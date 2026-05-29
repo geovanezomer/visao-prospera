@@ -390,7 +390,7 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
     });
   }
 
-  // ===== 5. NCG não coberto =====
+  // ===== 5. Necessidade de Capital de Giro não coberta =====
   if (ind.gapCapitalGiro > 0) {
     cards.push({
       id: "ncg_gap",
