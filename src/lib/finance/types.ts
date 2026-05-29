@@ -65,7 +65,11 @@ export interface TaxConfig {
   fatorRAuto?: boolean;
   presumidoBaseIRPJ: number;
   presumidoBaseCSLL: number;
+  /** Alíquota de ISS (serviços) OU ICMS débito (comércio/indústria), em %. */
   issIcms: number;
+  /** Alíquota de crédito de ICMS sobre o CPV (entradas). Aplicada apenas em comércio/indústria
+   *  nos regimes Presumido/Real. Default 0. ICMS efetivo = max(0, débito − crédito). */
+  aliquotaICMSCredito?: number;
   pisCreditos: number;
   cofinsCreditos: number;
   /** Dedução de materiais/subempreitada para ISS (Lei 116/2003 art. 7º §2º). Anual em R$. */
