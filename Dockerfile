@@ -4,13 +4,13 @@
 # ============================================================
 
 # ---------- Stage 1: build ----------
-FROM node:20-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
 # Instala deps com cache de layer
-COPY package.json package-lock.json* ./
-RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+COPY package.json bun.lock bunfig.toml ./
+RUN bun install --frozen-lockfile
 
 # Copia o restante do código
 COPY . .
@@ -19,7 +19,7 @@ COPY . .
 # Isso faz o build gerar .output/server/index.mjs rodável em Node.
 ENV NITRO_PRESET=node-server
 
-RUN npm run build
+RUN bun run build
 
 
 # ---------- Stage 2: runtime ----------
