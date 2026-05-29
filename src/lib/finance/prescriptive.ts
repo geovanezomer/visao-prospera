@@ -535,6 +535,61 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
     });
   }
 
+  // ===== 9. Eficiência operacional — conversão de EBITDA em caixa (sempre exibido) =====
+  {
+    const ebitdaAno = sum(dre.ebitda);
+    const conversaoFcf = ebitdaAno > 0 ? (ind.fcf / ebitdaAno) * 100 : 0;
+    const giroAtivo = ind.giroAtivo;
+    const benchConv = "Saudável: > 60% (EBITDA vira caixa)";
+    let severity: PrescriptiveCard["severity"];
+    let problem: string;
+    if (ebitdaAno <= 0) {
+      severity = "danger";
+      problem = "EBITDA negativo — operação não gera caixa";
+    } else if (conversaoFcf < 30) {
+      severity = "danger";
+      problem = "Baixíssima conversão de EBITDA em caixa";
+    } else if (conversaoFcf < 60) {
+      severity = "warn";
+      problem = "Conversão de EBITDA em caixa abaixo do ideal";
+    } else if (giroAtivo < 0.5) {
+      severity = "warn";
+      problem = "Giro do ativo baixo — capital ocioso";
+    } else {
+      severity = "ok";
+      problem = "Eficiência operacional saudável";
+    }
+    cards.push({
+      id: "eficiencia_op",
+      severity,
+      problem,
+      metricLabel: "FCF / EBITDA · Giro do Ativo",
+      metricValue: `${ebitdaAno > 0 ? conversaoFcf.toFixed(0) + "%" : "—"} · ${giroAtivo.toFixed(2)}×`,
+      benchmark: benchConv,
+      cause: ebitdaAno <= 0
+        ? "Sem EBITDA não há fonte interna de caixa: cada mês depende de captação ou queima de reservas."
+        : conversaoFcf < 60
+          ? "EBITDA não está virando caixa: capital de giro pesado (PMR alto, estoques), capex recorrente ou alta carga de impostos comem a geração."
+          : giroAtivo < 0.5
+            ? "Ativos pouco produtivos: receita gerada por R$ investido está abaixo do esperado — há gordura no balanço."
+            : "Operação converte EBITDA em caixa com folga e gira o ativo de forma adequada.",
+      actions: severity === "ok" ? [] : [
+        {
+          id: "ef_reduce_pmr",
+          title: `Reduzir PMR (atual ${state.revenue.pmr}d → ${Math.max(0, state.revenue.pmr - 10)}d)`,
+          detail: "Acelera entrada de caixa — melhora direto a conversão FCF/EBITDA.",
+          apply: (s) => setPmr(s, s.revenue.pmr - 10),
+        },
+        {
+          id: "ef_reduce_assets",
+          title: "Liberar ativos ociosos (-10% do ativo total)",
+          detail: "Venda de imóveis, equipamentos subutilizados, baixa de estoque parado. Aumenta giro e ROIC.",
+          apply: (s) => ({ ...s, capital: { ...s.capital, ativoTotal: s.capital.ativoTotal * 0.9 } }),
+        },
+      ],
+    });
+  }
+
   // Se nada disparou, parabeniza
   if (cards.length === 0) {
     cards.push({
