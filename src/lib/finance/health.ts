@@ -1,7 +1,7 @@
 import { AppState } from "./types";
 import { buildDRE, calcIndicators } from "./calculations";
 import { buildCashFlow } from "./cashflow";
-import { sum } from "./format";
+import { computeStrategic, type StrategicResult } from "./strategic";
 
 export interface HealthDimension {
   key: string;
@@ -14,11 +14,16 @@ export interface HealthDimension {
 }
 
 export interface HealthScore {
-  total: number;       // 0-100
+  /** Score financeiro puro (sem haircut estratégico). 0-100. */
+  financial: number;
+  /** Score final após haircut estratégico. 0-100. */
+  total: number;
   grade: "A" | "B" | "C" | "D" | "E";
   status: "ok" | "warn" | "danger";
   dimensions: HealthDimension[];
   headline: string;
+  strategic: StrategicResult;
+  haircut: number;
 }
 
 /** Mapeia um valor x dentro de [min..max] para 0..100 (clamp). */
