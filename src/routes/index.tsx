@@ -1,10 +1,10 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useAppState, useScenarios } from "@/lib/finance/store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Activity, Building2, Download, RotateCcw, Factory, Store, Briefcase } from "lucide-react";
+import { Activity, Building2, Download, RotateCcw, Factory, Store, Briefcase, Sparkles, X } from "lucide-react";
 import { RevenueTab } from "@/components/sim/RevenueTab";
 import { CostsTab } from "@/components/sim/CostsTab";
 import { CapitalTab } from "@/components/sim/CapitalTab";
@@ -15,6 +15,7 @@ import { DiagnosisTab } from "@/components/sim/DiagnosisTab";
 import { AnalysisTab } from "@/components/sim/AnalysisTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
 import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
+import { GuidedWizard } from "@/components/sim/guided/GuidedWizard";
 import { BusinessType } from "@/lib/finance/types";
 
 export const Route = createFileRoute("/")({
