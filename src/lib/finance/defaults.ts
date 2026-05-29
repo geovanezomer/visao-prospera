@@ -122,7 +122,7 @@ export const DEFAULT_STATE: AppState = {
     dividendos: fill12(0),
     amortizacoes: fill12(0),
   },
-  guided: false,
+  guided: { enabled: false, completedWizard: false, dismissedBanner: false },
 };
 
 // ============ Migração de estados antigos ============
