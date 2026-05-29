@@ -59,7 +59,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
 
   const waterfall = [
     { name: "Receita Líq.", value: sum(dre.receitaLiquida) },
-    { name: "− CPV", value: -sum(dre.cpv) },
+    { name: `− ${cvLabel.short}`, value: -sum(dre.cpv) },
     { name: "− Desp. Op.", value: -sum(dre.despesasOperacionais) },
     { name: "− D&A", value: -sum(dre.depreciacao) },
     { name: "± Financ.", value: sum(dre.resultadoFinanceiro) },
