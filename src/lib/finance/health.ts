@@ -133,16 +133,23 @@ export function computeHealth(state: AppState): HealthScore {
     },
   ];
 
-  const total = dims.reduce((acc, d) => acc + d.score * d.weight, 0);
+  const financial = dims.reduce((acc, d) => acc + d.score * d.weight, 0);
+  const strategic = computeStrategic(state);
+  const haircut = strategic.haircut;
+  const total = financial * (1 - haircut);
   const status = statusFromScore(total);
   const grade = gradeFromScore(total);
 
-  const headline =
+  const baseHeadline =
     grade === "A" ? "Empresa financeiramente saudável e cria valor econômico." :
     grade === "B" ? "Estrutura sólida com pontos de melhoria pontuais." :
     grade === "C" ? "Saúde mediana — vários indicadores em zona de atenção." :
     grade === "D" ? "Sinais relevantes de fragilidade financeira." :
     "Situação crítica — atuação imediata recomendada.";
 
-  return { total, grade, status, dimensions: dims, headline };
+  const headline = strategic.hasAnyAnswer && haircut > 0
+    ? `${baseHeadline} Risco estratégico reduziu o score em ${(haircut * 100).toFixed(0)}%.`
+    : baseHeadline;
+
+  return { financial, total, grade, status, dimensions: dims, headline, strategic, haircut };
 }
