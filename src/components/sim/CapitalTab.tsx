@@ -50,7 +50,7 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
           <div className="rounded-md border border-primary/40 bg-primary/10 p-4">
             <div className="flex items-center gap-1 text-xs uppercase tracking-wider text-primary">
               WACC — Custo Médio Ponderado de Capital
-              <HelpTip text="WACC = (E/V × Ke) + (D/V × Kd × (1 − IR)). Benchmark mínimo de retorno do capital investido." />
+              <HelpTip text="Retorno mínimo que a empresa precisa entregar para remunerar sócios (Ke) e credores (Kd). É a 'meta' que o ROIC precisa superar para a empresa criar valor." formula="(E/V × Ke) + (D/V × Kd × (1 − IR))" />
             </div>
             <div className="mono mt-2 text-3xl font-semibold text-primary">{wacc.toFixed(2)}%</div>
             <div className="mt-1 text-xs text-muted-foreground">
