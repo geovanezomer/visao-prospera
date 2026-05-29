@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { SectionTitle, HelpTip } from "./primitives";
 import { ForecastCard, MonteCarloCard } from "./AnalysisTab";
+import { IndicatorsCard } from "./IndicatorsCard";
 import { ArrowDownRight, ArrowUpRight, Minus, RotateCcw, Save, SlidersHorizontal, TriangleAlert, Wand2 } from "lucide-react";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
@@ -152,6 +153,7 @@ export function SimulatorTab({
           As análises abaixo refletem o cenário <strong className="text-foreground">simulado</strong> acima.
           Sem ajustes nos sliders, elas representam o cenário base atual do sistema.
         </div>
+        <IndicatorsCard state={simState} />
         <ForecastCard state={simState} />
         <MonteCarloCard state={simState} />
       </div>

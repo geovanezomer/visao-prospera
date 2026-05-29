@@ -5,7 +5,7 @@ import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "
 import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
 import { HealthScoreCard, SensitivityCard, ScenarioCompareCard } from "./AnalysisTab";
-import { IndicatorsCard } from "./IndicatorsCard";
+
 
 export function DiagnosisTab({
   state,
@@ -35,9 +35,6 @@ export function DiagnosisTab({
           </div>
         </div>
       </div>
-
-      {/* Indicadores financeiros completos */}
-      <IndicatorsCard state={state} />
 
       {/* Análises avançadas */}
       <HealthScoreCard state={state} />
