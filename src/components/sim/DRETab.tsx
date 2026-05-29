@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AppState, TaxRegime } from "@/lib/finance/types";
+type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { buildDRE, calcIndicators, diagnose } from "@/lib/finance/calculations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
