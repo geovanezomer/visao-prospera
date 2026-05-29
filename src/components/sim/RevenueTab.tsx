@@ -17,8 +17,8 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
   return (
     <div className="space-y-6">
       <div className="grid gap-3 md:grid-cols-4">
-        <StatCard label="Receita Bruta Anual" value={fmtBRL(brutaAnual)} tone="pos" />
-        <StatCard label="Receita Líquida Anual" value={fmtBRL(liqAnual)} sub={`Média mensal ${fmtBRL(avg(liquidas))}`} />
+        <StatCard label="Receita Bruta Anual" value={fmtBRL(brutaAnual)} tone="pos" hint={{ description: "Total faturado no ano antes de qualquer dedução (impostos, devoluções, inadimplência).", formula: "Σ Receita Bruta dos 12 meses" }} />
+        <StatCard label="Receita Líquida Anual" value={fmtBRL(liqAnual)} sub={`Média mensal ${fmtBRL(avg(liquidas))}`} hint={{ description: "Receita após descontar inadimplência e deduções. É a base de cálculo das margens (bruta, EBITDA, líquida).", formula: "Receita Bruta − Inadimplência − Deduções" }} />
         <StatCard label="Inadimplência média" value={fmtPct(avg(r.inadimplencia) / 100)} hint="Percentual médio esperado de não recebimento sobre a receita bruta." />
         <StatCard
           label="Ciclo Financeiro"
