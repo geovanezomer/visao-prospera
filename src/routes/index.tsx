@@ -166,7 +166,7 @@ function SimulaPro() {
             <TabsContent value="dre"><DRETab state={state} update={update} /></TabsContent>
             <TabsContent value="caixa"><CashflowTab state={state} update={update} /></TabsContent>
             <TabsContent value="diag"><DiagnosisTab state={state} update={update} saveScenario={save} /></TabsContent>
-            <TabsContent value="analise"><AnalysisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} /></TabsContent>
+            <TabsContent value="analise"><AnalysisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} saveScenario={save} /></TabsContent>
           </div>
         </Tabs>
 
