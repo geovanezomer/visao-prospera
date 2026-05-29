@@ -95,7 +95,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
           sub={fmtPct(pctRec(totFin)) + " da receita"}
           hint="Juros, IOF, antecipação de recebíveis, tarifas bancárias."
         />
-        <StatCard label="Total de Custos" value={fmtBRL(totGeral)} tone="neg" sub={fmtPct(pctRec(totGeral)) + " da receita"} />
+        <StatCard label="Total de Custos" value={fmtBRL(totGeral)} tone="neg" sub={fmtPct(pctRec(totGeral)) + " da receita"} hint={{ description: "Soma de todos os custos (vendas + fixos + variáveis + financeiros). Quanto menor o % sobre a receita, mais saudável a operação.", formula: "Custo de Vendas + Custos Fixos + Custos Variáveis + Custos Financeiros" }} />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/40 bg-card/30 px-4 py-2 text-xs text-muted-foreground">
