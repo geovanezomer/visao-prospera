@@ -5,6 +5,7 @@ import { Save, GitCompare, Trash2 } from "lucide-react";
 import { AppState, Scenario } from "@/lib/finance/types";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 export function ScenarioBar({
   state,
@@ -111,7 +112,16 @@ export function ScenarioBar({
                         <td className="p-2">
                           <div className="flex justify-end gap-1">
                             <Button size="sm" variant="ghost" onClick={() => { load(sc.state); setCmpOpen(false); }}>Carregar</Button>
-                            <Button size="sm" variant="ghost" onClick={() => remove(sc.id)}><Trash2 className="h-4 w-4" /></Button>
+                            <ConfirmDialog
+                              title={`Remover cenário "${sc.name}"?`}
+                              description="O cenário salvo será apagado e não poderá ser recuperado."
+                              confirmLabel="Remover"
+                              destructive
+                              onConfirm={() => remove(sc.id)}
+                              trigger={
+                                <Button size="sm" variant="ghost" title="Remover cenário"><Trash2 className="h-4 w-4" /></Button>
+                              }
+                            />
                           </div>
                         </td>
                       </tr>
