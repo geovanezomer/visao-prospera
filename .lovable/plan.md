@@ -1,97 +1,78 @@
-# Modo Guiado — v1
+## Wizard v2 — Mais realismo
 
-Transforma o CfoPRO em uma experiência acessível para usuários leigos sem tirar o poder do modo livre. Três pilares: **wizard de setup**, **cenários prontos** e **botão persistente no header**.
+### Novos passos (de 7 → 10)
 
-## Escopo aprovado
-
-- Wizard inicial (5–7 perguntas) que pré-popula todas as abas
-- Botão fixo no header para ativar/desativar
-- Biblioteca de cenários sugeridos prontos para simular
-- *Fora desta v1:* tour com coach marks, modo "linguagem leiga" global, relatório PDF
-
-## 1. Botão no Header
-
-Novo botão `Modo Guiado` ao lado de "Resetar" / "Exportar", com ícone (Sparkles/Compass) e estado visual ativo quando ligado.
-
-- **Clique 1ª vez:** abre o wizard (modal grande, 7 passos)
-- **Clique seguinte:** reabre o wizard para refazer (com confirmação se houver dados já preenchidos)
-- **Toggle persistente:** estado salvo em `localStorage` via `useAppState`; quando ativo, exibe um banner discreto no topo das abas com atalhos ("Próximo passo recomendado: preencha Capital").
-
-## 2. Wizard de Setup (7 passos)
-
-Modal full-screen com progresso visual (1/7 … 7/7), botões Voltar/Próximo e "Pular esta etapa". Cada passo tem **1 pergunta principal + presets clicáveis + campo livre opcional**.
-
-| # | Pergunta | Tipo | Onde aplica |
+| # | Passo atual / novo | Pergunta principal | Campos |
 |---|---|---|---|
-| 1 | Tipo de negócio | 3 cards (Serviços / Comércio / Indústria) | `state.businessType` |
-| 2 | Faturamento médio mensal | Input R$ + slider de sazonalidade (Estável / Sazonal / Crescimento 20% a.a.) | Gera curva de 12 meses em `revenue.bruta` |
-| 3 | Como você recebe e paga? | Presets ("À vista", "30 dias", "30/60/90", "Custom") | `revenue.pmr`, `revenue.pmp`, `pme` |
-| 4 | Equipe (CLT) | Nº de funcionários + salário médio | Cria linha de folha em `costs` com `encargosAuto: true` |
-| 5 | Custos fixos mensais agregados | Aluguel, software, marketing, outros (4 inputs) | Cria linhas em `costs` categoria `fixo` |
-| 6 | Regime tributário | 4 opções (Simples / Presumido / Real / "Não sei — sugira") | `tax.regime`. Se "Não sei", roda `compareRegimes` e escolhe o de menor carga |
-| 7 | Capital e dívida | "Tem empréstimo?" Sim → saldo + taxa; "Capital próprio aproximado" | `capital.dividaOnerosa`, `capital.kd`, `capital.patrimonioLiquido` |
+| 1 | Tipo de negócio | (mantém) | businessType, companyName |
+| 2 | Receita | "Quanto fatura por mês?" + sazonalidade | faturamentoMensal, seasonality, **crescimentoAA** (só se seasonality="crescimento") |
+| 3 | **🆕 Margem** | "A cada R$100 vendidos, quanto custa o produto/serviço?" | **margemCustoVendasPct** (slider 0–90, presets por setor: serviços 30 / comércio 65 / indústria 55) |
+| 4 | **🆕 Vendas & recebimentos** | "Como você recebe?" | pmr, pmp, **inadimplenciaPct**, **inadimplenciaComoPDD** (toggle), **percentualCartao**, **taxaCartaoPct** |
+| 5 | Equipe CLT | (mantém) | funcionarios, salarioMedio |
+| 6 | **🆕 Sócios** | "Você e os sócios retiram pró-labore?" | **numeroSocios**, **proLaboreMedio**, **comissaoVendasPct** |
+| 7 | Custos fixos | (mantém) | aluguel, software, marketing, outrosFixos |
+| 8 | **🆕 Estoque** (só comércio/indústria — pulado em serviços) | "Quantos dias de estoque você mantém?" | **diasEstoque** (default: comércio 30, indústria 45) |
+| 9 | Regime tributário | (mantém) | regimeEscolha |
+| 10 | Capital | (mantém) | temEmprestimo, saldoDivida, taxaMensal, capitalProprio |
+| Final | Resumo | (mantém) | Mostra 8 indicadores-chave |
 
-**Final do wizard:** tela de resumo mostrando os 8 indicadores-chave já calculados (EBITDA, Margem Líquida, ROIC×WACC, Necessidade de Capital de Giro, etc.) com mensagem "Tudo pronto! Você pode ajustar qualquer campo nas abas a qualquer momento."
+### Mapeamento para AppState
 
-## 3. Biblioteca de Cenários Prontos
+- **margemCustoVendasPct** → injetado na linha de custo `custo_vendas` correspondente (mercadoria / matéria-prima / mão-obra-direta), com `values = fill12(faturamento × pct / 100)` e `fixed: false`.
+- **inadimplenciaPct** → `revenue.inadimplencia = fill12(pct)`, `revenue.inadimplenciaComoPDD = toggle`.
+- **percentualCartao + taxaCartaoPct** → nova linha de custo variável `taxa_cartao` (categoria `variavel`, `fixed: false`) com `values = fill12(faturamento × %cartao × taxa / 10000)`.
+- **comissaoVendasPct** → linha `comissoes` (variável) com `values = fill12(faturamento × pct / 100)`.
+- **numeroSocios + proLaboreMedio** → linha `pro_labore` (fixa, sem encargosAuto — pró-labore tem INSS de 11% só, não 70%) com `values = fill12(numeroSocios × proLaboreMedio)`.
+- **diasEstoque** → `capital.estoques = (CMV mensal médio) × diasEstoque / 30`.
+- **crescimentoAA** → nova função `buildRevenueCurve(monthly, "crescimento", taxa)` que aplica `(1+taxa)^(i/12)` mês a mês, com média anual = `monthly`.
 
-Novo card "Simulações sugeridas" na aba **Análise & Cenários** (visível sempre, mas destacado no Modo Guiado).
+### Arquivos a alterar
 
-Cenários incluídos:
+1. **`src/lib/finance/guided/wizardToState.ts`**
+   - Estender `wizardSchema` com novos campos + validações (zod min/max).
+   - Atualizar `WIZARD_DEFAULTS`.
+   - `buildRevenueCurve` aceita `taxaAA?: number` para modo crescimento custom.
+   - `applyWizard`: injetar novas linhas de custo via `overrides`, popular `revenue.inadimplencia`, `capital.estoques`.
+   - Defaults por setor para `margemCustoVendasPct` e `diasEstoque`.
 
-1. **Aumento de preço (+10%)** — multiplica `revenue.bruta` por 1.10
-2. **Perda do maior cliente (-20% receita)** — multiplica por 0.80
-3. **Selic +2 p.p.** — aumenta `capital.kd` em 2
-4. **Contratação de +3 pessoas** (salário médio do estado atual) — adiciona linha de folha
-5. **Redução de 10% nos 3 maiores custos fixos** — reusa lógica de `prescriptive.ts`
-6. **Migração para o regime tributário ótimo** — usa `compareRegimes`
-7. **Antecipação de recebíveis (PMR -15 dias, custo 2% a.m.)** — ajusta `pmr` e adiciona despesa financeira
+2. **`src/components/sim/guided/GuidedWizard.tsx`**
+   - `STEP_COUNT = 10` (ou dinâmico: 9 se serviços, pula estoque).
+   - Adicionar 3 novos blocos de UI (Margem, Vendas & Recebimentos expandido, Sócios, Estoque).
+   - Validação por passo via `wizardSchema.pick(...)` por campo.
+   - Lógica condicional: passo "Estoque" só renderiza se `businessType !== "servicos"`.
+   - Lógica condicional: campo `crescimentoAA` só aparece se `seasonality === "crescimento"`.
 
-Cada cenário tem botão **"Simular"** (abre o `SimulateDialog` existente, comparando antes/depois) e **"Salvar como cenário"** (usa `useScenarios.save`).
+3. **`src/lib/finance/defaults.ts`** (verificar)
+   - Confirmar se `defaultCostsFor` já tem linhas `pro_labore`, `comissoes`, `taxa_cartao`. Se não, adicionar entradas-base (zeradas) para que os overrides funcionem; ou criar via push se ausentes.
 
-## 4. Estado e Persistência
+### UX do wizard
 
-Adicionar em `AppState`:
+- Presets clicáveis em cada novo campo (ex: inadimplência 0% / 2% / 5% / 10%).
+- HelpTip explicando o conceito (ex: "PDD = Provisão Devedores Duvidosos: lança o calote como despesa em vez de reduzir receita, mantendo a base de PIS/COFINS/ISS").
+- Barra de progresso passa a refletir 10 passos.
+- Botão "Pular este passo" mantém defaults sensatos.
+
+### Validação (zod)
+
 ```ts
-guided: {
-  enabled: boolean;
-  completedWizard: boolean;
-  dismissedBanner: boolean;
-}
+margemCustoVendasPct: z.number().min(0).max(95),
+inadimplenciaPct: z.number().min(0).max(50),
+inadimplenciaComoPDD: z.boolean(),
+percentualCartao: z.number().min(0).max(100),
+taxaCartaoPct: z.number().min(0).max(15),
+numeroSocios: z.number().int().min(0).max(20),
+proLaboreMedio: z.number().min(0).max(500_000),
+comissaoVendasPct: z.number().min(0).max(30),
+diasEstoque: z.number().int().min(0).max(365),
+crescimentoAA: z.number().min(-50).max(300),
 ```
 
-Persiste em `localStorage` junto com o resto do estado (já existe via `useAppState`).
+### Critérios de aceite
 
-## Arquivos a criar / editar
-
-**Criar:**
-- `src/components/sim/guided/GuidedWizard.tsx` — modal com os 7 passos
-- `src/components/sim/guided/WizardSteps.tsx` — componentes de cada passo
-- `src/components/sim/guided/GuidedBanner.tsx` — banner persistente no topo
-- `src/components/sim/guided/ScenarioLibrary.tsx` — biblioteca de cenários prontos
-- `src/lib/finance/guided/wizardToState.ts` — converte respostas do wizard em `AppState`
-- `src/lib/finance/guided/scenarios.ts` — definições dos 7 cenários prontos (reusa helpers de `prescriptive.ts`)
-
-**Editar:**
-- `src/lib/finance/types.ts` — adicionar `guided` em `AppState`
-- `src/lib/finance/defaults.ts` — `guided` default (`enabled: false, completedWizard: false`)
-- `src/lib/finance/store.ts` — expor `setGuided`
-- `src/routes/index.tsx` — botão "Modo Guiado" no header + montagem do wizard/banner
-- `src/components/sim/AnalysisTab.tsx` — incluir `<ScenarioLibrary />` no topo
-
-## Detalhes técnicos
-
-- **Validação:** todos os inputs do wizard usam `zod` (string trim, números com min/max, R$ não-negativos, salário ≤ R$ 1M, nº funcionários ≤ 9999) antes de virarem `AppState`.
-- **Sazonalidade:** "Estável" = valor constante; "Sazonal" = curva senoidal ±15% com pico em dezembro; "Crescimento 20%" = rampa linear.
-- **Confirmação:** se o usuário ativar o wizard com dados já preenchidos, usar o `ConfirmDialog` existente avisando que os campos serão sobrescritos (com opção "Manter o que já preenchi" para fazer merge inteligente em campos vazios).
-- **Acessibilidade:** modal usa `Dialog` do shadcn (já no projeto); navegação por teclado (Enter avança, Esc fecha com confirmação).
-- **i18n:** textos em pt-BR no arquivo de cada componente (sem framework de tradução nesta fase).
-
-## Critérios de aceite
-
-- Botão "Modo Guiado" visível no header em todas as resoluções ≥ 768px
-- Wizard completo em < 90s para usuário médio (7 passos, cada com presets clicáveis)
-- Ao concluir o wizard, todas as abas mostram dados coerentes e o Diagnóstico CFO já dispara cards
-- Biblioteca de cenários abre, simula e salva sem regressão na aba Análise
-- Estado do Modo Guiado persiste entre reloads
-- Nenhum input do wizard aceita valores inválidos (validação `zod` com mensagens em pt-BR)
+- Wizard completa em ≤ 2 min com defaults.
+- Após aplicar, DRE mostra Lucro Bruto coerente com a margem informada.
+- Inadimplência aparece corretamente (dedução de receita OU PDD) conforme toggle.
+- Pró-labore aparece como linha separada da folha CLT.
+- NCG no Capital reflete dias de estoque para comércio/indústria.
+- Modo "crescimento" usa a taxa informada (mês 1 ≈ mês 12 / (1+taxa)).
+- Wizard de serviços pula passo de estoque automaticamente (mostra "9 de 9" no contador).
