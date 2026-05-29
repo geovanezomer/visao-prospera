@@ -390,7 +390,7 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
     });
   }
 
-  // ===== 5. NCG não coberto =====
+  // ===== 5. Necessidade de Capital de Giro não coberta =====
   if (ind.gapCapitalGiro > 0) {
     cards.push({
       id: "ncg_gap",
@@ -444,31 +444,54 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
     });
   }
 
-  // ===== 7. Regime tributário sub-ótimo =====
-  const reg = compareRegimes(state);
-  const atual = reg[state.tax.regime];
-  const opcoes = (Object.entries(reg) as [keyof typeof reg, typeof atual][])
-    .filter(([k]) => k !== state.tax.regime)
-    .sort((a, b) => a[1].annual - b[1].annual);
-  const melhor = opcoes[0];
-  if (melhor && atual.annual - melhor[1].annual > atual.annual * 0.1) {
+  // ===== 7. Diagnóstico do Regime Tributário (sempre exibido) =====
+  {
+    const reg = compareRegimes(state);
+    const atual = reg[state.tax.regime];
+    const ranked = (Object.entries(reg) as [keyof typeof reg, typeof atual][])
+      .slice()
+      .sort((a, b) => a[1].annual - b[1].annual);
+    const melhor = ranked[0];
+    const isAtualMelhor = melhor[0] === state.tax.regime;
     const economia = atual.annual - melhor[1].annual;
-    cards.push({
-      id: "regime",
-      severity: "info",
-      problem: "Regime tributário pode estar sub-ótimo",
-      metricLabel: "Carga atual × alternativa",
-      metricValue: `${atual.effective.toFixed(1)}% × ${melhor[1].effective.toFixed(1)}%`,
-      cause: `Migrar para ${labelRegime(melhor[0])} economizaria ${economia.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}/ano segundo o cálculo atual. Valide com seu contador (CNAE, fator R, créditos).`,
-      actions: [
-        {
-          id: "switch_regime",
-          title: `Migrar para ${labelRegime(melhor[0])}`,
-          detail: "Simula a tributação no novo regime usando os parâmetros já configurados.",
-          apply: (s) => switchRegime(s, melhor[0] as AppState["tax"]["regime"]),
-        },
-      ],
-    });
+    const economiaPct = atual.annual > 0 ? (economia / atual.annual) * 100 : 0;
+
+    const comparativo = ranked
+      .map(
+        ([k, v]) =>
+          `${labelRegime(k)}: ${v.annual.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}/ano (${v.effective.toFixed(1)}%)`,
+      )
+      .join(" · ");
+
+    if (isAtualMelhor) {
+      cards.push({
+        id: "regime",
+        severity: "ok",
+        problem: `Regime atual (${labelRegime(state.tax.regime)}) é o mais vantajoso`,
+        metricLabel: "Carga tributária efetiva",
+        metricValue: `${atual.effective.toFixed(1)}%`,
+        cause: `Comparativo anual nos 3 regimes — ${comparativo}. A escolha atual minimiza a carga, mas revalide com seu contador conforme o CNAE, fator R e créditos de PIS/COFINS.`,
+        actions: [],
+      });
+    } else {
+      const severity: PrescriptiveCard["severity"] = economiaPct >= 15 ? "danger" : economiaPct >= 5 ? "warn" : "info";
+      cards.push({
+        id: "regime",
+        severity,
+        problem: `Regime tributário sub-ótimo (atual: ${labelRegime(state.tax.regime)})`,
+        metricLabel: "Carga atual × melhor opção",
+        metricValue: `${atual.effective.toFixed(1)}% × ${melhor[1].effective.toFixed(1)}%`,
+        cause: `Migrar para ${labelRegime(melhor[0])} economizaria ${economia.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}/ano (${economiaPct.toFixed(1)}% da carga atual). Comparativo: ${comparativo}. Valide com contador (CNAE, fator R, créditos, sublimites do Simples).`,
+        actions: [
+          {
+            id: "switch_regime",
+            title: `Simular migração para ${labelRegime(melhor[0])}`,
+            detail: "Aplica o novo regime ao plano usando os parâmetros já configurados (anexo do Simples, presunção, etc.).",
+            apply: (s) => switchRegime(s, melhor[0] as AppState["tax"]["regime"]),
+          },
+        ],
+      });
+    }
   }
 
   // ===== 8. Custos fixos altos =====

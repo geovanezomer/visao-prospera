@@ -442,7 +442,7 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
   if (ind.coberturaJuros < 2 && Number.isFinite(ind.coberturaJuros)) out.push({ level: "danger", title: "Cobertura de juros perigosa", message: `EBIT cobre apenas ${ind.coberturaJuros.toFixed(1)}× os juros.` });
   if (ind.dividaLiqEbitda > 3 && Number.isFinite(ind.dividaLiqEbitda)) out.push({ level: "warn", title: "Alavancagem elevada", message: `Dívida Líq./EBITDA = ${ind.dividaLiqEbitda.toFixed(1)}×.` });
 
-  if (ind.gapCapitalGiro > 0) out.push({ level: "warn", title: "NCG não coberta", message: `Falta ${ind.gapCapitalGiro.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} para o ciclo operacional.` });
+  if (ind.gapCapitalGiro > 0) out.push({ level: "warn", title: "Necessidade de Capital de Giro não coberta", message: `Falta ${ind.gapCapitalGiro.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} para o ciclo operacional.` });
   else if (ind.gapCapitalGiro < 0 && ind.ncg < 0) out.push({ level: "ok", title: "Ciclo financeiro libera caixa", message: `Empresa com ciclo negativo (PMP > PMR) — recebe antes de pagar.` });
 
   if (ind.roic < ind.wacc) out.push({ level: "danger", title: "Empresa destrói valor", message: `ROIC ${ind.roic.toFixed(1)}% < WACC ${ind.wacc.toFixed(1)}%.` });
