@@ -11,7 +11,7 @@ import { AlertTriangle, CheckCircle2, TriangleAlert } from "lucide-react";
 
 const CHART_COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15", "#F472B6", "#34D399", "#A78BFA", "#FB923C"];
 
-export function DRETab({ state }: { state: AppState }) {
+export function DRETab({ state, update }: { state: AppState; update: Updater }) {
   const [view, setView] = useState<"mensal" | "anual">("anual");
   const regime = state.tax.regime;
   const { dre, tax } = buildDRE(state, regime);
