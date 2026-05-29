@@ -152,7 +152,7 @@ function SimulaPro() {
         <div className="flex items-center justify-between gap-3 border-b border-primary/30 bg-primary/5 px-6 py-2 text-xs text-primary">
           <span>
             <Sparkles className="mr-1 inline h-3.5 w-3.5" />
-            Modo Guiado ativo — siga as abas: Receitas → Custos → Capital → Regime Tributário → DRE → Caixa → Resultados → Simulador.
+            Modo Guiado ativo — siga as abas: Receitas → Custos → Capital → Regime Tributário → DRE → Caixa → Governança → Análises → Simulador.
           </span>
           <button onClick={dismissBanner} className="rounded p-1 hover:bg-primary/20" aria-label="Fechar">
             <X className="h-3.5 w-3.5" />
