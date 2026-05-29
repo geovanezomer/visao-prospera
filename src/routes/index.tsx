@@ -177,7 +177,7 @@ function SimulaPro() {
             <TabsTrigger value="dre">5. DRE Simulado</TabsTrigger>
             <TabsTrigger value="caixa">6. Fluxo de Caixa</TabsTrigger>
             <TabsTrigger value="governanca">7. Governança</TabsTrigger>
-            <TabsTrigger value="resultados">8. Resultados</TabsTrigger>
+            <TabsTrigger value="resultados">8. Análises</TabsTrigger>
             <TabsTrigger value="simulador">9. Simulador</TabsTrigger>
           </TabsList>
 
