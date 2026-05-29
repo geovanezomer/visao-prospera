@@ -96,10 +96,19 @@ function SimulaPro() {
                 </SelectContent>
               </Select>
             </div>
-            <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-              <Switch checked={state.guided} onCheckedChange={(v) => update({ guided: v })} />
-              Modo guiado
-            </label>
+            <Button
+              size="sm"
+              variant={state.guided.enabled ? "default" : "outline"}
+              onClick={toggleGuided}
+              title={state.guided.completedWizard ? "Ativar/desativar Modo Guiado" : "Iniciar wizard de setup"}
+            >
+              <Sparkles className="mr-2 h-4 w-4" /> Modo Guiado
+            </Button>
+            {state.guided.completedWizard && (
+              <Button size="sm" variant="ghost" onClick={() => setWizardOpen(true)} title="Refazer wizard">
+                Refazer setup
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={exportReport}><Download className="mr-2 h-4 w-4" /> Exportar</Button>
             <ConfirmDialog
               title="Restaurar dados de exemplo?"
@@ -117,11 +126,24 @@ function SimulaPro() {
         </div>
       </header>
 
-      {state.guided && (
-        <div className="border-b border-primary/30 bg-primary/5 px-6 py-2 text-center text-xs text-primary">
-          Modo guiado ativo · Preencha as abas na ordem: Receitas → Custos → Capital → Regime Tributário → DRE Simulado para receber o diagnóstico.
+      {state.guided.enabled && !state.guided.dismissedBanner && (
+        <div className="flex items-center justify-between gap-3 border-b border-primary/30 bg-primary/5 px-6 py-2 text-xs text-primary">
+          <span>
+            <Sparkles className="mr-1 inline h-3.5 w-3.5" />
+            Modo Guiado ativo — siga as abas: Receitas → Custos → Capital → Regime Tributário → DRE → Diagnóstico → Análise.
+          </span>
+          <button onClick={dismissBanner} className="rounded p-1 hover:bg-primary/20" aria-label="Fechar">
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       )}
+
+      <GuidedWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        baseState={state}
+        onApply={handleWizardApply}
+      />
 
       <main className="mx-auto max-w-[1600px] px-6 py-6">
         <Tabs defaultValue="dre" className="w-full">
