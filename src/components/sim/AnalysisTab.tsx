@@ -50,7 +50,7 @@ function HealthScoreCard({ state }: { state: AppState }) {
       <div className="grid gap-6 md:grid-cols-[180px_1fr]">
         <div className="flex flex-col items-center justify-center">
           <svg width="140" height="140" viewBox="0 0 140 140" className="-rotate-90">
-            <circle cx="70" cy="70" r="52" stroke="hsl(var(--border))" strokeWidth="10" fill="none" opacity="0.4" />
+            <circle cx="70" cy="70" r="52" stroke="var(--border)" strokeWidth="10" fill="none" opacity="0.4" />
             <circle
               cx="70" cy="70" r="52"
               stroke={ringColor} strokeWidth="10" fill="none"
