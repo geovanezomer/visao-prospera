@@ -256,9 +256,15 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
       cause: `Folha mensal de ${(folhaMensal).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}. Quadro pode estar dimensionado para um faturamento maior que o atual.`,
       actions: [
         {
+          id: "dismiss_2_severance",
+          title: "Demitir 2 posições (com custo rescisório real)",
+          detail: `Aviso + 13º + férias + 1/3 + multa FGTS 40% ≈ ${(severanceCostPerPosition(custoMedio / 1.7) * 2).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} de saída de caixa one-shot (Mês 1), redução estrutural da folha a partir do mês 2.`,
+          apply: (s) => dismissWithSeverance(s, 2, custoMedio / 1.7, 0),
+        },
+        {
           id: "reduce_clt_2",
-          title: "Reduzir 2 posições CLT",
-          detail: `Corte equivalente a ~${(2 * custoMedio).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}/mês incluindo encargos.`,
+          title: "Reduzir 2 posições CLT (sem rescisão — encerramento de contrato/aposentadoria)",
+          detail: `Corte equivalente a ~${(2 * custoMedio).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}/mês incluindo encargos. Não impacta caixa one-shot.`,
           apply: (s) => reduceLaborByPositions(s, 2, custoMedio),
         },
         {
