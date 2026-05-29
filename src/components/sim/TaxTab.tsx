@@ -72,13 +72,30 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
               <PctInput value={state.tax.presumidoBaseCSLL} onChange={(n) => set({ presumidoBaseCSLL: n })} />
             </div>
           </div>
-          <div>
-            <label className="text-xs text-muted-foreground">ISS / ICMS</label>
-            <PctInput value={state.tax.issIcms} onChange={(n) => set({ issIcms: n })} />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                {state.businessType === "servicos" ? "ISS" : "ICMS (débito)"}
+                <HelpTip text={state.businessType === "servicos" ? "Alíquota de ISS sobre o serviço prestado." : "Alíquota de débito de ICMS sobre a receita bruta. O crédito sobre o CPV é configurado ao lado."} />
+              </label>
+              <PctInput value={state.tax.issIcms} onChange={(n) => set({ issIcms: n })} />
+            </div>
+            {state.businessType !== "servicos" && (
+              <div>
+                <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                  ICMS crédito (CPV)
+                  <HelpTip text="Alíquota média de ICMS embutida nas compras (entradas). O sistema calcula ICMS efetivo = max(0, débito sobre receita − crédito sobre CPV). Tipicamente igual à alíquota de débito quando UF de origem = destino." example="Comércio com CPV 60% da receita e ICMS 12% em ambos os lados → carga efetiva ≈ 4,8% da receita." />
+                </label>
+                <PctInput value={state.tax.aliquotaICMSCredito ?? 0} onChange={(n) => set({ aliquotaICMSCredito: n })} />
+              </div>
+            )}
           </div>
           {Object.entries(regimes.presumido.detail).map(([k, v]) => <Row key={k} label={k} value={fmtBRL(v)} />)}
           <Row label="Total Anual" value={fmtBRL(regimes.presumido.annual)} strong />
           <Row label="Carga efetiva" value={fmtPct(regimes.presumido.effective / 100)} />
+          <div className="mt-2 rounded-md bg-accent/30 p-2 text-[10.5px] text-muted-foreground">
+            ⓘ Adicional de IRPJ (10% sobre lucro trimestral &gt; R$60k) é apurado e recolhido por trimestre; aqui é distribuído proporcionalmente entre os meses para fins gerenciais.
+          </div>
         </Card>
 
         <Card title="Lucro Real" regime="real">
