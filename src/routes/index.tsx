@@ -38,12 +38,26 @@ export const Route = createFileRoute("/")({
 function SimulaPro() {
   const { state, update, reset, setState } = useAppState();
   const { scenarios, save, remove } = useScenarios();
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   const businessIcon = state.businessType === "industria" ? <Factory className="h-4 w-4" /> : state.businessType === "comercio" ? <Store className="h-4 w-4" /> : <Briefcase className="h-4 w-4" />;
 
   const exportReport = () => {
     window.print();
   };
+
+  const toggleGuided = () => {
+    if (!state.guided.completedWizard) {
+      setWizardOpen(true);
+    } else {
+      update({ guided: { ...state.guided, enabled: !state.guided.enabled } });
+    }
+  };
+
+  const handleWizardApply = (newState: AppState) => {
+    setState(newState);
+  };
+  const dismissBanner = () => update({ guided: { ...state.guided, dismissedBanner: true } });
 
   return (
     <div className="min-h-screen bg-background text-foreground">
