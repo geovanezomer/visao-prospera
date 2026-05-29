@@ -1,0 +1,43 @@
+# ============================================================
+# GZ FinancePRO — Docker Compose
+#
+# Produção:        docker compose up app -d --build
+# Desenvolvimento: docker compose --profile dev up app-dev --build
+# ============================================================
+
+services:
+  # ---------- Produção ----------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gzfinancepro:latest
+    container_name: gzfinancepro
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+
+  # ---------- Desenvolvimento (hot reload) ----------
+  app-dev:
+    profiles: ["dev"]
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: gzfinancepro:dev
+    container_name: gzfinancepro-dev
+    ports:
+      - "5173:5173"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5173
+    volumes:
+      # Código-fonte montado para hot reload
+      - .:/app
+      # Volume anônimo isola node_modules do host
+      - /app/node_modules
+      - /app/.output
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

@@ -1,0 +1,21 @@
+# ============================================================
+# GZ FinancePRO — Desenvolvimento com hot reload
+# Use junto com docker-compose.yml (service: app-dev)
+# ============================================================
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Instala deps primeiro (cache)
+COPY package.json package-lock.json* ./
+RUN npm install --no-audit --no-fund
+
+# Código será montado via volume — copia inicial para o caso de subir sem volume
+COPY . .
+
+ENV HOST=0.0.0.0
+ENV PORT=5173
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
