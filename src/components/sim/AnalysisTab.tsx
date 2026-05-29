@@ -35,7 +35,7 @@ export function AnalysisTab({
 }
 
 // ============== Health Score ==============
-function HealthScoreCard({ state }: { state: AppState }) {
+export function HealthScoreCard({ state }: { state: AppState }) {
   const h = useMemo(() => computeHealth(state), [state]);
   const ringColor = h.status === "ok" ? "var(--success)" : h.status === "warn" ? "var(--warning)" : "var(--destructive)";
   const circ = 2 * Math.PI * 52;
@@ -101,7 +101,7 @@ function DimRow({ d }: { d: HealthDimension }) {
 }
 
 // ============== Sensitivity ==============
-function SensitivityCard({ state }: { state: AppState }) {
+export function SensitivityCard({ state }: { state: AppState }) {
   const [output, setOutput] = useState<OutputKey>("ebitda");
   const result = useMemo(() => runSensitivity(state, output), [state, output]);
   const fmt = (n: number) => output === "roic" ? `${n.toFixed(1)}%` : fmtBRL(n);
@@ -174,7 +174,7 @@ function SensitivityCard({ state }: { state: AppState }) {
 }
 
 // ============== Scenario Compare ==============
-function ScenarioCompareCard({
+export function ScenarioCompareCard({
   state,
   scenarios,
   loadScenario,
@@ -276,7 +276,7 @@ function ScenarioCompareCard({
 }
 
 // ============== Forecast 36 meses + VPL/TIR ==============
-function ForecastCard({ state }: { state: AppState }) {
+export function ForecastCard({ state }: { state: AppState }) {
   const [cfg, setCfg] = useState<ForecastConfig>(DEFAULT_FORECAST_CFG);
   const result = useMemo(() => buildForecast(state, cfg), [state, cfg]);
   const set = (patch: Partial<ForecastConfig>) => setCfg((c) => ({ ...c, ...patch }));
@@ -347,7 +347,7 @@ function ForecastCard({ state }: { state: AppState }) {
 }
 
 // ============== Monte Carlo (Web Worker) ==============
-function MonteCarloCard({ state }: { state: AppState }) {
+export function MonteCarloCard({ state }: { state: AppState }) {
   const [cfg, setCfg] = useState<MCConfig>(DEFAULT_MC);
   const [result, setResult] = useState<MCResult | null>(null);
   const [running, setRunning] = useState(false);
