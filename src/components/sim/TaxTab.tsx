@@ -111,6 +111,15 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
                 className="num mt-1 w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm outline-none focus:border-primary" />
             </div>
           </div>
+          {state.businessType !== "servicos" && (
+            <div>
+              <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                ICMS crédito (CPV)
+                <HelpTip text="Alíquota média de ICMS embutida nas compras. ICMS efetivo = max(0, débito − crédito)." />
+              </label>
+              <PctInput value={state.tax.aliquotaICMSCredito ?? 0} onChange={(n) => set({ aliquotaICMSCredito: n })} />
+            </div>
+          )}
           {Object.entries(regimes.real.detail).map(([k, v]) => <Row key={k} label={k} value={fmtBRL(v)} />)}
           <Row label="Total Anual" value={fmtBRL(regimes.real.annual)} strong />
           <Row label="Carga efetiva" value={fmtPct(regimes.real.effective / 100)} />
