@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { SectionTitle, HelpTip } from "./primitives";
+import { ForecastCard, MonteCarloCard } from "./AnalysisTab";
 import { ArrowDownRight, ArrowUpRight, Minus, RotateCcw, Save, SlidersHorizontal, TriangleAlert, Wand2 } from "lucide-react";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
