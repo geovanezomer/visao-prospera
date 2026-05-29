@@ -92,7 +92,7 @@ export function StatCard({
 }: {
   label: string;
   value: ReactNode;
-  hint?: string;
+  hint?: HelpHint;
   tone?: "default" | "pos" | "neg" | "warn";
   sub?: ReactNode;
 }) {
@@ -102,7 +102,7 @@ export function StatCard({
     <div className="rounded-lg border border-border/60 bg-card/60 p-4">
       <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
         {label}
-        {hint && <HelpTip text={hint} />}
+        {renderHint(hint)}
       </div>
       <div className={cn("mono mt-2 text-2xl font-semibold", toneClass)}>{value}</div>
       {sub && <div className="mt-1 text-xs text-muted-foreground">{sub}</div>}
@@ -110,11 +110,11 @@ export function StatCard({
   );
 }
 
-export function SectionTitle({ children, hint }: { children: ReactNode; hint?: string }) {
+export function SectionTitle({ children, hint }: { children: ReactNode; hint?: HelpHint }) {
   return (
     <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
       {children}
-      {hint && <HelpTip text={hint} />}
+      {renderHint(hint)}
     </h3>
   );
 }
