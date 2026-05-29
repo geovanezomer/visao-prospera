@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Activity, GitCompare, LineChart as LineIcon, Play, Sliders, TrendingUp, Trash2 } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { ConfirmDialog, chartTooltipStyle, chartTooltipItemStyle, chartTooltipLabelStyle } from "./ConfirmDialog";
 
 export function AnalysisTab({
   state,
@@ -49,7 +50,7 @@ function HealthScoreCard({ state }: { state: AppState }) {
       <div className="grid gap-6 md:grid-cols-[180px_1fr]">
         <div className="flex flex-col items-center justify-center">
           <svg width="140" height="140" viewBox="0 0 140 140" className="-rotate-90">
-            <circle cx="70" cy="70" r="52" stroke="hsl(var(--border))" strokeWidth="10" fill="none" opacity="0.4" />
+            <circle cx="70" cy="70" r="52" stroke="var(--border)" strokeWidth="10" fill="none" opacity="0.4" />
             <circle
               cx="70" cy="70" r="52"
               stroke={ringColor} strokeWidth="10" fill="none"
@@ -222,9 +223,18 @@ function ScenarioCompareCard({
                     <div className="flex items-center justify-end gap-1">
                       <span>{sc.name}</span>
                       <button onClick={() => loadScenario(sc.state)} className="text-[9px] text-primary hover:underline">carregar</button>
-                      <button onClick={() => { if (confirm(`Remover cenário "${sc.name}"?`)) removeScenario(sc.id); }} className="text-muted-foreground hover:text-neg">
-                        <Trash2 className="h-3 w-3" />
-                      </button>
+                      <ConfirmDialog
+                        title={`Remover cenário "${sc.name}"?`}
+                        description="O cenário salvo será apagado e não poderá ser recuperado. O plano atual não é afetado."
+                        confirmLabel="Remover"
+                        destructive
+                        onConfirm={() => removeScenario(sc.id)}
+                        trigger={
+                          <button className="text-muted-foreground hover:text-neg" title="Remover cenário">
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        }
+                      />
                     </div>
                   </th>
                 ))}
@@ -301,24 +311,26 @@ function ForecastCard({ state }: { state: AppState }) {
           <AreaChart data={result.meses}>
             <defs>
               <linearGradient id="fclGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
-                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
+                <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.5} />
+                <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.05} />
               </linearGradient>
               <linearGradient id="saldoGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.05} />
+                <stop offset="0%" stopColor="var(--success)" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="var(--success)" stopOpacity={0.05} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="label" tick={{ fontSize: 9 }} interval={Math.floor(result.meses.length / 12)} />
-            <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <XAxis dataKey="label" tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} stroke="var(--muted-foreground)" interval={Math.floor(result.meses.length / 12)} />
+            <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} stroke="var(--muted-foreground)" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
             <Tooltip
-              contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
+              contentStyle={chartTooltipStyle}
+              itemStyle={chartTooltipItemStyle}
+              labelStyle={chartTooltipLabelStyle}
               formatter={(v: number) => fmtBRL(v)}
             />
-            <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
-            <Area type="monotone" dataKey="fcl" name="FCL mensal" stroke="hsl(var(--primary))" fill="url(#fclGrad)" strokeWidth={2} />
-            <Area type="monotone" dataKey="saldoCaixa" name="Saldo acumulado" stroke="hsl(var(--success))" fill="url(#saldoGrad)" strokeWidth={2} />
+            <ReferenceLine y={0} stroke="var(--muted-foreground)" />
+            <Area type="monotone" dataKey="fcl" name="FCL mensal" stroke="var(--primary)" fill="url(#fclGrad)" strokeWidth={2} />
+            <Area type="monotone" dataKey="saldoCaixa" name="Saldo acumulado" stroke="var(--success)" fill="url(#saldoGrad)" strokeWidth={2} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -394,19 +406,21 @@ function MonteCarloCard({ state }: { state: AppState }) {
               <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={histogram(dist.values, 30)}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="x" tick={{ fontSize: 9 }} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
-                    <YAxis tick={{ fontSize: 9 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="x" tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} stroke="var(--muted-foreground)" tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
+                    <YAxis tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} stroke="var(--muted-foreground)" />
                     <Tooltip
-                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", fontSize: 11 }}
+                      contentStyle={chartTooltipStyle}
+                      itemStyle={chartTooltipItemStyle}
+                      labelStyle={chartTooltipLabelStyle}
                       formatter={(v: number) => `${v} cenários`}
                       labelFormatter={(v: number) => fmtBRL(v)}
                     />
-                    <ReferenceLine x={dist.median} stroke="hsl(var(--primary))" strokeDasharray="4 2" />
-                    <ReferenceLine x={0} stroke="hsl(var(--destructive))" />
+                    <ReferenceLine x={dist.median} stroke="var(--primary)" strokeDasharray="4 2" />
+                    <ReferenceLine x={0} stroke="var(--destructive)" />
                     <Bar dataKey="count">
                       {histogram(dist.values, 30).map((b, i) => (
-                        <Cell key={i} fill={b.x < 0 ? "hsl(var(--destructive))" : "hsl(var(--primary))"} fillOpacity={0.7} />
+                        <Cell key={i} fill={b.x < 0 ? "var(--destructive)" : "var(--primary)"} fillOpacity={0.7} />
                       ))}
                     </Bar>
                   </BarChart>

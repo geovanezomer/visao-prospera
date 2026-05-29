@@ -14,15 +14,16 @@ import { CashflowTab } from "@/components/sim/CashflowTab";
 import { DiagnosisTab } from "@/components/sim/DiagnosisTab";
 import { AnalysisTab } from "@/components/sim/AnalysisTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
+import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
 import { BusinessType } from "@/lib/finance/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SimulaçãoPRO — Diagnóstico financeiro e DRE simulado" },
-      { name: "description", content: "Simulador de DRE, regime tributário, WACC e diagnóstico CFO para empresas brasileiras (Simples, Presumido, Lucro Real)." },
-      { property: "og:title", content: "SimulaçãoPRO" },
-      { property: "og:description", content: "Diagnóstico financeiro estilo terminal: DRE, WACC, ponto de equilíbrio e tributação comparada." },
+      { title: "CfoPRO — Diagnóstico & Simulação Empresarial" },
+      { name: "description", content: "CfoPRO: diagnóstico financeiro, DRE simulado, regime tributário, WACC e análise de cenários para empresas brasileiras (Simples, Presumido, Lucro Real)." },
+      { property: "og:title", content: "CfoPRO — Diagnóstico & Simulação Empresarial" },
+      { property: "og:description", content: "Diagnóstico financeiro estilo terminal: DRE, WACC, ponto de equilíbrio, tributação comparada, Monte Carlo e cenários." },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -53,9 +54,9 @@ function SimulaPro() {
             </div>
             <div>
               <h1 className="text-base font-semibold tracking-tight">
-                Simulação<span className="text-primary">PRO</span>
+                Cfo<span className="text-primary">PRO</span>
               </h1>
-              <p className="text-[11px] text-muted-foreground">Diagnóstico financeiro & DRE simulado · IFRS 18 / CPC 51</p>
+              <p className="text-[11px] text-muted-foreground">Diagnóstico & Simulação Empresarial · IFRS 18 / CPC 51</p>
             </div>
           </div>
 
@@ -85,9 +86,18 @@ function SimulaPro() {
               Modo guiado
             </label>
             <Button size="sm" variant="outline" onClick={exportReport}><Download className="mr-2 h-4 w-4" /> Exportar</Button>
-            <Button size="sm" variant="ghost" onClick={() => { if (confirm("Restaurar dados de exemplo?")) reset(); }}>
-              <RotateCcw className="mr-2 h-4 w-4" /> Reset
-            </Button>
+            <ConfirmDialog
+              title="Restaurar dados de exemplo?"
+              description="Todas as alterações feitas no plano atual serão substituídas pelos valores iniciais. Cenários salvos não são afetados."
+              confirmLabel="Restaurar"
+              destructive
+              onConfirm={reset}
+              trigger={
+                <Button size="sm" variant="ghost">
+                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
+                </Button>
+              }
+            />
           </div>
         </div>
       </header>
@@ -124,7 +134,7 @@ function SimulaPro() {
         </Tabs>
 
         <footer className="mt-12 border-t border-border/40 py-6 text-center text-[11px] text-muted-foreground">
-          SimulaçãoPRO · Ferramenta de diagnóstico financeiro para PMEs brasileiras · valores em R$ (pt-BR) · todos os dados ficam no seu navegador.
+          CfoPRO · Diagnóstico & Simulação Empresarial para PMEs brasileiras · valores em R$ (pt-BR) · todos os dados ficam no seu navegador.
         </footer>
       </main>
 

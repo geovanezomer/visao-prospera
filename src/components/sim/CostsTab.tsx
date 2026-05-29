@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, RefreshCw } from "lucide-react";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
@@ -50,7 +51,6 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
   const setSubcat = (id: string, subcategory: string) => updateLine(id, { subcategory });
 
   const reloadModel = () => {
-    if (!confirm(`Recarregar modelo de custos para ${business}? Suas linhas atuais serão substituídas.`)) return;
     update((s) => ({ ...s, costs: defaultCostsFor(business) }));
   };
 
@@ -102,9 +102,18 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
         <span>
           Empresa: <span className="font-medium text-foreground">{businessLabel(business)}</span> · rótulo do Custo de Vendas: <span className="font-mono text-primary">{cvLabel.short}</span>
         </span>
-        <Button size="sm" variant="ghost" onClick={reloadModel} className="h-7 text-xs">
-          <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Recarregar modelo {businessLabel(business)}
-        </Button>
+        <ConfirmDialog
+          title={`Recarregar modelo de custos para ${businessLabel(business)}?`}
+          description="Todas as linhas de custos atuais serão substituídas pelo modelo padrão deste tipo de empresa. Esta ação não pode ser desfeita."
+          confirmLabel="Recarregar"
+          destructive
+          onConfirm={reloadModel}
+          trigger={
+            <Button size="sm" variant="ghost" className="h-7 text-xs">
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Recarregar modelo {businessLabel(business)}
+            </Button>
+          }
+        />
       </div>
 
       {/* Custo de Vendas */}

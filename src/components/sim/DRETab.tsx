@@ -176,7 +176,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
               <XAxis dataKey="mes" stroke="#9ca3af" fontSize={11} />
               <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={{ background: "#161B22", border: "1px solid #ffffff20", fontSize: 12 }} formatter={(v: number) => fmtBRL(v)} />
+              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }} itemStyle={{ color: "var(--popover-foreground)" }} labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }} formatter={(v: number) => fmtBRL(v)} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="Receita" fill="#00E5A0" />
               <Bar dataKey="Custos" fill="#FF6B6B" />
@@ -191,7 +191,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
               <XAxis dataKey="mes" stroke="#9ca3af" fontSize={11} />
               <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={{ background: "#161B22", border: "1px solid #ffffff20", fontSize: 12 }} formatter={(v: number) => fmtBRL(v)} />
+              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }} itemStyle={{ color: "var(--popover-foreground)" }} labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }} formatter={(v: number) => fmtBRL(v)} />
               <Line type="monotone" dataKey="valor" stroke="#00E5A0" strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
@@ -203,7 +203,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
               <Pie data={costPie} dataKey="value" nameKey="name" outerRadius={100} innerRadius={50}>
                 {costPie.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
               </Pie>
-              <Tooltip contentStyle={{ background: "#161B22", border: "1px solid #ffffff20", fontSize: 12 }} formatter={(v: number) => fmtBRL(v)} />
+              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }} itemStyle={{ color: "var(--popover-foreground)" }} labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }} formatter={(v: number) => fmtBRL(v)} />
               <Legend wrapperStyle={{ fontSize: 10 }} />
             </PieChart>
           </ResponsiveContainer>
@@ -215,7 +215,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
               <XAxis dataKey="name" stroke="#9ca3af" fontSize={11} />
               <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={{ background: "#161B22", border: "1px solid #ffffff20", fontSize: 12 }} formatter={(v: number) => fmtBRL(v)} />
+              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }} itemStyle={{ color: "var(--popover-foreground)" }} labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }} formatter={(v: number) => fmtBRL(v)} />
               <Bar dataKey="value">
                 {waterfall.map((d, i) => <Cell key={i} fill={d.value >= 0 ? "#00E5A0" : "#FF6B6B"} />)}
               </Bar>

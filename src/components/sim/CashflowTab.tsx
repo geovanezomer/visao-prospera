@@ -111,7 +111,7 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
             <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
             <XAxis dataKey="mes" stroke="#9ca3af" fontSize={11} />
             <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-            <Tooltip contentStyle={{ background: "#161B22", border: "1px solid #ffffff20", fontSize: 12 }} formatter={(v: number) => fmtBRL(v)} />
+            <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }} itemStyle={{ color: "var(--popover-foreground)" }} labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }} formatter={(v: number) => fmtBRL(v)} />
             <ReferenceLine y={state.cashflow.caixaMinimo} stroke="#F5B85B" strokeDasharray="4 4" label={{ value: "mínimo", fill: "#F5B85B", fontSize: 10, position: "right" }} />
             <ReferenceLine y={0} stroke="#FF6B6B" strokeDasharray="4 4" />
             <Area type="monotone" dataKey="saldo" stroke="#00E5A0" strokeWidth={2} fill="url(#gSaldo)" />
