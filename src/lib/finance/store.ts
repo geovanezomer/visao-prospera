@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { AppState, Scenario } from "./types";
-import { DEFAULT_STATE } from "./defaults";
+import { DEFAULT_STATE, migrateState } from "./defaults";
 
 const KEY = "simulapro:state:v1";
 const SCEN_KEY = "simulapro:scenarios:v1";
@@ -10,7 +10,7 @@ export function useAppState() {
     if (typeof window === "undefined") return DEFAULT_STATE;
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) return { ...DEFAULT_STATE, ...JSON.parse(raw) };
+      if (raw) return migrateState({ ...DEFAULT_STATE, ...JSON.parse(raw) });
     } catch {}
     return DEFAULT_STATE;
   });
