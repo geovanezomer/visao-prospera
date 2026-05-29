@@ -94,6 +94,67 @@ export interface GuidedState {
   dismissedBanner: boolean;
 }
 
+// ============= Análise Estratégica (qualitativa, opcional) =============
+// Todas as respostas são opcionais. Se nenhuma seção for preenchida, o
+// módulo não gera score e não afeta o health financeiro.
+
+export type ClientesPara80 = "1-2" | "3-5" | "6-15" | "16+";
+export type TempoCliente = "lt1" | "1-3" | "3-5" | "5+";
+export type DependenciaCanal = "sim" | "parcial" | "nao";
+
+export interface ConcentrationAnswers {
+  /** % da receita do maior cliente (0–100). */
+  pctMaiorCliente?: number;
+  /** Quantos clientes respondem por ~80% da receita. */
+  clientesPara80Pct?: ClientesPara80;
+  /** Há quanto tempo o maior cliente está com você. */
+  tempoMaiorCliente?: TempoCliente;
+  /** % do CPV/CMV vindo do maior fornecedor (0–100). */
+  pctMaiorFornecedor?: number;
+  /** Depende de um único canal/plataforma para gerar leads. */
+  dependeCanal?: DependenciaCanal;
+}
+
+export type SocioAfastado = "normal" | "perde_eficiencia" | "para";
+export type QuemFechaContrato = "ninguem" | "socios" | "gerentes" | "equipe";
+export type ProcessosDoc = "nenhum" | "financeiros" | "operacionais" | "maioria";
+export type PlanoSucessao = "sim" | "parcial" | "nao" | "nunca";
+
+export interface GovernanceAnswers {
+  socioAfastado60d?: SocioAfastado;
+  quemFechaContrato?: QuemFechaContrato;
+  processosDocumentados?: ProcessosDoc;
+  planoSucessao?: PlanoSucessao;
+}
+
+export type ReajustePrecos = "sem_resistencia" | "com_resistencia" | "nao_repassou" | "reduziu";
+export type Elasticidade = "menos_5" | "5_20" | "mais_20" | "nao_sei";
+export type RazaoContratacao = "preco" | "relacionamento" | "qualidade" | "unica_opcao" | "prazo" | "marca";
+export type Concorrentes = "nenhum" | "1-3" | "4-10" | "10+" | "nao_sei";
+export type SwitchingCost = "alto" | "medio" | "baixo" | "commodity";
+
+export interface CompetitiveAnswers {
+  reajustePrecos?: ReajustePrecos;
+  elasticidade10pct?: Elasticidade;
+  razaoContratacao?: RazaoContratacao;
+  concorrentes?: Concorrentes;
+  switchingCost?: SwitchingCost;
+}
+
+export type ExposicaoRegulatoria = "sim" | "parcial" | "nao";
+
+export interface RegulatoryAnswers {
+  /** Operação depende de licença, certificação, contrato público, importação ou câmbio. */
+  exposicaoRegulatoria?: ExposicaoRegulatoria;
+}
+
+export interface StrategicAnswers {
+  concentration: ConcentrationAnswers;
+  governance: GovernanceAnswers;
+  competitive: CompetitiveAnswers;
+  regulatory: RegulatoryAnswers;
+}
+
 export interface AppState {
   businessType: BusinessType;
   companyName: string;
@@ -103,6 +164,8 @@ export interface AppState {
   tax: TaxConfig;
   cashflow: CashFlowConfig;
   guided: GuidedState;
+  /** Respostas qualitativas do módulo de Análise Estratégica (opcional). */
+  strategic?: StrategicAnswers;
 }
 
 export interface Scenario {

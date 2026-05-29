@@ -124,6 +124,12 @@ export const DEFAULT_STATE: AppState = {
     amortizacoes: fill12(0),
   },
   guided: { enabled: false, completedWizard: false, dismissedBanner: false },
+  strategic: {
+    concentration: {},
+    governance: {},
+    competitive: {},
+    regulatory: {},
+  },
 };
 
 // ============ Migração de estados antigos ============
@@ -151,5 +157,16 @@ export function migrateState(s: AppState): AppState {
     typeof rawGuided === "boolean"
       ? { enabled: rawGuided, completedWizard: false, dismissedBanner: false }
       : { ...DEFAULT_STATE.guided, ...(rawGuided as Partial<typeof DEFAULT_STATE.guided> | undefined) };
-  return { ...s, revenue, capital, tax, costs, cashflow, guided };
+  const strategic = s.strategic ?? {
+    concentration: {},
+    governance: {},
+    competitive: {},
+    regulatory: {},
+  };
+  // garante que cada subseção exista mesmo em states parcialmente preenchidos
+  strategic.concentration = strategic.concentration ?? {};
+  strategic.governance = strategic.governance ?? {};
+  strategic.competitive = strategic.competitive ?? {};
+  strategic.regulatory = strategic.regulatory ?? {};
+  return { ...s, revenue, capital, tax, costs, cashflow, guided, strategic };
 }
