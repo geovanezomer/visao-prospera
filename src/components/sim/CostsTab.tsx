@@ -342,12 +342,13 @@ function CostTable({
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] uppercase text-muted-foreground">Valor aplicado em todos os meses:</span>
                       <div className="w-36">
-                        <MoneyInput value={c.values[0]} onChange={(n) => onMonth(c.id, -1, n) /* unused */} />
+                        <MoneyInput
+                          value={c.values[0]}
+                          onChange={(n) => {
+                            for (let i = 0; i < 12; i++) onMonth(c.id, i, n);
+                          }}
+                        />
                       </div>
-                      <FixedAllSetter id={c.id} value={c.values[0]} onChange={(n) => {
-                        // setar 12 meses com mesmo valor
-                        for (let i = 0; i < 12; i++) onMonth(c.id, i, n);
-                      }} />
                     </div>
                   </td>
                 ) : (
