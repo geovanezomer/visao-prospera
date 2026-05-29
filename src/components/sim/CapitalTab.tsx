@@ -1,6 +1,6 @@
 import { AppState } from "@/lib/finance/types";
 import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
-import { buildDRE, calcIndicators, monthValues } from "@/lib/finance/calculations";
+import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 import { Slider } from "@/components/ui/slider";
 import { MoneyInput, PctInput, SectionTitle, StatCard, HelpTip } from "./primitives";
 
