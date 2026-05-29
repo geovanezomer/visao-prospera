@@ -83,7 +83,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
               </button>
             ))}
           </div>
-          <Select value={regime} onValueChange={(r) => (window.dispatchEvent(new CustomEvent("set-regime", { detail: r })))}>
+          <Select value={regime} onValueChange={(r) => update((s) => ({ ...s, tax: { ...s.tax, regime: r as TaxRegime } }))}>
             <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="simples">Simples Nacional</SelectItem>
