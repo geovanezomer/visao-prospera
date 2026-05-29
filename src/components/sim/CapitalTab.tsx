@@ -35,13 +35,13 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                Ke — Custo do Capital Próprio <HelpTip text="Retorno mínimo exigido pelos sócios. Pode ser estimado via CAPM: Rf + β × (Rm − Rf)." />
+                Ke — Custo do Capital Próprio <HelpTip text="Retorno mínimo exigido pelos sócios para aceitar o risco do negócio. Quem investe em empresa precisa ganhar mais do que na renda fixa." formula="CAPM: Rf + β × (Rm − Rf)" example="Selic 10% + Prêmio de risco 8% = 18%" />
               </label>
               <PctInput value={c.ke} onChange={(n) => set({ ke: n })} />
             </div>
             <div>
               <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                Kd — Custo da Dívida (a.a.) <HelpTip text="Taxa média anual dos empréstimos antes do benefício fiscal." />
+                Kd — Custo da Dívida (a.a.) <HelpTip text="Taxa média anual paga em empréstimos e financiamentos, ANTES do benefício fiscal (juros são dedutíveis do IR)." formula="Custo efetivo = Kd × (1 − Alíquota IR)" />
               </label>
               <PctInput value={c.kd} onChange={(n) => set({ kd: n })} />
             </div>
