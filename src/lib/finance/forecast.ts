@@ -81,6 +81,9 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   const cpvRatioBase = cpvAnoBase / receitaAnoBase;       // CPV / receita
   const depMensal = dre.depreciacao[0] || 0;
   const taxRatioBase = sum(tax.monthly) / receitaAnoBase; // alíquota efetiva sobre receita bruta
+  // Resultado financeiro projetado como proporção da receita (aproximação razoável
+  // enquanto a estrutura de dívida não é re-projetada). Inclui juros pagos − juros recebidos.
+  const resultadoFinanceiroRatioBase = sum(dre.resultadoFinanceiro) / receitaAnoBase;
 
   // Quebra custos por tipo
   let fixosNaoFolhaBase = 0;
@@ -162,8 +165,10 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     const lucroBruto = receita - cpv;
     const ebitda = lucroBruto - despesasOp;
     const ebit = ebitda - depMensal;
-    const impostos = receita * taxRatioBase;
-    const lucroLiquido = ebit - impostos; // simplificação (sem resultado financeiro projetado)
+    const resultadoFinanceiro = receita * resultadoFinanceiroRatioBase; // negativo para empresas alavancadas
+    const lair = ebit + resultadoFinanceiro;
+    const impostos = Math.max(0, lair) * taxRatioBase;
+    const lucroLiquido = lair - impostos;
 
     // NCG do mês: anualiza receita e CPV do mês para PMR/PMP
     const estoqueT = cpvAnoBase > 0 ? estoqueBase0 * (cpv / (cpvAnoBase / 12)) : estoqueBase0;
