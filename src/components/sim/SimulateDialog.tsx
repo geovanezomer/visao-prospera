@@ -15,6 +15,7 @@ export function SimulateDialog({
   card,
   onApply,
   onSave,
+  paramsSlot,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -24,6 +25,7 @@ export function SimulateDialog({
   card: PrescriptiveCard;
   onApply: (s: AppState) => void;
   onSave: (name: string, s: AppState) => void;
+  paramsSlot?: React.ReactNode;
 }) {
   const newState = useMemo(() => action.apply(state), [action, state]);
   const after = useMemo(() => snapshot(newState), [newState]);
