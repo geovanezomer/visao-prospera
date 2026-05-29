@@ -264,3 +264,184 @@ function ScenarioCompareCard({
     </section>
   );
 }
+
+// ============== Forecast 36 meses + VPL/TIR ==============
+function ForecastCard({ state }: { state: AppState }) {
+  const [growth, setGrowth] = useState(1.0);
+  const [horizon, setHorizon] = useState(36);
+  const [capex0, setCapex0] = useState(0);
+  const result = useMemo(() => buildForecast(state, growth, horizon, capex0), [state, growth, horizon, capex0]);
+
+  return (
+    <section className="rounded-lg border border-border/60 bg-card/40 p-5">
+      <header className="mb-4 flex items-center gap-2">
+        <TrendingUp className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold">Projeção {horizon} meses · VPL · TIR · Payback</h3>
+      </header>
+
+      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+        <NumberInput label="Crescimento mensal (%)" value={growth} step={0.1} onChange={setGrowth} />
+        <NumberInput label="Horizonte (meses)" value={horizon} step={6} onChange={(v) => setHorizon(Math.max(6, Math.min(120, Math.round(v))))} />
+        <NumberInput label="Investimento inicial (R$)" value={capex0} step={10000} onChange={setCapex0} />
+        <div className="flex flex-col justify-end">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Taxa de desconto (WACC)</span>
+          <span className="mono text-sm font-semibold">{result.taxaDescontoMensal.toFixed(2)}% a.m.</span>
+        </div>
+      </div>
+
+      <div className="mb-4 grid gap-3 md:grid-cols-4">
+        <KPI label="VPL" value={fmtBRL(result.vpl)} status={result.vpl > 0 ? "ok" : "danger"} sub={result.vpl > 0 ? "Projeto cria valor" : "Projeto destrói valor"} />
+        <KPI label="TIR (a.m.)" value={result.tir == null ? "—" : `${result.tir.toFixed(2)}%`} status={result.tir != null && result.tir > result.taxaDescontoMensal ? "ok" : "warn"} sub={result.tir == null ? "Sem inversão de sinal" : `vs custo ${result.taxaDescontoMensal.toFixed(2)}%`} />
+        <KPI label="Payback" value={result.paybackMeses == null ? "—" : `${result.paybackMeses} meses`} status={result.paybackMeses != null && result.paybackMeses <= horizon / 2 ? "ok" : "warn"} sub="Mês em que o caixa zera" />
+        <KPI label="FCL acumulado" value={fmtBRL(result.totalFcl)} status={result.totalFcl > 0 ? "ok" : "danger"} sub={`Receita ${fmtBRL(result.totalReceita)}`} />
+      </div>
+
+      <div className="h-72 rounded-md border border-border/40 bg-background/30 p-3">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={result.meses}>
+            <defs>
+              <linearGradient id="fclGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
+                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
+              </linearGradient>
+              <linearGradient id="saldoGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="label" tick={{ fontSize: 9 }} interval={Math.floor(result.meses.length / 12)} />
+            <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+            <Tooltip
+              contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
+              formatter={(v: number) => fmtBRL(v)}
+            />
+            <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
+            <Area type="monotone" dataKey="fcl" name="FCL mensal" stroke="hsl(var(--primary))" fill="url(#fclGrad)" strokeWidth={2} />
+            <Area type="monotone" dataKey="saldoCaixa" name="Saldo acumulado" stroke="hsl(var(--success))" fill="url(#saldoGrad)" strokeWidth={2} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+      <p className="mt-2 text-[10.5px] text-muted-foreground">
+        Aproximação: aplica crescimento composto à receita e à estrutura de custos atual. VPL desconta o FCL mensal pela WACC convertida.
+        TIR via Newton-Raphson com fallback bisseção. Para análise formal, considere modelo de 3 cenários (otimista/base/pessimista).
+      </p>
+    </section>
+  );
+}
+
+// ============== Monte Carlo ==============
+function MonteCarloCard({ state }: { state: AppState }) {
+  const [cfg, setCfg] = useState<MCConfig>(DEFAULT_MC);
+  const [result, setResult] = useState<ReturnType<typeof runMonteCarlo> | null>(null);
+  const [running, setRunning] = useState(false);
+
+  const run = () => {
+    setRunning(true);
+    // setTimeout para liberar UI
+    setTimeout(() => {
+      const r = runMonteCarlo(state, cfg);
+      setResult(r);
+      setRunning(false);
+    }, 30);
+  };
+
+  return (
+    <section className="rounded-lg border border-border/60 bg-card/40 p-5">
+      <header className="mb-4 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <LineIcon className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold">Simulação Monte Carlo</h3>
+        </div>
+        <Button size="sm" onClick={run} disabled={running}>
+          <Play className="mr-2 h-3.5 w-3.5" />
+          {running ? "Rodando..." : `Rodar ${cfg.iterations} cenários`}
+        </Button>
+      </header>
+
+      <div className="mb-4 grid gap-3 sm:grid-cols-5">
+        <NumberInput label="Iterações" value={cfg.iterations} step={500} onChange={(v) => setCfg({ ...cfg, iterations: Math.max(100, Math.min(10000, Math.round(v))) })} />
+        <NumberInput label="σ Preço (%)" value={cfg.precoSigmaPct} step={1} onChange={(v) => setCfg({ ...cfg, precoSigmaPct: v })} />
+        <NumberInput label="σ Volume (%)" value={cfg.volumeSigmaPct} step={1} onChange={(v) => setCfg({ ...cfg, volumeSigmaPct: v })} />
+        <NumberInput label="σ CPV (%)" value={cfg.cpvSigmaPct} step={1} onChange={(v) => setCfg({ ...cfg, cpvSigmaPct: v })} />
+        <NumberInput label="σ Folha (%)" value={cfg.folhaSigmaPct} step={1} onChange={(v) => setCfg({ ...cfg, folhaSigmaPct: v })} />
+      </div>
+
+      {!result ? (
+        <p className="text-xs text-muted-foreground">
+          Clique em "Rodar" para simular variações aleatórias (distribuição normal) em preço, volume, CPV e folha.
+          O sistema mostra o intervalo de confiança (P5–P95) e a probabilidade de prejuízo / caixa negativo.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            <KPI label="Prob. de Prejuízo" value={`${(result.probPrejuizo * 100).toFixed(1)}%`} status={result.probPrejuizo > 0.25 ? "danger" : result.probPrejuizo > 0.1 ? "warn" : "ok"} sub={`${result.iterations} cenários simulados`} />
+            <KPI label="Prob. Caixa < mínimo" value={`${(result.probCaixaNegativo * 100).toFixed(1)}%`} status={result.probCaixaNegativo > 0.25 ? "danger" : result.probCaixaNegativo > 0.1 ? "warn" : "ok"} sub="Risco de iliquidez" />
+          </div>
+
+          {[result.ebitda, result.lucroLiquido, result.saldoCaixaFinal].map((dist) => (
+            <div key={dist.label} className="rounded-md border border-border/40 bg-background/30 p-3">
+              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                <h4 className="text-xs font-semibold">{dist.label}</h4>
+                <div className="flex gap-4 text-[10.5px] text-muted-foreground mono">
+                  <span>P5: {fmtBRL(dist.p5)}</span>
+                  <span>P25: {fmtBRL(dist.p25)}</span>
+                  <span className="text-foreground">Mediana: {fmtBRL(dist.median)}</span>
+                  <span>P75: {fmtBRL(dist.p75)}</span>
+                  <span>P95: {fmtBRL(dist.p95)}</span>
+                </div>
+              </div>
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={histogram(dist.values, 30)}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="x" tick={{ fontSize: 9 }} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
+                    <YAxis tick={{ fontSize: 9 }} />
+                    <Tooltip
+                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", fontSize: 11 }}
+                      formatter={(v: number) => `${v} cenários`}
+                      labelFormatter={(v: number) => fmtBRL(v)}
+                    />
+                    <ReferenceLine x={dist.median} stroke="hsl(var(--primary))" strokeDasharray="4 2" />
+                    <ReferenceLine x={0} stroke="hsl(var(--destructive))" />
+                    <Bar dataKey="count">
+                      {histogram(dist.values, 30).map((b, i) => (
+                        <Cell key={i} fill={b.x < 0 ? "hsl(var(--destructive))" : "hsl(var(--primary))"} fillOpacity={0.7} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function NumberInput({ label, value, onChange, step = 1 }: { label: string; value: number; onChange: (v: number) => void; step?: number }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <input
+        type="number"
+        value={value}
+        step={step}
+        onChange={(e) => onChange(Number(e.target.value) || 0)}
+        className="rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm mono outline-none focus:border-primary"
+      />
+    </label>
+  );
+}
+
+function KPI({ label, value, status, sub }: { label: string; value: string; status: "ok" | "warn" | "danger"; sub?: string }) {
+  const color = status === "ok" ? "var(--success)" : status === "warn" ? "var(--warning)" : "var(--destructive)";
+  return (
+    <div className="rounded-md border border-border/40 bg-background/30 p-3">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="mono mt-1 text-lg font-bold" style={{ color }}>{value}</div>
+      {sub && <div className="text-[10px] text-muted-foreground">{sub}</div>}
+    </div>
+  );
+}
