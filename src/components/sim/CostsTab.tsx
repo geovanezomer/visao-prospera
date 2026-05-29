@@ -380,8 +380,3 @@ function CostTable({
   );
 }
 
-// Componente auxiliar invisível só para reaproveitar lógica de "valor único → 12 meses"
-// (mantemos o input acima como o controle visível, este aqui não renderiza nada)
-function FixedAllSetter(_: { id: string; value: number; onChange: (n: number) => void }) {
-  return null;
-}
