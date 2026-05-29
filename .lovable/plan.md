@@ -1,102 +1,97 @@
+# Modo Guiado — v1
 
-## Análise CFO do MVP atual
+Transforma o CfoPRO em uma experiência acessível para usuários leigos sem tirar o poder do modo livre. Três pilares: **wizard de setup**, **cenários prontos** e **botão persistente no header**.
 
-O MVP tem uma base sólida — DRE em padrão IFRS/CPC, três regimes tributários, WACC vs ROIC, ponto de equilíbrio, NCG, liquidez. Mas, como ferramenta de consultoria de verdade, ainda tem **gaps críticos** que impedem decisão real em campo:
+## Escopo aprovado
 
-**O que está bom**
-- Estrutura DRE correta até Lucro Líquido.
-- Comparador tributário side-by-side.
-- Indicadores de criação de valor (ROIC vs WACC) e alavancagem.
+- Wizard inicial (5–7 perguntas) que pré-popula todas as abas
+- Botão fixo no header para ativar/desativar
+- Biblioteca de cenários sugeridos prontos para simular
+- *Fora desta v1:* tour com coach marks, modo "linguagem leiga" global, relatório PDF
 
-**O que falta para virar "raio-X"**
-1. **Custos mal categorizados.** Hoje tudo é uma lista plana com flags `fixo/variavel`. Um CFO precisa enxergar 4 grupos contábeis distintos: **Custo de Vendas (CMV/CPV/CSP)**, **Custos/Despesas Fixas**, **Custos/Despesas Variáveis** e **Custos Financeiros**. A divisão atual confunde *custo* (ligado à produção/venda) com *despesa* (estrutura).
-2. **Não há subdivisão dentro do Custo de Vendas** (matéria-prima, mão de obra direta, CIF para indústria; mercadoria + frete + ICMS-ST para comércio; salários técnicos + insumos de serviço para serviços).
-3. **Tabela rígida** — usuário não consegue adicionar linhas próprias (cada empresa tem rubricas únicas).
-4. **Diagnóstico só descreve, não prescreve.** Diz "folha alta" mas não simula "se demitir 2 pessoas, sua margem vai de X para Y".
-5. Faltam alavancas de decisão clássicas de consultoria: simulação de empréstimo, renegociação de PMP/PMR, corte de custos, ajuste de preço, redução de quadro.
-6. Não há **fluxo de caixa projetado** (DRE ≠ caixa — empresa lucra e quebra por falta de giro).
+## 1. Botão no Header
 
----
+Novo botão `Modo Guiado` ao lado de "Resetar" / "Exportar", com ícone (Sparkles/Compass) e estado visual ativo quando ligado.
 
-## Plano de implementação
+- **Clique 1ª vez:** abre o wizard (modal grande, 7 passos)
+- **Clique seguinte:** reabre o wizard para refazer (com confirmação se houver dados já preenchidos)
+- **Toggle persistente:** estado salvo em `localStorage` via `useAppState`; quando ativo, exibe um banner discreto no topo das abas com atalhos ("Próximo passo recomendado: preencha Capital").
 
-### Fase 1 — Reestruturar Custos (foco do pedido)
+## 2. Wizard de Setup (7 passos)
 
-**1.1 Novo modelo de dados (`types.ts`)**
-- Adicionar campo `category` em `CostLine`:
-  `"custo_vendas" | "fixo" | "variavel" | "financeiro"`.
-- Adicionar `subcategory?: string` para divisões dentro de Custo de Vendas:
-  - Indústria → `materia_prima`, `mao_obra_direta`, `cif` (custos indiretos de fabricação)
-  - Comércio → `mercadoria`, `frete_compra`, `icms_st`, `embalagem`
-  - Serviços → `mao_obra_direta`, `insumos_servico`, `terceirizacao`
-- Adicionar `custom: boolean` para distinguir linhas padrão das adicionadas pelo usuário.
-- Manter `fixed` (modo de entrada: valor único vs 12 meses).
+Modal full-screen com progresso visual (1/7 … 7/7), botões Voltar/Próximo e "Pular esta etapa". Cada passo tem **1 pergunta principal + presets clicáveis + campo livre opcional**.
 
-**1.2 Defaults sensíveis ao `businessType`**
-- Carregar conjunto de linhas pré-configurado conforme indústria/comércio/serviços, com as subcategorias corretas de Custo de Vendas.
+| # | Pergunta | Tipo | Onde aplica |
+|---|---|---|---|
+| 1 | Tipo de negócio | 3 cards (Serviços / Comércio / Indústria) | `state.businessType` |
+| 2 | Faturamento médio mensal | Input R$ + slider de sazonalidade (Estável / Sazonal / Crescimento 20% a.a.) | Gera curva de 12 meses em `revenue.bruta` |
+| 3 | Como você recebe e paga? | Presets ("À vista", "30 dias", "30/60/90", "Custom") | `revenue.pmr`, `revenue.pmp`, `pme` |
+| 4 | Equipe (CLT) | Nº de funcionários + salário médio | Cria linha de folha em `costs` com `encargosAuto: true` |
+| 5 | Custos fixos mensais agregados | Aluguel, software, marketing, outros (4 inputs) | Cria linhas em `costs` categoria `fixo` |
+| 6 | Regime tributário | 4 opções (Simples / Presumido / Real / "Não sei — sugira") | `tax.regime`. Se "Não sei", roda `compareRegimes` e escolhe o de menor carga |
+| 7 | Capital e dívida | "Tem empréstimo?" Sim → saldo + taxa; "Capital próprio aproximado" | `capital.dividaOnerosa`, `capital.kd`, `capital.patrimonioLiquido` |
 
-**1.3 UI da aba Custos** (`CostsTab.tsx`)
-- **4 tabelas/seções colapsáveis**, na ordem que aparecem no DRE:
-  1. **Custo de Vendas** (CMV/CPV/CSP — rótulo dinâmico por tipo de empresa) — com sub-headers por subcategoria.
-  2. **Custos e Despesas Fixas** (aluguel, pró-labore, contabilidade, software, utilities…).
-  3. **Custos e Despesas Variáveis** (marketing %, comissões, fretes de venda…).
-  4. **Custos Financeiros** (juros, IOF, antecipação, tarifas).
-- Cada seção tem botão **"+ Adicionar linha"** (ícone Plus) que insere uma `CostLine` editável (label + valores) com `custom: true`.
-- Linhas custom têm botão de remover (lixeira).
-- StatCards no topo: total por grupo + % da receita + indicador de saúde (verde/amarelo/vermelho conforme benchmark do setor).
+**Final do wizard:** tela de resumo mostrando os 8 indicadores-chave já calculados (EBITDA, Margem Líquida, ROIC×WACC, Necessidade de Capital de Giro, etc.) com mensagem "Tudo pronto! Você pode ajustar qualquer campo nas abas a qualquer momento."
 
-**1.4 Recalcular DRE (`calculations.ts`)**
-- `cpv` passa a somar todas as linhas com `category === "custo_vendas"` (não mais por id hardcoded).
-- `custosVariaveis` = soma de `category === "variavel"`.
-- `custosFixos` = soma de `category === "fixo"`.
-- Ajustar linha do DRE: "(−) CPV / CMV / CSP" com label dinâmico.
+## 3. Biblioteca de Cenários Prontos
 
-### Fase 2 — Elevar o diagnóstico a "raio-X CFO"
+Novo card "Simulações sugeridas" na aba **Análise & Cenários** (visível sempre, mas destacado no Modo Guiado).
 
-**2.1 Aba nova "6. Diagnóstico & Decisões"**
-Separar diagnóstico do DRE. Conteúdo:
-- **Raio-X em 1 página**: semáforo dos 8 sinais vitais (rentabilidade, liquidez, alavancagem, eficiência, capital de giro, criação de valor, tributação, ponto de equilíbrio).
-- **Top 5 alertas prescritivos**, cada um com:
-  - O problema (com número).
-  - A causa provável.
-  - 2–3 ações recomendadas, cada uma com **estimativa de impacto** ("Reduzir PMR de 45 para 30 dias liberaria R$ 22.000 de caixa").
-  - Botão "Simular esta ação" → aplica num cenário rascunho.
+Cenários incluídos:
 
-**2.2 Simulador de alavancas (`LeversTab.tsx`)**
-Sliders de "e se?" com recálculo instantâneo do delta vs cenário base:
-- Variação de preço (±%)
-- Variação de volume (±%)
-- Corte de custos fixos (R$ ou %)
-- Reduzir quadro CLT (n funcionários × custo médio)
-- Tomar empréstimo (valor, prazo, taxa) — gera parcela, impacto em EBIT e DL/EBITDA
-- Renegociar PMP (+dias) / Reduzir PMR (−dias) — impacto em NCG e caixa
-- Mudar regime tributário
-Mostrar painel lateral fixo: "Antes vs Depois" (Lucro, Margem, ROIC, Liquidez, Caixa livre).
+1. **Aumento de preço (+10%)** — multiplica `revenue.bruta` por 1.10
+2. **Perda do maior cliente (-20% receita)** — multiplica por 0.80
+3. **Selic +2 p.p.** — aumenta `capital.kd` em 2
+4. **Contratação de +3 pessoas** (salário médio do estado atual) — adiciona linha de folha
+5. **Redução de 10% nos 3 maiores custos fixos** — reusa lógica de `prescriptive.ts`
+6. **Migração para o regime tributário ótimo** — usa `compareRegimes`
+7. **Antecipação de recebíveis (PMR -15 dias, custo 2% a.m.)** — ajusta `pmr` e adiciona despesa financeira
 
-**2.3 Fluxo de Caixa Projetado (12 meses)**
-- Converter DRE de competência → caixa, aplicando PMR aos recebimentos e PMP aos pagamentos.
-- Saldo de caixa mês a mês com linha de "caixa mínimo de segurança".
-- Alerta automático se saldo projetado for negativo em algum mês.
+Cada cenário tem botão **"Simular"** (abre o `SimulateDialog` existente, comparando antes/depois) e **"Salvar como cenário"** (usa `useScenarios.save`).
 
-**2.4 Diagnóstico com benchmarks setoriais**
-Tabela interna de faixas saudáveis por setor (margem bruta serviços 50–70%, comércio 25–40%, indústria 30–45%; folha/receita; etc.) para comparações justas.
+## 4. Estado e Persistência
 
-### Fase 3 — Polimento de consultoria
+Adicionar em `AppState`:
+```ts
+guided: {
+  enabled: boolean;
+  completedWizard: boolean;
+  dismissedBanner: boolean;
+}
+```
 
-- **Relatório executivo imprimível** (1–2 páginas) — capa com nome da empresa, sumário, top 5 ações, anexo com DRE e indicadores.
-- **Modo "Antes vs Depois"** entre 2 cenários salvos lado a lado.
-- Tooltips de "como interpretar" em cada indicador crítico.
+Persiste em `localStorage` junto com o resto do estado (já existe via `useAppState`).
 
----
+## Arquivos a criar / editar
 
-## Veredito CFO
+**Criar:**
+- `src/components/sim/guided/GuidedWizard.tsx` — modal com os 7 passos
+- `src/components/sim/guided/WizardSteps.tsx` — componentes de cada passo
+- `src/components/sim/guided/GuidedBanner.tsx` — banner persistente no topo
+- `src/components/sim/guided/ScenarioLibrary.tsx` — biblioteca de cenários prontos
+- `src/lib/finance/guided/wizardToState.ts` — converte respostas do wizard em `AppState`
+- `src/lib/finance/guided/scenarios.ts` — definições dos 7 cenários prontos (reusa helpers de `prescriptive.ts`)
 
-**Estão no caminho certo, mas o MVP atual ainda é uma calculadora de DRE — não uma ferramenta de decisão.** Com a Fase 1 (custos estruturados + linhas custom) você passa a refletir a contabilidade real da empresa. Com a Fase 2 (alavancas + caixa projetado + diagnóstico prescritivo) o produto vira o que você descreveu: um consultor pode chegar numa empresa, lançar os dados e sair com um plano de ação quantificado.
+**Editar:**
+- `src/lib/finance/types.ts` — adicionar `guided` em `AppState`
+- `src/lib/finance/defaults.ts` — `guided` default (`enabled: false, completedWizard: false`)
+- `src/lib/finance/store.ts` — expor `setGuided`
+- `src/routes/index.tsx` — botão "Modo Guiado" no header + montagem do wizard/banner
+- `src/components/sim/AnalysisTab.tsx` — incluir `<ScenarioLibrary />` no topo
 
-Sugiro executar **Fase 1 agora** (atende diretamente o pedido) e em seguida atacar **2.1 + 2.2 + 2.3** numa segunda rodada — é onde mora a diferenciação como ferramenta de consultoria.
+## Detalhes técnicos
 
----
+- **Validação:** todos os inputs do wizard usam `zod` (string trim, números com min/max, R$ não-negativos, salário ≤ R$ 1M, nº funcionários ≤ 9999) antes de virarem `AppState`.
+- **Sazonalidade:** "Estável" = valor constante; "Sazonal" = curva senoidal ±15% com pico em dezembro; "Crescimento 20%" = rampa linear.
+- **Confirmação:** se o usuário ativar o wizard com dados já preenchidos, usar o `ConfirmDialog` existente avisando que os campos serão sobrescritos (com opção "Manter o que já preenchi" para fazer merge inteligente em campos vazios).
+- **Acessibilidade:** modal usa `Dialog` do shadcn (já no projeto); navegação por teclado (Enter avança, Esc fecha com confirmação).
+- **i18n:** textos em pt-BR no arquivo de cada componente (sem framework de tradução nesta fase).
 
-## Pergunta antes de codar
+## Critérios de aceite
 
-Posso seguir com a **Fase 1 completa agora** (reestruturação dos custos em 4 grupos, subcategorias por tipo de empresa, linhas personalizáveis com botão "+") e deixar Fases 2 e 3 para a próxima rodada? Ou prefere que eu já inclua nesta entrega o **Fluxo de Caixa Projetado (2.3)** e o **Diagnóstico prescritivo (2.1)**, que são os dois itens que mais aproximam o MVP de uma ferramenta de consultoria real?
+- Botão "Modo Guiado" visível no header em todas as resoluções ≥ 768px
+- Wizard completo em < 90s para usuário médio (7 passos, cada com presets clicáveis)
+- Ao concluir o wizard, todas as abas mostram dados coerentes e o Diagnóstico CFO já dispara cards
+- Biblioteca de cenários abre, simula e salva sem regressão na aba Análise
+- Estado do Modo Guiado persiste entre reloads
+- Nenhum input do wizard aceita valores inválidos (validação `zod` com mensagens em pt-BR)
