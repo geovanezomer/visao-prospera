@@ -4,43 +4,26 @@ import { buildPrescriptiveCards, PrescriptiveCard } from "@/lib/finance/prescrip
 import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "lucide-react";
 import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
-import { HealthScoreCard, SensitivityCard, ScenarioCompareCard } from "./AnalysisTab";
+import { HealthScoreCard, SensitivityCard } from "./AnalysisTab";
 
 
 export function DiagnosisTab({
   state,
-  scenarios,
-  loadScenario,
-  removeScenario,
 }: {
   state: AppState;
-  scenarios: Scenario[];
-  loadScenario: (s: AppState) => void;
-  removeScenario: (id: string) => void;
+  scenarios?: Scenario[];
+  loadScenario?: (s: AppState) => void;
+  removeScenario?: (id: string) => void;
 }) {
   const cards = useMemo(() => buildPrescriptiveCards(state), [state]);
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
-        <div className="flex items-start gap-3">
-          <Info className="mt-0.5 h-5 w-5 text-primary" />
-          <div>
-            <div className="font-semibold text-foreground">Resultados — diagnóstico consolidado</div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Indicadores financeiros, análises avançadas (sensibilidade, projeção 36 meses, Monte Carlo) e, ao final,
-              o diagnóstico financeiro com causas/ações e a síntese estratégica. Para testar combinações de ajustes,
-              vá para a aba <strong>Simulador</strong>.
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Análises avançadas */}
       <HealthScoreCard state={state} />
       <SensitivityCard state={state} />
 
-      {/* Diagnóstico financeiro (após a projeção) */}
+      {/* Diagnóstico financeiro */}
       <section className="space-y-3">
         <SectionTitle>Diagnóstico financeiro</SectionTitle>
         <div className="grid gap-4 lg:grid-cols-2">
@@ -59,9 +42,6 @@ export function DiagnosisTab({
         <SectionTitle>Síntese estratégica</SectionTitle>
         <StrategicSummary state={state} />
       </section>
-
-      {/* Comparação de cenários salvos */}
-      <ScenarioCompareCard state={state} scenarios={scenarios} loadScenario={loadScenario} removeScenario={removeScenario} />
     </div>
   );
 }
