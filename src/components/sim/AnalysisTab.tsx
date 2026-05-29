@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppState, Scenario } from "@/lib/finance/types";
 import { computeHealth, HealthDimension } from "@/lib/finance/health";
 import { runSensitivity, OUTPUT_OPTIONS, OutputKey } from "@/lib/finance/sensitivity";
-import { buildForecast } from "@/lib/finance/forecast";
-import { runMonteCarlo, DEFAULT_MC, MCConfig, histogram } from "@/lib/finance/montecarlo";
+import { buildForecast, DEFAULT_FORECAST_CFG, ForecastConfig } from "@/lib/finance/forecast";
+import { DEFAULT_MC, MCConfig, MCResult, histogram } from "@/lib/finance/montecarlo";
 import { snapshot } from "@/lib/finance/prescriptive";
 import { fmtBRL } from "@/lib/finance/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
