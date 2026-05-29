@@ -21,9 +21,9 @@ import { AppState, BusinessType } from "@/lib/finance/types";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CfoPRO — Diagnóstico & Simulação Empresarial" },
-      { name: "description", content: "CfoPRO: diagnóstico financeiro, DRE simulado, regime tributário, WACC e análise de cenários para empresas brasileiras (Simples, Presumido, Lucro Real)." },
-      { property: "og:title", content: "CfoPRO — Diagnóstico & Simulação Empresarial" },
+      { title: "GZ FinancePRO — Diagnóstico & Simulação Empresarial" },
+      { name: "description", content: "GZ FinancePRO: diagnóstico financeiro, DRE simulado, regime tributário, WACC e análise de cenários para empresas brasileiras (Simples, Presumido, Lucro Real)." },
+      { property: "og:title", content: "GZ FinancePRO — Diagnóstico & Simulação Empresarial" },
       { property: "og:description", content: "Diagnóstico financeiro estilo terminal: DRE, WACC, ponto de equilíbrio, tributação comparada, Monte Carlo e cenários." },
     ],
     links: [
