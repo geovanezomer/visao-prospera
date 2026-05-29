@@ -54,6 +54,17 @@ export function DiagnosisTab({
         <SectionTitle>Síntese estratégica</SectionTitle>
         <StrategicSummary state={state} />
       </section>
+
+      {/* Indicadores, sensibilidade, projeção, Monte Carlo e comparação de cenários */}
+      <section className="space-y-3">
+        <SectionTitle>Indicadores financeiros e análise</SectionTitle>
+        <AnalysisTab
+          state={state}
+          scenarios={scenarios}
+          loadScenario={loadScenario}
+          removeScenario={removeScenario}
+        />
+      </section>
     </div>
   );
 }
