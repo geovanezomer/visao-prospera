@@ -36,9 +36,6 @@ export function DiagnosisTab({
         </div>
       </div>
 
-      {/* Indicadores financeiros completos */}
-      <IndicatorsCard state={state} />
-
       {/* Análises avançadas */}
       <HealthScoreCard state={state} />
       <SensitivityCard state={state} />
