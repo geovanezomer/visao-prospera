@@ -1,0 +1,334 @@
+import { useMemo, useState } from "react";
+import { AppState, TaxRegime } from "@/lib/finance/types";
+import { applySimulator, computeSimView, countActiveLevers, DEFAULT_SIM, PRESETS, SimDREView, SimulatorParams } from "@/lib/finance/simulator";
+import { fmtBRL, fmtBRLCompact, fmtPct } from "@/lib/finance/format";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { SectionTitle, HelpTip } from "./primitives";
+import { ArrowDownRight, ArrowUpRight, Minus, RotateCcw, Save, SlidersHorizontal, TriangleAlert, Wand2 } from "lucide-react";
+
+type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
+
+export function SimulatorTab({
+  state,
+  apply,
+  saveScenario,
+}: {
+  state: AppState;
+  apply: Updater;
+  saveScenario: (name: string, s: AppState) => void;
+}) {
+  const [p, setP] = useState<SimulatorParams>(DEFAULT_SIM);
+
+  const baseView = useMemo<SimDREView>(() => computeSimView(state), [state]);
+  const simState = useMemo(() => applySimulator(state, p), [state, p]);
+  const simView = useMemo<SimDREView>(() => computeSimView(simState), [simState]);
+
+  const set = <K extends keyof SimulatorParams>(k: K, v: SimulatorParams[K]) => setP((cur) => ({ ...cur, [k]: v }));
+  const reset = () => setP(DEFAULT_SIM);
+  const usePreset = (params: Partial<SimulatorParams>) => setP({ ...DEFAULT_SIM, ...params });
+
+  const active = countActiveLevers(p);
+
+  const inconsistencies: string[] = [];
+  if (simView.lucroLiquido < 0) inconsistencies.push("Lucro líquido negativo no cenário simulado");
+  if (simView.saldoCaixaFinal < 0) inconsistencies.push("Caixa final negativo — operação inviável sem captação");
+  if (Number.isFinite(simView.coberturaJuros) && simView.coberturaJuros < 1)
+    inconsistencies.push(`Cobertura de juros < 1× (${simView.coberturaJuros.toFixed(1)}×)`);
+
+  const applyToBase = () => {
+    apply(() => simState);
+  };
+  const onSave = () => {
+    const name = window.prompt("Nome do cenário:", `Sim ${active} ajustes`);
+    if (name) saveScenario(name, simState);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Banner */}
+      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
+        <div className="flex items-start gap-3">
+          <SlidersHorizontal className="mt-0.5 h-5 w-5 text-primary" />
+          <div className="flex-1">
+            <div className="font-semibold text-foreground">Simulador combinatório de cenários</div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Mova os sliders para combinar ajustes (preço, volume, custos, juros, capital de giro, regime).
+              O DRE Simulado Anual ao lado recalcula em tempo real. Quando encontrar a combinação ideal,
+              aplique no cenário base ou salve como um cenário separado.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {PRESETS.map((pr) => (
+              <Button key={pr.id} size="sm" variant="outline" className="h-7 text-[11px]"
+                onClick={() => usePreset(pr.params)}>
+                {pr.id === "neutro" ? <RotateCcw className="mr-1 h-3 w-3" /> : <Wand2 className="mr-1 h-3 w-3" />}
+                {pr.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Barra de status */}
+      <StatusBar active={active} base={baseView} sim={simView} inconsistencies={inconsistencies}
+        onApply={applyToBase} onSave={onSave} onReset={reset} />
+
+      {/* Grid 2 colunas */}
+      <div className="grid gap-4 lg:grid-cols-[1fr_460px]">
+        {/* Sliders */}
+        <div className="space-y-3">
+          <Accordion type="multiple" defaultValue={["receita", "custos", "giro", "divida", "trib"]} className="space-y-2">
+            <Group value="receita" title="Receita & Preço">
+              <SliderRow label="Preço de venda" hint="Aumenta/reduz tabela. Custos variáveis não acompanham." min={-30} max={30} step={1} value={p.priceDeltaPct} onChange={(v) => set("priceDeltaPct", v)} suffix="%" current={`Receita atual: ${fmtBRLCompact(baseView.receitaBruta)}`} signed />
+              <SliderRow label="Volume de vendas" hint="Receita + CPV variável acompanham. Mede alavancagem operacional." min={-50} max={50} step={1} value={p.volumeDeltaPct} onChange={(v) => set("volumeDeltaPct", v)} suffix="%" signed />
+            </Group>
+
+            <Group value="custos" title="Custos & Pessoal">
+              <SliderRow label="CPV / insumos" hint="Multiplica todas as linhas de Custo de Vendas." min={-20} max={30} step={1} value={p.cpvDeltaPct} onChange={(v) => set("cpvDeltaPct", v)} suffix="%" signed />
+              <SliderRow label="Folha (contratar/demitir equiv.)" hint="Multiplica linhas com encargos automáticos. + contrata, − demite." min={-30} max={30} step={1} value={p.payrollDeltaPct} onChange={(v) => set("payrollDeltaPct", v)} suffix="%" signed />
+              <SliderRow label="Cortar custos fixos (top-N)" hint="Aplica corte percentual nas N maiores rubricas fixas." min={0} max={50} step={1} value={p.fixedCutPct} onChange={(v) => set("fixedCutPct", v)} suffix="%" />
+              <div className="flex items-center gap-2 pl-1 text-[11px] text-muted-foreground">
+                Top N atingidos:
+                <Input type="number" min={1} max={8} value={p.fixedCutTopN} onChange={(e) => set("fixedCutTopN", Math.max(1, Math.min(8, parseInt(e.target.value) || 1)))} className="h-7 w-16" />
+              </div>
+              <SliderRow label="Terceirizar % do CPV" hint="Substitui parte do CPV variável por um custo fixo mensal contratado." min={0} max={100} step={5} value={p.outsourcePctCpv} onChange={(v) => set("outsourcePctCpv", v)} suffix="%" />
+              <div className="flex items-center gap-2 pl-1 text-[11px] text-muted-foreground">
+                Custo fixo contratado:
+                <Input type="number" step={500} min={0} value={p.outsourceFixedMonthly} onChange={(e) => set("outsourceFixedMonthly", Math.max(0, parseFloat(e.target.value) || 0))} className="h-7 w-32" />
+                <span>R$/mês</span>
+              </div>
+            </Group>
+
+            <Group value="giro" title="Capital de Giro">
+              <SliderRow label={`Reduzir PMR (atual ${state.revenue.pmr}d)`} hint="Acelera entrada de caixa. Negociação ou política comercial." min={-60} max={0} step={1} value={p.pmrDeltaDays} onChange={(v) => set("pmrDeltaDays", v)} suffix="d" />
+              <SliderRow label={`Aumentar PMP (atual ${state.revenue.pmp}d)`} hint="Posterga saídas sem mudar custo total." min={0} max={60} step={1} value={p.pmpDeltaDays} onChange={(v) => set("pmpDeltaDays", v)} suffix="d" />
+              <SliderRow label="Antecipação de recebíveis (custo)" hint="Adiciona despesa financeira mensal proporcional à receita antecipada." min={0} max={6} step={0.1} value={p.antecipPctAm} onChange={(v) => set("antecipPctAm", v)} suffix="% a.m." />
+            </Group>
+
+            <Group value="divida" title="Dívida & Juros">
+              <div className="space-y-2 rounded-md border border-border/40 bg-background/30 p-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Captar empréstimo</div>
+                <div className="grid grid-cols-3 gap-2">
+                  <NumInput label="Principal (R$)" value={p.loanPrincipal} onChange={(v) => set("loanPrincipal", v)} step={1000} min={0} />
+                  <NumInput label="Prazo (meses)" value={p.loanTermMonths} onChange={(v) => set("loanTermMonths", Math.max(1, Math.min(60, v)))} step={1} min={1} />
+                  <NumInput label="Taxa (% a.m.)" value={p.loanRatePctAm} onChange={(v) => set("loanRatePctAm", Math.max(0, v))} step={0.1} min={0} />
+                </div>
+              </div>
+              <SliderRow label="Quitar dívida (% do principal)" hint="Reduz dívida e juros futuros; consome caixa equivalente." min={0} max={100} step={5} value={p.debtPaydownPct} onChange={(v) => set("debtPaydownPct", v)} suffix="%" />
+              <SliderRow label={`Variar kd (atual ${state.capital.kd.toFixed(1)}% a.a.)`} hint="Selic sobe/cai: ajusta custo da dívida e proporcionalmente as despesas de juros." min={-5} max={5} step={0.25} value={p.kdDeltaPp} onChange={(v) => set("kdDeltaPp", v)} suffix=" p.p." signed />
+            </Group>
+
+            <Group value="trib" title="Tributário">
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-foreground">Mudar regime tributário</div>
+                <Select value={p.regimeOverride} onValueChange={(v) => set("regimeOverride", v as TaxRegime | "base")}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="base">Manter regime atual ({state.tax.regime})</SelectItem>
+                    <SelectItem value="simples">Simples Nacional</SelectItem>
+                    <SelectItem value="presumido">Lucro Presumido</SelectItem>
+                    <SelectItem value="real">Lucro Real</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </Group>
+          </Accordion>
+        </div>
+
+        {/* DRE Simulado */}
+        <div className="lg:sticky lg:top-[72px] lg:h-fit">
+          <DREPanel base={baseView} sim={simView} inconsistencies={inconsistencies} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============== Status bar ==============
+
+function StatusBar({ active, base, sim, inconsistencies, onApply, onSave, onReset }: {
+  active: number; base: SimDREView; sim: SimDREView; inconsistencies: string[];
+  onApply: () => void; onSave: () => void; onReset: () => void;
+}) {
+  const dEbitda = pctDelta(base.ebitda, sim.ebitda);
+  const dLL = pctDelta(base.lucroLiquido, sim.lucroLiquido);
+  const dCaixa = sim.saldoCaixaFinal - base.saldoCaixaFinal;
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-card/40 p-3">
+      <div className="flex flex-wrap items-center gap-3 text-xs">
+        <span className="rounded bg-primary/15 px-2 py-1 font-semibold text-primary">
+          {active === 0 ? "nenhum ajuste" : `${active} ajuste${active > 1 ? "s" : ""} ativo${active > 1 ? "s" : ""}`}
+        </span>
+        <Delta label="Δ EBITDA" value={dEbitda} suffix="%" />
+        <Delta label="Δ Lucro Líq." value={dLL} suffix="%" />
+        <Delta label="Δ Caixa" value={dCaixa} currency />
+        {inconsistencies.length > 0 && (
+          <span className="inline-flex items-center gap-1 rounded bg-[var(--destructive)]/15 px-2 py-1 text-neg">
+            <TriangleAlert className="h-3 w-3" /> {inconsistencies.length} alerta{inconsistencies.length > 1 ? "s" : ""}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="ghost" onClick={onReset}><RotateCcw className="mr-1 h-3.5 w-3.5" /> Resetar</Button>
+        <Button size="sm" variant="outline" onClick={onSave} disabled={active === 0}><Save className="mr-1 h-3.5 w-3.5" /> Salvar cenário</Button>
+        <Button size="sm" onClick={onApply} disabled={active === 0}>Aplicar ao cenário base</Button>
+      </div>
+    </div>
+  );
+}
+
+function Delta({ label, value, suffix, currency }: { label: string; value: number; suffix?: string; currency?: boolean }) {
+  const pos = value > 0.01;
+  const neg = value < -0.01;
+  const tone = pos ? "text-pos" : neg ? "text-neg" : "text-muted-foreground";
+  const Icon = pos ? ArrowUpRight : neg ? ArrowDownRight : Minus;
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className="text-muted-foreground">{label}:</span>
+      <span className={`mono inline-flex items-center font-semibold ${tone}`}>
+        <Icon className="h-3 w-3" />
+        {currency ? fmtBRLCompact(value) : `${value >= 0 ? "+" : ""}${value.toFixed(1)}${suffix ?? ""}`}
+      </span>
+    </span>
+  );
+}
+
+// ============== Slider row ==============
+
+function SliderRow({ label, hint, min, max, step, value, onChange, suffix, current, signed }: {
+  label: string; hint?: string; min: number; max: number; step: number;
+  value: number; onChange: (n: number) => void; suffix?: string; current?: string; signed?: boolean;
+}) {
+  const display = signed && value > 0 ? `+${value.toFixed(step < 1 ? 2 : 0)}` : value.toFixed(step < 1 ? 2 : 0);
+  return (
+    <div className="space-y-1.5 rounded-md border border-border/40 bg-background/20 px-3 py-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+          {label}
+          {hint && <HelpTip text={hint} />}
+        </div>
+        <div className="mono rounded border border-border/60 bg-input/40 px-2 py-0.5 text-xs">
+          {display}{suffix ?? ""}
+        </div>
+      </div>
+      <Slider min={min} max={max} step={step} value={[value]} onValueChange={(a) => onChange(a[0])} />
+      <div className="flex justify-between text-[10px] text-muted-foreground">
+        <span>{min}{suffix ?? ""}</span>
+        {current && <span>{current}</span>}
+        <span>{max > 0 ? "+" : ""}{max}{suffix ?? ""}</span>
+      </div>
+    </div>
+  );
+}
+
+function NumInput({ label, value, onChange, step, min }: { label: string; value: number; onChange: (n: number) => void; step: number; min: number }) {
+  return (
+    <div className="space-y-1">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <Input type="number" step={step} min={min} value={value} onChange={(e) => onChange(parseFloat(e.target.value) || 0)} className="h-8" />
+    </div>
+  );
+}
+
+function Group({ value, title, children }: { value: string; title: string; children: React.ReactNode }) {
+  return (
+    <AccordionItem value={value} className="rounded-lg border border-border/60 bg-card/30">
+      <AccordionTrigger className="px-4 py-2.5 text-sm font-semibold hover:no-underline">{title}</AccordionTrigger>
+      <AccordionContent className="space-y-2 px-4 pb-4 pt-1">{children}</AccordionContent>
+    </AccordionItem>
+  );
+}
+
+// ============== DRE Panel ==============
+
+function DREPanel({ base, sim, inconsistencies }: { base: SimDREView; sim: SimDREView; inconsistencies: string[] }) {
+  const rows: { label: string; b: number; s: number; bold?: boolean; sign?: -1 | 1 }[] = [
+    { label: "Receita Bruta", b: base.receitaBruta, s: sim.receitaBruta },
+    { label: "(−) Deduções/Inadimplência", b: -base.deducoes, s: -sim.deducoes, sign: -1 },
+    { label: "= Receita Líquida", b: base.receitaLiquida, s: sim.receitaLiquida, bold: true },
+    { label: "(−) CPV", b: -base.cpv, s: -sim.cpv, sign: -1 },
+    { label: "= Lucro Bruto", b: base.lucroBruto, s: sim.lucroBruto, bold: true },
+    { label: "(−) Despesas Operacionais", b: -base.despesasOp, s: -sim.despesasOp, sign: -1 },
+    { label: "= EBITDA", b: base.ebitda, s: sim.ebitda, bold: true },
+    { label: "(−) Depreciação", b: -base.depreciacao, s: -sim.depreciacao, sign: -1 },
+    { label: "= EBIT", b: base.ebit, s: sim.ebit },
+    { label: "(+/−) Resultado Financeiro", b: base.resultadoFinanceiro, s: sim.resultadoFinanceiro },
+    { label: "= LAIR", b: base.lair, s: sim.lair, bold: true },
+    { label: "(−) IR/CSLL", b: -base.impostos, s: -sim.impostos, sign: -1 },
+    { label: "= Lucro Líquido", b: base.lucroLiquido, s: sim.lucroLiquido, bold: true },
+  ];
+
+  return (
+    <div className="space-y-3 rounded-lg border border-border/60 bg-card/60 p-4">
+      <div className="flex items-center justify-between border-b border-border/40 pb-2">
+        <SectionTitle>DRE Simulado · Anual</SectionTitle>
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Base × Simulado</span>
+      </div>
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="text-[10px] uppercase text-muted-foreground">
+            <th className="pb-1 text-left font-medium">Linha</th>
+            <th className="pb-1 text-right font-medium">Base</th>
+            <th className="pb-1 text-right font-medium">Simulado</th>
+            <th className="pb-1 text-right font-medium">Δ%</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => {
+            const d = pctDelta(r.b, r.s);
+            const goodIsUp = (r.sign ?? 1) > 0; // se sign=-1, é despesa: cair é bom
+            const tone = Math.abs(d) < 0.05 ? "" : (goodIsUp ? (d > 0 ? "text-pos" : "text-neg") : (d < 0 ? "text-pos" : "text-neg"));
+            return (
+              <tr key={r.label} className={`border-b border-border/20 last:border-0 ${r.bold ? "font-semibold" : ""}`}>
+                <td className="py-1.5">{r.label}</td>
+                <td className="py-1.5 text-right mono text-muted-foreground">{fmtBRLCompact(r.b)}</td>
+                <td className={`py-1.5 text-right mono ${r.bold ? "" : ""}`}>{fmtBRLCompact(r.s)}</td>
+                <td className={`py-1.5 text-right mono ${tone}`}>{Math.abs(d) < 0.05 ? "—" : `${d >= 0 ? "+" : ""}${d.toFixed(1)}%`}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      <div className="grid grid-cols-2 gap-2 border-t border-border/40 pt-3 text-xs">
+        <Kpi label="Margem Líquida" base={`${base.margemLiquida.toFixed(1)}%`} sim={`${sim.margemLiquida.toFixed(1)}%`} better={sim.margemLiquida >= base.margemLiquida} />
+        <Kpi label="Margem EBITDA" base={`${base.margemEbitda.toFixed(1)}%`} sim={`${sim.margemEbitda.toFixed(1)}%`} better={sim.margemEbitda >= base.margemEbitda} />
+        <Kpi label="ROIC" base={fmtPct(base.roic)} sim={fmtPct(sim.roic)} better={sim.roic >= base.roic} />
+        <Kpi label="Saldo Caixa Final" base={fmtBRLCompact(base.saldoCaixaFinal)} sim={fmtBRLCompact(sim.saldoCaixaFinal)} better={sim.saldoCaixaFinal >= base.saldoCaixaFinal} />
+        <Kpi label="Pior mês de caixa" base={fmtBRLCompact(base.piorMesCaixa)} sim={fmtBRLCompact(sim.piorMesCaixa)} better={sim.piorMesCaixa >= base.piorMesCaixa} />
+        <Kpi label="NCG" base={fmtBRLCompact(base.ncg)} sim={fmtBRLCompact(sim.ncg)} better={sim.ncg <= base.ncg} />
+      </div>
+
+      {inconsistencies.length > 0 && (
+        <div className="rounded-md border border-[var(--destructive)]/60 bg-[var(--destructive)]/10 p-2 text-[11px] text-neg">
+          <div className="mb-1 flex items-center gap-1 font-semibold"><TriangleAlert className="h-3 w-3" /> Atenção:</div>
+          <ul className="space-y-0.5">
+            {inconsistencies.map((m) => <li key={m}>· {m}</li>)}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Kpi({ label, base, sim, better }: { label: string; base: string; sim: string; better: boolean }) {
+  return (
+    <div className="rounded border border-border/40 bg-background/30 p-2">
+      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="mt-0.5 flex items-baseline gap-2">
+        <span className={`mono text-sm font-semibold ${better ? "text-pos" : "text-neg"}`}>{sim}</span>
+        <span className="mono text-[10px] text-muted-foreground line-through">{base}</span>
+      </div>
+    </div>
+  );
+}
+
+function pctDelta(a: number, b: number): number {
+  if (Math.abs(a) < 1e-6) return b === 0 ? 0 : (b > 0 ? 100 : -100);
+  return ((b - a) / Math.abs(a)) * 100;
+}
