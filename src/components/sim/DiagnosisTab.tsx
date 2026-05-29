@@ -5,6 +5,7 @@ import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "
 import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
 import { AnalysisTab } from "./AnalysisTab";
+import { IndicatorsCard } from "./IndicatorsCard";
 
 export function DiagnosisTab({
   state,
