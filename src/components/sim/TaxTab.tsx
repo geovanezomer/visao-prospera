@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { AppState, SimplesAnexo, TaxRegime } from "@/lib/finance/types";
 import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
 import { compareRegimes, simplesAliquotaEfetiva, buildDRE } from "@/lib/finance/calculations";
