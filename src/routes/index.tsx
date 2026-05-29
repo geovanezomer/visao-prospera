@@ -14,6 +14,7 @@ import { DRETab } from "@/components/sim/DRETab";
 import { CashflowTab } from "@/components/sim/CashflowTab";
 import { DiagnosisTab } from "@/components/sim/DiagnosisTab";
 import { AnalysisTab } from "@/components/sim/AnalysisTab";
+import { StrategicTab } from "@/components/sim/StrategicTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
 import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
 import { GuidedWizard } from "@/components/sim/guided/GuidedWizard";
@@ -176,6 +177,7 @@ function SimulaPro() {
             <TabsTrigger value="caixa">6. Fluxo de Caixa</TabsTrigger>
             <TabsTrigger value="diag">7. Diagnóstico & Decisões</TabsTrigger>
             <TabsTrigger value="analise">8. Análise & Cenários</TabsTrigger>
+            <TabsTrigger value="estrategia">9. Análise Estratégica</TabsTrigger>
           </TabsList>
 
           <div className="mt-6">
@@ -187,6 +189,7 @@ function SimulaPro() {
             <TabsContent value="caixa"><CashflowTab state={state} update={update} /></TabsContent>
             <TabsContent value="diag"><DiagnosisTab state={state} update={update} saveScenario={save} /></TabsContent>
             <TabsContent value="analise"><AnalysisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} saveScenario={save} /></TabsContent>
+            <TabsContent value="estrategia"><StrategicTab state={state} update={update} /></TabsContent>
           </div>
         </Tabs>
 
