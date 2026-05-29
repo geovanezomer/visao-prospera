@@ -171,7 +171,7 @@ function SimulaPro() {
         </Tabs>
 
         <footer className="mt-12 border-t border-border/40 py-6 text-center text-[11px] text-muted-foreground">
-          CfoPRO · Diagnóstico & Simulação Empresarial para PMEs brasileiras · valores em R$ (pt-BR) · todos os dados ficam no seu navegador.
+          GZ FinancePRO · Diagnóstico & Simulação Empresarial para PMEs brasileiras · valores em R$ (pt-BR) · todos os dados ficam no seu navegador.
         </footer>
       </main>
 
