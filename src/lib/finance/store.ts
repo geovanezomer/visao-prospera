@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, Scenario } from "./types";
 import { DEFAULT_STATE, migrateState } from "./defaults";
 import { useAuth } from "@/lib/auth";
@@ -25,10 +25,15 @@ export function useAppState() {
   const username = user?.username ?? "guest";
   const [state, setState] = useState<AppState>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
+  // Garante que só salvamos no localStorage do usuário que foi efetivamente
+  // hidratado — evita race ao trocar de sessão (estado do user A escrito
+  // na key do user B antes da hidratação do B rodar).
+  const hydratedFor = useRef<string | null>(null);
 
   // Re-hydrate whenever the logged-in user changes.
   useEffect(() => {
     setHydrated(false);
+    hydratedFor.current = null;
     try {
       const raw = localStorage.getItem(stateKey(username)) ?? readFirst(LEGACY_STATE);
       if (raw) {
@@ -40,11 +45,13 @@ export function useAppState() {
     } catch {
       setState(DEFAULT_STATE);
     }
+    hydratedFor.current = username;
     setHydrated(true);
   }, [username]);
 
   useEffect(() => {
     if (!hydrated) return;
+    if (hydratedFor.current !== username) return;
     try { localStorage.setItem(stateKey(username), JSON.stringify(state)); } catch {}
   }, [state, hydrated, username]);
 

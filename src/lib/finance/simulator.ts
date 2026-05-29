@@ -116,20 +116,23 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     s.costs = s.costs.map((c) => (ids.has(c.id) ? { ...c, values: c.values.map((v) => v * f) } : c));
   }
 
-  // 6) Terceirização
-  if (p.outsourcePctCpv > 0 && p.outsourceFixedMonthly > 0) {
+  // 6) Terceirização — reduz CPV proporcionalmente ao % terceirizado e adiciona
+  // (opcionalmente) um custo fixo mensal para o contrato de terceirização.
+  if (p.outsourcePctCpv > 0) {
     const f = 1 - p.outsourcePctCpv / 100;
     s.costs = s.costs.map((c) =>
       c.category === "custo_vendas" ? { ...c, values: c.values.map((v) => v * f) } : c,
     );
-    s.costs.push({
-      id: `sim_outsource`,
-      label: `Terceirização (${p.outsourcePctCpv.toFixed(0)}% da operação)`,
-      category: "fixo",
-      values: fill12(p.outsourceFixedMonthly),
-      fixed: true,
-      custom: true,
-    });
+    if (p.outsourceFixedMonthly > 0) {
+      s.costs.push({
+        id: `sim_outsource`,
+        label: `Terceirização (${p.outsourcePctCpv.toFixed(0)}% da operação)`,
+        category: "fixo",
+        values: fill12(p.outsourceFixedMonthly),
+        fixed: true,
+        custom: true,
+      });
+    }
   }
 
   // 7) PMR / PMP
@@ -277,7 +280,7 @@ export function countActiveLevers(p: SimulatorParams): number {
   if (p.cpvDeltaPct !== 0) n++;
   if (p.payrollDeltaPct !== 0) n++;
   if (p.fixedCutPct > 0) n++;
-  if (p.outsourcePctCpv > 0 && p.outsourceFixedMonthly > 0) n++;
+  if (p.outsourcePctCpv > 0) n++;
   if (p.pmrDeltaDays !== 0) n++;
   if (p.pmpDeltaDays !== 0) n++;
   if (p.antecipPctAm > 0) n++;

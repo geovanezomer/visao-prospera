@@ -63,7 +63,9 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.reg
   const fornec = shiftByDaysSplit(dre.cpv, revenue.pmp);
   const pagamentosFornecedores = fornec.inAno;
 
-  const pagamentosFixos = dre.custosFixos.slice();
+  // PDD é não-caixa (CPC 47/IFRS 9). Remover do desembolso real para não duplicar
+  // a perda (a inadimplência já reduz a receita bruta a receber).
+  const pagamentosFixos = dre.custosFixos.map((v, i) => v - (dre.pdd?.[i] ?? 0));
   const pagamentosVariaveis = dre.custosVariaveis.map((tot, i) => tot - dre.cpv[i]);
 
   const pagamentosFinanceiros = dre.custosFinanceirosTotal.slice();
