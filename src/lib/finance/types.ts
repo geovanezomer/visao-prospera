@@ -12,6 +12,9 @@ export interface Revenue {
   inadimplencia: Months; // %
   pmr: number;
   pmp: number;
+  /** Quando true, inadimplência vira PDD (despesa operacional) ao invés de dedução de receita.
+   *  Mais correto contabilmente (CPC 47/IFRS 9) e não reduz base de PIS/COFINS/ISS. */
+  inadimplenciaComoPDD?: boolean;
 }
 
 export interface CostLine {
@@ -22,14 +25,16 @@ export interface CostLine {
   values: Months;
   fixed: boolean;
   custom?: boolean;
-  /** @deprecated migração legacy */
-  group?: "operacional" | "financeiro";
-  /** @deprecated migração legacy */
-  variavel?: boolean;
+  /** Linha de folha CLT. Aplica encargos automáticos (INSS Patr + FGTS + RAT/S + provisão 13º/férias). */
+  encargosAuto?: boolean;
+  /** % de encargos sobre o salário base (default 70% = INSS 20% + FGTS 8% + SAT/Sist.S ~5% + 13º + férias + 1/3). */
+  encargosPct?: number;
+  /** @deprecated legacy */ group?: "operacional" | "financeiro";
+  /** @deprecated legacy */ variavel?: boolean;
 }
 
 export interface CapitalStructure {
-  proprio: number;
+  proprio: number; // % capital próprio (E) — usado apenas como referência se dividaOnerosa/PL não preenchidos
   ke: number;
   kd: number;
   capitalGiroDisponivel: number;
@@ -39,27 +44,41 @@ export interface CapitalStructure {
   ativoTotal: number;
   estoques: number;
   disponibilidades: number;
+  // ----- novos campos (Fase 3) — fonte da verdade para ROIC, WACC, liquidez -----
+  /** Dívida onerosa total (empréstimos, financiamentos, debêntures). NÃO inclui fornecedores nem impostos a pagar. */
+  dividaOnerosa: number;
+  /** Ativo Circulante (caixa + CR + estoque + outros CP). Se 0, calculado a partir dos demais campos. */
+  ativoCirculante: number;
+  /** Passivo Circulante (fornecedores + impostos a pagar + empréstimos CP + salários a pagar). */
+  passivoCirculante: number;
+  /** Contas a Receber de clientes (saldo médio). Se 0, estimado a partir do PMR. */
+  contasReceber: number;
+  /** Fornecedores a Pagar (saldo médio). Se 0, estimado a partir do PMP. */
+  fornecedores: number;
 }
 
 export interface TaxConfig {
   regime: TaxRegime;
   simplesAnexo: SimplesAnexo;
   fatorR: number;
+  /** Quando true, calcula Fator R automaticamente (folha/RBT12) e migra Anexo V → III se ≥ 28%. */
+  fatorRAuto?: boolean;
   presumidoBaseIRPJ: number;
   presumidoBaseCSLL: number;
   issIcms: number;
   pisCreditos: number;
   cofinsCreditos: number;
+  /** Dedução de materiais/subempreitada para ISS (Lei 116/2003 art. 7º §2º). Anual em R$. */
+  issDeducoes?: number;
 }
 
-// Itens não-operacionais do fluxo de caixa
 export interface CashFlowConfig {
-  caixaMinimo: number;            // saldo mínimo de segurança (R$)
-  aportes: Months;                // aportes de sócios
-  emprestimosCaptados: Months;    // captação de dívida (entrada de caixa)
-  capex: Months;                  // investimentos em ativo fixo
-  dividendos: Months;             // distribuição de lucros
-  amortizacoes: Months;           // pagamentos de principal de dívida (não juros)
+  caixaMinimo: number;
+  aportes: Months;
+  emprestimosCaptados: Months;
+  capex: Months;
+  dividendos: Months;
+  amortizacoes: Months;
 }
 
 export interface AppState {
@@ -104,3 +123,6 @@ export const SUBCATEGORIES: Record<BusinessType, { id: string; label: string }[]
     { id: "terceirizacao", label: "Terceirização / Subcontratação" },
   ],
 };
+
+/** Fator de encargos default para CLT (INSS 20% + FGTS 8% + SAT/Sist.S ~5% + 13º + férias + 1/3). */
+export const DEFAULT_ENCARGOS_PCT = 70;
