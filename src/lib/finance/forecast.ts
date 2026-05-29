@@ -137,8 +137,7 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     const fatorReceita = Math.pow(1 + g, i);
     const receita = receitaBase[mes] * fatorReceita;
 
-    // CPV unitário melhora/piora com escala
-    const cpvRatio = cpvRatioBase * Math.pow(1 - escalaCpvMensal, i);
+    // CPV unitário melhora/piora com escala (ganhos compostos por mês)
     const cpvNaoFolha = receita * cpvNaoFolhaRatioBase * Math.pow(1 - escalaCpvMensal, i);
 
     // Variáveis não-CPV: escalam com receita

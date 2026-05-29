@@ -399,7 +399,10 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const roa = capital.ativoTotal > 0 ? (llAnual / capital.ativoTotal) * 100 : 0;
 
   // ---- Ciclo / NCG / Gap ----
-  const cicloFinanceiro = revenue.pmr - revenue.pmp;
+  // PME = (Estoque / CPV diário). Para serviços sem estoque/CPV resulta em 0.
+  const cpvDiario = sum(dre.cpv) / 360;
+  const pme = capital.estoques > 0 && cpvDiario > 0 ? capital.estoques / cpvDiario : 0;
+  const cicloFinanceiro = revenue.pmr + pme - revenue.pmp;
   // NCG: usa CR + Estoque − Fornecedores; fallback estimado se zerado
   const crEstimado = capital.contasReceber > 0 ? capital.contasReceber : (receitaBrutaAnual / 360) * revenue.pmr;
   const custoMedioMensal = (custosFixosAnual + custosVarAnual) / 12;
@@ -416,11 +419,13 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     : capital.disponibilidades + crEstimado + capital.estoques;
   const passivoCirculante = capital.passivoCirculante > 0
     ? capital.passivoCirculante
-    : Math.max(1, fornecEstimado + D * 0.3); // estimativa: 30% da dívida vence em CP
+    : Math.max(0, fornecEstimado + D * 0.3); // estimativa: 30% da dívida vence em CP
 
-  const liquidezCorrente = ativoCirculante / passivoCirculante;
-  const liquidezSeca = (ativoCirculante - capital.estoques) / passivoCirculante;
-  const liquidezImediata = capital.disponibilidades / passivoCirculante;
+  // Quando PC = 0 (empresa sem dívida e sem fornecedores), liquidez é indeterminada.
+  // Retornamos Infinity para que a UI exiba "—" em vez de números absurdos.
+  const liquidezCorrente = passivoCirculante > 0 ? ativoCirculante / passivoCirculante : Infinity;
+  const liquidezSeca = passivoCirculante > 0 ? (ativoCirculante - capital.estoques) / passivoCirculante : Infinity;
+  const liquidezImediata = passivoCirculante > 0 ? capital.disponibilidades / passivoCirculante : Infinity;
 
   // ---- Endividamento (apenas dívida onerosa para alavancagem) ----
   const passivoTotalEstim = capital.ativoTotal - PL;

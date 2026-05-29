@@ -150,15 +150,17 @@ function addLoan(state: AppState, principal: number, taxaMensal: number, prazoMe
 
 /** Quita parte do principal usando caixa: reduz dívida + juros futuros proporcionalmente. */
 function payDownDebt(state: AppState, pct: number): AppState {
-  const capital = { ...state.capital, dividaOnerosa: state.capital.dividaOnerosa * (1 - pct) };
+  const safePct = Math.min(Math.max(pct, 0), 1);
+  const originalDivida = state.capital.dividaOnerosa;
+  const capital = { ...state.capital, dividaOnerosa: originalDivida * (1 - safePct) };
   // reduz proporcionalmente os juros pagos (não a outras linhas financeiras)
   const costs = cloneCosts(state.costs).map((c) =>
     c.category === "financeiro" && /juros/i.test(c.label)
-      ? { ...c, values: c.values.map((v) => v * (1 - pct)) }
+      ? { ...c, values: c.values.map((v) => v * (1 - safePct)) }
       : c,
   );
-  // consome caixa equivalente
-  const cashUsed = capital.dividaOnerosa * (pct / (1 - pct)); // valor pago
+  // consome caixa equivalente ao principal quitado (evita divisão por zero quando pct = 1)
+  const cashUsed = originalDivida * safePct;
   const cashflow = { ...state.cashflow };
   cashflow.amortizacoes = state.cashflow.amortizacoes.slice();
   cashflow.amortizacoes[0] = (cashflow.amortizacoes[0] || 0) + cashUsed;

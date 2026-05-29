@@ -188,14 +188,14 @@ export function ScenarioCompareCard({
   const base = useMemo(() => snapshot(state), [state]);
   const rows = useMemo(() => scenarios.map((sc) => ({ sc, snap: snapshot(sc.state) })), [scenarios]);
 
-  const metrics: { key: keyof typeof base; label: string; fmt: (n: number) => string; higherBetter: boolean }[] = [
+  const metrics: { key: keyof typeof base; label: string; fmt: (n: number) => string; higherBetter: boolean; unit?: "pct" | "x" }[] = [
     { key: "receitaBruta", label: "Receita Bruta", fmt: fmtBRL, higherBetter: true },
     { key: "ebitda", label: "EBITDA", fmt: fmtBRL, higherBetter: true },
-    { key: "margemEbitda", label: "Margem EBITDA", fmt: (n) => `${n.toFixed(1)}%`, higherBetter: true },
+    { key: "margemEbitda", label: "Margem EBITDA", fmt: (n) => `${n.toFixed(1)}%`, higherBetter: true, unit: "pct" },
     { key: "lucroLiquido", label: "Lucro Líquido", fmt: fmtBRL, higherBetter: true },
-    { key: "margemLiquida", label: "Margem Líquida", fmt: (n) => `${n.toFixed(1)}%`, higherBetter: true },
-    { key: "roic", label: "ROIC", fmt: (n) => `${n.toFixed(1)}%`, higherBetter: true },
-    { key: "dividaLiqEbitda", label: "D.Líq/EBITDA", fmt: (n) => Number.isFinite(n) ? `${n.toFixed(1)}×` : "∞", higherBetter: false },
+    { key: "margemLiquida", label: "Margem Líquida", fmt: (n) => `${n.toFixed(1)}%`, higherBetter: true, unit: "pct" },
+    { key: "roic", label: "ROIC", fmt: (n) => `${n.toFixed(1)}%`, higherBetter: true, unit: "pct" },
+    { key: "dividaLiqEbitda", label: "D.Líq/EBITDA", fmt: (n) => Number.isFinite(n) ? `${n.toFixed(1)}×` : "∞", higherBetter: false, unit: "x" },
     { key: "saldoCaixaFinal", label: "Saldo Caixa (Dez)", fmt: fmtBRL, higherBetter: true },
     { key: "piorMesCaixa", label: "Pior mês caixa", fmt: fmtBRL, higherBetter: true },
     { key: "impostosAno", label: "Impostos/ano", fmt: fmtBRL, higherBetter: false },
@@ -258,7 +258,11 @@ export function ScenarioCompareCard({
                           <div>{m.fmt(v)}</div>
                           {!same && (
                             <div className="text-[9.5px] opacity-80">
-                              {m.label.includes("%") ? `${delta > 0 ? "+" : ""}${delta.toFixed(1)}pp` : `${delta > 0 ? "+" : ""}${fmtBRL(delta)}`}
+                              {m.unit === "pct"
+                                ? `${delta > 0 ? "+" : ""}${delta.toFixed(1)}pp`
+                                : m.unit === "x"
+                                ? `${delta > 0 ? "+" : ""}${delta.toFixed(2)}×`
+                                : `${delta > 0 ? "+" : ""}${fmtBRL(delta)}`}
                             </div>
                           )}
                         </td>

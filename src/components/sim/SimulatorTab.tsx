@@ -311,7 +311,7 @@ function DREPanel({ base, sim, inconsistencies }: { base: SimDREView; sim: SimDR
       <div className="grid grid-cols-2 gap-2 border-t border-border/40 pt-3 text-xs">
         <Kpi label="Margem Líquida" base={`${base.margemLiquida.toFixed(1)}%`} sim={`${sim.margemLiquida.toFixed(1)}%`} better={sim.margemLiquida >= base.margemLiquida} />
         <Kpi label="Margem EBITDA" base={`${base.margemEbitda.toFixed(1)}%`} sim={`${sim.margemEbitda.toFixed(1)}%`} better={sim.margemEbitda >= base.margemEbitda} />
-        <Kpi label="ROIC" base={fmtPct(base.roic)} sim={fmtPct(sim.roic)} better={sim.roic >= base.roic} />
+        <Kpi label="ROIC" base={fmtPct(base.roic / 100)} sim={fmtPct(sim.roic / 100)} better={sim.roic >= base.roic} />
         <Kpi label="Saldo Caixa Final" base={fmtBRLCompact(base.saldoCaixaFinal)} sim={fmtBRLCompact(sim.saldoCaixaFinal)} better={sim.saldoCaixaFinal >= base.saldoCaixaFinal} />
         <Kpi label="Pior mês de caixa" base={fmtBRLCompact(base.piorMesCaixa)} sim={fmtBRLCompact(sim.piorMesCaixa)} better={sim.piorMesCaixa >= base.piorMesCaixa} />
         <Kpi label="NCG" base={fmtBRLCompact(base.ncg)} sim={fmtBRLCompact(sim.ncg)} better={sim.ncg <= base.ncg} />
