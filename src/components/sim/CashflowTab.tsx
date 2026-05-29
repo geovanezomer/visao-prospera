@@ -36,24 +36,31 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
     <div className="space-y-6">
       {/* Sumário */}
       <div className="grid gap-3 md:grid-cols-4">
-        <StatCard label="Recebimentos no ano" value={fmtBRL(cf.totais.recebimentos)} tone="pos" />
+        <StatCard
+          label="Recebimentos no ano"
+          value={fmtBRL(cf.totais.recebimentos)}
+          tone="pos"
+          hint={{ description: "Total efetivamente recebido em caixa no ano, já descontada a inadimplência e respeitando o PMR (prazo médio de recebimento).", formula: "Σ Recebimentos mensais (Receita Líquida defasada pelo PMR)" }}
+        />
         <StatCard
           label="Fluxo Operacional"
           value={fmtBRL(cf.totais.fluxoOperacional)}
           tone={cf.totais.fluxoOperacional >= 0 ? "pos" : "neg"}
-          hint="Recebimentos − todas as saídas operacionais (já considera PMR/PMP e impostos com 1 mês de defasagem)."
+          hint={{ description: "Caixa gerado (ou consumido) pela operação no ano. Já considera PMR/PMP e impostos pagos com 1 mês de defasagem.", formula: "Recebimentos − Pagamentos Operacionais − Impostos pagos" }}
         />
         <StatCard
           label="Variação total de caixa"
           value={fmtBRL(cf.totais.variacao)}
           tone={cf.totais.variacao >= 0 ? "pos" : "neg"}
           sub="Operacional + Investimento + Financiamento"
+          hint={{ description: "Quanto o caixa cresceu (ou caiu) no ano somando os 3 fluxos: operação, investimentos e financiamentos.", formula: "Fluxo Operacional + Fluxo de Investimento + Fluxo de Financiamento" }}
         />
         <StatCard
           label="Saldo final (Dez)"
           value={fmtBRL(cf.totais.saldoFinal)}
           tone={cf.totais.saldoFinal >= state.cashflow.caixaMinimo ? "pos" : cf.totais.saldoFinal >= 0 ? "warn" : "neg"}
           sub={cf.totais.pioresMes ? `Pior mês: ${cf.totais.pioresMes.mes} = ${fmtBRL(cf.totais.pioresMes.saldo)}` : undefined}
+          hint={{ description: "Saldo de caixa projetado para dezembro. Deve ficar acima do caixa mínimo de segurança definido na configuração.", formula: "Saldo Inicial + Σ Variações mensais de caixa" }}
         />
       </div>
 

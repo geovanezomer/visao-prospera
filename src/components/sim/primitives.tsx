@@ -3,7 +3,9 @@ import { Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-export function HelpTip({ text }: { text: string }) {
+export type HelpHint = string | { description: string; formula?: string; example?: string };
+
+export function HelpTip({ text, formula, example }: { text: string; formula?: string; example?: string }) {
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
@@ -12,10 +14,27 @@ export function HelpTip({ text }: { text: string }) {
             <Info className="h-3.5 w-3.5" />
           </span>
         </TooltipTrigger>
-        <TooltipContent className="max-w-xs text-xs leading-relaxed">{text}</TooltipContent>
+        <TooltipContent className="max-w-sm space-y-2 bg-popover p-3 text-xs leading-relaxed text-popover-foreground shadow-lg border border-border">
+          <div className="text-foreground">{text}</div>
+          {formula && (
+            <div className="rounded border border-border/60 bg-muted/40 px-2 py-1.5">
+              <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Fórmula</div>
+              <div className="mono mt-0.5 text-[11px] text-primary">{formula}</div>
+            </div>
+          )}
+          {example && (
+            <div className="text-[11px] italic text-muted-foreground">Ex.: {example}</div>
+          )}
+        </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
+}
+
+export function renderHint(hint: HelpHint | undefined) {
+  if (!hint) return null;
+  if (typeof hint === "string") return <HelpTip text={hint} />;
+  return <HelpTip text={hint.description} formula={hint.formula} example={hint.example} />;
 }
 
 export function MoneyInput({
@@ -73,7 +92,7 @@ export function StatCard({
 }: {
   label: string;
   value: ReactNode;
-  hint?: string;
+  hint?: HelpHint;
   tone?: "default" | "pos" | "neg" | "warn";
   sub?: ReactNode;
 }) {
@@ -83,7 +102,7 @@ export function StatCard({
     <div className="rounded-lg border border-border/60 bg-card/60 p-4">
       <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
         {label}
-        {hint && <HelpTip text={hint} />}
+        {renderHint(hint)}
       </div>
       <div className={cn("mono mt-2 text-2xl font-semibold", toneClass)}>{value}</div>
       {sub && <div className="mt-1 text-xs text-muted-foreground">{sub}</div>}
@@ -91,11 +110,11 @@ export function StatCard({
   );
 }
 
-export function SectionTitle({ children, hint }: { children: ReactNode; hint?: string }) {
+export function SectionTitle({ children, hint }: { children: ReactNode; hint?: HelpHint }) {
   return (
     <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
       {children}
-      {hint && <HelpTip text={hint} />}
+      {renderHint(hint)}
     </h3>
   );
 }
