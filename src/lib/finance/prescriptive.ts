@@ -355,9 +355,9 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
         },
         {
           id: "amort_extra",
-          title: "Quitar 30% do principal (uso de caixa)",
-          detail: "Reduz juros futuros proporcionalmente.",
-          apply: (s) => scaleCategory(s, "financeiro", 0.7),
+          title: "Quitar 30% do principal da dívida (uso de caixa)",
+          detail: "Reduz dívida onerosa e juros futuros proporcionalmente; consome caixa equivalente.",
+          apply: (s) => payDownDebt(s, 0.3),
         },
       ],
     });
