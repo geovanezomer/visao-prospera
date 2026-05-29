@@ -1,10 +1,10 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useAppState, useScenarios } from "@/lib/finance/store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Activity, Building2, Download, RotateCcw, Factory, Store, Briefcase } from "lucide-react";
+import { Activity, Building2, Download, RotateCcw, Factory, Store, Briefcase, Sparkles, X } from "lucide-react";
 import { RevenueTab } from "@/components/sim/RevenueTab";
 import { CostsTab } from "@/components/sim/CostsTab";
 import { CapitalTab } from "@/components/sim/CapitalTab";
@@ -15,7 +15,8 @@ import { DiagnosisTab } from "@/components/sim/DiagnosisTab";
 import { AnalysisTab } from "@/components/sim/AnalysisTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
 import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
-import { BusinessType } from "@/lib/finance/types";
+import { GuidedWizard } from "@/components/sim/guided/GuidedWizard";
+import { AppState, BusinessType } from "@/lib/finance/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,12 +38,26 @@ export const Route = createFileRoute("/")({
 function SimulaPro() {
   const { state, update, reset, setState } = useAppState();
   const { scenarios, save, remove } = useScenarios();
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   const businessIcon = state.businessType === "industria" ? <Factory className="h-4 w-4" /> : state.businessType === "comercio" ? <Store className="h-4 w-4" /> : <Briefcase className="h-4 w-4" />;
 
   const exportReport = () => {
     window.print();
   };
+
+  const toggleGuided = () => {
+    if (!state.guided.completedWizard) {
+      setWizardOpen(true);
+    } else {
+      update({ guided: { ...state.guided, enabled: !state.guided.enabled } });
+    }
+  };
+
+  const handleWizardApply = (newState: AppState) => {
+    setState(newState);
+  };
+  const dismissBanner = () => update({ guided: { ...state.guided, dismissedBanner: true } });
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -81,10 +96,19 @@ function SimulaPro() {
                 </SelectContent>
               </Select>
             </div>
-            <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-              <Switch checked={state.guided} onCheckedChange={(v) => update({ guided: v })} />
-              Modo guiado
-            </label>
+            <Button
+              size="sm"
+              variant={state.guided.enabled ? "default" : "outline"}
+              onClick={toggleGuided}
+              title={state.guided.completedWizard ? "Ativar/desativar Modo Guiado" : "Iniciar wizard de setup"}
+            >
+              <Sparkles className="mr-2 h-4 w-4" /> Modo Guiado
+            </Button>
+            {state.guided.completedWizard && (
+              <Button size="sm" variant="ghost" onClick={() => setWizardOpen(true)} title="Refazer wizard">
+                Refazer setup
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={exportReport}><Download className="mr-2 h-4 w-4" /> Exportar</Button>
             <ConfirmDialog
               title="Restaurar dados de exemplo?"
@@ -102,11 +126,24 @@ function SimulaPro() {
         </div>
       </header>
 
-      {state.guided && (
-        <div className="border-b border-primary/30 bg-primary/5 px-6 py-2 text-center text-xs text-primary">
-          Modo guiado ativo · Preencha as abas na ordem: Receitas → Custos → Capital → Regime Tributário → DRE Simulado para receber o diagnóstico.
+      {state.guided.enabled && !state.guided.dismissedBanner && (
+        <div className="flex items-center justify-between gap-3 border-b border-primary/30 bg-primary/5 px-6 py-2 text-xs text-primary">
+          <span>
+            <Sparkles className="mr-1 inline h-3.5 w-3.5" />
+            Modo Guiado ativo — siga as abas: Receitas → Custos → Capital → Regime Tributário → DRE → Diagnóstico → Análise.
+          </span>
+          <button onClick={dismissBanner} className="rounded p-1 hover:bg-primary/20" aria-label="Fechar">
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       )}
+
+      <GuidedWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        baseState={state}
+        onApply={handleWizardApply}
+      />
 
       <main className="mx-auto max-w-[1600px] px-6 py-6">
         <Tabs defaultValue="dre" className="w-full">
@@ -129,7 +166,7 @@ function SimulaPro() {
             <TabsContent value="dre"><DRETab state={state} update={update} /></TabsContent>
             <TabsContent value="caixa"><CashflowTab state={state} update={update} /></TabsContent>
             <TabsContent value="diag"><DiagnosisTab state={state} update={update} saveScenario={save} /></TabsContent>
-            <TabsContent value="analise"><AnalysisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} /></TabsContent>
+            <TabsContent value="analise"><AnalysisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} saveScenario={save} /></TabsContent>
           </div>
         </Tabs>
 

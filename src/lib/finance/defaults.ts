@@ -122,7 +122,7 @@ export const DEFAULT_STATE: AppState = {
     dividendos: fill12(0),
     amortizacoes: fill12(0),
   },
-  guided: false,
+  guided: { enabled: false, completedWizard: false, dismissedBanner: false },
 };
 
 // ============ Migração de estados antigos ============
@@ -144,5 +144,11 @@ export function migrateState(s: AppState): AppState {
   const capital = { ...DEFAULT_STATE.capital, ...(s.capital ?? {}) };
   const tax = { ...DEFAULT_STATE.tax, ...(s.tax ?? {}) };
   const revenue = { ...DEFAULT_STATE.revenue, ...(s.revenue ?? {}) };
-  return { ...s, revenue, capital, tax, costs, cashflow };
+  // guided era boolean em versões antigas — migra para o objeto.
+  const rawGuided: unknown = (s as { guided?: unknown }).guided;
+  const guided =
+    typeof rawGuided === "boolean"
+      ? { enabled: rawGuided, completedWizard: false, dismissedBanner: false }
+      : { ...DEFAULT_STATE.guided, ...(rawGuided as Partial<typeof DEFAULT_STATE.guided> | undefined) };
+  return { ...s, revenue, capital, tax, costs, cashflow, guided };
 }

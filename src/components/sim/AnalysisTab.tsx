@@ -12,19 +12,24 @@ import { Activity, GitCompare, LineChart as LineIcon, Play, Sliders, TrendingUp,
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ConfirmDialog, chartTooltipStyle, chartTooltipItemStyle, chartTooltipLabelStyle } from "./ConfirmDialog";
 
+import { ScenarioLibrary } from "./guided/ScenarioLibrary";
+
 export function AnalysisTab({
   state,
   scenarios,
   loadScenario,
   removeScenario,
+  saveScenario,
 }: {
   state: AppState;
   scenarios: Scenario[];
   loadScenario: (s: AppState) => void;
   removeScenario: (id: string) => void;
+  saveScenario: (name: string, s: AppState) => void;
 }) {
   return (
     <div className="space-y-6">
+      <ScenarioLibrary state={state} saveScenario={saveScenario} loadScenario={loadScenario} />
       <HealthScoreCard state={state} />
       <SensitivityCard state={state} />
       <ForecastCard state={state} />
