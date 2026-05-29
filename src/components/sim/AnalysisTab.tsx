@@ -351,20 +351,52 @@ function ForecastCard({ state }: { state: AppState }) {
   );
 }
 
-// ============== Monte Carlo ==============
+// ============== Monte Carlo (Web Worker) ==============
 function MonteCarloCard({ state }: { state: AppState }) {
   const [cfg, setCfg] = useState<MCConfig>(DEFAULT_MC);
-  const [result, setResult] = useState<ReturnType<typeof runMonteCarlo> | null>(null);
+  const [result, setResult] = useState<MCResult | null>(null);
   const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+    (async () => {
+      const McWorker = (await import("@/workers/montecarlo.worker.ts?worker")).default;
+      if (cancelled) return;
+      const w = new McWorker();
+      w.onmessage = (e: MessageEvent<{ ok: boolean; result?: MCResult; error?: string }>) => {
+        if (e.data.ok && e.data.result) {
+          setResult(e.data.result);
+          setError(null);
+        } else {
+          setError(e.data.error ?? "Falha na simulação");
+        }
+        setRunning(false);
+      };
+      workerRef.current = w;
+    })();
+    return () => {
+      cancelled = true;
+      workerRef.current?.terminate();
+      workerRef.current = null;
+    };
+  }, []);
 
   const run = () => {
+    if (!workerRef.current) {
+      // fallback síncrono se worker indisponível
+      setRunning(true);
+      import("@/lib/finance/montecarlo").then(({ runMonteCarlo }) => {
+        setResult(runMonteCarlo(state, cfg));
+        setRunning(false);
+      });
+      return;
+    }
     setRunning(true);
-    // setTimeout para liberar UI
-    setTimeout(() => {
-      const r = runMonteCarlo(state, cfg);
-      setResult(r);
-      setRunning(false);
-    }, 30);
+    setError(null);
+    workerRef.current.postMessage({ state, cfg });
   };
 
   return (
