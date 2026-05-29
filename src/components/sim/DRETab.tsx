@@ -226,29 +226,31 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
 
       {/* Financial Indicators */}
       <div className="rounded-lg border border-border/60 bg-card/40 p-5">
-        <SectionTitle>Indicadores financeiros</SectionTitle>
+        <SectionTitle hint={{ description: "Métricas-chave que sintetizam a saúde financeira da empresa. Cada card traz a definição e a fórmula usada no cálculo." }}>
+          Indicadores financeiros
+        </SectionTitle>
         <div className="mt-4 grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-          <Ind label="Margem Bruta" v={fmtPct(ind.margemBruta / 100)} hint="Lucro Bruto / Receita Líquida" />
-          <Ind label="Margem EBITDA" v={fmtPct(ind.margemEbitda / 100)} hint="EBITDA / Receita Líquida" />
-          <Ind label="Margem Líquida" v={fmtPct(ind.margemLiquida / 100)} hint="Lucro Líquido / Receita Líquida" />
-          <Ind label="Margem de Contribuição" v={fmtPct(ind.margemContribuicao / 100)} hint="(Receita − Custos Variáveis) / Receita" />
-          <Ind label="Ponto de Equilíbrio" v={fmtBRL(ind.pontoEquilibrio)} hint="Receita necessária para cobrir custos fixos." />
-          <Ind label="Ponto de Eq. Financeiro" v={fmtBRL(ind.pontoEquilibrioFinanceiro)} hint="Desconsidera depreciação." />
-          <Ind label="ROE" v={fmtPct(ind.roe / 100)} hint="Lucro Líq. / Patrimônio Líq." />
-          <Ind label="ROA" v={fmtPct(ind.roa / 100)} hint="Lucro Líq. / Ativo Total" />
-          <Ind label="ROIC" v={fmtPct(ind.roic / 100)} tone={ind.roic >= ind.wacc ? "pos" : "neg"} hint="NOPAT / Capital Investido. Comparar com WACC." />
-          <Ind label="WACC" v={fmtPct(ind.wacc / 100)} />
-          <Ind label="Liquidez Corrente" v={ind.liquidezCorrente.toFixed(2)} tone={ind.liquidezCorrente >= 1 ? "pos" : "neg"} hint="Ativo Circulante / Passivo Circulante" />
-          <Ind label="Liquidez Seca" v={ind.liquidezSeca.toFixed(2)} hint="(AC − Estoques) / PC" />
-          <Ind label="Liquidez Imediata" v={ind.liquidezImediata.toFixed(2)} hint="Disponibilidades / PC" />
-          <Ind label="Endividamento Geral" v={fmtPct(ind.endividamentoGeral / 100)} hint="Passivo Total / Ativo Total" />
-          <Ind label="Cobertura de Juros" v={Number.isFinite(ind.coberturaJuros) ? `${ind.coberturaJuros.toFixed(1)}×` : "∞"} tone={ind.coberturaJuros >= 2 ? "pos" : "neg"} hint="EBIT / Despesas Financeiras" />
-          <Ind label="Giro do Ativo" v={`${ind.giroAtivo.toFixed(2)}×`} hint="Receita Líq. / Ativo Total" />
-          <Ind label="Dívida Líq. / EBITDA" v={Number.isFinite(ind.dividaLiqEbitda) ? `${ind.dividaLiqEbitda.toFixed(1)}×` : "∞"} tone={ind.dividaLiqEbitda <= 3 ? "pos" : "neg"} />
-          <Ind label="Ciclo Financeiro" v={`${ind.cicloFinanceiro} d`} />
-          <Ind label="NCG" v={fmtBRL(ind.ncg)} tone="warn" hint="Necessidade de Capital de Giro" />
-          <Ind label="Payback (anos)" v={Number.isFinite(ind.payback) ? ind.payback.toFixed(1) : "—"} hint="Patrimônio / Lucro Líquido anual" />
-          <Ind label="FCF estimado" v={fmtBRL(ind.fcf)} tone={ind.fcf >= 0 ? "pos" : "neg"} hint="EBITDA − Impostos − ΔNCG" />
+          <Ind label="Margem Bruta" v={fmtPct(ind.margemBruta / 100)} desc="Quanto sobra da receita após pagar o custo direto do produto/serviço. Mede a eficiência da operação antes das despesas." formula="Lucro Bruto ÷ Receita Líquida × 100" />
+          <Ind label="Margem EBITDA" v={fmtPct(ind.margemEbitda / 100)} desc="Quanto a operação gera de caixa antes de juros, impostos e depreciação. Mede a geração operacional 'pura'." formula="EBITDA ÷ Receita Líquida × 100" />
+          <Ind label="Margem Líquida" v={fmtPct(ind.margemLiquida / 100)} desc="O lucro que efetivamente sobra para os sócios, após tudo pago (custos, despesas, juros e impostos)." formula="Lucro Líquido ÷ Receita Líquida × 100" />
+          <Ind label="Margem de Contribuição" v={fmtPct(ind.margemContribuicao / 100)} desc="Quanto cada R$ vendido contribui para pagar os custos fixos e gerar lucro. Quanto maior, mais resiliente é o negócio." formula="(Receita − Custos Variáveis) ÷ Receita × 100" />
+          <Ind label="Ponto de Equilíbrio" v={fmtBRL(ind.pontoEquilibrio)} desc="Receita mínima necessária para a empresa não ter prejuízo (cobrir todos os custos fixos)." formula="Custos Fixos ÷ Margem de Contribuição" />
+          <Ind label="Ponto de Eq. Financeiro" v={fmtBRL(ind.pontoEquilibrioFinanceiro)} desc="Como o ponto de equilíbrio, mas desconsiderando depreciação (que não consome caixa). É o quanto precisa faturar para não ficar no vermelho de caixa." formula="(Custos Fixos − Depreciação) ÷ Margem de Contribuição" />
+          <Ind label="ROE" v={fmtPct(ind.roe / 100)} desc="Retorno sobre o Patrimônio Líquido. Mostra quanto a empresa gera de lucro para cada R$ investido pelos sócios. Compare com a Selic." formula="Lucro Líquido ÷ Patrimônio Líquido × 100" />
+          <Ind label="ROA" v={fmtPct(ind.roa / 100)} desc="Retorno sobre o Ativo Total. Mostra a eficiência da empresa em gerar lucro com todos os seus recursos (próprios + terceiros)." formula="Lucro Líquido ÷ Ativo Total × 100" />
+          <Ind label="ROIC" v={fmtPct(ind.roic / 100)} tone={ind.roic >= ind.wacc ? "pos" : "neg"} desc="Retorno sobre o Capital Investido na operação. Se ROIC > WACC, a empresa CRIA valor; se ROIC < WACC, DESTRÓI valor." formula="NOPAT ÷ Capital Investido × 100  (NOPAT = EBIT × (1 − IR))" />
+          <Ind label="WACC" v={fmtPct(ind.wacc / 100)} desc="Custo Médio Ponderado de Capital. É o retorno mínimo que a empresa precisa entregar para remunerar sócios e credores. Funciona como 'meta' do ROIC." formula="(E/V × Ke) + (D/V × Kd × (1 − IR))" />
+          <Ind label="Liquidez Corrente" v={ind.liquidezCorrente.toFixed(2)} tone={ind.liquidezCorrente >= 1 ? "pos" : "neg"} desc="Capacidade de pagar dívidas de curto prazo com recursos de curto prazo. Acima de 1,0 indica folga; abaixo, aperto." formula="Ativo Circulante ÷ Passivo Circulante" />
+          <Ind label="Liquidez Seca" v={ind.liquidezSeca.toFixed(2)} desc="Versão mais rigorosa da liquidez corrente: exclui estoques (que podem demorar a virar caixa). Ideal acima de 1,0." formula="(Ativo Circulante − Estoques) ÷ Passivo Circulante" />
+          <Ind label="Liquidez Imediata" v={ind.liquidezImediata.toFixed(2)} desc="Capacidade de pagar dívidas de curto prazo IMEDIATAMENTE, só com dinheiro em caixa e aplicações." formula="Disponibilidades ÷ Passivo Circulante" />
+          <Ind label="Endividamento Geral" v={fmtPct(ind.endividamentoGeral / 100)} desc="Percentual do ativo financiado por dívidas (terceiros). Acima de 60% costuma indicar alto risco financeiro." formula="Passivo Total ÷ Ativo Total × 100" />
+          <Ind label="Cobertura de Juros" v={Number.isFinite(ind.coberturaJuros) ? `${ind.coberturaJuros.toFixed(1)}×` : "∞"} tone={ind.coberturaJuros >= 2 ? "pos" : "neg"} desc="Quantas vezes o lucro operacional cobre as despesas de juros. Abaixo de 2× é zona de risco." formula="EBIT ÷ Despesas Financeiras" />
+          <Ind label="Giro do Ativo" v={`${ind.giroAtivo.toFixed(2)}×`} desc="Quantas vezes o ativo total 'gira' em vendas no ano. Mede eficiência: quanto maior, mais a empresa produz com o que tem." formula="Receita Líquida ÷ Ativo Total" />
+          <Ind label="Dívida Líq. / EBITDA" v={Number.isFinite(ind.dividaLiqEbitda) ? `${ind.dividaLiqEbitda.toFixed(1)}×` : "∞"} tone={ind.dividaLiqEbitda <= 3 ? "pos" : "neg"} desc="Em quantos anos de geração de caixa (EBITDA) a empresa quitaria sua dívida líquida. Acima de 3× preocupa bancos." formula="(Dívida Total − Caixa) ÷ EBITDA" />
+          <Ind label="Ciclo Financeiro" v={`${ind.cicloFinanceiro} d`} desc="Dias entre pagar fornecedores e receber dos clientes. Quanto MAIOR, mais capital de giro a empresa precisa." formula="PMR + PME − PMP (dias)" />
+          <Ind label="NCG" v={fmtBRL(ind.ncg)} tone="warn" desc="Necessidade de Capital de Giro — quanto de dinheiro a operação 'consome' permanentemente para girar (estoques + clientes − fornecedores)." formula="(Ciclo Financeiro ÷ 30) × Custos Mensais" />
+          <Ind label="Payback (anos)" v={Number.isFinite(ind.payback) ? ind.payback.toFixed(1) : "—"} desc="Tempo estimado para o lucro acumulado recuperar todo o capital investido pelos sócios." formula="Patrimônio Líquido ÷ Lucro Líquido Anual" />
+          <Ind label="FCF estimado" v={fmtBRL(ind.fcf)} tone={ind.fcf >= 0 ? "pos" : "neg"} desc="Free Cash Flow — geração de caixa livre após impostos e investimento em capital de giro. É o que sobra para sócios e dívida." formula="EBITDA − Impostos − Δ NCG" />
         </div>
       </div>
     </div>
@@ -264,12 +266,12 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-function Ind({ label, v, hint, tone }: { label: string; v: string; hint?: string; tone?: "pos" | "neg" | "warn" }) {
+function Ind({ label, v, desc, formula, tone }: { label: string; v: string; desc?: string; formula?: string; tone?: "pos" | "neg" | "warn" }) {
   const cls = tone === "pos" ? "text-pos" : tone === "neg" ? "text-neg" : tone === "warn" ? "text-[var(--warning)]" : "";
   return (
     <div className="rounded-md border border-border/40 bg-background/40 p-3">
       <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-        {label} {hint && <HelpTip text={hint} />}
+        {label} {desc && <HelpTip text={desc} formula={formula} />}
       </div>
       <div className={`mono mt-1 text-lg font-semibold ${cls}`}>{v}</div>
     </div>
