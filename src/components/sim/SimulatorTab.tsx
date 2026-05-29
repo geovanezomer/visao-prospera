@@ -145,6 +145,16 @@ export function SimulatorTab({
           <DREPanel base={baseView} sim={simView} inconsistencies={inconsistencies} />
         </div>
       </div>
+
+      {/* Projeções refletindo o cenário simulado */}
+      <div className="space-y-4 border-t border-border/60 pt-6">
+        <div className="rounded-lg border border-border/40 bg-background/30 p-3 text-xs text-muted-foreground">
+          As análises abaixo refletem o cenário <strong className="text-foreground">simulado</strong> acima.
+          Sem ajustes nos sliders, elas representam o cenário base atual do sistema.
+        </div>
+        <ForecastCard state={simState} />
+        <MonteCarloCard state={simState} />
+      </div>
     </div>
   );
 }
