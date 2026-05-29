@@ -28,15 +28,23 @@ export function DiagnosisTab({
           <div>
             <div className="font-semibold text-foreground">Resultados — diagnóstico consolidado</div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Visão única do diagnóstico financeiro (problemas detectados, causa provável e recomendações) combinado
-              com a análise estratégica (governança, concentração, competitividade). Para testar combinações de ajustes,
+              Indicadores financeiros, análises avançadas (sensibilidade, projeção 36 meses, Monte Carlo) e, ao final,
+              o diagnóstico financeiro com causas/ações e a síntese estratégica. Para testar combinações de ajustes,
               vá para a aba <strong>Simulador</strong>.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Diagnóstico financeiro */}
+      {/* Indicadores financeiros completos */}
+      <IndicatorsCard state={state} />
+
+      {/* Análises avançadas (até a projeção 36m) */}
+      <HealthScoreCard state={state} />
+      <SensitivityCard state={state} />
+      <ForecastCard state={state} />
+
+      {/* Diagnóstico financeiro (após a projeção) */}
       <section className="space-y-3">
         <SectionTitle>Diagnóstico financeiro</SectionTitle>
         <div className="grid gap-4 lg:grid-cols-2">
@@ -56,21 +64,9 @@ export function DiagnosisTab({
         <StrategicSummary state={state} />
       </section>
 
-      {/* Indicadores financeiros completos */}
-      <section className="space-y-3">
-        <IndicatorsCard state={state} />
-      </section>
-
-      {/* Sensibilidade, projeção, Monte Carlo e comparação de cenários */}
-      <section className="space-y-3">
-        <SectionTitle>Análises avançadas</SectionTitle>
-        <AnalysisTab
-          state={state}
-          scenarios={scenarios}
-          loadScenario={loadScenario}
-          removeScenario={removeScenario}
-        />
-      </section>
+      {/* Continuação das análises avançadas */}
+      <MonteCarloCard state={state} />
+      <ScenarioCompareCard state={state} scenarios={scenarios} loadScenario={loadScenario} removeScenario={removeScenario} />
     </div>
   );
 }
