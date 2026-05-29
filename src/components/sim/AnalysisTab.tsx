@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { AppState, Scenario } from "@/lib/finance/types";
 import { computeHealth, HealthDimension } from "@/lib/finance/health";
 import { runSensitivity, OUTPUT_OPTIONS, OutputKey } from "@/lib/finance/sensitivity";
@@ -103,7 +103,9 @@ function DimRow({ d }: { d: HealthDimension }) {
 // ============== Sensitivity ==============
 export function SensitivityCard({ state }: { state: AppState }) {
   const [output, setOutput] = useState<OutputKey>("ebitda");
-  const result = useMemo(() => runSensitivity(state, output), [state, output]);
+  // Difere o estado pesado para não bloquear teclado/sliders durante 36× buildDRE
+  const deferredState = useDeferredValue(state);
+  const result = useMemo(() => runSensitivity(deferredState, output), [deferredState, output]);
   const fmt = (n: number) => output === "roic" ? `${n.toFixed(1)}%` : fmtBRL(n);
 
   return (
