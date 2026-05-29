@@ -153,6 +153,7 @@ export function SimulatorTab({
           As análises abaixo refletem o cenário <strong className="text-foreground">simulado</strong> acima.
           Sem ajustes nos sliders, elas representam o cenário base atual do sistema.
         </div>
+        <IndicatorsCard state={simState} />
         <ForecastCard state={simState} />
         <MonteCarloCard state={simState} />
       </div>
