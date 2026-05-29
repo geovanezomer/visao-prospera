@@ -186,7 +186,6 @@ function laborCltLinesTotal(state: AppState): { lines: CostLine[]; totalMensal: 
 }
 
 function reduceLaborByPositions(state: AppState, positions: number, custoMedioPosicao: number): AppState {
-  // Reduz proporcionalmente as linhas de folha CLT identificadas
   const { lines, totalMensal } = laborCltLinesTotal(state);
   if (lines.length === 0 || totalMensal <= 0) return state;
   const corteMensal = Math.min(positions * custoMedioPosicao, totalMensal);
@@ -195,6 +194,28 @@ function reduceLaborByPositions(state: AppState, positions: number, custoMedioPo
     lines.some((l) => l.id === c.id) ? { ...c, values: c.values.map((v) => v * factor) } : c,
   );
   return { ...state, costs };
+}
+
+/**
+ * Custo rescisório sem justa causa (CLT) — estimativa conservadora:
+ *   Aviso indenizado (1 salário) + 13º proporcional + férias + 1/3 (~4/3 salário)
+ *   + multa FGTS 40% sobre 8% × meses trabalhados.
+ */
+export function severanceCostPerPosition(salarioBase: number, mesesTrabalhados = 24): number {
+  const aviso = salarioBase;
+  const decimoTerceiro = salarioBase;
+  const feriasMais1_3 = salarioBase * (4 / 3);
+  const multaFgts = salarioBase * 0.08 * mesesTrabalhados * 0.4;
+  return aviso + decimoTerceiro + feriasMais1_3 + multaFgts;
+}
+
+/** Demissão com custo rescisório como saída de caixa one-shot e redução estrutural da folha. */
+function dismissWithSeverance(state: AppState, positions: number, salarioBase: number, monthIdx = 0): AppState {
+  const severance = severanceCostPerPosition(salarioBase) * positions;
+  const novo = reduceLaborByPositions(state, positions, salarioBase);
+  const cashflow = { ...novo.cashflow, capex: novo.cashflow.capex.slice() };
+  cashflow.capex[monthIdx] = (cashflow.capex[monthIdx] || 0) + severance;
+  return { ...novo, cashflow };
 }
 
 // ============== Engine principal ==============
