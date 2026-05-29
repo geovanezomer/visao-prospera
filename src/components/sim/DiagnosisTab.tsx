@@ -4,7 +4,7 @@ import { buildPrescriptiveCards, PrescriptiveCard } from "@/lib/finance/prescrip
 import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "lucide-react";
 import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
-import { HealthScoreCard, SensitivityCard, ForecastCard, MonteCarloCard, ScenarioCompareCard } from "./AnalysisTab";
+import { HealthScoreCard, SensitivityCard, ScenarioCompareCard } from "./AnalysisTab";
 import { IndicatorsCard } from "./IndicatorsCard";
 
 export function DiagnosisTab({
