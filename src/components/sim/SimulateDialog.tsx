@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { AppState } from "@/lib/finance/types";
 import { MetricSnapshot, PrescriptiveAction, PrescriptiveCard, snapshot } from "@/lib/finance/prescriptive";
 import { fmtBRL } from "@/lib/finance/format";
@@ -15,6 +15,7 @@ export function SimulateDialog({
   card,
   onApply,
   onSave,
+  paramsSlot,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -24,6 +25,7 @@ export function SimulateDialog({
   card: PrescriptiveCard;
   onApply: (s: AppState) => void;
   onSave: (name: string, s: AppState) => void;
+  paramsSlot?: React.ReactNode;
 }) {
   const newState = useMemo(() => action.apply(state), [action, state]);
   const after = useMemo(() => snapshot(newState), [newState]);
@@ -55,11 +57,14 @@ export function SimulateDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="space-y-3 max-h-[75vh] overflow-y-auto pr-1">
+          {paramsSlot}
+
           <div className="rounded-md border border-border/40 bg-background/40 p-3 text-xs text-muted-foreground">
             <span className="font-semibold text-foreground">Contexto:</span> {card.problem} —{" "}
             <span className="mono">{card.metricValue}</span>
           </div>
+
 
           <div className="scrollbar-thin overflow-x-auto rounded-md border border-border/40">
             <table className="w-full text-sm">
