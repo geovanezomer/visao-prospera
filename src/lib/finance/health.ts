@@ -1,7 +1,7 @@
 import { AppState } from "./types";
 import { buildDRE, calcIndicators } from "./calculations";
 import { buildCashFlow } from "./cashflow";
-import { sum } from "./format";
+import { computeStrategic, type StrategicResult } from "./strategic";
 
 export interface HealthDimension {
   key: string;
@@ -14,11 +14,16 @@ export interface HealthDimension {
 }
 
 export interface HealthScore {
-  total: number;       // 0-100
+  /** Score financeiro puro (sem haircut estratégico). 0-100. */
+  financial: number;
+  /** Score final após haircut estratégico. 0-100. */
+  total: number;
   grade: "A" | "B" | "C" | "D" | "E";
   status: "ok" | "warn" | "danger";
   dimensions: HealthDimension[];
   headline: string;
+  strategic: StrategicResult;
+  haircut: number;
 }
 
 /** Mapeia um valor x dentro de [min..max] para 0..100 (clamp). */
@@ -128,16 +133,23 @@ export function computeHealth(state: AppState): HealthScore {
     },
   ];
 
-  const total = dims.reduce((acc, d) => acc + d.score * d.weight, 0);
+  const financial = dims.reduce((acc, d) => acc + d.score * d.weight, 0);
+  const strategic = computeStrategic(state);
+  const haircut = strategic.haircut;
+  const total = financial * (1 - haircut);
   const status = statusFromScore(total);
   const grade = gradeFromScore(total);
 
-  const headline =
+  const baseHeadline =
     grade === "A" ? "Empresa financeiramente saudável e cria valor econômico." :
     grade === "B" ? "Estrutura sólida com pontos de melhoria pontuais." :
     grade === "C" ? "Saúde mediana — vários indicadores em zona de atenção." :
     grade === "D" ? "Sinais relevantes de fragilidade financeira." :
     "Situação crítica — atuação imediata recomendada.";
 
-  return { total, grade, status, dimensions: dims, headline };
+  const headline = strategic.hasAnyAnswer && haircut > 0
+    ? `${baseHeadline} Risco estratégico reduziu o score em ${(haircut * 100).toFixed(0)}%.`
+    : baseHeadline;
+
+  return { financial, total, grade, status, dimensions: dims, headline, strategic, haircut };
 }
