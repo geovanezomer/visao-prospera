@@ -2,11 +2,14 @@ import { useMemo, useState } from "react";
 import { AppState, Scenario } from "@/lib/finance/types";
 import { computeHealth, HealthDimension } from "@/lib/finance/health";
 import { runSensitivity, OUTPUT_OPTIONS, OutputKey } from "@/lib/finance/sensitivity";
+import { buildForecast } from "@/lib/finance/forecast";
+import { runMonteCarlo, DEFAULT_MC, MCConfig, histogram } from "@/lib/finance/montecarlo";
 import { snapshot } from "@/lib/finance/prescriptive";
 import { fmtBRL } from "@/lib/finance/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Activity, GitCompare, Sliders, Trash2 } from "lucide-react";
+import { Activity, GitCompare, LineChart as LineIcon, Play, Sliders, TrendingUp, Trash2 } from "lucide-react";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 export function AnalysisTab({
   state,
@@ -23,6 +26,8 @@ export function AnalysisTab({
     <div className="space-y-6">
       <HealthScoreCard state={state} />
       <SensitivityCard state={state} />
+      <ForecastCard state={state} />
+      <MonteCarloCard state={state} />
       <ScenarioCompareCard state={state} scenarios={scenarios} loadScenario={loadScenario} removeScenario={removeScenario} />
     </div>
   );
