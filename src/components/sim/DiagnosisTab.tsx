@@ -1,11 +1,9 @@
 import { useMemo, useState } from "react";
-import { AppState, Scenario } from "@/lib/finance/types";
-import { buildPrescriptiveCards, MetricSnapshot, PrescriptiveAction, PrescriptiveCard, snapshot } from "@/lib/finance/prescriptive";
-import { fmtBRL, fmtPct } from "@/lib/finance/format";
+import { AppState } from "@/lib/finance/types";
+import { buildPrescriptiveCards, PrescriptiveAction, PrescriptiveCard, snapshot } from "@/lib/finance/prescriptive";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, CheckCircle2, Info, PlayCircle, Save, TriangleAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info, PlayCircle, TriangleAlert } from "lucide-react";
+import { SimulateDialog } from "./SimulateDialog";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
