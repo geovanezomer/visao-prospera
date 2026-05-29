@@ -134,6 +134,14 @@ function SimulaPro() {
                 </Button>
               }
             />
+            <div className="ml-1 flex items-center gap-2 border-l border-border/60 pl-2">
+              <span className="hidden text-[11px] text-muted-foreground md:inline">
+                {user.displayName}
+              </span>
+              <Button size="sm" variant="ghost" onClick={() => { logout(); navigate({ to: "/login" }); }} title="Sair">
+                <LogOut className="mr-2 h-4 w-4" /> Sair
+              </Button>
+            </div>
           </div>
         </div>
       </header>
