@@ -1,0 +1,110 @@
+import { AppState } from "@/lib/finance/types";
+import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
+import { buildDRE, calcIndicators, monthValues } from "@/lib/finance/calculations";
+import { Slider } from "@/components/ui/slider";
+import { MoneyInput, PctInput, SectionTitle, StatCard, HelpTip } from "./primitives";
+
+export function CapitalTab({ state, update }: { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void }) {
+  const c = state.capital;
+  const { dre } = buildDRE(state, state.tax.regime);
+  const ind = calcIndicators(state, dre);
+
+  const set = (patch: Partial<typeof c>) => update((s) => ({ ...s, capital: { ...s.capital, ...patch } }));
+
+  const wacc = ind.wacc;
+  const terceiros = 100 - c.proprio;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
+          <SectionTitle hint="Proporção entre capital dos sócios e dívida com terceiros.">Estrutura de capital</SectionTitle>
+
+          <div>
+            <div className="flex justify-between text-xs">
+              <span>Capital Próprio (E)</span>
+              <span className="num text-pos">{c.proprio.toFixed(0)}%</span>
+            </div>
+            <Slider value={[c.proprio]} min={0} max={100} step={1} onValueChange={([v]) => set({ proprio: v })} className="mt-2" />
+            <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+              <span>Capital de Terceiros (D)</span>
+              <span className="num">{terceiros.toFixed(0)}%</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                Ke — Custo do Capital Próprio <HelpTip text="Retorno mínimo exigido pelos sócios. Pode ser estimado via CAPM: Rf + β × (Rm − Rf)." />
+              </label>
+              <PctInput value={c.ke} onChange={(n) => set({ ke: n })} />
+            </div>
+            <div>
+              <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                Kd — Custo da Dívida (a.a.) <HelpTip text="Taxa média anual dos empréstimos antes do benefício fiscal." />
+              </label>
+              <PctInput value={c.kd} onChange={(n) => set({ kd: n })} />
+            </div>
+          </div>
+
+          <div className="rounded-md border border-primary/40 bg-primary/10 p-4">
+            <div className="flex items-center gap-1 text-xs uppercase tracking-wider text-primary">
+              WACC — Custo Médio Ponderado de Capital
+              <HelpTip text="WACC = (E/V × Ke) + (D/V × Kd × (1 − IR)). Benchmark mínimo de retorno do capital investido." />
+            </div>
+            <div className="mono mt-2 text-3xl font-semibold text-primary">{wacc.toFixed(2)}%</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              ROIC atual: <span className="num">{ind.roic.toFixed(2)}%</span> —{" "}
+              {ind.roic >= wacc ? <span className="text-pos font-semibold">criando valor</span> : <span className="text-neg font-semibold">destruindo valor</span>}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-4">
+          <SectionTitle hint="Itens patrimoniais usados para calcular liquidez, ROE, ROA e alavancagem.">Posição patrimonial</SectionTitle>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground">Patrimônio Líquido</label>
+              <MoneyInput value={c.patrimonioLiquido} onChange={(n) => set({ patrimonioLiquido: n })} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Ativo Total</label>
+              <MoneyInput value={c.ativoTotal} onChange={(n) => set({ ativoTotal: n })} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Disponibilidades (caixa)</label>
+              <MoneyInput value={c.disponibilidades} onChange={(n) => set({ disponibilidades: n })} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Estoques</label>
+              <MoneyInput value={c.estoques} onChange={(n) => set({ estoques: n })} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Depreciação mensal</label>
+              <MoneyInput value={c.depreciacaoMensal} onChange={(n) => set({ depreciacaoMensal: n })} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Juros recebidos / mês</label>
+              <MoneyInput value={c.jurosRecebidosMensal} onChange={(n) => set({ jurosRecebidosMensal: n })} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-4">
+        <StatCard label="Ciclo Financeiro" value={`${ind.cicloFinanceiro} dias`} hint="PMR − PMP. Dias que a operação fica descoberta de caixa." />
+        <StatCard label="NCG" value={fmtBRL(ind.ncg)} tone="warn" hint="Necessidade de Capital de Giro estimada a partir do ciclo e dos custos mensais." />
+        <div className="rounded-lg border border-border/60 bg-card/60 p-4">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Capital de Giro Disponível</div>
+          <MoneyInput value={c.capitalGiroDisponivel} onChange={(n) => set({ capitalGiroDisponivel: n })} className="mt-2 text-lg" />
+        </div>
+        <StatCard
+          label="Gap de Capital de Giro"
+          value={fmtBRL(ind.gapCapitalGiro)}
+          tone={ind.gapCapitalGiro > 0 ? "neg" : "pos"}
+          sub={ind.gapCapitalGiro > 0 ? "Falta caixa para sustentar o ciclo" : "Capital de giro suficiente"}
+        />
+      </div>
+    </div>
+  );
+}
