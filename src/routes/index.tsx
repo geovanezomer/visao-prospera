@@ -1,29 +1,125 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useAppState, useScenarios } from "@/lib/finance/store";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Activity, Building2, Download, RotateCcw, Factory, Store, Briefcase } from "lucide-react";
+import { RevenueTab } from "@/components/sim/RevenueTab";
+import { CostsTab } from "@/components/sim/CostsTab";
+import { CapitalTab } from "@/components/sim/CapitalTab";
+import { TaxTab } from "@/components/sim/TaxTab";
+import { DRETab } from "@/components/sim/DRETab";
+import { ScenarioBar } from "@/components/sim/ScenarioBar";
+import { BusinessType } from "@/lib/finance/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
+      { title: "SimulaçãoPRO — Diagnóstico financeiro e DRE simulado" },
+      { name: "description", content: "Simulador de DRE, regime tributário, WACC e diagnóstico CFO para empresas brasileiras (Simples, Presumido, Lucro Real)." },
+      { property: "og:title", content: "SimulaçãoPRO" },
+      { property: "og:description", content: "Diagnóstico financeiro estilo terminal: DRE, WACC, ponto de equilíbrio e tributação comparada." },
+    ],
+    links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" },
     ],
   }),
-  component: Index,
+  component: SimulaPro,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function SimulaPro() {
+  const { state, update, reset, setState } = useAppState();
+  const { scenarios, save, remove } = useScenarios();
+
+  const businessIcon = state.businessType === "industria" ? <Factory className="h-4 w-4" /> : state.businessType === "comercio" ? <Store className="h-4 w-4" /> : <Briefcase className="h-4 w-4" />;
+
+  const exportReport = () => {
+    window.print();
+  };
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/90 backdrop-blur">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-6 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/15 text-primary">
+              <Activity className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold tracking-tight">
+                Simulação<span className="text-primary">PRO</span>
+              </h1>
+              <p className="text-[11px] text-muted-foreground">Diagnóstico financeiro & DRE simulado · IFRS 18 / CPC 51</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 rounded-md border border-border/60 bg-card/60 px-3 py-1.5">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <input
+                value={state.companyName}
+                onChange={(e) => update({ companyName: e.target.value })}
+                className="w-44 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                placeholder="Nome da empresa"
+              />
+            </div>
+            <div className="flex items-center gap-2 rounded-md border border-border/60 bg-card/60 px-2 py-1">
+              {businessIcon}
+              <Select value={state.businessType} onValueChange={(v) => update({ businessType: v as BusinessType })}>
+                <SelectTrigger className="h-7 w-40 border-0 bg-transparent text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="servicos">Prestadora de serviços</SelectItem>
+                  <SelectItem value="comercio">Comércio / Revenda</SelectItem>
+                  <SelectItem value="industria">Indústria</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+              <Switch checked={state.guided} onCheckedChange={(v) => update({ guided: v })} />
+              Modo guiado
+            </label>
+            <Button size="sm" variant="outline" onClick={exportReport}><Download className="mr-2 h-4 w-4" /> Exportar</Button>
+            <Button size="sm" variant="ghost" onClick={() => { if (confirm("Restaurar dados de exemplo?")) reset(); }}>
+              <RotateCcw className="mr-2 h-4 w-4" /> Reset
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {state.guided && (
+        <div className="border-b border-primary/30 bg-primary/5 px-6 py-2 text-center text-xs text-primary">
+          Modo guiado ativo · Preencha as abas na ordem: Receitas → Custos → Capital → Regime Tributário → DRE Simulado para receber o diagnóstico.
+        </div>
+      )}
+
+      <main className="mx-auto max-w-[1600px] px-6 py-6">
+        <Tabs defaultValue="dre" className="w-full">
+          <TabsList className="bg-card/40">
+            <TabsTrigger value="receitas">1. Receitas</TabsTrigger>
+            <TabsTrigger value="custos">2. Custos e Despesas</TabsTrigger>
+            <TabsTrigger value="capital">3. Capital</TabsTrigger>
+            <TabsTrigger value="tributos">4. Regime Tributário</TabsTrigger>
+            <TabsTrigger value="dre">5. DRE Simulado</TabsTrigger>
+          </TabsList>
+
+          <div className="mt-6">
+            <TabsContent value="receitas"><RevenueTab state={state} update={update} /></TabsContent>
+            <TabsContent value="custos"><CostsTab state={state} update={update} /></TabsContent>
+            <TabsContent value="capital"><CapitalTab state={state} update={update} /></TabsContent>
+            <TabsContent value="tributos"><TaxTab state={state} update={update} /></TabsContent>
+            <TabsContent value="dre"><DRETab state={state} update={update} /></TabsContent>
+          </div>
+        </Tabs>
+
+        <footer className="mt-12 border-t border-border/40 py-6 text-center text-[11px] text-muted-foreground">
+          SimulaçãoPRO · Ferramenta de diagnóstico financeiro para PMEs brasileiras · valores em R$ (pt-BR) · todos os dados ficam no seu navegador.
+        </footer>
+      </main>
+
+      <ScenarioBar state={state} scenarios={scenarios} save={save} remove={remove} load={setState} />
     </div>
   );
 }
