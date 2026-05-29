@@ -5,11 +5,6 @@ export type TaxRegime = "simples" | "presumido" | "real";
 export type SimplesAnexo = "I" | "II" | "III" | "IV" | "V";
 
 export type CostCategory = "custo_vendas" | "fixo" | "variavel" | "financeiro";
-
-// Subcategorias dentro do Custo de Vendas, dependem do tipo de empresa.
-// industria: materia_prima | mao_obra_direta | cif
-// comercio:  mercadoria | frete_compra | icms_st | embalagem
-// servicos:  mao_obra_direta | insumos_servico | terceirizacao
 export type CostSubcategory = string;
 
 export interface Revenue {
@@ -25,18 +20,18 @@ export interface CostLine {
   category: CostCategory;
   subcategory?: CostSubcategory;
   values: Months;
-  fixed: boolean; // modo de entrada: valor único replicado em 12 meses
-  custom?: boolean; // adicionada pelo usuário, pode ser removida
-  /** @deprecated mantido apenas para migração de versões antigas */
+  fixed: boolean;
+  custom?: boolean;
+  /** @deprecated migração legacy */
   group?: "operacional" | "financeiro";
-  /** @deprecated substituído por category */
+  /** @deprecated migração legacy */
   variavel?: boolean;
 }
 
 export interface CapitalStructure {
-  proprio: number; // %
-  ke: number; // %
-  kd: number; // %
+  proprio: number;
+  ke: number;
+  kd: number;
   capitalGiroDisponivel: number;
   depreciacaoMensal: number;
   jurosRecebidosMensal: number;
@@ -50,11 +45,21 @@ export interface TaxConfig {
   regime: TaxRegime;
   simplesAnexo: SimplesAnexo;
   fatorR: number;
-  presumidoBaseIRPJ: number; // %
-  presumidoBaseCSLL: number; // %
-  issIcms: number; // %
-  pisCreditos: number; // monthly R$
-  cofinsCreditos: number; // monthly R$
+  presumidoBaseIRPJ: number;
+  presumidoBaseCSLL: number;
+  issIcms: number;
+  pisCreditos: number;
+  cofinsCreditos: number;
+}
+
+// Itens não-operacionais do fluxo de caixa
+export interface CashFlowConfig {
+  caixaMinimo: number;            // saldo mínimo de segurança (R$)
+  aportes: Months;                // aportes de sócios
+  emprestimosCaptados: Months;    // captação de dívida (entrada de caixa)
+  capex: Months;                  // investimentos em ativo fixo
+  dividendos: Months;             // distribuição de lucros
+  amortizacoes: Months;           // pagamentos de principal de dívida (não juros)
 }
 
 export interface AppState {
@@ -64,6 +69,7 @@ export interface AppState {
   costs: CostLine[];
   capital: CapitalStructure;
   tax: TaxConfig;
+  cashflow: CashFlowConfig;
   guided: boolean;
 }
 
@@ -73,8 +79,6 @@ export interface Scenario {
   createdAt: number;
   state: AppState;
 }
-
-// ============= helpers =============
 
 export const COST_VENDAS_LABEL: Record<BusinessType, { short: string; long: string }> = {
   industria: { short: "CPV", long: "Custo do Produto Vendido" },

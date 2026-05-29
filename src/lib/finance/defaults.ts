@@ -109,12 +109,18 @@ export const DEFAULT_STATE: AppState = {
     pisCreditos: 0,
     cofinsCreditos: 0,
   },
+  cashflow: {
+    caixaMinimo: 15000,
+    aportes: fill12(0),
+    emprestimosCaptados: fill12(0),
+    capex: fill12(0),
+    dividendos: fill12(0),
+    amortizacoes: fill12(0),
+  },
   guided: false,
 };
 
 // ============ Migração de estados antigos (localStorage v1) ============
-// Versões antigas usavam `group: "operacional" | "financeiro"` + ids hardcoded
-// (insumos, fretes) para definir CPV. Migramos para o novo modelo de category.
 const LEGACY_CPV_IDS = new Set(["insumos", "fretes"]);
 
 export function migrateCostLine(c: CostLine): CostLine {
@@ -128,6 +134,8 @@ export function migrateCostLine(c: CostLine): CostLine {
 }
 
 export function migrateState(s: AppState): AppState {
-  if (!s.costs) return s;
-  return { ...s, costs: s.costs.map(migrateCostLine) };
+  const costs = s.costs ? s.costs.map(migrateCostLine) : DEFAULT_STATE.costs;
+  const cashflow = s.cashflow ?? DEFAULT_STATE.cashflow;
+  return { ...s, costs, cashflow };
 }
+
