@@ -16,7 +16,7 @@ import { AnalysisTab } from "@/components/sim/AnalysisTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
 import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
 import { GuidedWizard } from "@/components/sim/guided/GuidedWizard";
-import { BusinessType } from "@/lib/finance/types";
+import { AppState, BusinessType } from "@/lib/finance/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({
