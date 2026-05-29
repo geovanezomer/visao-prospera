@@ -386,8 +386,10 @@ export interface Diagnostic {
 export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic[] {
   const out: Diagnostic[] = [];
   const receitaLiqAnual = sum(dre.receitaLiquida);
-  const folha = (state.costs.find((c) => c.id === "salarios")?.values.reduce((a, b) => a + b, 0) || 0) *
-    (state.costs.find((c) => c.id === "salarios")?.fixed ? 12 : 1);
+  const LABOR_KEYWORDS = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra|m\.o\.|clt/i;
+  const folha = state.costs
+    .filter((c) => c.category !== "financeiro" && LABOR_KEYWORDS.test(c.label))
+    .reduce((acc, c) => acc + sum(monthValues(c)), 0);
   const folhaPct = receitaLiqAnual > 0 ? (folha / receitaLiqAnual) * 100 : 0;
   if (folhaPct > 35) out.push({ level: "danger", title: "Custo de mão de obra elevado", message: `Folha CLT representa ${folhaPct.toFixed(1)}% da receita líquida. Acima de 35% pressiona margens — avalie produtividade, terceirização ou redesenho de processos.` });
   else if (folhaPct > 25) out.push({ level: "warn", title: "Folha em zona de atenção", message: `Folha em ${folhaPct.toFixed(1)}% da receita. Monitore eficiência por colaborador.` });
