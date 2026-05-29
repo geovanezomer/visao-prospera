@@ -126,7 +126,7 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
           value={fmtBRL(ind.gapCapitalGiro)}
           tone={ind.gapCapitalGiro > 0 ? "neg" : "pos"}
           sub={ind.gapCapitalGiro > 0 ? "Falta caixa para sustentar o ciclo" : "Capital de giro suficiente"}
-          hint={{ description: "Diferença entre o que a operação precisa (NCG) e o que a empresa tem (CGD). Positivo = precisa de empréstimo de giro; Negativo = sobra caixa.", formula: "NCG − Capital de Giro Disponível" }}
+          hint={{ description: "Diferença entre o que a operação precisa (Necessidade de Capital de Giro) e o que a empresa tem (CGD). Positivo = precisa de empréstimo de giro; Negativo = sobra caixa.", formula: "Necessidade de Capital de Giro − Capital de Giro Disponível" }}
         />
       </div>
     </div>
