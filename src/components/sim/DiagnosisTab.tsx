@@ -4,7 +4,7 @@ import { buildPrescriptiveCards, PrescriptiveCard } from "@/lib/finance/prescrip
 import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "lucide-react";
 import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
-import { HealthScoreCard, SensitivityCard, ForecastCard, MonteCarloCard, ScenarioCompareCard } from "./AnalysisTab";
+import { HealthScoreCard, SensitivityCard, ScenarioCompareCard } from "./AnalysisTab";
 import { IndicatorsCard } from "./IndicatorsCard";
 
 export function DiagnosisTab({
@@ -39,10 +39,9 @@ export function DiagnosisTab({
       {/* Indicadores financeiros completos */}
       <IndicatorsCard state={state} />
 
-      {/* Análises avançadas (até a projeção 36m) */}
+      {/* Análises avançadas */}
       <HealthScoreCard state={state} />
       <SensitivityCard state={state} />
-      <ForecastCard state={state} />
 
       {/* Diagnóstico financeiro (após a projeção) */}
       <section className="space-y-3">
@@ -64,8 +63,7 @@ export function DiagnosisTab({
         <StrategicSummary state={state} />
       </section>
 
-      {/* Continuação das análises avançadas */}
-      <MonteCarloCard state={state} />
+      {/* Comparação de cenários salvos */}
       <ScenarioCompareCard state={state} scenarios={scenarios} loadScenario={loadScenario} removeScenario={removeScenario} />
     </div>
   );

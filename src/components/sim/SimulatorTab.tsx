@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { SectionTitle, HelpTip } from "./primitives";
+import { ForecastCard, MonteCarloCard } from "./AnalysisTab";
 import { ArrowDownRight, ArrowUpRight, Minus, RotateCcw, Save, SlidersHorizontal, TriangleAlert, Wand2 } from "lucide-react";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
@@ -143,6 +144,16 @@ export function SimulatorTab({
         <div className="lg:sticky lg:top-[72px] lg:h-fit">
           <DREPanel base={baseView} sim={simView} inconsistencies={inconsistencies} />
         </div>
+      </div>
+
+      {/* Projeções refletindo o cenário simulado */}
+      <div className="space-y-4 border-t border-border/60 pt-6">
+        <div className="rounded-lg border border-border/40 bg-background/30 p-3 text-xs text-muted-foreground">
+          As análises abaixo refletem o cenário <strong className="text-foreground">simulado</strong> acima.
+          Sem ajustes nos sliders, elas representam o cenário base atual do sistema.
+        </div>
+        <ForecastCard state={simState} />
+        <MonteCarloCard state={simState} />
       </div>
     </div>
   );
