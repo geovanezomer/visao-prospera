@@ -1,25 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { AppState } from "@/lib/finance/types";
-import { buildPrescriptiveCards, PrescriptiveAction, PrescriptiveCard, snapshot } from "@/lib/finance/prescriptive";
-import { Button } from "@/components/ui/button";
-import { AlertTriangle, CheckCircle2, Info, PlayCircle, TriangleAlert } from "lucide-react";
-import { SimulateDialog } from "./SimulateDialog";
+import { buildPrescriptiveCards, PrescriptiveCard } from "@/lib/finance/prescriptive";
+import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "lucide-react";
+import { StrategicSummary } from "./StrategicSummary";
+import { SectionTitle } from "./primitives";
 
-type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
-
-export function DiagnosisTab({
-  state,
-  update,
-  saveScenario,
-}: {
-  state: AppState;
-  update: Updater;
-  saveScenario: (name: string, s: AppState) => void;
-}) {
+export function DiagnosisTab({ state }: { state: AppState }) {
   const cards = useMemo(() => buildPrescriptiveCards(state), [state]);
-  const base = useMemo(() => snapshot(state), [state]);
-
-  const [sim, setSim] = useState<{ action: PrescriptiveAction; card: PrescriptiveCard } | null>(null);
 
   return (
     <div className="space-y-6">
@@ -27,44 +14,35 @@ export function DiagnosisTab({
         <div className="flex items-start gap-3">
           <Info className="mt-0.5 h-5 w-5 text-primary" />
           <div>
-            <div className="font-semibold text-foreground">Raio-X CFO + plano de ação</div>
+            <div className="font-semibold text-foreground">Resultados — diagnóstico consolidado</div>
             <p className="mt-1 text-xs text-muted-foreground">
-              O sistema analisou seus números e listou abaixo os problemas detectados com <strong>ações recomendadas</strong> e
-              <strong> impacto quantificado</strong>. Clique em "Simular esta ação" para ver o efeito antes e depois — você pode
-              aplicar direto ou salvar como cenário.
+              Visão única do diagnóstico financeiro (problemas detectados, causa provável e recomendações) combinado
+              com a análise estratégica (governança, concentração, competitividade). Para testar combinações de ajustes,
+              vá para a aba <strong>Simulador</strong>.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {cards.map((c) => (
-          <CardView
-            key={c.id}
-            card={c}
-            onSimulate={(a) => setSim({ action: a, card: c })}
-          />
-        ))}
-      </div>
+      {/* Diagnóstico financeiro */}
+      <section className="space-y-3">
+        <SectionTitle>Diagnóstico financeiro</SectionTitle>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {cards.map((c) => <CardView key={c.id} card={c} />)}
+          {cards.length === 0 && (
+            <div className="rounded-lg border border-pos/40 bg-pos/5 p-4 text-sm text-foreground">
+              <div className="flex items-center gap-2 font-semibold"><CheckCircle2 className="h-5 w-5 text-pos" /> Nenhum problema crítico detectado</div>
+              <p className="mt-1 text-xs text-muted-foreground">Indicadores financeiros dentro de faixas saudáveis para o setor.</p>
+            </div>
+          )}
+        </div>
+      </section>
 
-      {sim && (
-        <SimulateDialog
-          open={!!sim}
-          onOpenChange={(o) => !o && setSim(null)}
-          base={base}
-          state={state}
-          action={sim.action}
-          card={sim.card}
-          onApply={(newState) => {
-            update(() => newState);
-            setSim(null);
-          }}
-          onSave={(name, newState) => {
-            saveScenario(name, newState);
-            setSim(null);
-          }}
-        />
-      )}
+      {/* Síntese estratégica */}
+      <section className="space-y-3">
+        <SectionTitle>Síntese estratégica</SectionTitle>
+        <StrategicSummary state={state} />
+      </section>
     </div>
   );
 }
@@ -82,7 +60,7 @@ function severityStyle(s: PrescriptiveCard["severity"]) {
   }
 }
 
-function CardView({ card, onSimulate }: { card: PrescriptiveCard; onSimulate: (a: PrescriptiveAction) => void }) {
+function CardView({ card }: { card: PrescriptiveCard }) {
   const st = severityStyle(card.severity);
   return (
     <div className={`rounded-lg border ${st.ring} bg-card/40`}>
@@ -107,24 +85,24 @@ function CardView({ card, onSimulate }: { card: PrescriptiveCard; onSimulate: (a
         </div>
         {card.actions.length > 0 && (
           <div>
-            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Ações recomendadas</div>
-            <div className="space-y-2">
+            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Ações sugeridas</div>
+            <ul className="space-y-1.5">
               {card.actions.map((a) => (
-                <div key={a.id} className="flex items-start justify-between gap-3 rounded-md border border-border/40 bg-background/40 p-3">
-                  <div className="flex-1">
-                    <div className="text-xs font-medium text-foreground">{a.title}</div>
+                <li key={a.id} className="flex items-start gap-2 rounded-md border border-border/40 bg-background/40 p-2.5 text-xs">
+                  <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                  <div>
+                    <div className="font-medium text-foreground">{a.title}</div>
                     <div className="mt-0.5 text-[11px] text-muted-foreground">{a.detail}</div>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => onSimulate(a)} className="h-7 shrink-0 text-[11px]">
-                    <PlayCircle className="mr-1 h-3.5 w-3.5" /> Simular
-                  </Button>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
+            <p className="mt-2 text-[10px] italic text-muted-foreground">
+              Para testar essas e outras alavancas com sliders e ver o DRE simulado, use a aba <strong>Simulador</strong>.
+            </p>
           </div>
         )}
       </div>
     </div>
   );
 }
-
