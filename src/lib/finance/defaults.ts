@@ -110,6 +110,7 @@ export const DEFAULT_STATE: AppState = {
     presumidoBaseIRPJ: 32,
     presumidoBaseCSLL: 32,
     issIcms: 5,
+    aliquotaICMSCredito: 0,
     pisCreditos: 0,
     cofinsCreditos: 0,
     issDeducoes: 0,

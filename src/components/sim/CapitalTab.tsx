@@ -1,6 +1,6 @@
 import { AppState } from "@/lib/finance/types";
 import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
-import { buildDRE, calcIndicators, monthValues } from "@/lib/finance/calculations";
+import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 import { Slider } from "@/components/ui/slider";
 import { MoneyInput, PctInput, SectionTitle, StatCard, HelpTip } from "./primitives";
 
@@ -14,8 +14,31 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
   const wacc = ind.wacc;
   const terceiros = 100 - c.proprio;
 
+  // Validação de consistência patrimonial
+  const warnings: string[] = [];
+  if (c.dividaOnerosa > c.ativoTotal && c.ativoTotal > 0) {
+    warnings.push(`Dívida onerosa (${fmtBRL(c.dividaOnerosa)}) maior que o Ativo Total (${fmtBRL(c.ativoTotal)}) — situação de insolvência técnica. WACC e ROIC perdem significado neste cenário.`);
+  }
+  if (c.patrimonioLiquido < 0) {
+    warnings.push(`Patrimônio Líquido negativo (${fmtBRL(c.patrimonioLiquido)}) — passivo a descoberto. Reveja o balanço antes de interpretar ROE/ROIC.`);
+  }
+  if (c.patrimonioLiquido > 0 && c.dividaOnerosa / c.patrimonioLiquido > 5) {
+    warnings.push(`Endividamento muito elevado: D/PL = ${(c.dividaOnerosa / c.patrimonioLiquido).toFixed(1)}× (saudável ≤ 2×). Risco financeiro relevante.`);
+  }
+  if (c.ativoCirculante > 0 && c.ativoTotal > 0 && c.ativoCirculante > c.ativoTotal) {
+    warnings.push(`Ativo Circulante (${fmtBRL(c.ativoCirculante)}) maior que Ativo Total — confira os valores.`);
+  }
+
   return (
     <div className="space-y-6">
+      {warnings.length > 0 && (
+        <div className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-xs">
+          <div className="mb-1 font-semibold text-warning">⚠ Inconsistências patrimoniais detectadas</div>
+          <ul className="ml-4 list-disc space-y-1 text-muted-foreground">
+            {warnings.map((w, i) => <li key={i}>{w}</li>)}
+          </ul>
+        </div>
+      )}
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
           <SectionTitle hint="Proporção entre capital dos sócios e dívida com terceiros.">Estrutura de capital</SectionTitle>
@@ -113,7 +136,7 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
 
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard label="Ciclo Financeiro" value={`${ind.cicloFinanceiro} dias`} hint={{ description: "Dias entre pagar fornecedores e receber dos clientes. Quanto MAIOR, mais capital de giro a empresa precisa imobilizar.", formula: "PMR + PME − PMP" }} />
-        <StatCard label="Necessidade de Capital de Giro" value={fmtBRL(ind.ncg)} tone="warn" hint={{ description: "Necessidade de Capital de Giro — dinheiro que a operação 'consome' permanentemente para girar (estoques + clientes − fornecedores).", formula: "(Ciclo Financeiro ÷ 30) × Custos Mensais" }} />
+        <StatCard label="Necessidade de Capital de Giro" value={fmtBRL(ind.ncg)} tone="warn" hint={{ description: "Dinheiro que a operação consome permanentemente para girar. Quando Contas a Receber/Fornecedores estão zerados, é estimada via PMR/PMP sobre receita bruta e CPV — pode divergir 30-40% do real se você tem mix de à vista/a prazo. Preencha os saldos médios para precisão.", formula: "CR + Estoques − Fornecedores" }} />
         <div className="rounded-lg border border-border/60 bg-card/60 p-4">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
             Capital de Giro Disponível

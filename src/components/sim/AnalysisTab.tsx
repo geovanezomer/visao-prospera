@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppState, Scenario } from "@/lib/finance/types";
 import { computeHealth, HealthDimension } from "@/lib/finance/health";
 import { runSensitivity, OUTPUT_OPTIONS, OutputKey } from "@/lib/finance/sensitivity";
-import { buildForecast } from "@/lib/finance/forecast";
-import { runMonteCarlo, DEFAULT_MC, MCConfig, histogram } from "@/lib/finance/montecarlo";
+import { buildForecast, DEFAULT_FORECAST_CFG, ForecastConfig } from "@/lib/finance/forecast";
+import { DEFAULT_MC, MCConfig, MCResult, histogram } from "@/lib/finance/montecarlo";
 import { snapshot } from "@/lib/finance/prescriptive";
 import { fmtBRL } from "@/lib/finance/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -282,22 +282,27 @@ function ScenarioCompareCard({
 
 // ============== Forecast 36 meses + VPL/TIR ==============
 function ForecastCard({ state }: { state: AppState }) {
-  const [growth, setGrowth] = useState(1.0);
-  const [horizon, setHorizon] = useState(36);
-  const [capex0, setCapex0] = useState(0);
-  const result = useMemo(() => buildForecast(state, growth, horizon, capex0), [state, growth, horizon, capex0]);
+  const [cfg, setCfg] = useState<ForecastConfig>(DEFAULT_FORECAST_CFG);
+  const result = useMemo(() => buildForecast(state, cfg), [state, cfg]);
+  const set = (patch: Partial<ForecastConfig>) => setCfg((c) => ({ ...c, ...patch }));
 
   return (
     <section className="rounded-lg border border-border/60 bg-card/40 p-5">
       <header className="mb-4 flex items-center gap-2">
         <TrendingUp className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold">Projeção {horizon} meses · VPL · TIR · Payback</h3>
+        <h3 className="text-sm font-semibold">Projeção {cfg.horizonteMeses} meses · VPL · TIR · Payback</h3>
       </header>
 
+      <div className="mb-3 grid gap-3 sm:grid-cols-4">
+        <NumberInput label="Cresc. receita (% a.m.)" value={cfg.crescimentoMensalPct} step={0.1} onChange={(v) => set({ crescimentoMensalPct: v })} />
+        <NumberInput label="Inflação fixos (% a.a.)" value={cfg.inflacaoFixosAA} step={0.5} onChange={(v) => set({ inflacaoFixosAA: v })} />
+        <NumberInput label="Ganho escala CPV (% a.a.)" value={cfg.ganhoEscalaCpvAA} step={0.5} onChange={(v) => set({ ganhoEscalaCpvAA: v })} />
+        <NumberInput label="Horizonte (meses)" value={cfg.horizonteMeses} step={6} onChange={(v) => set({ horizonteMeses: Math.max(6, Math.min(120, Math.round(v))) })} />
+      </div>
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
-        <NumberInput label="Crescimento mensal (%)" value={growth} step={0.1} onChange={setGrowth} />
-        <NumberInput label="Horizonte (meses)" value={horizon} step={6} onChange={(v) => setHorizon(Math.max(6, Math.min(120, Math.round(v))))} />
-        <NumberInput label="Investimento inicial (R$)" value={capex0} step={10000} onChange={setCapex0} />
+        <NumberInput label="Step receita p/ folha (%)" value={cfg.stepReceitaPct} step={5} onChange={(v) => set({ stepReceitaPct: Math.max(10, v) })} />
+        <NumberInput label="Salto de folha por step (%)" value={cfg.stepFolhaPct} step={5} onChange={(v) => set({ stepFolhaPct: v })} />
+        <NumberInput label="Investimento inicial (R$)" value={cfg.capexInicial} step={10000} onChange={(v) => set({ capexInicial: v })} />
         <div className="flex flex-col justify-end">
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Taxa de desconto (WACC)</span>
           <span className="mono text-sm font-semibold">{result.taxaDescontoMensal.toFixed(2)}% a.m.</span>
@@ -307,8 +312,8 @@ function ForecastCard({ state }: { state: AppState }) {
       <div className="mb-4 grid gap-3 md:grid-cols-4">
         <KPI label="VPL" value={fmtBRL(result.vpl)} status={result.vpl > 0 ? "ok" : "danger"} sub={result.vpl > 0 ? "Projeto cria valor" : "Projeto destrói valor"} />
         <KPI label="TIR (a.m.)" value={result.tir == null ? "—" : `${result.tir.toFixed(2)}%`} status={result.tir != null && result.tir > result.taxaDescontoMensal ? "ok" : "warn"} sub={result.tir == null ? "Sem inversão de sinal" : `vs custo ${result.taxaDescontoMensal.toFixed(2)}%`} />
-        <KPI label="Payback" value={result.paybackMeses == null ? "—" : `${result.paybackMeses} meses`} status={result.paybackMeses != null && result.paybackMeses <= horizon / 2 ? "ok" : "warn"} sub="Mês em que o caixa zera" />
-        <KPI label="FCL acumulado" value={fmtBRL(result.totalFcl)} status={result.totalFcl > 0 ? "ok" : "danger"} sub={`Receita ${fmtBRL(result.totalReceita)}`} />
+        <KPI label="Payback" value={result.paybackMeses == null ? "—" : `${result.paybackMeses} meses`} status={result.paybackMeses != null && result.paybackMeses <= cfg.horizonteMeses / 2 ? "ok" : "warn"} sub="Mês em que o caixa zera" />
+        <KPI label="ΔNCG acumulada" value={fmtBRL(result.totalDeltaNcg)} status={result.totalDeltaNcg < result.totalEbitda * 0.3 ? "ok" : "warn"} sub={`Consumo de caixa pelo giro`} />
       </div>
 
       <div className="h-72 rounded-md border border-border/40 bg-background/30 p-3">
@@ -340,27 +345,58 @@ function ForecastCard({ state }: { state: AppState }) {
         </ResponsiveContainer>
       </div>
       <p className="mt-2 text-[10.5px] text-muted-foreground">
-        Aproximação: aplica crescimento composto à receita e à estrutura de custos atual. VPL desconta o FCL mensal pela WACC convertida.
-        TIR via Newton-Raphson com fallback bisseção. Para análise formal, considere modelo de 3 cenários (otimista/base/pessimista).
+        Modelo estruturado: receita cresce composta; custos fixos seguem inflação (não escalam com receita); folha tem saltos discretos por step de receita; CPV escala com volume e ganha eficiência via curva de escala. FCL = EBITDA − impostos − capex − ΔNCG (variação de capital de giro recalculada mês a mês). Impostos projetados pela alíquota efetiva do ano-base. Aproximação consultiva — para análise formal use 3 cenários (otimista/base/pessimista).
       </p>
     </section>
   );
 }
 
-// ============== Monte Carlo ==============
+// ============== Monte Carlo (Web Worker) ==============
 function MonteCarloCard({ state }: { state: AppState }) {
   const [cfg, setCfg] = useState<MCConfig>(DEFAULT_MC);
-  const [result, setResult] = useState<ReturnType<typeof runMonteCarlo> | null>(null);
+  const [result, setResult] = useState<MCResult | null>(null);
   const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+    (async () => {
+      const McWorker = (await import("@/workers/montecarlo.worker.ts?worker")).default;
+      if (cancelled) return;
+      const w = new McWorker();
+      w.onmessage = (e: MessageEvent<{ ok: boolean; result?: MCResult; error?: string }>) => {
+        if (e.data.ok && e.data.result) {
+          setResult(e.data.result);
+          setError(null);
+        } else {
+          setError(e.data.error ?? "Falha na simulação");
+        }
+        setRunning(false);
+      };
+      workerRef.current = w;
+    })();
+    return () => {
+      cancelled = true;
+      workerRef.current?.terminate();
+      workerRef.current = null;
+    };
+  }, []);
 
   const run = () => {
+    if (!workerRef.current) {
+      // fallback síncrono se worker indisponível
+      setRunning(true);
+      import("@/lib/finance/montecarlo").then(({ runMonteCarlo }) => {
+        setResult(runMonteCarlo(state, cfg));
+        setRunning(false);
+      });
+      return;
+    }
     setRunning(true);
-    // setTimeout para liberar UI
-    setTimeout(() => {
-      const r = runMonteCarlo(state, cfg);
-      setResult(r);
-      setRunning(false);
-    }, 30);
+    setError(null);
+    workerRef.current.postMessage({ state, cfg });
   };
 
   return (
@@ -384,10 +420,14 @@ function MonteCarloCard({ state }: { state: AppState }) {
         <NumberInput label="σ Folha (%)" value={cfg.folhaSigmaPct} step={1} onChange={(v) => setCfg({ ...cfg, folhaSigmaPct: v })} />
       </div>
 
+      {error && (
+        <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-[11px] text-destructive">{error}</div>
+      )}
+
       {!result ? (
         <p className="text-xs text-muted-foreground">
           Clique em "Rodar" para simular variações aleatórias (distribuição normal) em preço, volume, CPV e folha.
-          O sistema mostra o intervalo de confiança (P5–P95) e a probabilidade de prejuízo / caixa negativo.
+          As <b>{cfg.iterations} iterações</b> rodam em <b>Web Worker</b> para não travar a UI. P5–P95 = intervalo de confiança; também mostra probabilidade de prejuízo / caixa &lt; mínimo.
         </p>
       ) : (
         <div className="space-y-4">
