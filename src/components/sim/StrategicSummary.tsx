@@ -50,6 +50,7 @@ export function StrategicSummary({ state }: { state: AppState }) {
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {strategic.subscores.filter((s) => s.filled).map((s) => <SubscoreCard key={s.key} sub={s} />)}
+        <ResilienciaCard strategic={strategic} health={health} />
         {strategic.subscores.filter((s) => !s.filled).length > 0 && (
           <div className="rounded-lg border border-dashed border-border/60 bg-muted/10 p-4 text-xs text-muted-foreground">
             <div className="mb-2 flex items-center gap-1.5 font-medium">
@@ -64,6 +65,40 @@ export function StrategicSummary({ state }: { state: AppState }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ResilienciaCard({ strategic, health }: { strategic: ReturnType<typeof computeStrategic>; health: ReturnType<typeof computeHealth> }) {
+  // Score sintético: média ponderada entre health financeiro e índice estratégico,
+  // penalizada pelo haircut. Reflete a "resiliência combinada" da empresa.
+  const score = Math.round(Math.max(0, Math.min(100, health.financial * 0.5 + strategic.index * 0.5 - strategic.haircut * 100 * 0.3)));
+  const tone =
+    score >= 70 ? { bar: "bg-pos", icon: <CheckCircle2 className="h-4 w-4 text-pos" /> }
+    : score >= 45 ? { bar: "bg-[var(--warning)]", icon: <TriangleAlert className="h-4 w-4 text-[var(--warning)]" /> }
+    : { bar: "bg-neg", icon: <AlertTriangle className="h-4 w-4 text-neg" /> };
+  const highlights: string[] = [];
+  if (strategic.haircut > 0.2) highlights.push(`Haircut estratégico ${(strategic.haircut * 100).toFixed(0)}% sobre o financeiro`);
+  if (health.financial < 50) highlights.push("Financeiro fraco — pouca margem para absorver choques");
+  if (strategic.index < 50) highlights.push("Estratégia frágil — eventos externos podem comprometer resultado");
+  if (highlights.length === 0) highlights.push("Combinação saudável entre solidez financeira e estratégica");
+  highlights.push(`Financeiro ${health.financial.toFixed(0)} · Estratégico ${strategic.index} · ajustado ${score}`);
+  return (
+    <div className="rounded-lg border border-border/60 bg-card/60 p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {tone.icon} Resiliência Combinada
+        </div>
+        <div className="mono text-sm font-semibold">{score.toFixed(0)}</div>
+      </div>
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/30">
+        <div className={`h-full ${tone.bar}`} style={{ width: `${score}%` }} />
+      </div>
+      <ul className="mt-3 space-y-1 text-[11px] text-muted-foreground">
+        {highlights.map((h, i) => (
+          <li key={i} className="flex gap-1.5"><ChevronRight className="mt-0.5 h-3 w-3 shrink-0" /><span>{h}</span></li>
+        ))}
+      </ul>
     </div>
   );
 }
