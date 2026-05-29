@@ -179,7 +179,6 @@ function SimulaPro() {
             <TabsTrigger value="governanca">7. Governança</TabsTrigger>
             <TabsTrigger value="resultados">8. Resultados</TabsTrigger>
             <TabsTrigger value="simulador">9. Simulador</TabsTrigger>
-            <TabsTrigger value="analise">10. Cenários & Análise</TabsTrigger>
           </TabsList>
 
           <div className="mt-6">
@@ -190,9 +189,8 @@ function SimulaPro() {
             <TabsContent value="dre"><DRETab state={state} update={update} /></TabsContent>
             <TabsContent value="caixa"><CashflowTab state={state} update={update} /></TabsContent>
             <TabsContent value="governanca"><StrategicTab state={state} update={update} /></TabsContent>
-            <TabsContent value="resultados"><DiagnosisTab state={state} /></TabsContent>
+            <TabsContent value="resultados"><DiagnosisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} /></TabsContent>
             <TabsContent value="simulador"><SimulatorTab state={state} apply={update} saveScenario={save} /></TabsContent>
-            <TabsContent value="analise"><AnalysisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} saveScenario={save} /></TabsContent>
           </div>
         </Tabs>
 
