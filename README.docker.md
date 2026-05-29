@@ -1,8 +1,8 @@
 # GZ FinancePRO — Build local com Docker
 
-Este projeto é uma aplicação **TanStack Start** (React 19 + Vite 7 + Nitro).
+Este projeto é uma aplicação **TanStack Start** (React 19 + Vite 7 + Nitro) que utiliza **Bun** como gerenciador de pacotes.
 Os arquivos abaixo permitem buildar e rodar localmente em qualquer máquina com
-Docker instalado, sem precisar do Node no host.
+Docker instalado, sem precisar do Node nem Bun no host.
 
 ## Arquivos incluídos
 
@@ -49,9 +49,10 @@ docker compose down
 
 ### O que o build faz
 
-1. **Stage `builder`** — instala dependências, define `NITRO_PRESET=node-server`
+1. **Stage `builder`** — usa a imagem `oven/bun:1-alpine` para instalar dependências
+   com `bun install --frozen-lockfile`, define `NITRO_PRESET=node-server`
    (o template default é Cloudflare Workers, aqui forçamos Node) e roda
-   `npm run build`. O Nitro gera `.output/server/index.mjs` auto-contido.
+   `bun run build`. O Nitro gera `.output/server/index.mjs` auto-contido.
 2. **Stage `runner`** — imagem `node:20-alpine` mínima copiando apenas
    `.output/`. Sem `node_modules` extra. Container final ~150MB.
 
