@@ -10,6 +10,8 @@ import { CostsTab } from "@/components/sim/CostsTab";
 import { CapitalTab } from "@/components/sim/CapitalTab";
 import { TaxTab } from "@/components/sim/TaxTab";
 import { DRETab } from "@/components/sim/DRETab";
+import { CashflowTab } from "@/components/sim/CashflowTab";
+import { DiagnosisTab } from "@/components/sim/DiagnosisTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
 import { BusinessType } from "@/lib/finance/types";
 
