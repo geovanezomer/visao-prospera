@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppState, TaxRegime } from "@/lib/finance/types";
+import { AppState, TaxRegime, COST_VENDAS_LABEL } from "@/lib/finance/types";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { buildDRE, calcIndicators, diagnose } from "@/lib/finance/calculations";
@@ -17,6 +17,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
   const { dre, tax } = buildDRE(state, regime);
   const ind = calcIndicators(state, dre);
   const diagnostics = diagnose(state, dre, ind);
+  const cvLabel = COST_VENDAS_LABEL[state.businessType];
 
   const rb = sum(dre.receitaBruta);
   const ll = sum(dre.lucroLiquido);
@@ -25,7 +26,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
     { k: "(+) Receita Operacional Bruta", v: dre.receitaBruta, strong: true, tone: "pos" as const },
     { k: "(−) Inadimplência / Deduções", v: dre.deducoesInadimplencia.map((x) => -x), tone: "neg" as const },
     { k: "(=) Receita Operacional Líquida", v: dre.receitaLiquida, strong: true },
-    { k: "(−) CPV / CSV", v: dre.cpv.map((x) => -x), tone: "neg" as const },
+    { k: `(−) ${cvLabel.short} — ${cvLabel.long}`, v: dre.cpv.map((x) => -x), tone: "neg" as const },
     { k: "(=) Lucro Bruto", v: dre.lucroBruto, strong: true, tone: "pos" as const, margin: ind.margemBruta },
     { k: "(−) Despesas Operacionais", v: dre.despesasOperacionais.map((x) => -x), tone: "neg" as const },
     { k: "(=) EBITDA", v: dre.ebitda, strong: true, margin: ind.margemEbitda },
@@ -58,7 +59,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
 
   const waterfall = [
     { name: "Receita Líq.", value: sum(dre.receitaLiquida) },
-    { name: "− CPV", value: -sum(dre.cpv) },
+    { name: `− ${cvLabel.short}`, value: -sum(dre.cpv) },
     { name: "− Desp. Op.", value: -sum(dre.despesasOperacionais) },
     { name: "− D&A", value: -sum(dre.depreciacao) },
     { name: "± Financ.", value: sum(dre.resultadoFinanceiro) },

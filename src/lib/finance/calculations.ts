@@ -193,8 +193,6 @@ export interface DRE {
   custosVariaveis: number[];
 }
 
-const VARIABLE_LIKE_IDS = new Set(["insumos", "fretes", "marketing"]);
-const CPV_IDS = new Set(["insumos", "fretes"]);
 
 export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: MonthlyTax } {
   const { revenue, costs, capital } = state;
@@ -203,29 +201,34 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   const deducoesInadimplencia = revenue.bruta.map((r, i) => r * (revenue.inadimplencia[i] / 100));
   const receitaLiquida = receitaBruta.map((r, i) => r - deducoesInadimplencia[i]);
 
-  const opLines = costs.filter((c) => c.group === "operacional");
-  const finLines = costs.filter((c) => c.group === "financeiro");
-
   const cpv = zeros12();
   const despOp = zeros12();
   const custosFixos = zeros12();
   const custosVariaveis = zeros12();
   const despesasPorCategoria: Record<string, number[]> = {};
 
-  for (const line of opLines) {
-    const v = monthValues(line);
-    despesasPorCategoria[line.label] = v;
+  for (const c of costs) {
+    if (c.category === "financeiro") continue;
+    const v = monthValues(c);
+    despesasPorCategoria[c.label] = v;
     for (let i = 0; i < 12; i++) {
-      if (CPV_IDS.has(line.id)) cpv[i] += v[i];
-      else despOp[i] += v[i];
-      if (line.variavel || VARIABLE_LIKE_IDS.has(line.id)) custosVariaveis[i] += v[i];
-      else custosFixos[i] += v[i];
+      if (c.category === "custo_vendas") {
+        cpv[i] += v[i];
+        custosVariaveis[i] += v[i]; // Custo de Vendas é variável por natureza
+      } else if (c.category === "variavel") {
+        despOp[i] += v[i];
+        custosVariaveis[i] += v[i];
+      } else {
+        // fixo
+        despOp[i] += v[i];
+        custosFixos[i] += v[i];
+      }
     }
   }
 
   const custosFinanceirosTotal = zeros12();
-  for (const line of finLines) {
-    const v = monthValues(line);
+  for (const c of costs.filter((x) => x.category === "financeiro")) {
+    const v = monthValues(c);
     for (let i = 0; i < 12; i++) custosFinanceirosTotal[i] += v[i];
   }
 
@@ -383,8 +386,10 @@ export interface Diagnostic {
 export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic[] {
   const out: Diagnostic[] = [];
   const receitaLiqAnual = sum(dre.receitaLiquida);
-  const folha = (state.costs.find((c) => c.id === "salarios")?.values.reduce((a, b) => a + b, 0) || 0) *
-    (state.costs.find((c) => c.id === "salarios")?.fixed ? 12 : 1);
+  const LABOR_KEYWORDS = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra|m\.o\.|clt/i;
+  const folha = state.costs
+    .filter((c) => c.category !== "financeiro" && LABOR_KEYWORDS.test(c.label))
+    .reduce((acc, c) => acc + sum(monthValues(c)), 0);
   const folhaPct = receitaLiqAnual > 0 ? (folha / receitaLiqAnual) * 100 : 0;
   if (folhaPct > 35) out.push({ level: "danger", title: "Custo de mão de obra elevado", message: `Folha CLT representa ${folhaPct.toFixed(1)}% da receita líquida. Acima de 35% pressiona margens — avalie produtividade, terceirização ou redesenho de processos.` });
   else if (folhaPct > 25) out.push({ level: "warn", title: "Folha em zona de atenção", message: `Folha em ${folhaPct.toFixed(1)}% da receita. Monitore eficiência por colaborador.` });
