@@ -420,10 +420,14 @@ function MonteCarloCard({ state }: { state: AppState }) {
         <NumberInput label="σ Folha (%)" value={cfg.folhaSigmaPct} step={1} onChange={(v) => setCfg({ ...cfg, folhaSigmaPct: v })} />
       </div>
 
+      {error && (
+        <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-[11px] text-destructive">{error}</div>
+      )}
+
       {!result ? (
         <p className="text-xs text-muted-foreground">
           Clique em "Rodar" para simular variações aleatórias (distribuição normal) em preço, volume, CPV e folha.
-          O sistema mostra o intervalo de confiança (P5–P95) e a probabilidade de prejuízo / caixa negativo.
+          As <b>{cfg.iterations} iterações</b> rodam em <b>Web Worker</b> para não travar a UI. P5–P95 = intervalo de confiança; também mostra probabilidade de prejuízo / caixa &lt; mínimo.
         </p>
       ) : (
         <div className="space-y-4">
