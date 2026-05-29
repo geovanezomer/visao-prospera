@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAppState, useScenarios } from "@/lib/finance/store";
+import { useAuth } from "@/lib/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Activity, Building2, Download, RotateCcw, Factory, Store, Briefcase, Sparkles, X } from "lucide-react";
+import { Activity, Building2, Download, RotateCcw, Factory, Store, Briefcase, Sparkles, X, LogOut } from "lucide-react";
 import { RevenueTab } from "@/components/sim/RevenueTab";
 import { CostsTab } from "@/components/sim/CostsTab";
 import { CapitalTab } from "@/components/sim/CapitalTab";
@@ -36,11 +37,22 @@ export const Route = createFileRoute("/")({
 });
 
 function SimulaPro() {
+  const { user, hydrated, logout } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (hydrated && !user) navigate({ to: "/login" });
+  }, [hydrated, user, navigate]);
+
   const { state, update, reset, setState } = useAppState();
   const { scenarios, save, remove } = useScenarios();
   const [wizardOpen, setWizardOpen] = useState(false);
 
   const businessIcon = state.businessType === "industria" ? <Factory className="h-4 w-4" /> : state.businessType === "comercio" ? <Store className="h-4 w-4" /> : <Briefcase className="h-4 w-4" />;
+
+  if (!hydrated || !user) {
+    return <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">Carregando…</div>;
+  }
 
   const exportReport = () => {
     window.print();
@@ -122,6 +134,14 @@ function SimulaPro() {
                 </Button>
               }
             />
+            <div className="ml-1 flex items-center gap-2 border-l border-border/60 pl-2">
+              <span className="hidden text-[11px] text-muted-foreground md:inline">
+                {user.displayName}
+              </span>
+              <Button size="sm" variant="ghost" onClick={() => { logout(); navigate({ to: "/login" }); }} title="Sair">
+                <LogOut className="mr-2 h-4 w-4" /> Sair
+              </Button>
+            </div>
           </div>
         </div>
       </header>
