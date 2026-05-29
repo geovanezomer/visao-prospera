@@ -13,7 +13,7 @@ import { TaxTab } from "@/components/sim/TaxTab";
 import { DRETab } from "@/components/sim/DRETab";
 import { CashflowTab } from "@/components/sim/CashflowTab";
 import { DiagnosisTab } from "@/components/sim/DiagnosisTab";
-import { AnalysisTab } from "@/components/sim/AnalysisTab";
+
 import { StrategicTab } from "@/components/sim/StrategicTab";
 import { SimulatorTab } from "@/components/sim/SimulatorTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
