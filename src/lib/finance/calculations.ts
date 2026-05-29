@@ -170,9 +170,21 @@ export function calcPresumido(state: AppState): MonthlyTax {
 }
 
 export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax {
-  const { revenue, tax } = state;
+  const { revenue, tax, businessType } = state;
   const iss = tax.issIcms / 100;
   const issDed = (tax.issDeducoes ?? 0) / 12;
+  const isMercadoria = businessType === "comercio" || businessType === "industria";
+  const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
+
+  const cpvMonthly = zeros12();
+  if (icmsCredAliq > 0) {
+    for (const c of state.costs) {
+      if (c.category !== "custo_vendas") continue;
+      const v = effectiveMonthValues(c);
+      for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
+    }
+  }
+
   const baseIRPJMensal = baseLairMonthly.map((l) => Math.max(0, l));
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal);
 
@@ -185,7 +197,9 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     const pis = Math.max(0, r * 0.0165 - tax.pisCreditos);
     const cofins = Math.max(0, r * 0.076 - tax.cofinsCreditos);
     const issBase = Math.max(0, r - issDed);
-    const issv = issBase * iss;
+    const debito = issBase * iss;
+    const credito = cpvMonthly[i] * icmsCredAliq;
+    const issv = Math.max(0, debito - credito);
     irpjTotal += irpj + adicional;
     csllTotal += csll;
     pisTotal += pis;
@@ -205,7 +219,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
       CSLL: csllTotal,
       "PIS (não-cum.)": pisTotal,
       "COFINS (não-cum.)": cofinsTotal,
-      "ISS/ICMS": issTotal,
+      [isMercadoria ? "ICMS (líquido)" : "ISS"]: issTotal,
     },
   };
 }
