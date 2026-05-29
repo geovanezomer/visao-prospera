@@ -1,15 +1,53 @@
 import { useMemo, useState } from "react";
 import { AppState } from "@/lib/finance/types";
-import { applyWizard, WIZARD_DEFAULTS, WizardAnswers, wizardSchema, buildRevenueCurve } from "@/lib/finance/guided/wizardToState";
+import {
+  applyWizard,
+  WIZARD_DEFAULTS,
+  WizardAnswers,
+  wizardSchema,
+  buildRevenueCurve,
+  MARGEM_DEFAULTS,
+  ESTOQUE_DEFAULTS,
+} from "@/lib/finance/guided/wizardToState";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 import { fmtBRL } from "@/lib/finance/format";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Store, Factory, ArrowLeft, ArrowRight, Sparkles, Check, AlertCircle, Users, Wallet, Receipt, Calendar, Building, TrendingUp } from "lucide-react";
+import {
+  Briefcase,
+  Store,
+  Factory,
+  ArrowLeft,
+  ArrowRight,
+  Sparkles,
+  Check,
+  AlertCircle,
+  Users,
+  Wallet,
+  Receipt,
+  Calendar,
+  Building,
+  TrendingUp,
+  Percent,
+  CreditCard,
+  UserCog,
+  Boxes,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { z } from "zod";
 
-const STEP_COUNT = 7;
+type StepProps = {
+  a: WizardAnswers;
+  update: (p: Partial<WizardAnswers>) => void;
+  err?: Record<string, string>;
+};
+
+type StepDef = {
+  id: string;
+  render: (p: StepProps) => React.ReactNode;
+  /** Se retornar false, o passo é pulado para esse businessType. */
+  show?: (a: WizardAnswers) => boolean;
+};
 
 export function GuidedWizard({
   open,
@@ -27,13 +65,53 @@ export function GuidedWizard({
     ...WIZARD_DEFAULTS,
     businessType: baseState.businessType,
     companyName: baseState.companyName,
+    margemCustoVendasPct: MARGEM_DEFAULTS[baseState.businessType],
+    diasEstoque: ESTOQUE_DEFAULTS[baseState.businessType],
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const update = (patch: Partial<WizardAnswers>) => setA((s) => ({ ...s, ...patch }));
+  const update = (patch: Partial<WizardAnswers>) => {
+    setA((s) => {
+      const next = { ...s, ...patch };
+      // Quando muda o setor, ajusta defaults de margem/estoque se ainda estavam no default antigo
+      if (patch.businessType && patch.businessType !== s.businessType) {
+        if (s.margemCustoVendasPct === MARGEM_DEFAULTS[s.businessType]) {
+          next.margemCustoVendasPct = MARGEM_DEFAULTS[patch.businessType];
+        }
+        if (s.diasEstoque === ESTOQUE_DEFAULTS[s.businessType]) {
+          next.diasEstoque = ESTOQUE_DEFAULTS[patch.businessType];
+        }
+      }
+      return next;
+    });
+  };
 
-  const validateCurrent = (): boolean => {
-    // valida só o que importa para este passo, mas usa o schema completo no fim
+  // ===== Definição dinâmica dos passos =====
+  const steps: StepDef[] = useMemo(
+    () => [
+      { id: "negocio", render: (p) => <StepNegocio {...p} /> },
+      { id: "receita", render: (p) => <StepReceita {...p} /> },
+      { id: "margem", render: (p) => <StepMargem {...p} /> },
+      { id: "vendas", render: (p) => <StepVendas {...p} /> },
+      { id: "equipe", render: (p) => <StepEquipe {...p} /> },
+      { id: "socios", render: (p) => <StepSocios {...p} /> },
+      { id: "fixos", render: (p) => <StepFixos {...p} /> },
+      {
+        id: "estoque",
+        render: (p) => <StepEstoque {...p} />,
+        show: (ans) => ans.businessType !== "servicos",
+      },
+      { id: "regime", render: (p) => <StepRegime {...p} /> },
+      { id: "capital", render: (p) => <StepCapital {...p} /> },
+    ],
+    [],
+  );
+
+  const visibleSteps = steps.filter((s) => !s.show || s.show(a));
+  const totalSteps = visibleSteps.length;
+  const summaryStep = totalSteps + 1;
+
+  const validateAll = (): boolean => {
     try {
       wizardSchema.parse(a);
       setErrors({});
@@ -50,38 +128,36 @@ export function GuidedWizard({
     }
   };
 
-  const next = () => setStep((s) => Math.min(STEP_COUNT + 1, s + 1));
+  const next = () => setStep((s) => Math.min(summaryStep, s + 1));
   const prev = () => setStep((s) => Math.max(1, s - 1));
 
   const handleFinish = () => {
-    if (!validateCurrent()) return;
+    if (!validateAll()) return;
     const newState = applyWizard(a, baseState);
     onApply(newState);
     onOpenChange(false);
     setStep(1);
   };
 
+  const currentStepIdx = Math.min(step, totalSteps) - 1;
+  const currentStepDef = visibleSteps[currentStepIdx];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            Modo Guiado — Setup em {STEP_COUNT} passos
+            Modo Guiado — Setup em {totalSteps} passos
           </DialogTitle>
         </DialogHeader>
 
-        <ProgressBar step={Math.min(step, STEP_COUNT)} total={STEP_COUNT} />
+        <ProgressBar step={Math.min(step, totalSteps)} total={totalSteps} />
 
         <div className="min-h-[340px] py-2">
-          {step === 1 && <Step1 a={a} update={update} />}
-          {step === 2 && <Step2 a={a} update={update} err={errors} />}
-          {step === 3 && <Step3 a={a} update={update} />}
-          {step === 4 && <Step4 a={a} update={update} err={errors} />}
-          {step === 5 && <Step5 a={a} update={update} err={errors} />}
-          {step === 6 && <Step6 a={a} update={update} />}
-          {step === 7 && <Step7 a={a} update={update} err={errors} />}
-          {step === STEP_COUNT + 1 && <Summary a={a} baseState={baseState} />}
+          {step <= totalSteps
+            ? currentStepDef?.render({ a, update, err: errors })
+            : <Summary a={a} baseState={baseState} />}
         </div>
 
         <DialogFooter className="flex items-center justify-between gap-2 sm:justify-between">
@@ -92,7 +168,7 @@ export function GuidedWizard({
                 <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
               </Button>
             )}
-            {step <= STEP_COUNT ? (
+            {step <= totalSteps ? (
               <Button onClick={next}>
                 Próximo <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -125,7 +201,7 @@ function ProgressBar({ step, total }: { step: number; total: number }) {
   );
 }
 
-// ============ Steps ============
+// ============ Helpers ============
 
 function StepHeader({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
   return (
@@ -148,9 +224,41 @@ function FieldError({ msg }: { msg?: string }) {
   );
 }
 
-type StepProps = { a: WizardAnswers; update: (p: Partial<WizardAnswers>) => void; err?: Record<string, string> };
+function PresetRow({
+  presets,
+  current,
+  onPick,
+  fmt,
+}: {
+  presets: number[];
+  current: number;
+  onPick: (v: number) => void;
+  fmt?: (v: number) => string;
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {presets.map((p) => (
+        <button
+          key={p}
+          type="button"
+          onClick={() => onPick(p)}
+          className={cn(
+            "rounded-md border px-2 py-0.5 text-[11px] transition",
+            current === p
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-border/60 bg-card/40 text-muted-foreground hover:border-primary/60",
+          )}
+        >
+          {fmt ? fmt(p) : p}
+        </button>
+      ))}
+    </div>
+  );
+}
 
-function Step1({ a, update }: StepProps) {
+// ============ Steps ============
+
+function StepNegocio({ a, update }: StepProps) {
   const opts: { id: WizardAnswers["businessType"]; label: string; desc: string; icon: React.ReactNode }[] = [
     { id: "servicos", label: "Serviços", desc: "Consultoria, agência, técnica", icon: <Briefcase className="h-5 w-5" /> },
     { id: "comercio", label: "Comércio", desc: "Loja, revenda, e-commerce", icon: <Store className="h-5 w-5" /> },
@@ -189,13 +297,13 @@ function Step1({ a, update }: StepProps) {
   );
 }
 
-function Step2({ a, update, err }: StepProps) {
+function StepReceita({ a, update, err }: StepProps) {
   const seasOpts: { id: WizardAnswers["seasonality"]; label: string; desc: string }[] = [
     { id: "estavel", label: "Estável", desc: "Receita parecida todo mês" },
     { id: "sazonal", label: "Sazonal", desc: "Variação ±15%, pico em dezembro" },
-    { id: "crescimento", label: "Crescimento", desc: "Sobe linearmente no ano" },
+    { id: "crescimento", label: "Crescimento", desc: "Sobe ao longo do ano" },
   ];
-  const preview = buildRevenueCurve(a.faturamentoMensal, a.seasonality);
+  const preview = buildRevenueCurve(a.faturamentoMensal, a.seasonality, a.crescimentoAA);
   const annual = preview.reduce((acc, v) => acc + v, 0);
   return (
     <div>
@@ -235,44 +343,207 @@ function Step2({ a, update, err }: StepProps) {
           </div>
         </div>
       </div>
+
+      {a.seasonality === "crescimento" && (
+        <div className="mt-4 rounded-md border border-border/60 bg-card/40 p-3">
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Taxa de crescimento esperada (% ao ano)
+          </label>
+          <NumberField
+            label=""
+            value={a.crescimentoAA}
+            onChange={(v) => update({ crescimentoAA: v })}
+            suffix="% a.a."
+            step={1}
+            err={err?.crescimentoAA}
+          />
+          <PresetRow
+            presets={[0, 10, 20, 30, 50, 100]}
+            current={a.crescimentoAA}
+            onPick={(v) => update({ crescimentoAA: v })}
+            fmt={(v) => `${v}%`}
+          />
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            A média anual permanece igual ao faturamento informado — o que muda é a distribuição entre meses (composto mensal).
+          </p>
+        </div>
+      )}
     </div>
   );
 }
 
-function Step3({ a, update }: StepProps) {
+function StepMargem({ a, update, err }: StepProps) {
+  const cvLabel =
+    a.businessType === "industria" ? "CPV (Custo do Produto)" :
+    a.businessType === "comercio" ? "CMV (Custo da Mercadoria)" :
+    "CSP (Custo do Serviço)";
+  const margemBruta = 100 - a.margemCustoVendasPct;
+  const cmvMensal = (a.faturamentoMensal * a.margemCustoVendasPct) / 100;
+  return (
+    <div>
+      <StepHeader
+        icon={<Percent className="h-5 w-5" />}
+        title="Margem — qual é o custo de cada venda?"
+        subtitle={`A cada R$ 100 que você fatura, quanto vai embora em ${cvLabel.toLowerCase()}? Define seu lucro bruto.`}
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <NumberField
+            label={`${cvLabel} sobre a receita`}
+            value={a.margemCustoVendasPct}
+            onChange={(v) => update({ margemCustoVendasPct: v })}
+            suffix="%"
+            step={1}
+            err={err?.margemCustoVendasPct}
+          />
+          <PresetRow
+            presets={[20, 30, 45, 55, 65, 75]}
+            current={a.margemCustoVendasPct}
+            onPick={(v) => update({ margemCustoVendasPct: v })}
+            fmt={(v) => `${v}%`}
+          />
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Benchmark do setor: <span className="font-semibold text-foreground">{MARGEM_DEFAULTS[a.businessType]}%</span>
+          </p>
+        </div>
+        <div className="rounded-md border border-border/60 bg-card/40 p-3 text-xs">
+          <div className="text-muted-foreground">Custo de vendas mensal médio:</div>
+          <div className="mono mt-1 text-sm font-semibold">{fmtBRL(cmvMensal)}</div>
+          <div className="mt-3 text-muted-foreground">Margem bruta resultante:</div>
+          <div className={cn("mono mt-1 text-sm font-semibold", margemBruta < 25 ? "text-neg" : margemBruta < 45 ? "text-warn" : "text-pos")}>
+            {margemBruta.toFixed(1)}%
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StepVendas({ a, update, err }: StepProps) {
   const presets: { id: string; label: string; pmr: number; pmp: number }[] = [
-    { id: "vista", label: "Recebo e pago à vista", pmr: 0, pmp: 0 },
-    { id: "30", label: "30 dias para receber e pagar", pmr: 30, pmp: 30 },
-    { id: "306090", label: "Vendo 30/60/90, pago em 30", pmr: 60, pmp: 30 },
-    { id: "custom", label: "Personalizar", pmr: a.pmr, pmp: a.pmp },
+    { id: "vista", label: "À vista", pmr: 0, pmp: 0 },
+    { id: "30", label: "30/30", pmr: 30, pmp: 30 },
+    { id: "306090", label: "30/60/90 venda, 30 compra", pmr: 60, pmp: 30 },
   ];
   return (
     <div>
-      <StepHeader icon={<Calendar className="h-5 w-5" />} title="Prazos médios de recebimento e pagamento" subtitle="PMR = dias entre venda e recebimento. PMP = dias entre compra e pagamento ao fornecedor." />
-      <div className="grid gap-2 sm:grid-cols-2">
-        {presets.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => update({ pmr: p.pmr, pmp: p.pmp })}
-            className={cn(
-              "rounded-md border p-3 text-left text-sm transition",
-              a.pmr === p.pmr && a.pmp === p.pmp ? "border-primary bg-primary/10" : "border-border/60 bg-card/40 hover:border-primary/60",
-            )}
-          >
-            <div className="font-medium">{p.label}</div>
-            <div className="mt-0.5 text-[11px] text-muted-foreground">PMR {p.pmr}d · PMP {p.pmp}d</div>
-          </button>
-        ))}
-      </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <NumberField label="PMR (dias para receber)" value={a.pmr} onChange={(v) => update({ pmr: v })} max={180} />
-        <NumberField label="PMP (dias para pagar)" value={a.pmp} onChange={(v) => update({ pmp: v })} max={180} />
+      <StepHeader
+        icon={<Calendar className="h-5 w-5" />}
+        title="Vendas, recebimentos e inadimplência"
+        subtitle="Prazos médios, perdas com calote e impacto da maquininha de cartão."
+      />
+
+      <div className="space-y-4">
+        <section>
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Prazos médios</div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {presets.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => update({ pmr: p.pmr, pmp: p.pmp })}
+                className={cn(
+                  "rounded-md border px-2 py-1 text-[11px] transition",
+                  a.pmr === p.pmr && a.pmp === p.pmp
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border/60 bg-card/40 text-muted-foreground hover:border-primary/60",
+                )}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <NumberField label="PMR (dias para receber)" value={a.pmr} onChange={(v) => update({ pmr: v })} max={180} err={err?.pmr} />
+            <NumberField label="PMP (dias para pagar)" value={a.pmp} onChange={(v) => update({ pmp: v })} max={180} err={err?.pmp} />
+          </div>
+        </section>
+
+        <section className="rounded-md border border-border/60 bg-card/40 p-3">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Inadimplência</div>
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            <div>
+              <NumberField
+                label="% de calote / atraso"
+                value={a.inadimplenciaPct}
+                onChange={(v) => update({ inadimplenciaPct: v })}
+                suffix="%"
+                step={0.5}
+                err={err?.inadimplenciaPct}
+              />
+              <PresetRow
+                presets={[0, 1, 2, 5, 10]}
+                current={a.inadimplenciaPct}
+                onPick={(v) => update({ inadimplenciaPct: v })}
+                fmt={(v) => `${v}%`}
+              />
+            </div>
+            <label className="flex cursor-pointer items-start gap-2 rounded-md border border-border/60 bg-input/40 p-2 text-xs">
+              <input
+                type="checkbox"
+                checked={a.inadimplenciaComoPDD}
+                onChange={(e) => update({ inadimplenciaComoPDD: e.target.checked })}
+                className="mt-0.5 h-4 w-4 accent-primary"
+              />
+              <span>
+                <span className="font-semibold text-foreground">Tratar como PDD</span>
+                <span className="block text-[11px] text-muted-foreground">
+                  Lança o calote como despesa operacional (Provisão Devedores Duvidosos). Mais correto contabilmente (CPC 47) — não reduz base de PIS/COFINS/ISS.
+                </span>
+              </span>
+            </label>
+          </div>
+        </section>
+
+        <section className="rounded-md border border-border/60 bg-card/40 p-3">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <CreditCard className="h-3.5 w-3.5" /> Cartão / maquininha
+          </div>
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            <div>
+              <NumberField
+                label="% das vendas no cartão"
+                value={a.percentualCartao}
+                onChange={(v) => update({ percentualCartao: v })}
+                suffix="%"
+                err={err?.percentualCartao}
+              />
+              <PresetRow
+                presets={[0, 25, 50, 75, 100]}
+                current={a.percentualCartao}
+                onPick={(v) => update({ percentualCartao: v })}
+                fmt={(v) => `${v}%`}
+              />
+            </div>
+            <div>
+              <NumberField
+                label="Taxa média da maquininha"
+                value={a.taxaCartaoPct}
+                onChange={(v) => update({ taxaCartaoPct: v })}
+                suffix="%"
+                step={0.1}
+                err={err?.taxaCartaoPct}
+              />
+              <PresetRow
+                presets={[1.5, 2.0, 2.5, 3.5, 5.0]}
+                current={a.taxaCartaoPct}
+                onPick={(v) => update({ taxaCartaoPct: v })}
+                fmt={(v) => `${v}%`}
+              />
+            </div>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Custo mensal de cartão estimado:{" "}
+            <span className="font-semibold text-foreground">
+              {fmtBRL((a.faturamentoMensal * a.percentualCartao * a.taxaCartaoPct) / 10000)}
+            </span>
+          </p>
+        </section>
       </div>
     </div>
   );
 }
 
-function Step4({ a, update, err }: StepProps) {
+function StepEquipe({ a, update, err }: StepProps) {
   const total = a.funcionarios * a.salarioMedio;
   return (
     <div>
@@ -290,7 +561,61 @@ function Step4({ a, update, err }: StepProps) {
   );
 }
 
-function Step5({ a, update, err }: StepProps) {
+function StepSocios({ a, update, err }: StepProps) {
+  const proLaboreTotal = a.numeroSocios * a.proLaboreMedio;
+  const comissaoMensal = (a.faturamentoMensal * a.comissaoVendasPct) / 100;
+  return (
+    <div>
+      <StepHeader
+        icon={<UserCog className="h-5 w-5" />}
+        title="Sócios e comissões"
+        subtitle="Pró-labore é separado da folha CLT (INSS de 11% só) e impacta o Fator R do Simples."
+      />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <NumberField
+          label="Nº de sócios com pró-labore"
+          value={a.numeroSocios}
+          onChange={(v) => update({ numeroSocios: Math.round(v) })}
+          max={20}
+          err={err?.numeroSocios}
+        />
+        <NumberField
+          label="Pró-labore médio (R$/sócio)"
+          value={a.proLaboreMedio}
+          onChange={(v) => update({ proLaboreMedio: v })}
+          prefix="R$"
+          err={err?.proLaboreMedio}
+        />
+      </div>
+
+      <div className="mt-4 rounded-md border border-border/60 bg-card/40 p-3">
+        <NumberField
+          label="Comissão de vendas (% sobre receita)"
+          value={a.comissaoVendasPct}
+          onChange={(v) => update({ comissaoVendasPct: v })}
+          suffix="%"
+          step={0.5}
+          err={err?.comissaoVendasPct}
+        />
+        <PresetRow
+          presets={[0, 1, 3, 5, 10]}
+          current={a.comissaoVendasPct}
+          onPick={(v) => update({ comissaoVendasPct: v })}
+          fmt={(v) => `${v}%`}
+        />
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Comissão mensal estimada: <span className="font-semibold text-foreground">{fmtBRL(comissaoMensal)}</span>
+        </p>
+      </div>
+
+      <div className="mt-3 text-xs text-muted-foreground">
+        Pró-labore total: <span className="font-semibold text-foreground">{fmtBRL(proLaboreTotal)}/mês</span>
+      </div>
+    </div>
+  );
+}
+
+function StepFixos({ a, update, err }: StepProps) {
   const total = a.aluguel + a.software + a.marketing + a.outrosFixos;
   return (
     <div>
@@ -308,7 +633,48 @@ function Step5({ a, update, err }: StepProps) {
   );
 }
 
-function Step6({ a, update }: StepProps) {
+function StepEstoque({ a, update, err }: StepProps) {
+  const cmvMensal = (a.faturamentoMensal * a.margemCustoVendasPct) / 100;
+  const saldoEstoque = (cmvMensal * a.diasEstoque) / 30;
+  return (
+    <div>
+      <StepHeader
+        icon={<Boxes className="h-5 w-5" />}
+        title="Giro de estoque"
+        subtitle="Quantos dias de estoque sua empresa mantém. Impacta diretamente a Necessidade de Capital de Giro."
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <NumberField
+            label="Dias médios de estoque"
+            value={a.diasEstoque}
+            onChange={(v) => update({ diasEstoque: Math.round(v) })}
+            suffix="dias"
+            err={err?.diasEstoque}
+          />
+          <PresetRow
+            presets={[7, 15, 30, 45, 60, 90]}
+            current={a.diasEstoque}
+            onPick={(v) => update({ diasEstoque: v })}
+            fmt={(v) => `${v}d`}
+          />
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Benchmark do setor: <span className="font-semibold text-foreground">{ESTOQUE_DEFAULTS[a.businessType]} dias</span>
+          </p>
+        </div>
+        <div className="rounded-md border border-border/60 bg-card/40 p-3 text-xs">
+          <div className="text-muted-foreground">Saldo médio de estoque estimado:</div>
+          <div className="mono mt-1 text-sm font-semibold">{fmtBRL(saldoEstoque)}</div>
+          <div className="mt-2 text-[11px] text-muted-foreground">
+            Cada dia adicional imobiliza ~{fmtBRL(cmvMensal / 30)} em capital de giro.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StepRegime({ a, update }: StepProps) {
   const opts: { id: WizardAnswers["regimeEscolha"]; label: string; desc: string }[] = [
     { id: "simples", label: "Simples Nacional", desc: "Faturamento até R$ 4,8M, alíquota única" },
     { id: "presumido", label: "Lucro Presumido", desc: "Base presumida de IRPJ/CSLL" },
@@ -337,10 +703,10 @@ function Step6({ a, update }: StepProps) {
   );
 }
 
-function Step7({ a, update, err }: StepProps) {
+function StepCapital({ a, update, err }: StepProps) {
   return (
     <div>
-      <StepHeader icon={<Wallet className="h-5 w-5" />} title="Capital e dívida" subtitle="Capital próprio aproximado (patrimônio) e empréstimo onerosos existentes." />
+      <StepHeader icon={<Wallet className="h-5 w-5" />} title="Capital e dívida" subtitle="Capital próprio aproximado (patrimônio) e empréstimos onerosos existentes." />
       <NumberField label="Capital próprio aproximado" value={a.capitalProprio} onChange={(v) => update({ capitalProprio: v })} prefix="R$" err={err?.capitalProprio} />
       <div className="mt-4 rounded-md border border-border/60 bg-card/40 p-3">
         <label className="flex items-center gap-2 text-sm">
@@ -421,8 +787,10 @@ function NumberField({
 }) {
   return (
     <div>
-      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</label>
-      <div className="relative mt-1">
+      {label && (
+        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</label>
+      )}
+      <div className={cn("relative", label && "mt-1")}>
         {prefix && <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{prefix}</span>}
         <input
           type="number"
@@ -434,7 +802,7 @@ function NumberField({
           className={cn(
             "num w-full rounded-md border border-border/60 bg-input/40 py-2 text-right text-sm outline-none focus:border-primary",
             prefix ? "px-9" : "px-3",
-            suffix ? "pr-7" : "",
+            suffix ? "pr-16" : "",
           )}
         />
         {suffix && <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{suffix}</span>}
