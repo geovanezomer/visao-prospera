@@ -112,10 +112,13 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Ciclo Financeiro" value={`${ind.cicloFinanceiro} dias`} hint="PMR − PMP. Dias que a operação fica descoberta de caixa." />
-        <StatCard label="NCG" value={fmtBRL(ind.ncg)} tone="warn" hint="Necessidade de Capital de Giro estimada a partir do ciclo e dos custos mensais." />
+        <StatCard label="Ciclo Financeiro" value={`${ind.cicloFinanceiro} dias`} hint={{ description: "Dias entre pagar fornecedores e receber dos clientes. Quanto MAIOR, mais capital de giro a empresa precisa imobilizar.", formula: "PMR + PME − PMP" }} />
+        <StatCard label="NCG" value={fmtBRL(ind.ncg)} tone="warn" hint={{ description: "Necessidade de Capital de Giro — dinheiro que a operação 'consome' permanentemente para girar (estoques + clientes − fornecedores).", formula: "(Ciclo Financeiro ÷ 30) × Custos Mensais" }} />
         <div className="rounded-lg border border-border/60 bg-card/60 p-4">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Capital de Giro Disponível</div>
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+            Capital de Giro Disponível
+            <HelpTip text="Recursos próprios que a empresa tem disponíveis para financiar o ciclo operacional (capital permanente menos ativo permanente)." formula="(PL + Exigível a LP) − Ativo Permanente" />
+          </div>
           <MoneyInput value={c.capitalGiroDisponivel} onChange={(n) => set({ capitalGiroDisponivel: n })} className="mt-2 text-lg" />
         </div>
         <StatCard
@@ -123,6 +126,7 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
           value={fmtBRL(ind.gapCapitalGiro)}
           tone={ind.gapCapitalGiro > 0 ? "neg" : "pos"}
           sub={ind.gapCapitalGiro > 0 ? "Falta caixa para sustentar o ciclo" : "Capital de giro suficiente"}
+          hint={{ description: "Diferença entre o que a operação precisa (NCG) e o que a empresa tem (CGD). Positivo = precisa de empréstimo de giro; Negativo = sobra caixa.", formula: "NCG − Capital de Giro Disponível" }}
         />
       </div>
     </div>
