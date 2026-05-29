@@ -80,6 +80,26 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
               <MoneyInput value={c.estoques} onChange={(n) => set({ estoques: n })} />
             </div>
             <div>
+              <label className="text-xs text-muted-foreground">Dívida Onerosa (empréstimos)</label>
+              <MoneyInput value={c.dividaOnerosa} onChange={(n) => set({ dividaOnerosa: n })} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Passivo Circulante (0 = auto)</label>
+              <MoneyInput value={c.passivoCirculante} onChange={(n) => set({ passivoCirculante: n })} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Ativo Circulante (0 = auto)</label>
+              <MoneyInput value={c.ativoCirculante} onChange={(n) => set({ ativoCirculante: n })} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Contas a Receber (0 = auto via PMR)</label>
+              <MoneyInput value={c.contasReceber} onChange={(n) => set({ contasReceber: n })} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Fornecedores a Pagar (0 = auto via PMP)</label>
+              <MoneyInput value={c.fornecedores} onChange={(n) => set({ fornecedores: n })} />
+            </div>
+            <div>
               <label className="text-xs text-muted-foreground">Depreciação mensal</label>
               <MoneyInput value={c.depreciacaoMensal} onChange={(n) => set({ depreciacaoMensal: n })} />
             </div>

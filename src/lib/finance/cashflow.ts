@@ -21,6 +21,10 @@ export interface CashFlow {
   variacaoCaixa: number[];
   saldoFinal: number[];
   alertas: { mes: string; saldo: number; tipo: "negativo" | "abaixoMinimo" }[];
+  // ----- Fase 3: buffers para o ano+1 -----
+  contasReceberAnoSeguinte: number;
+  fornecedoresAnoSeguinte: number;
+  impostosAnoSeguinte: number;
   totais: {
     recebimentos: number;
     pagamentosTotais: number;
@@ -34,41 +38,39 @@ export interface CashFlow {
 }
 
 /**
- * Desloca um array mensal por N dias (convertidos em meses).
- * Valores que cairiam após dezembro são truncados (simplificação de 1º ano).
+ * Desloca array mensal por N dias. Retorna {dentroDoAno, transbordoAno+1}.
+ * Não trunca mais — o que cairia em jan/ano+1 vira saldo a receber/pagar.
  */
-function shiftByDays(values: number[], lagDays: number): number[] {
+function shiftByDaysSplit(values: number[], lagDays: number): { inAno: number[]; transbordo: number } {
   const lag = Math.max(0, Math.round(lagDays / 30));
-  if (lag === 0) return values.slice();
+  if (lag === 0) return { inAno: values.slice(), transbordo: 0 };
   const out = zeros12();
+  let transbordo = 0;
   for (let i = 0; i < 12; i++) {
     const t = i + lag;
     if (t < 12) out[t] += values[i];
+    else transbordo += values[i];
   }
-  return out;
+  return { inAno: out, transbordo };
 }
 
 export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.regime): CashFlow {
   const { dre, tax } = buildDRE(state, regime);
   const { revenue, capital, cashflow } = state;
 
-  // Recebimentos: receita líquida (já abate inadimplência) deslocada pelo PMR
-  const recebimentos = shiftByDays(dre.receitaLiquida, revenue.pmr);
+  const rec = shiftByDaysSplit(dre.receitaLiquida, revenue.pmr);
+  const recebimentos = rec.inAno;
+  const fornec = shiftByDaysSplit(dre.cpv, revenue.pmp);
+  const pagamentosFornecedores = fornec.inAno;
 
-  // Pagamentos a fornecedores: Custo de Vendas (CPV) deslocado pelo PMP
-  const pagamentosFornecedores = shiftByDays(dre.cpv, revenue.pmp);
-
-  // Demais despesas operacionais: separar fixos (mesmo mês) e variáveis (mesmo mês)
   const pagamentosFixos = dre.custosFixos.slice();
-  const pagamentosVariaveis = dre.custosVariaveis.map((tot, i) => tot - dre.cpv[i]); // CPV já contabilizado
+  const pagamentosVariaveis = dre.custosVariaveis.map((tot, i) => tot - dre.cpv[i]);
 
-  // Financeiros: mesmo mês
   const pagamentosFinanceiros = dre.custosFinanceirosTotal.slice();
 
-  // Impostos: deslocados 1 mês (DAS / IRPJ apurados na competência são pagos no mês seguinte)
-  const pagamentosImpostos = shiftByDays(tax.monthly, 30);
+  const imp = shiftByDaysSplit(tax.monthly, 30);
+  const pagamentosImpostos = imp.inAno;
 
-  // Itens não-operacionais (do CashFlowConfig)
   const aportes = cashflow.aportes.slice();
   const emprestimosCaptados = cashflow.emprestimosCaptados.slice();
   const amortizacoes = cashflow.amortizacoes.slice();
@@ -86,12 +88,8 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.reg
   for (let i = 0; i < 12; i++) {
     saldoInicial[i] = saldo;
     fluxoOperacional[i] =
-      recebimentos[i] -
-      pagamentosFornecedores[i] -
-      pagamentosFixos[i] -
-      pagamentosVariaveis[i] -
-      pagamentosFinanceiros[i] -
-      pagamentosImpostos[i];
+      recebimentos[i] - pagamentosFornecedores[i] - pagamentosFixos[i] -
+      pagamentosVariaveis[i] - pagamentosFinanceiros[i] - pagamentosImpostos[i];
     fluxoInvestimento[i] = -capex[i];
     fluxoFinanciamento[i] = aportes[i] + emprestimosCaptados[i] - amortizacoes[i] - dividendos[i];
     variacaoCaixa[i] = fluxoOperacional[i] + fluxoInvestimento[i] + fluxoFinanciamento[i];
@@ -112,32 +110,16 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.reg
   }
 
   return {
-    saldoInicial,
-    recebimentos,
-    pagamentosFornecedores,
-    pagamentosFixos,
-    pagamentosVariaveis,
-    pagamentosFinanceiros,
-    pagamentosImpostos,
-    fluxoOperacional,
-    aportes,
-    emprestimosCaptados,
-    amortizacoes,
-    dividendos,
-    fluxoFinanciamento,
-    capex,
-    fluxoInvestimento,
-    variacaoCaixa,
-    saldoFinal,
-    alertas,
+    saldoInicial, recebimentos, pagamentosFornecedores, pagamentosFixos,
+    pagamentosVariaveis, pagamentosFinanceiros, pagamentosImpostos, fluxoOperacional,
+    aportes, emprestimosCaptados, amortizacoes, dividendos, fluxoFinanciamento,
+    capex, fluxoInvestimento, variacaoCaixa, saldoFinal, alertas,
+    contasReceberAnoSeguinte: rec.transbordo,
+    fornecedoresAnoSeguinte: fornec.transbordo,
+    impostosAnoSeguinte: imp.transbordo,
     totais: {
       recebimentos: sum(recebimentos),
-      pagamentosTotais:
-        sum(pagamentosFornecedores) +
-        sum(pagamentosFixos) +
-        sum(pagamentosVariaveis) +
-        sum(pagamentosFinanceiros) +
-        sum(pagamentosImpostos),
+      pagamentosTotais: sum(pagamentosFornecedores) + sum(pagamentosFixos) + sum(pagamentosVariaveis) + sum(pagamentosFinanceiros) + sum(pagamentosImpostos),
       fluxoOperacional: sum(fluxoOperacional),
       fluxoInvestimento: sum(fluxoInvestimento),
       fluxoFinanciamento: sum(fluxoFinanciamento),

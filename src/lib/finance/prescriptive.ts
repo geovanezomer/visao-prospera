@@ -102,26 +102,67 @@ function adjustRevenue(state: AppState, factor: number): AppState {
   };
 }
 
+/**
+ * Adiciona empréstimo via tabela PRICE REAL:
+ *  juros_t = saldo_{t-1} × i ; amort_t = PMT − juros_t ; saldo_t = saldo_{t-1} − amort_t.
+ * Atualiza: capital.dividaOnerosa (+principal), cashflow (captação + amortização do principal mês a mês)
+ *           e a linha "juros sobre empréstimos" do DRE com os juros do mês.
+ */
 function addLoan(state: AppState, principal: number, taxaMensal: number, prazoMeses: number, monthIdx = 0): AppState {
-  // Adiciona captação no mês `monthIdx` e cria parcela mensal (juros médios via PRICE simplificado).
   const i = taxaMensal / 100;
   const pmt = i === 0 ? principal / prazoMeses : principal * (i / (1 - Math.pow(1 + i, -prazoMeses)));
-  const novosJuros = pmt - principal / prazoMeses; // aproximação: parte juros = PMT − amort linear média
+
   const cashflow = { ...state.cashflow };
   cashflow.emprestimosCaptados = state.cashflow.emprestimosCaptados.map((v, idx) => (idx === monthIdx ? v + principal : v));
-  // amortização linear no mesmo período (simplificação)
-  const amortMensal = principal / prazoMeses;
-  cashflow.amortizacoes = state.cashflow.amortizacoes.map((v, idx) => (idx >= monthIdx && idx < monthIdx + prazoMeses ? v + amortMensal : v));
-  // soma juros à linha de "juros sobre empréstimos"
+  cashflow.amortizacoes = state.cashflow.amortizacoes.slice();
+
   const costs = cloneCosts(state.costs);
-  const jurosLine = costs.find((c) => /juros/i.test(c.label));
-  if (jurosLine) {
-    for (let idx = monthIdx; idx < Math.min(12, monthIdx + prazoMeses); idx++) {
-      jurosLine.values[idx] = (jurosLine.values[idx] || 0) + novosJuros;
-    }
+  let jurosLine = costs.find((c) => /juros/i.test(c.label));
+  if (!jurosLine) {
+    jurosLine = {
+      id: `juros_${Date.now().toString(36)}`,
+      label: "Juros sobre empréstimos",
+      category: "financeiro",
+      values: Array(12).fill(0),
+      fixed: false,
+      custom: true,
+    };
+    costs.push(jurosLine);
+  } else {
     jurosLine.fixed = false;
+    jurosLine.values = jurosLine.values.slice();
   }
-  return { ...state, costs, cashflow };
+
+  let saldo = principal;
+  for (let k = 0; k < prazoMeses; k++) {
+    const idx = monthIdx + k;
+    if (idx >= 12) break;
+    const juros = saldo * i;
+    const amort = pmt - juros;
+    jurosLine.values[idx] = (jurosLine.values[idx] || 0) + juros;
+    cashflow.amortizacoes[idx] = (cashflow.amortizacoes[idx] || 0) + amort;
+    saldo -= amort;
+  }
+
+  const capital = { ...state.capital, dividaOnerosa: state.capital.dividaOnerosa + principal };
+  return { ...state, costs, cashflow, capital };
+}
+
+/** Quita parte do principal usando caixa: reduz dívida + juros futuros proporcionalmente. */
+function payDownDebt(state: AppState, pct: number): AppState {
+  const capital = { ...state.capital, dividaOnerosa: state.capital.dividaOnerosa * (1 - pct) };
+  // reduz proporcionalmente os juros pagos (não a outras linhas financeiras)
+  const costs = cloneCosts(state.costs).map((c) =>
+    c.category === "financeiro" && /juros/i.test(c.label)
+      ? { ...c, values: c.values.map((v) => v * (1 - pct)) }
+      : c,
+  );
+  // consome caixa equivalente
+  const cashUsed = capital.dividaOnerosa * (pct / (1 - pct)); // valor pago
+  const cashflow = { ...state.cashflow };
+  cashflow.amortizacoes = state.cashflow.amortizacoes.slice();
+  cashflow.amortizacoes[0] = (cashflow.amortizacoes[0] || 0) + cashUsed;
+  return { ...state, costs, cashflow, capital };
 }
 
 function switchRegime(state: AppState, regime: AppState["tax"]["regime"]): AppState {
@@ -314,9 +355,9 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
         },
         {
           id: "amort_extra",
-          title: "Quitar 30% do principal (uso de caixa)",
-          detail: "Reduz juros futuros proporcionalmente.",
-          apply: (s) => scaleCategory(s, "financeiro", 0.7),
+          title: "Quitar 30% do principal da dívida (uso de caixa)",
+          detail: "Reduz dívida onerosa e juros futuros proporcionalmente; consome caixa equivalente.",
+          apply: (s) => payDownDebt(s, 0.3),
         },
       ],
     });
