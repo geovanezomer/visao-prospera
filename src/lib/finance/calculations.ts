@@ -193,8 +193,6 @@ export interface DRE {
   custosVariaveis: number[];
 }
 
-const VARIABLE_LIKE_IDS = new Set(["insumos", "fretes", "marketing"]);
-const CPV_IDS = new Set(["insumos", "fretes"]);
 
 export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: MonthlyTax } {
   const { revenue, costs, capital } = state;
