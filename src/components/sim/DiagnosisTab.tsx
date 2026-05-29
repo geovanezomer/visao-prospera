@@ -39,10 +39,9 @@ export function DiagnosisTab({
       {/* Indicadores financeiros completos */}
       <IndicatorsCard state={state} />
 
-      {/* Análises avançadas (até a projeção 36m) */}
+      {/* Análises avançadas */}
       <HealthScoreCard state={state} />
       <SensitivityCard state={state} />
-      <ForecastCard state={state} />
 
       {/* Diagnóstico financeiro (após a projeção) */}
       <section className="space-y-3">
@@ -64,8 +63,7 @@ export function DiagnosisTab({
         <StrategicSummary state={state} />
       </section>
 
-      {/* Continuação das análises avançadas */}
-      <MonteCarloCard state={state} />
+      {/* Comparação de cenários salvos */}
       <ScenarioCompareCard state={state} scenarios={scenarios} loadScenario={loadScenario} removeScenario={removeScenario} />
     </div>
   );
