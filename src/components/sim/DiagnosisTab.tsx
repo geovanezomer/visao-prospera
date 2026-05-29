@@ -56,9 +56,14 @@ export function DiagnosisTab({
         <StrategicSummary state={state} />
       </section>
 
-      {/* Indicadores, sensibilidade, projeção, Monte Carlo e comparação de cenários */}
+      {/* Indicadores financeiros completos */}
       <section className="space-y-3">
-        <SectionTitle>Indicadores financeiros e análise</SectionTitle>
+        <IndicatorsCard state={state} />
+      </section>
+
+      {/* Sensibilidade, projeção, Monte Carlo e comparação de cenários */}
+      <section className="space-y-3">
+        <SectionTitle>Análises avançadas</SectionTitle>
         <AnalysisTab
           state={state}
           scenarios={scenarios}
