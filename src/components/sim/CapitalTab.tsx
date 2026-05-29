@@ -113,7 +113,7 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
 
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard label="Ciclo Financeiro" value={`${ind.cicloFinanceiro} dias`} hint={{ description: "Dias entre pagar fornecedores e receber dos clientes. Quanto MAIOR, mais capital de giro a empresa precisa imobilizar.", formula: "PMR + PME − PMP" }} />
-        <StatCard label="NCG" value={fmtBRL(ind.ncg)} tone="warn" hint={{ description: "Necessidade de Capital de Giro — dinheiro que a operação 'consome' permanentemente para girar (estoques + clientes − fornecedores).", formula: "(Ciclo Financeiro ÷ 30) × Custos Mensais" }} />
+        <StatCard label="Necessidade de Capital de Giro" value={fmtBRL(ind.ncg)} tone="warn" hint={{ description: "Necessidade de Capital de Giro — dinheiro que a operação 'consome' permanentemente para girar (estoques + clientes − fornecedores).", formula: "(Ciclo Financeiro ÷ 30) × Custos Mensais" }} />
         <div className="rounded-lg border border-border/60 bg-card/60 p-4">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
             Capital de Giro Disponível
