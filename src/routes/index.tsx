@@ -152,7 +152,7 @@ function SimulaPro() {
         <div className="flex items-center justify-between gap-3 border-b border-primary/30 bg-primary/5 px-6 py-2 text-xs text-primary">
           <span>
             <Sparkles className="mr-1 inline h-3.5 w-3.5" />
-            Modo Guiado ativo — siga as abas: Receitas → Custos → Capital → Regime Tributário → DRE → Diagnóstico → Análise.
+            Modo Guiado ativo — siga as abas: Receitas → Custos → Capital → Regime Tributário → DRE → Caixa → Resultados → Simulador.
           </span>
           <button onClick={dismissBanner} className="rounded p-1 hover:bg-primary/20" aria-label="Fechar">
             <X className="h-3.5 w-3.5" />
@@ -176,9 +176,10 @@ function SimulaPro() {
             <TabsTrigger value="tributos">4. Regime Tributário</TabsTrigger>
             <TabsTrigger value="dre">5. DRE Simulado</TabsTrigger>
             <TabsTrigger value="caixa">6. Fluxo de Caixa</TabsTrigger>
-            <TabsTrigger value="diag">7. Diagnóstico & Decisões</TabsTrigger>
-            <TabsTrigger value="analise">8. Análise & Cenários</TabsTrigger>
-            <TabsTrigger value="estrategia">9. Análise Estratégica</TabsTrigger>
+            <TabsTrigger value="governanca">7. Governança</TabsTrigger>
+            <TabsTrigger value="resultados">8. Resultados</TabsTrigger>
+            <TabsTrigger value="simulador">9. Simulador</TabsTrigger>
+            <TabsTrigger value="analise">10. Cenários & Análise</TabsTrigger>
           </TabsList>
 
           <div className="mt-6">
@@ -188,9 +189,10 @@ function SimulaPro() {
             <TabsContent value="tributos"><TaxTab state={state} update={update} /></TabsContent>
             <TabsContent value="dre"><DRETab state={state} update={update} /></TabsContent>
             <TabsContent value="caixa"><CashflowTab state={state} update={update} /></TabsContent>
-            <TabsContent value="diag"><DiagnosisTab state={state} update={update} saveScenario={save} /></TabsContent>
+            <TabsContent value="governanca"><StrategicTab state={state} update={update} /></TabsContent>
+            <TabsContent value="resultados"><DiagnosisTab state={state} /></TabsContent>
+            <TabsContent value="simulador"><SimulatorTab state={state} apply={update} saveScenario={save} /></TabsContent>
             <TabsContent value="analise"><AnalysisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} saveScenario={save} /></TabsContent>
-            <TabsContent value="estrategia"><StrategicTab state={state} update={update} /></TabsContent>
           </div>
         </Tabs>
 
