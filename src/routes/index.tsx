@@ -37,11 +37,22 @@ export const Route = createFileRoute("/")({
 });
 
 function SimulaPro() {
+  const { user, hydrated, logout } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (hydrated && !user) navigate({ to: "/login" });
+  }, [hydrated, user, navigate]);
+
   const { state, update, reset, setState } = useAppState();
   const { scenarios, save, remove } = useScenarios();
   const [wizardOpen, setWizardOpen] = useState(false);
 
   const businessIcon = state.businessType === "industria" ? <Factory className="h-4 w-4" /> : state.businessType === "comercio" ? <Store className="h-4 w-4" /> : <Briefcase className="h-4 w-4" />;
+
+  if (!hydrated || !user) {
+    return <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">Carregando…</div>;
+  }
 
   const exportReport = () => {
     window.print();
