@@ -21,9 +21,9 @@ import { AppState, BusinessType } from "@/lib/finance/types";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CfoPRO — Diagnóstico & Simulação Empresarial" },
-      { name: "description", content: "CfoPRO: diagnóstico financeiro, DRE simulado, regime tributário, WACC e análise de cenários para empresas brasileiras (Simples, Presumido, Lucro Real)." },
-      { property: "og:title", content: "CfoPRO — Diagnóstico & Simulação Empresarial" },
+      { title: "GZ FinancePRO — Diagnóstico & Simulação Empresarial" },
+      { name: "description", content: "GZ FinancePRO: diagnóstico financeiro, DRE simulado, regime tributário, WACC e análise de cenários para empresas brasileiras (Simples, Presumido, Lucro Real)." },
+      { property: "og:title", content: "GZ FinancePRO — Diagnóstico & Simulação Empresarial" },
       { property: "og:description", content: "Diagnóstico financeiro estilo terminal: DRE, WACC, ponto de equilíbrio, tributação comparada, Monte Carlo e cenários." },
     ],
     links: [
@@ -69,7 +69,7 @@ function SimulaPro() {
             </div>
             <div>
               <h1 className="text-base font-semibold tracking-tight">
-                Cfo<span className="text-primary">PRO</span>
+                GZ Finance<span className="text-primary">PRO</span>
               </h1>
               <p className="text-[11px] text-muted-foreground">Diagnóstico & Simulação Empresarial · IFRS 18 / CPC 51</p>
             </div>
@@ -171,7 +171,7 @@ function SimulaPro() {
         </Tabs>
 
         <footer className="mt-12 border-t border-border/40 py-6 text-center text-[11px] text-muted-foreground">
-          CfoPRO · Diagnóstico & Simulação Empresarial para PMEs brasileiras · valores em R$ (pt-BR) · todos os dados ficam no seu navegador.
+          GZ FinancePRO · Diagnóstico & Simulação Empresarial para PMEs brasileiras · valores em R$ (pt-BR) · todos os dados ficam no seu navegador.
         </footer>
       </main>
 
