@@ -116,12 +116,12 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             { k: "Alíquota efetiva", v: (r: TaxRegime) => fmtPct(regimes[r].effective / 100) },
             { k: "Lucro Líquido (ano)", v: (r: TaxRegime) => fmtBRL(llBy[r]) },
           ].map((row) => (
-            <>
-              <div key={row.k} className="bg-card p-3 text-xs text-muted-foreground">{row.k}</div>
+            <Fragment key={row.k}>
+              <div className="bg-card p-3 text-xs text-muted-foreground">{row.k}</div>
               {(["simples", "presumido", "real"] as TaxRegime[]).map((r) => (
                 <div key={r + row.k} className={`bg-card p-3 num text-sm ${best === r ? "text-pos font-semibold" : ""}`}>{row.v(r)}</div>
               ))}
-            </>
+            </Fragment>
           ))}
         </div>
         <div className="border-t border-border/60 p-4 text-xs text-muted-foreground">
