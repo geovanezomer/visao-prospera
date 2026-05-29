@@ -1,11 +1,22 @@
 import { useMemo } from "react";
-import { AppState } from "@/lib/finance/types";
+import { AppState, Scenario } from "@/lib/finance/types";
 import { buildPrescriptiveCards, PrescriptiveCard } from "@/lib/finance/prescriptive";
 import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "lucide-react";
 import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
+import { AnalysisTab } from "./AnalysisTab";
 
-export function DiagnosisTab({ state }: { state: AppState }) {
+export function DiagnosisTab({
+  state,
+  scenarios,
+  loadScenario,
+  removeScenario,
+}: {
+  state: AppState;
+  scenarios: Scenario[];
+  loadScenario: (s: AppState) => void;
+  removeScenario: (id: string) => void;
+}) {
   const cards = useMemo(() => buildPrescriptiveCards(state), [state]);
 
   return (
@@ -42,6 +53,17 @@ export function DiagnosisTab({ state }: { state: AppState }) {
       <section className="space-y-3">
         <SectionTitle>Síntese estratégica</SectionTitle>
         <StrategicSummary state={state} />
+      </section>
+
+      {/* Indicadores, sensibilidade, projeção, Monte Carlo e comparação de cenários */}
+      <section className="space-y-3">
+        <SectionTitle>Indicadores financeiros e análise</SectionTitle>
+        <AnalysisTab
+          state={state}
+          scenarios={scenarios}
+          loadScenario={loadScenario}
+          removeScenario={removeScenario}
+        />
       </section>
     </div>
   );
