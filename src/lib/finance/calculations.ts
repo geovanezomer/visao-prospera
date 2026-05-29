@@ -203,29 +203,34 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   const deducoesInadimplencia = revenue.bruta.map((r, i) => r * (revenue.inadimplencia[i] / 100));
   const receitaLiquida = receitaBruta.map((r, i) => r - deducoesInadimplencia[i]);
 
-  const opLines = costs.filter((c) => c.group === "operacional");
-  const finLines = costs.filter((c) => c.group === "financeiro");
-
   const cpv = zeros12();
   const despOp = zeros12();
   const custosFixos = zeros12();
   const custosVariaveis = zeros12();
   const despesasPorCategoria: Record<string, number[]> = {};
 
-  for (const line of opLines) {
-    const v = monthValues(line);
-    despesasPorCategoria[line.label] = v;
+  for (const c of costs) {
+    if (c.category === "financeiro") continue;
+    const v = monthValues(c);
+    despesasPorCategoria[c.label] = v;
     for (let i = 0; i < 12; i++) {
-      if (CPV_IDS.has(line.id)) cpv[i] += v[i];
-      else despOp[i] += v[i];
-      if (line.variavel || VARIABLE_LIKE_IDS.has(line.id)) custosVariaveis[i] += v[i];
-      else custosFixos[i] += v[i];
+      if (c.category === "custo_vendas") {
+        cpv[i] += v[i];
+        custosVariaveis[i] += v[i]; // Custo de Vendas é variável por natureza
+      } else if (c.category === "variavel") {
+        despOp[i] += v[i];
+        custosVariaveis[i] += v[i];
+      } else {
+        // fixo
+        despOp[i] += v[i];
+        custosFixos[i] += v[i];
+      }
     }
   }
 
   const custosFinanceirosTotal = zeros12();
-  for (const line of finLines) {
-    const v = monthValues(line);
+  for (const c of costs.filter((x) => x.category === "financeiro")) {
+    const v = monthValues(c);
     for (let i = 0; i < 12; i++) custosFinanceirosTotal[i] += v[i];
   }
 
