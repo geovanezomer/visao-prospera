@@ -12,6 +12,7 @@ import { TaxTab } from "@/components/sim/TaxTab";
 import { DRETab } from "@/components/sim/DRETab";
 import { CashflowTab } from "@/components/sim/CashflowTab";
 import { DiagnosisTab } from "@/components/sim/DiagnosisTab";
+import { AnalysisTab } from "@/components/sim/AnalysisTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
 import { BusinessType } from "@/lib/finance/types";
 
@@ -107,6 +108,7 @@ function SimulaPro() {
             <TabsTrigger value="dre">5. DRE Simulado</TabsTrigger>
             <TabsTrigger value="caixa">6. Fluxo de Caixa</TabsTrigger>
             <TabsTrigger value="diag">7. Diagnóstico & Decisões</TabsTrigger>
+            <TabsTrigger value="analise">8. Análise & Cenários</TabsTrigger>
           </TabsList>
 
           <div className="mt-6">
@@ -117,6 +119,7 @@ function SimulaPro() {
             <TabsContent value="dre"><DRETab state={state} update={update} /></TabsContent>
             <TabsContent value="caixa"><CashflowTab state={state} update={update} /></TabsContent>
             <TabsContent value="diag"><DiagnosisTab state={state} update={update} saveScenario={save} /></TabsContent>
+            <TabsContent value="analise"><AnalysisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} /></TabsContent>
           </div>
         </Tabs>
 
