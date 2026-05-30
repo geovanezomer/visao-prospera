@@ -174,9 +174,9 @@ function SimulaPro() {
             <TabsTrigger value="custos">2. Custos e Despesas</TabsTrigger>
             <TabsTrigger value="capital">3. Capital</TabsTrigger>
             <TabsTrigger value="tributos">4. Regime Tributário</TabsTrigger>
-            <TabsTrigger value="dre">5. DRE Simulado</TabsTrigger>
-            <TabsTrigger value="caixa">6. Fluxo de Caixa</TabsTrigger>
-            <TabsTrigger value="governanca">7. Governança</TabsTrigger>
+            <TabsTrigger value="caixa">5. Fluxo de Caixa</TabsTrigger>
+            <TabsTrigger value="governanca">6. Governança</TabsTrigger>
+            <TabsTrigger value="dre">7. DRE</TabsTrigger>
             <TabsTrigger value="resultados">8. Análises</TabsTrigger>
             <TabsTrigger value="simulador">9. Simulador</TabsTrigger>
           </TabsList>
@@ -186,16 +186,17 @@ function SimulaPro() {
             <TabsContent value="custos"><CostsTab state={state} update={update} /></TabsContent>
             <TabsContent value="capital"><CapitalTab state={state} update={update} /></TabsContent>
             <TabsContent value="tributos"><TaxTab state={state} update={update} /></TabsContent>
-            <TabsContent value="dre"><DRETab state={state} update={update} /></TabsContent>
             <TabsContent value="caixa"><CashflowTab state={state} update={update} /></TabsContent>
             <TabsContent value="governanca"><StrategicTab state={state} update={update} /></TabsContent>
+            <TabsContent value="dre"><DRETab state={state} update={update} /></TabsContent>
             <TabsContent value="resultados"><DiagnosisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} /></TabsContent>
             <TabsContent value="simulador"><SimulatorTab state={state} apply={update} saveScenario={save} /></TabsContent>
           </div>
         </Tabs>
 
         <footer className="mt-12 border-t border-border/40 py-6 text-center text-[11px] text-muted-foreground">
-          GZ FinnancePRO · Diagnóstico & Simulação Empresarial para PMEs brasileiras · valores em R$ (pt-BR) · todos os dados ficam no seu navegador.
+          <p>GZ FinnancePRO · Diagnóstico &amp; Simulação Empresarial para PMEs brasileiras · valores em R$ (pt-BR) · todos os dados ficam no seu navegador.</p>
+          <p className="mt-1">Desenvolvido por Geovane Zomer | Consultor Financeiro &amp; Investimentos CVM 3354-5</p>
         </footer>
       </main>
 
