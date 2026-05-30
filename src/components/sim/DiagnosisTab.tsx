@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { AppState, Scenario } from "@/lib/finance/types";
 import { buildPrescriptiveCards, PrescriptiveCard } from "@/lib/finance/prescriptive";
+import { buildDRE, calcIndicators, diagnose } from "@/lib/finance/calculations";
 import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "lucide-react";
 import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
