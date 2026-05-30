@@ -38,6 +38,20 @@ export function renderHint(hint: HelpHint | undefined) {
   return <HelpTip text={hint.description} formula={hint.formula} example={hint.example} />;
 }
 
+function numToText(n: number): string {
+  if (!Number.isFinite(n) || n === 0) return "";
+  // Use dot as canonical separator; allow user to type either . or ,
+  return String(n);
+}
+
+function parseLoose(s: string): number {
+  if (!s) return 0;
+  // Accept both Brazilian comma and dot
+  const normalized = s.replace(/\s/g, "").replace(",", ".");
+  const n = parseFloat(normalized);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export function MoneyInput({
   value,
   onChange,
@@ -47,12 +61,33 @@ export function MoneyInput({
   onChange: (n: number) => void;
   className?: string;
 }) {
+  const [text, setText] = useState<string>(() => numToText(value));
+  const focusedRef = useRef(false);
+
+  // Sync external changes when input is not focused
+  useEffect(() => {
+    if (!focusedRef.current && parseLoose(text) !== value) {
+      setText(numToText(value));
+    }
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <input
-      type="number"
-      step="0.01"
-      value={Number.isFinite(value) ? value : 0}
-      onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+      type="text"
+      inputMode="decimal"
+      value={text}
+      onFocus={() => {
+        focusedRef.current = true;
+      }}
+      onBlur={() => {
+        focusedRef.current = false;
+        setText(numToText(value));
+      }}
+      onChange={(e) => {
+        const raw = e.target.value.replace(/[^0-9.,-]/g, "");
+        setText(raw);
+        onChange(parseLoose(raw));
+      }}
       className={cn(
         "num w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm text-foreground outline-none transition focus:border-primary focus:bg-input/70",
         className,
@@ -70,19 +105,40 @@ export function PctInput({
   onChange: (n: number) => void;
   className?: string;
 }) {
+  const [text, setText] = useState<string>(() => numToText(value));
+  const focusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!focusedRef.current && parseLoose(text) !== value) {
+      setText(numToText(value));
+    }
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className={cn("relative", className)}>
       <input
-        type="number"
-        step="0.1"
-        value={Number.isFinite(value) ? value : 0}
-        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+        type="text"
+        inputMode="decimal"
+        value={text}
+        onFocus={() => {
+          focusedRef.current = true;
+        }}
+        onBlur={() => {
+          focusedRef.current = false;
+          setText(numToText(value));
+        }}
+        onChange={(e) => {
+          const raw = e.target.value.replace(/[^0-9.,-]/g, "");
+          setText(raw);
+          onChange(parseLoose(raw));
+        }}
         className="num w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 pr-6 text-right text-sm outline-none transition focus:border-primary focus:bg-input/70"
       />
       <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
     </div>
   );
 }
+
 
 export function StatCard({
   label,
