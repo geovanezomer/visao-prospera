@@ -106,25 +106,6 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
         <StatCard label="Tributos / Receita" value={fmtPct(tax.effective / 100)} tone="warn" sub={`${fmtBRL(tax.annual)} no ano`} hint={{ description: "Carga tributária total efetiva: percentual da receita bruta consumido por impostos (sobre venda + sobre lucro).", formula: "(Impostos s/ Venda + Impostos s/ Lucro) ÷ Receita Bruta × 100" }} />
       </div>
 
-      {/* Diagnostics */}
-      <div className="rounded-lg border border-border/60 bg-card/40 p-5">
-        <SectionTitle hint="Diagnóstico automático baseado nos indicadores do plano atual.">Diagnóstico CFO</SectionTitle>
-        <div className="mt-4 grid gap-2 md:grid-cols-2">
-          {diagnostics.map((d, i) => (
-            <div key={i} className={`flex items-start gap-3 rounded-md border p-3 text-xs leading-relaxed ${
-              d.level === "ok" ? "border-[var(--success)]/40 bg-[var(--success)]/5" :
-              d.level === "warn" ? "border-[var(--warning)]/40 bg-[var(--warning)]/5" :
-              "border-[var(--destructive)]/40 bg-[var(--destructive)]/5"
-            }`}>
-              <div className="mt-0.5">{diagIcon(d.level)}</div>
-              <div>
-                <div className="font-semibold text-foreground">{d.title}</div>
-                <div className="text-muted-foreground">{d.message}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* DRE Table */}
       <div className="rounded-lg border border-border/60 bg-card/40">
