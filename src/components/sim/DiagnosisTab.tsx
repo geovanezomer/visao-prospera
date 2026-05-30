@@ -17,6 +17,16 @@ export function DiagnosisTab({
   removeScenario?: (id: string) => void;
 }) {
   const cards = useMemo(() => buildPrescriptiveCards(state), [state]);
+  const diagnostics = useMemo(() => {
+    const { dre } = buildDRE(state, state.tax.regime);
+    const ind = calcIndicators(state, dre);
+    return diagnose(state, dre, ind);
+  }, [state]);
+
+  const diagIcon = (l: string) =>
+    l === "ok" ? <CheckCircle2 className="h-4 w-4 text-pos" /> :
+    l === "warn" ? <TriangleAlert className="h-4 w-4 text-[var(--warning)]" /> :
+    <AlertTriangle className="h-4 w-4 text-neg" />;
 
   return (
     <div className="space-y-6">
