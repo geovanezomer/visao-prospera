@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle2, TriangleAlert } from "lucide-react";
+import { Bar as _Bar } from "recharts";
 
 const CHART_COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15", "#F472B6", "#34D399", "#A78BFA", "#FB923C"];
 
