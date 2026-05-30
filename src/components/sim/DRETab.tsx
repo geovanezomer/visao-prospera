@@ -16,7 +16,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
   const regime = state.tax.regime;
   const { dre, tax } = buildDRE(state, regime);
   const ind = calcIndicators(state, dre);
-  const diagnostics = diagnose(state, dre, ind);
+  
   const cvLabel = COST_VENDAS_LABEL[state.businessType];
 
   const rb = sum(dre.receitaBruta);
