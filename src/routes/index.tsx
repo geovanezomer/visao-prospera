@@ -83,9 +83,9 @@ function SimulaPro() {
             </div>
             <div>
               <h1 className="text-base font-semibold tracking-tight">
-                GZ Finance<span className="text-primary">PRO</span>
+                GZ Finnance<span className="text-primary">PRO</span>
               </h1>
-              <p className="text-[11px] text-muted-foreground">Diagnóstico & Simulação Empresarial · IFRS 18 / CPC 51</p>
+              <p className="text-[11px] text-muted-foreground">Desenvolvido por Geovane Zomer | Consultor Financeiro &amp; Investimentos CVM 3354-5</p>
             </div>
           </div>
 
