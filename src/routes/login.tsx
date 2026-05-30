@@ -58,7 +58,7 @@ function LoginPage() {
           </div>
           <div>
             <p className="text-sm font-semibold tracking-tight">
-              GZ Finance<span className="text-primary">PRO</span>
+              GZ Finnance<span className="text-primary">PRO</span>
             </p>
             <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Diagnóstico & Simulação
@@ -77,7 +77,7 @@ function LoginPage() {
         </div>
 
         <div className="text-[11px] text-muted-foreground">
-          IFRS 18 · CPC 51 · valores em R$ (pt-BR)
+          Desenvolvido por Geovane Zomer | Consultor Financeiro &amp; Investimentos CVM 3354-5
         </div>
       </section>
 
@@ -89,7 +89,7 @@ function LoginPage() {
               <Activity className="h-5 w-5" />
             </div>
             <p className="text-base font-semibold tracking-tight">
-              GZ Finance<span className="text-primary">PRO</span>
+              GZ Finnance<span className="text-primary">PRO</span>
             </p>
           </div>
 
