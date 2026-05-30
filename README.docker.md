@@ -1,4 +1,4 @@
-# GZ FinancePRO — Build local com Docker
+# GZ FinnancePRO — Build local com Docker
 
 Este projeto é uma aplicação **TanStack Start** (React 19 + Vite 7 + Nitro) que utiliza **Bun** como gerenciador de pacotes.
 Os arquivos abaixo permitem buildar e rodar localmente em qualquer máquina com

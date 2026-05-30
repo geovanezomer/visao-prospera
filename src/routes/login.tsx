@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Entrar — GZ FinancePRO" },
-      { name: "description", content: "Acesse o GZ FinancePRO: diagnóstico, DRE simulado, regime tributário e análise de cenários." },
+      { title: "Entrar — GZ FinnancePRO" },
+      { name: "description", content: "Acesse o GZ FinnancePRO: diagnóstico, DRE simulado, regime tributário e análise de cenários." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -95,7 +95,7 @@ function LoginPage() {
 
           <h2 className="text-2xl font-semibold tracking-tight">Bem-vindo de volta</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Acesse sua plataforma GZ FinancePRO.
+            Acesse sua plataforma GZ FinnancePRO.
           </p>
 
           <form onSubmit={onSubmit} className="mt-8 space-y-4" autoComplete="on">
