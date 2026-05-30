@@ -2,12 +2,12 @@ import { useState } from "react";
 import { AppState, TaxRegime, COST_VENDAS_LABEL } from "@/lib/finance/types";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/lib/finance/format";
-import { buildDRE, calcIndicators, diagnose } from "@/lib/finance/calculations";
+import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle2, TriangleAlert } from "lucide-react";
+
 
 const CHART_COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15", "#F472B6", "#34D399", "#A78BFA", "#FB923C"];
 
@@ -16,7 +16,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
   const regime = state.tax.regime;
   const { dre, tax } = buildDRE(state, regime);
   const ind = calcIndicators(state, dre);
-  const diagnostics = diagnose(state, dre, ind);
+  
   const cvLabel = COST_VENDAS_LABEL[state.businessType];
 
   const rb = sum(dre.receitaBruta);
@@ -67,10 +67,6 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
     { name: "Lucro Líq.", value: ll },
   ];
 
-  const diagIcon = (l: string) =>
-    l === "ok" ? <CheckCircle2 className="h-4 w-4 text-pos" /> :
-    l === "warn" ? <TriangleAlert className="h-4 w-4 text-[var(--warning)]" /> :
-    <AlertTriangle className="h-4 w-4 text-neg" />;
 
   return (
     <div className="space-y-6">
@@ -106,25 +102,6 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
         <StatCard label="Tributos / Receita" value={fmtPct(tax.effective / 100)} tone="warn" sub={`${fmtBRL(tax.annual)} no ano`} hint={{ description: "Carga tributária total efetiva: percentual da receita bruta consumido por impostos (sobre venda + sobre lucro).", formula: "(Impostos s/ Venda + Impostos s/ Lucro) ÷ Receita Bruta × 100" }} />
       </div>
 
-      {/* Diagnostics */}
-      <div className="rounded-lg border border-border/60 bg-card/40 p-5">
-        <SectionTitle hint="Diagnóstico automático baseado nos indicadores do plano atual.">Diagnóstico CFO</SectionTitle>
-        <div className="mt-4 grid gap-2 md:grid-cols-2">
-          {diagnostics.map((d, i) => (
-            <div key={i} className={`flex items-start gap-3 rounded-md border p-3 text-xs leading-relaxed ${
-              d.level === "ok" ? "border-[var(--success)]/40 bg-[var(--success)]/5" :
-              d.level === "warn" ? "border-[var(--warning)]/40 bg-[var(--warning)]/5" :
-              "border-[var(--destructive)]/40 bg-[var(--destructive)]/5"
-            }`}>
-              <div className="mt-0.5">{diagIcon(d.level)}</div>
-              <div>
-                <div className="font-semibold text-foreground">{d.title}</div>
-                <div className="text-muted-foreground">{d.message}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* DRE Table */}
       <div className="rounded-lg border border-border/60 bg-card/40">

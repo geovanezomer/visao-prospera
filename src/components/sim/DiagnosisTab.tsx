@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { AppState, Scenario } from "@/lib/finance/types";
 import { buildPrescriptiveCards, PrescriptiveCard } from "@/lib/finance/prescriptive";
+import { buildDRE, calcIndicators, diagnose } from "@/lib/finance/calculations";
 import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "lucide-react";
 import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
@@ -16,6 +17,16 @@ export function DiagnosisTab({
   removeScenario?: (id: string) => void;
 }) {
   const cards = useMemo(() => buildPrescriptiveCards(state), [state]);
+  const diagnostics = useMemo(() => {
+    const { dre } = buildDRE(state, state.tax.regime);
+    const ind = calcIndicators(state, dre);
+    return diagnose(state, dre, ind);
+  }, [state]);
+
+  const diagIcon = (l: string) =>
+    l === "ok" ? <CheckCircle2 className="h-4 w-4 text-pos" /> :
+    l === "warn" ? <TriangleAlert className="h-4 w-4 text-[var(--warning)]" /> :
+    <AlertTriangle className="h-4 w-4 text-neg" />;
 
   return (
     <div className="space-y-6">
@@ -26,6 +37,27 @@ export function DiagnosisTab({
       {/* Diagnóstico financeiro */}
       <section className="space-y-3">
         <SectionTitle>Diagnóstico financeiro</SectionTitle>
+
+        {/* Diagnóstico CFO */}
+        <div className="rounded-lg border border-border/60 bg-card/40 p-5">
+          <SectionTitle hint="Diagnóstico automático baseado nos indicadores do plano atual.">Diagnóstico CFO</SectionTitle>
+          <div className="mt-4 grid gap-2 md:grid-cols-2">
+            {diagnostics.map((d, i) => (
+              <div key={i} className={`flex items-start gap-3 rounded-md border p-3 text-xs leading-relaxed ${
+                d.level === "ok" ? "border-[var(--success)]/40 bg-[var(--success)]/5" :
+                d.level === "warn" ? "border-[var(--warning)]/40 bg-[var(--warning)]/5" :
+                "border-[var(--destructive)]/40 bg-[var(--destructive)]/5"
+              }`}>
+                <div className="mt-0.5">{diagIcon(d.level)}</div>
+                <div>
+                  <div className="font-semibold text-foreground">{d.title}</div>
+                  <div className="text-muted-foreground">{d.message}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="grid gap-4 lg:grid-cols-2">
           {cards.map((c) => <CardView key={c.id} card={c} />)}
           {cards.length === 0 && (
