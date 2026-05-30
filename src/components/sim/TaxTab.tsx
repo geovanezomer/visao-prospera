@@ -152,7 +152,7 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
           ))}
         </div>
         <div className="border-t border-border/60 p-4 text-xs text-muted-foreground">
-          Use o regime ativo no app na aba <b>DRE Simulado</b>. Atualmente:{" "}
+          Use o regime ativo no app na aba <b>DRE</b>. Atualmente:{" "}
           <Select value={state.tax.regime} onValueChange={(v) => set({ regime: v as TaxRegime })}>
             <SelectTrigger className="ml-2 inline-flex h-7 w-44"><SelectValue /></SelectTrigger>
             <SelectContent>

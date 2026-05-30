@@ -59,7 +59,7 @@ export function SimulatorTab({
             <div className="font-semibold text-foreground">Simulador combinatório de cenários</div>
             <p className="mt-1 text-xs text-muted-foreground">
               Mova os sliders para combinar ajustes (preço, volume, custos, juros, capital de giro, regime).
-              O DRE Simulado Anual ao lado recalcula em tempo real. Quando encontrar a combinação ideal,
+              O DRE Anual ao lado recalcula em tempo real. Quando encontrar a combinação ideal,
               aplique no cenário base ou salve como um cenário separado.
             </p>
           </div>
@@ -141,7 +141,7 @@ export function SimulatorTab({
           </Accordion>
         </div>
 
-        {/* DRE Simulado */}
+        {/* DRE */}
         <div className="lg:sticky lg:top-[72px] lg:h-fit">
           <DREPanel base={baseView} sim={simView} inconsistencies={inconsistencies} />
         </div>
@@ -279,7 +279,7 @@ function DREPanel({ base, sim, inconsistencies }: { base: SimDREView; sim: SimDR
   return (
     <div className="space-y-3 rounded-lg border border-border/60 bg-card/60 p-4">
       <div className="flex items-center justify-between border-b border-border/40 pb-2">
-        <SectionTitle>DRE Simulado · Anual</SectionTitle>
+        <SectionTitle>DRE · Anual</SectionTitle>
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Base × Simulado</span>
       </div>
       <table className="w-full text-xs">
