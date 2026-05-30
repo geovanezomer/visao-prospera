@@ -67,10 +67,6 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
     { name: "Lucro Líq.", value: ll },
   ];
 
-  const diagIcon = (l: string) =>
-    l === "ok" ? <CheckCircle2 className="h-4 w-4 text-pos" /> :
-    l === "warn" ? <TriangleAlert className="h-4 w-4 text-[var(--warning)]" /> :
-    <AlertTriangle className="h-4 w-4 text-neg" />;
 
   return (
     <div className="space-y-6">
