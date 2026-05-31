@@ -545,7 +545,6 @@ function RiskPanel({ valuation, state }: { valuation: ReturnType<typeof buildVal
             />
           )}
           <Reco icon="🧪" title="Simule cenários operacionais" text="Use a aba Simulador para testar como mudanças de preço, custo ou volume impactam o EV." />
-          {ind => null}
           <Reco icon="📐" title="Triangule múltiplos vs DCF" text="Métodos próximos = valuation defensável. Métodos divergentes = revisar premissas antes de negociar." />
         </ul>
       </section>
