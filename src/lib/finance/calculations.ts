@@ -407,7 +407,18 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   const inadimp = revenue.bruta.map((r, i) => r * (revenue.inadimplencia[i] / 100));
   const deducoesInadimplencia = usaPDD ? zeros12() : inadimp.slice();
   const pdd = usaPDD ? inadimp.slice() : zeros12();
-  const receitaLiquida = receitaBruta.map((r, i) => r - deducoesInadimplencia[i]);
+
+  // ---- Primeira passagem: descobrir impostos sobre venda (independem do LAIR) ----
+  // Simples/Presumido: dependem só de receita; Real: PIS/COFINS/ICMS/CBS/IBS também
+  // só dependem de receita+CPV, não de LAIR. Calculamos com LAIR=0 só para extrair vendas.
+  let taxPre: MonthlyTax;
+  if (regime === "simples") taxPre = calcSimples(state);
+  else if (regime === "presumido") taxPre = calcPresumido(state);
+  else taxPre = calcReal(state, zeros12());
+  const impostosVendas = taxPre.monthlyVendas.slice();
+
+  // Receita Líquida = Bruta − Inadimplência (se não-PDD) − Impostos sobre Venda (CPC/IFRS 15)
+  const receitaLiquida = receitaBruta.map((r, i) => r - deducoesInadimplencia[i] - impostosVendas[i]);
 
   const cpv = zeros12();
   const despOp = zeros12();
@@ -426,7 +437,6 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     }
   }
 
-  // PDD entra como despesa operacional fixa (líquida de eventual reversão/recuperação CPC 47)
   if (usaPDD) {
     const reversaoMensal = Math.max(0, revenue.pddReversaoMensal ?? 0);
     for (let i = 0; i < 12; i++) {
@@ -447,7 +457,6 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   const lucroBruto = receitaLiquida.map((r, i) => r - cpv[i]);
   const ebitda = lucroBruto.map((g, i) => g - despOp[i]);
 
-  // Depreciação base + depreciação adicional de Capex ativado no meio do ano (Auditoria)
   const depreciacao = fill12(capital.depreciacaoMensal);
   for (const c of costs) {
     if (!c.ativacao || c.ativacao.vidaUtilMeses <= 0 || c.ativacao.valor <= 0) continue;
@@ -455,7 +464,6 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     const depAdd = c.ativacao.valor / c.ativacao.vidaUtilMeses;
     for (let i = startIdx; i < 12; i++) depreciacao[i] += depAdd;
   }
-  // Capex ativados a partir da CapitalStructure (lista dedicada)
   for (const ca of capital.capexAtivacao ?? []) {
     if (!ca || ca.vidaUtilMeses <= 0 || ca.valor <= 0) continue;
     const startIdx = Math.max(0, Math.min(11, (ca.mes || 1) - 1));
@@ -466,20 +474,23 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   const resultadoFinanceiro = ebit.map((_, i) => capital.jurosRecebidosMensal - custosFinanceirosTotal[i]);
   const lair = ebit.map((e, i) => e + resultadoFinanceiro[i]);
 
+  // ---- Segunda passagem: impostos sobre LUCRO usando o LAIR já líquido de impostos sobre venda ----
   let tax: MonthlyTax;
-  if (regime === "simples") tax = calcSimples(state);
-  else if (regime === "presumido") tax = calcPresumido(state);
-  else tax = calcReal(state, lair);
+  if (regime === "simples") tax = taxPre;                  // sem IRPJ/CSLL separados
+  else if (regime === "presumido") tax = taxPre;           // IRPJ/CSLL com base presumida sobre receita (não muda)
+  else tax = calcReal(state, lair);                        // recalcula com LAIR correto
 
-  const lucroLiquido = lair.map((l, i) => l - tax.monthly[i]);
+  const impostosLucro = tax.monthlyLucro;
+  const impostosTotal = impostosVendas.map((v, i) => v + impostosLucro[i]);
+  const lucroLiquido = lair.map((l, i) => l - impostosLucro[i]);
   const custosOperacionaisTotal = cpv.map((c, i) => c + despOp[i]);
 
   return {
     dre: {
-      receitaBruta, deducoesInadimplencia, pdd, receitaLiquida,
+      receitaBruta, deducoesInadimplencia, impostosVendas, pdd, receitaLiquida,
       cpv, lucroBruto, despesasOperacionais: despOp,
       ebitda, depreciacao, ebit, resultadoFinanceiro, lair,
-      impostos: tax.monthly, lucroLiquido,
+      impostos: impostosLucro, impostosTotal, lucroLiquido,
       despesasPorCategoria, custosFinanceirosTotal, custosOperacionaisTotal,
       custosFixos, custosVariaveis,
       folhaCltAnual: folhaAnual(state),
