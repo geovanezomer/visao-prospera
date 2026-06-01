@@ -1,6 +1,6 @@
 import { AppState } from "@/lib/finance/types";
 import { fmtBRL, fmtPct, MESES, sum, avg } from "@/lib/finance/format";
-import { MoneyInput, PctInput, StatCard, SectionTitle, HelpTip } from "./primitives";
+import { MoneyInput, NumInput, PctInput, StatCard, SectionTitle, HelpTip } from "./primitives";
 
 export function RevenueTab({ state, update }: { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void }) {
   const r = state.revenue;
