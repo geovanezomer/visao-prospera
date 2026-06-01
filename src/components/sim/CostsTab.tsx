@@ -140,66 +140,68 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
         />
       </div>
 
-      {/* Custo de Vendas */}
-      <SectionBlock
-        title={`Custo de Vendas — ${cvLabel.short} (${cvLabel.long})`}
-        hint="Custos diretamente ligados à produção/aquisição do que é vendido. Subcategorias seguem o tipo de empresa selecionado."
-        accentClass="border-l-primary"
-        onAdd={() => addLine("custo_vendas", subcats[0]?.id)}
-      >
-        {subcats.map((sc) => {
-          const lines = byCat("custo_vendas").filter((l) => (l.subcategory || subcats[0].id) === sc.id);
-          if (lines.length === 0) {
+      {/* Custo de Vendas — oculto para Serviços (CSP descontinuado) */}
+      {business !== "servicos" && (
+        <SectionBlock
+          title={`Custo de Vendas — ${cvLabel.short} (${cvLabel.long})`}
+          hint="Custos diretamente ligados à produção/aquisição do que é vendido. Subcategorias seguem o tipo de empresa selecionado."
+          accentClass="border-l-primary"
+          onAdd={() => addLine("custo_vendas", subcats[0]?.id)}
+        >
+          {subcats.map((sc) => {
+            const lines = byCat("custo_vendas").filter((l) => (l.subcategory || subcats[0].id) === sc.id);
+            if (lines.length === 0) {
+              return (
+                <SubcatHeader key={sc.id} label={sc.label}>
+                  <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => addLine("custo_vendas", sc.id)}>
+                    <Plus className="mr-1 h-3 w-3" /> Adicionar
+                  </Button>
+                </SubcatHeader>
+              );
+            }
             return (
-              <SubcatHeader key={sc.id} label={sc.label}>
-                <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => addLine("custo_vendas", sc.id)}>
-                  <Plus className="mr-1 h-3 w-3" /> Adicionar
-                </Button>
-              </SubcatHeader>
+              <div key={sc.id}>
+                <SubcatHeader label={sc.label}>
+                  <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => addLine("custo_vendas", sc.id)}>
+                    <Plus className="mr-1 h-3 w-3" /> Adicionar
+                  </Button>
+                </SubcatHeader>
+                <CostTable
+                  lines={lines}
+                  receitaBrutaAnual={receitaBrutaAnual}
+                  onMonth={setMonth}
+                  onFixed={setFixed}
+                  onLabel={setLabel}
+                  onRemove={removeLine}
+                  onSubcat={setSubcat}
+                  subcats={subcats}
+                />
+              </div>
             );
-          }
-          return (
-            <div key={sc.id}>
-              <SubcatHeader label={sc.label}>
-                <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => addLine("custo_vendas", sc.id)}>
-                  <Plus className="mr-1 h-3 w-3" /> Adicionar
-                </Button>
-              </SubcatHeader>
-              <CostTable
-                lines={lines}
-                receitaBrutaAnual={receitaBrutaAnual}
-                onMonth={setMonth}
-                onFixed={setFixed}
-                onLabel={setLabel}
-                onRemove={removeLine}
-                onSubcat={setSubcat}
-                subcats={subcats}
-              />
-            </div>
-          );
-        })}
-        {/* Linhas sem subcategoria reconhecida (defensivo) */}
-        {(() => {
-          const known = new Set(subcats.map((s) => s.id));
-          const orphan = byCat("custo_vendas").filter((l) => !l.subcategory || !known.has(l.subcategory));
-          if (orphan.length === 0) return null;
-          return (
-            <div>
-              <SubcatHeader label="Outros / sem classificação" />
-              <CostTable
-                lines={orphan}
-                receitaBrutaAnual={receitaBrutaAnual}
-                onMonth={setMonth}
-                onFixed={setFixed}
-                onLabel={setLabel}
-                onRemove={removeLine}
-                onSubcat={setSubcat}
-                subcats={subcats}
-              />
-            </div>
-          );
-        })()}
-      </SectionBlock>
+          })}
+          {(() => {
+            const known = new Set(subcats.map((s) => s.id));
+            const orphan = byCat("custo_vendas").filter((l) => !l.subcategory || !known.has(l.subcategory));
+            if (orphan.length === 0) return null;
+            return (
+              <div>
+                <SubcatHeader label="Outros / sem classificação" />
+                <CostTable
+                  lines={orphan}
+                  receitaBrutaAnual={receitaBrutaAnual}
+                  onMonth={setMonth}
+                  onFixed={setFixed}
+                  onLabel={setLabel}
+                  onRemove={removeLine}
+                  onSubcat={setSubcat}
+                  subcats={subcats}
+                />
+              </div>
+            );
+          })()}
+        </SectionBlock>
+      )}
+
 
       {/* Custos Fixos */}
       <SectionBlock
