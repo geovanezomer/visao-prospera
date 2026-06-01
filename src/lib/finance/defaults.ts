@@ -101,6 +101,10 @@ export const DEFAULT_STATE: AppState = {
     passivoCirculante: 0,         // 0 = autocalcular
     contasReceber: 0,             // 0 = autocalcular via PMR
     fornecedores: 0,              // 0 = autocalcular via PMP
+    caixaOcioso: 0,
+    passivosNaoOnerosos: 0,
+    estoqueInicial: 0,
+    estoqueFinal: 0,
   },
   tax: {
     regime: "simples",
