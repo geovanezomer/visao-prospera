@@ -1,85 +1,63 @@
-## Contexto
+## Escopo desta etapa
 
-A aba **Regime Tributário** hoje compara apenas Simples × Presumido × Real no sistema atual (PIS, COFINS, ICMS, ISS, IRPJ, CSLL). A Reforma Tributária (EC 132/2023 + LC 214/2025) substitui PIS/COFINS por **CBS** (federal) e ICMS/ISS por **IBS** (estadual+municipal), em transição faseada de **2026 a 2032**, com CBS/IBS plenos em 2033. O Simples Nacional **permanece**, com opção de apropriação de créditos por fora do DAS.
+Apenas a parte de **autenticação**: trocar o login hardcoded (`src/lib/auth.tsx`) por Lovable Cloud Auth com verificação de e-mail e sessão persistente. Assinatura ASAAS, freemium e landing ficam para etapas seguintes.
 
-O MD enviado captura a ideia certa, mas com alguns números desatualizados (alíquotas de referência 27%/8%, transição 70/30 binária). Vou usar o cronograma e as alíquotas oficialmente projetadas:
+## 1. Habilitar Lovable Cloud
 
-| Ano | CBS | IBS | PIS/COFINS | ICMS/ISS |
-|---|---|---|---|---|
-| 2026 (teste) | 0,9% | 0,1% | integral, compensável c/ CBS/IBS | integral |
-| 2027 | ~8,8% | 0,1% | **extinto** | integral |
-| 2028 | ~8,8% | 0,1% | — | integral |
-| 2029 | ~8,8% | ~3,5% | — | 90% |
-| 2030 | ~8,8% | ~7,1% | — | 80% |
-| 2031 | ~8,8% | ~10,6% | — | 70% |
-| 2032 | ~8,8% | ~14,1% | — | 60% |
-| 2033 | ~8,8% | ~17,7% | — | **extinto** |
+Provisiona Postgres + Auth gerenciados (verificação de e-mail nativa, sessão persistente em localStorage com refresh automático, RLS, secrets server-side). Nenhum `.env` para colar — chaves injetadas automaticamente (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`).
 
-Combinado de referência: **~26,5%** (calibrado pelo Senado/MF — todos os valores serão **configuráveis**).
+## 2. Tabela `profiles` + trigger
 
-## Decisões de design
+Migration SQL:
+- `profiles` (`id uuid PK FK auth.users`, `display_name text`, `created_at timestamptz default now()`).
+- GRANTs explícitos (`authenticated` + `service_role`).
+- RLS: `auth.uid() = id` para SELECT/UPDATE.
+- Trigger `on_auth_user_created` → cria linha em `profiles` no signup, copiando `display_name` do `raw_user_meta_data`.
 
-1. **Não criar um 4º card.** Em vez disso, adicionar um **seletor de "Era Tributária"** no topo da aba, que reconfigura os 3 cards existentes (Simples / Presumido / Real) para o regime vigente naquele ano. Mais limpo e evita explosão combinatória.
-2. **Eras suportadas**: `atual` (até 2025), `transicao_2026`, `transicao_2027_2028`, `transicao_2029_2032` (ano-a-ano), `pleno_2033`. Selecionável por **ano-base** (slider/select 2025–2033) — o sistema deduz a era e mostra os percentuais aplicáveis.
-3. **Simples Nacional**: card permanece igual em todas as eras (DAS mantido). Adicionar nota "opção de apropriação de créditos de IBS/CBS aos clientes" quando ano ≥ 2027.
-4. **Presumido/Real**: PIS+COFINS é substituído por CBS; ICMS/ISS é substituído por IBS, **misturados conforme cronograma**. IRPJ/CSLL inalterados.
-5. **Comparativo lado a lado**: novo bloco "Sistema Atual vs. Reforma no ano X" mostrando carga efetiva projetada para o regime ativo nos dois mundos.
-6. **Cashback / split payment / não-cumulatividade plena**: IBS/CBS têm **crédito amplo** sobre qualquer aquisição (inclusive uso/consumo), diferente do PIS/COFINS atual. Refletir nas funções `calcPresumido`/`calcReal` (eras pós-2026): crédito sobre todo o CPV + custos/variáveis tributáveis, sem o filtro `semCredito` exclusivo de ICMS-ST (que perde sentido pós-2033).
+## 3. Substituir `src/lib/auth.tsx`
 
-## Implementação
+Mantém a **mesma API pública** (`useAuth()`, `AuthProvider`, `user`, `login`, `logout`, `hydrated`) para não quebrar o resto do app (`store.ts`, `ScenarioBar`, etc.), mas por dentro usa `supabase.auth`:
 
-### 1) `src/lib/finance/types.ts`
+- `AuthProvider`: inicializa com `supabase.auth.getSession()` e assina `onAuthStateChange` para manter `user` em sincronia (sessão persistente automática).
+- `login(email, password)` → `signInWithPassword`. Rejeita se `email_confirmed_at` for nulo, com mensagem clara "Confirme seu e-mail antes de entrar".
+- Novas funções: `signup(email, password, displayName)` → `signUp` com `emailRedirectTo: window.location.origin/auth/callback` e `data: { display_name }`; `requestPasswordReset(email)` → `resetPasswordForEmail` com `redirectTo: .../reset-password`.
+- `logout()` → `signOut`.
+- `AuthUser` muda para `{ id, email, displayName, emailConfirmed }`. Adapto os 2 lugares que liam `user.username` (`store.ts` usa `user.username` como chave de localStorage — passa a usar `user.id`, que é estável).
 
-- `TaxEra = "atual" | "2026" | "2027" | "2028" | "2029" | "2030" | "2031" | "2032" | "2033"`
-- `TaxConfig` ganha:
-  - `era: TaxEra` (default `"atual"`)
-  - `cbsAliquota?: number` (default 8.8)
-  - `ibsAliquotaRef?: number` (default 17.7, alíquota plena de referência)
-  - `cbsCreditoAmplo?: boolean` (default true a partir de 2027)
-- `IBS_TRANSICAO[ano]` e `ICMS_REDUTOR[ano]` como constantes exportadas.
+## 4. Rotas novas/atualizadas
 
-### 2) `src/lib/finance/calculations.ts`
+- `/login` (existente) — refatorada: campo **e-mail** (não username), link "Esqueci a senha", link "Criar conta", mensagem de "verifique seu e-mail" pós-signup.
+- `/signup` — nome, e-mail, senha (com validação Zod: e-mail válido, senha ≥ 8 chars com letras e números). Após sucesso, mostra "Enviamos um link de confirmação para seu e-mail".
+- `/forgot-password` — campo e-mail → dispara reset.
+- `/reset-password` — public route, lê `type=recovery` do hash, formulário de nova senha → `supabase.auth.updateUser({ password })`.
+- `/auth/callback` — recebe redirect de confirmação de e-mail, mostra "E-mail confirmado, redirecionando…" e navega para `/`.
 
-- Nova função `tributosReforma(receita, baseCredito, era, cfg)` retornando `{ cbs, ibs, residualPisCofins, residualIcmsIss }` mês a mês, aplicando os percentuais da tabela acima.
-- `calcPresumido(state)` e `calcReal(state)`: se `era !== "atual"`, substituem os blocos PIS/COFINS e ICMS/ISS pelo retorno de `tributosReforma`, mantendo IRPJ/CSLL e a lógica de carry-over de crédito.
-- `compareRegimes(state)` passa a aceitar `era` opcional (default = `state.tax.era`) e ganha versão `compareErasForRegime(state, regime)` → retorna carga efetiva por ano (2025→2033) para gráfico.
-- Atualizar `simplesAliquotaEfetiva` — sem mudança de fórmula, só adicionar nota informativa quando era ≥ 2027.
+Todas as rotas privadas atuais ficam atrás do layout `_authenticated.tsx` (já usado no projeto). `beforeLoad` redireciona para `/login` com `?redirect=` preservado.
 
-### 3) `src/components/sim/TaxTab.tsx`
+## 5. Cache invalidation no auth change
 
-- Novo bloco no topo: **Seletor de Era** (Select com 9 opções + tooltip explicando cada fase).
-- Os 3 cards existentes passam a renderizar linhas extras quando `era !== "atual"`:
-  - Presumido/Real: `CBS (X%)`, `IBS (Y%)`, `PIS/COFINS residual`, `ICMS residual` (linhas aparecem/desaparecem conforme ano).
-  - Simples: badge "Sem mudanças" + nota sobre crédito a clientes.
-- Novo bloco abaixo do comparativo entre regimes: **"Projeção 2025–2033"** — pequena tabela/gráfico de barras mostrando carga efetiva por ano para o regime ativo, evidenciando o cruzamento da transição.
-- Inputs configuráveis (collapsible "Parâmetros avançados da Reforma"): alíquota CBS, IBS de referência, % de crédito CBS — tudo com defaults oficiais.
+Adicionar listener único em `src/routes/__root.tsx` (`onAuthStateChange` → `router.invalidate()` + `queryClient.invalidateQueries()`) para evitar mostrar dados do usuário anterior após login/logout.
 
-### 4) `src/lib/finance/defaults.ts`
+## 6. E-mails de auth
 
-- Adicionar defaults da reforma no `TaxConfig` inicial: `era: "atual"`, `cbsAliquota: 8.8`, `ibsAliquotaRef: 17.7`.
-- Migração defensiva: estados salvos sem esses campos recebem defaults sem quebrar.
+Lovable Cloud já envia e-mails de confirmação e reset com templates padrão. Para domínio customizado de remetente, fica para a etapa do ASAAS (junto com Resend / transacionais). Por agora: templates padrão do Cloud — funcional desde o primeiro signup.
 
-### 5) `src/lib/finance/selftests.ts`
+## 7. Migração dos dados localStorage (preserva trabalho atual)
 
-- 4 novos testes: era 2026 (carga ≈ atual + 1pp), era 2029 (mistura 50/50), era 2033 (100% CBS+IBS, PIS/COFINS/ICMS zerados), Simples (invariante em todas as eras).
+`useAppState`/`useScenarios` em `src/lib/finance/store.ts` hoje chaveiam por `username`. Mudo para chavear por `user.id` (Supabase UUID). No 1º login pós-migração, um efeito procura `gzfp:state:adminfinancepro` ou `gzfp:state:clientefinancepro` no localStorage e, se achar, copia para `gzfp:state:<novo-uuid>` e marca `gzfp:migrated:<uuid>=1`. Os dados continuam em localStorage nesta etapa — mover para Postgres é etapa separada.
 
-### 6) `src/components/sim/DRETab.tsx`
+## Detalhes técnicos
 
-- Sem mudanças estruturais — a DRE consome `buildDRE(state, regime)` que já usa o `era` via `calcReal`/`calcPresumido`. Adicionar apenas uma badge "Era: 2029 (transição)" no topo do DRE quando `era !== "atual"`, para o usuário não esquecer o contexto.
+- Cliente Supabase do browser: `src/integrations/supabase/client.ts` (auto-gerado ao habilitar Cloud).
+- Validação dos formulários: `zod` + `react-hook-form` (já no projeto via shadcn).
+- Sem `createServerFn` nesta etapa — auth é 100% client-side via SDK do Supabase.
+- Hardcoded `USERS` em `src/lib/auth.tsx` é removido. As contas `adminfinancepro`/`clientefinancepro` deixam de existir; usuário cria conta nova. Avisar no `/login` durante 1 semana com banner: "Recriamos o sistema de contas — clique em Criar conta".
 
-### 7) Memória do projeto
+## Fora de escopo (etapas seguintes)
 
-Registrar em `mem://features/reforma-tributaria.md`: cronograma oficial, alíquotas de referência, e nota de que tudo é configurável.
-
-## Fora do escopo (poderia ser fase 2)
-
-- Split payment automático e cashback para PF de baixa renda (afeta caixa, não a DRE).
-- Regime regional/setorial diferenciado (combustíveis, financeiro, planos de saúde) — usariam alíquotas próprias.
-- Crédito presumido de IBS/CBS para exportador.
-- Mudança automática de `era` baseada em data atual (deixar manual para fins de simulação).
-
-## Pontos a confirmar antes de codar
-
-1. **Profundidade na transição**: ano-a-ano (9 eras) ou apenas 3 marcos ("atual", "transição 2027–2032", "pleno 2033")? Recomendo ano-a-ano porque é o diferencial da ferramenta para CFO planejar 2027–2032.
-2. **Alíquotas default**: usar 8,8% CBS + 17,7% IBS (referência atual) ou permitir o usuário escolher um cenário "MF otimista" vs. "Senado conservador" (26,5% vs. 28%)?
-3. **Comparativo "atual vs. reforma"**: tabela compacta dentro da aba ou gráfico de barras dedicado embaixo?
+- ASAAS / assinatura / webhook.
+- Landing nova em `/`.
+- Freemium por aba.
+- Mover `scenarios` e `app_state` para Postgres.
+- Domínio customizado para e-mails (Resend).
+- Social login (Google/Apple).
