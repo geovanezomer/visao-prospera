@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppState, BusinessType, CostCategory, CostLine, COST_VENDAS_LABEL, SUBCATEGORIES } from "@/lib/finance/types";
-import { fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
-import { monthValues } from "@/lib/finance/calculations";
+import { fill12, fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
+import { fixedCostBase, monthValues } from "@/lib/finance/calculations";
 import { defaultCostsFor } from "@/lib/finance/defaults";
 import { MoneyInput, SectionTitle, StatCard } from "./primitives";
 import { Switch } from "@/components/ui/switch";
@@ -31,18 +31,45 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
   const updateLine = (id: string, patch: Partial<CostLine>) =>
     update((s) => ({ ...s, costs: s.costs.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
 
-  const setMonth = (id: string, i: number, v: number) => {
+  const safeCostValue = (id: string, i: number | null, v: number) => {
     const cur = state.costs.find((c) => c.id === id);
-    if (!cur) return;
-    let safe = v;
+    let safe = Number.isFinite(v) ? v : 0;
     if (!Number.isFinite(v) || v < 0) {
       safe = 0;
-      setNegWarn(`"${cur.label}" — ${MESES[i]}: valores negativos não são permitidos. Use uma linha dedicada para recuperações/créditos. Revertido para R$ 0.`);
+      const label = cur?.label ?? "Rubrica";
+      const suffix = i === null ? "valor fixo" : MESES[i];
+      setNegWarn(`"${label}" — ${suffix}: valores negativos não são permitidos. Use uma linha dedicada para recuperações/créditos. Revertido para R$ 0.`);
     }
-    updateLine(id, { values: cur.values.map((x, j) => (j === i ? safe : x)) });
+    return safe;
   };
 
-  const setFixed = (id: string, fixed: boolean) => updateLine(id, { fixed });
+  const setMonth = (id: string, i: number, v: number) => {
+    const safe = safeCostValue(id, i, v);
+    update((s) => ({
+      ...s,
+      costs: s.costs.map((c) =>
+        c.id === id
+          ? { ...c, values: (c.values.length === 12 ? c.values : fill12(c.values[0] || 0)).map((x, j) => (j === i ? safe : x)) }
+          : c,
+      ),
+    }));
+  };
+
+  const setAllMonths = (id: string, v: number) => {
+    const safe = safeCostValue(id, null, v);
+    updateLine(id, { values: fill12(safe) });
+  };
+
+  const setFixed = (id: string, fixed: boolean) =>
+    update((s) => ({
+      ...s,
+      costs: s.costs.map((c) => {
+        if (c.id !== id) return c;
+        const values = c.values.length === 12 ? c.values : fill12(c.values[0] || 0);
+        const base = c.fixed ? fixedCostBase(values) : values[0] || 0;
+        return { ...c, fixed, values: fixed || c.fixed ? fill12(base) : values };
+      }),
+    }));
 
   const addLine = (category: CostCategory, subcategory?: string) => {
     const id = `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
@@ -170,6 +197,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
                   lines={lines}
                   receitaBrutaAnual={receitaBrutaAnual}
                   onMonth={setMonth}
+                  onAllMonths={setAllMonths}
                   onFixed={setFixed}
                   onLabel={setLabel}
                   onRemove={removeLine}
@@ -190,6 +218,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
                   lines={orphan}
                   receitaBrutaAnual={receitaBrutaAnual}
                   onMonth={setMonth}
+                  onAllMonths={setAllMonths}
                   onFixed={setFixed}
                   onLabel={setLabel}
                   onRemove={removeLine}
@@ -214,6 +243,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
           lines={byCat("fixo")}
           receitaBrutaAnual={receitaBrutaAnual}
           onMonth={setMonth}
+          onAllMonths={setAllMonths}
           onFixed={setFixed}
           onLabel={setLabel}
           onRemove={removeLine}
@@ -231,6 +261,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
           lines={byCat("variavel")}
           receitaBrutaAnual={receitaBrutaAnual}
           onMonth={setMonth}
+          onAllMonths={setAllMonths}
           onFixed={setFixed}
           onLabel={setLabel}
           onRemove={removeLine}
@@ -248,6 +279,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
           lines={byCat("financeiro")}
           receitaBrutaAnual={receitaBrutaAnual}
           onMonth={setMonth}
+          onAllMonths={setAllMonths}
           onFixed={setFixed}
           onLabel={setLabel}
           onRemove={removeLine}
@@ -300,6 +332,7 @@ function CostTable({
   lines,
   receitaBrutaAnual,
   onMonth,
+  onAllMonths,
   onFixed,
   onLabel,
   onRemove,
@@ -309,6 +342,7 @@ function CostTable({
   lines: CostLine[];
   receitaBrutaAnual: number;
   onMonth: (id: string, i: number, v: number) => void;
+  onAllMonths: (id: string, v: number) => void;
   onFixed: (id: string, fixed: boolean) => void;
   onLabel: (id: string, label: string) => void;
   onRemove: (id: string) => void;
@@ -378,10 +412,8 @@ function CostTable({
                       <span className="text-[10px] uppercase text-muted-foreground">Valor aplicado em todos os meses:</span>
                       <div className="w-36">
                         <MoneyInput
-                          value={c.values[0]}
-                          onChange={(n) => {
-                            for (let i = 0; i < 12; i++) onMonth(c.id, i, n);
-                          }}
+                          value={fixedCostBase(c.values)}
+                          onChange={(n) => onAllMonths(c.id, n)}
                         />
                       </div>
                     </div>

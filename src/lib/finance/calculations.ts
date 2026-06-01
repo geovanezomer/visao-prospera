@@ -64,8 +64,16 @@ export function presumidoBases(business: BusinessType): { irpj: number; csll: nu
 // =====================================================================
 // Encargos automáticos sobre folha CLT
 // =====================================================================
+export function fixedCostBase(values: number[]): number {
+  const normalized = values.length === 12 ? values : fill12(values[0] || 0);
+  const first = normalized[0] || 0;
+  const last = normalized[11] || 0;
+  const legacyFixedEditBug = normalized.slice(0, 11).every((v) => v === first) && last !== first;
+  return legacyFixedEditBug ? last : first;
+}
+
 export function effectiveMonthValues(c: CostLine): number[] {
-  const raw = c.fixed ? fill12(c.values[0] || 0) : c.values.slice();
+  const raw = c.fixed ? fill12(fixedCostBase(c.values)) : c.values.slice();
   if (c.encargosAuto) {
     const factor = 1 + (c.encargosPct ?? DEFAULT_ENCARGOS_PCT) / 100;
     return raw.map((v) => v * factor);
