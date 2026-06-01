@@ -81,7 +81,12 @@ export function MoneyInput({
       }}
       onBlur={() => {
         focusedRef.current = false;
-        setText(numToText(value));
+        // Normaliza apenas a apresentação a partir do que foi digitado —
+        // NÃO sobrescreve com a prop `value`, pois ela pode estar defasada
+        // se o setState do onChange ainda não foi commitado pelo React
+        // antes do blur (ex.: Tab → blur antes do re-render).
+        const n = parseLoose(text);
+        setText(numToText(n));
       }}
       onChange={(e) => {
         const raw = e.target.value.replace(/[^0-9.,-]/g, "");
@@ -137,6 +142,7 @@ export function NumInput({
       }}
       onBlur={() => {
         focusedRef.current = false;
+        // Normaliza pelo texto digitado (não pela prop, que pode estar defasada).
         const n = clamp(parseLoose(text));
         if (n !== value) onChange(n);
         setText(numToText(n));
@@ -187,7 +193,7 @@ export function PctInput({
         }}
         onBlur={() => {
           focusedRef.current = false;
-          setText(numToText(value));
+          setText(numToText(parseLoose(text)));
         }}
         onChange={(e) => {
           const raw = e.target.value.replace(/[^0-9.,-]/g, "");
