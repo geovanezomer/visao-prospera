@@ -316,6 +316,13 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     const depAdd = c.ativacao.valor / c.ativacao.vidaUtilMeses;
     for (let i = startIdx; i < 12; i++) depreciacao[i] += depAdd;
   }
+  // Capex ativados a partir da CapitalStructure (lista dedicada)
+  for (const ca of capital.capexAtivacao ?? []) {
+    if (!ca || ca.vidaUtilMeses <= 0 || ca.valor <= 0) continue;
+    const startIdx = Math.max(0, Math.min(11, (ca.mes || 1) - 1));
+    const depAdd = ca.valor / ca.vidaUtilMeses;
+    for (let i = startIdx; i < 12; i++) depreciacao[i] += depAdd;
+  }
   const ebit = ebitda.map((e, i) => e - depreciacao[i]);
   const resultadoFinanceiro = ebit.map((_, i) => capital.jurosRecebidosMensal - custosFinanceirosTotal[i]);
   const lair = ebit.map((e, i) => e + resultadoFinanceiro[i]);
