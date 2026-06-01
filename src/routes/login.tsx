@@ -96,14 +96,6 @@ function LoginPage() {
             Acesse sua plataforma GZ FinnancePRO.
           </p>
 
-          <div className="mt-4 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-[11px] leading-relaxed text-foreground">
-            Atualizamos o sistema de contas. Os logins antigos não funcionam mais —
-            <Link to="/signup" className="ml-1 font-medium text-primary underline-offset-2 hover:underline">
-              crie uma conta gratuita
-            </Link>
-            .
-          </div>
-
           <form onSubmit={onSubmit} className="mt-6 space-y-4" autoComplete="on">
             <div className="space-y-1.5">
               <Label htmlFor="email">E-mail</Label>
@@ -159,10 +151,7 @@ function LoginPage() {
           </form>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            Ainda não tem conta?{" "}
-            <Link to="/signup" className="font-medium text-primary hover:underline">
-              Criar conta
-            </Link>
+            O cadastro de novas contas está temporariamente desativado.
           </p>
 
           <p className="mt-8 text-[11px] leading-relaxed text-muted-foreground">
