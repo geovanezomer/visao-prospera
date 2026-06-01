@@ -1,92 +1,62 @@
-## Reestruturação das abas + Simulador unificado
+## Plano de Correção da Auditoria Financeira
 
-### 1. Renomeação e consolidação de abas
+A auditoria lista **30 itens** (3 críticos, 7 altos, 8 médios, 12 baixos) + **reforma CBS/IBS** + **6 grandes módulos novos** (Excel I/O, RBAC, Risk/VaR, Postgres, ESG, PWA Mobile).
 
-| Antes | Depois | Conteúdo |
-|---|---|---|
-| Diagnóstico e Decisões | **Resultados** | Cards prescritivos (sem botões "Simular") + síntese estratégica vinda de Governança |
-| Análise Estratégica | **Governança** | Apenas o formulário (perguntas de concentração, dependência, competitividade, fornecedores, regulatório) |
-| — (nova) | **Simulador** | Painel de sliders + DRE Simulado Anual em tempo real |
+Os 6 módulos novos são projetos independentes (semanas/meses de trabalho cada) e ficam **fora deste plano** — vamos tratá-los depois, um a um, se você quiser. Aqui foco apenas nas **correções de cálculo** que afetam diretamente os números mostrados pelo sistema.
 
-A aba **Resultados** passa a ser o ponto único de leitura — financeiro (cards do prescriptive) + estratégico (matriz 2x2, índice, highlights por dimensão, frase-síntese). Os botões "Simular esta ação" desaparecem dali.
+---
 
-### 2. Aba Simulador (o ponto alto)
+### Fase 1 — Bugs Críticos (P0) — núcleo financeiro
 
-**Layout em duas colunas:**
+Alvo: `src/lib/finance/calculations.ts`
 
-```text
-┌──────────────────────────────┬──────────────────────────┐
-│ CONTROLES (sliders agrupados)│ DRE SIMULADO ANUAL       │
-│                              │ (sticky, atualiza live)  │
-│ ▸ Receita & Preço            │                          │
-│ ▸ Custos & Pessoal           │ Receita Bruta            │
-│ ▸ Capital de Giro            │ (−) Deduções             │
-│ ▸ Dívida & Juros             │ = Receita Líquida        │
-│ ▸ Tributário                 │ (−) CPV                  │
-│                              │ = Lucro Bruto   [Δ %]    │
-│ [Resetar] [Salvar cenário]   │ (−) Despesas Op.         │
-│                              │ = EBITDA        [Δ %]    │
-│                              │ (−) Financeiras          │
-│                              │ = LAIR                   │
-│                              │ (−) IR/CSLL              │
-│                              │ = Lucro Líquido [Δ %]    │
-│                              │                          │
-│ Barra: "X ajustes ativos"    │ KPIs delta: margem,      │
-│                              │ caixa, ROIC, NCG         │
-└──────────────────────────────┴──────────────────────────┘
-```
+1. **NOPAT correto para ROIC** — usar `EBIT − impostos efetivos do DRE` (ou alíquota efetiva via `LAIR`) em vez de `EBIT × (1 − shield)`.
+2. **WACC com shield correto por regime** — manter `Kd × (1 − Tc)` somente onde juros são dedutíveis.
+3. **`irShieldForRegime`** — Real = 0,34; Presumido = 0; Simples = 0 (juros não deduzem em Presumido/Simples).
+4. **Capital Investido do ROIC** — descontar caixa ocioso (novo campo `capital.caixaOcioso` opcional, default 0) e somar passivos não-onerosos quando informados; fallback ao comportamento atual quando não preenchido para não quebrar dados existentes.
 
-**Sliders propostos (agrupados por bloco, com valor atual exibido e Δ live):**
+### Fase 2 — Bugs Altos (P1) — tributação e ciclo
 
-Receita & Preço
-- Preço de venda: −30% a +30%
-- Volume de vendas: −50% a +50%
-- Mix de receita (% serviços vs produtos): 0–100%
+1. **PIS/COFINS não-cumulativo**: ratear `pisCreditos` e `cofinsCreditos` em base mensal (`/12`) em `calcReal`.
+2. **PME com estoque médio**: usar `(estoqueInicial + estoqueFinal)/2` quando os dois existirem; manter fallback ao único valor atual.
+3. **TIR/VPL**: `irr()` retorna `{ value, error }`; UI passa a mostrar mensagem clara quando não converge.
+4. **Depreciação por ativação**: aceitar lista opcional de `capex[]` (mês + valor + vida útil) e somar à depreciação base a partir do mês de ativação. Mantém o campo atual.
+5. **ICMS — carry-over de crédito entre meses** (`calcPresumido`/`calcReal`): saldo credor passa para o próximo mês.
+6. **ICMS-ST sem crédito**: nova flag `semCredito` em `CostLine` (default `false`), respeitada nos cálculos.
+7. **Fator R do Simples**: alerta no UI quando RBT12 ultrapassa R$ 4.8M (sai do Simples) ou quando atividade não permite Anexo III.
 
-Custos & Pessoal
-- CPV / insumos: −20% a +30%
-- Folha (contratar/demitir equivalente): −30% a +30% com leitura "= X pessoas"
-- Custos fixos top-N: −50% a 0%
-- Terceirização (% do CPV → fixo): 0–100% + campo de valor fixo
+### Fase 3 — Inconsistências e precisão (P2)
 
-Capital de Giro
-- PMR (dias): −60 a 0
-- PMP (dias): 0 a +60
-- Antecipação de recebíveis (% a.m.): 0–6
+1. **PDD com reversão**: campo opcional `pddReversaoMensal` aplicado como receita não-operacional.
+2. **Ciclo × NCG**: novo aviso textual no card de capital de giro quando os sinais divergem.
+3. **Composição mensal de escala** (`forecast.ts`): aplicar fator anual ao ano e interpolar dentro do ano, evitando o erro composto.
+4. **Divisões por zero**: `terminalValue` exige `WACC − g ≥ 0,5%` (caso contrário, usa fallback explícito e marca a confiança como "C"); Newton-Raphson protegido contra `r→1`.
+5. **Infinity/NaN**: substituir `Infinity` por valores neutros (`99` para liquidez, `null` para cobertura de juros) e tratar no display.
 
-Dívida & Juros
-- Captar empréstimo: R$ 0 a 5× EBITDA + prazo + kd
-- Quitar dívida (% do caixa): 0–100%
-- kd / Selic: −5pp a +5pp
+### Fase 4 — Edge cases e testes (P3)
 
-Tributário
-- Regime: Simples / Presumido / Real (select)
-- Alíquota efetiva (override): apenas Real
+1. Avisos no Diagnóstico CFO: receita ≈ 0 com custos fixos, inadimplência ≥ 100%, custos negativos.
+2. Suíte de **self-tests** (estilo do `runValuationSelfTests`) em novo arquivo `src/lib/finance/__tests__/finance.selftests.ts`:
+   - NOPAT/ROIC (caso da auditoria: EBIT 100k, impostos 30k → ROIC 14%).
+   - WACC nos 3 regimes.
+   - PIS/COFINS mensal vs anual.
+   - PME com estoque médio.
+   - ICMS com carry-over.
+   - Gordon degenerado e proteção `WACC≈g`.
+   - TIR convergente, divergente e fallback.
+   Resultados logados no console e expostos na aba **Valuation → Auditoria** (estender a tabela existente).
 
-**DRE Simulado Anual** (lado direito, sticky):
-- Linhas do DRE com **valor base × valor simulado × Δ absoluto × Δ%**
-- Setas coloridas (verde/vermelha) por linha
-- 4 KPIs no rodapé: Margem Líquida, Caixa Operacional, ROIC, NCG
-- Botão "Salvar como cenário" persiste o snapshot atual (reaproveita `saveScenario`)
+### Fora deste plano (confirmar depois)
 
-### 3. Melhorias que sugiro adicionar
+- Reforma tributária **CBS/IBS** (novo regime, mudanças em `types.ts`, UI de seletor, simulação dual): trabalho grande, deve ser um plano dedicado.
+- Os 6 módulos novos: Excel I/O, RBAC multi-user, Risk/VaR, migração Postgres, ESG, PWA Mobile.
 
-1. **Barra de status de ajustes ativos** no topo: "5 ajustes ativos · Δ EBITDA +18% · Δ Caixa −R$ 230k" — feedback constante sem precisar olhar a coluna direita.
-2. **Botão "Aplicar combinação ao cenário base"** — quando a combinação de sliders é o "cenário perfeito", aplica de fato no `state` e move para os outros tabs.
-3. **Presets rápidos**: chips "Crise leve", "Crise dura", "Expansão", "Reestruturação" que pré-posicionam os sliders.
-4. **Alertas de inconsistência inline**: se a combinação gera LL negativo, caixa negativo ou cobertura de juros < 1, mostra badge vermelho no DRE.
-5. **Comparador A vs B**: permitir congelar uma simulação como "A" e mexer nos sliders para criar "B", mostrando lado a lado (opcional, fase 2).
+### Detalhes técnicos
 
-### Notas técnicas
+- Todas as mudanças mantêm **compatibilidade retroativa** com o `AppState` salvo no `localStorage` — novos campos são opcionais e têm default seguro em `defaults.ts`/`store.ts` (migração leve por versão).
+- Mudanças em `calculations.ts` são refletidas automaticamente em DRE, Indicadores, Simulador, Valuation e Análises (já consomem `buildDRE`/`calcIndicators`).
+- Cada fase termina rodando os self-tests; logs aparecem no console (F12) e na aba **Auditoria** do Valuation.
 
-- Criar `src/lib/finance/simulator.ts` com `SimulatorParams` (todos os controles) e `applySimulator(state, params) → AppState`. Reusa lógica de `scenarios.ts` (extraindo as funções `apply` já existentes).
-- Criar `src/components/sim/SimulatorTab.tsx` com sliders agrupados (Accordion ou seções) + painel DRE recalculado via `computeDRE(applySimulator(state, params))` memoizado.
-- `DiagnosisTab` → renomear para `ResultsTab.tsx`, remover prop `saveScenario`, esconder coluna de ações nos cards e injetar bloco de síntese estratégica (mover do `StrategicTab`).
-- `StrategicTab` vira `GovernanceTab.tsx` contendo apenas o formulário; toda renderização de matriz/índice/highlights migra para `ResultsTab`.
-- `routes/index.tsx`: renomear labels das tabs, adicionar nova tab "Simulador" entre Cenários e Forecast (ordem sugerida).
+---
 
-### Fora de escopo (não mexer)
-
-- Lógica de cálculo de DRE, NCG, ROIC, WACC permanece intacta.
-- Wizard, Forecast, Monte Carlo, Cashflow seguem como estão.
-- A engine de `prescriptive.ts` continua produzindo os cards — apenas a UI deixa de oferecer "Simular".
+Quer que eu siga **todas as 4 fases de uma vez** (são bugs claros e isolados), ou prefere que eu pare ao fim da **Fase 1** para você validar os números antes de continuar?
