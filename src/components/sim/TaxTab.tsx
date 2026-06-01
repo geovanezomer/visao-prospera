@@ -314,34 +314,8 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
           })}
         </div>
 
-        {/* Gráfico de barras dedicado */}
-        <div className="border-t border-border/60 p-4">
-          <div className="mb-2 text-xs text-muted-foreground">Carga efetiva (% da receita bruta)</div>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={projAtiva.map((p) => ({ name: TAX_ERA_SHORT[p.era], era: p.era, efetiva: Number(p.effective.toFixed(2)), tributos: p.annual }))} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.4)" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                  formatter={(value: number, key: string, item) => {
-                    if (key === "efetiva") return [`${value.toFixed(2)}%`, "Carga efetiva"];
-                    return [fmtBRL((item.payload as { tributos: number }).tributos), "Tributos (ano)"];
-                  }}
-                />
-                <Bar dataKey="efetiva" radius={[6, 6, 0, 0]}>
-                  {projAtiva.map((p) => (
-                    <Cell key={p.era} fill={p.era === era ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.35)"} />
-                  ))}
-                  <LabelList dataKey="efetiva" position="top" formatter={(v: number) => `${v.toFixed(1)}%`} style={{ fontSize: 11, fill: "hsl(var(--foreground))" }} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-2 text-[11px] text-muted-foreground">
-            Barra destacada = era atualmente selecionada. "Transição" usa o ponto médio de 2027–2032 (CBS pleno, IBS a 50% da plena, ICMS/ISS a 50%). Ajuste as alíquotas CBS/IBS acima para simular cenários otimista (≈26,5%) ou conservador (≈28%).
-          </div>
+        <div className="border-t border-border/60 p-4 text-[11px] text-muted-foreground">
+          "Transição" usa o ponto médio de 2027–2032 (CBS pleno, IBS a 50% da plena, ICMS/ISS a 50%, PIS/COFINS extintos). Ajuste as alíquotas CBS/IBS acima para simular cenários otimista (≈26,5%) ou conservador (≈28%).
         </div>
       </div>
     </div>
