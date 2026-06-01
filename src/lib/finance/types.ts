@@ -89,31 +89,24 @@ export interface CapexAtivacao {
 }
 
 /** Eras da Reforma Tributária (EC 132/2023 + LC 214/2025).
- *  Define o cronograma de substituição PIS/COFINS→CBS e ICMS/ISS→IBS.
- *  "atual" mantém o sistema pré-reforma. 2026-2032 são transição faseada; 2033 é regime pleno. */
-export type TaxEra =
-  | "atual"
-  | "2026"
-  | "2027"
-  | "2028"
-  | "2029"
-  | "2030"
-  | "2031"
-  | "2032"
-  | "2033";
+ *  Modelo simplificado em 3 marcos:
+ *  - "atual"     → sistema pré-reforma (até 2025)
+ *  - "transicao" → período 2027–2032 (CBS pleno, PIS/COFINS extintos, IBS faseado, ICMS/ISS em redução) — usa ponto médio
+ *  - "pleno"     → regime cheio a partir de 2033 (CBS+IBS, sem PIS/COFINS, sem ICMS/ISS) */
+export type TaxEra = "atual" | "transicao" | "pleno";
 
-export const TAX_ERAS: TaxEra[] = ["atual", "2026", "2027", "2028", "2029", "2030", "2031", "2032", "2033"];
+export const TAX_ERAS: TaxEra[] = ["atual", "transicao", "pleno"];
 
 export const TAX_ERA_LABEL: Record<TaxEra, string> = {
-  atual: "Sistema atual (até 2025)",
-  "2026": "2026 — Teste CBS/IBS",
-  "2027": "2027 — CBS pleno · PIS/COFINS extintos",
-  "2028": "2028 — CBS pleno · IBS teste",
-  "2029": "2029 — IBS 20% · ICMS 90%",
-  "2030": "2030 — IBS 40% · ICMS 80%",
-  "2031": "2031 — IBS 60% · ICMS 70%",
-  "2032": "2032 — IBS 80% · ICMS 60%",
-  "2033": "2033 — Regime pleno (CBS+IBS)",
+  atual: "Sistema atual (até 2026)",
+  transicao: "Transição (2027–2032) — CBS pleno, IBS faseado",
+  pleno: "Regime pleno (2033+) — CBS + IBS",
+};
+
+export const TAX_ERA_SHORT: Record<TaxEra, string> = {
+  atual: "Atual",
+  transicao: "Transição",
+  pleno: "Pleno 2033",
 };
 
 export interface TaxConfig {
