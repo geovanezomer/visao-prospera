@@ -72,6 +72,20 @@ export interface CapitalStructure {
   estoqueInicial?: number;
   /** Estoque final do período (R$). Se omitido, usa `estoques`. */
   estoqueFinal?: number;
+  /** Lista de Capex ativados ao longo do ano. Cada item gera depreciação adicional
+   *  de `valor / vidaUtilMeses` a partir do mês `mes` (1..12) até o fim do ano. */
+  capexAtivacao?: CapexAtivacao[];
+}
+
+export interface CapexAtivacao {
+  id: string;
+  label: string;
+  /** Mês de ativação (1..12). */
+  mes: number;
+  /** Valor capitalizado (R$). */
+  valor: number;
+  /** Vida útil em meses (linear). */
+  vidaUtilMeses: number;
 }
 
 export interface TaxConfig {
