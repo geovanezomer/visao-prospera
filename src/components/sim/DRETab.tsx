@@ -92,6 +92,10 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
         <div className="text-xs text-muted-foreground">
           Período: <span className="num">Jan</span> a <span className="num">Dez</span> · Regime ativo:{" "}
           <Badge variant="outline" className="ml-1">{regime === "simples" ? "Simples" : regime === "presumido" ? "Presumido" : "Real"}</Badge>
+          <span className="ml-2">· Era:</span>
+          <Badge variant="outline" className={`ml-1 ${(state.tax.era ?? "atual") !== "atual" ? "border-primary/50 text-primary" : ""}`}>
+            {TAX_ERA_SHORT[state.tax.era ?? "atual"]}
+          </Badge>
         </div>
       </div>
 
