@@ -31,6 +31,12 @@ export interface CostLine {
   encargosAuto?: boolean;
   /** % de encargos sobre o salário base (default 70% = INSS 20% + FGTS 8% + SAT/Sist.S ~5% + 13º + férias + 1/3). */
   encargosPct?: number;
+  /** Linha de custo de aquisição que NÃO gera crédito de ICMS/PIS/COFINS (ex: ICMS-ST, simples nacional do fornecedor).
+   *  Quando true, o valor da linha é excluído da base de cálculo de crédito de ICMS em Presumido/Real. */
+  semCredito?: boolean;
+  /** Capex de ativação no mês N (1..12) com vida útil em meses; gera depreciação adicional a partir do mês informado.
+   *  Default: undefined (linha sem ativação especial). */
+  ativacao?: { mes: number; valor: number; vidaUtilMeses: number };
   /** @deprecated legacy */ group?: "operacional" | "financeiro";
   /** @deprecated legacy */ variavel?: boolean;
 }
