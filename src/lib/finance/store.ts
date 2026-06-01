@@ -22,7 +22,7 @@ function readFirst(keys: string[]): string | null {
 
 export function useAppState() {
   const { user } = useAuth();
-  const username = user?.username ?? "guest";
+  const username = user?.id ?? "guest";
   const [state, setState] = useState<AppState>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
   // Garante que só salvamos no localStorage do usuário que foi efetivamente
@@ -66,7 +66,7 @@ export function useAppState() {
 
 export function useScenarios() {
   const { user } = useAuth();
-  const username = user?.username ?? "guest";
+  const username = user?.id ?? "guest";
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
