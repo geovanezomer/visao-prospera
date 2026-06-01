@@ -38,11 +38,8 @@ function costVendasFor(business: BusinessType): CostLine[] {
       line("embalagem", "Embalagem para venda", "custo_vendas", 180, "embalagem"),
     ];
   }
-  return [
-    line("mod_tec", "Salários técnicos (MOD)", "custo_vendas", 4500, "mao_obra_direta", { encargosAuto: true, encargosPct: 70 }),
-    line("insumos_serv", "Insumos de serviço", "custo_vendas", 500, "insumos_servico"),
-    line("terceiros", "Subcontratação / freelancers", "custo_vendas", 600, "terceirizacao"),
-  ];
+  // Serviços: sem CSP — mão de obra direta vai para Fixos, insumos e subcontratação vão para Variáveis
+  return [];
 }
 
 const fixos = (): CostLine[] => [
