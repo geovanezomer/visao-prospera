@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppState, TaxRegime, COST_VENDAS_LABEL } from "@/lib/finance/types";
+import { AppState, TaxRegime, COST_VENDAS_LABEL, TAX_ERA_SHORT } from "@/lib/finance/types";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
