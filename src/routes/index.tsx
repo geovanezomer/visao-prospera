@@ -196,8 +196,8 @@ function SimulaPro() {
             <TabsContent value="governanca"><StrategicTab state={state} update={update} /></TabsContent>
             <TabsContent value="dre"><DRETab state={state} update={update} /></TabsContent>
             <TabsContent value="resultados"><DiagnosisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} /></TabsContent>
-            <TabsContent value="simulador"><SimulatorTab state={state} apply={update} saveScenario={save} /></TabsContent>
-            <TabsContent value="valuation"><ValuationTab state={state} /></TabsContent>
+            <TabsContent value="simulador"><SimulatorTab state={state} apply={update} saveScenario={save} params={simParams} setParams={setSimParams} /></TabsContent>
+            <TabsContent value="valuation"><ValuationTab baseState={state} simulatedState={simulatedState} simActive={simActive} /></TabsContent>
           </div>
         </Tabs>
 
