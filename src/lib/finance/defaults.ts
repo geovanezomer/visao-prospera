@@ -38,30 +38,44 @@ function costVendasFor(business: BusinessType): CostLine[] {
       line("embalagem", "Embalagem para venda", "custo_vendas", 180, "embalagem"),
     ];
   }
-  return [
-    line("mod_tec", "Salários técnicos (MOD)", "custo_vendas", 4500, "mao_obra_direta", { encargosAuto: true, encargosPct: 70 }),
-    line("insumos_serv", "Insumos de serviço", "custo_vendas", 500, "insumos_servico"),
-    line("terceiros", "Subcontratação / freelancers", "custo_vendas", 600, "terceirizacao"),
-  ];
+  // Serviços: sem CSP — mão de obra direta vai para Fixos, insumos e subcontratação vão para Variáveis
+  return [];
 }
 
-const fixos = (): CostLine[] => [
-  line("aluguel", "Aluguel", "fixo", 2500),
-  line("prolabore", "Pró-labore (sócios)", "fixo", 3000),
-  line("admin_clt", "Salários administrativos (CLT)", "fixo", 2800, undefined, { encargosAuto: true, encargosPct: 70 }),
-  line("contabilidade", "Contabilidade", "fixo", 450),
-  line("tecnologia", "Tecnologia / Software (SaaS)", "fixo", 350),
-  line("utilities", "Energia, água, internet", "fixo", 600),
-  line("manutencao", "Manutenção e reparos", "fixo", 200),
-  line("outros_fix", "Outros custos fixos", "fixo", 250),
-];
+function fixosFor(business: BusinessType): CostLine[] {
+  const base: CostLine[] = [
+    line("aluguel", "Aluguel", "fixo", 2500),
+    line("prolabore", "Pró-labore (sócios)", "fixo", 3000),
+    line("admin_clt", "Salários administrativos (CLT)", "fixo", 2800, undefined, { encargosAuto: true, encargosPct: 70 }),
+    line("beneficios", "Benefícios (VA/VR + Plano Saúde)", "fixo", 600),
+    line("plr", "PLR / Divisão de Lucros", "fixo", 0),
+    line("contabilidade", "Contabilidade", "fixo", 450),
+    line("tecnologia", "Tecnologia / Software (SaaS)", "fixo", 350),
+    line("utilities", "Energia, água, internet", "fixo", 600),
+    line("manutencao", "Manutenção e reparos", "fixo", 200),
+    line("outros_fix", "Outros custos fixos", "fixo", 250),
+  ];
+  if (business === "servicos") {
+    base.splice(3, 0, line("mod_terc", "Mão de Obra Direta (Terceirização)", "fixo", 4500, undefined, { encargosAuto: true, encargosPct: 70 }));
+  }
+  return base;
+}
 
-const variaveis = (): CostLine[] => [
-  line("marketing", "Marketing e publicidade", "variavel", 800),
-  line("comissoes", "Comissões de vendas", "variavel", 600),
-  line("frete_venda", "Frete sobre vendas", "variavel", 250),
-  line("outros_var", "Outros custos variáveis", "variavel", 0),
-];
+function variaveisFor(business: BusinessType): CostLine[] {
+  const base: CostLine[] = [
+    line("marketing", "Marketing e publicidade", "variavel", 800),
+    line("comissoes", "Comissões de vendas", "variavel", 600),
+    line("frete_venda", "Frete sobre vendas", "variavel", 250),
+    line("outros_var", "Outros custos variáveis", "variavel", 0),
+  ];
+  if (business === "servicos") {
+    base.push(
+      line("insumos_serv", "Insumos de serviço", "variavel", 500),
+      line("terceiros", "Subcontratação / freelancers", "variavel", 600),
+    );
+  }
+  return base;
+}
 
 const financeiros = (): CostLine[] => [
   line("juros", "Juros sobre empréstimos", "financeiro", 300),
@@ -71,7 +85,7 @@ const financeiros = (): CostLine[] => [
 ];
 
 export function defaultCostsFor(business: BusinessType): CostLine[] {
-  return [...costVendasFor(business), ...fixos(), ...variaveis(), ...financeiros()];
+  return [...costVendasFor(business), ...fixosFor(business), ...variaveisFor(business), ...financeiros()];
 }
 
 export const DEFAULT_STATE: AppState = {
@@ -155,7 +169,18 @@ export function migrateCostLine(c: CostLine): CostLine {
 }
 
 export function migrateState(s: AppState): AppState {
-  const costs = s.costs ? s.costs.map(migrateCostLine) : DEFAULT_STATE.costs;
+  let costs = s.costs ? s.costs.map(migrateCostLine) : DEFAULT_STATE.costs;
+  // Serviços: descontinuamos CSP — realoca linhas custo_vendas para fixo/variável
+  if (s.businessType === "servicos") {
+    costs = costs.map((c) => {
+      if (c.category !== "custo_vendas") return c;
+      if (c.subcategory === "mao_obra_direta") {
+        return { ...c, category: "fixo", subcategory: undefined, label: c.label.includes("MOD") || c.label.toLowerCase().includes("salário") ? "Mão de Obra Direta (Terceirização)" : c.label };
+      }
+      return { ...c, category: "variavel", subcategory: undefined };
+    });
+  }
+
   const cashflow = s.cashflow ?? DEFAULT_STATE.cashflow;
   const capital = { ...DEFAULT_STATE.capital, ...(s.capital ?? {}) };
   const tax = { ...DEFAULT_STATE.tax, ...(s.tax ?? {}) };

@@ -96,6 +96,68 @@ export function MoneyInput({
   );
 }
 
+export function NumInput({
+  value,
+  onChange,
+  integer = false,
+  min,
+  max,
+  className,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  integer?: boolean;
+  min?: number;
+  max?: number;
+  className?: string;
+}) {
+  const [text, setText] = useState<string>(() => numToText(value));
+  const focusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!focusedRef.current && parseLoose(text) !== value) {
+      setText(numToText(value));
+    }
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const clamp = (n: number) => {
+    let v = integer ? Math.trunc(n) : n;
+    if (typeof min === "number" && v < min) v = min;
+    if (typeof max === "number" && v > max) v = max;
+    return v;
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode={integer ? "numeric" : "decimal"}
+      value={text}
+      onFocus={() => {
+        focusedRef.current = true;
+      }}
+      onBlur={() => {
+        focusedRef.current = false;
+        const n = clamp(parseLoose(text));
+        if (n !== value) onChange(n);
+        setText(numToText(n));
+      }}
+      onChange={(e) => {
+        const raw = e.target.value.replace(integer ? /[^0-9-]/g : /[^0-9.,-]/g, "");
+        setText(raw);
+        if (raw === "" || raw === "-") {
+          onChange(0);
+        } else {
+          onChange(clamp(parseLoose(raw)));
+        }
+      }}
+      className={cn(
+        "num w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm text-foreground outline-none transition focus:border-primary focus:bg-input/70",
+        className,
+      )}
+    />
+  );
+}
+
 export function PctInput({
   value,
   onChange,

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Activity, GitCompare, LineChart as LineIcon, Play, Sliders, TrendingUp, Trash2 } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ConfirmDialog, chartTooltipStyle, chartTooltipItemStyle, chartTooltipLabelStyle } from "./ConfirmDialog";
+import { NumInput } from "./primitives";
 
 export function AnalysisTab({
   state,
@@ -484,16 +485,11 @@ function NumberInput({ label, value, onChange, step = 1 }: { label: string; valu
   return (
     <label className="flex flex-col gap-1">
       <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
-      <input
-        type="number"
-        value={value}
-        step={step}
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
-        className="rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm mono outline-none focus:border-primary"
-      />
+      <NumInput value={value} onChange={onChange} integer={step >= 1 && Number.isInteger(step)} />
     </label>
   );
 }
+
 
 function KPI({ label, value, status, sub }: { label: string; value: string; status: "ok" | "warn" | "danger"; sub?: string }) {
   const color = status === "ok" ? "var(--success)" : status === "warn" ? "var(--warning)" : "var(--destructive)";

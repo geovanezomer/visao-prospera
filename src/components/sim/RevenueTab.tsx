@@ -1,6 +1,6 @@
 import { AppState } from "@/lib/finance/types";
 import { fmtBRL, fmtPct, MESES, sum, avg } from "@/lib/finance/format";
-import { MoneyInput, PctInput, StatCard, SectionTitle, HelpTip } from "./primitives";
+import { MoneyInput, NumInput, PctInput, StatCard, SectionTitle, HelpTip } from "./primitives";
 
 export function RevenueTab({ state, update }: { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void }) {
   const r = state.revenue;
@@ -34,14 +34,13 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         <div className="mt-3 grid gap-4 md:grid-cols-3">
           <div>
             <label className="text-xs text-muted-foreground">PMR — Recebimento (dias)</label>
-            <input type="number" value={r.pmr} onChange={(e) => update((s) => ({ ...s, revenue: { ...s.revenue, pmr: parseInt(e.target.value) || 0 } }))}
-              className="num mt-1 w-full rounded-md border border-border/60 bg-input/40 px-3 py-2 text-right outline-none focus:border-primary" />
+            <NumInput integer min={0} value={r.pmr} onChange={(n) => update((s) => ({ ...s, revenue: { ...s.revenue, pmr: n } }))} className="mt-1" />
           </div>
           <div>
             <label className="text-xs text-muted-foreground">PMP — Pagamento (dias)</label>
-            <input type="number" value={r.pmp} onChange={(e) => update((s) => ({ ...s, revenue: { ...s.revenue, pmp: parseInt(e.target.value) || 0 } }))}
-              className="num mt-1 w-full rounded-md border border-border/60 bg-input/40 px-3 py-2 text-right outline-none focus:border-primary" />
+            <NumInput integer min={0} value={r.pmp} onChange={(n) => update((s) => ({ ...s, revenue: { ...s.revenue, pmp: n } }))} className="mt-1" />
           </div>
+
           <div className="rounded-md bg-accent/40 p-3 text-xs leading-relaxed text-muted-foreground">
             <span className="font-semibold text-foreground">Impacto:</span> cada dia de ciclo financeiro positivo amplia a necessidade de capital de giro proporcionalmente ao custo operacional mensal.
           </div>
