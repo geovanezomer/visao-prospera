@@ -197,6 +197,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
                   lines={lines}
                   receitaBrutaAnual={receitaBrutaAnual}
                   onMonth={setMonth}
+                  onAllMonths={setAllMonths}
                   onFixed={setFixed}
                   onLabel={setLabel}
                   onRemove={removeLine}
@@ -217,6 +218,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
                   lines={orphan}
                   receitaBrutaAnual={receitaBrutaAnual}
                   onMonth={setMonth}
+                  onAllMonths={setAllMonths}
                   onFixed={setFixed}
                   onLabel={setLabel}
                   onRemove={removeLine}
@@ -241,6 +243,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
           lines={byCat("fixo")}
           receitaBrutaAnual={receitaBrutaAnual}
           onMonth={setMonth}
+          onAllMonths={setAllMonths}
           onFixed={setFixed}
           onLabel={setLabel}
           onRemove={removeLine}
@@ -258,6 +261,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
           lines={byCat("variavel")}
           receitaBrutaAnual={receitaBrutaAnual}
           onMonth={setMonth}
+          onAllMonths={setAllMonths}
           onFixed={setFixed}
           onLabel={setLabel}
           onRemove={removeLine}
@@ -275,6 +279,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
           lines={byCat("financeiro")}
           receitaBrutaAnual={receitaBrutaAnual}
           onMonth={setMonth}
+          onAllMonths={setAllMonths}
           onFixed={setFixed}
           onLabel={setLabel}
           onRemove={removeLine}
