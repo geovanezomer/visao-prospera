@@ -240,14 +240,10 @@ function EditableRow({
       <td className="px-4 py-1 text-xs">{label}</td>
       {values.map((v, i) => (
         <td key={i} className="px-0.5 py-0.5">
-          <input
-            type="number"
-            value={v || 0}
-            onChange={(e) => onChange(i, parseFloat(e.target.value) || 0)}
-            className="num w-full rounded border border-border/40 bg-input/30 px-1 py-1 text-right text-[10px] outline-none focus:border-primary"
-          />
+          <NumInput value={v} onChange={(n) => onChange(i, n)} className="px-1 py-1 text-[10px]" />
         </td>
       ))}
+
       <td className={`num px-3 py-1 text-right text-xs ${signNegative && total > 0 ? "text-neg" : ""}`}>
         {total > 0 ? (signNegative ? `(${fmtBRL(total)})` : fmtBRL(total)) : "—"}
       </td>
