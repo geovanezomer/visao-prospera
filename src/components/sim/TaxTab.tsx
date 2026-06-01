@@ -66,6 +66,11 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
     }
   }
 
+  const era: TaxEra = state.tax.era ?? "atual";
+  const reforma = getReformaRates(era, state.tax);
+  const emReforma = era !== "atual";
+  const projAtiva = compareErasForRegime(state, state.tax.regime);
+
   return (
     <div className="space-y-6">
       {simplesWarnings.length > 0 && (
@@ -76,6 +81,67 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
           </ul>
         </div>
       )}
+
+      {/* Seletor de Era Tributária — Reforma CBS/IBS (EC 132/2023 + LC 214/2025) */}
+      <div className="rounded-lg border border-border/60 bg-card/40 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <SectionTitle>Sistema Tributário</SectionTitle>
+            {emReforma && <Badge className="bg-primary/20 text-primary border border-primary/30">Reforma ativa</Badge>}
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-muted-foreground">Era / ano-base</label>
+            <Select value={era} onValueChange={(v) => set({ era: v as TaxEra })}>
+              <SelectTrigger className="h-8 w-72"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {TAX_ERAS.map((e) => (
+                  <SelectItem key={e} value={e}>{TAX_ERA_LABEL[e]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        {emReforma && (
+          <div className="mt-3 grid gap-3 md:grid-cols-4">
+            <div className="rounded-md bg-accent/30 p-2 text-xs">
+              <div className="text-muted-foreground">CBS (federal)</div>
+              <div className="num text-sm font-semibold">{reforma.cbsPct.toFixed(2)}%</div>
+            </div>
+            <div className="rounded-md bg-accent/30 p-2 text-xs">
+              <div className="text-muted-foreground">IBS (estadual+municipal)</div>
+              <div className="num text-sm font-semibold">{reforma.ibsPct.toFixed(2)}%</div>
+            </div>
+            <div className="rounded-md bg-accent/30 p-2 text-xs">
+              <div className="text-muted-foreground">PIS/COFINS residual</div>
+              <div className="num text-sm font-semibold">{(reforma.pisCofinsMult * 100).toFixed(0)}%</div>
+            </div>
+            <div className="rounded-md bg-accent/30 p-2 text-xs">
+              <div className="text-muted-foreground">ICMS/ISS residual</div>
+              <div className="num text-sm font-semibold">{(reforma.icmsIssMult * 100).toFixed(0)}%</div>
+            </div>
+          </div>
+        )}
+        <div className="mt-3 flex flex-wrap items-end gap-4 border-t border-border/40 pt-3">
+          <div>
+            <label className="flex items-center gap-1 text-xs text-muted-foreground">
+              CBS plena (%)
+              <HelpTip text="Alíquota de referência da Contribuição sobre Bens e Serviços (federal), substituta de PIS+COFINS. Referência MF/Senado: 8,8%." />
+            </label>
+            <PctInput value={state.tax.cbsAliquota ?? 8.8} onChange={(n) => set({ cbsAliquota: n })} />
+          </div>
+          <div>
+            <label className="flex items-center gap-1 text-xs text-muted-foreground">
+              IBS plena (%)
+              <HelpTip text="Alíquota de referência do Imposto sobre Bens e Serviços (estadual+municipal), substituto de ICMS+ISS. Referência: 17,7%." />
+            </label>
+            <PctInput value={state.tax.ibsAliquotaRef ?? 17.7} onChange={(n) => set({ ibsAliquotaRef: n })} />
+          </div>
+          <div className="ml-auto text-[11px] text-muted-foreground max-w-md">
+            Cronograma EC 132/2023: CBS pleno em 2027 (extingue PIS/COFINS); IBS faseado 20→100% entre 2029 e 2033; ICMS/ISS reduzidos 10pp/ano até extinção em 2033. Simples mantém o DAS em todas as eras.
+          </div>
+        </div>
+      </div>
+
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card title="Simples Nacional" regime="simples">
