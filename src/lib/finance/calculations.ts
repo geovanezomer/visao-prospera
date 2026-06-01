@@ -682,3 +682,19 @@ export function compareRegimes(state: AppState) {
     real: calcReal(state, baseLair),
   };
 }
+
+/** Projeção da carga efetiva (%) por era para um dado regime, mantendo o resto do estado fixo. */
+export function compareErasForRegime(state: AppState, regime: TaxRegime): { era: TaxEra; effective: number; annual: number }[] {
+  const eras: TaxEra[] = ["atual", "2026", "2027", "2028", "2029", "2030", "2031", "2032", "2033"];
+  return eras.map((era) => {
+    const s: AppState = { ...state, tax: { ...state.tax, era } };
+    let tax: MonthlyTax;
+    if (regime === "simples") tax = calcSimples(s);
+    else if (regime === "presumido") tax = calcPresumido(s);
+    else {
+      const baseLair = buildDRE(s, "real").dre.lair;
+      tax = calcReal(s, baseLair);
+    }
+    return { era, effective: tax.effective, annual: tax.annual };
+  });
+}
