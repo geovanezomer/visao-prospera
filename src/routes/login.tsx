@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Activity, ArrowRight, Lock, User } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Activity, ArrowRight, Lock, Mail } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const { user, hydrated, login } = useAuth();
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -29,11 +29,11 @@ function LoginPage() {
     if (hydrated && user) navigate({ to: "/" });
   }, [hydrated, user, navigate]);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const res = login(username, password);
+    const res = await login(email, password);
     setLoading(false);
     if (!res.ok) {
       setError(res.error);
@@ -44,7 +44,6 @@ function LoginPage() {
 
   return (
     <main className="grid min-h-screen grid-cols-1 bg-background text-foreground lg:grid-cols-2">
-      {/* Brand panel */}
       <section
         className="relative hidden flex-col justify-between overflow-hidden p-12 lg:flex"
         style={{
@@ -81,7 +80,6 @@ function LoginPage() {
         </div>
       </section>
 
-      {/* Form panel */}
       <section className="flex items-center justify-center px-6 py-12 lg:px-12">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
@@ -98,26 +96,40 @@ function LoginPage() {
             Acesse sua plataforma GZ FinnancePRO.
           </p>
 
-          <form onSubmit={onSubmit} className="mt-8 space-y-4" autoComplete="on">
+          <div className="mt-4 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-[11px] leading-relaxed text-foreground">
+            Atualizamos o sistema de contas. Os logins antigos não funcionam mais —
+            <Link to="/signup" className="ml-1 font-medium text-primary underline-offset-2 hover:underline">
+              crie uma conta gratuita
+            </Link>
+            .
+          </div>
+
+          <form onSubmit={onSubmit} className="mt-6 space-y-4" autoComplete="on">
             <div className="space-y-1.5">
-              <Label htmlFor="username">Usuário</Label>
+              <Label htmlFor="email">E-mail</Label>
               <div className="relative">
-                <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  id="username"
-                  name="username"
-                  autoComplete="username"
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
                   className="pl-9"
-                  placeholder="seu usuário"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="voce@empresa.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password">Senha</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Senha</Label>
+                <Link to="/forgot-password" className="text-[11px] text-muted-foreground hover:text-foreground">
+                  Esqueci a senha
+                </Link>
+              </div>
               <div className="relative">
                 <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -146,8 +158,15 @@ function LoginPage() {
             </Button>
           </form>
 
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            Ainda não tem conta?{" "}
+            <Link to="/signup" className="font-medium text-primary hover:underline">
+              Criar conta
+            </Link>
+          </p>
+
           <p className="mt-8 text-[11px] leading-relaxed text-muted-foreground">
-            Acesso restrito. Seus cenários e simulações ficam salvos na sua conta neste navegador.
+            Acesso restrito. Sua sessão e seus cenários ficam vinculados à sua conta.
           </p>
         </div>
       </section>
