@@ -80,6 +80,12 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
 
   return (
     <div className="space-y-6">
+      {negWarn && (
+        <div className="flex items-start gap-2 rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-xs text-warning">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span className="text-foreground/90">{negWarn}</span>
+        </div>
+      )}
       {/* Sumário */}
       <div className="grid gap-3 md:grid-cols-5">
         <StatCard
