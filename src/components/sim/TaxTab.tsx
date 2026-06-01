@@ -206,14 +206,13 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-xs text-muted-foreground">Créditos PIS / mês</label>
-              <input type="number" value={state.tax.pisCreditos} onChange={(e) => set({ pisCreditos: parseFloat(e.target.value) || 0 })}
-                className="num mt-1 w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm outline-none focus:border-primary" />
+              <NumInput value={state.tax.pisCreditos} onChange={(n) => set({ pisCreditos: n })} className="mt-1" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground">Créditos COFINS / mês</label>
-              <input type="number" value={state.tax.cofinsCreditos} onChange={(e) => set({ cofinsCreditos: parseFloat(e.target.value) || 0 })}
-                className="num mt-1 w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm outline-none focus:border-primary" />
+              <NumInput value={state.tax.cofinsCreditos} onChange={(n) => set({ cofinsCreditos: n })} className="mt-1" />
             </div>
+
           </div>
           {state.businessType !== "servicos" && (
             <div>
