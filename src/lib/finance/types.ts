@@ -15,6 +15,8 @@ export interface Revenue {
   /** Quando true, inadimplência vira PDD (despesa operacional) ao invés de dedução de receita.
    *  Mais correto contabilmente (CPC 47/IFRS 9) e não reduz base de PIS/COFINS/ISS. */
   inadimplenciaComoPDD?: boolean;
+  /** Reversão/recuperação de PDD mensal (R$). Reduz a PDD líquida do mês (CPC 47). */
+  pddReversaoMensal?: number;
 }
 
 export interface CostLine {
@@ -29,6 +31,12 @@ export interface CostLine {
   encargosAuto?: boolean;
   /** % de encargos sobre o salário base (default 70% = INSS 20% + FGTS 8% + SAT/Sist.S ~5% + 13º + férias + 1/3). */
   encargosPct?: number;
+  /** Linha de custo de aquisição que NÃO gera crédito de ICMS/PIS/COFINS (ex: ICMS-ST, simples nacional do fornecedor).
+   *  Quando true, o valor da linha é excluído da base de cálculo de crédito de ICMS em Presumido/Real. */
+  semCredito?: boolean;
+  /** Capex de ativação no mês N (1..12) com vida útil em meses; gera depreciação adicional a partir do mês informado.
+   *  Default: undefined (linha sem ativação especial). */
+  ativacao?: { mes: number; valor: number; vidaUtilMeses: number };
   /** @deprecated legacy */ group?: "operacional" | "financeiro";
   /** @deprecated legacy */ variavel?: boolean;
 }
@@ -55,6 +63,15 @@ export interface CapitalStructure {
   contasReceber: number;
   /** Fornecedores a Pagar (saldo médio). Se 0, estimado a partir do PMP. */
   fornecedores: number;
+  // ----- novos campos (Auditoria Jun/2026) — correções de ROIC e PME -----
+  /** Caixa ocioso/excedente (não-operacional). Subtraído do Capital Investido no cálculo do ROIC. */
+  caixaOcioso?: number;
+  /** Passivos não-onerosos (fornecedores + salários + impostos a pagar) subtraídos do CI. Se omitido, usa fornecedores. */
+  passivosNaoOnerosos?: number;
+  /** Estoque inicial do período (R$). Usado para PME = (inicial+final)/2 quando ambos preenchidos. */
+  estoqueInicial?: number;
+  /** Estoque final do período (R$). Se omitido, usa `estoques`. */
+  estoqueFinal?: number;
 }
 
 export interface TaxConfig {

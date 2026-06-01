@@ -34,7 +34,7 @@ function costVendasFor(business: BusinessType): CostLine[] {
     return [
       line("merc_principal", "Mercadoria para revenda", "custo_vendas", 4500, "mercadoria"),
       line("frete_compra", "Frete sobre compras", "custo_vendas", 350, "frete_compra"),
-      line("icms_st", "ICMS-ST / tributos não recuperáveis", "custo_vendas", 280, "icms_st"),
+      line("icms_st", "ICMS-ST / tributos não recuperáveis", "custo_vendas", 280, "icms_st", { semCredito: true }),
       line("embalagem", "Embalagem para venda", "custo_vendas", 180, "embalagem"),
     ];
   }
@@ -101,6 +101,10 @@ export const DEFAULT_STATE: AppState = {
     passivoCirculante: 0,         // 0 = autocalcular
     contasReceber: 0,             // 0 = autocalcular via PMR
     fornecedores: 0,              // 0 = autocalcular via PMP
+    caixaOcioso: 0,
+    passivosNaoOnerosos: 0,
+    estoqueInicial: 0,
+    estoqueFinal: 0,
   },
   tax: {
     regime: "simples",
@@ -136,13 +140,15 @@ export const DEFAULT_STATE: AppState = {
 const LEGACY_CPV_IDS = new Set(["insumos", "fretes"]);
 
 export function migrateCostLine(c: CostLine): CostLine {
-  if (c.category) return c;
+  // Auto-marca ICMS-ST como sem crédito (Auditoria Jun/2026)
+  const semCredito = c.semCredito ?? (c.subcategory === "icms_st");
+  if (c.category) return { ...c, semCredito };
   let category: CostLine["category"];
   if (c.group === "financeiro") category = "financeiro";
   else if (LEGACY_CPV_IDS.has(c.id)) category = "custo_vendas";
   else if (c.variavel) category = "variavel";
   else category = "fixo";
-  return { ...c, category };
+  return { ...c, category, semCredito };
 }
 
 export function migrateState(s: AppState): AppState {

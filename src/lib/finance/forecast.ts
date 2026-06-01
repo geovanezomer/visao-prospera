@@ -123,8 +123,9 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   const ncg0 = crBase0 + estoqueBase0 - fornecBase0;
 
   const g = cfg.crescimentoMensalPct / 100;
-  const inflacaoMensal = Math.pow(1 + cfg.inflacaoFixosAA / 100, 1 / 12) - 1;
-  const escalaCpvMensal = Math.pow(1 + cfg.ganhoEscalaCpvAA / 100, 1 / 12) - 1; // positivo = reduz CPV
+  // Auditoria: aplica fatores ANUAIS elevados à fração do ano para evitar erro composto mensal.
+  const inflacaoFator = (i: number) => Math.pow(1 + cfg.inflacaoFixosAA / 100, i / 12);
+  const escalaCpvFator = (i: number) => Math.pow(1 - cfg.ganhoEscalaCpvAA / 100, i / 12);
   const horizon = cfg.horizonteMeses;
 
   const meses: ForecastMonth[] = [];
@@ -140,8 +141,8 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     const fatorReceita = Math.pow(1 + g, i);
     const receita = receitaBase[mes] * fatorReceita;
 
-    // CPV unitário melhora/piora com escala (ganhos compostos por mês)
-    const cpvNaoFolha = receita * cpvNaoFolhaRatioBase * Math.pow(1 - escalaCpvMensal, i);
+    // CPV unitário melhora/piora com escala (fator anual aplicado à fração do ano)
+    const cpvNaoFolha = receita * cpvNaoFolhaRatioBase * escalaCpvFator(i);
 
     // Variáveis não-CPV: escalam com receita
     const variaveisNaoCpv = receita * variaveisRatioBase;
@@ -157,8 +158,8 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
 
     const cpv = cpvNaoFolha + folhaCpv;
 
-    // Fixos não-folha: inflação composta
-    const fatorInflacao = Math.pow(1 + inflacaoMensal, i);
+    // Fixos não-folha: inflação anual elevada à fração do ano
+    const fatorInflacao = inflacaoFator(i);
     const fixosNaoFolha = fixosNaoFolhaMensalBase * fatorInflacao;
 
     const despesasOp = fixosNaoFolha + folhaFixa + variaveisNaoCpv;
@@ -218,7 +219,7 @@ export function npv(flows: number[], rate: number): number {
   return acc;
 }
 
-// TIR via Newton-Raphson com fallback bisseção
+// TIR via Newton-Raphson com fallback bisseção. Protegido contra r→-1 e df≈0.
 export function irr(flows: number[], guess = 0.01): number | null {
   const hasPos = flows.some((f) => f > 0);
   const hasNeg = flows.some((f) => f < 0);
@@ -233,12 +234,16 @@ export function irr(flows: number[], guess = 0.01): number | null {
       if (t > 0) df += -t * flows[t] / (d * (1 + r));
     }
     if (Math.abs(f) < 1e-7) return r;
-    if (df === 0) break;
+    if (!Number.isFinite(df) || Math.abs(df) < 1e-12) break;
+    if (Math.abs(1 + r) < 1e-9) break;
     const next = r - f / df;
     if (!Number.isFinite(next) || next <= -0.999) break;
     r = next;
   }
   let lo = -0.99, hi = 10;
+  const vLo = npv(flows, lo);
+  const vHi = npv(flows, hi);
+  if (!Number.isFinite(vLo) || !Number.isFinite(vHi) || vLo * vHi > 0) return null;
   for (let iter = 0; iter < 200; iter++) {
     const mid = (lo + hi) / 2;
     const v = npv(flows, mid);
@@ -246,6 +251,17 @@ export function irr(flows: number[], guess = 0.01): number | null {
     if (npv(flows, lo) * v < 0) hi = mid; else lo = mid;
   }
   return null;
+}
+
+/** Diagnóstico de TIR para auditoria — devolve o valor ou o motivo da não convergência. */
+export function irrDetailed(flows: number[]): { value: number | null; error?: string } {
+  const hasPos = flows.some((f) => f > 0);
+  const hasNeg = flows.some((f) => f < 0);
+  if (!hasPos || !hasNeg) return { value: null, error: "Fluxos sem sinais opostos — TIR indefinida." };
+  const v = irr(flows);
+  return v == null
+    ? { value: null, error: "Newton-Raphson e bisseção não convergiram para esses fluxos." }
+    : { value: v };
 }
 
 function paybackMonths(flows: number[]): number | null {

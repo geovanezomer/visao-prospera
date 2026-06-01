@@ -120,11 +120,12 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const isMercadoria = businessType === "comercio" || businessType === "industria";
   const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
 
-  // CPV mensal para crédito de ICMS
+  // CPV mensal para crédito de ICMS — EXCLUI linhas marcadas semCredito (ICMS-ST etc.)
   const cpvMonthly = zeros12();
   if (icmsCredAliq > 0) {
     for (const c of state.costs) {
       if (c.category !== "custo_vendas") continue;
+      if (c.semCredito) continue; // Auditoria: ICMS-ST não gera crédito
       const v = effectiveMonthValues(c);
       for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
     }
@@ -135,6 +136,7 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal);
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0;
+  let saldoCredorICMS = 0; // Auditoria: carry-over de crédito ICMS entre meses
   const monthly = revenue.bruta.map((r, i) => {
     const irpj = baseIRPJMensal[i] * 0.15;
     const adicional = adicionalMensal[i];
@@ -143,8 +145,9 @@ export function calcPresumido(state: AppState): MonthlyTax {
     const cofins = r * 0.03;
     const issBase = Math.max(0, r - issDed);
     const debito = issBase * iss;
-    const credito = cpvMonthly[i] * icmsCredAliq;
-    const issv = Math.max(0, debito - credito);
+    const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
+    const issv = Math.max(0, debito - creditoMes);
+    saldoCredorICMS = Math.max(0, creditoMes - debito); // sobra vira saldo p/ próximo mês
     irpjTotal += irpj + adicional;
     csllTotal += csll;
     pisTotal += pis;
@@ -180,6 +183,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   if (icmsCredAliq > 0) {
     for (const c of state.costs) {
       if (c.category !== "custo_vendas") continue;
+      if (c.semCredito) continue; // Auditoria: ICMS-ST não gera crédito
       const v = effectiveMonthValues(c);
       for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
     }
@@ -188,18 +192,24 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const baseIRPJMensal = baseLairMonthly.map((l) => Math.max(0, l));
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal);
 
+  // Auditoria: créditos de PIS/COFINS são anuais — ratear por mês
+  const pisCreditoMensal = Math.max(0, (tax.pisCreditos || 0) / 12);
+  const cofinsCreditoMensal = Math.max(0, (tax.cofinsCreditos || 0) / 12);
+
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0;
+  let saldoCredorICMS = 0;
   const monthly = revenue.bruta.map((r, i) => {
     const lair = baseIRPJMensal[i];
     const irpj = lair * 0.15;
     const adicional = adicionalMensal[i];
     const csll = lair * 0.09;
-    const pis = Math.max(0, r * 0.0165 - tax.pisCreditos);
-    const cofins = Math.max(0, r * 0.076 - tax.cofinsCreditos);
+    const pis = Math.max(0, r * 0.0165 - pisCreditoMensal);
+    const cofins = Math.max(0, r * 0.076 - cofinsCreditoMensal);
     const issBase = Math.max(0, r - issDed);
     const debito = issBase * iss;
-    const credito = cpvMonthly[i] * icmsCredAliq;
-    const issv = Math.max(0, debito - credito);
+    const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
+    const issv = Math.max(0, debito - creditoMes);
+    saldoCredorICMS = Math.max(0, creditoMes - debito);
     irpjTotal += irpj + adicional;
     csllTotal += csll;
     pisTotal += pis;
@@ -277,13 +287,16 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     }
   }
 
-  // PDD entra como despesa operacional fixa
+  // PDD entra como despesa operacional fixa (líquida de eventual reversão/recuperação CPC 47)
   if (usaPDD) {
+    const reversaoMensal = Math.max(0, revenue.pddReversaoMensal ?? 0);
     for (let i = 0; i < 12; i++) {
-      despOp[i] += pdd[i];
-      custosFixos[i] += pdd[i];
+      const pddLiq = Math.max(0, pdd[i] - reversaoMensal);
+      pdd[i] = pddLiq;
+      despOp[i] += pddLiq;
+      custosFixos[i] += pddLiq;
     }
-    despesasPorCategoria["PDD — Perdas por inadimplência"] = pdd.slice();
+    despesasPorCategoria["PDD — Perdas por inadimplência (líq. recup.)"] = pdd.slice();
   }
 
   const custosFinanceirosTotal = zeros12();
@@ -294,7 +307,15 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
 
   const lucroBruto = receitaLiquida.map((r, i) => r - cpv[i]);
   const ebitda = lucroBruto.map((g, i) => g - despOp[i]);
+
+  // Depreciação base + depreciação adicional de Capex ativado no meio do ano (Auditoria)
   const depreciacao = fill12(capital.depreciacaoMensal);
+  for (const c of costs) {
+    if (!c.ativacao || c.ativacao.vidaUtilMeses <= 0 || c.ativacao.valor <= 0) continue;
+    const startIdx = Math.max(0, Math.min(11, (c.ativacao.mes || 1) - 1));
+    const depAdd = c.ativacao.valor / c.ativacao.vidaUtilMeses;
+    for (let i = startIdx; i < 12; i++) depreciacao[i] += depAdd;
+  }
   const ebit = ebitda.map((e, i) => e - depreciacao[i]);
   const resultadoFinanceiro = ebit.map((_, i) => capital.jurosRecebidosMensal - custosFinanceirosTotal[i]);
   const lair = ebit.map((e, i) => e + resultadoFinanceiro[i]);
@@ -355,11 +376,15 @@ export interface Indicators {
   ativoCirculante: number;
 }
 
-/** Shield fiscal aproximado por regime (juros deduzem só em Lucro Real). */
+/**
+ * Shield fiscal correto por regime (Auditoria Jun/2026).
+ * Juros sobre empréstimos só são DEDUTÍVEIS da base do IRPJ/CSLL no Lucro Real.
+ * Em Presumido a base é presumida sobre receita — juros não abatem.
+ * Em Simples (DAS) também não há dedução.
+ */
 export function irShieldForRegime(regime: TaxRegime): number {
-  if (regime === "real") return 0.34;
-  if (regime === "presumido") return 0.10; // shield indireto pequeno
-  return 0; // Simples — juros não geram dedução
+  if (regime === "real") return 0.34; // IRPJ 15% + Adic 10% + CSLL 9%
+  return 0;                            // presumido / simples
 }
 
 export function calcIndicators(state: AppState, dre: DRE): Indicators {
@@ -369,6 +394,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const lucroBrutoAnual = sum(dre.lucroBruto);
   const ebitdaAnual = sum(dre.ebitda);
   const ebitAnual = sum(dre.ebit);
+  const lairAnual = sum(dre.lair);
   const llAnual = sum(dre.lucroLiquido);
   const custosVarAnual = sum(dre.custosVariaveis);
   const custosFixosAnual = sum(dre.custosFixos) + sum(dre.depreciacao);
@@ -391,26 +417,39 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const irShield = irShieldForRegime(state.tax.regime);
   const wacc = wE * capital.ke + wD * capital.kd * (1 - irShield);
 
-  // ---- ROIC com capital investido correto ----
-  const capitalInvestido = PL + D;
-  const nopat = ebitAnual * (1 - irShield);
-  const roic = capitalInvestido > 0 ? (nopat / capitalInvestido) * 100 : 0;
+  // ---- NOPAT e ROIC corretos (Auditoria) ----
+  // NOPAT = EBIT − impostos operacionais. Quando lair anual <= 0, usamos fallback EBIT × (1 − shield).
+  const tcEfetiva = lairAnual > 0 ? Math.min(0.5, impostosAnual / lairAnual) : irShield;
+  const nopat = lairAnual > 0
+    ? Math.max(0, ebitAnual - ebitAnual * tcEfetiva)
+    : Math.max(0, ebitAnual * (1 - irShield));
+
+  // Capital Investido = PL + Dívida Onerosa − Caixa Ocioso − Passivos não-onerosos informados.
+  // Fallback (compat): se nenhum dos novos campos for informado, mantém comportamento antigo.
+  const caixaOcioso = Math.max(0, capital.caixaOcioso ?? 0);
+  const passivosNaoOnerosos = Math.max(0, capital.passivosNaoOnerosos ?? 0);
+  const capitalInvestidoBase = PL + D;
+  const capitalInvestido = Math.max(1, capitalInvestidoBase - caixaOcioso - passivosNaoOnerosos);
+  const roic = capitalInvestidoBase > 0 ? (nopat / capitalInvestido) * 100 : 0;
   const roe = PL > 0 ? (llAnual / PL) * 100 : 0;
   const roa = capital.ativoTotal > 0 ? (llAnual / capital.ativoTotal) * 100 : 0;
 
   // ---- Ciclo / NCG / Gap ----
-  // PME = (Estoque / CPV diário). Para serviços sem estoque/CPV resulta em 0.
+  // PME = Estoque MÉDIO ÷ CPV diário (Auditoria). Usa (inicial+final)/2 quando ambos informados.
+  const ei = Math.max(0, capital.estoqueInicial ?? 0);
+  const ef = Math.max(0, capital.estoqueFinal ?? 0);
+  const estoqueMedio = ei > 0 && ef > 0
+    ? (ei + ef) / 2
+    : (ef > 0 ? ef : capital.estoques);
   const cpvDiario = sum(dre.cpv) / 360;
-  const pme = capital.estoques > 0 && cpvDiario > 0 ? capital.estoques / cpvDiario : 0;
+  const pme = estoqueMedio > 0 && cpvDiario > 0 ? estoqueMedio / cpvDiario : 0;
   const cicloFinanceiro = revenue.pmr + pme - revenue.pmp;
   // NCG: usa CR + Estoque − Fornecedores; fallback estimado se zerado
   const crEstimado = capital.contasReceber > 0 ? capital.contasReceber : (receitaBrutaAnual / 360) * revenue.pmr;
-  const custoMedioMensal = (custosFixosAnual + custosVarAnual) / 12;
   const fornecEstimado = capital.fornecedores > 0
     ? capital.fornecedores
     : (sum(dre.cpv) / 360) * revenue.pmp;
-  const ncg = crEstimado + capital.estoques - fornecEstimado;
-  // Gap pode ser negativo (libera caixa) — ciclo negativo gera caixa
+  const ncg = crEstimado + estoqueMedio - fornecEstimado;
   const gapCapitalGiro = ncg - capital.capitalGiroDisponivel;
 
   // ---- Liquidez com AC/PC reais ----
@@ -421,11 +460,11 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     ? capital.passivoCirculante
     : Math.max(0, fornecEstimado + D * 0.3); // estimativa: 30% da dívida vence em CP
 
-  // Quando PC = 0 (empresa sem dívida e sem fornecedores), liquidez é indeterminada.
-  // Retornamos Infinity para que a UI exiba "—" em vez de números absurdos.
-  const liquidezCorrente = passivoCirculante > 0 ? ativoCirculante / passivoCirculante : Infinity;
-  const liquidezSeca = passivoCirculante > 0 ? (ativoCirculante - capital.estoques) / passivoCirculante : Infinity;
-  const liquidezImediata = passivoCirculante > 0 ? capital.disponibilidades / passivoCirculante : Infinity;
+  // Caps neutros (Auditoria — evita Infinity propagando para outras métricas).
+  const CAP_LIQ = 99;
+  const liquidezCorrente = passivoCirculante > 1 ? Math.min(CAP_LIQ, ativoCirculante / passivoCirculante) : CAP_LIQ;
+  const liquidezSeca = passivoCirculante > 1 ? Math.min(CAP_LIQ, (ativoCirculante - estoqueMedio) / passivoCirculante) : CAP_LIQ;
+  const liquidezImediata = passivoCirculante > 1 ? Math.min(CAP_LIQ, capital.disponibilidades / passivoCirculante) : CAP_LIQ;
 
   // ---- Endividamento (apenas dívida onerosa para alavancagem) ----
   const passivoTotalEstim = capital.ativoTotal - PL;
