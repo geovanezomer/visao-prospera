@@ -25,6 +25,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
   const rows = [
     { k: "(+) Receita Operacional Bruta", v: dre.receitaBruta, strong: true, tone: "pos" as const },
     { k: "(−) Inadimplência / Deduções", v: dre.deducoesInadimplencia.map((x) => -x), tone: "neg" as const },
+    { k: regime === "simples" ? "(−) DAS Simples Nacional" : "(−) Impostos sobre Vendas (PIS/COFINS/ICMS/ISS/CBS/IBS)", v: dre.impostosVendas.map((x) => -x), tone: "neg" as const },
     { k: "(=) Receita Operacional Líquida", v: dre.receitaLiquida, strong: true },
     { k: `(−) ${cvLabel.short} — ${cvLabel.long}`, v: dre.cpv.map((x) => -x), tone: "neg" as const },
     { k: "(=) Lucro Bruto", v: dre.lucroBruto, strong: true, tone: "pos" as const, margin: ind.margemBruta },
@@ -34,7 +35,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
     { k: "(=) EBIT — Lucro Operacional", v: dre.ebit, strong: true, margin: ind.margemEbit },
     { k: "(+/−) Resultado Financeiro", v: dre.resultadoFinanceiro },
     { k: "(=) LAIR — Lucro Antes do IR", v: dre.lair, strong: true },
-    { k: "(−) Impostos s/ Lucro", v: dre.impostos.map((x) => -x), tone: "neg" as const },
+    { k: "(−) IRPJ + CSLL", v: dre.impostos.map((x) => -x), tone: "neg" as const },
     { k: "(=) LUCRO LÍQUIDO", v: dre.lucroLiquido, strong: true, tone: ll >= 0 ? ("pos" as const) : ("neg" as const), margin: ind.margemLiquida, highlight: true },
   ];
 
