@@ -546,20 +546,29 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
     out.push({ level: "warn", title: "Linhas de custo com valores negativos", message: `${linhasNegativas.length} rubrica(s) com valor negativo (ex.: "${linhasNegativas[0].label}"). Margem bruta pode estar inflada artificialmente — use linhas dedicadas para recuperações/créditos.` });
   }
 
-  // #3 Receita zero com custos fixos → empresa não viável no horizonte
+  // #3 Receita zero (bruta) com custos fixos → empresa não viável no horizonte
   const custosFixosAnual = sum(dre.custosFixos);
+  const ebitdaAnual = sum(dre.ebitda);
+  const fmtR = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
   if (receitaBrutaAnual <= 0 && custosFixosAnual > 0) {
-    out.push({ level: "danger", title: "Operação inviável: receita zero com custos fixos", message: `Sem receita projetada e R$ ${custosFixosAnual.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} de custos fixos no ano. Ponto de equilíbrio indefinido — preencha a aba Receita.` });
+    out.push({ level: "danger", title: "Operação inviável: receita zero com custos fixos", message: `Sem receita projetada e ${fmtR(custosFixosAnual)} de custos fixos no ano. EBITDA projetado = ${fmtR(ebitdaAnual)}. Ponto de equilíbrio indefinido — preencha a aba Receita.` });
+  } else if (receitaBrutaAnual > 0 && receitaLiqAnual <= 0) {
+    // Edge: receita bruta existe mas líquida zerou (inadimplência ~100%, deduções/impostos consumindo tudo)
+    out.push({
+      level: "danger",
+      title: "Receita líquida zerada",
+      message: `Receita bruta de ${fmtR(receitaBrutaAnual)} foi totalmente consumida por deduções/inadimplência/impostos. Receita líquida = ${fmtR(receitaLiqAnual)}, EBITDA = ${fmtR(ebitdaAnual)}. Indicadores percentuais (margens, folha %, ROIC) ficam indefinidos — revise inadimplência e regime tributário.`,
+    });
   }
 
-  if (folhaPct > 35) out.push({ level: "danger", title: "Custo de mão de obra elevado", message: `Folha (com encargos) ${folhaPct.toFixed(1)}% da receita líquida.` });
-  else if (folhaPct > 25) out.push({ level: "warn", title: "Folha em zona de atenção", message: `Folha em ${folhaPct.toFixed(1)}% da receita.` });
+  if (folhaPct > 35) out.push({ level: "danger", title: "Custo de mão de obra elevado", message: `Folha (com encargos) ${folhaPct.toFixed(1)}% da receita líquida (${fmtR(folha)} de ${fmtR(receitaLiqAnual)}).` });
+  else if (folhaPct > 25) out.push({ level: "warn", title: "Folha em zona de atenção", message: `Folha em ${folhaPct.toFixed(1)}% da receita líquida (${fmtR(folha)}).` });
 
   const fixoPct = receitaLiqAnual > 0 ? (sum(dre.custosFixos) / receitaLiqAnual) * 100 : 0;
-  if (fixoPct > 50) out.push({ level: "danger", title: "Custos fixos altos demais", message: `Custos fixos somam ${fixoPct.toFixed(1)}% da receita.` });
+  if (receitaLiqAnual > 0 && fixoPct > 50) out.push({ level: "danger", title: "Custos fixos altos demais", message: `Custos fixos somam ${fixoPct.toFixed(1)}% da receita líquida (${fmtR(custosFixosAnual)}).` });
 
-  if (ind.margemBruta < 25) out.push({ level: "danger", title: "Margem bruta baixa", message: `Margem bruta de ${ind.margemBruta.toFixed(1)}%.` });
-  if (ind.margemLiquida < 5) out.push({ level: ind.margemLiquida < 0 ? "danger" : "warn", title: "Margem líquida insuficiente", message: `Margem líquida em ${ind.margemLiquida.toFixed(1)}%.` });
+  if (receitaLiqAnual > 0 && ind.margemBruta < 25) out.push({ level: "danger", title: "Margem bruta baixa", message: `Margem bruta de ${ind.margemBruta.toFixed(1)}% — EBITDA ${fmtR(ebitdaAnual)} (margem EBITDA ${ind.margemEbitda.toFixed(1)}%).` });
+  if (receitaLiqAnual > 0 && ind.margemLiquida < 5) out.push({ level: ind.margemLiquida < 0 ? "danger" : "warn", title: "Margem líquida insuficiente", message: `Margem líquida em ${ind.margemLiquida.toFixed(1)}% (EBITDA ${ind.margemEbitda.toFixed(1)}%).` });
 
   if (ind.coberturaJuros < 2 && Number.isFinite(ind.coberturaJuros)) out.push({ level: "danger", title: "Cobertura de juros perigosa", message: `EBIT cobre apenas ${ind.coberturaJuros.toFixed(1)}× os juros.` });
   if (ind.dividaLiqEbitda > 3 && Number.isFinite(ind.dividaLiqEbitda)) out.push({ level: "warn", title: "Alavancagem elevada", message: `Dívida Líq./EBITDA = ${ind.dividaLiqEbitda.toFixed(1)}×.` });
