@@ -230,27 +230,27 @@ function CapexAtivacaoSection({
                       />
                     </td>
                     <td className="px-2 py-2 text-center">
-                      <input
-                        type="number"
+                      <NumInput
+                        integer
                         min={1}
                         max={12}
                         value={x.mes}
-                        onChange={(e) => upd(x.id, { mes: Math.max(1, Math.min(12, parseInt(e.target.value) || 1)) })}
-                        className="num w-16 rounded-md border border-border/40 bg-input/40 px-2 py-1 text-right text-xs outline-none focus:border-primary"
+                        onChange={(n) => upd(x.id, { mes: Math.max(1, Math.min(12, n || 1)) })}
+                        className="w-16"
                       />
                     </td>
                     <td className="px-2 py-2">
                       <MoneyInput value={x.valor} onChange={(n) => upd(x.id, { valor: n })} />
                     </td>
                     <td className="px-2 py-2">
-                      <input
-                        type="number"
+                      <NumInput
+                        integer
                         min={1}
                         value={x.vidaUtilMeses}
-                        onChange={(e) => upd(x.id, { vidaUtilMeses: Math.max(1, parseInt(e.target.value) || 1) })}
-                        className="num w-full rounded-md border border-border/40 bg-input/40 px-2 py-1 text-right text-xs outline-none focus:border-primary"
+                        onChange={(n) => upd(x.id, { vidaUtilMeses: Math.max(1, n || 1) })}
                       />
                     </td>
+
                     <td className="num px-2 py-2 text-right text-neg">{fmtBRL(dep)}</td>
                     <td className="px-1 py-2 text-center">
                       <button
