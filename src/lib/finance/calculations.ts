@@ -110,8 +110,15 @@ export function simplesExcedeLimite(state: AppState): boolean {
 // IMPOSTOS
 // =====================================================================
 export interface MonthlyTax {
+  /** Total mensal (vendas + lucro). Retro-compat. */
   monthly: number[];
+  /** Impostos sobre venda — PIS/COFINS/ICMS/ISS/CBS/IBS (+ DAS no Simples). Deduzidos antes da Receita Líquida. */
+  monthlyVendas: number[];
+  /** Impostos sobre lucro — IRPJ + Adicional + CSLL. Deduzidos do LAIR. */
+  monthlyLucro: number[];
   annual: number;
+  annualVendas: number;
+  annualLucro: number;
   effective: number;
   detail: Record<string, number>;
 }
@@ -149,7 +156,11 @@ export function calcSimples(state: AppState): MonthlyTax {
   }
   return {
     monthly,
+    monthlyVendas: monthly.slice(),
+    monthlyLucro: zeros12(),
     annual,
+    annualVendas: annual,
+    annualLucro: 0,
     effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
     detail,
   };
@@ -187,21 +198,20 @@ export function calcPresumido(state: AppState): MonthlyTax {
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
+  const monthlyVendas = zeros12();
+  const monthlyLucro = zeros12();
   const monthly = revenue.bruta.map((r, i) => {
     const irpj = baseIRPJMensal[i] * 0.15;
     const adicional = adicionalMensal[i];
     const csll = baseCSLLMensal[i] * 0.09;
-    // PIS/COFINS antigos × multiplicador da era (1 até 2026, 0 a partir de 2027)
     const pis = r * 0.0065 * reforma.pisCofinsMult;
     const cofins = r * 0.03 * reforma.pisCofinsMult;
-    // ICMS/ISS antigos × multiplicador (1 até 2028, fading 0.9→0 até 2033)
     const issBase = Math.max(0, r - issDed);
     const debito = issBase * iss;
     const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
     const issvBruto = Math.max(0, debito - creditoMes);
     const issv = issvBruto * reforma.icmsIssMult;
     saldoCredorICMS = Math.max(0, creditoMes - debito);
-    // CBS (federal) — débito × crédito amplo sobre CPV
     let cbs = 0, ibs = 0;
     if (reforma.cbsPct > 0) {
       const dCbs = r * (reforma.cbsPct / 100);
@@ -222,9 +232,15 @@ export function calcPresumido(state: AppState): MonthlyTax {
     issTotal += issv;
     cbsTotal += cbs;
     ibsTotal += ibs;
-    return irpj + adicional + csll + pis + cofins + issv + cbs + ibs;
+    const vendas = pis + cofins + issv + cbs + ibs;
+    const lucro = irpj + adicional + csll;
+    monthlyVendas[i] = vendas;
+    monthlyLucro[i] = lucro;
+    return vendas + lucro;
   });
   const annual = sum(monthly);
+  const annualVendas = sum(monthlyVendas);
+  const annualLucro = sum(monthlyLucro);
   const rbAnual = sum(revenue.bruta);
   const detail: Record<string, number> = {
     "IRPJ": irpjTotal - sum(adicionalMensal),
@@ -242,7 +258,11 @@ export function calcPresumido(state: AppState): MonthlyTax {
   if (ibsTotal > 0) detail[`IBS (${reforma.ibsPct.toFixed(2)}%)`] = ibsTotal;
   return {
     monthly,
+    monthlyVendas,
+    monthlyLucro,
     annual,
+    annualVendas,
+    annualLucro,
     effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
     detail,
   };
@@ -277,6 +297,8 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
+  const monthlyVendas = zeros12();
+  const monthlyLucro = zeros12();
   const monthly = revenue.bruta.map((r, i) => {
     const lair = baseIRPJMensal[i];
     const irpj = lair * 0.15;
@@ -310,9 +332,15 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     issTotal += issv;
     cbsTotal += cbs;
     ibsTotal += ibs;
-    return irpj + adicional + csll + pis + cofins + issv + cbs + ibs;
+    const vendas = pis + cofins + issv + cbs + ibs;
+    const lucro = irpj + adicional + csll;
+    monthlyVendas[i] = vendas;
+    monthlyLucro[i] = lucro;
+    return vendas + lucro;
   });
   const annual = sum(monthly);
+  const annualVendas = sum(monthlyVendas);
+  const annualLucro = sum(monthlyLucro);
   const rbAnual = sum(revenue.bruta);
   const detail: Record<string, number> = {
     "IRPJ": irpjTotal - sum(adicionalMensal),
@@ -330,7 +358,11 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   if (ibsTotal > 0) detail[`IBS (${reforma.ibsPct.toFixed(2)}%)`] = ibsTotal;
   return {
     monthly,
+    monthlyVendas,
+    monthlyLucro,
     annual,
+    annualVendas,
+    annualLucro,
     effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
     detail,
   };
@@ -342,6 +374,8 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
 export interface DRE {
   receitaBruta: number[];
   deducoesInadimplencia: number[]; // 0 se inadimplenciaComoPDD
+  /** Tributos sobre venda (PIS/COFINS/ICMS/ISS/CBS/IBS, ou DAS no Simples) — deduzidos antes da Receita Líquida (CPC/IFRS 15). */
+  impostosVendas: number[];
   pdd: number[];                    // 0 se !inadimplenciaComoPDD
   receitaLiquida: number[];
   cpv: number[];
@@ -352,7 +386,10 @@ export interface DRE {
   ebit: number[];
   resultadoFinanceiro: number[];
   lair: number[];
+  /** Impostos sobre lucro (IRPJ + Adicional + CSLL). Zero no Simples. */
   impostos: number[];
+  /** Total = impostosVendas + impostos (sobre lucro). Para cards de carga total. */
+  impostosTotal: number[];
   lucroLiquido: number[];
   despesasPorCategoria: Record<string, number[]>;
   custosFinanceirosTotal: number[];
@@ -370,7 +407,18 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   const inadimp = revenue.bruta.map((r, i) => r * (revenue.inadimplencia[i] / 100));
   const deducoesInadimplencia = usaPDD ? zeros12() : inadimp.slice();
   const pdd = usaPDD ? inadimp.slice() : zeros12();
-  const receitaLiquida = receitaBruta.map((r, i) => r - deducoesInadimplencia[i]);
+
+  // ---- Primeira passagem: descobrir impostos sobre venda (independem do LAIR) ----
+  // Simples/Presumido: dependem só de receita; Real: PIS/COFINS/ICMS/CBS/IBS também
+  // só dependem de receita+CPV, não de LAIR. Calculamos com LAIR=0 só para extrair vendas.
+  let taxPre: MonthlyTax;
+  if (regime === "simples") taxPre = calcSimples(state);
+  else if (regime === "presumido") taxPre = calcPresumido(state);
+  else taxPre = calcReal(state, zeros12());
+  const impostosVendas = taxPre.monthlyVendas.slice();
+
+  // Receita Líquida = Bruta − Inadimplência (se não-PDD) − Impostos sobre Venda (CPC/IFRS 15)
+  const receitaLiquida = receitaBruta.map((r, i) => r - deducoesInadimplencia[i] - impostosVendas[i]);
 
   const cpv = zeros12();
   const despOp = zeros12();
@@ -389,7 +437,6 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     }
   }
 
-  // PDD entra como despesa operacional fixa (líquida de eventual reversão/recuperação CPC 47)
   if (usaPDD) {
     const reversaoMensal = Math.max(0, revenue.pddReversaoMensal ?? 0);
     for (let i = 0; i < 12; i++) {
@@ -410,7 +457,6 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   const lucroBruto = receitaLiquida.map((r, i) => r - cpv[i]);
   const ebitda = lucroBruto.map((g, i) => g - despOp[i]);
 
-  // Depreciação base + depreciação adicional de Capex ativado no meio do ano (Auditoria)
   const depreciacao = fill12(capital.depreciacaoMensal);
   for (const c of costs) {
     if (!c.ativacao || c.ativacao.vidaUtilMeses <= 0 || c.ativacao.valor <= 0) continue;
@@ -418,7 +464,6 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     const depAdd = c.ativacao.valor / c.ativacao.vidaUtilMeses;
     for (let i = startIdx; i < 12; i++) depreciacao[i] += depAdd;
   }
-  // Capex ativados a partir da CapitalStructure (lista dedicada)
   for (const ca of capital.capexAtivacao ?? []) {
     if (!ca || ca.vidaUtilMeses <= 0 || ca.valor <= 0) continue;
     const startIdx = Math.max(0, Math.min(11, (ca.mes || 1) - 1));
@@ -429,20 +474,23 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   const resultadoFinanceiro = ebit.map((_, i) => capital.jurosRecebidosMensal - custosFinanceirosTotal[i]);
   const lair = ebit.map((e, i) => e + resultadoFinanceiro[i]);
 
+  // ---- Segunda passagem: impostos sobre LUCRO usando o LAIR já líquido de impostos sobre venda ----
   let tax: MonthlyTax;
-  if (regime === "simples") tax = calcSimples(state);
-  else if (regime === "presumido") tax = calcPresumido(state);
-  else tax = calcReal(state, lair);
+  if (regime === "simples") tax = taxPre;                  // sem IRPJ/CSLL separados
+  else if (regime === "presumido") tax = taxPre;           // IRPJ/CSLL com base presumida sobre receita (não muda)
+  else tax = calcReal(state, lair);                        // recalcula com LAIR correto
 
-  const lucroLiquido = lair.map((l, i) => l - tax.monthly[i]);
+  const impostosLucro = tax.monthlyLucro;
+  const impostosTotal = impostosVendas.map((v, i) => v + impostosLucro[i]);
+  const lucroLiquido = lair.map((l, i) => l - impostosLucro[i]);
   const custosOperacionaisTotal = cpv.map((c, i) => c + despOp[i]);
 
   return {
     dre: {
-      receitaBruta, deducoesInadimplencia, pdd, receitaLiquida,
+      receitaBruta, deducoesInadimplencia, impostosVendas, pdd, receitaLiquida,
       cpv, lucroBruto, despesasOperacionais: despOp,
       ebitda, depreciacao, ebit, resultadoFinanceiro, lair,
-      impostos: tax.monthly, lucroLiquido,
+      impostos: impostosLucro, impostosTotal, lucroLiquido,
       despesasPorCategoria, custosFinanceirosTotal, custosOperacionaisTotal,
       custosFixos, custosVariaveis,
       folhaCltAnual: folhaAnual(state),
