@@ -256,12 +256,15 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const issDed = (tax.issDeducoes ?? 0) / 12;
   const isMercadoria = businessType === "comercio" || businessType === "industria";
   const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
+  const reforma = getReformaRates(tax.era, tax);
+  const usaReforma = reforma.cbsPct > 0 || reforma.ibsPct > 0 || reforma.pisCofinsMult < 1 || reforma.icmsIssMult < 1;
 
   const cpvMonthly = zeros12();
-  if (icmsCredAliq > 0) {
+  const temCpvCredito = icmsCredAliq > 0 || usaReforma;
+  if (temCpvCredito) {
     for (const c of state.costs) {
       if (c.category !== "custo_vendas") continue;
-      if (c.semCredito) continue; // Auditoria: ICMS-ST não gera crédito
+      if (c.semCredito) continue;
       const v = effectiveMonthValues(c);
       for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
     }
@@ -274,41 +277,64 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const pisCreditoMensal = Math.max(0, (tax.pisCreditos || 0) / 12);
   const cofinsCreditoMensal = Math.max(0, (tax.cofinsCreditos || 0) / 12);
 
-  let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0;
-  let saldoCredorICMS = 0;
+  let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
+  let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
   const monthly = revenue.bruta.map((r, i) => {
     const lair = baseIRPJMensal[i];
     const irpj = lair * 0.15;
     const adicional = adicionalMensal[i];
     const csll = lair * 0.09;
-    const pis = Math.max(0, r * 0.0165 - pisCreditoMensal);
-    const cofins = Math.max(0, r * 0.076 - cofinsCreditoMensal);
+    const pis = Math.max(0, r * 0.0165 - pisCreditoMensal) * reforma.pisCofinsMult;
+    const cofins = Math.max(0, r * 0.076 - cofinsCreditoMensal) * reforma.pisCofinsMult;
     const issBase = Math.max(0, r - issDed);
     const debito = issBase * iss;
     const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
-    const issv = Math.max(0, debito - creditoMes);
+    const issvBruto = Math.max(0, debito - creditoMes);
+    const issv = issvBruto * reforma.icmsIssMult;
     saldoCredorICMS = Math.max(0, creditoMes - debito);
+    let cbs = 0, ibs = 0;
+    if (reforma.cbsPct > 0) {
+      const dCbs = r * (reforma.cbsPct / 100);
+      const cCbs = cpvMonthly[i] * (reforma.cbsPct / 100) + saldoCBS;
+      cbs = Math.max(0, dCbs - cCbs);
+      saldoCBS = Math.max(0, cCbs - dCbs);
+    }
+    if (reforma.ibsPct > 0) {
+      const dIbs = r * (reforma.ibsPct / 100);
+      const cIbs = cpvMonthly[i] * (reforma.ibsPct / 100) + saldoIBS;
+      ibs = Math.max(0, dIbs - cIbs);
+      saldoIBS = Math.max(0, cIbs - dIbs);
+    }
     irpjTotal += irpj + adicional;
     csllTotal += csll;
     pisTotal += pis;
     cofinsTotal += cofins;
     issTotal += issv;
-    return irpj + adicional + csll + pis + cofins + issv;
+    cbsTotal += cbs;
+    ibsTotal += ibs;
+    return irpj + adicional + csll + pis + cofins + issv + cbs + ibs;
   });
   const annual = sum(monthly);
   const rbAnual = sum(revenue.bruta);
+  const detail: Record<string, number> = {
+    "IRPJ": irpjTotal - sum(adicionalMensal),
+    "Adicional IRPJ (10%)": sum(adicionalMensal),
+    CSLL: csllTotal,
+  };
+  if (reforma.pisCofinsMult > 0) {
+    detail["PIS (não-cum.)"] = pisTotal;
+    detail["COFINS (não-cum.)"] = cofinsTotal;
+  }
+  if (reforma.icmsIssMult > 0) {
+    detail[isMercadoria ? "ICMS (líquido)" : "ISS"] = issTotal;
+  }
+  if (cbsTotal > 0) detail[`CBS (${reforma.cbsPct.toFixed(2)}%)`] = cbsTotal;
+  if (ibsTotal > 0) detail[`IBS (${reforma.ibsPct.toFixed(2)}%)`] = ibsTotal;
   return {
     monthly,
     annual,
     effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
-    detail: {
-      "IRPJ": irpjTotal - sum(adicionalMensal),
-      "Adicional IRPJ (10%)": sum(adicionalMensal),
-      CSLL: csllTotal,
-      "PIS (não-cum.)": pisTotal,
-      "COFINS (não-cum.)": cofinsTotal,
-      [isMercadoria ? "ICMS (líquido)" : "ISS"]: issTotal,
-    },
+    detail,
   };
 }
 
