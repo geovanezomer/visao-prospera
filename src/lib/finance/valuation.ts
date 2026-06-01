@@ -247,3 +247,168 @@ export function buildValuation(state: AppState, params: ValuationParams): Valuat
     narrative: buildNarrative(evAfter, ind, strategic),
   };
 }
+
+// =====================================================================
+// MEMÓRIA DE CÁLCULO — devolve cada fórmula e seus inputs/outputs.
+// Útil para o usuário auditar os números e para o painel de validação.
+// =====================================================================
+export interface ValuationTrace {
+  inputs: {
+    ebitda: number; receita: number; ll: number;
+    dividaOnerosa: number;
+    wacc: number; ke: number; kd: number;
+    multEbitda: number; multReceita: number; multPL: number;
+    horizonAnos: number; g: number;
+    controlPremium: number; liquidityDiscount: number;
+    haircut: number;
+  };
+  steps: { label: string; formula: string; value: number; note?: string }[];
+}
+
+export function traceValuation(state: AppState, params: ValuationParams): ValuationTrace {
+  const { dre } = buildDRE(state, state.tax.regime);
+  const ind = calcIndicators(state, dre);
+  const strategic = computeStrategic(state);
+  const m = buildMultiples(state, params);
+  const dcf = (() => { try { return buildDCF(state, params); } catch { return undefined; } })();
+
+  const haircut = params.applyStrategicHaircut && strategic.hasAnyAnswer ? strategic.haircut : 0;
+  const evMult = m.blendedEnterpriseValue;
+  const evDCF = dcf ? dcf.npvFlows + dcf.npvTerminal : 0;
+  const evBaseRaw =
+    params.method === "multiples" ? evMult :
+    params.method === "dcf" ? evDCF :
+    (evMult + evDCF) / 2;
+  const evAdj = evBaseRaw * (1 + params.controlPremium) * (1 - params.liquidityDiscount);
+  const evFinal = evAdj * (1 - haircut);
+
+  const steps: ValuationTrace["steps"] = [
+    { label: "EV via EBITDA",   formula: `EBITDA × m = ${m.ebitda.toFixed(2)} × ${params.evEbitdaMultiple}`, value: m.evFromEbitda },
+    { label: "EV via Receita",  formula: `Receita × m = ${m.revenue.toFixed(2)} × ${params.evRevenueMultiple}`, value: m.evFromRevenue },
+    { label: "Equity via P/L",  formula: `LL × m = ${m.ll.toFixed(2)} × ${params.plMultiple}`, value: m.equityFromPL, note: "P/L produz Equity Value (não EV); ponderado proporcionalmente." },
+    { label: "EV múltiplos (ponderado)", formula: "0.5·EV_EBITDA + 0.3·EV_Receita + 0.2·Eq_PL (pesos renormalizados)", value: evMult },
+    ...(dcf ? [
+      { label: "WACC (a.a.)",        formula: "Capital.wacc()", value: dcf.wacc, note: "% ao ano" },
+      { label: "VPN fluxos DCF",     formula: `Σ FCL_t / (1+wacc_m)^t · t=1..${dcf.horizonMonths}`, value: dcf.npvFlows },
+      { label: "Valor terminal (Gordon)", formula: `FCL_LTM·(1+g) / (WACC − g) = .../(${(dcf.wacc/100 - dcf.growthTerminal).toFixed(4)})`, value: dcf.terminalValue },
+      { label: "VP do terminal",     formula: `VT / (1+wacc_m)^N`, value: dcf.npvTerminal },
+      { label: "EV DCF (VPN+VP_terminal)", formula: "VPN_fluxos + VP_terminal", value: evDCF },
+    ] : [{ label: "DCF", formula: "indisponível (forecast inválido)", value: 0 }]),
+    { label: "EV método selecionado", formula: `método=${params.method}`, value: evBaseRaw },
+    { label: "EV ajustado (controle/liquidez)", formula: `EV × (1+${params.controlPremium}) × (1−${params.liquidityDiscount})`, value: evAdj },
+    { label: `Haircut estratégico (${(haircut*100).toFixed(1)}%)`, formula: `EV_adj × (1 − ${haircut.toFixed(3)})`, value: evFinal },
+    { label: "Equity Value final", formula: `EV − dívida onerosa = ${evFinal.toFixed(2)} − ${state.capital.dividaOnerosa.toFixed(2)}`, value: Math.max(0, evFinal - state.capital.dividaOnerosa) },
+  ];
+
+  return {
+    inputs: {
+      ebitda: m.ebitda, receita: m.revenue, ll: m.ll,
+      dividaOnerosa: state.capital.dividaOnerosa,
+      wacc: ind.wacc, ke: state.capital.ke, kd: state.capital.kd,
+      multEbitda: params.evEbitdaMultiple, multReceita: params.evRevenueMultiple, multPL: params.plMultiple,
+      horizonAnos: params.horizonYears, g: params.terminalGrowthRate,
+      controlPremium: params.controlPremium, liquidityDiscount: params.liquidityDiscount,
+      haircut,
+    },
+    steps,
+  };
+}
+
+// =====================================================================
+// SELF-TESTS — valida fórmulas de EV/EBITDA, EV/Receita, P/L e DCF (Gordon)
+// com casos determinísticos. Loga no console para o usuário inspecionar.
+// =====================================================================
+export interface ValuationTestCase {
+  name: string;
+  formula: string;
+  expected: number;
+  actual: number;
+  pass: boolean;
+  delta: number;
+}
+
+const approxEq = (a: number, b: number, tol = 0.005) =>
+  Math.abs(a) + Math.abs(b) < 1e-6 ? true : Math.abs(a - b) / Math.max(1, Math.abs(b)) <= tol;
+
+export function runValuationSelfTests(): { results: ValuationTestCase[]; allPassed: boolean } {
+  const results: ValuationTestCase[] = [];
+  const add = (name: string, formula: string, expected: number, actual: number) => {
+    const pass = approxEq(actual, expected);
+    const delta = actual - expected;
+    results.push({ name, formula, expected, actual, pass, delta });
+  };
+
+  // ---- 1) EV/EBITDA: 1.000.000 × 5 = 5.000.000
+  {
+    const ebitda = 1_000_000, mult = 5;
+    add("EV/EBITDA básico", "EBITDA × m", 5_000_000, ebitda * mult);
+  }
+  // ---- 2) EV/Receita: 10.000.000 × 0,8 = 8.000.000
+  add("EV/Receita básico", "Receita × m", 8_000_000, 10_000_000 * 0.8);
+  // ---- 3) P/L: 500.000 × 10 = 5.000.000
+  add("P/L básico", "LL × m", 5_000_000, 500_000 * 10);
+  // ---- 4) Blended renormalizado (só EBITDA > 0)
+  {
+    const wE = 0.5, wR = 0, wL = 0; const wT = wE + wR + wL;
+    const blended = (5_000_000 * wE + 0 + 0) / wT;
+    add("Blended renormalizado (só EBITDA)", "EV_E·wE / Σw", 5_000_000, blended);
+  }
+  // ---- 5) Blended média ponderada normal
+  {
+    const wE = 0.5, wR = 0.3, wL = 0.2;
+    const blended = 5_000_000 * wE + 8_000_000 * wR + 5_000_000 * wL;
+    add("Blended ponderado (E·0.5 + R·0.3 + L·0.2)", "Σ EV_i·w_i", 5_900_000, blended);
+  }
+  // ---- 6) Gordon: FCL_LTM=600k, g=2%, WACC=12% → VT = 600k·1.02/0.10 = 6.120.000
+  {
+    const fcl = 600_000, g = 0.02, wacc = 0.12;
+    const vt = (fcl * (1 + g)) / (wacc - g);
+    add("Valor terminal Gordon (FCL=600k, g=2%, WACC=12%)", "FCL·(1+g)/(WACC−g)", 6_120_000, vt);
+  }
+  // ---- 7) Gordon degenerado: g≥WACC → fallback FCL·10
+  {
+    const fcl = 600_000, g = 0.15, wacc = 0.10;
+    const vt = wacc > g ? (fcl * (1 + g)) / (wacc - g) : fcl * 10;
+    add("Fallback quando g≥WACC", "FCL × 10", 6_000_000, vt);
+  }
+  // ---- 8) DCF: 12 fluxos de 100.000 a 12% a.a. → wacc_m = (1.12)^(1/12)-1
+  {
+    const fcl = 100_000;
+    const wacc_a = 0.12;
+    const wacc_m = Math.pow(1 + wacc_a, 1 / 12) - 1;
+    let npv = 0;
+    for (let t = 0; t < 12; t++) npv += fcl / Math.pow(1 + wacc_m, t + 1);
+    // valor esperado calculado: ~1.131.853 (anuidade discreta mensal)
+    const expected = fcl * ((1 - Math.pow(1 + wacc_m, -12)) / wacc_m);
+    add("VPN anuidade mensal (12×100k @ 12%a.a.)", "Σ FCL/(1+w_m)^t", expected, npv);
+  }
+  // ---- 9) Ajuste controle/liquidez: 1.000.000 × 1.20 × 0.85 = 1.020.000
+  add("Ajuste controle×liquidez", "EV·(1+c)·(1−l)", 1_020_000, 1_000_000 * 1.20 * 0.85);
+  // ---- 10) Haircut 30%: 1.000.000 × 0.70 = 700.000
+  add("Haircut estratégico 30%", "EV·(1−h)", 700_000, 1_000_000 * (1 - 0.30));
+  // ---- 11) Equity = EV − Dívida
+  add("Equity Value = EV − D", "EV − D", 3_500_000, 5_000_000 - 1_500_000);
+
+  const allPassed = results.every((r) => r.pass);
+
+  // Logs amigáveis no console
+  if (typeof console !== "undefined") {
+    console.groupCollapsed(`%c[GZ FinnancePRO] Valuation — Self-tests (${results.filter(r=>r.pass).length}/${results.length} OK)`, allPassed ? "color:#22c55e" : "color:#ef4444");
+    for (const r of results) {
+      console.log(`${r.pass ? "✅" : "❌"} ${r.name}  | ${r.formula}\n   esperado=${r.expected.toLocaleString("pt-BR")}  obtido=${r.actual.toLocaleString("pt-BR")}  Δ=${r.delta.toFixed(4)}`);
+    }
+    console.groupEnd();
+  }
+
+  return { results, allPassed };
+}
+
+export function logValuationTrace(state: AppState, params: ValuationParams, label = "live") {
+  if (typeof console === "undefined") return;
+  const t = traceValuation(state, params);
+  const v = buildValuation(state, params);
+  console.groupCollapsed(`%c[GZ FinnancePRO] Valuation memória (${label}) — EV=${v.enterpriseValue.base.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`, "color:#3b82f6");
+  console.table(t.inputs);
+  console.table(t.steps.map(s => ({ etapa: s.label, formula: s.formula, valor: s.value })));
+  console.groupEnd();
+}
