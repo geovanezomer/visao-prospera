@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Activity, GitCompare, LineChart as LineIcon, Play, Sliders, TrendingUp, Trash2 } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ConfirmDialog, chartTooltipStyle, chartTooltipItemStyle, chartTooltipLabelStyle } from "./ConfirmDialog";
+import { NumInput } from "./primitives";
 
 export function AnalysisTab({
   state,
