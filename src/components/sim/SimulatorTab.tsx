@@ -18,12 +18,22 @@ export function SimulatorTab({
   state,
   apply,
   saveScenario,
+  params,
+  setParams,
 }: {
   state: AppState;
   apply: Updater;
   saveScenario: (name: string, s: AppState) => void;
+  params?: SimulatorParams;
+  setParams?: (p: SimulatorParams) => void;
 }) {
-  const [p, setP] = useState<SimulatorParams>(DEFAULT_SIM);
+  const [localP, setLocalP] = useState<SimulatorParams>(DEFAULT_SIM);
+  const p = params ?? localP;
+  const setP: (updater: SimulatorParams | ((cur: SimulatorParams) => SimulatorParams)) => void =
+    (updater) => {
+      const next = typeof updater === "function" ? (updater as (c: SimulatorParams) => SimulatorParams)(p) : updater;
+      if (setParams) setParams(next); else setLocalP(next);
+    };
 
   const baseView = useMemo<SimDREView>(() => computeSimView(state), [state]);
   const simState = useMemo(() => applySimulator(state, p), [state, p]);
