@@ -63,6 +63,27 @@ export function ValuationTab({
 
   return (
     <div className="space-y-6">
+      {/* Banner fonte de dados — Base × Simulado */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4 text-primary" />
+          <div>
+            <div className="font-semibold text-foreground">
+              Fonte dos números: {useSimulated ? "DRE Simulado (aba Simulador)" : "DRE base (sem ajustes)"}
+            </div>
+            <div className="text-muted-foreground">
+              {useSimulated
+                ? `${simActive ?? 0} alavanca${(simActive ?? 0) === 1 ? "" : "s"} ativa${(simActive ?? 0) === 1 ? "" : "s"} no Simulador estão sendo aplicadas ao valuation.`
+                : "Usando os dados originais antes de qualquer simulação."}
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-1">
+          <Button size="sm" variant={useSimulated ? "default" : "outline"} onClick={() => setUseSimulated(true)}>DRE Simulado</Button>
+          <Button size="sm" variant={!useSimulated ? "default" : "outline"} onClick={() => setUseSimulated(false)}>DRE Base</Button>
+        </div>
+      </div>
+
       {/* Resumo executivo */}
       <section className="rounded-lg border border-border/60 bg-card/40 p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
