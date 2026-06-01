@@ -374,6 +374,8 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
 export interface DRE {
   receitaBruta: number[];
   deducoesInadimplencia: number[]; // 0 se inadimplenciaComoPDD
+  /** Tributos sobre venda (PIS/COFINS/ICMS/ISS/CBS/IBS, ou DAS no Simples) — deduzidos antes da Receita Líquida (CPC/IFRS 15). */
+  impostosVendas: number[];
   pdd: number[];                    // 0 se !inadimplenciaComoPDD
   receitaLiquida: number[];
   cpv: number[];
@@ -384,7 +386,10 @@ export interface DRE {
   ebit: number[];
   resultadoFinanceiro: number[];
   lair: number[];
+  /** Impostos sobre lucro (IRPJ + Adicional + CSLL). Zero no Simples. */
   impostos: number[];
+  /** Total = impostosVendas + impostos (sobre lucro). Para cards de carga total. */
+  impostosTotal: number[];
   lucroLiquido: number[];
   despesasPorCategoria: Record<string, number[]>;
   custosFinanceirosTotal: number[];
