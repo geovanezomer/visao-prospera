@@ -332,6 +332,7 @@ function CostTable({
   lines,
   receitaBrutaAnual,
   onMonth,
+  onAllMonths,
   onFixed,
   onLabel,
   onRemove,
@@ -341,6 +342,7 @@ function CostTable({
   lines: CostLine[];
   receitaBrutaAnual: number;
   onMonth: (id: string, i: number, v: number) => void;
+  onAllMonths: (id: string, v: number) => void;
   onFixed: (id: string, fixed: boolean) => void;
   onLabel: (id: string, label: string) => void;
   onRemove: (id: string) => void;
@@ -411,9 +413,7 @@ function CostTable({
                       <div className="w-36">
                         <MoneyInput
                           value={c.values[0]}
-                          onChange={(n) => {
-                            for (let i = 0; i < 12; i++) onMonth(c.id, i, n);
-                          }}
+                          onChange={(n) => onAllMonths(c.id, n)}
                         />
                       </div>
                     </div>
