@@ -269,32 +269,79 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
         </div>
       </div>
 
-      {/* Projeção 2025 → 2033 para o regime ativo */}
+      {/* Comparativo Atual vs. Reforma — tabela + gráfico */}
       <div className="rounded-lg border border-border/60 bg-card/40">
         <div className="border-b border-border/60 p-4">
           <SectionTitle>
-            Projeção da carga efetiva — {state.tax.regime === "simples" ? "Simples" : state.tax.regime === "presumido" ? "Presumido" : "Real"} · todas as eras
+            Atual vs. Reforma — {state.tax.regime === "simples" ? "Simples" : state.tax.regime === "presumido" ? "Presumido" : "Real"}
           </SectionTitle>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            Carga tributária projetada para o regime ativo ao longo da transição CBS/IBS, mantendo receita, custos e demais parâmetros constantes.
+            Carga tributária projetada para o regime ativo nas três fases da Reforma (EC 132/2023), mantendo receita, custos e demais parâmetros constantes. A era selecionada no topo está destacada.
           </p>
         </div>
-        <div className="grid grid-cols-9 gap-px bg-border/40 text-center">
+
+        {/* Tabela compacta 3 colunas */}
+        <div className="grid grid-cols-4 gap-px bg-border/40 text-center">
+          <div className="bg-card p-3 text-left text-[11px] uppercase tracking-wider text-muted-foreground">Indicador</div>
           {projAtiva.map((p) => (
-            <div key={"h" + p.era} className={`bg-card p-2 text-[10px] uppercase tracking-wider ${p.era === era ? "text-primary font-semibold" : "text-muted-foreground"}`}>
-              {p.era === "atual" ? "Atual" : p.era}
+            <div key={"h" + p.era} className={`bg-card p-3 text-[11px] uppercase tracking-wider ${p.era === era ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+              {TAX_ERA_SHORT[p.era]}
             </div>
           ))}
+          <div className="bg-card p-3 text-left text-xs text-muted-foreground">Carga efetiva</div>
           {projAtiva.map((p) => (
-            <div key={"v" + p.era} className={`bg-card p-2 num text-xs ${p.era === era ? "text-primary font-semibold" : ""}`}>
+            <div key={"v" + p.era} className={`bg-card p-3 num text-sm ${p.era === era ? "text-primary font-semibold" : ""}`}>
               {p.effective.toFixed(2)}%
             </div>
           ))}
+          <div className="bg-card p-3 text-left text-xs text-muted-foreground">Tributos (ano)</div>
           {projAtiva.map((p) => (
-            <div key={"a" + p.era} className="bg-card p-2 num text-[10px] text-muted-foreground">
+            <div key={"a" + p.era} className={`bg-card p-3 num text-sm ${p.era === era ? "text-primary font-semibold" : "text-muted-foreground"}`}>
               {fmtBRL(p.annual)}
             </div>
           ))}
+          <div className="bg-card p-3 text-left text-xs text-muted-foreground">Δ vs. atual</div>
+          {projAtiva.map((p) => {
+            const base = projAtiva[0].annual;
+            const delta = p.annual - base;
+            const pct = base > 0 ? (delta / base) * 100 : 0;
+            const tone = delta > 0 ? "text-neg" : delta < 0 ? "text-pos" : "text-muted-foreground";
+            return (
+              <div key={"d" + p.era} className={`bg-card p-3 num text-sm ${tone}`}>
+                {p.era === "atual" ? "—" : `${delta >= 0 ? "+" : ""}${fmtBRL(delta)} (${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%)`}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Gráfico de barras dedicado */}
+        <div className="border-t border-border/60 p-4">
+          <div className="mb-2 text-xs text-muted-foreground">Carga efetiva (% da receita bruta)</div>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={projAtiva.map((p) => ({ name: TAX_ERA_SHORT[p.era], era: p.era, efetiva: Number(p.effective.toFixed(2)), tributos: p.annual }))} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.4)" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <Tooltip
+                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                  formatter={(value: number, key: string, item) => {
+                    if (key === "efetiva") return [`${value.toFixed(2)}%`, "Carga efetiva"];
+                    return [fmtBRL((item.payload as { tributos: number }).tributos), "Tributos (ano)"];
+                  }}
+                />
+                <Bar dataKey="efetiva" radius={[6, 6, 0, 0]}>
+                  {projAtiva.map((p) => (
+                    <Cell key={p.era} fill={p.era === era ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.35)"} />
+                  ))}
+                  <LabelList dataKey="efetiva" position="top" formatter={(v: number) => `${v.toFixed(1)}%`} style={{ fontSize: 11, fill: "hsl(var(--foreground))" }} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-2 text-[11px] text-muted-foreground">
+            Barra destacada = era atualmente selecionada. "Transição" usa o ponto médio de 2027–2032 (CBS pleno, IBS a 50% da plena, ICMS/ISS a 50%). Ajuste as alíquotas CBS/IBS acima para simular cenários otimista (≈26,5%) ou conservador (≈28%).
+          </div>
         </div>
       </div>
     </div>
