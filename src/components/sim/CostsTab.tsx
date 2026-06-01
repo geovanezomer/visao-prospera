@@ -412,7 +412,7 @@ function CostTable({
                       <span className="text-[10px] uppercase text-muted-foreground">Valor aplicado em todos os meses:</span>
                       <div className="w-36">
                         <MoneyInput
-                          value={c.values[0]}
+                          value={fixedCostBase(c.values)}
                           onChange={(n) => onAllMonths(c.id, n)}
                         />
                       </div>
