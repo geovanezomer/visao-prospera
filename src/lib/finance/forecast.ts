@@ -141,8 +141,8 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     const fatorReceita = Math.pow(1 + g, i);
     const receita = receitaBase[mes] * fatorReceita;
 
-    // CPV unitário melhora/piora com escala (ganhos compostos por mês)
-    const cpvNaoFolha = receita * cpvNaoFolhaRatioBase * Math.pow(1 - escalaCpvMensal, i);
+    // CPV unitário melhora/piora com escala (fator anual aplicado à fração do ano)
+    const cpvNaoFolha = receita * cpvNaoFolhaRatioBase * escalaCpvFator(i);
 
     // Variáveis não-CPV: escalam com receita
     const variaveisNaoCpv = receita * variaveisRatioBase;
@@ -158,8 +158,8 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
 
     const cpv = cpvNaoFolha + folhaCpv;
 
-    // Fixos não-folha: inflação composta
-    const fatorInflacao = Math.pow(1 + inflacaoMensal, i);
+    // Fixos não-folha: inflação anual elevada à fração do ano
+    const fatorInflacao = inflacaoFator(i);
     const fixosNaoFolha = fixosNaoFolhaMensalBase * fatorInflacao;
 
     const despesasOp = fixosNaoFolha + folhaFixa + variaveisNaoCpv;
