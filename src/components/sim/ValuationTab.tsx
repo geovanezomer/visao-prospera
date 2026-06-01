@@ -131,6 +131,7 @@ export function ValuationTab({
           <TabsTrigger value="multiples"><BarChart3 className="mr-1.5 h-3.5 w-3.5" />1. Múltiplos</TabsTrigger>
           <TabsTrigger value="dcf"><TrendingUp className="mr-1.5 h-3.5 w-3.5" />2. DCF</TabsTrigger>
           <TabsTrigger value="risk"><ShieldAlert className="mr-1.5 h-3.5 w-3.5" />3. Risco & Sensibilidade</TabsTrigger>
+          <TabsTrigger value="audit"><Calculator className="mr-1.5 h-3.5 w-3.5" />4. Auditoria</TabsTrigger>
         </TabsList>
 
         {/* ============ MÚLTIPLOS ============ */}
