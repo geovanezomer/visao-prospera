@@ -140,13 +140,15 @@ export const DEFAULT_STATE: AppState = {
 const LEGACY_CPV_IDS = new Set(["insumos", "fretes"]);
 
 export function migrateCostLine(c: CostLine): CostLine {
-  if (c.category) return c;
+  // Auto-marca ICMS-ST como sem crédito (Auditoria Jun/2026)
+  const semCredito = c.semCredito ?? (c.subcategory === "icms_st");
+  if (c.category) return { ...c, semCredito };
   let category: CostLine["category"];
   if (c.group === "financeiro") category = "financeiro";
   else if (LEGACY_CPV_IDS.has(c.id)) category = "custo_vendas";
   else if (c.variavel) category = "variavel";
   else category = "fixo";
-  return { ...c, category };
+  return { ...c, category, semCredito };
 }
 
 export function migrateState(s: AppState): AppState {
