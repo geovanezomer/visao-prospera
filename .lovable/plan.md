@@ -1,62 +1,85 @@
-## Plano de Correção da Auditoria Financeira
+## Contexto
 
-A auditoria lista **30 itens** (3 críticos, 7 altos, 8 médios, 12 baixos) + **reforma CBS/IBS** + **6 grandes módulos novos** (Excel I/O, RBAC, Risk/VaR, Postgres, ESG, PWA Mobile).
+A aba **Regime Tributário** hoje compara apenas Simples × Presumido × Real no sistema atual (PIS, COFINS, ICMS, ISS, IRPJ, CSLL). A Reforma Tributária (EC 132/2023 + LC 214/2025) substitui PIS/COFINS por **CBS** (federal) e ICMS/ISS por **IBS** (estadual+municipal), em transição faseada de **2026 a 2032**, com CBS/IBS plenos em 2033. O Simples Nacional **permanece**, com opção de apropriação de créditos por fora do DAS.
 
-Os 6 módulos novos são projetos independentes (semanas/meses de trabalho cada) e ficam **fora deste plano** — vamos tratá-los depois, um a um, se você quiser. Aqui foco apenas nas **correções de cálculo** que afetam diretamente os números mostrados pelo sistema.
+O MD enviado captura a ideia certa, mas com alguns números desatualizados (alíquotas de referência 27%/8%, transição 70/30 binária). Vou usar o cronograma e as alíquotas oficialmente projetadas:
 
----
+| Ano | CBS | IBS | PIS/COFINS | ICMS/ISS |
+|---|---|---|---|---|
+| 2026 (teste) | 0,9% | 0,1% | integral, compensável c/ CBS/IBS | integral |
+| 2027 | ~8,8% | 0,1% | **extinto** | integral |
+| 2028 | ~8,8% | 0,1% | — | integral |
+| 2029 | ~8,8% | ~3,5% | — | 90% |
+| 2030 | ~8,8% | ~7,1% | — | 80% |
+| 2031 | ~8,8% | ~10,6% | — | 70% |
+| 2032 | ~8,8% | ~14,1% | — | 60% |
+| 2033 | ~8,8% | ~17,7% | — | **extinto** |
 
-### Fase 1 — Bugs Críticos (P0) — núcleo financeiro
+Combinado de referência: **~26,5%** (calibrado pelo Senado/MF — todos os valores serão **configuráveis**).
 
-Alvo: `src/lib/finance/calculations.ts`
+## Decisões de design
 
-1. **NOPAT correto para ROIC** — usar `EBIT − impostos efetivos do DRE` (ou alíquota efetiva via `LAIR`) em vez de `EBIT × (1 − shield)`.
-2. **WACC com shield correto por regime** — manter `Kd × (1 − Tc)` somente onde juros são dedutíveis.
-3. **`irShieldForRegime`** — Real = 0,34; Presumido = 0; Simples = 0 (juros não deduzem em Presumido/Simples).
-4. **Capital Investido do ROIC** — descontar caixa ocioso (novo campo `capital.caixaOcioso` opcional, default 0) e somar passivos não-onerosos quando informados; fallback ao comportamento atual quando não preenchido para não quebrar dados existentes.
+1. **Não criar um 4º card.** Em vez disso, adicionar um **seletor de "Era Tributária"** no topo da aba, que reconfigura os 3 cards existentes (Simples / Presumido / Real) para o regime vigente naquele ano. Mais limpo e evita explosão combinatória.
+2. **Eras suportadas**: `atual` (até 2025), `transicao_2026`, `transicao_2027_2028`, `transicao_2029_2032` (ano-a-ano), `pleno_2033`. Selecionável por **ano-base** (slider/select 2025–2033) — o sistema deduz a era e mostra os percentuais aplicáveis.
+3. **Simples Nacional**: card permanece igual em todas as eras (DAS mantido). Adicionar nota "opção de apropriação de créditos de IBS/CBS aos clientes" quando ano ≥ 2027.
+4. **Presumido/Real**: PIS+COFINS é substituído por CBS; ICMS/ISS é substituído por IBS, **misturados conforme cronograma**. IRPJ/CSLL inalterados.
+5. **Comparativo lado a lado**: novo bloco "Sistema Atual vs. Reforma no ano X" mostrando carga efetiva projetada para o regime ativo nos dois mundos.
+6. **Cashback / split payment / não-cumulatividade plena**: IBS/CBS têm **crédito amplo** sobre qualquer aquisição (inclusive uso/consumo), diferente do PIS/COFINS atual. Refletir nas funções `calcPresumido`/`calcReal` (eras pós-2026): crédito sobre todo o CPV + custos/variáveis tributáveis, sem o filtro `semCredito` exclusivo de ICMS-ST (que perde sentido pós-2033).
 
-### Fase 2 — Bugs Altos (P1) — tributação e ciclo
+## Implementação
 
-1. **PIS/COFINS não-cumulativo**: ratear `pisCreditos` e `cofinsCreditos` em base mensal (`/12`) em `calcReal`.
-2. **PME com estoque médio**: usar `(estoqueInicial + estoqueFinal)/2` quando os dois existirem; manter fallback ao único valor atual.
-3. **TIR/VPL**: `irr()` retorna `{ value, error }`; UI passa a mostrar mensagem clara quando não converge.
-4. **Depreciação por ativação**: aceitar lista opcional de `capex[]` (mês + valor + vida útil) e somar à depreciação base a partir do mês de ativação. Mantém o campo atual.
-5. **ICMS — carry-over de crédito entre meses** (`calcPresumido`/`calcReal`): saldo credor passa para o próximo mês.
-6. **ICMS-ST sem crédito**: nova flag `semCredito` em `CostLine` (default `false`), respeitada nos cálculos.
-7. **Fator R do Simples**: alerta no UI quando RBT12 ultrapassa R$ 4.8M (sai do Simples) ou quando atividade não permite Anexo III.
+### 1) `src/lib/finance/types.ts`
 
-### Fase 3 — Inconsistências e precisão (P2)
+- `TaxEra = "atual" | "2026" | "2027" | "2028" | "2029" | "2030" | "2031" | "2032" | "2033"`
+- `TaxConfig` ganha:
+  - `era: TaxEra` (default `"atual"`)
+  - `cbsAliquota?: number` (default 8.8)
+  - `ibsAliquotaRef?: number` (default 17.7, alíquota plena de referência)
+  - `cbsCreditoAmplo?: boolean` (default true a partir de 2027)
+- `IBS_TRANSICAO[ano]` e `ICMS_REDUTOR[ano]` como constantes exportadas.
 
-1. **PDD com reversão**: campo opcional `pddReversaoMensal` aplicado como receita não-operacional.
-2. **Ciclo × NCG**: novo aviso textual no card de capital de giro quando os sinais divergem.
-3. **Composição mensal de escala** (`forecast.ts`): aplicar fator anual ao ano e interpolar dentro do ano, evitando o erro composto.
-4. **Divisões por zero**: `terminalValue` exige `WACC − g ≥ 0,5%` (caso contrário, usa fallback explícito e marca a confiança como "C"); Newton-Raphson protegido contra `r→1`.
-5. **Infinity/NaN**: substituir `Infinity` por valores neutros (`99` para liquidez, `null` para cobertura de juros) e tratar no display.
+### 2) `src/lib/finance/calculations.ts`
 
-### Fase 4 — Edge cases e testes (P3)
+- Nova função `tributosReforma(receita, baseCredito, era, cfg)` retornando `{ cbs, ibs, residualPisCofins, residualIcmsIss }` mês a mês, aplicando os percentuais da tabela acima.
+- `calcPresumido(state)` e `calcReal(state)`: se `era !== "atual"`, substituem os blocos PIS/COFINS e ICMS/ISS pelo retorno de `tributosReforma`, mantendo IRPJ/CSLL e a lógica de carry-over de crédito.
+- `compareRegimes(state)` passa a aceitar `era` opcional (default = `state.tax.era`) e ganha versão `compareErasForRegime(state, regime)` → retorna carga efetiva por ano (2025→2033) para gráfico.
+- Atualizar `simplesAliquotaEfetiva` — sem mudança de fórmula, só adicionar nota informativa quando era ≥ 2027.
 
-1. Avisos no Diagnóstico CFO: receita ≈ 0 com custos fixos, inadimplência ≥ 100%, custos negativos.
-2. Suíte de **self-tests** (estilo do `runValuationSelfTests`) em novo arquivo `src/lib/finance/__tests__/finance.selftests.ts`:
-   - NOPAT/ROIC (caso da auditoria: EBIT 100k, impostos 30k → ROIC 14%).
-   - WACC nos 3 regimes.
-   - PIS/COFINS mensal vs anual.
-   - PME com estoque médio.
-   - ICMS com carry-over.
-   - Gordon degenerado e proteção `WACC≈g`.
-   - TIR convergente, divergente e fallback.
-   Resultados logados no console e expostos na aba **Valuation → Auditoria** (estender a tabela existente).
+### 3) `src/components/sim/TaxTab.tsx`
 
-### Fora deste plano (confirmar depois)
+- Novo bloco no topo: **Seletor de Era** (Select com 9 opções + tooltip explicando cada fase).
+- Os 3 cards existentes passam a renderizar linhas extras quando `era !== "atual"`:
+  - Presumido/Real: `CBS (X%)`, `IBS (Y%)`, `PIS/COFINS residual`, `ICMS residual` (linhas aparecem/desaparecem conforme ano).
+  - Simples: badge "Sem mudanças" + nota sobre crédito a clientes.
+- Novo bloco abaixo do comparativo entre regimes: **"Projeção 2025–2033"** — pequena tabela/gráfico de barras mostrando carga efetiva por ano para o regime ativo, evidenciando o cruzamento da transição.
+- Inputs configuráveis (collapsible "Parâmetros avançados da Reforma"): alíquota CBS, IBS de referência, % de crédito CBS — tudo com defaults oficiais.
 
-- Reforma tributária **CBS/IBS** (novo regime, mudanças em `types.ts`, UI de seletor, simulação dual): trabalho grande, deve ser um plano dedicado.
-- Os 6 módulos novos: Excel I/O, RBAC multi-user, Risk/VaR, migração Postgres, ESG, PWA Mobile.
+### 4) `src/lib/finance/defaults.ts`
 
-### Detalhes técnicos
+- Adicionar defaults da reforma no `TaxConfig` inicial: `era: "atual"`, `cbsAliquota: 8.8`, `ibsAliquotaRef: 17.7`.
+- Migração defensiva: estados salvos sem esses campos recebem defaults sem quebrar.
 
-- Todas as mudanças mantêm **compatibilidade retroativa** com o `AppState` salvo no `localStorage` — novos campos são opcionais e têm default seguro em `defaults.ts`/`store.ts` (migração leve por versão).
-- Mudanças em `calculations.ts` são refletidas automaticamente em DRE, Indicadores, Simulador, Valuation e Análises (já consomem `buildDRE`/`calcIndicators`).
-- Cada fase termina rodando os self-tests; logs aparecem no console (F12) e na aba **Auditoria** do Valuation.
+### 5) `src/lib/finance/selftests.ts`
 
----
+- 4 novos testes: era 2026 (carga ≈ atual + 1pp), era 2029 (mistura 50/50), era 2033 (100% CBS+IBS, PIS/COFINS/ICMS zerados), Simples (invariante em todas as eras).
 
-Quer que eu siga **todas as 4 fases de uma vez** (são bugs claros e isolados), ou prefere que eu pare ao fim da **Fase 1** para você validar os números antes de continuar?
+### 6) `src/components/sim/DRETab.tsx`
+
+- Sem mudanças estruturais — a DRE consome `buildDRE(state, regime)` que já usa o `era` via `calcReal`/`calcPresumido`. Adicionar apenas uma badge "Era: 2029 (transição)" no topo do DRE quando `era !== "atual"`, para o usuário não esquecer o contexto.
+
+### 7) Memória do projeto
+
+Registrar em `mem://features/reforma-tributaria.md`: cronograma oficial, alíquotas de referência, e nota de que tudo é configurável.
+
+## Fora do escopo (poderia ser fase 2)
+
+- Split payment automático e cashback para PF de baixa renda (afeta caixa, não a DRE).
+- Regime regional/setorial diferenciado (combustíveis, financeiro, planos de saúde) — usariam alíquotas próprias.
+- Crédito presumido de IBS/CBS para exportador.
+- Mudança automática de `era` baseada em data atual (deixar manual para fins de simulação).
+
+## Pontos a confirmar antes de codar
+
+1. **Profundidade na transição**: ano-a-ano (9 eras) ou apenas 3 marcos ("atual", "transição 2027–2032", "pleno 2033")? Recomendo ano-a-ano porque é o diferencial da ferramenta para CFO planejar 2027–2032.
+2. **Alíquotas default**: usar 8,8% CBS + 17,7% IBS (referência atual) ou permitir o usuário escolher um cenário "MF otimista" vs. "Senado conservador" (26,5% vs. 28%)?
+3. **Comparativo "atual vs. reforma"**: tabela compacta dentro da aba ou gráfico de barras dedicado embaixo?

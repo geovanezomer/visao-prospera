@@ -88,6 +88,34 @@ export interface CapexAtivacao {
   vidaUtilMeses: number;
 }
 
+/** Eras da Reforma Tributária (EC 132/2023 + LC 214/2025).
+ *  Define o cronograma de substituição PIS/COFINS→CBS e ICMS/ISS→IBS.
+ *  "atual" mantém o sistema pré-reforma. 2026-2032 são transição faseada; 2033 é regime pleno. */
+export type TaxEra =
+  | "atual"
+  | "2026"
+  | "2027"
+  | "2028"
+  | "2029"
+  | "2030"
+  | "2031"
+  | "2032"
+  | "2033";
+
+export const TAX_ERAS: TaxEra[] = ["atual", "2026", "2027", "2028", "2029", "2030", "2031", "2032", "2033"];
+
+export const TAX_ERA_LABEL: Record<TaxEra, string> = {
+  atual: "Sistema atual (até 2025)",
+  "2026": "2026 — Teste CBS/IBS",
+  "2027": "2027 — CBS pleno · PIS/COFINS extintos",
+  "2028": "2028 — CBS pleno · IBS teste",
+  "2029": "2029 — IBS 20% · ICMS 90%",
+  "2030": "2030 — IBS 40% · ICMS 80%",
+  "2031": "2031 — IBS 60% · ICMS 70%",
+  "2032": "2032 — IBS 80% · ICMS 60%",
+  "2033": "2033 — Regime pleno (CBS+IBS)",
+};
+
 export interface TaxConfig {
   regime: TaxRegime;
   simplesAnexo: SimplesAnexo;
@@ -105,6 +133,13 @@ export interface TaxConfig {
   cofinsCreditos: number;
   /** Dedução de materiais/subempreitada para ISS (Lei 116/2003 art. 7º §2º). Anual em R$. */
   issDeducoes?: number;
+  // ----- Reforma Tributária (CBS/IBS) — EC 132/2023 + LC 214/2025 -----
+  /** Era do sistema tributário aplicado ao cálculo. Default "atual". */
+  era?: TaxEra;
+  /** Alíquota plena de CBS (federal) em %. Default 8,8 (referência MF/Senado). */
+  cbsAliquota?: number;
+  /** Alíquota plena de referência do IBS (estadual+municipal) em %. Default 17,7. */
+  ibsAliquotaRef?: number;
 }
 
 export interface CashFlowConfig {
