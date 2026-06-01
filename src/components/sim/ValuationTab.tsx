@@ -340,6 +340,11 @@ export function ValuationTab({
         <TabsContent value="risk" className="mt-4 space-y-4">
           <RiskPanel valuation={valuation} state={source} />
         </TabsContent>
+
+        {/* ============ AUDITORIA ============ */}
+        <TabsContent value="audit" className="mt-4 space-y-4">
+          <AuditPanel trace={trace} />
+        </TabsContent>
       </Tabs>
     </div>
   );
