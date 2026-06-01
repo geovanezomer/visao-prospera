@@ -169,7 +169,18 @@ export function migrateCostLine(c: CostLine): CostLine {
 }
 
 export function migrateState(s: AppState): AppState {
-  const costs = s.costs ? s.costs.map(migrateCostLine) : DEFAULT_STATE.costs;
+  let costs = s.costs ? s.costs.map(migrateCostLine) : DEFAULT_STATE.costs;
+  // Serviços: descontinuamos CSP — realoca linhas custo_vendas para fixo/variável
+  if (s.businessType === "servicos") {
+    costs = costs.map((c) => {
+      if (c.category !== "custo_vendas") return c;
+      if (c.subcategory === "mao_obra_direta") {
+        return { ...c, category: "fixo", subcategory: undefined, label: c.label.includes("MOD") || c.label.toLowerCase().includes("salário") ? "Mão de Obra Direta (Terceirização)" : c.label };
+      }
+      return { ...c, category: "variavel", subcategory: undefined };
+    });
+  }
+
   const cashflow = s.cashflow ?? DEFAULT_STATE.cashflow;
   const capital = { ...DEFAULT_STATE.capital, ...(s.capital ?? {}) };
   const tax = { ...DEFAULT_STATE.tax, ...(s.tax ?? {}) };
