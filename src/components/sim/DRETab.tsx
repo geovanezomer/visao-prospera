@@ -59,12 +59,13 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
     .sort((a, b) => b.value - a.value);
 
   const waterfall = [
-    { name: "Receita Líq.", value: sum(dre.receitaLiquida) },
+    { name: "Receita Bruta", value: sum(dre.receitaBruta) },
+    { name: "− Imp. Vendas", value: -sum(dre.impostosVendas) },
     { name: `− ${cvLabel.short}`, value: -sum(dre.cpv) },
     { name: "− Desp. Op.", value: -sum(dre.despesasOperacionais) },
     { name: "− D&A", value: -sum(dre.depreciacao) },
     { name: "± Financ.", value: sum(dre.resultadoFinanceiro) },
-    { name: "− Impostos", value: -sum(dre.impostos) },
+    { name: "− IRPJ/CSLL", value: -sum(dre.impostos) },
     { name: "Lucro Líq.", value: ll },
   ];
 
