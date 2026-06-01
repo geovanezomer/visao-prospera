@@ -74,7 +74,7 @@ export function ValuationTab({
               </SectionTitle>
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
-              {state.companyName} · {BUSINESS_LABEL[state.businessType]} · método {valuation.method === "blended" ? "combinado" : valuation.method}
+              {source.companyName} · {BUSINESS_LABEL[source.businessType]} · método {valuation.method === "blended" ? "combinado" : valuation.method}
             </div>
           </div>
           <ConfidenceBadge grade={valuation.confidenceScore} />
@@ -116,7 +116,7 @@ export function ValuationTab({
         <TabsContent value="multiples" className="mt-4 space-y-4">
           <section className="rounded-lg border border-border/60 bg-card/40 p-5">
             <SectionTitle hint="Múltiplos de mercado típicos para o setor. Você pode customizar ou selecionar um cenário.">
-              Múltiplos Setoriais — {BUSINESS_LABEL[state.businessType]}
+              Múltiplos Setoriais — {BUSINESS_LABEL[source.businessType]}
             </SectionTitle>
 
             <div className="mt-3 flex flex-wrap gap-2">
@@ -207,13 +207,13 @@ export function ValuationTab({
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">− Dívida onerosa</div>
                 <div className="mono mt-1 text-lg font-semibold text-foreground">
-                  {fmtBRLCompact(state.capital.dividaOnerosa)}
+                  {fmtBRLCompact(source.capital.dividaOnerosa)}
                 </div>
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">= Equity Value</div>
                 <div className="mono mt-1 text-lg font-semibold text-pos">
-                  {fmtBRLCompact(Math.max(0, valuation.multiplesDetails.blendedEnterpriseValue - state.capital.dividaOnerosa))}
+                  {fmtBRLCompact(Math.max(0, valuation.multiplesDetails.blendedEnterpriseValue - source.capital.dividaOnerosa))}
                 </div>
               </div>
             </div>
