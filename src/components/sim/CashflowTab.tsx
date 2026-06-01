@@ -1,7 +1,7 @@
 import { AppState } from "@/lib/finance/types";
 import { fmtBRL, fmtBRLCompact, MESES, sum } from "@/lib/finance/format";
 import { buildCashFlow } from "@/lib/finance/cashflow";
-import { MoneyInput, SectionTitle, StatCard } from "./primitives";
+import { MoneyInput, NumInput, SectionTitle, StatCard } from "./primitives";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AlertTriangle, TriangleAlert } from "lucide-react";
 
