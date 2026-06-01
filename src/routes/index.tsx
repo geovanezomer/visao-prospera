@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAppState, useScenarios } from "@/lib/finance/store";
 import { useAuth } from "@/lib/auth";
@@ -21,6 +21,7 @@ import { ScenarioBar } from "@/components/sim/ScenarioBar";
 import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
 import { GuidedWizard } from "@/components/sim/guided/GuidedWizard";
 import { AppState, BusinessType } from "@/lib/finance/types";
+import { applySimulator, countActiveLevers, DEFAULT_SIM, SimulatorParams } from "@/lib/finance/simulator";
 
 export const Route = createFileRoute("/")({
   head: () => ({
