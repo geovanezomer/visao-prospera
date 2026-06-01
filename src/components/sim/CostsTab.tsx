@@ -48,7 +48,8 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
     update((s) => ({ ...s, costs: s.costs.filter((c) => c.id !== id) }));
 
   const setLabel = (id: string, label: string) => updateLine(id, { label });
-  const setSubcat = (id: string, subcategory: string) => updateLine(id, { subcategory });
+  const setSubcat = (id: string, subcategory: string) =>
+    updateLine(id, { subcategory, semCredito: subcategory === "icms_st" ? true : undefined });
 
   const reloadModel = () => {
     update((s) => ({ ...s, costs: defaultCostsFor(business) }));
