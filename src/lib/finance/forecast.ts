@@ -123,8 +123,9 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   const ncg0 = crBase0 + estoqueBase0 - fornecBase0;
 
   const g = cfg.crescimentoMensalPct / 100;
-  const inflacaoMensal = Math.pow(1 + cfg.inflacaoFixosAA / 100, 1 / 12) - 1;
-  const escalaCpvMensal = Math.pow(1 + cfg.ganhoEscalaCpvAA / 100, 1 / 12) - 1; // positivo = reduz CPV
+  // Auditoria: aplica fatores ANUAIS elevados à fração do ano para evitar erro composto mensal.
+  const inflacaoFator = (i: number) => Math.pow(1 + cfg.inflacaoFixosAA / 100, i / 12);
+  const escalaCpvFator = (i: number) => Math.pow(1 - cfg.ganhoEscalaCpvAA / 100, i / 12);
   const horizon = cfg.horizonteMeses;
 
   const meses: ForecastMonth[] = [];
