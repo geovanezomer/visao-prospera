@@ -4,7 +4,7 @@ import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
 import { compareErasForRegime, compareRegimes, getReformaRates, simplesAliquotaEfetiva, buildDRE } from "@/lib/finance/calculations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { HelpTip, PctInput, SectionTitle } from "./primitives";
+import { HelpTip, NumInput, PctInput, SectionTitle } from "./primitives";
 
 export function TaxTab({ state, update }: { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void }) {
   const rbAnual = sum(state.revenue.bruta);
