@@ -297,6 +297,8 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
+  const monthlyVendas = zeros12();
+  const monthlyLucro = zeros12();
   const monthly = revenue.bruta.map((r, i) => {
     const lair = baseIRPJMensal[i];
     const irpj = lair * 0.15;
@@ -330,9 +332,15 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     issTotal += issv;
     cbsTotal += cbs;
     ibsTotal += ibs;
-    return irpj + adicional + csll + pis + cofins + issv + cbs + ibs;
+    const vendas = pis + cofins + issv + cbs + ibs;
+    const lucro = irpj + adicional + csll;
+    monthlyVendas[i] = vendas;
+    monthlyLucro[i] = lucro;
+    return vendas + lucro;
   });
   const annual = sum(monthly);
+  const annualVendas = sum(monthlyVendas);
+  const annualLucro = sum(monthlyLucro);
   const rbAnual = sum(revenue.bruta);
   const detail: Record<string, number> = {
     "IRPJ": irpjTotal - sum(adicionalMensal),
@@ -350,7 +358,11 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   if (ibsTotal > 0) detail[`IBS (${reforma.ibsPct.toFixed(2)}%)`] = ibsTotal;
   return {
     monthly,
+    monthlyVendas,
+    monthlyLucro,
     annual,
+    annualVendas,
+    annualLucro,
     effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
     detail,
   };
