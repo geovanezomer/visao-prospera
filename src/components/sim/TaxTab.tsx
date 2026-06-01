@@ -91,9 +91,9 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             {emReforma && <Badge className="bg-primary/20 text-primary border border-primary/30">Reforma ativa</Badge>}
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-muted-foreground">Era / ano-base</label>
+            <label className="text-xs text-muted-foreground">Era</label>
             <Select value={era} onValueChange={(v) => set({ era: v as TaxEra })}>
-              <SelectTrigger className="h-8 w-72"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-8 w-64"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {TAX_ERAS.map((e) => (
                   <SelectItem key={e} value={e}>{TAX_ERA_LABEL[e]}</SelectItem>
