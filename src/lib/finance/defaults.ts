@@ -118,6 +118,9 @@ export const DEFAULT_STATE: AppState = {
     pisCreditos: 0,
     cofinsCreditos: 0,
     issDeducoes: 0,
+    era: "atual",
+    cbsAliquota: 8.8,
+    ibsAliquotaRef: 17.7,
   },
   cashflow: {
     caixaMinimo: 15000,
