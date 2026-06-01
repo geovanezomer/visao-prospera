@@ -135,12 +135,14 @@ function buildDCF(state: AppState, params: ValuationParams): DCFSummary {
     npvFlows += fcfProjected[t] / Math.pow(1 + waccMonthly, t + 1);
   }
 
-  // Valor terminal por Gordon: usa FCF anualizado dos últimos 12 meses
+  // Valor terminal por Gordon: usa FCF anualizado dos últimos 12 meses.
+  // Auditoria: exige spread mínimo de 0,5% entre WACC e g — caso contrário usa fallback explícito.
   const lastYearFCF = fcfProjected.slice(-12).reduce((a, b) => a + b, 0);
   const g = params.terminalGrowthRate;
-  const terminalValue = waccAnnual > g
-    ? (lastYearFCF * (1 + g)) / (waccAnnual - g)
-    : lastYearFCF * 10;
+  const spread = waccAnnual - g;
+  const terminalValue = spread >= 0.005
+    ? (lastYearFCF * (1 + g)) / spread
+    : lastYearFCF * 10; // fallback p/ WACC≈g (perpetuidade não converge)
   const npvTerminal = terminalValue / Math.pow(1 + waccMonthly, fcfProjected.length);
 
   return {
