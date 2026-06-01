@@ -51,6 +51,9 @@ function SimulaPro() {
   const { state, update, reset, setState } = useAppState();
   const { scenarios, save, remove } = useScenarios();
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [simParams, setSimParams] = useState<SimulatorParams>(DEFAULT_SIM);
+  const simulatedState = useMemo(() => applySimulator(state, simParams), [state, simParams]);
+  const simActive = countActiveLevers(simParams);
 
   const businessIcon = state.businessType === "industria" ? <Factory className="h-4 w-4" /> : state.businessType === "comercio" ? <Store className="h-4 w-4" /> : <Briefcase className="h-4 w-4" />;
 
