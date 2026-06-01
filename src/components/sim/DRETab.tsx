@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppState, TaxRegime, COST_VENDAS_LABEL } from "@/lib/finance/types";
+import { AppState, TaxRegime, COST_VENDAS_LABEL, TAX_ERA_SHORT } from "@/lib/finance/types";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
@@ -92,6 +92,10 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
         <div className="text-xs text-muted-foreground">
           Período: <span className="num">Jan</span> a <span className="num">Dez</span> · Regime ativo:{" "}
           <Badge variant="outline" className="ml-1">{regime === "simples" ? "Simples" : regime === "presumido" ? "Presumido" : "Real"}</Badge>
+          <span className="ml-2">· Era:</span>
+          <Badge variant="outline" className={`ml-1 ${(state.tax.era ?? "atual") !== "atual" ? "border-primary/50 text-primary" : ""}`}>
+            {TAX_ERA_SHORT[state.tax.era ?? "atual"]}
+          </Badge>
         </div>
       </div>
 
