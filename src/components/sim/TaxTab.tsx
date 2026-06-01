@@ -37,8 +37,46 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
     </div>
   );
 
+  // Alertas de sublimite e enquadramento (Auditoria — Fase 2)
+  const simplesWarnings: string[] = [];
+  if (rbAnual > 4_800_000) {
+    simplesWarnings.push(
+      `RBT12 = ${fmtBRL(rbAnual)} ultrapassa R$ 4.800.000 — a empresa está DESENQUADRADA do Simples Nacional. Migre obrigatoriamente para Lucro Presumido ou Real.`,
+    );
+  } else if (rbAnual > 3_600_000) {
+    simplesWarnings.push(
+      `RBT12 = ${fmtBRL(rbAnual)} ultrapassa o sublimite estadual de R$ 3.600.000 — ICMS/ISS passam a ser recolhidos fora do Simples (regime normal estadual), embora os tributos federais continuem no DAS.`,
+    );
+  } else if (rbAnual > 4_320_000) {
+    simplesWarnings.push(
+      `RBT12 = ${fmtBRL(rbAnual)} está a menos de 10% do teto (R$ 4.8M). Cuidado com o desenquadramento automático.`,
+    );
+  }
+  if (state.tax.simplesAnexo === "III" && state.businessType !== "servicos") {
+    simplesWarnings.push(
+      `Anexo III é para serviços com Fator R ≥ 28%. Atividade atual é "${state.businessType}" — reveja o anexo (Comércio = I, Indústria = II).`,
+    );
+  }
+  if (state.tax.simplesAnexo === "V" && state.tax.fatorRAuto) {
+    const folha = (buildDRE(state, state.tax.regime).dre.folhaCltAnual || 0);
+    if (rbAnual > 0 && folha / rbAnual >= 0.28) {
+      simplesWarnings.push(
+        `Fator R = ${((folha / rbAnual) * 100).toFixed(1)}% (≥ 28%) — Anexo V será automaticamente migrado para Anexo III (alíquotas menores).`,
+      );
+    }
+  }
+
   return (
     <div className="space-y-6">
+      {simplesWarnings.length > 0 && (
+        <div className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-xs">
+          <div className="mb-1 font-semibold text-warning">⚠ Avisos do Simples Nacional</div>
+          <ul className="ml-4 list-disc space-y-1 text-muted-foreground">
+            {simplesWarnings.map((w, i) => <li key={i}>{w}</li>)}
+          </ul>
+        </div>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-3">
         <Card title="Simples Nacional" regime="simples">
           <div>
