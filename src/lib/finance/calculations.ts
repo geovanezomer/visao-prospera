@@ -58,6 +58,9 @@ function folhaAnual(state: AppState): number {
     .reduce((acc, c) => acc + sum(effectiveMonthValues(c)), 0);
 }
 
+/** Limite anual de receita bruta para permanência no Simples Nacional (LC 123/06). */
+export const LIMITE_SIMPLES = 4_800_000;
+
 export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
   const anexo = state.tax.simplesAnexo;
   if (!state.tax.fatorRAuto || anexo !== "V") return anexo;
@@ -65,6 +68,11 @@ export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
   if (rbt12 <= 0) return anexo;
   const fatorR = folhaAnual(state) / rbt12;
   return fatorR >= 0.28 ? "III" : "V";
+}
+
+/** Retorna true se RBT12 ultrapassa o limite do Simples Nacional (desenquadramento obrigatório). */
+export function simplesExcedeLimite(state: AppState): boolean {
+  return sum(state.revenue.bruta) > LIMITE_SIMPLES;
 }
 
 // =====================================================================
@@ -102,11 +110,17 @@ export function calcSimples(state: AppState): MonthlyTax {
   const aliq = simplesAliquotaEfetiva(rbAnual, anexo) / 100;
   const monthly = revenue.bruta.map((r) => r * aliq);
   const annual = sum(monthly);
+  const excedeu = rbAnual > LIMITE_SIMPLES;
+  const detail: Record<string, number> = { [`DAS Simples (Anexo ${anexo})`]: annual };
+  if (excedeu) {
+    // Sinaliza desenquadramento: ao exceder R$ 4,8M a empresa deve migrar para Lucro Presumido/Real.
+    detail["⚠ Excedeu limite Simples (R$ 4,8M) — desenquadramento obrigatório"] = 0;
+  }
   return {
     monthly,
     annual,
     effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
-    detail: { [`DAS Simples (Anexo ${anexo})`]: annual },
+    detail,
   };
 }
 
