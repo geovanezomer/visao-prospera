@@ -491,11 +491,17 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const passivoTotalEstim = capital.ativoTotal - PL;
   const endividamentoGeral = capital.ativoTotal > 0 ? (passivoTotalEstim / capital.ativoTotal) * 100 : 0;
   const grauEndividamento = PL > 0 ? (D / PL) * 100 : 0;
-  const coberturaJuros = jurosAnual > 0 ? ebitAnual / jurosAnual : Infinity;
+  // Caps neutros para evitar Infinity/NaN propagando em métricas compostas.
+  const CAP_COB = 999;       // cobertura de juros máx exibível
+  const CAP_DL_EBITDA = 99;  // dívida líq / EBITDA máx
+  const CAP_PAYBACK = 99;    // payback em anos máx
+  const coberturaJuros = jurosAnual > 1 ? Math.min(CAP_COB, ebitAnual / jurosAnual) : CAP_COB;
   const giroAtivo = capital.ativoTotal > 0 ? receitaLiqAnual / capital.ativoTotal : 0;
   const dividaLiq = D - capital.disponibilidades;
-  const dividaLiqEbitda = ebitdaAnual > 0 ? dividaLiq / ebitdaAnual : (dividaLiq <= 0 ? 0 : Infinity);
-  const payback = llAnual > 0 ? PL / llAnual : Infinity;
+  const dividaLiqEbitda = ebitdaAnual > 1
+    ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitdaAnual))
+    : (dividaLiq <= 0 ? 0 : CAP_DL_EBITDA);
+  const payback = llAnual > 1 ? Math.min(CAP_PAYBACK, PL / llAnual) : (PL <= 0 ? 0 : CAP_PAYBACK);
   const fcf = ebitdaAnual - impostosAnual - Math.max(0, ncg - capital.capitalGiroDisponivel);
 
   return {
