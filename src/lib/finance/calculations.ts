@@ -683,7 +683,7 @@ export function compareRegimes(state: AppState) {
 
 /** Projeção da carga efetiva (%) por era para um dado regime, mantendo o resto do estado fixo. */
 export function compareErasForRegime(state: AppState, regime: TaxRegime): { era: TaxEra; effective: number; annual: number }[] {
-  const eras: TaxEra[] = ["atual", "2026", "2027", "2028", "2029", "2030", "2031", "2032", "2033"];
+  const eras: TaxEra[] = ["atual", "transicao", "pleno"];
   return eras.map((era) => {
     const s: AppState = { ...state, tax: { ...state.tax, era } };
     let tax: MonthlyTax;
