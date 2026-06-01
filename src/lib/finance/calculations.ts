@@ -110,8 +110,15 @@ export function simplesExcedeLimite(state: AppState): boolean {
 // IMPOSTOS
 // =====================================================================
 export interface MonthlyTax {
+  /** Total mensal (vendas + lucro). Retro-compat. */
   monthly: number[];
+  /** Impostos sobre venda — PIS/COFINS/ICMS/ISS/CBS/IBS (+ DAS no Simples). Deduzidos antes da Receita Líquida. */
+  monthlyVendas: number[];
+  /** Impostos sobre lucro — IRPJ + Adicional + CSLL. Deduzidos do LAIR. */
+  monthlyLucro: number[];
   annual: number;
+  annualVendas: number;
+  annualLucro: number;
   effective: number;
   detail: Record<string, number>;
 }
