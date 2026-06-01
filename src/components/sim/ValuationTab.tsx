@@ -1,10 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppState } from "@/lib/finance/types";
 import {
   buildValuation,
   defaultValuationParams,
   VALUATION_PRESETS,
   ValuationParams,
+  traceValuation,
+  runValuationSelfTests,
+  logValuationTrace,
+  ValuationTestCase,
 } from "@/lib/finance/valuation";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 import { fmtBRLCompact, fmtPct, sum } from "@/lib/finance/format";
@@ -14,22 +18,42 @@ import { Button } from "@/components/ui/button";
 import { StatCard, SectionTitle, MoneyInput } from "./primitives";
 import {
   DollarSign, BarChart3, TrendingUp, ShieldAlert, AlertTriangle, CheckCircle2,
-  Info, TrendingDown,
+  Info, TrendingDown, FlaskConical, Calculator, SlidersHorizontal,
 } from "lucide-react";
 
 const BUSINESS_LABEL = { servicos: "Serviços", comercio: "Comércio", industria: "Indústria" } as const;
 
-export function ValuationTab({ state }: { state: AppState }) {
-  const [params, setParams] = useState<ValuationParams>(() => defaultValuationParams(state.businessType));
+export function ValuationTab({
+  baseState,
+  simulatedState,
+  simActive,
+  // backward-compat: aceita `state` antigo
+  state,
+}: {
+  baseState?: AppState;
+  simulatedState?: AppState;
+  simActive?: number;
+  state?: AppState;
+}) {
+  const effectiveBase = baseState ?? state!;
+  const effectiveSim = simulatedState ?? state!;
+  const [useSimulated, setUseSimulated] = useState(true);
+  const source: AppState = useSimulated ? effectiveSim : effectiveBase;
+
+  const [params, setParams] = useState<ValuationParams>(() => defaultValuationParams(source.businessType));
   const set = (p: Partial<ValuationParams>) => setParams((s) => ({ ...s, ...p }));
 
-  const presets = VALUATION_PRESETS[state.businessType];
-  const valuation = useMemo(() => buildValuation(state, params), [state, params]);
-  const { dre } = useMemo(() => buildDRE(state, state.tax.regime), [state]);
-  const ind = useMemo(() => calcIndicators(state, dre), [state, dre]);
+  const presets = VALUATION_PRESETS[source.businessType];
+  const valuation = useMemo(() => buildValuation(source, params), [source, params]);
+  const { dre } = useMemo(() => buildDRE(source, source.tax.regime), [source]);
+  const ind = useMemo(() => calcIndicators(source, dre), [source, dre]);
   const ebitda = sum(dre.ebitda);
   const receita = sum(dre.receitaBruta);
   const ll = sum(dre.lucroLiquido);
+  const trace = useMemo(() => traceValuation(source, params), [source, params]);
+
+  // Loga memória sempre que muda
+  useEffect(() => { logValuationTrace(source, params, useSimulated ? "simulado" : "base"); }, [source, params, useSimulated]);
 
   const ev = valuation.enterpriseValue;
   const eq = valuation.equityValue;
