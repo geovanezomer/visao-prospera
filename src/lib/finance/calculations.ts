@@ -287,13 +287,16 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     }
   }
 
-  // PDD entra como despesa operacional fixa
+  // PDD entra como despesa operacional fixa (líquida de eventual reversão/recuperação CPC 47)
   if (usaPDD) {
+    const reversaoMensal = Math.max(0, revenue.pddReversaoMensal ?? 0);
     for (let i = 0; i < 12; i++) {
-      despOp[i] += pdd[i];
-      custosFixos[i] += pdd[i];
+      const pddLiq = Math.max(0, pdd[i] - reversaoMensal);
+      pdd[i] = pddLiq;
+      despOp[i] += pddLiq;
+      custosFixos[i] += pddLiq;
     }
-    despesasPorCategoria["PDD — Perdas por inadimplência"] = pdd.slice();
+    despesasPorCategoria["PDD — Perdas por inadimplência (líq. recup.)"] = pdd.slice();
   }
 
   const custosFinanceirosTotal = zeros12();
@@ -304,7 +307,15 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
 
   const lucroBruto = receitaLiquida.map((r, i) => r - cpv[i]);
   const ebitda = lucroBruto.map((g, i) => g - despOp[i]);
+
+  // Depreciação base + depreciação adicional de Capex ativado no meio do ano (Auditoria)
   const depreciacao = fill12(capital.depreciacaoMensal);
+  for (const c of costs) {
+    if (!c.ativacao || c.ativacao.vidaUtilMeses <= 0 || c.ativacao.valor <= 0) continue;
+    const startIdx = Math.max(0, Math.min(11, (c.ativacao.mes || 1) - 1));
+    const depAdd = c.ativacao.valor / c.ativacao.vidaUtilMeses;
+    for (let i = startIdx; i < 12; i++) depreciacao[i] += depAdd;
+  }
   const ebit = ebitda.map((e, i) => e - depreciacao[i]);
   const resultadoFinanceiro = ebit.map((_, i) => capital.jurosRecebidosMensal - custosFinanceirosTotal[i]);
   const lair = ebit.map((e, i) => e + resultadoFinanceiro[i]);
