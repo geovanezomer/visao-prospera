@@ -15,6 +15,8 @@ export interface Revenue {
   /** Quando true, inadimplência vira PDD (despesa operacional) ao invés de dedução de receita.
    *  Mais correto contabilmente (CPC 47/IFRS 9) e não reduz base de PIS/COFINS/ISS. */
   inadimplenciaComoPDD?: boolean;
+  /** Reversão/recuperação de PDD mensal (R$). Reduz a PDD líquida do mês (CPC 47). */
+  pddReversaoMensal?: number;
 }
 
 export interface CostLine {
