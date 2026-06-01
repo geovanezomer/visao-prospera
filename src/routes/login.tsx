@@ -150,12 +150,9 @@ function LoginPage() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            O cadastro de novas contas está temporariamente desativado.
-          </p>
 
           <p className="mt-8 text-[11px] leading-relaxed text-muted-foreground">
-            Acesso restrito. Sua sessão e seus cenários ficam vinculados à sua conta.
+            Sua sessão e seus cenários ficam vinculados à sua conta.
           </p>
         </div>
       </section>
