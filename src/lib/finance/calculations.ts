@@ -120,11 +120,12 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const isMercadoria = businessType === "comercio" || businessType === "industria";
   const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
 
-  // CPV mensal para crédito de ICMS
+  // CPV mensal para crédito de ICMS — EXCLUI linhas marcadas semCredito (ICMS-ST etc.)
   const cpvMonthly = zeros12();
   if (icmsCredAliq > 0) {
     for (const c of state.costs) {
       if (c.category !== "custo_vendas") continue;
+      if (c.semCredito) continue; // Auditoria: ICMS-ST não gera crédito
       const v = effectiveMonthValues(c);
       for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
     }
@@ -135,6 +136,7 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal);
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0;
+  let saldoCredorICMS = 0; // Auditoria: carry-over de crédito ICMS entre meses
   const monthly = revenue.bruta.map((r, i) => {
     const irpj = baseIRPJMensal[i] * 0.15;
     const adicional = adicionalMensal[i];
@@ -143,8 +145,9 @@ export function calcPresumido(state: AppState): MonthlyTax {
     const cofins = r * 0.03;
     const issBase = Math.max(0, r - issDed);
     const debito = issBase * iss;
-    const credito = cpvMonthly[i] * icmsCredAliq;
-    const issv = Math.max(0, debito - credito);
+    const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
+    const issv = Math.max(0, debito - creditoMes);
+    saldoCredorICMS = Math.max(0, creditoMes - debito); // sobra vira saldo p/ próximo mês
     irpjTotal += irpj + adicional;
     csllTotal += csll;
     pisTotal += pis;
@@ -180,6 +183,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   if (icmsCredAliq > 0) {
     for (const c of state.costs) {
       if (c.category !== "custo_vendas") continue;
+      if (c.semCredito) continue; // Auditoria: ICMS-ST não gera crédito
       const v = effectiveMonthValues(c);
       for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
     }
@@ -188,18 +192,24 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const baseIRPJMensal = baseLairMonthly.map((l) => Math.max(0, l));
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal);
 
+  // Auditoria: créditos de PIS/COFINS são anuais — ratear por mês
+  const pisCreditoMensal = Math.max(0, (tax.pisCreditos || 0) / 12);
+  const cofinsCreditoMensal = Math.max(0, (tax.cofinsCreditos || 0) / 12);
+
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0;
+  let saldoCredorICMS = 0;
   const monthly = revenue.bruta.map((r, i) => {
     const lair = baseIRPJMensal[i];
     const irpj = lair * 0.15;
     const adicional = adicionalMensal[i];
     const csll = lair * 0.09;
-    const pis = Math.max(0, r * 0.0165 - tax.pisCreditos);
-    const cofins = Math.max(0, r * 0.076 - tax.cofinsCreditos);
+    const pis = Math.max(0, r * 0.0165 - pisCreditoMensal);
+    const cofins = Math.max(0, r * 0.076 - cofinsCreditoMensal);
     const issBase = Math.max(0, r - issDed);
     const debito = issBase * iss;
-    const credito = cpvMonthly[i] * icmsCredAliq;
-    const issv = Math.max(0, debito - credito);
+    const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
+    const issv = Math.max(0, debito - creditoMes);
+    saldoCredorICMS = Math.max(0, creditoMes - debito);
     irpjTotal += irpj + adicional;
     csllTotal += csll;
     pisTotal += pis;
