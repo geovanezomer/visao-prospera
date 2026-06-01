@@ -156,7 +156,11 @@ export function calcSimples(state: AppState): MonthlyTax {
   }
   return {
     monthly,
+    monthlyVendas: monthly.slice(),
+    monthlyLucro: zeros12(),
     annual,
+    annualVendas: annual,
+    annualLucro: 0,
     effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
     detail,
   };
