@@ -58,7 +58,9 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.reg
   const { dre, tax } = buildDRE(state, regime);
   const { revenue, capital, cashflow } = state;
 
-  const rec = shiftByDaysSplit(dre.receitaLiquida, revenue.pmr);
+  // Recebimentos = Receita Bruta − Inadimplência (impostos sobre venda saem em pagamentosImpostos).
+  const recebivelMensal = dre.receitaBruta.map((r, i) => r - (dre.deducoesInadimplencia[i] ?? 0));
+  const rec = shiftByDaysSplit(recebivelMensal, revenue.pmr);
   const recebimentos = rec.inAno;
   const fornec = shiftByDaysSplit(dre.cpv, revenue.pmp);
   const pagamentosFornecedores = fornec.inAno;
