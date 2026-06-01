@@ -526,9 +526,32 @@ export interface Diagnostic { level: "ok" | "warn" | "danger"; title: string; me
 
 export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic[] {
   const out: Diagnostic[] = [];
+  const receitaBrutaAnual = sum(state.revenue.bruta);
   const receitaLiqAnual = sum(dre.receitaLiquida);
   const folha = dre.folhaCltAnual;
   const folhaPct = receitaLiqAnual > 0 ? (folha / receitaLiqAnual) * 100 : 0;
+
+  // ===== Edge cases (Auditoria) =====
+  // #1 Empresa 100% (ou quase) inadimplente
+  const inadMedia = state.revenue.inadimplencia.reduce((a, b) => a + b, 0) / 12;
+  if (inadMedia >= 95) {
+    out.push({ level: "danger", title: "Inadimplência crítica (~100%)", message: `Inadimplência média de ${inadMedia.toFixed(1)}% — receita líquida praticamente nula. Modelo de cobrança inviável; revise o crédito a clientes.` });
+  } else if (inadMedia >= 30) {
+    out.push({ level: "warn", title: "Inadimplência elevada", message: `Inadimplência média de ${inadMedia.toFixed(1)}% compromete o EBITDA e o caixa.` });
+  }
+
+  // #2 Custos negativos (erro de digitação ou reversão indevida)
+  const linhasNegativas = state.costs.filter(c => c.values.some(v => v < 0));
+  if (linhasNegativas.length > 0) {
+    out.push({ level: "warn", title: "Linhas de custo com valores negativos", message: `${linhasNegativas.length} rubrica(s) com valor negativo (ex.: "${linhasNegativas[0].label}"). Margem bruta pode estar inflada artificialmente — use linhas dedicadas para recuperações/créditos.` });
+  }
+
+  // #3 Receita zero com custos fixos → empresa não viável no horizonte
+  const custosFixosAnual = sum(dre.custosFixos);
+  if (receitaBrutaAnual <= 0 && custosFixosAnual > 0) {
+    out.push({ level: "danger", title: "Operação inviável: receita zero com custos fixos", message: `Sem receita projetada e R$ ${custosFixosAnual.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} de custos fixos no ano. Ponto de equilíbrio indefinido — preencha a aba Receita.` });
+  }
+
   if (folhaPct > 35) out.push({ level: "danger", title: "Custo de mão de obra elevado", message: `Folha (com encargos) ${folhaPct.toFixed(1)}% da receita líquida.` });
   else if (folhaPct > 25) out.push({ level: "warn", title: "Folha em zona de atenção", message: `Folha em ${folhaPct.toFixed(1)}% da receita.` });
 
