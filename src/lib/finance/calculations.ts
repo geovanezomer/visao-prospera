@@ -21,16 +21,14 @@ export function getReformaRates(era: TaxEra | undefined, cfg: TaxConfig): Reform
   const cbsFull = cfg.cbsAliquota ?? 8.8;
   const ibsFull = cfg.ibsAliquotaRef ?? 17.7;
   switch (era ?? "atual") {
-    case "atual": return { cbsPct: 0, ibsPct: 0, pisCofinsMult: 1, icmsIssMult: 1 };
-    // 2026: CBS 0.9% compensável c/ PIS/COFINS (efeito líquido ≈ 0), IBS 0.1% adicional.
-    case "2026": return { cbsPct: 0, ibsPct: 0.1, pisCofinsMult: 1, icmsIssMult: 1 };
-    case "2027": return { cbsPct: cbsFull, ibsPct: 0.1, pisCofinsMult: 0, icmsIssMult: 1 };
-    case "2028": return { cbsPct: cbsFull, ibsPct: 0.1, pisCofinsMult: 0, icmsIssMult: 1 };
-    case "2029": return { cbsPct: cbsFull, ibsPct: ibsFull * 0.20, pisCofinsMult: 0, icmsIssMult: 0.90 };
-    case "2030": return { cbsPct: cbsFull, ibsPct: ibsFull * 0.40, pisCofinsMult: 0, icmsIssMult: 0.80 };
-    case "2031": return { cbsPct: cbsFull, ibsPct: ibsFull * 0.60, pisCofinsMult: 0, icmsIssMult: 0.70 };
-    case "2032": return { cbsPct: cbsFull, ibsPct: ibsFull * 0.80, pisCofinsMult: 0, icmsIssMult: 0.60 };
-    case "2033": return { cbsPct: cbsFull, ibsPct: ibsFull, pisCofinsMult: 0, icmsIssMult: 0 };
+    case "atual":
+      return { cbsPct: 0, ibsPct: 0, pisCofinsMult: 1, icmsIssMult: 1 };
+    // Transição 2027–2032 (ponto médio): CBS pleno, PIS/COFINS extintos,
+    // IBS em 50% da plena, ICMS/ISS reduzidos a 50%.
+    case "transicao":
+      return { cbsPct: cbsFull, ibsPct: ibsFull * 0.5, pisCofinsMult: 0, icmsIssMult: 0.5 };
+    case "pleno":
+      return { cbsPct: cbsFull, ibsPct: ibsFull, pisCofinsMult: 0, icmsIssMult: 0 };
   }
 }
 
@@ -685,7 +683,7 @@ export function compareRegimes(state: AppState) {
 
 /** Projeção da carga efetiva (%) por era para um dado regime, mantendo o resto do estado fixo. */
 export function compareErasForRegime(state: AppState, regime: TaxRegime): { era: TaxEra; effective: number; annual: number }[] {
-  const eras: TaxEra[] = ["atual", "2026", "2027", "2028", "2029", "2030", "2031", "2032", "2033"];
+  const eras: TaxEra[] = ["atual", "transicao", "pleno"];
   return eras.map((era) => {
     const s: AppState = { ...state, tax: { ...state.tax, era } };
     let tax: MonthlyTax;

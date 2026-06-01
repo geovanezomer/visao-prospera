@@ -159,6 +159,11 @@ export function migrateState(s: AppState): AppState {
   const cashflow = s.cashflow ?? DEFAULT_STATE.cashflow;
   const capital = { ...DEFAULT_STATE.capital, ...(s.capital ?? {}) };
   const tax = { ...DEFAULT_STATE.tax, ...(s.tax ?? {}) };
+  // Migra eras ano-a-ano (legado) para o modelo de 3 marcos.
+  const legacyEra = tax.era as unknown as string | undefined;
+  if (legacyEra && !["atual", "transicao", "pleno"].includes(legacyEra)) {
+    tax.era = legacyEra === "2033" ? "pleno" : legacyEra === "atual" ? "atual" : "transicao";
+  }
   const revenue = { ...DEFAULT_STATE.revenue, ...(s.revenue ?? {}) };
   // guided era boolean em versões antigas — migra para o objeto.
   const rawGuided: unknown = (s as { guided?: unknown }).guided;
