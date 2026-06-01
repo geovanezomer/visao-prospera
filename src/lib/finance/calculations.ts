@@ -110,11 +110,17 @@ export function calcSimples(state: AppState): MonthlyTax {
   const aliq = simplesAliquotaEfetiva(rbAnual, anexo) / 100;
   const monthly = revenue.bruta.map((r) => r * aliq);
   const annual = sum(monthly);
+  const excedeu = rbAnual > LIMITE_SIMPLES;
+  const detail: Record<string, number> = { [`DAS Simples (Anexo ${anexo})`]: annual };
+  if (excedeu) {
+    // Sinaliza desenquadramento: ao exceder R$ 4,8M a empresa deve migrar para Lucro Presumido/Real.
+    detail["⚠ Excedeu limite Simples (R$ 4,8M) — desenquadramento obrigatório"] = 0;
+  }
   return {
     monthly,
     annual,
     effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
-    detail: { [`DAS Simples (Anexo ${anexo})`]: annual },
+    detail,
   };
 }
 
