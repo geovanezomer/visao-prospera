@@ -63,6 +63,15 @@ export interface CapitalStructure {
   contasReceber: number;
   /** Fornecedores a Pagar (saldo médio). Se 0, estimado a partir do PMP. */
   fornecedores: number;
+  // ----- novos campos (Auditoria Jun/2026) — correções de ROIC e PME -----
+  /** Caixa ocioso/excedente (não-operacional). Subtraído do Capital Investido no cálculo do ROIC. */
+  caixaOcioso?: number;
+  /** Passivos não-onerosos (fornecedores + salários + impostos a pagar) subtraídos do CI. Se omitido, usa fornecedores. */
+  passivosNaoOnerosos?: number;
+  /** Estoque inicial do período (R$). Usado para PME = (inicial+final)/2 quando ambos preenchidos. */
+  estoqueInicial?: number;
+  /** Estoque final do período (R$). Se omitido, usa `estoques`. */
+  estoqueFinal?: number;
 }
 
 export interface TaxConfig {
