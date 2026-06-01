@@ -142,6 +142,7 @@ export function NumInput({
       }}
       onBlur={() => {
         focusedRef.current = false;
+        // Normaliza pelo texto digitado (não pela prop, que pode estar defasada).
         const n = clamp(parseLoose(text));
         if (n !== value) onChange(n);
         setText(numToText(n));
