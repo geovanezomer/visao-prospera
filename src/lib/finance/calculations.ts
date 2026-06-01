@@ -58,6 +58,9 @@ function folhaAnual(state: AppState): number {
     .reduce((acc, c) => acc + sum(effectiveMonthValues(c)), 0);
 }
 
+/** Limite anual de receita bruta para permanência no Simples Nacional (LC 123/06). */
+export const LIMITE_SIMPLES = 4_800_000;
+
 export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
   const anexo = state.tax.simplesAnexo;
   if (!state.tax.fatorRAuto || anexo !== "V") return anexo;
@@ -65,6 +68,11 @@ export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
   if (rbt12 <= 0) return anexo;
   const fatorR = folhaAnual(state) / rbt12;
   return fatorR >= 0.28 ? "III" : "V";
+}
+
+/** Retorna true se RBT12 ultrapassa o limite do Simples Nacional (desenquadramento obrigatório). */
+export function simplesExcedeLimite(state: AppState): boolean {
+  return sum(state.revenue.bruta) > LIMITE_SIMPLES;
 }
 
 // =====================================================================
