@@ -42,23 +42,40 @@ function costVendasFor(business: BusinessType): CostLine[] {
   return [];
 }
 
-const fixos = (): CostLine[] => [
-  line("aluguel", "Aluguel", "fixo", 2500),
-  line("prolabore", "Pró-labore (sócios)", "fixo", 3000),
-  line("admin_clt", "Salários administrativos (CLT)", "fixo", 2800, undefined, { encargosAuto: true, encargosPct: 70 }),
-  line("contabilidade", "Contabilidade", "fixo", 450),
-  line("tecnologia", "Tecnologia / Software (SaaS)", "fixo", 350),
-  line("utilities", "Energia, água, internet", "fixo", 600),
-  line("manutencao", "Manutenção e reparos", "fixo", 200),
-  line("outros_fix", "Outros custos fixos", "fixo", 250),
-];
+function fixosFor(business: BusinessType): CostLine[] {
+  const base: CostLine[] = [
+    line("aluguel", "Aluguel", "fixo", 2500),
+    line("prolabore", "Pró-labore (sócios)", "fixo", 3000),
+    line("admin_clt", "Salários administrativos (CLT)", "fixo", 2800, undefined, { encargosAuto: true, encargosPct: 70 }),
+    line("beneficios", "Benefícios (VA/VR + Plano Saúde)", "fixo", 600),
+    line("plr", "PLR / Divisão de Lucros", "fixo", 0),
+    line("contabilidade", "Contabilidade", "fixo", 450),
+    line("tecnologia", "Tecnologia / Software (SaaS)", "fixo", 350),
+    line("utilities", "Energia, água, internet", "fixo", 600),
+    line("manutencao", "Manutenção e reparos", "fixo", 200),
+    line("outros_fix", "Outros custos fixos", "fixo", 250),
+  ];
+  if (business === "servicos") {
+    base.splice(3, 0, line("mod_terc", "Mão de Obra Direta (Terceirização)", "fixo", 4500, undefined, { encargosAuto: true, encargosPct: 70 }));
+  }
+  return base;
+}
 
-const variaveis = (): CostLine[] => [
-  line("marketing", "Marketing e publicidade", "variavel", 800),
-  line("comissoes", "Comissões de vendas", "variavel", 600),
-  line("frete_venda", "Frete sobre vendas", "variavel", 250),
-  line("outros_var", "Outros custos variáveis", "variavel", 0),
-];
+function variaveisFor(business: BusinessType): CostLine[] {
+  const base: CostLine[] = [
+    line("marketing", "Marketing e publicidade", "variavel", 800),
+    line("comissoes", "Comissões de vendas", "variavel", 600),
+    line("frete_venda", "Frete sobre vendas", "variavel", 250),
+    line("outros_var", "Outros custos variáveis", "variavel", 0),
+  ];
+  if (business === "servicos") {
+    base.push(
+      line("insumos_serv", "Insumos de serviço", "variavel", 500),
+      line("terceiros", "Subcontratação / freelancers", "variavel", 600),
+    );
+  }
+  return base;
+}
 
 const financeiros = (): CostLine[] => [
   line("juros", "Juros sobre empréstimos", "financeiro", 300),
