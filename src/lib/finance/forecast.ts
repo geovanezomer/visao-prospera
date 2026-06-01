@@ -55,6 +55,7 @@ export interface ForecastResult {
   totalDeltaNcg: number;
   vpl: number;
   tir: number | null;     // %a.m.
+  tirError?: string;
   paybackMeses: number | null;
   taxaDescontoMensal: number;
 }
@@ -195,7 +196,7 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   const i_m = Math.pow(1 + waccA, 1 / 12) - 1;
   const flows: number[] = [-cfg.capexInicial, ...meses.map((m) => m.fcl)];
   const vpl = npv(flows, i_m);
-  const tir = irr(flows);
+  const tirDet = irrDetailed(flows);
   const payback = paybackMonths(flows);
 
   return {
@@ -206,7 +207,8 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     totalFcl: sum(meses.map((m) => m.fcl)),
     totalDeltaNcg: sum(meses.map((m) => m.deltaNcg)),
     vpl,
-    tir: tir == null ? null : tir * 100,
+    tir: tirDet.value == null ? null : tirDet.value * 100,
+    tirError: tirDet.error,
     paybackMeses: payback,
     taxaDescontoMensal: i_m * 100,
   };

@@ -312,7 +312,7 @@ export function ForecastCard({ state }: { state: AppState }) {
 
       <div className="mb-4 grid gap-3 md:grid-cols-4">
         <KPI label="VPL" value={fmtBRL(result.vpl)} status={result.vpl > 0 ? "ok" : "danger"} sub={result.vpl > 0 ? "Projeto cria valor" : "Projeto destrói valor"} />
-        <KPI label="TIR (a.m.)" value={result.tir == null ? "—" : `${result.tir.toFixed(2)}%`} status={result.tir != null && result.tir > result.taxaDescontoMensal ? "ok" : "warn"} sub={result.tir == null ? "Sem inversão de sinal" : `vs custo ${result.taxaDescontoMensal.toFixed(2)}%`} />
+        <KPI label="TIR (a.m.)" value={result.tir == null ? "—" : `${result.tir.toFixed(2)}%`} status={result.tir != null && result.tir > result.taxaDescontoMensal ? "ok" : "warn"} sub={result.tir == null ? (result.tirError ?? "Sem inversão de sinal") : `vs custo ${result.taxaDescontoMensal.toFixed(2)}%`} />
         <KPI label="Payback" value={result.paybackMeses == null ? "—" : `${result.paybackMeses} meses`} status={result.paybackMeses != null && result.paybackMeses <= cfg.horizonteMeses / 2 ? "ok" : "warn"} sub="Mês em que o caixa zera" />
         <KPI label="ΔNCG acumulada" value={fmtBRL(result.totalDeltaNcg)} status={result.totalDeltaNcg < result.totalEbitda * 0.3 ? "ok" : "warn"} sub={`Consumo de caixa pelo giro`} />
       </div>
