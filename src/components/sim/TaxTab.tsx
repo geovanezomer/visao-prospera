@@ -138,7 +138,7 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             <PctInput value={state.tax.ibsAliquotaRef ?? 17.7} onChange={(n) => set({ ibsAliquotaRef: n })} />
           </div>
           <div className="ml-auto text-[11px] text-muted-foreground max-w-md">
-            Cronograma EC 132/2023: CBS pleno em 2027 (extingue PIS/COFINS); IBS faseado 20→100% entre 2029 e 2033; ICMS/ISS reduzidos 10pp/ano até extinção em 2033. Simples mantém o DAS em todas as eras.
+            Cronograma EC 132/2023: 2027 — CBS pleno + PIS/COFINS extintos; 2027–2032 transição (IBS faseado, ICMS/ISS em redução, ponto médio usado aqui); 2033 — regime pleno (CBS+IBS, sem PIS/COFINS/ICMS/ISS). Simples mantém o DAS em todas as eras.
           </div>
         </div>
       </div>
