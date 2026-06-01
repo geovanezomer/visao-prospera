@@ -12,6 +12,14 @@ import { ConfirmDialog } from "./ConfirmDialog";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
+function fixedInputValue(values: number[]) {
+  const normalized = values.length === 12 ? values : fill12(values[0] || 0);
+  const first = normalized[0] || 0;
+  const last = normalized[11] || 0;
+  const legacyFixedEditBug = normalized.slice(0, 11).every((v) => v === first) && last !== first;
+  return legacyFixedEditBug ? last : first;
+}
+
 export function CostsTab({ state, update }: { state: AppState; update: Updater }) {
   const business = state.businessType;
   const receitaBrutaAnual = sum(state.revenue.bruta);
@@ -66,7 +74,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
       costs: s.costs.map((c) => {
         if (c.id !== id) return c;
         const values = c.values.length === 12 ? c.values : fill12(c.values[0] || 0);
-        const base = values[0] || 0;
+        const base = c.fixed ? fixedInputValue(values) : values[0] || 0;
         return { ...c, fixed, values: fixed || c.fixed ? fill12(base) : values };
       }),
     }));
