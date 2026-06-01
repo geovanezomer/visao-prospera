@@ -34,7 +34,7 @@ function costVendasFor(business: BusinessType): CostLine[] {
     return [
       line("merc_principal", "Mercadoria para revenda", "custo_vendas", 4500, "mercadoria"),
       line("frete_compra", "Frete sobre compras", "custo_vendas", 350, "frete_compra"),
-      line("icms_st", "ICMS-ST / tributos não recuperáveis", "custo_vendas", 280, "icms_st"),
+      line("icms_st", "ICMS-ST / tributos não recuperáveis", "custo_vendas", 280, "icms_st", { semCredito: true }),
       line("embalagem", "Embalagem para venda", "custo_vendas", 180, "embalagem"),
     ];
   }
