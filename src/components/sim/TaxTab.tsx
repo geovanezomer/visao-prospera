@@ -1,7 +1,7 @@
 import { Fragment } from "react";
-import { AppState, SimplesAnexo, TaxRegime } from "@/lib/finance/types";
+import { AppState, SimplesAnexo, TaxEra, TaxRegime, TAX_ERAS, TAX_ERA_LABEL } from "@/lib/finance/types";
 import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
-import { compareRegimes, simplesAliquotaEfetiva, buildDRE } from "@/lib/finance/calculations";
+import { compareErasForRegime, compareRegimes, getReformaRates, simplesAliquotaEfetiva, buildDRE } from "@/lib/finance/calculations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { HelpTip, PctInput, SectionTitle } from "./primitives";
