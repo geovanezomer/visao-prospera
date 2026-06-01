@@ -55,6 +55,7 @@ export interface ForecastResult {
   totalDeltaNcg: number;
   vpl: number;
   tir: number | null;     // %a.m.
+  tirError?: string;
   paybackMeses: number | null;
   taxaDescontoMensal: number;
 }
