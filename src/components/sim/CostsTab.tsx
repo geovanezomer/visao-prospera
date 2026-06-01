@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { AppState, BusinessType, CostCategory, CostLine, COST_VENDAS_LABEL, SUBCATEGORIES } from "@/lib/finance/types";
 import { fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { monthValues } from "@/lib/finance/calculations";
@@ -6,7 +7,7 @@ import { MoneyInput, SectionTitle, StatCard } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, RefreshCw } from "lucide-react";
+import { Plus, Trash2, RefreshCw, AlertTriangle } from "lucide-react";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
@@ -17,6 +18,14 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
   const cvLabel = COST_VENDAS_LABEL[business];
   const subcats = SUBCATEGORIES[business];
 
+  // Aviso inline quando o usuário tenta digitar valor negativo (revertido para 0)
+  const [negWarn, setNegWarn] = useState<string | null>(null);
+  useEffect(() => {
+    if (!negWarn) return;
+    const t = setTimeout(() => setNegWarn(null), 4000);
+    return () => clearTimeout(t);
+  }, [negWarn]);
+
   const byCat = (cat: CostCategory) => state.costs.filter((c) => c.category === cat);
 
   const updateLine = (id: string, patch: Partial<CostLine>) =>
@@ -25,7 +34,12 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
   const setMonth = (id: string, i: number, v: number) => {
     const cur = state.costs.find((c) => c.id === id);
     if (!cur) return;
-    updateLine(id, { values: cur.values.map((x, j) => (j === i ? v : x)) });
+    let safe = v;
+    if (!Number.isFinite(v) || v < 0) {
+      safe = 0;
+      setNegWarn(`"${cur.label}" — ${MESES[i]}: valores negativos não são permitidos. Use uma linha dedicada para recuperações/créditos. Revertido para R$ 0.`);
+    }
+    updateLine(id, { values: cur.values.map((x, j) => (j === i ? safe : x)) });
   };
 
   const setFixed = (id: string, fixed: boolean) => updateLine(id, { fixed });
