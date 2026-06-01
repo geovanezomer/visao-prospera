@@ -166,13 +166,18 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const issDed = (tax.issDeducoes ?? 0) / 12;
   const isMercadoria = businessType === "comercio" || businessType === "industria";
   const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
+  const reforma = getReformaRates(tax.era, tax);
+  const usaReforma = reforma.cbsPct > 0 || reforma.ibsPct > 0 || reforma.pisCofinsMult < 1 || reforma.icmsIssMult < 1;
 
-  // CPV mensal para crédito de ICMS — EXCLUI linhas marcadas semCredito (ICMS-ST etc.)
+  // CPV mensal — base de crédito (ICMS antigo e também CBS/IBS amplo na reforma).
+  // EXCLUI linhas marcadas semCredito (ICMS-ST etc.). Pós-2033 ICMS-ST deixa de existir,
+  // mas o flag continua sinalizando "tributo embutido no preço, sem crédito" — respeitamos.
   const cpvMonthly = zeros12();
-  if (icmsCredAliq > 0) {
+  const temCpvCredito = icmsCredAliq > 0 || usaReforma;
+  if (temCpvCredito) {
     for (const c of state.costs) {
       if (c.category !== "custo_vendas") continue;
-      if (c.semCredito) continue; // Auditoria: ICMS-ST não gera crédito
+      if (c.semCredito) continue;
       const v = effectiveMonthValues(c);
       for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
     }
@@ -182,40 +187,66 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const baseCSLLMensal = revenue.bruta.map((r) => r * baseCSLL);
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal);
 
-  let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0;
-  let saldoCredorICMS = 0; // Auditoria: carry-over de crédito ICMS entre meses
+  let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
+  let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
   const monthly = revenue.bruta.map((r, i) => {
     const irpj = baseIRPJMensal[i] * 0.15;
     const adicional = adicionalMensal[i];
     const csll = baseCSLLMensal[i] * 0.09;
-    const pis = r * 0.0065;
-    const cofins = r * 0.03;
+    // PIS/COFINS antigos × multiplicador da era (1 até 2026, 0 a partir de 2027)
+    const pis = r * 0.0065 * reforma.pisCofinsMult;
+    const cofins = r * 0.03 * reforma.pisCofinsMult;
+    // ICMS/ISS antigos × multiplicador (1 até 2028, fading 0.9→0 até 2033)
     const issBase = Math.max(0, r - issDed);
     const debito = issBase * iss;
     const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
-    const issv = Math.max(0, debito - creditoMes);
-    saldoCredorICMS = Math.max(0, creditoMes - debito); // sobra vira saldo p/ próximo mês
+    const issvBruto = Math.max(0, debito - creditoMes);
+    const issv = issvBruto * reforma.icmsIssMult;
+    saldoCredorICMS = Math.max(0, creditoMes - debito);
+    // CBS (federal) — débito × crédito amplo sobre CPV
+    let cbs = 0, ibs = 0;
+    if (reforma.cbsPct > 0) {
+      const dCbs = r * (reforma.cbsPct / 100);
+      const cCbs = cpvMonthly[i] * (reforma.cbsPct / 100) + saldoCBS;
+      cbs = Math.max(0, dCbs - cCbs);
+      saldoCBS = Math.max(0, cCbs - dCbs);
+    }
+    if (reforma.ibsPct > 0) {
+      const dIbs = r * (reforma.ibsPct / 100);
+      const cIbs = cpvMonthly[i] * (reforma.ibsPct / 100) + saldoIBS;
+      ibs = Math.max(0, dIbs - cIbs);
+      saldoIBS = Math.max(0, cIbs - dIbs);
+    }
     irpjTotal += irpj + adicional;
     csllTotal += csll;
     pisTotal += pis;
     cofinsTotal += cofins;
     issTotal += issv;
-    return irpj + adicional + csll + pis + cofins + issv;
+    cbsTotal += cbs;
+    ibsTotal += ibs;
+    return irpj + adicional + csll + pis + cofins + issv + cbs + ibs;
   });
   const annual = sum(monthly);
   const rbAnual = sum(revenue.bruta);
+  const detail: Record<string, number> = {
+    "IRPJ": irpjTotal - sum(adicionalMensal),
+    "Adicional IRPJ (10%)": sum(adicionalMensal),
+    CSLL: csllTotal,
+  };
+  if (reforma.pisCofinsMult > 0) {
+    detail.PIS = pisTotal;
+    detail.COFINS = cofinsTotal;
+  }
+  if (reforma.icmsIssMult > 0) {
+    detail[isMercadoria ? "ICMS (líquido)" : "ISS"] = issTotal;
+  }
+  if (cbsTotal > 0) detail[`CBS (${reforma.cbsPct.toFixed(2)}%)`] = cbsTotal;
+  if (ibsTotal > 0) detail[`IBS (${reforma.ibsPct.toFixed(2)}%)`] = ibsTotal;
   return {
     monthly,
     annual,
     effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
-    detail: {
-      "IRPJ": irpjTotal - sum(adicionalMensal),
-      "Adicional IRPJ (10%)": sum(adicionalMensal),
-      CSLL: csllTotal,
-      PIS: pisTotal,
-      COFINS: cofinsTotal,
-      [isMercadoria ? "ICMS (líquido)" : "ISS"]: issTotal,
-    },
+    detail,
   };
 }
 
