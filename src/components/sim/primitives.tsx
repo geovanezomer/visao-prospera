@@ -193,7 +193,7 @@ export function PctInput({
         }}
         onBlur={() => {
           focusedRef.current = false;
-          setText(numToText(value));
+          setText(numToText(parseLoose(text)));
         }}
         onChange={(e) => {
           const raw = e.target.value.replace(/[^0-9.,-]/g, "");
