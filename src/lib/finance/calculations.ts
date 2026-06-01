@@ -198,21 +198,20 @@ export function calcPresumido(state: AppState): MonthlyTax {
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
+  const monthlyVendas = zeros12();
+  const monthlyLucro = zeros12();
   const monthly = revenue.bruta.map((r, i) => {
     const irpj = baseIRPJMensal[i] * 0.15;
     const adicional = adicionalMensal[i];
     const csll = baseCSLLMensal[i] * 0.09;
-    // PIS/COFINS antigos × multiplicador da era (1 até 2026, 0 a partir de 2027)
     const pis = r * 0.0065 * reforma.pisCofinsMult;
     const cofins = r * 0.03 * reforma.pisCofinsMult;
-    // ICMS/ISS antigos × multiplicador (1 até 2028, fading 0.9→0 até 2033)
     const issBase = Math.max(0, r - issDed);
     const debito = issBase * iss;
     const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
     const issvBruto = Math.max(0, debito - creditoMes);
     const issv = issvBruto * reforma.icmsIssMult;
     saldoCredorICMS = Math.max(0, creditoMes - debito);
-    // CBS (federal) — débito × crédito amplo sobre CPV
     let cbs = 0, ibs = 0;
     if (reforma.cbsPct > 0) {
       const dCbs = r * (reforma.cbsPct / 100);
@@ -233,9 +232,15 @@ export function calcPresumido(state: AppState): MonthlyTax {
     issTotal += issv;
     cbsTotal += cbs;
     ibsTotal += ibs;
-    return irpj + adicional + csll + pis + cofins + issv + cbs + ibs;
+    const vendas = pis + cofins + issv + cbs + ibs;
+    const lucro = irpj + adicional + csll;
+    monthlyVendas[i] = vendas;
+    monthlyLucro[i] = lucro;
+    return vendas + lucro;
   });
   const annual = sum(monthly);
+  const annualVendas = sum(monthlyVendas);
+  const annualLucro = sum(monthlyLucro);
   const rbAnual = sum(revenue.bruta);
   const detail: Record<string, number> = {
     "IRPJ": irpjTotal - sum(adicionalMensal),
@@ -253,7 +258,11 @@ export function calcPresumido(state: AppState): MonthlyTax {
   if (ibsTotal > 0) detail[`IBS (${reforma.ibsPct.toFixed(2)}%)`] = ibsTotal;
   return {
     monthly,
+    monthlyVendas,
+    monthlyLucro,
     annual,
+    annualVendas,
+    annualLucro,
     effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
     detail,
   };
