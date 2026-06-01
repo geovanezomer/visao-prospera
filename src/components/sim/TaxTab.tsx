@@ -267,6 +267,35 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
           </Select>
         </div>
       </div>
+
+      {/* Projeção 2025 → 2033 para o regime ativo */}
+      <div className="rounded-lg border border-border/60 bg-card/40">
+        <div className="border-b border-border/60 p-4">
+          <SectionTitle>
+            Projeção da carga efetiva — {state.tax.regime === "simples" ? "Simples" : state.tax.regime === "presumido" ? "Presumido" : "Real"} · todas as eras
+          </SectionTitle>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Carga tributária projetada para o regime ativo ao longo da transição CBS/IBS, mantendo receita, custos e demais parâmetros constantes.
+          </p>
+        </div>
+        <div className="grid grid-cols-9 gap-px bg-border/40 text-center">
+          {projAtiva.map((p) => (
+            <div key={"h" + p.era} className={`bg-card p-2 text-[10px] uppercase tracking-wider ${p.era === era ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+              {p.era === "atual" ? "Atual" : p.era}
+            </div>
+          ))}
+          {projAtiva.map((p) => (
+            <div key={"v" + p.era} className={`bg-card p-2 num text-xs ${p.era === era ? "text-primary font-semibold" : ""}`}>
+              {p.effective.toFixed(2)}%
+            </div>
+          ))}
+          {projAtiva.map((p) => (
+            <div key={"a" + p.era} className="bg-card p-2 num text-[10px] text-muted-foreground">
+              {fmtBRL(p.annual)}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
