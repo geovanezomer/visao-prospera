@@ -85,7 +85,7 @@ const financeiros = (): CostLine[] => [
 ];
 
 export function defaultCostsFor(business: BusinessType): CostLine[] {
-  return [...costVendasFor(business), ...fixos(), ...variaveis(), ...financeiros()];
+  return [...costVendasFor(business), ...fixosFor(business), ...variaveisFor(business), ...financeiros()];
 }
 
 export const DEFAULT_STATE: AppState = {
