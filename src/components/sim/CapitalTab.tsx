@@ -466,7 +466,7 @@ function SpreadForecastCard({ state, className = "" }: { state: AppState; classN
     headlineTone === "pos" ? "text-pos" : headlineTone === "neg" ? "text-neg" : "text-muted-foreground";
 
   return (
-    <div className="rounded-lg border border-border/60 bg-card/40 p-5">
+    <div className={`rounded-lg border border-border/60 bg-card/40 p-5 flex flex-col ${className}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
