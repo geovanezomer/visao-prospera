@@ -93,13 +93,12 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
           onChange={set}
         />
         <BalanceSheetCard capital={c} onChange={set} />
+        <CapexAtivacaoSection
+          items={c.capexAtivacao ?? []}
+          onChange={(next) => set({ capexAtivacao: next })}
+        />
         <WaccRoicMeter wacc={wacc} roic={ind.roic} />
       </div>
-
-      <CapexAtivacaoSection
-        items={c.capexAtivacao ?? []}
-        onChange={(next) => set({ capexAtivacao: next })}
-      />
     </div>
   );
 }
