@@ -37,7 +37,7 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
     critical: criticalByMes[m] ?? null,
   }));
 
-  const danger = cf.alertas.some((a) => a.tipo === "negativo");
+  
 
   // Top 3 meses mais críticos: menores saldos do ano (independente de bater o mínimo).
   const top3Criticos = MESES
