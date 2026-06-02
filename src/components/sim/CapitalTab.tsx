@@ -488,7 +488,7 @@ function SpreadForecastCard({ state, className = "" }: { state: AppState; classN
         </div>
       </div>
 
-      <div className="mt-3 h-32">
+      <div className="mt-3 min-h-[128px] flex-1">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={years} margin={{ top: 16, right: 8, bottom: 0, left: -16 }}>
             <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
