@@ -298,6 +298,7 @@ export function calcPresumido(state: AppState): MonthlyTax {
 
 export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax {
   const { revenue, tax, businessType } = state;
+  const trib = receitaTributavel(state);
   const iss = tax.issIcms / 100;
   const issDed = (tax.issDeducoes ?? 0) / 12;
   const isMercadoria = businessType === "comercio" || businessType === "industria";
@@ -327,7 +328,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
   const monthlyVendas = zeros12();
   const monthlyLucro = zeros12();
-  const monthly = revenue.bruta.map((r, i) => {
+  const monthly = trib.map((r, i) => {
     const lair = baseIRPJMensal[i];
     const irpj = lair * 0.15;
     const adicional = adicionalMensal[i];
