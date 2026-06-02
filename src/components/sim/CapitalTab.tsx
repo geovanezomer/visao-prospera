@@ -503,14 +503,13 @@ function SpreadForecastCard({ state }: { state: AppState }) {
                 fontSize: 11,
               }}
               labelStyle={{ color: "var(--foreground)", fontWeight: 600 }}
-              formatter={(v: number, name: string, item: { payload: SpreadYear }) => {
-                if (name === "spread") {
-                  return [
-                    `${v >= 0 ? "+" : ""}${v.toFixed(2)} p.p.  (ROIC ${item.payload.roic.toFixed(1)}% · WACC ${item.payload.wacc.toFixed(1)}%)`,
-                    "Spread",
-                  ];
-                }
-                return [v, name];
+              formatter={(v: number, _name: string, item: { payload?: typeof years[number] }) => {
+                const p = item?.payload;
+                if (!p) return [`${v.toFixed(2)} p.p.`, "Spread"];
+                return [
+                  `${v >= 0 ? "+" : ""}${v.toFixed(2)} p.p.  (ROIC ${p.roic.toFixed(1)}% · WACC ${p.wacc.toFixed(1)}%)`,
+                  "Spread",
+                ];
               }}
             />
             <Bar dataKey="spread" radius={[4, 4, 0, 0]}>
