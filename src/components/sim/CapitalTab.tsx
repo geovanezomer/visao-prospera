@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bar, BarChart, Cell, ReferenceLine, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from "recharts";
 import { AppState, CapexAtivacao } from "@/lib/finance/types";
 import { fmtBRL } from "@/lib/finance/format";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
