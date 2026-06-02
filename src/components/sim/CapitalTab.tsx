@@ -84,8 +84,8 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-        <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
+        <div className="flex flex-col gap-4">
           <CapitalStructureCard
             proprio={c.proprio}
             terceiros={terceiros}
@@ -96,7 +96,7 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
             onChange={set}
           />
           <WaccRoicMeter wacc={wacc} roic={ind.roic} />
-          <SpreadForecastCard state={state} />
+          <SpreadForecastCard state={state} className="flex-1" />
         </div>
 
         <BalanceSheetCard capital={c} onChange={set} />
@@ -427,7 +427,7 @@ function MeterBar({ label, subLabel, value, pct, color }: { label: string; subLa
 // =================================================================
 // Spread forecast (ROIC − WACC) — projeção 5 anos
 // =================================================================
-function SpreadForecastCard({ state }: { state: AppState }) {
+function SpreadForecastCard({ state, className = "" }: { state: AppState; className?: string }) {
   const result = useMemo(() => buildSpreadForecast(state, 5), [state]);
   const { years, waccConstant, degenerate, breakEvenYear } = result;
 
@@ -466,7 +466,7 @@ function SpreadForecastCard({ state }: { state: AppState }) {
     headlineTone === "pos" ? "text-pos" : headlineTone === "neg" ? "text-neg" : "text-muted-foreground";
 
   return (
-    <div className="rounded-lg border border-border/60 bg-card/40 p-5">
+    <div className={`rounded-lg border border-border/60 bg-card/40 p-5 flex flex-col ${className}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -488,7 +488,7 @@ function SpreadForecastCard({ state }: { state: AppState }) {
         </div>
       </div>
 
-      <div className="mt-3 h-32">
+      <div className="mt-3 min-h-[128px] flex-1">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={years} margin={{ top: 16, right: 8, bottom: 0, left: -16 }}>
             <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
