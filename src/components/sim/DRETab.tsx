@@ -27,7 +27,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
     { k: "(+) Receita Operacional Bruta", v: dre.receitaBruta, strong: true, tone: "pos" as const },
     { k: "(−) Inadimplência / Deduções", v: dre.deducoesInadimplencia.map((x) => -x), tone: "neg" as const },
     ...(temOutrasDed
-      ? [{ k: "(−) Outras deduções de receita (devoluções, descontos, perdas)", v: dre.outrasDeducoes.map((x) => -x), tone: "neg" as const }]
+      ? [{ k: "(−) Outras deduções de receita", v: dre.outrasDeducoes.map((x) => -x), tone: "neg" as const }]
       : []),
     { k: regime === "simples" ? "(−) DAS Simples Nacional" : "(−) Impostos sobre Vendas (PIS/COFINS/ICMS/ISS/CBS/IBS)", v: dre.impostosVendas.map((x) => -x), tone: "neg" as const },
     { k: "(=) Receita Operacional Líquida", v: dre.receitaLiquida, strong: true },
