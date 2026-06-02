@@ -488,21 +488,34 @@ function SpreadForecastCard({ state, className = "" }: { state: AppState; classN
         </div>
       </div>
 
-      <div className="mt-3 min-h-[128px] flex-1">
+      <div className="mt-3 min-h-[140px] flex-1">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={years} margin={{ top: 16, right: 8, bottom: 0, left: -16 }}>
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v.toFixed(0)}`} width={36} />
-            <ReferenceLine y={0} stroke="var(--border)" strokeDasharray="3 3" />
+          <AreaChart data={years} margin={{ top: 16, right: 12, bottom: 0, left: -10 }}>
+            <defs>
+              <linearGradient id="gSpreadPos" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--success)" stopOpacity={0.5} />
+                <stop offset="100%" stopColor="var(--success)" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="gSpreadNeg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--destructive)" stopOpacity={0.5} />
+                <stop offset="100%" stopColor="var(--destructive)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} />
+            <YAxis
+              stroke="var(--muted-foreground)"
+              fontSize={10}
+              tickFormatter={(v) => `${v.toFixed(0)} p.p.`}
+              width={50}
+              tickLine={false}
+              axisLine={false}
+            />
+            <ReferenceLine y={0} stroke="var(--warning)" strokeDasharray="4 4" label={{ value: "equilíbrio", fill: "var(--warning)", fontSize: 10, position: "right" }} />
             <RTooltip
-              cursor={{ fill: "color-mix(in oklab, var(--muted) 30%, transparent)" }}
-              contentStyle={{
-                background: "var(--popover)",
-                border: "1px solid var(--border)",
-                borderRadius: 6,
-                fontSize: 11,
-              }}
-              labelStyle={{ color: "var(--foreground)", fontWeight: 600 }}
+              contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }}
+              itemStyle={{ color: "var(--popover-foreground)" }}
+              labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }}
               formatter={(v: number, _name: string, item: { payload?: typeof years[number] }) => {
                 const p = item?.payload;
                 if (!p) return [`${v.toFixed(2)} p.p.`, "Spread"];
@@ -512,12 +525,30 @@ function SpreadForecastCard({ state, className = "" }: { state: AppState; classN
                 ];
               }}
             />
-            <Bar dataKey="spread" radius={[4, 4, 0, 0]}>
-              {years.map((y) => (
-                <Cell key={y.ano} fill={y.spread >= 0 ? "var(--success)" : "var(--destructive)"} />
-              ))}
-            </Bar>
-          </BarChart>
+            <Area
+              type="monotone"
+              dataKey="spread"
+              stroke={allNegative ? "var(--destructive)" : allPositive ? "var(--success)" : "var(--primary)"}
+              strokeWidth={2}
+              fill={allNegative ? "url(#gSpreadNeg)" : "url(#gSpreadPos)"}
+              dot={(props: { cx?: number; cy?: number; payload?: typeof years[number]; index?: number }) => {
+                const { cx, cy, payload, index } = props;
+                const color = (payload?.spread ?? 0) >= 0 ? "var(--success)" : "var(--destructive)";
+                return (
+                  <circle
+                    key={`dot-${index}`}
+                    cx={cx}
+                    cy={cy}
+                    r={4}
+                    fill={color}
+                    stroke="var(--background)"
+                    strokeWidth={2}
+                  />
+                );
+              }}
+              activeDot={{ r: 6, stroke: "var(--background)", strokeWidth: 2 }}
+            />
+          </AreaChart>
         </ResponsiveContainer>
       </div>
 
