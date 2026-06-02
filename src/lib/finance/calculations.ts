@@ -1,6 +1,23 @@
 import { AppState, SimplesAnexo, TaxRegime, BusinessType, CostLine, DEFAULT_ENCARGOS_PCT, TaxEra, TaxConfig } from "./types";
 import { sum, zeros12, fill12 } from "./format";
 
+/** Soma mensal das linhas livres de dedução da Receita (devoluções, perdas, descontos, etc.). */
+export function outrasDeducoesMensal(state: AppState): number[] {
+  const out = zeros12();
+  const deds = state.revenue.deducoes ?? [];
+  for (const d of deds) {
+    if (!Array.isArray(d.valores)) continue;
+    for (let i = 0; i < 12; i++) out[i] += Math.max(0, d.valores[i] || 0);
+  }
+  return out;
+}
+
+/** Receita Bruta menos outras deduções — base usada para impostos sobre venda. */
+function receitaTributavel(state: AppState): number[] {
+  const out = outrasDeducoesMensal(state);
+  return state.revenue.bruta.map((b, i) => Math.max(0, (b || 0) - out[i]));
+}
+
 // =====================================================================
 // REFORMA TRIBUTÁRIA — CBS/IBS (EC 132/2023 + LC 214/2025)
 // =====================================================================
