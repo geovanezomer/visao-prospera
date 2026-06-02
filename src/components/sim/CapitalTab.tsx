@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Bar, BarChart, Cell, ReferenceLine, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from "recharts";
 import { AppState, CapexAtivacao } from "@/lib/finance/types";
 import { fmtBRL } from "@/lib/finance/format";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
+import { buildSpreadForecast } from "@/lib/finance/spreadForecast";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Lightbulb, X, TrendingUp, TrendingDown, Wallet, Landmark, Coins, Settings2 } from "lucide-react";
+import { Plus, Trash2, Lightbulb, X, TrendingUp, TrendingDown, Wallet, Landmark, Coins, Settings2, LineChart } from "lucide-react";
 import { MoneyInput, NumInput, PctInput, SectionTitle, StatCard, HelpTip } from "./primitives";
 
 const INTRO_KEY = "gzf_capital_intro_dismissed_v1";
