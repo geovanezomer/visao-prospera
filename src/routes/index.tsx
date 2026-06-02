@@ -87,10 +87,10 @@ function SimulaPro() {
               <Activity className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-base font-semibold tracking-tight">
+          <h1 className="text-base font-semibold tracking-tight">
                 GZ Finnance<span className="text-primary">PRO</span>
               </h1>
-              <p className="text-[11px] text-muted-foreground">Desenvolvido por Geovane Zomer | Consultor Financeiro &amp; Investimentos CVM 3354-5</p>
+              <p className="text-[11px] text-muted-foreground">Diagnóstico &amp; Simulação Empresarial para PMEs</p>
             </div>
           </div>
 
