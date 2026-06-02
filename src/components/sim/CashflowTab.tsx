@@ -39,6 +39,17 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
 
   const danger = cf.alertas.some((a) => a.tipo === "negativo");
 
+  // Top 3 meses mais críticos: menores saldos do ano (independente de bater o mínimo).
+  const top3Criticos = MESES
+    .map((mes, i) => ({
+      mes,
+      saldo: cf.saldoFinal[i],
+      deficitVsMin: state.cashflow.caixaMinimo - cf.saldoFinal[i], // positivo = está abaixo do mínimo
+    }))
+    .sort((a, b) => a.saldo - b.saldo)
+    .slice(0, 3);
+
+
   return (
     <div className="space-y-6">
       {/* Sumário */}
