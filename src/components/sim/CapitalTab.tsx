@@ -94,6 +94,7 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
             onChange={set}
           />
           <WaccRoicMeter wacc={wacc} roic={ind.roic} />
+          <SpreadForecastCard state={state} />
         </div>
 
         <BalanceSheetCard capital={c} onChange={set} />
