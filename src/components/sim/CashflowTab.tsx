@@ -3,7 +3,7 @@ import { fmtBRL, fmtBRLCompact, MESES, sum } from "@/lib/finance/format";
 import { buildCashFlow } from "@/lib/finance/cashflow";
 import { MoneyInput, SectionTitle, StatCard } from "./primitives";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { AlertTriangle, TriangleAlert } from "lucide-react";
+
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 type NonOpKey = "aportes" | "emprestimosCaptados" | "capex" | "dividendos" | "amortizacoes";
@@ -37,7 +37,7 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
     critical: criticalByMes[m] ?? null,
   }));
 
-  const danger = cf.alertas.some((a) => a.tipo === "negativo");
+  
 
   // Top 3 meses mais críticos: menores saldos do ano (independente de bater o mínimo).
   const top3Criticos = MESES
@@ -82,30 +82,6 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
         />
       </div>
 
-      {/* Alertas */}
-      {cf.alertas.length > 0 && (
-        <div
-          className={`flex items-start gap-3 rounded-md border p-4 text-sm ${
-            danger
-              ? "border-[var(--destructive)]/50 bg-[var(--destructive)]/10 text-foreground"
-              : "border-[var(--warning)]/50 bg-[var(--warning)]/10 text-foreground"
-          }`}
-        >
-          {danger ? <AlertTriangle className="mt-0.5 h-5 w-5 text-neg" /> : <TriangleAlert className="mt-0.5 h-5 w-5 text-[var(--warning)]" />}
-          <div>
-            <div className="font-semibold">
-              {danger ? "Atenção: caixa fica NEGATIVO em algum mês" : "Caixa fica abaixo do mínimo de segurança"}
-            </div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              Meses críticos:{" "}
-              {cf.alertas
-                .map((a) => `${a.mes} (${a.saldo.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })})`)
-                .join(" · ")}
-            </div>
-            <div className="mt-1 text-xs">Vá para a aba <strong>Diagnóstico & Decisões</strong> para simular ações de correção.</div>
-          </div>
-        </div>
-      )}
 
       {/* Movimentações de caixa não operacionais */}
       <div className="rounded-lg border border-border/60 bg-card/40">
