@@ -520,7 +520,7 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
 
   return {
     dre: {
-      receitaBruta, deducoesInadimplencia, impostosVendas, pdd, receitaLiquida,
+      receitaBruta, deducoesInadimplencia, outrasDeducoes, impostosVendas, pdd, receitaLiquida,
       cpv, lucroBruto, despesasOperacionais: despOp,
       ebitda, depreciacao, ebit, resultadoFinanceiro, lair,
       impostos: impostosLucro, impostosTotal, lucroLiquido,
