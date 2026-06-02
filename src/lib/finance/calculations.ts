@@ -403,6 +403,8 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
 export interface DRE {
   receitaBruta: number[];
   deducoesInadimplencia: number[]; // 0 se inadimplenciaComoPDD
+  /** Outras deduções de receita (devoluções, perdas, descontos comerciais, etc.) — linhas livres definidas pelo usuário. */
+  outrasDeducoes: number[];
   /** Tributos sobre venda (PIS/COFINS/ICMS/ISS/CBS/IBS, ou DAS no Simples) — deduzidos antes da Receita Líquida (CPC/IFRS 15). */
   impostosVendas: number[];
   pdd: number[];                    // 0 se !inadimplenciaComoPDD
