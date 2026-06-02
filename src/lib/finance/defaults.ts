@@ -97,6 +97,7 @@ export const DEFAULT_STATE: AppState = {
     pmr: 30,
     pmp: 30,
     inadimplenciaComoPDD: false,
+    deducoes: [],
   },
   costs: defaultCostsFor("servicos"),
   capital: {
