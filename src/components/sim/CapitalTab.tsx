@@ -47,22 +47,6 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <CapitalStructureCard
-          proprio={c.proprio}
-          terceiros={terceiros}
-          ke={c.ke}
-          kd={c.kd}
-          patrimonioLiquido={c.patrimonioLiquido}
-          dividaOnerosa={c.dividaOnerosa}
-          onChange={set}
-        />
-
-        <BalanceSheetCard capital={c} onChange={set} />
-      </div>
-
-      <WaccRoicMeter wacc={wacc} roic={ind.roic} />
-
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
           label="Ciclo Financeiro"
@@ -96,6 +80,23 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
           }
           hint={{ description: "Diferença entre o que a operação precisa (NCG) e o que a empresa tem (CGD). Positivo = precisa de empréstimo de giro; Negativo = sobra caixa.", formula: "NCG − CGD" }}
         />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <div className="space-y-4">
+          <CapitalStructureCard
+            proprio={c.proprio}
+            terceiros={terceiros}
+            ke={c.ke}
+            kd={c.kd}
+            patrimonioLiquido={c.patrimonioLiquido}
+            dividaOnerosa={c.dividaOnerosa}
+            onChange={set}
+          />
+          <WaccRoicMeter wacc={wacc} roic={ind.roic} />
+        </div>
+
+        <BalanceSheetCard capital={c} onChange={set} />
       </div>
 
       <CapexAtivacaoSection
