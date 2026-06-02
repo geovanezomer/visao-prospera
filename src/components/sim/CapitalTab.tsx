@@ -425,6 +425,114 @@ function MeterBar({ label, subLabel, value, pct, color }: { label: string; subLa
 }
 
 // =================================================================
+// Spread forecast (ROIC − WACC) — projeção 5 anos
+// =================================================================
+function SpreadForecastCard({ state }: { state: AppState }) {
+  const result = useMemo(() => buildSpreadForecast(state, 5), [state]);
+  const { years, waccConstant, degenerate, breakEvenYear } = result;
+
+  const allPositive = years.every((y) => y.spread >= 0);
+  const allNegative = years.every((y) => y.spread < 0);
+  const trendUp = years[years.length - 1].spread > years[0].spread + 0.5;
+  const trendDown = years[years.length - 1].spread < years[0].spread - 0.5;
+
+  let headline = "";
+  let headlineTone: "pos" | "neg" | "muted" = "muted";
+  if (degenerate) {
+    headline = allPositive
+      ? "Spread estável — continua criando valor nos próximos 5 anos"
+      : allNegative
+      ? "Spread estável — continua destruindo valor nos próximos 5 anos"
+      : "Spread estável ao longo do horizonte";
+    headlineTone = allPositive ? "pos" : allNegative ? "neg" : "muted";
+  } else if (breakEvenYear) {
+    const cruzouParaPos = years[breakEvenYear - 1].spread >= 0;
+    headline = cruzouParaPos
+      ? `Volta a criar valor no ano Y${breakEvenYear}`
+      : `Passa a destruir valor a partir de Y${breakEvenYear}`;
+    headlineTone = cruzouParaPos ? "pos" : "neg";
+  } else if (trendUp) {
+    headline = allPositive ? "Spread melhorando — valor cresce" : "Spread melhorando, mas ainda negativo";
+    headlineTone = allPositive ? "pos" : "neg";
+  } else if (trendDown) {
+    headline = allPositive ? "Spread caindo — atenção" : "Spread piorando — destruição de valor acelera";
+    headlineTone = "neg";
+  } else {
+    headline = allPositive ? "Mantém criação de valor" : "Mantém destruição de valor";
+    headlineTone = allPositive ? "pos" : "neg";
+  }
+
+  const toneCls =
+    headlineTone === "pos" ? "text-pos" : headlineTone === "neg" ? "text-neg" : "text-muted-foreground";
+
+  return (
+    <div className="rounded-lg border border-border/60 bg-card/40 p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <LineChart className="h-3.5 w-3.5" />
+            Spread projetado · ROIC − WACC
+            <HelpTip
+              text="Projeção do spread anual nos próximos 5 anos, usando o crescimento de receita do simulador. WACC mantido constante (mesma estrutura de capital). Capital Investido cresce com capex acumulado."
+              formula="Spread = ROIC_ano − WACC"
+            />
+          </div>
+          <h3 className={`mt-1 text-sm font-semibold ${toneCls}`}>{headline}</h3>
+        </div>
+        <div className="shrink-0 text-right">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Y5</div>
+          <div className={`mono text-base font-semibold ${years[4].spread >= 0 ? "text-pos" : "text-neg"}`}>
+            {years[4].spread >= 0 ? "+" : ""}
+            {years[4].spread.toFixed(1)} p.p.
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 h-32">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={years} margin={{ top: 16, right: 8, bottom: 0, left: -16 }}>
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v.toFixed(0)}`} width={36} />
+            <ReferenceLine y={0} stroke="var(--border)" strokeDasharray="3 3" />
+            <RTooltip
+              cursor={{ fill: "color-mix(in oklab, var(--muted) 30%, transparent)" }}
+              contentStyle={{
+                background: "var(--popover)",
+                border: "1px solid var(--border)",
+                borderRadius: 6,
+                fontSize: 11,
+              }}
+              labelStyle={{ color: "var(--foreground)", fontWeight: 600 }}
+              formatter={(v: number, name: string, item: { payload: SpreadYear }) => {
+                if (name === "spread") {
+                  return [
+                    `${v >= 0 ? "+" : ""}${v.toFixed(2)} p.p.  (ROIC ${item.payload.roic.toFixed(1)}% · WACC ${item.payload.wacc.toFixed(1)}%)`,
+                    "Spread",
+                  ];
+                }
+                return [v, name];
+              }}
+            />
+            <Bar dataKey="spread" radius={[4, 4, 0, 0]}>
+              {years.map((y) => (
+                <Cell key={y.ano} fill={y.spread >= 0 ? "var(--success)" : "var(--destructive)"} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
+        <span className="mono">WACC fixo: {waccConstant.toFixed(1)}%</span>
+        <span>Mesma estrutura de capital · capex base replicado</span>
+      </div>
+    </div>
+  );
+}
+
+
+
+// =================================================================
 // Balance sheet card — grouped
 // =================================================================
 function BalanceSheetCard({
