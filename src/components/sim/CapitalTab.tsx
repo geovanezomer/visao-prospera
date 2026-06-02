@@ -84,8 +84,8 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-        <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
+        <div className="flex flex-col gap-4">
           <CapitalStructureCard
             proprio={c.proprio}
             terceiros={terceiros}
@@ -96,7 +96,7 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
             onChange={set}
           />
           <WaccRoicMeter wacc={wacc} roic={ind.roic} />
-          <SpreadForecastCard state={state} />
+          <SpreadForecastCard state={state} className="flex-1" />
         </div>
 
         <BalanceSheetCard capital={c} onChange={set} />
