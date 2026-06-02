@@ -39,6 +39,17 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
 
   const danger = cf.alertas.some((a) => a.tipo === "negativo");
 
+  // Top 3 meses mais críticos: menores saldos do ano (independente de bater o mínimo).
+  const top3Criticos = MESES
+    .map((mes, i) => ({
+      mes,
+      saldo: cf.saldoFinal[i],
+      deficitVsMin: state.cashflow.caixaMinimo - cf.saldoFinal[i], // positivo = está abaixo do mínimo
+    }))
+    .sort((a, b) => a.saldo - b.saldo)
+    .slice(0, 3);
+
+
   return (
     <div className="space-y-6">
       {/* Sumário */}
@@ -192,7 +203,55 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
         </div>
       </div>
 
+      {/* Resumo: 3 meses mais críticos */}
+      <div className="rounded-lg border border-border/60 bg-card/40 p-4">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h4 className="text-sm font-semibold">3 meses mais críticos do ano</h4>
+          <span className="text-[10px] text-muted-foreground">menor saldo projetado · déficit vs. caixa mínimo</span>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {top3Criticos.map((c, idx) => {
+            const negativo = c.saldo < 0;
+            const abaixoMin = !negativo && c.saldo < state.cashflow.caixaMinimo;
+            const tone = negativo ? "var(--destructive)" : abaixoMin ? "var(--warning)" : "var(--success)";
+            const status = negativo ? "Caixa negativo" : abaixoMin ? "Abaixo do mínimo" : "Dentro do mínimo";
+            return (
+              <div
+                key={c.mes}
+                className="rounded-md border bg-background/40 p-3"
+                style={{ borderColor: `color-mix(in oklab, ${tone} 40%, transparent)` }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-card text-[10px] font-bold text-muted-foreground">
+                      {idx + 1}º
+                    </span>
+                    <span className="text-sm font-semibold">{c.mes}</span>
+                  </div>
+                  <span className="text-[9.5px] font-semibold uppercase tracking-wider" style={{ color: tone }}>
+                    {status}
+                  </span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <div className="text-[9.5px] uppercase tracking-wider text-muted-foreground">Saldo</div>
+                    <div className="num font-semibold" style={{ color: tone }}>{fmtBRL(c.saldo)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[9.5px] uppercase tracking-wider text-muted-foreground">Déficit vs. mín.</div>
+                    <div className={`num font-semibold ${c.deficitVsMin > 0 ? "text-neg" : "text-muted-foreground"}`}>
+                      {c.deficitVsMin > 0 ? fmtBRL(c.deficitVsMin) : "—"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Gráfico de saldo */}
+
       <div className="rounded-lg border border-border/60 bg-card/40 p-4">
         <div className="mb-3 flex items-center justify-between">
           <h4 className="text-sm font-semibold">Saldo de caixa projetado (12 meses)</h4>
