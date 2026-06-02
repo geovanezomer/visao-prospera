@@ -168,12 +168,14 @@ function adicionalIrpjTrimestral(baseMensal: number[]): number[] {
 
 export function calcSimples(state: AppState): MonthlyTax {
   const { revenue } = state;
+  const trib = receitaTributavel(state);
   const anexo = resolveSimplesAnexo(state);
-  const rbAnual = sum(revenue.bruta);
+  const rbAnual = sum(trib);
   const aliq = simplesAliquotaEfetiva(rbAnual, anexo) / 100;
-  const monthly = revenue.bruta.map((r) => r * aliq);
+  const monthly = trib.map((r) => r * aliq);
   const annual = sum(monthly);
-  const excedeu = rbAnual > LIMITE_SIMPLES;
+  const rbBrutaAnual = sum(revenue.bruta);
+  const excedeu = rbBrutaAnual > LIMITE_SIMPLES;
   const detail: Record<string, number> = { [`DAS Simples (Anexo ${anexo})`]: annual };
   if (excedeu) {
     // Sinaliza desenquadramento: ao exceder R$ 4,8M a empresa deve migrar para Lucro Presumido/Real.
@@ -186,13 +188,14 @@ export function calcSimples(state: AppState): MonthlyTax {
     annual,
     annualVendas: annual,
     annualLucro: 0,
-    effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
+    effective: rbBrutaAnual > 0 ? (annual / rbBrutaAnual) * 100 : 0,
     detail,
   };
 }
 
 export function calcPresumido(state: AppState): MonthlyTax {
   const { revenue, tax, businessType } = state;
+  const trib = receitaTributavel(state);
   const bases = presumidoBases(businessType);
   const baseIRPJ = (tax.presumidoBaseIRPJ || bases.irpj) / 100;
   const baseCSLL = (tax.presumidoBaseCSLL || bases.csll) / 100;
