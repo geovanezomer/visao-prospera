@@ -1,6 +1,23 @@
 import { AppState, SimplesAnexo, TaxRegime, BusinessType, CostLine, DEFAULT_ENCARGOS_PCT, TaxEra, TaxConfig } from "./types";
 import { sum, zeros12, fill12 } from "./format";
 
+/** Soma mensal das linhas livres de dedução da Receita (devoluções, perdas, descontos, etc.). */
+export function outrasDeducoesMensal(state: AppState): number[] {
+  const out = zeros12();
+  const deds = state.revenue.deducoes ?? [];
+  for (const d of deds) {
+    if (!Array.isArray(d.valores)) continue;
+    for (let i = 0; i < 12; i++) out[i] += Math.max(0, d.valores[i] || 0);
+  }
+  return out;
+}
+
+/** Receita Bruta menos outras deduções — base usada para impostos sobre venda. */
+function receitaTributavel(state: AppState): number[] {
+  const out = outrasDeducoesMensal(state);
+  return state.revenue.bruta.map((b, i) => Math.max(0, (b || 0) - out[i]));
+}
+
 // =====================================================================
 // REFORMA TRIBUTÁRIA — CBS/IBS (EC 132/2023 + LC 214/2025)
 // =====================================================================
@@ -151,12 +168,14 @@ function adicionalIrpjTrimestral(baseMensal: number[]): number[] {
 
 export function calcSimples(state: AppState): MonthlyTax {
   const { revenue } = state;
+  const trib = receitaTributavel(state);
   const anexo = resolveSimplesAnexo(state);
-  const rbAnual = sum(revenue.bruta);
+  const rbAnual = sum(trib);
   const aliq = simplesAliquotaEfetiva(rbAnual, anexo) / 100;
-  const monthly = revenue.bruta.map((r) => r * aliq);
+  const monthly = trib.map((r) => r * aliq);
   const annual = sum(monthly);
-  const excedeu = rbAnual > LIMITE_SIMPLES;
+  const rbBrutaAnual = sum(revenue.bruta);
+  const excedeu = rbBrutaAnual > LIMITE_SIMPLES;
   const detail: Record<string, number> = { [`DAS Simples (Anexo ${anexo})`]: annual };
   if (excedeu) {
     // Sinaliza desenquadramento: ao exceder R$ 4,8M a empresa deve migrar para Lucro Presumido/Real.
@@ -169,13 +188,14 @@ export function calcSimples(state: AppState): MonthlyTax {
     annual,
     annualVendas: annual,
     annualLucro: 0,
-    effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
+    effective: rbBrutaAnual > 0 ? (annual / rbBrutaAnual) * 100 : 0,
     detail,
   };
 }
 
 export function calcPresumido(state: AppState): MonthlyTax {
   const { revenue, tax, businessType } = state;
+  const trib = receitaTributavel(state);
   const bases = presumidoBases(businessType);
   const baseIRPJ = (tax.presumidoBaseIRPJ || bases.irpj) / 100;
   const baseCSLL = (tax.presumidoBaseCSLL || bases.csll) / 100;
@@ -200,15 +220,15 @@ export function calcPresumido(state: AppState): MonthlyTax {
     }
   }
 
-  const baseIRPJMensal = revenue.bruta.map((r) => r * baseIRPJ);
-  const baseCSLLMensal = revenue.bruta.map((r) => r * baseCSLL);
+  const baseIRPJMensal = trib.map((r) => r * baseIRPJ);
+  const baseCSLLMensal = trib.map((r) => r * baseCSLL);
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal);
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
   const monthlyVendas = zeros12();
   const monthlyLucro = zeros12();
-  const monthly = revenue.bruta.map((r, i) => {
+  const monthly = trib.map((r, i) => {
     const irpj = baseIRPJMensal[i] * 0.15;
     const adicional = adicionalMensal[i];
     const csll = baseCSLLMensal[i] * 0.09;
@@ -278,6 +298,7 @@ export function calcPresumido(state: AppState): MonthlyTax {
 
 export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax {
   const { revenue, tax, businessType } = state;
+  const trib = receitaTributavel(state);
   const iss = tax.issIcms / 100;
   const issDed = (tax.issDeducoes ?? 0) / 12;
   const isMercadoria = businessType === "comercio" || businessType === "industria";
@@ -307,7 +328,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
   const monthlyVendas = zeros12();
   const monthlyLucro = zeros12();
-  const monthly = revenue.bruta.map((r, i) => {
+  const monthly = trib.map((r, i) => {
     const lair = baseIRPJMensal[i];
     const irpj = lair * 0.15;
     const adicional = adicionalMensal[i];
@@ -382,6 +403,8 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
 export interface DRE {
   receitaBruta: number[];
   deducoesInadimplencia: number[]; // 0 se inadimplenciaComoPDD
+  /** Outras deduções de receita (devoluções, perdas, descontos comerciais, etc.) — linhas livres definidas pelo usuário. */
+  outrasDeducoes: number[];
   /** Tributos sobre venda (PIS/COFINS/ICMS/ISS/CBS/IBS, ou DAS no Simples) — deduzidos antes da Receita Líquida (CPC/IFRS 15). */
   impostosVendas: number[];
   pdd: number[];                    // 0 se !inadimplenciaComoPDD
@@ -425,8 +448,10 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   else taxPre = calcReal(state, zeros12());
   const impostosVendas = taxPre.monthlyVendas.slice();
 
-  // Receita Líquida = Bruta − Inadimplência (se não-PDD) − Impostos sobre Venda (CPC/IFRS 15)
-  const receitaLiquida = receitaBruta.map((r, i) => r - deducoesInadimplencia[i] - impostosVendas[i]);
+  const outrasDeducoes = outrasDeducoesMensal(state);
+
+  // Receita Líquida = Bruta − Inadimplência (se não-PDD) − Outras Deduções − Impostos sobre Venda (CPC/IFRS 15)
+  const receitaLiquida = receitaBruta.map((r, i) => r - deducoesInadimplencia[i] - outrasDeducoes[i] - impostosVendas[i]);
 
   const cpv = zeros12();
   const despOp = zeros12();
@@ -495,7 +520,7 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
 
   return {
     dre: {
-      receitaBruta, deducoesInadimplencia, impostosVendas, pdd, receitaLiquida,
+      receitaBruta, deducoesInadimplencia, outrasDeducoes, impostosVendas, pdd, receitaLiquida,
       cpv, lucroBruto, despesasOperacionais: despOp,
       ebitda, depreciacao, ebit, resultadoFinanceiro, lair,
       impostos: impostosLucro, impostosTotal, lucroLiquido,

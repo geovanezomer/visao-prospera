@@ -1,47 +1,67 @@
-## Mini-gráfico de evolução do spread (ROIC − WACC) abaixo do Termômetro
+# Linhas de dedução customizadas na aba Receitas
 
-Preencher o espaço vazio à esquerda com um card compacto que projeta o spread ROIC − WACC ano a ano, alinhado ao tema do termômetro logo acima.
+## Objetivo
+Permitir que o usuário adicione, na tabela "Receita Mensal — 12 meses", quantas linhas de dedução quiser (devoluções, perdas, furtos, descontos comerciais, abatimentos, etc.). Cada linha tem um **rótulo livre** e **12 valores em R$**, é **persistida com o cenário** e **abatida antes da Receita Líquida** — tanto na aba Receitas quanto na DRE (entrando na composição que reduz a base de impostos sobre venda).
 
-### O que aparece
+## Comportamento na UI
 
-Um card com a mesma largura do `CapitalStructureCard` e altura ~180–220px:
+Card "Receita Mensal — 12 meses":
+- Header ganha botão **`+ Incluir linha`** à direita do título.
+- Cada linha customizada renderiza:
+  - 1ª coluna: input de texto editável com o rótulo (placeholder "Ex: Devoluções")
+  - 12 colunas: `MoneyInput` em R$ (default 0)
+  - Coluna Total: soma anual em vermelho/negativo (tom `neg`)
+  - Botão **lixeira** discreto na ponta para remover a linha
+- Linha "Receita Líquida" continua sendo a última, agora calculada como:
+  `Líquida = Bruta × (1 − inad.) − Σ deduções customizadas`
 
-- **Título**: "Spread projetado · ROIC − WACC" + HelpTip
-- **Subtítulo curto** (1 linha): "Se nada mudar, em X anos a empresa volta/deixa de criar valor" — ou "Continua destruindo valor nos próximos 5 anos" conforme o caso.
-- **Mini-gráfico de barras** (5 anos, Y1–Y5): cada barra é o spread daquele ano.
-  - Verde quando spread ≥ 0
-  - Vermelho quando spread < 0
-  - Linha tracejada no zero (linha do "ponto de equilíbrio econômico")
-  - Eixo Y compacto sem grid pesado; rótulo de valor em cima de cada barra (ex.: "+2.3 p.p." / "−16.0 p.p.")
-- **Rodapé** (1 linha em mono): "WACC fixo: 16.0% · Pressuposto: mesma estrutura de capital"
+Card de KPI "Receita Líquida Anual" no topo passa a refletir a mesma fórmula. O `hint` que hoje diz *"Bruta − Inadimplência − Deduções"* finalmente bate com o cálculo.
 
-### Como o spread é calculado por ano (sem mexer em cálculos existentes)
+## Impacto na DRE
 
-Lógica local nova em `CapitalTab.tsx` (ou helper `src/lib/finance/spreadForecast.ts`):
+Na DRE, a soma anual das linhas customizadas vira uma nova linha **"Outras deduções de receita"** entre "Inadimplência / Deduções" e "DAS / Impostos sobre Vendas". A base de cálculo de impostos sobre venda passa a ser a receita já líquida dessas deduções (consistente com IFRS 15/CPC 47 — devoluções e descontos reduzem a base tributável).
 
-1. Receita anual de cada ano vem do `buildForecast(state, DEFAULT_FORECAST_CFG)` que já agrega por mês — somo por ano.
-2. Margem operacional do ano-base = `ind.margemOperacional` (já em `calcIndicators`) — assumo constante (com ganho de escala anual aplicado igual ao que o forecast já faz para CPV, se simples; senão constante).
-3. NOPAT_ano = EBIT_ano × (1 − alíquota efetiva do ano-base).
-4. Capital Investido projetado: parte do CI base e soma o capex acumulado de cada ano (do `capexAtivacao` que estende ao longo dos meses + `capexInicial` do forecast). Sem capex novo, CI permanece constante.
-5. ROIC_ano = NOPAT_ano / CI_ano × 100.
-6. WACC constante (= `ind.wacc` do estado atual, premissa "mesma estrutura").
-7. Spread_ano = ROIC_ano − WACC.
+## Mudanças técnicas
 
-Esta é uma projeção orientativa, não substitui o ROIC do ano-base nem altera nada em `calculations.ts`, `forecast.ts`, `valuation.ts` etc.
+### 1. `src/lib/finance/types.ts`
+Adicionar ao `interface Revenue`:
+```ts
+deducoes?: Array<{
+  id: string;       // uuid local
+  label: string;    // rótulo livre
+  valores: Months;  // 12 valores em R$
+}>;
+```
+Opcional para retrocompatibilidade com cenários salvos antes da mudança.
 
-### Caso de borda — projeção degenerada
+### 2. `src/lib/finance/defaults.ts`
+Default: `deducoes: []`.
 
-Se a receita projetada não muda (crescimento 0%), nenhum capex novo e estrutura igual → todos os 5 anos teriem o mesmo spread. Nesse caso:
-- Trocar o gráfico por uma mensagem: "Sem projeção configurada — defina crescimento/capex em **Receitas** ou no **Simulador** para ver a evolução do spread."
-- Com link/atalho para abrir a aba do Simulador.
+### 3. `src/lib/finance/calculations.ts`
+- Em `buildDRE` (linha ~410), calcular `outrasDeducoes[i] = Σ deducoes[*].valores[i]`.
+- Atualizar `receitaLiquida[i] = receitaBruta[i] − deducoesInadimplencia[i] − outrasDeducoes[i] − impostosVendas[i]`.
+- Garantir que `impostosVendas` use a base já líquida dessas deduções (passar `bruta − inadimplência − outrasDeducoes` para `calcSimples/Presumido/Real` no lugar de só `bruta`).
+- Expor `outrasDeducoes` no retorno para a DRE renderizar a linha.
 
-### Arquivos afetados
+### 4. `src/components/sim/DRETab.tsx`
+Adicionar linha "Outras deduções de receita" abaixo de "Inadimplência / Deduções", lendo `outrasDeducoes` do DRE construído. Só renderizar a linha se houver pelo menos uma dedução customizada com valor > 0 (evita poluir DRE de quem não usa).
 
-- `src/components/sim/CapitalTab.tsx` — adicionar `<SpreadForecastCard />` dentro da coluna esquerda, após `<WaccRoicMeter />`. Componente fica no mesmo arquivo se < 80 linhas; senão extraio para `src/components/sim/capital/SpreadForecastCard.tsx`.
-- Possível helper novo `src/lib/finance/spreadForecast.ts` (~40 linhas) para encapsular o cálculo do spread anual — mantém `CapitalTab.tsx` enxuto.
+### 5. `src/components/sim/RevenueTab.tsx`
+- Recalcular `liquidas` localmente subtraindo a soma das deduções customizadas por mês.
+- Botão `+ Incluir linha` no header do card.
+- Renderizar dinamicamente as linhas customizadas entre "Inadimplência" e "Receita Líquida".
+- Helpers `addDeducao`, `removeDeducao(id)`, `setDeducaoLabel(id, label)`, `setDeducaoValor(id, mesIdx, valor)` atualizando o estado imutavelmente.
 
-### O que NÃO muda
+### 6. Persistência
+`useAppState` (store em localStorage) já serializa o `AppState` inteiro. Como `deducoes` é parte do `Revenue`, é salvo/carregado/exportado automaticamente, junto com cenários salvos via `useScenarios`.
 
-- `calculations.ts`, `forecast.ts`, `valuation.ts`, `strategic.ts`, `prescriptive.ts` — intocados.
-- Termômetro de Valor existente continua igual (mostra o ano-base).
-- Nenhum input novo de usuário; o card consome o que já está no `state`.
+## Fora de escopo
+- Suporte a `%` (apenas R$ por mês, conforme decidido).
+- Validação tributária por tipo de dedução (ex: ICMS de devolução). O usuário é responsável pelo significado contábil do que digita.
+- Alteração nos outros lugares que consomem receita (Cashflow, Valuation): já consomem a Receita Líquida final via `buildDRE`, então a propagação é automática.
+
+## Verificação após implementar
+1. Adicionar uma linha "Devoluções" com R$ 500/mês: KPI "Receita Líquida Anual" cai R$ 6.000.
+2. Abrir a DRE: aparece linha "Outras deduções de receita" com −R$ 6.000 e os impostos sobre venda diminuem proporcionalmente.
+3. Salvar cenário, recarregar a página, restaurar cenário: a linha customizada continua lá com rótulo e valores.
+4. Remover a linha: DRE volta a esconder a linha "Outras deduções" e KPIs voltam ao valor original.
