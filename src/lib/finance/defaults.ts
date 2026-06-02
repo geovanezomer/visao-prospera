@@ -191,6 +191,7 @@ export function migrateState(s: AppState): AppState {
     tax.era = legacyEra === "2033" ? "pleno" : legacyEra === "atual" ? "atual" : "transicao";
   }
   const revenue = { ...DEFAULT_STATE.revenue, ...(s.revenue ?? {}) };
+  if (!Array.isArray(revenue.deducoes)) revenue.deducoes = [];
   // guided era boolean em versões antigas — migra para o objeto.
   const rawGuided: unknown = (s as { guided?: unknown }).guided;
   const guided =
