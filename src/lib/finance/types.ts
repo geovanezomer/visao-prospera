@@ -7,6 +7,12 @@ export type SimplesAnexo = "I" | "II" | "III" | "IV" | "V";
 export type CostCategory = "custo_vendas" | "fixo" | "variavel" | "financeiro";
 export type CostSubcategory = string;
 
+export interface RevenueDeducao {
+  id: string;
+  label: string;
+  valores: Months;
+}
+
 export interface Revenue {
   bruta: Months;
   inadimplencia: Months; // %
@@ -17,6 +23,9 @@ export interface Revenue {
   inadimplenciaComoPDD?: boolean;
   /** Reversão/recuperação de PDD mensal (R$). Reduz a PDD líquida do mês (CPC 47). */
   pddReversaoMensal?: number;
+  /** Linhas livres de deduções (devoluções, perdas, furtos, descontos comerciais, abatimentos...).
+   *  Subtraídas da Receita Bruta antes da Receita Líquida e da base de impostos sobre venda. */
+  deducoes?: RevenueDeducao[];
 }
 
 export interface CostLine {
