@@ -427,7 +427,7 @@ function MeterBar({ label, subLabel, value, pct, color }: { label: string; subLa
 // =================================================================
 // Spread forecast (ROIC − WACC) — projeção 5 anos
 // =================================================================
-function SpreadForecastCard({ state }: { state: AppState }) {
+function SpreadForecastCard({ state, className = "" }: { state: AppState; className?: string }) {
   const result = useMemo(() => buildSpreadForecast(state, 5), [state]);
   const { years, waccConstant, degenerate, breakEvenYear } = result;
 
