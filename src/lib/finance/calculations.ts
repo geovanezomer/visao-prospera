@@ -448,8 +448,10 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   else taxPre = calcReal(state, zeros12());
   const impostosVendas = taxPre.monthlyVendas.slice();
 
-  // Receita Líquida = Bruta − Inadimplência (se não-PDD) − Impostos sobre Venda (CPC/IFRS 15)
-  const receitaLiquida = receitaBruta.map((r, i) => r - deducoesInadimplencia[i] - impostosVendas[i]);
+  const outrasDeducoes = outrasDeducoesMensal(state);
+
+  // Receita Líquida = Bruta − Inadimplência (se não-PDD) − Outras Deduções − Impostos sobre Venda (CPC/IFRS 15)
+  const receitaLiquida = receitaBruta.map((r, i) => r - deducoesInadimplencia[i] - outrasDeducoes[i] - impostosVendas[i]);
 
   const cpv = zeros12();
   const despOp = zeros12();
