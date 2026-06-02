@@ -89,36 +89,6 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
         </div>
       )}
 
-      {/* Gráfico de saldo */}
-      <div className="rounded-lg border border-border/60 bg-card/40 p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-semibold">Saldo de caixa projetado (12 meses)</h4>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Caixa mínimo:</span>
-            <div className="w-32">
-              <MoneyInput value={state.cashflow.caixaMinimo} onChange={setCaixaMin} />
-            </div>
-          </div>
-        </div>
-        <ResponsiveContainer width="100%" height={280}>
-          <AreaChart data={chart}>
-            <defs>
-              <linearGradient id="gSaldo" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#00E5A0" stopOpacity={0.5} />
-                <stop offset="100%" stopColor="#00E5A0" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-            <XAxis dataKey="mes" stroke="#9ca3af" fontSize={11} />
-            <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-            <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }} itemStyle={{ color: "var(--popover-foreground)" }} labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }} formatter={(v: number) => fmtBRL(v)} />
-            <ReferenceLine y={state.cashflow.caixaMinimo} stroke="#F5B85B" strokeDasharray="4 4" label={{ value: "mínimo", fill: "#F5B85B", fontSize: 10, position: "right" }} />
-            <ReferenceLine y={0} stroke="#FF6B6B" strokeDasharray="4 4" />
-            <Area type="monotone" dataKey="saldo" stroke="#00E5A0" strokeWidth={2} fill="url(#gSaldo)" />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
       {/* Tabela detalhada */}
       <div className="rounded-lg border border-border/60 bg-card/40">
         <div className="border-b border-border/60 p-4">
@@ -191,6 +161,37 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
           Modelo simplificado: ignora variações de estoque e ajustes de capital de giro contábil mais finos. Para diagnóstico operacional é suficiente.
         </div>
       </div>
+
+      {/* Gráfico de saldo */}
+      <div className="rounded-lg border border-border/60 bg-card/40 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h4 className="text-sm font-semibold">Saldo de caixa projetado (12 meses)</h4>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">Caixa mínimo:</span>
+            <div className="w-32">
+              <MoneyInput value={state.cashflow.caixaMinimo} onChange={setCaixaMin} />
+            </div>
+          </div>
+        </div>
+        <ResponsiveContainer width="100%" height={280}>
+          <AreaChart data={chart}>
+            <defs>
+              <linearGradient id="gSaldo" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#00E5A0" stopOpacity={0.5} />
+                <stop offset="100%" stopColor="#00E5A0" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+            <XAxis dataKey="mes" stroke="#9ca3af" fontSize={11} />
+            <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+            <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }} itemStyle={{ color: "var(--popover-foreground)" }} labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }} formatter={(v: number) => fmtBRL(v)} />
+            <ReferenceLine y={state.cashflow.caixaMinimo} stroke="#F5B85B" strokeDasharray="4 4" label={{ value: "mínimo", fill: "#F5B85B", fontSize: 10, position: "right" }} />
+            <ReferenceLine y={0} stroke="#FF6B6B" strokeDasharray="4 4" />
+            <Area type="monotone" dataKey="saldo" stroke="#00E5A0" strokeWidth={2} fill="url(#gSaldo)" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
     </div>
   );
 }
