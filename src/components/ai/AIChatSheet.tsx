@@ -20,6 +20,7 @@ import { buildSystemPrompt } from "@/services/ai/systemPrompt";
 import { runTool } from "@/services/ai/tools";
 import { processFile, buildPdfContext, buildVisionMessageContent, confidenceLabel, MAX_FILES_PER_MSG, type ChatAttachment } from "@/services/ai/attachments";
 import type { AppState } from "@/lib/finance/types";
+import type { SimulatorParams } from "@/lib/finance/simulator";
 import { toast } from "sonner";
 
 const ReactMarkdown = lazy(() => import("react-markdown"));
@@ -30,6 +31,7 @@ interface Props {
   state: AppState;
   simulatedState?: AppState;
   simActive?: number;
+  simParams?: SimulatorParams;
 }
 
 const SUGGESTIONS = [
