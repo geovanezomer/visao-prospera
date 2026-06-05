@@ -175,7 +175,7 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
         const out = await chatWithTools(
           config,
           llm,
-          (name, args) => runTool(name, args, state, simHasChanges ? simulatedState : undefined),
+          (name, args) => runTool(name, args, state, simHasChanges ? simulatedState : undefined, simParams),
           {
             signal: ac.signal,
             onProgress: (e) => {
