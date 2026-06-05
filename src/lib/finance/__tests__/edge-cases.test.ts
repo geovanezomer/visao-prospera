@@ -56,12 +56,17 @@ describe("Edge — contrato de custo fixo (fixedCostBase)", () => {
     expect(fixedCostBase(vals)).toBe(250);
   });
 
-  it("Variação mensal arbitrária em custo fixo → usa primeiro (contrato: fixo = escalar)", () => {
-    // Documenta o comportamento intencional: se o cost.fixed === true, o sistema
-    // colapsa para um único valor. Variação "intencional" em fixo é estado
-    // inconsistente — o usuário deve marcar c.fixed = false para preservar.
+  it("Variação mensal em custo fixo → adota a edição mais recente (último valor distinto)", () => {
+    // Contrato revisto: se há variação num custo marcado como fixo, o sistema
+    // assume que a alteração mais recente reflete a intenção do usuário.
+    // Generaliza o heurístico antigo que só capturava edição no mês 12.
     const vals = [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210];
-    expect(fixedCostBase(vals)).toBe(100);
+    expect(fixedCostBase(vals)).toBe(210);
+  });
+
+  it("Edição em mês intermediário (ex.: mês 6) é respeitada", () => {
+    const vals = [100, 100, 100, 100, 100, 100, 250, 250, 250, 250, 250, 250];
+    expect(fixedCostBase(vals)).toBe(250);
   });
 
   it("effectiveMonthValues respeita fixed e replica o escalar nos 12 meses", () => {
