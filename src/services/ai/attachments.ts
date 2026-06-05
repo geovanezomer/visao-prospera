@@ -54,14 +54,9 @@ function fileToDataUrl(file: File): Promise<string> {
 
 async function extractPdfText(file: File): Promise<string> {
   // Lazy import — pesado.
+  // @ts-expect-error - sem tipos para subpath
   const pdfjs: any = await import("pdfjs-dist/build/pdf.mjs");
-  // Worker via CDN para evitar configurar bundling
-  try {
-    const workerSrc = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
-    pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
-  } catch {
-    pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@6.0.227/build/pdf.worker.min.mjs`;
-  }
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@6.0.227/build/pdf.worker.min.mjs`;
   const buf = await file.arrayBuffer();
   const doc = await pdfjs.getDocument({ data: buf }).promise;
   const maxPages = Math.min(doc.numPages, 50);
