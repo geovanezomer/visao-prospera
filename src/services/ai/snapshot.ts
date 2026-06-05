@@ -41,7 +41,8 @@ export function buildSnapshot(state: AppState): string {
   out.push(`- **Caixa mínimo configurado:** ${brl(state.cashflow.caixaMinimo)}`);
 
   // ===== 2. DRE =====
-  const { dre } = tryRun(() => buildDRE(state, state.tax.regime), { dre: null as any });
+  const built = tryRun(() => buildDRE(state, state.tax.regime), null as any);
+  const dre = built?.dre ?? null;
   if (dre) {
     out.push(`\n## DRE Anual (R$)`);
     out.push(table(
