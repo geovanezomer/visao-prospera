@@ -68,9 +68,23 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
     critical: criticalByMes[m] ?? null,
   }));
 
-  
+  const burnRunway = computeBurnRunway({
+    fluxoOperacional: cf.fluxoOperacional,
+    caixaAtual: state.capital.disponibilidades,
+    recebiveis: state.capital.contasReceber || 0,
+  });
+  const caixaAtual = state.capital.disponibilidades;
+  const recebiveis = state.capital.contasReceber || 0;
+  const runwayLabel = !burnRunway.queimando
+    ? "∞ (operação gera caixa)"
+    : burnRunway.runwayMeses >= 24
+    ? "24+ meses"
+    : `${burnRunway.runwayMeses.toFixed(1)} meses`;
+  const runwayTone: "pos" | "neg" | "warn" =
+    !burnRunway.queimando ? "pos" : burnRunway.runwayMeses >= 12 ? "pos" : burnRunway.runwayMeses >= 6 ? "warn" : "neg";
 
   // Top 3 meses mais críticos: menores saldos do ano (independente de bater o mínimo).
+
   const top3Criticos = MESES
     .map((mes, i) => ({
       mes,
