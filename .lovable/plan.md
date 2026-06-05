@@ -1,108 +1,167 @@
 ## Objetivo
 
-Tirar do código-fonte todas as alíquotas e tabelas tributárias hoje hardcoded e permitir edição pelo usuário, sem perder os valores oficiais como padrão. Acesso via ícone de engrenagem na barra superior, ao lado do botão Reset.
+Chat lateral embarcado (fechado por padrão) que conversa sobre **TUDO** que o sistema calcula, com **persona especialista** (CFO + Contador + Economista) e suporte a dois provedores: **LM Studio local** e **OpenAI API**.
 
-## Constantes que ficarão editáveis
+---
 
-**Federais sobre lucro**
-- IRPJ — alíquota base (hoje 15%)
-- Adicional IRPJ — alíquota (hoje 10%) e gatilho trimestral (hoje R$ 60.000)
-- CSLL — alíquota (hoje 9%)
+## 1. Provedores selecionáveis
 
-**Federais sobre venda — sistema atual**
-- PIS cumulativo (Presumido) — hoje 0,65%
-- COFINS cumulativo (Presumido) — hoje 3,0%
-- PIS não-cumulativo (Real) — hoje 1,65%
-- COFINS não-cumulativo (Real) — hoje 7,6%
+`src/services/ai/providers.ts`
 
-**Simples Nacional**
-- Limite anual de enquadramento (hoje R$ 4.800.000)
-- Fator R — % mínimo de folha/RBT12 (hoje 28%)
-- Tabelas dos Anexos I, II, III, IV, V — 6 faixas cada, com `teto`, `alíquota` e `parcela a deduzir`. Total: 90 valores editáveis, organizados por anexo em tabela compacta.
-
-**Lucro Presumido — bases de presunção**
-- Indústria: IRPJ 8% / CSLL 12%
-- Comércio: IRPJ 8% / CSLL 12%
-- Serviços: IRPJ 32% / CSLL 32%
-
-**Reforma tributária (transição)**
-- Multiplicador de IBS na fase de transição (hoje 0,5)
-- Multiplicador de ICMS/ISS na fase de transição (hoje 0,5)
-- `cbsAliquota` e `ibsAliquotaRef` já são editáveis em TaxConfig — serão movidos para o painel para concentrar tudo no mesmo lugar.
-
-## Como o usuário interage
-
-1. Botão de engrenagem (`Settings`) no header, à esquerda do Reset.
-2. Abre um `Dialog` largo com 4 abas:
-   - **Federais** — IRPJ, Adicional, CSLL, PIS, COFINS
-   - **Simples Nacional** — limite, Fator R, e seletor de anexo para editar a tabela de 6 faixas
-   - **Lucro Presumido** — 3 linhas (indústria/comércio/serviços) × 2 colunas (IRPJ/CSLL)
-   - **Reforma** — alíquotas plenas CBS/IBS e multiplicadores da transição
-3. Cada campo numérico tem o valor padrão oficial mostrado como placeholder/tooltip; campos vazios = usa padrão.
-4. Botão "Restaurar padrões oficiais" por aba e um geral no rodapé.
-5. As mudanças são salvas em `state.tax` (cenário atual) — entram automaticamente em Save Cenário e Comparar Cenários, permitindo simular "mesma empresa, reforma alternativa".
-
-## Detalhes técnicos
-
-**Tipos** (`src/lib/finance/types.ts`)
-Estender `TaxConfig` com um sub-objeto opcional `rates`:
 ```ts
-ratesOverride?: {
-  irpj?: number; irpjAdicional?: number; irpjAdicionalGatilhoTri?: number;
-  csll?: number;
-  pisCum?: number; cofinsCum?: number;
-  pisNaoCum?: number; cofinsNaoCum?: number;
-  simplesLimite?: number; fatorRMinimo?: number;
-  simplesTables?: Partial<Record<SimplesAnexo, [number,number,number][]>>;
-  presumidoBases?: Partial<Record<BusinessType, { irpj: number; csll: number }>>;
-  reformaTransicaoIbsMult?: number;
-  reformaTransicaoIcmsIssMult?: number;
-};
+type Provider = "lmstudio" | "openai";
+interface AIConfig {
+  provider: Provider;
+  baseUrl: string;        // lmstudio: http://127.0.0.1:1234/v1 | openai: https://api.openai.com/v1
+  apiKey: string;         // vazio em lmstudio
+  model: string;
+  temperature: number;
+  includeSnapshot: boolean;
+}
 ```
-Tudo opcional — `undefined` = usar padrão oficial. Garante retrocompatibilidade total com cenários salvos.
 
-**Defaults centralizados** (`src/lib/finance/taxDefaults.ts` — novo)
-Move `SIMPLES_TABLES`, `presumidoBases`, e cria constantes nomeadas (`IRPJ_PCT`, `CSLL_PCT`, `PIS_CUM_PCT`, etc.) — todas exportadas. Vira a "fonte da verdade" dos valores oficiais.
+Persistido em `localStorage` (`gz-finance-ai-config`). Chave OpenAI também em localStorage (uso local Docker, conforme aceito).
 
-**Resolvers** (`src/lib/finance/taxDefaults.ts`)
-Funções `getIrpj(state)`, `getSimplesTable(state, anexo)`, `getPresumidoBases(state, business)` etc., que retornam `ratesOverride?.x ?? DEFAULT`. Sem `??` espalhado pelo `calculations.ts`.
+Ambos provedores usam a **mesma API OpenAI-compatible** (`/chat/completions` com SSE). Só muda `baseUrl` + header `Authorization`.
 
-**Refactor cirúrgico** em `calculations.ts`
-Trocar cada constante mágica pelo resolver correspondente. Mudanças localizadas em `calcSimples`, `calcPresumido`, `calcReal`, `presumidoBases`, `resolveSimplesAnexo`, `simplesExcedeLimite`, `getReformaRates`. Nenhuma mudança de assinatura pública.
+---
 
-**UI** (`src/components/sim/TaxSettingsDialog.tsx` — novo)
-Componente único com `Tabs` shadcn. Editor de tabela do Simples: dropdown de anexo + grid 6×3 com inputs numéricos. Botão "restaurar este anexo" reseta `simplesTables[anexo]` para `undefined`.
+## 2. System Prompt — Persona Especialista + Contexto do Sistema
 
-**Header** (`src/routes/index.tsx`)
-Adicionar `<TaxSettingsDialog />` antes do `ConfirmDialog` de Reset. Ícone `Settings` do lucide.
+```
+Você é um especialista sênior em finanças corporativas, atuando simultaneamente como:
+- CFO (Chief Financial Officer) com 20+ anos de experiência em empresas de médio porte
+- Contador (CRC ativo) com domínio de CPC, IFRS e legislação fiscal brasileira
+- Economista (CORECON) com foco em análise de investimentos e valuation
 
-**Migração** (`src/lib/finance/defaults.ts` → `migrateState`)
-Nenhuma mudança necessária — `ratesOverride` é opcional, cenários antigos seguem usando padrões oficiais.
+SOBRE O SISTEMA QUE VOCÊ ESTÁ ANALISANDO:
+Este é o "Visão Próspera", uma plataforma de simulação financeira e valuation
+para PMEs brasileiras. Ele constrói, a partir das premissas do usuário:
+- DRE mensal do ano-base e DRE anual projetada (até N anos)
+- Fluxo de caixa mensal com identificação do pior mês e runway
+- Indicadores: EBITDA, margens, ROE, ROIC, liquidez, endividamento, DSCR, cobertura de juros
+- Valuation por DCF (WACC, g, valor terminal) e múltiplos
+- Diagnóstico de saúde financeira com alertas de risco (default, capital de giro, custos fixos)
+- Análise de sensibilidade (tornado) e simulação Monte Carlo
+- Recomendações prescritivas para o consultor apresentar ao cliente
 
-## Testes
+Seu trabalho é ajudar o consultor a interpretar esses números em reuniões com clientes:
+explicar o porquê, apontar riscos, sugerir ações e quantificar impactos.
 
-Adicionar em `src/lib/finance/__tests__/`:
-- `tax-overrides.test.ts` — cobrindo:
-  - Cenário sem override gera mesmo resultado que hoje (regressão dos 39 testes existentes não pode quebrar).
-  - Override de IRPJ para 20% aumenta `tax.annualLucro` no Real proporcionalmente.
-  - Override de tabela do Simples Anexo III altera DAS no `calcSimples`.
-  - Override de `simplesLimite` para R$ 6M faz desaparecer o alerta de desenquadramento que apareceria com 5M.
-  - Override de `reformaTransicaoIbsMult` para 1,0 zera o desconto da transição.
+REGRAS INVIOLÁVEIS:
+1. Responda SOMENTE com base nos números do <SNAPSHOT> abaixo. Nunca invente valores.
+2. Se a informação não estiver no snapshot, diga claramente "não disponível nos dados".
+3. Sempre cite o número exato (R$ ou %) e a fonte (ex: "DRE Ano 2", "Indicadores", "Fluxo Mês 7").
+4. Tom: direto, executivo, em português brasileiro. Sem jargão desnecessário.
+5. Quando sugerir ações, quantifique o impacto esperado (ex: "cortar R$ Xk libera Y meses de caixa").
+6. Use markdown para tabelas e listas quando aumentar clareza.
 
-## Fora de escopo
+<SNAPSHOT>
+{snapshot markdown completo gerado dinamicamente}
+</SNAPSHOT>
+```
 
-- Persistir padrões em um lugar global (rejeitado na pergunta — fica por cenário).
-- Versionamento histórico das alíquotas (ex.: "alíquotas de 2025 vs 2026"). Pode virar uma feature futura usando o sistema de cenários.
-- Validação fiscal (ex.: avisar se faixa nova quebra monotonicidade da tabela). Mostro apenas o input cru — confiança no usuário.
+---
 
-## Arquivos afetados
+## 3. Snapshot COMPLETO dos dados
 
-Novos:
-- `src/lib/finance/taxDefaults.ts`
-- `src/components/sim/TaxSettingsDialog.tsx`
-- `src/lib/finance/__tests__/tax-overrides.test.ts`
+`src/services/ai/snapshot.ts` — serializa em markdown estruturado **tudo** que o sistema calcula:
 
-Editados:
-- `src/lib/finance/types.ts` (+ `ratesOverride` em `TaxConfig`)
-- `src/lib/finance/calculations.ts` (substituir constantes por resolvers)
-- `src/routes/index.tsx` (botão de engrenagem no header)
+- **Empresa & premissas**: nome, setor, regime tributário, ano-base, horizonte, WACC, g, alíquotas
+- **DRE completa**: 12 meses ano-base + N anos projeção (`buildDRE`, `forecastDRE`)
+- **Receita**: por produto/serviço, sazonalidade, crescimento
+- **Custos**: CPV (folha + não-folha), fixos, variáveis, capex
+- **Fluxo de caixa**: mensal completo + pior mês + runway (`buildCashFlow`)
+- **Indicadores**: todos de `calcIndicators`
+- **Valuation**: VPL, TIR, valor terminal, múltiplos (`valuation`)
+- **Saúde**: score + riscos (`health`)
+- **Diagnóstico**: alertas e gargalos (`diagnose`)
+- **Monte Carlo**: percentis (se calculado)
+- **Sensibilidade**: tornado
+- **Prescritivo**: recomendações
+- **Estratégico**: cenários
+
+Tudo com seções markdown claras, números formatados em R$ e %. Auto-resume seções secundárias se exceder o limite do modelo, mantendo DRE + indicadores + valuation sempre completos.
+
+---
+
+## 4. UI — Barra lateral fechada por padrão
+
+- `src/components/ai/AIFab.tsx` — botão flutuante (canto inferior direito), ícone de chat
+- `src/components/ai/AIChatSheet.tsx` — `Sheet` shadcn lado direito (~440px):
+  - Header: provedor ativo + ⚙️ config + 🗑️ limpar histórico
+  - Mensagens renderizadas com `react-markdown`
+  - Indicador "pensando…" durante stream
+  - Input com Enter para enviar, Shift+Enter quebra linha
+  - Sugestões iniciais ("Qual o VPL e o que ele significa?", "Por que o caixa fica negativo no mês X?", "O DSCR é saudável?", "O que cortar para melhorar o EBITDA?")
+- `src/components/ai/AIConfigDialog.tsx`:
+  - Select de provedor (LM Studio / OpenAI)
+  - Base URL (auto-preenchida, editável)
+  - API Key (campo seguro, só relevante em OpenAI)
+  - Select de modelo (lista via `GET /v1/models`)
+  - Slider temperatura (default 0.3 para precisão)
+  - Toggle "incluir snapshot de dados" (default ON)
+  - Botão "Testar conexão"
+
+Montado no layout raiz (ou em `routes/index.tsx`) para ficar disponível em todas as abas do simulador.
+
+Histórico em `localStorage` por empresa: `gz-finance-ai-chat-{companyName}` (últimas 50 msgs).
+
+---
+
+## 5. Cliente unificado com streaming
+
+`src/services/ai/client.ts`
+
+```ts
+async function* streamChat(config, messages) {
+  const res = await fetch(`${config.baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(config.apiKey && { Authorization: `Bearer ${config.apiKey}` }),
+    },
+    body: JSON.stringify({
+      model: config.model, messages,
+      temperature: config.temperature, stream: true,
+    }),
+  });
+  // parse SSE → yield delta.content
+}
+```
+
+Idêntico para LM Studio e OpenAI (mesma API).
+
+---
+
+## Arquivos a criar
+
+- `src/services/ai/providers.ts`
+- `src/services/ai/client.ts`
+- `src/services/ai/snapshot.ts`
+- `src/services/ai/systemPrompt.ts` (persona + contexto do sistema)
+- `src/components/ai/AIFab.tsx`
+- `src/components/ai/AIChatSheet.tsx`
+- `src/components/ai/AIConfigDialog.tsx`
+
+## Arquivos a editar
+
+- Layout/rota raiz do simulador — montar `<AIFab />` + `<AIChatSheet />`
+- `package.json` — adicionar `react-markdown`
+
+## Não faz parte
+
+- Sem backend / sem server function (100% client-side, roda no Docker do usuário)
+- Sem persistência em banco
+- Sem tool-calling (read-only: LLM lê snapshot e responde)
+
+---
+
+## Garantias
+
+1. **Persona especialista** (CFO + Contador + Economista) + contexto explícito do Visão Próspera embutidos no system prompt.
+2. Snapshot inclui **todos os outputs** dos módulos `finance/*`.
+3. Prompt obriga citar fonte exata e proíbe inventar números.
+4. Toggle "incluir snapshot" ligado por padrão; temperatura default baixa (0.3).
+5. Botão "Testar conexão" valida endpoint + modelo antes do uso.
+6. Sugestões iniciais mostram o alcance das perguntas possíveis.
