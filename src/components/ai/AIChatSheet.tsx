@@ -260,8 +260,8 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text).then(
-      () => toast({ description: "Copiado." }),
-      () => toast({ description: "Falha ao copiar.", variant: "destructive" }),
+      () => toast.success("Copiado."),
+      () => toast.error("Falha ao copiar."),
     );
   };
 
