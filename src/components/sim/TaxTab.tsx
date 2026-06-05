@@ -10,7 +10,7 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
   const rbAnual = sum(state.revenue.bruta);
   const set = (patch: Partial<typeof state.tax>) => update((s) => ({ ...s, tax: { ...s.tax, ...patch } }));
   const regimes = compareRegimes(state);
-  const aliqEf = simplesAliquotaEfetiva(rbAnual, state.tax.simplesAnexo);
+  const aliqEf = simplesAliquotaEfetiva(rbAnual, state.tax.simplesAnexo, state.tax);
 
   // net profits per regime
   const llBy: Record<TaxRegime, number> = {

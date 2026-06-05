@@ -19,6 +19,7 @@ import { SimulatorTab } from "@/components/sim/SimulatorTab";
 import { ValuationTab } from "@/components/sim/ValuationTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
 import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
+import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
 import { GuidedWizard } from "@/components/sim/guided/GuidedWizard";
 import { AppState, BusinessType, TabKey } from "@/lib/finance/types";
 import { applySimulator, countActiveLevers, DEFAULT_SIM, SimulatorParams } from "@/lib/finance/simulator";
@@ -129,6 +130,7 @@ function SimulaPro() {
               </Button>
             )}
             <Button size="sm" variant="outline" onClick={exportReport}><Download className="mr-2 h-4 w-4" /> Exportar</Button>
+            <TaxSettingsDialog state={state} update={update} />
             <ConfirmDialog
               title="Restaurar dados de exemplo?"
               description="Todas as alterações feitas no plano atual serão substituídas pelos valores iniciais. Cenários salvos não são afetados."

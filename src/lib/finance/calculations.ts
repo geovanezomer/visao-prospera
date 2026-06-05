@@ -1,4 +1,11 @@
 import { AppState, SimplesAnexo, TaxRegime, BusinessType, CostLine, DEFAULT_ENCARGOS_PCT, TaxEra, TaxConfig } from "./types";
+import {
+  getIrpjPct, getIrpjAdicionalPct, getIrpjAdicionalGatilhoTri, getCsllPct,
+  getPisCumPct, getCofinsCumPct, getPisNaoCumPct, getCofinsNaoCumPct,
+  getSimplesLimite, getFatorRMinimoPct,
+  getSimplesTable, getPresumidoBases,
+  getReformaTransicaoIbsMult, getReformaTransicaoIcmsIssMult,
+} from "./taxDefaults";
 import { sum, zeros12, fill12 } from "./format";
 
 /** Soma mensal das linhas livres de dedução da Receita (devoluções, perdas, descontos, etc.). */
@@ -37,32 +44,25 @@ export interface ReformaRates {
 export function getReformaRates(era: TaxEra | undefined, cfg: TaxConfig): ReformaRates {
   const cbsFull = cfg.cbsAliquota ?? 8.8;
   const ibsFull = cfg.ibsAliquotaRef ?? 17.7;
+  const ibsMult = getReformaTransicaoIbsMult(cfg);
+  const icmsIssMult = getReformaTransicaoIcmsIssMult(cfg);
   switch (era ?? "atual") {
     case "atual":
       return { cbsPct: 0, ibsPct: 0, pisCofinsMult: 1, icmsIssMult: 1 };
     // Transição 2027–2032 (ponto médio): CBS pleno, PIS/COFINS extintos,
-    // IBS em 50% da plena, ICMS/ISS reduzidos a 50%.
+    // IBS na fração configurada (default 50%), ICMS/ISS na fração configurada (default 50%).
     case "transicao":
-      return { cbsPct: cbsFull, ibsPct: ibsFull * 0.5, pisCofinsMult: 0, icmsIssMult: 0.5 };
+      return { cbsPct: cbsFull, ibsPct: ibsFull * ibsMult, pisCofinsMult: 0, icmsIssMult };
     case "pleno":
       return { cbsPct: cbsFull, ibsPct: ibsFull, pisCofinsMult: 0, icmsIssMult: 0 };
   }
 }
 
 // =====================================================================
-// SIMPLES NACIONAL 2024
+// SIMPLES NACIONAL — tabelas vivem em taxDefaults.ts (editáveis via painel)
 // =====================================================================
-type Faixa = [number, number, number];
-const SIMPLES_TABLES: Record<SimplesAnexo, Faixa[]> = {
-  I:   [[180000,4.0,0],[360000,7.3,5940],[720000,9.5,13860],[1800000,10.7,22500],[3600000,14.3,87300],[4800000,19.0,378000]],
-  II:  [[180000,4.5,0],[360000,7.8,5940],[720000,10.0,13860],[1800000,11.2,22500],[3600000,14.7,85500],[4800000,30.0,720000]],
-  III: [[180000,6.0,0],[360000,11.2,9360],[720000,13.5,17640],[1800000,16.0,35640],[3600000,21.0,125640],[4800000,33.0,648000]],
-  IV:  [[180000,4.5,0],[360000,9.0,8100],[720000,10.2,12420],[1800000,14.0,39780],[3600000,22.0,183780],[4800000,33.0,828000]],
-  V:   [[180000,15.5,0],[360000,18.0,4500],[720000,19.5,9900],[1800000,20.5,17100],[3600000,23.0,62100],[4800000,30.5,540000]],
-};
-
-export function simplesAliquotaEfetiva(rbt12: number, anexo: SimplesAnexo): number {
-  const table = SIMPLES_TABLES[anexo];
+export function simplesAliquotaEfetiva(rbt12: number, anexo: SimplesAnexo, tax: TaxConfig): number {
+  const table = getSimplesTable(tax, anexo);
   for (const [teto, aliq, deduz] of table) {
     if (rbt12 <= teto) {
       if (rbt12 === 0) return 0;
@@ -72,10 +72,9 @@ export function simplesAliquotaEfetiva(rbt12: number, anexo: SimplesAnexo): numb
   return 33;
 }
 
+/** @deprecated Use getPresumidoBases(tax, business) de taxDefaults.ts. Mantido para retro-compat. */
 export function presumidoBases(business: BusinessType): { irpj: number; csll: number } {
-  if (business === "industria") return { irpj: 8, csll: 12 };
-  if (business === "comercio") return { irpj: 8, csll: 12 };
-  return { irpj: 32, csll: 32 };
+  return getPresumidoBases({ ratesOverride: undefined } as TaxConfig, business);
 }
 
 // =====================================================================
@@ -114,7 +113,8 @@ function folhaAnual(state: AppState): number {
     .reduce((acc, c) => acc + sum(effectiveMonthValues(c)), 0);
 }
 
-/** Limite anual de receita bruta para permanência no Simples Nacional (LC 123/06). */
+/** Limite anual de receita bruta para permanência no Simples Nacional (LC 123/06).
+ *  @deprecated Use getSimplesLimite(tax) de taxDefaults.ts. */
 export const LIMITE_SIMPLES = 4_800_000;
 
 export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
@@ -123,12 +123,13 @@ export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
   const rbt12 = sum(state.revenue.bruta);
   if (rbt12 <= 0) return anexo;
   const fatorR = folhaAnual(state) / rbt12;
-  return fatorR >= 0.28 ? "III" : "V";
+  const minPct = getFatorRMinimoPct(state.tax);
+  return fatorR >= (minPct / 100) ? "III" : "V";
 }
 
 /** Retorna true se RBT12 ultrapassa o limite do Simples Nacional (desenquadramento obrigatório). */
 export function simplesExcedeLimite(state: AppState): boolean {
-  return sum(state.revenue.bruta) > LIMITE_SIMPLES;
+  return sum(state.revenue.bruta) > getSimplesLimite(state.tax);
 }
 
 // =====================================================================
@@ -148,15 +149,16 @@ export interface MonthlyTax {
   detail: Record<string, number>;
 }
 
-/** Adicional IRPJ trimestral: 10% sobre lucro trimestral acima de R$60k (R$20k × 3 meses). */
-function adicionalIrpjTrimestral(baseMensal: number[]): number[] {
+/** Adicional IRPJ trimestral: % sobre lucro trimestral acima do gatilho (R$20k × 3 meses por padrão). */
+function adicionalIrpjTrimestral(baseMensal: number[], tax: TaxConfig): number[] {
   const out = zeros12();
+  const aliq = getIrpjAdicionalPct(tax) / 100;
+  const gatilho = getIrpjAdicionalGatilhoTri(tax);
   for (let t = 0; t < 4; t++) {
     const m0 = t * 3;
     const baseTri = (baseMensal[m0] || 0) + (baseMensal[m0 + 1] || 0) + (baseMensal[m0 + 2] || 0);
-    const excedente = Math.max(0, baseTri - 60000);
-    const adic = excedente * 0.10;
-    // distribui proporcionalmente entre os meses do trimestre
+    const excedente = Math.max(0, baseTri - gatilho);
+    const adic = excedente * aliq;
     const totalBase = baseTri > 0 ? baseTri : 1;
     for (let k = 0; k < 3; k++) {
       const i = m0 + k;
@@ -167,19 +169,20 @@ function adicionalIrpjTrimestral(baseMensal: number[]): number[] {
 }
 
 export function calcSimples(state: AppState): MonthlyTax {
-  const { revenue } = state;
+  const { revenue, tax } = state;
   const trib = receitaTributavel(state);
   const anexo = resolveSimplesAnexo(state);
   const rbAnual = sum(trib);
-  const aliq = simplesAliquotaEfetiva(rbAnual, anexo) / 100;
+  const aliq = simplesAliquotaEfetiva(rbAnual, anexo, tax) / 100;
   const monthly = trib.map((r) => r * aliq);
   const annual = sum(monthly);
   const rbBrutaAnual = sum(revenue.bruta);
-  const excedeu = rbBrutaAnual > LIMITE_SIMPLES;
+  const limite = getSimplesLimite(tax);
+  const excedeu = rbBrutaAnual > limite;
   const detail: Record<string, number> = { [`DAS Simples (Anexo ${anexo})`]: annual };
   if (excedeu) {
-    // Sinaliza desenquadramento: ao exceder R$ 4,8M a empresa deve migrar para Lucro Presumido/Real.
-    detail["⚠ Excedeu limite Simples (R$ 4,8M) — desenquadramento obrigatório"] = 0;
+    const limMi = (limite / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+    detail[`⚠ Excedeu limite Simples (R$ ${limMi}M) — desenquadramento obrigatório`] = 0;
   }
   return {
     monthly,
@@ -196,7 +199,7 @@ export function calcSimples(state: AppState): MonthlyTax {
 export function calcPresumido(state: AppState): MonthlyTax {
   const { revenue, tax, businessType } = state;
   const trib = receitaTributavel(state);
-  const bases = presumidoBases(businessType);
+  const bases = getPresumidoBases(tax, businessType);
   const baseIRPJ = (tax.presumidoBaseIRPJ || bases.irpj) / 100;
   const baseCSLL = (tax.presumidoBaseCSLL || bases.csll) / 100;
   const iss = tax.issIcms / 100;
@@ -205,6 +208,10 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
   const reforma = getReformaRates(tax.era, tax);
   const usaReforma = reforma.cbsPct > 0 || reforma.ibsPct > 0 || reforma.pisCofinsMult < 1 || reforma.icmsIssMult < 1;
+  const irpjAliq = getIrpjPct(tax) / 100;
+  const csllAliq = getCsllPct(tax) / 100;
+  const pisAliq = getPisCumPct(tax) / 100;
+  const cofinsAliq = getCofinsCumPct(tax) / 100;
 
   // CPV mensal — base de crédito (ICMS antigo e também CBS/IBS amplo na reforma).
   // EXCLUI linhas marcadas semCredito (ICMS-ST etc.). Pós-2033 ICMS-ST deixa de existir,
@@ -222,18 +229,18 @@ export function calcPresumido(state: AppState): MonthlyTax {
 
   const baseIRPJMensal = trib.map((r) => r * baseIRPJ);
   const baseCSLLMensal = trib.map((r) => r * baseCSLL);
-  const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal);
+  const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
   const monthlyVendas = zeros12();
   const monthlyLucro = zeros12();
   const monthly = trib.map((r, i) => {
-    const irpj = baseIRPJMensal[i] * 0.15;
+    const irpj = baseIRPJMensal[i] * irpjAliq;
     const adicional = adicionalMensal[i];
-    const csll = baseCSLLMensal[i] * 0.09;
-    const pis = r * 0.0065 * reforma.pisCofinsMult;
-    const cofins = r * 0.03 * reforma.pisCofinsMult;
+    const csll = baseCSLLMensal[i] * csllAliq;
+    const pis = r * pisAliq * reforma.pisCofinsMult;
+    const cofins = r * cofinsAliq * reforma.pisCofinsMult;
     const issBase = Math.max(0, r - issDed);
     const debito = issBase * iss;
     const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
@@ -318,11 +325,16 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   }
 
   const baseIRPJMensal = baseLairMonthly.map((l) => Math.max(0, l));
-  const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal);
+  const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
 
   // Auditoria: créditos de PIS/COFINS são anuais — ratear por mês
   const pisCreditoMensal = Math.max(0, (tax.pisCreditos || 0) / 12);
   const cofinsCreditoMensal = Math.max(0, (tax.cofinsCreditos || 0) / 12);
+  // Alíquotas dinâmicas
+  const irpjAliq = getIrpjPct(tax) / 100;
+  const csllAliq = getCsllPct(tax) / 100;
+  const pisAliq = getPisNaoCumPct(tax) / 100;
+  const cofinsAliq = getCofinsNaoCumPct(tax) / 100;
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
@@ -330,11 +342,11 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const monthlyLucro = zeros12();
   const monthly = trib.map((r, i) => {
     const lair = baseIRPJMensal[i];
-    const irpj = lair * 0.15;
+    const irpj = lair * irpjAliq;
     const adicional = adicionalMensal[i];
-    const csll = lair * 0.09;
-    const pis = Math.max(0, r * 0.0165 - pisCreditoMensal) * reforma.pisCofinsMult;
-    const cofins = Math.max(0, r * 0.076 - cofinsCreditoMensal) * reforma.pisCofinsMult;
+    const csll = lair * csllAliq;
+    const pis = Math.max(0, r * pisAliq - pisCreditoMensal) * reforma.pisCofinsMult;
+    const cofins = Math.max(0, r * cofinsAliq - cofinsCreditoMensal) * reforma.pisCofinsMult;
     const issBase = Math.max(0, r - issDed);
     const debito = issBase * iss;
     const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;

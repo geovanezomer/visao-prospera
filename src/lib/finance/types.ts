@@ -164,6 +164,9 @@ export interface TaxConfig {
   cbsAliquota?: number;
   /** Alíquota plena de referência do IBS (estadual+municipal) em %. Default 17,7. */
   ibsAliquotaRef?: number;
+  /** Overrides de alíquotas/tabelas oficiais (painel "Parâmetros tributários").
+   *  Cada campo ausente = usa o padrão oficial em src/lib/finance/taxDefaults.ts. */
+  ratesOverride?: import("./taxDefaults").TaxRatesOverride;
 }
 
 export interface CashFlowConfig {
