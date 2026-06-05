@@ -1,67 +1,108 @@
-# Linhas de dedução customizadas na aba Receitas
-
 ## Objetivo
-Permitir que o usuário adicione, na tabela "Receita Mensal — 12 meses", quantas linhas de dedução quiser (devoluções, perdas, furtos, descontos comerciais, abatimentos, etc.). Cada linha tem um **rótulo livre** e **12 valores em R$**, é **persistida com o cenário** e **abatida antes da Receita Líquida** — tanto na aba Receitas quanto na DRE (entrando na composição que reduz a base de impostos sobre venda).
 
-## Comportamento na UI
+Tirar do código-fonte todas as alíquotas e tabelas tributárias hoje hardcoded e permitir edição pelo usuário, sem perder os valores oficiais como padrão. Acesso via ícone de engrenagem na barra superior, ao lado do botão Reset.
 
-Card "Receita Mensal — 12 meses":
-- Header ganha botão **`+ Incluir linha`** à direita do título.
-- Cada linha customizada renderiza:
-  - 1ª coluna: input de texto editável com o rótulo (placeholder "Ex: Devoluções")
-  - 12 colunas: `MoneyInput` em R$ (default 0)
-  - Coluna Total: soma anual em vermelho/negativo (tom `neg`)
-  - Botão **lixeira** discreto na ponta para remover a linha
-- Linha "Receita Líquida" continua sendo a última, agora calculada como:
-  `Líquida = Bruta × (1 − inad.) − Σ deduções customizadas`
+## Constantes que ficarão editáveis
 
-Card de KPI "Receita Líquida Anual" no topo passa a refletir a mesma fórmula. O `hint` que hoje diz *"Bruta − Inadimplência − Deduções"* finalmente bate com o cálculo.
+**Federais sobre lucro**
+- IRPJ — alíquota base (hoje 15%)
+- Adicional IRPJ — alíquota (hoje 10%) e gatilho trimestral (hoje R$ 60.000)
+- CSLL — alíquota (hoje 9%)
 
-## Impacto na DRE
+**Federais sobre venda — sistema atual**
+- PIS cumulativo (Presumido) — hoje 0,65%
+- COFINS cumulativo (Presumido) — hoje 3,0%
+- PIS não-cumulativo (Real) — hoje 1,65%
+- COFINS não-cumulativo (Real) — hoje 7,6%
 
-Na DRE, a soma anual das linhas customizadas vira uma nova linha **"Outras deduções de receita"** entre "Inadimplência / Deduções" e "DAS / Impostos sobre Vendas". A base de cálculo de impostos sobre venda passa a ser a receita já líquida dessas deduções (consistente com IFRS 15/CPC 47 — devoluções e descontos reduzem a base tributável).
+**Simples Nacional**
+- Limite anual de enquadramento (hoje R$ 4.800.000)
+- Fator R — % mínimo de folha/RBT12 (hoje 28%)
+- Tabelas dos Anexos I, II, III, IV, V — 6 faixas cada, com `teto`, `alíquota` e `parcela a deduzir`. Total: 90 valores editáveis, organizados por anexo em tabela compacta.
 
-## Mudanças técnicas
+**Lucro Presumido — bases de presunção**
+- Indústria: IRPJ 8% / CSLL 12%
+- Comércio: IRPJ 8% / CSLL 12%
+- Serviços: IRPJ 32% / CSLL 32%
 
-### 1. `src/lib/finance/types.ts`
-Adicionar ao `interface Revenue`:
+**Reforma tributária (transição)**
+- Multiplicador de IBS na fase de transição (hoje 0,5)
+- Multiplicador de ICMS/ISS na fase de transição (hoje 0,5)
+- `cbsAliquota` e `ibsAliquotaRef` já são editáveis em TaxConfig — serão movidos para o painel para concentrar tudo no mesmo lugar.
+
+## Como o usuário interage
+
+1. Botão de engrenagem (`Settings`) no header, à esquerda do Reset.
+2. Abre um `Dialog` largo com 4 abas:
+   - **Federais** — IRPJ, Adicional, CSLL, PIS, COFINS
+   - **Simples Nacional** — limite, Fator R, e seletor de anexo para editar a tabela de 6 faixas
+   - **Lucro Presumido** — 3 linhas (indústria/comércio/serviços) × 2 colunas (IRPJ/CSLL)
+   - **Reforma** — alíquotas plenas CBS/IBS e multiplicadores da transição
+3. Cada campo numérico tem o valor padrão oficial mostrado como placeholder/tooltip; campos vazios = usa padrão.
+4. Botão "Restaurar padrões oficiais" por aba e um geral no rodapé.
+5. As mudanças são salvas em `state.tax` (cenário atual) — entram automaticamente em Save Cenário e Comparar Cenários, permitindo simular "mesma empresa, reforma alternativa".
+
+## Detalhes técnicos
+
+**Tipos** (`src/lib/finance/types.ts`)
+Estender `TaxConfig` com um sub-objeto opcional `rates`:
 ```ts
-deducoes?: Array<{
-  id: string;       // uuid local
-  label: string;    // rótulo livre
-  valores: Months;  // 12 valores em R$
-}>;
+ratesOverride?: {
+  irpj?: number; irpjAdicional?: number; irpjAdicionalGatilhoTri?: number;
+  csll?: number;
+  pisCum?: number; cofinsCum?: number;
+  pisNaoCum?: number; cofinsNaoCum?: number;
+  simplesLimite?: number; fatorRMinimo?: number;
+  simplesTables?: Partial<Record<SimplesAnexo, [number,number,number][]>>;
+  presumidoBases?: Partial<Record<BusinessType, { irpj: number; csll: number }>>;
+  reformaTransicaoIbsMult?: number;
+  reformaTransicaoIcmsIssMult?: number;
+};
 ```
-Opcional para retrocompatibilidade com cenários salvos antes da mudança.
+Tudo opcional — `undefined` = usar padrão oficial. Garante retrocompatibilidade total com cenários salvos.
 
-### 2. `src/lib/finance/defaults.ts`
-Default: `deducoes: []`.
+**Defaults centralizados** (`src/lib/finance/taxDefaults.ts` — novo)
+Move `SIMPLES_TABLES`, `presumidoBases`, e cria constantes nomeadas (`IRPJ_PCT`, `CSLL_PCT`, `PIS_CUM_PCT`, etc.) — todas exportadas. Vira a "fonte da verdade" dos valores oficiais.
 
-### 3. `src/lib/finance/calculations.ts`
-- Em `buildDRE` (linha ~410), calcular `outrasDeducoes[i] = Σ deducoes[*].valores[i]`.
-- Atualizar `receitaLiquida[i] = receitaBruta[i] − deducoesInadimplencia[i] − outrasDeducoes[i] − impostosVendas[i]`.
-- Garantir que `impostosVendas` use a base já líquida dessas deduções (passar `bruta − inadimplência − outrasDeducoes` para `calcSimples/Presumido/Real` no lugar de só `bruta`).
-- Expor `outrasDeducoes` no retorno para a DRE renderizar a linha.
+**Resolvers** (`src/lib/finance/taxDefaults.ts`)
+Funções `getIrpj(state)`, `getSimplesTable(state, anexo)`, `getPresumidoBases(state, business)` etc., que retornam `ratesOverride?.x ?? DEFAULT`. Sem `??` espalhado pelo `calculations.ts`.
 
-### 4. `src/components/sim/DRETab.tsx`
-Adicionar linha "Outras deduções de receita" abaixo de "Inadimplência / Deduções", lendo `outrasDeducoes` do DRE construído. Só renderizar a linha se houver pelo menos uma dedução customizada com valor > 0 (evita poluir DRE de quem não usa).
+**Refactor cirúrgico** em `calculations.ts`
+Trocar cada constante mágica pelo resolver correspondente. Mudanças localizadas em `calcSimples`, `calcPresumido`, `calcReal`, `presumidoBases`, `resolveSimplesAnexo`, `simplesExcedeLimite`, `getReformaRates`. Nenhuma mudança de assinatura pública.
 
-### 5. `src/components/sim/RevenueTab.tsx`
-- Recalcular `liquidas` localmente subtraindo a soma das deduções customizadas por mês.
-- Botão `+ Incluir linha` no header do card.
-- Renderizar dinamicamente as linhas customizadas entre "Inadimplência" e "Receita Líquida".
-- Helpers `addDeducao`, `removeDeducao(id)`, `setDeducaoLabel(id, label)`, `setDeducaoValor(id, mesIdx, valor)` atualizando o estado imutavelmente.
+**UI** (`src/components/sim/TaxSettingsDialog.tsx` — novo)
+Componente único com `Tabs` shadcn. Editor de tabela do Simples: dropdown de anexo + grid 6×3 com inputs numéricos. Botão "restaurar este anexo" reseta `simplesTables[anexo]` para `undefined`.
 
-### 6. Persistência
-`useAppState` (store em localStorage) já serializa o `AppState` inteiro. Como `deducoes` é parte do `Revenue`, é salvo/carregado/exportado automaticamente, junto com cenários salvos via `useScenarios`.
+**Header** (`src/routes/index.tsx`)
+Adicionar `<TaxSettingsDialog />` antes do `ConfirmDialog` de Reset. Ícone `Settings` do lucide.
+
+**Migração** (`src/lib/finance/defaults.ts` → `migrateState`)
+Nenhuma mudança necessária — `ratesOverride` é opcional, cenários antigos seguem usando padrões oficiais.
+
+## Testes
+
+Adicionar em `src/lib/finance/__tests__/`:
+- `tax-overrides.test.ts` — cobrindo:
+  - Cenário sem override gera mesmo resultado que hoje (regressão dos 39 testes existentes não pode quebrar).
+  - Override de IRPJ para 20% aumenta `tax.annualLucro` no Real proporcionalmente.
+  - Override de tabela do Simples Anexo III altera DAS no `calcSimples`.
+  - Override de `simplesLimite` para R$ 6M faz desaparecer o alerta de desenquadramento que apareceria com 5M.
+  - Override de `reformaTransicaoIbsMult` para 1,0 zera o desconto da transição.
 
 ## Fora de escopo
-- Suporte a `%` (apenas R$ por mês, conforme decidido).
-- Validação tributária por tipo de dedução (ex: ICMS de devolução). O usuário é responsável pelo significado contábil do que digita.
-- Alteração nos outros lugares que consomem receita (Cashflow, Valuation): já consomem a Receita Líquida final via `buildDRE`, então a propagação é automática.
 
-## Verificação após implementar
-1. Adicionar uma linha "Devoluções" com R$ 500/mês: KPI "Receita Líquida Anual" cai R$ 6.000.
-2. Abrir a DRE: aparece linha "Outras deduções de receita" com −R$ 6.000 e os impostos sobre venda diminuem proporcionalmente.
-3. Salvar cenário, recarregar a página, restaurar cenário: a linha customizada continua lá com rótulo e valores.
-4. Remover a linha: DRE volta a esconder a linha "Outras deduções" e KPIs voltam ao valor original.
+- Persistir padrões em um lugar global (rejeitado na pergunta — fica por cenário).
+- Versionamento histórico das alíquotas (ex.: "alíquotas de 2025 vs 2026"). Pode virar uma feature futura usando o sistema de cenários.
+- Validação fiscal (ex.: avisar se faixa nova quebra monotonicidade da tabela). Mostro apenas o input cru — confiança no usuário.
+
+## Arquivos afetados
+
+Novos:
+- `src/lib/finance/taxDefaults.ts`
+- `src/components/sim/TaxSettingsDialog.tsx`
+- `src/lib/finance/__tests__/tax-overrides.test.ts`
+
+Editados:
+- `src/lib/finance/types.ts` (+ `ratesOverride` em `TaxConfig`)
+- `src/lib/finance/calculations.ts` (substituir constantes por resolvers)
+- `src/routes/index.tsx` (botão de engrenagem no header)
