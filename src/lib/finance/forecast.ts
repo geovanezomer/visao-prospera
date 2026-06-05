@@ -183,10 +183,18 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     const fcl = ebitda - impostos - capex - deltaNcg;
     saldo += fcl;
 
+    // Guarda final: nunca propagar NaN/Infinity para a UI mesmo que algum
+    // input degenerado (ex.: receita=0 + ratios indefinidos) escape.
+    const safe = (n: number) => (Number.isFinite(n) ? n : 0);
     meses.push({
       idx: i, ano, mes: mes + 1, label,
-      receita, ebitda, lucroLiquido,
-      ncg: ncgT, deltaNcg, fcl, saldoCaixa: saldo,
+      receita: safe(receita),
+      ebitda: safe(ebitda),
+      lucroLiquido: safe(lucroLiquido),
+      ncg: safe(ncgT),
+      deltaNcg: safe(deltaNcg),
+      fcl: safe(fcl),
+      saldoCaixa: safe(saldo),
     });
   }
 

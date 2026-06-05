@@ -136,13 +136,15 @@ function buildDCF(state: AppState, params: ValuationParams): DCFSummary {
   }
 
   // Valor terminal por Gordon: usa FCF anualizado dos últimos 12 meses.
-  // Auditoria: exige spread mínimo de 0,5% entre WACC e g — caso contrário usa fallback explícito.
+  // Auditoria: exige spread mínimo de 0,5% entre WACC e g — caso contrário
+  // usa fallback conservador (5× FCL ≈ múltiplo EV/EBITDA típico de PME madura)
+  // em vez de 10×, que superestimava o valor terminal quando WACC≈g.
   const lastYearFCF = fcfProjected.slice(-12).reduce((a, b) => a + b, 0);
   const g = params.terminalGrowthRate;
   const spread = waccAnnual - g;
   const terminalValue = spread >= 0.005
     ? (lastYearFCF * (1 + g)) / spread
-    : lastYearFCF * 10; // fallback p/ WACC≈g (perpetuidade não converge)
+    : lastYearFCF * 5; // fallback p/ WACC≈g (perpetuidade não converge)
   const npvTerminal = terminalValue / Math.pow(1 + waccMonthly, fcfProjected.length);
 
   return {
@@ -367,11 +369,11 @@ export function runValuationSelfTests(): { results: ValuationTestCase[]; allPass
     const vt = (fcl * (1 + g)) / (wacc - g);
     add("Valor terminal Gordon (FCL=600k, g=2%, WACC=12%)", "FCL·(1+g)/(WACC−g)", 6_120_000, vt);
   }
-  // ---- 7) Gordon degenerado: g≥WACC → fallback FCL·10
+  // ---- 7) Gordon degenerado: g≥WACC → fallback FCL·5 (conservador p/ PME)
   {
     const fcl = 600_000, g = 0.15, wacc = 0.10;
-    const vt = wacc > g ? (fcl * (1 + g)) / (wacc - g) : fcl * 10;
-    add("Fallback quando g≥WACC", "FCL × 10", 6_000_000, vt);
+    const vt = wacc - g >= 0.005 ? (fcl * (1 + g)) / (wacc - g) : fcl * 5;
+    add("Fallback quando g≥WACC", "FCL × 5", 3_000_000, vt);
   }
   // ---- 8) DCF: 12 fluxos de 100.000 a 12% a.a. → wacc_m = (1.12)^(1/12)-1
   {
