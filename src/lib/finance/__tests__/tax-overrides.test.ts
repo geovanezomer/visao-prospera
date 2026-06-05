@@ -103,16 +103,19 @@ describe("ratesOverride — Simples Nacional", () => {
 
 describe("ratesOverride — Lucro Presumido", () => {
   it("Bases de presunção customizadas alteram base IRPJ/CSLL", () => {
+    // Zeramos presumidoBaseIRPJ/CSLL para que o cálculo caia no resolver getPresumidoBases
+    // (que aplica ratesOverride.presumidoBases). Sem isso, os campos avulsos do TaxConfig
+    // sobrescrevem sempre.
     const base = createState({
       businessType: "servicos",
       revenue: { bruta: m12(50000) },
-      tax: { regime: "presumido" },
+      tax: { regime: "presumido", presumidoBaseIRPJ: 0, presumidoBaseCSLL: 0 },
     });
     const reduzida = createState({
       businessType: "servicos",
       revenue: { bruta: m12(50000) },
       tax: {
-        regime: "presumido",
+        regime: "presumido", presumidoBaseIRPJ: 0, presumidoBaseCSLL: 0,
         ratesOverride: { presumidoBases: { servicos: { irpj: 16, csll: 16 } } },
       },
     });
