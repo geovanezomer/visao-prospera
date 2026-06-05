@@ -3,6 +3,7 @@ import { AppState, TaxRegime, COST_VENDAS_LABEL, TAX_ERA_SHORT } from "@/lib/fin
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
+import { buildCashFlow } from "@/lib/finance/cashflow";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
@@ -16,7 +17,12 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
   const regime = state.tax.regime;
   const { dre, tax } = buildDRE(state, regime);
   const ind = calcIndicators(state, dre);
-  
+  const cf = buildCashFlow(state, regime);
+  const limiar = state.cashflow.limiarAlerta ?? -10000;
+  const mesesCriticosIdx = new Set(
+    cf.saldoFinal.map((s, i) => (s <= limiar ? i : -1)).filter((i) => i >= 0)
+  );
+
   const cvLabel = COST_VENDAS_LABEL[state.businessType];
 
   const rb = sum(dre.receitaBruta);
