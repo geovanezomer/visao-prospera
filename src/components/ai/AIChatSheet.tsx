@@ -18,7 +18,7 @@ import { buildSnapshot, getSectionsCached } from "@/services/ai/snapshot";
 import { buildSystemPrompt } from "@/services/ai/systemPrompt";
 import { runTool } from "@/services/ai/tools";
 import type { AppState } from "@/lib/finance/types";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const ReactMarkdown = lazy(() => import("react-markdown"));
 
