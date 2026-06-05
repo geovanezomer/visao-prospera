@@ -1,5 +1,27 @@
 export type Months = number[]; // length 12
 
+/** Chaves das abas da interface principal (src/routes/index.tsx).
+ *  Mantém o `value` dos componentes Tabs/TabsTrigger/TabsContent fortemente tipado:
+ *  qualquer string fora deste union dispara erro de compilação. */
+export type TabKey =
+  | "receitas"     // 1. Receita mensal + deduções (CPC/IFRS 15)
+  | "custos"       // 2. CPV/CMV/CSP + fixos + variáveis + financeiros
+  | "capital"      // 3. Estrutura de capital, WACC, capex
+  | "tributos"     // 4. Regime tributário (Simples/Presumido/Real + reforma CBS/IBS)
+  | "caixa"        // 5. Fluxo de Caixa (DFC) + burn/runway
+  | "governanca"   // 6. Análise estratégica (concentração, governança, competitiva, regulatória)
+  | "dre"          // 7. DRE consolidada
+  | "resultados"   // 8. Diagnóstico + cenários
+  | "simulador"    // 9. Simulador de alavancas
+  | "valuation";   // 10. Valuation (múltiplos + DCF)
+
+/** Lista canônica das abas, em ordem. Use em vez de hardcodar strings. */
+export const TAB_KEYS: readonly TabKey[] = [
+  "receitas", "custos", "capital", "tributos", "caixa",
+  "governanca", "dre", "resultados", "simulador", "valuation",
+] as const;
+
+
 export type BusinessType = "servicos" | "comercio" | "industria";
 export type TaxRegime = "simples" | "presumido" | "real";
 export type SimplesAnexo = "I" | "II" | "III" | "IV" | "V";

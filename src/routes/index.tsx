@@ -20,7 +20,7 @@ import { ValuationTab } from "@/components/sim/ValuationTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
 import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
 import { GuidedWizard } from "@/components/sim/guided/GuidedWizard";
-import { AppState, BusinessType } from "@/lib/finance/types";
+import { AppState, BusinessType, TabKey } from "@/lib/finance/types";
 import { applySimulator, countActiveLevers, DEFAULT_SIM, SimulatorParams } from "@/lib/finance/simulator";
 
 export const Route = createFileRoute("/")({
@@ -173,31 +173,31 @@ function SimulaPro() {
       />
 
       <main className="mx-auto max-w-[1600px] px-6 py-6">
-        <Tabs defaultValue="dre" className="w-full">
+        <Tabs defaultValue={"dre" satisfies TabKey} className="w-full">
           <TabsList className="bg-card/40">
-            <TabsTrigger value="receitas">1. Receitas</TabsTrigger>
-            <TabsTrigger value="custos">2. Custos e Despesas</TabsTrigger>
-            <TabsTrigger value="capital">3. Capital</TabsTrigger>
-            <TabsTrigger value="tributos">4. Regime Tributário</TabsTrigger>
-            <TabsTrigger value="caixa">5. Fluxo de Caixa</TabsTrigger>
-            <TabsTrigger value="governanca">6. Governança</TabsTrigger>
-            <TabsTrigger value="dre">7. DRE</TabsTrigger>
-            <TabsTrigger value="resultados">8. Análises</TabsTrigger>
-            <TabsTrigger value="simulador">9. Simulador</TabsTrigger>
-            <TabsTrigger value="valuation">10. Valuation</TabsTrigger>
+            <TabsTrigger value={"receitas" satisfies TabKey}>1. Receitas</TabsTrigger>
+            <TabsTrigger value={"custos" satisfies TabKey}>2. Custos e Despesas</TabsTrigger>
+            <TabsTrigger value={"capital" satisfies TabKey}>3. Capital</TabsTrigger>
+            <TabsTrigger value={"tributos" satisfies TabKey}>4. Regime Tributário</TabsTrigger>
+            <TabsTrigger value={"caixa" satisfies TabKey}>5. Fluxo de Caixa</TabsTrigger>
+            <TabsTrigger value={"governanca" satisfies TabKey}>6. Governança</TabsTrigger>
+            <TabsTrigger value={"dre" satisfies TabKey}>7. DRE</TabsTrigger>
+            <TabsTrigger value={"resultados" satisfies TabKey}>8. Análises</TabsTrigger>
+            <TabsTrigger value={"simulador" satisfies TabKey}>9. Simulador</TabsTrigger>
+            <TabsTrigger value={"valuation" satisfies TabKey}>10. Valuation</TabsTrigger>
           </TabsList>
 
           <div className="mt-6">
-            <TabsContent value="receitas"><RevenueTab state={state} update={update} /></TabsContent>
-            <TabsContent value="custos"><CostsTab state={state} update={update} /></TabsContent>
-            <TabsContent value="capital"><CapitalTab state={state} update={update} /></TabsContent>
-            <TabsContent value="tributos"><TaxTab state={state} update={update} /></TabsContent>
-            <TabsContent value="caixa"><CashflowTab state={state} update={update} /></TabsContent>
-            <TabsContent value="governanca"><StrategicTab state={state} update={update} /></TabsContent>
-            <TabsContent value="dre"><DRETab state={state} update={update} /></TabsContent>
-            <TabsContent value="resultados"><DiagnosisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} /></TabsContent>
-            <TabsContent value="simulador"><SimulatorTab state={state} apply={update} saveScenario={save} params={simParams} setParams={setSimParams} /></TabsContent>
-            <TabsContent value="valuation"><ValuationTab baseState={state} simulatedState={simulatedState} simActive={simActive} /></TabsContent>
+            <TabsContent value={"receitas" satisfies TabKey}><RevenueTab state={state} update={update} /></TabsContent>
+            <TabsContent value={"custos" satisfies TabKey}><CostsTab state={state} update={update} /></TabsContent>
+            <TabsContent value={"capital" satisfies TabKey}><CapitalTab state={state} update={update} /></TabsContent>
+            <TabsContent value={"tributos" satisfies TabKey}><TaxTab state={state} update={update} /></TabsContent>
+            <TabsContent value={"caixa" satisfies TabKey}><CashflowTab state={state} update={update} /></TabsContent>
+            <TabsContent value={"governanca" satisfies TabKey}><StrategicTab state={state} update={update} /></TabsContent>
+            <TabsContent value={"dre" satisfies TabKey}><DRETab state={state} update={update} /></TabsContent>
+            <TabsContent value={"resultados" satisfies TabKey}><DiagnosisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} /></TabsContent>
+            <TabsContent value={"simulador" satisfies TabKey}><SimulatorTab state={state} apply={update} saveScenario={save} params={simParams} setParams={setSimParams} /></TabsContent>
+            <TabsContent value={"valuation" satisfies TabKey}><ValuationTab baseState={state} simulatedState={simulatedState} simActive={simActive} /></TabsContent>
           </div>
         </Tabs>
 
