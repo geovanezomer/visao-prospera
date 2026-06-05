@@ -44,32 +44,25 @@ export interface ReformaRates {
 export function getReformaRates(era: TaxEra | undefined, cfg: TaxConfig): ReformaRates {
   const cbsFull = cfg.cbsAliquota ?? 8.8;
   const ibsFull = cfg.ibsAliquotaRef ?? 17.7;
+  const ibsMult = getReformaTransicaoIbsMult(cfg);
+  const icmsIssMult = getReformaTransicaoIcmsIssMult(cfg);
   switch (era ?? "atual") {
     case "atual":
       return { cbsPct: 0, ibsPct: 0, pisCofinsMult: 1, icmsIssMult: 1 };
     // Transição 2027–2032 (ponto médio): CBS pleno, PIS/COFINS extintos,
-    // IBS em 50% da plena, ICMS/ISS reduzidos a 50%.
+    // IBS na fração configurada (default 50%), ICMS/ISS na fração configurada (default 50%).
     case "transicao":
-      return { cbsPct: cbsFull, ibsPct: ibsFull * 0.5, pisCofinsMult: 0, icmsIssMult: 0.5 };
+      return { cbsPct: cbsFull, ibsPct: ibsFull * ibsMult, pisCofinsMult: 0, icmsIssMult };
     case "pleno":
       return { cbsPct: cbsFull, ibsPct: ibsFull, pisCofinsMult: 0, icmsIssMult: 0 };
   }
 }
 
 // =====================================================================
-// SIMPLES NACIONAL 2024
+// SIMPLES NACIONAL — tabelas vivem em taxDefaults.ts (editáveis via painel)
 // =====================================================================
-type Faixa = [number, number, number];
-const SIMPLES_TABLES: Record<SimplesAnexo, Faixa[]> = {
-  I:   [[180000,4.0,0],[360000,7.3,5940],[720000,9.5,13860],[1800000,10.7,22500],[3600000,14.3,87300],[4800000,19.0,378000]],
-  II:  [[180000,4.5,0],[360000,7.8,5940],[720000,10.0,13860],[1800000,11.2,22500],[3600000,14.7,85500],[4800000,30.0,720000]],
-  III: [[180000,6.0,0],[360000,11.2,9360],[720000,13.5,17640],[1800000,16.0,35640],[3600000,21.0,125640],[4800000,33.0,648000]],
-  IV:  [[180000,4.5,0],[360000,9.0,8100],[720000,10.2,12420],[1800000,14.0,39780],[3600000,22.0,183780],[4800000,33.0,828000]],
-  V:   [[180000,15.5,0],[360000,18.0,4500],[720000,19.5,9900],[1800000,20.5,17100],[3600000,23.0,62100],[4800000,30.5,540000]],
-};
-
-export function simplesAliquotaEfetiva(rbt12: number, anexo: SimplesAnexo): number {
-  const table = SIMPLES_TABLES[anexo];
+export function simplesAliquotaEfetiva(rbt12: number, anexo: SimplesAnexo, tax: TaxConfig): number {
+  const table = getSimplesTable(tax, anexo);
   for (const [teto, aliq, deduz] of table) {
     if (rbt12 <= teto) {
       if (rbt12 === 0) return 0;
