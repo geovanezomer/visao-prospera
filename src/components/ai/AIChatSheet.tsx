@@ -345,7 +345,7 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="relative flex w-full flex-col overflow-hidden p-0 sm:max-w-[520px]">
+        <SheetContent side="right" hideCloseButton className="relative flex w-full flex-col overflow-hidden p-0 sm:max-w-[520px]">
           <SheetHeader className="flex flex-row items-center justify-between border-b border-border/40 px-3 py-2.5 space-y-0">
             <div className="flex items-center gap-2 min-w-0">
               <Bot className="h-4 w-4 text-primary shrink-0" />
