@@ -115,20 +115,29 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
 
   const send = async (text: string, opts?: { auditMode?: boolean; replaceLast?: boolean }) => {
     const content = text.trim();
-    if ((!content && !opts?.auditMode) || streaming) return;
+    if ((!content && !opts?.auditMode && attachments.length === 0) || streaming) return;
     if (!activeId) return;
+
+    const atts = attachments.slice();
+    const pdfCtx = buildPdfContext(atts);
+    const displayContent = content + (pdfCtx ? `\n\n_(📎 ${atts.length} anexo${atts.length > 1 ? "s" : ""})_` : "");
 
     let history = messages.slice();
     if (opts?.replaceLast) {
-      // remove última assistant (e tools associados) para regenerar
       while (history.length && history[history.length - 1].role !== "user") history.pop();
-    } else if (content) {
-      const userMsg: ChatMessage = { role: "user", content, ts: Date.now() };
+    } else if (content || atts.length) {
+      const userMsg: ChatMessage = {
+        role: "user",
+        content: displayContent,
+        ts: Date.now(),
+        attachments: atts.map(a => ({ name: a.name, type: a.type, size: a.size, error: a.error })),
+      } as ChatMessage;
       history = [...history, userMsg];
     }
 
     setMessages(history);
     setInput("");
+    setAttachments([]);
     setStreaming(true);
     touchThread(state.companyName, activeId);
 
@@ -136,14 +145,28 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
     const ac = new AbortController();
     abortRef.current = ac;
 
+    // Last user content para LLM: texto + pdfCtx + (se houver imagens, vira array vision)
+    const fullUserText = content + pdfCtx;
+    const hasImages = atts.some(a => a.type === "image" && a.dataUrl && !a.error);
+    const lastUserContent = hasImages ? buildVisionMessageContent(fullUserText, atts) : fullUserText;
+
+    const buildLlmHistory = (forTools: boolean): LLMMessage[] => {
+      const base: LLMMessage[] = [{ role: "system", content: sysPrompt }];
+      const filtered = history.filter(m => forTools ? (m.role === "user" || m.role === "assistant") : true);
+      filtered.forEach((m, idx) => {
+        const isLastUser = idx === filtered.length - 1 && m.role === "user";
+        const role = (m.role === "tool" ? "assistant" : m.role) as LLMMessage["role"];
+        base.push({
+          role,
+          content: isLastUser ? (lastUserContent as any) : m.content,
+        });
+      });
+      return base;
+    };
+
     // === Caminho 1: TOOL CALLING ===
     if (config.useTools) {
-      const llm: LLMMessage[] = [
-        { role: "system", content: sysPrompt },
-        ...history
-          .filter(m => m.role === "user" || m.role === "assistant")
-          .map(m => ({ role: m.role, content: m.content }) as LLMMessage),
-      ];
+      const llm = buildLlmHistory(true);
       const collected: ToolCall[] = [];
       try {
         const out = await chatWithTools(
@@ -186,10 +209,7 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
     }
 
     // === Caminho 2: STREAMING simples ===
-    const llm: LLMMessage[] = [
-      { role: "system", content: sysPrompt },
-      ...history.map(m => ({ role: m.role === "tool" ? "assistant" : m.role, content: m.content }) as LLMMessage),
-    ];
+    const llm = buildLlmHistory(false);
     let acc = "";
     setMessages([...history, { role: "assistant", content: "", ts: Date.now() }]);
     try {
@@ -216,6 +236,28 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
       abortRef.current = null;
     }
   };
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const remaining = MAX_FILES_PER_MSG - attachments.length;
+    if (remaining <= 0) { toast.error(`Máx ${MAX_FILES_PER_MSG} anexos por mensagem.`); return; }
+    const toProcess = Array.from(files).slice(0, remaining);
+    setProcessingFile(true);
+    try {
+      const results: ChatAttachment[] = [];
+      for (const f of toProcess) {
+        const att = await processFile(f);
+        if (att.error) toast.error(`${att.name}: ${att.error}`);
+        results.push(att);
+      }
+      setAttachments(prev => [...prev, ...results]);
+    } finally {
+      setProcessingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeAttachment = (id: string) => setAttachments(prev => prev.filter(a => a.id !== id));
 
   const handleStop = () => abortRef.current?.abort();
 
