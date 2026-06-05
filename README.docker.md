@@ -17,12 +17,16 @@ Docker instalado, sem precisar do Node nem Bun no host.
 
 - Docker 24+
 - Docker Compose v2 (já vem com o Docker Desktop)
+- Arquivo **`.env`** na raiz do projeto (copie de `.env.example` e preencha
+  com suas credenciais do Lovable Cloud / Supabase). **Sem ele o build
+  gera bundle quebrado** — as `VITE_*` são injetadas em build-time.
 
 Verifique:
 
 ```bash
 docker --version
 docker compose version
+test -f .env && echo "OK .env presente" || echo "FALTA .env — copie de .env.example"
 ```
 
 ---
