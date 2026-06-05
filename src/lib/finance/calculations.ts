@@ -72,10 +72,9 @@ export function simplesAliquotaEfetiva(rbt12: number, anexo: SimplesAnexo, tax: 
   return 33;
 }
 
+/** @deprecated Use getPresumidoBases(tax, business) de taxDefaults.ts. Mantido para retro-compat. */
 export function presumidoBases(business: BusinessType): { irpj: number; csll: number } {
-  if (business === "industria") return { irpj: 8, csll: 12 };
-  if (business === "comercio") return { irpj: 8, csll: 12 };
-  return { irpj: 32, csll: 32 };
+  return getPresumidoBases({ ratesOverride: undefined } as TaxConfig, business);
 }
 
 // =====================================================================
@@ -108,13 +107,8 @@ export function monthValues(c: CostLine): number[] {
 // =====================================================================
 const LABOR_KEYWORDS = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra|m\.o\.|clt/i;
 
-function folhaAnual(state: AppState): number {
-  return state.costs
-    .filter((c) => c.category !== "financeiro" && (c.encargosAuto || LABOR_KEYWORDS.test(c.label)))
-    .reduce((acc, c) => acc + sum(effectiveMonthValues(c)), 0);
-}
-
-/** Limite anual de receita bruta para permanência no Simples Nacional (LC 123/06). */
+/** Limite anual de receita bruta para permanência no Simples Nacional (LC 123/06).
+ *  @deprecated Use getSimplesLimite(tax) de taxDefaults.ts. */
 export const LIMITE_SIMPLES = 4_800_000;
 
 export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
@@ -123,12 +117,13 @@ export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
   const rbt12 = sum(state.revenue.bruta);
   if (rbt12 <= 0) return anexo;
   const fatorR = folhaAnual(state) / rbt12;
-  return fatorR >= 0.28 ? "III" : "V";
+  const minPct = getFatorRMinimoPct(state.tax);
+  return fatorR >= (minPct / 100) ? "III" : "V";
 }
 
 /** Retorna true se RBT12 ultrapassa o limite do Simples Nacional (desenquadramento obrigatório). */
 export function simplesExcedeLimite(state: AppState): boolean {
-  return sum(state.revenue.bruta) > LIMITE_SIMPLES;
+  return sum(state.revenue.bruta) > getSimplesLimite(state.tax);
 }
 
 // =====================================================================
