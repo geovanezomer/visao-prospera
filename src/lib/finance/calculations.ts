@@ -1,4 +1,11 @@
 import { AppState, SimplesAnexo, TaxRegime, BusinessType, CostLine, DEFAULT_ENCARGOS_PCT, TaxEra, TaxConfig } from "./types";
+import {
+  getIrpjPct, getIrpjAdicionalPct, getIrpjAdicionalGatilhoTri, getCsllPct,
+  getPisCumPct, getCofinsCumPct, getPisNaoCumPct, getCofinsNaoCumPct,
+  getSimplesLimite, getFatorRMinimoPct,
+  getSimplesTable, getPresumidoBases,
+  getReformaTransicaoIbsMult, getReformaTransicaoIcmsIssMult,
+} from "./taxDefaults";
 import { sum, zeros12, fill12 } from "./format";
 
 /** Soma mensal das linhas livres de dedução da Receita (devoluções, perdas, descontos, etc.). */
