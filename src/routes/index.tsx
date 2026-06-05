@@ -210,7 +210,7 @@ function SimulaPro() {
       </main>
 
       <ScenarioBar state={state} scenarios={scenarios} save={save} remove={remove} load={setState} />
-      <AIFab state={state} simulatedState={simulatedState} simActive={simActive} />
+      <AIFab state={state} simulatedState={simulatedState} simActive={simActive} simParams={simParams} />
     </div>
   );
 }
