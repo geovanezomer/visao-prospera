@@ -15,14 +15,35 @@ type NonOpKey = "aportes" | "emprestimosCaptados" | "capex" | "dividendos" | "am
 export function CashflowTab({ state, update }: { state: AppState; update: Updater }) {
   const cf = buildCashFlow(state);
 
-  const setNonOp = (key: NonOpKey, monthIdx: number, value: number) =>
-    update((s) => ({
-      ...s,
-      cashflow: {
-        ...s.cashflow,
-        [key]: s.cashflow[key].map((v, i) => (i === monthIdx ? value : v)),
-      },
-    }));
+  const setCaixaMin = (v: number) =>
+    update((s) => ({ ...s, cashflow: { ...s.cashflow, caixaMinimo: v } }));
+
+  const limiar = state.cashflow.limiarAlerta ?? -10000;
+  const setLimiar = (v: number) =>
+    update((s) => ({ ...s, cashflow: { ...s.cashflow, limiarAlerta: v } }));
+
+  // Meses que cruzam o limiar crítico
+  const mesesCriticos = MESES
+    .map((mes, i) => ({ mes, saldo: cf.saldoFinal[i], idx: i }))
+    .filter((m) => m.saldo <= limiar);
+  const mesesCriticosIdx = new Set(mesesCriticos.map((m) => m.idx));
+
+  // Toast discreto quando há novo mês crítico
+  const lastNotifiedRef = useRef<string>("");
+  useEffect(() => {
+    if (mesesCriticos.length === 0) {
+      lastNotifiedRef.current = "";
+      return;
+    }
+    const key = mesesCriticos.map((m) => m.mes).join(",");
+    if (key !== lastNotifiedRef.current) {
+      lastNotifiedRef.current = key;
+      const primeiro = mesesCriticos[0];
+      toast.warning(`Atenção — saldo projetado cai abaixo do limiar em ${primeiro.mes}`, {
+        description: `Saldo previsto: ${fmtBRL(primeiro.saldo)} · Limiar: ${fmtBRL(limiar)}`,
+      });
+    }
+  }, [mesesCriticos.map((m) => `${m.mes}:${m.saldo}`).join("|"), limiar]);
 
   const setCaixaMin = (v: number) =>
     update((s) => ({ ...s, cashflow: { ...s.cashflow, caixaMinimo: v } }));
