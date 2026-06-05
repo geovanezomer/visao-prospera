@@ -83,9 +83,16 @@ export function presumidoBases(business: BusinessType): { irpj: number; csll: nu
 export function fixedCostBase(values: number[]): number {
   const normalized = values.length === 12 ? values : fill12(values[0] || 0);
   const first = normalized[0] || 0;
-  const last = normalized[11] || 0;
-  const legacyFixedEditBug = normalized.slice(0, 11).every((v) => v === first) && last !== first;
-  return legacyFixedEditBug ? last : first;
+  // Se todos os meses são iguais, retorna o valor.
+  if (normalized.every((v) => v === first)) return first;
+  // Caso contrário (estado inconsistente para um custo marcado fixo),
+  // adota a edição mais recente — varre do mês 12 para trás procurando
+  // o último valor distinto do anterior. Generaliza o antigo heurístico
+  // que só detectava alteração no mês 12.
+  for (let i = normalized.length - 1; i > 0; i--) {
+    if (normalized[i] !== normalized[i - 1]) return normalized[i] || 0;
+  }
+  return normalized[normalized.length - 1] || first;
 }
 
 export function effectiveMonthValues(c: CostLine): number[] {
