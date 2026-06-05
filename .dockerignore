@@ -16,9 +16,10 @@ build
 .github
 
 # Variáveis de ambiente locais
-.env
-.env.*
-!.env.example
+# IMPORTANTE: .env é necessário no build (Vite injeta VITE_* em build-time)
+# e no runtime (SSR lê SUPABASE_URL etc). NÃO ignorar.
+.env.local
+.env.*.local
 
 # IDE / editor
 .vscode
