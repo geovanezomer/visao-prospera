@@ -1,5 +1,5 @@
 import { AppState, TaxRegime } from "./types";
-import { buildDRE } from "./calculations";
+import { buildDRE, type DRE, type MonthlyTax } from "./calculations";
 import { MESES, sum, zeros12 } from "./format";
 
 export interface CashFlow {
@@ -21,7 +21,6 @@ export interface CashFlow {
   variacaoCaixa: number[];
   saldoFinal: number[];
   alertas: { mes: string; saldo: number; tipo: "negativo" | "abaixoMinimo" }[];
-  // ----- Fase 3: buffers para o ano+1 -----
   contasReceberAnoSeguinte: number;
   fornecedoresAnoSeguinte: number;
   impostosAnoSeguinte: number;
@@ -37,11 +36,19 @@ export interface CashFlow {
   };
 }
 
+// =====================================================================
+// Funções puras — cada uma testável isoladamente, sem efeito colateral.
+// =====================================================================
+
 /**
- * Desloca array mensal por N dias. Retorna {dentroDoAno, transbordoAno+1}.
- * Não trunca mais — o que cairia em jan/ano+1 vira saldo a receber/pagar.
+ * Desloca um array mensal por N dias (arredondando para meses inteiros).
+ * O que cairia em jan/ano+1 ou depois acumula em `transbordo`.
+ *
+ * Exemplo: lag=30, valores=[100,...12x]
+ *   → inAno=[0, 100, 100, ..., 100] (11 meses)
+ *   → transbordo = 100 (mês 12 cai em jan/ano+1)
  */
-function shiftByDaysSplit(values: number[], lagDays: number): { inAno: number[]; transbordo: number } {
+export function shiftByDaysSplit(values: number[], lagDays: number): { inAno: number[]; transbordo: number } {
   const lag = Math.max(0, Math.round(lagDays / 30));
   if (lag === 0) return { inAno: values.slice(), transbordo: 0 };
   const out = zeros12();
@@ -54,26 +61,154 @@ function shiftByDaysSplit(values: number[], lagDays: number): { inAno: number[];
   return { inAno: out, transbordo };
 }
 
+/**
+ * Recebimentos = (Receita Bruta − Inadimplência) deslocados pelo PMR.
+ * Impostos sobre venda saem em `computeImpostos`, NÃO daqui.
+ */
+export function computeRecebimentos(state: AppState, dre: DRE): { inAno: number[]; transbordo: number } {
+  const recebivelMensal = dre.receitaBruta.map((r, i) => r - (dre.deducoesInadimplencia[i] ?? 0));
+  return shiftByDaysSplit(recebivelMensal, state.revenue.pmr);
+}
+
+/**
+ * Pagamentos a fornecedores = CPV/CMV/CSP deslocados pelo PMP.
+ */
+export function computeFornecedores(state: AppState, dre: DRE): { inAno: number[]; transbordo: number } {
+  return shiftByDaysSplit(dre.cpv, state.revenue.pmp);
+}
+
+/**
+ * Pagamentos de impostos = total mensal de tributos deslocado 30 dias (apuração + DARF).
+ */
+export function computeImpostos(tax: MonthlyTax): { inAno: number[]; transbordo: number } {
+  return shiftByDaysSplit(tax.monthly, 30);
+}
+
+/**
+ * Pagamentos operacionais não-fornecedor: fixos, variáveis (excluindo CPV), financeiros.
+ * PDD é removida dos fixos pois é não-caixa (CPC 47/IFRS 9) — a perda já está nos recebimentos.
+ */
+export function computePagamentosOperacionais(dre: DRE): {
+  fixos: number[];
+  variaveis: number[];
+  financeiros: number[];
+} {
+  return {
+    fixos: dre.custosFixos.map((v, i) => v - (dre.pdd?.[i] ?? 0)),
+    variaveis: dre.custosVariaveis.map((tot, i) => tot - dre.cpv[i]),
+    financeiros: dre.custosFinanceirosTotal.slice(),
+  };
+}
+
+/**
+ * Compõe os três fluxos mensais a partir de seus componentes.
+ */
+export function computeFluxos(args: {
+  recebimentos: number[];
+  fornecedores: number[];
+  fixos: number[];
+  variaveis: number[];
+  financeiros: number[];
+  impostos: number[];
+  capex: number[];
+  aportes: number[];
+  emprestimosCaptados: number[];
+  amortizacoes: number[];
+  dividendos: number[];
+}): {
+  fluxoOperacional: number[];
+  fluxoInvestimento: number[];
+  fluxoFinanciamento: number[];
+  variacaoCaixa: number[];
+} {
+  const fluxoOperacional = zeros12();
+  const fluxoInvestimento = zeros12();
+  const fluxoFinanciamento = zeros12();
+  const variacaoCaixa = zeros12();
+  for (let i = 0; i < 12; i++) {
+    fluxoOperacional[i] =
+      args.recebimentos[i] - args.fornecedores[i] - args.fixos[i] -
+      args.variaveis[i] - args.financeiros[i] - args.impostos[i];
+    fluxoInvestimento[i] = -args.capex[i];
+    fluxoFinanciamento[i] =
+      args.aportes[i] + args.emprestimosCaptados[i] - args.amortizacoes[i] - args.dividendos[i];
+    variacaoCaixa[i] = fluxoOperacional[i] + fluxoInvestimento[i] + fluxoFinanciamento[i];
+  }
+  return { fluxoOperacional, fluxoInvestimento, fluxoFinanciamento, variacaoCaixa };
+}
+
+/**
+ * Acumula saldo mês a mês: saldoInicial[i+1] = saldoFinal[i].
+ */
+export function computeSaldos(saldoInicial0: number, variacaoCaixa: number[]): {
+  saldoInicial: number[];
+  saldoFinal: number[];
+} {
+  const saldoInicial = zeros12();
+  const saldoFinal = zeros12();
+  let saldo = saldoInicial0;
+  for (let i = 0; i < 12; i++) {
+    saldoInicial[i] = saldo;
+    saldo += variacaoCaixa[i];
+    saldoFinal[i] = saldo;
+  }
+  return { saldoInicial, saldoFinal };
+}
+
+/**
+ * Lista meses com saldo final < 0 (negativo) ou < caixa mínimo (abaixoMinimo).
+ */
+export function computeAlertas(saldoFinal: number[], caixaMinimo: number): CashFlow["alertas"] {
+  const out: CashFlow["alertas"] = [];
+  for (let i = 0; i < 12; i++) {
+    if (saldoFinal[i] < 0) out.push({ mes: MESES[i], saldo: saldoFinal[i], tipo: "negativo" });
+    else if (saldoFinal[i] < caixaMinimo) out.push({ mes: MESES[i], saldo: saldoFinal[i], tipo: "abaixoMinimo" });
+  }
+  return out;
+}
+
+/**
+ * Encontra o mês com menor saldo final do ano. Retorna null se vetor vazio.
+ */
+export function computePiorMes(saldoFinal: number[]): { mes: string; saldo: number } | null {
+  let pior: { mes: string; saldo: number } | null = null;
+  for (let i = 0; i < 12; i++) {
+    if (!pior || saldoFinal[i] < pior.saldo) pior = { mes: MESES[i], saldo: saldoFinal[i] };
+  }
+  return pior;
+}
+
+/**
+ * Burn rate (consumo médio mensal de caixa pela operação) e runway estimado.
+ * - burnMedio12: média do ano inteiro
+ * - burnMedio3: média dos últimos 3 meses (mais sensível ao momento atual)
+ * - runwayMeses: (caixa atual + recebíveis) ÷ burnMedio3, Infinity se operação gera caixa
+ */
+export function computeBurnRunway(args: {
+  fluxoOperacional: number[];
+  caixaAtual: number;
+  recebiveis: number;
+}): { burnMedio12: number; burnMedio3: number; runwayMeses: number; queimando: boolean } {
+  const burnMensal = args.fluxoOperacional.map((v) => -v); // positivo = queima
+  const burnMedio12 = burnMensal.reduce((a, b) => a + b, 0) / 12;
+  const burnMedio3 = burnMensal.slice(-3).reduce((a, b) => a + b, 0) / 3;
+  const colchao = args.caixaAtual + args.recebiveis;
+  const queimando = burnMedio3 > 0;
+  const runwayMeses = queimando ? colchao / burnMedio3 : Infinity;
+  return { burnMedio12, burnMedio3, runwayMeses, queimando };
+}
+
+// =====================================================================
+// Orquestrador — mesma assinatura e retorno do legado.
+// =====================================================================
 export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.regime): CashFlow {
   const { dre, tax } = buildDRE(state, regime);
-  const { revenue, capital, cashflow } = state;
+  const { capital, cashflow } = state;
 
-  // Recebimentos = Receita Bruta − Inadimplência (impostos sobre venda saem em pagamentosImpostos).
-  const recebivelMensal = dre.receitaBruta.map((r, i) => r - (dre.deducoesInadimplencia[i] ?? 0));
-  const rec = shiftByDaysSplit(recebivelMensal, revenue.pmr);
-  const recebimentos = rec.inAno;
-  const fornec = shiftByDaysSplit(dre.cpv, revenue.pmp);
-  const pagamentosFornecedores = fornec.inAno;
-
-  // PDD é não-caixa (CPC 47/IFRS 9). Remover do desembolso real para não duplicar
-  // a perda (a inadimplência já reduz a receita bruta a receber).
-  const pagamentosFixos = dre.custosFixos.map((v, i) => v - (dre.pdd?.[i] ?? 0));
-  const pagamentosVariaveis = dre.custosVariaveis.map((tot, i) => tot - dre.cpv[i]);
-
-  const pagamentosFinanceiros = dre.custosFinanceirosTotal.slice();
-
-  const imp = shiftByDaysSplit(tax.monthly, 30);
-  const pagamentosImpostos = imp.inAno;
+  const rec = computeRecebimentos(state, dre);
+  const fornec = computeFornecedores(state, dre);
+  const imp = computeImpostos(tax);
+  const op = computePagamentosOperacionais(dre);
 
   const aportes = cashflow.aportes.slice();
   const emprestimosCaptados = cashflow.emprestimosCaptados.slice();
@@ -81,53 +216,48 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.reg
   const dividendos = cashflow.dividendos.slice();
   const capex = cashflow.capex.slice();
 
-  const fluxoOperacional = zeros12();
-  const fluxoInvestimento = zeros12();
-  const fluxoFinanciamento = zeros12();
-  const variacaoCaixa = zeros12();
-  const saldoFinal = zeros12();
-  const saldoInicial = zeros12();
+  const fluxos = computeFluxos({
+    recebimentos: rec.inAno,
+    fornecedores: fornec.inAno,
+    fixos: op.fixos,
+    variaveis: op.variaveis,
+    financeiros: op.financeiros,
+    impostos: imp.inAno,
+    capex, aportes, emprestimosCaptados, amortizacoes, dividendos,
+  });
 
-  let saldo = capital.disponibilidades;
-  for (let i = 0; i < 12; i++) {
-    saldoInicial[i] = saldo;
-    fluxoOperacional[i] =
-      recebimentos[i] - pagamentosFornecedores[i] - pagamentosFixos[i] -
-      pagamentosVariaveis[i] - pagamentosFinanceiros[i] - pagamentosImpostos[i];
-    fluxoInvestimento[i] = -capex[i];
-    fluxoFinanciamento[i] = aportes[i] + emprestimosCaptados[i] - amortizacoes[i] - dividendos[i];
-    variacaoCaixa[i] = fluxoOperacional[i] + fluxoInvestimento[i] + fluxoFinanciamento[i];
-    saldo = saldo + variacaoCaixa[i];
-    saldoFinal[i] = saldo;
-  }
-
-  const alertas: CashFlow["alertas"] = [];
-  for (let i = 0; i < 12; i++) {
-    if (saldoFinal[i] < 0) alertas.push({ mes: MESES[i], saldo: saldoFinal[i], tipo: "negativo" });
-    else if (saldoFinal[i] < cashflow.caixaMinimo)
-      alertas.push({ mes: MESES[i], saldo: saldoFinal[i], tipo: "abaixoMinimo" });
-  }
-
-  let pior: { mes: string; saldo: number } | null = null;
-  for (let i = 0; i < 12; i++) {
-    if (!pior || saldoFinal[i] < pior.saldo) pior = { mes: MESES[i], saldo: saldoFinal[i] };
-  }
+  const { saldoInicial, saldoFinal } = computeSaldos(capital.disponibilidades, fluxos.variacaoCaixa);
+  const alertas = computeAlertas(saldoFinal, cashflow.caixaMinimo);
+  const pior = computePiorMes(saldoFinal);
 
   return {
-    saldoInicial, recebimentos, pagamentosFornecedores, pagamentosFixos,
-    pagamentosVariaveis, pagamentosFinanceiros, pagamentosImpostos, fluxoOperacional,
-    aportes, emprestimosCaptados, amortizacoes, dividendos, fluxoFinanciamento,
-    capex, fluxoInvestimento, variacaoCaixa, saldoFinal, alertas,
+    saldoInicial,
+    recebimentos: rec.inAno,
+    pagamentosFornecedores: fornec.inAno,
+    pagamentosFixos: op.fixos,
+    pagamentosVariaveis: op.variaveis,
+    pagamentosFinanceiros: op.financeiros,
+    pagamentosImpostos: imp.inAno,
+    fluxoOperacional: fluxos.fluxoOperacional,
+    aportes, emprestimosCaptados, amortizacoes, dividendos,
+    fluxoFinanciamento: fluxos.fluxoFinanciamento,
+    capex,
+    fluxoInvestimento: fluxos.fluxoInvestimento,
+    variacaoCaixa: fluxos.variacaoCaixa,
+    saldoFinal,
+    alertas,
     contasReceberAnoSeguinte: rec.transbordo,
     fornecedoresAnoSeguinte: fornec.transbordo,
     impostosAnoSeguinte: imp.transbordo,
     totais: {
-      recebimentos: sum(recebimentos),
-      pagamentosTotais: sum(pagamentosFornecedores) + sum(pagamentosFixos) + sum(pagamentosVariaveis) + sum(pagamentosFinanceiros) + sum(pagamentosImpostos),
-      fluxoOperacional: sum(fluxoOperacional),
-      fluxoInvestimento: sum(fluxoInvestimento),
-      fluxoFinanciamento: sum(fluxoFinanciamento),
-      variacao: sum(variacaoCaixa),
+      recebimentos: sum(rec.inAno),
+      pagamentosTotais:
+        sum(fornec.inAno) + sum(op.fixos) + sum(op.variaveis) +
+        sum(op.financeiros) + sum(imp.inAno),
+      fluxoOperacional: sum(fluxos.fluxoOperacional),
+      fluxoInvestimento: sum(fluxos.fluxoInvestimento),
+      fluxoFinanciamento: sum(fluxos.fluxoFinanciamento),
+      variacao: sum(fluxos.variacaoCaixa),
       saldoFinal: saldoFinal[11],
       pioresMes: pior,
     },
