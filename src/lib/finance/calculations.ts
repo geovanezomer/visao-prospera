@@ -325,11 +325,16 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   }
 
   const baseIRPJMensal = baseLairMonthly.map((l) => Math.max(0, l));
-  const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal);
+  const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
 
   // Auditoria: créditos de PIS/COFINS são anuais — ratear por mês
   const pisCreditoMensal = Math.max(0, (tax.pisCreditos || 0) / 12);
   const cofinsCreditoMensal = Math.max(0, (tax.cofinsCreditos || 0) / 12);
+  // Alíquotas dinâmicas
+  const irpjAliq = getIrpjPct(tax) / 100;
+  const csllAliq = getCsllPct(tax) / 100;
+  const pisAliq = getPisNaoCumPct(tax) / 100;
+  const cofinsAliq = getCofinsNaoCumPct(tax) / 100;
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
@@ -337,11 +342,11 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const monthlyLucro = zeros12();
   const monthly = trib.map((r, i) => {
     const lair = baseIRPJMensal[i];
-    const irpj = lair * 0.15;
+    const irpj = lair * irpjAliq;
     const adicional = adicionalMensal[i];
-    const csll = lair * 0.09;
-    const pis = Math.max(0, r * 0.0165 - pisCreditoMensal) * reforma.pisCofinsMult;
-    const cofins = Math.max(0, r * 0.076 - cofinsCreditoMensal) * reforma.pisCofinsMult;
+    const csll = lair * csllAliq;
+    const pis = Math.max(0, r * pisAliq - pisCreditoMensal) * reforma.pisCofinsMult;
+    const cofins = Math.max(0, r * cofinsAliq - cofinsCreditoMensal) * reforma.pisCofinsMult;
     const issBase = Math.max(0, r - issDed);
     const debito = issBase * iss;
     const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
