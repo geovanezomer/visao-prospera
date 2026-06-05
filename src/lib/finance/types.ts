@@ -146,6 +146,9 @@ export interface TaxConfig {
 
 export interface CashFlowConfig {
   caixaMinimo: number;
+  /** Limiar crítico de alerta (R$). Quando o saldo final de algum mês fica ≤ limiarAlerta,
+   *  badges/toasts/destaques de risco são exibidos. Default −10.000. */
+  limiarAlerta?: number;
   aportes: Months;
   emprestimosCaptados: Months;
   capex: Months;
