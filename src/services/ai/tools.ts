@@ -4,6 +4,15 @@
 import type { AppState } from "@/lib/finance/types";
 import { applySimulator, DEFAULT_SIM, type SimulatorParams } from "@/lib/finance/simulator";
 import { buildSections, getSectionsCached } from "./snapshot";
+import { findSector, listSectors, rank, type SectorBenchmark } from "@/services/benchmark/sectors";
+import { fetchSerie, getMacroSnapshot, getSerieFormatted, MACRO_SERIES_KEYS, type SerieKey } from "@/services/macro/bcb";
+import { project, projectionToMarkdown, DEFAULT_PROJ } from "@/services/scenarios/projector";
+import { sensitivity, sensitivityToMarkdown, type SensMetric } from "@/services/scenarios/sensitivity";
+import { listScenarios, saveScenario, deleteScenario, getScenario } from "@/services/scenarios/store";
+import { listActions, createAction, updateAction, deleteAction, actionsToMarkdown, type ActionStatus } from "@/services/actions/store";
+import { regimeComparisonToMarkdown } from "@/services/compliance/tax";
+import { checklistToMarkdown } from "@/services/compliance/checklist";
+import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 
 export interface ToolDef {
   name: string;
@@ -12,65 +21,150 @@ export interface ToolDef {
 }
 
 export const TOOLS: ToolDef[] = [
-  {
-    name: "get_premissas",
-    description: "Retorna as premissas da empresa (regime tributário, capital, prazos médios, caixa mínimo).",
-    parameters: { type: "object", properties: {}, required: [] },
-  },
-  {
-    name: "get_dre",
-    description: "Retorna a DRE completa anual e mensal (receita, custos, EBITDA, lucro líquido, impostos).",
-    parameters: { type: "object", properties: {}, required: [] },
-  },
-  {
-    name: "get_indicadores",
-    description: "Retorna todos os indicadores financeiros (margens, ROE/ROA/ROIC, WACC, liquidez, endividamento, cobertura de juros, ciclo financeiro).",
-    parameters: { type: "object", properties: {}, required: [] },
-  },
-  {
-    name: "get_fluxo_caixa",
-    description: "Retorna o fluxo de caixa mensal completo, com pior mês e alertas.",
-    parameters: { type: "object", properties: {}, required: [] },
-  },
-  {
-    name: "get_valuation",
-    description: "Retorna o valuation (EV, equity value, múltiplos implícitos, DCF, haircut estratégico, confiança).",
-    parameters: { type: "object", properties: {}, required: [] },
-  },
-  {
-    name: "get_diagnostico",
-    description: "Retorna o diagnóstico automático e os alertas de risco.",
-    parameters: { type: "object", properties: {}, required: [] },
-  },
-  {
-    name: "get_saude_financeira",
-    description: "Retorna o score de saúde financeira (financeiro + total) e as dimensões avaliadas.",
-    parameters: { type: "object", properties: {}, required: [] },
-  },
-  {
-    name: "get_prescritivo",
-    description: "Retorna as recomendações prescritivas de ações que o consultor pode propor ao cliente.",
-    parameters: { type: "object", properties: {}, required: [] },
-  },
-  {
-    name: "get_comparativo_simulado",
-    description: "Compara o cenário base com o cenário simulado atualmente ativo (alavancas do simulador).",
-    parameters: { type: "object", properties: {}, required: [] },
-  },
+  // --- Dados internos ---
+  { name: "get_premissas", description: "Premissas da empresa (regime, capital, prazos, caixa mínimo).", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_dre", description: "DRE completa anual e mensal.", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_indicadores", description: "Indicadores financeiros (margens, ROE/ROIC, liquidez, endividamento, ciclo).", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_fluxo_caixa", description: "Fluxo de caixa mensal, pior mês e alertas.", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_valuation", description: "Valuation: EV, equity, múltiplos, DCF, confiança.", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_diagnostico", description: "Diagnóstico automático e alertas de risco.", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_saude_financeira", description: "Score de saúde (financeiro + total).", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_prescritivo", description: "Recomendações prescritivas.", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_comparativo_simulado", description: "Compara base × cenário simulado ativo.", parameters: { type: "object", properties: {}, required: [] } },
   {
     name: "simular_alavanca",
-    description: "Aplica uma alavanca temporária e retorna o impacto. Use para responder 'e se cortar 20% dos fixos?'.",
+    description: "Aplica alavancas temporárias e retorna impacto. Use para responder 'e se cortar 20% dos fixos?'.",
     parameters: {
       type: "object",
       properties: {
-        receitaPct: { type: "number", description: "Variação % na receita (ex: -10 = corte de 10%, +5 = aumento de 5%)." },
-        cpvPct: { type: "number", description: "Variação % no CPV/CMV/CSP." },
-        fixosPct: { type: "number", description: "Variação % nos custos fixos." },
-        pmrDelta: { type: "number", description: "Variação em dias no PMR." },
-        pmpDelta: { type: "number", description: "Variação em dias no PMP." },
+        receitaPct: { type: "number" }, cpvPct: { type: "number" },
+        fixosPct: { type: "number" }, pmrDelta: { type: "number" }, pmpDelta: { type: "number" },
       },
       required: [],
     },
+  },
+
+  // --- Benchmark setorial ---
+  {
+    name: "listar_setores",
+    description: "Lista os setores disponíveis para comparação. Filtra opcionalmente por tipo (servicos/comercio/industria).",
+    parameters: { type: "object", properties: { tipo: { type: "string", enum: ["servicos", "comercio", "industria"] } }, required: [] },
+  },
+  {
+    name: "comparar_com_setor",
+    description: "Compara os indicadores da empresa com benchmarks de mercado (medianas P25/P50/P75). Use SEMPRE que o usuário perguntar 'isso é bom?', 'está acima da média?', 'como me comparo com o mercado?'.",
+    parameters: {
+      type: "object",
+      properties: {
+        setor: { type: "string", description: "ID ou parte do nome do setor (ex: 'varejo', 'consultoria', 'saas'). Se omitido, sugere o melhor match pelo tipo de negócio." },
+      },
+      required: [],
+    },
+  },
+
+  // --- Macro ---
+  {
+    name: "get_macro",
+    description: "Retorna os principais indicadores macro atuais (Selic, CDI, IPCA, IGP-M, câmbio) via API do Banco Central.",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "get_serie_macro",
+    description: "Retorna histórico de uma série macro do BCB.",
+    parameters: {
+      type: "object",
+      properties: {
+        serie: { type: "string", enum: MACRO_SERIES_KEYS as readonly string[] as string[] },
+        ultimos: { type: "number", description: "Quantos pontos (padrão 12)." },
+      },
+      required: ["serie"],
+    },
+  },
+
+  // --- Cenários ---
+  {
+    name: "listar_cenarios", description: "Lista cenários salvos para esta empresa.",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "salvar_cenario", description: "Salva o cenário simulado atual com um nome.",
+    parameters: { type: "object", properties: { nome: { type: "string" }, notas: { type: "string" } }, required: ["nome"] },
+  },
+  {
+    name: "excluir_cenario", description: "Remove um cenário salvo pelo id ou nome.",
+    parameters: { type: "object", properties: { idOuNome: { type: "string" } }, required: ["idOuNome"] },
+  },
+  {
+    name: "projetar",
+    description: "Projeta receita/EBITDA para N meses com premissas de crescimento.",
+    parameters: {
+      type: "object",
+      properties: {
+        meses: { type: "number", description: "12, 24, 36 ou 60." },
+        crescReceitaMensalPct: { type: "number" },
+        inflVariavelMensalPct: { type: "number" },
+        inflFixoMensalPct: { type: "number" },
+        margemEbitdaAlvoPct: { type: "number" },
+      },
+      required: ["meses"],
+    },
+  },
+  {
+    name: "sensibilidade",
+    description: "Análise de sensibilidade: varia ±20% receita/CPV/fixos e mede impacto na métrica escolhida.",
+    parameters: {
+      type: "object",
+      properties: { metrica: { type: "string", enum: ["ebitda", "lucroLiquido", "valuation", "margemEbitda"] } },
+      required: ["metrica"],
+    },
+  },
+
+  // --- Plano de ação ---
+  {
+    name: "listar_acoes", description: "Lista o plano de ação. Filtra por status opcional.",
+    parameters: { type: "object", properties: { status: { type: "string", enum: ["aberta", "em_andamento", "concluida", "cancelada"] } }, required: [] },
+  },
+  {
+    name: "criar_acao", description: "Adiciona uma ação ao plano (origem = chat).",
+    parameters: {
+      type: "object",
+      properties: {
+        titulo: { type: "string" },
+        descricao: { type: "string" },
+        responsavel: { type: "string" },
+        prazo: { type: "string", description: "Data ISO (YYYY-MM-DD) ou texto." },
+        impactoEsperado: { type: "string" },
+      },
+      required: ["titulo"],
+    },
+  },
+  {
+    name: "atualizar_acao", description: "Atualiza status/dados de uma ação.",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        status: { type: "string", enum: ["aberta", "em_andamento", "concluida", "cancelada"] },
+        responsavel: { type: "string" }, prazo: { type: "string" }, impactoEsperado: { type: "string" },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "excluir_acao", description: "Remove ação do plano.",
+    parameters: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+  },
+
+  // --- Compliance/Tributário ---
+  {
+    name: "simular_regime_tributario",
+    description: "Compara Simples × Presumido × Real e indica o de menor carga (heurístico).",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "checklist_compliance",
+    description: "Lista obrigações fiscais/trabalhistas aplicáveis ao regime atual.",
+    parameters: { type: "object", properties: {}, required: [] },
   },
 ];
 
@@ -81,8 +175,38 @@ export function asOpenAITools() {
   }));
 }
 
-export function runTool(name: string, args: any, state: AppState, simulatedState?: AppState): string {
+// ============================================================
+// Execução
+// ============================================================
+
+function compareSectorMd(state: AppState, sector: SectorBenchmark): string {
+  const { dre } = buildDRE(state, state.tax.regime);
+  const ind = calcIndicators(state, dre);
+  const rows: string[] = [];
+  rows.push(`## Comparativo com Setor: ${sector.label}`);
+  rows.push("");
+  rows.push("| Indicador | Seu valor | P25 | Mediana | P75 | Posição |");
+  rows.push("| --- | --- | --- | --- | --- | --- |");
+  const items = [
+    { label: "Margem Bruta", v: ind.margemBruta, b: sector.margemBruta, hi: true, unit: "%" },
+    { label: "Margem EBITDA", v: ind.margemEbitda, b: sector.margemEbitda, hi: true, unit: "%" },
+    { label: "Margem Líquida", v: ind.margemLiquida, b: sector.margemLiquida, hi: true, unit: "%" },
+    { label: "Giro do Ativo", v: ind.giroAtivo, b: sector.giroAtivo, hi: true, unit: "x" },
+    { label: "Endividamento", v: ind.endividamentoGeral, b: sector.endividamento, hi: false, unit: "%" },
+    { label: "PMR (dias)", v: state.revenue.pmr, b: sector.pmr, hi: false, unit: "d" },
+    { label: "PMP (dias)", v: state.revenue.pmp, b: sector.pmp, hi: false, unit: "d" },
+  ];
+  items.forEach(it => {
+    const r = rank(it.v, it.b, it.hi);
+    const fmt = (n: number) => it.unit === "x" ? n.toFixed(2) + "x" : `${n.toFixed(1)}${it.unit}`;
+    rows.push(`| ${it.label} | ${fmt(it.v)} | ${fmt(it.b.p25)} | ${fmt(it.b.p50)} | ${fmt(it.b.p75)} | ${r.label} |`);
+  });
+  return rows.join("\n");
+}
+
+export function runTool(name: string, args: any, state: AppState, simulatedState?: AppState): string | Promise<string> {
   const sec = getSectionsCached(state, simulatedState);
+  const company = state.companyName || "default";
   switch (name) {
     case "get_premissas": return sec.premissas;
     case "get_dre": return sec.dre;
@@ -94,6 +218,7 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
     case "get_prescritivo": return sec.prescritivo;
     case "get_comparativo_simulado":
       return sec.comparativo ?? "Nenhum cenário simulado ativo — todas as alavancas estão em 0.";
+
     case "simular_alavanca": {
       const params: SimulatorParams = {
         ...DEFAULT_SIM,
@@ -105,8 +230,121 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       };
       const simulated = applySimulator(state, params);
       const simSec = buildSections(state, simulated);
-      return simSec.comparativo ?? "Simulação aplicada, mas não foi possível calcular o comparativo.";
+      return simSec.comparativo ?? "Simulação aplicada, mas sem comparativo disponível.";
     }
+
+    // --- Setor ---
+    case "listar_setores": {
+      const list = listSectors(args?.tipo);
+      return `## Setores disponíveis\n\n${list.map(s => `- **${s.id}** — ${s.label} (${s.businessType})`).join("\n")}`;
+    }
+    case "comparar_com_setor": {
+      let sector = args?.setor ? findSector(String(args.setor)) : undefined;
+      if (!sector) {
+        // pega primeiro do tipo da empresa
+        sector = listSectors(state.businessType)[0];
+      }
+      if (!sector) return "Nenhum setor encontrado para comparação.";
+      return compareSectorMd(state, sector);
+    }
+
+    // --- Macro ---
+    case "get_macro": return getMacroSnapshot();
+    case "get_serie_macro": {
+      const k = args?.serie as SerieKey;
+      const n = Number(args?.ultimos) || 12;
+      if (!k) return "Parâmetro 'serie' obrigatório.";
+      return getSerieFormatted(k, n);
+    }
+
+    // --- Cenários ---
+    case "listar_cenarios": {
+      const all = listScenarios(company);
+      if (!all.length) return "_Nenhum cenário salvo._";
+      return "## Cenários salvos\n\n" + all.map(s => {
+        const sum = s.summary ? ` — EBITDA ${Math.round(s.summary.ebitda).toLocaleString("pt-BR")} (${s.summary.margemEbitda.toFixed(1)}%)` : "";
+        return `- **${s.name}** (${s.id})${sum}`;
+      }).join("\n");
+    }
+    case "salvar_cenario": {
+      if (!args?.nome) return "Parâmetro 'nome' obrigatório.";
+      // usa cenário simulado se houver; caso contrário, base
+      const target = simulatedState ?? state;
+      const { dre } = buildDRE(target, target.tax.regime);
+      const ind = calcIndicators(target, dre);
+      const params: SimulatorParams = { ...DEFAULT_SIM }; // se vier de simulador, idealmente passar os params atuais
+      const rec = saveScenario(company, {
+        name: String(args.nome),
+        notes: args?.notas ? String(args.notas) : undefined,
+        params,
+        summary: {
+          ebitda: dre.ebitda.reduce((a, b) => a + b, 0),
+          margemEbitda: ind.margemEbitda,
+          lucroLiquido: dre.lucroLiquido.reduce((a, b) => a + b, 0),
+        },
+      });
+      return `✅ Cenário **${rec.name}** salvo (id: ${rec.id}).`;
+    }
+    case "excluir_cenario": {
+      const rec = getScenario(company, String(args?.idOuNome || ""));
+      if (!rec) return "Cenário não encontrado.";
+      deleteScenario(company, rec.id);
+      return `🗑️ Cenário **${rec.name}** removido.`;
+    }
+    case "projetar": {
+      const months = Number(args?.meses) || 12;
+      const res = project(state, months, {
+        ...DEFAULT_PROJ,
+        revenueGrowthMonthlyPct: Number(args?.crescReceitaMensalPct ?? DEFAULT_PROJ.revenueGrowthMonthlyPct),
+        variableInflMonthlyPct: Number(args?.inflVariavelMensalPct ?? DEFAULT_PROJ.variableInflMonthlyPct),
+        fixedInflMonthlyPct: Number(args?.inflFixoMensalPct ?? DEFAULT_PROJ.fixedInflMonthlyPct),
+        targetEbitdaMarginPct: args?.margemEbitdaAlvoPct !== undefined ? Number(args.margemEbitdaAlvoPct) : undefined,
+      });
+      return projectionToMarkdown(res);
+    }
+    case "sensibilidade": {
+      const m = (args?.metrica as SensMetric) || "ebitda";
+      const rows = sensitivity(state, m);
+      return sensitivityToMarkdown(m, rows);
+    }
+
+    // --- Ações ---
+    case "listar_acoes": {
+      const items = listActions(company, args?.status ? { status: args.status as ActionStatus } : undefined);
+      return `## Plano de Ação${args?.status ? ` (${args.status})` : ""}\n\n` + actionsToMarkdown(items);
+    }
+    case "criar_acao": {
+      if (!args?.titulo) return "Parâmetro 'titulo' obrigatório.";
+      const a = createAction(company, {
+        titulo: String(args.titulo),
+        descricao: args?.descricao ? String(args.descricao) : undefined,
+        responsavel: args?.responsavel ? String(args.responsavel) : undefined,
+        prazo: args?.prazo ? String(args.prazo) : undefined,
+        impactoEsperado: args?.impactoEsperado ? String(args.impactoEsperado) : undefined,
+        origem: "chat",
+      });
+      return `✅ Ação criada: **${a.titulo}** (id: ${a.id}).`;
+    }
+    case "atualizar_acao": {
+      if (!args?.id) return "Parâmetro 'id' obrigatório.";
+      const a = updateAction(company, String(args.id), {
+        status: args?.status as ActionStatus | undefined,
+        responsavel: args?.responsavel,
+        prazo: args?.prazo,
+        impactoEsperado: args?.impactoEsperado,
+      });
+      return a ? `✅ Ação atualizada: **${a.titulo}** → ${a.status}.` : "Ação não encontrada.";
+    }
+    case "excluir_acao": {
+      if (!args?.id) return "Parâmetro 'id' obrigatório.";
+      deleteAction(company, String(args.id));
+      return "🗑️ Ação removida.";
+    }
+
+    // --- Compliance ---
+    case "simular_regime_tributario": return regimeComparisonToMarkdown(state);
+    case "checklist_compliance": return checklistToMarkdown(state);
+
     default:
       return `Ferramenta desconhecida: ${name}`;
   }
