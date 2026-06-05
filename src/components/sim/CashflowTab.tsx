@@ -83,6 +83,14 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
 
   return (
     <div className="space-y-6">
+      {mesesCriticos.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Badge variant="destructive" className="gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            Saldo ≤ {fmtBRL(limiar)} em {mesesCriticos.map((m) => m.mes).join(", ")}
+          </Badge>
+        </div>
+      )}
       {/* Sumário */}
       <div className="grid gap-3 md:grid-cols-4">
         <StatCard
@@ -104,14 +112,24 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
           sub="Operacional + Investimento + Financiamento"
           hint={{ description: "Quanto o caixa cresceu (ou caiu) no ano somando os 3 fluxos: operação, investimentos e financiamentos.", formula: "Fluxo Operacional + Fluxo de Investimento + Fluxo de Financiamento" }}
         />
-        <StatCard
-          label="Saldo final (Dez)"
-          value={fmtBRL(cf.totais.saldoFinal)}
-          tone={cf.totais.saldoFinal >= state.cashflow.caixaMinimo ? "pos" : cf.totais.saldoFinal >= 0 ? "warn" : "neg"}
-          sub={cf.totais.pioresMes ? `Pior mês: ${cf.totais.pioresMes.mes} = ${fmtBRL(cf.totais.pioresMes.saldo)}` : undefined}
-          hint={{ description: "Saldo de caixa projetado para dezembro. Deve ficar acima do caixa mínimo de segurança definido na configuração.", formula: "Saldo Inicial + Σ Variações mensais de caixa" }}
-        />
+        <div className="relative">
+          {mesesCriticos.length > 0 && (
+            <Badge variant="destructive" className="absolute right-2 top-2 z-10 gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              Crítico
+            </Badge>
+          )}
+          <StatCard
+            label="Saldo final (Dez)"
+            value={fmtBRL(cf.totais.saldoFinal)}
+            tone={mesesCriticos.length > 0 ? "neg" : cf.totais.saldoFinal >= state.cashflow.caixaMinimo ? "pos" : cf.totais.saldoFinal >= 0 ? "warn" : "neg"}
+            sub={cf.totais.pioresMes ? `Pior mês: ${cf.totais.pioresMes.mes} = ${fmtBRL(cf.totais.pioresMes.saldo)}` : undefined}
+            hint={{ description: "Saldo de caixa projetado para dezembro. Deve ficar acima do caixa mínimo de segurança definido na configuração.", formula: "Saldo Inicial + Σ Variações mensais de caixa" }}
+          />
+        </div>
       </div>
+
+
 
 
       {/* Movimentações de caixa não operacionais */}
