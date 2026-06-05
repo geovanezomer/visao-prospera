@@ -1,167 +1,110 @@
-## Objetivo
+# Plano: Consultor IA Completo — Módulos Invisíveis + Upload de Documentos
 
-Chat lateral embarcado (fechado por padrão) que conversa sobre **TUDO** que o sistema calcula, com **persona especialista** (CFO + Contador + Economista) e suporte a dois provedores: **LM Studio local** e **OpenAI API**.
+## Visão geral
+
+Sua intuição está certa: os 3 módulos **não precisam de UI própria** — eles vivem como **camadas de dados/serviços** que o chat acessa via *tool calling*. Isso mantém a interface limpa e dá superpoderes ao CFO conversacional.
+
+Adicionamos também **upload de imagens e PDFs** direto no chat (balancetes, contratos, notas, prints de relatórios externos).
 
 ---
 
-## 1. Provedores selecionáveis
+## 1. Módulo: Benchmark Setorial + Macro (invisível)
 
-`src/services/ai/providers.ts`
+**O que faz:** dá ao chat respostas tipo *"sua margem de 12% está acima da mediana do varejo (8%)"* e *"com Selic projetada em 10%, seu WACC deveria ser ~14%"*.
 
-```ts
-type Provider = "lmstudio" | "openai";
-interface AIConfig {
-  provider: Provider;
-  baseUrl: string;        // lmstudio: http://127.0.0.1:1234/v1 | openai: https://api.openai.com/v1
-  apiKey: string;         // vazio em lmstudio
-  model: string;
-  temperature: number;
-  includeSnapshot: boolean;
-}
+**Implementação:**
+- `src/services/benchmark/sectors.ts` — base estática JSON com medianas/quartis por setor CNAE (margem bruta, EBITDA, líquida, giro, endividamento, prazo médio). Fontes: Sebrae/Serasa/IBGE consolidadas manualmente em ~20 setores principais.
+- `src/services/macro/bcb.ts` — fetch das séries do **Banco Central (API SGS pública, sem chave)**: Selic, IPCA, CDI, câmbio USD/EUR. Cache de 6h em localStorage.
+- Exposto ao chat via novas tools: `get_benchmark(setor, indicador)`, `get_macro(serie, periodo)`, `comparar_com_setor(indicador)`.
+
+## 2. Módulo: Cenários Versionados (invisível ao usuário, visível ao chat)
+
+**O que faz:** o chat consegue *"salve este cenário como 'Otimista Q1'"*, *"compare base vs otimista"*, *"projete 24 meses com crescimento de 5% a.m."*.
+
+**Implementação:**
+- `src/services/scenarios/store.ts` — persistência em localStorage por empresa: `{ id, nome, criadoEm, alavancas, dreProjetado, indicadores }`.
+- `src/services/scenarios/projector.ts` — engine de projeção 12/24/60 meses usando alavancas atuais + curva configurável.
+- `src/services/scenarios/sensitivity.ts` — análise de sensibilidade (varia ±20% cada premissa, mede impacto no valuation/EBITDA).
+- Tools: `salvar_cenario(nome)`, `listar_cenarios()`, `comparar_cenarios(a, b)`, `projetar(meses, premissas)`, `sensibilidade(metrica)`.
+
+## 3. Módulo: Plano de Ação + Compliance (invisível)
+
+**O que faz:** rastreia decisões e dá checklist tributário/fiscal sob demanda.
+
+**Implementação:**
+- `src/services/actions/store.ts` — localStorage: `{ id, titulo, origem (alerta/chat), responsavel, prazo, status, criadoEm, resolvidoEm, impactoEsperado }`.
+- `src/services/compliance/tax.ts` — simulador de regime tributário (Simples × Presumido × Real) com break-even por faturamento/margem.
+- `src/services/compliance/checklist.ts` — lista de obrigações (DEFIS, ECF, SPED, eSocial) com periodicidade.
+- Tools: `criar_acao(titulo, prazo, responsavel)`, `listar_acoes(status)`, `marcar_concluida(id)`, `simular_regime_tributario()`, `checklist_compliance()`.
+
+## 4. Upload de Documentos no Chat
+
+**O que faz:** anexar PDFs (balancete, contrato, NF), imagens (print de relatório, foto de documento) e a IA lê o conteúdo.
+
+**Implementação:**
+- Botão de clipe no `AIChatSheet.tsx` → `<input type="file" accept="image/*,application/pdf">`.
+- **Imagens:** convertidas para base64 e enviadas como `image_url` nas mensagens (OpenAI Vision via gpt-4o / LM Studio com modelo vision local).
+- **PDFs:** extração client-side via `pdfjs-dist` (texto) — anexado como bloco de contexto na mensagem. Para PDFs escaneados, avisa o usuário que precisa OCR (futuro).
+- Limite: 10MB por arquivo, max 3 arquivos por mensagem.
+- Indicador visual de arquivos anexados (chips removíveis) antes de enviar.
+- Arquivos ficam apenas em memória da conversa (não persistem em localStorage para evitar estourar quota).
+
+## 5. Integração com o systemPrompt
+
+Atualizar `systemPrompt.ts` para informar ao modelo:
+- Quais tools novas existem e quando usar (ex: *"sempre que o usuário perguntar 'isso é bom?' chame `comparar_com_setor`"*).
+- Que pode receber imagens/PDFs e deve extrair números relevantes para o snapshot.
+- Glossário expandido com termos tributários (Fator R, Anexo III/V, PIS/COFINS cumulativo vs não-cumulativo).
+
+---
+
+## Estrutura de arquivos
+
+```text
+src/
+├── services/
+│   ├── ai/
+│   │   ├── tools.ts                    # EXPANDIR — registrar novas tools
+│   │   ├── systemPrompt.ts             # EXPANDIR — instruir uso + glossário
+│   │   └── attachments.ts              # NOVO — processar imagens/PDFs
+│   ├── benchmark/
+│   │   ├── sectors.ts                  # NOVO — base setorial
+│   │   └── sectors.data.json           # NOVO — dados
+│   ├── macro/
+│   │   └── bcb.ts                      # NOVO — API BCB SGS
+│   ├── scenarios/
+│   │   ├── store.ts                    # NOVO
+│   │   ├── projector.ts                # NOVO
+│   │   └── sensitivity.ts              # NOVO
+│   ├── actions/
+│   │   └── store.ts                    # NOVO
+│   └── compliance/
+│       ├── tax.ts                      # NOVO
+│       └── checklist.ts                # NOVO
+└── components/ai/
+    ├── AIChatSheet.tsx                 # EDITAR — botão upload + chips
+    └── AttachmentChip.tsx              # NOVO — UI dos anexos
 ```
 
-Persistido em `localStorage` (`gz-finance-ai-config`). Chave OpenAI também em localStorage (uso local Docker, conforme aceito).
+## Dependências novas
 
-Ambos provedores usam a **mesma API OpenAI-compatible** (`/chat/completions` com SSE). Só muda `baseUrl` + header `Authorization`.
+- `pdfjs-dist` (extração de texto de PDF no browser)
 
----
+## Ordem de implementação (entrego tudo num único batch)
 
-## 2. System Prompt — Persona Especialista + Contexto do Sistema
+1. Tools registry expandido + systemPrompt atualizado
+2. Benchmark + Macro (mais imediato em ROI)
+3. Cenários + projetor
+4. Plano de ação + Compliance tributário
+5. Upload de imagens (Vision) e PDFs no chat
+6. Sanity check: testar fluxo "envie balancete PDF → IA lê → compara com setor → sugere ação → salva no plano"
 
-```
-Você é um especialista sênior em finanças corporativas, atuando simultaneamente como:
-- CFO (Chief Financial Officer) com 20+ anos de experiência em empresas de médio porte
-- Contador (CRC ativo) com domínio de CPC, IFRS e legislação fiscal brasileira
-- Economista (CORECON) com foco em análise de investimentos e valuation
+## Observações importantes
 
-SOBRE O SISTEMA QUE VOCÊ ESTÁ ANALISANDO:
-Este é o "Visão Próspera", uma plataforma de simulação financeira e valuation
-para PMEs brasileiras. Ele constrói, a partir das premissas do usuário:
-- DRE mensal do ano-base e DRE anual projetada (até N anos)
-- Fluxo de caixa mensal com identificação do pior mês e runway
-- Indicadores: EBITDA, margens, ROE, ROIC, liquidez, endividamento, DSCR, cobertura de juros
-- Valuation por DCF (WACC, g, valor terminal) e múltiplos
-- Diagnóstico de saúde financeira com alertas de risco (default, capital de giro, custos fixos)
-- Análise de sensibilidade (tornado) e simulação Monte Carlo
-- Recomendações prescritivas para o consultor apresentar ao cliente
+- **Tudo em localStorage** mantém a arquitetura sem backend, fiel ao seu setup Docker/local.
+- **Benchmarks** começam com ~20 setores; fácil expandir depois.
+- **Vision** funciona nativo no OpenAI (`gpt-4o`); no LM Studio depende do modelo carregado (ex: `llava`, `qwen2-vl`). Detectamos e avisamos.
+- **Modelos invisíveis ≠ inacessíveis ao usuário**: se ele quiser, pode pedir *"liste meus cenários salvos"* ou *"mostre meu plano de ação"* — a IA responde formatado.
+- Mantém compatibilidade total com o que já foi construído (snapshot, threads, auditor mode, etc.).
 
-Seu trabalho é ajudar o consultor a interpretar esses números em reuniões com clientes:
-explicar o porquê, apontar riscos, sugerir ações e quantificar impactos.
-
-REGRAS INVIOLÁVEIS:
-1. Responda SOMENTE com base nos números do <SNAPSHOT> abaixo. Nunca invente valores.
-2. Se a informação não estiver no snapshot, diga claramente "não disponível nos dados".
-3. Sempre cite o número exato (R$ ou %) e a fonte (ex: "DRE Ano 2", "Indicadores", "Fluxo Mês 7").
-4. Tom: direto, executivo, em português brasileiro. Sem jargão desnecessário.
-5. Quando sugerir ações, quantifique o impacto esperado (ex: "cortar R$ Xk libera Y meses de caixa").
-6. Use markdown para tabelas e listas quando aumentar clareza.
-
-<SNAPSHOT>
-{snapshot markdown completo gerado dinamicamente}
-</SNAPSHOT>
-```
-
----
-
-## 3. Snapshot COMPLETO dos dados
-
-`src/services/ai/snapshot.ts` — serializa em markdown estruturado **tudo** que o sistema calcula:
-
-- **Empresa & premissas**: nome, setor, regime tributário, ano-base, horizonte, WACC, g, alíquotas
-- **DRE completa**: 12 meses ano-base + N anos projeção (`buildDRE`, `forecastDRE`)
-- **Receita**: por produto/serviço, sazonalidade, crescimento
-- **Custos**: CPV (folha + não-folha), fixos, variáveis, capex
-- **Fluxo de caixa**: mensal completo + pior mês + runway (`buildCashFlow`)
-- **Indicadores**: todos de `calcIndicators`
-- **Valuation**: VPL, TIR, valor terminal, múltiplos (`valuation`)
-- **Saúde**: score + riscos (`health`)
-- **Diagnóstico**: alertas e gargalos (`diagnose`)
-- **Monte Carlo**: percentis (se calculado)
-- **Sensibilidade**: tornado
-- **Prescritivo**: recomendações
-- **Estratégico**: cenários
-
-Tudo com seções markdown claras, números formatados em R$ e %. Auto-resume seções secundárias se exceder o limite do modelo, mantendo DRE + indicadores + valuation sempre completos.
-
----
-
-## 4. UI — Barra lateral fechada por padrão
-
-- `src/components/ai/AIFab.tsx` — botão flutuante (canto inferior direito), ícone de chat
-- `src/components/ai/AIChatSheet.tsx` — `Sheet` shadcn lado direito (~440px):
-  - Header: provedor ativo + ⚙️ config + 🗑️ limpar histórico
-  - Mensagens renderizadas com `react-markdown`
-  - Indicador "pensando…" durante stream
-  - Input com Enter para enviar, Shift+Enter quebra linha
-  - Sugestões iniciais ("Qual o VPL e o que ele significa?", "Por que o caixa fica negativo no mês X?", "O DSCR é saudável?", "O que cortar para melhorar o EBITDA?")
-- `src/components/ai/AIConfigDialog.tsx`:
-  - Select de provedor (LM Studio / OpenAI)
-  - Base URL (auto-preenchida, editável)
-  - API Key (campo seguro, só relevante em OpenAI)
-  - Select de modelo (lista via `GET /v1/models`)
-  - Slider temperatura (default 0.3 para precisão)
-  - Toggle "incluir snapshot de dados" (default ON)
-  - Botão "Testar conexão"
-
-Montado no layout raiz (ou em `routes/index.tsx`) para ficar disponível em todas as abas do simulador.
-
-Histórico em `localStorage` por empresa: `gz-finance-ai-chat-{companyName}` (últimas 50 msgs).
-
----
-
-## 5. Cliente unificado com streaming
-
-`src/services/ai/client.ts`
-
-```ts
-async function* streamChat(config, messages) {
-  const res = await fetch(`${config.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(config.apiKey && { Authorization: `Bearer ${config.apiKey}` }),
-    },
-    body: JSON.stringify({
-      model: config.model, messages,
-      temperature: config.temperature, stream: true,
-    }),
-  });
-  // parse SSE → yield delta.content
-}
-```
-
-Idêntico para LM Studio e OpenAI (mesma API).
-
----
-
-## Arquivos a criar
-
-- `src/services/ai/providers.ts`
-- `src/services/ai/client.ts`
-- `src/services/ai/snapshot.ts`
-- `src/services/ai/systemPrompt.ts` (persona + contexto do sistema)
-- `src/components/ai/AIFab.tsx`
-- `src/components/ai/AIChatSheet.tsx`
-- `src/components/ai/AIConfigDialog.tsx`
-
-## Arquivos a editar
-
-- Layout/rota raiz do simulador — montar `<AIFab />` + `<AIChatSheet />`
-- `package.json` — adicionar `react-markdown`
-
-## Não faz parte
-
-- Sem backend / sem server function (100% client-side, roda no Docker do usuário)
-- Sem persistência em banco
-- Sem tool-calling (read-only: LLM lê snapshot e responde)
-
----
-
-## Garantias
-
-1. **Persona especialista** (CFO + Contador + Economista) + contexto explícito do Visão Próspera embutidos no system prompt.
-2. Snapshot inclui **todos os outputs** dos módulos `finance/*`.
-3. Prompt obriga citar fonte exata e proíbe inventar números.
-4. Toggle "incluir snapshot" ligado por padrão; temperatura default baixa (0.3).
-5. Botão "Testar conexão" valida endpoint + modelo antes do uso.
-6. Sugestões iniciais mostram o alcance das perguntas possíveis.
+Posso implementar?

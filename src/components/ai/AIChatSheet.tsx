@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import {
   Settings, Trash2, Send, Loader2, Bot, User, Plus, MessageSquare,
   RefreshCcw, Copy, Download, ChevronDown, ChevronRight, Wrench, Edit2, Sparkles, Square,
+  Paperclip, FileText, ImageIcon, X,
 } from "lucide-react";
 import { AIConfigDialog } from "./AIConfigDialog";
 import {
@@ -17,6 +18,7 @@ import { chatWithTools, streamChat, type LLMMessage, type ToolCall } from "@/ser
 import { buildSnapshot, getSectionsCached } from "@/services/ai/snapshot";
 import { buildSystemPrompt } from "@/services/ai/systemPrompt";
 import { runTool } from "@/services/ai/tools";
+import { processFile, buildPdfContext, buildVisionMessageContent, MAX_FILES_PER_MSG, type ChatAttachment } from "@/services/ai/attachments";
 import type { AppState } from "@/lib/finance/types";
 import { toast } from "sonner";
 
@@ -53,8 +55,11 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
   const [showThreads, setShowThreads] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameVal, setRenameVal] = useState("");
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
+  const [processingFile, setProcessingFile] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // === Bootstrap por empresa ===
   useEffect(() => {
@@ -110,20 +115,29 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
 
   const send = async (text: string, opts?: { auditMode?: boolean; replaceLast?: boolean }) => {
     const content = text.trim();
-    if ((!content && !opts?.auditMode) || streaming) return;
+    if ((!content && !opts?.auditMode && attachments.length === 0) || streaming) return;
     if (!activeId) return;
+
+    const atts = attachments.slice();
+    const pdfCtx = buildPdfContext(atts);
+    const displayContent = content + (pdfCtx ? `\n\n_(📎 ${atts.length} anexo${atts.length > 1 ? "s" : ""})_` : "");
 
     let history = messages.slice();
     if (opts?.replaceLast) {
-      // remove última assistant (e tools associados) para regenerar
       while (history.length && history[history.length - 1].role !== "user") history.pop();
-    } else if (content) {
-      const userMsg: ChatMessage = { role: "user", content, ts: Date.now() };
+    } else if (content || atts.length) {
+      const userMsg: ChatMessage = {
+        role: "user",
+        content: displayContent,
+        ts: Date.now(),
+        attachments: atts.map(a => ({ name: a.name, type: a.type, size: a.size, error: a.error })),
+      } as ChatMessage;
       history = [...history, userMsg];
     }
 
     setMessages(history);
     setInput("");
+    setAttachments([]);
     setStreaming(true);
     touchThread(state.companyName, activeId);
 
@@ -131,14 +145,28 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
     const ac = new AbortController();
     abortRef.current = ac;
 
+    // Last user content para LLM: texto + pdfCtx + (se houver imagens, vira array vision)
+    const fullUserText = content + pdfCtx;
+    const hasImages = atts.some(a => a.type === "image" && a.dataUrl && !a.error);
+    const lastUserContent = hasImages ? buildVisionMessageContent(fullUserText, atts) : fullUserText;
+
+    const buildLlmHistory = (forTools: boolean): LLMMessage[] => {
+      const base: LLMMessage[] = [{ role: "system", content: sysPrompt }];
+      const filtered = history.filter(m => forTools ? (m.role === "user" || m.role === "assistant") : true);
+      filtered.forEach((m, idx) => {
+        const isLastUser = idx === filtered.length - 1 && m.role === "user";
+        const role = (m.role === "tool" ? "assistant" : m.role) as LLMMessage["role"];
+        base.push({
+          role,
+          content: isLastUser ? (lastUserContent as any) : m.content,
+        });
+      });
+      return base;
+    };
+
     // === Caminho 1: TOOL CALLING ===
     if (config.useTools) {
-      const llm: LLMMessage[] = [
-        { role: "system", content: sysPrompt },
-        ...history
-          .filter(m => m.role === "user" || m.role === "assistant")
-          .map(m => ({ role: m.role, content: m.content }) as LLMMessage),
-      ];
+      const llm = buildLlmHistory(true);
       const collected: ToolCall[] = [];
       try {
         const out = await chatWithTools(
@@ -181,10 +209,7 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
     }
 
     // === Caminho 2: STREAMING simples ===
-    const llm: LLMMessage[] = [
-      { role: "system", content: sysPrompt },
-      ...history.map(m => ({ role: m.role === "tool" ? "assistant" : m.role, content: m.content }) as LLMMessage),
-    ];
+    const llm = buildLlmHistory(false);
     let acc = "";
     setMessages([...history, { role: "assistant", content: "", ts: Date.now() }]);
     try {
@@ -211,6 +236,28 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
       abortRef.current = null;
     }
   };
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const remaining = MAX_FILES_PER_MSG - attachments.length;
+    if (remaining <= 0) { toast.error(`Máx ${MAX_FILES_PER_MSG} anexos por mensagem.`); return; }
+    const toProcess = Array.from(files).slice(0, remaining);
+    setProcessingFile(true);
+    try {
+      const results: ChatAttachment[] = [];
+      for (const f of toProcess) {
+        const att = await processFile(f);
+        if (att.error) toast.error(`${att.name}: ${att.error}`);
+        results.push(att);
+      }
+      setAttachments(prev => [...prev, ...results]);
+    } finally {
+      setProcessingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeAttachment = (id: string) => setAttachments(prev => prev.filter(a => a.id !== id));
 
   const handleStop = () => abortRef.current?.abort();
 
@@ -389,12 +436,41 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
           </div>
 
           <div className="border-t border-border/40 p-3">
+            {attachments.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {attachments.map(a => (
+                  <div key={a.id} className={`inline-flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] ${a.error ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-border/40 bg-muted/30"}`}>
+                    {a.type === "image" ? <ImageIcon className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+                    <span className="max-w-[140px] truncate">{a.name}</span>
+                    <span className="text-muted-foreground">{Math.round(a.size / 1024)}kb</span>
+                    <button onClick={() => removeAttachment(a.id)} className="ml-0.5 hover:text-foreground"><X className="h-3 w-3" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex items-end gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                multiple
+                className="hidden"
+                onChange={(e) => void handleFiles(e.target.files)}
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={streaming || processingFile || attachments.length >= MAX_FILES_PER_MSG}
+                title={`Anexar imagem ou PDF (máx ${MAX_FILES_PER_MSG})`}
+              >
+                {processingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+              </Button>
               <Textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKey}
-                placeholder="Pergunte sobre DRE, caixa, valuation, riscos…"
+                placeholder="Pergunte sobre DRE, caixa, valuation, riscos… ou anexe um balancete/print"
                 rows={2}
                 className="min-h-[44px] resize-none text-sm"
                 disabled={streaming}
@@ -402,7 +478,7 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
               {streaming ? (
                 <Button variant="outline" size="icon" onClick={handleStop} title="Parar"><Square className="h-4 w-4" /></Button>
               ) : (
-                <Button size="icon" onClick={() => void send(input)} disabled={!input.trim()} title="Enviar (Enter)"><Send className="h-4 w-4" /></Button>
+                <Button size="icon" onClick={() => void send(input)} disabled={!input.trim() && attachments.length === 0} title="Enviar (Enter)"><Send className="h-4 w-4" /></Button>
               )}
             </div>
             <p className="mt-1.5 text-[10px] text-muted-foreground">
