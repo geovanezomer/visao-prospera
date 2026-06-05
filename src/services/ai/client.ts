@@ -1,23 +1,52 @@
-// Cliente unificado para LM Studio e OpenAI (API OpenAI-compatible).
+// Cliente unificado: streaming, tool-calling, retry, timeout.
 import type { AIConfig } from "./providers";
+import { asOpenAITools } from "./tools";
 
 export interface LLMMessage {
-  role: "system" | "user" | "assistant";
+  role: "system" | "user" | "assistant" | "tool";
   content: string;
+  tool_call_id?: string;
+  tool_calls?: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }>;
+  name?: string;
 }
 
-/** Lista modelos disponíveis no endpoint (GET /v1/models). */
+const headers = (cfg: AIConfig) => ({
+  "Content-Type": "application/json",
+  ...(cfg.apiKey ? { Authorization: `Bearer ${cfg.apiKey}` } : {}),
+});
+
+function withTimeout(cfg: AIConfig, signal?: AbortSignal): { signal: AbortSignal; cancel: () => void } {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(new Error("timeout")), cfg.timeoutMs);
+  if (signal) signal.addEventListener("abort", () => ac.abort(signal.reason), { once: true });
+  return { signal: ac.signal, cancel: () => clearTimeout(t) };
+}
+
+async function fetchWithRetry(url: string, init: RequestInit, retries = 2): Promise<Response> {
+  let lastErr: any;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const res = await fetch(url, init);
+      if (res.status === 429 || res.status >= 500) {
+        if (i < retries) { await new Promise(r => setTimeout(r, 600 * (i + 1))); continue; }
+      }
+      return res;
+    } catch (e: any) {
+      lastErr = e;
+      if (e?.name === "AbortError") throw e;
+      if (i < retries) { await new Promise(r => setTimeout(r, 500 * (i + 1))); continue; }
+    }
+  }
+  throw lastErr ?? new Error("fetch failed");
+}
+
 export async function listModels(cfg: AIConfig): Promise<string[]> {
-  const res = await fetch(`${cfg.baseUrl}/models`, {
-    headers: cfg.apiKey ? { Authorization: `Bearer ${cfg.apiKey}` } : {},
-  });
+  const res = await fetch(`${cfg.baseUrl}/models`, { headers: headers(cfg) });
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text().catch(() => "")}`);
   const json = await res.json();
-  const arr = Array.isArray(json?.data) ? json.data : [];
-  return arr.map((m: any) => m.id).filter(Boolean);
+  return (Array.isArray(json?.data) ? json.data : []).map((m: any) => m.id).filter(Boolean);
 }
 
-/** Testa conexão fazendo uma chamada mínima. */
 export async function testConnection(cfg: AIConfig): Promise<{ ok: boolean; message: string }> {
   try {
     const models = await listModels(cfg);
@@ -27,56 +56,128 @@ export async function testConnection(cfg: AIConfig): Promise<{ ok: boolean; mess
   }
 }
 
-/** Stream de chat completion (SSE). Yields deltas de texto. */
+/** Stream simples sem tools. */
 export async function* streamChat(
   cfg: AIConfig,
   messages: LLMMessage[],
   signal?: AbortSignal,
 ): AsyncGenerator<string, void, unknown> {
-  const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
-    method: "POST",
-    signal,
-    headers: {
-      "Content-Type": "application/json",
-      ...(cfg.apiKey ? { Authorization: `Bearer ${cfg.apiKey}` } : {}),
-    },
-    body: JSON.stringify({
-      model: cfg.model,
-      messages,
-      temperature: cfg.temperature,
-      stream: true,
-    }),
-  });
+  const { signal: s, cancel } = withTimeout(cfg, signal);
+  try {
+    const res = await fetchWithRetry(`${cfg.baseUrl}/chat/completions`, {
+      method: "POST",
+      signal: s,
+      headers: headers(cfg),
+      body: JSON.stringify({
+        model: cfg.model,
+        messages,
+        temperature: cfg.temperature,
+        stream: true,
+      }),
+    });
 
-  if (!res.ok || !res.body) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
-  }
+    if (!res.ok || !res.body) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
+    }
 
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || !trimmed.startsWith("data:")) continue;
-      const payload = trimmed.slice(5).trim();
-      if (payload === "[DONE]") return;
-      try {
-        const obj = JSON.parse(payload);
-        const delta = obj?.choices?.[0]?.delta?.content;
-        if (typeof delta === "string" && delta) yield delta;
-      } catch {
-        // ignora linhas parciais
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t || !t.startsWith("data:")) continue;
+        const payload = t.slice(5).trim();
+        if (payload === "[DONE]") return;
+        try {
+          const obj = JSON.parse(payload);
+          const delta = obj?.choices?.[0]?.delta?.content;
+          if (typeof delta === "string" && delta) yield delta;
+        } catch {}
       }
     }
+  } finally {
+    cancel();
   }
+}
+
+// ============================================================
+// Round-trip com TOOLS (não-streaming): loop até finalizar
+// ============================================================
+export interface ToolCall {
+  id: string;
+  name: string;
+  arguments: any;
+  result?: string;
+}
+
+export interface ToolRoundResult {
+  finalText: string;
+  toolCalls: ToolCall[];
+}
+
+export async function chatWithTools(
+  cfg: AIConfig,
+  initialMessages: LLMMessage[],
+  runTool: (name: string, args: any) => string,
+  opts?: { maxRounds?: number; signal?: AbortSignal; onProgress?: (e: { type: "tool"; call: ToolCall } | { type: "text"; delta: string }) => void },
+): Promise<ToolRoundResult> {
+  const maxRounds = opts?.maxRounds ?? 5;
+  const calls: ToolCall[] = [];
+  const messages = initialMessages.slice();
+
+  for (let i = 0; i < maxRounds; i++) {
+    const { signal: s, cancel } = withTimeout(cfg, opts?.signal);
+    let res: Response;
+    try {
+      res = await fetchWithRetry(`${cfg.baseUrl}/chat/completions`, {
+        method: "POST",
+        signal: s,
+        headers: headers(cfg),
+        body: JSON.stringify({
+          model: cfg.model,
+          messages,
+          temperature: cfg.temperature,
+          tools: asOpenAITools(),
+          tool_choice: "auto",
+          stream: false,
+        }),
+      });
+    } finally { cancel(); }
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
+    }
+    const json = await res.json();
+    const choice = json?.choices?.[0];
+    const msg = choice?.message;
+    const toolCalls = msg?.tool_calls;
+
+    if (toolCalls && toolCalls.length > 0) {
+      messages.push({ role: "assistant", content: msg.content || "", tool_calls: toolCalls });
+      for (const tc of toolCalls) {
+        let args: any = {};
+        try { args = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {}; } catch {}
+        const result = runTool(tc.function.name, args);
+        const call: ToolCall = { id: tc.id, name: tc.function.name, arguments: args, result };
+        calls.push(call);
+        opts?.onProgress?.({ type: "tool", call });
+        messages.push({ role: "tool", tool_call_id: tc.id, name: tc.function.name, content: result });
+      }
+      continue;
+    }
+
+    const finalText = msg?.content || "";
+    if (opts?.onProgress) opts.onProgress({ type: "text", delta: finalText });
+    return { finalText, toolCalls: calls };
+  }
+
+  return { finalText: "_(Limite de rodadas de tool-calling atingido sem resposta final.)_", toolCalls: calls };
 }

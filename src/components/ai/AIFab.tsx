@@ -4,7 +4,13 @@ import { Button } from "@/components/ui/button";
 import { AIChatSheet } from "./AIChatSheet";
 import type { AppState } from "@/lib/finance/types";
 
-export function AIFab({ state }: { state: AppState }) {
+interface Props {
+  state: AppState;
+  simulatedState?: AppState;
+  simActive?: number;
+}
+
+export function AIFab({ state, simulatedState, simActive }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -16,7 +22,13 @@ export function AIFab({ state }: { state: AppState }) {
       >
         <Bot className="h-5 w-5" />
       </Button>
-      <AIChatSheet open={open} onOpenChange={setOpen} state={state} />
+      <AIChatSheet
+        open={open}
+        onOpenChange={setOpen}
+        state={state}
+        simulatedState={simulatedState}
+        simActive={simActive}
+      />
     </>
   );
 }
