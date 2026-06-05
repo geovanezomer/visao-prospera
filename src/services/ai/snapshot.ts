@@ -8,7 +8,7 @@ import { buildCashFlow } from "@/lib/finance/cashflow";
 import { buildValuation, defaultValuationParams } from "@/lib/finance/valuation";
 import { computeHealth } from "@/lib/finance/health";
 import { buildPrescriptiveCards } from "@/lib/finance/prescriptive";
-import { MESES, sum, fmtBRL, fmtPct, fmtNum } from "@/lib/finance/format";
+import { MESES, sum, fmtNum } from "@/lib/finance/format";
 
 const brl = (n: number) =>
   Number.isFinite(n)
