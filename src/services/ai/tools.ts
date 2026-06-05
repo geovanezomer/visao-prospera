@@ -97,11 +97,11 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
     case "simular_alavanca": {
       const params: SimulatorParams = {
         ...DEFAULT_SIM,
-        receitaPct: Number(args?.receitaPct) || 0,
-        cpvPct: Number(args?.cpvPct) || 0,
-        fixosPct: Number(args?.fixosPct) || 0,
-        pmrDelta: Number(args?.pmrDelta) || 0,
-        pmpDelta: Number(args?.pmpDelta) || 0,
+        priceDeltaPct: Number(args?.receitaPct) || 0,
+        cpvDeltaPct: Number(args?.cpvPct) || 0,
+        fixedCutPct: Math.max(0, -(Number(args?.fixosPct) || 0)),
+        pmrDeltaDays: Math.min(0, Number(args?.pmrDelta) || 0),
+        pmpDeltaDays: Math.max(0, Number(args?.pmpDelta) || 0),
       };
       const simulated = applySimulator(state, params);
       const simSec = buildSections(state, simulated);
