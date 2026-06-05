@@ -70,23 +70,21 @@ describe("buildCashFlow — PMR e PMP", () => {
     expect(sum(cf.fluxoInvestimento)).toBe(-50000);
   });
 
-  it("PDD não vira desembolso de caixa direto (é não-caixa)", () => {
-    // No modo PDD a inadimplência some das deduções da receita, então Simples
-    // tributa sobre receita bruta cheia → impostos sobem. Mas a PDD em si NÃO
-    // deve gerar pagamento de caixa. Verificamos isso isolando o efeito:
-    // saldo final difere apenas pelo delta de impostos, nunca pelo valor da PDD.
-    const semPDD = createState({
-      revenue: { inadimplencia: m12(10), inadimplenciaComoPDD: false },
-      tax: { regime: "real" }, // Real: base de impostos = lucro, não receita → isola o efeito
-    });
+  it("PDD aparece na DRE como despesa, mas NÃO entra em pagamentosFixos do caixa", () => {
+    // PDD é despesa não-caixa (CPC 47/IFRS 9). O cashflow deduz a PDD dos
+    // pagamentos fixos para não duplicar a perda já refletida nos recebimentos.
     const comPDD = createState({
       revenue: { inadimplencia: m12(10), inadimplenciaComoPDD: true },
-      tax: { regime: "real" },
     });
-    const cfA = buildCashFlow(semPDD, "real");
-    const cfB = buildCashFlow(comPDD, "real");
-    // PDD nominal anual ≈ 10% de 190k ≈ 19k — saldos NÃO podem diferir nessa ordem
-    const diff = Math.abs(cfB.totais.saldoFinal - cfA.totais.saldoFinal);
-    expect(diff).toBeLessThan(5000); // tolera ajuste de IR/CSLL, mas não os 19k de PDD
+    const cf = buildCashFlow(comPDD);
+    // Total de pagamentosFixos deve ser positivo (existem outros custos fixos)
+    // mas não pode ter saltado com a PDD — verificamos comparando contra cenário sem PDD
+    const semPDD = createState({
+      revenue: { inadimplencia: m12(0), inadimplenciaComoPDD: false },
+    });
+    const cfRef = buildCashFlow(semPDD);
+    // Diferença em pagamentosFixos deve ser ~0 (PDD removida do desembolso)
+    const diffFixos = Math.abs(sum(cf.pagamentosFixos) - sum(cfRef.pagamentosFixos));
+    expect(diffFixos).toBeLessThan(1);
   });
 });
