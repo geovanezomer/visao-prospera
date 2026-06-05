@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { AppState } from "@/lib/finance/types";
 import { fmtBRL, fmtBRLCompact, MESES, sum } from "@/lib/finance/format";
-import { buildCashFlow, computeBurnRunway } from "@/lib/finance/cashflow";
+import { buildCashFlow, computeBurnRunway, computeAlertas, computePiorMes } from "@/lib/finance/cashflow";
 import { MoneyInput, SectionTitle, StatCard } from "./primitives";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle } from "lucide-react";
@@ -54,9 +54,12 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
       },
     }));
 
+  const alertas = computeAlertas(cf.saldoFinal, state.cashflow.caixaMinimo);
+  const piorMes = computePiorMes(cf.saldoFinal);
+
   // Mapa de meses críticos: para destacar pontos no gráfico.
   const criticalByMes: Record<string, "negativo" | "abaixoMinimo"> = {};
-  cf.alertas.forEach((a) => {
+  alertas.forEach((a) => {
     // Em caso de empate, "negativo" prevalece (mais severo).
     if (criticalByMes[a.mes] !== "negativo") criticalByMes[a.mes] = a.tipo;
   });
@@ -137,7 +140,7 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
             label="Saldo final (Dez)"
             value={fmtBRL(cf.totais.saldoFinal)}
             tone={mesesCriticos.length > 0 ? "neg" : cf.totais.saldoFinal >= state.cashflow.caixaMinimo ? "pos" : cf.totais.saldoFinal >= 0 ? "warn" : "neg"}
-            sub={cf.totais.pioresMes ? `Pior mês: ${cf.totais.pioresMes.mes} = ${fmtBRL(cf.totais.pioresMes.saldo)}` : undefined}
+            sub={piorMes ? `Pior mês: ${piorMes.mes} = ${fmtBRL(piorMes.saldo)}` : undefined}
             hint={{ description: "Saldo de caixa projetado para dezembro. Deve ficar acima do caixa mínimo de segurança definido na configuração.", formula: "Saldo Inicial + Σ Variações mensais de caixa" }}
           />
         </div>
