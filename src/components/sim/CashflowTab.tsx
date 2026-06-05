@@ -54,9 +54,12 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
       },
     }));
 
+  const alertas = computeAlertas(cf.saldoFinal, state.cashflow.caixaMinimo);
+  const piorMes = computePiorMes(cf.saldoFinal);
+
   // Mapa de meses críticos: para destacar pontos no gráfico.
   const criticalByMes: Record<string, "negativo" | "abaixoMinimo"> = {};
-  cf.alertas.forEach((a) => {
+  alertas.forEach((a) => {
     // Em caso de empate, "negativo" prevalece (mais severo).
     if (criticalByMes[a.mes] !== "negativo") criticalByMes[a.mes] = a.tipo;
   });
