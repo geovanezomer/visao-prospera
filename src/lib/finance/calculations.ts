@@ -149,15 +149,16 @@ export interface MonthlyTax {
   detail: Record<string, number>;
 }
 
-/** Adicional IRPJ trimestral: 10% sobre lucro trimestral acima de R$60k (R$20k × 3 meses). */
-function adicionalIrpjTrimestral(baseMensal: number[]): number[] {
+/** Adicional IRPJ trimestral: % sobre lucro trimestral acima do gatilho (R$20k × 3 meses por padrão). */
+function adicionalIrpjTrimestral(baseMensal: number[], tax: TaxConfig): number[] {
   const out = zeros12();
+  const aliq = getIrpjAdicionalPct(tax) / 100;
+  const gatilho = getIrpjAdicionalGatilhoTri(tax);
   for (let t = 0; t < 4; t++) {
     const m0 = t * 3;
     const baseTri = (baseMensal[m0] || 0) + (baseMensal[m0 + 1] || 0) + (baseMensal[m0 + 2] || 0);
-    const excedente = Math.max(0, baseTri - 60000);
-    const adic = excedente * 0.10;
-    // distribui proporcionalmente entre os meses do trimestre
+    const excedente = Math.max(0, baseTri - gatilho);
+    const adic = excedente * aliq;
     const totalBase = baseTri > 0 ? baseTri : 1;
     for (let k = 0; k < 3; k++) {
       const i = m0 + k;
@@ -168,19 +169,20 @@ function adicionalIrpjTrimestral(baseMensal: number[]): number[] {
 }
 
 export function calcSimples(state: AppState): MonthlyTax {
-  const { revenue } = state;
+  const { revenue, tax } = state;
   const trib = receitaTributavel(state);
   const anexo = resolveSimplesAnexo(state);
   const rbAnual = sum(trib);
-  const aliq = simplesAliquotaEfetiva(rbAnual, anexo) / 100;
+  const aliq = simplesAliquotaEfetiva(rbAnual, anexo, tax) / 100;
   const monthly = trib.map((r) => r * aliq);
   const annual = sum(monthly);
   const rbBrutaAnual = sum(revenue.bruta);
-  const excedeu = rbBrutaAnual > LIMITE_SIMPLES;
+  const limite = getSimplesLimite(tax);
+  const excedeu = rbBrutaAnual > limite;
   const detail: Record<string, number> = { [`DAS Simples (Anexo ${anexo})`]: annual };
   if (excedeu) {
-    // Sinaliza desenquadramento: ao exceder R$ 4,8M a empresa deve migrar para Lucro Presumido/Real.
-    detail["⚠ Excedeu limite Simples (R$ 4,8M) — desenquadramento obrigatório"] = 0;
+    const limMi = (limite / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+    detail[`⚠ Excedeu limite Simples (R$ ${limMi}M) — desenquadramento obrigatório`] = 0;
   }
   return {
     monthly,
@@ -197,7 +199,7 @@ export function calcSimples(state: AppState): MonthlyTax {
 export function calcPresumido(state: AppState): MonthlyTax {
   const { revenue, tax, businessType } = state;
   const trib = receitaTributavel(state);
-  const bases = presumidoBases(businessType);
+  const bases = getPresumidoBases(tax, businessType);
   const baseIRPJ = (tax.presumidoBaseIRPJ || bases.irpj) / 100;
   const baseCSLL = (tax.presumidoBaseCSLL || bases.csll) / 100;
   const iss = tax.issIcms / 100;
@@ -206,6 +208,10 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
   const reforma = getReformaRates(tax.era, tax);
   const usaReforma = reforma.cbsPct > 0 || reforma.ibsPct > 0 || reforma.pisCofinsMult < 1 || reforma.icmsIssMult < 1;
+  const irpjAliq = getIrpjPct(tax) / 100;
+  const csllAliq = getCsllPct(tax) / 100;
+  const pisAliq = getPisCumPct(tax) / 100;
+  const cofinsAliq = getCofinsCumPct(tax) / 100;
 
   // CPV mensal — base de crédito (ICMS antigo e também CBS/IBS amplo na reforma).
   // EXCLUI linhas marcadas semCredito (ICMS-ST etc.). Pós-2033 ICMS-ST deixa de existir,
