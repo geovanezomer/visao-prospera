@@ -79,6 +79,7 @@ export interface ChatMessage {
   content: string;
   ts: number;
   toolName?: string;
+  attachments?: Array<{ name: string; type: "image" | "pdf"; size: number; error?: string }>;
 }
 
 export interface ChatThread {
