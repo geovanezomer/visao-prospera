@@ -290,64 +290,45 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
       </div>
 
       {/* Burn Rate & Runway */}
-      {(() => {
-        const burnMensal = cf.fluxoOperacional.map((v) => -v); // positivo = queima de caixa
-        const burnMedio12 = burnMensal.reduce((a, b) => a + b, 0) / 12;
-        const burnMedio3 = burnMensal.slice(-3).reduce((a, b) => a + b, 0) / 3;
-        const caixaAtual = state.capital.disponibilidades;
-        const recebiveis = state.capital.contasReceber || 0;
-        const colchao = caixaAtual + recebiveis;
-        const runwayMeses = burnMedio3 > 0 ? colchao / burnMedio3 : Infinity;
-        const queimando = burnMedio3 > 0;
-        const runwayLabel = !queimando
-          ? "∞ (operação gera caixa)"
-          : runwayMeses >= 24
-          ? "24+ meses"
-          : `${runwayMeses.toFixed(1)} meses`;
-        const runwayTone: "pos" | "neg" | "warn" =
-          !queimando ? "pos" : runwayMeses >= 12 ? "pos" : runwayMeses >= 6 ? "warn" : "neg";
-        return (
-          <div className="rounded-lg border border-border/60 bg-card/40 p-4">
-            <SectionTitle hint="Burn rate é o ritmo de consumo de caixa pela operação. Runway estima por quantos meses o caixa atual + recebíveis sustentam a empresa, considerando o burn médio dos últimos 3 meses.">
-              Burn Rate & Runway
-            </SectionTitle>
-            <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <StatCard
-                label="Burn rate médio (12m)"
-                value={burnMedio12 > 0 ? `${fmtBRL(burnMedio12)}/mês` : `+${fmtBRL(-burnMedio12)}/mês`}
-                tone={burnMedio12 > 0 ? "neg" : "pos"}
-                sub={burnMedio12 > 0 ? "Caixa consumido por mês" : "Operação gerou caixa"}
-                hint={{ description: "Média mensal de consumo (ou geração) operacional de caixa no ano.", formula: "Σ (Pagamentos Operacionais − Recebimentos) ÷ 12" }}
-              />
-              <StatCard
-                label="Burn rate (últimos 3m)"
-                value={burnMedio3 > 0 ? `${fmtBRL(burnMedio3)}/mês` : `+${fmtBRL(-burnMedio3)}/mês`}
-                tone={burnMedio3 > 0 ? "neg" : "pos"}
-                sub="Base de cálculo do runway"
-                hint={{ description: "Média de queima de caixa nos últimos 3 meses do horizonte projetado. Mais sensível ao momento atual da operação.", formula: "Σ (−Fluxo Operacional dos últimos 3 meses) ÷ 3" }}
-              />
-              <StatCard
-                label="Runway"
-                value={runwayLabel}
-                tone={runwayTone}
-                sub={`Caixa ${fmtBRL(caixaAtual)} + CR ${fmtBRL(recebiveis)}`}
-                hint={{ description: "Quantos meses o colchão de caixa + recebíveis sustenta a empresa, mantido o burn médio dos últimos 3 meses.", formula: "(Disponibilidades + Contas a Receber) ÷ Burn médio 3m" }}
-              />
-            </div>
-            {queimando && runwayMeses < 6 && (
-              <div className="mt-3 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                <div>
-                  <div className="font-semibold text-destructive">Runway curto: menos de 6 meses</div>
-                  <div className="mt-0.5 text-muted-foreground">
-                    Considere reduzir custos, captar capital ou acelerar recebimentos para estender a sobrevida operacional.
-                  </div>
-                </div>
+      <div className="rounded-lg border border-border/60 bg-card/40 p-4">
+        <SectionTitle hint="Burn rate é o ritmo de consumo de caixa pela operação. Runway estima por quantos meses o caixa atual + recebíveis sustentam a empresa, considerando o burn médio dos últimos 3 meses.">
+          Burn Rate & Runway
+        </SectionTitle>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          <StatCard
+            label="Burn rate médio (12m)"
+            value={burnRunway.burnMedio12 > 0 ? `${fmtBRL(burnRunway.burnMedio12)}/mês` : `+${fmtBRL(-burnRunway.burnMedio12)}/mês`}
+            tone={burnRunway.burnMedio12 > 0 ? "neg" : "pos"}
+            sub={burnRunway.burnMedio12 > 0 ? "Caixa consumido por mês" : "Operação gerou caixa"}
+            hint={{ description: "Média mensal de consumo (ou geração) operacional de caixa no ano.", formula: "Σ (Pagamentos Operacionais − Recebimentos) ÷ 12" }}
+          />
+          <StatCard
+            label="Burn rate (últimos 3m)"
+            value={burnRunway.burnMedio3 > 0 ? `${fmtBRL(burnRunway.burnMedio3)}/mês` : `+${fmtBRL(-burnRunway.burnMedio3)}/mês`}
+            tone={burnRunway.burnMedio3 > 0 ? "neg" : "pos"}
+            sub="Base de cálculo do runway"
+            hint={{ description: "Média de queima de caixa nos últimos 3 meses do horizonte projetado. Mais sensível ao momento atual da operação.", formula: "Σ (−Fluxo Operacional dos últimos 3 meses) ÷ 3" }}
+          />
+          <StatCard
+            label="Runway"
+            value={runwayLabel}
+            tone={runwayTone}
+            sub={`Caixa ${fmtBRL(caixaAtual)} + CR ${fmtBRL(recebiveis)}`}
+            hint={{ description: "Quantos meses o colchão de caixa + recebíveis sustenta a empresa, mantido o burn médio dos últimos 3 meses.", formula: "(Disponibilidades + Contas a Receber) ÷ Burn médio 3m" }}
+          />
+        </div>
+        {burnRunway.queimando && burnRunway.runwayMeses < 6 && (
+          <div className="mt-3 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+            <div>
+              <div className="font-semibold text-destructive">Runway curto: menos de 6 meses</div>
+              <div className="mt-0.5 text-muted-foreground">
+                Considere reduzir custos, captar capital ou acelerar recebimentos para estender a sobrevida operacional.
               </div>
-            )}
+            </div>
           </div>
-        );
-      })()}
+        )}
+      </div>
 
       {/* Gráfico de saldo */}
 
