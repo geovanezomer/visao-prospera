@@ -6,6 +6,7 @@ import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "
 import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
 import { HealthScoreCard, SensitivityCard } from "./AnalysisTab";
+import { CriticalAlertsBanner } from "./CriticalAlertsBanner";
 
 
 export function DiagnosisTab({
@@ -30,6 +31,9 @@ export function DiagnosisTab({
 
   return (
     <div className="space-y-6">
+      {/* Alertas críticos consolidados — leitura imediata */}
+      <CriticalAlertsBanner state={state} />
+
       {/* Análises avançadas */}
       <HealthScoreCard state={state} />
       <SensitivityCard state={state} />
