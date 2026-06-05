@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, AlertTriangle, X } from "lucide-react";
 import { AIConfig, Provider, switchProvider } from "@/services/ai/providers";
 import { listModels, testConnection } from "@/services/ai/client";
 
@@ -41,13 +40,16 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
     setTesting(false);
   };
 
+  if (!open) return null;
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-lg p-0">
-        <div className="flex flex-col h-full">
-          <SheetHeader className="border-b border-border/40 px-4 py-3 space-y-0">
-            <SheetTitle className="text-sm">Configurar Consultor IA</SheetTitle>
-          </SheetHeader>
+    <div className="absolute inset-0 z-20 flex flex-col bg-background shadow-2xl">
+      <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
+        <h2 className="text-sm font-semibold text-foreground">Configurar Consultor IA</h2>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onOpenChange(false)} title="Fechar configurações">
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
             <div className="space-y-1.5">
@@ -160,12 +162,10 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
             </div>
           </div>
 
-          <SheetFooter className="border-t border-border/40 px-4 py-3">
+          <div className="flex flex-col-reverse gap-2 border-t border-border/40 px-4 py-3 sm:flex-row sm:justify-end">
             <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button onClick={() => { onSave(draft); onOpenChange(false); }}>Salvar</Button>
-          </SheetFooter>
-        </div>
-      </SheetContent>
-    </Sheet>
+          </div>
+    </div>
   );
 }
