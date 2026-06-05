@@ -23,9 +23,7 @@ function tryRun<T>(fn: () => T, fallback: T): T {
 
 function table(headers: string[], rows: string[][]): string {
   const sep = headers.map(() => "---").join(" | ");
-  const head = headers.join(" | ");
-  const body = rows.map(r => r.join(" | ")).join("\n");
-  return `| ${head} |\n| ${sep} |\n${rows.map(r => `| ${r.join(" | ")} |`).join("\n")}`;
+  return `| ${headers.join(" | ")} |\n| ${sep} |\n${rows.map(r => `| ${r.join(" | ")} |`).join("\n")}`;
 }
 
 export function buildSnapshot(state: AppState): string {
