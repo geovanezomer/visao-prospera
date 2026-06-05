@@ -55,8 +55,11 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
   const [showThreads, setShowThreads] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameVal, setRenameVal] = useState("");
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
+  const [processingFile, setProcessingFile] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // === Bootstrap por empresa ===
   useEffect(() => {
