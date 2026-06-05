@@ -278,12 +278,20 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
       {/* Gráfico de saldo */}
 
       <div className="rounded-lg border border-border/60 bg-card/40 p-4">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h4 className="text-sm font-semibold">Saldo de caixa projetado (12 meses)</h4>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Caixa mínimo:</span>
-            <div className="w-32">
-              <MoneyInput value={state.cashflow.caixaMinimo} onChange={setCaixaMin} />
+          <div className="flex flex-wrap items-center gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Caixa mínimo:</span>
+              <div className="w-32">
+                <MoneyInput value={state.cashflow.caixaMinimo} onChange={setCaixaMin} />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Limiar crítico:</span>
+              <div className="w-32">
+                <MoneyInput value={limiar} onChange={setLimiar} />
+              </div>
             </div>
           </div>
         </div>
