@@ -204,7 +204,7 @@ function compareSectorMd(state: AppState, sector: SectorBenchmark): string {
   return rows.join("\n");
 }
 
-export function runTool(name: string, args: any, state: AppState, simulatedState?: AppState): string | Promise<string> {
+export function runTool(name: string, args: any, state: AppState, simulatedState?: AppState, simParams?: SimulatorParams): string | Promise<string> {
   const sec = getSectionsCached(state, simulatedState);
   const company = state.companyName || "default";
   switch (name) {
