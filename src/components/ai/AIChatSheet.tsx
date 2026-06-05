@@ -43,7 +43,7 @@ const SUGGESTIONS = [
   "Que ações me dariam o maior impacto no valuation?",
 ];
 
-export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActive }: Props) {
+export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActive, simParams }: Props) {
   const [config, setConfig] = useState<AIConfig>(() => loadConfig());
   const [threads, setThreads] = useState<ChatThread[]>(() => loadThreads(state.companyName));
   const [activeId, setActiveId] = useState<string>(() => {
