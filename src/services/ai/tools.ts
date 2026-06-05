@@ -268,11 +268,11 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
     }
     case "salvar_cenario": {
       if (!args?.nome) return "Parâmetro 'nome' obrigatório.";
-      // usa cenário simulado se houver; caso contrário, base
+      // Usa params reais do simulador ativo se houver alavanca acionada; senão, base.
+      const params: SimulatorParams = simParams ?? { ...DEFAULT_SIM };
       const target = simulatedState ?? state;
       const { dre } = buildDRE(target, target.tax.regime);
       const ind = calcIndicators(target, dre);
-      const params: SimulatorParams = { ...DEFAULT_SIM }; // se vier de simulador, idealmente passar os params atuais
       const rec = saveScenario(company, {
         name: String(args.nome),
         notes: args?.notas ? String(args.notas) : undefined,
@@ -283,7 +283,9 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
           lucroLiquido: dre.lucroLiquido.reduce((a, b) => a + b, 0),
         },
       });
-      return `✅ Cenário **${rec.name}** salvo (id: ${rec.id}).`;
+      const hasLevers = simParams && Object.values(simParams).some(v => typeof v === "number" && v !== 0);
+      const note = hasLevers ? "_(parâmetros do simulador ativo capturados)_" : "_(cenário base — nenhuma alavanca ativa)_";
+      return `✅ Cenário **${rec.name}** salvo (id: ${rec.id}). ${note}`;
     }
     case "excluir_cenario": {
       const rec = getScenario(company, String(args?.idOuNome || ""));
