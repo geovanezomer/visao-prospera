@@ -1,7 +1,11 @@
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { AppState } from "@/lib/finance/types";
 import { fmtBRL, fmtBRLCompact, MESES, sum } from "@/lib/finance/format";
 import { buildCashFlow } from "@/lib/finance/cashflow";
 import { MoneyInput, SectionTitle, StatCard } from "./primitives";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 
@@ -11,6 +15,36 @@ type NonOpKey = "aportes" | "emprestimosCaptados" | "capex" | "dividendos" | "am
 export function CashflowTab({ state, update }: { state: AppState; update: Updater }) {
   const cf = buildCashFlow(state);
 
+  const setCaixaMin = (v: number) =>
+    update((s) => ({ ...s, cashflow: { ...s.cashflow, caixaMinimo: v } }));
+
+  const limiar = state.cashflow.limiarAlerta ?? -10000;
+  const setLimiar = (v: number) =>
+    update((s) => ({ ...s, cashflow: { ...s.cashflow, limiarAlerta: v } }));
+
+  // Meses que cruzam o limiar crítico
+  const mesesCriticos = MESES
+    .map((mes, i) => ({ mes, saldo: cf.saldoFinal[i], idx: i }))
+    .filter((m) => m.saldo <= limiar);
+  const mesesCriticosIdx = new Set(mesesCriticos.map((m) => m.idx));
+
+  // Toast discreto quando há novo mês crítico
+  const lastNotifiedRef = useRef<string>("");
+  useEffect(() => {
+    if (mesesCriticos.length === 0) {
+      lastNotifiedRef.current = "";
+      return;
+    }
+    const key = mesesCriticos.map((m) => m.mes).join(",");
+    if (key !== lastNotifiedRef.current) {
+      lastNotifiedRef.current = key;
+      const primeiro = mesesCriticos[0];
+      toast.warning(`Atenção — saldo projetado cai abaixo do limiar em ${primeiro.mes}`, {
+        description: `Saldo previsto: ${fmtBRL(primeiro.saldo)} · Limiar: ${fmtBRL(limiar)}`,
+      });
+    }
+  }, [mesesCriticos.map((m) => `${m.mes}:${m.saldo}`).join("|"), limiar]);
+
   const setNonOp = (key: NonOpKey, monthIdx: number, value: number) =>
     update((s) => ({
       ...s,
@@ -19,9 +53,6 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
         [key]: s.cashflow[key].map((v, i) => (i === monthIdx ? value : v)),
       },
     }));
-
-  const setCaixaMin = (v: number) =>
-    update((s) => ({ ...s, cashflow: { ...s.cashflow, caixaMinimo: v } }));
 
   // Mapa de meses críticos: para destacar pontos no gráfico.
   const criticalByMes: Record<string, "negativo" | "abaixoMinimo"> = {};
@@ -52,6 +83,14 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
 
   return (
     <div className="space-y-6">
+      {mesesCriticos.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Badge variant="destructive" className="gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            Saldo ≤ {fmtBRL(limiar)} em {mesesCriticos.map((m) => m.mes).join(", ")}
+          </Badge>
+        </div>
+      )}
       {/* Sumário */}
       <div className="grid gap-3 md:grid-cols-4">
         <StatCard
@@ -73,14 +112,24 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
           sub="Operacional + Investimento + Financiamento"
           hint={{ description: "Quanto o caixa cresceu (ou caiu) no ano somando os 3 fluxos: operação, investimentos e financiamentos.", formula: "Fluxo Operacional + Fluxo de Investimento + Fluxo de Financiamento" }}
         />
-        <StatCard
-          label="Saldo final (Dez)"
-          value={fmtBRL(cf.totais.saldoFinal)}
-          tone={cf.totais.saldoFinal >= state.cashflow.caixaMinimo ? "pos" : cf.totais.saldoFinal >= 0 ? "warn" : "neg"}
-          sub={cf.totais.pioresMes ? `Pior mês: ${cf.totais.pioresMes.mes} = ${fmtBRL(cf.totais.pioresMes.saldo)}` : undefined}
-          hint={{ description: "Saldo de caixa projetado para dezembro. Deve ficar acima do caixa mínimo de segurança definido na configuração.", formula: "Saldo Inicial + Σ Variações mensais de caixa" }}
-        />
+        <div className="relative">
+          {mesesCriticos.length > 0 && (
+            <Badge variant="destructive" className="absolute right-2 top-2 z-10 gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              Crítico
+            </Badge>
+          )}
+          <StatCard
+            label="Saldo final (Dez)"
+            value={fmtBRL(cf.totais.saldoFinal)}
+            tone={mesesCriticos.length > 0 ? "neg" : cf.totais.saldoFinal >= state.cashflow.caixaMinimo ? "pos" : cf.totais.saldoFinal >= 0 ? "warn" : "neg"}
+            sub={cf.totais.pioresMes ? `Pior mês: ${cf.totais.pioresMes.mes} = ${fmtBRL(cf.totais.pioresMes.saldo)}` : undefined}
+            hint={{ description: "Saldo de caixa projetado para dezembro. Deve ficar acima do caixa mínimo de segurança definido na configuração.", formula: "Saldo Inicial + Σ Variações mensais de caixa" }}
+          />
+        </div>
       </div>
+
+
 
 
       {/* Movimentações de caixa não operacionais */}
@@ -229,12 +278,20 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
       {/* Gráfico de saldo */}
 
       <div className="rounded-lg border border-border/60 bg-card/40 p-4">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h4 className="text-sm font-semibold">Saldo de caixa projetado (12 meses)</h4>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Caixa mínimo:</span>
-            <div className="w-32">
-              <MoneyInput value={state.cashflow.caixaMinimo} onChange={setCaixaMin} />
+          <div className="flex flex-wrap items-center gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Caixa mínimo:</span>
+              <div className="w-32">
+                <MoneyInput value={state.cashflow.caixaMinimo} onChange={setCaixaMin} />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Limiar crítico:</span>
+              <div className="w-32">
+                <MoneyInput value={limiar} onChange={setLimiar} />
+              </div>
             </div>
           </div>
         </div>
@@ -251,6 +308,7 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
             <YAxis stroke="var(--muted-foreground)" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
             <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }} itemStyle={{ color: "var(--popover-foreground)" }} labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }} formatter={(v: number) => fmtBRL(v)} />
             <ReferenceLine y={state.cashflow.caixaMinimo} stroke="var(--warning)" strokeDasharray="4 4" label={{ value: "mínimo", fill: "var(--warning)", fontSize: 10, position: "right" }} />
+            <ReferenceLine y={limiar} stroke="var(--destructive)" strokeDasharray="6 3" label={{ value: "limiar", fill: "var(--destructive)", fontSize: 10, position: "right" }} />
             <ReferenceLine y={0} stroke="var(--destructive)" strokeDasharray="4 4" />
             <Area
               type="monotone"

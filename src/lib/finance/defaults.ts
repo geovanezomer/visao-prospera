@@ -139,6 +139,7 @@ export const DEFAULT_STATE: AppState = {
   },
   cashflow: {
     caixaMinimo: 15000,
+    limiarAlerta: -10000,
     aportes: fill12(0),
     emprestimosCaptados: fill12(0),
     capex: fill12(0),
