@@ -247,13 +247,20 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
     try {
       const results: ChatAttachment[] = [];
       for (const f of toProcess) {
-        const att = await processFile(f);
+        setProcessingMsg(`Lendo ${f.name}…`);
+        const att = await processFile(f, (m) => setProcessingMsg(m));
         if (att.error) toast.error(`${att.name}: ${att.error}`);
+        else if (att.ocrUsed) {
+          const lbl = confidenceLabel(att.ocrConfidence);
+          if (lbl.tone === "bad") toast.warning(`${att.name}: OCR com confiança ${lbl.label}. Revise antes de usar.`);
+          else toast.success(`${att.name}: OCR concluído — confiança ${lbl.label}.`);
+        }
         results.push(att);
       }
       setAttachments(prev => [...prev, ...results]);
     } finally {
       setProcessingFile(false);
+      setProcessingMsg("");
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
