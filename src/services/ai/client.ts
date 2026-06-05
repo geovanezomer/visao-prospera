@@ -125,7 +125,7 @@ export interface ToolRoundResult {
 export async function chatWithTools(
   cfg: AIConfig,
   initialMessages: LLMMessage[],
-  runTool: (name: string, args: any) => string,
+  runTool: (name: string, args: any) => string | Promise<string>,
   opts?: { maxRounds?: number; signal?: AbortSignal; onProgress?: (e: { type: "tool"; call: ToolCall } | { type: "text"; delta: string }) => void },
 ): Promise<ToolRoundResult> {
   const maxRounds = opts?.maxRounds ?? 5;
@@ -165,7 +165,7 @@ export async function chatWithTools(
       for (const tc of toolCalls) {
         let args: any = {};
         try { args = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {}; } catch {}
-        const result = runTool(tc.function.name, args);
+        const result = await runTool(tc.function.name, args);
         const call: ToolCall = { id: tc.id, name: tc.function.name, arguments: args, result };
         calls.push(call);
         opts?.onProgress?.({ type: "tool", call });
