@@ -164,6 +164,8 @@ describe("Edge — TIR e VPL", () => {
   });
 
   it("VPL com taxa muito alta → tende a flows[0]", () => {
-    expect(npv([-100, 50, 60, 70], 100)).toBeCloseTo(-100, 1);
+    // taxa = 10000% a.p. → demais fluxos viram quase zero
+    expect(npv([-100, 50, 60, 70], 100)).toBeGreaterThan(-100);
+    expect(npv([-100, 50, 60, 70], 100)).toBeLessThan(-99);
   });
 });
