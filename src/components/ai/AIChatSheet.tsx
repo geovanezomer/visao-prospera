@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import {
   Settings, Trash2, Send, Loader2, Bot, User, Plus, MessageSquare,
   RefreshCcw, Copy, Download, ChevronDown, ChevronRight, Wrench, Edit2, Sparkles, Square,
+  Paperclip, FileText, ImageIcon, X,
 } from "lucide-react";
 import { AIConfigDialog } from "./AIConfigDialog";
 import {
@@ -17,6 +18,7 @@ import { chatWithTools, streamChat, type LLMMessage, type ToolCall } from "@/ser
 import { buildSnapshot, getSectionsCached } from "@/services/ai/snapshot";
 import { buildSystemPrompt } from "@/services/ai/systemPrompt";
 import { runTool } from "@/services/ai/tools";
+import { processFile, buildPdfContext, buildVisionMessageContent, MAX_FILES_PER_MSG, type ChatAttachment } from "@/services/ai/attachments";
 import type { AppState } from "@/lib/finance/types";
 import { toast } from "sonner";
 
