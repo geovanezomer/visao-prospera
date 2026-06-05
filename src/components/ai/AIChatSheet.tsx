@@ -20,6 +20,7 @@ import { buildSystemPrompt } from "@/services/ai/systemPrompt";
 import { runTool } from "@/services/ai/tools";
 import { processFile, buildPdfContext, buildVisionMessageContent, confidenceLabel, MAX_FILES_PER_MSG, type ChatAttachment } from "@/services/ai/attachments";
 import type { AppState } from "@/lib/finance/types";
+import type { SimulatorParams } from "@/lib/finance/simulator";
 import { toast } from "sonner";
 
 const ReactMarkdown = lazy(() => import("react-markdown"));
@@ -30,6 +31,7 @@ interface Props {
   state: AppState;
   simulatedState?: AppState;
   simActive?: number;
+  simParams?: SimulatorParams;
 }
 
 const SUGGESTIONS = [
@@ -41,7 +43,7 @@ const SUGGESTIONS = [
   "Que ações me dariam o maior impacto no valuation?",
 ];
 
-export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActive }: Props) {
+export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActive, simParams }: Props) {
   const [config, setConfig] = useState<AIConfig>(() => loadConfig());
   const [threads, setThreads] = useState<ChatThread[]>(() => loadThreads(state.companyName));
   const [activeId, setActiveId] = useState<string>(() => {
@@ -173,7 +175,7 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
         const out = await chatWithTools(
           config,
           llm,
-          (name, args) => runTool(name, args, state, simHasChanges ? simulatedState : undefined),
+          (name, args) => runTool(name, args, state, simHasChanges ? simulatedState : undefined, simParams),
           {
             signal: ac.signal,
             onProgress: (e) => {

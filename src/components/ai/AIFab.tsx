@@ -3,14 +3,16 @@ import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIChatSheet } from "./AIChatSheet";
 import type { AppState } from "@/lib/finance/types";
+import type { SimulatorParams } from "@/lib/finance/simulator";
 
 interface Props {
   state: AppState;
   simulatedState?: AppState;
   simActive?: number;
+  simParams?: SimulatorParams;
 }
 
-export function AIFab({ state, simulatedState, simActive }: Props) {
+export function AIFab({ state, simulatedState, simActive, simParams }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -28,6 +30,7 @@ export function AIFab({ state, simulatedState, simActive }: Props) {
         state={state}
         simulatedState={simulatedState}
         simActive={simActive}
+        simParams={simParams}
       />
     </>
   );
