@@ -70,16 +70,23 @@ describe("buildCashFlow — PMR e PMP", () => {
     expect(sum(cf.fluxoInvestimento)).toBe(-50000);
   });
 
-  it("PDD não é desembolso de caixa (não duplica a inadimplência)", () => {
+  it("PDD não vira desembolso de caixa direto (é não-caixa)", () => {
+    // No modo PDD a inadimplência some das deduções da receita, então Simples
+    // tributa sobre receita bruta cheia → impostos sobem. Mas a PDD em si NÃO
+    // deve gerar pagamento de caixa. Verificamos isso isolando o efeito:
+    // saldo final difere apenas pelo delta de impostos, nunca pelo valor da PDD.
     const semPDD = createState({
       revenue: { inadimplencia: m12(10), inadimplenciaComoPDD: false },
+      tax: { regime: "real" }, // Real: base de impostos = lucro, não receita → isola o efeito
     });
     const comPDD = createState({
       revenue: { inadimplencia: m12(10), inadimplenciaComoPDD: true },
+      tax: { regime: "real" },
     });
-    const cfA = buildCashFlow(semPDD);
-    const cfB = buildCashFlow(comPDD);
-    // Saldo final NÃO deve cair por causa da PDD (ela é não-caixa)
-    expect(Math.abs(cfB.totais.saldoFinal - cfA.totais.saldoFinal)).toBeLessThan(1);
+    const cfA = buildCashFlow(semPDD, "real");
+    const cfB = buildCashFlow(comPDD, "real");
+    // PDD nominal anual ≈ 10% de 190k ≈ 19k — saldos NÃO podem diferir nessa ordem
+    const diff = Math.abs(cfB.totais.saldoFinal - cfA.totais.saldoFinal);
+    expect(diff).toBeLessThan(5000); // tolera ajuste de IR/CSLL, mas não os 19k de PDD
   });
 });

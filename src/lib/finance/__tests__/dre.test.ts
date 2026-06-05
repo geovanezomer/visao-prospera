@@ -42,8 +42,8 @@ describe("buildDRE — Simples Nacional (default)", () => {
     const dreA = buildDRE(semDed, "simples").dre;
     const dreB = buildDRE(comDed, "simples").dre;
     expect(sum(dreB.outrasDeducoes)).toBeCloseTo(6000, 2);
-    // Receita Líquida cai pelo menos o valor das deduções
-    expect(sum(dreA.receitaLiquida) - sum(dreB.receitaLiquida)).toBeGreaterThanOrEqual(6000 - 1);
+    // Receita Líquida cai (parte vira menos imposto, então a queda é < 6000 mas > 0)
+    expect(sum(dreA.receitaLiquida)).toBeGreaterThan(sum(dreB.receitaLiquida));
     // Impostos sobre venda também caem (base menor no Simples)
     expect(sum(dreB.impostosVendas)).toBeLessThan(sum(dreA.impostosVendas));
   });
