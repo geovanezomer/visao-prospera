@@ -45,8 +45,14 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
     }
   }, [mesesCriticos.map((m) => `${m.mes}:${m.saldo}`).join("|"), limiar]);
 
-  const setCaixaMin = (v: number) =>
-    update((s) => ({ ...s, cashflow: { ...s.cashflow, caixaMinimo: v } }));
+  const setNonOp = (key: NonOpKey, monthIdx: number, value: number) =>
+    update((s) => ({
+      ...s,
+      cashflow: {
+        ...s.cashflow,
+        [key]: s.cashflow[key].map((v, i) => (i === monthIdx ? value : v)),
+      },
+    }));
 
   // Mapa de meses críticos: para destacar pontos no gráfico.
   const criticalByMes: Record<string, "negativo" | "abaixoMinimo"> = {};
