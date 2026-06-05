@@ -18,7 +18,7 @@ import { chatWithTools, streamChat, type LLMMessage, type ToolCall } from "@/ser
 import { buildSnapshot, getSectionsCached } from "@/services/ai/snapshot";
 import { buildSystemPrompt } from "@/services/ai/systemPrompt";
 import { runTool } from "@/services/ai/tools";
-import { processFile, buildPdfContext, buildVisionMessageContent, MAX_FILES_PER_MSG, type ChatAttachment } from "@/services/ai/attachments";
+import { processFile, buildPdfContext, buildVisionMessageContent, confidenceLabel, MAX_FILES_PER_MSG, type ChatAttachment } from "@/services/ai/attachments";
 import type { AppState } from "@/lib/finance/types";
 import { toast } from "sonner";
 
@@ -57,6 +57,7 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
   const [renameVal, setRenameVal] = useState("");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const [processingFile, setProcessingFile] = useState(false);
+  const [processingMsg, setProcessingMsg] = useState<string>("");
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -246,13 +247,20 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
     try {
       const results: ChatAttachment[] = [];
       for (const f of toProcess) {
-        const att = await processFile(f);
+        setProcessingMsg(`Lendo ${f.name}…`);
+        const att = await processFile(f, (m) => setProcessingMsg(m));
         if (att.error) toast.error(`${att.name}: ${att.error}`);
+        else if (att.ocrUsed) {
+          const lbl = confidenceLabel(att.ocrConfidence);
+          if (lbl.tone === "bad") toast.warning(`${att.name}: OCR com confiança ${lbl.label}. Revise antes de usar.`);
+          else toast.success(`${att.name}: OCR concluído — confiança ${lbl.label}.`);
+        }
         results.push(att);
       }
       setAttachments(prev => [...prev, ...results]);
     } finally {
       setProcessingFile(false);
+      setProcessingMsg("");
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -438,14 +446,27 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
           <div className="border-t border-border/40 p-3">
             {attachments.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-1.5">
-                {attachments.map(a => (
-                  <div key={a.id} className={`inline-flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] ${a.error ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-border/40 bg-muted/30"}`}>
-                    {a.type === "image" ? <ImageIcon className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
-                    <span className="max-w-[140px] truncate">{a.name}</span>
-                    <span className="text-muted-foreground">{Math.round(a.size / 1024)}kb</span>
-                    <button onClick={() => removeAttachment(a.id)} className="ml-0.5 hover:text-foreground"><X className="h-3 w-3" /></button>
-                  </div>
-                ))}
+                {attachments.map(a => {
+                  const conf = a.ocrUsed ? confidenceLabel(a.ocrConfidence) : null;
+                  const confCls = conf?.tone === "bad" ? "border-destructive/50 bg-destructive/10 text-destructive"
+                    : conf?.tone === "warn" ? "border-amber-500/50 bg-amber-500/10 text-amber-300"
+                    : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300";
+                  return (
+                    <div key={a.id} className={`inline-flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] ${a.error ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-border/40 bg-muted/30"}`}>
+                      {a.type === "image" ? <ImageIcon className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+                      <span className="max-w-[140px] truncate">{a.name}</span>
+                      <span className="text-muted-foreground">{Math.round(a.size / 1024)}kb</span>
+                      {conf && <span className={`rounded px-1 text-[10px] border ${confCls}`} title="Confiança do OCR">OCR · {conf.label}</span>}
+                      <button onClick={() => removeAttachment(a.id)} className="ml-0.5 hover:text-foreground"><X className="h-3 w-3" /></button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {processingFile && processingMsg && (
+              <div className="mb-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>{processingMsg}</span>
               </div>
             )}
             <div className="flex items-end gap-2">
