@@ -436,12 +436,41 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
           </div>
 
           <div className="border-t border-border/40 p-3">
+            {attachments.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {attachments.map(a => (
+                  <div key={a.id} className={`inline-flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] ${a.error ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-border/40 bg-muted/30"}`}>
+                    {a.type === "image" ? <ImageIcon className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+                    <span className="max-w-[140px] truncate">{a.name}</span>
+                    <span className="text-muted-foreground">{Math.round(a.size / 1024)}kb</span>
+                    <button onClick={() => removeAttachment(a.id)} className="ml-0.5 hover:text-foreground"><X className="h-3 w-3" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex items-end gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                multiple
+                className="hidden"
+                onChange={(e) => void handleFiles(e.target.files)}
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={streaming || processingFile || attachments.length >= MAX_FILES_PER_MSG}
+                title={`Anexar imagem ou PDF (máx ${MAX_FILES_PER_MSG})`}
+              >
+                {processingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+              </Button>
               <Textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKey}
-                placeholder="Pergunte sobre DRE, caixa, valuation, riscos…"
+                placeholder="Pergunte sobre DRE, caixa, valuation, riscos… ou anexe um balancete/print"
                 rows={2}
                 className="min-h-[44px] resize-none text-sm"
                 disabled={streaming}
@@ -449,7 +478,7 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
               {streaming ? (
                 <Button variant="outline" size="icon" onClick={handleStop} title="Parar"><Square className="h-4 w-4" /></Button>
               ) : (
-                <Button size="icon" onClick={() => void send(input)} disabled={!input.trim()} title="Enviar (Enter)"><Send className="h-4 w-4" /></Button>
+                <Button size="icon" onClick={() => void send(input)} disabled={!input.trim() && attachments.length === 0} title="Enviar (Enter)"><Send className="h-4 w-4" /></Button>
               )}
             </div>
             <p className="mt-1.5 text-[10px] text-muted-foreground">
