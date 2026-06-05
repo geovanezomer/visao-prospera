@@ -229,18 +229,18 @@ export function calcPresumido(state: AppState): MonthlyTax {
 
   const baseIRPJMensal = trib.map((r) => r * baseIRPJ);
   const baseCSLLMensal = trib.map((r) => r * baseCSLL);
-  const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal);
+  const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
   const monthlyVendas = zeros12();
   const monthlyLucro = zeros12();
   const monthly = trib.map((r, i) => {
-    const irpj = baseIRPJMensal[i] * 0.15;
+    const irpj = baseIRPJMensal[i] * irpjAliq;
     const adicional = adicionalMensal[i];
-    const csll = baseCSLLMensal[i] * 0.09;
-    const pis = r * 0.0065 * reforma.pisCofinsMult;
-    const cofins = r * 0.03 * reforma.pisCofinsMult;
+    const csll = baseCSLLMensal[i] * csllAliq;
+    const pis = r * pisAliq * reforma.pisCofinsMult;
+    const cofins = r * cofinsAliq * reforma.pisCofinsMult;
     const issBase = Math.max(0, r - issDed);
     const debito = issBase * iss;
     const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
