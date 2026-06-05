@@ -130,7 +130,14 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
             <thead>
               <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 <th className="px-4 py-2 text-left">Descrição</th>
-                {view === "mensal" && MESES.map((m) => <th key={m} className="px-2 py-2 text-right">{m}</th>)}
+                {view === "mensal" && MESES.map((m, i) => (
+                  <th
+                    key={m}
+                    className={`px-2 py-2 text-right ${mesesCriticosIdx.has(i) ? "border-l-2 border-r-2 border-destructive/60 text-destructive" : ""}`}
+                  >
+                    {m}
+                  </th>
+                ))}
                 <th className="px-4 py-2 text-right">Anual</th>
                 <th className="px-3 py-2 text-right">% Rec</th>
               </tr>
