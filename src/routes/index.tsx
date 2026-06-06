@@ -51,7 +51,6 @@ function SimulaPro() {
 
   const { state, update, reset, setState } = useAppState();
   const { scenarios, save, remove } = useScenarios();
-  const [wizardOpen, setWizardOpen] = useState(false);
   const [simParams, setSimParams] = useState<SimulatorParams>(DEFAULT_SIM);
   const simulatedState = useMemo(() => applySimulator(state, simParams), [state, simParams]);
   const simActive = countActiveLevers(simParams);
@@ -66,18 +65,6 @@ function SimulaPro() {
     window.print();
   };
 
-  const toggleGuided = () => {
-    if (!state.guided.completedWizard) {
-      setWizardOpen(true);
-    } else {
-      update({ guided: { ...state.guided, enabled: !state.guided.enabled } });
-    }
-  };
-
-  const handleWizardApply = (newState: AppState) => {
-    setState(newState);
-  };
-  const dismissBanner = () => update({ guided: { ...state.guided, dismissedBanner: true } });
 
   return (
     <div className="min-h-screen bg-background text-foreground">
