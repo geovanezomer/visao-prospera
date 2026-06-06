@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Activity, Building2, Download, RotateCcw, Factory, Store, Briefcase, Sparkles, X, LogOut } from "lucide-react";
+import { Activity, Building2, Download, RotateCcw, Factory, Store, Briefcase, LogOut } from "lucide-react";
 import { RevenueTab } from "@/components/sim/RevenueTab";
 import { CostsTab } from "@/components/sim/CostsTab";
 import { CapitalTab } from "@/components/sim/CapitalTab";
@@ -20,9 +20,8 @@ import { ValuationTab } from "@/components/sim/ValuationTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
 import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
 import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
-import { GuidedWizard } from "@/components/sim/guided/GuidedWizard";
 import { AIFab } from "@/components/ai/AIFab";
-import { AppState, BusinessType, TabKey } from "@/lib/finance/types";
+import { BusinessType, TabKey } from "@/lib/finance/types";
 import { applySimulator, countActiveLevers, DEFAULT_SIM, SimulatorParams } from "@/lib/finance/simulator";
 
 export const Route = createFileRoute("/")({
@@ -52,7 +51,6 @@ function SimulaPro() {
 
   const { state, update, reset, setState } = useAppState();
   const { scenarios, save, remove } = useScenarios();
-  const [wizardOpen, setWizardOpen] = useState(false);
   const [simParams, setSimParams] = useState<SimulatorParams>(DEFAULT_SIM);
   const simulatedState = useMemo(() => applySimulator(state, simParams), [state, simParams]);
   const simActive = countActiveLevers(simParams);
@@ -67,18 +65,6 @@ function SimulaPro() {
     window.print();
   };
 
-  const toggleGuided = () => {
-    if (!state.guided.completedWizard) {
-      setWizardOpen(true);
-    } else {
-      update({ guided: { ...state.guided, enabled: !state.guided.enabled } });
-    }
-  };
-
-  const handleWizardApply = (newState: AppState) => {
-    setState(newState);
-  };
-  const dismissBanner = () => update({ guided: { ...state.guided, dismissedBanner: true } });
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -117,19 +103,6 @@ function SimulaPro() {
                 </SelectContent>
               </Select>
             </div>
-            <Button
-              size="sm"
-              variant={state.guided.enabled ? "default" : "outline"}
-              onClick={toggleGuided}
-              title={state.guided.completedWizard ? "Ativar/desativar Modo Guiado" : "Iniciar wizard de setup"}
-            >
-              <Sparkles className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Modo Guiado</span>
-            </Button>
-            {state.guided.completedWizard && (
-              <Button size="sm" variant="ghost" onClick={() => setWizardOpen(true)} title="Refazer wizard" className="hidden sm:inline-flex">
-                Refazer setup
-              </Button>
-            )}
             <Button size="sm" variant="outline" onClick={exportReport} title="Exportar">
               <Download className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Exportar</span>
             </Button>
@@ -158,24 +131,8 @@ function SimulaPro() {
         </div>
       </header>
 
-      {state.guided.enabled && !state.guided.dismissedBanner && (
-        <div className="flex items-center justify-between gap-3 border-b border-primary/30 bg-primary/5 px-6 py-2 text-xs text-primary">
-          <span>
-            <Sparkles className="mr-1 inline h-3.5 w-3.5" />
-            Modo Guiado ativo — siga as abas: Receitas → Custos → Capital → Regime Tributário → DRE → Caixa → Governança → Análises → Simulador.
-          </span>
-          <button onClick={dismissBanner} className="rounded p-1 hover:bg-primary/20" aria-label="Fechar">
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      )}
 
-      <GuidedWizard
-        open={wizardOpen}
-        onOpenChange={setWizardOpen}
-        baseState={state}
-        onApply={handleWizardApply}
-      />
+
 
       <main className="mx-auto max-w-[1600px] px-6 py-6">
         <Tabs defaultValue={"dre" satisfies TabKey} className="w-full">
