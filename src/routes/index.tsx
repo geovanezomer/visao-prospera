@@ -144,24 +144,8 @@ function SimulaPro() {
         </div>
       </header>
 
-      {state.guided.enabled && !state.guided.dismissedBanner && (
-        <div className="flex items-center justify-between gap-3 border-b border-primary/30 bg-primary/5 px-6 py-2 text-xs text-primary">
-          <span>
-            <Sparkles className="mr-1 inline h-3.5 w-3.5" />
-            Modo Guiado ativo — siga as abas: Receitas → Custos → Capital → Regime Tributário → DRE → Caixa → Governança → Análises → Simulador.
-          </span>
-          <button onClick={dismissBanner} className="rounded p-1 hover:bg-primary/20" aria-label="Fechar">
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      )}
 
-      <GuidedWizard
-        open={wizardOpen}
-        onOpenChange={setWizardOpen}
-        baseState={state}
-        onApply={handleWizardApply}
-      />
+
 
       <main className="mx-auto max-w-[1600px] px-6 py-6">
         <Tabs defaultValue={"dre" satisfies TabKey} className="w-full">
