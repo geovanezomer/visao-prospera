@@ -181,14 +181,6 @@ export interface CashFlowConfig {
   amortizacoes: Months;
 }
 
-export interface GuidedState {
-  /** Modo guiado ativo (mostra banner persistente). */
-  enabled: boolean;
-  /** Wizard de setup já foi concluído pelo menos uma vez. */
-  completedWizard: boolean;
-  /** Usuário fechou o banner de boas-vindas. */
-  dismissedBanner: boolean;
-}
 
 // ============= Análise Estratégica (qualitativa, opcional) =============
 // Todas as respostas são opcionais. Se nenhuma seção for preenchida, o
