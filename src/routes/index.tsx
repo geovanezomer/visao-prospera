@@ -177,18 +177,20 @@ function SimulaPro() {
 
       <main className="mx-auto max-w-[1600px] px-6 py-6">
         <Tabs defaultValue={"dre" satisfies TabKey} className="w-full">
-          <TabsList className="bg-card/40">
-            <TabsTrigger value={"receitas" satisfies TabKey}>1. Receitas</TabsTrigger>
-            <TabsTrigger value={"custos" satisfies TabKey}>2. Custos e Despesas</TabsTrigger>
-            <TabsTrigger value={"capital" satisfies TabKey}>3. Capital</TabsTrigger>
-            <TabsTrigger value={"tributos" satisfies TabKey}>4. Regime Tributário</TabsTrigger>
-            <TabsTrigger value={"caixa" satisfies TabKey}>5. Fluxo de Caixa</TabsTrigger>
-            <TabsTrigger value={"governanca" satisfies TabKey}>6. Governança</TabsTrigger>
-            <TabsTrigger value={"dre" satisfies TabKey}>7. DRE</TabsTrigger>
-            <TabsTrigger value={"resultados" satisfies TabKey}>8. Análises</TabsTrigger>
-            <TabsTrigger value={"simulador" satisfies TabKey}>9. Simulador</TabsTrigger>
-            <TabsTrigger value={"valuation" satisfies TabKey}>10. Valuation</TabsTrigger>
-          </TabsList>
+          <div className="-mx-6 overflow-x-auto px-6 scrollbar-thin">
+            <TabsList className="inline-flex w-max min-w-full bg-card/40">
+              <TabsTrigger className="shrink-0" value={"receitas" satisfies TabKey}>1. Receitas</TabsTrigger>
+              <TabsTrigger className="shrink-0" value={"custos" satisfies TabKey}>2. Custos e Despesas</TabsTrigger>
+              <TabsTrigger className="shrink-0" value={"capital" satisfies TabKey}>3. Capital</TabsTrigger>
+              <TabsTrigger className="shrink-0" value={"tributos" satisfies TabKey}>4. Regime Tributário</TabsTrigger>
+              <TabsTrigger className="shrink-0" value={"caixa" satisfies TabKey}>5. Fluxo de Caixa</TabsTrigger>
+              <TabsTrigger className="shrink-0" value={"governanca" satisfies TabKey}>6. Governança</TabsTrigger>
+              <TabsTrigger className="shrink-0" value={"dre" satisfies TabKey}>7. DRE</TabsTrigger>
+              <TabsTrigger className="shrink-0" value={"resultados" satisfies TabKey}>8. Análises</TabsTrigger>
+              <TabsTrigger className="shrink-0" value={"simulador" satisfies TabKey}>9. Simulador</TabsTrigger>
+              <TabsTrigger className="shrink-0" value={"valuation" satisfies TabKey}>10. Valuation</TabsTrigger>
+            </TabsList>
+          </div>
 
           <div className="mt-6">
             <TabsContent value={"receitas" satisfies TabKey}><RevenueTab state={state} update={update} /></TabsContent>
