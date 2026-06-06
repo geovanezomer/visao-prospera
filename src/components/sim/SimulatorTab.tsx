@@ -63,17 +63,19 @@ export function SimulatorTab({
     <div className="space-y-4">
       {/* Banner */}
       <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
-        <div className="flex items-start gap-3">
-          <SlidersHorizontal className="mt-0.5 h-5 w-5 text-primary" />
-          <div className="flex-1">
-            <div className="font-semibold text-foreground">Simulador combinatório de cenários</div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Mova os sliders para combinar ajustes (preço, volume, custos, juros, capital de giro, regime).
-              O DRE Anual ao lado recalcula em tempo real. Quando encontrar a combinação ideal,
-              aplique no cenário base ou salve como um cenário separado.
-            </p>
+        <div className="flex flex-col gap-3 md:flex-row md:items-start">
+          <div className="flex flex-1 items-start gap-3">
+            <SlidersHorizontal className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-foreground">Simulador combinatório de cenários</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Mova os sliders para combinar ajustes (preço, volume, custos, juros, capital de giro, regime).
+                O DRE Anual ao lado recalcula em tempo real. Quando encontrar a combinação ideal,
+                aplique no cenário base ou salve como um cenário separado.
+              </p>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1 md:max-w-[260px] md:justify-end">
             {PRESETS.map((pr) => (
               <Button key={pr.id} size="sm" variant="outline" className="h-7 text-[11px]"
                 onClick={() => usePreset(pr.params)}>
