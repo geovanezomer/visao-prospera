@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Activity, Building2, Download, RotateCcw, Factory, Store, Briefcase, Sparkles, X, LogOut } from "lucide-react";
+import { Activity, Building2, Download, RotateCcw, Factory, Store, Briefcase, LogOut } from "lucide-react";
 import { RevenueTab } from "@/components/sim/RevenueTab";
 import { CostsTab } from "@/components/sim/CostsTab";
 import { CapitalTab } from "@/components/sim/CapitalTab";
