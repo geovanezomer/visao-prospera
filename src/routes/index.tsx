@@ -117,19 +117,6 @@ function SimulaPro() {
                 </SelectContent>
               </Select>
             </div>
-            <Button
-              size="sm"
-              variant={state.guided.enabled ? "default" : "outline"}
-              onClick={toggleGuided}
-              title={state.guided.completedWizard ? "Ativar/desativar Modo Guiado" : "Iniciar wizard de setup"}
-            >
-              <Sparkles className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Modo Guiado</span>
-            </Button>
-            {state.guided.completedWizard && (
-              <Button size="sm" variant="ghost" onClick={() => setWizardOpen(true)} title="Refazer wizard" className="hidden sm:inline-flex">
-                Refazer setup
-              </Button>
-            )}
             <Button size="sm" variant="outline" onClick={exportReport} title="Exportar">
               <Download className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Exportar</span>
             </Button>
