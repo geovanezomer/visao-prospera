@@ -83,33 +83,33 @@ function SimulaPro() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/90 backdrop-blur">
-        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-6 py-3">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/15 text-primary">
               <Activity className="h-5 w-5" />
             </div>
             <div>
-          <h1 className="text-base font-semibold tracking-tight">
+              <h1 className="text-base font-semibold tracking-tight">
                 GZ Finnance<span className="text-primary">PRO</span>
               </h1>
-              <p className="text-[11px] text-muted-foreground">Diagnóstico &amp; Simulação Empresarial para PMEs</p>
+              <p className="hidden text-[11px] text-muted-foreground sm:block">Diagnóstico &amp; Simulação Empresarial para PMEs</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2 rounded-md border border-border/60 bg-card/60 px-3 py-1.5">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-border/60 bg-card/60 px-3 py-1.5 sm:flex-none">
+              <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
               <input
                 value={state.companyName}
                 onChange={(e) => update({ companyName: e.target.value })}
-                className="w-44 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground sm:w-44"
                 placeholder="Nome da empresa"
               />
             </div>
             <div className="flex items-center gap-2 rounded-md border border-border/60 bg-card/60 px-2 py-1">
               {businessIcon}
               <Select value={state.businessType} onValueChange={(v) => update({ businessType: v as BusinessType })}>
-                <SelectTrigger className="h-7 w-40 border-0 bg-transparent text-sm"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-7 w-32 border-0 bg-transparent text-sm sm:w-40"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="servicos">Prestadora de serviços</SelectItem>
                   <SelectItem value="comercio">Comércio / Revenda</SelectItem>
@@ -123,14 +123,16 @@ function SimulaPro() {
               onClick={toggleGuided}
               title={state.guided.completedWizard ? "Ativar/desativar Modo Guiado" : "Iniciar wizard de setup"}
             >
-              <Sparkles className="mr-2 h-4 w-4" /> Modo Guiado
+              <Sparkles className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Modo Guiado</span>
             </Button>
             {state.guided.completedWizard && (
-              <Button size="sm" variant="ghost" onClick={() => setWizardOpen(true)} title="Refazer wizard">
+              <Button size="sm" variant="ghost" onClick={() => setWizardOpen(true)} title="Refazer wizard" className="hidden sm:inline-flex">
                 Refazer setup
               </Button>
             )}
-            <Button size="sm" variant="outline" onClick={exportReport}><Download className="mr-2 h-4 w-4" /> Exportar</Button>
+            <Button size="sm" variant="outline" onClick={exportReport} title="Exportar">
+              <Download className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Exportar</span>
+            </Button>
             <TaxSettingsDialog state={state} update={update} />
             <ConfirmDialog
               title="Restaurar dados de exemplo?"
@@ -139,8 +141,8 @@ function SimulaPro() {
               destructive
               onConfirm={reset}
               trigger={
-                <Button size="sm" variant="ghost">
-                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
+                <Button size="sm" variant="ghost" title="Reset">
+                  <RotateCcw className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Reset</span>
                 </Button>
               }
             />
@@ -149,7 +151,7 @@ function SimulaPro() {
                 {user.displayName}
               </span>
               <Button size="sm" variant="ghost" onClick={async () => { await logout(); navigate({ to: "/login" }); }} title="Sair">
-                <LogOut className="mr-2 h-4 w-4" /> Sair
+                <LogOut className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Sair</span>
               </Button>
             </div>
           </div>
