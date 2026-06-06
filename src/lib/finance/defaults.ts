@@ -193,12 +193,6 @@ export function migrateState(s: AppState): AppState {
   }
   const revenue = { ...DEFAULT_STATE.revenue, ...(s.revenue ?? {}) };
   if (!Array.isArray(revenue.deducoes)) revenue.deducoes = [];
-  // guided era boolean em versões antigas — migra para o objeto.
-  const rawGuided: unknown = (s as { guided?: unknown }).guided;
-  const guided =
-    typeof rawGuided === "boolean"
-      ? { enabled: rawGuided, completedWizard: false, dismissedBanner: false }
-      : { ...DEFAULT_STATE.guided, ...(rawGuided as Partial<typeof DEFAULT_STATE.guided> | undefined) };
   const strategic = s.strategic ?? {
     concentration: {},
     governance: {},
@@ -210,5 +204,8 @@ export function migrateState(s: AppState): AppState {
   strategic.governance = strategic.governance ?? {};
   strategic.competitive = strategic.competitive ?? {};
   strategic.regulatory = strategic.regulatory ?? {};
-  return { ...s, revenue, capital, tax, costs, cashflow, guided, strategic };
+  // remove campo legado `guided` se presente em states antigos persistidos
+  const { guided: _legacyGuided, ...rest } = s as AppState & { guided?: unknown };
+  void _legacyGuided;
+  return { ...rest, revenue, capital, tax, costs, cashflow, strategic };
 }
