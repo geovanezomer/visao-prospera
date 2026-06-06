@@ -251,7 +251,7 @@ export interface AppState {
   capital: CapitalStructure;
   tax: TaxConfig;
   cashflow: CashFlowConfig;
-  guided: GuidedState;
+  
   /** Respostas qualitativas do módulo de Análise Estratégica (opcional). */
   strategic?: StrategicAnswers;
 }
