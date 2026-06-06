@@ -20,9 +20,8 @@ import { ValuationTab } from "@/components/sim/ValuationTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
 import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
 import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
-import { GuidedWizard } from "@/components/sim/guided/GuidedWizard";
 import { AIFab } from "@/components/ai/AIFab";
-import { AppState, BusinessType, TabKey } from "@/lib/finance/types";
+import { BusinessType, TabKey } from "@/lib/finance/types";
 import { applySimulator, countActiveLevers, DEFAULT_SIM, SimulatorParams } from "@/lib/finance/simulator";
 
 export const Route = createFileRoute("/")({
