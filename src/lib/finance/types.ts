@@ -50,6 +50,10 @@ export interface Revenue {
   /** Linhas livres de deduções (devoluções, perdas, furtos, descontos comerciais, abatimentos...).
    *  Subtraídas da Receita Bruta antes da Receita Líquida e da base de impostos sobre venda. */
   deducoes?: RevenueDeducao[];
+  /** Modo fixo para a linha Receita Bruta (mesmo valor nos 12 meses). */
+  brutaFixa?: boolean;
+  /** Modo fixo para a linha Inadimplência % (mesmo % nos 12 meses). */
+  inadimplenciaFixa?: boolean;
 }
 
 export interface CostLine {
