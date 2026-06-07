@@ -51,10 +51,20 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       };
     });
 
-  const setInad = (i: number, v: number) =>
-    update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? v : x)) } }));
-  const setInadAll = (v: number) =>
-    update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: fill12(v) } }));
+  // Inadimplência é armazenada em % internamente. A UI exibe em R$.
+  // Converte R$ <-> % usando a Receita Bruta do mês (ou média anual no modo fixo).
+  const setInadBRL = (i: number, brl: number) =>
+    update((s) => {
+      const base = s.revenue.bruta[i] || 0;
+      const pct = base > 0 ? (brl / base) * 100 : 0;
+      return { ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } };
+    });
+  const setInadAllBRL = (brl: number) =>
+    update((s) => {
+      const base = fixedBase(s.revenue.bruta) || (sum(s.revenue.bruta) / 12) || 0;
+      const pct = base > 0 ? (brl / base) * 100 : 0;
+      return { ...s, revenue: { ...s.revenue, inadimplencia: fill12(pct) } };
+    });
   const setInadFixa = (fixed: boolean) =>
     update((s) => {
       const base = fixed ? fixedBase(s.revenue.inadimplencia) : s.revenue.inadimplencia[0] || 0;
@@ -67,6 +77,10 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         },
       };
     });
+
+  // Valores em R$ derivados a partir do % armazenado
+  const inadimpBRL = r.bruta.map((b, i) => b * (r.inadimplencia[i] / 100));
+  const inadimpBRLAnual = sum(inadimpBRL);
 
   const addDeducao = () =>
     update((s) => ({
