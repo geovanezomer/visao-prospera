@@ -33,6 +33,8 @@ export interface RevenueDeducao {
   id: string;
   label: string;
   valores: Months;
+  /** Se true, o mesmo valor é aplicado em todos os 12 meses (modo fixo). */
+  fixed?: boolean;
 }
 
 export interface Revenue {
