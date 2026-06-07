@@ -343,10 +343,12 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
             </tbody>
           </table>
         </div>
+        </div>
       </div>
     </div>
   );
 }
+
 
 function ModeToggle({ fixed, onChange }: { fixed: boolean; onChange: (fixed: boolean) => void }) {
   return (
