@@ -1,6 +1,6 @@
 import { AppState, RevenueDeducao } from "@/lib/finance/types";
 import { fmtBRL, fmtPct, MESES, sum, avg, zeros12, fill12 } from "@/lib/finance/format";
-import { MoneyInput, NumInput, PctInput, StatCard, SectionTitle } from "./primitives";
+import { MoneyInput, NumInput, StatCard, SectionTitle } from "./primitives";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -51,10 +51,20 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       };
     });
 
-  const setInad = (i: number, v: number) =>
-    update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? v : x)) } }));
-  const setInadAll = (v: number) =>
-    update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: fill12(v) } }));
+  // Inadimplência é armazenada em % internamente. A UI exibe em R$.
+  // Converte R$ <-> % usando a Receita Bruta do mês (ou média anual no modo fixo).
+  const setInadBRL = (i: number, brl: number) =>
+    update((s) => {
+      const base = s.revenue.bruta[i] || 0;
+      const pct = base > 0 ? (brl / base) * 100 : 0;
+      return { ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } };
+    });
+  const setInadAllBRL = (brl: number) =>
+    update((s) => {
+      const base = fixedBase(s.revenue.bruta) || (sum(s.revenue.bruta) / 12) || 0;
+      const pct = base > 0 ? (brl / base) * 100 : 0;
+      return { ...s, revenue: { ...s.revenue, inadimplencia: fill12(pct) } };
+    });
   const setInadFixa = (fixed: boolean) =>
     update((s) => {
       const base = fixed ? fixedBase(s.revenue.inadimplencia) : s.revenue.inadimplencia[0] || 0;
@@ -67,6 +77,10 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         },
       };
     });
+
+  // Valores em R$ derivados a partir do % armazenado
+  const inadimpBRL = r.bruta.map((b, i) => b * (r.inadimplencia[i] / 100));
+  const inadimpBRLAnual = sum(inadimpBRL);
 
   const addDeducao = () =>
     update((s) => ({
@@ -163,22 +177,17 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       </div>
 
       {/* Receita mensal — visualmente alinhado com a aba Custos */}
-      <div className="rounded-lg border border-border/60 border-l-4 border-l-pos bg-card/40">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 p-4">
-          <div>
-            <SectionTitle hint="Receita Bruta, inadimplência (% sobre a bruta) e deduções customizadas (devoluções, perdas, furtos, descontos comerciais, abatimentos...). Use o toggle de Modo para aplicar o mesmo valor em todos os meses.">
-              Receita mensal — 12 meses
-            </SectionTitle>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Linhas livres de dedução abatem a Receita Líquida e a base dos impostos sobre venda na DRE.
-            </p>
-          </div>
-          <Button size="sm" variant="outline" onClick={addDeducao} className="h-7 gap-1 text-xs">
-            <Plus className="h-3.5 w-3.5" /> Adicionar linha
+      <div className="rounded-lg border border-border/60 border-l-4 border-l-[color:var(--success)] bg-card/40">
+        <div className="flex items-center justify-between border-b border-border/60 p-4">
+          <SectionTitle hint="Receita Bruta, inadimplência (em R$) e deduções customizadas (devoluções, perdas, furtos, descontos comerciais, abatimentos...). Use o toggle de Modo para aplicar o mesmo valor em todos os meses.">
+            Receita mensal — 12 meses
+          </SectionTitle>
+          <Button size="sm" variant="outline" onClick={addDeducao} className="h-7 text-xs">
+            <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar linha
           </Button>
         </div>
-
-        <div className="scrollbar-thin overflow-x-auto p-2">
+        <div className="space-y-4 p-2">
+        <div className="scrollbar-thin overflow-x-auto">
           <table className="w-full min-w-[1200px] text-sm">
             <thead>
               <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -220,32 +229,35 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
                 <td />
               </tr>
 
-              {/* Inadimplência % */}
+              {/* Inadimplência R$ */}
               <tr className="border-t border-border/40 align-middle">
-                <td className="px-3 py-2 text-xs">Inadimplência (%)</td>
+                <td className="px-3 py-2 text-xs">Inadimplência (R$)</td>
                 <td className="px-2 py-2">
                   <ModeToggle fixed={!!r.inadimplenciaFixa} onChange={setInadFixa} />
                 </td>
                 {r.inadimplenciaFixa ? (
                   <td className="px-1 py-1" colSpan={12}>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase text-muted-foreground">% aplicado em todos os meses:</span>
-                      <div className="w-28">
-                        <PctInput value={fixedBase(r.inadimplencia)} onChange={setInadAll} />
+                      <span className="text-[10px] uppercase text-muted-foreground">Valor aplicado em todos os meses:</span>
+                      <div className="w-36">
+                        <MoneyInput value={fixedBase(inadimpBRL)} onChange={setInadAllBRL} />
                       </div>
                     </div>
                   </td>
                 ) : (
-                  r.inadimplencia.map((v, i) => (
+                  inadimpBRL.map((v, i) => (
                     <td key={i} className="px-1 py-1">
-                      <PctInput value={v} onChange={(n) => setInad(i, n)} />
+                      <MoneyInput value={v} onChange={(n) => setInadBRL(i, n)} />
                     </td>
                   ))
                 )}
-                <td className="num px-3 py-2 text-right text-muted-foreground">{fmtPct(avg(r.inadimplencia) / 100)}</td>
-                <td className="num px-2 py-2 text-right text-xs text-muted-foreground">—</td>
+                <td className={`num px-3 py-2 text-right ${inadimpBRLAnual > 0 ? "text-neg" : "text-muted-foreground"}`}>
+                  {inadimpBRLAnual > 0 ? `− ${fmtBRL(inadimpBRLAnual)}` : fmtBRL(0)}
+                </td>
+                <td className="num px-2 py-2 text-right text-xs text-muted-foreground">{fmtPct(pctRec(inadimpBRLAnual))}</td>
                 <td />
               </tr>
+
 
               {/* Deduções customizadas */}
               {deducoes.map((d) => {
@@ -331,10 +343,12 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
             </tbody>
           </table>
         </div>
+        </div>
       </div>
     </div>
   );
 }
+
 
 function ModeToggle({ fixed, onChange }: { fixed: boolean; onChange: (fixed: boolean) => void }) {
   return (
