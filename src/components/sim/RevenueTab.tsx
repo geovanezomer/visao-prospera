@@ -177,22 +177,17 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       </div>
 
       {/* Receita mensal — visualmente alinhado com a aba Custos */}
-      <div className="rounded-lg border border-border/60 border-l-4 border-l-pos bg-card/40">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 p-4">
-          <div>
-            <SectionTitle hint="Receita Bruta, inadimplência (% sobre a bruta) e deduções customizadas (devoluções, perdas, furtos, descontos comerciais, abatimentos...). Use o toggle de Modo para aplicar o mesmo valor em todos os meses.">
-              Receita mensal — 12 meses
-            </SectionTitle>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Linhas livres de dedução abatem a Receita Líquida e a base dos impostos sobre venda na DRE.
-            </p>
-          </div>
-          <Button size="sm" variant="outline" onClick={addDeducao} className="h-7 gap-1 text-xs">
-            <Plus className="h-3.5 w-3.5" /> Adicionar linha
+      <div className="rounded-lg border border-border/60 border-l-4 border-l-[color:var(--success)] bg-card/40">
+        <div className="flex items-center justify-between border-b border-border/60 p-4">
+          <SectionTitle hint="Receita Bruta, inadimplência (em R$) e deduções customizadas (devoluções, perdas, furtos, descontos comerciais, abatimentos...). Use o toggle de Modo para aplicar o mesmo valor em todos os meses.">
+            Receita mensal — 12 meses
+          </SectionTitle>
+          <Button size="sm" variant="outline" onClick={addDeducao} className="h-7 text-xs">
+            <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar linha
           </Button>
         </div>
-
-        <div className="scrollbar-thin overflow-x-auto p-2">
+        <div className="space-y-4 p-2">
+        <div className="scrollbar-thin overflow-x-auto">
           <table className="w-full min-w-[1200px] text-sm">
             <thead>
               <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
