@@ -229,32 +229,35 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
                 <td />
               </tr>
 
-              {/* Inadimplência % */}
+              {/* Inadimplência R$ */}
               <tr className="border-t border-border/40 align-middle">
-                <td className="px-3 py-2 text-xs">Inadimplência (%)</td>
+                <td className="px-3 py-2 text-xs">Inadimplência (R$)</td>
                 <td className="px-2 py-2">
                   <ModeToggle fixed={!!r.inadimplenciaFixa} onChange={setInadFixa} />
                 </td>
                 {r.inadimplenciaFixa ? (
                   <td className="px-1 py-1" colSpan={12}>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase text-muted-foreground">% aplicado em todos os meses:</span>
-                      <div className="w-28">
-                        <PctInput value={fixedBase(r.inadimplencia)} onChange={setInadAll} />
+                      <span className="text-[10px] uppercase text-muted-foreground">Valor aplicado em todos os meses:</span>
+                      <div className="w-36">
+                        <MoneyInput value={fixedBase(inadimpBRL)} onChange={setInadAllBRL} />
                       </div>
                     </div>
                   </td>
                 ) : (
-                  r.inadimplencia.map((v, i) => (
+                  inadimpBRL.map((v, i) => (
                     <td key={i} className="px-1 py-1">
-                      <PctInput value={v} onChange={(n) => setInad(i, n)} />
+                      <MoneyInput value={v} onChange={(n) => setInadBRL(i, n)} />
                     </td>
                   ))
                 )}
-                <td className="num px-3 py-2 text-right text-muted-foreground">{fmtPct(avg(r.inadimplencia) / 100)}</td>
-                <td className="num px-2 py-2 text-right text-xs text-muted-foreground">—</td>
+                <td className={`num px-3 py-2 text-right ${inadimpBRLAnual > 0 ? "text-neg" : "text-muted-foreground"}`}>
+                  {inadimpBRLAnual > 0 ? `− ${fmtBRL(inadimpBRLAnual)}` : fmtBRL(0)}
+                </td>
+                <td className="num px-2 py-2 text-right text-xs text-muted-foreground">{fmtPct(pctRec(inadimpBRLAnual))}</td>
                 <td />
               </tr>
+
 
               {/* Deduções customizadas */}
               {deducoes.map((d) => {
