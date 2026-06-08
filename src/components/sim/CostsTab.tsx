@@ -90,9 +90,8 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
   const setSubcat = (id: string, subcategory: string) =>
     updateLine(id, { subcategory, semCredito: subcategory === "icms_st" ? true : undefined });
 
-  const reloadModel = () => {
-    update((s) => ({ ...s, costs: defaultCostsFor(business) }));
-  };
+
+
 
   // totais
   const totCV = sum(byCat("custo_vendas").flatMap(monthValues));
