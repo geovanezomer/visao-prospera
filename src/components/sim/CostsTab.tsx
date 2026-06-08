@@ -269,9 +269,6 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
   );
 }
 
-function businessLabel(b: BusinessType) {
-  return b === "industria" ? "Indústria" : b === "comercio" ? "Comércio / Revenda" : "Prestadora de serviços";
-}
 
 function SectionBlock({
   title,
