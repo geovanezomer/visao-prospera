@@ -354,7 +354,7 @@ function RevenueTable({
                     <input
                       value={row.label}
                       onChange={(e) => onLabel(row, e.target.value)}
-                      placeholder="Ex: Devoluções"
+                      placeholder="Ex: Inadimplência"
                       className="w-full rounded-md border border-border/40 bg-input/40 px-2 py-1 text-xs outline-none focus:border-primary"
                     />
                   ) : (
