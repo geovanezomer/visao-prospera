@@ -66,7 +66,7 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
     {
       id: "row_inad",
       kind: "inadimplencia",
-      label: "Inadimplência (R$)",
+      label: "Devoluções e Cancelamentos",
       values: inadimpBRL,
       fixed: !!r.inadimplenciaFixa,
       editableLabel: false,
