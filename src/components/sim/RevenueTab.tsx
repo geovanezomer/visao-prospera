@@ -1,5 +1,5 @@
 import { AppState, RevenueDeducao } from "@/lib/finance/types";
-import { fmtBRL, fmtPct, MESES, sum, fill12, zeros12 } from "@/lib/finance/format";
+import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12, zeros12 } from "@/lib/finance/format";
 import { MoneyInput, NumInput, StatCard, SectionTitle } from "./primitives";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -405,7 +405,7 @@ function RevenueTable({
           <tr className="border-t border-border/40 bg-accent/20 align-middle">
             <td className="px-3 py-2 text-xs font-semibold" colSpan={2}>Receita Líquida</td>
             {liquidas.map((v, i) => (
-              <td key={i} className="num px-1 py-2 text-right text-pos">{fmtBRL(v)}</td>
+              <td key={i} className="num px-1 py-2 text-right text-[11px] text-pos">{fmtBRLCompact(v)}</td>
             ))}
             <td className="num px-3 py-2 text-right font-semibold text-pos">{fmtBRL(liqAnual)}</td>
             <td className="num px-2 py-2 text-right text-xs text-muted-foreground">{fmtPct(pctRec(liqAnual))}</td>
