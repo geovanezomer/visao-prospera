@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
-import { AppState, BusinessType, CostCategory, CostLine, COST_VENDAS_LABEL, SUBCATEGORIES } from "@/lib/finance/types";
+import { AppState, CostCategory, CostLine, COST_VENDAS_LABEL, SUBCATEGORIES } from "@/lib/finance/types";
 import { fill12, fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { fixedCostBase, monthValues } from "@/lib/finance/calculations";
-import { defaultCostsFor } from "@/lib/finance/defaults";
 import { MoneyInput, SectionTitle, StatCard } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, RefreshCw, AlertTriangle } from "lucide-react";
-import { ConfirmDialog } from "./ConfirmDialog";
+import { Plus, Trash2, AlertTriangle } from "lucide-react";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
@@ -92,9 +90,8 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
   const setSubcat = (id: string, subcategory: string) =>
     updateLine(id, { subcategory, semCredito: subcategory === "icms_st" ? true : undefined });
 
-  const reloadModel = () => {
-    update((s) => ({ ...s, costs: defaultCostsFor(business) }));
-  };
+
+
 
   // totais
   const totCV = sum(byCat("custo_vendas").flatMap(monthValues));
@@ -149,23 +146,6 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
       </div>
 
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/40 bg-card/30 px-4 py-2 text-xs text-muted-foreground">
-        <span>
-          Empresa: <span className="font-medium text-foreground">{businessLabel(business)}</span> · rótulo do Custo de Vendas: <span className="font-mono text-primary">{cvLabel.short}</span>
-        </span>
-        <ConfirmDialog
-          title={`Recarregar modelo de custos para ${businessLabel(business)}?`}
-          description="Todas as linhas de custos atuais serão substituídas pelo modelo padrão deste tipo de empresa. Esta ação não pode ser desfeita."
-          confirmLabel="Recarregar"
-          destructive
-          onConfirm={reloadModel}
-          trigger={
-            <Button size="sm" variant="ghost" className="h-7 text-xs">
-              <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Recarregar modelo {businessLabel(business)}
-            </Button>
-          }
-        />
-      </div>
 
       {/* Custo de Vendas — oculto para Serviços (CSP descontinuado) */}
       {business !== "servicos" && (
@@ -289,9 +269,6 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
   );
 }
 
-function businessLabel(b: BusinessType) {
-  return b === "industria" ? "Indústria" : b === "comercio" ? "Comércio / Revenda" : "Prestadora de serviços";
-}
 
 function SectionBlock({
   title,
