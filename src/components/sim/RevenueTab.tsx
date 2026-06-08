@@ -1,5 +1,5 @@
 import { AppState, RevenueDeducao } from "@/lib/finance/types";
-import { fmtBRL, fmtPct, MESES, sum, fill12, zeros12 } from "@/lib/finance/format";
+import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12, zeros12 } from "@/lib/finance/format";
 import { MoneyInput, NumInput, StatCard, SectionTitle } from "./primitives";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
