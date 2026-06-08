@@ -238,7 +238,7 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       <SectionBlock
         title="Receita Mensal — 12 meses"
         hint="Receita Bruta, inadimplência (R$) e deduções customizadas. Use o toggle de Modo para aplicar o mesmo valor em todos os meses."
-        accentClass="border-l-pos"
+        accentClass="border-l-[color:var(--success)]"
         onAdd={addDeducao}
       >
         <RevenueTable
