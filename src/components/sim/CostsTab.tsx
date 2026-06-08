@@ -146,23 +146,6 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
       </div>
 
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/40 bg-card/30 px-4 py-2 text-xs text-muted-foreground">
-        <span>
-          Empresa: <span className="font-medium text-foreground">{businessLabel(business)}</span> · rótulo do Custo de Vendas: <span className="font-mono text-primary">{cvLabel.short}</span>
-        </span>
-        <ConfirmDialog
-          title={`Recarregar modelo de custos para ${businessLabel(business)}?`}
-          description="Todas as linhas de custos atuais serão substituídas pelo modelo padrão deste tipo de empresa. Esta ação não pode ser desfeita."
-          confirmLabel="Recarregar"
-          destructive
-          onConfirm={reloadModel}
-          trigger={
-            <Button size="sm" variant="ghost" className="h-7 text-xs">
-              <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Recarregar modelo {businessLabel(business)}
-            </Button>
-          }
-        />
-      </div>
 
       {/* Custo de Vendas — oculto para Serviços (CSP descontinuado) */}
       {business !== "servicos" && (
