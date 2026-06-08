@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
-import { AppState, BusinessType, CostCategory, CostLine, COST_VENDAS_LABEL, SUBCATEGORIES } from "@/lib/finance/types";
+import { AppState, CostCategory, CostLine, COST_VENDAS_LABEL, SUBCATEGORIES } from "@/lib/finance/types";
 import { fill12, fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { fixedCostBase, monthValues } from "@/lib/finance/calculations";
-import { defaultCostsFor } from "@/lib/finance/defaults";
 import { MoneyInput, SectionTitle, StatCard } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, RefreshCw, AlertTriangle } from "lucide-react";
-import { ConfirmDialog } from "./ConfirmDialog";
+import { Plus, Trash2, AlertTriangle } from "lucide-react";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
