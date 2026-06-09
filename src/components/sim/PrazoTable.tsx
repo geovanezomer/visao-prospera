@@ -104,5 +104,3 @@ export function PrazoTable({
   );
 }
 
-// Suprime warning de import não usado (MoneyInput) em alguns lints estritos
-void MoneyInput;
