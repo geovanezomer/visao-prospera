@@ -4,52 +4,38 @@ import { MoneyInput, StatCard, SectionTitle } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { PrazoTable } from "./PrazoTable";
 
-function uid(prefix = "r"): string {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
-}
-
 function fixedBase(values: number[]): number {
   if (!values?.length) return 0;
   const nonZero = values.find((v) => Number(v) !== 0);
   return Number.isFinite(nonZero as number) ? (nonZero as number) : (values[0] || 0);
 }
 
-// Linha unificada — Receita Bruta, Inadimplência (R$) ou deduções customizadas
-type RowKind = "bruta" | "inadimplencia" | "deducao";
+type RowKind = "bruta" | "inadimplencia";
 type Row = {
   id: string;
   kind: RowKind;
   label: string;
-  values: number[]; // sempre em R$
+  values: number[];
   fixed: boolean;
-  editableLabel: boolean;
-  removable: boolean;
   tone: "pos" | "neg";
-  dedId?: string;
 };
 
 export function RevenueTab({ state, update }: { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void }) {
   const r = state.revenue;
-  const deducoes: RevenueDeducao[] = r.deducoes ?? [];
 
-  // Derivações
   const inadimpBRL = r.bruta.map((b, i) => b * ((r.inadimplencia[i] || 0) / 100));
-  const outras = MESES.map((_, i) => deducoes.reduce((acc, d) => acc + Math.max(0, d.valores?.[i] || 0), 0));
-  const liquidas = r.bruta.map((b, i) => Math.max(0, b - inadimpBRL[i] - outras[i]));
+  const liquidas = r.bruta.map((b, i) => Math.max(0, b - inadimpBRL[i]));
 
   const brutaAnual = sum(r.bruta);
   const inadimpAnual = sum(inadimpBRL);
-  const outrasAnual = sum(outras);
-  const deducoesAnual = inadimpAnual + outrasAnual;
+  const deducoesAnual = inadimpAnual;
   const liqAnual = sum(liquidas);
 
-  // Média mensal YTD — considera apenas meses com receita bruta > 0
   const monthsWithRevenue = liquidas.filter((_, i) => r.bruta[i] > 0).length;
   const mediaYTD = monthsWithRevenue > 0 ? liqAnual / monthsWithRevenue : 0;
 
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
 
-  // ===== Construir lista unificada de linhas =====
   const rows: Row[] = [
     {
       id: "row_bruta",
@@ -57,8 +43,6 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       label: "Receita Bruta",
       values: r.bruta,
       fixed: !!r.brutaFixa,
-      editableLabel: false,
-      removable: false,
       tone: "pos",
     },
     {
@@ -67,45 +51,20 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       label: "Devoluções e Cancelamentos",
       values: inadimpBRL,
       fixed: !!r.inadimplenciaFixa,
-      editableLabel: false,
-      removable: false,
       tone: "neg",
     },
-    ...deducoes.map<Row>((d) => ({
-      id: `row_${d.id}`,
-      kind: "deducao",
-      label: d.label || "",
-      values: d.valores,
-      fixed: !!d.fixed,
-      editableLabel: true,
-      removable: true,
-      tone: "neg",
-      dedId: d.id,
-    })),
   ];
 
-  // ===== Handlers =====
   const setMonth = (row: Row, i: number, v: number) => {
     const safe = Math.max(0, Number.isFinite(v) ? v : 0);
     if (row.kind === "bruta") {
       update((s) => ({ ...s, revenue: { ...s.revenue, bruta: s.revenue.bruta.map((x, j) => (j === i ? safe : x)) } }));
-    } else if (row.kind === "inadimplencia") {
+    } else {
       update((s) => {
         const base = s.revenue.bruta[i] || 0;
         const pct = base > 0 ? (safe / base) * 100 : 0;
         return { ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } };
       });
-    } else if (row.kind === "deducao" && row.dedId) {
-      const dedId = row.dedId;
-      update((s) => ({
-        ...s,
-        revenue: {
-          ...s.revenue,
-          deducoes: (s.revenue.deducoes ?? []).map((d) =>
-            d.id === dedId ? { ...d, valores: d.valores.map((x, j) => (j === i ? safe : x)) } : d,
-          ),
-        },
-      }));
     }
   };
 
@@ -113,23 +72,12 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
     const safe = Math.max(0, Number.isFinite(v) ? v : 0);
     if (row.kind === "bruta") {
       update((s) => ({ ...s, revenue: { ...s.revenue, bruta: fill12(safe) } }));
-    } else if (row.kind === "inadimplencia") {
+    } else {
       update((s) => {
         const base = fixedBase(s.revenue.bruta) || sum(s.revenue.bruta) / 12 || 0;
         const pct = base > 0 ? (safe / base) * 100 : 0;
         return { ...s, revenue: { ...s.revenue, inadimplencia: fill12(pct) } };
       });
-    } else if (row.kind === "deducao" && row.dedId) {
-      const dedId = row.dedId;
-      update((s) => ({
-        ...s,
-        revenue: {
-          ...s.revenue,
-          deducoes: (s.revenue.deducoes ?? []).map((d) =>
-            d.id === dedId ? { ...d, valores: fill12(safe) } : d,
-          ),
-        },
-      }));
     }
   };
 
@@ -137,72 +85,21 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
     if (row.kind === "bruta") {
       update((s) => {
         const base = fixed ? fixedBase(s.revenue.bruta) : s.revenue.bruta[0] || 0;
-        return {
-          ...s,
-          revenue: { ...s.revenue, brutaFixa: fixed, bruta: fixed ? fill12(base) : s.revenue.bruta },
-        };
+        return { ...s, revenue: { ...s.revenue, brutaFixa: fixed, bruta: fixed ? fill12(base) : s.revenue.bruta } };
       });
-    } else if (row.kind === "inadimplencia") {
+    } else {
       update((s) => {
         const base = fixed ? fixedBase(s.revenue.inadimplencia) : s.revenue.inadimplencia[0] || 0;
         return {
           ...s,
-          revenue: {
-            ...s.revenue,
-            inadimplenciaFixa: fixed,
-            inadimplencia: fixed ? fill12(base) : s.revenue.inadimplencia,
-          },
+          revenue: { ...s.revenue, inadimplenciaFixa: fixed, inadimplencia: fixed ? fill12(base) : s.revenue.inadimplencia },
         };
       });
-    } else if (row.kind === "deducao" && row.dedId) {
-      const dedId = row.dedId;
-      update((s) => ({
-        ...s,
-        revenue: {
-          ...s.revenue,
-          deducoes: (s.revenue.deducoes ?? []).map((d) => {
-            if (d.id !== dedId) return d;
-            const base = fixed ? fixedBase(d.valores) : d.valores[0] || 0;
-            return { ...d, fixed, valores: fixed ? fill12(base) : d.valores };
-          }),
-        },
-      }));
     }
   };
 
-  const setLabel = (row: Row, label: string) => {
-    if (row.kind !== "deducao" || !row.dedId) return;
-    const dedId = row.dedId;
-    update((s) => ({
-      ...s,
-      revenue: {
-        ...s.revenue,
-        deducoes: (s.revenue.deducoes ?? []).map((d) => (d.id === dedId ? { ...d, label } : d)),
-      },
-    }));
-  };
-
-  const removeRow = (row: Row) => {
-    if (!row.dedId) return;
-    const dedId = row.dedId;
-    update((s) => ({
-      ...s,
-      revenue: { ...s.revenue, deducoes: (s.revenue.deducoes ?? []).filter((d) => d.id !== dedId) },
-    }));
-  };
-
-  const addDeducao = () =>
-    update((s) => ({
-      ...s,
-      revenue: {
-        ...s.revenue,
-        deducoes: [...(s.revenue.deducoes ?? []), { id: uid("ded"), label: "", valores: zeros12(), fixed: false }],
-      },
-    }));
-
   return (
     <div className="space-y-6">
-      {/* Sumário */}
       <div className="grid gap-3 md:grid-cols-4">
         <StatCard
           label="Receita Bruta Anual"
@@ -215,7 +112,7 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
           value={fmtBRL(deducoesAnual)}
           tone="neg"
           sub={fmtPct(pctRec(deducoesAnual)) + " da receita"}
-          hint={{ description: "Inadimplência + deduções customizadas (devoluções, descontos, abatimentos).", formula: "Inadimplência + Σ Deduções customizadas" }}
+          hint={{ description: "Devoluções e cancelamentos.", formula: "Σ Devoluções e Cancelamentos" }}
         />
         <StatCard
           label="Receita Operacional"
@@ -230,15 +127,12 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
           sub={`${monthsWithRevenue} ${monthsWithRevenue === 1 ? "mês" : "meses"} com receita`}
           hint="Média mensal da Receita Operacional considerando apenas meses com receita bruta lançada."
         />
-
       </div>
 
-      {/* Receita mensal — clone visual da CostsTab */}
       <SectionBlock
         title="Receita Mensal — 12 meses"
-        hint="Receita Bruta, inadimplência (R$) e deduções customizadas. Use o toggle de Modo para aplicar o mesmo valor em todos os meses."
+        hint="Receita Bruta e devoluções/cancelamentos (em R$). Use o toggle de Modo para aplicar o mesmo valor em todos os meses."
         accentClass="border-l-[color:var(--success)]"
-        onAdd={addDeducao}
       >
         <RevenueTable
           rows={rows}
@@ -248,12 +142,9 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
-          onLabel={setLabel}
-          onRemove={removeRow}
         />
       </SectionBlock>
 
-      {/* PMR — Prazo Médio de Recebimento (mês a mês) */}
       <PrazoTable
         title="Prazo Médio de Recebimento (PMR) — 12 meses"
         hint="Dias entre faturar e receber do cliente. Pode variar por mês conforme sazonalidade, mix de clientes ou política comercial."
@@ -271,10 +162,7 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
           })
         }
         onAllMonths={(v) =>
-          update((s) => ({
-            ...s,
-            revenue: { ...s.revenue, pmrMensal: fill12(v), pmr: v },
-          }))
+          update((s) => ({ ...s, revenue: { ...s.revenue, pmrMensal: fill12(v), pmr: v } }))
         }
         onFixed={(fixed) =>
           update((s) => {
@@ -291,27 +179,21 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
   );
 }
 
-
 function SectionBlock({
   title,
   hint,
   accentClass,
-  onAdd,
   children,
 }: {
   title: string;
   hint?: string;
   accentClass: string;
-  onAdd: () => void;
   children: React.ReactNode;
 }) {
   return (
     <div className={`rounded-lg border border-border/60 border-l-4 bg-card/40 ${accentClass}`}>
       <div className="flex items-center justify-between border-b border-border/60 p-4">
         <SectionTitle hint={hint}>{title}</SectionTitle>
-        <Button size="sm" variant="outline" onClick={onAdd} className="h-7 text-xs">
-          <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar linha
-        </Button>
       </div>
       <div className="space-y-4 p-2">{children}</div>
     </div>
@@ -326,8 +208,6 @@ function RevenueTable({
   onMonth,
   onAllMonths,
   onFixed,
-  onLabel,
-  onRemove,
 }: {
   rows: Row[];
   brutaAnual: number;
@@ -336,8 +216,6 @@ function RevenueTable({
   onMonth: (row: Row, i: number, v: number) => void;
   onAllMonths: (row: Row, v: number) => void;
   onFixed: (row: Row, fixed: boolean) => void;
-  onLabel: (row: Row, label: string) => void;
-  onRemove: (row: Row) => void;
 }) {
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
 
@@ -365,16 +243,7 @@ function RevenueTable({
             return (
               <tr key={row.id} className="border-t border-border/40 align-middle">
                 <td className="px-3 py-2">
-                  {row.editableLabel ? (
-                    <input
-                      value={row.label}
-                      onChange={(e) => onLabel(row, e.target.value)}
-                      placeholder="Ex: Inadimplência"
-                      className="w-full rounded-md border border-border/40 bg-input/40 px-2 py-1 text-xs outline-none focus:border-primary"
-                    />
-                  ) : (
-                    <span className="text-xs">{row.label}</span>
-                  )}
+                  <span className="text-xs">{row.label}</span>
                 </td>
                 <td className="px-2 py-2">
                   <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
@@ -401,22 +270,11 @@ function RevenueTable({
                 )}
                 <td className={`num px-3 py-2 text-right ${toneClass}`}>{anualDisplay}</td>
                 <td className="num px-2 py-2 text-right text-xs text-muted-foreground">{fmtPct(pct)}</td>
-                <td className="px-1 py-2 text-center">
-                  {row.removable && (
-                    <button
-                      onClick={() => onRemove(row)}
-                      title="Remover linha"
-                      className="text-muted-foreground transition hover:text-neg"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </td>
+                <td />
               </tr>
             );
           })}
 
-          {/* Receita Operacional */}
           <tr className="border-t border-border/40 bg-accent/20 align-middle">
             <td className="px-3 py-2 text-xs font-semibold" colSpan={2}>Receita Operacional</td>
             {liquidas.map((v, i) => (
