@@ -40,8 +40,18 @@ export interface RevenueDeducao {
 export interface Revenue {
   bruta: Months;
   inadimplencia: Months; // %
+  /** PMR médio (em dias) — derivado de pmrMensal. Mantido para backward-compat. */
   pmr: number;
+  /** PMP médio (em dias) — derivado de pmpMensal. Mantido para backward-compat. */
   pmp: number;
+  /** PMR mês a mês (em dias). */
+  pmrMensal?: Months;
+  /** PMP mês a mês (em dias). */
+  pmpMensal?: Months;
+  /** Modo fixo para PMR (mesmo valor nos 12 meses). */
+  pmrFixo?: boolean;
+  /** Modo fixo para PMP (mesmo valor nos 12 meses). */
+  pmpFixo?: boolean;
   /** Quando true, inadimplência vira PDD (despesa operacional) ao invés de dedução de receita.
    *  Mais correto contabilmente (CPC 47/IFRS 9) e não reduz base de PIS/COFINS/ISS. */
   inadimplenciaComoPDD?: boolean;

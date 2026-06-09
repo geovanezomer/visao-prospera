@@ -96,6 +96,10 @@ export const DEFAULT_STATE: AppState = {
     inadimplencia: fill12(5),
     pmr: 30,
     pmp: 30,
+    pmrMensal: fill12(30),
+    pmpMensal: fill12(30),
+    pmrFixo: true,
+    pmpFixo: true,
     inadimplenciaComoPDD: false,
     deducoes: [],
   },
@@ -193,6 +197,14 @@ export function migrateState(s: AppState): AppState {
   }
   const revenue = { ...DEFAULT_STATE.revenue, ...(s.revenue ?? {}) };
   if (!Array.isArray(revenue.deducoes)) revenue.deducoes = [];
+  if (!Array.isArray(revenue.pmrMensal) || revenue.pmrMensal.length !== 12) {
+    revenue.pmrMensal = fill12(revenue.pmr || 0);
+    revenue.pmrFixo = true;
+  }
+  if (!Array.isArray(revenue.pmpMensal) || revenue.pmpMensal.length !== 12) {
+    revenue.pmpMensal = fill12(revenue.pmp || 0);
+    revenue.pmpFixo = true;
+  }
   const strategic = s.strategic ?? {
     concentration: {},
     governance: {},

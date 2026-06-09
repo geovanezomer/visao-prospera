@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
+import { PrazoTable } from "./PrazoTable";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
@@ -265,6 +266,41 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
           onRemove={removeLine}
         />
       </SectionBlock>
+
+      {/* PMP — Prazo Médio de Pagamento (mês a mês) */}
+      <PrazoTable
+        title="Prazo Médio de Pagamento (PMP) — 12 meses"
+        hint="Dias entre receber a nota do fornecedor e efetivamente pagar. Quanto maior, mais o fornecedor financia o ciclo da empresa."
+        accentClass="border-l-neg"
+        rubrica="PMP — Pagamento (dias)"
+        summaryLabel="PMP"
+        values={state.revenue.pmpMensal ?? fill12(state.revenue.pmp || 0)}
+        fixed={!!state.revenue.pmpFixo}
+        onMonth={(i, v) =>
+          update((s) => {
+            const base = s.revenue.pmpMensal ?? fill12(s.revenue.pmp || 0);
+            const next = base.map((x, j) => (j === i ? v : x));
+            const media = Math.round(next.reduce((a, b) => a + (b || 0), 0) / 12);
+            return { ...s, revenue: { ...s.revenue, pmpMensal: next, pmp: media } };
+          })
+        }
+        onAllMonths={(v) =>
+          update((s) => ({
+            ...s,
+            revenue: { ...s.revenue, pmpMensal: fill12(v), pmp: v },
+          }))
+        }
+        onFixed={(fixed) =>
+          update((s) => {
+            const base = s.revenue.pmpMensal ?? fill12(s.revenue.pmp || 0);
+            if (fixed) {
+              const ref = base.find((x) => x !== 0) ?? base[0] ?? 0;
+              return { ...s, revenue: { ...s.revenue, pmpFixo: true, pmpMensal: fill12(ref), pmp: ref } };
+            }
+            return { ...s, revenue: { ...s.revenue, pmpFixo: false } };
+          })
+        }
+      />
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import { AppState, RevenueDeducao } from "@/lib/finance/types";
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12, zeros12 } from "@/lib/finance/format";
-import { MoneyInput, NumInput, StatCard, SectionTitle } from "./primitives";
+import { MoneyInput, StatCard, SectionTitle } from "./primitives";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2 } from "lucide-react";
+import { PrazoTable } from "./PrazoTable";
 
 function uid(prefix = "r"): string {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
@@ -48,7 +49,6 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
   const monthsWithRevenue = liquidas.filter((_, i) => r.bruta[i] > 0).length;
   const mediaYTD = monthsWithRevenue > 0 ? liqAnual / monthsWithRevenue : 0;
 
-  const ciclo = r.pmr - r.pmp;
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
 
   // ===== Construir lista unificada de linhas =====
@@ -220,18 +220,19 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
           hint={{ description: "Inadimplência + deduções customizadas (devoluções, descontos, abatimentos).", formula: "Inadimplência + Σ Deduções customizadas" }}
         />
         <StatCard
-          label="Receita Líquida"
+          label="Receita Operacional"
           value={fmtBRL(liqAnual)}
           tone="pos"
           sub={fmtPct(pctRec(liqAnual)) + " da receita"}
-          hint={{ description: "Receita após inadimplência e deduções. Impostos sobre venda são abatidos depois, na DRE.", formula: "Receita Bruta − Deduções da Receita" }}
+          hint={{ description: "Receita após deduções (devoluções, cancelamentos, abatimentos). Os impostos sobre venda são abatidos depois, na DRE — só então temos a Receita Líquida contábil.", formula: "Receita Bruta − Deduções da Receita" }}
         />
         <StatCard
           label="Média Mensal YTD"
           value={fmtBRL(mediaYTD)}
           sub={`${monthsWithRevenue} ${monthsWithRevenue === 1 ? "mês" : "meses"} com receita`}
-          hint="Média mensal da Receita Líquida considerando apenas meses com receita bruta lançada."
+          hint="Média mensal da Receita Operacional considerando apenas meses com receita bruta lançada."
         />
+
       </div>
 
       {/* Receita mensal — clone visual da CostsTab */}
@@ -254,28 +255,44 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         />
       </SectionBlock>
 
-      {/* Prazos médios */}
-      <div className="rounded-lg border border-border/60 bg-card/40 p-4">
-        <SectionTitle hint="Prazo Médio de Recebimento e de Pagamento, em dias.">Prazos médios</SectionTitle>
-        <div className="mt-3 grid gap-4 md:grid-cols-3">
-          <div>
-            <label className="text-xs text-muted-foreground">PMR — Recebimento (dias)</label>
-            <NumInput integer min={0} value={r.pmr} onChange={(n) => update((s) => ({ ...s, revenue: { ...s.revenue, pmr: n } }))} className="mt-1" />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">PMP — Pagamento (dias)</label>
-            <NumInput integer min={0} value={r.pmp} onChange={(n) => update((s) => ({ ...s, revenue: { ...s.revenue, pmp: n } }))} className="mt-1" />
-          </div>
-          <div className="rounded-md bg-accent/40 p-3 text-xs leading-relaxed text-muted-foreground">
-            <span className="font-semibold text-foreground">Ciclo financeiro:</span>{" "}
-            <span className={ciclo > 30 ? "text-warn" : ciclo > 0 ? "text-foreground" : "text-pos"}>{ciclo} dias</span> —{" "}
-            {ciclo > 0 ? "empresa financia o cliente." : "fornecedor financia a empresa."}
-          </div>
-        </div>
-      </div>
+      {/* PMR — Prazo Médio de Recebimento (mês a mês) */}
+      <PrazoTable
+        title="Prazo Médio de Recebimento (PMR) — 12 meses"
+        hint="Dias entre faturar e receber do cliente. Pode variar por mês conforme sazonalidade, mix de clientes ou política comercial."
+        accentClass="border-l-[color:var(--success)]"
+        rubrica="PMR — Recebimento (dias)"
+        summaryLabel="PMR"
+        values={r.pmrMensal ?? fill12(r.pmr || 0)}
+        fixed={!!r.pmrFixo}
+        onMonth={(i, v) =>
+          update((s) => {
+            const base = s.revenue.pmrMensal ?? fill12(s.revenue.pmr || 0);
+            const next = base.map((x, j) => (j === i ? v : x));
+            const media = Math.round(next.reduce((a, b) => a + (b || 0), 0) / 12);
+            return { ...s, revenue: { ...s.revenue, pmrMensal: next, pmr: media } };
+          })
+        }
+        onAllMonths={(v) =>
+          update((s) => ({
+            ...s,
+            revenue: { ...s.revenue, pmrMensal: fill12(v), pmr: v },
+          }))
+        }
+        onFixed={(fixed) =>
+          update((s) => {
+            const base = s.revenue.pmrMensal ?? fill12(s.revenue.pmr || 0);
+            if (fixed) {
+              const ref = base.find((x) => x !== 0) ?? base[0] ?? 0;
+              return { ...s, revenue: { ...s.revenue, pmrFixo: true, pmrMensal: fill12(ref), pmr: ref } };
+            }
+            return { ...s, revenue: { ...s.revenue, pmrFixo: false } };
+          })
+        }
+      />
     </div>
   );
 }
+
 
 function SectionBlock({
   title,
@@ -401,9 +418,9 @@ function RevenueTable({
             );
           })}
 
-          {/* Receita Líquida */}
+          {/* Receita Operacional */}
           <tr className="border-t border-border/40 bg-accent/20 align-middle">
-            <td className="px-3 py-2 text-xs font-semibold" colSpan={2}>Receita Líquida</td>
+            <td className="px-3 py-2 text-xs font-semibold" colSpan={2}>Receita Operacional</td>
             {liquidas.map((v, i) => (
               <td key={i} className="num px-1 py-2 text-right text-[11px] text-pos">{fmtBRLCompact(v)}</td>
             ))}
