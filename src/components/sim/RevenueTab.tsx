@@ -255,28 +255,44 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         />
       </SectionBlock>
 
-      {/* Prazos médios */}
-      <div className="rounded-lg border border-border/60 bg-card/40 p-4">
-        <SectionTitle hint="Prazo Médio de Recebimento e de Pagamento, em dias.">Prazos médios</SectionTitle>
-        <div className="mt-3 grid gap-4 md:grid-cols-3">
-          <div>
-            <label className="text-xs text-muted-foreground">PMR — Recebimento (dias)</label>
-            <NumInput integer min={0} value={r.pmr} onChange={(n) => update((s) => ({ ...s, revenue: { ...s.revenue, pmr: n } }))} className="mt-1" />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">PMP — Pagamento (dias)</label>
-            <NumInput integer min={0} value={r.pmp} onChange={(n) => update((s) => ({ ...s, revenue: { ...s.revenue, pmp: n } }))} className="mt-1" />
-          </div>
-          <div className="rounded-md bg-accent/40 p-3 text-xs leading-relaxed text-muted-foreground">
-            <span className="font-semibold text-foreground">Ciclo financeiro:</span>{" "}
-            <span className={ciclo > 30 ? "text-warn" : ciclo > 0 ? "text-foreground" : "text-pos"}>{ciclo} dias</span> —{" "}
-            {ciclo > 0 ? "empresa financia o cliente." : "fornecedor financia a empresa."}
-          </div>
-        </div>
-      </div>
+      {/* PMR — Prazo Médio de Recebimento (mês a mês) */}
+      <PrazoTable
+        title="Prazo Médio de Recebimento (PMR) — 12 meses"
+        hint="Dias entre faturar e receber do cliente. Pode variar por mês conforme sazonalidade, mix de clientes ou política comercial."
+        accentClass="border-l-[color:var(--success)]"
+        rubrica="PMR — Recebimento (dias)"
+        summaryLabel="PMR"
+        values={r.pmrMensal ?? fill12(r.pmr || 0)}
+        fixed={!!r.pmrFixo}
+        onMonth={(i, v) =>
+          update((s) => {
+            const base = s.revenue.pmrMensal ?? fill12(s.revenue.pmr || 0);
+            const next = base.map((x, j) => (j === i ? v : x));
+            const media = Math.round(next.reduce((a, b) => a + (b || 0), 0) / 12);
+            return { ...s, revenue: { ...s.revenue, pmrMensal: next, pmr: media } };
+          })
+        }
+        onAllMonths={(v) =>
+          update((s) => ({
+            ...s,
+            revenue: { ...s.revenue, pmrMensal: fill12(v), pmr: v },
+          }))
+        }
+        onFixed={(fixed) =>
+          update((s) => {
+            const base = s.revenue.pmrMensal ?? fill12(s.revenue.pmr || 0);
+            if (fixed) {
+              const ref = base.find((x) => x !== 0) ?? base[0] ?? 0;
+              return { ...s, revenue: { ...s.revenue, pmrFixo: true, pmrMensal: fill12(ref), pmr: ref } };
+            }
+            return { ...s, revenue: { ...s.revenue, pmrFixo: false } };
+          })
+        }
+      />
     </div>
   );
 }
+
 
 function SectionBlock({
   title,
