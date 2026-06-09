@@ -1,9 +1,10 @@
 import { AppState, RevenueDeducao } from "@/lib/finance/types";
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12, zeros12 } from "@/lib/finance/format";
-import { MoneyInput, NumInput, StatCard, SectionTitle } from "./primitives";
+import { MoneyInput, StatCard, SectionTitle } from "./primitives";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2 } from "lucide-react";
+import { PrazoTable } from "./PrazoTable";
 
 function uid(prefix = "r"): string {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
