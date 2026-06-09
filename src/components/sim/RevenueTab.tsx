@@ -50,8 +50,6 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
   const mediaYTD = monthsWithRevenue > 0 ? liqAnual / monthsWithRevenue : 0;
 
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
-  void pctRec;
-  const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
 
   // ===== Construir lista unificada de linhas =====
   const rows: Row[] = [
