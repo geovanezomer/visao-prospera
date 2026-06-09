@@ -1,5 +1,5 @@
 import { MESES, fill12 } from "@/lib/finance/format";
-import { MoneyInput, NumInput, SectionTitle } from "./primitives";
+import { NumInput, SectionTitle } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 
 function avg(values: number[]): number {
