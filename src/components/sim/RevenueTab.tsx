@@ -221,18 +221,19 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
           hint={{ description: "Inadimplência + deduções customizadas (devoluções, descontos, abatimentos).", formula: "Inadimplência + Σ Deduções customizadas" }}
         />
         <StatCard
-          label="Receita Líquida"
+          label="Receita Operacional"
           value={fmtBRL(liqAnual)}
           tone="pos"
           sub={fmtPct(pctRec(liqAnual)) + " da receita"}
-          hint={{ description: "Receita após inadimplência e deduções. Impostos sobre venda são abatidos depois, na DRE.", formula: "Receita Bruta − Deduções da Receita" }}
+          hint={{ description: "Receita após deduções (devoluções, cancelamentos, abatimentos). Os impostos sobre venda são abatidos depois, na DRE — só então temos a Receita Líquida contábil.", formula: "Receita Bruta − Deduções da Receita" }}
         />
         <StatCard
           label="Média Mensal YTD"
           value={fmtBRL(mediaYTD)}
           sub={`${monthsWithRevenue} ${monthsWithRevenue === 1 ? "mês" : "meses"} com receita`}
-          hint="Média mensal da Receita Líquida considerando apenas meses com receita bruta lançada."
+          hint="Média mensal da Receita Operacional considerando apenas meses com receita bruta lançada."
         />
+
       </div>
 
       {/* Receita mensal — clone visual da CostsTab */}
