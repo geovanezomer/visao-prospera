@@ -49,7 +49,8 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
   const monthsWithRevenue = liquidas.filter((_, i) => r.bruta[i] > 0).length;
   const mediaYTD = monthsWithRevenue > 0 ? liqAnual / monthsWithRevenue : 0;
 
-  const ciclo = r.pmr - r.pmp;
+  const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
+  void pctRec;
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
 
   // ===== Construir lista unificada de linhas =====
