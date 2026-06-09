@@ -419,9 +419,9 @@ function RevenueTable({
             );
           })}
 
-          {/* Receita Líquida */}
+          {/* Receita Operacional */}
           <tr className="border-t border-border/40 bg-accent/20 align-middle">
-            <td className="px-3 py-2 text-xs font-semibold" colSpan={2}>Receita Líquida</td>
+            <td className="px-3 py-2 text-xs font-semibold" colSpan={2}>Receita Operacional</td>
             {liquidas.map((v, i) => (
               <td key={i} className="num px-1 py-2 text-right text-[11px] text-pos">{fmtBRLCompact(v)}</td>
             ))}
