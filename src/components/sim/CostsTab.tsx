@@ -275,8 +275,6 @@ function CostTable({
   onFixed,
   onLabel,
   onRemove,
-  onSubcat,
-  subcats,
 }: {
   lines: CostLine[];
   receitaBrutaAnual: number;
@@ -285,9 +283,8 @@ function CostTable({
   onFixed: (id: string, fixed: boolean) => void;
   onLabel: (id: string, label: string) => void;
   onRemove: (id: string) => void;
-  onSubcat?: (id: string, sc: string) => void;
-  subcats?: { id: string; label: string }[];
 }) {
+
   if (lines.length === 0) {
     return <div className="px-4 py-3 text-xs text-muted-foreground">Nenhuma rubrica nesta categoria. Use “+ Adicionar linha”.</div>;
   }
