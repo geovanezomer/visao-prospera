@@ -1,4 +1,4 @@
-import { AppState } from "@/lib/finance/types";
+import { AppState, RevenueDeducao } from "@/lib/finance/types";
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/lib/finance/format";
 import { MoneyInput, StatCard, SectionTitle } from "./primitives";
 import { Switch } from "@/components/ui/switch";
@@ -10,10 +10,12 @@ function fixedBase(values: number[]): number {
   return Number.isFinite(nonZero as number) ? (nonZero as number) : (values[0] || 0);
 }
 
-type RowKind = "bruta" | "inadimplencia";
+type RowKind = "bruta" | "inadimplencia" | "deducao";
 type Row = {
   id: string;
   kind: RowKind;
+  /** id da dedução em revenue.deducoes (quando kind = "deducao") */
+  dedId?: string;
   label: string;
   values: number[];
   fixed: boolean;
@@ -24,11 +26,19 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
   const r = state.revenue;
 
   const inadimpBRL = r.bruta.map((b, i) => b * ((r.inadimplencia[i] || 0) / 100));
-  const liquidas = r.bruta.map((b, i) => Math.max(0, b - inadimpBRL[i]));
+  const findDed = (id: string): RevenueDeducao | undefined => r.deducoes?.find((d) => d.id === id);
+  const descDed = findDed("desc_incond") ?? { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true };
+  const abatDed = findDed("abatimentos") ?? { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true };
+
+  const liquidas = r.bruta.map((b, i) =>
+    Math.max(0, b - inadimpBRL[i] - (descDed.valores[i] || 0) - (abatDed.valores[i] || 0))
+  );
 
   const brutaAnual = sum(r.bruta);
   const inadimpAnual = sum(inadimpBRL);
-  const deducoesAnual = inadimpAnual;
+  const descAnual = sum(descDed.valores);
+  const abatAnual = sum(abatDed.valores);
+  const deducoesAnual = inadimpAnual + descAnual + abatAnual;
   const liqAnual = sum(liquidas);
 
   const monthsWithRevenue = liquidas.filter((_, i) => r.bruta[i] > 0).length;
@@ -37,34 +47,34 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
 
   const rows: Row[] = [
-    {
-      id: "row_bruta",
-      kind: "bruta",
-      label: "Receita Bruta",
-      values: r.bruta,
-      fixed: !!r.brutaFixa,
-      tone: "pos",
-    },
-    {
-      id: "row_inad",
-      kind: "inadimplencia",
-      label: "Devoluções e Cancelamentos",
-      values: inadimpBRL,
-      fixed: !!r.inadimplenciaFixa,
-      tone: "neg",
-    },
+    { id: "row_bruta", kind: "bruta", label: "Receita Bruta", values: r.bruta, fixed: !!r.brutaFixa, tone: "pos" },
+    { id: "row_inad", kind: "inadimplencia", label: "Devoluções e Cancelamentos", values: inadimpBRL, fixed: !!r.inadimplenciaFixa, tone: "neg" },
+    { id: "row_desc", kind: "deducao", dedId: "desc_incond", label: "Descontos Incondicionais", values: descDed.valores, fixed: !!descDed.fixed, tone: "neg" },
+    { id: "row_abat", kind: "deducao", dedId: "abatimentos", label: "Abatimentos", values: abatDed.valores, fixed: !!abatDed.fixed, tone: "neg" },
   ];
+
+  const updateDed = (id: string, label: string, mut: (d: RevenueDeducao) => RevenueDeducao) =>
+    update((s) => {
+      const list = s.revenue.deducoes ?? [];
+      const exists = list.find((d) => d.id === id);
+      const base: RevenueDeducao = exists ?? { id, label, valores: fill12(0), fixed: true };
+      const next = mut(base);
+      const newList = exists ? list.map((d) => (d.id === id ? next : d)) : [...list, next];
+      return { ...s, revenue: { ...s.revenue, deducoes: newList } };
+    });
 
   const setMonth = (row: Row, i: number, v: number) => {
     const safe = Math.max(0, Number.isFinite(v) ? v : 0);
     if (row.kind === "bruta") {
       update((s) => ({ ...s, revenue: { ...s.revenue, bruta: s.revenue.bruta.map((x, j) => (j === i ? safe : x)) } }));
-    } else {
+    } else if (row.kind === "inadimplencia") {
       update((s) => {
         const base = s.revenue.bruta[i] || 0;
         const pct = base > 0 ? (safe / base) * 100 : 0;
         return { ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } };
       });
+    } else if (row.kind === "deducao" && row.dedId) {
+      updateDed(row.dedId, row.label, (d) => ({ ...d, valores: d.valores.map((x, j) => (j === i ? safe : x)) }));
     }
   };
 
@@ -72,12 +82,14 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
     const safe = Math.max(0, Number.isFinite(v) ? v : 0);
     if (row.kind === "bruta") {
       update((s) => ({ ...s, revenue: { ...s.revenue, bruta: fill12(safe) } }));
-    } else {
+    } else if (row.kind === "inadimplencia") {
       update((s) => {
         const base = fixedBase(s.revenue.bruta) || sum(s.revenue.bruta) / 12 || 0;
         const pct = base > 0 ? (safe / base) * 100 : 0;
         return { ...s, revenue: { ...s.revenue, inadimplencia: fill12(pct) } };
       });
+    } else if (row.kind === "deducao" && row.dedId) {
+      updateDed(row.dedId, row.label, (d) => ({ ...d, valores: fill12(safe) }));
     }
   };
 
@@ -87,13 +99,18 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         const base = fixed ? fixedBase(s.revenue.bruta) : s.revenue.bruta[0] || 0;
         return { ...s, revenue: { ...s.revenue, brutaFixa: fixed, bruta: fixed ? fill12(base) : s.revenue.bruta } };
       });
-    } else {
+    } else if (row.kind === "inadimplencia") {
       update((s) => {
         const base = fixed ? fixedBase(s.revenue.inadimplencia) : s.revenue.inadimplencia[0] || 0;
         return {
           ...s,
           revenue: { ...s.revenue, inadimplenciaFixa: fixed, inadimplencia: fixed ? fill12(base) : s.revenue.inadimplencia },
         };
+      });
+    } else if (row.kind === "deducao" && row.dedId) {
+      updateDed(row.dedId, row.label, (d) => {
+        const base = fixed ? fixedBase(d.valores) : d.valores[0] || 0;
+        return { ...d, fixed, valores: fixed ? fill12(base) : d.valores };
       });
     }
   };
@@ -112,14 +129,14 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
           value={fmtBRL(deducoesAnual)}
           tone="neg"
           sub={fmtPct(pctRec(deducoesAnual)) + " da receita"}
-          hint={{ description: "Devoluções e cancelamentos.", formula: "Σ Devoluções e Cancelamentos" }}
+          hint={{ description: "Devoluções, cancelamentos, descontos incondicionais e abatimentos.", formula: "Devoluções + Descontos Incondicionais + Abatimentos" }}
         />
         <StatCard
           label="Receita Operacional"
           value={fmtBRL(liqAnual)}
           tone="pos"
           sub={fmtPct(pctRec(liqAnual)) + " da receita"}
-          hint={{ description: "Receita após deduções (devoluções, cancelamentos, abatimentos). Os impostos sobre venda são abatidos depois, na DRE — só então temos a Receita Líquida contábil.", formula: "Receita Bruta − Deduções da Receita" }}
+          hint={{ description: "Receita após deduções (devoluções, cancelamentos, descontos e abatimentos). Os impostos sobre venda são abatidos depois, na DRE — só então temos a Receita Líquida contábil.", formula: "Receita Bruta − Deduções da Receita" }}
         />
         <StatCard
           label="Média Mensal YTD"
@@ -131,7 +148,7 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
 
       <SectionBlock
         title="Receita Mensal — 12 meses"
-        hint="Receita Bruta e devoluções/cancelamentos (em R$). Use o toggle de Modo para aplicar o mesmo valor em todos os meses."
+        hint="Receita Bruta e deduções (em R$). Use o toggle de Modo para aplicar o mesmo valor em todos os meses."
         accentClass="border-l-[color:var(--success)]"
       >
         <RevenueTable
