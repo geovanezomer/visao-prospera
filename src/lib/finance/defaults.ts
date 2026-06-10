@@ -178,16 +178,23 @@ export function migrateCostLine(c: CostLine): CostLine {
 }
 
 export function migrateState(s: AppState): AppState {
-  let costs = s.costs ? s.costs.map(migrateCostLine) : DEFAULT_STATE.costs;
-  // Serviços: descontinuamos CSP — realoca linhas custo_vendas para fixo/variável
-  if (s.businessType === "servicos") {
-    costs = costs.map((c) => {
-      if (c.category !== "custo_vendas") return c;
-      if (c.subcategory === "mao_obra_direta") {
-        return { ...c, category: "fixo", subcategory: undefined, label: c.label.includes("MOD") || c.label.toLowerCase().includes("salário") ? "Mão de Obra Direta (Terceirização)" : c.label };
-      }
-      return { ...c, category: "variavel", subcategory: undefined };
-    });
+  // IDs de rubricas descontinuadas (removidas em todas as variantes)
+  const REMOVED_IDS = new Set(["outros_fix", "outros_var", "outros_fin"]);
+  let costs = s.costs ? s.costs.map(migrateCostLine).filter((c) => !REMOVED_IDS.has(c.id)) : DEFAULT_STATE.costs;
+  // Todas as categorias custo_vendas viraram variável (CPV/CMV/CSP descontinuado como seção)
+  costs = costs.map((c) => {
+    if (c.category !== "custo_vendas") return c;
+    if (s.businessType === "servicos" && c.subcategory === "mao_obra_direta") {
+      return { ...c, category: "fixo", subcategory: undefined, label: c.label.includes("MOD") || c.label.toLowerCase().includes("salário") ? "Mão de Obra Direta (Terceirização)" : c.label };
+    }
+    return { ...c, category: "variavel", subcategory: undefined };
+  });
+  // Garante presença de "Maquininha Cartão" (financeiro) e "Marketplace" (variável)
+  if (!costs.some((c) => c.id === "maquininha")) {
+    costs.push(line("maquininha", "Maquininha Cartão", "financeiro", 0, undefined, { fixed: false, values: fill12(0) }));
+  }
+  if (!costs.some((c) => c.id === "marketplace")) {
+    costs.push(line("marketplace", "Marketplace", "variavel", 0, undefined, { fixed: false, values: fill12(0) }));
   }
 
   const cashflow = s.cashflow ?? DEFAULT_STATE.cashflow;
@@ -200,6 +207,13 @@ export function migrateState(s: AppState): AppState {
   }
   const revenue = { ...DEFAULT_STATE.revenue, ...(s.revenue ?? {}) };
   if (!Array.isArray(revenue.deducoes)) revenue.deducoes = [];
+  // Garante Descontos Incondicionais e Abatimentos
+  if (!revenue.deducoes.some((d) => d.id === "desc_incond")) {
+    revenue.deducoes = [...revenue.deducoes, { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true }];
+  }
+  if (!revenue.deducoes.some((d) => d.id === "abatimentos")) {
+    revenue.deducoes = [...revenue.deducoes, { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true }];
+  }
   if (!Array.isArray(revenue.pmrMensal) || revenue.pmrMensal.length !== 12) {
     revenue.pmrMensal = fill12(revenue.pmr || 0);
     revenue.pmrFixo = true;
