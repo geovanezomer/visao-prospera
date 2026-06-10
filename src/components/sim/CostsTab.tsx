@@ -323,21 +323,8 @@ function CostTable({
                   ) : (
                     <span className="text-xs">{c.label}</span>
                   )}
-                  {subcats && onSubcat && c.custom && (
-                    <div className="mt-1">
-                      <Select value={c.subcategory || subcats[0].id} onValueChange={(v) => onSubcat(c.id, v)}>
-                        <SelectTrigger className="h-6 w-full text-[10px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {subcats.map((s) => (
-                            <SelectItem key={s.id} value={s.id} className="text-[10px]">{s.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
                 </td>
+
                 <td className="px-2 py-2">
                   <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
                     <span>Fixo</span>
