@@ -20,25 +20,9 @@ const line = (
   ...extras,
 });
 
-function costVendasFor(business: BusinessType): CostLine[] {
-  if (business === "industria") {
-    return [
-      line("mp_aco", "Matéria-prima principal", "custo_vendas", 2500, "materia_prima"),
-      line("mp_aux", "Matéria-prima auxiliar / componentes", "custo_vendas", 800, "materia_prima"),
-      line("mod_prod", "Salários produção (MOD)", "custo_vendas", 3500, "mao_obra_direta", { encargosAuto: true, encargosPct: 70 }),
-      line("cif_energia", "Energia de fábrica", "custo_vendas", 600, "cif"),
-      line("cif_manut", "Manutenção de máquinas", "custo_vendas", 400, "cif"),
-    ];
-  }
-  if (business === "comercio") {
-    return [
-      line("merc_principal", "Mercadoria para revenda", "custo_vendas", 4500, "mercadoria"),
-      line("frete_compra", "Frete sobre compras", "custo_vendas", 350, "frete_compra"),
-      line("icms_st", "ICMS-ST / tributos não recuperáveis", "custo_vendas", 280, "icms_st", { semCredito: true }),
-      line("embalagem", "Embalagem para venda", "custo_vendas", 180, "embalagem"),
-    ];
-  }
-  // Serviços: sem CSP — mão de obra direta vai para Fixos, insumos e subcontratação vão para Variáveis
+function costVendasFor(_business: BusinessType): CostLine[] {
+  // Custo de Vendas (CPV/CMV/CSP) foi descontinuado como seção própria.
+  // Linhas de custo direto agora aparecem em Variáveis (toggle Fixo desligado, valor 0).
   return [];
 }
 
@@ -53,7 +37,6 @@ function fixosFor(business: BusinessType): CostLine[] {
     line("tecnologia", "Tecnologia / Software (SaaS)", "fixo", 350),
     line("utilities", "Energia, água, internet", "fixo", 600),
     line("manutencao", "Manutenção e reparos", "fixo", 200),
-    line("outros_fix", "Outros custos fixos", "fixo", 250),
   ];
   if (business === "servicos") {
     base.splice(3, 0, line("mod_terc", "Mão de Obra Direta (Terceirização)", "fixo", 4500, undefined, { encargosAuto: true, encargosPct: 70 }));
@@ -66,12 +49,29 @@ function variaveisFor(business: BusinessType): CostLine[] {
     line("marketing", "Marketing e publicidade", "variavel", 800),
     line("comissoes", "Comissões de vendas", "variavel", 600),
     line("frete_venda", "Frete sobre vendas", "variavel", 250),
-    line("outros_var", "Outros custos variáveis", "variavel", 0),
+    line("marketplace", "Marketplace", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
   ];
   if (business === "servicos") {
     base.push(
       line("insumos_serv", "Insumos de serviço", "variavel", 500),
       line("terceiros", "Subcontratação / freelancers", "variavel", 600),
+    );
+  }
+  if (business === "industria") {
+    base.push(
+      line("mp_aco", "Matéria-prima principal", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
+      line("mp_aux", "Matéria-prima auxiliar / componentes", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
+      line("mod_prod", "Salários produção (MOD)", "variavel", 0, undefined, { fixed: false, values: fill12(0), encargosAuto: true, encargosPct: 70 }),
+      line("cif_energia", "Energia de fábrica", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
+      line("cif_manut", "Manutenção de máquinas", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
+    );
+  }
+  if (business === "comercio") {
+    base.push(
+      line("merc_principal", "Mercadoria para revenda", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
+      line("frete_compra", "Frete sobre compras", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
+      line("icms_st", "ICMS-ST / tributos não recuperáveis", "variavel", 0, undefined, { fixed: false, values: fill12(0), semCredito: true }),
+      line("embalagem", "Embalagem para venda", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
     );
   }
   return base;
@@ -81,7 +81,7 @@ const financeiros = (): CostLine[] => [
   line("juros", "Juros sobre empréstimos", "financeiro", 300),
   line("iof", "IOF / Tarifas bancárias", "financeiro", 120),
   line("antecipacao", "Antecipação de recebíveis", "financeiro", 0),
-  line("outros_fin", "Outros custos financeiros", "financeiro", 0),
+  line("maquininha", "Maquininha Cartão", "financeiro", 0, undefined, { fixed: false, values: fill12(0) }),
 ];
 
 export function defaultCostsFor(business: BusinessType): CostLine[] {
@@ -101,7 +101,10 @@ export const DEFAULT_STATE: AppState = {
     pmrFixo: true,
     pmpFixo: true,
     inadimplenciaComoPDD: false,
-    deducoes: [],
+    deducoes: [
+      { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true },
+      { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true },
+    ],
   },
   costs: defaultCostsFor("servicos"),
   capital: {
@@ -175,16 +178,23 @@ export function migrateCostLine(c: CostLine): CostLine {
 }
 
 export function migrateState(s: AppState): AppState {
-  let costs = s.costs ? s.costs.map(migrateCostLine) : DEFAULT_STATE.costs;
-  // Serviços: descontinuamos CSP — realoca linhas custo_vendas para fixo/variável
-  if (s.businessType === "servicos") {
-    costs = costs.map((c) => {
-      if (c.category !== "custo_vendas") return c;
-      if (c.subcategory === "mao_obra_direta") {
-        return { ...c, category: "fixo", subcategory: undefined, label: c.label.includes("MOD") || c.label.toLowerCase().includes("salário") ? "Mão de Obra Direta (Terceirização)" : c.label };
-      }
-      return { ...c, category: "variavel", subcategory: undefined };
-    });
+  // IDs de rubricas descontinuadas (removidas em todas as variantes)
+  const REMOVED_IDS = new Set(["outros_fix", "outros_var", "outros_fin"]);
+  let costs = s.costs ? s.costs.map(migrateCostLine).filter((c) => !REMOVED_IDS.has(c.id)) : DEFAULT_STATE.costs;
+  // Todas as categorias custo_vendas viraram variável (CPV/CMV/CSP descontinuado como seção)
+  costs = costs.map((c) => {
+    if (c.category !== "custo_vendas") return c;
+    if (s.businessType === "servicos" && c.subcategory === "mao_obra_direta") {
+      return { ...c, category: "fixo", subcategory: undefined, label: c.label.includes("MOD") || c.label.toLowerCase().includes("salário") ? "Mão de Obra Direta (Terceirização)" : c.label };
+    }
+    return { ...c, category: "variavel", subcategory: undefined };
+  });
+  // Garante presença de "Maquininha Cartão" (financeiro) e "Marketplace" (variável)
+  if (!costs.some((c) => c.id === "maquininha")) {
+    costs.push(line("maquininha", "Maquininha Cartão", "financeiro", 0, undefined, { fixed: false, values: fill12(0) }));
+  }
+  if (!costs.some((c) => c.id === "marketplace")) {
+    costs.push(line("marketplace", "Marketplace", "variavel", 0, undefined, { fixed: false, values: fill12(0) }));
   }
 
   const cashflow = s.cashflow ?? DEFAULT_STATE.cashflow;
@@ -197,6 +207,13 @@ export function migrateState(s: AppState): AppState {
   }
   const revenue = { ...DEFAULT_STATE.revenue, ...(s.revenue ?? {}) };
   if (!Array.isArray(revenue.deducoes)) revenue.deducoes = [];
+  // Garante Descontos Incondicionais e Abatimentos
+  if (!revenue.deducoes.some((d) => d.id === "desc_incond")) {
+    revenue.deducoes = [...revenue.deducoes, { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true }];
+  }
+  if (!revenue.deducoes.some((d) => d.id === "abatimentos")) {
+    revenue.deducoes = [...revenue.deducoes, { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true }];
+  }
   if (!Array.isArray(revenue.pmrMensal) || revenue.pmrMensal.length !== 12) {
     revenue.pmrMensal = fill12(revenue.pmr || 0);
     revenue.pmrFixo = true;
