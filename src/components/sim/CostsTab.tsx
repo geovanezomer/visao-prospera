@@ -1,21 +1,18 @@
 import { useEffect, useState } from "react";
-import { AppState, CostCategory, CostLine, COST_VENDAS_LABEL, SUBCATEGORIES } from "@/lib/finance/types";
+import { AppState, CostCategory, CostLine } from "@/lib/finance/types";
 import { fill12, fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { fixedCostBase, monthValues } from "@/lib/finance/calculations";
 import { MoneyInput, SectionTitle, StatCard } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
 import { PrazoTable } from "./PrazoTable";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
 export function CostsTab({ state, update }: { state: AppState; update: Updater }) {
-  const business = state.businessType;
   const receitaBrutaAnual = sum(state.revenue.bruta);
-  const cvLabel = COST_VENDAS_LABEL[business];
-  const subcats = SUBCATEGORIES[business];
+
 
   // Aviso inline quando o usuário tenta digitar valor negativo (revertido para 0)
   const [negWarn, setNegWarn] = useState<string | null>(null);
