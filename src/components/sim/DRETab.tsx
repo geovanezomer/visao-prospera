@@ -30,26 +30,43 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
   const rb = sum(dre.receitaBruta);
   const ll = sum(dre.lucroLiquido);
 
-  const temOutrasDed = sum(dre.outrasDeducoes) > 0;
-  const rows = [
-    { k: "(+) Receita Operacional Bruta", v: dre.receitaBruta, strong: true, tone: "pos" as const },
-    { k: "(−) Inadimplência / Deduções", v: dre.deducoesInadimplencia.map((x) => -x), tone: "neg" as const },
-    ...(temOutrasDed
-      ? [{ k: "(−) Outras deduções de receita", v: dre.outrasDeducoes.map((x) => -x), tone: "neg" as const }]
-      : []),
-    { k: regime === "simples" ? "(−) DAS Simples Nacional" : "(−) Impostos sobre Vendas (PIS/COFINS/ICMS/ISS/CBS/IBS)", v: dre.impostosVendas.map((x) => -x), tone: "neg" as const },
-    { k: "(=) Receita Operacional Líquida", v: dre.receitaLiquida, strong: true },
-    { k: `(−) ${cvLabel.short} — ${cvLabel.long}`, v: dre.cpv.map((x) => -x), tone: "neg" as const },
-    { k: "(=) Lucro Bruto", v: dre.lucroBruto, strong: true, tone: "pos" as const, margin: ind.margemBruta },
-    { k: "(−) Despesas Operacionais", v: dre.despesasOperacionais.map((x) => -x), tone: "neg" as const },
-    { k: "(=) EBITDA", v: dre.ebitda, strong: true, margin: ind.margemEbitda },
-    { k: "(−) Depreciação & Amortização", v: dre.depreciacao.map((x) => -x), tone: "neg" as const },
-    { k: "(=) EBIT — Lucro Operacional", v: dre.ebit, strong: true, margin: ind.margemEbit },
-    { k: "(+/−) Resultado Financeiro", v: dre.resultadoFinanceiro },
-    { k: "(=) LAIR — Lucro Antes do IR", v: dre.lair, strong: true },
-    { k: "(−) IRPJ + CSLL", v: dre.impostos.map((x) => -x), tone: "neg" as const },
-    { k: "(=) LUCRO LÍQUIDO", v: dre.lucroLiquido, strong: true, tone: ll >= 0 ? ("pos" as const) : ("neg" as const), margin: ind.margemLiquida, highlight: true },
+  // Descontos Incondicionais e Abatimentos — busca por id em revenue.deducoes
+  const dedById = (id: string) => state.revenue.deducoes?.find((d) => d.id === id);
+  const descIncond = dedById("desc_incond")?.valores ?? Array(12).fill(0);
+  const abatimentos = dedById("abatimentos")?.valores ?? Array(12).fill(0);
+
+  // Total de Custos (mensal) — soma de custos operacionais + financeiros + CPV
+  const totalCustos = dre.cpv.map((c, i) => c + dre.despesasOperacionais[i] + dre.custosFinanceirosTotal[i]);
+
+  // Linhas detalhadas para o accordion — apenas as preenchidas (anual > 0)
+  const linhasPreenchidas = state.costs
+    .map((c) => ({ label: c.label, category: c.category, values: monthValues(c) }))
+    .filter((x) => sum(x.values) > 0);
+  const grupos: { id: CostCategory; titulo: string }[] = [
+    { id: "fixo", titulo: "Custos e Despesas Fixas" },
+    { id: "variavel", titulo: "Custos e Despesas Variáveis" },
+    { id: "financeiro", titulo: "Custos Financeiros" },
   ];
+
+  const [openCustos, setOpenCustos] = useState(false);
+
+  const rows: Array<
+    | { kind: "linha"; k: string; v: number[]; strong?: boolean; tone?: "pos" | "neg"; margin?: number; highlight?: boolean }
+    | { kind: "custos" }
+  > = [
+    { kind: "linha", k: "(+) Receita Operacional Bruta", v: dre.receitaBruta, strong: true, tone: "pos" },
+    { kind: "linha", k: "(−) Devoluções e Cancelamentos", v: dre.deducoesInadimplencia.map((x) => -x), tone: "neg" },
+    { kind: "linha", k: "(−) Descontos Incondicionais", v: descIncond.map((x) => -x), tone: "neg" },
+    { kind: "linha", k: "(−) Abatimentos", v: abatimentos.map((x) => -x), tone: "neg" },
+    { kind: "linha", k: regime === "simples" ? "(−) DAS Simples Nacional" : "(−) Impostos sobre Vendas (PIS/COFINS/ICMS/ISS/CBS/IBS)", v: dre.impostosVendas.map((x) => -x), tone: "neg" },
+    { kind: "linha", k: "(=) Receita Operacional Líquida", v: dre.receitaLiquida, strong: true },
+    { kind: "custos" },
+    { kind: "linha", k: "(−) Depreciação & Amortização", v: dre.depreciacao.map((x) => -x), tone: "neg" },
+    { kind: "linha", k: "(=) LAIR — Lucro Antes do IR", v: dre.lair, strong: true },
+    { kind: "linha", k: "(−) IRPJ + CSLL", v: dre.impostos.map((x) => -x), tone: "neg" },
+    { kind: "linha", k: "(=) LUCRO LÍQUIDO", v: dre.lucroLiquido, strong: true, tone: ll >= 0 ? "pos" : "neg", margin: ind.margemLiquida, highlight: true },
+  ];
+
 
   // chart data
   const monthlyChart = MESES.map((m, i) => ({
