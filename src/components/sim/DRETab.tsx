@@ -1,13 +1,15 @@
-import { useState } from "react";
-import { AppState, TaxRegime, COST_VENDAS_LABEL, TAX_ERA_SHORT } from "@/lib/finance/types";
+import { useState, Fragment } from "react";
+import { AppState, TaxRegime, COST_VENDAS_LABEL, TAX_ERA_SHORT, CostCategory } from "@/lib/finance/types";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/lib/finance/format";
-import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
+import { buildDRE, calcIndicators, monthValues } from "@/lib/finance/calculations";
 import { buildCashFlow } from "@/lib/finance/cashflow";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
 import { Badge } from "@/components/ui/badge";
+import { ChevronRight } from "lucide-react";
+
 
 
 const CHART_COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15", "#F472B6", "#34D399", "#A78BFA", "#FB923C"];
