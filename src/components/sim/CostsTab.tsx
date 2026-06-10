@@ -257,14 +257,8 @@ function SectionBlock({
   );
 }
 
-function SubcatHeader({ label, children }: { label: string; children?: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between border-b border-border/30 px-3 py-1.5">
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-primary/80">{label}</span>
-      {children}
-    </div>
-  );
-}
+
+
 
 function CostTable({
   lines,
