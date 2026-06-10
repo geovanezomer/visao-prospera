@@ -112,16 +112,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
         </div>
       )}
       {/* Sumário */}
-      <div className={`grid gap-3 ${business === "servicos" ? "md:grid-cols-4" : "md:grid-cols-5"}`}>
-        {business !== "servicos" && (
-          <StatCard
-            label={`${cvLabel.short} — Custo de Vendas`}
-            value={fmtBRL(totCV)}
-            tone="neg"
-            sub={fmtPct(pctRec(totCV)) + " da receita"}
-            hint={`${cvLabel.long}. Custos diretamente ligados ao produto/serviço vendido — variam com o volume.`}
-          />
-        )}
+      <div className="grid gap-3 md:grid-cols-4">
         <StatCard
           label="Custos Fixos"
           value={fmtBRL(totFix)}
@@ -141,10 +132,11 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
           value={fmtBRL(totFin)}
           tone="neg"
           sub={fmtPct(pctRec(totFin)) + " da receita"}
-          hint="Juros, IOF, antecipação de recebíveis, tarifas bancárias."
+          hint="Juros, IOF, antecipação de recebíveis, tarifas bancárias, maquininha."
         />
-        <StatCard label="Total de Custos" value={fmtBRL(totGeral)} tone="neg" sub={fmtPct(pctRec(totGeral)) + " da receita"} hint={{ description: "Soma de todos os custos. Quanto menor o % sobre a receita, mais saudável a operação.", formula: business === "servicos" ? "Custos Fixos + Variáveis + Financeiros" : "Custo de Vendas + Custos Fixos + Variáveis + Financeiros" }} />
+        <StatCard label="Total de Custos" value={fmtBRL(totGeral)} tone="neg" sub={fmtPct(pctRec(totGeral)) + " da receita"} hint={{ description: "Soma de todos os custos. Quanto menor o % sobre a receita, mais saudável a operação.", formula: "Custos Fixos + Variáveis + Financeiros" }} />
       </div>
+
 
 
 
