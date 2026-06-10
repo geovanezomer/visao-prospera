@@ -101,7 +101,10 @@ export const DEFAULT_STATE: AppState = {
     pmrFixo: true,
     pmpFixo: true,
     inadimplenciaComoPDD: false,
-    deducoes: [],
+    deducoes: [
+      { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true },
+      { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true },
+    ],
   },
   costs: defaultCostsFor("servicos"),
   capital: {
