@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
-import { AppState, CostCategory, CostLine } from "@/lib/finance/types";
+import { AppState, CostCategory, CostLine, COST_VENDAS_LABEL, SUBCATEGORIES } from "@/lib/finance/types";
 import { fill12, fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { fixedCostBase, monthValues } from "@/lib/finance/calculations";
 import { MoneyInput, SectionTitle, StatCard } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
 import { PrazoTable } from "./PrazoTable";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
 export function CostsTab({ state, update }: { state: AppState; update: Updater }) {
+  const business = state.businessType;
   const receitaBrutaAnual = sum(state.revenue.bruta);
-
+  const cvLabel = COST_VENDAS_LABEL[business];
+  const subcats = SUBCATEGORIES[business];
 
   // Aviso inline quando o usuário tenta digitar valor negativo (revertido para 0)
   const [negWarn, setNegWarn] = useState<string | null>(null);
@@ -85,7 +88,8 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
     update((s) => ({ ...s, costs: s.costs.filter((c) => c.id !== id) }));
 
   const setLabel = (id: string, label: string) => updateLine(id, { label });
-
+  const setSubcat = (id: string, subcategory: string) =>
+    updateLine(id, { subcategory, semCredito: subcategory === "icms_st" ? true : undefined });
 
 
 
@@ -108,7 +112,16 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
         </div>
       )}
       {/* Sumário */}
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className={`grid gap-3 ${business === "servicos" ? "md:grid-cols-4" : "md:grid-cols-5"}`}>
+        {business !== "servicos" && (
+          <StatCard
+            label={`${cvLabel.short} — Custo de Vendas`}
+            value={fmtBRL(totCV)}
+            tone="neg"
+            sub={fmtPct(pctRec(totCV)) + " da receita"}
+            hint={`${cvLabel.long}. Custos diretamente ligados ao produto/serviço vendido — variam com o volume.`}
+          />
+        )}
         <StatCard
           label="Custos Fixos"
           value={fmtBRL(totFix)}
@@ -128,14 +141,76 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
           value={fmtBRL(totFin)}
           tone="neg"
           sub={fmtPct(pctRec(totFin)) + " da receita"}
-          hint="Juros, IOF, antecipação de recebíveis, tarifas bancárias, maquininha."
+          hint="Juros, IOF, antecipação de recebíveis, tarifas bancárias."
         />
-        <StatCard label="Total de Custos" value={fmtBRL(totGeral)} tone="neg" sub={fmtPct(pctRec(totGeral)) + " da receita"} hint={{ description: "Soma de todos os custos. Quanto menor o % sobre a receita, mais saudável a operação.", formula: "Custos Fixos + Variáveis + Financeiros" }} />
+        <StatCard label="Total de Custos" value={fmtBRL(totGeral)} tone="neg" sub={fmtPct(pctRec(totGeral)) + " da receita"} hint={{ description: "Soma de todos os custos. Quanto menor o % sobre a receita, mais saudável a operação.", formula: business === "servicos" ? "Custos Fixos + Variáveis + Financeiros" : "Custo de Vendas + Custos Fixos + Variáveis + Financeiros" }} />
       </div>
 
 
 
-
+      {/* Custo de Vendas — oculto para Serviços (CSP descontinuado) */}
+      {business !== "servicos" && (
+        <SectionBlock
+          title={`Custo de Vendas — ${cvLabel.short} (${cvLabel.long})`}
+          hint="Custos diretamente ligados à produção/aquisição do que é vendido. Subcategorias seguem o tipo de empresa selecionado."
+          accentClass="border-l-primary"
+          onAdd={() => addLine("custo_vendas", subcats[0]?.id)}
+        >
+          {subcats.map((sc) => {
+            const lines = byCat("custo_vendas").filter((l) => (l.subcategory || subcats[0].id) === sc.id);
+            if (lines.length === 0) {
+              return (
+                <SubcatHeader key={sc.id} label={sc.label}>
+                  <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => addLine("custo_vendas", sc.id)}>
+                    <Plus className="mr-1 h-3 w-3" /> Adicionar
+                  </Button>
+                </SubcatHeader>
+              );
+            }
+            return (
+              <div key={sc.id}>
+                <SubcatHeader label={sc.label}>
+                  <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => addLine("custo_vendas", sc.id)}>
+                    <Plus className="mr-1 h-3 w-3" /> Adicionar
+                  </Button>
+                </SubcatHeader>
+                <CostTable
+                  lines={lines}
+                  receitaBrutaAnual={receitaBrutaAnual}
+                  onMonth={setMonth}
+                  onAllMonths={setAllMonths}
+                  onFixed={setFixed}
+                  onLabel={setLabel}
+                  onRemove={removeLine}
+                  onSubcat={setSubcat}
+                  subcats={subcats}
+                />
+              </div>
+            );
+          })}
+          {(() => {
+            const known = new Set(subcats.map((s) => s.id));
+            const orphan = byCat("custo_vendas").filter((l) => !l.subcategory || !known.has(l.subcategory));
+            if (orphan.length === 0) return null;
+            return (
+              <div>
+                <SubcatHeader label="Outros / sem classificação" />
+                <CostTable
+                  lines={orphan}
+                  receitaBrutaAnual={receitaBrutaAnual}
+                  onMonth={setMonth}
+                  onAllMonths={setAllMonths}
+                  onFixed={setFixed}
+                  onLabel={setLabel}
+                  onRemove={removeLine}
+                  onSubcat={setSubcat}
+                  subcats={subcats}
+                />
+              </div>
+            );
+          })()}
+        </SectionBlock>
+      )}
 
 
       {/* Custos Fixos */}
@@ -257,8 +332,14 @@ function SectionBlock({
   );
 }
 
-
-
+function SubcatHeader({ label, children }: { label: string; children?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between border-b border-border/30 px-3 py-1.5">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-primary/80">{label}</span>
+      {children}
+    </div>
+  );
+}
 
 function CostTable({
   lines,
@@ -268,6 +349,8 @@ function CostTable({
   onFixed,
   onLabel,
   onRemove,
+  onSubcat,
+  subcats,
 }: {
   lines: CostLine[];
   receitaBrutaAnual: number;
@@ -276,8 +359,9 @@ function CostTable({
   onFixed: (id: string, fixed: boolean) => void;
   onLabel: (id: string, label: string) => void;
   onRemove: (id: string) => void;
+  onSubcat?: (id: string, sc: string) => void;
+  subcats?: { id: string; label: string }[];
 }) {
-
   if (lines.length === 0) {
     return <div className="px-4 py-3 text-xs text-muted-foreground">Nenhuma rubrica nesta categoria. Use “+ Adicionar linha”.</div>;
   }
@@ -313,8 +397,21 @@ function CostTable({
                   ) : (
                     <span className="text-xs">{c.label}</span>
                   )}
+                  {subcats && onSubcat && c.custom && (
+                    <div className="mt-1">
+                      <Select value={c.subcategory || subcats[0].id} onValueChange={(v) => onSubcat(c.id, v)}>
+                        <SelectTrigger className="h-6 w-full text-[10px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subcats.map((s) => (
+                            <SelectItem key={s.id} value={s.id} className="text-[10px]">{s.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </td>
-
                 <td className="px-2 py-2">
                   <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
                     <span>Fixo</span>

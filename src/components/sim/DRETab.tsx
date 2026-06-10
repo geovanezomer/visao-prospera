@@ -1,15 +1,13 @@
-import { useState, Fragment } from "react";
-import { AppState, TaxRegime, COST_VENDAS_LABEL, TAX_ERA_SHORT, CostCategory } from "@/lib/finance/types";
+import { useState } from "react";
+import { AppState, TaxRegime, COST_VENDAS_LABEL, TAX_ERA_SHORT } from "@/lib/finance/types";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/lib/finance/format";
-import { buildDRE, calcIndicators, monthValues } from "@/lib/finance/calculations";
+import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 import { buildCashFlow } from "@/lib/finance/cashflow";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight } from "lucide-react";
-
 
 
 const CHART_COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15", "#F472B6", "#34D399", "#A78BFA", "#FB923C"];
@@ -30,43 +28,26 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
   const rb = sum(dre.receitaBruta);
   const ll = sum(dre.lucroLiquido);
 
-  // Descontos Incondicionais e Abatimentos — busca por id em revenue.deducoes
-  const dedById = (id: string) => state.revenue.deducoes?.find((d) => d.id === id);
-  const descIncond = dedById("desc_incond")?.valores ?? Array(12).fill(0);
-  const abatimentos = dedById("abatimentos")?.valores ?? Array(12).fill(0);
-
-  // Total de Custos (mensal) — soma de custos operacionais + financeiros + CPV
-  const totalCustos = dre.cpv.map((c, i) => c + dre.despesasOperacionais[i] + dre.custosFinanceirosTotal[i]);
-
-  // Linhas detalhadas para o accordion — apenas as preenchidas (anual > 0)
-  const linhasPreenchidas = state.costs
-    .map((c) => ({ label: c.label, category: c.category, values: monthValues(c) }))
-    .filter((x) => sum(x.values) > 0);
-  const grupos: { id: CostCategory; titulo: string }[] = [
-    { id: "fixo", titulo: "Custos e Despesas Fixas" },
-    { id: "variavel", titulo: "Custos e Despesas Variáveis" },
-    { id: "financeiro", titulo: "Custos Financeiros" },
+  const temOutrasDed = sum(dre.outrasDeducoes) > 0;
+  const rows = [
+    { k: "(+) Receita Operacional Bruta", v: dre.receitaBruta, strong: true, tone: "pos" as const },
+    { k: "(−) Inadimplência / Deduções", v: dre.deducoesInadimplencia.map((x) => -x), tone: "neg" as const },
+    ...(temOutrasDed
+      ? [{ k: "(−) Outras deduções de receita", v: dre.outrasDeducoes.map((x) => -x), tone: "neg" as const }]
+      : []),
+    { k: regime === "simples" ? "(−) DAS Simples Nacional" : "(−) Impostos sobre Vendas (PIS/COFINS/ICMS/ISS/CBS/IBS)", v: dre.impostosVendas.map((x) => -x), tone: "neg" as const },
+    { k: "(=) Receita Operacional Líquida", v: dre.receitaLiquida, strong: true },
+    { k: `(−) ${cvLabel.short} — ${cvLabel.long}`, v: dre.cpv.map((x) => -x), tone: "neg" as const },
+    { k: "(=) Lucro Bruto", v: dre.lucroBruto, strong: true, tone: "pos" as const, margin: ind.margemBruta },
+    { k: "(−) Despesas Operacionais", v: dre.despesasOperacionais.map((x) => -x), tone: "neg" as const },
+    { k: "(=) EBITDA", v: dre.ebitda, strong: true, margin: ind.margemEbitda },
+    { k: "(−) Depreciação & Amortização", v: dre.depreciacao.map((x) => -x), tone: "neg" as const },
+    { k: "(=) EBIT — Lucro Operacional", v: dre.ebit, strong: true, margin: ind.margemEbit },
+    { k: "(+/−) Resultado Financeiro", v: dre.resultadoFinanceiro },
+    { k: "(=) LAIR — Lucro Antes do IR", v: dre.lair, strong: true },
+    { k: "(−) IRPJ + CSLL", v: dre.impostos.map((x) => -x), tone: "neg" as const },
+    { k: "(=) LUCRO LÍQUIDO", v: dre.lucroLiquido, strong: true, tone: ll >= 0 ? ("pos" as const) : ("neg" as const), margin: ind.margemLiquida, highlight: true },
   ];
-
-  const [openCustos, setOpenCustos] = useState(false);
-
-  const rows: Array<
-    | { kind: "linha"; k: string; v: number[]; strong?: boolean; tone?: "pos" | "neg"; margin?: number; highlight?: boolean }
-    | { kind: "custos" }
-  > = [
-    { kind: "linha", k: "(+) Receita Operacional Bruta", v: dre.receitaBruta, strong: true, tone: "pos" },
-    { kind: "linha", k: "(−) Devoluções e Cancelamentos", v: dre.deducoesInadimplencia.map((x) => -x), tone: "neg" },
-    { kind: "linha", k: "(−) Descontos Incondicionais", v: descIncond.map((x) => -x), tone: "neg" },
-    { kind: "linha", k: "(−) Abatimentos", v: abatimentos.map((x) => -x), tone: "neg" },
-    { kind: "linha", k: regime === "simples" ? "(−) DAS Simples Nacional" : "(−) Impostos sobre Vendas (PIS/COFINS/ICMS/ISS/CBS/IBS)", v: dre.impostosVendas.map((x) => -x), tone: "neg" },
-    { kind: "linha", k: "(=) Receita Operacional Líquida", v: dre.receitaLiquida, strong: true },
-    { kind: "custos" },
-    { kind: "linha", k: "(−) Depreciação & Amortização", v: dre.depreciacao.map((x) => -x), tone: "neg" },
-    { kind: "linha", k: "(=) LAIR — Lucro Antes do IR", v: dre.lair, strong: true },
-    { kind: "linha", k: "(−) IRPJ + CSLL", v: dre.impostos.map((x) => -x), tone: "neg" },
-    { kind: "linha", k: "(=) LUCRO LÍQUIDO", v: dre.lucroLiquido, strong: true, tone: ll >= 0 ? "pos" : "neg", margin: ind.margemLiquida, highlight: true },
-  ];
-
 
   // chart data
   const monthlyChart = MESES.map((m, i) => ({
@@ -163,59 +144,6 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
             </thead>
             <tbody>
               {rows.map((row, idx) => {
-                if (row.kind === "custos") {
-                  const total = sum(totalCustos);
-                  const pct = rb > 0 ? total / rb : 0;
-                  return (
-                    <Fragment key={idx}>
-                      <tr className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20" onClick={() => setOpenCustos((v) => !v)}>
-                        <td className="px-4 py-2 text-xs font-semibold">
-                          <span className="inline-flex items-center gap-1">
-                            <ChevronRight className={`h-3 w-3 transition-transform ${openCustos ? "rotate-90" : ""}`} />
-                            (−) Total de Custos
-                          </span>
-                        </td>
-                        {view === "mensal" && totalCustos.map((v, i) => (
-                          <td key={i} className={`num px-2 py-2 text-right text-xs ${mesesCriticosIdx.has(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} text-neg`}>
-                            {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
-                          </td>
-                        ))}
-                        <td className="num px-4 py-2 text-right font-semibold text-neg">− {fmtBRL(total)}</td>
-                        <td className="num px-3 py-2 text-right text-xs text-muted-foreground">{fmtPct(pct)}</td>
-                      </tr>
-                      {openCustos && grupos.map((g) => {
-                        const linhas = linhasPreenchidas.filter((l) => l.category === g.id);
-                        if (linhas.length === 0) return null;
-                        const grupoTotal = sum(linhas.flatMap((l) => l.values));
-                        return (
-                          <Fragment key={g.id}>
-                            <tr className="border-t border-border/20 bg-muted/10">
-                              <td className="px-4 py-1.5 pl-8 text-[10px] uppercase tracking-wider text-primary/80">{g.titulo}</td>
-                              {view === "mensal" && MESES.map((_, i) => <td key={i} className="px-2 py-1.5" />)}
-                              <td className="num px-4 py-1.5 text-right text-[11px] text-muted-foreground">{fmtBRL(grupoTotal)}</td>
-                              <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">{fmtPct(rb > 0 ? grupoTotal / rb : 0)}</td>
-                            </tr>
-                            {linhas.map((l, li) => {
-                              const lTotal = sum(l.values);
-                              return (
-                                <tr key={`${g.id}_${li}`} className="border-t border-border/20">
-                                  <td className="px-4 py-1.5 pl-12 text-xs text-muted-foreground">{l.label}</td>
-                                  {view === "mensal" && l.values.map((v, i) => (
-                                    <td key={i} className="num px-2 py-1.5 text-right text-xs text-muted-foreground">
-                                      {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
-                                    </td>
-                                  ))}
-                                  <td className="num px-4 py-1.5 text-right text-xs text-neg">− {fmtBRL(lTotal)}</td>
-                                  <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">{fmtPct(rb > 0 ? lTotal / rb : 0)}</td>
-                                </tr>
-                              );
-                            })}
-                          </Fragment>
-                        );
-                      })}
-                    </Fragment>
-                  );
-                }
                 const total = sum(row.v);
                 const pct = rb > 0 ? total / rb : 0;
                 const toneCls = row.tone === "pos" ? "text-pos" : row.tone === "neg" ? "text-neg" : "";
@@ -235,7 +163,6 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                   </tr>
                 );
               })}
-
             </tbody>
           </table>
         </div>
