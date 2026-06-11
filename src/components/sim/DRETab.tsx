@@ -142,11 +142,11 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
-        <StatCard label="Receita Bruta" value={fmtBRL(rb)} tone="pos" hint={{ description: "Soma total de tudo que a empresa faturou no ano, antes de qualquer dedução (impostos, devoluções, inadimplência).", formula: "Σ Receita Bruta dos 12 meses" }} />
-        <StatCard label="EBITDA" value={fmtBRL(sum(dre.ebitda))} sub={`Margem ${ind.margemEbitda.toFixed(1)}%`} tone={sum(dre.ebitda) >= 0 ? "pos" : "neg"} hint={{ description: "Geração de caixa operacional antes de juros, impostos, depreciação e amortização. Mostra a 'força bruta' da operação.", formula: "Lucro Bruto − Despesas Operacionais" }} />
-        <StatCard label="Lucro Líquido" value={fmtBRL(ll)} sub={`Margem ${ind.margemLiquida.toFixed(1)}%`} tone={ll >= 0 ? "pos" : "neg"} hint={{ description: "O que efetivamente sobra para os sócios após pagar todos os custos, despesas, juros e impostos.", formula: "LAIR − Impostos sobre o Lucro" }} />
-        <StatCard label="Tributos / Receita" value={fmtPct(tax.effective / 100)} tone="warn" sub={`${fmtBRL(tax.annual)} no ano`} hint={{ description: "Carga tributária total efetiva: percentual da receita bruta consumido por impostos (sobre venda + sobre lucro).", formula: "(Impostos s/ Venda + Impostos s/ Lucro) ÷ Receita Bruta × 100" }} />
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatCard label="Faturamento" value={fmtBRL(rb)} tone="pos" hint={{ description: "Faturamento bruto anual.", formula: "Σ Receita Bruta" }} />
+        <StatCard label="EBITDA" value={fmtBRL(sum(dre.ebitda))} sub={`${ind.margemEbitda.toFixed(1)}%`} tone={sum(dre.ebitda) >= 0 ? "pos" : "neg"} hint={{ description: "Caixa operacional.", formula: "Lucro Bruto − Despesas" }} />
+        <StatCard label="Lucro Líq." value={fmtBRL(ll)} sub={`${ind.margemLiquida.toFixed(1)}%`} tone={ll >= 0 ? "pos" : "neg"} hint={{ description: "Resultado final.", formula: "LAIR − Impostos" }} />
+        <StatCard label="Impostos" value={fmtPct(tax.effective / 100)} tone="warn" sub={`${fmtBRLCompact(tax.annual)}`} hint={{ description: "Carga tributária.", formula: "Impostos ÷ Receita Bruta" }} />
       </div>
 
 
