@@ -263,6 +263,7 @@ function SectionBlock({
 function CostTable({
   lines,
   receitaBrutaAnual,
+  regime,
   onMonth,
   onAllMonths,
   onFixed,
@@ -271,6 +272,7 @@ function CostTable({
 }: {
   lines: CostLine[];
   receitaBrutaAnual: number;
+  regime?: TaxRegime;
   onMonth: (id: string, i: number, v: number) => void;
   onAllMonths: (id: string, v: number) => void;
   onFixed: (id: string, fixed: boolean) => void;
@@ -298,7 +300,7 @@ function CostTable({
         </thead>
         <tbody>
           {lines.map((c) => {
-            const vals = monthValues(c, state.tax.regime);
+            const vals = monthValues(c, regime);
             const anual = sum(vals);
             const pct = receitaBrutaAnual > 0 ? anual / receitaBrutaAnual : 0;
             return (
