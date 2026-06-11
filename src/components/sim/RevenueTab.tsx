@@ -140,6 +140,11 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         const base = fixed ? fixedBase(d.valores) : d.valores[0] || 0;
         return { ...d, fixed, valores: fixed ? fill12(base) : d.valores };
       });
+    } else if (row.kind === "financeira" && row.finId) {
+      updateFin(row.finId, row.label, (d) => {
+        const base = fixed ? fixedBase(d.valores) : d.valores[0] || 0;
+        return { ...d, fixed, valores: fixed ? fill12(base) : d.valores };
+      });
     }
   };
 
