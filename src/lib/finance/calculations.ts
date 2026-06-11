@@ -115,9 +115,9 @@ export function monthValues(c: CostLine): number[] {
 const LABOR_KEYWORDS = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra|m\.o\.|clt/i;
 
 function folhaAnual(state: AppState): number {
-  return state.costs
-    .filter((c) => c.category !== "financeiro" && (c.encargosAuto || LABOR_KEYWORDS.test(c.label)))
-    .reduce((acc, c) => acc + sum(effectiveMonthValues(c)), 0);
+  const laborCosts = state.costs
+    .filter((c) => c.category !== "financeiro" && (c.encargosAuto || LABOR_KEYWORDS.test(c.label)));
+  return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c)), 0);
 }
 
 /** Limite anual de receita bruta para permanência no Simples Nacional (LC 123/06).
@@ -128,7 +128,7 @@ export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
   const anexo = state.tax.simplesAnexo;
   if (!state.tax.fatorRAuto || anexo !== "V") return anexo;
   const rbt12 = sum(state.revenue.bruta);
-  if (rbt12 <= 0) return anexo;
+  if (rbt12 <= 0 || rbt12 > getSimplesLimite(state.tax)) return anexo;
   const fatorR = folhaAnual(state) / rbt12;
   const minPct = getFatorRMinimoPct(state.tax);
   return fatorR >= (minPct / 100) ? "III" : "V";
@@ -163,7 +163,7 @@ function adicionalIrpjTrimestral(baseMensal: number[], tax: TaxConfig): number[]
   const gatilho = getIrpjAdicionalGatilhoTri(tax);
   for (let t = 0; t < 4; t++) {
     const m0 = t * 3;
-    const baseTri = (baseMensal[m0] || 0) + (baseMensal[m0 + 1] || 0) + (baseMensal[m0 + 2] || 0);
+    const baseTri = Math.max(0, (baseMensal[m0] || 0) + (baseMensal[m0 + 1] || 0) + (baseMensal[m0 + 2] || 0));
     const excedente = Math.max(0, baseTri - gatilho);
     const adic = excedente * aliq;
     const totalBase = baseTri > 0 ? baseTri : 1;
@@ -334,7 +334,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const baseIRPJMensal = baseLairMonthly.map((l) => Math.max(0, l));
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
 
-  // Auditoria: créditos de PIS/COFINS são anuais — ratear por mês
+  // Auditoria Jun/2026: ratear créditos anuais por mês
   const pisCreditoMensal = Math.max(0, (tax.pisCreditos || 0) / 12);
   const cofinsCreditoMensal = Math.max(0, (tax.cofinsCreditos || 0) / 12);
   // Alíquotas dinâmicas
