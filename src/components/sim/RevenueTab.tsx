@@ -10,12 +10,14 @@ function fixedBase(values: number[]): number {
   return Number.isFinite(nonZero as number) ? (nonZero as number) : (values[0] || 0);
 }
 
-type RowKind = "bruta" | "inadimplencia" | "deducao";
+type RowKind = "bruta" | "inadimplencia" | "deducao" | "financeira";
 type Row = {
   id: string;
   kind: RowKind;
   /** id da dedução em revenue.deducoes (quando kind = "deducao") */
   dedId?: string;
+  /** id da receita financeira em revenue.receitasFinanceiras (quando kind = "financeira") */
+  finId?: string;
   label: string;
   values: number[];
   fixed: boolean;
@@ -63,6 +65,28 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       return { ...s, revenue: { ...s.revenue, deducoes: newList } };
     });
 
+  const updateFin = (id: string, label: string, mut: (d: RevenueDeducao) => RevenueDeducao) =>
+    update((s) => {
+      const list = s.revenue.receitasFinanceiras ?? [];
+      const exists = list.find((d) => d.id === id);
+      const base: RevenueDeducao = exists ?? { id, label, valores: fill12(0), fixed: true };
+      const next = mut(base);
+      const newList = exists ? list.map((d) => (d.id === id ? next : d)) : [...list, next];
+      return { ...s, revenue: { ...s.revenue, receitasFinanceiras: newList } };
+    });
+
+  const finList = r.receitasFinanceiras ?? [];
+  const findFin = (id: string, label: string): RevenueDeducao =>
+    finList.find((d) => d.id === id) ?? { id, label, valores: fill12(0), fixed: true };
+  const rendAplic = findFin("rend_aplic", "Rendimento de aplicações");
+  const alugueis = findFin("alugueis", "Aluguéis Recebidos");
+  const vendaAtivos = findFin("venda_ativos", "Venda de Ativos");
+  const finRows: Row[] = [
+    { id: "row_rend", kind: "financeira", finId: "rend_aplic", label: "Rendimento de aplicações", values: rendAplic.valores, fixed: !!rendAplic.fixed, tone: "pos" },
+    { id: "row_alug", kind: "financeira", finId: "alugueis", label: "Aluguéis Recebidos", values: alugueis.valores, fixed: !!alugueis.fixed, tone: "pos" },
+    { id: "row_vatv", kind: "financeira", finId: "venda_ativos", label: "Venda de Ativos", values: vendaAtivos.valores, fixed: !!vendaAtivos.fixed, tone: "pos" },
+  ];
+
   const setMonth = (row: Row, i: number, v: number) => {
     const safe = Math.max(0, Number.isFinite(v) ? v : 0);
     if (row.kind === "bruta") {
@@ -75,6 +99,8 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       });
     } else if (row.kind === "deducao" && row.dedId) {
       updateDed(row.dedId, row.label, (d) => ({ ...d, valores: d.valores.map((x, j) => (j === i ? safe : x)) }));
+    } else if (row.kind === "financeira" && row.finId) {
+      updateFin(row.finId, row.label, (d) => ({ ...d, valores: d.valores.map((x, j) => (j === i ? safe : x)) }));
     }
   };
 
@@ -90,6 +116,8 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       });
     } else if (row.kind === "deducao" && row.dedId) {
       updateDed(row.dedId, row.label, (d) => ({ ...d, valores: fill12(safe) }));
+    } else if (row.kind === "financeira" && row.finId) {
+      updateFin(row.finId, row.label, (d) => ({ ...d, valores: fill12(safe) }));
     }
   };
 
@@ -109,6 +137,11 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       });
     } else if (row.kind === "deducao" && row.dedId) {
       updateDed(row.dedId, row.label, (d) => {
+        const base = fixed ? fixedBase(d.valores) : d.valores[0] || 0;
+        return { ...d, fixed, valores: fixed ? fill12(base) : d.valores };
+      });
+    } else if (row.kind === "financeira" && row.finId) {
+      updateFin(row.finId, row.label, (d) => {
         const base = fixed ? fixedBase(d.valores) : d.valores[0] || 0;
         return { ...d, fixed, valores: fixed ? fill12(base) : d.valores };
       });
@@ -154,8 +187,27 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         <RevenueTable
           rows={rows}
           brutaAnual={brutaAnual}
-          liquidas={liquidas}
-          liqAnual={liqAnual}
+          footer={{ label: "Receita Operacional", values: liquidas, total: liqAnual, tone: "pos" }}
+          onMonth={setMonth}
+          onAllMonths={setAllMonths}
+          onFixed={setFixed}
+        />
+      </SectionBlock>
+
+      <SectionBlock
+        title="Receitas Financeiras — 12 meses"
+        hint="Rendimentos de aplicações, aluguéis recebidos e venda de ativos. Não compõem a Receita Operacional."
+        accentClass="border-l-[color:var(--success)]"
+      >
+        <RevenueTable
+          rows={finRows}
+          brutaAnual={brutaAnual}
+          footer={{
+            label: "Total Receitas Financeiras",
+            values: MESES.map((_, i) => finRows.reduce((a, r) => a + (r.values[i] || 0), 0)),
+            total: finRows.reduce((a, r) => a + sum(r.values), 0),
+            tone: "pos",
+          }}
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
@@ -220,21 +272,20 @@ function SectionBlock({
 function RevenueTable({
   rows,
   brutaAnual,
-  liquidas,
-  liqAnual,
+  footer,
   onMonth,
   onAllMonths,
   onFixed,
 }: {
   rows: Row[];
   brutaAnual: number;
-  liquidas: number[];
-  liqAnual: number;
+  footer?: { label: string; values: number[]; total: number; tone?: "pos" | "neg" };
   onMonth: (row: Row, i: number, v: number) => void;
   onAllMonths: (row: Row, v: number) => void;
   onFixed: (row: Row, fixed: boolean) => void;
 }) {
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
+  const footerToneClass = footer?.tone === "neg" ? "text-neg" : "text-pos";
 
   return (
     <div className="scrollbar-thin overflow-x-auto">
@@ -292,15 +343,17 @@ function RevenueTable({
             );
           })}
 
-          <tr className="border-t border-border/40 bg-accent/20 align-middle">
-            <td className="px-3 py-2 text-xs font-semibold" colSpan={2}>Receita Operacional</td>
-            {liquidas.map((v, i) => (
-              <td key={i} className="num px-1 py-2 text-right text-[11px] text-pos">{fmtBRLCompact(v)}</td>
-            ))}
-            <td className="num px-3 py-2 text-right font-semibold text-pos">{fmtBRL(liqAnual)}</td>
-            <td className="num px-2 py-2 text-right text-xs text-muted-foreground">{fmtPct(pctRec(liqAnual))}</td>
-            <td />
-          </tr>
+          {footer && (
+            <tr className="border-t border-border/40 bg-accent/20 align-middle">
+              <td className="px-3 py-2 text-xs font-semibold" colSpan={2}>{footer.label}</td>
+              {footer.values.map((v, i) => (
+                <td key={i} className={`num px-1 py-2 text-right text-[11px] ${footerToneClass}`}>{fmtBRLCompact(v)}</td>
+              ))}
+              <td className={`num px-3 py-2 text-right font-semibold ${footerToneClass}`}>{fmtBRL(footer.total)}</td>
+              <td className="num px-2 py-2 text-right text-xs text-muted-foreground">{fmtPct(pctRec(footer.total))}</td>
+              <td />
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

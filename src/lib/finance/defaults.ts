@@ -36,7 +36,9 @@ function fixosFor(business: BusinessType): CostLine[] {
     line("contabilidade", "Contabilidade", "fixo", 450),
     line("tecnologia", "Tecnologia / Software (SaaS)", "fixo", 350),
     line("utilities", "Energia, água, internet", "fixo", 600),
-    line("manutencao", "Manutenção e reparos", "fixo", 200),
+    line("manutencao", "Manutenção e Limpeza", "fixo", 200),
+    line("material_escritorio", "Material de escritório", "fixo", 0),
+    line("seguros", "Seguros", "fixo", 0),
   ];
   if (business === "servicos") {
     base.splice(3, 0, line("mod_terc", "Mão de Obra Direta (Terceirização)", "fixo", 4500, undefined, { encargosAuto: true, encargosPct: 70 }));
@@ -48,13 +50,14 @@ function variaveisFor(business: BusinessType): CostLine[] {
   const base: CostLine[] = [
     line("marketing", "Marketing e publicidade", "variavel", 800),
     line("comissoes", "Comissões de vendas", "variavel", 600),
-    line("frete_venda", "Frete sobre vendas", "variavel", 250),
+    line("frete_venda", "Fretes / Transportes", "variavel", 250),
+    line("frete_vendas", "Frete sobre vendas", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
+    line("combustivel", "Combustível", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
     line("marketplace", "Marketplace", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
   ];
   if (business === "servicos") {
     base.push(
-      line("insumos_serv", "Insumos de serviço", "variavel", 500),
-      line("terceiros", "Subcontratação / freelancers", "variavel", 600),
+      line("insumos_serv", "Insumos / Matéria Prima", "variavel", 500),
     );
   }
   if (business === "industria") {
@@ -79,8 +82,11 @@ function variaveisFor(business: BusinessType): CostLine[] {
 
 const financeiros = (): CostLine[] => [
   line("juros", "Juros sobre empréstimos", "financeiro", 300),
-  line("iof", "IOF / Tarifas bancárias", "financeiro", 120),
-  line("antecipacao", "Antecipação de recebíveis", "financeiro", 0),
+  line("cheque_especial", "Juros sobre cheque especial", "financeiro", 0),
+  line("iof", "IOF", "financeiro", 120),
+  line("tarifas_bancarias", "Tarifas bancárias", "financeiro", 0),
+  line("multas_juros", "Multas e juros por atraso", "financeiro", 0),
+  line("antecipacao", "Taxas de Antecipação", "financeiro", 0),
   line("maquininha", "Maquininha Cartão", "financeiro", 0, undefined, { fixed: false, values: fill12(0) }),
 ];
 
@@ -104,6 +110,11 @@ export const DEFAULT_STATE: AppState = {
     deducoes: [
       { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true },
       { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true },
+    ],
+    receitasFinanceiras: [
+      { id: "rend_aplic", label: "Rendimento de aplicações", valores: fill12(0), fixed: true },
+      { id: "alugueis", label: "Aluguéis Recebidos", valores: fill12(0), fixed: true },
+      { id: "venda_ativos", label: "Venda de Ativos", valores: fill12(0), fixed: true },
     ],
   },
   costs: defaultCostsFor("servicos"),
@@ -179,8 +190,17 @@ export function migrateCostLine(c: CostLine): CostLine {
 
 export function migrateState(s: AppState): AppState {
   // IDs de rubricas descontinuadas (removidas em todas as variantes)
-  const REMOVED_IDS = new Set(["outros_fix", "outros_var", "outros_fin"]);
+  const REMOVED_IDS = new Set(["outros_fix", "outros_var", "outros_fin", "terceiros"]);
+  // Relabels de rubricas existentes (mantém o id, atualiza apenas o label)
+  const RELABEL: Record<string, string> = {
+    manutencao: "Manutenção e Limpeza",
+    frete_venda: "Fretes / Transportes",
+    insumos_serv: "Insumos / Matéria Prima",
+    iof: "IOF",
+    antecipacao: "Taxas de Antecipação",
+  };
   let costs = s.costs ? s.costs.map(migrateCostLine).filter((c) => !REMOVED_IDS.has(c.id)) : DEFAULT_STATE.costs;
+  costs = costs.map((c) => (RELABEL[c.id] ? { ...c, label: RELABEL[c.id] } : c));
   // Todas as categorias custo_vendas viraram variável (CPV/CMV/CSP descontinuado como seção)
   costs = costs.map((c) => {
     if (c.category !== "custo_vendas") return c;
@@ -189,13 +209,21 @@ export function migrateState(s: AppState): AppState {
     }
     return { ...c, category: "variavel", subcategory: undefined };
   });
-  // Garante presença de "Maquininha Cartão" (financeiro) e "Marketplace" (variável)
-  if (!costs.some((c) => c.id === "maquininha")) {
-    costs.push(line("maquininha", "Maquininha Cartão", "financeiro", 0, undefined, { fixed: false, values: fill12(0) }));
-  }
-  if (!costs.some((c) => c.id === "marketplace")) {
-    costs.push(line("marketplace", "Marketplace", "variavel", 0, undefined, { fixed: false, values: fill12(0) }));
-  }
+  // Garante presença das rubricas novas
+  const ensure = (id: string, label: string, category: CostLine["category"], extras?: Partial<CostLine>) => {
+    if (!costs.some((c) => c.id === id)) {
+      costs.push(line(id, label, category, 0, undefined, { fixed: false, values: fill12(0), ...extras }));
+    }
+  };
+  ensure("maquininha", "Maquininha Cartão", "financeiro");
+  ensure("marketplace", "Marketplace", "variavel");
+  ensure("cheque_especial", "Juros sobre cheque especial", "financeiro");
+  ensure("tarifas_bancarias", "Tarifas bancárias", "financeiro");
+  ensure("multas_juros", "Multas e juros por atraso", "financeiro");
+  ensure("combustivel", "Combustível", "variavel");
+  ensure("frete_vendas", "Frete sobre vendas", "variavel");
+  ensure("material_escritorio", "Material de escritório", "fixo");
+  ensure("seguros", "Seguros", "fixo");
 
   const cashflow = s.cashflow ?? DEFAULT_STATE.cashflow;
   const capital = { ...DEFAULT_STATE.capital, ...(s.capital ?? {}) };
@@ -214,6 +242,16 @@ export function migrateState(s: AppState): AppState {
   if (!revenue.deducoes.some((d) => d.id === "abatimentos")) {
     revenue.deducoes = [...revenue.deducoes, { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true }];
   }
+  // Garante Receitas Financeiras padrão
+  if (!Array.isArray(revenue.receitasFinanceiras)) revenue.receitasFinanceiras = [];
+  const ensureRF = (id: string, label: string) => {
+    if (!revenue.receitasFinanceiras!.some((d) => d.id === id)) {
+      revenue.receitasFinanceiras = [...revenue.receitasFinanceiras!, { id, label, valores: fill12(0), fixed: true }];
+    }
+  };
+  ensureRF("rend_aplic", "Rendimento de aplicações");
+  ensureRF("alugueis", "Aluguéis Recebidos");
+  ensureRF("venda_ativos", "Venda de Ativos");
   if (!Array.isArray(revenue.pmrMensal) || revenue.pmrMensal.length !== 12) {
     revenue.pmrMensal = fill12(revenue.pmr || 0);
     revenue.pmrFixo = true;
