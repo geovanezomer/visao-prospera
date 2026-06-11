@@ -11,7 +11,7 @@ export function regimeComparisonToMarkdown(state: AppState): string {
   };
 
   const current = state.tax.regime;
-  const best = (Object.entries(llBy) as [any, number][]).reduce((a, b) => b[1] > a[1] ? b : a)[0];
+  const best = (Object.entries(llBy) as [AppState["tax"]["regime"], number][]).reduce((a, b) => b[1] > a[1] ? b : a)[0];
   const delta = llBy[best] - llBy[current];
 
   let md = `## Comparativo de Regimes Tributários (Anual)\n\n`;
