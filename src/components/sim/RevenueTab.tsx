@@ -65,6 +65,28 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       return { ...s, revenue: { ...s.revenue, deducoes: newList } };
     });
 
+  const updateFin = (id: string, label: string, mut: (d: RevenueDeducao) => RevenueDeducao) =>
+    update((s) => {
+      const list = s.revenue.receitasFinanceiras ?? [];
+      const exists = list.find((d) => d.id === id);
+      const base: RevenueDeducao = exists ?? { id, label, valores: fill12(0), fixed: true };
+      const next = mut(base);
+      const newList = exists ? list.map((d) => (d.id === id ? next : d)) : [...list, next];
+      return { ...s, revenue: { ...s.revenue, receitasFinanceiras: newList } };
+    });
+
+  const finList = r.receitasFinanceiras ?? [];
+  const findFin = (id: string, label: string): RevenueDeducao =>
+    finList.find((d) => d.id === id) ?? { id, label, valores: fill12(0), fixed: true };
+  const rendAplic = findFin("rend_aplic", "Rendimento de aplicações");
+  const alugueis = findFin("alugueis", "Aluguéis Recebidos");
+  const vendaAtivos = findFin("venda_ativos", "Venda de Ativos");
+  const finRows: Row[] = [
+    { id: "row_rend", kind: "financeira", finId: "rend_aplic", label: "Rendimento de aplicações", values: rendAplic.valores, fixed: !!rendAplic.fixed, tone: "pos" },
+    { id: "row_alug", kind: "financeira", finId: "alugueis", label: "Aluguéis Recebidos", values: alugueis.valores, fixed: !!alugueis.fixed, tone: "pos" },
+    { id: "row_vatv", kind: "financeira", finId: "venda_ativos", label: "Venda de Ativos", values: vendaAtivos.valores, fixed: !!vendaAtivos.fixed, tone: "pos" },
+  ];
+
   const setMonth = (row: Row, i: number, v: number) => {
     const safe = Math.max(0, Number.isFinite(v) ? v : 0);
     if (row.kind === "bruta") {
