@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AppState, CapexAtivacao } from "@/lib/finance/types";
-import { fmtBRL, fmtNum } from "@/lib/finance/format";
+import { fmtBRL, fmtNum, sum } from "@/lib/finance/format";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
