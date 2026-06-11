@@ -111,6 +111,11 @@ export const DEFAULT_STATE: AppState = {
       { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true },
       { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true },
     ],
+    receitasFinanceiras: [
+      { id: "rend_aplic", label: "Rendimento de aplicações", valores: fill12(0), fixed: true },
+      { id: "alugueis", label: "Aluguéis Recebidos", valores: fill12(0), fixed: true },
+      { id: "venda_ativos", label: "Venda de Ativos", valores: fill12(0), fixed: true },
+    ],
   },
   costs: defaultCostsFor("servicos"),
   capital: {
@@ -185,8 +190,17 @@ export function migrateCostLine(c: CostLine): CostLine {
 
 export function migrateState(s: AppState): AppState {
   // IDs de rubricas descontinuadas (removidas em todas as variantes)
-  const REMOVED_IDS = new Set(["outros_fix", "outros_var", "outros_fin"]);
+  const REMOVED_IDS = new Set(["outros_fix", "outros_var", "outros_fin", "terceiros"]);
+  // Relabels de rubricas existentes (mantém o id, atualiza apenas o label)
+  const RELABEL: Record<string, string> = {
+    manutencao: "Manutenção e Limpeza",
+    frete_venda: "Fretes / Transportes",
+    insumos_serv: "Insumos / Matéria Prima",
+    iof: "IOF",
+    antecipacao: "Taxas de Antecipação",
+  };
   let costs = s.costs ? s.costs.map(migrateCostLine).filter((c) => !REMOVED_IDS.has(c.id)) : DEFAULT_STATE.costs;
+  costs = costs.map((c) => (RELABEL[c.id] ? { ...c, label: RELABEL[c.id] } : c));
   // Todas as categorias custo_vendas viraram variável (CPV/CMV/CSP descontinuado como seção)
   costs = costs.map((c) => {
     if (c.category !== "custo_vendas") return c;
@@ -195,13 +209,21 @@ export function migrateState(s: AppState): AppState {
     }
     return { ...c, category: "variavel", subcategory: undefined };
   });
-  // Garante presença de "Maquininha Cartão" (financeiro) e "Marketplace" (variável)
-  if (!costs.some((c) => c.id === "maquininha")) {
-    costs.push(line("maquininha", "Maquininha Cartão", "financeiro", 0, undefined, { fixed: false, values: fill12(0) }));
-  }
-  if (!costs.some((c) => c.id === "marketplace")) {
-    costs.push(line("marketplace", "Marketplace", "variavel", 0, undefined, { fixed: false, values: fill12(0) }));
-  }
+  // Garante presença das rubricas novas
+  const ensure = (id: string, label: string, category: CostLine["category"], extras?: Partial<CostLine>) => {
+    if (!costs.some((c) => c.id === id)) {
+      costs.push(line(id, label, category, 0, undefined, { fixed: false, values: fill12(0), ...extras }));
+    }
+  };
+  ensure("maquininha", "Maquininha Cartão", "financeiro");
+  ensure("marketplace", "Marketplace", "variavel");
+  ensure("cheque_especial", "Juros sobre cheque especial", "financeiro");
+  ensure("tarifas_bancarias", "Tarifas bancárias", "financeiro");
+  ensure("multas_juros", "Multas e juros por atraso", "financeiro");
+  ensure("combustivel", "Combustível", "variavel");
+  ensure("frete_vendas", "Frete sobre vendas", "variavel");
+  ensure("material_escritorio", "Material de escritório", "fixo");
+  ensure("seguros", "Seguros", "fixo");
 
   const cashflow = s.cashflow ?? DEFAULT_STATE.cashflow;
   const capital = { ...DEFAULT_STATE.capital, ...(s.capital ?? {}) };
