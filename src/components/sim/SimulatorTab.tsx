@@ -289,20 +289,27 @@ function DREPanel({ base, sim, inconsistencies }: { base: SimDREView; sim: SimDR
   ];
 
   return (
-    <div className="space-y-3 rounded-lg border border-border/60 bg-card/60 p-4">
+    <div className="space-y-3 rounded-lg border border-border/60 bg-card/60 p-3 sm:p-4">
       <div className="flex items-center justify-between border-b border-border/40 pb-2">
         <SectionTitle>DRE · Anual</SectionTitle>
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Base × Simulado</span>
+        <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">Base × Simulado</span>
       </div>
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="text-[10px] uppercase text-muted-foreground">
-            <th className="pb-1 text-left font-medium">Linha</th>
-            <th className="pb-1 text-right font-medium">Base</th>
-            <th className="pb-1 text-right font-medium">Simulado</th>
-            <th className="pb-1 text-right font-medium">Δ%</th>
-          </tr>
-        </thead>
+      <div className="overflow-x-auto scrollbar-none">
+        <table className="w-full text-[clamp(0.65rem,1vw+0.35rem,0.75rem)] table-fixed">
+          <colgroup>
+            <col className="w-[110px] sm:w-auto" />
+            <col className="w-[75px] sm:w-[90px]" />
+            <col className="w-[75px] sm:w-[90px]" />
+            <col className="w-[45px] sm:w-[55px]" />
+          </colgroup>
+          <thead>
+            <tr className="text-[9px] sm:text-[10px] uppercase text-muted-foreground">
+              <th className="pb-1 text-left font-medium">Linha</th>
+              <th className="pb-1 text-right font-medium">Base</th>
+              <th className="pb-1 text-right font-medium">Simulado</th>
+              <th className="pb-1 text-right font-medium">Δ%</th>
+            </tr>
+          </thead>
         <tbody>
           {rows.map((r) => {
             const d = pctDelta(r.b, r.s);
@@ -310,7 +317,7 @@ function DREPanel({ base, sim, inconsistencies }: { base: SimDREView; sim: SimDR
             const tone = Math.abs(d) < 0.05 ? "" : (goodIsUp ? (d > 0 ? "text-pos" : "text-neg") : (d < 0 ? "text-pos" : "text-neg"));
             return (
               <tr key={r.label} className={`border-b border-border/20 last:border-0 ${r.bold ? "font-semibold" : ""}`}>
-                <td className="py-1.5">{r.label}</td>
+                <td className="py-1.5 truncate">{r.label}</td>
                 <td className="py-1.5 text-right mono text-muted-foreground">{fmtBRLCompact(r.b)}</td>
                 <td className={`py-1.5 text-right mono ${r.bold ? "" : ""}`}>{fmtBRLCompact(r.s)}</td>
                 <td className={`py-1.5 text-right mono ${tone}`}>{Math.abs(d) < 0.05 ? "—" : `${d >= 0 ? "+" : ""}${d.toFixed(1)}%`}</td>
