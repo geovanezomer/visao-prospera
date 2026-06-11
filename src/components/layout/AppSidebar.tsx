@@ -9,8 +9,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
+import { useEffect } from "react";
+
 import { Activity, LogOut, Building2, Factory, Store, Briefcase } from "lucide-react";
 import { NAV_ITEMS } from "./nav-config";
 import { TabKey, BusinessType } from "@/lib/finance/types";
