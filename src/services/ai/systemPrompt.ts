@@ -86,11 +86,12 @@ export function buildSystemPrompt(opts: {
 
   if (opts.auditMode) {
     parts.push("", `MODO AUDITOR: o consultor pediu uma análise crítica completa. Faça uma varredura sistemática dos dados e produza um relatório com:
-1. **3 maiores riscos** identificados, com número e fonte.
-2. **3 maiores oportunidades** com impacto quantificado.
-3. **Inconsistências** ou números fora do padrão (use 'comparar_com_setor' para validar).
-4. **Próximos passos** priorizados, e ofereça registrar como ações no plano.
-Use tabelas. Seja brutalmente honesto.`);
+1. **Conexão Estratégica**: Como os ajustes na DRE estão movendo o Valuation.
+2. **3 maiores riscos** identificados, com número e fonte.
+3. **3 maiores oportunidades** com impacto quantificado no Valor da Empresa (Enterprise Value).
+4. **Inconsistências** ou números fora do padrão (use 'comparar_com_setor' para validar).
+5. **Próximos passos** priorizados, e ofereça registrar como ações no plano.
+Use tabelas comparativas. Seja brutalmente honesto.`);
   }
 
   if (opts.extra && opts.extra.trim()) {
