@@ -91,10 +91,10 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
 
 
   // totais
-  const totCV = sum(byCat("custo_vendas").flatMap(monthValues));
-  const totFix = sum(byCat("fixo").flatMap(monthValues));
-  const totVar = sum(byCat("variavel").flatMap(monthValues));
-  const totFin = sum(byCat("financeiro").flatMap(monthValues));
+  const totCV = sum(byCat("custo_vendas").flatMap((c) => monthValues(c, state.tax.regime)));
+  const totFix = sum(byCat("fixo").flatMap((c) => monthValues(c, state.tax.regime)));
+  const totVar = sum(byCat("variavel").flatMap((c) => monthValues(c, state.tax.regime)));
+  const totFin = sum(byCat("financeiro").flatMap((c) => monthValues(c, state.tax.regime)));
   const totGeral = totCV + totFix + totVar + totFin;
 
   const pctRec = (v: number) => (receitaBrutaAnual > 0 ? v / receitaBrutaAnual : 0);
