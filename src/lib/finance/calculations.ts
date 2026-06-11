@@ -720,6 +720,8 @@ export interface Diagnostic { level: "ok" | "warn" | "danger"; title: string; me
 
 export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic[] {
   const out: Diagnostic[] = [];
+  const fmtR = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  
   const receitaBrutaAnual = sum(state.revenue.bruta);
   const receitaLiqAnual = sum(dre.receitaLiquida);
   const folha = dre.folhaCltAnual;
@@ -765,8 +767,6 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
 
   // #3 Receita zero (bruta) com custos fixos → empresa não viável no horizonte
   const custosFixosAnual = sum(dre.custosFixos);
-  const ebitdaAnual = sum(dre.ebitda);
-  const fmtR = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
   if (receitaBrutaAnual <= 0 && custosFixosAnual > 0) {
     out.push({ level: "danger", title: "Operação inviável: receita zero com custos fixos", message: `Sem receita projetada e ${fmtR(custosFixosAnual)} de custos fixos no ano. EBITDA projetado = ${fmtR(ebitdaAnual)}. Ponto de equilíbrio indefinido — preencha a aba Receita.` });
   } else if (receitaBrutaAnual > 0 && receitaLiqAnual <= 0) {
