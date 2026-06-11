@@ -8,6 +8,7 @@
 
 import { AppState, CostLine, TaxRegime } from "./types";
 import { buildDRE, calcIndicators, monthValues } from "./calculations";
+import { buildValuation, defaultValuationParams } from "./valuation";
 import { buildCashFlow } from "./cashflow";
 import { fill12, sum } from "./format";
 
@@ -241,6 +242,8 @@ export interface SimDREView {
   saldoCaixaFinal: number;
   piorMesCaixa: number;
   coberturaJuros: number;
+  enterpriseValue: number;
+  equityValue: number;
 }
 
 export function computeSimView(state: AppState): SimDREView {
@@ -248,6 +251,10 @@ export function computeSimView(state: AppState): SimDREView {
   const ind = calcIndicators(state, dre);
   const cf = buildCashFlow(state);
   const deducoes = sum(dre.deducoesInadimplencia);
+  
+  const valParams = defaultValuationParams(state.businessType);
+  const val = buildValuation(state, valParams);
+  
   return {
     receitaBruta: sum(dre.receitaBruta),
     deducoes,
@@ -270,6 +277,8 @@ export function computeSimView(state: AppState): SimDREView {
     saldoCaixaFinal: cf.totais.saldoFinal,
     piorMesCaixa: cf.totais.pioresMes?.saldo ?? 0,
     coberturaJuros: ind.coberturaJuros,
+    enterpriseValue: val.enterpriseValue.base,
+    equityValue: val.equityValue.base,
   };
 }
 

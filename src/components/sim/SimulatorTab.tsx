@@ -335,6 +335,7 @@ function DREPanel({ base, sim, inconsistencies }: { base: SimDREView; sim: SimDR
         <Kpi label="Saldo Caixa Final" base={fmtBRLCompact(base.saldoCaixaFinal)} sim={fmtBRLCompact(sim.saldoCaixaFinal)} better={sim.saldoCaixaFinal >= base.saldoCaixaFinal} />
         <Kpi label="Pior mês de caixa" base={fmtBRLCompact(base.piorMesCaixa)} sim={fmtBRLCompact(sim.piorMesCaixa)} better={sim.piorMesCaixa >= base.piorMesCaixa} />
         <Kpi label="NCG" base={fmtBRLCompact(base.ncg)} sim={fmtBRLCompact(sim.ncg)} better={sim.ncg <= base.ncg} />
+        <Kpi label="Valuation (EV)" base={fmtBRLCompact(base.enterpriseValue)} sim={fmtBRLCompact(sim.enterpriseValue)} better={sim.enterpriseValue >= base.enterpriseValue} highlight />
       </div>
 
       {inconsistencies.length > 0 && (
@@ -349,13 +350,13 @@ function DREPanel({ base, sim, inconsistencies }: { base: SimDREView; sim: SimDR
   );
 }
 
-function Kpi({ label, base, sim, better }: { label: string; base: string; sim: string; better: boolean }) {
+function Kpi({ label, base, sim, better, highlight }: { label: string; base: string; sim: string; better: boolean; highlight?: boolean }) {
   return (
-    <div className="rounded border border-border/40 bg-background/30 p-2">
-      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="mt-0.5 flex items-baseline gap-2">
-        <span className={`mono text-sm font-semibold ${better ? "text-pos" : "text-neg"}`}>{sim}</span>
-        <span className="mono text-[10px] text-muted-foreground line-through">{base}</span>
+    <div className={cn("rounded border p-2 transition-all", highlight ? "border-primary/40 bg-primary/5 shadow-sm" : "border-border/40 bg-background/30")}>
+      <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</div>
+      <div className="mt-0.5 flex items-baseline gap-2 flex-wrap">
+        <span className={cn("mono text-sm font-bold", better ? "text-pos" : "text-neg")}>{sim}</span>
+        <span className="mono text-[9px] text-muted-foreground line-through opacity-70">{base}</span>
       </div>
     </div>
   );
