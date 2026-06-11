@@ -36,10 +36,12 @@ export function StrategicSummary({ state }: { state: AppState }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3">
         <StatCard label="Índice estratégico" value={`${strategic.index}/100`} tone={levelTone as "pos" | "default" | "warn" | "neg"} sub={`Nível: ${strategic.level}`} />
         <StatCard label="Haircut aplicado" value={`${(strategic.haircut * 100).toFixed(0)}%`} tone={strategic.haircut === 0 ? "pos" : strategic.haircut > 0.2 ? "neg" : "warn"} sub="reduz o health financeiro" />
-        <StatCard label="Health ajustado" value={`${health.total.toFixed(0)}/100`} sub={`Financeiro puro: ${health.financial.toFixed(0)}`} />
+        <div className="col-span-2 md:col-span-1">
+          <StatCard label="Health ajustado" value={`${health.total.toFixed(0)}/100`} sub={`Financeiro puro: ${health.financial.toFixed(0)}`} />
+        </div>
       </div>
 
       <div className="rounded-lg border border-border/60 bg-card/60 p-4 text-sm">

@@ -15,7 +15,7 @@ export function IndicatorsCard({ state }: { state: AppState }) {
       <SectionTitle hint={{ description: "Métricas-chave que sintetizam a saúde financeira da empresa. Cada card traz a definição e a fórmula usada no cálculo." }}>
         Indicadores financeiros
       </SectionTitle>
-      <div className="mt-4 grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
         <Ind label="Margem Bruta" v={fmtPct(ind.margemBruta / 100)} desc="Quanto sobra da receita após pagar o custo direto do produto/serviço." formula="Lucro Bruto ÷ Receita Líquida × 100" />
         <Ind label="Margem EBITDA" v={fmtPct(ind.margemEbitda / 100)} desc="Geração operacional antes de juros, impostos e depreciação." formula="EBITDA ÷ Receita Líquida × 100" />
         <Ind label="Margem Líquida" v={fmtPct(ind.margemLiquida / 100)} desc="Lucro final sobre receita, após tudo pago." formula="Lucro Líquido ÷ Receita Líquida × 100" />
@@ -45,11 +45,11 @@ export function IndicatorsCard({ state }: { state: AppState }) {
 function Ind({ label, v, desc, formula, tone }: { label: string; v: string; desc?: string; formula?: string; tone?: "pos" | "neg" | "warn" }) {
   const cls = tone === "pos" ? "text-pos" : tone === "neg" ? "text-neg" : tone === "warn" ? "text-[var(--warning)]" : "";
   return (
-    <div className="rounded-md border border-border/40 bg-background/40 p-3">
-      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-        {label} {desc && <HelpTip text={desc} formula={formula} />}
+    <div className="rounded-md border border-border/40 bg-background/40 p-2 sm:p-3">
+      <div className="flex items-center gap-1 text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground leading-tight min-h-[20px]">
+        <span className="truncate">{label}</span> {desc && <HelpTip text={desc} formula={formula} />}
       </div>
-      <div className={`mono mt-1 text-lg font-semibold ${cls}`}>{v}</div>
+      <div className={`mono mt-1 text-sm sm:text-lg font-semibold truncate ${cls}`}>{v}</div>
     </div>
   );
 }

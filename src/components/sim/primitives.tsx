@@ -229,7 +229,7 @@ export function StatCard({
         {label}
         {renderHint(hint)}
       </div>
-      <div className={cn("mono mt-1 text-lg font-semibold sm:mt-2 sm:text-xl md:text-2xl", toneClass)}>
+      <div className={cn("mono mt-1 text-base font-semibold leading-tight sm:mt-2 sm:text-xl md:text-2xl break-words", toneClass)}>
         {value}
       </div>
       {sub && <div className="mt-1 text-[10px] text-muted-foreground sm:text-xs">{sub}</div>}
