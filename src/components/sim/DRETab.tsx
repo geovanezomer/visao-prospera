@@ -117,10 +117,11 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
           <div className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
             {(["anual", "mensal"] as const).map((v) => (
               <button key={v} onClick={() => setView(v)}
-                className={`rounded px-3 py-1 text-xs ${view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                {v === "anual" ? "Visão Anual" : "Visão Mensal"}
+                className={`rounded px-3 py-1 text-xs transition-all ${view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"} ${v === "mensal" ? "hidden lg:block" : ""}`}>
+                {v === "anual" ? "Anual" : "Mensal"}
               </button>
             ))}
+
           </div>
           <Select value={regime} onValueChange={(r) => update((s) => ({ ...s, tax: { ...s.tax, regime: r as TaxRegime } }))}>
             <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
