@@ -83,7 +83,7 @@ function SimulaPro() {
         <SidebarInset className="flex flex-col">
           <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/80 px-4 backdrop-blur sm:px-6">
             <div className="flex items-center gap-2">
-              <SidebarTrigger className="md:hidden" />
+              <SidebarTrigger className="h-9 w-9" />
               <div className="flex items-center gap-2 md:gap-4">
                 <h2 className="text-sm font-medium capitalize text-muted-foreground md:text-base">
                   {activeTab === "ai" ? "Consultor IA" : activeTab}
