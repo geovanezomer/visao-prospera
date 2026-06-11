@@ -56,7 +56,7 @@ export interface Revenue {
    *  Mais correto contabilmente (CPC 47/IFRS 9) e não reduz base de PIS/COFINS/ISS. */
   inadimplenciaComoPDD?: boolean;
   /** Reversão/recuperação de PDD mensal (R$). Reduz a PDD líquida do mês (CPC 47). */
-  pddReversaoMensal?: number;
+  pddReversaoMensal?: Months;
   /** Linhas livres de deduções (devoluções, perdas, furtos, descontos comerciais, abatimentos...).
    *  Subtraídas da Receita Bruta antes da Receita Líquida e da base de impostos sobre venda. */
   deducoes?: RevenueDeducao[];
