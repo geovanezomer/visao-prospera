@@ -151,13 +151,16 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
 
 
       {/* DRE Table */}
-      <div className="rounded-lg border border-border/60 bg-card/40">
-        <div className="border-b border-border/60 p-4">
-          <h3 className="text-base font-semibold">D.R.E. — Demonstração do Resultado do Exercício</h3>
-          <p className="text-xs text-muted-foreground">Visão gerencial conforme IFRS 18 / CPC 51 — regime de competência.</p>
+      <div className="rounded-lg border border-border/60 bg-card/40 overflow-hidden">
+        <div className="border-b border-border/60 p-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-semibold">D.R.E. — Demonstração do Resultado do Exercício</h3>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Regime de Competência</p>
+          </div>
         </div>
-        <div className="scrollbar-thin overflow-x-auto">
-          <table className="w-full min-w-[900px] text-sm">
+        <div className="scrollbar-thin overflow-x-auto w-full">
+          <table className="w-full min-w-full text-sm">
+
             <thead>
               <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 <th className="px-4 py-2 text-left">Descrição</th>

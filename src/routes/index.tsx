@@ -68,15 +68,22 @@ function SimulaPro() {
       <div className="flex min-h-screen w-full bg-background text-foreground">
         <AppSidebar 
           activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
+          setActiveTab={(tab) => {
+            setActiveTab(tab);
+            // No mobile, fecha a sidebar após selecionar
+            if (window.innerWidth < 768) {
+              document.dispatchEvent(new CustomEvent('close-mobile-sidebar'));
+            }
+          }} 
           state={state} 
           update={update} 
         />
+
         
         <SidebarInset className="flex flex-col">
           <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/80 px-4 backdrop-blur sm:px-6">
             <div className="flex items-center gap-2">
-              <SidebarTrigger className="md:hidden" />
+              <SidebarTrigger className="h-9 w-9" />
               <div className="flex items-center gap-2 md:gap-4">
                 <h2 className="text-sm font-medium capitalize text-muted-foreground md:text-base">
                   {activeTab === "ai" ? "Consultor IA" : activeTab}
@@ -106,8 +113,8 @@ function SimulaPro() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto">
-            <div className="mx-auto h-full max-w-[1600px] p-4 sm:p-6">
+          <main className="flex-1 overflow-x-hidden overflow-y-auto">
+            <div className="mx-auto h-full max-w-[1600px] p-2 sm:p-4 md:p-6">
               {activeTab === "ai" ? (
                 <AIView 
                   state={state} 

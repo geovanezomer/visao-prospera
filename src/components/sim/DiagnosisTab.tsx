@@ -45,7 +45,7 @@ export function DiagnosisTab({
         {/* Diagnóstico CFO */}
         <div className="rounded-lg border border-border/60 bg-card/40 p-5">
           <SectionTitle hint="Diagnóstico automático baseado nos indicadores do plano atual.">Diagnóstico CFO</SectionTitle>
-          <div className="mt-4 grid gap-2 md:grid-cols-2">
+          <div className="mt-4 flex flex-col gap-3 md:grid md:grid-cols-2">
             {diagnostics.map((d, i) => (
               <div key={i} className={`flex items-start gap-3 rounded-md border p-3 text-xs leading-relaxed ${
                 d.level === "ok" ? "border-[var(--success)]/40 bg-[var(--success)]/5" :
@@ -62,7 +62,7 @@ export function DiagnosisTab({
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2">
           {cards.map((c) => <CardView key={c.id} card={c} />)}
           {cards.length === 0 && (
             <div className="rounded-lg border border-pos/40 bg-pos/5 p-4 text-sm text-foreground">
