@@ -68,10 +68,17 @@ function SimulaPro() {
       <div className="flex min-h-screen w-full bg-background text-foreground">
         <AppSidebar 
           activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
+          setActiveTab={(tab) => {
+            setActiveTab(tab);
+            // No mobile, fecha a sidebar após selecionar
+            if (window.innerWidth < 768) {
+              document.dispatchEvent(new CustomEvent('close-mobile-sidebar'));
+            }
+          }} 
           state={state} 
           update={update} 
         />
+
         
         <SidebarInset className="flex flex-col">
           <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/80 px-4 backdrop-blur sm:px-6">
