@@ -114,6 +114,13 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
         />
       </div>
 
+      <div className="grid gap-4 md:grid-cols-3">
+        <CashConversionCard ll={sum(dre.lucroLiquido)} fcf={ind.fcf} />
+        <div className="md:col-span-2">
+          <NCGExplanationCard ncg={ind.ncg} pmr={state.revenue.pmr} pmp={state.revenue.pmp} receitaDia={sum(dre.receitaBruta)/360} cpvDia={sum(dre.cpv)/360} />
+        </div>
+      </div>
+
       <div className="space-y-4">
         <CapitalStructureCard
           proprio={c.proprio}
