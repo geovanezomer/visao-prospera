@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AppState, CostCategory, CostLine } from "@/lib/finance/types";
+import { AppState, CostCategory, CostLine, TaxRegime } from "@/lib/finance/types";
 import { fill12, fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { fixedCostBase, monthValues } from "@/lib/finance/calculations";
 import { MoneyInput, SectionTitle, StatCard } from "./primitives";
@@ -91,10 +91,10 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
 
 
   // totais
-  const totCV = sum(byCat("custo_vendas").flatMap(monthValues));
-  const totFix = sum(byCat("fixo").flatMap(monthValues));
-  const totVar = sum(byCat("variavel").flatMap(monthValues));
-  const totFin = sum(byCat("financeiro").flatMap(monthValues));
+  const totCV = sum(byCat("custo_vendas").flatMap((c) => monthValues(c, state.tax.regime)));
+  const totFix = sum(byCat("fixo").flatMap((c) => monthValues(c, state.tax.regime)));
+  const totVar = sum(byCat("variavel").flatMap((c) => monthValues(c, state.tax.regime)));
+  const totFin = sum(byCat("financeiro").flatMap((c) => monthValues(c, state.tax.regime)));
   const totGeral = totCV + totFix + totVar + totFin;
 
   const pctRec = (v: number) => (receitaBrutaAnual > 0 ? v / receitaBrutaAnual : 0);
@@ -148,6 +148,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
         <CostTable
           lines={byCat("fixo")}
           receitaBrutaAnual={receitaBrutaAnual}
+          regime={state.tax.regime}
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
@@ -166,6 +167,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
         <CostTable
           lines={byCat("variavel")}
           receitaBrutaAnual={receitaBrutaAnual}
+          regime={state.tax.regime}
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
@@ -184,6 +186,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
         <CostTable
           lines={byCat("financeiro")}
           receitaBrutaAnual={receitaBrutaAnual}
+          regime={state.tax.regime}
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
@@ -263,6 +266,7 @@ function SectionBlock({
 function CostTable({
   lines,
   receitaBrutaAnual,
+  regime,
   onMonth,
   onAllMonths,
   onFixed,
@@ -271,6 +275,7 @@ function CostTable({
 }: {
   lines: CostLine[];
   receitaBrutaAnual: number;
+  regime?: TaxRegime;
   onMonth: (id: string, i: number, v: number) => void;
   onAllMonths: (id: string, v: number) => void;
   onFixed: (id: string, fixed: boolean) => void;
@@ -298,7 +303,7 @@ function CostTable({
         </thead>
         <tbody>
           {lines.map((c) => {
-            const vals = monthValues(c);
+            const vals = monthValues(c, regime);
             const anual = sum(vals);
             const pct = receitaBrutaAnual > 0 ? anual / receitaBrutaAnual : 0;
             return (
