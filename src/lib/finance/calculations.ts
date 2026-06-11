@@ -334,7 +334,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const baseIRPJMensal = baseLairMonthly.map((l) => Math.max(0, l));
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
 
-  // Auditoria: créditos de PIS/COFINS são anuais — ratear por mês
+  // Auditoria Jun/2026: ratear créditos anuais por mês
   const pisCreditoMensal = Math.max(0, (tax.pisCreditos || 0) / 12);
   const cofinsCreditoMensal = Math.max(0, (tax.cofinsCreditos || 0) / 12);
   // Alíquotas dinâmicas
