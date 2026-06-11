@@ -163,7 +163,7 @@ function adicionalIrpjTrimestral(baseMensal: number[], tax: TaxConfig): number[]
   const gatilho = getIrpjAdicionalGatilhoTri(tax);
   for (let t = 0; t < 4; t++) {
     const m0 = t * 3;
-    const baseTri = (baseMensal[m0] || 0) + (baseMensal[m0 + 1] || 0) + (baseMensal[m0 + 2] || 0);
+    const baseTri = Math.max(0, (baseMensal[m0] || 0) + (baseMensal[m0 + 1] || 0) + (baseMensal[m0 + 2] || 0));
     const excedente = Math.max(0, baseTri - gatilho);
     const adic = excedente * aliq;
     const totalBase = baseTri > 0 ? baseTri : 1;
