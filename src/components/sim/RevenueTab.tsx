@@ -116,6 +116,8 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       });
     } else if (row.kind === "deducao" && row.dedId) {
       updateDed(row.dedId, row.label, (d) => ({ ...d, valores: fill12(safe) }));
+    } else if (row.kind === "financeira" && row.finId) {
+      updateFin(row.finId, row.label, (d) => ({ ...d, valores: fill12(safe) }));
     }
   };
 
