@@ -109,3 +109,14 @@
   .scrollbar-thin::-webkit-scrollbar { height: 8px; width: 8px; }
   .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
 }
+
+/* ===== MODO REUNIÃO / APRESENTAÇÃO ===== */
+.meeting-mode { font-size: 17px; }
+.meeting-mode [data-sidebar="sidebar"],
+.meeting-mode [data-meeting-hide="true"] { display: none !important; }
+.meeting-mode header.sticky { background: var(--color-background) !important; backdrop-filter: none; }
+.meeting-mode .mono, .meeting-mode .num { font-size: 1.05em; }
+.meeting-mode main { padding-top: 0.5rem; }
+.meeting-mode h1, .meeting-mode h2, .meeting-mode h3 { letter-spacing: -0.01em; }
+.meeting-mode [data-meeting-kpi="true"] { transform: scale(1.04); transform-origin: top left; transition: transform .25s ease; }
+.meeting-mode footer { display: none; }
