@@ -92,7 +92,7 @@ export function SimulatorTab({
         onApply={applyToBase} onSave={onSave} onReset={reset} />
 
       {/* Grid 2 colunas */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_460px]">
+      <div className="grid gap-4 lg:grid-cols-[1fr_clamp(380px,30vw,460px)]">
         {/* Sliders */}
         <div className="space-y-3">
           <Accordion type="multiple" defaultValue={["receita", "custos", "giro", "divida", "trib"]} className="space-y-2">

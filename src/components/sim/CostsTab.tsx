@@ -287,8 +287,8 @@ function CostTable({
     return <div className="px-4 py-3 text-xs text-muted-foreground">Nenhuma rubrica nesta categoria. Use “+ Adicionar linha”.</div>;
   }
   return (
-    <div className="scrollbar-thin overflow-x-auto">
-      <table className="w-full min-w-[1200px] text-sm">
+    <div className="scrollbar-thin w-full overflow-x-auto overflow-y-hidden">
+      <table className="w-full min-w-[900px] text-[clamp(0.75rem,1vw+0.5rem,0.875rem)] md:min-w-[1200px]">
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
             <th className="w-56 px-3 py-2">Rubrica</th>

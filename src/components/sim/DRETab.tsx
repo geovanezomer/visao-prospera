@@ -151,15 +151,15 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
 
 
       {/* DRE Table */}
-      <div className="rounded-lg border border-border/60 bg-card/40 overflow-hidden">
-        <div className="border-b border-border/60 p-4 flex items-center justify-between">
+      <div className="rounded-lg border border-border/60 bg-card/40 overflow-hidden shadow-sm">
+        <div className="border-b border-border/60 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="text-base font-semibold">D.R.E. — Demonstração do Resultado do Exercício</h3>
+            <h3 className="text-sm sm:text-base font-semibold">D.R.E. — Demonstração do Resultado do Exercício</h3>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Regime de Competência</p>
           </div>
         </div>
-        <div className="scrollbar-thin overflow-x-auto w-full">
-          <table className="w-full min-w-full text-sm">
+        <div className="scrollbar-thin w-full overflow-x-auto overflow-y-hidden">
+          <table className="w-full min-w-[700px] md:min-w-full text-[clamp(0.7rem,1vw+0.4rem,0.875rem)]">
 
             <thead>
               <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
