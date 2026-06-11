@@ -242,6 +242,16 @@ export function migrateState(s: AppState): AppState {
   if (!revenue.deducoes.some((d) => d.id === "abatimentos")) {
     revenue.deducoes = [...revenue.deducoes, { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true }];
   }
+  // Garante Receitas Financeiras padrão
+  if (!Array.isArray(revenue.receitasFinanceiras)) revenue.receitasFinanceiras = [];
+  const ensureRF = (id: string, label: string) => {
+    if (!revenue.receitasFinanceiras!.some((d) => d.id === id)) {
+      revenue.receitasFinanceiras = [...revenue.receitasFinanceiras!, { id, label, valores: fill12(0), fixed: true }];
+    }
+  };
+  ensureRF("rend_aplic", "Rendimento de aplicações");
+  ensureRF("alugueis", "Aluguéis Recebidos");
+  ensureRF("venda_ativos", "Venda de Ativos");
   if (!Array.isArray(revenue.pmrMensal) || revenue.pmrMensal.length !== 12) {
     revenue.pmrMensal = fill12(revenue.pmr || 0);
     revenue.pmrFixo = true;
