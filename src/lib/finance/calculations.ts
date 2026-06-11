@@ -128,7 +128,7 @@ export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
   const anexo = state.tax.simplesAnexo;
   if (!state.tax.fatorRAuto || anexo !== "V") return anexo;
   const rbt12 = sum(state.revenue.bruta);
-  if (rbt12 <= 0) return anexo;
+  if (rbt12 <= 0 || rbt12 > getSimplesLimite(state.tax)) return anexo;
   const fatorR = folhaAnual(state) / rbt12;
   const minPct = getFatorRMinimoPct(state.tax);
   return fatorR >= (minPct / 100) ? "III" : "V";
