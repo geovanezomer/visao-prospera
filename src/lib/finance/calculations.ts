@@ -490,9 +490,9 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   }
 
   if (usaPDD) {
-    const reversaoMensal = Math.max(0, revenue.pddReversaoMensal ?? 0);
+    const revArray = revenue.pddReversaoMensal || zeros12();
     for (let i = 0; i < 12; i++) {
-      const pddLiq = Math.max(0, pdd[i] - reversaoMensal);
+      const pddLiq = Math.max(0, pdd[i] - (revArray[i] || 0));
       pdd[i] = pddLiq;
       despOp[i] += pddLiq;
       custosFixos[i] += pddLiq;
