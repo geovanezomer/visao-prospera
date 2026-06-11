@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 import { AppState, TaxRegime } from "@/lib/finance/types";
 import { applySimulator, computeSimView, countActiveLevers, DEFAULT_SIM, PRESETS, SimDREView, SimulatorParams } from "@/lib/finance/simulator";
 import { fmtBRL, fmtBRLCompact, fmtPct } from "@/lib/finance/format";
@@ -10,7 +11,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { SectionTitle, HelpTip } from "./primitives";
 import { ForecastCard, MonteCarloCard } from "./AnalysisTab";
 import { IndicatorsCard } from "./IndicatorsCard";
-import { ArrowDownRight, ArrowUpRight, Minus, RotateCcw, Save, SlidersHorizontal, TriangleAlert, Wand2 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Minus, RotateCcw, Save, SlidersHorizontal, TriangleAlert, Wand2, Sparkles } from "lucide-react";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
@@ -182,16 +183,18 @@ function StatusBar({ active, base, sim, inconsistencies, onApply, onSave, onRese
   const dEbitda = pctDelta(base.ebitda, sim.ebitda);
   const dLL = pctDelta(base.lucroLiquido, sim.lucroLiquido);
   const dCaixa = sim.saldoCaixaFinal - base.saldoCaixaFinal;
+  const dValuation = pctDelta(base.enterpriseValue, sim.enterpriseValue);
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-border/60 bg-card/40 p-3">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-primary/40 bg-primary/5 p-3 shadow-sm ring-1 ring-primary/20">
       <div className="flex flex-wrap items-center gap-3 text-xs">
-        <span className="rounded bg-primary/15 px-2 py-1 font-semibold text-primary">
-          {active === 0 ? "nenhum ajuste" : `${active} ajuste${active > 1 ? "s" : ""} ativo${active > 1 ? "s" : ""}`}
-        </span>
-        <Delta label="Δ EBITDA" value={dEbitda} suffix="%" />
-        <Delta label="Δ Lucro Líq." value={dLL} suffix="%" />
-        <Delta label="Δ Caixa" value={dCaixa} currency />
+        <div className="flex items-center gap-2 pr-2 border-r border-border/40">
+          <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+          <span className="font-bold text-primary uppercase tracking-tighter">Impacto Estratégico</span>
+        </div>
+        <Delta label="EBITDA" value={dEbitda} suffix="%" />
+        <Delta label="Caixa" value={dCaixa} currency />
+        <Delta label="Valuation (EV)" value={dValuation} suffix="%" highlight />
         {inconsistencies.length > 0 && (
           <span className="inline-flex items-center gap-1 rounded bg-[var(--destructive)]/15 px-2 py-1 text-neg">
             <TriangleAlert className="h-3 w-3" /> {inconsistencies.length} alerta{inconsistencies.length > 1 ? "s" : ""}
@@ -207,16 +210,16 @@ function StatusBar({ active, base, sim, inconsistencies, onApply, onSave, onRese
   );
 }
 
-function Delta({ label, value, suffix, currency }: { label: string; value: number; suffix?: string; currency?: boolean }) {
+function Delta({ label, value, suffix, currency, highlight }: { label: string; value: number; suffix?: string; currency?: boolean; highlight?: boolean }) {
   const pos = value > 0.01;
   const neg = value < -0.01;
-  const tone = pos ? "text-pos" : neg ? "text-neg" : "text-muted-foreground";
+  const tone = highlight ? (pos ? "bg-primary text-primary-foreground px-1.5 py-0.5 rounded shadow-sm" : "bg-neg text-white px-1.5 py-0.5 rounded") : (pos ? "text-pos" : neg ? "text-neg" : "text-muted-foreground");
   const Icon = pos ? ArrowUpRight : neg ? ArrowDownRight : Minus;
   return (
-    <span className="inline-flex items-center gap-1">
-      <span className="text-muted-foreground">{label}:</span>
-      <span className={`mono inline-flex items-center font-semibold ${tone}`}>
-        <Icon className="h-3 w-3" />
+    <span className="inline-flex items-center gap-1.5">
+      <span className="text-muted-foreground font-medium">{label}:</span>
+      <span className={`mono inline-flex items-center font-bold ${tone}`}>
+        {!highlight && <Icon className="h-3 w-3" />}
         {currency ? fmtBRLCompact(value) : `${value >= 0 ? "+" : ""}${value.toFixed(1)}${suffix ?? ""}`}
       </span>
     </span>
@@ -335,6 +338,7 @@ function DREPanel({ base, sim, inconsistencies }: { base: SimDREView; sim: SimDR
         <Kpi label="Saldo Caixa Final" base={fmtBRLCompact(base.saldoCaixaFinal)} sim={fmtBRLCompact(sim.saldoCaixaFinal)} better={sim.saldoCaixaFinal >= base.saldoCaixaFinal} />
         <Kpi label="Pior mês de caixa" base={fmtBRLCompact(base.piorMesCaixa)} sim={fmtBRLCompact(sim.piorMesCaixa)} better={sim.piorMesCaixa >= base.piorMesCaixa} />
         <Kpi label="NCG" base={fmtBRLCompact(base.ncg)} sim={fmtBRLCompact(sim.ncg)} better={sim.ncg <= base.ncg} />
+        <Kpi label="Valuation (EV)" base={fmtBRLCompact(base.enterpriseValue)} sim={fmtBRLCompact(sim.enterpriseValue)} better={sim.enterpriseValue >= base.enterpriseValue} highlight />
       </div>
 
       {inconsistencies.length > 0 && (
@@ -349,13 +353,13 @@ function DREPanel({ base, sim, inconsistencies }: { base: SimDREView; sim: SimDR
   );
 }
 
-function Kpi({ label, base, sim, better }: { label: string; base: string; sim: string; better: boolean }) {
+function Kpi({ label, base, sim, better, highlight }: { label: string; base: string; sim: string; better: boolean; highlight?: boolean }) {
   return (
-    <div className="rounded border border-border/40 bg-background/30 p-2">
-      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="mt-0.5 flex items-baseline gap-2">
-        <span className={`mono text-sm font-semibold ${better ? "text-pos" : "text-neg"}`}>{sim}</span>
-        <span className="mono text-[10px] text-muted-foreground line-through">{base}</span>
+    <div className={cn("rounded border p-2 transition-all", highlight ? "border-primary/40 bg-primary/5 shadow-sm" : "border-border/40 bg-background/30")}>
+      <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</div>
+      <div className="mt-0.5 flex items-baseline gap-2 flex-wrap">
+        <span className={cn("mono text-sm font-bold", better ? "text-pos" : "text-neg")}>{sim}</span>
+        <span className="mono text-[9px] text-muted-foreground line-through opacity-70">{base}</span>
       </div>
     </div>
   );
