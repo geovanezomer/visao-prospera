@@ -55,11 +55,12 @@ export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSideba
             <Activity className="h-5 w-5" />
           </div>
           <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-semibold leading-none tracking-tight">
-              GZ Finnance<span className="text-primary">PRO</span>
+            <span className="text-sm font-bold leading-none tracking-tight">
+              GZ FINNANCE<span className="text-primary">PRO</span>
             </span>
-            <span className="mt-1 text-[10px] text-muted-foreground truncate">Diagnóstico & Simulação</span>
+            <span className="mt-1 text-[9px] uppercase tracking-widest text-muted-foreground/80 truncate">Auditoria & Gestão</span>
           </div>
+
         </div>
       </SidebarHeader>
 
