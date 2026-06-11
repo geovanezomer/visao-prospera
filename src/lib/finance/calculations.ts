@@ -720,10 +720,34 @@ export interface Diagnostic { level: "ok" | "warn" | "danger"; title: string; me
 
 export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic[] {
   const out: Diagnostic[] = [];
+  const fmtR = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  
   const receitaBrutaAnual = sum(state.revenue.bruta);
   const receitaLiqAnual = sum(dre.receitaLiquida);
   const folha = dre.folhaCltAnual;
   const folhaPct = receitaLiqAnual > 0 ? (folha / receitaLiqAnual) * 100 : 0;
+  const llAnual = sum(dre.lucroLiquido);
+  const ebitdaAnual = sum(dre.ebitda);
+  const fcfAnual = ind.fcf;
+
+  // #0 Conversão de Lucro em Caixa (Auditoria CFO)
+  if (llAnual > 1000) {
+    const conversao = (fcfAnual / llAnual) * 100;
+    if (conversao < 30 && conversao >= 0) {
+      out.push({ level: "warn", title: "Baixa conversão de lucro em caixa", message: `Apenas ${conversao.toFixed(1)}% do lucro líquido vira caixa livre. O restante está ficando imobilizado em capital de giro ou pagando dívidas.` });
+    } else if (conversao < 0) {
+      out.push({ level: "danger", title: "Lucro que não vira caixa", message: `Empresa é lucrativa (${fmtR(llAnual)}), mas queima caixa livre (${fmtR(fcfAnual)}). Risco de crise de liquidez por excesso de NCG ou serviço de dívida.` });
+    }
+  }
+
+  // #0.1 Divergência EBITDA x Caixa (Alerta imediato CFO)
+  if (ebitdaAnual > 0 && fcfAnual < 0) {
+    out.push({
+      level: "danger",
+      title: "Divergência: EBITDA (+) vs Caixa (−)",
+      message: "Alerta CFO: A operação gera resultado operacional positivo, mas o caixa está caindo. Verifique se o crescimento está sendo financiado por excesso de prazo aos clientes ou estoques altos (NCG)."
+    });
+  }
 
   // ===== Edge cases (Auditoria) =====
   // #1 Empresa 100% (ou quase) inadimplente
@@ -742,8 +766,6 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
 
   // #3 Receita zero (bruta) com custos fixos → empresa não viável no horizonte
   const custosFixosAnual = sum(dre.custosFixos);
-  const ebitdaAnual = sum(dre.ebitda);
-  const fmtR = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
   if (receitaBrutaAnual <= 0 && custosFixosAnual > 0) {
     out.push({ level: "danger", title: "Operação inviável: receita zero com custos fixos", message: `Sem receita projetada e ${fmtR(custosFixosAnual)} de custos fixos no ano. EBITDA projetado = ${fmtR(ebitdaAnual)}. Ponto de equilíbrio indefinido — preencha a aba Receita.` });
   } else if (receitaBrutaAnual > 0 && receitaLiqAnual <= 0) {
