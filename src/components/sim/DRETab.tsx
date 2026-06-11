@@ -1,6 +1,7 @@
-import { useState, Fragment } from "react";
+import { useState, Fragment, useEffect } from "react";
 import { AppState, TaxRegime, COST_VENDAS_LABEL, TAX_ERA_SHORT, CostCategory } from "@/lib/finance/types";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
+
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { buildDRE, calcIndicators, monthValues } from "@/lib/finance/calculations";
 import { buildCashFlow } from "@/lib/finance/cashflow";
@@ -16,6 +17,16 @@ const CHART_COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7
 
 export function DRETab({ state, update }: { state: AppState; update: Updater }) {
   const [view, setView] = useState<"mensal" | "anual">("anual");
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) setView("anual");
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const regime = state.tax.regime;
   const { dre, tax } = buildDRE(state, regime);
   const ind = calcIndicators(state, dre);
@@ -106,10 +117,11 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
           <div className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
             {(["anual", "mensal"] as const).map((v) => (
               <button key={v} onClick={() => setView(v)}
-                className={`rounded px-3 py-1 text-xs ${view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                {v === "anual" ? "Visão Anual" : "Visão Mensal"}
+                className={`rounded px-3 py-1 text-xs transition-all ${view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"} ${v === "mensal" ? "hidden lg:block" : ""}`}>
+                {v === "anual" ? "Anual" : "Mensal"}
               </button>
             ))}
+
           </div>
           <Select value={regime} onValueChange={(r) => update((s) => ({ ...s, tax: { ...s.tax, regime: r as TaxRegime } }))}>
             <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
@@ -130,11 +142,11 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
-        <StatCard label="Receita Bruta" value={fmtBRL(rb)} tone="pos" hint={{ description: "Soma total de tudo que a empresa faturou no ano, antes de qualquer dedução (impostos, devoluções, inadimplência).", formula: "Σ Receita Bruta dos 12 meses" }} />
-        <StatCard label="EBITDA" value={fmtBRL(sum(dre.ebitda))} sub={`Margem ${ind.margemEbitda.toFixed(1)}%`} tone={sum(dre.ebitda) >= 0 ? "pos" : "neg"} hint={{ description: "Geração de caixa operacional antes de juros, impostos, depreciação e amortização. Mostra a 'força bruta' da operação.", formula: "Lucro Bruto − Despesas Operacionais" }} />
-        <StatCard label="Lucro Líquido" value={fmtBRL(ll)} sub={`Margem ${ind.margemLiquida.toFixed(1)}%`} tone={ll >= 0 ? "pos" : "neg"} hint={{ description: "O que efetivamente sobra para os sócios após pagar todos os custos, despesas, juros e impostos.", formula: "LAIR − Impostos sobre o Lucro" }} />
-        <StatCard label="Tributos / Receita" value={fmtPct(tax.effective / 100)} tone="warn" sub={`${fmtBRL(tax.annual)} no ano`} hint={{ description: "Carga tributária total efetiva: percentual da receita bruta consumido por impostos (sobre venda + sobre lucro).", formula: "(Impostos s/ Venda + Impostos s/ Lucro) ÷ Receita Bruta × 100" }} />
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatCard label="Faturamento" value={fmtBRL(rb)} tone="pos" hint={{ description: "Faturamento bruto anual.", formula: "Σ Receita Bruta" }} />
+        <StatCard label="EBITDA" value={fmtBRL(sum(dre.ebitda))} sub={`${ind.margemEbitda.toFixed(1)}%`} tone={sum(dre.ebitda) >= 0 ? "pos" : "neg"} hint={{ description: "Caixa operacional.", formula: "Lucro Bruto − Despesas" }} />
+        <StatCard label="Lucro Líq." value={fmtBRL(ll)} sub={`${ind.margemLiquida.toFixed(1)}%`} tone={ll >= 0 ? "pos" : "neg"} hint={{ description: "Resultado final.", formula: "LAIR − Impostos" }} />
+        <StatCard label="Impostos" value={fmtPct(tax.effective / 100)} tone="warn" sub={`${fmtBRLCompact(tax.annual)}`} hint={{ description: "Carga tributária.", formula: "Impostos ÷ Receita Bruta" }} />
       </div>
 
 
