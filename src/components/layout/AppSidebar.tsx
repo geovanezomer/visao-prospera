@@ -92,7 +92,7 @@ export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSideba
         ))}
 
         <SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
-          <SidebarGroupLabel>Contexto do Negócio</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] uppercase tracking-wider">Configurações Rápidas</SidebarGroupLabel>
           <div className="space-y-3 px-2 py-2">
             <div className="flex items-center gap-2 rounded-md border border-sidebar-border bg-sidebar-accent/50 px-2 py-1.5">
               <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
