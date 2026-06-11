@@ -490,9 +490,9 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   }
 
   if (usaPDD) {
-    const reversaoMensal = Math.max(0, revenue.pddReversaoMensal ?? 0);
+    const revArray = revenue.pddReversaoMensal || zeros12();
     for (let i = 0; i < 12; i++) {
-      const pddLiq = Math.max(0, pdd[i] - reversaoMensal);
+      const pddLiq = Math.max(0, pdd[i] - (revArray[i] || 0));
       pdd[i] = pddLiq;
       despOp[i] += pddLiq;
       custosFixos[i] += pddLiq;
@@ -633,13 +633,13 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     ? Math.max(0, ebitAnual - ebitAnual * tcEfetiva)
     : Math.max(0, ebitAnual * (1 - irShield));
 
-  // Capital Investido = PL + Dívida Onerosa − Caixa Ocioso − Passivos não-onerosos informados.
-  // Fallback (compat): se nenhum dos novos campos for informado, mantém comportamento antigo.
+  // Capital Investido (Auditoria): (Ativo Total − Caixa Ocioso) − Passivos não-onerosos.
+  // Se Ativo Total omitido, reconstrói via PL + D + PNO.
+  const pno = Math.max(0, capital.passivosNaoOnerosos ?? capital.fornecedores ?? 0);
   const caixaOcioso = Math.max(0, capital.caixaOcioso ?? 0);
-  const passivosNaoOnerosos = Math.max(0, capital.passivosNaoOnerosos ?? 0);
-  const capitalInvestidoBase = PL + D;
-  const capitalInvestido = Math.max(1, capitalInvestidoBase - caixaOcioso - passivosNaoOnerosos);
-  const roic = capitalInvestidoBase > 0 ? (nopat / capitalInvestido) * 100 : 0;
+  const ciBase = capital.ativoTotal > 0 ? capital.ativoTotal : (PL + D + pno);
+  const capitalInvestido = Math.max(1, ciBase - caixaOcioso - pno);
+  const roic = capitalInvestido > 0 ? (nopat / capitalInvestido) * 100 : 0;
   const roe = PL > 0 ? (llAnual / PL) * 100 : 0;
   const roa = capital.ativoTotal > 0 ? (llAnual / capital.ativoTotal) * 100 : 0;
 
@@ -690,6 +690,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitdaAnual))
     : (dividaLiq <= 0 ? 0 : CAP_DL_EBITDA);
   const payback = llAnual > 1 ? Math.min(CAP_PAYBACK, PL / llAnual) : (PL <= 0 ? 0 : CAP_PAYBACK);
+  // FCF simplificado: EBITDA − Impostos − ΔNCG (Auditoria).
+  // ΔNCG estimado como a diferença entre a NCG atual e o capital de giro disponível.
   const fcf = ebitdaAnual - impostosAnual - Math.max(0, ncg - capital.capitalGiroDisponivel);
 
   return {

@@ -107,6 +107,7 @@ export const DEFAULT_STATE: AppState = {
     pmrFixo: true,
     pmpFixo: true,
     inadimplenciaComoPDD: false,
+    pddReversaoMensal: fill12(0),
     deducoes: [
       { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true },
       { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true },
@@ -234,6 +235,12 @@ export function migrateState(s: AppState): AppState {
     tax.era = legacyEra === "2033" ? "pleno" : legacyEra === "atual" ? "atual" : "transicao";
   }
   const revenue = { ...DEFAULT_STATE.revenue, ...(s.revenue ?? {}) };
+  if (typeof revenue.pddReversaoMensal === "number") {
+    revenue.pddReversaoMensal = fill12(revenue.pddReversaoMensal);
+  } else if (!revenue.pddReversaoMensal) {
+    revenue.pddReversaoMensal = fill12(0);
+  }
+
   if (!Array.isArray(revenue.deducoes)) revenue.deducoes = [];
   // Garante Descontos Incondicionais e Abatimentos
   if (!revenue.deducoes.some((d) => d.id === "desc_incond")) {

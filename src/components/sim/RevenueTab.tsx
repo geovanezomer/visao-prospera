@@ -1,6 +1,6 @@
 import { AppState, RevenueDeducao } from "@/lib/finance/types";
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/lib/finance/format";
-import { MoneyInput, StatCard, SectionTitle } from "./primitives";
+import { MoneyInput, StatCard, SectionTitle, HelpTip } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { PrazoTable } from "./PrazoTable";
 
@@ -32,15 +32,19 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
   const descDed = findDed("desc_incond") ?? { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true };
   const abatDed = findDed("abatimentos") ?? { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true };
 
-  const liquidas = r.bruta.map((b, i) =>
-    Math.max(0, b - inadimpBRL[i] - (descDed.valores[i] || 0) - (abatDed.valores[i] || 0))
-  );
+  const usaPDD = !!r.inadimplenciaComoPDD;
+  const liquidas = r.bruta.map((b, i) => {
+    const dedNormal = (descDed.valores[i] || 0) + (abatDed.valores[i] || 0);
+    // Se PDD, a inadimplência não reduz a Receita Líquida (vira despesa operacional na DRE)
+    const inad = usaPDD ? 0 : inadimpBRL[i];
+    return Math.max(0, b - inad - dedNormal);
+  });
 
   const brutaAnual = sum(r.bruta);
   const inadimpAnual = sum(inadimpBRL);
   const descAnual = sum(descDed.valores);
   const abatAnual = sum(abatDed.valores);
-  const deducoesAnual = inadimpAnual + descAnual + abatAnual;
+  const deducoesAnual = (usaPDD ? 0 : inadimpAnual) + descAnual + abatAnual;
   const liqAnual = sum(liquidas);
 
   const monthsWithRevenue = liquidas.filter((_, i) => r.bruta[i] > 0).length;
@@ -54,6 +58,19 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
     { id: "row_desc", kind: "deducao", dedId: "desc_incond", label: "Descontos Incondicionais", values: descDed.valores, fixed: !!descDed.fixed, tone: "neg" },
     { id: "row_abat", kind: "deducao", dedId: "abatimentos", label: "Abatimentos", values: abatDed.valores, fixed: !!abatDed.fixed, tone: "neg" },
   ];
+
+  if (usaPDD) {
+    const pddRec = r.pddReversaoMensal ?? fill12(0);
+    rows.push({
+      id: "row_pdd_rec",
+      kind: "deducao", // Reuso do kind deducao para simplificar update
+      dedId: "pdd_rec",
+      label: "Recuperação de Inadimplência (+)",
+      values: pddRec,
+      fixed: false, // Pode ser customizado
+      tone: "pos"
+    });
+  }
 
   const updateDed = (id: string, label: string, mut: (d: RevenueDeducao) => RevenueDeducao) =>
     update((s) => {
@@ -98,7 +115,11 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         return { ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } };
       });
     } else if (row.kind === "deducao" && row.dedId) {
-      updateDed(row.dedId, row.label, (d) => ({ ...d, valores: d.valores.map((x, j) => (j === i ? safe : x)) }));
+      if (row.dedId === "pdd_rec") {
+        update((s) => ({ ...s, revenue: { ...s.revenue, pddReversaoMensal: (s.revenue.pddReversaoMensal || fill12(0)).map((x, j) => (j === i ? safe : x)) } }));
+      } else {
+        updateDed(row.dedId, row.label, (d) => ({ ...d, valores: d.valores.map((x, j) => (j === i ? safe : x)) }));
+      }
     } else if (row.kind === "financeira" && row.finId) {
       updateFin(row.finId, row.label, (d) => ({ ...d, valores: d.valores.map((x, j) => (j === i ? safe : x)) }));
     }
@@ -115,7 +136,11 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         return { ...s, revenue: { ...s.revenue, inadimplencia: fill12(pct) } };
       });
     } else if (row.kind === "deducao" && row.dedId) {
-      updateDed(row.dedId, row.label, (d) => ({ ...d, valores: fill12(safe) }));
+      if (row.dedId === "pdd_rec") {
+        update((s) => ({ ...s, revenue: { ...s.revenue, pddReversaoMensal: fill12(safe) } }));
+      } else {
+        updateDed(row.dedId, row.label, (d) => ({ ...d, valores: fill12(safe) }));
+      }
     } else if (row.kind === "financeira" && row.finId) {
       updateFin(row.finId, row.label, (d) => ({ ...d, valores: fill12(safe) }));
     }
@@ -136,10 +161,16 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         };
       });
     } else if (row.kind === "deducao" && row.dedId) {
-      updateDed(row.dedId, row.label, (d) => {
-        const base = fixed ? fixedBase(d.valores) : d.valores[0] || 0;
-        return { ...d, fixed, valores: fixed ? fill12(base) : d.valores };
-      });
+      if (row.dedId === "pdd_rec") {
+        // PDD rec não tem modo fixo isolado no state por enquanto, tratamos como mensal livre
+        const base = fixed ? fixedBase(row.values) : row.values[0] || 0;
+        update((s) => ({ ...s, revenue: { ...s.revenue, pddReversaoMensal: fill12(base) } }));
+      } else {
+        updateDed(row.dedId, row.label, (d) => {
+          const base = fixed ? fixedBase(d.valores) : d.valores[0] || 0;
+          return { ...d, fixed, valores: fixed ? fill12(base) : d.valores };
+        });
+      }
     } else if (row.kind === "financeira" && row.finId) {
       updateFin(row.finId, row.label, (d) => {
         const base = fixed ? fixedBase(d.valores) : d.valores[0] || 0;
@@ -184,6 +215,16 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         hint="Receita Bruta e deduções (em R$). Use o toggle de Modo para aplicar o mesmo valor em todos os meses."
         accentClass="border-l-[color:var(--success)]"
       >
+        <div className="flex items-center gap-2 px-4 py-2 bg-accent/20 rounded-md mb-4 mx-2">
+          <label className="text-[11px] text-muted-foreground flex items-center gap-2 cursor-pointer">
+            <Switch
+              checked={usaPDD}
+              onCheckedChange={(v) => update((s) => ({ ...s, revenue: { ...s.revenue, inadimplenciaComoPDD: v } }))}
+            />
+            Contabilizar inadimplência como PDD (Despesa Operacional)
+            <HelpTip text="CPC 47 / IFRS 15: Inadimplência esperada pode ser tratada como PDD ao invés de dedução direta de receita. Isso evita redução da base de cálculo de impostos sobre faturamento (PIS/COFINS/ISS) e é o padrão em empresas maiores." />
+          </label>
+        </div>
         <RevenueTable
           rows={rows}
           brutaAnual={brutaAnual}

@@ -92,13 +92,12 @@ function estimateHHI(a: ConcentrationAnswers): number | undefined {
   // Resolve numericamente (Newton em poucos passos).
   let r = 0.7;
   for (let i = 0; i < 20; i++) {
-    const f = s1 * (1 - Math.pow(r, n)) / (1 - r) - target;
-    const dfdr =
-      s1 *
-      ((-n * Math.pow(r, n - 1)) * (1 - r) + (1 - Math.pow(r, n))) /
-      Math.pow(1 - r, 2);
-    if (Math.abs(dfdr) < 1e-9) break;
-    r = clamp(r - f / dfdr, 0.05, 0.99);
+    const dr = Math.max(1e-6, Math.abs(1 - r));
+    const den = r > 1 ? r - 1 : 1 - r;
+    const f = s1 * (1 - Math.pow(r, n)) / Math.max(1e-6, 1 - r) - target;
+    const dfdr = s1 * ((-n * Math.pow(r, n - 1)) * (1 - r) + (1 - Math.pow(r, n))) / Math.max(1e-9, Math.pow(1 - r, 2));
+    if (Math.abs(f) < 1e-4 || Math.abs(dfdr) < 1e-12) break;
+    r = clamp(r - f / dfdr, 0.01, 0.999);
   }
   let hhi = 0;
   for (let i = 0; i < n; i++) {
