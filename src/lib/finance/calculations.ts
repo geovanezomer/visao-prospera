@@ -741,7 +741,6 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
   }
 
   // #0.1 Divergência EBITDA x Caixa (Alerta imediato CFO)
-  // EBITDA positivo mas caixa final menor que inicial (simplificado pela proxy do FCF negativo)
   if (ebitdaAnual > 0 && fcfAnual < 0) {
     out.push({
       level: "danger",
