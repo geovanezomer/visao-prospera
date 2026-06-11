@@ -224,7 +224,7 @@ export function StatCard({
   const toneClass =
     tone === "pos" ? "text-pos" : tone === "neg" ? "text-neg" : tone === "warn" ? "text-[var(--warning)]" : "text-foreground";
   return (
-    <div className="rounded-lg border border-border/60 bg-card/60 p-4">
+    <div className="rounded-lg border border-border/60 bg-card/60 p-3 md:p-4">
       <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
         {label}
         {renderHint(hint)}
