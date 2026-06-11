@@ -161,10 +161,16 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         };
       });
     } else if (row.kind === "deducao" && row.dedId) {
-      updateDed(row.dedId, row.label, (d) => {
-        const base = fixed ? fixedBase(d.valores) : d.valores[0] || 0;
-        return { ...d, fixed, valores: fixed ? fill12(base) : d.valores };
-      });
+      if (row.dedId === "pdd_rec") {
+        // PDD rec não tem modo fixo isolado no state por enquanto, tratamos como mensal livre
+        const base = fixed ? fixedBase(row.values) : row.values[0] || 0;
+        update((s) => ({ ...s, revenue: { ...s.revenue, pddReversaoMensal: fill12(base) } }));
+      } else {
+        updateDed(row.dedId, row.label, (d) => {
+          const base = fixed ? fixedBase(d.valores) : d.valores[0] || 0;
+          return { ...d, fixed, valores: fixed ? fill12(base) : d.valores };
+        });
+      }
     } else if (row.kind === "financeira" && row.finId) {
       updateFin(row.finId, row.label, (d) => {
         const base = fixed ? fixedBase(d.valores) : d.valores[0] || 0;
