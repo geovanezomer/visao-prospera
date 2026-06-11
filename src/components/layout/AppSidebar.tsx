@@ -73,7 +73,11 @@ export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSideba
                   <SidebarMenuItem key={item.value}>
                     <SidebarMenuButton
                       isActive={activeTab === item.value}
-                      onClick={() => setActiveTab(item.value)}
+                      onClick={() => {
+                        setActiveTab(item.value);
+                        setOpenMobile(false);
+                      }}
+
                       tooltip={item.title}
                     >
                       <item.icon className="h-4 w-4" />
