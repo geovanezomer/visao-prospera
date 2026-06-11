@@ -115,9 +115,9 @@ export function monthValues(c: CostLine): number[] {
 const LABOR_KEYWORDS = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra|m\.o\.|clt/i;
 
 function folhaAnual(state: AppState): number {
-  return state.costs
-    .filter((c) => c.category !== "financeiro" && (c.encargosAuto || LABOR_KEYWORDS.test(c.label)))
-    .reduce((acc, c) => acc + sum(effectiveMonthValues(c)), 0);
+  const laborCosts = state.costs
+    .filter((c) => c.category !== "financeiro" && (c.encargosAuto || LABOR_KEYWORDS.test(c.label)));
+  return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c)), 0);
 }
 
 /** Limite anual de receita bruta para permanência no Simples Nacional (LC 123/06).
