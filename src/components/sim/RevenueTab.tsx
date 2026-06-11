@@ -253,21 +253,20 @@ function SectionBlock({
 function RevenueTable({
   rows,
   brutaAnual,
-  liquidas,
-  liqAnual,
+  footer,
   onMonth,
   onAllMonths,
   onFixed,
 }: {
   rows: Row[];
   brutaAnual: number;
-  liquidas: number[];
-  liqAnual: number;
+  footer?: { label: string; values: number[]; total: number; tone?: "pos" | "neg" };
   onMonth: (row: Row, i: number, v: number) => void;
   onAllMonths: (row: Row, v: number) => void;
   onFixed: (row: Row, fixed: boolean) => void;
 }) {
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
+  const footerToneClass = footer?.tone === "neg" ? "text-neg" : "text-pos";
 
   return (
     <div className="scrollbar-thin overflow-x-auto">
@@ -325,15 +324,17 @@ function RevenueTable({
             );
           })}
 
-          <tr className="border-t border-border/40 bg-accent/20 align-middle">
-            <td className="px-3 py-2 text-xs font-semibold" colSpan={2}>Receita Operacional</td>
-            {liquidas.map((v, i) => (
-              <td key={i} className="num px-1 py-2 text-right text-[11px] text-pos">{fmtBRLCompact(v)}</td>
-            ))}
-            <td className="num px-3 py-2 text-right font-semibold text-pos">{fmtBRL(liqAnual)}</td>
-            <td className="num px-2 py-2 text-right text-xs text-muted-foreground">{fmtPct(pctRec(liqAnual))}</td>
-            <td />
-          </tr>
+          {footer && (
+            <tr className="border-t border-border/40 bg-accent/20 align-middle">
+              <td className="px-3 py-2 text-xs font-semibold" colSpan={2}>{footer.label}</td>
+              {footer.values.map((v, i) => (
+                <td key={i} className={`num px-1 py-2 text-right text-[11px] ${footerToneClass}`}>{fmtBRLCompact(v)}</td>
+              ))}
+              <td className={`num px-3 py-2 text-right font-semibold ${footerToneClass}`}>{fmtBRL(footer.total)}</td>
+              <td className="num px-2 py-2 text-right text-xs text-muted-foreground">{fmtPct(pctRec(footer.total))}</td>
+              <td />
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
