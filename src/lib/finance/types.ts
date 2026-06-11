@@ -64,6 +64,8 @@ export interface Revenue {
   brutaFixa?: boolean;
   /** Modo fixo para a linha Inadimplência % (mesmo % nos 12 meses). */
   inadimplenciaFixa?: boolean;
+  /** Receitas Financeiras (rendimentos de aplicações, aluguéis, venda de ativos, etc.). */
+  receitasFinanceiras?: RevenueDeducao[];
 }
 
 export interface CostLine {
