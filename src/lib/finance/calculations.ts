@@ -98,7 +98,11 @@ export function fixedCostBase(values: number[]): number {
 export function effectiveMonthValues(c: CostLine): number[] {
   const raw = c.fixed ? fill12(fixedCostBase(c.values)) : c.values.slice();
   if (c.encargosAuto) {
-    const factor = 1 + (c.encargosPct ?? DEFAULT_ENCARGOS_PCT) / 100;
+    // Auditoria: Se regime for Simples Nacional, os encargos patronais (CPP) já estão no DAS.
+    // Reduzimos o multiplicador padrão para evitar bitributação, mantendo apenas FGTS/Férias/13º (~25-30%).
+    const isSimples = state.tax.regime === "simples";
+    const defaultRate = isSimples ? 30 : DEFAULT_ENCARGOS_PCT;
+    const factor = 1 + (c.encargosPct ?? defaultRate) / 100;
     return raw.map((v) => v * factor);
   }
   return raw;
