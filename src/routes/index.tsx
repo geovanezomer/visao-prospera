@@ -22,8 +22,9 @@ import { TabKey } from "@/lib/finance/types";
 import { applySimulator, countActiveLevers, DEFAULT_SIM, SimulatorParams } from "@/lib/finance/simulator";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Button } from "@/components/ui/button";
-import { Download, RotateCcw, Menu } from "lucide-react";
+import { Download, RotateCcw, Menu, Presentation, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -52,8 +53,23 @@ function SimulaPro() {
   const { scenarios, save, remove } = useScenarios();
   const [activeTab, setActiveTab] = useState<TabKey | "ai">("dre");
   const [simParams, setSimParams] = useState<SimulatorParams>(DEFAULT_SIM);
+  const [meetingMode, setMeetingMode] = useState(false);
   const simulatedState = useMemo(() => applySimulator(state, simParams), [state, simParams]);
   const simActive = countActiveLevers(simParams);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (meetingMode) root.classList.add("meeting-mode");
+    else root.classList.remove("meeting-mode");
+    return () => root.classList.remove("meeting-mode");
+  }, [meetingMode]);
+
+  useEffect(() => {
+    if (!meetingMode) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMeetingMode(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [meetingMode]);
 
   if (!hydrated || !user) {
     return <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">Carregando…</div>;
@@ -92,24 +108,41 @@ function SimulaPro() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={exportReport} className="h-8">
+              {meetingMode && (
+                <Badge variant="outline" className="hidden sm:inline-flex border-primary/40 bg-primary/10 text-primary text-[10px] uppercase tracking-wider">
+                  Modo Reunião · ESC para sair
+                </Badge>
+              )}
+              <Button
+                size="sm"
+                variant={meetingMode ? "default" : "outline"}
+                onClick={() => setMeetingMode((v) => !v)}
+                className="h-8"
+                title="Modo Reunião: oculta menus, amplia fontes e destaca KPIs para apresentação ao cliente"
+              >
+                {meetingMode ? <X className="h-3.5 w-3.5 sm:mr-2" /> : <Presentation className="h-3.5 w-3.5 sm:mr-2" />}
+                <span className="hidden sm:inline">{meetingMode ? "Sair Reunião" : "Modo Reunião"}</span>
+              </Button>
+              <Button size="sm" variant="outline" onClick={exportReport} className="h-8" data-meeting-hide="true">
                 <Download className="h-3.5 w-3.5 sm:mr-2" /> 
                 <span className="hidden sm:inline">Exportar</span>
               </Button>
-              <TaxSettingsDialog state={state} update={update} />
-              <ConfirmDialog
-                title="Restaurar dados?"
-                description="Isso resetará todos os valores atuais."
-                confirmLabel="Restaurar"
-                destructive
-                onConfirm={reset}
-                trigger={
-                  <Button size="sm" variant="ghost" className="h-8">
-                    <RotateCcw className="h-3.5 w-3.5 sm:mr-2" /> 
-                    <span className="hidden sm:inline">Reset</span>
-                  </Button>
-                }
-              />
+              <div data-meeting-hide="true" className="contents">
+                <TaxSettingsDialog state={state} update={update} />
+                <ConfirmDialog
+                  title="Restaurar dados?"
+                  description="Isso resetará todos os valores atuais."
+                  confirmLabel="Restaurar"
+                  destructive
+                  onConfirm={reset}
+                  trigger={
+                    <Button size="sm" variant="ghost" className="h-8">
+                      <RotateCcw className="h-3.5 w-3.5 sm:mr-2" /> 
+                      <span className="hidden sm:inline">Reset</span>
+                    </Button>
+                  }
+                />
+              </div>
             </div>
           </header>
 
