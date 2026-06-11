@@ -17,6 +17,16 @@ const CHART_COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7
 
 export function DRETab({ state, update }: { state: AppState; update: Updater }) {
   const [view, setView] = useState<"mensal" | "anual">("anual");
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) setView("anual");
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const regime = state.tax.regime;
   const { dre, tax } = buildDRE(state, regime);
   const ind = calcIndicators(state, dre);
