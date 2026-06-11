@@ -235,6 +235,12 @@ export function migrateState(s: AppState): AppState {
     tax.era = legacyEra === "2033" ? "pleno" : legacyEra === "atual" ? "atual" : "transicao";
   }
   const revenue = { ...DEFAULT_STATE.revenue, ...(s.revenue ?? {}) };
+  if (typeof revenue.pddReversaoMensal === "number") {
+    revenue.pddReversaoMensal = fill12(revenue.pddReversaoMensal);
+  } else if (!revenue.pddReversaoMensal) {
+    revenue.pddReversaoMensal = fill12(0);
+  }
+
   if (!Array.isArray(revenue.deducoes)) revenue.deducoes = [];
   // Garante Descontos Incondicionais e Abatimentos
   if (!revenue.deducoes.some((d) => d.id === "desc_incond")) {
