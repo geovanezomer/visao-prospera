@@ -81,7 +81,13 @@ export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSideba
       </SidebarHeader>
 
       <SidebarContent className="py-2">
-        <Accordion type="multiple" defaultValue={[...groups]} className="w-full border-none">
+        <Accordion 
+          type="multiple" 
+          value={openGroups} 
+          onValueChange={setOpenGroups}
+          className="w-full border-none"
+        >
+
           {groups.map((group) => (
             <AccordionItem key={group} value={group} className="border-none px-2">
               <AccordionTrigger className="py-2 hover:no-underline group-data-[collapsible=icon]:hidden">
