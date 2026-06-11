@@ -115,7 +115,7 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <CashConversionCard ll={sum(dre.lucroLiquido)} fcf={ind.fcf} />
+        <CashConversionCard ll={sum(dre.lucroLiquido)} fcf={ind.fcf} ebitda={sum(dre.ebitda)} />
         <div className="md:col-span-2">
           <NCGExplanationCard ncg={ind.ncg} pmr={state.revenue.pmr} pmp={state.revenue.pmp} receitaDia={sum(dre.receitaBruta)/360} cpvDia={sum(dre.cpv)/360} />
         </div>
@@ -710,10 +710,11 @@ function CapexAtivacaoSection({
 }
 
 
-function CashConversionCard({ ll, fcf }: { ll: number; fcf: number }) {
-  const conversao = ll > 0 ? (fcf / ll) * 100 : 0;
-  const tone = conversao >= 70 ? "pos" : conversao >= 30 ? "default" : conversao >= 0 ? "warn" : "neg";
-  const label = conversao < 0 ? "Conversão Negativa" : `${conversao.toFixed(1)}%`;
+function CashConversionCard({ ll, fcf, ebitda }: { ll: number; fcf: number; ebitda: number }) {
+  const conversaoLL = ll > 0 ? (fcf / ll) * 100 : 0;
+  const conversaoEbitda = ebitda > 0 ? (fcf / ebitda) * 100 : 0;
+  const tone = conversaoLL >= 70 ? "pos" : conversaoLL >= 30 ? "default" : conversaoLL >= 0 ? "warn" : "neg";
+  const label = conversaoLL < 0 ? "Conversão Negativa" : `${conversaoLL.toFixed(1)}%`;
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/60 p-5 flex flex-col justify-between">
@@ -728,29 +729,36 @@ function CashConversionCard({ ll, fcf }: { ll: number; fcf: number }) {
         </div>
         <div className="mt-4 space-y-3">
           <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">EBITDA (Gerencial)</span>
+            <span className="mono font-semibold">{fmtBRL(ebitda)}</span>
+          </div>
+          <div className="flex justify-between text-xs">
             <span className="text-muted-foreground">Lucro Líquido (Competência)</span>
             <span className="mono font-semibold">{fmtBRL(ll)}</span>
           </div>
-          <div className="flex justify-between text-xs">
+          <div className="flex justify-between text-xs border-t border-border/20 pt-2">
             <span className="text-muted-foreground">Caixa Livre (FCF Proxy)</span>
-            <span className="mono font-semibold">{fmtBRL(fcf)}</span>
+            <span className="mono font-semibold text-primary">{fmtBRL(fcf)}</span>
           </div>
         </div>
       </div>
       <div className="mt-4 pt-4 border-t border-border/40">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Qualidade do Lucro</div>
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Eficiência da Conversão</div>
+          <div className="text-[10px] font-bold text-primary">EBITDA → Caixa: {conversaoEbitda.toFixed(1)}%</div>
+        </div>
         <div className="h-1.5 w-full rounded-full bg-muted/30 overflow-hidden">
           <div 
-            className={`h-full transition-all ${conversao >= 70 ? "bg-pos" : conversao >= 30 ? "bg-primary" : "bg-warning"}`} 
-            style={{ width: `${Math.min(100, Math.max(0, conversao))}%` }} 
+            className={`h-full transition-all ${conversaoLL >= 70 ? "bg-pos" : conversaoLL >= 30 ? "bg-primary" : "bg-warning"}`} 
+            style={{ width: `${Math.min(100, Math.max(0, conversaoLL))}%` }} 
           />
         </div>
         <p className="mt-2 text-[10px] text-muted-foreground leading-tight">
-          {conversao < 0 
+          {conversaoLL < 0 
             ? "⚠ Alerta CFO: A empresa dá lucro no papel mas consome caixa na vida real. Perigo de insolvência."
-            : conversao < 40 
-            ? "O lucro está ficando preso no Capital de Giro ou pagando passivos antigos."
-            : "Conversão saudável. O lucro está se transformando em liquidez para a empresa."}
+            : conversaoEbitda < 50 
+            ? `Baixa eficiência: ${(100 - conversaoEbitda).toFixed(1)}% do EBITDA está sendo consumido por NCG, Impostos ou Juros.`
+            : "Conversão saudável. O resultado operacional está se transformando em liquidez real."}
         </p>
       </div>
     </div>

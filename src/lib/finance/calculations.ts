@@ -583,6 +583,7 @@ export interface Indicators {
   dividaLiqEbitda: number;
   payback: number;
   fcf: number;
+  conversaoEbitdaCaixa: number;
   // novos
   dividaOnerosa: number;
   passivoCirculante: number;
@@ -709,6 +710,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     liquidezCorrente, liquidezSeca, liquidezImediata,
     endividamentoGeral, grauEndividamento, coberturaJuros, giroAtivo,
     dividaLiqEbitda, payback, fcf,
+    conversaoEbitdaCaixa: ebitdaAnual > 0 ? (fcf / ebitdaAnual) * 100 : 0,
     dividaOnerosa: D, passivoCirculante, ativoCirculante,
   };
 }
