@@ -10,12 +10,14 @@ function fixedBase(values: number[]): number {
   return Number.isFinite(nonZero as number) ? (nonZero as number) : (values[0] || 0);
 }
 
-type RowKind = "bruta" | "inadimplencia" | "deducao";
+type RowKind = "bruta" | "inadimplencia" | "deducao" | "financeira";
 type Row = {
   id: string;
   kind: RowKind;
   /** id da dedução em revenue.deducoes (quando kind = "deducao") */
   dedId?: string;
+  /** id da receita financeira em revenue.receitasFinanceiras (quando kind = "financeira") */
+  finId?: string;
   label: string;
   values: number[];
   fixed: boolean;
