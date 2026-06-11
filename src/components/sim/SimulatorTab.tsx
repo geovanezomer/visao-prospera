@@ -324,8 +324,9 @@ function DREPanel({ base, sim, inconsistencies }: { base: SimDREView; sim: SimDR
               </tr>
             );
           })}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
 
       <div className="grid grid-cols-2 gap-2 border-t border-border/40 pt-3 text-xs">
         <Kpi label="Margem Líquida" base={`${base.margemLiquida.toFixed(1)}%`} sim={`${sim.margemLiquida.toFixed(1)}%`} better={sim.margemLiquida >= base.margemLiquida} />
