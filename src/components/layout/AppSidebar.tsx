@@ -11,7 +11,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
 
 import { Activity, LogOut, Building2, Factory, Store, Briefcase, ChevronDown } from "lucide-react";
 import { NAV_ITEMS } from "./nav-config";
