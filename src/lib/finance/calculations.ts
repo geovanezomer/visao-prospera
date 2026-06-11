@@ -633,13 +633,13 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     ? Math.max(0, ebitAnual - ebitAnual * tcEfetiva)
     : Math.max(0, ebitAnual * (1 - irShield));
 
-  // Capital Investido = PL + Dívida Onerosa − Caixa Ocioso − Passivos não-onerosos informados.
-  // Fallback (compat): se nenhum dos novos campos for informado, mantém comportamento antigo.
+  // Capital Investido (Auditoria): (Ativo Total − Caixa Ocioso) − Passivos não-onerosos.
+  // Se Ativo Total omitido, reconstrói via PL + D + PNO.
+  const pno = Math.max(0, capital.passivosNaoOnerosos ?? capital.fornecedores ?? 0);
   const caixaOcioso = Math.max(0, capital.caixaOcioso ?? 0);
-  const passivosNaoOnerosos = Math.max(0, capital.passivosNaoOnerosos ?? 0);
-  const capitalInvestidoBase = PL + D;
-  const capitalInvestido = Math.max(1, capitalInvestidoBase - caixaOcioso - passivosNaoOnerosos);
-  const roic = capitalInvestidoBase > 0 ? (nopat / capitalInvestido) * 100 : 0;
+  const ciBase = capital.ativoTotal > 0 ? capital.ativoTotal : (PL + D + pno);
+  const capitalInvestido = Math.max(1, ciBase - caixaOcioso - pno);
+  const roic = capitalInvestido > 0 ? (nopat / capitalInvestido) * 100 : 0;
   const roe = PL > 0 ? (llAnual / PL) * 100 : 0;
   const roa = capital.ativoTotal > 0 ? (llAnual / capital.ativoTotal) * 100 : 0;
 
