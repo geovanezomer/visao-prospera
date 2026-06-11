@@ -180,8 +180,9 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-3 md:grid-cols-4">
+    <div className="space-y-4 md:space-y-6">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+
         <StatCard
           label="Receita Bruta Anual"
           value={fmtBRL(brutaAnual)}
