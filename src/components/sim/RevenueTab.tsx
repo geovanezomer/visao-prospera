@@ -187,8 +187,27 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         <RevenueTable
           rows={rows}
           brutaAnual={brutaAnual}
-          liquidas={liquidas}
-          liqAnual={liqAnual}
+          footer={{ label: "Receita Operacional", values: liquidas, total: liqAnual, tone: "pos" }}
+          onMonth={setMonth}
+          onAllMonths={setAllMonths}
+          onFixed={setFixed}
+        />
+      </SectionBlock>
+
+      <SectionBlock
+        title="Receitas Financeiras — 12 meses"
+        hint="Rendimentos de aplicações, aluguéis recebidos e venda de ativos. Não compõem a Receita Operacional."
+        accentClass="border-l-[color:var(--success)]"
+      >
+        <RevenueTable
+          rows={finRows}
+          brutaAnual={brutaAnual}
+          footer={{
+            label: "Total Receitas Financeiras",
+            values: MESES.map((_, i) => finRows.reduce((a, r) => a + (r.values[i] || 0), 0)),
+            total: finRows.reduce((a, r) => a + sum(r.values), 0),
+            tone: "pos",
+          }}
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
