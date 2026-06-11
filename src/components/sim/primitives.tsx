@@ -15,7 +15,7 @@ export function HelpTip({ text, formula, example }: { text: string; formula?: st
             <Info className="h-3.5 w-3.5" />
           </span>
         </TooltipTrigger>
-        <TooltipContent className="max-w-sm space-y-2 bg-popover p-3 text-xs leading-relaxed text-popover-foreground shadow-lg border border-border">
+        <TooltipContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm space-y-2 bg-popover p-3 text-xs leading-relaxed text-popover-foreground shadow-lg border border-border">
           <div className="text-foreground">{text}</div>
           {formula && (
             <div className="rounded border border-border/60 bg-muted/40 px-2 py-1.5">

@@ -184,7 +184,7 @@ function StatusBar({ active, base, sim, inconsistencies, onApply, onSave, onRese
   const dCaixa = sim.saldoCaixaFinal - base.saldoCaixaFinal;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-card/40 p-3">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-border/60 bg-card/40 p-3">
       <div className="flex flex-wrap items-center gap-3 text-xs">
         <span className="rounded bg-primary/15 px-2 py-1 font-semibold text-primary">
           {active === 0 ? "nenhum ajuste" : `${active} ajuste${active > 1 ? "s" : ""} ativo${active > 1 ? "s" : ""}`}
@@ -198,10 +198,10 @@ function StatusBar({ active, base, sim, inconsistencies, onApply, onSave, onRese
           </span>
         )}
       </div>
-      <div className="flex items-center gap-2">
-        <Button size="sm" variant="ghost" onClick={onReset}><RotateCcw className="mr-1 h-3.5 w-3.5" /> Resetar</Button>
-        <Button size="sm" variant="outline" onClick={onSave} disabled={active === 0}><Save className="mr-1 h-3.5 w-3.5" /> Salvar cenário</Button>
-        <Button size="sm" onClick={onApply} disabled={active === 0}>Aplicar ao cenário base</Button>
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+        <Button size="sm" variant="ghost" onClick={onReset} className="h-8 justify-start sm:justify-center"><RotateCcw className="mr-1 h-3.5 w-3.5" /> Resetar</Button>
+        <Button size="sm" variant="outline" onClick={onSave} disabled={active === 0} className="h-8 justify-start sm:justify-center"><Save className="mr-1 h-3.5 w-3.5" /> Salvar cenário</Button>
+        <Button size="sm" onClick={onApply} disabled={active === 0} className="h-8 justify-start sm:justify-center">Aplicar ao cenário base</Button>
       </div>
     </div>
   );
