@@ -62,7 +62,7 @@ export function DiagnosisTab({
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2">
           {cards.map((c) => <CardView key={c.id} card={c} />)}
           {cards.length === 0 && (
             <div className="rounded-lg border border-pos/40 bg-pos/5 p-4 text-sm text-foreground">
