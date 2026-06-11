@@ -177,7 +177,9 @@ function SimulaPro() {
           </footer>
         </SidebarInset>
 
-        <ScenarioBar state={state} scenarios={scenarios} save={save} remove={remove} load={setState} />
+        <div data-meeting-hide="true" className="contents">
+          <ScenarioBar state={state} scenarios={scenarios} save={save} remove={remove} load={setState} />
+        </div>
         {/* AI FAB REMOVIDO POR SOLICITAÇÃO DO USUÁRIO */}
       </div>
     </SidebarProvider>
