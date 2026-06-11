@@ -95,12 +95,12 @@ export function fixedCostBase(values: number[]): number {
   return normalized[normalized.length - 1] || first;
 }
 
-export function effectiveMonthValues(c: CostLine): number[] {
+export function effectiveMonthValues(c: CostLine, regime?: TaxRegime): number[] {
   const raw = c.fixed ? fill12(fixedCostBase(c.values)) : c.values.slice();
   if (c.encargosAuto) {
     // Auditoria: Se regime for Simples Nacional, os encargos patronais (CPP) já estão no DAS.
     // Reduzimos o multiplicador padrão para evitar bitributação, mantendo apenas FGTS/Férias/13º (~25-30%).
-    const isSimples = state.tax.regime === "simples";
+    const isSimples = regime === "simples";
     const defaultRate = isSimples ? 30 : DEFAULT_ENCARGOS_PCT;
     const factor = 1 + (c.encargosPct ?? defaultRate) / 100;
     return raw.map((v) => v * factor);
@@ -109,8 +109,8 @@ export function effectiveMonthValues(c: CostLine): number[] {
 }
 
 /** Mantido para retro-compatibilidade — agora aplica encargos. */
-export function monthValues(c: CostLine): number[] {
-  return effectiveMonthValues(c);
+export function monthValues(c: CostLine, regime?: TaxRegime): number[] {
+  return effectiveMonthValues(c, regime);
 }
 
 // =====================================================================
@@ -121,7 +121,7 @@ const LABOR_KEYWORDS = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra
 function folhaAnual(state: AppState): number {
   const laborCosts = state.costs
     .filter((c) => c.category !== "financeiro" && (c.encargosAuto || LABOR_KEYWORDS.test(c.label)));
-  return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c)), 0);
+  return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c, state.tax.regime)), 0);
 }
 
 /** Limite anual de receita bruta para permanência no Simples Nacional (LC 123/06).
@@ -484,7 +484,7 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
 
   for (const c of costs) {
     if (c.category === "financeiro") continue;
-    const v = effectiveMonthValues(c);
+    const v = effectiveMonthValues(c, regime);
     despesasPorCategoria[c.label] = v;
     for (let i = 0; i < 12; i++) {
       if (c.category === "custo_vendas") { cpv[i] += v[i]; custosVariaveis[i] += v[i]; }
@@ -506,7 +506,7 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
 
   const custosFinanceirosTotal = zeros12();
   for (const c of costs.filter((x) => x.category === "financeiro")) {
-    const v = effectiveMonthValues(c);
+    const v = effectiveMonthValues(c, regime);
     for (let i = 0; i < 12; i++) custosFinanceirosTotal[i] += v[i];
   }
 
