@@ -17,7 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 
-const ReactMarkdown = lazy(() => import("react-markdown"));
+const ReactMarkdown = lazy(() => import("react-markdown") as any);
+
 
 interface Props {
   state: AppState;
