@@ -145,9 +145,7 @@ function SimulaPro() {
         </SidebarInset>
 
         <ScenarioBar state={state} scenarios={scenarios} save={save} remove={remove} load={setState} />
-        {activeTab !== "ai" && (
-          <AIFab state={state} simulatedState={simulatedState} simActive={simActive} simParams={simParams} />
-        )}
+        {/* AI FAB REMOVIDO POR SOLICITAÇÃO DO USUÁRIO */}
       </div>
     </SidebarProvider>
   );

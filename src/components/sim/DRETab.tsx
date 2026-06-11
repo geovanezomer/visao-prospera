@@ -158,8 +158,16 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Regime de Competência</p>
           </div>
         </div>
-        <div className="scrollbar-thin w-full overflow-x-auto overflow-y-hidden">
-          <table className="w-full min-w-[700px] md:min-w-full text-[clamp(0.7rem,1vw+0.4rem,0.875rem)]">
+        <div className="scrollbar-none w-full overflow-x-auto overflow-y-hidden touch-pan-x">
+          <table className="w-full min-w-[600px] md:min-w-full text-[clamp(0.65rem,1vw+0.3rem,0.875rem)] table-fixed md:table-auto">
+            <colgroup>
+              <col className="w-[120px] sm:w-auto" />
+              {view === "mensal" && MESES.map((_, i) => (
+                <col key={i} className="w-[70px]" />
+              ))}
+              <col className="w-[90px] md:w-auto" />
+              <col className="w-[50px] md:w-auto" />
+            </colgroup>
 
             <thead>
               <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -184,10 +192,10 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                   return (
                     <Fragment key={idx}>
                       <tr className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20" onClick={() => setOpenCustos((v) => !v)}>
-                        <td className="px-4 py-2 text-xs font-semibold">
+                        <td className="px-3 py-2 text-[10px] sm:text-xs font-semibold truncate">
                           <span className="inline-flex items-center gap-1">
-                            <ChevronRight className={`h-3 w-3 transition-transform ${openCustos ? "rotate-90" : ""}`} />
-                            (−) Total de Custos
+                            <ChevronRight className={`h-3 w-3 shrink-0 transition-transform ${openCustos ? "rotate-90" : ""}`} />
+                            (−) Custos
                           </span>
                         </td>
                         {view === "mensal" && totalCustos.map((v, i) => (
@@ -236,7 +244,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                 const toneCls = row.tone === "pos" ? "text-pos" : row.tone === "neg" ? "text-neg" : "";
                 return (
                   <tr key={idx} className={`border-t border-border/30 ${row.highlight ? "bg-primary/10" : row.strong ? "bg-accent/20" : ""}`}>
-                    <td className={`px-4 py-2 ${row.strong ? "font-semibold" : "text-muted-foreground"} text-xs`}>{row.k}</td>
+                    <td className={`px-3 py-2 ${row.strong ? "font-semibold" : "text-muted-foreground"} text-[10px] sm:text-xs truncate`}>{row.k}</td>
                     {view === "mensal" && row.v.map((v, i) => (
                       <td key={i} className={`num px-2 py-2 text-right text-xs ${mesesCriticosIdx.has(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}>
                         {v === 0 ? "—" : fmtBRLCompact(v)}
