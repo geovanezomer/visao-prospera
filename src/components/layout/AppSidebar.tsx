@@ -48,7 +48,7 @@ export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSideba
   const groups = ["Entradas", "Configurações", "Análises", "Estratégia"] as const;
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="border-b border-sidebar-border/50 py-4">
         <div className="flex items-center gap-3 px-2">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
