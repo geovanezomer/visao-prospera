@@ -329,8 +329,9 @@ function RevenueTable({
   const footerToneClass = footer?.tone === "neg" ? "text-neg" : "text-pos";
 
   return (
-    <div className="scrollbar-thin overflow-x-auto">
-      <table className="w-full min-w-[1200px] text-sm">
+    <div className="scrollbar-thin overflow-x-auto w-full max-w-[calc(100vw-2rem)] md:max-w-none">
+      <table className="w-full min-w-[1000px] text-sm">
+
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
             <th className="w-56 px-3 py-2">Rubrica</th>
