@@ -115,7 +115,11 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         return { ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } };
       });
     } else if (row.kind === "deducao" && row.dedId) {
-      updateDed(row.dedId, row.label, (d) => ({ ...d, valores: d.valores.map((x, j) => (j === i ? safe : x)) }));
+      if (row.dedId === "pdd_rec") {
+        update((s) => ({ ...s, revenue: { ...s.revenue, pddReversaoMensal: (s.revenue.pddReversaoMensal || fill12(0)).map((x, j) => (j === i ? safe : x)) } }));
+      } else {
+        updateDed(row.dedId, row.label, (d) => ({ ...d, valores: d.valores.map((x, j) => (j === i ? safe : x)) }));
+      }
     } else if (row.kind === "financeira" && row.finId) {
       updateFin(row.finId, row.label, (d) => ({ ...d, valores: d.valores.map((x, j) => (j === i ? safe : x)) }));
     }
