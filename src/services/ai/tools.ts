@@ -10,7 +10,7 @@ import { project, projectionToMarkdown, DEFAULT_PROJ } from "@/services/scenario
 import { sensitivity, sensitivityToMarkdown, type SensMetric } from "@/services/scenarios/sensitivity";
 import { listScenarios, saveScenario, deleteScenario, getScenario } from "@/services/scenarios/store";
 import { listActions, createAction, updateAction, deleteAction, actionsToMarkdown, type ActionStatus } from "@/services/actions/store";
-import { regimeComparisonToMarkdown } from "@/services/compliance/tax";
+import { regimeComparisonToMarkdown, taxAuditToMarkdown } from "@/services/compliance/tax";
 import { checklistToMarkdown } from "@/services/compliance/checklist";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 
@@ -159,6 +159,11 @@ export const TOOLS: ToolDef[] = [
   {
     name: "simular_regime_tributario",
     description: "Compara Simples × Presumido × Real e indica o de menor carga (heurístico).",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "diagnostico_tributario",
+    description: "Gera um diagnóstico detalhado da situação fiscal atual, detectando economias potenciais (ex: migração para Real).",
     parameters: { type: "object", properties: {}, required: [] },
   },
   {
@@ -345,6 +350,7 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
 
     // --- Compliance ---
     case "simular_regime_tributario": return regimeComparisonToMarkdown(state);
+    case "diagnostico_tributario": return taxAuditToMarkdown(state);
     case "checklist_compliance": return checklistToMarkdown(state);
 
     default:

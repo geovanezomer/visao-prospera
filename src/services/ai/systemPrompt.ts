@@ -1,6 +1,7 @@
 // Persona + contexto do sistema + glossário + suplemento do usuário.
 
 export const GLOSSARIO = `### Glossário do sistema (use estes termos exatamente):
+- **Diagnóstico Tributário**: Comparação entre regimes (Simples, Presumido, Real). Alerta de economia potencial se Lucro Real < Margem Presumida.
 - **DSCR / Cobertura de Juros**: EBIT ÷ Juros financeiros. < 1,5x = risco de breach.
 - **NCG**: Necessidade de Capital de Giro = Contas a Receber + Estoque − Fornecedores.
 - **Gap de Capital de Giro**: NCG − Capital de Giro disponível. Positivo = aperto operacional.
