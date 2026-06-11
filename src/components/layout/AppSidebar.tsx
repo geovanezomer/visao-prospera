@@ -130,13 +130,13 @@ export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSideba
             </SidebarMenuButton>
           </SidebarMenuItem>
           {user && (
-            <div className="mt-2 flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:hidden">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-accent text-xs font-medium">
-                {user.displayName?.charAt(0) || "U"}
+            <div className="mt-2 flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:hidden border-t border-sidebar-border/30 pt-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                {user.displayName?.charAt(0).toUpperCase() || "U"}
               </div>
               <div className="flex flex-col overflow-hidden">
-                <span className="truncate text-xs font-medium">{user.displayName}</span>
-                <span className="truncate text-[10px] text-muted-foreground">{user.email}</span>
+                <span className="truncate text-xs font-semibold leading-none">{user.displayName}</span>
+                <span className="mt-1 truncate text-[10px] text-muted-foreground leading-none">{user.email}</span>
               </div>
             </div>
           )}
