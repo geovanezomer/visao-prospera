@@ -148,6 +148,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
         <CostTable
           lines={byCat("fixo")}
           receitaBrutaAnual={receitaBrutaAnual}
+          regime={state.tax.regime}
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
@@ -166,6 +167,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
         <CostTable
           lines={byCat("variavel")}
           receitaBrutaAnual={receitaBrutaAnual}
+          regime={state.tax.regime}
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
@@ -184,6 +186,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
         <CostTable
           lines={byCat("financeiro")}
           receitaBrutaAnual={receitaBrutaAnual}
+          regime={state.tax.regime}
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
