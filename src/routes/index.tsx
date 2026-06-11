@@ -113,7 +113,7 @@ function SimulaPro() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-x-hidden overflow-y-auto">
             <div className="mx-auto h-full max-w-[1600px] p-4 sm:p-6">
               {activeTab === "ai" ? (
                 <AIView 
