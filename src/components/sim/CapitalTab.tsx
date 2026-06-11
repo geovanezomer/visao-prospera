@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { AppState, CapexAtivacao } from "@/lib/finance/types";
-import { fmtBRL } from "@/lib/finance/format";
+import { fmtBRL, fmtNum } from "@/lib/finance/format";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Lightbulb, X, TrendingUp, TrendingDown, Wallet, Landmark, Coins, Settings2 } from "lucide-react";
+import { Plus, Trash2, Lightbulb, X, TrendingUp, TrendingDown, Wallet, Landmark, Coins, Settings2, ArrowRight } from "lucide-react";
 import { MoneyInput, NumInput, PctInput, SectionTitle, StatCard, HelpTip } from "./primitives";
 
 const INTRO_KEY = "gzf_capital_intro_dismissed_v1";
@@ -54,13 +54,45 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
           hint={{ description: "Dias entre pagar fornecedores e receber dos clientes. Quanto MAIOR, mais capital de giro a empresa precisa imobilizar.", formula: "PMR + PME − PMP" }}
           sub={ind.cicloFinanceiro > 60 ? "Ciclo longo — pressiona o caixa" : ind.cicloFinanceiro > 30 ? "Ciclo moderado" : "Ciclo curto — bom para o caixa"}
         />
-        <StatCard
-          label="Necessidade de Capital de Giro"
-          value={fmtBRL(ind.ncg)}
-          tone="warn"
-          hint={{ description: "Dinheiro que a operação consome permanentemente para girar. Quando Contas a Receber/Fornecedores estão zerados, é estimada via PMR/PMP sobre receita bruta e CPV — pode divergir 30-40% do real se você tem mix de à vista/a prazo. Preencha os saldos médios para precisão.", formula: "CR + Estoques − Fornecedores" }}
-          sub="O quanto o ciclo 'come' de caixa todo dia"
-        />
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 shadow-sm ring-1 ring-primary/10">
+          <div className="flex items-center justify-between gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+            <span>Necessidade de Capital de Giro (NCG)</span>
+            <HelpTip text="Dinheiro consumido pela operação. Reflete a defasagem entre recebimento de clientes e pagamento de fornecedores/estoque." formula="Contas a Receber + Estoques − Fornecedores" />
+          </div>
+          <div className="mono mt-2 text-2xl font-bold text-foreground">{fmtBRL(ind.ncg)}</div>
+          <div className="mt-3 flex flex-col gap-2 rounded border border-primary/20 bg-background/40 p-2">
+            <div className="flex items-center justify-between text-[9px] uppercase tracking-tighter text-muted-foreground">
+              <span>Alavancas de Valor</span>
+              <span className="font-semibold text-primary">Impacto Estimado</span>
+            </div>
+            <div className="flex items-center justify-between gap-2 border-t border-primary/10 pt-1.5">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-foreground">PMR: {state.revenue.pmr} dias</span>
+                <span className="text-[8px] text-muted-foreground italic">Reduzir PMR libera caixa</span>
+              </div>
+              <ArrowRight className="h-3 w-3 text-primary/40" />
+              <div className="text-right">
+                <div className="mono text-[11px] font-bold text-pos">
+                  {fmtBRL(sum(dre.receitaBruta) / 360)}
+                </div>
+                <div className="text-[8px] text-muted-foreground">por dia salvo</div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-2 border-t border-primary/10 pt-1.5">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-medium text-foreground">PMP: {state.revenue.pmp} dias</span>
+                <span className="text-[8px] text-muted-foreground italic">Alongar PMP economiza giro</span>
+              </div>
+              <ArrowRight className="h-3 w-3 text-primary/40" />
+              <div className="text-right">
+                <div className="mono text-[11px] font-bold text-pos">
+                  {fmtBRL(sum(dre.cpv) / 360)}
+                </div>
+                <div className="text-[8px] text-muted-foreground">por dia estendido</div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div className="rounded-lg border border-border/60 bg-card/60 p-4">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
             Capital de Giro Disponível
