@@ -31,6 +31,14 @@ interface AppSidebarProps {
 export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSidebarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { setOpenMobile } = useSidebar();
+
+  useEffect(() => {
+    const handleClose = () => setOpenMobile(false);
+    document.addEventListener('close-mobile-sidebar', handleClose);
+    return () => document.removeEventListener('close-mobile-sidebar', handleClose);
+  }, [setOpenMobile]);
+
 
   const businessIcon = 
     state.businessType === "industria" ? <Factory className="h-4 w-4" /> : 
