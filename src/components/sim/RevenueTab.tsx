@@ -136,7 +136,11 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         return { ...s, revenue: { ...s.revenue, inadimplencia: fill12(pct) } };
       });
     } else if (row.kind === "deducao" && row.dedId) {
-      updateDed(row.dedId, row.label, (d) => ({ ...d, valores: fill12(safe) }));
+      if (row.dedId === "pdd_rec") {
+        update((s) => ({ ...s, revenue: { ...s.revenue, pddReversaoMensal: fill12(safe) } }));
+      } else {
+        updateDed(row.dedId, row.label, (d) => ({ ...d, valores: fill12(safe) }));
+      }
     } else if (row.kind === "financeira" && row.finId) {
       updateFin(row.finId, row.label, (d) => ({ ...d, valores: fill12(safe) }));
     }
