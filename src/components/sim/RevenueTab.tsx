@@ -215,6 +215,16 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
         hint="Receita Bruta e deduções (em R$). Use o toggle de Modo para aplicar o mesmo valor em todos os meses."
         accentClass="border-l-[color:var(--success)]"
       >
+        <div className="flex items-center gap-2 px-4 py-2 bg-accent/20 rounded-md mb-4 mx-2">
+          <label className="text-[11px] text-muted-foreground flex items-center gap-2 cursor-pointer">
+            <Switch
+              checked={usaPDD}
+              onCheckedChange={(v) => update((s) => ({ ...s, revenue: { ...s.revenue, inadimplenciaComoPDD: v } }))}
+            />
+            Contabilizar inadimplência como PDD (Despesa Operacional)
+            <HelpTip text="CPC 47 / IFRS 15: Inadimplência esperada pode ser tratada como PDD ao invés de dedução direta de receita. Isso evita redução da base de cálculo de impostos sobre faturamento (PIS/COFINS/ISS) e é o padrão em empresas maiores." />
+          </label>
+        </div>
         <RevenueTable
           rows={rows}
           brutaAnual={brutaAnual}
