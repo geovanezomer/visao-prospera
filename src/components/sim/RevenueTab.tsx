@@ -1,6 +1,6 @@
 import { AppState, RevenueDeducao } from "@/lib/finance/types";
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/lib/finance/format";
-import { MoneyInput, StatCard, SectionTitle } from "./primitives";
+import { MoneyInput, StatCard, SectionTitle, HelpTip } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { PrazoTable } from "./PrazoTable";
 
