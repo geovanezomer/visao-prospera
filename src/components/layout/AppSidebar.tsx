@@ -13,13 +13,16 @@ import {
 } from "@/components/ui/sidebar";
 import { useEffect } from "react";
 
-import { Activity, LogOut, Building2, Factory, Store, Briefcase } from "lucide-react";
+import { Activity, LogOut, Building2, Factory, Store, Briefcase, ChevronDown } from "lucide-react";
 import { NAV_ITEMS } from "./nav-config";
 import { TabKey, BusinessType } from "@/lib/finance/types";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "@tanstack/react-router";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
+
 
 interface AppSidebarProps {
   activeTab: TabKey | "ai";
