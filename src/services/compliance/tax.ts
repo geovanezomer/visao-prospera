@@ -35,13 +35,14 @@ export function taxAuditToMarkdown(state: AppState): string {
   const { dre } = buildDRE(state, state.tax.regime);
   const llAnual = sum(dre.lucroLiquido);
   const regimes = compareRegimes(state);
+  const currentRegime = state.tax.regime;
   
   let md = `## Diagnóstico Tributário Detalhado\n\n`;
-  md += `- **Regime Atual:** ${state.tax.regime.toUpperCase()}\n`;
+  md += `- **Regime Atual:** ${currentRegime.toUpperCase()}\n`;
   md += `- **Faturamento (RBT12):** ${fmtBRL(rbAnual)}\n`;
   md += `- **Lucro Líquido Real:** ${fmtBRL(llAnual)}\n\n`;
 
-  const savings = regimes[state.tax.regime].annual - Math.min(regimes.simples.annual, regimes.presumido.annual, regimes.real.annual);
+  const savings = regimes[currentRegime].annual - Math.min(regimes.simples.annual, regimes.presumido.annual, regimes.real.annual);
 
   md += `### 🔍 Análise de Oportunidades\n`;
   
