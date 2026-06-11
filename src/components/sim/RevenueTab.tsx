@@ -32,15 +32,19 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
   const descDed = findDed("desc_incond") ?? { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true };
   const abatDed = findDed("abatimentos") ?? { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true };
 
-  const liquidas = r.bruta.map((b, i) =>
-    Math.max(0, b - inadimpBRL[i] - (descDed.valores[i] || 0) - (abatDed.valores[i] || 0))
-  );
+  const usaPDD = !!r.inadimplenciaComoPDD;
+  const liquidas = r.bruta.map((b, i) => {
+    const dedNormal = (descDed.valores[i] || 0) + (abatDed.valores[i] || 0);
+    // Se PDD, a inadimplência não reduz a Receita Líquida (vira despesa operacional na DRE)
+    const inad = usaPDD ? 0 : inadimpBRL[i];
+    return Math.max(0, b - inad - dedNormal);
+  });
 
   const brutaAnual = sum(r.bruta);
   const inadimpAnual = sum(inadimpBRL);
   const descAnual = sum(descDed.valores);
   const abatAnual = sum(abatDed.valores);
-  const deducoesAnual = inadimpAnual + descAnual + abatAnual;
+  const deducoesAnual = (usaPDD ? 0 : inadimpAnual) + descAnual + abatAnual;
   const liqAnual = sum(liquidas);
 
   const monthsWithRevenue = liquidas.filter((_, i) => r.bruta[i] > 0).length;
@@ -54,6 +58,19 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
     { id: "row_desc", kind: "deducao", dedId: "desc_incond", label: "Descontos Incondicionais", values: descDed.valores, fixed: !!descDed.fixed, tone: "neg" },
     { id: "row_abat", kind: "deducao", dedId: "abatimentos", label: "Abatimentos", values: abatDed.valores, fixed: !!abatDed.fixed, tone: "neg" },
   ];
+
+  if (usaPDD) {
+    const pddRec = r.pddReversaoMensal ?? fill12(0);
+    rows.push({
+      id: "row_pdd_rec",
+      kind: "deducao", // Reuso do kind deducao para simplificar update
+      dedId: "pdd_rec",
+      label: "Recuperação de Inadimplência (+)",
+      values: pddRec,
+      fixed: false, // Pode ser customizado
+      tone: "pos"
+    });
+  }
 
   const updateDed = (id: string, label: string, mut: (d: RevenueDeducao) => RevenueDeducao) =>
     update((s) => {
