@@ -51,7 +51,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
 
   // Linhas detalhadas para o accordion — apenas as preenchidas (anual > 0)
   const linhasPreenchidas = state.costs
-    .map((c) => ({ label: c.label, category: c.category, values: monthValues(c) }))
+    .map((c) => ({ label: c.label, category: c.category, values: monthValues(c, state.tax.regime) }))
     .filter((x) => sum(x.values) > 0);
   const grupos: { id: CostCategory; titulo: string }[] = [
     { id: "fixo", titulo: "Custos e Despesas Fixas" },

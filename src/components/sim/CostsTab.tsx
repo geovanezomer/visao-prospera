@@ -298,7 +298,7 @@ function CostTable({
         </thead>
         <tbody>
           {lines.map((c) => {
-            const vals = monthValues(c);
+            const vals = monthValues(c, state.tax.regime);
             const anual = sum(vals);
             const pct = receitaBrutaAnual > 0 ? anual / receitaBrutaAnual : 0;
             return (
