@@ -50,6 +50,18 @@ export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSideba
     <Briefcase className="h-4 w-4" />;
 
   const groups = ["Entradas", "Configurações", "Análises", "Estratégia"] as const;
+  const [openGroups, setOpenGroups] = useState<string[]>([]);
+
+  // Sincroniza o acordeon com a aba ativa no mobile
+  useEffect(() => {
+    const activeItem = NAV_ITEMS.find(item => item.value === activeTab);
+    if (activeItem && window.innerWidth < 768) {
+      setOpenGroups([activeItem.group]);
+    } else if (window.innerWidth >= 768) {
+      setOpenGroups([...groups]);
+    }
+  }, [activeTab]);
+
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
