@@ -107,6 +107,7 @@ export const DEFAULT_STATE: AppState = {
     pmrFixo: true,
     pmpFixo: true,
     inadimplenciaComoPDD: false,
+    pddReversaoMensal: fill12(0),
     deducoes: [
       { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true },
       { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true },
