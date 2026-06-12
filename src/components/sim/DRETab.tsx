@@ -46,12 +46,19 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
   const descIncond = dedById("desc_incond")?.valores ?? Array(12).fill(0);
   const abatimentos = dedById("abatimentos")?.valores ?? Array(12).fill(0);
 
-  // Total de Custos (mensal) — soma de custos operacionais + financeiros + CPV
-  const totalCustos = dre.cpv.map((c, i) => c + dre.despesasOperacionais[i] + dre.custosFinanceirosTotal[i]);
+  // Total de Custos Operacionais (sem CPV — CPV vai como linha própria antes do Lucro Bruto)
+  const totalCustos = dre.despesasOperacionais.map((c, i) => c + dre.custosFinanceirosTotal[i]);
 
   // Linhas detalhadas para o accordion — apenas as preenchidas (anual > 0)
+  // Exclui custo_vendas/direto_venda (que vão no CPV/CMV/CSP)
   const linhasPreenchidas = state.costs
+    .filter((c) => c.category !== "custo_vendas" && c.category !== "direto_venda")
     .map((c) => ({ label: c.label, category: c.category, values: monthValues(c, state.tax.regime) }))
+    .filter((x) => sum(x.values) > 0);
+  // Linhas detalhadas do CPV/CMV/CSP
+  const linhasCpv = state.costs
+    .filter((c) => c.category === "custo_vendas" || c.category === "direto_venda")
+    .map((c) => ({ label: c.label, values: monthValues(c, state.tax.regime) }))
     .filter((x) => sum(x.values) > 0);
   const grupos: { id: CostCategory; titulo: string }[] = [
     { id: "fixo", titulo: "Custos e Despesas Fixas" },
@@ -60,10 +67,12 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
   ];
 
   const [openCustos, setOpenCustos] = useState(false);
+  const [openCpv, setOpenCpv] = useState(false);
 
   const rows: Array<
     | { kind: "linha"; k: string; v: number[]; strong?: boolean; tone?: "pos" | "neg"; margin?: number; highlight?: boolean }
     | { kind: "custos" }
+    | { kind: "cpv" }
   > = [
     { kind: "linha", k: "(+) Receita Operacional Bruta", v: dre.receitaBruta, strong: true, tone: "pos" },
     { kind: "linha", k: "(−) Devoluções e Cancelamentos", v: dre.deducoesInadimplencia.map((x) => -x), tone: "neg" },
@@ -71,12 +80,15 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
     { kind: "linha", k: "(−) Abatimentos", v: abatimentos.map((x) => -x), tone: "neg" },
     { kind: "linha", k: regime === "simples" ? "(−) DAS Simples Nacional" : "(−) Impostos sobre Vendas (PIS/COFINS/ICMS/ISS/CBS/IBS)", v: dre.impostosVendas.map((x) => -x), tone: "neg" },
     { kind: "linha", k: "(=) Receita Operacional Líquida", v: dre.receitaLiquida, strong: true },
+    { kind: "cpv" },
+    { kind: "linha", k: "(=) Lucro Bruto", v: dre.lucroBruto, strong: true, tone: sum(dre.lucroBruto) >= 0 ? "pos" : "neg" },
     { kind: "custos" },
     { kind: "linha", k: "(−) Depreciação & Amortização", v: dre.depreciacao.map((x) => -x), tone: "neg" },
     { kind: "linha", k: "(=) LAIR — Lucro Antes do IR", v: dre.lair, strong: true },
     { kind: "linha", k: "(−) IRPJ + CSLL", v: dre.impostos.map((x) => -x), tone: "neg" },
     { kind: "linha", k: "(=) LUCRO LÍQUIDO", v: dre.lucroLiquido, strong: true, tone: ll >= 0 ? "pos" : "neg", margin: ind.margemLiquida, highlight: true },
   ];
+
 
 
   // chart data
@@ -239,6 +251,52 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                     </Fragment>
                   );
                 }
+                if (row.kind === "cpv") {
+                  const total = sum(dre.cpv);
+                  const pct = rb > 0 ? total / rb : 0;
+                  return (
+                    <Fragment key={idx}>
+                      <tr className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20" onClick={() => setOpenCpv((v) => !v)}>
+                        <td className="px-3 py-2 text-[10px] sm:text-xs font-semibold truncate">
+                          <span className="inline-flex items-center gap-1">
+                            <ChevronRight className={`h-3 w-3 shrink-0 transition-transform ${openCpv ? "rotate-90" : ""}`} />
+                            (−) {cvLabel.long}
+                          </span>
+                        </td>
+                        {view === "mensal" && dre.cpv.map((v, i) => (
+                          <td key={i} className={`num px-2 py-2 text-right text-xs ${mesesCriticosIdx.has(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} text-neg`}>
+                            {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
+                          </td>
+                        ))}
+                        <td className="num px-4 py-2 text-right font-semibold text-neg">− {fmtBRL(total)}</td>
+                        <td className="num px-3 py-2 text-right text-xs text-muted-foreground">{fmtPct(pct)}</td>
+                      </tr>
+                      {openCpv && linhasCpv.map((l, li) => {
+                        const lTotal = sum(l.values);
+                        return (
+                          <tr key={`cpv_${li}`} className="border-t border-border/20">
+                            <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">{l.label}</td>
+                            {view === "mensal" && l.values.map((v, i) => (
+                              <td key={i} className="num px-2 py-1.5 text-right text-xs text-muted-foreground">
+                                {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
+                              </td>
+                            ))}
+                            <td className="num px-4 py-1.5 text-right text-xs text-neg">− {fmtBRL(lTotal)}</td>
+                            <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">{fmtPct(rb > 0 ? lTotal / rb : 0)}</td>
+                          </tr>
+                        );
+                      })}
+                      {openCpv && linhasCpv.length === 0 && (
+                        <tr className="border-t border-border/20">
+                          <td colSpan={view === "mensal" ? 15 : 3} className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground">
+                            Nenhum item classificado como {cvLabel.short} ainda. Cadastre custos na categoria "Custo de Vendas" na aba Custos.
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                }
+
                 const total = sum(row.v);
                 const pct = rb > 0 ? total / rb : 0;
                 const toneCls = row.tone === "pos" ? "text-pos" : row.tone === "neg" ? "text-neg" : "";
