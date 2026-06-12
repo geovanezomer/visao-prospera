@@ -1,4 +1,4 @@
-import { AppState, BusinessType, CostLine } from "./types";
+import { AppState, BusinessType, CostLine, COST_VENDAS_TABLE_CONFIG } from "./types";
 import { fill12 } from "./format";
 
 const baseRevenue = [13000, 14000, 15500, 15000, 16000, 17000, 15500, 14500, 16000, 17500, 18500, 21000];
@@ -20,10 +20,9 @@ const line = (
   ...extras,
 });
 
-function costVendasFor(_business: BusinessType): CostLine[] {
-  // Custo de Vendas (CPV/CMV/CSP) foi descontinuado como seção própria.
-  // Linhas de custo direto agora aparecem em Variáveis (toggle Fixo desligado, valor 0).
-  return [];
+function costVendasFor(business: BusinessType): CostLine[] {
+  const config = COST_VENDAS_TABLE_CONFIG[business];
+  return config.map(c => line(c.id, c.label, "direto_venda", 0, c.subcategory, { fixed: false, values: fill12(0) }));
 }
 
 function fixosFor(business: BusinessType): CostLine[] {
@@ -202,13 +201,15 @@ export function migrateState(s: AppState): AppState {
   };
   let costs = s.costs ? s.costs.map(migrateCostLine).filter((c) => !REMOVED_IDS.has(c.id)) : DEFAULT_STATE.costs;
   costs = costs.map((c) => (RELABEL[c.id] ? { ...c, label: RELABEL[c.id] } : c));
-  // Todas as categorias custo_vendas viraram variável (CPV/CMV/CSP descontinuado como seção)
+  // Todas as categorias custo_vendas ou direto_venda são processadas
   costs = costs.map((c) => {
-    if (c.category !== "custo_vendas") return c;
-    if (s.businessType === "servicos" && c.subcategory === "mao_obra_direta") {
+    if (c.category !== "custo_vendas" && c.category !== "direto_venda") return c;
+    if (s.businessType === "servicos" && c.subcategory === "mao_obra_direta" && c.category !== "direto_venda") {
       return { ...c, category: "fixo", subcategory: undefined, label: c.label.includes("MOD") || c.label.toLowerCase().includes("salário") ? "Mão de Obra Direta (Terceirização)" : c.label };
     }
-    return { ...c, category: "variavel", subcategory: undefined };
+    // Se for migração e ainda estiver como custo_vendas, move para direto_venda
+    if (c.category === "custo_vendas") return { ...c, category: "direto_venda" };
+    return c;
   });
   // Garante presença das rubricas novas
   const ensure = (id: string, label: string, category: CostLine["category"], extras?: Partial<CostLine>) => {
