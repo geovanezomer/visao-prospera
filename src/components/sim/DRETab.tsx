@@ -264,7 +264,9 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
         </div>
       </div>
 
-    \\u003c/div\\u003e\\n  );\\n}
+    </div>
+  );
+}
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
