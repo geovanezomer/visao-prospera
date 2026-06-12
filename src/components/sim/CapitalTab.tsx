@@ -47,7 +47,7 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-4">
         <div className="rounded-lg border border-border/60 bg-card/60 p-4">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
             Capital de Giro Disponível
@@ -56,13 +56,11 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
           <MoneyInput value={c.capitalGiroDisponivel} onChange={(n) => set({ capitalGiroDisponivel: n })} className="mt-2 text-lg" />
           <div className="mt-1 text-[10px] text-muted-foreground">Quanto a empresa tem livre para girar</div>
         </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="md:col-span-2">
+        <div className="md:col-span-3">
           <NCGExplanationCard ncg={ind.ncg} pmr={state.revenue.pmr} pmp={state.revenue.pmp} receitaDia={sum(dre.receitaBruta)/360} cpvDia={sum(dre.cpv)/360} />
         </div>
       </div>
+
 
       <div className="space-y-4">
         <CapitalStructureCard
