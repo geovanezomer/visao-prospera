@@ -11,17 +11,14 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 
-import { Activity, LogOut, Building2, Factory, Store, Briefcase, ChevronDown } from "lucide-react";
+import { Activity, LogOut, Building2, Factory, Store, Briefcase } from "lucide-react";
 import { NAV_ITEMS } from "./nav-config";
 import { TabKey, BusinessType } from "@/lib/finance/types";
 import { useAuth } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "@tanstack/react-router";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 
 
@@ -34,7 +31,6 @@ interface AppSidebarProps {
 
 export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSidebarProps) {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const { setOpenMobile } = useSidebar();
 
   useEffect(() => {
@@ -48,19 +44,6 @@ export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSideba
     state.businessType === "industria" ? <Factory className="h-4 w-4" /> : 
     state.businessType === "comercio" ? <Store className="h-4 w-4" /> : 
     <Briefcase className="h-4 w-4" />;
-
-  const groups = ["Entradas", "Configurações", "Análises", "Estratégia"] as const;
-  const [openGroups, setOpenGroups] = useState<string[]>([]);
-
-  // Sincroniza o acordeon com a aba ativa no mobile
-  useEffect(() => {
-    const activeItem = NAV_ITEMS.find(item => item.value === activeTab);
-    if (activeItem && window.innerWidth < 768) {
-      setOpenGroups([activeItem.group]);
-    } else if (window.innerWidth >= 768) {
-      setOpenGroups([...groups]);
-    }
-  }, [activeTab]);
 
 
   return (
@@ -81,63 +64,31 @@ export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSideba
       </SidebarHeader>
 
       <SidebarContent className="py-2">
-        <Accordion 
-          type="multiple" 
-          value={openGroups} 
-          onValueChange={setOpenGroups}
-          className="w-full border-none"
-        >
-
-          {groups.map((group) => (
-            <AccordionItem key={group} value={group} className="border-none px-2">
-              <AccordionTrigger className="py-2 hover:no-underline group-data-[collapsible=icon]:hidden">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-                  {group}
-                </span>
-              </AccordionTrigger>
-              <AccordionContent className="pb-2">
-                <SidebarMenu>
-                  {NAV_ITEMS.filter((item) => item.group === group).map((item) => (
-                    <SidebarMenuItem key={item.value}>
-                      <SidebarMenuButton
-                        isActive={activeTab === item.value}
-                        onClick={() => {
-                          setActiveTab(item.value);
-                          setOpenMobile(false);
-                        }}
-                        tooltip={item.title}
-                        className={cn(
-                          "transition-colors",
-                          activeTab === item.value 
-                            ? "bg-primary/10 text-primary font-medium" 
-                            : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        )}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </AccordionContent>
-              
-              {/* Fallback para quando o sidebar está colapsado (ícone apenas) */}
-              <div className="hidden group-data-[collapsible=icon]:block space-y-1">
-                {NAV_ITEMS.filter((item) => item.group === group).map((item) => (
-                  <SidebarMenuItem key={item.value} className="list-none">
-                    <SidebarMenuButton
-                      isActive={activeTab === item.value}
-                      onClick={() => setActiveTab(item.value)}
-                      tooltip={item.title}
-                    >
-                      <item.icon className="h-4 w-4" />
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </div>
-            </AccordionItem>
-          ))}
-        </Accordion>
+        <SidebarGroup>
+          <SidebarMenu>
+            {NAV_ITEMS.map((item) => (
+              <SidebarMenuItem key={item.value}>
+                <SidebarMenuButton
+                  isActive={activeTab === item.value}
+                  onClick={() => {
+                    setActiveTab(item.value);
+                    setOpenMobile(false);
+                  }}
+                  tooltip={item.title}
+                  className={cn(
+                    "transition-colors",
+                    activeTab === item.value 
+                      ? "bg-primary/10 text-primary font-medium" 
+                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.title}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
 
 
         <SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
@@ -174,9 +125,8 @@ export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSideba
           <SidebarMenuItem>
             <SidebarMenuButton 
               className="w-full justify-start gap-3"
-              onClick={async () => { 
-                await logout(); 
-                navigate({ to: "/login" }); 
+              onClick={() => { 
+                logout(); 
               }}
             >
               <LogOut className="h-4 w-4" />
