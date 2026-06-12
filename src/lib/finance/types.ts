@@ -11,14 +11,15 @@ export type TabKey =
   | "caixa"        // 5. Fluxo de Caixa (DFC) + burn/runway
   | "governanca"   // 6. Análise estratégica (concentração, governança, competitiva, regulatória)
   | "dre"          // 7. DRE consolidada
-  | "resultados"   // 8. Diagnóstico + cenários
-  | "simulador"    // 9. Simulador de alavancas
-  | "valuation";   // 10. Valuation (múltiplos + DCF)
+  | "indicadores"  // 8. Indicadores financeiros e gráficos
+  | "resultados"   // 9. Diagnóstico + cenários
+  | "simulador"    // 10. Simulador de alavancas
+  | "valuation";   // 11. Valuation (múltiplos + DCF)
 
 /** Lista canônica das abas, em ordem. Use em vez de hardcodar strings. */
 export const TAB_KEYS: readonly TabKey[] = [
   "receitas", "custos", "capital", "tributos", "caixa",
-  "governanca", "dre", "resultados", "simulador", "valuation",
+  "governanca", "dre", "indicadores", "resultados", "simulador", "valuation",
 ] as const;
 
 
