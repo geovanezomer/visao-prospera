@@ -493,7 +493,7 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     const v = effectiveMonthValues(c, regime);
     despesasPorCategoria[c.label] = v;
     for (let i = 0; i < 12; i++) {
-      if (c.category === "custo_vendas") { cpv[i] += v[i]; custosVariaveis[i] += v[i]; }
+      if (c.category === "custo_vendas" || c.category === "direto_venda") { cpv[i] += v[i]; custosVariaveis[i] += v[i]; }
       else if (c.category === "variavel") { despOp[i] += v[i]; custosVariaveis[i] += v[i]; }
       else { despOp[i] += v[i]; custosFixos[i] += v[i]; }
     }
