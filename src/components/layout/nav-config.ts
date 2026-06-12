@@ -27,8 +27,6 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Regime Tributário", icon: Gavel, value: "tributos" },
   { title: "Fluxo de Caixa", icon: Presentation, value: "caixa" },
   { title: "Governança", icon: ShieldCheck, value: "governanca" },
-  { title: "DRE", icon: FileSpreadsheet, value: "dre" },
-  { title: "Indicadores", icon: Activity, value: "indicadores" },
   { title: "Diagnóstico", icon: Search, value: "resultados" },
   { title: "Simulador", icon: Wand2, value: "simulador" },
   { title: "Valuation", icon: LayoutDashboard, value: "valuation" },
