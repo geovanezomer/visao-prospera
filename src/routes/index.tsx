@@ -14,7 +14,6 @@ import { DiagnosisTab } from "@/components/sim/DiagnosisTab";
 import { StrategicTab } from "@/components/sim/StrategicTab";
 import { SimulatorTab } from "@/components/sim/SimulatorTab";
 import { ValuationTab } from "@/components/sim/ValuationTab";
-import { IndicatorsTab } from "@/components/sim/IndicatorsTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
 import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
 import { AIFab } from "@/components/ai/AIFab";
@@ -165,7 +164,6 @@ function SimulaPro() {
                   {activeTab === "caixa" && <CashflowTab state={state} update={update} />}
                   {activeTab === "governanca" && <StrategicTab state={state} update={update} />}
                   {activeTab === "dre" && <DRETab state={state} update={update} />}
-                  {activeTab === "indicadores" && <IndicatorsTab state={state} />}
                   {activeTab === "resultados" && <DiagnosisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} />}
                   {activeTab === "simulador" && <SimulatorTab state={state} apply={update} saveScenario={save} params={simParams} setParams={setSimParams} />}
                   {activeTab === "valuation" && <ValuationTab baseState={state} simulatedState={simulatedState} simActive={simActive} />}

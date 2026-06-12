@@ -21,7 +21,6 @@ export type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { title: "DRE", icon: FileSpreadsheet, value: "dre" },
-  { title: "Indicadores", icon: LayoutDashboard, value: "indicadores" },
   { title: "Receitas", icon: Receipt, value: "receitas" },
   { title: "Despesas", icon: PiggyBank, value: "custos" },
   { title: "Capital", icon: Wallet, value: "capital" },
