@@ -142,11 +142,10 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
         <StatCard label="Faturamento" value={fmtBRL(rb)} tone="pos" hint={{ description: "Faturamento bruto anual.", formula: "Σ Receita Bruta" }} />
         <StatCard label="EBITDA" value={fmtBRL(sum(dre.ebitda))} sub={`${ind.margemEbitda.toFixed(1)}%`} tone={sum(dre.ebitda) >= 0 ? "pos" : "neg"} hint={{ description: "Caixa operacional.", formula: "Lucro Bruto − Despesas" }} />
         <StatCard label="Lucro Líq." value={fmtBRL(ll)} sub={`${ind.margemLiquida.toFixed(1)}%`} tone={ll >= 0 ? "pos" : "neg"} hint={{ description: "Resultado final.", formula: "LAIR − Impostos" }} />
-        <StatCard label="Conversão" value={`${ind.conversaoEbitdaCaixa.toFixed(1)}%`} sub="EBITDA → Caixa" tone={ind.conversaoEbitdaCaixa >= 70 ? "pos" : ind.conversaoEbitdaCaixa >= 40 ? "default" : "neg"} hint={{ description: "Qualidade do Caixa: mede quanto do EBITDA efetivamente vira caixa livre.", formula: "FCF ÷ EBITDA × 100" }} />
         <StatCard label="Impostos" value={fmtPct(tax.effective / 100)} tone="warn" sub={`${fmtBRLCompact(tax.annual)}`} hint={{ description: "Carga tributária.", formula: "Impostos ÷ Receita Bruta" }} />
       </div>
 
