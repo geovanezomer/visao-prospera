@@ -573,13 +573,21 @@ function BalanceSheetCard({
           </div>
 
           {hasInconsistencia && (
-            <div className="mt-3 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>
-                PL informado (<strong>{fmtBRL(plInformado)}</strong>) difere do calculado
-                (<strong>{fmtBRL(plCalculado)}</strong>). Diferença de <strong>{fmtBRL(diff)}</strong>.
-                Revise os valores ou ajuste o PL.
-              </span>
+            <div className="mt-3 flex flex-col gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-[11px] text-warning">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>
+                  O PL informado (<strong>{fmtBRL(plInformado)}</strong>) não bate com a diferença entre 
+                  Ativos e Dívidas (<strong>{fmtBRL(plCalculado)}</strong>). 
+                  Diferença: <strong>{fmtBRL(diff)}</strong>.
+                </span>
+              </div>
+              <button
+                onClick={() => onChange({ patrimonioLiquido: plCalculado })}
+                className="self-start rounded bg-warning/20 px-2 py-1 text-[10px] font-bold uppercase hover:bg-warning/30 transition-colors"
+              >
+                Ajustar PL para {fmtBRL(plCalculado)}
+              </button>
             </div>
           )}
         </div>
