@@ -27,7 +27,7 @@ export type BusinessType = "servicos" | "comercio" | "industria";
 export type TaxRegime = "simples" | "presumido" | "real";
 export type SimplesAnexo = "I" | "II" | "III" | "IV" | "V";
 
-export type CostCategory = "custo_vendas" | "fixo" | "variavel" | "financeiro";
+export type CostCategory = "custo_vendas" | "fixo" | "variavel" | "financeiro" | "direto_venda";
 export type CostSubcategory = string;
 
 export interface RevenueDeducao {
@@ -304,6 +304,24 @@ export const SUBCATEGORIES: Record<BusinessType, { id: string; label: string }[]
     { id: "mao_obra_direta", label: "Mão de obra direta (técnica)" },
     { id: "insumos_servico", label: "Insumos de serviço" },
     { id: "terceirizacao", label: "Terceirização / Subcontratação" },
+  ],
+};
+
+export const COST_VENDAS_TABLE_CONFIG: Record<BusinessType, { id: string; label: string; subcategory: string }[]> = {
+  industria: [
+    { id: "mp", label: "Matéria-prima", subcategory: "materia_prima" },
+    { id: "mod", label: "Mão de obra direta", subcategory: "materia_prima" },
+    { id: "insumos_ind", label: "Insumos Industriais", subcategory: "cif" },
+  ],
+  comercio: [
+    { id: "merc", label: "Mercadoria para revenda", subcategory: "mercadoria" },
+    { id: "frete", label: "Frete sobre compras", subcategory: "frete_compra" },
+    { id: "emb", label: "Embalagem", subcategory: "embalagem" },
+  ],
+  servicos: [
+    { id: "mod_serv", label: "Mão de obra direta (técnica)", subcategory: "mao_obra_direta" },
+    { id: "insumos_serv", label: "Insumos de serviço", subcategory: "insumos_servico" },
+    { id: "subcon", label: "Subcontratação", subcategory: "terceirizacao" },
   ],
 };
 

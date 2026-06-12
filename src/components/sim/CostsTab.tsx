@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AppState, CostCategory, CostLine, TaxRegime } from "@/lib/finance/types";
 import { fill12, fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { fixedCostBase, monthValues } from "@/lib/finance/calculations";
+import { COST_VENDAS_LABEL, COST_VENDAS_TABLE_CONFIG } from "@/lib/finance/types";
 import { MoneyInput, SectionTitle, StatCard } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -95,7 +96,8 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
   const totFix = sum(byCat("fixo").flatMap((c) => monthValues(c, state.tax.regime)));
   const totVar = sum(byCat("variavel").flatMap((c) => monthValues(c, state.tax.regime)));
   const totFin = sum(byCat("financeiro").flatMap((c) => monthValues(c, state.tax.regime)));
-  const totGeral = totCV + totFix + totVar + totFin;
+  const totCPV = sum([...byCat("custo_vendas"), ...byCat("direto_venda")].flatMap((c) => monthValues(c, state.tax.regime)));
+  const totGeral = totCPV + totFix + totVar + totFin;
 
   const pctRec = (v: number) => (receitaBrutaAnual > 0 ? v / receitaBrutaAnual : 0);
 
@@ -109,6 +111,13 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
       )}
       {/* Sumário */}
       <div className="grid gap-3 md:grid-cols-4">
+        <StatCard
+          label={COST_VENDAS_LABEL[state.businessType].short}
+          value={fmtBRL(totCPV)}
+          tone="neg"
+          sub={fmtPct(pctRec(totCPV)) + " da receita"}
+          hint={COST_VENDAS_LABEL[state.businessType].long}
+        />
         <StatCard
           label="Custos Fixos"
           value={fmtBRL(totFix)}
@@ -137,6 +146,25 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
 
 
 
+
+      {/* Custos Diretos de Venda (CMV/CPV/CSP) */}
+      <SectionBlock
+        title={COST_VENDAS_LABEL[state.businessType].long}
+        hint={`Custos diretamente ligados à ${state.businessType === "servicos" ? "prestação do serviço" : "produção ou revenda"}.`}
+        accentClass="border-l-primary"
+        onAdd={() => addLine("direto_venda")}
+      >
+        <CostTable
+          lines={[...byCat("custo_vendas"), ...byCat("direto_venda")]}
+          receitaBrutaAnual={receitaBrutaAnual}
+          regime={state.tax.regime}
+          onMonth={setMonth}
+          onAllMonths={setAllMonths}
+          onFixed={setFixed}
+          onLabel={setLabel}
+          onRemove={removeLine}
+        />
+      </SectionBlock>
 
       {/* Custos Fixos */}
       <SectionBlock
