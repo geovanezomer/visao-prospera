@@ -17,7 +17,6 @@ export type NavItem = {
   title: string;
   icon: any;
   value: TabKey | "ai";
-  group: "Entradas" | "Configurações" | "Análises" | "Estratégia";
 };
 
 export const NAV_ITEMS: NavItem[] = [
