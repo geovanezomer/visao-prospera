@@ -47,52 +47,7 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard
-          label="Ciclo Financeiro"
-          value={`${ind.cicloFinanceiro} dias`}
-          hint={{ description: "Dias entre pagar fornecedores e receber dos clientes. Quanto MAIOR, mais capital de giro a empresa precisa imobilizar.", formula: "PMR + PME − PMP" }}
-          sub={ind.cicloFinanceiro > 60 ? "Ciclo longo — pressiona o caixa" : ind.cicloFinanceiro > 30 ? "Ciclo moderado" : "Ciclo curto — bom para o caixa"}
-        />
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 shadow-sm ring-1 ring-primary/10">
-          <div className="flex items-center justify-between gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary">
-            <span>Necessidade de Capital de Giro (NCG)</span>
-            <HelpTip text="Dinheiro consumido pela operação. Reflete a defasagem entre recebimento de clientes e pagamento de fornecedores/estoque." formula="Contas a Receber + Estoques − Fornecedores" />
-          </div>
-          <div className="mono mt-2 text-2xl font-bold text-foreground">{fmtBRL(ind.ncg)}</div>
-          <div className="mt-3 flex flex-col gap-2 rounded border border-primary/20 bg-background/40 p-2">
-            <div className="flex items-center justify-between text-[9px] uppercase tracking-tighter text-muted-foreground">
-              <span>Alavancas de Valor</span>
-              <span className="font-semibold text-primary">Impacto Estimado</span>
-            </div>
-            <div className="flex items-center justify-between gap-2 border-t border-primary/10 pt-1.5">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-foreground">PMR: {state.revenue.pmr} dias</span>
-                <span className="text-[8px] text-muted-foreground italic">Reduzir PMR libera caixa</span>
-              </div>
-              <ArrowRight className="h-3 w-3 text-primary/40" />
-              <div className="text-right">
-                <div className="mono text-[11px] font-bold text-pos">
-                  {fmtBRL(sum(dre.receitaBruta) / 360)}
-                </div>
-                <div className="text-[8px] text-muted-foreground">por dia salvo</div>
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-2 border-t border-primary/10 pt-1.5">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium text-foreground">PMP: {state.revenue.pmp} dias</span>
-                <span className="text-[8px] text-muted-foreground italic">Alongar PMP economiza giro</span>
-              </div>
-              <ArrowRight className="h-3 w-3 text-primary/40" />
-              <div className="text-right">
-                <div className="mono text-[11px] font-bold text-pos">
-                  {fmtBRL(sum(dre.cpv) / 360)}
-                </div>
-                <div className="text-[8px] text-muted-foreground">por dia estendido</div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-lg border border-border/60 bg-card/60 p-4">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
             Capital de Giro Disponível
@@ -101,21 +56,9 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
           <MoneyInput value={c.capitalGiroDisponivel} onChange={(n) => set({ capitalGiroDisponivel: n })} className="mt-2 text-lg" />
           <div className="mt-1 text-[10px] text-muted-foreground">Quanto a empresa tem livre para girar</div>
         </div>
-        <StatCard
-          label="Gap de Capital de Giro"
-          value={fmtBRL(ind.gapCapitalGiro)}
-          tone={ind.gapCapitalGiro > 0 ? "neg" : "pos"}
-          sub={
-            ind.gapCapitalGiro > 0
-              ? "Falta caixa: negocie prazos, antecipe recebíveis ou capte giro"
-              : "Folga: sobra para investir ou amortizar dívidas"
-          }
-          hint={{ description: "Diferença entre o que a operação precisa (NCG) e o que a empresa tem (CGD). Positivo = precisa de empréstimo de giro; Negativo = sobra caixa.", formula: "NCG − CGD" }}
-        />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <CashConversionCard ll={sum(dre.lucroLiquido)} fcf={ind.fcf} ebitda={sum(dre.ebitda)} />
+      <div className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
           <NCGExplanationCard ncg={ind.ncg} pmr={state.revenue.pmr} pmp={state.revenue.pmp} receitaDia={sum(dre.receitaBruta)/360} cpvDia={sum(dre.cpv)/360} />
         </div>
@@ -710,60 +653,6 @@ function CapexAtivacaoSection({
 }
 
 
-function CashConversionCard({ ll, fcf, ebitda }: { ll: number; fcf: number; ebitda: number }) {
-  const conversaoLL = ll > 0 ? (fcf / ll) * 100 : 0;
-  const conversaoEbitda = ebitda > 0 ? (fcf / ebitda) * 100 : 0;
-  const tone = conversaoLL >= 70 ? "pos" : conversaoLL >= 30 ? "default" : conversaoLL >= 0 ? "warn" : "neg";
-  const label = conversaoLL < 0 ? "Conversão Negativa" : `${conversaoLL.toFixed(1)}%`;
-
-  return (
-    <div className="rounded-lg border border-border/60 bg-card/60 p-5 flex flex-col justify-between">
-      <div>
-        <div className="flex items-center justify-between">
-          <SectionTitle hint="Mede quanto do lucro líquido contábil efetivamente sobra como caixa livre após todas as variações de capital de giro e impostos.">
-            Conversão de Caixa
-          </SectionTitle>
-          <div className={`mono text-xl font-bold ${tone === "pos" ? "text-pos" : tone === "warn" ? "text-warning" : tone === "neg" ? "text-neg" : ""}`}>
-            {label}
-          </div>
-        </div>
-        <div className="mt-4 space-y-3">
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">EBITDA (Gerencial)</span>
-            <span className="mono font-semibold">{fmtBRL(ebitda)}</span>
-          </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Lucro Líquido (Competência)</span>
-            <span className="mono font-semibold">{fmtBRL(ll)}</span>
-          </div>
-          <div className="flex justify-between text-xs border-t border-border/20 pt-2">
-            <span className="text-muted-foreground">Caixa Livre (FCF Proxy)</span>
-            <span className="mono font-semibold text-primary">{fmtBRL(fcf)}</span>
-          </div>
-        </div>
-      </div>
-      <div className="mt-4 pt-4 border-t border-border/40">
-        <div className="flex items-center justify-between mb-1.5">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Eficiência da Conversão</div>
-          <div className="text-[10px] font-bold text-primary">EBITDA → Caixa: {conversaoEbitda.toFixed(1)}%</div>
-        </div>
-        <div className="h-1.5 w-full rounded-full bg-muted/30 overflow-hidden">
-          <div 
-            className={`h-full transition-all ${conversaoLL >= 70 ? "bg-pos" : conversaoLL >= 30 ? "bg-primary" : "bg-warning"}`} 
-            style={{ width: `${Math.min(100, Math.max(0, conversaoLL))}%` }} 
-          />
-        </div>
-        <p className="mt-2 text-[10px] text-muted-foreground leading-tight">
-          {conversaoLL < 0 
-            ? "⚠ Alerta CFO: A empresa dá lucro no papel mas consome caixa na vida real. Perigo de insolvência."
-            : conversaoEbitda < 50 
-            ? `Baixa eficiência: ${(100 - conversaoEbitda).toFixed(1)}% do EBITDA está sendo consumido por NCG, Impostos ou Juros.`
-            : "Conversão saudável. O resultado operacional está se transformando em liquidez real."}
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function NCGExplanationCard({ ncg, pmr, pmp, receitaDia, cpvDia }: { ncg: number; pmr: number; pmp: number; receitaDia: number; cpvDia: number }) {
   return (
