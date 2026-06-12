@@ -19,7 +19,7 @@ export type TabKey =
 /** Lista canônica das abas, em ordem. Use em vez de hardcodar strings. */
 export const TAB_KEYS: readonly TabKey[] = [
   "receitas", "custos", "capital", "tributos", "caixa",
-  "governanca", "dre", "resultados", "simulador", "valuation",
+  "governanca", "dre", "indicadores", "resultados", "simulador", "valuation",
 ] as const;
 
 
