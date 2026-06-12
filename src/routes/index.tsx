@@ -14,6 +14,7 @@ import { DiagnosisTab } from "@/components/sim/DiagnosisTab";
 import { StrategicTab } from "@/components/sim/StrategicTab";
 import { SimulatorTab } from "@/components/sim/SimulatorTab";
 import { ValuationTab } from "@/components/sim/ValuationTab";
+import { IndicatorsTab } from "@/components/sim/IndicatorsTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
 import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
 import { AIFab } from "@/components/ai/AIFab";
