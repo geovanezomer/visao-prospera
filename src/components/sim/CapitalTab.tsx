@@ -413,56 +413,122 @@ function BalanceSheetCard({
   onChange: (patch: Partial<AppState["capital"]>) => void;
 }) {
   return (
-    <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-4">
-      <div>
+    <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
+      <div className="p-6 border-b border-border/60">
         <SectionTitle hint="Saldos do balanço usados para calcular liquidez, ROE, ROA e alavancagem. Tire da última DRE/Balancete da empresa.">
           Fotografia do balanço hoje
         </SectionTitle>
-        <div className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">Posição Patrimonial</div>
+        <div className="mt-1 text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Posição Patrimonial da Empresa</div>
+        <p className="mt-2 text-xs text-muted-foreground max-w-2xl">
+          Preencha os valores atuais da sua empresa. Se não tiver certeza de algum valor, use as dicas (ícone de interrogação) para entender onde buscar essa informação.
+        </p>
       </div>
 
-      <BalanceGroup
-        icon={<Coins className="h-3.5 w-3.5" />}
-        color="var(--success)"
-        title="O que a empresa TEM (Ativos)"
-        subtitle="Bens e direitos: caixa, estoques, contas a receber"
-      >
-        <Field label="Ativo Total" value={capital.ativoTotal} onChange={(n) => onChange({ ativoTotal: n })} hint="Soma de tudo que a empresa possui: caixa, estoques, máquinas, imóveis, contas a receber etc." />
-        <Field label="Disponibilidades (caixa)" value={capital.disponibilidades} onChange={(n) => onChange({ disponibilidades: n })} hint="Dinheiro em conta corrente, aplicações de liquidez imediata." />
-        <Field label="Estoques" value={capital.estoques} onChange={(n) => onChange({ estoques: n })} hint="Mercadorias, matéria-prima ou produtos acabados em estoque." />
-        <Field label="Ativo Circulante" value={capital.ativoCirculante} onChange={(n) => onChange({ ativoCirculante: n })} hint="Bens conversíveis em caixa em até 12 meses. Deixe 0 para o sistema estimar automaticamente." placeholder="0 = auto" />
-        <Field label="Contas a Receber" value={capital.contasReceber} onChange={(n) => onChange({ contasReceber: n })} hint="Saldo médio que clientes ainda devem. Deixe 0 para estimar via PMR." placeholder="0 = auto via PMR" />
-      </BalanceGroup>
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-border/60">
+        {/* Ativos */}
+        <BalanceGroup
+          icon={<Coins className="h-4 w-4" />}
+          color="var(--success)"
+          title="Ativos"
+          subtitle="Tudo o que a empresa TEM"
+        >
+          <Field 
+            label="Disponibilidades" 
+            value={capital.disponibilidades} 
+            onChange={(n) => onChange({ disponibilidades: n })} 
+            hint="Soma do saldo em todas as contas bancárias e dinheiro em caixa hoje." 
+            placeholder="Caixa e Bancos"
+          />
+          <Field 
+            label="Contas a Receber" 
+            value={capital.contasReceber} 
+            onChange={(n) => onChange({ contasReceber: n })} 
+            hint="Total que seus clientes já compraram mas ainda não pagaram." 
+            placeholder="0 = auto via PMR"
+          />
+          <Field 
+            label="Estoques" 
+            value={capital.estoques} 
+            onChange={(n) => onChange({ estoques: n })} 
+            hint="Valor total de mercadorias, insumos ou produtos parados no estoque." 
+          />
+          <Field 
+            label="Ativo Total" 
+            value={capital.ativoTotal} 
+            onChange={(n) => onChange({ ativoTotal: n })} 
+            hint="A soma de TUDO: caixa + receber + estoque + máquinas + imóveis + veículos." 
+            highlight
+          />
+        </BalanceGroup>
 
-      <BalanceGroup
-        icon={<Landmark className="h-3.5 w-3.5" />}
-        color="var(--destructive)"
-        title="O que a empresa DEVE (Passivos)"
-        subtitle="Obrigações com bancos, fornecedores e tributos"
-      >
-        <Field label="Dívida Onerosa (empréstimos)" value={capital.dividaOnerosa} onChange={(n) => onChange({ dividaOnerosa: n })} hint="Empréstimos e financiamentos com bancos que cobram juros. NÃO inclui fornecedores ou impostos parcelados sem juros." />
-        <Field label="Passivo Circulante" value={capital.passivoCirculante} onChange={(n) => onChange({ passivoCirculante: n })} hint="Obrigações a pagar em até 12 meses (fornecedores, salários, impostos, parcela de empréstimos). Deixe 0 para estimar." placeholder="0 = auto" />
-        <Field label="Fornecedores a Pagar" value={capital.fornecedores} onChange={(n) => onChange({ fornecedores: n })} hint="Saldo médio que a empresa deve a fornecedores. Deixe 0 para estimar via PMP." placeholder="0 = auto via PMP" />
-      </BalanceGroup>
+        {/* Passivos */}
+        <BalanceGroup
+          icon={<Landmark className="h-4 w-4" />}
+          color="var(--destructive)"
+          title="Passivos"
+          subtitle="Tudo o que a empresa DEVE"
+        >
+          <Field 
+            label="Fornecedores" 
+            value={capital.fornecedores} 
+            onChange={(n) => onChange({ fornecedores: n })} 
+            hint="Total de boletos e faturas de fornecedores que ainda vão vencer." 
+            placeholder="A Pagar"
+          />
+          <Field 
+            label="Empréstimos" 
+            value={capital.dividaOnerosa} 
+            onChange={(n) => onChange({ dividaOnerosa: n })} 
+            hint="Dívidas com bancos que cobram juros. Não inclua impostos ou fornecedores aqui." 
+            placeholder="Dívida Onerosa"
+          />
+          <Field 
+            label="Passivo Circulante" 
+            value={capital.passivoCirculante} 
+            onChange={(n) => onChange({ passivoCirculante: n })} 
+            hint="Soma de todas as contas a pagar nos próximos 12 meses (impostos, salários, aluguel, etc)." 
+          />
+        </BalanceGroup>
 
-      <BalanceGroup
-        icon={<Wallet className="h-3.5 w-3.5" />}
-        color="var(--primary)"
-        title="O que sobra para os sócios (Patrimônio)"
-        subtitle="Ativo − Passivo = riqueza líquida dos donos"
-      >
-        <Field label="Patrimônio Líquido" value={capital.patrimonioLiquido} onChange={(n) => onChange({ patrimonioLiquido: n })} hint="Capital social + reservas + lucros acumulados. É o que sobraria para os sócios se a empresa quitasse todas as dívidas hoje." />
-      </BalanceGroup>
+        {/* Patrimônio */}
+        <BalanceGroup
+          icon={<Wallet className="h-4 w-4" />}
+          color="var(--primary)"
+          title="Patrimônio"
+          subtitle="Riqueza dos sócios"
+        >
+          <Field 
+            label="Patrimônio Líquido" 
+            value={capital.patrimonioLiquido} 
+            onChange={(n) => onChange({ patrimonioLiquido: n })} 
+            hint="Capital Social + Reservas + Lucros Acumulados. É o valor 'contábil' da empresa para os donos." 
+            highlight
+          />
+        </BalanceGroup>
 
-      <BalanceGroup
-        icon={<Settings2 className="h-3.5 w-3.5" />}
-        color="var(--muted-foreground)"
-        title="Outros lançamentos mensais"
-        subtitle="Entram na DRE todo mês"
-      >
-        <Field label="Depreciação mensal" value={capital.depreciacaoMensal} onChange={(n) => onChange({ depreciacaoMensal: n })} hint="Perda contábil de valor de máquinas, equipamentos e imóveis no mês. Não sai do caixa, mas reduz o lucro tributável." />
-        <Field label="Juros recebidos / mês" value={capital.jurosRecebidosMensal} onChange={(n) => onChange({ jurosRecebidosMensal: n })} hint="Rendimentos médios de aplicações financeiras no mês." />
-      </BalanceGroup>
+        {/* Outros */}
+        <BalanceGroup
+          icon={<Settings2 className="h-4 w-4" />}
+          color="var(--muted-foreground)"
+          title="Outros Dados"
+          subtitle="Ajustes mensais"
+        >
+          <Field 
+            label="Depreciação" 
+            value={capital.depreciacaoMensal} 
+            onChange={(n) => onChange({ depreciacaoMensal: n })} 
+            hint="Quanto seus ativos (máquinas, carros, etc) perdem de valor por mês." 
+            placeholder="Perda mensal"
+          />
+          <Field 
+            label="Juros Recebidos" 
+            value={capital.jurosRecebidosMensal} 
+            onChange={(n) => onChange({ jurosRecebidosMensal: n })} 
+            hint="Quanto a empresa ganha de juros em aplicações financeiras por mês." 
+            placeholder="Rendimentos"
+          />
+        </BalanceGroup>
+      </div>
     </div>
   );
 }
@@ -481,23 +547,20 @@ function BalanceGroup({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className="rounded-md border bg-background/30 p-3"
-      style={{ borderColor: `color-mix(in oklab, ${color} 30%, var(--border))` }}
-    >
-      <div className="mb-2 flex items-start gap-2">
-        <span
-          className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-          style={{ background: `color-mix(in oklab, ${color} 20%, transparent)`, color }}
+    <div className="p-5 flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <div
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+          style={{ background: `color-mix(in oklab, ${color} 15%, transparent)`, color }}
         >
           {icon}
-        </span>
+        </div>
         <div>
-          <div className="text-xs font-semibold" style={{ color }}>{title}</div>
-          <div className="text-[10px] text-muted-foreground">{subtitle}</div>
+          <div className="text-sm font-bold tracking-tight" style={{ color }}>{title}</div>
+          <div className="text-[10px] text-muted-foreground font-medium uppercase">{subtitle}</div>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">{children}</div>
+      <div className="flex flex-col gap-3.5">{children}</div>
     </div>
   );
 }
@@ -508,21 +571,33 @@ function Field({
   onChange,
   hint,
   placeholder,
+  highlight,
 }: {
   label: string;
   value: number;
   onChange: (n: number) => void;
   hint: string;
   placeholder?: string;
+  highlight?: boolean;
 }) {
   return (
-    <div>
-      <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+    <div className={highlight ? "rounded-lg bg-muted/30 p-2 -mx-2" : ""}>
+      <label className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground mb-1.5">
         {label}
         <HelpTip text={hint} />
       </label>
-      <MoneyInput value={value} onChange={onChange} />
-      {placeholder && <div className="mt-0.5 text-[9.5px] text-muted-foreground/70">{placeholder}</div>}
+      <div className="relative group">
+        <MoneyInput 
+          value={value} 
+          onChange={onChange} 
+          className={`h-9 text-sm transition-all focus:ring-1 ${highlight ? "font-semibold border-primary/30" : ""}`}
+        />
+        {placeholder && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[10px] text-muted-foreground/40 italic hidden sm:block group-focus-within:opacity-0 transition-opacity">
+            {placeholder}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
