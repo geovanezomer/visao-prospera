@@ -224,12 +224,12 @@ export function StatCard({
   const toneClass =
     tone === "pos" ? "text-pos" : tone === "neg" ? "text-neg" : tone === "warn" ? "text-[var(--warning)]" : "text-foreground";
   return (
-    <div className="flex flex-col gap-1 rounded-lg border border-border/60 bg-card/60 p-3 transition-colors hover:border-border/80 sm:p-4">
-      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[11px]">
+    <div className="flex flex-col gap-0.5 rounded-lg border border-border/60 bg-card/60 p-2.5 transition-colors hover:border-border/80">
+      <div className="flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[10px]">
         {label}
         {renderHint(hint)}
       </div>
-      <div className={cn("mono mt-1 text-base font-semibold leading-tight sm:mt-2 sm:text-xl md:text-2xl break-words", toneClass)}>
+      <div className={cn("mono mt-0.5 text-sm font-semibold leading-tight sm:text-lg lg:text-xl break-words", toneClass)}>
         {value}
       </div>
       {sub && <div className="mt-1 text-[10px] text-muted-foreground sm:text-xs">{sub}</div>}
