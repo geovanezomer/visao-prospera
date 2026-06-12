@@ -181,8 +181,7 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
-
+      <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <StatCard
           label="Receita Bruta Anual"
           value={fmtBRL(brutaAnual)}
@@ -208,6 +207,12 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
           value={fmtBRL(mediaYTD)}
           sub={`${monthsWithRevenue} ${monthsWithRevenue === 1 ? "mês" : "meses"} com receita`}
           hint="Média mensal da Receita Operacional considerando apenas meses com receita bruta lançada."
+        />
+        <StatCard
+          label="Total de Receitas"
+          value={fmtBRL(brutaAnual + (r.receitasFinanceiras?.reduce((acc, f) => acc + sum(f.valores), 0) || 0))}
+          tone="pos"
+          hint="Soma da Receita Operacional Bruta com as Receitas Financeiras."
         />
       </div>
 
