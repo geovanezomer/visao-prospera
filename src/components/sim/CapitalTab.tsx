@@ -625,9 +625,17 @@ function BalanceSheetCard({
         </div>
 
         {hasInconsistencia ? (
-          <div className="mt-3 flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
-            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-            Há inconsistência no balanço. Volte e revise os valores.
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              Há inconsistência no balanço (Ativos ≠ Dívidas + PL).
+            </div>
+            <button 
+              onClick={() => onChange({ patrimonioLiquido: plCalculado })}
+              className="text-[10px] font-bold underline decoration-warning/30 underline-offset-2 hover:text-warning/80"
+            >
+              Corrigir agora
+            </button>
           </div>
         ) : capital.ativoTotal > 0 ? (
           <div className="mt-3 flex items-center gap-2 rounded-md border border-pos/40 bg-pos/10 p-2 text-[11px] text-pos">
