@@ -415,20 +415,24 @@ function BalanceSheetCard({
   onChange: (patch: Partial<AppState["capital"]>) => void;
 }) {
   // ---------- Cálculos auxiliares ----------
-  // Total de ativos circulantes informados (somatório das 3 linhas)
-  const ativoCircCalc =
-    (capital.disponibilidades || 0) + (capital.estoques || 0) + (capital.contasReceber || 0);
-
-  // Patrimônio líquido calculado pela equação fundamental:
-  // PL = Ativo Total − (Dívida Onerosa + Fornecedores + outros passivos circulantes)
-  const totalPassivos = (capital.dividaOnerosa || 0) + (capital.passivoCirculante || 0);
+  // ---------- Cálculos auxiliares ----------
+  // Ativos Circulantes (curto prazo)
+  const ativoCircCalc = (capital.disponibilidades || 0) + (capital.estoques || 0) + (capital.contasReceber || 0);
+  
+  // Total de Dívidas (Passivos)
+  // Somamos Dívida Onerosa (bancos) + Fornecedores + Outros passivos circulantes se houver
+  const totalPassivos = (capital.dividaOnerosa || 0) + (capital.fornecedores || 0) + (capital.passivoCirculante || 0);
+  
+  // Patrimônio líquido calculado pela equação fundamental: PL = Ativos − Passivos
   const plCalculado = (capital.ativoTotal || 0) - totalPassivos;
   const plInformado = capital.patrimonioLiquido || 0;
+  
   const diff = Math.abs(plInformado - plCalculado);
+  // Consideramos inconsistência se a diferença for maior que 2% do ativo ou R$ 100
   const hasInconsistencia = capital.ativoTotal > 0 && diff > Math.max(100, capital.ativoTotal * 0.02);
 
   // KPIs do resumo
-  const capitalCirculante = ativoCircCalc - (capital.passivoCirculante || capital.fornecedores || 0);
+  const capitalCirculante = ativoCircCalc - (capital.fornecedores || capital.passivoCirculante || 0);
   const dpl = plInformado > 0 ? (capital.dividaOnerosa || 0) / plInformado : 0;
   const solvencia = totalPassivos > 0 ? (capital.ativoTotal || 0) / totalPassivos : 0;
 
@@ -569,13 +573,21 @@ function BalanceSheetCard({
           </div>
 
           {hasInconsistencia && (
-            <div className="mt-3 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>
-                PL informado (<strong>{fmtBRL(plInformado)}</strong>) difere do calculado
-                (<strong>{fmtBRL(plCalculado)}</strong>). Diferença de <strong>{fmtBRL(diff)}</strong>.
-                Revise os valores ou ajuste o PL.
-              </span>
+            <div className="mt-3 flex flex-col gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-[11px] text-warning">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>
+                  O PL informado (<strong>{fmtBRL(plInformado)}</strong>) não bate com a diferença entre 
+                  Ativos e Dívidas (<strong>{fmtBRL(plCalculado)}</strong>). 
+                  Diferença: <strong>{fmtBRL(diff)}</strong>.
+                </span>
+              </div>
+              <button
+                onClick={() => onChange({ patrimonioLiquido: plCalculado })}
+                className="self-start rounded bg-warning/20 px-2 py-1 text-[10px] font-bold uppercase hover:bg-warning/30 transition-colors"
+              >
+                Ajustar PL para {fmtBRL(plCalculado)}
+              </button>
             </div>
           )}
         </div>
@@ -613,9 +625,17 @@ function BalanceSheetCard({
         </div>
 
         {hasInconsistencia ? (
-          <div className="mt-3 flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
-            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-            Há inconsistência no balanço. Volte e revise os valores.
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              Há inconsistência no balanço (Ativos ≠ Dívidas + PL).
+            </div>
+            <button 
+              onClick={() => onChange({ patrimonioLiquido: plCalculado })}
+              className="text-[10px] font-bold underline decoration-warning/30 underline-offset-2 hover:text-warning/80"
+            >
+              Corrigir agora
+            </button>
           </div>
         ) : capital.ativoTotal > 0 ? (
           <div className="mt-3 flex items-center gap-2 rounded-md border border-pos/40 bg-pos/10 p-2 text-[11px] text-pos">
