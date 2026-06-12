@@ -415,20 +415,24 @@ function BalanceSheetCard({
   onChange: (patch: Partial<AppState["capital"]>) => void;
 }) {
   // ---------- Cálculos auxiliares ----------
-  // Total de ativos circulantes informados (somatório das 3 linhas)
-  const ativoCircCalc =
-    (capital.disponibilidades || 0) + (capital.estoques || 0) + (capital.contasReceber || 0);
-
-  // Patrimônio líquido calculado pela equação fundamental:
-  // PL = Ativo Total − (Dívida Onerosa + Fornecedores + outros passivos circulantes)
-  const totalPassivos = (capital.dividaOnerosa || 0) + (capital.passivoCirculante || 0);
+  // ---------- Cálculos auxiliares ----------
+  // Ativos Circulantes (curto prazo)
+  const ativoCircCalc = (capital.disponibilidades || 0) + (capital.estoques || 0) + (capital.contasReceber || 0);
+  
+  // Total de Dívidas (Passivos)
+  // Somamos Dívida Onerosa (bancos) + Fornecedores + Outros passivos circulantes se houver
+  const totalPassivos = (capital.dividaOnerosa || 0) + (capital.fornecedores || 0) + (capital.passivoCirculante || 0);
+  
+  // Patrimônio líquido calculado pela equação fundamental: PL = Ativos − Passivos
   const plCalculado = (capital.ativoTotal || 0) - totalPassivos;
   const plInformado = capital.patrimonioLiquido || 0;
+  
   const diff = Math.abs(plInformado - plCalculado);
+  // Consideramos inconsistência se a diferença for maior que 2% do ativo ou R$ 100
   const hasInconsistencia = capital.ativoTotal > 0 && diff > Math.max(100, capital.ativoTotal * 0.02);
 
   // KPIs do resumo
-  const capitalCirculante = ativoCircCalc - (capital.passivoCirculante || capital.fornecedores || 0);
+  const capitalCirculante = ativoCircCalc - (capital.fornecedores || capital.passivoCirculante || 0);
   const dpl = plInformado > 0 ? (capital.dividaOnerosa || 0) / plInformado : 0;
   const solvencia = totalPassivos > 0 ? (capital.ativoTotal || 0) / totalPassivos : 0;
 
