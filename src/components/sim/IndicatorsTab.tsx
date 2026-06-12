@@ -2,7 +2,8 @@ import { AppState } from "@/lib/finance/types";
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { HelpTip, SectionTitle } from "./primitives";
+import { HelpTip, SectionTitle, StatCard } from "./primitives";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
 const CHART_COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15", "#F472B6", "#34D399", "#A78BFA", "#FB923C"];
 
@@ -44,6 +45,34 @@ export function IndicatorsTab({ state }: { state: AppState }) {
 
   return (
     <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-4">
+        <StatCard
+          label="Ciclo Financeiro"
+          value={`${ind.cicloFinanceiro} dias`}
+          hint={{ description: "Dias entre pagar fornecedores e receber dos clientes. Quanto MAIOR, mais capital de giro a empresa precisa imobilizar.", formula: "PMR + PME − PMP" }}
+          sub={ind.cicloFinanceiro > 60 ? "Ciclo longo — pressiona o caixa" : ind.cicloFinanceiro > 30 ? "Ciclo moderado" : "Ciclo curto — bom para o caixa"}
+        />
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 shadow-sm ring-1 ring-primary/10">
+          <div className="flex items-center justify-between gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+            <span>Necessidade de Capital de Giro (NCG)</span>
+            <HelpTip text="Dinheiro consumido pela operação. Reflete a defasagem entre recebimento de clientes e pagamento de fornecedores/estoque." formula="Contas a Receber + Estoques − Fornecedores" />
+          </div>
+          <div className="mono mt-2 text-2xl font-bold text-foreground">{fmtBRL(ind.ncg)}</div>
+        </div>
+        <StatCard
+          label="Gap de Capital de Giro"
+          value={fmtBRL(ind.gapCapitalGiro)}
+          tone={ind.gapCapitalGiro > 0 ? "neg" : "pos"}
+          sub={
+            ind.gapCapitalGiro > 0
+              ? "Falta caixa: negocie prazos, antecipe recebíveis ou capte giro"
+              : "Folga: sobra para investir ou amortizar dívidas"
+          }
+          hint={{ description: "Diferença entre o que a operação precisa (NCG) e o que a empresa tem (CGD). Positivo = precisa de empréstimo de giro; Negativo = sobra caixa.", formula: "NCG − CGD" }}
+        />
+        <CashConversionSmall ebitda={sum(dre.ebitda)} fcf={ind.fcf} />
+      </div>
+
       <div className="rounded-lg border border-border/60 bg-card/40 p-5">
         <SectionTitle hint={{ description: "Métricas-chave que sintetizam a saúde financeira da empresa. Cada card traz a definição e a fórmula usada no cálculo." }}>
           Indicadores financeiros
@@ -149,6 +178,27 @@ function Ind({ label, v, desc, formula, tone }: { label: string; v: string; desc
         {label} {desc && <HelpTip text={desc} formula={formula} />}
       </div>
       <div className={`mono mt-1 text-lg font-semibold ${cls}`}>{v}</div>
+    </div>
+  );
+}
+
+function CashConversionSmall({ ebitda, fcf }: { ebitda: number; fcf: number }) {
+  const conversaoEbitda = ebitda > 0 ? (fcf / ebitda) * 100 : 0;
+  const tone = conversaoEbitda >= 70 ? "pos" : conversaoEbitda >= 40 ? "default" : "neg";
+  
+  return (
+    <div className="rounded-lg border border-border/60 bg-card/60 p-4">
+      <div className="flex items-center justify-between gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <span>Conversão de Caixa</span>
+        <HelpTip text="Mede quanto do EBITDA efetivamente vira caixa livre (FCF)." formula="FCF ÷ EBITDA × 100" />
+      </div>
+      <div className={`mono mt-2 text-2xl font-bold ${tone === "pos" ? "text-pos" : tone === "neg" ? "text-neg" : "text-foreground"}`}>
+        {conversaoEbitda.toFixed(1)}%
+      </div>
+      <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+        {conversaoEbitda >= 70 ? <TrendingUp className="h-3 w-3 text-pos" /> : <TrendingDown className="h-3 w-3 text-neg" />}
+        EBITDA → Caixa
+      </div>
     </div>
   );
 }
