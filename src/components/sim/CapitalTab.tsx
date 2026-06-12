@@ -54,7 +54,7 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
             <HelpTip text="Recursos próprios que a empresa tem disponíveis para financiar o ciclo operacional (capital permanente menos ativo permanente)." formula="(PL + Exigível a LP) − Ativo Permanente" />
           </div>
           <MoneyInput value={c.capitalGiroDisponivel} onChange={(n) => set({ capitalGiroDisponivel: n })} className="mt-2 text-lg" />
-          <div className="mt-1 text-[10px] text-muted-foreground">Quanto a empresa tem livre para girar</div>
+          <div className="mt-1 text-[10px] text-muted-foreground">Qual é a disponibilidade de dinheiro imediata da empresa para giro, somando caixa e bancos</div>
         </div>
         <div className="md:col-span-3">
           <NCGExplanationCard ncg={ind.ncg} pmr={state.revenue.pmr} pmp={state.revenue.pmp} receitaDia={sum(dre.receitaBruta)/360} cpvDia={sum(dre.cpv)/360} />
