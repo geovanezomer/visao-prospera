@@ -283,9 +283,9 @@ export interface Scenario {
 }
 
 export const COST_VENDAS_LABEL: Record<BusinessType, { short: string; long: string }> = {
-  industria: { short: "CPV", long: "Custo do Produto Vendido" },
-  comercio: { short: "CMV", long: "Custo da Mercadoria Vendida" },
-  servicos: { short: "CSP", long: "Custo do Serviço Prestado" },
+  industria: { short: "Custo Produto Vendido", long: "Custo do Produto Vendido" },
+  comercio: { short: "Custo Mercadoria Vendida", long: "Custo da Mercadoria Vendida" },
+  servicos: { short: "Custo Serviço Prestado", long: "Custo do Serviço Prestado" },
 };
 
 export const SUBCATEGORIES: Record<BusinessType, { id: string; label: string }[]> = {

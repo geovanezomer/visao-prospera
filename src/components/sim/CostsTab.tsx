@@ -110,7 +110,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
         </div>
       )}
       {/* Sumário */}
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-2 lg:grid-cols-5 md:grid-cols-3 sm:grid-cols-2">
         <StatCard
           label={COST_VENDAS_LABEL[state.businessType].short}
           value={fmtBRL(totCPV)}
