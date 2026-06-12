@@ -4,7 +4,7 @@ import { fmtBRL, fmtNum, sum } from "@/lib/finance/format";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Lightbulb, X, TrendingUp, TrendingDown, Wallet, Landmark, Coins, Settings2, ArrowRight } from "lucide-react";
+import { Plus, Trash2, Lightbulb, X, TrendingUp, TrendingDown, Wallet, Landmark, Coins, Settings2, ArrowRight, Banknote, Package, Users, AlertTriangle, CheckCircle2, Camera } from "lucide-react";
 import { MoneyInput, NumInput, PctInput, SectionTitle, StatCard, HelpTip } from "./primitives";
 
 const INTRO_KEY = "gzf_capital_intro_dismissed_v1";
@@ -403,7 +403,9 @@ function MeterBar({ label, subLabel, value, pct, color }: { label: string; subLa
 
 
 // =================================================================
-// Balance sheet card — grouped
+// Balance sheet card — redesenhado para pequenos empresários
+// Layout: 3 blocos empilhados (Ativos · Dívidas+PL · Resumo) +
+// um bloco extra para lançamentos mensais (depreciação / juros recebidos).
 // =================================================================
 function BalanceSheetCard({
   capital,
@@ -412,69 +414,267 @@ function BalanceSheetCard({
   capital: AppState["capital"];
   onChange: (patch: Partial<AppState["capital"]>) => void;
 }) {
+  // ---------- Cálculos auxiliares ----------
+  // Total de ativos circulantes informados (somatório das 3 linhas)
+  const ativoCircCalc =
+    (capital.disponibilidades || 0) + (capital.estoques || 0) + (capital.contasReceber || 0);
+
+  // Patrimônio líquido calculado pela equação fundamental:
+  // PL = Ativo Total − (Dívida Onerosa + Fornecedores + outros passivos circulantes)
+  const totalPassivos = (capital.dividaOnerosa || 0) + (capital.passivoCirculante || 0);
+  const plCalculado = (capital.ativoTotal || 0) - totalPassivos;
+  const plInformado = capital.patrimonioLiquido || 0;
+  const diff = Math.abs(plInformado - plCalculado);
+  const hasInconsistencia = capital.ativoTotal > 0 && diff > Math.max(100, capital.ativoTotal * 0.02);
+
+  // KPIs do resumo
+  const capitalCirculante = ativoCircCalc - (capital.passivoCirculante || capital.fornecedores || 0);
+  const dpl = plInformado > 0 ? (capital.dividaOnerosa || 0) / plInformado : 0;
+  const solvencia = totalPassivos > 0 ? (capital.ativoTotal || 0) / totalPassivos : 0;
+
   return (
-    <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-4">
-      <div>
-        <SectionTitle hint="Saldos do balanço usados para calcular liquidez, ROE, ROA e alavancagem. Tire da última DRE/Balancete da empresa.">
-          Fotografia do balanço hoje
-        </SectionTitle>
-        <div className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">Posição Patrimonial</div>
+    <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
+      {/* Cabeçalho */}
+      <div className="flex items-start gap-3">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
+          <Camera className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <SectionTitle hint="Saldos atuais do balanço — preencha com os últimos números do seu contador. Geram liquidez, ROE, ROA e alavancagem.">
+            Fotografia do balanço hoje
+          </SectionTitle>
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
+            Em 3 passos rápidos você descreve a posição patrimonial da empresa.
+          </div>
+        </div>
       </div>
 
-      <BalanceGroup
-        icon={<Coins className="h-3.5 w-3.5" />}
+      {/* ============================================================
+          PASSO 1 — ATIVOS (o que a empresa tem)
+         ============================================================ */}
+      <StepCard
+        step={1}
         color="var(--success)"
-        title="O que a empresa TEM (Ativos)"
-        subtitle="Bens e direitos: caixa, estoques, contas a receber"
+        title="Dinheiro e bens da empresa"
+        subtitle="Tudo que pode virar caixa em algum momento"
       >
-        <Field label="Ativo Total" value={capital.ativoTotal} onChange={(n) => onChange({ ativoTotal: n })} hint="Soma de tudo que a empresa possui: caixa, estoques, máquinas, imóveis, contas a receber etc." />
-        <Field label="Disponibilidades (caixa)" value={capital.disponibilidades} onChange={(n) => onChange({ disponibilidades: n })} hint="Dinheiro em conta corrente, aplicações de liquidez imediata." />
-        <Field label="Estoques" value={capital.estoques} onChange={(n) => onChange({ estoques: n })} hint="Mercadorias, matéria-prima ou produtos acabados em estoque." />
-        <Field label="Ativo Circulante" value={capital.ativoCirculante} onChange={(n) => onChange({ ativoCirculante: n })} hint="Bens conversíveis em caixa em até 12 meses. Deixe 0 para o sistema estimar automaticamente." placeholder="0 = auto" />
-        <Field label="Contas a Receber" value={capital.contasReceber} onChange={(n) => onChange({ contasReceber: n })} hint="Saldo médio que clientes ainda devem. Deixe 0 para estimar via PMR." placeholder="0 = auto via PMR" />
-      </BalanceGroup>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <SimpleField
+            icon={<Banknote className="h-4 w-4" />}
+            label="Dinheiro em caixa e bancos"
+            hint="Saldo em conta corrente + aplicações de liquidez imediata."
+            value={capital.disponibilidades}
+            onChange={(n) => onChange({ disponibilidades: n })}
+          />
+          <SimpleField
+            icon={<Package className="h-4 w-4" />}
+            label="Estoque (produtos parados)"
+            hint="Mercadorias, matéria-prima ou produtos acabados no estoque."
+            value={capital.estoques}
+            onChange={(n) => onChange({ estoques: n })}
+          />
+          <SimpleField
+            icon={<Users className="h-4 w-4" />}
+            label="Clientes que te devem"
+            hint="Saldo médio a receber de clientes. Deixe 0 para calcular automaticamente pelo prazo médio (PMR)."
+            value={capital.contasReceber}
+            onChange={(n) => onChange({ contasReceber: n })}
+            placeholder="0 = calculado pelo prazo médio"
+          />
+          <SimpleField
+            icon={<Coins className="h-4 w-4" />}
+            label="Total de ativos da empresa"
+            hint="Soma de TUDO que a empresa possui: caixa, estoques, máquinas, imóveis, veículos, contas a receber etc."
+            value={capital.ativoTotal}
+            onChange={(n) => onChange({ ativoTotal: n })}
+            emphasis
+          />
+        </div>
 
-      <BalanceGroup
-        icon={<Landmark className="h-3.5 w-3.5" />}
+        {/* Mini-resumo do ativo circulante */}
+        <div className="mt-3 grid grid-cols-4 overflow-hidden rounded-md border border-border/40 text-center text-[10px]">
+          <MiniStat label="Caixa/bancos" value={fmtBRL(capital.disponibilidades)} />
+          <MiniStat label="Estoque" value={fmtBRL(capital.estoques)} />
+          <MiniStat label="A receber" value={fmtBRL(capital.contasReceber)} />
+          <MiniStat label="Ativo circulante" value={fmtBRL(ativoCircCalc)} highlight />
+        </div>
+      </StepCard>
+
+      {/* ============================================================
+          PASSO 2 — DÍVIDAS + PATRIMÔNIO LÍQUIDO
+         ============================================================ */}
+      <StepCard
+        step={2}
         color="var(--destructive)"
-        title="O que a empresa DEVE (Passivos)"
-        subtitle="Obrigações com bancos, fornecedores e tributos"
+        title="O que a empresa deve"
+        subtitle="Dívidas, contas e obrigações"
       >
-        <Field label="Dívida Onerosa (empréstimos)" value={capital.dividaOnerosa} onChange={(n) => onChange({ dividaOnerosa: n })} hint="Empréstimos e financiamentos com bancos que cobram juros. NÃO inclui fornecedores ou impostos parcelados sem juros." />
-        <Field label="Passivo Circulante" value={capital.passivoCirculante} onChange={(n) => onChange({ passivoCirculante: n })} hint="Obrigações a pagar em até 12 meses (fornecedores, salários, impostos, parcela de empréstimos). Deixe 0 para estimar." placeholder="0 = auto" />
-        <Field label="Fornecedores a Pagar" value={capital.fornecedores} onChange={(n) => onChange({ fornecedores: n })} hint="Saldo médio que a empresa deve a fornecedores. Deixe 0 para estimar via PMP." placeholder="0 = auto via PMP" />
-      </BalanceGroup>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <SimpleField
+            icon={<Landmark className="h-4 w-4" />}
+            label="Empréstimos e financiamentos"
+            hint="Dívida com bancos que cobram juros. NÃO inclua fornecedores ou impostos parcelados sem juros."
+            value={capital.dividaOnerosa}
+            onChange={(n) => onChange({ dividaOnerosa: n })}
+          />
+          <SimpleField
+            icon={<Users className="h-4 w-4" />}
+            label="Fornecedores a pagar"
+            hint="Saldo médio que a empresa deve a fornecedores. Deixe 0 para calcular pelo prazo médio (PMP)."
+            value={capital.fornecedores}
+            onChange={(n) => onChange({ fornecedores: n })}
+            placeholder="0 = calculado pelo prazo médio"
+          />
+        </div>
 
-      <BalanceGroup
-        icon={<Wallet className="h-3.5 w-3.5" />}
+        {/* Sub-bloco: Patrimônio Líquido */}
+        <div className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-4">
+          <div className="flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-primary" />
+            <div className="text-xs font-semibold text-primary">O que sobra para os sócios</div>
+          </div>
+          <div className="mt-0.5 text-[10px] text-muted-foreground">
+            Patrimônio líquido = ativos − dívidas
+          </div>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <SimpleField
+              icon={<Wallet className="h-4 w-4" />}
+              label="Patrimônio líquido dos sócios"
+              hint="Capital social + reservas + lucros acumulados. O que sobraria para os sócios se a empresa quitasse todas as dívidas hoje."
+              value={capital.patrimonioLiquido}
+              onChange={(n) => onChange({ patrimonioLiquido: n })}
+              emphasis
+            />
+
+            {/* Equação visual: Ativo − Dívidas = PL calculado */}
+            <div className="flex items-center justify-around rounded-md border border-border/40 bg-background/40 p-3 text-center">
+              <div>
+                <div className="num text-sm font-semibold">{fmtBRL(capital.ativoTotal)}</div>
+                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Ativos</div>
+              </div>
+              <span className="text-muted-foreground">−</span>
+              <div>
+                <div className="num text-sm font-semibold text-neg">{fmtBRL(totalPassivos)}</div>
+                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Dívidas</div>
+              </div>
+              <span className="text-muted-foreground">=</span>
+              <div>
+                <div className={`num text-sm font-semibold ${hasInconsistencia ? "text-warning" : "text-pos"}`}>
+                  {fmtBRL(plCalculado)}
+                </div>
+                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">PL calculado</div>
+              </div>
+            </div>
+          </div>
+
+          {hasInconsistencia && (
+            <div className="mt-3 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                PL informado (<strong>{fmtBRL(plInformado)}</strong>) difere do calculado
+                (<strong>{fmtBRL(plCalculado)}</strong>). Diferença de <strong>{fmtBRL(diff)}</strong>.
+                Revise os valores ou ajuste o PL.
+              </span>
+            </div>
+          )}
+        </div>
+      </StepCard>
+
+      {/* ============================================================
+          PASSO 3 — RESUMO + KPIs
+         ============================================================ */}
+      <StepCard
+        step={3}
         color="var(--primary)"
-        title="O que sobra para os sócios (Patrimônio)"
-        subtitle="Ativo − Passivo = riqueza líquida dos donos"
+        title="Resumo do balanço"
+        subtitle="Confira antes de continuar"
       >
-        <Field label="Patrimônio Líquido" value={capital.patrimonioLiquido} onChange={(n) => onChange({ patrimonioLiquido: n })} hint="Capital social + reservas + lucros acumulados. É o que sobraria para os sócios se a empresa quitasse todas as dívidas hoje." />
-      </BalanceGroup>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <SummaryList
+            title="ATIVOS"
+            color="var(--success)"
+            rows={[
+              ["Caixa e bancos", capital.disponibilidades],
+              ["Estoque", capital.estoques],
+              ["Clientes a receber", capital.contasReceber],
+              ["Total de ativos", capital.ativoTotal, true],
+            ]}
+          />
+          <SummaryList
+            title="PASSIVOS"
+            color="var(--destructive)"
+            rows={[
+              ["Empréstimos e financiamentos", capital.dividaOnerosa],
+              ["Fornecedores a pagar", capital.fornecedores],
+              ["Patrimônio líquido", capital.patrimonioLiquido, true],
+            ]}
+          />
+        </div>
 
-      <BalanceGroup
-        icon={<Settings2 className="h-3.5 w-3.5" />}
-        color="var(--muted-foreground)"
-        title="Outros lançamentos mensais"
-        subtitle="Entram na DRE todo mês"
-      >
-        <Field label="Depreciação mensal" value={capital.depreciacaoMensal} onChange={(n) => onChange({ depreciacaoMensal: n })} hint="Perda contábil de valor de máquinas, equipamentos e imóveis no mês. Não sai do caixa, mas reduz o lucro tributável." />
-        <Field label="Juros recebidos / mês" value={capital.jurosRecebidosMensal} onChange={(n) => onChange({ jurosRecebidosMensal: n })} hint="Rendimentos médios de aplicações financeiras no mês." />
-      </BalanceGroup>
+        {hasInconsistencia ? (
+          <div className="mt-3 flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            Há inconsistência no balanço. Volte e revise os valores.
+          </div>
+        ) : capital.ativoTotal > 0 ? (
+          <div className="mt-3 flex items-center gap-2 rounded-md border border-pos/40 bg-pos/10 p-2 text-[11px] text-pos">
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+            Balanço consistente — Ativo = Passivo + PL.
+          </div>
+        ) : null}
+
+        {/* KPIs derivados */}
+        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+          <KpiTile
+            label="Capital circulante"
+            value={fmtBRL(capitalCirculante)}
+            tone={capitalCirculante >= 0 ? "pos" : "neg"}
+            hint="Ativo circulante − Passivo circulante. Folga para honrar compromissos de curto prazo."
+          />
+          <KpiTile
+            label="Alavancagem D/PL"
+            value={`${dpl.toFixed(2)}×`}
+            tone={dpl <= 2 ? "pos" : dpl <= 3 ? "warn" : "neg"}
+            hint="Dívida onerosa ÷ Patrimônio líquido. Saudável ≤ 2×."
+          />
+          <KpiTile
+            label="Solvência geral"
+            value={`${solvencia.toFixed(2)}×`}
+            tone={solvencia >= 1.5 ? "pos" : solvencia >= 1 ? "warn" : "neg"}
+            hint="Ativo total ÷ Passivo total. Quanto a empresa tem para cada R$ 1 de dívida."
+          />
+        </div>
+      </StepCard>
+
+      {/* ============================================================
+          Lançamentos mensais (mantidos para a DRE)
+         ============================================================ */}
+      <div className="rounded-md border border-border/40 bg-background/30 p-3">
+        <div className="mb-2 flex items-center gap-2">
+          <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
+          <div className="text-xs font-semibold text-muted-foreground">Outros lançamentos mensais</div>
+          <span className="text-[10px] text-muted-foreground/70">Entram na DRE todo mês</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Depreciação mensal" value={capital.depreciacaoMensal} onChange={(n) => onChange({ depreciacaoMensal: n })} hint="Perda contábil de valor de máquinas, equipamentos e imóveis no mês. Não sai do caixa, mas reduz o lucro tributável." />
+          <Field label="Juros recebidos / mês" value={capital.jurosRecebidosMensal} onChange={(n) => onChange({ jurosRecebidosMensal: n })} hint="Rendimentos médios de aplicações financeiras no mês." />
+        </div>
+      </div>
     </div>
   );
 }
 
-function BalanceGroup({
-  icon,
+// ---------- Subcomponentes do balanço amigável ----------
+
+function StepCard({
+  step,
   color,
   title,
   subtitle,
   children,
 }: {
-  icon: React.ReactNode;
+  step: number;
   color: string;
   title: string;
   subtitle: string;
@@ -482,22 +682,113 @@ function BalanceGroup({
 }) {
   return (
     <div
-      className="rounded-md border bg-background/30 p-3"
+      className="rounded-lg border bg-background/40 p-4"
       style={{ borderColor: `color-mix(in oklab, ${color} 30%, var(--border))` }}
     >
-      <div className="mb-2 flex items-start gap-2">
+      <div className="mb-3 flex items-center gap-3">
         <span
-          className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-          style={{ background: `color-mix(in oklab, ${color} 20%, transparent)`, color }}
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold text-background"
+          style={{ background: color }}
         >
-          {icon}
+          {step}
         </span>
-        <div>
-          <div className="text-xs font-semibold" style={{ color }}>{title}</div>
-          <div className="text-[10px] text-muted-foreground">{subtitle}</div>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold" style={{ color }}>{title}</div>
+          <div className="text-[11px] text-muted-foreground">{subtitle}</div>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">{children}</div>
+      {children}
+    </div>
+  );
+}
+
+function SimpleField({
+  icon,
+  label,
+  hint,
+  value,
+  onChange,
+  placeholder,
+  emphasis,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  hint: string;
+  value: number;
+  onChange: (n: number) => void;
+  placeholder?: string;
+  emphasis?: boolean;
+}) {
+  return (
+    <div className={`rounded-md border p-3 ${emphasis ? "border-primary/40 bg-primary/5" : "border-border/40 bg-background/40"}`}>
+      <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <span className="text-muted-foreground/80">{icon}</span>
+        <span className="font-medium text-foreground/90">{label}</span>
+        <HelpTip text={hint} />
+      </label>
+      <MoneyInput value={value} onChange={onChange} className={`mt-1.5 ${emphasis ? "text-base font-semibold" : ""}`} />
+      {placeholder && <div className="mt-1 text-[9.5px] text-muted-foreground/70">{placeholder}</div>}
+    </div>
+  );
+}
+
+function MiniStat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className={`p-2 ${highlight ? "bg-primary/10" : "bg-background/40"} border-r border-border/30 last:border-r-0`}>
+      <div className="num text-[11px] font-semibold">{value}</div>
+      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
+function SummaryList({
+  title,
+  color,
+  rows,
+}: {
+  title: string;
+  color: string;
+  rows: [string, number, boolean?][];
+}) {
+  return (
+    <div className="rounded-md border border-border/40 bg-background/40 p-3">
+      <div className="mb-2 text-[10px] font-bold uppercase tracking-wider" style={{ color }}>{title}</div>
+      <div className="space-y-1">
+        {rows.map(([label, value, bold], i) => (
+          <div
+            key={i}
+            className={`flex items-center justify-between text-xs ${bold ? "border-t border-border/40 pt-1.5 font-semibold" : ""}`}
+          >
+            <span className="text-muted-foreground">{label}</span>
+            <span className="num">{fmtBRL(value)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function KpiTile({
+  label,
+  value,
+  tone,
+  hint,
+}: {
+  label: string;
+  value: string;
+  tone: "pos" | "warn" | "neg";
+  hint: string;
+}) {
+  const colorCls = tone === "pos" ? "text-pos border-pos/30 bg-pos/5"
+                 : tone === "warn" ? "text-warning border-warning/30 bg-warning/5"
+                 : "text-neg border-neg/30 bg-neg/5";
+  return (
+    <div className={`rounded-md border p-2 ${colorCls}`}>
+      <div className="num text-sm font-bold">{value}</div>
+      <div className="flex items-center justify-center gap-1 text-[9.5px] uppercase tracking-wider text-muted-foreground">
+        {label}
+        <HelpTip text={hint} />
+      </div>
     </div>
   );
 }
