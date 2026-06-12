@@ -20,15 +20,15 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
-  { title: "DRE", icon: FileSpreadsheet, value: "dre", group: "Análises" },
-  { title: "Receitas", icon: Receipt, value: "receitas", group: "Entradas" },
-  { title: "Custos e Despesas", icon: PiggyBank, value: "custos", group: "Entradas" },
-  { title: "Capital", icon: Wallet, value: "capital", group: "Entradas" },
-  { title: "Regime Tributário", icon: Gavel, value: "tributos", group: "Configurações" },
-  { title: "Governança", icon: ShieldCheck, value: "governanca", group: "Configurações" },
-  { title: "Fluxo de Caixa", icon: Presentation, value: "caixa", group: "Análises" },
-  { title: "Diagnóstico", icon: Search, value: "resultados", group: "Análises" },
-  { title: "Simulador", icon: Wand2, value: "simulador", group: "Estratégia" },
-  { title: "Valuation", icon: LayoutDashboard, value: "valuation", group: "Estratégia" },
-  { title: "Consultor IA", icon: Bot, value: "ai", group: "Estratégia" },
+  { title: "DRE", icon: FileSpreadsheet, value: "dre" },
+  { title: "Receitas", icon: Receipt, value: "receitas" },
+  { title: "Despesas", icon: PiggyBank, value: "custos" },
+  { title: "Capital", icon: Wallet, value: "capital" },
+  { title: "Regime Tributário", icon: Gavel, value: "tributos" },
+  { title: "Governança", icon: ShieldCheck, value: "governanca" },
+  { title: "Fluxo de Caixa", icon: Presentation, value: "caixa" },
+  { title: "Diagnóstico", icon: Search, value: "resultados" },
+  { title: "Simulador", icon: Wand2, value: "simulador" },
+  { title: "Valuation", icon: LayoutDashboard, value: "valuation" },
+  { title: "Consultor IA", icon: Bot, value: "ai" },
 ];
