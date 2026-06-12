@@ -92,6 +92,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
 
 
   // totais
+  const totCV = sum(byCat("custo_vendas").flatMap((c) => monthValues(c, state.tax.regime)));
   const totFix = sum(byCat("fixo").flatMap((c) => monthValues(c, state.tax.regime)));
   const totVar = sum(byCat("variavel").flatMap((c) => monthValues(c, state.tax.regime)));
   const totFin = sum(byCat("financeiro").flatMap((c) => monthValues(c, state.tax.regime)));
@@ -111,6 +112,13 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
       {/* Sumário */}
       <div className="grid gap-3 md:grid-cols-4">
         <StatCard
+          label={COST_VENDAS_LABEL[state.businessType].short}
+          value={fmtBRL(totCPV)}
+          tone="neg"
+          sub={fmtPct(pctRec(totCPV)) + " da receita"}
+          hint={COST_VENDAS_LABEL[state.businessType].long}
+        />
+        <StatCard
           label="Custos Fixos"
           value={fmtBRL(totFix)}
           tone="neg"
@@ -119,10 +127,10 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
         />
         <StatCard
           label="Custos Variáveis"
-          value={fmtBRL(totVar + totCPV)}
+          value={fmtBRL(totVar)}
           tone="neg"
-          sub={fmtPct(pctRec(totVar + totCPV)) + " da receita"}
-          hint={`Soma de custos diretos (${COST_VENDAS_LABEL[state.businessType].short}) e despesas variáveis (marketing, comissões, etc).`}
+          sub={fmtPct(pctRec(totVar)) + " da receita"}
+          hint="Variam com vendas (marketing, comissões, insumos, terceirização…)."
         />
         <StatCard
           label="Custos Financeiros"
