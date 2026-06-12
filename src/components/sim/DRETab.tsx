@@ -251,6 +251,52 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                     </Fragment>
                   );
                 }
+                if (row.kind === "cpv") {
+                  const total = sum(dre.cpv);
+                  const pct = rb > 0 ? total / rb : 0;
+                  return (
+                    <Fragment key={idx}>
+                      <tr className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20" onClick={() => setOpenCpv((v) => !v)}>
+                        <td className="px-3 py-2 text-[10px] sm:text-xs font-semibold truncate">
+                          <span className="inline-flex items-center gap-1">
+                            <ChevronRight className={`h-3 w-3 shrink-0 transition-transform ${openCpv ? "rotate-90" : ""}`} />
+                            (−) {cvLabel.long}
+                          </span>
+                        </td>
+                        {view === "mensal" && dre.cpv.map((v, i) => (
+                          <td key={i} className={`num px-2 py-2 text-right text-xs ${mesesCriticosIdx.has(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} text-neg`}>
+                            {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
+                          </td>
+                        ))}
+                        <td className="num px-4 py-2 text-right font-semibold text-neg">− {fmtBRL(total)}</td>
+                        <td className="num px-3 py-2 text-right text-xs text-muted-foreground">{fmtPct(pct)}</td>
+                      </tr>
+                      {openCpv && linhasCpv.map((l, li) => {
+                        const lTotal = sum(l.values);
+                        return (
+                          <tr key={`cpv_${li}`} className="border-t border-border/20">
+                            <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">{l.label}</td>
+                            {view === "mensal" && l.values.map((v, i) => (
+                              <td key={i} className="num px-2 py-1.5 text-right text-xs text-muted-foreground">
+                                {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
+                              </td>
+                            ))}
+                            <td className="num px-4 py-1.5 text-right text-xs text-neg">− {fmtBRL(lTotal)}</td>
+                            <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">{fmtPct(rb > 0 ? lTotal / rb : 0)}</td>
+                          </tr>
+                        );
+                      })}
+                      {openCpv && linhasCpv.length === 0 && (
+                        <tr className="border-t border-border/20">
+                          <td colSpan={view === "mensal" ? 15 : 3} className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground">
+                            Nenhum item classificado como {cvLabel.short} ainda. Cadastre custos na categoria "Custo de Vendas" na aba Custos.
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                }
+
                 const total = sum(row.v);
                 const pct = rb > 0 ? total / rb : 0;
                 const toneCls = row.tone === "pos" ? "text-pos" : row.tone === "neg" ? "text-neg" : "";
