@@ -8,7 +8,10 @@ import {
 } from "./taxDefaults";
 import { sum, zeros12, fill12 } from "./format";
 
-/** Soma mensal das linhas livres de dedução da Receita (devoluções, perdas, descontos, etc.). */
+/** 
+ * Soma mensal das linhas livres de dedução da Receita (devoluções, perdas, descontos, etc.). 
+ * @formula Σ (Revenue.deducoes.valores)
+ */
 export function outrasDeducoesMensal(state: AppState): number[] {
   const out = zeros12();
   const deds = state.revenue.deducoes ?? [];
@@ -19,7 +22,10 @@ export function outrasDeducoesMensal(state: AppState): number[] {
   return out;
 }
 
-/** Receita Bruta menos outras deduções — base usada para impostos sobre venda. */
+/** 
+ * Receita Bruta menos outras deduções — base usada para impostos sobre venda. 
+ * @formula Receita Bruta − Outras Deduções
+ */
 function receitaTributavel(state: AppState): number[] {
   const out = outrasDeducoesMensal(state);
   return state.revenue.bruta.map((b, i) => Math.max(0, (b || 0) - out[i]));
@@ -559,32 +565,56 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
 // INDICADORES
 // =====================================================================
 export interface Indicators {
+  /** Lucro Bruto ÷ Receita Líquida × 100 */
   margemBruta: number;
+  /** EBITDA ÷ Receita Líquida × 100 */
   margemEbitda: number;
+  /** EBIT ÷ Receita Líquida × 100 */
   margemEbit: number;
+  /** Lucro Líquido ÷ Receita Líquida × 100 */
   margemLiquida: number;
+  /** (Receita Líquida − Custos Variáveis) ÷ Receita Líquida × 100 */
   margemContribuicao: number;
+  /** Custos Fixos ÷ Margem de Contribuição */
   pontoEquilibrio: number;
+  /** (Custos Fixos − Depreciação) ÷ Margem de Contribuição */
   pontoEquilibrioFinanceiro: number;
+  /** Lucro Líquido ÷ Patrimônio Líquido × 100 */
   roe: number;
+  /** Lucro Líquido ÷ Ativo Total × 100 */
   roa: number;
+  /** NOPAT ÷ Capital Investido × 100 */
   roic: number;
+  /** (Capital Próprio/V × Ke) + (Dívida/V × Kd × (1 − IR Shield)) */
   wacc: number;
+  /** PMR + PME − PMP */
   cicloFinanceiro: number;
+  /** Contas a Receber + Estoques − Fornecedores */
   ncg: number;
+  /** NCG − Capital de Giro Disponível */
   gapCapitalGiro: number;
+  /** Ativo Circulante ÷ Passivo Circulante */
   liquidezCorrente: number;
+  /** (Ativo Circulante − Estoques) ÷ Passivo Circulante */
   liquidezSeca: number;
+  /** Disponibilidades ÷ Passivo Circulante */
   liquidezImediata: number;
+  /** Passivo Total ÷ Ativo Total × 100 */
   endividamentoGeral: number;
+  /** Dívida Onerosa ÷ Patrimônio Líquido × 100 */
   grauEndividamento: number;
+  /** EBIT ÷ Despesas Financeiras */
   coberturaJuros: number;
+  /** Receita Líquida ÷ Ativo Total */
   giroAtivo: number;
+  /** (Dívida Total − Caixa) ÷ EBITDA */
   dividaLiqEbitda: number;
+  /** Patrimônio Líquido ÷ Lucro Líquido Anual */
   payback: number;
+  /** EBITDA − Impostos − Δ NCG */
   fcf: number;
+  /** FCF ÷ EBITDA × 100 */
   conversaoEbitdaCaixa: number;
-  // novos
   dividaOnerosa: number;
   passivoCirculante: number;
   ativoCirculante: number;
