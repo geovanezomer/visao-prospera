@@ -165,6 +165,7 @@ function SimulaPro() {
                   {activeTab === "caixa" && <CashflowTab state={state} update={update} />}
                   {activeTab === "governanca" && <StrategicTab state={state} update={update} />}
                   {activeTab === "dre" && <DRETab state={state} update={update} />}
+                  {activeTab === "indicadores" && <IndicatorsTab state={state} />}
                   {activeTab === "resultados" && <DiagnosisTab state={state} scenarios={scenarios} loadScenario={setState} removeScenario={remove} />}
                   {activeTab === "simulador" && <SimulatorTab state={state} apply={update} saveScenario={save} params={simParams} setParams={setSimParams} />}
                   {activeTab === "valuation" && <ValuationTab baseState={state} simulatedState={simulatedState} simActive={simActive} />}
