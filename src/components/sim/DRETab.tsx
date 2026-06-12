@@ -142,11 +142,10 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
         <StatCard label="Faturamento" value={fmtBRL(rb)} tone="pos" hint={{ description: "Faturamento bruto anual.", formula: "Σ Receita Bruta" }} />
         <StatCard label="EBITDA" value={fmtBRL(sum(dre.ebitda))} sub={`${ind.margemEbitda.toFixed(1)}%`} tone={sum(dre.ebitda) >= 0 ? "pos" : "neg"} hint={{ description: "Caixa operacional.", formula: "Lucro Bruto − Despesas" }} />
         <StatCard label="Lucro Líq." value={fmtBRL(ll)} sub={`${ind.margemLiquida.toFixed(1)}%`} tone={ll >= 0 ? "pos" : "neg"} hint={{ description: "Resultado final.", formula: "LAIR − Impostos" }} />
-        <StatCard label="Conversão" value={`${ind.conversaoEbitdaCaixa.toFixed(1)}%`} sub="EBITDA → Caixa" tone={ind.conversaoEbitdaCaixa >= 70 ? "pos" : ind.conversaoEbitdaCaixa >= 40 ? "default" : "neg"} hint={{ description: "Qualidade do Caixa: mede quanto do EBITDA efetivamente vira caixa livre.", formula: "FCF ÷ EBITDA × 100" }} />
         <StatCard label="Impostos" value={fmtPct(tax.effective / 100)} tone="warn" sub={`${fmtBRLCompact(tax.annual)}`} hint={{ description: "Carga tributária.", formula: "Impostos ÷ Receita Bruta" }} />
       </div>
 
@@ -329,6 +328,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
         <div className="mt-4 grid gap-4 md:grid-cols-3 lg:grid-cols-4">
           <Ind label="Margem Bruta" v={fmtPct(ind.margemBruta / 100)} desc="Quanto sobra da receita após pagar o custo direto do produto/serviço. Mede a eficiência da operação antes das despesas." formula="Lucro Bruto ÷ Receita Líquida × 100" />
           <Ind label="Margem EBITDA" v={fmtPct(ind.margemEbitda / 100)} desc="Quanto a operação gera de caixa antes de juros, impostos e depreciação. Mede a geração operacional 'pura'." formula="EBITDA ÷ Receita Líquida × 100" />
+          <Ind label="Conversão" v={`${ind.conversaoEbitdaCaixa.toFixed(1)}%`} tone={ind.conversaoEbitdaCaixa >= 70 ? "pos" : ind.conversaoEbitdaCaixa >= 40 ? undefined : "neg"} desc="Qualidade do Caixa: mede quanto do EBITDA efetivamente vira caixa livre (FCF)." formula="FCF ÷ EBITDA × 100" />
           <Ind label="Margem Líquida" v={fmtPct(ind.margemLiquida / 100)} desc="O lucro que efetivamente sobra para os sócios, após tudo pago (custos, despesas, juros e impostos)." formula="Lucro Líquido ÷ Receita Líquida × 100" />
           <Ind label="Margem de Contribuição" v={fmtPct(ind.margemContribuicao / 100)} desc="Quanto cada R$ vendido contribui para pagar os custos fixos e gerar lucro. Quanto maior, mais resiliente é o negócio." formula="(Receita − Custos Variáveis) ÷ Receita × 100" />
           <Ind label="Ponto de Equilíbrio" v={fmtBRL(ind.pontoEquilibrio)} desc="Receita mínima necessária para a empresa não ter prejuízo (cobrir todos os custos fixos)." formula="Custos Fixos ÷ Margem de Contribuição" />
