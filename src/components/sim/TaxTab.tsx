@@ -90,9 +90,7 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
   // Alertas de sublimite e enquadramento (Auditoria — Fase 2)
   const simplesWarnings: string[] = [];
   if (rbAnual > simplesLimite) {
-    simplesWarnings.push(
-      `RBT12 = ${fmtBRL(rbAnual)} ultrapassa ${fmtBRL(simplesLimite)} — a empresa está DESENQUADRADA do Simples Nacional. Migre obrigatoriamente para Lucro Presumido ou Real.`,
-    );
+    // Desenquadramento já é comunicado pelo card "desligado" do Simples — sem alerta no topo.
   } else if (rbAnual > 3_600_000) {
     simplesWarnings.push(
       `RBT12 = ${fmtBRL(rbAnual)} ultrapassa o sublimite estadual de R$ 3.600.000 — ICMS/ISS passam a ser recolhidos fora do Simples (regime normal estadual), embora os tributos federais continuem no DAS.`,
