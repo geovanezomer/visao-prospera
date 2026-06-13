@@ -773,7 +773,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const wE = V > 0 ? PL / V : capital.proprio / 100;
   const wD = V > 0 ? D / V : 1 - capital.proprio / 100;
 
-  const irShield = irShieldForRegime(state.tax.regime);
+  // SSOT: WACC usa shield do regime EFETIVO (Simples acima do limite vira Presumido sem shield).
+  const irShield = irShieldForRegime(resolveEffectiveRegime(state));
   const wacc = wE * capital.ke + wD * capital.kd * (1 - irShield);
 
   // ---- NOPAT e ROIC corretos (Auditoria) ----
