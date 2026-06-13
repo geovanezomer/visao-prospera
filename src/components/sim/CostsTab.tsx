@@ -168,7 +168,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
 
       {/* Custos Fixos */}
       <SectionBlock
-        title="Custos e Despesas Fixas"
+        title="Despesas Administrativas"
         hint="Não variam com o volume vendido. Compõem a estrutura mínima de operação."
         accentClass="border-l-[color:var(--warning)]"
         onAdd={() => addLine("fixo")}
