@@ -1,5 +1,5 @@
 import { AppState, CostLine } from "./types";
-import { buildDRE, calcIndicators, compareRegimes, monthValues } from "./calculations";
+import { buildDRE, calcIndicators, compareRegimes, folhaAnual, monthValues, resolveEffectiveRegime } from "./calculations";
 import { buildCashFlow } from "./cashflow";
 import { sum } from "./format";
 
