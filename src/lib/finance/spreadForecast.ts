@@ -1,5 +1,5 @@
 import { AppState } from "./types";
-import { buildDRE, calcIndicators } from "./calculations";
+import { buildDRE, calcIndicators, irShieldForRegime } from "./calculations";
 import { buildForecast, DEFAULT_FORECAST_CFG } from "./forecast";
 import { sum } from "./format";
 
