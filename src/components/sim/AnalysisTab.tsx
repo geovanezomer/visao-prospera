@@ -455,8 +455,8 @@ export function MonteCarloCard({ state }: { state: AppState }) {
                 comoLer: `O resultado mais provável gira em torno de ${fmtBRL(dist.median)}. Em 90% das simulações o lucro fica entre ${fmtBRL(dist.p5)} e ${fmtBRL(dist.p95)}.`,
                 alerta: probNeg > 0.1 ? `Risco relevante: ${(probNeg * 100).toFixed(1)}% dos cenários terminam em prejuízo.` : undefined,
               },
-              "Saldo Caixa Final": {
-                oQueE: "Saldo de Caixa no fim do horizonte é quanto dinheiro deve sobrar no banco depois de todas as entradas e saídas.",
+              "Saldo de Caixa (Dez)": {
+                oQueE: "Saldo de Caixa em dezembro é quanto dinheiro deve sobrar no banco no fim do horizonte simulado, depois de todas as entradas e saídas.",
                 comoLer: `O saldo mediano projetado é ${fmtBRL(dist.median)}. Em 90% dos cenários o caixa final fica entre ${fmtBRL(dist.p5)} e ${fmtBRL(dist.p95)}.`,
                 alerta: probNeg > 0.1 ? `Alerta de liquidez: em ${(probNeg * 100).toFixed(1)}% dos cenários a empresa termina com caixa negativo (precisaria de empréstimo).` : undefined,
               },
