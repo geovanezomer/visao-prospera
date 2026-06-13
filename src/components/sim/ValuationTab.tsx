@@ -236,6 +236,7 @@ export function ValuationTab({
               />
             </div>
 
+            {/* V4: Equity Value usa Dívida Líquida (Dívida − Caixa), não bruta. */}
             <div className="mt-5 grid grid-cols-3 gap-3 rounded-md border border-primary/30 bg-primary/5 p-4 text-center">
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">EV (múltiplos)</div>
@@ -244,18 +245,22 @@ export function ValuationTab({
                 </div>
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">− Dívida onerosa</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">− Dívida líquida</div>
                 <div className="mono mt-1 text-lg font-semibold text-foreground">
-                  {fmtBRLCompact(source.capital.dividaOnerosa)}
+                  {fmtBRLCompact(valuation.netDebt)}
+                </div>
+                <div className="text-[9px] text-muted-foreground mt-0.5">
+                  Dív. {fmtBRLCompact(source.capital.dividaOnerosa)} − Caixa {fmtBRLCompact(source.capital.caixaOcioso ?? 0)}
                 </div>
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">= Equity Value</div>
                 <div className="mono mt-1 text-lg font-semibold text-pos">
-                  {fmtBRLCompact(Math.max(0, valuation.multiplesDetails.blendedEnterpriseValue - source.capital.dividaOnerosa))}
+                  {fmtBRLCompact(Math.max(0, valuation.multiplesDetails.blendedEnterpriseValue - valuation.netDebt))}
                 </div>
               </div>
             </div>
+
           </section>
         </TabsContent>
 
