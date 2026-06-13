@@ -7,10 +7,14 @@
  */
 
 import { AppState, CostLine, TaxRegime } from "./types";
-import { buildDRE, calcIndicators, monthValues } from "./calculations";
+import { buildDRE, calcIndicators, monthValues, resolveEffectiveRegime, type DRE, type Indicators } from "./calculations";
 import { buildValuation, defaultValuationParams } from "./valuation";
-import { buildCashFlow } from "./cashflow";
+import { buildCashFlow, type CashFlow } from "./cashflow";
 import { fill12, sum } from "./format";
+
+// Mesmo regex usado em sensitivity.ts/prescriptive.ts — verdade única para identificar folha.
+const LABOR_RE = /sal[áa]rio|folha|clt|prolabore|pr[óo]-labore|mod|m[ãa]o de obra/i;
+const isLaborLine = (c: CostLine) => c.encargosAuto === true || LABOR_RE.test(c.label);
 
 export interface SimulatorParams {
   // Receita & Preço
