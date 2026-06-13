@@ -19,7 +19,13 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
   const set = (patch: Partial<typeof c>) => update((s) => ({ ...s, capital: { ...s.capital, ...patch } }));
 
   const wacc = ind.wacc;
-  const terceiros = 100 - c.proprio;
+  // Quando PL e Dívida estão preenchidos, a proporção real é PL/(PL+D) — o slider
+  // vira leitura derivada para evitar contradição visual entre % e R$ (B2/B3).
+  const totalFinancAbs = Math.max(0, c.patrimonioLiquido) + Math.max(0, c.dividaOnerosa);
+  const proprioDerivado = totalFinancAbs > 0
+    ? (Math.max(0, c.patrimonioLiquido) / totalFinancAbs) * 100
+    : c.proprio;
+  const terceiros = 100 - proprioDerivado;
 
   // Validações
   const warnings: string[] = [];
