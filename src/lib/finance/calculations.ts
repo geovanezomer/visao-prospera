@@ -836,6 +836,14 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // Qualidade do Lucro = FCF ÷ LL. Acima de 1 = lucro vira caixa; abaixo = lucro "no papel".
   const qualidadeLucro = llAnual > 1 ? Math.max(-9, Math.min(9, fcf / llAnual)) : 0;
 
+  // Indicadores de produtividade por colaborador (headcount em Configurações Rápidas).
+  const headcount = Math.max(0, state.numColaboradores ?? 0);
+  const receitaPorColaborador = headcount > 0 ? receitaLiqAnual / headcount : 0;
+  const lucroPorColaborador = headcount > 0 ? llAnual / headcount : 0;
+  // Folha (CLT + pró-labore + MOD) com encargos sobre Receita Líquida.
+  const folha = folhaAnual(state);
+  const custoPessoalSobreReceita = receitaLiqAnual > 0 ? (folha / receitaLiqAnual) * 100 : 0;
+
   return {
     margemBruta: receitaLiqAnual > 0 ? (lucroBrutoAnual / receitaLiqAnual) * 100 : 0,
     margemEbitda: receitaLiqAnual > 0 ? (ebitdaAnual / receitaLiqAnual) * 100 : 0,
@@ -849,6 +857,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     dividaLiqEbitda, dividaLiqEbit, dividaLiqPl, payback, fcf,
     conversaoEbitdaCaixa: ebitdaAnual > 0 ? (fcf / ebitdaAnual) * 100 : 0,
     gao, qualidadeLucro,
+    receitaPorColaborador, lucroPorColaborador, custoPessoalSobreReceita,
     dividaOnerosa: D, passivoCirculante, ativoCirculante,
   };
 }
