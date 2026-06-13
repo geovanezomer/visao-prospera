@@ -540,7 +540,9 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   }
 
   const lucroBruto = receitaLiquida.map((r, i) => r - cpv[i]);
-  const ebitda = lucroBruto.map((g, i) => g - despOp[i]);
+  // Outras Receitas Operacionais (aluguéis, venda de ativos) — entram acima do EBITDA.
+  const { financeiras: rendimentosFinanceiros, operacionais: outrasReceitasOperacionais } = splitReceitasFinanceiras(state);
+  const ebitda = lucroBruto.map((g, i) => g - despOp[i] + outrasReceitasOperacionais[i]);
 
   const depreciacao = fill12(capital.depreciacaoMensal);
   for (const c of costs) {
@@ -556,13 +558,9 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     for (let i = startIdx; i < 12; i++) depreciacao[i] += depAdd;
   }
   const ebit = ebitda.map((e, i) => e - depreciacao[i]);
-  // Receitas Financeiras vêm da aba Receitas (revenue.receitasFinanceiras) — soma por mês
-  const receitasFinanceirasMensal = zeros12();
-  for (const rf of state.revenue.receitasFinanceiras ?? []) {
-    const vals = rf.valores ?? [];
-    for (let i = 0; i < 12; i++) receitasFinanceirasMensal[i] += Number(vals[i]) || 0;
-  }
-  const resultadoFinanceiro = ebit.map((_, i) => receitasFinanceirasMensal[i] - custosFinanceirosTotal[i]);
+  // Resultado Financeiro = Rendimentos Financeiros (rend_aplic etc.) − Custos Financeiros.
+  // Aluguéis e venda de ativos NÃO entram aqui (são operacionais, já no EBITDA).
+  const resultadoFinanceiro = ebit.map((_, i) => rendimentosFinanceiros[i] - custosFinanceirosTotal[i]);
   const lair = ebit.map((e, i) => e + resultadoFinanceiro[i]);
 
   // ---- Segunda passagem: impostos sobre LUCRO usando o LAIR já líquido de impostos sobre venda ----
@@ -580,6 +578,7 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     dre: {
       receitaBruta, deducoesInadimplencia, outrasDeducoes, impostosVendas, pdd, receitaLiquida,
       cpv, lucroBruto, despesasOperacionais: despOp,
+      outrasReceitasOperacionais,
       ebitda, depreciacao, ebit, resultadoFinanceiro, lair,
       impostos: impostosLucro, impostosTotal, lucroLiquido,
       despesasPorCategoria, custosFinanceirosTotal, custosOperacionaisTotal,
