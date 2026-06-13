@@ -95,7 +95,7 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   let variaveisNaoCpvBase = 0; // variáveis (não-CPV) que escalam com receita
   for (const c of state.costs) {
     if (c.category === "financeiro") continue;
-    const v = sum(effectiveMonthValues(c, state.tax.regime));
+    const v = sum(effectiveMonthValues(c, regime));
     const isLabor = c.encargosAuto || LABOR_RE.test(c.label);
     if (isCpvCost(c)) continue; // já em cpvBase (inclui direto_venda)
     if (c.category === "variavel") variaveisNaoCpvBase += v;
