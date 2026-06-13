@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import { AppState, SimplesAnexo, TaxEra, TaxRegime, TAX_ERAS, TAX_ERA_LABEL, TAX_ERA_SHORT } from "@/lib/finance/types";
 import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
 import { compareErasForRegime, compareRegimes, getReformaRates, simplesAliquotaEfetiva, buildDRE } from "@/lib/finance/calculations";
-import { getPresumidoBases } from "@/lib/finance/taxDefaults";
+import { getPresumidoBases, SIMPLES_LIMITE } from "@/lib/finance/taxDefaults";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { HelpTip, NumInput, PctInput, SectionTitle } from "./primitives";
@@ -13,13 +13,20 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
   const regimes = compareRegimes(state);
   const aliqEf = simplesAliquotaEfetiva(rbAnual, state.tax.simplesAnexo, state.tax);
 
+  // Teto do Simples Nacional — configurável em Parâmetros (atualmente em discussão no Congresso)
+  const simplesLimite = state.tax.ratesOverride?.simplesLimite ?? SIMPLES_LIMITE;
+  const desenquadradoSimples = rbAnual > simplesLimite;
+
   // net profits per regime
   const llBy: Record<TaxRegime, number> = {
     simples: sum(buildDRE(state, "simples").dre.lucroLiquido),
     presumido: sum(buildDRE(state, "presumido").dre.lucroLiquido),
     real: sum(buildDRE(state, "real").dre.lucroLiquido),
   };
-  const best = (Object.entries(llBy) as [TaxRegime, number][]).reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+  // Quando desenquadrado, Simples sai da disputa do "mais vantajoso"
+  const bestPool = (Object.entries(llBy) as [TaxRegime, number][])
+    .filter(([r]) => !(desenquadradoSimples && r === "simples"));
+  const best = bestPool.reduce((a, b) => (b[1] > a[1] ? b : a))[0];
 
   const Card = ({
     title,
@@ -82,17 +89,17 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
 
   // Alertas de sublimite e enquadramento (Auditoria — Fase 2)
   const simplesWarnings: string[] = [];
-  if (rbAnual > 4_800_000) {
+  if (rbAnual > simplesLimite) {
     simplesWarnings.push(
-      `RBT12 = ${fmtBRL(rbAnual)} ultrapassa R$ 4.800.000 — a empresa está DESENQUADRADA do Simples Nacional. Migre obrigatoriamente para Lucro Presumido ou Real.`,
+      `RBT12 = ${fmtBRL(rbAnual)} ultrapassa ${fmtBRL(simplesLimite)} — a empresa está DESENQUADRADA do Simples Nacional. Migre obrigatoriamente para Lucro Presumido ou Real.`,
     );
   } else if (rbAnual > 3_600_000) {
     simplesWarnings.push(
       `RBT12 = ${fmtBRL(rbAnual)} ultrapassa o sublimite estadual de R$ 3.600.000 — ICMS/ISS passam a ser recolhidos fora do Simples (regime normal estadual), embora os tributos federais continuem no DAS.`,
     );
-  } else if (rbAnual > 4_320_000) {
+  } else if (rbAnual > simplesLimite * 0.9) {
     simplesWarnings.push(
-      `RBT12 = ${fmtBRL(rbAnual)} está a menos de 10% do teto (R$ 4.8M). Cuidado com o desenquadramento automático.`,
+      `RBT12 = ${fmtBRL(rbAnual)} está a menos de 10% do teto (${fmtBRL(simplesLimite)}). Cuidado com o desenquadramento automático.`,
     );
   }
   if (state.tax.simplesAnexo === "III" && state.businessType !== "servicos") {
@@ -290,32 +297,50 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
 
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card
-          title="Simples Nacional"
-          regime="simples"
-          annual={regimes.simples.annual}
-          effective={regimes.simples.effective}
-          badge={`Anexo ${state.tax.simplesAnexo}${state.tax.simplesAnexo === "III" ? " · Fator R ≥ 28%" : ""}`}
-        >
-          <div>
-            <label className="text-xs text-muted-foreground">Anexo</label>
-            <Select value={state.tax.simplesAnexo} onValueChange={(v) => set({ simplesAnexo: v as SimplesAnexo })}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {(["I", "II", "III", "IV", "V"] as const).map((a) => (
-                  <SelectItem key={a} value={a}>Anexo {a}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {desenquadradoSimples ? (
+          <div className="relative rounded-lg border border-border/40 bg-card/20 p-5 opacity-60">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-semibold text-muted-foreground line-through">Simples Nacional</h3>
+                <Badge variant="outline" className="border-warning/50 bg-warning/10 text-[10px] text-warning">
+                  Desenquadrado
+                </Badge>
+              </div>
+              <div className="text-3xl font-bold tracking-tight text-muted-foreground/50">—</div>
+              <div className="text-xs text-muted-foreground">indisponível</div>
+            </div>
+            <div className="mt-4 rounded-md border border-warning/30 bg-warning/5 p-3 text-[11px] text-muted-foreground">
+              RBT12 ({fmtBRL(rbAnual)}) ultrapassa o teto de {fmtBRL(simplesLimite)}. Ajuste o teto em <b>Parâmetros → Simples Nacional</b> se a legislação mudar.
+            </div>
           </div>
-          <Row label="RBT12" value={fmtBRL(rbAnual)} />
-          <Row label="Alíquota Efetiva" value={fmtPct(aliqEf / 100)} />
-          <Row label="DAS (unificado)" value={fmtBRL(regimes.simples.annual)} strong />
-          
-          <div className="mt-3 rounded-md bg-accent/30 p-3 text-[11px] text-muted-foreground">
-            Anexos: <b>I</b> comércio · <b>II</b> indústria · <b>III</b> serviços (Fator R ≥ 28%) · <b>IV</b> serviços específicos · <b>V</b> serviços intelectuais.
-          </div>
-        </Card>
+        ) : (
+          <Card
+            title="Simples Nacional"
+            regime="simples"
+            annual={regimes.simples.annual}
+            effective={regimes.simples.effective}
+            badge={`Anexo ${state.tax.simplesAnexo}${state.tax.simplesAnexo === "III" ? " · Fator R ≥ 28%" : ""}`}
+          >
+            <div>
+              <label className="text-xs text-muted-foreground">Anexo</label>
+              <Select value={state.tax.simplesAnexo} onValueChange={(v) => set({ simplesAnexo: v as SimplesAnexo })}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(["I", "II", "III", "IV", "V"] as const).map((a) => (
+                    <SelectItem key={a} value={a}>Anexo {a}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Row label="RBT12" value={fmtBRL(rbAnual)} />
+            <Row label="Alíquota Efetiva" value={fmtPct(aliqEf / 100)} />
+            <Row label="DAS (unificado)" value={fmtBRL(regimes.simples.annual)} strong />
+
+            <div className="mt-3 rounded-md bg-accent/30 p-3 text-[11px] text-muted-foreground">
+              Anexos: <b>I</b> comércio · <b>II</b> indústria · <b>III</b> serviços (Fator R ≥ 28%) · <b>IV</b> serviços específicos · <b>V</b> serviços intelectuais.
+            </div>
+          </Card>
+        )}
 
         <Card
           title="Lucro Presumido"
@@ -394,7 +419,8 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             </div>
           </div>
           {(() => {
-            const regs: TaxRegime[] = ["simples", "presumido", "real"];
+            const regs: TaxRegime[] = (["simples", "presumido", "real"] as TaxRegime[])
+              .filter(r => !(desenquadradoSimples && r === "simples"));
             const labels: Record<TaxRegime, string> = {
               simples: "Simples Nacional", presumido: "Lucro Presumido", real: "Lucro Real",
             };
@@ -447,27 +473,35 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
           })()}
         </div>
 
-        <div className="grid grid-cols-4 gap-px bg-border/40">
-          <div className="bg-card p-4 text-xs uppercase tracking-wider text-muted-foreground">Indicador</div>
-          {(["simples", "presumido", "real"] as TaxRegime[]).map((r) => (
-            <div key={r} className={`bg-card p-4 text-xs uppercase tracking-wider ${best === r ? "text-primary" : "text-muted-foreground"}`}>
-              {r === "simples" ? "Simples Nacional" : r === "presumido" ? "Lucro Presumido" : "Lucro Real"}
-              {best === r && <span className="ml-2">✓</span>}
-            </div>
-          ))}
-          {[
-            { k: "Tributos totais (ano)", v: (r: TaxRegime) => fmtBRL(regimes[r].annual) },
-            { k: "Alíquota efetiva", v: (r: TaxRegime) => fmtPct(regimes[r].effective / 100) },
-            { k: "Lucro Líquido (ano)", v: (r: TaxRegime) => fmtBRL(llBy[r]) },
-          ].map((row) => (
-            <Fragment key={row.k}>
-              <div className="bg-card p-3 text-xs text-muted-foreground">{row.k}</div>
-              {(["simples", "presumido", "real"] as TaxRegime[]).map((r) => (
-                <div key={r + row.k} className={`bg-card p-3 num text-sm ${best === r ? "text-pos font-semibold" : ""}`}>{row.v(r)}</div>
+        {(() => {
+          const cols: TaxRegime[] = (["simples", "presumido", "real"] as TaxRegime[])
+            .filter(r => !(desenquadradoSimples && r === "simples"));
+          const labelOf = (r: TaxRegime) => r === "simples" ? "Simples Nacional" : r === "presumido" ? "Lucro Presumido" : "Lucro Real";
+          const gridCls = cols.length === 3 ? "grid-cols-4" : "grid-cols-3";
+          return (
+            <div className={`grid ${gridCls} gap-px bg-border/40`}>
+              <div className="bg-card p-4 text-xs uppercase tracking-wider text-muted-foreground">Indicador</div>
+              {cols.map((r) => (
+                <div key={r} className={`bg-card p-4 text-xs uppercase tracking-wider ${best === r ? "text-primary" : "text-muted-foreground"}`}>
+                  {labelOf(r)}
+                  {best === r && <span className="ml-2">✓</span>}
+                </div>
               ))}
-            </Fragment>
-          ))}
-        </div>
+              {[
+                { k: "Tributos totais (ano)", v: (r: TaxRegime) => fmtBRL(regimes[r].annual) },
+                { k: "Alíquota efetiva", v: (r: TaxRegime) => fmtPct(regimes[r].effective / 100) },
+                { k: "Lucro Líquido (ano)", v: (r: TaxRegime) => fmtBRL(llBy[r]) },
+              ].map((row) => (
+                <Fragment key={row.k}>
+                  <div className="bg-card p-3 text-xs text-muted-foreground">{row.k}</div>
+                  {cols.map((r) => (
+                    <div key={r + row.k} className={`bg-card p-3 num text-sm ${best === r ? "text-pos font-semibold" : ""}`}>{row.v(r)}</div>
+                  ))}
+                </Fragment>
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
 
