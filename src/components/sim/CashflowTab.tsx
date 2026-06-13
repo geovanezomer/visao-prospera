@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AppState } from "@/lib/finance/types";
 import { fmtBRL, fmtBRLCompact, MESES, sum } from "@/lib/finance/format";
 import { buildCashFlow, computeBurnRunway, computeAlertas, computePiorMes } from "@/lib/finance/cashflow";
-import { MoneyInput, SectionTitle, StatCard } from "./primitives";
+import { MoneyInput, SectionTitle, StatCard, HelpTip } from "./primitives";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
