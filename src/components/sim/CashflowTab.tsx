@@ -531,6 +531,13 @@ function fixedBase(values: number[]): number {
   return Number.isFinite(nonZero as number) ? (nonZero as number) : (values[0] || 0);
 }
 
+// True quando o array tem variação real entre meses (mais de um valor distinto)
+function hasSazonalidade(values: number[]): boolean {
+  if (!values?.length) return false;
+  const first = values[0];
+  return values.some((v) => v !== first);
+}
+
 type NonOpRow = {
   key: NonOpKey;
   label: string;
