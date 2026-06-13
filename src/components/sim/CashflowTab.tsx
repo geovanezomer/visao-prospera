@@ -171,54 +171,7 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
       </div>
 
       {/* Tabela detalhada */}
-      <div className="rounded-lg border border-border/60 bg-card/40">
-        <div className="border-b border-border/60 p-4">
-          <SectionTitle hint="Caixa pelo método direto. Receitas e CPV usam PMR/PMP da aba Receitas. Impostos pagos no mês seguinte ao da competência.">
-            Demonstração do Fluxo de Caixa — método direto
-          </SectionTitle>
-        </div>
-        <div className="scrollbar-thin overflow-x-auto">
-          <table className="w-full min-w-[1100px] border-separate border-spacing-0 text-sm">
-            <thead>
-              <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                <th className="sticky left-0 z-20 bg-card px-4 py-2 shadow-[1px_0_0_0_var(--border)]">Linha</th>
-                {MESES.map((m) => (
-                  <th key={m} className="px-1 py-2 text-right">{m}</th>
-                ))}
-                <th className="px-3 py-2 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <Row label="Saldo inicial" values={cf.saldoInicial} muted />
-              <SectionRow label="ATIVIDADES OPERACIONAIS" />
-              <Row label="(+) Recebimentos de clientes" values={cf.recebimentos} tone="pos" />
-              <Row label="(−) Pagamentos a fornecedores (CPV)" values={cf.pagamentosFornecedores.map((v) => -v)} tone="neg" />
-              <Row label="(−) Pagamentos de custos fixos" values={cf.pagamentosFixos.map((v) => -v)} tone="neg" />
-              <Row label="(−) Pagamentos de custos variáveis" values={cf.pagamentosVariaveis.map((v) => -v)} tone="neg" />
-              <Row label="(−) Despesas financeiras" values={cf.pagamentosFinanceiros.map((v) => -v)} tone="neg" />
-              <Row label="(−) Impostos pagos" values={cf.pagamentosImpostos.map((v) => -v)} tone="neg" />
-              <Row label="(=) Fluxo das Operações" values={cf.fluxoOperacional} strong />
-
-              <SectionRow label="ATIVIDADES DE INVESTIMENTO" />
-              <Row label="(−) CapEx — investimentos em ativo fixo" values={state.cashflow.capex.map((v) => -v)} tone="neg" />
-              <Row label="(=) Fluxo de Investimento" values={cf.fluxoInvestimento} strong />
-
-              <SectionRow label="ATIVIDADES DE FINANCIAMENTO" />
-              <Row label="(+) Aportes de sócios" values={state.cashflow.aportes} tone="pos" />
-              <Row label="(+) Captação de empréstimos" values={state.cashflow.emprestimosCaptados} tone="pos" />
-              <Row label="(−) Amortização de principal" values={state.cashflow.amortizacoes.map((v) => -v)} tone="neg" />
-              <Row label="(−) Distribuição de dividendos" values={state.cashflow.dividendos.map((v) => -v)} tone="neg" />
-              <Row label="(=) Fluxo de Financiamento" values={cf.fluxoFinanciamento} strong />
-
-              <Row label="(=) VARIAÇÃO DE CAIXA" values={cf.variacaoCaixa} strong highlight />
-              <Row label="(=) SALDO FINAL" values={cf.saldoFinal} strong highlight />
-            </tbody>
-          </table>
-        </div>
-        <div className="border-t border-border/60 px-4 py-2 text-[10px] text-muted-foreground">
-          Modelo simplificado: ignora variações de estoque e ajustes de capital de giro contábil mais finos. Para diagnóstico operacional é suficiente.
-        </div>
-      </div>
+      <DFCTable state={state} cf={cf} />
 
       {/* Resumo: 3 meses mais críticos */}
       <div className="rounded-lg border border-border/60 bg-card/40 p-4">
@@ -387,15 +340,113 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
   );
 }
 
-function Row({ label, values, tone, strong, highlight, muted }: { label: string; values: number[]; tone?: "pos" | "neg"; strong?: boolean; highlight?: boolean; muted?: boolean }) {
-  const total = sum(values);
+type Period = "mensal" | "trimestral" | "anual";
+type Agg = "sum" | "last" | "first";
+
+function bucketIndices(period: Period): number[][] {
+  if (period === "mensal") return MESES.map((_, i) => [i]);
+  if (period === "trimestral") return [[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
+  return [[0,1,2,3,4,5,6,7,8,9,10,11]];
+}
+function periodLabels(period: Period): string[] {
+  if (period === "mensal") return MESES;
+  if (period === "trimestral") return ["T1", "T2", "T3", "T4"];
+  return ["Ano"];
+}
+function aggregate(values: number[], period: Period, agg: Agg): number[] {
+  return bucketIndices(period).map((idxs) => {
+    if (agg === "sum") return idxs.reduce((a, i) => a + (values[i] || 0), 0);
+    if (agg === "last") return values[idxs[idxs.length - 1]] || 0;
+    return values[idxs[0]] || 0;
+  });
+}
+
+function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof buildCashFlow> }) {
+  const [period, setPeriod] = useState<Period>("trimestral");
+  const cols = periodLabels(period);
+
+  return (
+    <div className="rounded-lg border border-border/60 bg-card/40">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 p-4">
+        <SectionTitle hint="Caixa pelo método direto. Receitas e CPV usam PMR/PMP da aba Receitas. Impostos pagos no mês seguinte ao da competência.">
+          Demonstração do Fluxo de Caixa — método direto
+        </SectionTitle>
+        <div className="inline-flex rounded-md border border-border/60 bg-card p-0.5 text-xs">
+          {(["mensal", "trimestral", "anual"] as Period[]).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setPeriod(p)}
+              className={`rounded px-3 py-1 capitalize transition-colors ${
+                period === p ? "bg-primary text-primary-foreground font-semibold" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="scrollbar-thin overflow-x-auto">
+        <table className="w-full min-w-[900px] border-separate border-spacing-0 text-sm">
+          <thead>
+            <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+              <th className="sticky left-0 z-20 w-[320px] min-w-[320px] bg-card px-4 py-2 shadow-[1px_0_0_0_var(--border)]">Linha</th>
+              {cols.map((c) => (
+                <th key={c} className="px-2 py-2 text-right">{c}</th>
+              ))}
+              <th className="px-3 py-2 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <Row label="Saldo inicial" values={aggregate(cf.saldoInicial, period, "first")} muted rawTotal={cf.saldoInicial[0]} />
+            <SectionRow label="ATIVIDADES OPERACIONAIS" cols={cols.length} />
+            <Row label="(+) Recebimentos de clientes" values={aggregate(cf.recebimentos, period, "sum")} tone="pos" />
+            <Row label="(−) Pagamentos a fornecedores (CPV)" values={aggregate(cf.pagamentosFornecedores.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(cf.pagamentosFornecedores)} />
+            <Row label="(−) Pagamentos de custos fixos" values={aggregate(cf.pagamentosFixos.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(cf.pagamentosFixos)} />
+            <Row label="(−) Pagamentos de custos variáveis" values={aggregate(cf.pagamentosVariaveis.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(cf.pagamentosVariaveis)} />
+            <Row label="(−) Despesas financeiras" values={aggregate(cf.pagamentosFinanceiros.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(cf.pagamentosFinanceiros)} />
+            <Row label="(−) Impostos pagos" values={aggregate(cf.pagamentosImpostos.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(cf.pagamentosImpostos)} />
+            <Row label="(=) Fluxo das Operações" values={aggregate(cf.fluxoOperacional, period, "sum")} strong rawTotal={sum(cf.fluxoOperacional)} />
+
+            <SectionRow label="ATIVIDADES DE INVESTIMENTO" cols={cols.length} />
+            <Row label="(−) CapEx — investimentos em ativo fixo" values={aggregate(state.cashflow.capex.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(state.cashflow.capex)} />
+            <Row label="(=) Fluxo de Investimento" values={aggregate(cf.fluxoInvestimento, period, "sum")} strong rawTotal={sum(cf.fluxoInvestimento)} />
+
+            <SectionRow label="ATIVIDADES DE FINANCIAMENTO" cols={cols.length} />
+            <Row label="(+) Aportes de sócios" values={aggregate(state.cashflow.aportes, period, "sum")} tone="pos" rawTotal={sum(state.cashflow.aportes)} />
+            <Row label="(+) Captação de empréstimos" values={aggregate(state.cashflow.emprestimosCaptados, period, "sum")} tone="pos" rawTotal={sum(state.cashflow.emprestimosCaptados)} />
+            <Row label="(−) Amortização de principal" values={aggregate(state.cashflow.amortizacoes.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(state.cashflow.amortizacoes)} />
+            <Row label="(−) Distribuição de dividendos" values={aggregate(state.cashflow.dividendos.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(state.cashflow.dividendos)} />
+            <Row label="(=) Fluxo de Financiamento" values={aggregate(cf.fluxoFinanciamento, period, "sum")} strong rawTotal={sum(cf.fluxoFinanciamento)} />
+
+            <Row label="(=) VARIAÇÃO DE CAIXA" values={aggregate(cf.variacaoCaixa, period, "sum")} strong highlight rawTotal={sum(cf.variacaoCaixa)} />
+            <Row label="(=) SALDO FINAL" values={aggregate(cf.saldoFinal, period, "last")} strong highlight rawTotal={cf.saldoFinal[11]} />
+          </tbody>
+        </table>
+      </div>
+      <div className="border-t border-border/60 px-4 py-2 text-[10px] text-muted-foreground">
+        Modelo simplificado: ignora variações de estoque e ajustes de capital de giro contábil mais finos. Para diagnóstico operacional é suficiente.
+      </div>
+    </div>
+  );
+}
+
+function Row({
+  label, values, tone, strong, highlight, muted, rawTotal,
+}: {
+  label: string; values: number[]; tone?: "pos" | "neg";
+  strong?: boolean; highlight?: boolean; muted?: boolean;
+  /** Total a exibir (sobrepõe a soma de `values`). Útil ao agregar por período. */
+  rawTotal?: number;
+}) {
+  const total = rawTotal ?? sum(values);
   const toneCls = tone === "pos" ? "text-pos" : tone === "neg" ? "text-neg" : "";
   const rowBg = highlight ? "bg-primary/10" : strong ? "bg-accent/20" : "bg-card";
   return (
     <tr className={`${highlight ? "bg-primary/10" : strong ? "bg-accent/20" : ""}`}>
-      <td className={`sticky left-0 z-10 ${rowBg} border-t border-border/30 px-4 py-1.5 text-xs shadow-[1px_0_0_0_var(--border)] ${strong ? "font-semibold" : muted ? "text-muted-foreground" : ""}`}>{label}</td>
+      <td className={`sticky left-0 z-10 w-[320px] min-w-[320px] ${rowBg} border-t border-border/30 px-4 py-1.5 text-xs shadow-[1px_0_0_0_var(--border)] ${strong ? "font-semibold" : muted ? "text-muted-foreground" : ""}`}>{label}</td>
       {values.map((v, i) => (
-        <td key={i} className={`num border-t border-border/30 px-1 py-1.5 text-right text-[11px] ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-foreground" : "text-muted-foreground"}`}>
+        <td key={i} className={`num border-t border-border/30 px-2 py-1.5 text-right text-[11px] ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-foreground" : "text-muted-foreground"}`}>
           {v === 0 ? "—" : fmtBRLCompact(v)}
         </td>
       ))}
@@ -406,13 +457,13 @@ function Row({ label, values, tone, strong, highlight, muted }: { label: string;
   );
 }
 
-function SectionRow({ label }: { label: string }) {
+function SectionRow({ label, cols = 12 }: { label: string; cols?: number }) {
   return (
     <tr className="bg-card/60">
-      <td className="sticky left-0 z-10 border-t border-border/40 bg-card/80 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary/80 shadow-[1px_0_0_0_var(--border)]">
+      <td className="sticky left-0 z-10 w-[320px] min-w-[320px] border-t border-border/40 bg-card/80 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary/80 shadow-[1px_0_0_0_var(--border)]">
         {label}
       </td>
-      <td colSpan={13} className="border-t border-border/40 px-4 py-1.5" />
+      <td colSpan={cols + 1} className="border-t border-border/40 px-4 py-1.5" />
     </tr>
   );
 }
