@@ -468,18 +468,8 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             </Fragment>
           ))}
         </div>
-        <div className="border-t border-border/60 p-4 text-xs text-muted-foreground">
-          Use o regime ativo no app na aba <b>DRE</b>. Atualmente:{" "}
-          <Select value={state.tax.regime} onValueChange={(v) => set({ regime: v as TaxRegime })}>
-            <SelectTrigger className="ml-2 inline-flex h-7 w-44"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="simples">Simples Nacional</SelectItem>
-              <SelectItem value="presumido">Lucro Presumido</SelectItem>
-              <SelectItem value="real">Lucro Real</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
+
 
       {/* Comparativo Atual vs. Reforma — tabela + gráfico */}
       <div className="rounded-lg border border-border/60 bg-card/40">
