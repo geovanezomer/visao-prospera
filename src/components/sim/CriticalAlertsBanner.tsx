@@ -95,11 +95,12 @@ export function CriticalAlertsBanner({ state, model }: { state: AppState; model?
           <Metric
             icon={<AlertTriangle className="h-4 w-4" />}
             label="Cobertura de juros"
-            value={Number.isFinite(ind.coberturaJuros) ? `${ind.coberturaJuros.toFixed(1)}×` : "∞"}
+            // coberturaJuros é capada em CAP_COB (999) — sempre finita.
+            value={jurosAnual <= 1 ? "—" : `${ind.coberturaJuros.toFixed(1)}×`}
             tone={cobTone}
             desc="Quantas vezes o EBIT cobre os juros do ano."
             formula="EBIT ÷ Juros"
-            sub={ind.coberturaJuros < 2 ? "⚠ Risco real de inadimplência financeira" : "OK"}
+            sub={jurosAnual <= 1 ? "Sem juros relevantes no período" : ind.coberturaJuros < 2 ? "⚠ Risco real de inadimplência financeira" : "OK"}
           />
           <Metric
             icon={<TrendingDown className="h-4 w-4" />}
