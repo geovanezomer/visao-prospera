@@ -204,9 +204,9 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
         />
       </SectionBlock>
 
-      {/* Custos Financeiros */}
+      {/* Despesas Financeiras */}
       <SectionBlock
-        title="Custos Financeiros"
+        title="Despesas Financeiras"
         hint="Juros, IOF, tarifas bancárias e antecipação de recebíveis."
         accentClass="border-l-neg"
         onAdd={() => addLine("financeiro")}
