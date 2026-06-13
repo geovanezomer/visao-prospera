@@ -841,6 +841,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // Indicadores de produtividade por colaborador (headcount em Configurações Rápidas).
   const headcount = Math.max(0, state.numColaboradores ?? 0);
   const receitaPorColaborador = headcount > 0 ? receitaLiqAnual / headcount : 0;
+  const ebitdaPorColaborador = headcount > 0 ? ebitdaAnual / headcount : 0;
   const lucroPorColaborador = headcount > 0 ? llAnual / headcount : 0;
   // Folha (CLT + pró-labore + MOD) com encargos sobre Receita Líquida.
   const folha = folhaAnual(state);
