@@ -111,7 +111,7 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   let cpvNaoFolhaBase = 0;
   for (const c of state.costs) {
     if (!isCpvCost(c)) continue;
-    const v = sum(effectiveMonthValues(c, state.tax.regime));
+    const v = sum(effectiveMonthValues(c, regime));
     const isLabor = c.encargosAuto || LABOR_RE.test(c.label);
     if (isLabor) folhaCpvBase += v;
     else cpvNaoFolhaBase += v;
