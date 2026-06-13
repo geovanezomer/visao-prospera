@@ -32,7 +32,9 @@ export interface SpreadForecastResult {
  *   • Capital Investido cresce com capex acumulado dos anos anteriores.
  */
 export function buildSpreadForecast(state: AppState, horizonYears = 5): SpreadForecastResult {
-  const { dre } = buildDRE(state, state.tax.regime);
+  // SSOT: regime EFETIVO (downgrade Simples→Presumido se acima do limite).
+  const regime = resolveEffectiveRegime(state);
+  const { dre } = buildDRE(state, regime);
   const ind = calcIndicators(state, dre);
   const wacc = ind.wacc;
 
@@ -42,8 +44,8 @@ export function buildSpreadForecast(state: AppState, horizonYears = 5): SpreadFo
   const depAnual = sum(dre.depreciacao);
   const impostosAnual = sum(dre.impostos);
   const lairAnual = sum(dre.lair);
-  // SSOT-2: shield fiscal correto por regime — em Presumido/Simples = 0.
-  const irShield = irShieldForRegime(state.tax.regime);
+  // SSOT-2: shield fiscal correto por regime EFETIVO — em Presumido/Simples = 0.
+  const irShield = irShieldForRegime(regime);
   const tcEfetiva = lairAnual > 0 ? Math.min(0.5, impostosAnual / lairAnual) : irShield;
 
   const PL = Math.max(0, state.capital.patrimonioLiquido);
