@@ -1,131 +1,193 @@
-import { Fragment, useEffect } from "react";
-import { AppState, SimplesAnexo, TaxEra, TaxRegime, TAX_ERAS, TAX_ERA_LABEL, TAX_ERA_SHORT } from "@/lib/finance/types";
+import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
+import { toast } from "sonner";
+import { AppState, BusinessType, SimplesAnexo, TaxEra, TaxRegime, TAX_ERA_SHORT } from "@/lib/finance/types";
 import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
-import { compareErasForRegime, compareRegimes, getReformaRates, simplesAliquotaEfetiva, buildDRE } from "@/lib/finance/calculations";
+import {
+  compareErasForRegime,
+  compareRegimes,
+  getReformaRates,
+  simplesAliquotaEfetiva,
+  resolveSimplesAnexo,
+  folhaAnual,
+  buildDRE,
+} from "@/lib/finance/calculations";
 import { getPresumidoBases, SIMPLES_LIMITE } from "@/lib/finance/taxDefaults";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { HelpTip, NumInput, PctInput, SectionTitle } from "./primitives";
+import { HelpTip, PctInput, SectionTitle } from "./primitives";
+
+// =================================================================
+// Componentes movidos para o topo do módulo (B9) — evitam recriação
+// a cada render e preservam identidade React dos filhos.
+// =================================================================
+const RegimeCard = ({
+  title,
+  isBest,
+  annual,
+  effective,
+  badge,
+  children,
+}: {
+  title: string;
+  isBest: boolean;
+  annual: number;
+  effective: number;
+  badge?: string;
+  children: React.ReactNode;
+}) => (
+  <div
+    className={`relative rounded-lg border bg-card/40 p-5 ${
+      isBest ? "border-success shadow-[0_0_0_1px_var(--success)]" : "border-border/60"
+    }`}
+  >
+    {isBest && (
+      <div className="absolute -top-2.5 left-4 z-10">
+        <span className="inline-flex items-center rounded-full bg-success px-2.5 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-sm">
+          ✓ Mais vantajoso
+        </span>
+      </div>
+    )}
+    <div className="space-y-1">
+      <h3 className="text-base font-semibold text-foreground">{title}</h3>
+      <div className={`text-3xl font-bold tracking-tight ${isBest ? "text-pos" : "text-foreground"}`}>
+        {fmtBRL(annual)}
+      </div>
+      <div className="text-xs text-muted-foreground">
+        {fmtPct(effective / 100)} carga efetiva
+      </div>
+    </div>
+    {badge && (
+      <div className="mt-3">
+        <Badge variant="outline" className="border-border/60 bg-accent/20 text-[11px] font-normal text-foreground">
+          {badge}
+        </Badge>
+      </div>
+    )}
+    <div className="mt-4 space-y-3 text-sm">{children}</div>
+  </div>
+);
+
+const Row = ({ label, value, strong }: { label: string; value: string; strong?: boolean }) => (
+  <div className={`flex items-center justify-between border-b border-border/30 pb-1 ${strong ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+    <span className="text-xs">{label}</span>
+    <span className="num text-sm">{value}</span>
+  </div>
+);
+
+// Mapeamento Anexo → atividade esperada para validação (B5).
+const ANEXO_BUSINESS_OK: Record<SimplesAnexo, BusinessType[]> = {
+  I: ["comercio"],
+  II: ["industria"],
+  III: ["servicos"],
+  IV: ["servicos"],
+  V: ["servicos"],
+};
 
 export function TaxTab({ state, update }: { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void }) {
-  const rbAnual = sum(state.revenue.bruta);
-  const set = (patch: Partial<typeof state.tax>) => update((s) => ({ ...s, tax: { ...s.tax, ...patch } }));
-  const regimes = compareRegimes(state);
-  const aliqEf = simplesAliquotaEfetiva(rbAnual, state.tax.simplesAnexo, state.tax);
+  const rbAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
+  const set = useCallback(
+    (patch: Partial<typeof state.tax>) =>
+      update((s) => ({ ...s, tax: { ...s.tax, ...patch } })),
+    [update],
+  );
 
-  // Teto do Simples Nacional — configurável em Parâmetros (atualmente em discussão no Congresso)
-  const simplesLimite = state.tax.ratesOverride?.simplesLimite ?? SIMPLES_LIMITE;
-  const desenquadradoSimples = rbAnual > simplesLimite;
-
-  // net profits per regime
-  const llBy: Record<TaxRegime, number> = {
+  // ----- Engine: memoizada (B1) — recomputa só quando state muda -----
+  const regimes = useMemo(() => compareRegimes(state), [state]);
+  const llBy: Record<TaxRegime, number> = useMemo(() => ({
     simples: sum(buildDRE(state, "simples").dre.lucroLiquido),
     presumido: sum(buildDRE(state, "presumido").dre.lucroLiquido),
     real: sum(buildDRE(state, "real").dre.lucroLiquido),
-  };
-  // Quando desenquadrado, Simples sai da disputa do "mais vantajoso"
-  const bestPool = (Object.entries(llBy) as [TaxRegime, number][])
-    .filter(([r]) => !(desenquadradoSimples && r === "simples"));
-  const best = bestPool.reduce((a, b) => (b[1] > a[1] ? b : a))[0];
-
-  // Auto-migrar regime quando desenquadrado do Simples — escolhe o mais vantajoso
-  useEffect(() => {
-    if (desenquadradoSimples && state.tax.regime === "simples") {
-      set({ regime: best });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [desenquadradoSimples, state.tax.regime, best]);
-
-  const Card = ({
-    title,
-    regime,
-    annual,
-    effective,
-    badge,
-    children,
-  }: {
-    title: string;
-    regime: TaxRegime;
-    annual: number;
-    effective: number;
-    badge?: string;
-    children: React.ReactNode;
-  }) => {
-    const isBest = best === regime;
-    return (
-      <div
-        className={`relative rounded-lg border bg-card/40 p-5 ${
-          isBest ? "border-success shadow-[0_0_0_1px_var(--success)]" : "border-border/60"
-        }`}
-      >
-        {isBest && (
-          <div className="absolute -top-2.5 left-4 z-10">
-            <span className="inline-flex items-center rounded-full bg-success px-2.5 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-sm">
-              ✓ Mais vantajoso
-            </span>
-          </div>
-        )}
-
-        <div className="space-y-1">
-          <h3 className="text-base font-semibold text-foreground">{title}</h3>
-          <div className={`text-3xl font-bold tracking-tight ${isBest ? "text-pos" : "text-foreground"}`}>
-            {fmtBRL(annual)}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {fmtPct(effective / 100)} carga efetiva
-          </div>
-        </div>
-        {badge && (
-          <div className="mt-3">
-            <Badge variant="outline" className="border-border/60 bg-accent/20 text-[11px] font-normal text-foreground">
-              {badge}
-            </Badge>
-          </div>
-        )}
-        <div className="mt-4 space-y-3 text-sm">{children}</div>
-      </div>
-    );
-  };
-
-  const Row = ({ label, value, strong }: { label: string; value: string; strong?: boolean }) => (
-    <div className={`flex items-center justify-between border-b border-border/30 pb-1 ${strong ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
-      <span className="text-xs">{label}</span>
-      <span className="num text-sm">{value}</span>
-    </div>
+  }), [state]);
+  const projAtiva = useMemo(
+    () => compareErasForRegime(state, state.tax.regime),
+    [state],
   );
 
+  // B10: alíquota efetiva exibida usa o anexo *resolvido* (Fator R V→III).
+  const anexoEfetivo = useMemo(() => resolveSimplesAnexo(state), [state]);
+  const aliqEf = useMemo(
+    () => simplesAliquotaEfetiva(rbAnual, anexoEfetivo, state.tax),
+    [rbAnual, anexoEfetivo, state.tax],
+  );
 
-  // Alertas de sublimite e enquadramento (Auditoria — Fase 2)
-  const simplesWarnings: string[] = [];
-  if (rbAnual > simplesLimite) {
-    // Desenquadramento já é comunicado pelo card "desligado" do Simples — sem alerta no topo.
-  } else if (rbAnual > 3_600_000) {
-    simplesWarnings.push(
-      `RBT12 = ${fmtBRL(rbAnual)} ultrapassa o sublimite estadual de R$ 3.600.000 — ICMS/ISS passam a ser recolhidos fora do Simples (regime normal estadual), embora os tributos federais continuem no DAS.`,
-    );
-  } else if (rbAnual > simplesLimite * 0.9) {
-    simplesWarnings.push(
-      `RBT12 = ${fmtBRL(rbAnual)} está a menos de 10% do teto (${fmtBRL(simplesLimite)}). Cuidado com o desenquadramento automático.`,
-    );
-  }
-  if (state.tax.simplesAnexo === "III" && state.businessType !== "servicos") {
-    simplesWarnings.push(
-      `Anexo III é para serviços com Fator R ≥ 28%. Atividade atual é "${state.businessType}" — reveja o anexo (Comércio = I, Indústria = II).`,
-    );
-  }
-  if (state.tax.simplesAnexo === "V" && state.tax.fatorRAuto) {
-    const folha = (buildDRE(state, state.tax.regime).dre.folhaCltAnual || 0);
-    if (rbAnual > 0 && folha / rbAnual >= 0.28) {
-      simplesWarnings.push(
-        `Fator R = ${((folha / rbAnual) * 100).toFixed(1)}% (≥ 28%) — Anexo V será automaticamente migrado para Anexo III (alíquotas menores).`,
+  const simplesLimite = state.tax.ratesOverride?.simplesLimite ?? SIMPLES_LIMITE;
+  const desenquadradoSimples = rbAnual > simplesLimite;
+
+  // Quando desenquadrado, Simples sai da disputa do "mais vantajoso"
+  const best: TaxRegime = useMemo(() => {
+    const pool = (Object.entries(llBy) as [TaxRegime, number][])
+      .filter(([r]) => !(desenquadradoSimples && r === "simples"));
+    return pool.reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+  }, [llBy, desenquadradoSimples]);
+
+  // B2/B7: auto-migrar regime quando desenquadrado, com guarda contra
+  // oscilação (só dispara UMA vez por transição "ficou desenquadrado")
+  // e avisa o usuário via toast.
+  const migratedRef = useRef(false);
+  useEffect(() => {
+    if (!desenquadradoSimples) {
+      migratedRef.current = false;
+      return;
+    }
+    if (state.tax.regime === "simples" && !migratedRef.current) {
+      migratedRef.current = true;
+      const target = best;
+      set({ regime: target });
+      const label = target === "presumido" ? "Lucro Presumido" : "Lucro Real";
+      toast.warning(`Regime migrado automaticamente para ${label}`, {
+        description: `RBT12 = ${fmtBRL(rbAnual)} ultrapassa o teto do Simples (${fmtBRL(simplesLimite)}).`,
+      });
+    }
+  }, [desenquadradoSimples, state.tax.regime, best, set, rbAnual, simplesLimite]);
+
+  // Alertas de sublimite e enquadramento (memoizado — B1/B5)
+  const simplesWarnings = useMemo(() => {
+    const w: string[] = [];
+    if (rbAnual > simplesLimite) {
+      // Desenquadramento já é comunicado pelo card "desligado" — sem alerta extra.
+    } else if (rbAnual > 3_600_000) {
+      w.push(
+        `RBT12 = ${fmtBRL(rbAnual)} ultrapassa o sublimite estadual de R$ 3.600.000 — ICMS/ISS passam a ser recolhidos fora do Simples (regime normal estadual), embora os tributos federais continuem no DAS.`,
+      );
+    } else if (rbAnual > simplesLimite * 0.9) {
+      w.push(
+        `RBT12 = ${fmtBRL(rbAnual)} está a menos de 10% do teto (${fmtBRL(simplesLimite)}). Cuidado com o desenquadramento automático.`,
       );
     }
-  }
+    // B5: validação completa de anexo × businessType.
+    const okBusiness = ANEXO_BUSINESS_OK[state.tax.simplesAnexo];
+    if (okBusiness && !okBusiness.includes(state.businessType)) {
+      const labels: Record<SimplesAnexo, string> = {
+        I: "Anexo I (comércio)",
+        II: "Anexo II (indústria)",
+        III: "Anexo III (serviços, Fator R ≥ 28%)",
+        IV: "Anexo IV (serviços específicos)",
+        V: "Anexo V (serviços intelectuais)",
+      };
+      w.push(
+        `${labels[state.tax.simplesAnexo]} é incompatível com a atividade "${state.businessType}". Reveja o anexo (Comércio = I, Indústria = II, Serviços = III/IV/V).`,
+      );
+    }
+    if (state.tax.simplesAnexo === "V" && state.tax.fatorRAuto) {
+      // B6: usa helper barato `folhaAnual` em vez de `buildDRE(...).folhaCltAnual`.
+      const folha = folhaAnual(state);
+      if (rbAnual > 0 && folha / rbAnual >= 0.28) {
+        w.push(
+          `Fator R = ${((folha / rbAnual) * 100).toFixed(1)}% (≥ 28%) — Anexo V será automaticamente migrado para Anexo III (alíquotas menores).`,
+        );
+      }
+    }
+    return w;
+  }, [rbAnual, simplesLimite, state]);
 
   const era: TaxEra = state.tax.era ?? "atual";
-  const reforma = getReformaRates(era, state.tax);
-  const emReforma = era !== "atual";
-  const projAtiva = compareErasForRegime(state, state.tax.regime);
+  const reforma = useMemo(() => getReformaRates(era, state.tax), [era, state.tax]);
+
+  const setOverride = useCallback(
+    (patch: Partial<NonNullable<typeof state.tax.ratesOverride>>) =>
+      set({ ratesOverride: { ...(state.tax.ratesOverride ?? {}), ...patch } }),
+    [set, state.tax.ratesOverride],
+  );
 
   return (
     <div className="space-y-6">
@@ -148,13 +210,15 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             </p>
           </div>
           <div className="flex items-center gap-2">
-            
             <div className="flex flex-col items-end gap-1">
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Regime ativo (DRE)</span>
               <Select value={state.tax.regime} onValueChange={(v) => set({ regime: v as TaxRegime })}>
                 <SelectTrigger className="h-8 w-48"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="simples">Simples Nacional</SelectItem>
+                  {/* B7: opção Simples desabilitada quando desenquadrado */}
+                  <SelectItem value="simples" disabled={desenquadradoSimples}>
+                    Simples Nacional{desenquadradoSimples ? " (desenquadrado)" : ""}
+                  </SelectItem>
                   <SelectItem value="presumido">Lucro Presumido</SelectItem>
                   <SelectItem value="real">Lucro Real</SelectItem>
                 </SelectContent>
@@ -162,7 +226,6 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             </div>
           </div>
         </div>
-
 
         {/* Timeline visual clicável */}
         <div className="mt-5">
@@ -176,7 +239,6 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             return (
               <>
                 <div className="relative">
-                  {/* trilho */}
                   <div className="absolute left-0 right-0 top-4 h-1 rounded-full bg-border/60" />
                   <div
                     className="absolute left-0 top-4 h-1 rounded-full bg-primary transition-all duration-500"
@@ -231,11 +293,8 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
           const icmsIssMult = (state.tax.ratesOverride?.reformaTransicaoIcmsIssMult ?? 0.5);
           const ibsTrans = ibsPleno * ibsMult;
           const icmsIssResidual = icmsIssMult * 100;
-          const setOverride = (patch: Partial<NonNullable<typeof state.tax.ratesOverride>>) =>
-            set({ ratesOverride: { ...(state.tax.ratesOverride ?? {}), ...patch } });
           return (
             <div className="mt-5 grid gap-4 border-t border-border/40 pt-4 md:grid-cols-2">
-              {/* TRANSIÇÃO 2027–2032 */}
               <div className="rounded-md border border-border/50 bg-accent/20 p-3">
                 <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Transição · 2027–2032
@@ -271,7 +330,6 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
                 </div>
               </div>
 
-              {/* REGIME PLENO 2033+ */}
               <div className="rounded-md border border-border/50 bg-accent/20 p-3">
                 <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Regime Pleno · 2033+
@@ -301,6 +359,34 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
         })()}
       </div>
 
+      {/* B3/B4: Bloco compartilhado de ICMS (afeta Presumido E Real).
+           Antes estava duplicado dentro de cada card, sugerindo parâmetros independentes. */}
+      {state.businessType !== "servicos" && (
+        <div className="rounded-lg border border-border/60 bg-card/40 p-5">
+          <SectionTitle hint="Alíquotas de ICMS aplicadas tanto em Lucro Presumido quanto em Lucro Real. ICMS efetivo = max(0, débito − crédito).">
+            ICMS · Débito e Crédito
+          </SectionTitle>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                ICMS débito (%)
+                <HelpTip text="Alíquota de débito sobre a receita bruta. Mesmo valor é usado em Presumido e Real." />
+              </label>
+              <PctInput value={state.tax.issIcms} onChange={(n) => set({ issIcms: n })} />
+            </div>
+            <div>
+              <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                ICMS crédito (CPV) (%)
+                <HelpTip text="Alíquota média de ICMS embutida nas compras (entradas). Aproveitada como crédito em Presumido e Real." />
+              </label>
+              <PctInput value={state.tax.aliquotaICMSCredito ?? 0} onChange={(n) => set({ aliquotaICMSCredito: n })} />
+            </div>
+          </div>
+          <div className="mt-2 text-[10.5px] text-muted-foreground">
+            ⓘ Estas alíquotas são compartilhadas pelos dois regimes — alterá-las aqui afeta ambos os cálculos abaixo.
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {desenquadradoSimples ? (
@@ -320,12 +406,12 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             </div>
           </div>
         ) : (
-          <Card
+          <RegimeCard
             title="Simples Nacional"
-            regime="simples"
+            isBest={best === "simples"}
             annual={regimes.simples.annual}
             effective={regimes.simples.effective}
-            badge={`Anexo ${state.tax.simplesAnexo}${state.tax.simplesAnexo === "III" ? " · Fator R ≥ 28%" : ""}`}
+            badge={`Anexo ${anexoEfetivo}${anexoEfetivo === "III" && state.tax.simplesAnexo === "V" ? " (migrado de V via Fator R)" : ""}`}
           >
             <div>
               <label className="text-xs text-muted-foreground">Anexo</label>
@@ -345,12 +431,12 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             <div className="mt-3 rounded-md bg-accent/30 p-3 text-[11px] text-muted-foreground">
               Anexos: <b>I</b> comércio · <b>II</b> indústria · <b>III</b> serviços (Fator R ≥ 28%) · <b>IV</b> serviços específicos · <b>V</b> serviços intelectuais.
             </div>
-          </Card>
+          </RegimeCard>
         )}
 
-        <Card
+        <RegimeCard
           title="Lucro Presumido"
-          regime="presumido"
+          isBest={best === "presumido"}
           annual={regimes.presumido.annual}
           effective={regimes.presumido.effective}
           badge={(() => {
@@ -360,53 +446,24 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             return `Base IRPJ ${bI}% · CSLL ${bC}%`;
           })()}
         >
-          {state.businessType !== "servicos" && (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                  ICMS (débito)
-                  <HelpTip text="Alíquota de débito de ICMS sobre a receita bruta. O crédito sobre o CPV é configurado ao lado." />
-                </label>
-                <PctInput value={state.tax.issIcms} onChange={(n) => set({ issIcms: n })} />
-              </div>
-              <div>
-                <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                  ICMS crédito (CPV)
-                  <HelpTip text="Alíquota média de ICMS embutida nas compras (entradas). ICMS efetivo = max(0, débito − crédito)." />
-                </label>
-                <PctInput value={state.tax.aliquotaICMSCredito ?? 0} onChange={(n) => set({ aliquotaICMSCredito: n })} />
-              </div>
-            </div>
-          )}
           {Object.entries(regimes.presumido.detail).map(([k, v]) => <Row key={k} label={k} value={fmtBRL(v)} />)}
           <div className="mt-2 rounded-md bg-accent/30 p-2 text-[10.5px] text-muted-foreground">
             ⓘ Base IRPJ, Base CSLL{state.businessType === "servicos" ? " e ISS" : ""} são editáveis em <b>Parâmetros</b> (cabeçalho). Adicional de IRPJ (10% sobre lucro trimestral &gt; R$60k) é distribuído proporcionalmente entre os meses.
           </div>
-        </Card>
+        </RegimeCard>
 
-        <Card
+        <RegimeCard
           title="Lucro Real"
-          regime="real"
+          isBest={best === "real"}
           annual={regimes.real.annual}
           effective={regimes.real.effective}
           badge="PIS/COFINS não-cumulativo"
         >
-          {state.businessType !== "servicos" && (
-            <div>
-              <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                ICMS crédito (CPV)
-                <HelpTip text="Alíquota média de ICMS embutida nas compras. ICMS efetivo = max(0, débito − crédito)." />
-              </label>
-              <PctInput value={state.tax.aliquotaICMSCredito ?? 0} onChange={(n) => set({ aliquotaICMSCredito: n })} />
-            </div>
-          )}
           {Object.entries(regimes.real.detail).map(([k, v]) => <Row key={k} label={k} value={fmtBRL(v)} />)}
           <div className="mt-2 rounded-md bg-accent/30 p-2 text-[10.5px] text-muted-foreground">
             ⓘ PIS/COFINS não-cumulativos abatem créditos automaticamente sobre insumos. Após 2027, com CBS/IBS, a não-cumulatividade é plena sobre toda despesa operacional vinculada à atividade.
           </div>
-        </Card>
-
-
+        </RegimeCard>
       </div>
 
       <div className="rounded-lg border border-border/60 bg-card/40">
@@ -440,7 +497,7 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
                   const widthPct = (Math.abs(v) / maxAbs) * 100;
                   const isBest = r === best;
                   const isCurrent = r === state.tax.regime;
-                  const delta = v - bestVal; // negativo = perde para o melhor
+                  const delta = v - bestVal;
                   const deltaPct = bestVal !== 0 ? (delta / Math.abs(bestVal)) * 100 : 0;
                   return (
                     <div key={r}>
@@ -510,7 +567,6 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
         })()}
       </div>
 
-
       {/* Comparativo Atual vs. Reforma — tabela + gráfico */}
       <div className="rounded-lg border border-border/60 bg-card/40">
         <div className="border-b border-border/60 p-4">
@@ -522,7 +578,6 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
           </p>
         </div>
 
-        {/* Tabela compacta 3 colunas */}
         <div className="grid grid-cols-4 gap-px bg-border/40 text-center">
           <div className="bg-card p-3 text-left text-[11px] uppercase tracking-wider text-muted-foreground">Indicador</div>
           {projAtiva.map((p) => (
