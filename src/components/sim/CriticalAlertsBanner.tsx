@@ -118,7 +118,7 @@ export function CriticalAlertsBanner({ state, model }: { state: AppState; model?
             <div className="flex items-center gap-2 text-sm font-semibold">
               <Scissors className="h-4 w-4 text-[var(--warning)]" />
               Break-even dinâmico — corte mínimo para fechar o gap
-              <HelpTip text="Quanto cortar em custos fixos anuais para o saldo do pior mês atingir o caixa mínimo. Impacto em VPL assume o corte como recorrente, capitalizado por perpetuidade." formula="Gap ÷ Custos Fixos · ΔVPL ≈ Corte × (1 − IR) ÷ WACC" />
+              <HelpTip text="Quanto cortar em custos fixos anuais para o saldo do pior mês atingir o caixa mínimo. Impacto em VPL trata o gap como déficit pontual (one-shot), aplicando apenas o escudo fiscal — sem perpetuidade." formula="Gap ÷ Custos Fixos · ΔVPL ≈ Gap × (1 − IR)" />
             </div>
             <div className="mt-3 grid gap-3 md:grid-cols-3 text-xs">
               <Cell label="Gap a cobrir" v={fmtBRL(gap)} tone="warn" />
@@ -128,10 +128,10 @@ export function CriticalAlertsBanner({ state, model }: { state: AppState; model?
                 sub={custosFixosAnuais > 0 ? `Base: ${fmtBRL(custosFixosAnuais)}/ano` : "Sem custos fixos cadastrados"}
               />
               <Cell
-                label="Impacto em VPL (perpetuidade)"
+                label="Impacto em VPL (one-shot)"
                 v={`+${fmtBRL(vplDelta)}`}
                 tone="pos"
-                sub={`WACC ${fmtPct(ind.wacc / 100)} · shield ${fmtPct(irShieldForRegime(state.tax.regime))}`}
+                sub={`Regime efetivo · shield ${fmtPct(shield)}`}
               />
             </div>
             <p className="mt-3 text-[11px] italic text-muted-foreground">
