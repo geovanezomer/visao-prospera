@@ -57,10 +57,11 @@ function gradeFromScore(s: number): HealthScore["grade"] {
   return "E";
 }
 
-export function computeHealth(state: AppState): HealthScore {
-  const { dre } = buildDRE(state, state.tax.regime);
-  const ind = calcIndicators(state, dre);
-  const cf = buildCashFlow(state);
+export function computeHealth(state: AppState, precomputed?: HealthPrecomputed): HealthScore {
+  // Verdade absoluta: usa regime efetivo (Simples pode ter excedido limite → Presumido).
+  const dre = precomputed?.dre ?? buildDRE(state, resolveEffectiveRegime(state)).dre;
+  const ind = precomputed?.ind ?? calcIndicators(state, dre);
+  const cf = precomputed?.cf ?? buildCashFlow(state);
   const piorCaixa = cf.totais.pioresMes?.saldo ?? 0;
   const margemEbitda = ind.margemEbitda;
   const margemLiquida = ind.margemLiquida;
