@@ -1,8 +1,7 @@
 import { AppState } from "./types";
-import { buildDRE, calcIndicators, resolveEffectiveRegime, type Indicators } from "./calculations";
+import { buildDRE, calcIndicators, resolveEffectiveRegime, type Indicators, type DRE } from "./calculations";
 import { buildCashFlow, type CashFlow } from "./cashflow";
 import { computeStrategic, type StrategicResult } from "./strategic";
-import type { DRE } from "./types";
 
 /** Permite reaproveitar DRE/indicadores/CF já calculados (evita 3× recálculo do engine). */
 export interface HealthPrecomputed {
