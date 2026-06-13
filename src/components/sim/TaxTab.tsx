@@ -21,15 +21,55 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
   };
   const best = (Object.entries(llBy) as [TaxRegime, number][]).reduce((a, b) => (b[1] > a[1] ? b : a))[0];
 
-  const Card = ({ title, regime, children }: { title: string; regime: TaxRegime; children: React.ReactNode }) => (
-    <div className={`rounded-lg border bg-card/40 p-5 ${best === regime ? "border-primary shadow-[0_0_0_1px_var(--primary)]" : "border-border/60"}`}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">{title}</h3>
-        {best === regime && <Badge className="bg-primary text-primary-foreground">✓ Mais Vantajoso</Badge>}
+  const Card = ({
+    title,
+    regime,
+    annual,
+    effective,
+    badge,
+    children,
+  }: {
+    title: string;
+    regime: TaxRegime;
+    annual: number;
+    effective: number;
+    badge?: string;
+    children: React.ReactNode;
+  }) => {
+    const isBest = best === regime;
+    return (
+      <div
+        className={`relative rounded-lg border bg-card/40 p-5 ${
+          isBest ? "border-pos shadow-[0_0_0_1px_var(--pos)]" : "border-border/60"
+        }`}
+      >
+        {isBest && (
+          <div className="absolute -top-2.5 left-4">
+            <Badge className="bg-pos text-pos-foreground border-0 px-2 py-0.5 text-[10px]">
+              ✓ Mais vantajoso
+            </Badge>
+          </div>
+        )}
+        <div className="space-y-1">
+          <h3 className="text-base font-semibold text-foreground">{title}</h3>
+          <div className={`text-3xl font-bold tracking-tight ${isBest ? "text-pos" : "text-foreground"}`}>
+            {fmtBRL(annual)}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {fmtPct(effective / 100)} carga efetiva
+          </div>
+        </div>
+        {badge && (
+          <div className="mt-3">
+            <Badge variant="outline" className="border-border/60 bg-accent/20 text-[11px] font-normal text-foreground">
+              {badge}
+            </Badge>
+          </div>
+        )}
+        <div className="mt-4 space-y-3 text-sm">{children}</div>
       </div>
-      <div className="mt-4 space-y-3 text-sm">{children}</div>
-    </div>
-  );
+    );
+  };
 
   const Row = ({ label, value, strong }: { label: string; value: string; strong?: boolean }) => (
     <div className={`flex items-center justify-between border-b border-border/30 pb-1 ${strong ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
@@ -37,6 +77,7 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
       <span className="num text-sm">{value}</span>
     </div>
   );
+
 
   // Alertas de sublimite e enquadramento (Auditoria — Fase 2)
   const simplesWarnings: string[] = [];
