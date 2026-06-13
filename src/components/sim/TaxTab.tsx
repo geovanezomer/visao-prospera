@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useEffect } from "react";
 import { AppState, SimplesAnexo, TaxEra, TaxRegime, TAX_ERAS, TAX_ERA_LABEL, TAX_ERA_SHORT } from "@/lib/finance/types";
 import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
 import { compareErasForRegime, compareRegimes, getReformaRates, simplesAliquotaEfetiva, buildDRE } from "@/lib/finance/calculations";
@@ -27,6 +27,14 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
   const bestPool = (Object.entries(llBy) as [TaxRegime, number][])
     .filter(([r]) => !(desenquadradoSimples && r === "simples"));
   const best = bestPool.reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+
+  // Auto-migrar regime quando desenquadrado do Simples — escolhe o mais vantajoso
+  useEffect(() => {
+    if (desenquadradoSimples && state.tax.regime === "simples") {
+      set({ regime: best });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [desenquadradoSimples, state.tax.regime, best]);
 
   const Card = ({
     title,
