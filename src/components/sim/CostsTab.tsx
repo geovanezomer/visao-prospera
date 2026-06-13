@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppState, CostCategory, CostLine, TaxRegime } from "@/lib/finance/types";
 import { fill12, fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { fixedCostBase, monthValues } from "@/lib/finance/calculations";
