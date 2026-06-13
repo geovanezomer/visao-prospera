@@ -136,7 +136,7 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
     const w: string[] = [];
     if (rbAnual > simplesLimite) {
       // Desenquadramento já é comunicado pelo card "desligado" — sem alerta extra.
-    } else if (rbAnual > 3_600_000) {
+    } else if (rbAnual > SIMPLES_SUBLIMITE_ESTADUAL) {
       w.push(
         `RBT12 = ${fmtBRL(rbAnual)} ultrapassa o sublimite estadual de R$ 3.600.000 — ICMS/ISS passam a ser recolhidos fora do Simples (regime normal estadual), embora os tributos federais continuem no DAS.`,
       );
