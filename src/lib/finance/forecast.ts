@@ -1,5 +1,5 @@
 import { AppState } from "./types";
-import { buildDRE, calcIndicators, effectiveMonthValues, isCpvCost } from "./calculations";
+import { buildDRE, calcIndicators, effectiveMonthValues, isCpvCost, resolveEffectiveRegime } from "./calculations";
 import { sum } from "./format";
 
 export interface ForecastMonth {
@@ -74,7 +74,10 @@ const LABOR_RE = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra|m\.o\
  *   • FCL = EBITDA − impostos − capex − ΔNCG.
  */
 export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastResult {
-  const { dre, tax } = buildDRE(state, state.tax.regime);
+  // SSOT: regime EFETIVO. Garante consistência com IndicatorsTab/Valuation
+  // quando a RBT12 estoura o limite do Simples (downgrade para Presumido).
+  const regime = resolveEffectiveRegime(state);
+  const { dre, tax } = buildDRE(state, regime);
   const receitaBase = dre.receitaBruta.slice();          // 12
   const receitaAnoBase = sum(receitaBase) || 1;
   const cpvBase = dre.cpv.slice();
@@ -92,7 +95,7 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   let variaveisNaoCpvBase = 0; // variáveis (não-CPV) que escalam com receita
   for (const c of state.costs) {
     if (c.category === "financeiro") continue;
-    const v = sum(effectiveMonthValues(c, state.tax.regime));
+    const v = sum(effectiveMonthValues(c, regime));
     const isLabor = c.encargosAuto || LABOR_RE.test(c.label);
     if (isCpvCost(c)) continue; // já em cpvBase (inclui direto_venda)
     if (c.category === "variavel") variaveisNaoCpvBase += v;
@@ -108,7 +111,7 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   let cpvNaoFolhaBase = 0;
   for (const c of state.costs) {
     if (!isCpvCost(c)) continue;
-    const v = sum(effectiveMonthValues(c, state.tax.regime));
+    const v = sum(effectiveMonthValues(c, regime));
     const isLabor = c.encargosAuto || LABOR_RE.test(c.label);
     if (isLabor) folhaCpvBase += v;
     else cpvNaoFolhaBase += v;

@@ -1,5 +1,6 @@
 import { AppState, BusinessType, CostLine, COST_VENDAS_TABLE_CONFIG } from "./types";
 import { fill12 } from "./format";
+import { coerceMonths } from "./safeMath";
 
 const baseRevenue = [13000, 14000, 15500, 15000, 16000, 17000, 15500, 14500, 16000, 17500, 18500, 21000];
 
@@ -283,5 +284,23 @@ export function migrateState(s: AppState): AppState {
   // remove campo legado `guided` se presente em states antigos persistidos
   const { guided: _legacyGuided, ...rest } = s as AppState & { guided?: unknown };
   void _legacyGuided;
+
+  // SSOT: sanitização final de TODAS as séries Months[12] — protege contra
+  // estados persistidos corrompidos (arrays curtos, NaN, Infinity, undefined).
+  // Garante a invariante "Months sempre tem 12 finitos" em runtime.
+  revenue.bruta = coerceMonths(revenue.bruta);
+  revenue.inadimplencia = coerceMonths(revenue.inadimplencia);
+  revenue.pmrMensal = coerceMonths(revenue.pmrMensal, revenue.pmr || 0);
+  revenue.pmpMensal = coerceMonths(revenue.pmpMensal, revenue.pmp || 0);
+  revenue.pddReversaoMensal = coerceMonths(revenue.pddReversaoMensal);
+  revenue.deducoes = revenue.deducoes.map((d) => ({ ...d, valores: coerceMonths(d.valores) }));
+  revenue.receitasFinanceiras = (revenue.receitasFinanceiras ?? []).map((d) => ({ ...d, valores: coerceMonths(d.valores) }));
+  costs = costs.map((c) => ({ ...c, values: coerceMonths(c.values) }));
+  cashflow.aportes = coerceMonths(cashflow.aportes);
+  cashflow.emprestimosCaptados = coerceMonths(cashflow.emprestimosCaptados);
+  cashflow.capex = coerceMonths(cashflow.capex);
+  cashflow.dividendos = coerceMonths(cashflow.dividendos);
+  cashflow.amortizacoes = coerceMonths(cashflow.amortizacoes);
+
   return { ...rest, revenue, capital, tax, costs, cashflow, strategic };
 }

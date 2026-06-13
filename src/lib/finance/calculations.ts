@@ -147,9 +147,12 @@ export function monthValues(c: CostLine, regime?: TaxRegime): number[] {
 const LABOR_KEYWORDS = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra|m\.o\.|clt/i;
 
 export function folhaAnual(state: AppState): number {
+  // SSOT: regime EFETIVO. Encargos do Simples são reduzidos automaticamente
+  // dentro de effectiveMonthValues quando aplicável.
+  const regime = resolveEffectiveRegime(state);
   const laborCosts = state.costs
     .filter((c) => c.category !== "financeiro" && (c.encargosAuto || LABOR_KEYWORDS.test(c.label)));
-  return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c, state.tax.regime)), 0);
+  return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c, regime)), 0);
 }
 
 // SSOT-10: LIMITE_SIMPLES removido — use SIMPLES_LIMITE / getSimplesLimite(tax) de taxDefaults.ts.
@@ -770,7 +773,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const wE = V > 0 ? PL / V : capital.proprio / 100;
   const wD = V > 0 ? D / V : 1 - capital.proprio / 100;
 
-  const irShield = irShieldForRegime(state.tax.regime);
+  // SSOT: WACC usa shield do regime EFETIVO (Simples acima do limite vira Presumido sem shield).
+  const irShield = irShieldForRegime(resolveEffectiveRegime(state));
   const wacc = wE * capital.ke + wD * capital.kd * (1 - irShield);
 
   // ---- NOPAT e ROIC corretos (Auditoria) ----

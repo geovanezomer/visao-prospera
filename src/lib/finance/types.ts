@@ -1,4 +1,17 @@
-export type Months = number[]; // length 12
+/**
+ * `Months` representa uma série mensal de 12 posições.
+ *
+ * Tecnicamente é `number[]` para evitar quebrar literais de array espalhados
+ * pelo codebase (defaults, testes, formulários). A invariante de 12 posições
+ * finitas é garantida em RUNTIME por:
+ *   - `fill12` (construção segura) — `format.ts`
+ *   - `coerceMonths` (sanitização) — `safeMath.ts`
+ *   - `migrateState` (boundary do localStorage) — `defaults.ts`
+ *
+ * Não construa um `Months` manualmente — sempre passe por `fill12` ou
+ * `coerceMonths` para garantir 12 posições e valores finitos.
+ */
+export type Months = number[]; // length 12 (validado em runtime)
 
 /** Chaves das abas da interface principal (src/routes/index.tsx).
  *  Mantém o `value` dos componentes Tabs/TabsTrigger/TabsContent fortemente tipado:
