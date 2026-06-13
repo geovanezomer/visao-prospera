@@ -232,7 +232,8 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
   // ----- Comparativo simulado vs base -----
   let compLines: string | undefined;
   if (simulatedState && simulatedState !== state) {
-    const builtSim = tryRun(() => buildDRE(simulatedState, simulatedState.tax.regime), null as any);
+    const simRegime = tryRun(() => resolveEffectiveRegime(simulatedState), simulatedState.tax.regime);
+    const builtSim = tryRun(() => buildDRE(simulatedState, simRegime), null as any);
     const dreSim = builtSim?.dre ?? null;
     const indSim = dreSim ? tryRun(() => calcIndicators(simulatedState, dreSim), null as any) : null;
     const valSim = tryRun(() => buildValuation(simulatedState, defaultValuationParams(simulatedState.businessType)), null as any);
