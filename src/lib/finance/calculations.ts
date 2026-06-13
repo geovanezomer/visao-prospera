@@ -970,13 +970,26 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
   return out;
 }
 
+/**
+ * SSOT-4: comparativo de regimes COM lucro líquido e regime ótimo embutidos.
+ * Antes, TaxTab e compliance/tax.ts reimplementavam llBy/best/delta separadamente.
+ */
 export function compareRegimes(state: AppState) {
   const baseLair = buildDRE(state, "presumido").dre.lair;
-  return {
-    simples: calcSimples(state),
-    presumido: calcPresumido(state),
-    real: calcReal(state, baseLair),
+  const simples = calcSimples(state);
+  const presumido = calcPresumido(state);
+  const real = calcReal(state, baseLair);
+  const llBy: Record<TaxRegime, number> = {
+    simples: sum(buildDRE(state, "simples").dre.lucroLiquido),
+    presumido: sum(buildDRE(state, "presumido").dre.lucroLiquido),
+    real: sum(buildDRE(state, "real").dre.lucroLiquido),
   };
+  const desenquadrado = simplesExcedeLimite(state);
+  const candidates: TaxRegime[] = desenquadrado
+    ? ["presumido", "real"]
+    : ["simples", "presumido", "real"];
+  const best = candidates.reduce((a, b) => (llBy[b] > llBy[a] ? b : a));
+  return { simples, presumido, real, llBy, best, desenquadradoSimples: desenquadrado };
 }
 
 /** Projeção da carga efetiva (%) por era para um dado regime, mantendo o resto do estado fixo. */
