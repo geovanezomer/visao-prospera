@@ -36,8 +36,8 @@ export function AnalysisTab({
 }
 
 // ============== Health Score ==============
-export function HealthScoreCard({ state }: { state: AppState }) {
-  const h = useMemo(() => computeHealth(state), [state]);
+export function HealthScoreCard({ state, precomputed }: { state: AppState; precomputed?: HealthPrecomputed }) {
+  const h = useMemo(() => computeHealth(state, precomputed), [state, precomputed]);
   const ringColor = h.status === "ok" ? "var(--success)" : h.status === "warn" ? "var(--warning)" : "var(--destructive)";
   const circ = 2 * Math.PI * 52;
   const offset = circ * (1 - h.total / 100);
