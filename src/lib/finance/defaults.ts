@@ -284,5 +284,19 @@ export function migrateState(s: AppState): AppState {
   // remove campo legado `guided` se presente em states antigos persistidos
   const { guided: _legacyGuided, ...rest } = s as AppState & { guided?: unknown };
   void _legacyGuided;
+
+  // SSOT: sanitização final de TODAS as séries Months[12] — protege contra
+  // estados persistidos corrompidos (arrays curtos, NaN, Infinity, undefined).
+  // Garante a invariante "Months sempre tem 12 finitos" em runtime.
+  revenue.bruta = coerceMonths(revenue.bruta);
+  revenue.inadimplencia = coerceMonths(revenue.inadimplencia);
+  revenue.pmrMensal = coerceMonths(revenue.pmrMensal, revenue.pmr || 0);
+  revenue.pmpMensal = coerceMonths(revenue.pmpMensal, revenue.pmp || 0);
+  revenue.pddReversaoMensal = coerceMonths(revenue.pddReversaoMensal);
+  revenue.deducoes = revenue.deducoes.map((d) => ({ ...d, valores: coerceMonths(d.valores) }));
+  revenue.receitasFinanceiras = (revenue.receitasFinanceiras ?? []).map((d) => ({ ...d, valores: coerceMonths(d.valores) }));
+  costs = costs.map((c) => ({ ...c, values: coerceMonths(c.values) }));
+  cashflow.capex = coerceMonths(cashflow.capex);
+
   return { ...rest, revenue, capital, tax, costs, cashflow, strategic };
 }
