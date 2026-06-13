@@ -1,6 +1,8 @@
+import { useMemo } from "react";
 import { AppState, RevenueDeducao } from "@/lib/finance/types";
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/lib/finance/format";
-import { MoneyInput, StatCard, SectionTitle, HelpTip } from "./primitives";
+import { buildDRE } from "@/lib/finance/calculations";
+import { MoneyInput, PctInput, StatCard, SectionTitle, HelpTip } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { PrazoTable } from "./PrazoTable";
 
@@ -10,16 +12,30 @@ function fixedBase(values: number[]): number {
   return Number.isFinite(nonZero as number) ? (nonZero as number) : (values[0] || 0);
 }
 
+/** Saneamento mínimo de inputs financeiros (substitui Zod inline). */
+function sanitize(v: number, opts: { min?: number; max?: number } = {}): number {
+  let n = Number.isFinite(v) ? v : 0;
+  const min = opts.min ?? 0;
+  if (n < min) n = min;
+  if (typeof opts.max === "number" && n > opts.max) n = opts.max;
+  return n;
+}
+
 type RowKind = "bruta" | "inadimplencia" | "deducao" | "financeira";
+type RowUnit = "brl" | "pct";
 type Row = {
   id: string;
   kind: RowKind;
+  unit: RowUnit;
   /** id da dedução em revenue.deducoes (quando kind = "deducao") */
   dedId?: string;
   /** id da receita financeira em revenue.receitasFinanceiras (quando kind = "financeira") */
   finId?: string;
   label: string;
+  /** Valores na unidade de input (R$ para brl, % para pct). */
   values: number[];
+  /** Valores em R$ para exibição/total anual (igual a values quando unit=brl). */
+  brlValues: number[];
   fixed: boolean;
   tone: "pos" | "neg";
 };
@@ -27,48 +43,54 @@ type Row = {
 export function RevenueTab({ state, update }: { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void }) {
   const r = state.revenue;
 
-  const inadimpBRL = r.bruta.map((b, i) => b * ((r.inadimplencia[i] || 0) / 100));
-  const findDed = (id: string): RevenueDeducao | undefined => r.deducoes?.find((d) => d.id === id);
-  const descDed = findDed("desc_incond") ?? { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true };
-  const abatDed = findDed("abatimentos") ?? { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true };
+  // -------- Derivados memoizados --------
+  const derived = useMemo(() => {
+    const inadimpBRL = r.bruta.map((b, i) => b * ((r.inadimplencia[i] || 0) / 100));
+    const findDed = (id: string): RevenueDeducao | undefined => r.deducoes?.find((d) => d.id === id);
+    const descDed = findDed("desc_incond") ?? { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true };
+    const abatDed = findDed("abatimentos") ?? { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true };
+    const usaPDD = !!r.inadimplenciaComoPDD;
 
-  const usaPDD = !!r.inadimplenciaComoPDD;
-  const liquidas = r.bruta.map((b, i) => {
-    const dedNormal = (descDed.valores[i] || 0) + (abatDed.valores[i] || 0);
-    // Se PDD, a inadimplência não reduz a Receita Líquida (vira despesa operacional na DRE)
-    const inad = usaPDD ? 0 : inadimpBRL[i];
-    return Math.max(0, b - inad - dedNormal);
-  });
+    // VERDADE ABSOLUTA: deriva Receita Operacional da DRE central.
+    // Receita Operacional = Receita Líquida + Impostos sobre Venda (Receita antes da carga tributária).
+    const { dre } = buildDRE(state, state.tax.regime);
+    const liquidas = dre.receitaLiquida.map((rl, i) => rl + (dre.impostosVendas[i] || 0));
 
-  const brutaAnual = sum(r.bruta);
-  const inadimpAnual = sum(inadimpBRL);
-  const descAnual = sum(descDed.valores);
-  const abatAnual = sum(abatDed.valores);
-  const deducoesAnual = (usaPDD ? 0 : inadimpAnual) + descAnual + abatAnual;
-  const liqAnual = sum(liquidas);
+    const brutaAnual = sum(r.bruta);
+    const inadimpAnual = sum(inadimpBRL);
+    const descAnual = sum(descDed.valores);
+    const abatAnual = sum(abatDed.valores);
+    const deducoesAnual = (usaPDD ? 0 : inadimpAnual) + descAnual + abatAnual;
+    const liqAnual = sum(liquidas);
+    const monthsWithRevenue = liquidas.filter((_, i) => r.bruta[i] > 0).length;
+    const mediaYTD = monthsWithRevenue > 0 ? liqAnual / monthsWithRevenue : 0;
 
-  const monthsWithRevenue = liquidas.filter((_, i) => r.bruta[i] > 0).length;
-  const mediaYTD = monthsWithRevenue > 0 ? liqAnual / monthsWithRevenue : 0;
+    return { inadimpBRL, descDed, abatDed, usaPDD, liquidas, brutaAnual, deducoesAnual, liqAnual, monthsWithRevenue, mediaYTD };
+  }, [state, r]);
 
+  const { inadimpBRL, descDed, abatDed, usaPDD, liquidas, brutaAnual, deducoesAnual, liqAnual, monthsWithRevenue, mediaYTD } = derived;
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
 
   const rows: Row[] = [
-    { id: "row_bruta", kind: "bruta", label: "Receita Bruta", values: r.bruta, fixed: !!r.brutaFixa, tone: "pos" },
-    { id: "row_inad", kind: "inadimplencia", label: "Devoluções e Cancelamentos", values: inadimpBRL, fixed: !!r.inadimplenciaFixa, tone: "neg" },
-    { id: "row_desc", kind: "deducao", dedId: "desc_incond", label: "Descontos Incondicionais", values: descDed.valores, fixed: !!descDed.fixed, tone: "neg" },
-    { id: "row_abat", kind: "deducao", dedId: "abatimentos", label: "Abatimentos", values: abatDed.valores, fixed: !!abatDed.fixed, tone: "neg" },
+    { id: "row_bruta", kind: "bruta", unit: "brl", label: "Receita Bruta", values: r.bruta, brlValues: r.bruta, fixed: !!r.brutaFixa, tone: "pos" },
+    // Inadimplência editada DIRETAMENTE em % (evita conversão R$↔% instável quando a Bruta muda).
+    { id: "row_inad", kind: "inadimplencia", unit: "pct", label: "Inadimplência (%)", values: r.inadimplencia, brlValues: inadimpBRL, fixed: !!r.inadimplenciaFixa, tone: "neg" },
+    { id: "row_desc", kind: "deducao", unit: "brl", dedId: "desc_incond", label: "Descontos Incondicionais", values: descDed.valores, brlValues: descDed.valores, fixed: !!descDed.fixed, tone: "neg" },
+    { id: "row_abat", kind: "deducao", unit: "brl", dedId: "abatimentos", label: "Abatimentos", values: abatDed.valores, brlValues: abatDed.valores, fixed: !!abatDed.fixed, tone: "neg" },
   ];
 
   if (usaPDD) {
     const pddRec = r.pddReversaoMensal ?? fill12(0);
     rows.push({
       id: "row_pdd_rec",
-      kind: "deducao", // Reuso do kind deducao para simplificar update
+      kind: "deducao",
+      unit: "brl",
       dedId: "pdd_rec",
       label: "Recuperação de Inadimplência (+)",
       values: pddRec,
-      fixed: false, // Pode ser customizado
-      tone: "pos"
+      brlValues: pddRec,
+      fixed: false,
+      tone: "pos",
     });
   }
 
@@ -99,49 +121,48 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
   const alugueis = findFin("alugueis", "Aluguéis Recebidos");
   const vendaAtivos = findFin("venda_ativos", "Venda de Ativos");
   const finRows: Row[] = [
-    { id: "row_rend", kind: "financeira", finId: "rend_aplic", label: "Rendimento de aplicações", values: rendAplic.valores, fixed: !!rendAplic.fixed, tone: "pos" },
-    { id: "row_alug", kind: "financeira", finId: "alugueis", label: "Aluguéis Recebidos", values: alugueis.valores, fixed: !!alugueis.fixed, tone: "pos" },
-    { id: "row_vatv", kind: "financeira", finId: "venda_ativos", label: "Venda de Ativos", values: vendaAtivos.valores, fixed: !!vendaAtivos.fixed, tone: "pos" },
+    { id: "row_rend", kind: "financeira", unit: "brl", finId: "rend_aplic", label: "Rendimento de aplicações", values: rendAplic.valores, brlValues: rendAplic.valores, fixed: !!rendAplic.fixed, tone: "pos" },
+    { id: "row_alug", kind: "financeira", unit: "brl", finId: "alugueis", label: "Aluguéis Recebidos (oper.)", values: alugueis.valores, brlValues: alugueis.valores, fixed: !!alugueis.fixed, tone: "pos" },
+    { id: "row_vatv", kind: "financeira", unit: "brl", finId: "venda_ativos", label: "Venda de Ativos (oper.)", values: vendaAtivos.valores, brlValues: vendaAtivos.valores, fixed: !!vendaAtivos.fixed, tone: "pos" },
   ];
 
   const setMonth = (row: Row, i: number, v: number) => {
-    const safe = Math.max(0, Number.isFinite(v) ? v : 0);
     if (row.kind === "bruta") {
+      const safe = sanitize(v);
       update((s) => ({ ...s, revenue: { ...s.revenue, bruta: s.revenue.bruta.map((x, j) => (j === i ? safe : x)) } }));
     } else if (row.kind === "inadimplencia") {
-      update((s) => {
-        const base = s.revenue.bruta[i] || 0;
-        const pct = base > 0 ? (safe / base) * 100 : 0;
-        return { ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } };
-      });
+      // Agora v é o PERCENTUAL digitado diretamente (0..100). Sem conversão dependente da Bruta.
+      const pct = sanitize(v, { min: 0, max: 100 });
+      update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } }));
     } else if (row.kind === "deducao" && row.dedId) {
+      const safe = sanitize(v);
       if (row.dedId === "pdd_rec") {
         update((s) => ({ ...s, revenue: { ...s.revenue, pddReversaoMensal: (s.revenue.pddReversaoMensal || fill12(0)).map((x, j) => (j === i ? safe : x)) } }));
       } else {
         updateDed(row.dedId, row.label, (d) => ({ ...d, valores: d.valores.map((x, j) => (j === i ? safe : x)) }));
       }
     } else if (row.kind === "financeira" && row.finId) {
+      const safe = sanitize(v);
       updateFin(row.finId, row.label, (d) => ({ ...d, valores: d.valores.map((x, j) => (j === i ? safe : x)) }));
     }
   };
 
   const setAllMonths = (row: Row, v: number) => {
-    const safe = Math.max(0, Number.isFinite(v) ? v : 0);
     if (row.kind === "bruta") {
+      const safe = sanitize(v);
       update((s) => ({ ...s, revenue: { ...s.revenue, bruta: fill12(safe) } }));
     } else if (row.kind === "inadimplencia") {
-      update((s) => {
-        const base = fixedBase(s.revenue.bruta) || sum(s.revenue.bruta) / 12 || 0;
-        const pct = base > 0 ? (safe / base) * 100 : 0;
-        return { ...s, revenue: { ...s.revenue, inadimplencia: fill12(pct) } };
-      });
+      const pct = sanitize(v, { min: 0, max: 100 });
+      update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: fill12(pct) } }));
     } else if (row.kind === "deducao" && row.dedId) {
+      const safe = sanitize(v);
       if (row.dedId === "pdd_rec") {
         update((s) => ({ ...s, revenue: { ...s.revenue, pddReversaoMensal: fill12(safe) } }));
       } else {
         updateDed(row.dedId, row.label, (d) => ({ ...d, valores: fill12(safe) }));
       }
     } else if (row.kind === "financeira" && row.finId) {
+      const safe = sanitize(v);
       updateFin(row.finId, row.label, (d) => ({ ...d, valores: fill12(safe) }));
     }
   };
@@ -162,7 +183,6 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       });
     } else if (row.kind === "deducao" && row.dedId) {
       if (row.dedId === "pdd_rec") {
-        // PDD rec não tem modo fixo isolado no state por enquanto, tratamos como mensal livre
         const base = fixed ? fixedBase(row.values) : row.values[0] || 0;
         update((s) => ({ ...s, revenue: { ...s.revenue, pddReversaoMensal: fill12(base) } }));
       } else {
@@ -212,13 +232,13 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
           label="Total de Receitas"
           value={fmtBRL(brutaAnual + (r.receitasFinanceiras?.reduce((acc, f) => acc + sum(f.valores), 0) || 0))}
           tone="pos"
-          hint="Soma da Receita Operacional Bruta com as Receitas Financeiras."
+          hint="Soma da Receita Operacional Bruta com as Receitas Financeiras e demais entradas (aluguéis, venda de ativos)."
         />
       </div>
 
       <SectionBlock
         title="Receita Mensal — 12 meses"
-        hint="Receita Bruta e deduções (em R$). Use o toggle de Modo para aplicar o mesmo valor em todos os meses."
+        hint="Receita Bruta e deduções. A coluna de inadimplência é digitada em %; o valor em R$ aparece no total anual."
         accentClass="border-l-[color:var(--success)]"
       >
         <div className="flex items-center gap-2 px-4 py-2 bg-accent/20 rounded-md mb-4 mx-2">
@@ -228,7 +248,10 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
               onCheckedChange={(v) => update((s) => ({ ...s, revenue: { ...s.revenue, inadimplenciaComoPDD: v } }))}
             />
             Contabilizar inadimplência como PDD (Despesa Operacional)
-            <HelpTip text="CPC 47 / IFRS 15: Inadimplência esperada pode ser tratada como PDD ao invés de dedução direta de receita. Isso evita redução da base de cálculo de impostos sobre faturamento (PIS/COFINS/ISS) e é o padrão em empresas maiores." />
+            <HelpTip
+              text="Quando ATIVO: a inadimplência esperada não reduz a Receita Líquida — vira PDD (despesa operacional, abaixo do Lucro Bruto), seguindo CPC 47/IFRS 9. Quando DESATIVO: a inadimplência é deduzida diretamente da Receita Bruta. Em ambos os casos, a base de PIS/COFINS/ISS continua sendo a Receita Bruta — o toggle muda apenas a classificação na DRE."
+              formula="PDD líquida = Inadimplência − Recuperação"
+            />
           </label>
         </div>
         <RevenueTable
@@ -242,15 +265,15 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       </SectionBlock>
 
       <SectionBlock
-        title="Receitas Financeiras — 12 meses"
-        hint="Rendimentos de aplicações, aluguéis recebidos e venda de ativos. Não compõem a Receita Operacional."
+        title="Outras Receitas — 12 meses"
+        hint="Rendimento de aplicações entra no Resultado Financeiro e é tributado (Real: PIS 0,65% + COFINS 4%; Presumido: 100% na base de IRPJ/CSLL). Aluguéis e Venda de Ativos são reclassificados como Outras Receitas Operacionais (entram no EBITDA), não no Resultado Financeiro."
         accentClass="border-l-[color:var(--success)]"
       >
         <RevenueTable
           rows={finRows}
           brutaAnual={brutaAnual}
           footer={{
-            label: "Total Receitas Financeiras",
+            label: "Total Outras Receitas",
             values: MESES.map((_, i) => finRows.reduce((a, r) => a + (r.values[i] || 0), 0)),
             total: finRows.reduce((a, r) => a + sum(r.values), 0),
             tone: "pos",
@@ -263,7 +286,7 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
 
       <PrazoTable
         title="Prazo Médio de Recebimento (PMR) — 12 meses"
-        hint="Dias entre faturar e receber do cliente. Pode variar por mês conforme sazonalidade, mix de clientes ou política comercial."
+        hint="Dias entre faturar e receber do cliente. A variação mensal é refletida no Fluxo de Caixa."
         accentClass="border-l-[color:var(--success)]"
         rubrica="PMR — Recebimento (dias)"
         summaryLabel="PMR"
@@ -334,10 +357,12 @@ function RevenueTable({
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
   const footerToneClass = footer?.tone === "neg" ? "text-neg" : "text-pos";
 
+  const renderCellInput = (row: Row, v: number, onChange: (n: number) => void) =>
+    row.unit === "pct" ? <PctInput value={v} onChange={onChange} /> : <MoneyInput value={v} onChange={onChange} />;
+
   return (
     <div className="scrollbar-thin w-full overflow-x-auto overflow-y-hidden">
       <table className="w-full min-w-[800px] text-[clamp(0.75rem,1vw+0.5rem,0.875rem)] md:min-w-[1000px]">
-
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
             <th className="w-56 px-3 py-2">Descrição</th>
@@ -352,7 +377,8 @@ function RevenueTable({
         </thead>
         <tbody>
           {rows.map((row) => {
-            const anual = sum(row.values);
+            // Total ANUAL exibido sempre em R$ (mesmo quando input é %).
+            const anual = sum(row.brlValues);
             const pct = pctRec(anual);
             const toneClass = row.tone === "pos" ? "text-pos" : anual > 0 ? "text-neg" : "text-muted-foreground";
             const anualDisplay = row.tone === "neg" && anual > 0 ? `− ${fmtBRL(anual)}` : fmtBRL(anual);
@@ -371,16 +397,18 @@ function RevenueTable({
                 {row.fixed ? (
                   <td className="px-1 py-1" colSpan={12}>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase text-muted-foreground">Valor aplicado em todos os meses:</span>
+                      <span className="text-[10px] uppercase text-muted-foreground">
+                        {row.unit === "pct" ? "% aplicado em todos os meses:" : "Valor aplicado em todos os meses:"}
+                      </span>
                       <div className="w-36">
-                        <MoneyInput value={fixedBase(row.values)} onChange={(n) => onAllMonths(row, n)} />
+                        {renderCellInput(row, fixedBase(row.values), (n) => onAllMonths(row, n))}
                       </div>
                     </div>
                   </td>
                 ) : (
                   row.values.map((v, i) => (
                     <td key={i} className="px-1 py-1">
-                      <MoneyInput value={v} onChange={(n) => onMonth(row, i, n)} />
+                      {renderCellInput(row, v, (n) => onMonth(row, i, n))}
                     </td>
                   ))
                 )}
