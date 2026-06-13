@@ -296,7 +296,11 @@ export function migrateState(s: AppState): AppState {
   revenue.deducoes = revenue.deducoes.map((d) => ({ ...d, valores: coerceMonths(d.valores) }));
   revenue.receitasFinanceiras = (revenue.receitasFinanceiras ?? []).map((d) => ({ ...d, valores: coerceMonths(d.valores) }));
   costs = costs.map((c) => ({ ...c, values: coerceMonths(c.values) }));
+  cashflow.aportes = coerceMonths(cashflow.aportes);
+  cashflow.emprestimosCaptados = coerceMonths(cashflow.emprestimosCaptados);
   cashflow.capex = coerceMonths(cashflow.capex);
+  cashflow.dividendos = coerceMonths(cashflow.dividendos);
+  cashflow.amortizacoes = coerceMonths(cashflow.amortizacoes);
 
   return { ...rest, revenue, capital, tax, costs, cashflow, strategic };
 }
