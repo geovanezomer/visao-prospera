@@ -681,19 +681,25 @@ function Reco({ icon, title, text }: { icon: string; title: string; text: string
 // =====================================================================
 // Auditoria — memória de cálculo + self-tests
 // =====================================================================
-function AuditPanel({ trace }: { trace: ReturnType<typeof traceValuation> }) {
+function AuditPanel({ trace, onLogTrace }: { trace: ReturnType<typeof traceValuation>; onLogTrace: () => void }) {
   const [tests, setTests] = useState<{ results: ValuationTestCase[]; allPassed: boolean } | null>(null);
   const runTests = () => setTests(runValuationSelfTests());
 
   return (
     <>
       <section className="rounded-lg border border-border/60 bg-card/40 p-5">
-        <div className="flex items-center gap-2">
-          <Calculator className="h-4 w-4 text-primary" />
-          <SectionTitle hint="Cada linha mostra a fórmula aplicada, os inputs e o resultado. Use para auditar o valuation.">
-            Memória de Cálculo
-          </SectionTitle>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Calculator className="h-4 w-4 text-primary" />
+            <SectionTitle hint="Cada linha mostra a fórmula aplicada, os inputs e o resultado. Use para auditar o valuation.">
+              Memória de Cálculo
+            </SectionTitle>
+          </div>
+          <Button size="sm" variant="outline" onClick={onLogTrace}>
+            <Calculator className="mr-1.5 h-3.5 w-3.5" /> Logar no console
+          </Button>
         </div>
+
 
         <div className="mt-4 grid gap-2 rounded-md border border-border/40 bg-background/30 p-3 text-xs md:grid-cols-3">
           <KV k="EBITDA (12m)" v={trace.inputs.ebitda} />
