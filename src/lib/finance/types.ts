@@ -97,7 +97,8 @@ export interface CapitalStructure {
   kd: number;
   capitalGiroDisponivel: number;
   depreciacaoMensal: number;
-  jurosRecebidosMensal: number;
+  /** @deprecated não utilizado — rendimentos financeiros vêm de receitas.financeiras (rend_aplic). */
+  jurosRecebidosMensal?: number;
   patrimonioLiquido: number;
   ativoTotal: number;
   estoques: number;

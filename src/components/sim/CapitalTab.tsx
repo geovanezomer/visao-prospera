@@ -1,23 +1,31 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppState, CapexAtivacao } from "@/lib/finance/types";
 import { fmtBRL, fmtNum, sum } from "@/lib/finance/format";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Lightbulb, X, TrendingUp, TrendingDown, Wallet, Landmark, Coins, Settings2, ArrowRight, Banknote, Package, Users, AlertTriangle, CheckCircle2, Camera } from "lucide-react";
+import { Plus, Trash2, Lightbulb, X, TrendingUp, TrendingDown, Wallet, Landmark, Coins, Settings2, ArrowRight, Banknote, Package, Users, AlertTriangle, CheckCircle2, Camera, ChevronDown, ChevronUp } from "lucide-react";
 import { MoneyInput, NumInput, PctInput, SectionTitle, StatCard, HelpTip } from "./primitives";
 
 const INTRO_KEY = "gzf_capital_intro_dismissed_v1";
 
 export function CapitalTab({ state, update }: { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void }) {
   const c = state.capital;
-  const { dre } = buildDRE(state, state.tax.regime);
-  const ind = calcIndicators(state, dre);
+  // Memoiza engine pesada — recomputa só quando o estado financeiro muda.
+  const { dre } = useMemo(() => buildDRE(state, state.tax.regime), [state]);
+  const ind = useMemo(() => calcIndicators(state, dre), [state, dre]);
+
 
   const set = (patch: Partial<typeof c>) => update((s) => ({ ...s, capital: { ...s.capital, ...patch } }));
 
   const wacc = ind.wacc;
-  const terceiros = 100 - c.proprio;
+  // Quando PL e Dívida estão preenchidos, a proporção real é PL/(PL+D) — o slider
+  // vira leitura derivada para evitar contradição visual entre % e R$ (B2/B3).
+  const totalFinancAbs = Math.max(0, c.patrimonioLiquido) + Math.max(0, c.dividaOnerosa);
+  const proprioDerivado = totalFinancAbs > 0
+    ? (Math.max(0, c.patrimonioLiquido) / totalFinancAbs) * 100
+    : c.proprio;
+  const terceiros = 100 - proprioDerivado;
 
   // Validações
   const warnings: string[] = [];
@@ -64,15 +72,17 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
 
       <div className="space-y-4">
         <CapitalStructureCard
-          proprio={c.proprio}
+          proprio={proprioDerivado}
           terceiros={terceiros}
           ke={c.ke}
           kd={c.kd}
           patrimonioLiquido={c.patrimonioLiquido}
           dividaOnerosa={c.dividaOnerosa}
+          derived={totalFinancAbs > 0}
           onChange={set}
         />
         <BalanceSheetCard capital={c} onChange={set} />
+        <AdvancedRefinementCard capital={c} onChange={set} />
         <CapexAtivacaoSection
           items={c.capexAtivacao ?? []}
           onChange={(next) => set({ capexAtivacao: next })}
@@ -164,6 +174,7 @@ function CapitalStructureCard({
   kd,
   patrimonioLiquido,
   dividaOnerosa,
+  derived,
   onChange,
 }: {
   proprio: number;
@@ -172,20 +183,27 @@ function CapitalStructureCard({
   kd: number;
   patrimonioLiquido: number;
   dividaOnerosa: number;
+  /** true quando proprio% é derivado de PL/D reais — slider vira leitura. */
+  derived: boolean;
   onChange: (patch: Partial<AppState["capital"]>) => void;
 }) {
   // Valores absolutos: usa PL e Dívida Onerosa reais se informados; senão mostra apenas %
-  const totalFinanc = (patrimonioLiquido > 0 ? patrimonioLiquido : 0) + (dividaOnerosa > 0 ? dividaOnerosa : 0);
+  const PL = Math.max(0, patrimonioLiquido);
+  const D = Math.max(0, dividaOnerosa);
+  const totalFinanc = PL + D;
   const hasAbs = totalFinanc > 0;
-  const valSocios = hasAbs ? patrimonioLiquido : 0;
-  const valBancos = hasAbs ? dividaOnerosa : 0;
+  const valSocios = hasAbs ? PL : 0;
+  const valBancos = hasAbs ? D : 0;
 
-  // Diagnóstico de alavancagem
-  const dpl = patrimonioLiquido > 0 ? dividaOnerosa / patrimonioLiquido : 0;
+  // Diagnóstico de alavancagem — usa PL/D não-negativos (B10).
+  const dpl = PL > 0 ? D / PL : 0;
   let alavMsg = "";
   let alavTone: "pos" | "warn" | "neg" | "muted" = "muted";
   if (hasAbs) {
-    if (dpl > 2) { alavMsg = `Endividamento alto: D/PL = ${dpl.toFixed(1)}× (saudável ≤ 2×)`; alavTone = "neg"; }
+    if (patrimonioLiquido < 0) {
+      alavMsg = "Patrimônio líquido negativo — passivo a descoberto. D/PL perde sentido.";
+      alavTone = "neg";
+    } else if (dpl > 2) { alavMsg = `Endividamento alto: D/PL = ${dpl.toFixed(1)}× (saudável ≤ 2×)`; alavTone = "neg"; }
     else if (dpl >= 0.5) { alavMsg = `Alavancagem equilibrada: D/PL = ${dpl.toFixed(1)}×`; alavTone = "pos"; }
     else if (dpl > 0) { alavMsg = `Pouco alavancada: D/PL = ${dpl.toFixed(1)}× — espaço para usar mais dívida`; alavTone = "warn"; }
     else { alavMsg = "Sem dívida onerosa: empresa 100% financiada pelos sócios"; alavTone = "pos"; }
@@ -227,7 +245,20 @@ function CapitalStructureCard({
             )}
           </div>
         </div>
-        <Slider value={[proprio]} min={0} max={100} step={1} onValueChange={([v]) => onChange({ proprio: v })} className="mt-3" />
+        <Slider
+          value={[proprio]}
+          min={0}
+          max={100}
+          step={1}
+          disabled={derived}
+          onValueChange={([v]) => !derived && onChange({ proprio: v })}
+          className="mt-3"
+        />
+        {derived && (
+          <p className="mt-1 text-[10px] text-muted-foreground/80 italic">
+            Proporção calculada automaticamente a partir do Patrimônio Líquido e da Dívida Onerosa informados abaixo. Ajuste pelos campos em R$ para alterar.
+          </p>
+        )}
         {hasAbs && (
           <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
             Sua empresa é financiada por <span className="font-semibold text-pos">{fmtBRL(valSocios)}</span> dos sócios e <span className="font-semibold text-warning">{fmtBRL(valBancos)}</span> de bancos.
@@ -237,6 +268,8 @@ function CapitalStructureCard({
           <p className={`mt-1 text-[11px] font-medium ${toneCls}`}>{alavMsg}</p>
         )}
       </div>
+
+
 
       {/* Ke e Kd com presets */}
       <div className="grid grid-cols-2 gap-3">
@@ -419,22 +452,28 @@ function BalanceSheetCard({
   // Ativos Circulantes (curto prazo)
   const ativoCircCalc = (capital.disponibilidades || 0) + (capital.estoques || 0) + (capital.contasReceber || 0);
   
-  // Total de Dívidas (Passivos)
-  // Somamos Dívida Onerosa (bancos) + Fornecedores + Outros passivos circulantes se houver
-  const totalPassivos = (capital.dividaOnerosa || 0) + (capital.fornecedores || 0) + (capital.passivoCirculante || 0);
-  
+  // Total de Passivos (B1): evita dupla contagem.
+  // Se o usuário preencheu passivoCirculante explicitamente, ele JÁ inclui
+  // fornecedores e a parcela CP da dívida — então usamos PC + (D − D_CP_implícita).
+  // Aproximação prática: PC + dívidaOnerosa quando PC informado;
+  // dívidaOnerosa + fornecedores quando PC = 0.
+  const totalPassivos = (capital.passivoCirculante || 0) > 0
+    ? (capital.dividaOnerosa || 0) + (capital.passivoCirculante || 0)
+    : (capital.dividaOnerosa || 0) + (capital.fornecedores || 0);
+
   // Patrimônio líquido calculado pela equação fundamental: PL = Ativos − Passivos
   const plCalculado = (capital.ativoTotal || 0) - totalPassivos;
   const plInformado = capital.patrimonioLiquido || 0;
-  
+
   const diff = Math.abs(plInformado - plCalculado);
   // Consideramos inconsistência se a diferença for maior que 2% do ativo ou R$ 100
   const hasInconsistencia = capital.ativoTotal > 0 && diff > Math.max(100, capital.ativoTotal * 0.02);
 
   // KPIs do resumo
-  const capitalCirculante = ativoCircCalc - (capital.fornecedores || capital.passivoCirculante || 0);
+  const capitalCirculante = ativoCircCalc - (capital.passivoCirculante || capital.fornecedores || 0);
   const dpl = plInformado > 0 ? (capital.dividaOnerosa || 0) / plInformado : 0;
   const solvencia = totalPassivos > 0 ? (capital.ativoTotal || 0) / totalPassivos : 0;
+
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
@@ -996,6 +1035,72 @@ function NCGExplanationCard({ ncg, pmr, pmp, receitaDia, cpvDia }: { ncg: number
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+// =================================================================
+// Refinamento avançado — expõe campos que a engine usa mas estavam
+// "escondidos": caixa ocioso, passivos não-onerosos, estoque inicial/final.
+// Colapsável para não poluir a tela.
+// =================================================================
+function AdvancedRefinementCard({
+  capital,
+  onChange,
+}: {
+  capital: AppState["capital"];
+  onChange: (patch: Partial<AppState["capital"]>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-lg border border-border/60 bg-card/40">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between p-4 text-left"
+      >
+        <div>
+          <div className="text-sm font-semibold">Refinamento avançado</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
+            Ajustes finos que melhoram ROIC, PME e liquidez — opcionais.
+          </div>
+        </div>
+        {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+      </button>
+      {open && (
+        <div className="grid gap-3 border-t border-border/40 p-4 sm:grid-cols-2">
+          <SimpleField
+            icon={<Banknote className="h-4 w-4" />}
+            label="Caixa ocioso (não-operacional)"
+            hint="Parcela do caixa que NÃO sustenta a operação (ex.: reserva estratégica, sobra). É subtraída do Capital Investido no ROIC para não distorcer o retorno."
+            value={capital.caixaOcioso ?? 0}
+            onChange={(n) => onChange({ caixaOcioso: n })}
+          />
+          <SimpleField
+            icon={<Users className="h-4 w-4" />}
+            label="Passivos não-onerosos"
+            hint="Fornecedores + salários + impostos a pagar (sem juros). Subtraídos do Capital Investido no ROIC. Se 0, usa o campo Fornecedores."
+            value={capital.passivosNaoOnerosos ?? 0}
+            onChange={(n) => onChange({ passivosNaoOnerosos: n })}
+            placeholder="0 = usa Fornecedores"
+          />
+          <SimpleField
+            icon={<Package className="h-4 w-4" />}
+            label="Estoque inicial do período"
+            hint="Saldo de estoque em 01/jan. Usado para PME = (inicial + final) ÷ 2 quando ambos preenchidos."
+            value={capital.estoqueInicial ?? 0}
+            onChange={(n) => onChange({ estoqueInicial: n })}
+            placeholder="0 = usa só estoque atual"
+          />
+          <SimpleField
+            icon={<Package className="h-4 w-4" />}
+            label="Estoque final do período"
+            hint="Saldo de estoque em 31/dez. Usado para PME médio. Se 0, usa o campo Estoque do balanço."
+            value={capital.estoqueFinal ?? 0}
+            onChange={(n) => onChange({ estoqueFinal: n })}
+            placeholder="0 = usa Estoque"
+          />
+        </div>
+      )}
     </div>
   );
 }
