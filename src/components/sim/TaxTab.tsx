@@ -135,7 +135,7 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {emReforma && <Badge className="bg-primary/20 text-primary border border-primary/30">Reforma ativa</Badge>}
+            
             <div className="flex flex-col items-end gap-1">
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Regime ativo (DRE)</span>
               <Select value={state.tax.regime} onValueChange={(v) => set({ regime: v as TaxRegime })}>
