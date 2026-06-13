@@ -185,7 +185,8 @@ export function asOpenAITools() {
 // ============================================================
 
 function compareSectorMd(state: AppState, sector: SectorBenchmark): string {
-  const { dre } = buildDRE(state, state.tax.regime);
+  // SSOT: regime efetivo (downgrade automático se exceder limite Simples).
+  const { dre } = buildDRE(state, resolveEffectiveRegime(state));
   const ind = calcIndicators(state, dre);
   const rows: string[] = [];
   rows.push(`## Comparativo com Setor: ${sector.label}`);
