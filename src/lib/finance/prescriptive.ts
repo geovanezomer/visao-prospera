@@ -48,7 +48,8 @@ export interface MetricSnapshot {
 }
 
 export function snapshot(state: AppState): MetricSnapshot {
-  const { dre, tax } = buildDRE(state, state.tax.regime);
+  // Usa regime efetivo (Simples pode ter excedido limite).
+  const { dre, tax } = buildDRE(state, resolveEffectiveRegime(state));
   const ind = calcIndicators(state, dre);
   const cf = buildCashFlow(state);
   return {
