@@ -150,50 +150,24 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
 
 
 
-      {/* Movimentações de caixa não operacionais */}
-      <div className="rounded-lg border border-border/60 bg-card/40">
-        <div className="border-b border-border/60 p-4">
+      {/* Movimentações de caixa não operacionais — tabela estilo Receitas/Despesas */}
+      <div className="rounded-lg border border-border/60 border-l-4 border-l-[color:var(--primary)] bg-card/40">
+        <div className="flex items-center justify-between border-b border-border/60 p-4">
           <SectionTitle hint="Edite aqui CapEx, aportes, captações, amortizações e dividendos. Os valores alimentam automaticamente as linhas de investimento e financiamento na DFC abaixo.">
-            Movimentações de caixa não operacionais
+            Movimentações de caixa não operacionais — 12 meses
           </SectionTitle>
         </div>
-        <div className="divide-y divide-border/40">
-          <NonOpSection
-            label="CapEx — investimentos em ativo fixo"
-            hint="Saída de caixa para compra de máquinas, equipamentos, obras, software."
-            values={state.cashflow.capex}
-            onChange={(i, v) => setNonOp("capex", i, v)}
-            tone="neg"
-          />
-          <NonOpSection
-            label="Aportes de sócios"
-            hint="Entrada de capital próprio dos sócios na empresa."
-            values={state.cashflow.aportes}
-            onChange={(i, v) => setNonOp("aportes", i, v)}
-            tone="pos"
-          />
-          <NonOpSection
-            label="Captação de empréstimos"
-            hint="Entrada de caixa por novas linhas de crédito tomadas no período."
-            values={state.cashflow.emprestimosCaptados}
-            onChange={(i, v) => setNonOp("emprestimosCaptados", i, v)}
-            tone="pos"
-          />
-          <NonOpSection
-            label="Amortização de principal"
-            hint="Pagamento da parcela de principal de dívidas (não confundir com juros, que já entram em Despesas financeiras)."
-            values={state.cashflow.amortizacoes}
-            onChange={(i, v) => setNonOp("amortizacoes", i, v)}
-            tone="neg"
-          />
-          <NonOpSection
-            label="Distribuição de dividendos"
-            hint="Saída de caixa para distribuir lucros aos sócios."
-            values={state.cashflow.dividendos}
-            onChange={(i, v) => setNonOp("dividendos", i, v)}
-            tone="neg"
-          />
-        </div>
+        <NonOpTable
+          rows={[
+            { key: "capex", label: "CapEx — investimentos em ativo fixo", hint: "Saída de caixa para compra de máquinas, equipamentos, obras, software.", tone: "neg", values: state.cashflow.capex },
+            { key: "aportes", label: "Aportes de sócios", hint: "Entrada de capital próprio dos sócios na empresa.", tone: "pos", values: state.cashflow.aportes },
+            { key: "emprestimosCaptados", label: "Captação de empréstimos", hint: "Entrada de caixa por novas linhas de crédito tomadas no período.", tone: "pos", values: state.cashflow.emprestimosCaptados },
+            { key: "amortizacoes", label: "Amortização de principal", hint: "Pagamento da parcela de principal de dívidas (não confundir com juros, que já entram em Despesas financeiras).", tone: "neg", values: state.cashflow.amortizacoes },
+            { key: "dividendos", label: "Distribuição de dividendos", hint: "Saída de caixa para distribuir lucros aos sócios.", tone: "neg", values: state.cashflow.dividendos },
+          ]}
+          onMonth={setNonOp}
+          onAllMonths={(key, v) => update((s) => ({ ...s, cashflow: { ...s.cashflow, [key]: MESES.map(() => v) } }))}
+        />
       </div>
 
       {/* Tabela detalhada */}
