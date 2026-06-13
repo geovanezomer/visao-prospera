@@ -7,10 +7,14 @@
  */
 
 import { AppState, CostLine, TaxRegime } from "./types";
-import { buildDRE, calcIndicators, monthValues } from "./calculations";
+import { buildDRE, calcIndicators, monthValues, resolveEffectiveRegime, type DRE, type Indicators } from "./calculations";
 import { buildValuation, defaultValuationParams } from "./valuation";
-import { buildCashFlow } from "./cashflow";
+import { buildCashFlow, type CashFlow } from "./cashflow";
 import { fill12, sum } from "./format";
+
+// Mesmo regex usado em sensitivity.ts/prescriptive.ts — verdade única para identificar folha.
+const LABOR_RE = /sal[áa]rio|folha|clt|prolabore|pr[óo]-labore|mod|m[ãa]o de obra/i;
+const isLaborLine = (c: CostLine) => c.encargosAuto === true || LABOR_RE.test(c.label);
 
 export interface SimulatorParams {
   // Receita & Preço
@@ -75,7 +79,21 @@ function topNFixedIds(state: AppState, n: number): Set<string> {
 }
 
 export function applySimulator(base: AppState, p: SimulatorParams): AppState {
-  let s: AppState = { ...base, revenue: { ...base.revenue, bruta: base.revenue.bruta.slice(), inadimplencia: base.revenue.inadimplencia.slice() }, costs: cloneCosts(base.costs), capital: { ...base.capital }, cashflow: { ...base.cashflow, emprestimosCaptados: base.cashflow.emprestimosCaptados.slice(), amortizacoes: base.cashflow.amortizacoes.slice(), capex: base.cashflow.capex.slice() }, tax: { ...base.tax } };
+  let s: AppState = {
+    ...base,
+    revenue: {
+      ...base.revenue,
+      bruta: base.revenue.bruta.slice(),
+      inadimplencia: base.revenue.inadimplencia.slice(),
+      // Clona deduções e receitas financeiras profundas — para aplicar volume sem mutar o estado base.
+      deducoes: base.revenue.deducoes?.map((d) => ({ ...d, valores: d.valores.slice() })),
+      receitasFinanceiras: base.revenue.receitasFinanceiras?.map((d) => ({ ...d, valores: d.valores.slice() })),
+    },
+    costs: cloneCosts(base.costs),
+    capital: { ...base.capital },
+    cashflow: { ...base.cashflow, emprestimosCaptados: base.cashflow.emprestimosCaptados.slice(), amortizacoes: base.cashflow.amortizacoes.slice(), capex: base.cashflow.capex.slice() },
+    tax: { ...base.tax },
+  };
 
   // 1) Preço
   if (p.priceDeltaPct !== 0) {
@@ -83,10 +101,15 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     s.revenue.bruta = s.revenue.bruta.map((v) => v * f);
   }
 
-  // 2) Volume: receita + custo_vendas + variavel
+  // 2) Volume: receita + custo_vendas + variavel + deduções absolutas (S2)
+  // Inadimplência é %, escala automaticamente. Devoluções/descontos/abatimentos são R$ absolutos —
+  // precisam crescer junto, senão Receita Líquida fica artificialmente alta em volumes maiores.
   if (p.volumeDeltaPct !== 0) {
     const f = 1 + p.volumeDeltaPct / 100;
     s.revenue.bruta = s.revenue.bruta.map((v) => v * f);
+    if (s.revenue.deducoes) {
+      s.revenue.deducoes = s.revenue.deducoes.map((d) => ({ ...d, valores: d.valores.map((v) => v * f) }));
+    }
     s.costs = s.costs.map((c) =>
       c.category === "custo_vendas" || c.category === "variavel"
         ? { ...c, values: c.values.map((v) => v * f) }
@@ -102,11 +125,11 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     );
   }
 
-  // 4) Folha (linhas com encargosAuto)
+  // 4) Folha — usa isLaborLine (encargosAuto OU regex de folha), igual a sensitivity/prescriptive (S3).
   if (p.payrollDeltaPct !== 0) {
     const f = 1 + p.payrollDeltaPct / 100;
     s.costs = s.costs.map((c) =>
-      c.encargosAuto ? { ...c, values: c.values.map((v) => v * f) } : c,
+      isLaborLine(c) ? { ...c, values: c.values.map((v) => v * f) } : c,
     );
   }
 
@@ -157,7 +180,40 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     });
   }
 
-  // 9) Captar empréstimo (PRICE)
+  // Reordenação S4/S8: kd → quitar dívida existente → captar empréstimo novo.
+  // Motivos:
+  //  • kd primeiro: novo custo de dívida reflete em TODAS as linhas de juros existentes
+  //    antes da quitação proporcional escalar resíduos errados.
+  //  • Quitar antes de captar: evita que o "% quitar" incida sobre o empréstimo recém-captado
+  //    (caso clássico: usuário capta 100k @ 2% a.m. e "quita 30%" do total — quitava 30% do novo).
+
+  // 9) kd / Selic (antes de quitar para que a redução seja sobre o juros pós-kd)
+  if (p.kdDeltaPp !== 0) {
+    const kdAtual = Math.max(s.capital.kd, 0.5);
+    const novoKd = Math.max(0.5, s.capital.kd + p.kdDeltaPp);
+    const fator = novoKd / kdAtual;
+    s.capital.kd = novoKd;
+    s.costs = s.costs.map((c) =>
+      c.category === "financeiro" && /juros/i.test(c.label)
+        ? { ...c, values: c.values.map((v) => v * fator) }
+        : c,
+    );
+  }
+
+  // 10) Quitar dívida EXISTENTE (antes de captar)
+  if (p.debtPaydownPct > 0) {
+    const pct = p.debtPaydownPct / 100;
+    const pago = s.capital.dividaOnerosa * pct;
+    s.capital.dividaOnerosa = s.capital.dividaOnerosa * (1 - pct);
+    s.costs = s.costs.map((c) =>
+      c.category === "financeiro" && /juros/i.test(c.label)
+        ? { ...c, values: c.values.map((v) => v * (1 - pct)) }
+        : c,
+    );
+    s.cashflow.amortizacoes[0] = (s.cashflow.amortizacoes[0] || 0) + pago;
+  }
+
+  // 11) Captar empréstimo NOVO (PRICE) — depois da quitação, para não ser quitado junto
   if (p.loanPrincipal > 0 && p.loanTermMonths > 0) {
     const i = p.loanRatePctAm / 100;
     const pmt = i === 0 ? p.loanPrincipal / p.loanTermMonths : p.loanPrincipal * (i / (1 - Math.pow(1 + i, -p.loanTermMonths)));
@@ -182,31 +238,6 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       fixed: false,
       custom: true,
     });
-  }
-
-  // 10) Quitar dívida
-  if (p.debtPaydownPct > 0) {
-    const pct = p.debtPaydownPct / 100;
-    const pago = s.capital.dividaOnerosa * pct;
-    s.capital.dividaOnerosa = s.capital.dividaOnerosa * (1 - pct);
-    s.costs = s.costs.map((c) =>
-      c.category === "financeiro" && /juros/i.test(c.label)
-        ? { ...c, values: c.values.map((v) => v * (1 - pct)) }
-        : c,
-    );
-    s.cashflow.amortizacoes[0] = (s.cashflow.amortizacoes[0] || 0) + pago;
-  }
-
-  // 11) kd / Selic
-  if (p.kdDeltaPp !== 0) {
-    const novoKd = Math.max(0.5, s.capital.kd + p.kdDeltaPp);
-    const fator = novoKd / Math.max(s.capital.kd, 0.5);
-    s.capital.kd = novoKd;
-    s.costs = s.costs.map((c) =>
-      c.category === "financeiro" && /juros/i.test(c.label)
-        ? { ...c, values: c.values.map((v) => v * fator) }
-        : c,
-    );
   }
 
   // 12) Regime
@@ -260,10 +291,25 @@ export interface SimDREView {
   equityValue: number;
 }
 
-export function computeSimView(state: AppState): SimDREView {
-  const { dre, tax } = buildDRE(state, state.tax.regime);
-  const ind = calcIndicators(state, dre);
-  const cf = buildCashFlow(state);
+/**
+ * Snapshot resumido do DRE/indicadores para o painel Base × Simulado.
+ *
+ * S1/S9: usa regime efetivo (não nominal) — alinhado com Indicators/Diagnosis.
+ * S6: aceita `precomputed` (vindo de useFinanceModel) para o `baseView`,
+ *     evitando uma rodada extra de buildDRE+calcIndicators+buildCashFlow por render.
+ */
+export interface SimViewPrecomputed {
+  regime?: TaxRegime;
+  dre?: DRE;
+  ind?: Indicators;
+  cf?: CashFlow;
+}
+
+export function computeSimView(state: AppState, precomputed?: SimViewPrecomputed): SimDREView {
+  const regime = precomputed?.regime ?? resolveEffectiveRegime(state);
+  const dre = precomputed?.dre ?? buildDRE(state, regime).dre;
+  const ind = precomputed?.ind ?? calcIndicators(state, dre);
+  const cf = precomputed?.cf ?? buildCashFlow(state);
   const deducoes = sum(dre.deducoesInadimplencia);
 
   // Descontos Incondicionais e Abatimentos via revenue.deducoes
@@ -271,10 +317,10 @@ export function computeSimView(state: AppState): SimDREView {
   const descIncond = sum(dedById("desc_incond")?.valores ?? []);
   const abatim = sum(dedById("abatimentos")?.valores ?? []);
 
-  // Comerciais (variavel) / Administrativas (fixo) / Financeiras (financeiro)
+  // Comerciais (variavel) / Administrativas (fixo) / Financeiras (financeiro) — usa regime EFETIVO.
   let despComerciais = 0, despAdmin = 0, despFinanc = 0;
   for (const c of state.costs) {
-    const v = sum(monthValues(c, state.tax.regime));
+    const v = sum(monthValues(c, regime));
     if (c.category === "variavel") despComerciais += v;
     else if (c.category === "fixo") despAdmin += v;
     else if (c.category === "financeiro") despFinanc += v;
@@ -287,6 +333,10 @@ export function computeSimView(state: AppState): SimDREView {
 
   const valParams = defaultValuationParams(state.businessType);
   const val = buildValuation(state, valParams);
+
+  // tax.annual = total de impostos (vendas + lucro). Derivamos de dre.impostosTotal para
+  // evitar uma 2ª chamada a buildDRE quando temos precomputed.
+  const impostosAnuais = sum(dre.impostosTotal);
 
   return {
     receitaBruta: sum(dre.receitaBruta),
@@ -311,7 +361,7 @@ export function computeSimView(state: AppState): SimDREView {
     despesasFinanceiras: despFinanc,
     resultadoFinanceiro: sum(dre.resultadoFinanceiro),
     lair: sum(dre.lair),
-    impostos: tax.annual,
+    impostos: impostosAnuais,
     lucroLiquido: sum(dre.lucroLiquido),
     margemBruta: ind.margemBruta,
     margemEbitda: ind.margemEbitda,

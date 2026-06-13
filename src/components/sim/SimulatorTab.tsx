@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AppState, TaxRegime } from "@/lib/finance/types";
 import { applySimulator, computeSimView, countActiveLevers, DEFAULT_SIM, PRESETS, SimDREView, SimulatorParams } from "@/lib/finance/simulator";
+import { useFinanceModel } from "@/lib/finance/useFinanceModel";
 import { fmtBRL, fmtBRLCompact, fmtPct } from "@/lib/finance/format";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,12 @@ export function SimulatorTab({
       if (setParams) setParams(next); else setLocalP(next);
     };
 
-  const baseView = useMemo<SimDREView>(() => computeSimView(state), [state]);
+  // S6: reaproveita o modelo central (verdade absoluta) — evita 1 rodada extra de buildDRE+ind+cf.
+  const baseModel = useFinanceModel(state);
+  const baseView = useMemo<SimDREView>(
+    () => computeSimView(state, { regime: baseModel.regime, dre: baseModel.dre, ind: baseModel.ind, cf: baseModel.cf }),
+    [state, baseModel.regime, baseModel.dre, baseModel.ind, baseModel.cf],
+  );
   const simState = useMemo(() => applySimulator(state, p), [state, p]);
   const simView = useMemo<SimDREView>(() => computeSimView(simState), [simState]);
 
@@ -49,7 +55,8 @@ export function SimulatorTab({
   const inconsistencies: string[] = [];
   if (simView.lucroLiquido < 0) inconsistencies.push("Lucro líquido negativo no cenário simulado");
   if (simView.saldoCaixaFinal < 0) inconsistencies.push("Caixa final negativo — operação inviável sem captação");
-  if (Number.isFinite(simView.coberturaJuros) && simView.coberturaJuros < 1)
+  // S5: coberturaJuros é capada em CAP_COB (999) — sempre finita. Sem Number.isFinite.
+  if (simView.coberturaJuros < 1)
     inconsistencies.push(`Cobertura de juros < 1× (${simView.coberturaJuros.toFixed(1)}×)`);
 
   const applyToBase = () => {
@@ -110,11 +117,13 @@ export function SimulatorTab({
                 Top N atingidos:
                 <Input type="number" min={1} max={8} value={p.fixedCutTopN} onChange={(e) => set("fixedCutTopN", Math.max(1, Math.min(8, parseInt(e.target.value) || 1)))} className="h-7 w-16" />
               </div>
-              <SliderRow label="Terceirizar % do CPV" hint="Substitui parte do CPV variável por um custo fixo mensal contratado." min={0} max={100} step={5} value={p.outsourcePctCpv} onChange={(v) => set("outsourcePctCpv", v)} suffix="%" />
-              <div className="flex items-center gap-2 pl-1 text-[11px] text-muted-foreground">
+              <SliderRow label="Terceirizar % do CPV" hint="Substitui parte do CPV variável por um custo fixo mensal contratado. Defina o % primeiro — o campo R$/mês abaixo só vira custo quando o % é > 0." min={0} max={100} step={5} value={p.outsourcePctCpv} onChange={(v) => set("outsourcePctCpv", v)} suffix="%" />
+              <div className={cn("flex items-center gap-2 pl-1 text-[11px]", p.outsourcePctCpv === 0 ? "text-muted-foreground/50" : "text-muted-foreground")}>
                 Custo fixo contratado:
-                <Input type="number" step={500} min={0} value={p.outsourceFixedMonthly} onChange={(e) => set("outsourceFixedMonthly", Math.max(0, parseFloat(e.target.value) || 0))} className="h-7 w-32" />
+                <Input type="number" step={500} min={0} value={p.outsourceFixedMonthly} disabled={p.outsourcePctCpv === 0}
+                  onChange={(e) => set("outsourceFixedMonthly", Math.max(0, parseFloat(e.target.value) || 0))} className="h-7 w-32" />
                 <span>R$/mês</span>
+                {p.outsourcePctCpv === 0 && <span className="italic">(ativo somente com % &gt; 0)</span>}
               </div>
             </Group>
 
