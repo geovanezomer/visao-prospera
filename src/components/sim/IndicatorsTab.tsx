@@ -30,12 +30,13 @@ export function IndicatorsTab({ state }: { state: AppState }) {
   // (I1+I9) Modelo central: regime efetivo + DRE + indicadores + CAGR memoizados.
   const { dre, ind, cagrReceitas12m } = useFinanceModel(state);
 
-  // B3: separar custos operacionais de despesas financeiras no gráfico mensal
+  // (I7) D&A é linha própria nos dois charts — padroniza classificação com o waterfall.
   const monthlyChart = useMemo(
     () => MESES.map((m, i) => ({
       mes: m,
       Receita: dre.receitaLiquida[i],
-      Operacionais: dre.cpv[i] + dre.despesasOperacionais[i] + dre.depreciacao[i],
+      Operacionais: dre.cpv[i] + dre.despesasOperacionais[i],
+      "D&A": dre.depreciacao[i],
       Financeiros: dre.custosFinanceirosTotal[i],
       Lucro: dre.lucroLiquido[i],
     })),
