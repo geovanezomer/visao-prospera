@@ -21,15 +21,55 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
   };
   const best = (Object.entries(llBy) as [TaxRegime, number][]).reduce((a, b) => (b[1] > a[1] ? b : a))[0];
 
-  const Card = ({ title, regime, children }: { title: string; regime: TaxRegime; children: React.ReactNode }) => (
-    <div className={`rounded-lg border bg-card/40 p-5 ${best === regime ? "border-primary shadow-[0_0_0_1px_var(--primary)]" : "border-border/60"}`}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold">{title}</h3>
-        {best === regime && <Badge className="bg-primary text-primary-foreground">✓ Mais Vantajoso</Badge>}
+  const Card = ({
+    title,
+    regime,
+    annual,
+    effective,
+    badge,
+    children,
+  }: {
+    title: string;
+    regime: TaxRegime;
+    annual: number;
+    effective: number;
+    badge?: string;
+    children: React.ReactNode;
+  }) => {
+    const isBest = best === regime;
+    return (
+      <div
+        className={`relative rounded-lg border bg-card/40 p-5 ${
+          isBest ? "border-pos shadow-[0_0_0_1px_var(--pos)]" : "border-border/60"
+        }`}
+      >
+        {isBest && (
+          <div className="absolute -top-2.5 left-4">
+            <Badge className="bg-pos text-pos-foreground border-0 px-2 py-0.5 text-[10px]">
+              ✓ Mais vantajoso
+            </Badge>
+          </div>
+        )}
+        <div className="space-y-1">
+          <h3 className="text-base font-semibold text-foreground">{title}</h3>
+          <div className={`text-3xl font-bold tracking-tight ${isBest ? "text-pos" : "text-foreground"}`}>
+            {fmtBRL(annual)}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {fmtPct(effective / 100)} carga efetiva
+          </div>
+        </div>
+        {badge && (
+          <div className="mt-3">
+            <Badge variant="outline" className="border-border/60 bg-accent/20 text-[11px] font-normal text-foreground">
+              {badge}
+            </Badge>
+          </div>
+        )}
+        <div className="mt-4 space-y-3 text-sm">{children}</div>
       </div>
-      <div className="mt-4 space-y-3 text-sm">{children}</div>
-    </div>
-  );
+    );
+  };
 
   const Row = ({ label, value, strong }: { label: string; value: string; strong?: boolean }) => (
     <div className={`flex items-center justify-between border-b border-border/30 pb-1 ${strong ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
@@ -37,6 +77,7 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
       <span className="num text-sm">{value}</span>
     </div>
   );
+
 
   // Alertas de sublimite e enquadramento (Auditoria — Fase 2)
   const simplesWarnings: string[] = [];
@@ -234,7 +275,13 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
 
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card title="Simples Nacional" regime="simples">
+        <Card
+          title="Simples Nacional"
+          regime="simples"
+          annual={regimes.simples.annual}
+          effective={regimes.simples.effective}
+          badge={`Anexo ${state.tax.simplesAnexo}${state.tax.simplesAnexo === "III" ? " · Fator R ≥ 28%" : ""}`}
+        >
           <div>
             <label className="text-xs text-muted-foreground">Anexo</label>
             <Select value={state.tax.simplesAnexo} onValueChange={(v) => set({ simplesAnexo: v as SimplesAnexo })}>
@@ -248,57 +295,56 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
           </div>
           <Row label="RBT12" value={fmtBRL(rbAnual)} />
           <Row label="Alíquota Efetiva" value={fmtPct(aliqEf / 100)} />
-          <Row label="DAS Anual" value={fmtBRL(regimes.simples.annual)} strong />
-          <Row label="Carga efetiva s/ receita" value={fmtPct(regimes.simples.effective / 100)} />
+          <Row label="DAS (unificado)" value={fmtBRL(regimes.simples.annual)} strong />
+          <div className="text-[10.5px] text-muted-foreground">↳ inclui IRPJ, CSLL, PIS, COFINS, ISS</div>
           <div className="mt-3 rounded-md bg-accent/30 p-3 text-[11px] text-muted-foreground">
             Anexos: <b>I</b> comércio · <b>II</b> indústria · <b>III</b> serviços (Fator R ≥ 28%) · <b>IV</b> serviços específicos · <b>V</b> serviços intelectuais.
           </div>
         </Card>
 
-        <Card title="Lucro Presumido" regime="presumido">
-          {(() => {
+        <Card
+          title="Lucro Presumido"
+          regime="presumido"
+          annual={regimes.presumido.annual}
+          effective={regimes.presumido.effective}
+          badge={(() => {
             const bases = getPresumidoBases(state.tax, state.businessType);
-            const baseIRPJ = state.tax.presumidoBaseIRPJ || bases.irpj;
-            const baseCSLL = state.tax.presumidoBaseCSLL || bases.csll;
-            return (
-              <>
-                <Row label="Base IRPJ" value={fmtPct(baseIRPJ / 100)} />
-                <Row label="Base CSLL" value={fmtPct(baseCSLL / 100)} />
-                {state.businessType === "servicos" ? (
-                  <Row label="ISS" value={fmtPct(state.tax.issIcms / 100)} />
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                        ICMS (débito)
-                        <HelpTip text="Alíquota de débito de ICMS sobre a receita bruta. O crédito sobre o CPV é configurado ao lado." />
-                      </label>
-                      <PctInput value={state.tax.issIcms} onChange={(n) => set({ issIcms: n })} />
-                    </div>
-                    <div>
-                      <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                        ICMS crédito (CPV)
-                        <HelpTip text="Alíquota média de ICMS embutida nas compras (entradas). ICMS efetivo = max(0, débito − crédito)." />
-                      </label>
-                      <PctInput value={state.tax.aliquotaICMSCredito ?? 0} onChange={(n) => set({ aliquotaICMSCredito: n })} />
-                    </div>
-                  </div>
-                )}
-                <div className="text-[10.5px] text-muted-foreground">
-                  ⓘ Base IRPJ, Base CSLL{state.businessType === "servicos" ? " e ISS" : ""} são editáveis em <b>Parâmetros</b> (cabeçalho).
-                </div>
-              </>
-            );
+            const bI = state.tax.presumidoBaseIRPJ || bases.irpj;
+            const bC = state.tax.presumidoBaseCSLL || bases.csll;
+            return `Base IRPJ ${bI}% · CSLL ${bC}%`;
           })()}
+        >
+          {state.businessType !== "servicos" && (
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                  ICMS (débito)
+                  <HelpTip text="Alíquota de débito de ICMS sobre a receita bruta. O crédito sobre o CPV é configurado ao lado." />
+                </label>
+                <PctInput value={state.tax.issIcms} onChange={(n) => set({ issIcms: n })} />
+              </div>
+              <div>
+                <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                  ICMS crédito (CPV)
+                  <HelpTip text="Alíquota média de ICMS embutida nas compras (entradas). ICMS efetivo = max(0, débito − crédito)." />
+                </label>
+                <PctInput value={state.tax.aliquotaICMSCredito ?? 0} onChange={(n) => set({ aliquotaICMSCredito: n })} />
+              </div>
+            </div>
+          )}
           {Object.entries(regimes.presumido.detail).map(([k, v]) => <Row key={k} label={k} value={fmtBRL(v)} />)}
-          <Row label="Total Anual" value={fmtBRL(regimes.presumido.annual)} strong />
-          <Row label="Carga efetiva" value={fmtPct(regimes.presumido.effective / 100)} />
           <div className="mt-2 rounded-md bg-accent/30 p-2 text-[10.5px] text-muted-foreground">
-            ⓘ Adicional de IRPJ (10% sobre lucro trimestral &gt; R$60k) é apurado e recolhido por trimestre; aqui é distribuído proporcionalmente entre os meses para fins gerenciais.
+            ⓘ Base IRPJ, Base CSLL{state.businessType === "servicos" ? " e ISS" : ""} são editáveis em <b>Parâmetros</b> (cabeçalho). Adicional de IRPJ (10% sobre lucro trimestral &gt; R$60k) é distribuído proporcionalmente entre os meses.
           </div>
         </Card>
 
-        <Card title="Lucro Real" regime="real">
+        <Card
+          title="Lucro Real"
+          regime="real"
+          annual={regimes.real.annual}
+          effective={regimes.real.effective}
+          badge="PIS/COFINS não-cumulativo"
+        >
           {state.businessType !== "servicos" && (
             <div>
               <label className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -309,12 +355,11 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             </div>
           )}
           {Object.entries(regimes.real.detail).map(([k, v]) => <Row key={k} label={k} value={fmtBRL(v)} />)}
-          <Row label="Total Anual" value={fmtBRL(regimes.real.annual)} strong />
-          <Row label="Carga efetiva" value={fmtPct(regimes.real.effective / 100)} />
           <div className="mt-2 rounded-md bg-accent/30 p-2 text-[10.5px] text-muted-foreground">
             ⓘ PIS/COFINS não-cumulativos abatem créditos automaticamente sobre insumos. Após 2027, com CBS/IBS, a não-cumulatividade é plena sobre toda despesa operacional vinculada à atividade.
           </div>
         </Card>
+
 
       </div>
 
