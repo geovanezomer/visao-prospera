@@ -62,18 +62,43 @@ export function shiftByDaysSplit(values: number[], lagDays: number): { inAno: nu
 }
 
 /**
+ * Variante por mês: cada mês `i` tem seu próprio lag (em dias).
+ * Útil quando o PMR/PMP varia ao longo do ano (sazonalidade, mix de clientes etc.).
+ */
+export function shiftByDaysSplitMonthly(values: number[], lagDaysByMonth: number[]): { inAno: number[]; transbordo: number } {
+  const out = zeros12();
+  let transbordo = 0;
+  for (let i = 0; i < 12; i++) {
+    const lag = Math.max(0, Math.round((lagDaysByMonth[i] || 0) / 30));
+    const t = i + lag;
+    if (t < 12) out[t] += values[i];
+    else transbordo += values[i];
+  }
+  return { inAno: out, transbordo };
+}
+
+/**
  * Recebimentos = (Receita Bruta − Inadimplência) deslocados pelo PMR.
+ * Usa `pmrMensal` quando disponível (sazonalidade do prazo de recebimento).
  * Impostos sobre venda saem em `computeImpostos`, NÃO daqui.
  */
 export function computeRecebimentos(state: AppState, dre: DRE): { inAno: number[]; transbordo: number } {
   const recebivelMensal = dre.receitaBruta.map((r, i) => r - (dre.deducoesInadimplencia[i] ?? 0));
+  const pmrM = state.revenue.pmrMensal;
+  if (Array.isArray(pmrM) && pmrM.length === 12) {
+    return shiftByDaysSplitMonthly(recebivelMensal, pmrM);
+  }
   return shiftByDaysSplit(recebivelMensal, state.revenue.pmr);
 }
 
 /**
- * Pagamentos a fornecedores = CPV/CMV/CSP deslocados pelo PMP.
+ * Pagamentos a fornecedores = CPV/CMV/CSP deslocados pelo PMP (mensal quando definido).
  */
 export function computeFornecedores(state: AppState, dre: DRE): { inAno: number[]; transbordo: number } {
+  const pmpM = state.revenue.pmpMensal;
+  if (Array.isArray(pmpM) && pmpM.length === 12) {
+    return shiftByDaysSplitMonthly(dre.cpv, pmpM);
+  }
   return shiftByDaysSplit(dre.cpv, state.revenue.pmp);
 }
 
