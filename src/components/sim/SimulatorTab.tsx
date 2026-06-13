@@ -37,7 +37,12 @@ export function SimulatorTab({
       if (setParams) setParams(next); else setLocalP(next);
     };
 
-  const baseView = useMemo<SimDREView>(() => computeSimView(state), [state]);
+  // S6: reaproveita o modelo central (verdade absoluta) — evita 1 rodada extra de buildDRE+ind+cf.
+  const baseModel = useFinanceModel(state);
+  const baseView = useMemo<SimDREView>(
+    () => computeSimView(state, { regime: baseModel.regime, dre: baseModel.dre, ind: baseModel.ind, cf: baseModel.cf }),
+    [state, baseModel.regime, baseModel.dre, baseModel.ind, baseModel.cf],
+  );
   const simState = useMemo(() => applySimulator(state, p), [state, p]);
   const simView = useMemo<SimDREView>(() => computeSimView(simState), [simState]);
 
@@ -50,7 +55,8 @@ export function SimulatorTab({
   const inconsistencies: string[] = [];
   if (simView.lucroLiquido < 0) inconsistencies.push("Lucro líquido negativo no cenário simulado");
   if (simView.saldoCaixaFinal < 0) inconsistencies.push("Caixa final negativo — operação inviável sem captação");
-  if (Number.isFinite(simView.coberturaJuros) && simView.coberturaJuros < 1)
+  // S5: coberturaJuros é capada em CAP_COB (999) — sempre finita. Sem Number.isFinite.
+  if (simView.coberturaJuros < 1)
     inconsistencies.push(`Cobertura de juros < 1× (${simView.coberturaJuros.toFixed(1)}×)`);
 
   const applyToBase = () => {
