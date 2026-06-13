@@ -10,7 +10,7 @@ import {
   logValuationTrace,
   ValuationTestCase,
 } from "@/lib/finance/valuation";
-import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
+import { useFinanceModel } from "@/lib/finance/useFinanceModel";
 import { fmtBRLCompact, fmtPct, sum } from "@/lib/finance/format";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
@@ -40,26 +40,43 @@ export function ValuationTab({
   const [useSimulated, setUseSimulated] = useState(true);
   const source: AppState = useSimulated ? effectiveSim : effectiveBase;
 
+  // V6: presets atualizam quando businessType muda.
   const [params, setParams] = useState<ValuationParams>(() => defaultValuationParams(source.businessType));
+  useEffect(() => {
+    setParams((cur) => ({ ...defaultValuationParams(source.businessType), ...{
+      // preserva ajustes que o usuário fez explicitamente, exceto múltiplos e g (que dependem do setor)
+      controlPremium: cur.controlPremium,
+      liquidityDiscount: cur.liquidityDiscount,
+      horizonYears: cur.horizonYears,
+      applyStrategicHaircut: cur.applyStrategicHaircut,
+      method: cur.method,
+    }}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source.businessType]);
   const set = (p: Partial<ValuationParams>) => setParams((s) => ({ ...s, ...p }));
 
   const presets = VALUATION_PRESETS[source.businessType];
-  const valuation = useMemo(() => buildValuation(source, params), [source, params]);
-  const { dre } = useMemo(() => buildDRE(source, source.tax.regime), [source]);
-  const ind = useMemo(() => calcIndicators(source, dre), [source, dre]);
+
+  // V1+V2: modelo central injetado em buildValuation/traceValuation — evita
+  // ~8 chamadas redundantes a buildDRE/calcIndicators por render, e usa regime EFETIVO.
+  const { regime, dre, ind } = useFinanceModel(source);
+  const precomputed = useMemo(() => ({ regime, dre, ind }), [regime, dre, ind]);
+  const valuation = useMemo(() => buildValuation(source, params, precomputed), [source, params, precomputed]);
+  const trace = useMemo(() => traceValuation(source, params, precomputed), [source, params, precomputed]);
   const ebitda = sum(dre.ebitda);
   const receita = sum(dre.receitaBruta);
   const ll = sum(dre.lucroLiquido);
-  const trace = useMemo(() => traceValuation(source, params), [source, params]);
 
-  // Loga memória sempre que muda
-  useEffect(() => { logValuationTrace(source, params, useSimulated ? "simulado" : "base"); }, [source, params, useSimulated]);
+  // V5: log opt-in via botão (não mais a cada slider).
+  const onLogTrace = () => logValuationTrace(source, params, useSimulated ? "simulado" : "base");
 
   const ev = valuation.enterpriseValue;
   const eq = valuation.equityValue;
   const strategic = valuation.strategicResult;
 
   const evTone = ev.base > 0 ? "pos" : "neg";
+
+
 
   return (
     <div className="space-y-6">
@@ -219,6 +236,7 @@ export function ValuationTab({
               />
             </div>
 
+            {/* V4: Equity Value usa Dívida Líquida (Dívida − Caixa), não bruta. */}
             <div className="mt-5 grid grid-cols-3 gap-3 rounded-md border border-primary/30 bg-primary/5 p-4 text-center">
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">EV (múltiplos)</div>
@@ -227,18 +245,22 @@ export function ValuationTab({
                 </div>
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">− Dívida onerosa</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">− Dívida líquida</div>
                 <div className="mono mt-1 text-lg font-semibold text-foreground">
-                  {fmtBRLCompact(source.capital.dividaOnerosa)}
+                  {fmtBRLCompact(valuation.netDebt)}
+                </div>
+                <div className="text-[9px] text-muted-foreground mt-0.5">
+                  Dív. {fmtBRLCompact(source.capital.dividaOnerosa)} − Caixa {fmtBRLCompact(source.capital.caixaOcioso ?? 0)}
                 </div>
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">= Equity Value</div>
                 <div className="mono mt-1 text-lg font-semibold text-pos">
-                  {fmtBRLCompact(Math.max(0, valuation.multiplesDetails.blendedEnterpriseValue - source.capital.dividaOnerosa))}
+                  {fmtBRLCompact(Math.max(0, valuation.multiplesDetails.blendedEnterpriseValue - valuation.netDebt))}
                 </div>
               </div>
             </div>
+
           </section>
         </TabsContent>
 
@@ -280,12 +302,29 @@ export function ValuationTab({
               />
             </div>
 
-            {params.terminalGrowthRate * 100 >= ind.wacc && (
+            {/* V7: alinhado com engine (spread < 0,5pp aciona fallback). */}
+            {(params.terminalGrowthRate * 100) >= (ind.wacc - 0.5) && (
               <div className="mt-4 flex items-start gap-2 rounded-md border border-neg/40 bg-neg/5 p-3 text-xs">
                 <AlertTriangle className="mt-0.5 h-4 w-4 text-neg" />
-                <span className="text-foreground">g ≥ WACC: perpetuidade de Gordon não converge. Reduza g ou aumente WACC.</span>
+                <span className="text-foreground">
+                  Spread WACC − g abaixo de 0,5pp: perpetuidade de Gordon instável.
+                  A engine usa fallback conservador (FCL × 5) — reduza g ou aumente WACC.
+                </span>
               </div>
             )}
+
+            {/* V8/V10: warnings do DCF (FCL terminal negativo, WACC default, etc.) */}
+            {valuation.dcfDetails?.warnings && valuation.dcfDetails.warnings.length > 0 && (
+              <div className="mt-4 space-y-1.5">
+                {valuation.dcfDetails.warnings.map((w, i) => (
+                  <div key={i} className="flex items-start gap-2 rounded-md border border-[var(--warning)]/40 bg-[var(--warning)]/5 p-3 text-xs">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 text-[var(--warning)]" />
+                    <span className="text-foreground">{w}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
 
             {valuation.dcfDetails && (
               <div className="mt-5">
@@ -343,7 +382,7 @@ export function ValuationTab({
 
         {/* ============ AUDITORIA ============ */}
         <TabsContent value="audit" className="mt-4 space-y-4">
-          <AuditPanel trace={trace} />
+          <AuditPanel trace={trace} onLogTrace={onLogTrace} />
         </TabsContent>
       </Tabs>
     </div>
@@ -562,11 +601,14 @@ function RiskPanel({ valuation, state }: { valuation: ReturnType<typeof buildVal
         <SectionTitle hint="Range de Enterprise Value combinando incerteza de premissas e haircut estratégico.">
           Faixa de Valuation
         </SectionTitle>
+        {/* V3: descrição reflete o cálculo real (multiplicador empírico) ao
+            invés de "WACC ±1pp · g ±0.5pp" que não é o que a engine faz. */}
         <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <RangeCard tone="neg" label="Pessimista" desc="WACC +1pp · g −0.5pp · receita −10%" value={ev.low} base={ev.base} />
-          <RangeCard tone="primary" label="Base (provável)" desc="Premissas atuais" value={ev.base} base={ev.base} />
-          <RangeCard tone="pos" label="Otimista" desc="WACC −1pp · g +0.5pp · receita +15%" value={ev.high} base={ev.base} />
+          <RangeCard tone="neg" label="Pessimista" desc={valuation.dcfDetails ? "Incerteza paramétrica: −25% sobre EV base" : "Incerteza paramétrica: −10% sobre EV base"} value={ev.low} base={ev.base} />
+          <RangeCard tone="primary" label="Base (provável)" desc="Premissas atuais (WACC, g, múltiplos)" value={ev.base} base={ev.base} />
+          <RangeCard tone="pos" label="Otimista" desc={valuation.dcfDetails ? "Incerteza paramétrica: +35% sobre EV base" : "Incerteza paramétrica: +15% sobre EV base"} value={ev.high} base={ev.base} />
         </div>
+
         <div className="mt-3 flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-xs">
           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary" />
           <div className="text-foreground">
@@ -639,19 +681,25 @@ function Reco({ icon, title, text }: { icon: string; title: string; text: string
 // =====================================================================
 // Auditoria — memória de cálculo + self-tests
 // =====================================================================
-function AuditPanel({ trace }: { trace: ReturnType<typeof traceValuation> }) {
+function AuditPanel({ trace, onLogTrace }: { trace: ReturnType<typeof traceValuation>; onLogTrace: () => void }) {
   const [tests, setTests] = useState<{ results: ValuationTestCase[]; allPassed: boolean } | null>(null);
   const runTests = () => setTests(runValuationSelfTests());
 
   return (
     <>
       <section className="rounded-lg border border-border/60 bg-card/40 p-5">
-        <div className="flex items-center gap-2">
-          <Calculator className="h-4 w-4 text-primary" />
-          <SectionTitle hint="Cada linha mostra a fórmula aplicada, os inputs e o resultado. Use para auditar o valuation.">
-            Memória de Cálculo
-          </SectionTitle>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Calculator className="h-4 w-4 text-primary" />
+            <SectionTitle hint="Cada linha mostra a fórmula aplicada, os inputs e o resultado. Use para auditar o valuation.">
+              Memória de Cálculo
+            </SectionTitle>
+          </div>
+          <Button size="sm" variant="outline" onClick={onLogTrace}>
+            <Calculator className="mr-1.5 h-3.5 w-3.5" /> Logar no console
+          </Button>
         </div>
+
 
         <div className="mt-4 grid gap-2 rounded-md border border-border/40 bg-background/30 p-3 text-xs md:grid-cols-3">
           <KV k="EBITDA (12m)" v={trace.inputs.ebitda} />

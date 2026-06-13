@@ -1,9 +1,14 @@
 /**
  * Valuation engine — consolida dados das abas em uma narrativa de valor
  * com múltiplos setoriais, DCF e ajuste de risco estratégico.
+ *
+ * V1+V2 (auditoria): aceita modelo pré-computado { dre, ind, regime } para
+ * evitar 8× chamadas redundantes a buildDRE/calcIndicators por render.
+ * Quando não recebe, resolve o REGIME EFETIVO (não o nominal) — alinhado
+ * com Indicadores/Diagnóstico/Simulador (verdade absoluta única).
  */
-import { AppState, BusinessType } from "./types";
-import { buildDRE, calcIndicators } from "./calculations";
+import { AppState, BusinessType, TaxRegime } from "./types";
+import { buildDRE, calcIndicators, resolveEffectiveRegime } from "./calculations";
 import { buildForecast, ForecastConfig, DEFAULT_FORECAST_CFG } from "./forecast";
 import { computeStrategic, StrategicResult } from "./strategic";
 import { sum } from "./format";
@@ -34,6 +39,7 @@ export interface DCFSummary {
   npvTerminal: number;
   horizonMonths: number;
   growthTerminal: number;
+  warnings: string[];    // V8/V10: alertas (FCL terminal negativo, WACC default, etc.)
 }
 
 export interface MultiplesSummary {
@@ -55,6 +61,7 @@ export interface ValuationResult {
   confidenceRationale: string;
   strategicResult: StrategicResult;
   haircutApplied: number;
+  netDebt: number;       // V4: dívida líquida usada no equity
   dcfDetails?: DCFSummary;
   multiplesDetails: MultiplesSummary;
   narrative: string;
@@ -91,13 +98,38 @@ export const defaultValuationParams = (b: BusinessType): ValuationParams => {
 };
 
 // =====================================================================
+// MODELO PRÉ-COMPUTADO (V2) — evita rebuild de DRE/ind em cada subrotina.
+// Se omitido, resolve regime EFETIVO (V1) e calcula localmente.
+// =====================================================================
+export interface PrecomputedValuationModel {
+  regime: TaxRegime;
+  dre: ReturnType<typeof buildDRE>["dre"];
+  ind: ReturnType<typeof calcIndicators>;
+}
+
+function ensureModel(state: AppState, pre?: PrecomputedValuationModel): PrecomputedValuationModel {
+  if (pre) return pre;
+  const regime = resolveEffectiveRegime(state);          // V1: verdade absoluta
+  const dre = buildDRE(state, regime).dre;
+  const ind = calcIndicators(state, dre);
+  return { regime, dre, ind };
+}
+
+// V4: dívida líquida = dívida onerosa − caixa ocioso (≥ 0; valuation
+// não credita "caixa negativo" como reforço de equity).
+function netDebt(state: AppState): number {
+  const divida = Math.max(0, state.capital.dividaOnerosa ?? 0);
+  const caixa = Math.max(0, state.capital.caixaOcioso ?? 0);
+  return Math.max(0, divida - caixa);
+}
+
+// =====================================================================
 // MÚLTIPLOS — média ponderada com pesos renormalizados se algum múltiplo = 0
 // =====================================================================
-function buildMultiples(state: AppState, params: ValuationParams): MultiplesSummary {
-  const { dre } = buildDRE(state, state.tax.regime);
-  const ebitda = sum(dre.ebitda);
-  const revenue = sum(dre.receitaBruta);
-  const ll = sum(dre.lucroLiquido);
+function buildMultiples(state: AppState, params: ValuationParams, m: PrecomputedValuationModel): MultiplesSummary {
+  const ebitda = sum(m.dre.ebitda);
+  const revenue = sum(m.dre.receitaBruta);
+  const ll = sum(m.dre.lucroLiquido);
 
   const evFromEbitda = Math.max(0, ebitda) * Math.max(0, params.evEbitdaMultiple);
   const evFromRevenue = Math.max(0, revenue) * Math.max(0, params.evRevenueMultiple);
@@ -117,17 +149,23 @@ function buildMultiples(state: AppState, params: ValuationParams): MultiplesSumm
 // =====================================================================
 // DCF — projeta FCL via forecast e desconta à WACC
 // =====================================================================
-function buildDCF(state: AppState, params: ValuationParams): DCFSummary {
-  const { dre } = buildDRE(state, state.tax.regime);
-  const ind = calcIndicators(state, dre);
+function buildDCF(state: AppState, params: ValuationParams, m: PrecomputedValuationModel): DCFSummary {
+  const warnings: string[] = [];
 
   const forecast = buildForecast(state, {
     ...params.forecastConfig,
     horizonteMeses: params.horizonYears * 12,
   });
-  const fcfProjected = forecast.meses.map((m) => m.fcl);
+  const fcfProjected = forecast.meses.map((mo) => mo.fcl);
 
-  const waccAnnual = Math.max(0.005, (ind.wacc || 10) / 100);
+  // V10: WACC default silencioso vira alerta explícito.
+  const rawWacc = m.ind.wacc;
+  if (!Number.isFinite(rawWacc) || rawWacc <= 0) {
+    warnings.push("WACC não definido (Capital): assumindo 10% a.a. — informe Ke/Kd para precisão.");
+  } else if (rawWacc > 50) {
+    warnings.push(`WACC = ${rawWacc.toFixed(1)}% fora de faixa realista — revise estrutura de capital.`);
+  }
+  const waccAnnual = Math.max(0.005, ((Number.isFinite(rawWacc) && rawWacc > 0 ? rawWacc : 10)) / 100);
   const waccMonthly = Math.pow(1 + waccAnnual, 1 / 12) - 1;
 
   let npvFlows = 0;
@@ -135,13 +173,19 @@ function buildDCF(state: AppState, params: ValuationParams): DCFSummary {
     npvFlows += fcfProjected[t] / Math.pow(1 + waccMonthly, t + 1);
   }
 
-  // Valor terminal por Gordon: usa FCF anualizado dos últimos 12 meses.
-  // Auditoria: exige spread mínimo de 0,5% entre WACC e g — caso contrário
-  // usa fallback conservador (5× FCL ≈ múltiplo EV/EBITDA típico de PME madura)
-  // em vez de 10×, que superestimava o valor terminal quando WACC≈g.
+  // Valor terminal por Gordon. Spread mínimo de 0,5% (V7: alinhado com a UI).
   const lastYearFCF = fcfProjected.slice(-12).reduce((a, b) => a + b, 0);
   const g = params.terminalGrowthRate;
   const spread = waccAnnual - g;
+
+  // V8: FCL_LTM negativo torna VT negativo. Sinaliza explicitamente.
+  if (lastYearFCF < 0) {
+    warnings.push(`FCL projetado do último ano é negativo (${lastYearFCF.toFixed(0)}). Valor terminal sairá negativo — DCF não confiável.`);
+  }
+  if (spread < 0.005) {
+    warnings.push(`Spread WACC − g abaixo de 0,5% (${(spread * 100).toFixed(2)}pp). Perpetuidade de Gordon não converge — usando fallback FCL × 5.`);
+  }
+
   const terminalValue = spread >= 0.005
     ? (lastYearFCF * (1 + g)) / spread
     : lastYearFCF * 5; // fallback p/ WACC≈g (perpetuidade não converge)
@@ -155,13 +199,14 @@ function buildDCF(state: AppState, params: ValuationParams): DCFSummary {
     npvTerminal,
     horizonMonths: params.horizonYears * 12,
     growthTerminal: g,
+    warnings,
   };
 }
 
 // =====================================================================
 // CONFIANÇA
 // =====================================================================
-function computeConfidence(state: AppState, params: ValuationParams, strategic: StrategicResult) {
+function computeConfidence(state: AppState, params: ValuationParams, strategic: StrategicResult, m: PrecomputedValuationModel) {
   let score = 100;
   const issues: string[] = [];
   if (!strategic.hasAnyAnswer) { score -= 25; issues.push("análise estratégica não preenchida"); }
@@ -170,9 +215,7 @@ function computeConfidence(state: AppState, params: ValuationParams, strategic: 
   if (capital.dividaOnerosa <= 0 && capital.patrimonioLiquido <= 0) { score -= 20; issues.push("estrutura de capital não informada"); }
   if (capital.ke <= 0 || capital.kd <= 0) { score -= 10; issues.push("custo de capital não definido"); }
   if (params.terminalGrowthRate > 0.05) { score -= 10; issues.push("g terminal acima de 5% (irreal p/ PME)"); }
-  const { dre } = buildDRE(state, state.tax.regime);
-  const ind = calcIndicators(state, dre);
-  if (ind.wacc <= 0 || ind.wacc > 50) { score -= 15; issues.push("WACC fora de faixa realista"); }
+  if (m.ind.wacc <= 0 || m.ind.wacc > 50) { score -= 15; issues.push("WACC fora de faixa realista"); }
   const grade: ConfidenceGrade = score >= 85 ? "A" : score >= 70 ? "B" : score >= 55 ? "C" : score >= 40 ? "D" : "E";
   const rationale = issues.length === 0
     ? "Dados financeiros e estratégicos robustos."
@@ -202,14 +245,17 @@ function buildNarrative(ev: number, ind: ReturnType<typeof calcIndicators>, stra
 // =====================================================================
 // API
 // =====================================================================
-export function buildValuation(state: AppState, params: ValuationParams): ValuationResult {
-  const { dre } = buildDRE(state, state.tax.regime);
-  const ind = calcIndicators(state, dre);
+export function buildValuation(
+  state: AppState,
+  params: ValuationParams,
+  precomputed?: PrecomputedValuationModel,
+): ValuationResult {
+  const m = ensureModel(state, precomputed);
   const strategic = computeStrategic(state);
 
-  const mults = buildMultiples(state, params);
+  const mults = buildMultiples(state, params, m);
   let dcf: DCFSummary | undefined;
-  try { dcf = buildDCF(state, params); } catch { dcf = undefined; }
+  try { dcf = buildDCF(state, params, m); } catch { dcf = undefined; }
 
   const evMultiples = mults.blendedEnterpriseValue;
   const evDCF = dcf ? dcf.npvFlows + dcf.npvTerminal : 0;
@@ -224,19 +270,24 @@ export function buildValuation(state: AppState, params: ValuationParams): Valuat
   const haircut = params.applyStrategicHaircut && strategic.hasAnyAnswer ? strategic.haircut : 0;
   const evAfter = evBase * (1 - haircut);
 
+  // V3+V9: faixa é incerteza paramétrica sobre o EV final.
+  // Multiplicadores empíricos (±25% / +35% c/ DCF, ±10/+15 sem DCF) refletem
+  // dispersão típica de premissas (WACC ±1pp, g ±0,5pp, receita ±10/15%).
   const evLow = evAfter * (dcf ? 0.75 : 0.9);
   const evHigh = evAfter * (dcf ? 1.35 : 1.15);
-  const D = state.capital.dividaOnerosa;
 
-  const { grade, rationale } = computeConfidence(state, params, strategic);
+  // V4: equity = EV − dívida líquida (não bruta).
+  const nd = netDebt(state);
+
+  const { grade, rationale } = computeConfidence(state, params, strategic, m);
 
   return {
     method: params.method,
     enterpriseValue: { low: evLow, base: evAfter, high: evHigh },
     equityValue: {
-      low: Math.max(0, evLow - D),
-      base: Math.max(0, evAfter - D),
-      high: Math.max(0, evHigh - D),
+      low: Math.max(0, evLow - nd),
+      base: Math.max(0, evAfter - nd),
+      high: Math.max(0, evHigh - nd),
     },
     impliedMultiple: {
       evEbitda: mults.ebitda > 0 ? evAfter / mults.ebitda : 0,
@@ -246,20 +297,20 @@ export function buildValuation(state: AppState, params: ValuationParams): Valuat
     confidenceRationale: rationale,
     strategicResult: strategic,
     haircutApplied: haircut,
+    netDebt: nd,
     dcfDetails: dcf,
     multiplesDetails: mults,
-    narrative: buildNarrative(evAfter, ind, strategic),
+    narrative: buildNarrative(evAfter, m.ind, strategic),
   };
 }
 
 // =====================================================================
-// MEMÓRIA DE CÁLCULO — devolve cada fórmula e seus inputs/outputs.
-// Útil para o usuário auditar os números e para o painel de validação.
+// MEMÓRIA DE CÁLCULO
 // =====================================================================
 export interface ValuationTrace {
   inputs: {
     ebitda: number; receita: number; ll: number;
-    dividaOnerosa: number;
+    dividaOnerosa: number; caixaOcioso: number; dividaLiquida: number;
     wacc: number; ke: number; kd: number;
     multEbitda: number; multReceita: number; multPL: number;
     horizonAnos: number; g: number;
@@ -269,15 +320,18 @@ export interface ValuationTrace {
   steps: { label: string; formula: string; value: number; note?: string }[];
 }
 
-export function traceValuation(state: AppState, params: ValuationParams): ValuationTrace {
-  const { dre } = buildDRE(state, state.tax.regime);
-  const ind = calcIndicators(state, dre);
+export function traceValuation(
+  state: AppState,
+  params: ValuationParams,
+  precomputed?: PrecomputedValuationModel,
+): ValuationTrace {
+  const m = ensureModel(state, precomputed);
   const strategic = computeStrategic(state);
-  const m = buildMultiples(state, params);
-  const dcf = (() => { try { return buildDCF(state, params); } catch { return undefined; } })();
+  const mults = buildMultiples(state, params, m);
+  const dcf = (() => { try { return buildDCF(state, params, m); } catch { return undefined; } })();
 
   const haircut = params.applyStrategicHaircut && strategic.hasAnyAnswer ? strategic.haircut : 0;
-  const evMult = m.blendedEnterpriseValue;
+  const evMult = mults.blendedEnterpriseValue;
   const evDCF = dcf ? dcf.npvFlows + dcf.npvTerminal : 0;
   const evBaseRaw =
     params.method === "multiples" ? evMult :
@@ -285,11 +339,12 @@ export function traceValuation(state: AppState, params: ValuationParams): Valuat
     (evMult + evDCF) / 2;
   const evAdj = evBaseRaw * (1 + params.controlPremium) * (1 - params.liquidityDiscount);
   const evFinal = evAdj * (1 - haircut);
+  const nd = netDebt(state);
 
   const steps: ValuationTrace["steps"] = [
-    { label: "EV via EBITDA",   formula: `EBITDA × m = ${m.ebitda.toFixed(2)} × ${params.evEbitdaMultiple}`, value: m.evFromEbitda },
-    { label: "EV via Receita",  formula: `Receita × m = ${m.revenue.toFixed(2)} × ${params.evRevenueMultiple}`, value: m.evFromRevenue },
-    { label: "Equity via P/L",  formula: `LL × m = ${m.ll.toFixed(2)} × ${params.plMultiple}`, value: m.equityFromPL, note: "P/L produz Equity Value (não EV); ponderado proporcionalmente." },
+    { label: "EV via EBITDA",   formula: `EBITDA × m = ${mults.ebitda.toFixed(2)} × ${params.evEbitdaMultiple}`, value: mults.evFromEbitda },
+    { label: "EV via Receita",  formula: `Receita × m = ${mults.revenue.toFixed(2)} × ${params.evRevenueMultiple}`, value: mults.evFromRevenue },
+    { label: "Equity via P/L",  formula: `LL × m = ${mults.ll.toFixed(2)} × ${params.plMultiple}`, value: mults.equityFromPL, note: "P/L produz Equity Value (não EV); ponderado proporcionalmente." },
     { label: "EV múltiplos (ponderado)", formula: "0.5·EV_EBITDA + 0.3·EV_Receita + 0.2·Eq_PL (pesos renormalizados)", value: evMult },
     ...(dcf ? [
       { label: "WACC (a.a.)",        formula: "Capital.wacc()", value: dcf.wacc, note: "% ao ano" },
@@ -301,14 +356,15 @@ export function traceValuation(state: AppState, params: ValuationParams): Valuat
     { label: "EV método selecionado", formula: `método=${params.method}`, value: evBaseRaw },
     { label: "EV ajustado (controle/liquidez)", formula: `EV × (1+${params.controlPremium}) × (1−${params.liquidityDiscount})`, value: evAdj },
     { label: `Haircut estratégico (${(haircut*100).toFixed(1)}%)`, formula: `EV_adj × (1 − ${haircut.toFixed(3)})`, value: evFinal },
-    { label: "Equity Value final", formula: `EV − dívida onerosa = ${evFinal.toFixed(2)} − ${state.capital.dividaOnerosa.toFixed(2)}`, value: Math.max(0, evFinal - state.capital.dividaOnerosa) },
+    { label: "Dívida líquida", formula: `Dívida onerosa − Caixa = ${state.capital.dividaOnerosa.toFixed(2)} − ${(state.capital.caixaOcioso ?? 0).toFixed(2)}`, value: nd, note: "V4: equity desconta dívida líquida, não bruta" },
+    { label: "Equity Value final", formula: `EV − dívida líquida = ${evFinal.toFixed(2)} − ${nd.toFixed(2)}`, value: Math.max(0, evFinal - nd) },
   ];
 
   return {
     inputs: {
-      ebitda: m.ebitda, receita: m.revenue, ll: m.ll,
-      dividaOnerosa: state.capital.dividaOnerosa,
-      wacc: ind.wacc, ke: state.capital.ke, kd: state.capital.kd,
+      ebitda: mults.ebitda, receita: mults.revenue, ll: mults.ll,
+      dividaOnerosa: state.capital.dividaOnerosa, caixaOcioso: state.capital.caixaOcioso ?? 0, dividaLiquida: nd,
+      wacc: m.ind.wacc, ke: state.capital.ke, kd: state.capital.kd,
       multEbitda: params.evEbitdaMultiple, multReceita: params.evRevenueMultiple, multPL: params.plMultiple,
       horizonAnos: params.horizonYears, g: params.terminalGrowthRate,
       controlPremium: params.controlPremium, liquidityDiscount: params.liquidityDiscount,
@@ -319,8 +375,20 @@ export function traceValuation(state: AppState, params: ValuationParams): Valuat
 }
 
 // =====================================================================
-// SELF-TESTS — valida fórmulas de EV/EBITDA, EV/Receita, P/L e DCF (Gordon)
-// com casos determinísticos. Loga no console para o usuário inspecionar.
+// LOGGING — opt-in (V5: removido do useEffect; usar via botão)
+// =====================================================================
+export function logValuationTrace(state: AppState, params: ValuationParams, sourceLabel: string) {
+  const t = traceValuation(state, params);
+  // eslint-disable-next-line no-console
+  console.groupCollapsed(`[Valuation] memória de cálculo · ${sourceLabel}`);
+  // eslint-disable-next-line no-console
+  console.table(t.steps.map((s) => ({ etapa: s.label, formula: s.formula, valor: s.value })));
+  // eslint-disable-next-line no-console
+  console.groupEnd();
+}
+
+// =====================================================================
+// SELF-TESTS
 // =====================================================================
 export interface ValuationTestCase {
   name: string;
@@ -342,77 +410,54 @@ export function runValuationSelfTests(): { results: ValuationTestCase[]; allPass
     results.push({ name, formula, expected, actual, pass, delta });
   };
 
-  // ---- 1) EV/EBITDA: 1.000.000 × 5 = 5.000.000
   {
     const ebitda = 1_000_000, mult = 5;
     add("EV/EBITDA básico", "EBITDA × m", 5_000_000, ebitda * mult);
   }
-  // ---- 2) EV/Receita: 10.000.000 × 0,8 = 8.000.000
   add("EV/Receita básico", "Receita × m", 8_000_000, 10_000_000 * 0.8);
-  // ---- 3) P/L: 500.000 × 10 = 5.000.000
   add("P/L básico", "LL × m", 5_000_000, 500_000 * 10);
-  // ---- 4) Blended renormalizado (só EBITDA > 0)
   {
     const wE = 0.5, wR = 0, wL = 0; const wT = wE + wR + wL;
     const blended = (5_000_000 * wE + 0 + 0) / wT;
     add("Blended renormalizado (só EBITDA)", "EV_E·wE / Σw", 5_000_000, blended);
   }
-  // ---- 5) Blended média ponderada normal
   {
     const wE = 0.5, wR = 0.3, wL = 0.2;
     const blended = 5_000_000 * wE + 8_000_000 * wR + 5_000_000 * wL;
     add("Blended ponderado (E·0.5 + R·0.3 + L·0.2)", "Σ EV_i·w_i", 5_900_000, blended);
   }
-  // ---- 6) Gordon: FCL_LTM=600k, g=2%, WACC=12% → VT = 600k·1.02/0.10 = 6.120.000
   {
     const fcl = 600_000, g = 0.02, wacc = 0.12;
     const vt = (fcl * (1 + g)) / (wacc - g);
     add("Valor terminal Gordon (FCL=600k, g=2%, WACC=12%)", "FCL·(1+g)/(WACC−g)", 6_120_000, vt);
   }
-  // ---- 7) Gordon degenerado: g≥WACC → fallback FCL·5 (conservador p/ PME)
   {
     const fcl = 600_000, g = 0.15, wacc = 0.10;
     const vt = wacc - g >= 0.005 ? (fcl * (1 + g)) / (wacc - g) : fcl * 5;
     add("Fallback quando g≥WACC", "FCL × 5", 3_000_000, vt);
   }
-  // ---- 8) DCF: 12 fluxos de 100.000 a 12% a.a. → wacc_m = (1.12)^(1/12)-1
   {
     const fcl = 100_000;
     const wacc_a = 0.12;
     const wacc_m = Math.pow(1 + wacc_a, 1 / 12) - 1;
     let npv = 0;
     for (let t = 0; t < 12; t++) npv += fcl / Math.pow(1 + wacc_m, t + 1);
-    // valor esperado calculado: ~1.131.853 (anuidade discreta mensal)
     const expected = fcl * ((1 - Math.pow(1 + wacc_m, -12)) / wacc_m);
     add("VPN anuidade mensal (12×100k @ 12%a.a.)", "Σ FCL/(1+w_m)^t", expected, npv);
   }
-  // ---- 9) Ajuste controle/liquidez: 1.000.000 × 1.20 × 0.85 = 1.020.000
   add("Ajuste controle×liquidez", "EV·(1+c)·(1−l)", 1_020_000, 1_000_000 * 1.20 * 0.85);
-  // ---- 10) Haircut 30%: 1.000.000 × 0.70 = 700.000
   add("Haircut estratégico 30%", "EV·(1−h)", 700_000, 1_000_000 * (1 - 0.30));
-  // ---- 11) Equity = EV − Dívida
-  add("Equity Value = EV − D", "EV − D", 3_500_000, 5_000_000 - 1_500_000);
+  // V4: equity usa dívida LÍQUIDA (com caixa)
+  add("Equity Value = EV − Dívida Líq.", "EV − (D − Caixa)", 4_000_000, 5_000_000 - (1_500_000 - 500_000));
 
   const allPassed = results.every((r) => r.pass);
 
-  // Logs amigáveis no console
-  if (typeof console !== "undefined") {
-    console.groupCollapsed(`%c[GZ FinnancePRO] Valuation — Self-tests (${results.filter(r=>r.pass).length}/${results.length} OK)`, allPassed ? "color:#22c55e" : "color:#ef4444");
-    for (const r of results) {
-      console.log(`${r.pass ? "✅" : "❌"} ${r.name}  | ${r.formula}\n   esperado=${r.expected.toLocaleString("pt-BR")}  obtido=${r.actual.toLocaleString("pt-BR")}  Δ=${r.delta.toFixed(4)}`);
-    }
-    console.groupEnd();
-  }
+  // eslint-disable-next-line no-console
+  console.groupCollapsed(`[Valuation Self-Tests] ${results.filter(r => r.pass).length}/${results.length} OK`);
+  // eslint-disable-next-line no-console
+  console.table(results);
+  // eslint-disable-next-line no-console
+  console.groupEnd();
 
   return { results, allPassed };
-}
-
-export function logValuationTrace(state: AppState, params: ValuationParams, label = "live") {
-  if (typeof console === "undefined") return;
-  const t = traceValuation(state, params);
-  const v = buildValuation(state, params);
-  console.groupCollapsed(`%c[GZ FinnancePRO] Valuation memória (${label}) — EV=${v.enterpriseValue.base.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`, "color:#3b82f6");
-  console.table(t.inputs);
-  console.table(t.steps.map(s => ({ etapa: s.label, formula: s.formula, valor: s.value })));
-  console.groupEnd();
 }
