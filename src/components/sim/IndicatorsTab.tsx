@@ -19,11 +19,11 @@ const TOOLTIP_STYLE = {
 const TOOLTIP_ITEM = { color: "var(--popover-foreground)" } as const;
 const TOOLTIP_LABEL = { color: "var(--popover-foreground)", fontWeight: 600 } as const;
 
-// Helper: formata "vezes" tratando ∞ (sem dívida) vs indefinido (EBIT≤0)
-function fmtTimes(v: number, ebitOrEbitda: number, decimals = 1): string {
-  if (Number.isFinite(v)) return `${v.toFixed(decimals)}×`;
-  // Dívida ≈ 0 → infinito real (positivo); EBIT/EBITDA ≤ 0 → indefinido
-  return ebitOrEbitda > 0 ? "∞" : "—";
+// Helper: formata "vezes". Indicadores são capped na engine — sempre finitos.
+// Mantém o ramo "—" apenas para o caso degenerado de denominador ≤ 0 (sem base de comparação).
+function fmtTimes(v: number, base: number, decimals = 1): string {
+  if (base <= 0) return "—";
+  return `${v.toFixed(decimals)}×`;
 }
 
 export function IndicatorsTab({ state }: { state: AppState }) {
