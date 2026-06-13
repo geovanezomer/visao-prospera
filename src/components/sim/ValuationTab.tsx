@@ -302,12 +302,29 @@ export function ValuationTab({
               />
             </div>
 
-            {params.terminalGrowthRate * 100 >= ind.wacc && (
+            {/* V7: alinhado com engine (spread < 0,5pp aciona fallback). */}
+            {(params.terminalGrowthRate * 100) >= (ind.wacc - 0.5) && (
               <div className="mt-4 flex items-start gap-2 rounded-md border border-neg/40 bg-neg/5 p-3 text-xs">
                 <AlertTriangle className="mt-0.5 h-4 w-4 text-neg" />
-                <span className="text-foreground">g ≥ WACC: perpetuidade de Gordon não converge. Reduza g ou aumente WACC.</span>
+                <span className="text-foreground">
+                  Spread WACC − g abaixo de 0,5pp: perpetuidade de Gordon instável.
+                  A engine usa fallback conservador (FCL × 5) — reduza g ou aumente WACC.
+                </span>
               </div>
             )}
+
+            {/* V8/V10: warnings do DCF (FCL terminal negativo, WACC default, etc.) */}
+            {valuation.dcfDetails?.warnings && valuation.dcfDetails.warnings.length > 0 && (
+              <div className="mt-4 space-y-1.5">
+                {valuation.dcfDetails.warnings.map((w, i) => (
+                  <div key={i} className="flex items-start gap-2 rounded-md border border-[var(--warning)]/40 bg-[var(--warning)]/5 p-3 text-xs">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 text-[var(--warning)]" />
+                    <span className="text-foreground">{w}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
 
             {valuation.dcfDetails && (
               <div className="mt-5">
