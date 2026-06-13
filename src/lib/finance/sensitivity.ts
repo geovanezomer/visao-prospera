@@ -61,7 +61,7 @@ const OUTPUT_LABEL: Record<OutputKey, string> = {
 };
 
 function readOutput(state: AppState, output: OutputKey): number {
-  const { dre } = buildDRE(state, state.tax.regime);
+  const { dre } = buildDRE(state, resolveEffectiveRegime(state));
   if (output === "ebitda") return sum(dre.ebitda);
   if (output === "lucroLiquido") return sum(dre.lucroLiquido);
   if (output === "roic") return calcIndicators(state, dre).roic;
