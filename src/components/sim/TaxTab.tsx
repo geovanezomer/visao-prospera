@@ -82,27 +82,80 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
         </div>
       )}
 
-      {/* Seletor de Era Tributária — Reforma CBS/IBS (EC 132/2023 + LC 214/2025) */}
-      <div className="rounded-lg border border-border/60 bg-card/40 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <SectionTitle>Sistema Tributário</SectionTitle>
-            {emReforma && <Badge className="bg-primary/20 text-primary border border-primary/30">Reforma ativa</Badge>}
+      {/* Cabeçalho — Timeline clicável da Reforma Tributária (EC 132/2023) */}
+      <div className="rounded-lg border border-border/60 bg-card/40 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <SectionTitle>Cronograma da Reforma Tributária</SectionTitle>
+            <p className="mt-1 text-[11px] text-muted-foreground max-w-xl">
+              EC 132/2023 + LC 214/2025. Clique em uma fase para simular toda a tela naquele momento do cronograma.
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-muted-foreground">Era</label>
-            <Select value={era} onValueChange={(v) => set({ era: v as TaxEra })}>
-              <SelectTrigger className="h-8 w-64"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {TAX_ERAS.map((e) => (
-                  <SelectItem key={e} value={e}>{TAX_ERA_LABEL[e]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {emReforma && <Badge className="bg-primary/20 text-primary border border-primary/30">Reforma ativa</Badge>}
         </div>
+
+        {/* Timeline visual clicável */}
+        <div className="mt-5">
+          {(() => {
+            const phases: { era: TaxEra; label: string; periodo: string; desc: string }[] = [
+              { era: "atual",     label: "Sistema Atual",   periodo: "até 2026",   desc: "PIS/COFINS + ICMS/ISS vigentes" },
+              { era: "transicao", label: "Transição",       periodo: "2027 – 2032", desc: "CBS pleno · IBS faseado · ICMS/ISS em redução" },
+              { era: "pleno",     label: "Regime Pleno",    periodo: "2033 +",      desc: "CBS + IBS (sem PIS/COFINS/ICMS/ISS)" },
+            ];
+            const activeIdx = phases.findIndex(p => p.era === era);
+            return (
+              <>
+                <div className="relative">
+                  {/* trilho */}
+                  <div className="absolute left-0 right-0 top-4 h-1 rounded-full bg-border/60" />
+                  <div
+                    className="absolute left-0 top-4 h-1 rounded-full bg-primary transition-all duration-500"
+                    style={{ width: `${(activeIdx / (phases.length - 1)) * 100}%` }}
+                  />
+                  <div className="relative grid grid-cols-3 gap-3">
+                    {phases.map((p, i) => {
+                      const isActive = i === activeIdx;
+                      const isPast = i < activeIdx;
+                      return (
+                        <button
+                          key={p.era}
+                          type="button"
+                          onClick={() => set({ era: p.era })}
+                          className="group flex flex-col items-center text-center focus:outline-none"
+                        >
+                          <div
+                            className={`relative z-10 grid h-9 w-9 place-items-center rounded-full border-2 text-xs font-bold transition-all ${
+                              isActive
+                                ? "border-primary bg-primary text-primary-foreground shadow-[0_0_0_4px_var(--primary)]/20 scale-110"
+                                : isPast
+                                ? "border-primary bg-primary/30 text-primary"
+                                : "border-border bg-card text-muted-foreground group-hover:border-primary/60"
+                            }`}
+                          >
+                            {i + 1}
+                          </div>
+                          <div className={`mt-2 text-xs font-semibold ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
+                            {p.label}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">{p.periodo}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
+                  <span className="font-semibold text-primary">{phases[activeIdx].label}</span>
+                  <span className="text-muted-foreground"> · {phases[activeIdx].periodo}</span>
+                  <div className="mt-0.5 text-[11px] text-muted-foreground">{phases[activeIdx].desc}</div>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+
+        {/* Alíquotas de referência da fase ativa */}
         {emReforma && (
-          <div className="mt-3 grid gap-3 md:grid-cols-4">
+          <div className="mt-4 grid gap-3 md:grid-cols-4">
             <div className="rounded-md bg-accent/30 p-2 text-xs">
               <div className="text-muted-foreground">CBS (federal)</div>
               <div className="num text-sm font-semibold">{reforma.cbsPct.toFixed(2)}%</div>
@@ -121,7 +174,8 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             </div>
           </div>
         )}
-        <div className="mt-3 flex flex-wrap items-end gap-4 border-t border-border/40 pt-3">
+
+        <div className="mt-4 flex flex-wrap items-end gap-4 border-t border-border/40 pt-3">
           <div>
             <label className="flex items-center gap-1 text-xs text-muted-foreground">
               CBS plena (%)
@@ -137,7 +191,7 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             <PctInput value={state.tax.ibsAliquotaRef ?? 17.7} onChange={(n) => set({ ibsAliquotaRef: n })} />
           </div>
           <div className="ml-auto text-[11px] text-muted-foreground max-w-md">
-            Cronograma EC 132/2023: 2027 — CBS pleno + PIS/COFINS extintos; 2027–2032 transição (IBS faseado, ICMS/ISS em redução, ponto médio usado aqui); 2033 — regime pleno (CBS+IBS, sem PIS/COFINS/ICMS/ISS). Simples mantém o DAS em todas as eras.
+            Ajuste CBS/IBS para simular cenários otimista (≈26,5%) ou conservador (≈28%). O Simples mantém o DAS em todas as fases.
           </div>
         </div>
       </div>
@@ -233,6 +287,71 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
         <div className="border-b border-border/60 p-4">
           <SectionTitle>Comparativo anual entre regimes</SectionTitle>
         </div>
+
+        {/* Barras proporcionais — Lucro Líquido por regime */}
+        <div className="border-b border-border/60 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Lucro líquido anual por regime
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              Quanto maior a barra, mais sobra para a empresa
+            </div>
+          </div>
+          {(() => {
+            const regs: TaxRegime[] = ["simples", "presumido", "real"];
+            const labels: Record<TaxRegime, string> = {
+              simples: "Simples Nacional", presumido: "Lucro Presumido", real: "Lucro Real",
+            };
+            const values = regs.map(r => llBy[r]);
+            const maxAbs = Math.max(1, ...values.map(v => Math.abs(v)));
+            const bestVal = llBy[best];
+            return (
+              <div className="space-y-3">
+                {regs.map(r => {
+                  const v = llBy[r];
+                  const widthPct = (Math.abs(v) / maxAbs) * 100;
+                  const isBest = r === best;
+                  const isCurrent = r === state.tax.regime;
+                  const delta = v - bestVal; // negativo = perde para o melhor
+                  const deltaPct = bestVal !== 0 ? (delta / Math.abs(bestVal)) * 100 : 0;
+                  return (
+                    <div key={r}>
+                      <div className="mb-1 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-semibold ${isBest ? "text-pos" : "text-foreground"}`}>{labels[r]}</span>
+                          {isBest && <Badge className="h-4 bg-pos/20 text-pos border border-pos/40 px-1.5 text-[9px]">MELHOR</Badge>}
+                          {isCurrent && <Badge variant="outline" className="h-4 px-1.5 text-[9px]">Ativo</Badge>}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="num text-sm font-semibold tabular-nums">{fmtBRL(v)}</span>
+                          {!isBest && (
+                            <span className="num text-[11px] text-neg tabular-nums">
+                              {delta >= 0 ? "+" : ""}{fmtBRL(delta)} ({deltaPct.toFixed(1)}%)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="h-3 w-full overflow-hidden rounded-full bg-border/40">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            v < 0 ? "bg-neg" : isBest ? "bg-pos" : "bg-primary/60"
+                          }`}
+                          style={{ width: `${widthPct}%` }}
+                        />
+                      </div>
+                      <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+                        <span>Tributos: <span className="num">{fmtBRL(regimes[r].annual)}</span></span>
+                        <span>Carga: <span className="num">{fmtPct(regimes[r].effective / 100)}</span></span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
+
         <div className="grid grid-cols-4 gap-px bg-border/40">
           <div className="bg-card p-4 text-xs uppercase tracking-wider text-muted-foreground">Indicador</div>
           {(["simples", "presumido", "real"] as TaxRegime[]).map((r) => (
