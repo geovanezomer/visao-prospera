@@ -1,20 +1,25 @@
 /**
  * Hook central de derivação do modelo financeiro.
- * Garante UMA fonte de verdade: regime efetivo + DRE + indicadores + CF + CAGR,
- * memoizados por `state`. Usar em todas as tabs que precisam desses dados
- * (IndicatorsTab, IndicatorsCard, DRETab, DiagnosisTab, ValuationTab) para
- * evitar recálculos duplicados e divergências entre telas.
+ *
+ * Delega para `buildFinancialModel` (camada pure-function SSOT) e memoiza
+ * o resultado por `state`. Mantém compatibilidade com consumidores antigos
+ * (regime, dre, ind, cf, cagrReceitas12m) e expõe o modelo completo via
+ * `model` para novos consumidores que queiram valuation e health também.
  */
 import { useMemo } from "react";
 import { AppState } from "./types";
-import { buildDRE, calcIndicators, cagr12m, resolveEffectiveRegime } from "./calculations";
-import { buildCashFlow } from "./cashflow";
+import { buildFinancialModel } from "./financialModel";
 
 export function useFinanceModel(state: AppState) {
-  const regime = useMemo(() => resolveEffectiveRegime(state), [state]);
-  const dre = useMemo(() => buildDRE(state, regime).dre, [state, regime]);
-  const ind = useMemo(() => calcIndicators(state, dre), [state, dre]);
-  const cf = useMemo(() => buildCashFlow(state), [state]);
-  const cagrReceitas12m = useMemo(() => cagr12m(dre.receitaLiquida), [dre.receitaLiquida]);
-  return { regime, dre, ind, cf, cagrReceitas12m };
+  const model = useMemo(() => buildFinancialModel(state), [state]);
+  return {
+    // Campos legados — não quebra chamadores existentes.
+    regime: model.regime,
+    dre: model.dre,
+    ind: model.ind,
+    cf: model.cf,
+    cagrReceitas12m: model.cagrReceitas12m,
+    // Modelo completo (valuation, health, tax) para novos consumidores.
+    model,
+  };
 }
