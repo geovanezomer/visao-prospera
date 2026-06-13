@@ -59,6 +59,14 @@ export function SimulatorTab({
   const simplesLimite = state.tax.ratesOverride?.simplesLimite ?? SIMPLES_LIMITE;
   const desenquadradoSimples = rbAnual > simplesLimite;
 
+  // Se override é "simples" mas o cenário ultrapassou o teto, força "base" (alinhado à página de Regime).
+  useEffect(() => {
+    if (desenquadradoSimples && p.regimeOverride === "simples") {
+      setP((cur) => ({ ...cur, regimeOverride: "base" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [desenquadradoSimples]);
+
   const inconsistencies: string[] = [];
   if (simView.lucroLiquido < 0) inconsistencies.push("Lucro líquido negativo no cenário simulado");
   if (simView.saldoCaixaFinal < 0) inconsistencies.push("Caixa final negativo — operação inviável sem captação");
