@@ -10,7 +10,7 @@ import {
   logValuationTrace,
   ValuationTestCase,
 } from "@/lib/finance/valuation";
-import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
+import { useFinanceModel } from "@/lib/finance/useFinanceModel";
 import { fmtBRLCompact, fmtPct, sum } from "@/lib/finance/format";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
@@ -40,26 +40,43 @@ export function ValuationTab({
   const [useSimulated, setUseSimulated] = useState(true);
   const source: AppState = useSimulated ? effectiveSim : effectiveBase;
 
+  // V6: presets atualizam quando businessType muda.
   const [params, setParams] = useState<ValuationParams>(() => defaultValuationParams(source.businessType));
+  useEffect(() => {
+    setParams((cur) => ({ ...defaultValuationParams(source.businessType), ...{
+      // preserva ajustes que o usuário fez explicitamente, exceto múltiplos e g (que dependem do setor)
+      controlPremium: cur.controlPremium,
+      liquidityDiscount: cur.liquidityDiscount,
+      horizonYears: cur.horizonYears,
+      applyStrategicHaircut: cur.applyStrategicHaircut,
+      method: cur.method,
+    }}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source.businessType]);
   const set = (p: Partial<ValuationParams>) => setParams((s) => ({ ...s, ...p }));
 
   const presets = VALUATION_PRESETS[source.businessType];
-  const valuation = useMemo(() => buildValuation(source, params), [source, params]);
-  const { dre } = useMemo(() => buildDRE(source, source.tax.regime), [source]);
-  const ind = useMemo(() => calcIndicators(source, dre), [source, dre]);
+
+  // V1+V2: modelo central injetado em buildValuation/traceValuation — evita
+  // ~8 chamadas redundantes a buildDRE/calcIndicators por render, e usa regime EFETIVO.
+  const { regime, dre, ind } = useFinanceModel(source);
+  const precomputed = useMemo(() => ({ regime, dre, ind }), [regime, dre, ind]);
+  const valuation = useMemo(() => buildValuation(source, params, precomputed), [source, params, precomputed]);
+  const trace = useMemo(() => traceValuation(source, params, precomputed), [source, params, precomputed]);
   const ebitda = sum(dre.ebitda);
   const receita = sum(dre.receitaBruta);
   const ll = sum(dre.lucroLiquido);
-  const trace = useMemo(() => traceValuation(source, params), [source, params]);
 
-  // Loga memória sempre que muda
-  useEffect(() => { logValuationTrace(source, params, useSimulated ? "simulado" : "base"); }, [source, params, useSimulated]);
+  // V5: log opt-in via botão (não mais a cada slider).
+  const onLogTrace = () => logValuationTrace(source, params, useSimulated ? "simulado" : "base");
 
   const ev = valuation.enterpriseValue;
   const eq = valuation.equityValue;
   const strategic = valuation.strategicResult;
 
   const evTone = ev.base > 0 ? "pos" : "neg";
+
+
 
   return (
     <div className="space-y-6">
