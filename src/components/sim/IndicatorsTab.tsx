@@ -236,8 +236,9 @@ function Ind({ label, v, desc, formula, tone }: { label: string; v: string; desc
   );
 }
 
-function CashConversionSmall({ ebitda, fcf }: { ebitda: number; fcf: number }) {
-  const conversaoEbitda = ebitda > 0 ? (fcf / ebitda) * 100 : 0;
+// (I2) Consome ind.conversaoEbitdaCaixa — não recalcula localmente.
+function CashConversionSmall({ conversao }: { conversao: number }) {
+  const conversaoEbitda = conversao;
   const tone = conversaoEbitda >= 70 ? "pos" : conversaoEbitda >= 40 ? "default" : "neg";
 
   return (
