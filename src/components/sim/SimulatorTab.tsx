@@ -161,22 +161,9 @@ export function SimulatorTab({
               <SliderRow label={`Variar kd (atual ${state.capital.kd.toFixed(1)}% a.a.)`} hint="Selic sobe/cai: ajusta custo da dívida e proporcionalmente as despesas de juros." min={-5} max={5} step={0.25} value={p.kdDeltaPp} onChange={(v) => set("kdDeltaPp", v)} suffix=" p.p." signed />
             </Group>
 
-            <Group value="trib" title="Tributário">
-              <div className="space-y-1">
-                <div className="text-xs font-medium text-foreground">Mudar regime tributário</div>
-                <Select value={p.regimeOverride} onValueChange={(v) => set("regimeOverride", v as TaxRegime | "base")}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="base">Manter regime atual ({state.tax.regime})</SelectItem>
-                    <SelectItem value="simples">Simples Nacional</SelectItem>
-                    <SelectItem value="presumido">Lucro Presumido</SelectItem>
-                    <SelectItem value="real">Lucro Real</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </Group>
           </Accordion>
         </div>
+
 
         {/* DRE */}
         <div className="lg:sticky lg:top-[72px] lg:h-fit">
