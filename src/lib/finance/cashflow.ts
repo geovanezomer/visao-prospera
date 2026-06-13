@@ -78,26 +78,34 @@ export function shiftByDaysSplitMonthly(values: number[], lagDaysByMonth: number
 }
 
 /**
+ * True quando o array tem variação real entre meses (sazonalidade).
+ * Se for constante (todos iguais), preferimos o escalar `pmr`/`pmp`
+ * — assim overrides do simulador / sensibilidade no escalar continuam efetivos.
+ */
+function hasMonthlyVariation(arr: number[] | undefined): boolean {
+  if (!Array.isArray(arr) || arr.length !== 12) return false;
+  const first = arr[0];
+  return arr.some((v) => v !== first);
+}
+
+/**
  * Recebimentos = (Receita Bruta − Inadimplência) deslocados pelo PMR.
- * Usa `pmrMensal` quando disponível (sazonalidade do prazo de recebimento).
- * Impostos sobre venda saem em `computeImpostos`, NÃO daqui.
+ * Usa `pmrMensal` quando há sazonalidade real; caso contrário, escalar `pmr`.
  */
 export function computeRecebimentos(state: AppState, dre: DRE): { inAno: number[]; transbordo: number } {
   const recebivelMensal = dre.receitaBruta.map((r, i) => r - (dre.deducoesInadimplencia[i] ?? 0));
-  const pmrM = state.revenue.pmrMensal;
-  if (Array.isArray(pmrM) && pmrM.length === 12) {
-    return shiftByDaysSplitMonthly(recebivelMensal, pmrM);
+  if (hasMonthlyVariation(state.revenue.pmrMensal)) {
+    return shiftByDaysSplitMonthly(recebivelMensal, state.revenue.pmrMensal!);
   }
   return shiftByDaysSplit(recebivelMensal, state.revenue.pmr);
 }
 
 /**
- * Pagamentos a fornecedores = CPV/CMV/CSP deslocados pelo PMP (mensal quando definido).
+ * Pagamentos a fornecedores = CPV/CMV/CSP deslocados pelo PMP (mensal quando há sazonalidade).
  */
 export function computeFornecedores(state: AppState, dre: DRE): { inAno: number[]; transbordo: number } {
-  const pmpM = state.revenue.pmpMensal;
-  if (Array.isArray(pmpM) && pmpM.length === 12) {
-    return shiftByDaysSplitMonthly(dre.cpv, pmpM);
+  if (hasMonthlyVariation(state.revenue.pmpMensal)) {
+    return shiftByDaysSplitMonthly(dre.cpv, state.revenue.pmpMensal!);
   }
   return shiftByDaysSplit(dre.cpv, state.revenue.pmp);
 }
