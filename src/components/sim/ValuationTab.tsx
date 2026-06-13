@@ -382,7 +382,7 @@ export function ValuationTab({
 
         {/* ============ AUDITORIA ============ */}
         <TabsContent value="audit" className="mt-4 space-y-4">
-          <AuditPanel trace={trace} />
+          <AuditPanel trace={trace} onLogTrace={onLogTrace} />
         </TabsContent>
       </Tabs>
     </div>
