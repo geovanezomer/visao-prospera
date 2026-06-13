@@ -12,7 +12,7 @@ import { PrazoTable } from "./PrazoTable";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
 export function CostsTab({ state, update }: { state: AppState; update: Updater }) {
-  const receitaBrutaAnual = sum(state.revenue.bruta);
+  const receitaBrutaAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
 
 
   // Aviso inline quando o usuário tenta digitar valor negativo (revertido para 0)
