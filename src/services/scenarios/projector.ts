@@ -38,7 +38,8 @@ export interface ProjectionResult {
 
 export function project(state: AppState, months: number, a: Partial<ProjectionAssumptions> = {}): ProjectionResult {
   const ass: ProjectionAssumptions = { ...DEFAULT_PROJ, ...a };
-  const { dre } = buildDRE(state, state.tax.regime);
+  // SSOT: regime EFETIVO.
+  const { dre } = buildDRE(state, resolveEffectiveRegime(state));
   // SSOT-3: usar Receita LÍQUIDA como base (denominador da margem EBITDA),
   // alinhado com calcIndicators e buildForecast. Antes usava Receita Bruta,
   // o que inflava a margem em 5–15pp em Presumido/Simples.
