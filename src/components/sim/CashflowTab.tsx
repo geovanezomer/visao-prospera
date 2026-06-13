@@ -171,54 +171,7 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
       </div>
 
       {/* Tabela detalhada */}
-      <div className="rounded-lg border border-border/60 bg-card/40">
-        <div className="border-b border-border/60 p-4">
-          <SectionTitle hint="Caixa pelo método direto. Receitas e CPV usam PMR/PMP da aba Receitas. Impostos pagos no mês seguinte ao da competência.">
-            Demonstração do Fluxo de Caixa — método direto
-          </SectionTitle>
-        </div>
-        <div className="scrollbar-thin overflow-x-auto">
-          <table className="w-full min-w-[1100px] border-separate border-spacing-0 text-sm">
-            <thead>
-              <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                <th className="sticky left-0 z-20 bg-card px-4 py-2 shadow-[1px_0_0_0_var(--border)]">Linha</th>
-                {MESES.map((m) => (
-                  <th key={m} className="px-1 py-2 text-right">{m}</th>
-                ))}
-                <th className="px-3 py-2 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <Row label="Saldo inicial" values={cf.saldoInicial} muted />
-              <SectionRow label="ATIVIDADES OPERACIONAIS" />
-              <Row label="(+) Recebimentos de clientes" values={cf.recebimentos} tone="pos" />
-              <Row label="(−) Pagamentos a fornecedores (CPV)" values={cf.pagamentosFornecedores.map((v) => -v)} tone="neg" />
-              <Row label="(−) Pagamentos de custos fixos" values={cf.pagamentosFixos.map((v) => -v)} tone="neg" />
-              <Row label="(−) Pagamentos de custos variáveis" values={cf.pagamentosVariaveis.map((v) => -v)} tone="neg" />
-              <Row label="(−) Despesas financeiras" values={cf.pagamentosFinanceiros.map((v) => -v)} tone="neg" />
-              <Row label="(−) Impostos pagos" values={cf.pagamentosImpostos.map((v) => -v)} tone="neg" />
-              <Row label="(=) Fluxo das Operações" values={cf.fluxoOperacional} strong />
-
-              <SectionRow label="ATIVIDADES DE INVESTIMENTO" />
-              <Row label="(−) CapEx — investimentos em ativo fixo" values={state.cashflow.capex.map((v) => -v)} tone="neg" />
-              <Row label="(=) Fluxo de Investimento" values={cf.fluxoInvestimento} strong />
-
-              <SectionRow label="ATIVIDADES DE FINANCIAMENTO" />
-              <Row label="(+) Aportes de sócios" values={state.cashflow.aportes} tone="pos" />
-              <Row label="(+) Captação de empréstimos" values={state.cashflow.emprestimosCaptados} tone="pos" />
-              <Row label="(−) Amortização de principal" values={state.cashflow.amortizacoes.map((v) => -v)} tone="neg" />
-              <Row label="(−) Distribuição de dividendos" values={state.cashflow.dividendos.map((v) => -v)} tone="neg" />
-              <Row label="(=) Fluxo de Financiamento" values={cf.fluxoFinanciamento} strong />
-
-              <Row label="(=) VARIAÇÃO DE CAIXA" values={cf.variacaoCaixa} strong highlight />
-              <Row label="(=) SALDO FINAL" values={cf.saldoFinal} strong highlight />
-            </tbody>
-          </table>
-        </div>
-        <div className="border-t border-border/60 px-4 py-2 text-[10px] text-muted-foreground">
-          Modelo simplificado: ignora variações de estoque e ajustes de capital de giro contábil mais finos. Para diagnóstico operacional é suficiente.
-        </div>
-      </div>
+      <DFCTable state={state} cf={cf} />
 
       {/* Resumo: 3 meses mais críticos */}
       <div className="rounded-lg border border-border/60 bg-card/40 p-4">
