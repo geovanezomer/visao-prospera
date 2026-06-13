@@ -5,8 +5,24 @@ import {
   getSimplesLimite, getFatorRMinimoPct,
   getSimplesTable, getPresumidoBases,
   getReformaTransicaoIbsMult, getReformaTransicaoIcmsIssMult,
+  DEFAULT_ENCARGOS_PCT_SIMPLES,
 } from "./taxDefaults";
 import { sum, zeros12, fill12 } from "./format";
+
+/**
+ * SSOT-1 — Dívida Líquida canônica usada por Valuation e Indicadores.
+ * Prefere caixa ocioso (excedente não-operacional). Fallback para
+ * disponibilidades totais para compatibilidade com balanços antigos.
+ * Retorna valor RAW (pode ser negativo quando caixa > dívida).
+ */
+export function computeNetDebt(state: AppState): number {
+  const D = Math.max(0, state.capital.dividaOnerosa ?? 0);
+  const cash = Math.max(
+    0,
+    state.capital.caixaOcioso ?? state.capital.disponibilidades ?? 0,
+  );
+  return D - cash;
+}
 
 /** 
  * Soma mensal das linhas livres de dedução da Receita (devoluções, perdas, descontos, etc.). 
