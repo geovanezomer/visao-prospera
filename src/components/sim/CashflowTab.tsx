@@ -195,8 +195,8 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
           )}
           <StatCard
             label="Saldo final (Dez)"
-            value={fmtBRL(cf.totais.saldoFinal)}
-            tone={mesesCriticos.length > 0 ? "neg" : cf.totais.saldoFinal >= state.cashflow.caixaMinimo ? "pos" : cf.totais.saldoFinal >= 0 ? "warn" : "neg"}
+            value={fmtBRL(saldoDez)}
+            tone={saldoDezTone}
             sub={piorMes ? `Pior mês: ${piorMes.mes} = ${fmtBRL(piorMes.saldo)}` : undefined}
             hint={{ description: "Saldo de caixa projetado para dezembro. Deve ficar acima do caixa mínimo de segurança definido na configuração.", formula: "Saldo Inicial + Σ Variações mensais de caixa" }}
           />
