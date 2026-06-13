@@ -356,6 +356,12 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const csllAliq = getCsllPct(tax) / 100;
   const pisAliq = getPisNaoCumPct(tax) / 100;
   const cofinsAliq = getCofinsNaoCumPct(tax) / 100;
+  // [Receitas Financeiras] No Lucro Real não-cumulativo, PIS/COFINS sobre receitas
+  // financeiras é fixo: 0,65% (PIS) + 4% (COFINS) — Decreto 8.426/2015.
+  // Sob a reforma plena, PIS/COFINS são extintos (pisCofinsMult=0) e zera automaticamente.
+  const PIS_RF = 0.0065;
+  const COFINS_RF = 0.04;
+  const { financeiras: rendFin } = splitReceitasFinanceiras(state);
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
@@ -366,8 +372,12 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     const irpj = lair * irpjAliq;
     const adicional = adicionalMensal[i];
     const csll = lair * csllAliq;
-    const pis = Math.max(0, r * pisAliq - pisCreditoMensal) * reforma.pisCofinsMult;
-    const cofins = Math.max(0, r * cofinsAliq - cofinsCreditoMensal) * reforma.pisCofinsMult;
+    const pisVenda = Math.max(0, r * pisAliq - pisCreditoMensal);
+    const cofinsVenda = Math.max(0, r * cofinsAliq - cofinsCreditoMensal);
+    const pisRF = (rendFin[i] || 0) * PIS_RF;
+    const cofinsRF = (rendFin[i] || 0) * COFINS_RF;
+    const pis = (pisVenda + pisRF) * reforma.pisCofinsMult;
+    const cofins = (cofinsVenda + cofinsRF) * reforma.pisCofinsMult;
     const issBase = Math.max(0, r - issDed);
     const debito = issBase * iss;
     const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
