@@ -117,11 +117,13 @@ export function SimulatorTab({
                 Top N atingidos:
                 <Input type="number" min={1} max={8} value={p.fixedCutTopN} onChange={(e) => set("fixedCutTopN", Math.max(1, Math.min(8, parseInt(e.target.value) || 1)))} className="h-7 w-16" />
               </div>
-              <SliderRow label="Terceirizar % do CPV" hint="Substitui parte do CPV variável por um custo fixo mensal contratado." min={0} max={100} step={5} value={p.outsourcePctCpv} onChange={(v) => set("outsourcePctCpv", v)} suffix="%" />
-              <div className="flex items-center gap-2 pl-1 text-[11px] text-muted-foreground">
+              <SliderRow label="Terceirizar % do CPV" hint="Substitui parte do CPV variável por um custo fixo mensal contratado. Defina o % primeiro — o campo R$/mês abaixo só vira custo quando o % é > 0." min={0} max={100} step={5} value={p.outsourcePctCpv} onChange={(v) => set("outsourcePctCpv", v)} suffix="%" />
+              <div className={cn("flex items-center gap-2 pl-1 text-[11px]", p.outsourcePctCpv === 0 ? "text-muted-foreground/50" : "text-muted-foreground")}>
                 Custo fixo contratado:
-                <Input type="number" step={500} min={0} value={p.outsourceFixedMonthly} onChange={(e) => set("outsourceFixedMonthly", Math.max(0, parseFloat(e.target.value) || 0))} className="h-7 w-32" />
+                <Input type="number" step={500} min={0} value={p.outsourceFixedMonthly} disabled={p.outsourcePctCpv === 0}
+                  onChange={(e) => set("outsourceFixedMonthly", Math.max(0, parseFloat(e.target.value) || 0))} className="h-7 w-32" />
                 <span>R$/mês</span>
+                {p.outsourcePctCpv === 0 && <span className="italic">(ativo somente com % &gt; 0)</span>}
               </div>
             </Group>
 
