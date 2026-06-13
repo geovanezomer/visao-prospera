@@ -174,6 +174,7 @@ function CapitalStructureCard({
   kd,
   patrimonioLiquido,
   dividaOnerosa,
+  derived,
   onChange,
 }: {
   proprio: number;
@@ -182,20 +183,27 @@ function CapitalStructureCard({
   kd: number;
   patrimonioLiquido: number;
   dividaOnerosa: number;
+  /** true quando proprio% é derivado de PL/D reais — slider vira leitura. */
+  derived: boolean;
   onChange: (patch: Partial<AppState["capital"]>) => void;
 }) {
   // Valores absolutos: usa PL e Dívida Onerosa reais se informados; senão mostra apenas %
-  const totalFinanc = (patrimonioLiquido > 0 ? patrimonioLiquido : 0) + (dividaOnerosa > 0 ? dividaOnerosa : 0);
+  const PL = Math.max(0, patrimonioLiquido);
+  const D = Math.max(0, dividaOnerosa);
+  const totalFinanc = PL + D;
   const hasAbs = totalFinanc > 0;
-  const valSocios = hasAbs ? patrimonioLiquido : 0;
-  const valBancos = hasAbs ? dividaOnerosa : 0;
+  const valSocios = hasAbs ? PL : 0;
+  const valBancos = hasAbs ? D : 0;
 
-  // Diagnóstico de alavancagem
-  const dpl = patrimonioLiquido > 0 ? dividaOnerosa / patrimonioLiquido : 0;
+  // Diagnóstico de alavancagem — usa PL/D não-negativos (B10).
+  const dpl = PL > 0 ? D / PL : 0;
   let alavMsg = "";
   let alavTone: "pos" | "warn" | "neg" | "muted" = "muted";
   if (hasAbs) {
-    if (dpl > 2) { alavMsg = `Endividamento alto: D/PL = ${dpl.toFixed(1)}× (saudável ≤ 2×)`; alavTone = "neg"; }
+    if (patrimonioLiquido < 0) {
+      alavMsg = "Patrimônio líquido negativo — passivo a descoberto. D/PL perde sentido.";
+      alavTone = "neg";
+    } else if (dpl > 2) { alavMsg = `Endividamento alto: D/PL = ${dpl.toFixed(1)}× (saudável ≤ 2×)`; alavTone = "neg"; }
     else if (dpl >= 0.5) { alavMsg = `Alavancagem equilibrada: D/PL = ${dpl.toFixed(1)}×`; alavTone = "pos"; }
     else if (dpl > 0) { alavMsg = `Pouco alavancada: D/PL = ${dpl.toFixed(1)}× — espaço para usar mais dívida`; alavTone = "warn"; }
     else { alavMsg = "Sem dívida onerosa: empresa 100% financiada pelos sócios"; alavTone = "pos"; }
@@ -237,7 +245,20 @@ function CapitalStructureCard({
             )}
           </div>
         </div>
-        <Slider value={[proprio]} min={0} max={100} step={1} onValueChange={([v]) => onChange({ proprio: v })} className="mt-3" />
+        <Slider
+          value={[proprio]}
+          min={0}
+          max={100}
+          step={1}
+          disabled={derived}
+          onValueChange={([v]) => !derived && onChange({ proprio: v })}
+          className="mt-3"
+        />
+        {derived && (
+          <p className="mt-1 text-[10px] text-muted-foreground/80 italic">
+            Proporção calculada automaticamente a partir do Patrimônio Líquido e da Dívida Onerosa informados abaixo. Ajuste pelos campos em R$ para alterar.
+          </p>
+        )}
         {hasAbs && (
           <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
             Sua empresa é financiada por <span className="font-semibold text-pos">{fmtBRL(valSocios)}</span> dos sócios e <span className="font-semibold text-warning">{fmtBRL(valBancos)}</span> de bancos.
@@ -247,6 +268,8 @@ function CapitalStructureCard({
           <p className={`mt-1 text-[11px] font-medium ${toneCls}`}>{alavMsg}</p>
         )}
       </div>
+
+
 
       {/* Ke e Kd com presets */}
       <div className="grid grid-cols-2 gap-3">
