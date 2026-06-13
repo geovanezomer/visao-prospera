@@ -44,7 +44,10 @@ export interface SnapshotSections {
 }
 
 export function buildSections(state: AppState, simulatedState?: AppState): SnapshotSections {
-  const built = tryRun(() => buildDRE(state, state.tax.regime), null as any);
+  // SSOT: usa regime efetivo (downgrade automático Simples→Presumido se excedeu limite),
+  // alinhado com TaxTab, IndicatorsTab, ValuationTab e demais consumidores.
+  const effectiveRegime = tryRun(() => resolveEffectiveRegime(state), state.tax.regime);
+  const built = tryRun(() => buildDRE(state, effectiveRegime), null as any);
   const dre = built?.dre ?? null;
   const ind = dre ? tryRun(() => calcIndicators(state, dre), null as any) : null;
   const cf = tryRun(() => buildCashFlow(state), null as any);
@@ -53,11 +56,14 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
   const cards = tryRun(() => buildPrescriptiveCards(state), [] as any[]);
 
   // ----- premissas -----
+  const regimeLabel = effectiveRegime !== state.tax.regime
+    ? `${effectiveRegime} (nominal: ${state.tax.regime} — downgrade por exceder limite)`
+    : state.tax.regime;
   const p: string[] = [
     `## Empresa e Premissas`,
     `- **Empresa:** ${state.companyName || "(sem nome)"}`,
     `- **Negócio:** ${state.businessType}`,
-    `- **Regime:** ${state.tax.regime}${state.tax.regime === "simples" ? ` (Anexo ${state.tax.simplesAnexo}, Fator R ${pct(state.tax.fatorR)})` : ""}`,
+    `- **Regime:** ${regimeLabel}${effectiveRegime === "simples" ? ` (Anexo ${state.tax.simplesAnexo}, Fator R ${pct(state.tax.fatorR)})` : ""}`,
     `- **Era tributária:** ${state.tax.era ?? "atual"}`,
     `- **Ke ${pct(state.capital.ke * 100)} | Kd ${pct(state.capital.kd * 100)}**`,
     `- **PL:** ${brl(state.capital.patrimonioLiquido)} | **Dívida onerosa:** ${brl(state.capital.dividaOnerosa)} | **Ativo total:** ${brl(state.capital.ativoTotal)}`,
