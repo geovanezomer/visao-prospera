@@ -124,7 +124,7 @@ export const DEFAULT_STATE: AppState = {
     kd: 18,
     capitalGiroDisponivel: 15000,
     depreciacaoMensal: 400,
-    jurosRecebidosMensal: 50,
+    
     patrimonioLiquido: 60000,
     ativoTotal: 100000,
     estoques: 5000,
