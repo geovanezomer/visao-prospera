@@ -108,7 +108,7 @@ export function IndicatorsTab({ state }: { state: AppState }) {
           }
           hint={{ description: "Diferença entre o que a operação precisa (NCG) e o que a empresa tem (CGD). Positivo = precisa de empréstimo de giro; Negativo = sobra caixa.", formula: "NCG − CGD" }}
         />
-        <CashConversionSmall ebitda={ebitdaAnual} fcf={ind.fcf} />
+        <CashConversionSmall conversao={ind.conversaoEbitdaCaixa} />
       </div>
 
       <div className="rounded-lg border border-border/60 bg-card/40 p-5">
