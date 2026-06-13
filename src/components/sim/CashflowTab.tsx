@@ -589,7 +589,18 @@ function NonOpTable({
                 <td className="px-2 py-2">
                   <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
                     <span>Fixo</span>
-                    <Switch checked={!fixed} onCheckedChange={(v) => setFixed(row.key, !v)} />
+                    <Switch
+                      checked={!fixed}
+                      onCheckedChange={(v) => {
+                        // B6: ao alternar Mensal → Fixo com sazonalidade real, avisar.
+                        if (!v && hasSazonalidade(row.values)) {
+                          toast.warning(`Sazonalidade de "${row.label}" será nivelada`, {
+                            description: "Alternar para 'Fixo' substitui os 12 meses pelo primeiro valor não-zero.",
+                          });
+                        }
+                        setFixed(row.key, !v);
+                      }}
+                    />
                     <span>Mensal</span>
                   </div>
                 </td>
