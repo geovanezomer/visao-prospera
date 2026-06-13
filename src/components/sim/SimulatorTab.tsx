@@ -340,9 +340,10 @@ function DREPanel({ base, sim, inconsistencies }: { base: SimDREView; sim: SimDR
             return (
               <tr key={r.label} className={`border-b border-border/20 last:border-0 ${r.bold ? "font-semibold" : ""}`}>
                 <td className="py-1.5 truncate">{r.label}</td>
-                <td className="py-1.5 text-right mono text-muted-foreground">{fmtBRLCompact(r.b)}</td>
-                <td className={`py-1.5 text-right mono ${r.bold ? "" : ""}`}>{fmtBRLCompact(r.s)}</td>
-                <td className={`py-1.5 text-right mono ${tone}`}>{Math.abs(d) < 0.05 ? "—" : `${d >= 0 ? "+" : ""}${d.toFixed(1)}%`}</td>
+                <td className="py-1.5 pl-2 text-right mono text-muted-foreground">{fmtBRLCompact(r.b)}</td>
+                <td className={`py-1.5 pl-2 text-right mono ${r.bold ? "" : ""}`}>{fmtBRLCompact(r.s)}</td>
+                <td className={`py-1.5 pl-2 text-right mono ${tone}`}>{Math.abs(d) < 0.05 ? "—" : `${d >= 0 ? "+" : ""}${d.toFixed(1)}%`}</td>
+
               </tr>
             );
           })}
