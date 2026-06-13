@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AppState, TaxRegime } from "@/lib/finance/types";
 import { applySimulator, computeSimView, countActiveLevers, DEFAULT_SIM, PRESETS, SimDREView, SimulatorParams } from "@/lib/finance/simulator";
@@ -13,6 +13,8 @@ import { SectionTitle, HelpTip } from "./primitives";
 import { ForecastCard, MonteCarloCard } from "./AnalysisTab";
 import { IndicatorsCard } from "./IndicatorsCard";
 import { ArrowDownRight, ArrowUpRight, Minus, RotateCcw, Save, SlidersHorizontal, TriangleAlert, Wand2, Sparkles } from "lucide-react";
+import { SIMPLES_LIMITE } from "@/lib/finance/taxDefaults";
+import { sum } from "@/lib/finance/format";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
@@ -52,6 +54,19 @@ export function SimulatorTab({
 
   const active = countActiveLevers(p);
 
+  // Desenquadramento do Simples (mesma regra da página Regime Tributário)
+  const rbAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
+  const simplesLimite = state.tax.ratesOverride?.simplesLimite ?? SIMPLES_LIMITE;
+  const desenquadradoSimples = rbAnual > simplesLimite;
+
+  // Se override é "simples" mas o cenário ultrapassou o teto, força "base" (alinhado à página de Regime).
+  useEffect(() => {
+    if (desenquadradoSimples && p.regimeOverride === "simples") {
+      setP((cur) => ({ ...cur, regimeOverride: "base" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [desenquadradoSimples]);
+
   const inconsistencies: string[] = [];
   if (simView.lucroLiquido < 0) inconsistencies.push("Lucro líquido negativo no cenário simulado");
   if (simView.saldoCaixaFinal < 0) inconsistencies.push("Caixa final negativo — operação inviável sem captação");
@@ -69,35 +84,10 @@ export function SimulatorTab({
 
   return (
     <div className="space-y-4">
-      {/* Banner */}
-      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start">
-          <div className="flex flex-1 items-start gap-3">
-            <SlidersHorizontal className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold text-foreground">Simulador combinatório de cenários</div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Mova os sliders para combinar ajustes (preço, volume, custos, juros, capital de giro, regime).
-                O DRE Anual ao lado recalcula em tempo real. Quando encontrar a combinação ideal,
-                aplique no cenário base ou salve como um cenário separado.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-1 md:max-w-[260px] md:justify-end">
-            {PRESETS.map((pr) => (
-              <Button key={pr.id} size="sm" variant="outline" className="h-7 text-[11px]"
-                onClick={() => usePreset(pr.params)}>
-                {pr.id === "neutro" ? <RotateCcw className="mr-1 h-3 w-3" /> : <Wand2 className="mr-1 h-3 w-3" />}
-                {pr.label}
-              </Button>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Barra de status */}
       <StatusBar active={active} base={baseView} sim={simView} inconsistencies={inconsistencies}
         onApply={applyToBase} onSave={onSave} onReset={reset} />
+
 
       {/* Grid 2 colunas — DRE ocupa 1/2 da largura da página */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -111,7 +101,9 @@ export function SimulatorTab({
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="base">Manter regime atual ({state.tax.regime})</SelectItem>
-                    <SelectItem value="simples">Simples Nacional</SelectItem>
+                    <SelectItem value="simples" disabled={desenquadradoSimples}>
+                      Simples Nacional{desenquadradoSimples ? " (desenquadrado)" : ""}
+                    </SelectItem>
                     <SelectItem value="presumido">Lucro Presumido</SelectItem>
                     <SelectItem value="real">Lucro Real</SelectItem>
                   </SelectContent>
