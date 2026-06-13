@@ -61,9 +61,9 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
     .map((c) => ({ label: c.label, values: monthValues(c, state.tax.regime) }))
     .filter((x) => sum(x.values) > 0);
   const grupos: { id: CostCategory; titulo: string }[] = [
-    { id: "fixo", titulo: "Custos e Despesas Fixas" },
-    { id: "variavel", titulo: "Custos e Despesas Variáveis" },
-    { id: "financeiro", titulo: "Custos Financeiros" },
+    { id: "fixo", titulo: "Despesas Administrativas" },
+    { id: "variavel", titulo: "Despesas Comerciais" },
+    { id: "financeiro", titulo: "Despesas Financeiras" },
   ];
 
   const [openCustos, setOpenCustos] = useState(false);

@@ -168,7 +168,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
 
       {/* Custos Fixos */}
       <SectionBlock
-        title="Custos e Despesas Fixas"
+        title="Despesas Administrativas"
         hint="Não variam com o volume vendido. Compõem a estrutura mínima de operação."
         accentClass="border-l-[color:var(--warning)]"
         onAdd={() => addLine("fixo")}
@@ -187,7 +187,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
 
       {/* Custos Variáveis */}
       <SectionBlock
-        title="Custos e Despesas Variáveis"
+        title="Despesas Comerciais"
         hint="Variam proporcionalmente às vendas — comissões, marketing, frete sobre vendas etc."
         accentClass="border-l-[#5BA8F5]"
         onAdd={() => addLine("variavel")}
@@ -204,9 +204,9 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
         />
       </SectionBlock>
 
-      {/* Custos Financeiros */}
+      {/* Despesas Financeiras */}
       <SectionBlock
-        title="Custos Financeiros"
+        title="Despesas Financeiras"
         hint="Juros, IOF, tarifas bancárias e antecipação de recebíveis."
         accentClass="border-l-neg"
         onAdd={() => addLine("financeiro")}
