@@ -1,5 +1,5 @@
 import { AppState } from "./types";
-import { buildDRE, calcIndicators, effectiveMonthValues } from "./calculations";
+import { buildDRE, calcIndicators, effectiveMonthValues, isCpvCost } from "./calculations";
 import { sum } from "./format";
 
 export interface ForecastMonth {
