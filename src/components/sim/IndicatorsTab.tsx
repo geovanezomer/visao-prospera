@@ -77,6 +77,8 @@ export function IndicatorsTab({ state }: { state: AppState }) {
 
   // Pré-calcula EBIT/EBITDA anuais para distinguir ∞ vs indefinido (B7)
   const ebitAnual = sum(dre.ebit);
+  // (I3) Gate correto dos cards de produtividade: headcount > 0 (não valor calculado).
+  const hasHeadcount = (state.numColaboradores ?? 0) > 0;
   const ebitdaAnual = sum(dre.ebitda);
 
   return (
