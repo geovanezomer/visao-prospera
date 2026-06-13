@@ -755,7 +755,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     cicloFinanceiro, ncg, gapCapitalGiro,
     liquidezCorrente, liquidezSeca, liquidezImediata,
     endividamentoGeral, grauEndividamento, coberturaJuros, giroAtivo,
-    dividaLiqEbitda, payback, fcf,
+    dividaLiqEbitda, dividaLiqEbit, dividaLiqPl, payback, fcf,
     conversaoEbitdaCaixa: ebitdaAnual > 0 ? (fcf / ebitdaAnual) * 100 : 0,
     dividaOnerosa: D, passivoCirculante, ativoCirculante,
   };
