@@ -54,7 +54,7 @@ export function PrazoTable({
           <table className="w-full min-w-[1200px] text-sm">
             <thead>
               <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                <th className="w-56 px-3 py-2">Rubrica</th>
+                <th className="w-56 px-3 py-2">Descrição</th>
                 <th className="w-24 px-2 py-2 text-center">Modo</th>
                 {MESES.map((m) => (
                   <th key={m} className="px-1 py-2 text-right">{m}</th>

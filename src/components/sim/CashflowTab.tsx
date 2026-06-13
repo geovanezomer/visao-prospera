@@ -159,7 +159,7 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
         </div>
         <NonOpTable
           rows={[
-            { key: "capex", label: "CapEx — investimentos em ativo fixo", hint: "Saída de caixa para compra de máquinas, equipamentos, obras, software.", tone: "neg", values: state.cashflow.capex },
+            { key: "capex", label: "CapEx — aportes em ativo fixo", hint: "Saída de caixa para compra de máquinas, equipamentos, obras, software.", tone: "neg", values: state.cashflow.capex },
             { key: "aportes", label: "Aportes de sócios", hint: "Entrada de capital próprio dos sócios na empresa.", tone: "pos", values: state.cashflow.aportes },
             { key: "emprestimosCaptados", label: "Captação de empréstimos", hint: "Entrada de caixa por novas linhas de crédito tomadas no período.", tone: "pos", values: state.cashflow.emprestimosCaptados },
             { key: "amortizacoes", label: "Amortização de principal", hint: "Pagamento da parcela de principal de dívidas (não confundir com juros, que já entram em Despesas financeiras).", tone: "neg", values: state.cashflow.amortizacoes },
@@ -409,7 +409,7 @@ function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof buildC
             <Row label="(=) Fluxo das Operações" values={aggregate(cf.fluxoOperacional, period, "sum")} strong rawTotal={sum(cf.fluxoOperacional)} />
 
             <SectionRow label="ATIVIDADES DE INVESTIMENTO" cols={cols.length} />
-            <Row label="(−) CapEx — investimentos em ativo fixo" values={aggregate(state.cashflow.capex.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(state.cashflow.capex)} />
+            <Row label="(−) CapEx — aportes em ativo fixo" values={aggregate(state.cashflow.capex.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(state.cashflow.capex)} />
             <Row label="(=) Fluxo de Investimento" values={aggregate(cf.fluxoInvestimento, period, "sum")} strong rawTotal={sum(cf.fluxoInvestimento)} />
 
             <SectionRow label="ATIVIDADES DE FINANCIAMENTO" cols={cols.length} />
@@ -503,7 +503,7 @@ function NonOpTable({
       <table className="w-full min-w-[800px] text-[clamp(0.75rem,1vw+0.5rem,0.875rem)] md:min-w-[1000px]">
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-            <th className="w-64 px-3 py-2">Rubrica</th>
+            <th className="w-64 px-3 py-2">Descrição</th>
             <th className="w-24 px-2 py-2 text-center">Modo</th>
             {MESES.map((m) => (
               <th key={m} className="px-1 py-2 text-right">{m}</th>

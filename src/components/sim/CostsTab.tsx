@@ -33,7 +33,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
     let safe = Number.isFinite(v) ? v : 0;
     if (!Number.isFinite(v) || v < 0) {
       safe = 0;
-      const label = cur?.label ?? "Rubrica";
+      const label = cur?.label ?? "Descrição";
       const suffix = i === null ? "valor fixo" : MESES[i];
       setNegWarn(`"${label}" — ${suffix}: valores negativos não são permitidos. Use uma linha dedicada para recuperações/créditos. Revertido para R$ 0.`);
     }
@@ -319,7 +319,7 @@ function CostTable({
       <table className="w-full min-w-[900px] text-[clamp(0.75rem,1vw+0.5rem,0.875rem)] md:min-w-[1200px]">
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-            <th className="w-56 px-3 py-2">Rubrica</th>
+            <th className="w-56 px-3 py-2">Descrição</th>
             <th className="w-24 px-2 py-2 text-center">Modo</th>
             {MESES.map((m) => (
               <th key={m} className="px-1 py-2 text-right">{m}</th>
