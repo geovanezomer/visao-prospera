@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AppState } from "@/lib/finance/types";
 import { fmtBRL, fmtBRLCompact, MESES, sum } from "@/lib/finance/format";
 import { buildCashFlow, computeBurnRunway, computeAlertas, computePiorMes } from "@/lib/finance/cashflow";
-import { MoneyInput, SectionTitle, StatCard } from "./primitives";
+import { MoneyInput, SectionTitle, StatCard, HelpTip } from "./primitives";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -149,50 +150,24 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
 
 
 
-      {/* Movimentações de caixa não operacionais */}
-      <div className="rounded-lg border border-border/60 bg-card/40">
-        <div className="border-b border-border/60 p-4">
+      {/* Movimentações de caixa não operacionais — tabela estilo Receitas/Despesas */}
+      <div className="rounded-lg border border-border/60 border-l-4 border-l-[color:var(--primary)] bg-card/40">
+        <div className="flex items-center justify-between border-b border-border/60 p-4">
           <SectionTitle hint="Edite aqui CapEx, aportes, captações, amortizações e dividendos. Os valores alimentam automaticamente as linhas de investimento e financiamento na DFC abaixo.">
-            Movimentações de caixa não operacionais
+            Movimentações de caixa não operacionais — 12 meses
           </SectionTitle>
         </div>
-        <div className="divide-y divide-border/40">
-          <NonOpSection
-            label="CapEx — investimentos em ativo fixo"
-            hint="Saída de caixa para compra de máquinas, equipamentos, obras, software."
-            values={state.cashflow.capex}
-            onChange={(i, v) => setNonOp("capex", i, v)}
-            tone="neg"
-          />
-          <NonOpSection
-            label="Aportes de sócios"
-            hint="Entrada de capital próprio dos sócios na empresa."
-            values={state.cashflow.aportes}
-            onChange={(i, v) => setNonOp("aportes", i, v)}
-            tone="pos"
-          />
-          <NonOpSection
-            label="Captação de empréstimos"
-            hint="Entrada de caixa por novas linhas de crédito tomadas no período."
-            values={state.cashflow.emprestimosCaptados}
-            onChange={(i, v) => setNonOp("emprestimosCaptados", i, v)}
-            tone="pos"
-          />
-          <NonOpSection
-            label="Amortização de principal"
-            hint="Pagamento da parcela de principal de dívidas (não confundir com juros, que já entram em Despesas financeiras)."
-            values={state.cashflow.amortizacoes}
-            onChange={(i, v) => setNonOp("amortizacoes", i, v)}
-            tone="neg"
-          />
-          <NonOpSection
-            label="Distribuição de dividendos"
-            hint="Saída de caixa para distribuir lucros aos sócios."
-            values={state.cashflow.dividendos}
-            onChange={(i, v) => setNonOp("dividendos", i, v)}
-            tone="neg"
-          />
-        </div>
+        <NonOpTable
+          rows={[
+            { key: "capex", label: "CapEx — investimentos em ativo fixo", hint: "Saída de caixa para compra de máquinas, equipamentos, obras, software.", tone: "neg", values: state.cashflow.capex },
+            { key: "aportes", label: "Aportes de sócios", hint: "Entrada de capital próprio dos sócios na empresa.", tone: "pos", values: state.cashflow.aportes },
+            { key: "emprestimosCaptados", label: "Captação de empréstimos", hint: "Entrada de caixa por novas linhas de crédito tomadas no período.", tone: "pos", values: state.cashflow.emprestimosCaptados },
+            { key: "amortizacoes", label: "Amortização de principal", hint: "Pagamento da parcela de principal de dívidas (não confundir com juros, que já entram em Despesas financeiras).", tone: "neg", values: state.cashflow.amortizacoes },
+            { key: "dividendos", label: "Distribuição de dividendos", hint: "Saída de caixa para distribuir lucros aos sócios.", tone: "neg", values: state.cashflow.dividendos },
+          ]}
+          onMonth={setNonOp}
+          onAllMonths={(key, v) => update((s) => ({ ...s, cashflow: { ...s.cashflow, [key]: MESES.map(() => v) } }))}
+        />
       </div>
 
       {/* Tabela detalhada */}
@@ -442,47 +417,96 @@ function SectionRow({ label }: { label: string }) {
   );
 }
 
-function NonOpSection({
-  label,
-  hint,
-  values,
-  onChange,
-  tone,
-}: {
+function fixedBase(values: number[]): number {
+  if (!values?.length) return 0;
+  const nonZero = values.find((v) => Number(v) !== 0);
+  return Number.isFinite(nonZero as number) ? (nonZero as number) : (values[0] || 0);
+}
+
+type NonOpRow = {
+  key: NonOpKey;
   label: string;
-  hint?: string;
-  values: number[];
-  onChange: (i: number, v: number) => void;
+  hint: string;
   tone: "pos" | "neg";
+  values: number[];
+};
+
+function NonOpTable({
+  rows,
+  onMonth,
+  onAllMonths,
+}: {
+  rows: NonOpRow[];
+  onMonth: (key: NonOpKey, i: number, v: number) => void;
+  onAllMonths: (key: NonOpKey, v: number) => void;
 }) {
-  const total = sum(values);
-  const dotColor = tone === "pos" ? "var(--success)" : "var(--destructive)";
-  const totalCls = total === 0 ? "text-muted-foreground" : tone === "pos" ? "text-pos" : "text-neg";
+  // Cada linha começa "fechada" (modo Fixo) — toggle local para abrir os 12 meses.
+  const [fixedMap, setFixedMap] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(rows.map((r) => [r.key, true])),
+  );
+  const isFixed = (k: string) => fixedMap[k] ?? true;
+  const setFixed = (k: string, v: boolean) => setFixedMap((m) => ({ ...m, [k]: v }));
+
   return (
-    <div className="p-4">
-      <div className="mb-2 flex items-start justify-between gap-3">
-        <div className="flex items-start gap-2">
-          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: dotColor }} />
-          <div>
-            <div className="text-xs font-semibold">{label}</div>
-            {hint && <div className="mt-0.5 text-[10.5px] leading-snug text-muted-foreground">{hint}</div>}
-          </div>
-        </div>
-        <div className="shrink-0 text-right">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Total ano</div>
-          <div className={`num text-sm font-semibold ${totalCls}`}>
-            {total === 0 ? "—" : tone === "neg" ? `(${fmtBRL(total)})` : fmtBRL(total)}
-          </div>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-12">
-        {values.map((v, i) => (
-          <div key={i} className="flex flex-col">
-            <label className="mb-0.5 text-[9px] uppercase tracking-wider text-muted-foreground">{MESES[i]}</label>
-            <MoneyInput value={v} onChange={(n) => onChange(i, n)} />
-          </div>
-        ))}
-      </div>
+    <div className="scrollbar-thin w-full overflow-x-auto overflow-y-hidden p-2">
+      <table className="w-full min-w-[800px] text-[clamp(0.75rem,1vw+0.5rem,0.875rem)] md:min-w-[1000px]">
+        <thead>
+          <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+            <th className="w-64 px-3 py-2">Rubrica</th>
+            <th className="w-24 px-2 py-2 text-center">Modo</th>
+            {MESES.map((m) => (
+              <th key={m} className="px-1 py-2 text-right">{m}</th>
+            ))}
+            <th className="px-3 py-2 text-right">Anual</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
+            const anual = sum(row.values);
+            const fixed = isFixed(row.key);
+            const dotColor = row.tone === "pos" ? "var(--success)" : "var(--destructive)";
+            const toneClass = anual === 0 ? "text-muted-foreground" : row.tone === "pos" ? "text-pos" : "text-neg";
+            const anualDisplay = anual === 0 ? "—" : row.tone === "neg" ? `(${fmtBRL(anual)})` : fmtBRL(anual);
+            return (
+              <tr key={row.key} className="border-t border-border/40 align-middle">
+                <td className="px-3 py-2">
+                  <div className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: dotColor }} />
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-semibold">{row.label}</span>
+                      <HelpTip text={row.hint} />
+                    </div>
+                  </div>
+                </td>
+                <td className="px-2 py-2">
+                  <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
+                    <span>Fixo</span>
+                    <Switch checked={!fixed} onCheckedChange={(v) => setFixed(row.key, !v)} />
+                    <span>Mensal</span>
+                  </div>
+                </td>
+                {fixed ? (
+                  <td className="px-1 py-1" colSpan={12}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] uppercase text-muted-foreground">Valor aplicado em todos os meses:</span>
+                      <div className="w-36">
+                        <MoneyInput value={fixedBase(row.values)} onChange={(n) => onAllMonths(row.key, n)} />
+                      </div>
+                    </div>
+                  </td>
+                ) : (
+                  row.values.map((v, i) => (
+                    <td key={i} className="px-1 py-1">
+                      <MoneyInput value={v} onChange={(n) => onMonth(row.key, i, n)} />
+                    </td>
+                  ))
+                )}
+                <td className={`num px-3 py-2 text-right font-semibold ${toneClass}`}>{anualDisplay}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
