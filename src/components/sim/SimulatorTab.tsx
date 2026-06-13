@@ -326,10 +326,11 @@ function DREPanel({ base, sim, inconsistencies }: { base: SimDREView; sim: SimDR
           <thead>
             <tr className="text-[9px] sm:text-[10px] uppercase text-muted-foreground">
               <th className="pb-1 text-left font-medium">Linha</th>
-              <th className="pb-1 text-right font-medium">Base</th>
-              <th className="pb-1 text-right font-medium">Simulado</th>
-              <th className="pb-1 text-right font-medium">Δ%</th>
+              <th className="pb-1 pl-2 text-right font-medium">Base</th>
+              <th className="pb-1 pl-2 text-right font-medium">Simulado</th>
+              <th className="pb-1 pl-2 text-right font-medium">Δ%</th>
             </tr>
+
           </thead>
         <tbody>
           {rows.map((r) => {
