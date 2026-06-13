@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { AppState } from "@/lib/finance/types";
 import { fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
-import { buildDRE, calcIndicators, cagr12m, resolveEffectiveRegime } from "@/lib/finance/calculations";
+import { useFinanceModel } from "@/lib/finance/useFinanceModel";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
 import { TrendingUp, TrendingDown } from "lucide-react";
