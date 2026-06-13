@@ -297,7 +297,7 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
           <Row label="RBT12" value={fmtBRL(rbAnual)} />
           <Row label="Alíquota Efetiva" value={fmtPct(aliqEf / 100)} />
           <Row label="DAS (unificado)" value={fmtBRL(regimes.simples.annual)} strong />
-          <div className="text-[10.5px] text-muted-foreground">↳ inclui IRPJ, CSLL, PIS, COFINS, ISS</div>
+          
           <div className="mt-3 rounded-md bg-accent/30 p-3 text-[11px] text-muted-foreground">
             Anexos: <b>I</b> comércio · <b>II</b> indústria · <b>III</b> serviços (Fator R ≥ 28%) · <b>IV</b> serviços específicos · <b>V</b> serviços intelectuais.
           </div>
