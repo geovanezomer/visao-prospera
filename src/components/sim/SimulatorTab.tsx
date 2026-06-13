@@ -13,6 +13,8 @@ import { SectionTitle, HelpTip } from "./primitives";
 import { ForecastCard, MonteCarloCard } from "./AnalysisTab";
 import { IndicatorsCard } from "./IndicatorsCard";
 import { ArrowDownRight, ArrowUpRight, Minus, RotateCcw, Save, SlidersHorizontal, TriangleAlert, Wand2, Sparkles } from "lucide-react";
+import { SIMPLES_LIMITE } from "@/lib/finance/taxDefaults";
+import { sum } from "@/lib/finance/format";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
