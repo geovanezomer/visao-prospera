@@ -14,7 +14,7 @@ import {
 import { useEffect } from "react";
 
 
-import { Activity, LogOut, Building2, Factory, Store, Briefcase } from "lucide-react";
+import { Activity, LogOut, Building2, Factory, Store, Briefcase, Users } from "lucide-react";
 import { NAV_ITEMS } from "./nav-config";
 import { TabKey, BusinessType } from "@/lib/finance/types";
 import { useAuth } from "@/lib/auth";
@@ -115,6 +115,18 @@ export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSideba
                   <SelectItem value="industria">Indústria</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex items-center gap-2 rounded-md border border-sidebar-border bg-sidebar-accent/50 px-2 py-1.5">
+              <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <input
+                type="number"
+                min={0}
+                value={state.numColaboradores ?? 0}
+                onChange={(e) => update({ numColaboradores: Math.max(0, parseInt(e.target.value || "0", 10)) })}
+                className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+                placeholder="Nº de colaboradores"
+              />
+              <span className="text-[10px] text-muted-foreground shrink-0">colab.</span>
             </div>
           </div>
         </SidebarGroup>

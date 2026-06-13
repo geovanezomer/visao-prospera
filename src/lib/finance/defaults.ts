@@ -96,6 +96,7 @@ export function defaultCostsFor(business: BusinessType): CostLine[] {
 export const DEFAULT_STATE: AppState = {
   businessType: "servicos",
   companyName: "Minha Empresa LTDA",
+  numColaboradores: 10,
   revenue: {
     bruta: baseRevenue,
     inadimplencia: fill12(5),
