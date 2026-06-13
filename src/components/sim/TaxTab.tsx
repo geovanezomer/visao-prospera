@@ -40,16 +40,17 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
     return (
       <div
         className={`relative rounded-lg border bg-card/40 p-5 ${
-          isBest ? "border-pos shadow-[0_0_0_1px_var(--pos)]" : "border-border/60"
+          isBest ? "border-success shadow-[0_0_0_1px_var(--success)]" : "border-border/60"
         }`}
       >
         {isBest && (
-          <div className="absolute -top-2.5 left-4">
-            <Badge className="bg-pos text-pos-foreground border-0 px-2 py-0.5 text-[10px]">
+          <div className="absolute -top-2.5 left-4 z-10">
+            <span className="inline-flex items-center rounded-full bg-success px-2.5 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-sm">
               ✓ Mais vantajoso
-            </Badge>
+            </span>
           </div>
         )}
+
         <div className="space-y-1">
           <h3 className="text-base font-semibold text-foreground">{title}</h3>
           <div className={`text-3xl font-bold tracking-tight ${isBest ? "text-pos" : "text-foreground"}`}>
