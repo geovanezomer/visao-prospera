@@ -706,6 +706,8 @@ export interface Indicators {
   qualidadeLucro: number;
   /** Receita Líquida Anual ÷ nº de colaboradores. */
   receitaPorColaborador: number;
+  /** Receita BRUTA Anual ÷ nº de colaboradores — métrica clássica de benchmarking ("Faturamento/Colab"). */
+  faturamentoPorColaborador: number;
   /** EBITDA Anual ÷ nº de colaboradores. */
   ebitdaPorColaborador: number;
   /** Lucro Líquido Anual ÷ nº de colaboradores. */
