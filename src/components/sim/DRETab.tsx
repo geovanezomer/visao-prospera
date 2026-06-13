@@ -238,56 +238,54 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
             </thead>
             <tbody>
               {rows.map((row, idx) => {
-                if (row.kind === "custos") {
-                  const total = sum(totalCustos);
-                  const pct = rb > 0 ? total / rb : 0;
+                if (row.kind === "grupo") {
+                  const total = sum(row.v);
+                  const pct = rb > 0 ? Math.abs(total) / rb : 0;
+                  const isOpen = !!openGroups[row.id];
+                  const toneCls = row.tone === "neg" ? "text-neg" : row.tone === "pos" ? "text-pos" : "";
                   return (
                     <Fragment key={idx}>
-                      <tr className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20" onClick={() => setOpenCustos((v) => !v)}>
+                      <tr className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20" onClick={() => toggleGroup(row.id)}>
                         <td className="px-3 py-2 text-[10px] sm:text-xs font-semibold truncate">
                           <span className="inline-flex items-center gap-1">
-                            <ChevronRight className={`h-3 w-3 shrink-0 transition-transform ${openCustos ? "rotate-90" : ""}`} />
-                            (−) Custos
+                            <ChevronRight className={`h-3 w-3 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                            {row.titulo}
                           </span>
                         </td>
-                        {view === "mensal" && totalCustos.map((v, i) => (
-                          <td key={i} className={`num px-2 py-2 text-right text-xs ${mesesCriticosIdx.has(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} text-neg`}>
-                            {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
+                        {view === "mensal" && row.v.map((v, i) => (
+                          <td key={i} className={`num px-2 py-2 text-right text-xs ${mesesCriticosIdx.has(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}>
+                            {v === 0 ? "—" : fmtBRLCompact(v)}
                           </td>
                         ))}
-                        <td className="num px-4 py-2 text-right font-semibold text-neg">− {fmtBRL(total)}</td>
+                        <td className={`num px-4 py-2 text-right font-semibold ${total < 0 ? "text-neg" : total > 0 ? toneCls || "text-foreground" : ""}`}>{fmtBRL(total)}</td>
                         <td className="num px-3 py-2 text-right text-xs text-muted-foreground">{fmtPct(pct)}</td>
                       </tr>
-                      {openCustos && grupos.map((g) => {
-                        const linhas = linhasPreenchidas.filter((l) => l.category === g.id);
-                        if (linhas.length === 0) return null;
-                        const grupoTotal = sum(linhas.flatMap((l) => l.values));
+                      {isOpen && row.lines.map((l, li) => {
+                        const sgn = row.tone === "neg" ? -1 : 1;
+                        const lTotal = sum(l.values) * sgn;
                         return (
-                          <Fragment key={g.id}>
-                            <tr className="border-t border-border/20 bg-muted/10">
-                              <td className="px-4 py-1.5 pl-8 text-[10px] uppercase tracking-wider text-primary/80">{g.titulo}</td>
-                              {view === "mensal" && MESES.map((_, i) => <td key={i} className="px-2 py-1.5" />)}
-                              <td className="num px-4 py-1.5 text-right text-[11px] text-muted-foreground">{fmtBRL(grupoTotal)}</td>
-                              <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">{fmtPct(rb > 0 ? grupoTotal / rb : 0)}</td>
-                            </tr>
-                            {linhas.map((l, li) => {
-                              const lTotal = sum(l.values);
+                          <tr key={`${row.id}_${li}`} className="border-t border-border/20">
+                            <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">{l.label}</td>
+                            {view === "mensal" && l.values.map((v, i) => {
+                              const sv = v * sgn;
                               return (
-                                <tr key={`${g.id}_${li}`} className="border-t border-border/20">
-                                  <td className="px-4 py-1.5 pl-12 text-xs text-muted-foreground">{l.label}</td>
-                                  {view === "mensal" && l.values.map((v, i) => (
-                                    <td key={i} className="num px-2 py-1.5 text-right text-xs text-muted-foreground">
-                                      {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
-                                    </td>
-                                  ))}
-                                  <td className="num px-4 py-1.5 text-right text-xs text-neg">− {fmtBRL(lTotal)}</td>
-                                  <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">{fmtPct(rb > 0 ? lTotal / rb : 0)}</td>
-                                </tr>
+                                <td key={i} className={`num px-2 py-1.5 text-right text-xs ${sv < 0 ? "text-neg" : sv > 0 ? "text-pos" : "text-muted-foreground"}`}>
+                                  {sv === 0 ? "—" : fmtBRLCompact(sv)}
+                                </td>
                               );
                             })}
-                          </Fragment>
+                            <td className={`num px-4 py-1.5 text-right text-xs ${lTotal < 0 ? "text-neg" : lTotal > 0 ? "text-pos" : ""}`}>{fmtBRL(lTotal)}</td>
+                            <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">{fmtPct(rb > 0 ? Math.abs(lTotal) / rb : 0)}</td>
+                          </tr>
                         );
                       })}
+                      {isOpen && row.lines.length === 0 && (
+                        <tr className="border-t border-border/20">
+                          <td colSpan={view === "mensal" ? 15 : 3} className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground">
+                            {row.emptyMsg ?? "Sem itens cadastrados."}
+                          </td>
+                        </tr>
+                      )}
                     </Fragment>
                   );
                 }
@@ -356,6 +354,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                   </tr>
                 );
               })}
+
 
             </tbody>
           </table>
