@@ -222,7 +222,7 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
             { key: "dividendos", label: "Distribuição de dividendos", hint: "Saída de caixa para distribuir lucros aos sócios.", tone: "neg", values: state.cashflow.dividendos },
           ]}
           onMonth={setNonOp}
-          onAllMonths={(key, v) => update((s) => ({ ...s, cashflow: { ...s.cashflow, [key]: MESES.map(() => v) } }))}
+          onAllMonths={setNonOpAll}
         />
       </div>
 
