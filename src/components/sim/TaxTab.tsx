@@ -89,17 +89,17 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
 
   // Alertas de sublimite e enquadramento (Auditoria — Fase 2)
   const simplesWarnings: string[] = [];
-  if (rbAnual > 4_800_000) {
+  if (rbAnual > simplesLimite) {
     simplesWarnings.push(
-      `RBT12 = ${fmtBRL(rbAnual)} ultrapassa R$ 4.800.000 — a empresa está DESENQUADRADA do Simples Nacional. Migre obrigatoriamente para Lucro Presumido ou Real.`,
+      `RBT12 = ${fmtBRL(rbAnual)} ultrapassa ${fmtBRL(simplesLimite)} — a empresa está DESENQUADRADA do Simples Nacional. Migre obrigatoriamente para Lucro Presumido ou Real.`,
     );
   } else if (rbAnual > 3_600_000) {
     simplesWarnings.push(
       `RBT12 = ${fmtBRL(rbAnual)} ultrapassa o sublimite estadual de R$ 3.600.000 — ICMS/ISS passam a ser recolhidos fora do Simples (regime normal estadual), embora os tributos federais continuem no DAS.`,
     );
-  } else if (rbAnual > 4_320_000) {
+  } else if (rbAnual > simplesLimite * 0.9) {
     simplesWarnings.push(
-      `RBT12 = ${fmtBRL(rbAnual)} está a menos de 10% do teto (R$ 4.8M). Cuidado com o desenquadramento automático.`,
+      `RBT12 = ${fmtBRL(rbAnual)} está a menos de 10% do teto (${fmtBRL(simplesLimite)}). Cuidado com o desenquadramento automático.`,
     );
   }
   if (state.tax.simplesAnexo === "III" && state.businessType !== "servicos") {
