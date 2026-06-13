@@ -704,6 +704,12 @@ export interface Indicators {
   gao: number;
   /** FCF ÷ Lucro Líquido — quanto do lucro contábil vira caixa. */
   qualidadeLucro: number;
+  /** Receita Líquida Anual ÷ nº de colaboradores. */
+  receitaPorColaborador: number;
+  /** Lucro Líquido Anual ÷ nº de colaboradores. */
+  lucroPorColaborador: number;
+  /** Folha total anual (com encargos) ÷ Receita Líquida × 100. */
+  custoPessoalSobreReceita: number;
   dividaOnerosa: number;
   passivoCirculante: number;
   ativoCirculante: number;
