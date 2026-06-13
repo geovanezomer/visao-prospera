@@ -48,17 +48,16 @@ export function CriticalAlertsBanner({ state, model }: { state: AppState; model?
     const cutPctFixos = custosFixosAnuais > 0 ? (gap / custosFixosAnuais) * 100 : 0;
     // Shield do regime EFETIVO (não o nominal — se Simples virou Presumido, shield muda).
     const shield = irShieldForRegime(regime);
-    const waccDecimal = Math.max(0.005, ind.wacc / 100);
     // Gap é déficit pontual do pior mês — não perpétuo. Tratamos como economia
     // ONE-SHOT: VPL ≈ Corte × (1 − IR). Multiplicar por 1/WACC inflaria 10–20×.
     const vplDelta = gap > 0 ? gap * (1 - shield) : 0;
 
     const dangers = diag.filter((d) => d.level === "danger");
 
-    return { ind, regime, ebitdaAnual, jurosAnual, amortAnual, servicoDivida, dscr, pior, caixaMin, gap, custosFixosAnuais, cutPctFixos, shield, vplDelta, dangers };
+    return { ind, ebitdaAnual, jurosAnual, amortAnual, servicoDivida, dscr, pior, caixaMin, gap, custosFixosAnuais, cutPctFixos, shield, vplDelta, dangers };
   }, [state, model]);
 
-  const { ind, regime, jurosAnual, dscr, pior, caixaMin, gap, custosFixosAnuais, cutPctFixos, shield, vplDelta, dangers } = data;
+  const { ind, jurosAnual, dscr, pior, caixaMin, gap, custosFixosAnuais, cutPctFixos, shield, vplDelta, dangers } = data;
 
   const dscrTone = dscr == null ? "neutral" : dscr < 1.2 ? "danger" : dscr < 1.5 ? "warn" : "ok";
   const piorTone = !pior ? "neutral" : pior.saldo < 0 ? "danger" : pior.saldo < caixaMin ? "warn" : "ok";
