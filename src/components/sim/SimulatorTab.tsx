@@ -318,10 +318,11 @@ function DREPanel({ base, sim, inconsistencies }: { base: SimDREView; sim: SimDR
         <table className="w-full text-[clamp(0.65rem,1vw+0.35rem,0.75rem)] table-fixed">
           <colgroup>
             <col className="w-[110px] sm:w-auto" />
-            <col className="w-[75px] sm:w-[90px]" />
-            <col className="w-[75px] sm:w-[90px]" />
-            <col className="w-[45px] sm:w-[55px]" />
+            <col className="w-[95px] sm:w-[115px]" />
+            <col className="w-[95px] sm:w-[115px]" />
+            <col className="w-[55px] sm:w-[65px]" />
           </colgroup>
+
           <thead>
             <tr className="text-[9px] sm:text-[10px] uppercase text-muted-foreground">
               <th className="pb-1 text-left font-medium">Linha</th>
