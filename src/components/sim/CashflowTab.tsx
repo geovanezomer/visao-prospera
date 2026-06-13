@@ -386,7 +386,7 @@ function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof buildC
           ))}
         </div>
       </div>
-      <div className="scrollbar-thin overflow-x-auto">
+      <div className="scrollbar-thin relative isolate overflow-x-auto">
         <table className="w-full min-w-[900px] border-separate border-spacing-0 text-sm">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
