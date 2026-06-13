@@ -1,6 +1,6 @@
 // Snapshot em camadas + estimativa de tokens + sanitização + cache por hash.
 import type { AppState } from "@/lib/finance/types";
-import { buildDRE, calcIndicators, diagnose } from "@/lib/finance/calculations";
+import { buildDRE, calcIndicators, diagnose, resolveEffectiveRegime } from "@/lib/finance/calculations";
 import { buildCashFlow } from "@/lib/finance/cashflow";
 import { buildValuation, defaultValuationParams } from "@/lib/finance/valuation";
 import { computeHealth } from "@/lib/finance/health";
