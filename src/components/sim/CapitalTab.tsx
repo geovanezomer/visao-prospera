@@ -72,15 +72,17 @@ export function CapitalTab({ state, update }: { state: AppState; update: (p: Par
 
       <div className="space-y-4">
         <CapitalStructureCard
-          proprio={c.proprio}
+          proprio={proprioDerivado}
           terceiros={terceiros}
           ke={c.ke}
           kd={c.kd}
           patrimonioLiquido={c.patrimonioLiquido}
           dividaOnerosa={c.dividaOnerosa}
+          derived={totalFinancAbs > 0}
           onChange={set}
         />
         <BalanceSheetCard capital={c} onChange={set} />
+        <AdvancedRefinementCard capital={c} onChange={set} />
         <CapexAtivacaoSection
           items={c.capexAtivacao ?? []}
           onChange={(next) => set({ capexAtivacao: next })}
