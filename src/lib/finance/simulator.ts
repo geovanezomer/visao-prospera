@@ -125,11 +125,11 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     );
   }
 
-  // 4) Folha (linhas com encargosAuto)
+  // 4) Folha — usa isLaborLine (encargosAuto OU regex de folha), igual a sensitivity/prescriptive (S3).
   if (p.payrollDeltaPct !== 0) {
     const f = 1 + p.payrollDeltaPct / 100;
     s.costs = s.costs.map((c) =>
-      c.encargosAuto ? { ...c, values: c.values.map((v) => v * f) } : c,
+      isLaborLine(c) ? { ...c, values: c.values.map((v) => v * f) } : c,
     );
   }
 
