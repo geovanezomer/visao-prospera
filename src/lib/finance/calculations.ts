@@ -706,6 +706,8 @@ export interface Indicators {
   qualidadeLucro: number;
   /** Receita Líquida Anual ÷ nº de colaboradores. */
   receitaPorColaborador: number;
+  /** EBITDA Anual ÷ nº de colaboradores. */
+  ebitdaPorColaborador: number;
   /** Lucro Líquido Anual ÷ nº de colaboradores. */
   lucroPorColaborador: number;
   /** Folha total anual (com encargos) ÷ Receita Líquida × 100. */
