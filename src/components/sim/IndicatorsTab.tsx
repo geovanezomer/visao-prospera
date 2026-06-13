@@ -12,6 +12,18 @@ export function IndicatorsTab({ state }: { state: AppState }) {
   const { dre } = buildDRE(state, regime);
   const ind = calcIndicators(state, dre);
 
+  // CAGR Receitas 12 meses: taxa equivalente anualizada entre o 1º e o 12º mês de receita líquida.
+  // Fórmula: (Receita_M12 / Receita_M1)^(12 / (n-1)) - 1, onde n = nº de meses com receita > 0.
+  const cagrReceitas12m = (() => {
+    const serie = dre.receitaLiquida.filter((v) => v > 0);
+    if (serie.length < 2) return NaN;
+    const inicio = serie[0];
+    const fim = serie[serie.length - 1];
+    if (inicio <= 0 || fim <= 0) return NaN;
+    const periodos = serie.length - 1; // meses entre o 1º e o último
+    return Math.pow(fim / inicio, 12 / periodos) - 1;
+  })();
+
   const monthlyChart = MESES.map((m, i) => ({
     mes: m,
     Receita: dre.receitaLiquida[i],
