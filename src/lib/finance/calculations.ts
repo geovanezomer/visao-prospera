@@ -832,7 +832,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const CAP_PAYBACK = 99;    // payback em anos máx
   const coberturaJuros = jurosAnual > 1 ? Math.min(CAP_COB, ebitAnual / jurosAnual) : CAP_COB;
   const giroAtivo = capital.ativoTotal > 0 ? receitaLiqAnual / capital.ativoTotal : 0;
-  const dividaLiq = D - capital.disponibilidades;
+  const dividaLiq = computeNetDebt(state); // SSOT-1: helper único usado por Valuation também
   const dividaLiqEbitda = ebitdaAnual > 1
     ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitdaAnual))
     : (dividaLiq <= 0 ? 0 : CAP_DL_EBITDA);
