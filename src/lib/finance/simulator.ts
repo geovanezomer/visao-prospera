@@ -180,7 +180,40 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     });
   }
 
-  // 9) Captar empréstimo (PRICE)
+  // Reordenação S4/S8: kd → quitar dívida existente → captar empréstimo novo.
+  // Motivos:
+  //  • kd primeiro: novo custo de dívida reflete em TODAS as linhas de juros existentes
+  //    antes da quitação proporcional escalar resíduos errados.
+  //  • Quitar antes de captar: evita que o "% quitar" incida sobre o empréstimo recém-captado
+  //    (caso clássico: usuário capta 100k @ 2% a.m. e "quita 30%" do total — quitava 30% do novo).
+
+  // 9) kd / Selic (antes de quitar para que a redução seja sobre o juros pós-kd)
+  if (p.kdDeltaPp !== 0) {
+    const kdAtual = Math.max(s.capital.kd, 0.5);
+    const novoKd = Math.max(0.5, s.capital.kd + p.kdDeltaPp);
+    const fator = novoKd / kdAtual;
+    s.capital.kd = novoKd;
+    s.costs = s.costs.map((c) =>
+      c.category === "financeiro" && /juros/i.test(c.label)
+        ? { ...c, values: c.values.map((v) => v * fator) }
+        : c,
+    );
+  }
+
+  // 10) Quitar dívida EXISTENTE (antes de captar)
+  if (p.debtPaydownPct > 0) {
+    const pct = p.debtPaydownPct / 100;
+    const pago = s.capital.dividaOnerosa * pct;
+    s.capital.dividaOnerosa = s.capital.dividaOnerosa * (1 - pct);
+    s.costs = s.costs.map((c) =>
+      c.category === "financeiro" && /juros/i.test(c.label)
+        ? { ...c, values: c.values.map((v) => v * (1 - pct)) }
+        : c,
+    );
+    s.cashflow.amortizacoes[0] = (s.cashflow.amortizacoes[0] || 0) + pago;
+  }
+
+  // 11) Captar empréstimo NOVO (PRICE) — depois da quitação, para não ser quitado junto
   if (p.loanPrincipal > 0 && p.loanTermMonths > 0) {
     const i = p.loanRatePctAm / 100;
     const pmt = i === 0 ? p.loanPrincipal / p.loanTermMonths : p.loanPrincipal * (i / (1 - Math.pow(1 + i, -p.loanTermMonths)));
@@ -205,31 +238,6 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       fixed: false,
       custom: true,
     });
-  }
-
-  // 10) Quitar dívida
-  if (p.debtPaydownPct > 0) {
-    const pct = p.debtPaydownPct / 100;
-    const pago = s.capital.dividaOnerosa * pct;
-    s.capital.dividaOnerosa = s.capital.dividaOnerosa * (1 - pct);
-    s.costs = s.costs.map((c) =>
-      c.category === "financeiro" && /juros/i.test(c.label)
-        ? { ...c, values: c.values.map((v) => v * (1 - pct)) }
-        : c,
-    );
-    s.cashflow.amortizacoes[0] = (s.cashflow.amortizacoes[0] || 0) + pago;
-  }
-
-  // 11) kd / Selic
-  if (p.kdDeltaPp !== 0) {
-    const novoKd = Math.max(0.5, s.capital.kd + p.kdDeltaPp);
-    const fator = novoKd / Math.max(s.capital.kd, 0.5);
-    s.capital.kd = novoKd;
-    s.costs = s.costs.map((c) =>
-      c.category === "financeiro" && /juros/i.test(c.label)
-        ? { ...c, values: c.values.map((v) => v * fator) }
-        : c,
-    );
   }
 
   // 12) Regime
