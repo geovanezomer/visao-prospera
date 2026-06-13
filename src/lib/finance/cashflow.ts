@@ -5,6 +5,8 @@ import { MESES, sum, zeros12 } from "./format";
 export interface CashFlow {
   saldoInicial: number[];
   recebimentos: number[];
+  /** Rendimentos de aplicações financeiras realizados em caixa (operacional). */
+  receitasFinanceiras: number[];
   pagamentosFornecedores: number[];
   pagamentosFixos: number[];
   pagamentosVariaveis: number[];
@@ -26,6 +28,7 @@ export interface CashFlow {
   impostosAnoSeguinte: number;
   totais: {
     recebimentos: number;
+    receitasFinanceiras: number;
     pagamentosTotais: number;
     fluxoOperacional: number;
     fluxoInvestimento: number;
