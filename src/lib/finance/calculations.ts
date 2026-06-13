@@ -86,8 +86,15 @@ export function presumidoBases(business: BusinessType): { irpj: number; csll: nu
 // =====================================================================
 // Encargos automáticos sobre folha CLT
 // =====================================================================
+/** Classificação canônica: linhas que compõem o CPV/CMV/CSP (geram crédito tributário
+ *  e escalam com receita no forecast). Usado em buildDRE, calcReal e forecast. */
+export function isCpvCost(c: CostLine): boolean {
+  return c.category === "custo_vendas" || c.category === "direto_venda";
+}
+
 export function fixedCostBase(values: number[]): number {
   const normalized = values.length === 12 ? values : fill12(values[0] || 0);
+
   const first = normalized[0] || 0;
   // Se todos os meses são iguais, retorna o valor.
   if (normalized.every((v) => v === first)) return first;
@@ -237,12 +244,13 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const temCpvCredito = icmsCredAliq > 0 || usaReforma;
   if (temCpvCredito) {
     for (const c of state.costs) {
-      if (c.category !== "custo_vendas") continue;
+      if (!isCpvCost(c)) continue;
       if (c.semCredito) continue;
       const v = effectiveMonthValues(c);
       for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
     }
   }
+
 
   // [Receitas Financeiras] No Presumido, rendimentos de aplicações entram INTEGRAIS
   // na base de IRPJ/CSLL (sem o redutor de 8/32%). Aluguéis/venda de ativos vão
@@ -338,12 +346,13 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const temCpvCredito = icmsCredAliq > 0 || usaReforma;
   if (temCpvCredito) {
     for (const c of state.costs) {
-      if (c.category !== "custo_vendas") continue;
+      if (!isCpvCost(c)) continue;
       if (c.semCredito) continue;
       const v = effectiveMonthValues(c);
       for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
     }
   }
+
 
   const baseIRPJMensal = baseLairMonthly.map((l) => Math.max(0, l));
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);

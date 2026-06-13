@@ -1,5 +1,5 @@
 import { AppState } from "./types";
-import { buildDRE, calcIndicators, effectiveMonthValues } from "./calculations";
+import { buildDRE, calcIndicators, effectiveMonthValues, isCpvCost } from "./calculations";
 import { sum } from "./format";
 
 export interface ForecastMonth {
@@ -94,7 +94,7 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     if (c.category === "financeiro") continue;
     const v = sum(effectiveMonthValues(c, state.tax.regime));
     const isLabor = c.encargosAuto || LABOR_RE.test(c.label);
-    if (c.category === "custo_vendas") continue; // já em cpvBase
+    if (isCpvCost(c)) continue; // já em cpvBase (inclui direto_venda)
     if (c.category === "variavel") variaveisNaoCpvBase += v;
     else if (isLabor) folhaFixaBase += v;
     else fixosNaoFolhaBase += v;
@@ -107,12 +107,13 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   let folhaCpvBase = 0;
   let cpvNaoFolhaBase = 0;
   for (const c of state.costs) {
-    if (c.category !== "custo_vendas") continue;
+    if (!isCpvCost(c)) continue;
     const v = sum(effectiveMonthValues(c, state.tax.regime));
     const isLabor = c.encargosAuto || LABOR_RE.test(c.label);
     if (isLabor) folhaCpvBase += v;
     else cpvNaoFolhaBase += v;
   }
+
   const folhaCpvMensalBase = folhaCpvBase / 12;
   const cpvNaoFolhaRatioBase = cpvNaoFolhaBase / receitaAnoBase;
 

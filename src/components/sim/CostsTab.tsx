@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppState, CostCategory, CostLine, TaxRegime } from "@/lib/finance/types";
 import { fill12, fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
 import { fixedCostBase, monthValues } from "@/lib/finance/calculations";
@@ -12,7 +12,7 @@ import { PrazoTable } from "./PrazoTable";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
 export function CostsTab({ state, update }: { state: AppState; update: Updater }) {
-  const receitaBrutaAnual = sum(state.revenue.bruta);
+  const receitaBrutaAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
 
 
   // Aviso inline quando o usuário tenta digitar valor negativo (revertido para 0)
@@ -91,15 +91,25 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
 
 
 
-  // totais
-  const totCV = sum(byCat("custo_vendas").flatMap((c) => monthValues(c, state.tax.regime)));
-  const totFix = sum(byCat("fixo").flatMap((c) => monthValues(c, state.tax.regime)));
-  const totVar = sum(byCat("variavel").flatMap((c) => monthValues(c, state.tax.regime)));
-  const totFin = sum(byCat("financeiro").flatMap((c) => monthValues(c, state.tax.regime)));
-  const totCPV = sum([...byCat("custo_vendas"), ...byCat("direto_venda")].flatMap((c) => monthValues(c, state.tax.regime)));
-  const totGeral = totCPV + totFix + totVar + totFin;
+  // totais (memoizados — recalcular só quando custos ou regime mudam)
+  const { totCV, totFix, totVar, totFin, totCPV, totGeral } = useMemo(() => {
+    const regime = state.tax.regime;
+    let cv = 0, fix = 0, vr = 0, fn = 0, cpv = 0;
+    for (const c of state.costs) {
+      const v = sum(monthValues(c, regime));
+      if (c.category === "custo_vendas") { cv += v; cpv += v; }
+      else if (c.category === "direto_venda") { cpv += v; }
+      else if (c.category === "fixo") fix += v;
+      else if (c.category === "variavel") vr += v;
+      else if (c.category === "financeiro") fn += v;
+    }
+    return { totCV: cv, totFix: fix, totVar: vr, totFin: fn, totCPV: cpv, totGeral: cpv + fix + vr + fn };
+  }, [state.costs, state.tax.regime]);
 
-  const pctRec = (v: number) => (receitaBrutaAnual > 0 ? v / receitaBrutaAnual : 0);
+  const pctRec = useCallback(
+    (v: number) => (receitaBrutaAnual > 0 ? v / receitaBrutaAnual : 0),
+    [receitaBrutaAnual],
+  );
 
   return (
     <div className="space-y-6">
@@ -139,8 +149,9 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
           sub={fmtPct(pctRec(totFin)) + " da receita"}
           hint="Juros, IOF, antecipação de recebíveis, tarifas bancárias, maquininha."
         />
-        <StatCard label="Total de Custos" value={fmtBRL(totGeral)} tone="neg" sub={fmtPct(pctRec(totGeral)) + " da receita"} hint={{ description: "Soma de todos os custos. Quanto menor o % sobre a receita, mais saudável a operação.", formula: "Custos Fixos + Variáveis + Financeiros" }} />
+        <StatCard label="Total de Custos" value={fmtBRL(totGeral)} tone="neg" sub={fmtPct(pctRec(totGeral)) + " da receita"} hint={{ description: "Soma de todos os custos. Quanto menor o % sobre a receita, mais saudável a operação.", formula: "CPV/CMV/CSP + Custos Fixos + Variáveis + Financeiros" }} />
       </div>
+
 
 
 
