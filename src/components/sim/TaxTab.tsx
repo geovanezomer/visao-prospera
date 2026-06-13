@@ -419,7 +419,8 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             </div>
           </div>
           {(() => {
-            const regs: TaxRegime[] = ["simples", "presumido", "real"];
+            const regs: TaxRegime[] = (["simples", "presumido", "real"] as TaxRegime[])
+              .filter(r => !(desenquadradoSimples && r === "simples"));
             const labels: Record<TaxRegime, string> = {
               simples: "Simples Nacional", presumido: "Lucro Presumido", real: "Lucro Real",
             };
