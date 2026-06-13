@@ -54,6 +54,11 @@ export function SimulatorTab({
 
   const active = countActiveLevers(p);
 
+  // Desenquadramento do Simples (mesma regra da página Regime Tributário)
+  const rbAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
+  const simplesLimite = state.tax.ratesOverride?.simplesLimite ?? SIMPLES_LIMITE;
+  const desenquadradoSimples = rbAnual > simplesLimite;
+
   const inconsistencies: string[] = [];
   if (simView.lucroLiquido < 0) inconsistencies.push("Lucro líquido negativo no cenário simulado");
   if (simView.saldoCaixaFinal < 0) inconsistencies.push("Caixa final negativo — operação inviável sem captação");
