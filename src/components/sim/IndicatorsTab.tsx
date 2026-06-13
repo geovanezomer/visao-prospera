@@ -27,15 +27,8 @@ function fmtTimes(v: number, ebitOrEbitda: number, decimals = 1): string {
 }
 
 export function IndicatorsTab({ state }: { state: AppState }) {
-  // B9: regime efetivo (considera desenquadramento do Simples — verdade absoluta)
-  const regime = useMemo(() => resolveEffectiveRegime(state), [state]);
-
-  // B8: memoizar engine pesada (buildDRE + calcIndicators)
-  const dre = useMemo(() => buildDRE(state, regime).dre, [state, regime]);
-  const ind = useMemo(() => calcIndicators(state, dre), [state, dre]);
-
-  // B4: CAGR via helper central (preserva distância real em meses)
-  const cagrReceitas12m = useMemo(() => cagr12m(dre.receitaLiquida), [dre.receitaLiquida]);
+  // (I1+I9) Modelo central: regime efetivo + DRE + indicadores + CAGR memoizados.
+  const { dre, ind, cagrReceitas12m } = useFinanceModel(state);
 
   // B3: separar custos operacionais de despesas financeiras no gráfico mensal
   const monthlyChart = useMemo(
