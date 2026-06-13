@@ -1,18 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppState, CapexAtivacao } from "@/lib/finance/types";
 import { fmtBRL, fmtNum, sum } from "@/lib/finance/format";
 import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Lightbulb, X, TrendingUp, TrendingDown, Wallet, Landmark, Coins, Settings2, ArrowRight, Banknote, Package, Users, AlertTriangle, CheckCircle2, Camera } from "lucide-react";
+import { Plus, Trash2, Lightbulb, X, TrendingUp, TrendingDown, Wallet, Landmark, Coins, Settings2, ArrowRight, Banknote, Package, Users, AlertTriangle, CheckCircle2, Camera, ChevronDown, ChevronUp } from "lucide-react";
 import { MoneyInput, NumInput, PctInput, SectionTitle, StatCard, HelpTip } from "./primitives";
 
 const INTRO_KEY = "gzf_capital_intro_dismissed_v1";
 
 export function CapitalTab({ state, update }: { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void }) {
   const c = state.capital;
-  const { dre } = buildDRE(state, state.tax.regime);
-  const ind = calcIndicators(state, dre);
+  // Memoiza engine pesada — recomputa só quando o estado financeiro muda.
+  const { dre } = useMemo(() => buildDRE(state, state.tax.regime), [state]);
+  const ind = useMemo(() => calcIndicators(state, dre), [state, dre]);
+
 
   const set = (patch: Partial<typeof c>) => update((s) => ({ ...s, capital: { ...s.capital, ...patch } }));
 
