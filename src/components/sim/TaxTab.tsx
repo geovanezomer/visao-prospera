@@ -473,27 +473,35 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
           })()}
         </div>
 
-        <div className="grid grid-cols-4 gap-px bg-border/40">
-          <div className="bg-card p-4 text-xs uppercase tracking-wider text-muted-foreground">Indicador</div>
-          {(["simples", "presumido", "real"] as TaxRegime[]).map((r) => (
-            <div key={r} className={`bg-card p-4 text-xs uppercase tracking-wider ${best === r ? "text-primary" : "text-muted-foreground"}`}>
-              {r === "simples" ? "Simples Nacional" : r === "presumido" ? "Lucro Presumido" : "Lucro Real"}
-              {best === r && <span className="ml-2">✓</span>}
-            </div>
-          ))}
-          {[
-            { k: "Tributos totais (ano)", v: (r: TaxRegime) => fmtBRL(regimes[r].annual) },
-            { k: "Alíquota efetiva", v: (r: TaxRegime) => fmtPct(regimes[r].effective / 100) },
-            { k: "Lucro Líquido (ano)", v: (r: TaxRegime) => fmtBRL(llBy[r]) },
-          ].map((row) => (
-            <Fragment key={row.k}>
-              <div className="bg-card p-3 text-xs text-muted-foreground">{row.k}</div>
-              {(["simples", "presumido", "real"] as TaxRegime[]).map((r) => (
-                <div key={r + row.k} className={`bg-card p-3 num text-sm ${best === r ? "text-pos font-semibold" : ""}`}>{row.v(r)}</div>
+        {(() => {
+          const cols: TaxRegime[] = (["simples", "presumido", "real"] as TaxRegime[])
+            .filter(r => !(desenquadradoSimples && r === "simples"));
+          const labelOf = (r: TaxRegime) => r === "simples" ? "Simples Nacional" : r === "presumido" ? "Lucro Presumido" : "Lucro Real";
+          const gridCls = cols.length === 3 ? "grid-cols-4" : "grid-cols-3";
+          return (
+            <div className={`grid ${gridCls} gap-px bg-border/40`}>
+              <div className="bg-card p-4 text-xs uppercase tracking-wider text-muted-foreground">Indicador</div>
+              {cols.map((r) => (
+                <div key={r} className={`bg-card p-4 text-xs uppercase tracking-wider ${best === r ? "text-primary" : "text-muted-foreground"}`}>
+                  {labelOf(r)}
+                  {best === r && <span className="ml-2">✓</span>}
+                </div>
               ))}
-            </Fragment>
-          ))}
-        </div>
+              {[
+                { k: "Tributos totais (ano)", v: (r: TaxRegime) => fmtBRL(regimes[r].annual) },
+                { k: "Alíquota efetiva", v: (r: TaxRegime) => fmtPct(regimes[r].effective / 100) },
+                { k: "Lucro Líquido (ano)", v: (r: TaxRegime) => fmtBRL(llBy[r]) },
+              ].map((row) => (
+                <Fragment key={row.k}>
+                  <div className="bg-card p-3 text-xs text-muted-foreground">{row.k}</div>
+                  {cols.map((r) => (
+                    <div key={r + row.k} className={`bg-card p-3 num text-sm ${best === r ? "text-pos font-semibold" : ""}`}>{row.v(r)}</div>
+                  ))}
+                </Fragment>
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
 
