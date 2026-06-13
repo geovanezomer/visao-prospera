@@ -222,15 +222,29 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
 export interface SimDREView {
   receitaBruta: number;
   deducoes: number;
+  // Detalhamento das deduções (anual)
+  devolucoesCancelamentos: number;
+  descontosIncondicionais: number;
+  abatimentos: number;
+  tributosReceita: number;
   receitaLiquida: number;
   cpv: number;
   lucroBruto: number;
   despesasOp: number;
+  // Detalhamento das despesas operacionais (anual)
+  despesasComerciais: number;
+  despesasAdministrativas: number;
+  outrasOperacionais: number; // inclui D&A com sinal negativo
   ebitda: number;
   depreciacao: number;
-  ebit: number;
-  resultadoFinanceiro: number;
-  lair: number;
+  ebit: number;                // = Lucro Operacional
+  // Bloco financeiro
+  receitasFinanceiras: number;
+  ganhoAlienacao: number;
+  laft: number;                // Lucro Antes do Financiamento e Tributos
+  despesasFinanceiras: number;
+  resultadoFinanceiro: number; // receitasFin − despesasFin (compat)
+  lair: number;                // = EBT
   impostos: number;
   lucroLiquido: number;
 
@@ -251,20 +265,50 @@ export function computeSimView(state: AppState): SimDREView {
   const ind = calcIndicators(state, dre);
   const cf = buildCashFlow(state);
   const deducoes = sum(dre.deducoesInadimplencia);
-  
+
+  // Descontos Incondicionais e Abatimentos via revenue.deducoes
+  const dedById = (id: string) => state.revenue.deducoes?.find((d) => d.id === id);
+  const descIncond = sum(dedById("desc_incond")?.valores ?? []);
+  const abatim = sum(dedById("abatimentos")?.valores ?? []);
+
+  // Comerciais (variavel) / Administrativas (fixo) / Financeiras (financeiro)
+  let despComerciais = 0, despAdmin = 0, despFinanc = 0;
+  for (const c of state.costs) {
+    const v = sum(monthValues(c, state.tax.regime));
+    if (c.category === "variavel") despComerciais += v;
+    else if (c.category === "fixo") despAdmin += v;
+    else if (c.category === "financeiro") despFinanc += v;
+  }
+  const outrasOp = -sum(dre.depreciacao);
+  const receitasFin = sum(state.revenue.receitasFinanceiras?.flatMap((r) => r.valores ?? []) ?? []);
+  const ganhoAlien = 0;
+  const ebit = sum(dre.ebit);
+  const laft = ebit + receitasFin + ganhoAlien;
+
   const valParams = defaultValuationParams(state.businessType);
   const val = buildValuation(state, valParams);
-  
+
   return {
     receitaBruta: sum(dre.receitaBruta),
     deducoes,
+    devolucoesCancelamentos: deducoes,
+    descontosIncondicionais: descIncond,
+    abatimentos: abatim,
+    tributosReceita: sum(dre.impostosVendas),
     receitaLiquida: sum(dre.receitaLiquida),
     cpv: sum(dre.cpv),
     lucroBruto: sum(dre.lucroBruto),
     despesasOp: sum(dre.despesasOperacionais),
+    despesasComerciais: despComerciais,
+    despesasAdministrativas: despAdmin,
+    outrasOperacionais: outrasOp,
     ebitda: sum(dre.ebitda),
     depreciacao: sum(dre.depreciacao),
-    ebit: sum(dre.ebit),
+    ebit,
+    receitasFinanceiras: receitasFin,
+    ganhoAlienacao: ganhoAlien,
+    laft,
+    despesasFinanceiras: despFinanc,
     resultadoFinanceiro: sum(dre.resultadoFinanceiro),
     lair: sum(dre.lair),
     impostos: tax.annual,

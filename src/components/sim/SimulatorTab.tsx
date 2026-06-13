@@ -276,19 +276,25 @@ function Group({ value, title, children }: { value: string; title: string; child
 
 function DREPanel({ base, sim, inconsistencies }: { base: SimDREView; sim: SimDREView; inconsistencies: string[] }) {
   const rows: { label: string; b: number; s: number; bold?: boolean; sign?: -1 | 1 }[] = [
-    { label: "Receita Bruta", b: base.receitaBruta, s: sim.receitaBruta },
-    { label: "(−) Deduções/Inadimplência", b: -base.deducoes, s: -sim.deducoes, sign: -1 },
-    { label: "= Receita Líquida", b: base.receitaLiquida, s: sim.receitaLiquida, bold: true },
-    { label: "(−) CPV", b: -base.cpv, s: -sim.cpv, sign: -1 },
-    { label: "= Lucro Bruto", b: base.lucroBruto, s: sim.lucroBruto, bold: true },
-    { label: "(−) Despesas Operacionais", b: -base.despesasOp, s: -sim.despesasOp, sign: -1 },
-    { label: "= EBITDA", b: base.ebitda, s: sim.ebitda, bold: true },
-    { label: "(−) Depreciação", b: -base.depreciacao, s: -sim.depreciacao, sign: -1 },
-    { label: "= EBIT", b: base.ebit, s: sim.ebit },
-    { label: "(+/−) Resultado Financeiro", b: base.resultadoFinanceiro, s: sim.resultadoFinanceiro },
-    { label: "= LAIR", b: base.lair, s: sim.lair, bold: true },
-    { label: "(−) IR/CSLL", b: -base.impostos, s: -sim.impostos, sign: -1 },
-    { label: "= Lucro Líquido", b: base.lucroLiquido, s: sim.lucroLiquido, bold: true },
+    { label: "(+) Receita Operacional Bruta", b: base.receitaBruta, s: sim.receitaBruta, bold: true },
+    { label: "(−) Devoluções e Cancelamentos", b: -base.devolucoesCancelamentos, s: -sim.devolucoesCancelamentos, sign: -1 },
+    { label: "(−) Descontos Incondicionais", b: -base.descontosIncondicionais, s: -sim.descontosIncondicionais, sign: -1 },
+    { label: "(−) Abatimentos", b: -base.abatimentos, s: -sim.abatimentos, sign: -1 },
+    { label: "(−) Tributos sobre Receita", b: -base.tributosReceita, s: -sim.tributosReceita, sign: -1 },
+    { label: "(=) Receita Operacional Líquida", b: base.receitaLiquida, s: sim.receitaLiquida, bold: true },
+    { label: "(−) CPV / CMV / CSP", b: -base.cpv, s: -sim.cpv, sign: -1 },
+    { label: "(=) LUCRO BRUTO", b: base.lucroBruto, s: sim.lucroBruto, bold: true },
+    { label: "(−) Despesas Comerciais", b: -base.despesasComerciais, s: -sim.despesasComerciais, sign: -1 },
+    { label: "(−) Despesas Administrativas", b: -base.despesasAdministrativas, s: -sim.despesasAdministrativas, sign: -1 },
+    { label: "(±) Outras Despesas/Receitas Operacionais", b: base.outrasOperacionais, s: sim.outrasOperacionais },
+    { label: "(=) LUCRO OPERACIONAL / EBIT", b: base.ebit, s: sim.ebit, bold: true },
+    { label: "(+) Receitas Financeiras", b: base.receitasFinanceiras, s: sim.receitasFinanceiras },
+    { label: "(±) Ganho/Perda em alienação de ativos", b: base.ganhoAlienacao, s: sim.ganhoAlienacao },
+    { label: "(=) LUCRO ANTES DO FINANC. E TRIBUTOS", b: base.laft, s: sim.laft, bold: true },
+    { label: "(−) Despesas Financeiras", b: -base.despesasFinanceiras, s: -sim.despesasFinanceiras, sign: -1 },
+    { label: "(=) LUCRO ANTES DO IR/CSLL (EBT)", b: base.lair, s: sim.lair, bold: true },
+    { label: "(−) IR / CSLL", b: -base.impostos, s: -sim.impostos, sign: -1 },
+    { label: "(=) LUCRO LÍQUIDO DO EXERCÍCIO", b: base.lucroLiquido, s: sim.lucroLiquido, bold: true },
   ];
 
   return (
