@@ -152,7 +152,18 @@ export function TaxSettingsDialog({ state, update }: Props) {
                 })}
               </div>
             </Section>
+
+            <Section title="ISS — alíquota municipal (Serviços)">
+              <Row label="ISS" suffix="%" defaultVal={5}
+                value={state.tax.issIcms ?? 5}
+                onChange={(v) => update((s) => ({ ...s, tax: { ...s.tax, issIcms: v } }))}
+                onReset={() => update((s) => ({ ...s, tax: { ...s.tax, issIcms: 5 } }))} />
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                Faixa legal: 2% (mínimo) a 5% (máximo) — definida por cada município.
+              </p>
+            </Section>
           </TabsContent>
+
 
           {/* ===================== REFORMA ===================== */}
           <TabsContent value="reforma" className="space-y-3 pt-4">

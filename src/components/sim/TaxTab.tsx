@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { AppState, SimplesAnexo, TaxEra, TaxRegime, TAX_ERAS, TAX_ERA_LABEL, TAX_ERA_SHORT } from "@/lib/finance/types";
 import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
 import { compareErasForRegime, compareRegimes, getReformaRates, simplesAliquotaEfetiva, buildDRE } from "@/lib/finance/calculations";
+import { getPresumidoBases } from "@/lib/finance/taxDefaults";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { HelpTip, NumInput, PctInput, SectionTitle } from "./primitives";
@@ -255,34 +256,40 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
         </Card>
 
         <Card title="Lucro Presumido" regime="presumido">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="flex items-center gap-1 text-xs text-muted-foreground">Base IRPJ <HelpTip text="Indústria/Comércio: 8%. Serviços: 32%." /></label>
-              <PctInput value={state.tax.presumidoBaseIRPJ} onChange={(n) => set({ presumidoBaseIRPJ: n })} />
-            </div>
-            <div>
-              <label className="flex items-center gap-1 text-xs text-muted-foreground">Base CSLL <HelpTip text="Indústria/Comércio: 12%. Serviços: 32%." /></label>
-              <PctInput value={state.tax.presumidoBaseCSLL} onChange={(n) => set({ presumidoBaseCSLL: n })} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                {state.businessType === "servicos" ? "ISS" : "ICMS (débito)"}
-                <HelpTip text={state.businessType === "servicos" ? "Alíquota de ISS sobre o serviço prestado." : "Alíquota de débito de ICMS sobre a receita bruta. O crédito sobre o CPV é configurado ao lado."} />
-              </label>
-              <PctInput value={state.tax.issIcms} onChange={(n) => set({ issIcms: n })} />
-            </div>
-            {state.businessType !== "servicos" && (
-              <div>
-                <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                  ICMS crédito (CPV)
-                  <HelpTip text="Alíquota média de ICMS embutida nas compras (entradas). O sistema calcula ICMS efetivo = max(0, débito sobre receita − crédito sobre CPV). Tipicamente igual à alíquota de débito quando UF de origem = destino." example="Comércio com CPV 60% da receita e ICMS 12% em ambos os lados → carga efetiva ≈ 4,8% da receita." />
-                </label>
-                <PctInput value={state.tax.aliquotaICMSCredito ?? 0} onChange={(n) => set({ aliquotaICMSCredito: n })} />
-              </div>
-            )}
-          </div>
+          {(() => {
+            const bases = getPresumidoBases(state.tax, state.businessType);
+            const baseIRPJ = state.tax.presumidoBaseIRPJ || bases.irpj;
+            const baseCSLL = state.tax.presumidoBaseCSLL || bases.csll;
+            return (
+              <>
+                <Row label="Base IRPJ" value={fmtPct(baseIRPJ / 100)} />
+                <Row label="Base CSLL" value={fmtPct(baseCSLL / 100)} />
+                {state.businessType === "servicos" ? (
+                  <Row label="ISS" value={fmtPct(state.tax.issIcms / 100)} />
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                        ICMS (débito)
+                        <HelpTip text="Alíquota de débito de ICMS sobre a receita bruta. O crédito sobre o CPV é configurado ao lado." />
+                      </label>
+                      <PctInput value={state.tax.issIcms} onChange={(n) => set({ issIcms: n })} />
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                        ICMS crédito (CPV)
+                        <HelpTip text="Alíquota média de ICMS embutida nas compras (entradas). ICMS efetivo = max(0, débito − crédito)." />
+                      </label>
+                      <PctInput value={state.tax.aliquotaICMSCredito ?? 0} onChange={(n) => set({ aliquotaICMSCredito: n })} />
+                    </div>
+                  </div>
+                )}
+                <div className="text-[10.5px] text-muted-foreground">
+                  ⓘ Base IRPJ, Base CSLL{state.businessType === "servicos" ? " e ISS" : ""} são editáveis em <b>Parâmetros</b> (cabeçalho).
+                </div>
+              </>
+            );
+          })()}
           {Object.entries(regimes.presumido.detail).map(([k, v]) => <Row key={k} label={k} value={fmtBRL(v)} />)}
           <Row label="Total Anual" value={fmtBRL(regimes.presumido.annual)} strong />
           <Row label="Carga efetiva" value={fmtPct(regimes.presumido.effective / 100)} />
@@ -292,17 +299,6 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
         </Card>
 
         <Card title="Lucro Real" regime="real">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs text-muted-foreground">Créditos PIS / mês</label>
-              <NumInput value={state.tax.pisCreditos} onChange={(n) => set({ pisCreditos: n })} className="mt-1" />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Créditos COFINS / mês</label>
-              <NumInput value={state.tax.cofinsCreditos} onChange={(n) => set({ cofinsCreditos: n })} className="mt-1" />
-            </div>
-
-          </div>
           {state.businessType !== "servicos" && (
             <div>
               <label className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -315,7 +311,11 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
           {Object.entries(regimes.real.detail).map(([k, v]) => <Row key={k} label={k} value={fmtBRL(v)} />)}
           <Row label="Total Anual" value={fmtBRL(regimes.real.annual)} strong />
           <Row label="Carga efetiva" value={fmtPct(regimes.real.effective / 100)} />
+          <div className="mt-2 rounded-md bg-accent/30 p-2 text-[10.5px] text-muted-foreground">
+            ⓘ PIS/COFINS não-cumulativos abatem créditos automaticamente sobre insumos. Após 2027, com CBS/IBS, a não-cumulatividade é plena sobre toda despesa operacional vinculada à atividade.
+          </div>
         </Card>
+
       </div>
 
       <div className="rounded-lg border border-border/60 bg-card/40">
