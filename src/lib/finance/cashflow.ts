@@ -239,7 +239,7 @@ export function computeBurnRunway(args: {
 // =====================================================================
 // Orquestrador — mesma assinatura e retorno do legado.
 // =====================================================================
-export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.regime): CashFlow {
+export function buildCashFlow(state: AppState, regime: TaxRegime = resolveEffectiveRegime(state)): CashFlow {
   const { dre, tax } = buildDRE(state, regime);
   const { capital, cashflow } = state;
 
@@ -247,6 +247,8 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.reg
   const fornec = computeFornecedores(state, dre);
   const imp = computeImpostos(tax);
   const op = computePagamentosOperacionais(dre);
+  // B2: rendimentos de aplicações financeiras realizam-se em caixa no mês de competência
+  const { financeiras: receitasFinanceiras } = splitReceitasFinanceiras(state);
 
   const aportes = cashflow.aportes.slice();
   const emprestimosCaptados = cashflow.emprestimosCaptados.slice();
@@ -256,6 +258,7 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.reg
 
   const fluxos = computeFluxos({
     recebimentos: rec.inAno,
+    receitasFinanceiras,
     fornecedores: fornec.inAno,
     fixos: op.fixos,
     variaveis: op.variaveis,
@@ -271,6 +274,7 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.reg
   return {
     saldoInicial,
     recebimentos: rec.inAno,
+    receitasFinanceiras,
     pagamentosFornecedores: fornec.inAno,
     pagamentosFixos: op.fixos,
     pagamentosVariaveis: op.variaveis,
@@ -289,6 +293,7 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.reg
     impostosAnoSeguinte: imp.transbordo,
     totais: {
       recebimentos: sum(rec.inAno),
+      receitasFinanceiras: sum(receitasFinanceiras),
       pagamentosTotais:
         sum(fornec.inAno) + sum(op.fixos) + sum(op.variaveis) +
         sum(op.financeiros) + sum(imp.inAno),
