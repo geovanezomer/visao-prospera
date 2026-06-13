@@ -1,17 +1,13 @@
 import type { AppState } from "@/lib/finance/types";
 import { buildDRE, compareRegimes } from "@/lib/finance/calculations";
+import { SIMPLES_SUBLIMITE_ESTADUAL } from "@/lib/finance/taxDefaults";
 import { sum, fmtBRL } from "@/lib/finance/format";
 
 export function regimeComparisonToMarkdown(state: AppState): string {
+  // SSOT-4: usa llBy/best já calculados pela engine — não recalcula localmente.
   const regimes = compareRegimes(state);
-  const llBy = {
-    simples: sum(buildDRE(state, "simples").dre.lucroLiquido),
-    presumido: sum(buildDRE(state, "presumido").dre.lucroLiquido),
-    real: sum(buildDRE(state, "real").dre.lucroLiquido),
-  };
-
+  const { llBy, best } = regimes;
   const current = state.tax.regime;
-  const best = (Object.entries(llBy) as [AppState["tax"]["regime"], number][]).reduce((a, b) => b[1] > a[1] ? b : a)[0];
   const delta = llBy[best] - llBy[current];
 
   let md = `## Comparativo de Regimes Tributários (Anual)\n\n`;
