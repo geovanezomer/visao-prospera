@@ -291,10 +291,25 @@ export interface SimDREView {
   equityValue: number;
 }
 
-export function computeSimView(state: AppState): SimDREView {
-  const { dre, tax } = buildDRE(state, state.tax.regime);
-  const ind = calcIndicators(state, dre);
-  const cf = buildCashFlow(state);
+/**
+ * Snapshot resumido do DRE/indicadores para o painel Base × Simulado.
+ *
+ * S1/S9: usa regime efetivo (não nominal) — alinhado com Indicators/Diagnosis.
+ * S6: aceita `precomputed` (vindo de useFinanceModel) para o `baseView`,
+ *     evitando uma rodada extra de buildDRE+calcIndicators+buildCashFlow por render.
+ */
+export interface SimViewPrecomputed {
+  regime?: TaxRegime;
+  dre?: DRE;
+  ind?: Indicators;
+  cf?: CashFlow;
+}
+
+export function computeSimView(state: AppState, precomputed?: SimViewPrecomputed): SimDREView {
+  const regime = precomputed?.regime ?? resolveEffectiveRegime(state);
+  const dre = precomputed?.dre ?? buildDRE(state, regime).dre;
+  const ind = precomputed?.ind ?? calcIndicators(state, dre);
+  const cf = precomputed?.cf ?? buildCashFlow(state);
   const deducoes = sum(dre.deducoesInadimplencia);
 
   // Descontos Incondicionais e Abatimentos via revenue.deducoes
@@ -302,10 +317,10 @@ export function computeSimView(state: AppState): SimDREView {
   const descIncond = sum(dedById("desc_incond")?.valores ?? []);
   const abatim = sum(dedById("abatimentos")?.valores ?? []);
 
-  // Comerciais (variavel) / Administrativas (fixo) / Financeiras (financeiro)
+  // Comerciais (variavel) / Administrativas (fixo) / Financeiras (financeiro) — usa regime EFETIVO.
   let despComerciais = 0, despAdmin = 0, despFinanc = 0;
   for (const c of state.costs) {
-    const v = sum(monthValues(c, state.tax.regime));
+    const v = sum(monthValues(c, regime));
     if (c.category === "variavel") despComerciais += v;
     else if (c.category === "fixo") despAdmin += v;
     else if (c.category === "financeiro") despFinanc += v;
@@ -318,6 +333,10 @@ export function computeSimView(state: AppState): SimDREView {
 
   const valParams = defaultValuationParams(state.businessType);
   const val = buildValuation(state, valParams);
+
+  // tax.annual = total de impostos (vendas + lucro). Derivamos de dre.impostosTotal para
+  // evitar uma 2ª chamada a buildDRE quando temos precomputed.
+  const impostosAnuais = sum(dre.impostosTotal);
 
   return {
     receitaBruta: sum(dre.receitaBruta),
@@ -342,7 +361,7 @@ export function computeSimView(state: AppState): SimDREView {
     despesasFinanceiras: despFinanc,
     resultadoFinanceiro: sum(dre.resultadoFinanceiro),
     lair: sum(dre.lair),
-    impostos: tax.annual,
+    impostos: impostosAnuais,
     lucroLiquido: sum(dre.lucroLiquido),
     margemBruta: ind.margemBruta,
     margemEbitda: ind.margemEbitda,
