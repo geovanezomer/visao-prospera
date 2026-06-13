@@ -346,12 +346,13 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const temCpvCredito = icmsCredAliq > 0 || usaReforma;
   if (temCpvCredito) {
     for (const c of state.costs) {
-      if (c.category !== "custo_vendas") continue;
+      if (!isCpvCost(c)) continue;
       if (c.semCredito) continue;
       const v = effectiveMonthValues(c);
       for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
     }
   }
+
 
   const baseIRPJMensal = baseLairMonthly.map((l) => Math.max(0, l));
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
