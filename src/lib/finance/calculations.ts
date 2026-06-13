@@ -734,6 +734,12 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const dividaLiqEbitda = ebitdaAnual > 1
     ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitdaAnual))
     : (dividaLiq <= 0 ? 0 : CAP_DL_EBITDA);
+  const dividaLiqEbit = ebitAnual > 1
+    ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitAnual))
+    : (dividaLiq <= 0 ? 0 : CAP_DL_EBITDA);
+  const dividaLiqPl = PL > 1
+    ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / PL))
+    : (dividaLiq <= 0 ? 0 : CAP_DL_EBITDA);
   const payback = llAnual > 1 ? Math.min(CAP_PAYBACK, PL / llAnual) : (PL <= 0 ? 0 : CAP_PAYBACK);
   // FCF simplificado: EBITDA − Impostos − ΔNCG (Auditoria).
   // ΔNCG estimado como a diferença entre a NCG atual e o capital de giro disponível.
