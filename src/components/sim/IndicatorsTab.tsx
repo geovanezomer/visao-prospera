@@ -162,6 +162,7 @@ export function IndicatorsTab({ state }: { state: AppState }) {
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="Receita" fill="#00E5A0" />
               <Bar dataKey="Operacionais" fill="#FF6B6B" />
+              <Bar dataKey="D&A" fill="#C77DFF" />
               <Bar dataKey="Financeiros" fill="#F5B85B" />
               <Bar dataKey="Lucro" fill="#5BA8F5" />
             </BarChart>
