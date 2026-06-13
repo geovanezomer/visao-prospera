@@ -93,7 +93,9 @@ export function SimulatorTab({
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="base">Manter regime atual ({state.tax.regime})</SelectItem>
-                    <SelectItem value="simples">Simples Nacional</SelectItem>
+                    <SelectItem value="simples" disabled={desenquadradoSimples}>
+                      Simples Nacional{desenquadradoSimples ? " (desenquadrado)" : ""}
+                    </SelectItem>
                     <SelectItem value="presumido">Lucro Presumido</SelectItem>
                     <SelectItem value="real">Lucro Real</SelectItem>
                   </SelectContent>
