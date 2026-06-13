@@ -62,18 +62,51 @@ export function shiftByDaysSplit(values: number[], lagDays: number): { inAno: nu
 }
 
 /**
+ * Variante por mês: cada mês `i` tem seu próprio lag (em dias).
+ * Útil quando o PMR/PMP varia ao longo do ano (sazonalidade, mix de clientes etc.).
+ */
+export function shiftByDaysSplitMonthly(values: number[], lagDaysByMonth: number[]): { inAno: number[]; transbordo: number } {
+  const out = zeros12();
+  let transbordo = 0;
+  for (let i = 0; i < 12; i++) {
+    const lag = Math.max(0, Math.round((lagDaysByMonth[i] || 0) / 30));
+    const t = i + lag;
+    if (t < 12) out[t] += values[i];
+    else transbordo += values[i];
+  }
+  return { inAno: out, transbordo };
+}
+
+/**
+ * True quando o array tem variação real entre meses (sazonalidade).
+ * Se for constante (todos iguais), preferimos o escalar `pmr`/`pmp`
+ * — assim overrides do simulador / sensibilidade no escalar continuam efetivos.
+ */
+function hasMonthlyVariation(arr: number[] | undefined): boolean {
+  if (!Array.isArray(arr) || arr.length !== 12) return false;
+  const first = arr[0];
+  return arr.some((v) => v !== first);
+}
+
+/**
  * Recebimentos = (Receita Bruta − Inadimplência) deslocados pelo PMR.
- * Impostos sobre venda saem em `computeImpostos`, NÃO daqui.
+ * Usa `pmrMensal` quando há sazonalidade real; caso contrário, escalar `pmr`.
  */
 export function computeRecebimentos(state: AppState, dre: DRE): { inAno: number[]; transbordo: number } {
   const recebivelMensal = dre.receitaBruta.map((r, i) => r - (dre.deducoesInadimplencia[i] ?? 0));
+  if (hasMonthlyVariation(state.revenue.pmrMensal)) {
+    return shiftByDaysSplitMonthly(recebivelMensal, state.revenue.pmrMensal!);
+  }
   return shiftByDaysSplit(recebivelMensal, state.revenue.pmr);
 }
 
 /**
- * Pagamentos a fornecedores = CPV/CMV/CSP deslocados pelo PMP.
+ * Pagamentos a fornecedores = CPV/CMV/CSP deslocados pelo PMP (mensal quando há sazonalidade).
  */
 export function computeFornecedores(state: AppState, dre: DRE): { inAno: number[]; transbordo: number } {
+  if (hasMonthlyVariation(state.revenue.pmpMensal)) {
+    return shiftByDaysSplitMonthly(dre.cpv, state.revenue.pmpMensal!);
+  }
   return shiftByDaysSplit(dre.cpv, state.revenue.pmp);
 }
 

@@ -244,8 +244,12 @@ export function calcPresumido(state: AppState): MonthlyTax {
     }
   }
 
-  const baseIRPJMensal = trib.map((r) => r * baseIRPJ);
-  const baseCSLLMensal = trib.map((r) => r * baseCSLL);
+  // [Receitas Financeiras] No Presumido, rendimentos de aplicações entram INTEGRAIS
+  // na base de IRPJ/CSLL (sem o redutor de 8/32%). Aluguéis/venda de ativos vão
+  // como "operacionais" (já tratados na DRE) e não somam aqui.
+  const { financeiras: rendFin } = splitReceitasFinanceiras(state);
+  const baseIRPJMensal = trib.map((r, i) => r * baseIRPJ + (rendFin[i] || 0));
+  const baseCSLLMensal = trib.map((r, i) => r * baseCSLL + (rendFin[i] || 0));
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
@@ -352,6 +356,12 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const csllAliq = getCsllPct(tax) / 100;
   const pisAliq = getPisNaoCumPct(tax) / 100;
   const cofinsAliq = getCofinsNaoCumPct(tax) / 100;
+  // [Receitas Financeiras] No Lucro Real não-cumulativo, PIS/COFINS sobre receitas
+  // financeiras é fixo: 0,65% (PIS) + 4% (COFINS) — Decreto 8.426/2015.
+  // Sob a reforma plena, PIS/COFINS são extintos (pisCofinsMult=0) e zera automaticamente.
+  const PIS_RF = 0.0065;
+  const COFINS_RF = 0.04;
+  const { financeiras: rendFin } = splitReceitasFinanceiras(state);
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
@@ -362,8 +372,12 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     const irpj = lair * irpjAliq;
     const adicional = adicionalMensal[i];
     const csll = lair * csllAliq;
-    const pis = Math.max(0, r * pisAliq - pisCreditoMensal) * reforma.pisCofinsMult;
-    const cofins = Math.max(0, r * cofinsAliq - cofinsCreditoMensal) * reforma.pisCofinsMult;
+    const pisVenda = Math.max(0, r * pisAliq - pisCreditoMensal);
+    const cofinsVenda = Math.max(0, r * cofinsAliq - cofinsCreditoMensal);
+    const pisRF = (rendFin[i] || 0) * PIS_RF;
+    const cofinsRF = (rendFin[i] || 0) * COFINS_RF;
+    const pis = (pisVenda + pisRF) * reforma.pisCofinsMult;
+    const cofins = (cofinsVenda + cofinsRF) * reforma.pisCofinsMult;
     const issBase = Math.max(0, r - issDed);
     const debito = issBase * iss;
     const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
@@ -441,6 +455,8 @@ export interface DRE {
   cpv: number[];
   lucroBruto: number[];
   despesasOperacionais: number[];
+  /** Outras receitas operacionais (aluguéis recebidos, venda de ativos etc.) — somadas no EBITDA. */
+  outrasReceitasOperacionais: number[];
   ebitda: number[];
   depreciacao: number[];
   ebit: number[];
@@ -457,6 +473,27 @@ export interface DRE {
   custosFixos: number[];
   custosVariaveis: number[];
   folhaCltAnual: number;
+}
+
+/**
+ * Classifica as linhas de `revenue.receitasFinanceiras` por natureza contábil:
+ * - `financeiras`: rendimento de aplicações e ids customizados → entram no Resultado Financeiro
+ *   e são tributadas (PIS/COFINS no Real, base de IRPJ/CSLL no Presumido).
+ * - `operacionais`: aluguéis recebidos e venda de ativos → entram acima do EBITDA
+ *   como "Outras Receitas Operacionais".
+ *
+ * Critério por id (default p/ retrocompat: financeira).
+ */
+export function splitReceitasFinanceiras(state: AppState): { financeiras: number[]; operacionais: number[] } {
+  const financeiras = zeros12();
+  const operacionais = zeros12();
+  const OPERACIONAIS_IDS = new Set(["alugueis", "venda_ativos"]);
+  for (const rf of state.revenue.receitasFinanceiras ?? []) {
+    const vals = rf.valores ?? [];
+    const bucket = OPERACIONAIS_IDS.has(rf.id) ? operacionais : financeiras;
+    for (let i = 0; i < 12; i++) bucket[i] += Number(vals[i]) || 0;
+  }
+  return { financeiras, operacionais };
 }
 
 export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: MonthlyTax } {
@@ -517,7 +554,9 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   }
 
   const lucroBruto = receitaLiquida.map((r, i) => r - cpv[i]);
-  const ebitda = lucroBruto.map((g, i) => g - despOp[i]);
+  // Outras Receitas Operacionais (aluguéis, venda de ativos) — entram acima do EBITDA.
+  const { financeiras: rendimentosFinanceiros, operacionais: outrasReceitasOperacionais } = splitReceitasFinanceiras(state);
+  const ebitda = lucroBruto.map((g, i) => g - despOp[i] + outrasReceitasOperacionais[i]);
 
   const depreciacao = fill12(capital.depreciacaoMensal);
   for (const c of costs) {
@@ -533,13 +572,9 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     for (let i = startIdx; i < 12; i++) depreciacao[i] += depAdd;
   }
   const ebit = ebitda.map((e, i) => e - depreciacao[i]);
-  // Receitas Financeiras vêm da aba Receitas (revenue.receitasFinanceiras) — soma por mês
-  const receitasFinanceirasMensal = zeros12();
-  for (const rf of state.revenue.receitasFinanceiras ?? []) {
-    const vals = rf.valores ?? [];
-    for (let i = 0; i < 12; i++) receitasFinanceirasMensal[i] += Number(vals[i]) || 0;
-  }
-  const resultadoFinanceiro = ebit.map((_, i) => receitasFinanceirasMensal[i] - custosFinanceirosTotal[i]);
+  // Resultado Financeiro = Rendimentos Financeiros (rend_aplic etc.) − Custos Financeiros.
+  // Aluguéis e venda de ativos NÃO entram aqui (são operacionais, já no EBITDA).
+  const resultadoFinanceiro = ebit.map((_, i) => rendimentosFinanceiros[i] - custosFinanceirosTotal[i]);
   const lair = ebit.map((e, i) => e + resultadoFinanceiro[i]);
 
   // ---- Segunda passagem: impostos sobre LUCRO usando o LAIR já líquido de impostos sobre venda ----
@@ -557,6 +592,7 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     dre: {
       receitaBruta, deducoesInadimplencia, outrasDeducoes, impostosVendas, pdd, receitaLiquida,
       cpv, lucroBruto, despesasOperacionais: despOp,
+      outrasReceitasOperacionais,
       ebitda, depreciacao, ebit, resultadoFinanceiro, lair,
       impostos: impostosLucro, impostosTotal, lucroLiquido,
       despesasPorCategoria, custosFinanceirosTotal, custosOperacionaisTotal,
