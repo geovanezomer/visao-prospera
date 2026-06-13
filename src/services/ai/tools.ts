@@ -12,7 +12,7 @@ import { listScenarios, saveScenario, deleteScenario, getScenario } from "@/serv
 import { listActions, createAction, updateAction, deleteAction, actionsToMarkdown, type ActionStatus } from "@/services/actions/store";
 import { regimeComparisonToMarkdown, taxAuditToMarkdown } from "@/services/compliance/tax";
 import { checklistToMarkdown } from "@/services/compliance/checklist";
-import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
+import { buildDRE, calcIndicators, resolveEffectiveRegime } from "@/lib/finance/calculations";
 
 export interface ToolDef {
   name: string;
@@ -185,7 +185,8 @@ export function asOpenAITools() {
 // ============================================================
 
 function compareSectorMd(state: AppState, sector: SectorBenchmark): string {
-  const { dre } = buildDRE(state, state.tax.regime);
+  // SSOT: regime efetivo (downgrade automático se exceder limite Simples).
+  const { dre } = buildDRE(state, resolveEffectiveRegime(state));
   const ind = calcIndicators(state, dre);
   const rows: string[] = [];
   rows.push(`## Comparativo com Setor: ${sector.label}`);
@@ -276,7 +277,7 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       // Usa params reais do simulador ativo se houver alavanca acionada; senão, base.
       const params: SimulatorParams = simParams ?? { ...DEFAULT_SIM };
       const target = simulatedState ?? state;
-      const { dre } = buildDRE(target, target.tax.regime);
+      const { dre } = buildDRE(target, resolveEffectiveRegime(target));
       const ind = calcIndicators(target, dre);
       const rec = saveScenario(company, {
         name: String(args.nome),
