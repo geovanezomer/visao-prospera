@@ -24,11 +24,11 @@ export function DiagnosisTab({ state }: { state: AppState }) {
 
   return (
     <div className="space-y-6">
-      {/* Alertas críticos consolidados — leitura imediata */}
-      <CriticalAlertsBanner state={state} />
+      {/* Alertas críticos consolidados — leitura imediata (reusa o model central) */}
+      <CriticalAlertsBanner state={state} model={{ dre: model.dre, ind: model.ind, cf: model.cf, regime: model.regime }} />
 
-      {/* Análises avançadas */}
-      <HealthScoreCard state={state} />
+      {/* Análises avançadas (reusa o model central) */}
+      <HealthScoreCard state={state} precomputed={{ dre: model.dre, ind: model.ind, cf: model.cf }} />
       <SensitivityCard state={state} />
 
       {/* Diagnóstico financeiro */}
