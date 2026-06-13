@@ -676,9 +676,8 @@ function BalanceSheetCard({
           <div className="text-xs font-semibold text-muted-foreground">Outros lançamentos mensais</div>
           <span className="text-[10px] text-muted-foreground/70">Entram na DRE todo mês</span>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           <Field label="Depreciação mensal" value={capital.depreciacaoMensal} onChange={(n) => onChange({ depreciacaoMensal: n })} hint="Perda contábil de valor de máquinas, equipamentos e imóveis no mês. Não sai do caixa, mas reduz o lucro tributável." />
-          <Field label="Juros recebidos / mês" value={capital.jurosRecebidosMensal} onChange={(n) => onChange({ jurosRecebidosMensal: n })} hint="Rendimentos médios de aplicações financeiras no mês." />
         </div>
       </div>
     </div>
