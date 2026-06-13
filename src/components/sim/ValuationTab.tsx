@@ -601,11 +601,14 @@ function RiskPanel({ valuation, state }: { valuation: ReturnType<typeof buildVal
         <SectionTitle hint="Range de Enterprise Value combinando incerteza de premissas e haircut estratégico.">
           Faixa de Valuation
         </SectionTitle>
+        {/* V3: descrição reflete o cálculo real (multiplicador empírico) ao
+            invés de "WACC ±1pp · g ±0.5pp" que não é o que a engine faz. */}
         <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <RangeCard tone="neg" label="Pessimista" desc="WACC +1pp · g −0.5pp · receita −10%" value={ev.low} base={ev.base} />
-          <RangeCard tone="primary" label="Base (provável)" desc="Premissas atuais" value={ev.base} base={ev.base} />
-          <RangeCard tone="pos" label="Otimista" desc="WACC −1pp · g +0.5pp · receita +15%" value={ev.high} base={ev.base} />
+          <RangeCard tone="neg" label="Pessimista" desc={valuation.dcfDetails ? "Incerteza paramétrica: −25% sobre EV base" : "Incerteza paramétrica: −10% sobre EV base"} value={ev.low} base={ev.base} />
+          <RangeCard tone="primary" label="Base (provável)" desc="Premissas atuais (WACC, g, múltiplos)" value={ev.base} base={ev.base} />
+          <RangeCard tone="pos" label="Otimista" desc={valuation.dcfDetails ? "Incerteza paramétrica: +35% sobre EV base" : "Incerteza paramétrica: +15% sobre EV base"} value={ev.high} base={ev.base} />
         </div>
+
         <div className="mt-3 flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-xs">
           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary" />
           <div className="text-foreground">
