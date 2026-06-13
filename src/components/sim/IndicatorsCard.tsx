@@ -35,6 +35,8 @@ export function IndicatorsCard({ state }: { state: AppState }) {
         <Ind label="Dívida Líq. / EBITDA" v={Number.isFinite(ind.dividaLiqEbitda) ? `${ind.dividaLiqEbitda.toFixed(1)}×` : "∞"} tone={ind.dividaLiqEbitda <= 3 ? "pos" : "neg"} desc="Anos de EBITDA para quitar a dívida líquida." formula="(Dívida − Caixa) ÷ EBITDA" />
         <Ind label="Ciclo Financeiro" v={`${ind.cicloFinanceiro} d`} desc="Dias entre pagar fornecedores e receber clientes." formula="PMR + PME − PMP" />
         <Ind label="NCG" v={fmtBRL(ind.ncg)} tone="warn" desc="Necessidade de Capital de Giro." formula="(Ciclo ÷ 30) × Custos Mensais" />
+        <Ind label="GAO" v={ind.gao !== 0 ? `${ind.gao.toFixed(2)}×` : "—"} tone={ind.gao > 3 ? "warn" : "pos"} desc="Grau de Alavancagem Operacional. Se a receita variar 1%, o EBIT varia GAO%. Quanto maior, mais sensível o lucro ao volume." formula="Margem de Contribuição (R$) ÷ EBIT" />
+        <Ind label="Qualidade do Lucro" v={ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}×` : "—"} tone={ind.qualidadeLucro >= 1 ? "pos" : "neg"} desc="O lucro contábil está virando caixa? ≥1 saudável; <1 lucro 'no papel' (NCG, inadimplência)." formula="Fluxo de Caixa Operacional ÷ Lucro Líquido" />
         <Ind label="Payback (anos)" v={Number.isFinite(ind.payback) ? ind.payback.toFixed(1) : "—"} desc="Tempo para o lucro recuperar o capital investido." formula="PL ÷ Lucro Líquido Anual" />
         <Ind label="FCF estimado" v={fmtBRL(ind.fcf)} tone={ind.fcf >= 0 ? "pos" : "neg"} desc="Free Cash Flow estimado." formula="EBITDA − Impostos − Δ NCG" />
       </div>
