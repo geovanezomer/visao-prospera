@@ -187,7 +187,7 @@ export function CostsTab({ state, update }: { state: AppState; update: Updater }
 
       {/* Custos Variáveis */}
       <SectionBlock
-        title="Custos e Despesas Variáveis"
+        title="Despesas Comerciais"
         hint="Variam proporcionalmente às vendas — comissões, marketing, frete sobre vendas etc."
         accentClass="border-l-[#5BA8F5]"
         onAdd={() => addLine("variavel")}
