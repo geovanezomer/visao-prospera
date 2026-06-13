@@ -438,43 +438,91 @@ export function MonteCarloCard({ state }: { state: AppState }) {
             <KPI label="Prob. Caixa < mínimo" value={`${(result.probCaixaNegativo * 100).toFixed(1)}%`} status={result.probCaixaNegativo > 0.25 ? "danger" : result.probCaixaNegativo > 0.1 ? "warn" : "ok"} sub="Risco de iliquidez" />
           </div>
 
-          {[result.ebitda, result.lucroLiquido, result.saldoCaixaFinal].map((dist) => (
-            <div key={dist.label} className="rounded-md border border-border/40 bg-background/30 p-3">
-              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                <h4 className="text-xs font-semibold">{dist.label}</h4>
-                <div className="flex gap-4 text-[10.5px] text-muted-foreground mono">
-                  <span>P5: {fmtBRL(dist.p5)}</span>
-                  <span>P25: {fmtBRL(dist.p25)}</span>
-                  <span className="text-foreground">Mediana: {fmtBRL(dist.median)}</span>
-                  <span>P75: {fmtBRL(dist.p75)}</span>
-                  <span>P95: {fmtBRL(dist.p95)}</span>
+          {[result.ebitda, result.lucroLiquido, result.saldoCaixaFinal].map((dist) => {
+            // Probabilidade de resultado negativo (barras à esquerda do zero)
+            const probNeg = dist.values.filter((v) => v < 0).length / Math.max(1, dist.values.length);
+            // Amplitude entre cenários pessimista (P5) e otimista (P95)
+            const amplitude = dist.p95 - dist.p5;
+            // Explicação contextualizada por métrica (linguagem para leigos)
+            const explicacoes: Record<string, { oQueE: string; comoLer: string; alerta?: string }> = {
+              "EBITDA": {
+                oQueE: "EBITDA é o lucro operacional da empresa antes de juros, impostos e depreciação — quanto o negócio gera só com a operação.",
+                comoLer: `Em metade dos cenários simulados o EBITDA fica próximo de ${fmtBRL(dist.median)}. Em 90% dos casos cai entre ${fmtBRL(dist.p5)} (pessimista) e ${fmtBRL(dist.p95)} (otimista).`,
+                alerta: probNeg > 0.1 ? `Atenção: em ${(probNeg * 100).toFixed(1)}% dos cenários o EBITDA fica negativo — operação não se paga.` : undefined,
+              },
+              "Lucro Líquido": {
+                oQueE: "Lucro Líquido é o que sobra de verdade após pagar impostos, juros e todas as despesas — o resultado final do exercício.",
+                comoLer: `O resultado mais provável gira em torno de ${fmtBRL(dist.median)}. Em 90% das simulações o lucro fica entre ${fmtBRL(dist.p5)} e ${fmtBRL(dist.p95)}.`,
+                alerta: probNeg > 0.1 ? `Risco relevante: ${(probNeg * 100).toFixed(1)}% dos cenários terminam em prejuízo.` : undefined,
+              },
+              "Saldo de Caixa (Dez)": {
+                oQueE: "Saldo de Caixa em dezembro é quanto dinheiro deve sobrar no banco no fim do horizonte simulado, depois de todas as entradas e saídas.",
+                comoLer: `O saldo mediano projetado é ${fmtBRL(dist.median)}. Em 90% dos cenários o caixa final fica entre ${fmtBRL(dist.p5)} e ${fmtBRL(dist.p95)}.`,
+                alerta: probNeg > 0.1 ? `Alerta de liquidez: em ${(probNeg * 100).toFixed(1)}% dos cenários a empresa termina com caixa negativo (precisaria de empréstimo).` : undefined,
+              },
+            };
+            const exp = explicacoes[dist.label] ?? {
+              oQueE: "Distribuição de resultados possíveis simulados.",
+              comoLer: `Mediana ${fmtBRL(dist.median)}; 90% dos casos entre ${fmtBRL(dist.p5)} e ${fmtBRL(dist.p95)}.`,
+            };
+            return (
+              <div key={dist.label} className="rounded-md border border-border/40 bg-background/30 p-3">
+                <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                  <h4 className="text-xs font-semibold">{dist.label}</h4>
+                  <div className="flex gap-4 text-[10.5px] text-muted-foreground mono">
+                    <span>P5: {fmtBRL(dist.p5)}</span>
+                    <span>P25: {fmtBRL(dist.p25)}</span>
+                    <span className="text-foreground">Mediana: {fmtBRL(dist.median)}</span>
+                    <span>P75: {fmtBRL(dist.p75)}</span>
+                    <span>P95: {fmtBRL(dist.p95)}</span>
+                  </div>
+                </div>
+                <div className="h-40">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={histogram(dist.values, 30)}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="x" tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} stroke="var(--muted-foreground)" tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
+                      <YAxis tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} stroke="var(--muted-foreground)" />
+                      <Tooltip
+                        contentStyle={chartTooltipStyle}
+                        itemStyle={chartTooltipItemStyle}
+                        labelStyle={chartTooltipLabelStyle}
+                        formatter={(v: number) => `${v} cenários`}
+                        labelFormatter={(v: number) => fmtBRL(v)}
+                      />
+                      <ReferenceLine x={dist.median} stroke="var(--primary)" strokeDasharray="4 2" />
+                      <ReferenceLine x={0} stroke="var(--destructive)" />
+                      <Bar dataKey="count">
+                        {histogram(dist.values, 30).map((b, i) => (
+                          <Cell key={i} fill={b.x < 0 ? "var(--destructive)" : "var(--primary)"} fillOpacity={0.7} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Explicação em linguagem simples para o leigo */}
+                <div className="mt-2 space-y-1.5 rounded-sm bg-muted/30 p-2.5 text-[11px] leading-relaxed text-muted-foreground">
+                  <p>
+                    <span className="font-semibold text-foreground">O que é: </span>
+                    {exp.oQueE}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-foreground">Como ler o gráfico: </span>
+                    cada barra é um grupo de cenários simulados. Quanto mais alta, mais cenários caíram naquela faixa. A linha tracejada marca a <b>mediana</b> (resultado mais provável); a linha vermelha marca o <b>zero</b> (barras à esquerda = resultado negativo).
+                  </p>
+                  <p>
+                    <span className="font-semibold text-foreground">No seu caso: </span>
+                    {exp.comoLer} A amplitude total entre pessimista e otimista é de <b>{fmtBRL(amplitude)}</b> — quanto maior, mais incerto o resultado.
+                  </p>
+                  {exp.alerta && (
+                    <p className="text-destructive">
+                      <span className="font-semibold">⚠ </span>{exp.alerta}
+                    </p>
+                  )}
                 </div>
               </div>
-              <div className="h-40">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={histogram(dist.values, 30)}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="x" tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} stroke="var(--muted-foreground)" tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
-                    <YAxis tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} stroke="var(--muted-foreground)" />
-                    <Tooltip
-                      contentStyle={chartTooltipStyle}
-                      itemStyle={chartTooltipItemStyle}
-                      labelStyle={chartTooltipLabelStyle}
-                      formatter={(v: number) => `${v} cenários`}
-                      labelFormatter={(v: number) => fmtBRL(v)}
-                    />
-                    <ReferenceLine x={dist.median} stroke="var(--primary)" strokeDasharray="4 2" />
-                    <ReferenceLine x={0} stroke="var(--destructive)" />
-                    <Bar dataKey="count">
-                      {histogram(dist.values, 30).map((b, i) => (
-                        <Cell key={i} fill={b.x < 0 ? "var(--destructive)" : "var(--primary)"} fillOpacity={0.7} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>
