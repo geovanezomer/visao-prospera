@@ -96,21 +96,23 @@ export function computeHealth(state: AppState, precomputed?: HealthPrecomputed):
     },
     {
       key: "alav",
+      // calcIndicators já aplica cap em CAP_DL_EBITDA (99) — sempre finito.
       label: "Alavancagem (D.Líq/EBITDA)",
-      score: inverseBand(Number.isFinite(ind.dividaLiqEbitda) ? ind.dividaLiqEbitda : 10, 0, 5),
+      score: inverseBand(ind.dividaLiqEbitda, 0, 5),
       weight: 0.12,
-      value: Number.isFinite(ind.dividaLiqEbitda) ? `${ind.dividaLiqEbitda.toFixed(1)}×` : "∞",
+      value: `${ind.dividaLiqEbitda.toFixed(1)}×`,
       comment: ind.dividaLiqEbitda > 3 ? "Dívida alta — limita captação e pressiona caixa." : "Endividamento sob controle.",
-      status: statusFromScore(inverseBand(Number.isFinite(ind.dividaLiqEbitda) ? ind.dividaLiqEbitda : 10, 0, 5)),
+      status: statusFromScore(inverseBand(ind.dividaLiqEbitda, 0, 5)),
     },
     {
       key: "cob",
+      // calcIndicators já aplica cap em CAP_COB (999) — sempre finito.
       label: "Cobertura de Juros",
-      score: band(Number.isFinite(ind.coberturaJuros) ? Math.min(ind.coberturaJuros, 10) : 10, 0, 6),
+      score: band(Math.min(ind.coberturaJuros, 10), 0, 6),
       weight: 0.08,
-      value: Number.isFinite(ind.coberturaJuros) ? `${ind.coberturaJuros.toFixed(1)}×` : "∞",
+      value: `${ind.coberturaJuros.toFixed(1)}×`,
       comment: ind.coberturaJuros < 2 ? "EBIT mal cobre os juros — risco de default." : "Lucro operacional cobre confortavelmente o serviço da dívida.",
-      status: statusFromScore(band(Number.isFinite(ind.coberturaJuros) ? Math.min(ind.coberturaJuros, 10) : 10, 0, 6)),
+      status: statusFromScore(band(Math.min(ind.coberturaJuros, 10), 0, 6)),
     },
     {
       key: "liq",
