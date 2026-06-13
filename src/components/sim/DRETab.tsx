@@ -175,14 +175,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
             ))}
 
           </div>
-          <Select value={regime} onValueChange={(r) => update((s) => ({ ...s, tax: { ...s.tax, regime: r as TaxRegime } }))}>
-            <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="simples">Simples Nacional</SelectItem>
-              <SelectItem value="presumido">Lucro Presumido</SelectItem>
-              <SelectItem value="real">Lucro Real</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Seleção de regime fica na aba Tributário — aqui apenas refletimos o regime ativo abaixo. */}
         </div>
         <div className="text-xs text-muted-foreground">
           Período: <span className="num">Jan</span> a <span className="num">Dez</span> · Regime ativo:{" "}
