@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { AppState } from "@/lib/finance/types";
 import { fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
-import { buildDRE, calcIndicators, cagr12m, resolveEffectiveRegime } from "@/lib/finance/calculations";
+import { useFinanceModel } from "@/lib/finance/useFinanceModel";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
 import { TrendingUp, TrendingDown } from "lucide-react";
@@ -19,30 +19,24 @@ const TOOLTIP_STYLE = {
 const TOOLTIP_ITEM = { color: "var(--popover-foreground)" } as const;
 const TOOLTIP_LABEL = { color: "var(--popover-foreground)", fontWeight: 600 } as const;
 
-// Helper: formata "vezes" tratando ∞ (sem dívida) vs indefinido (EBIT≤0)
-function fmtTimes(v: number, ebitOrEbitda: number, decimals = 1): string {
-  if (Number.isFinite(v)) return `${v.toFixed(decimals)}×`;
-  // Dívida ≈ 0 → infinito real (positivo); EBIT/EBITDA ≤ 0 → indefinido
-  return ebitOrEbitda > 0 ? "∞" : "—";
+// Helper: formata "vezes". Indicadores são capped na engine — sempre finitos.
+// Mantém o ramo "—" apenas para o caso degenerado de denominador ≤ 0 (sem base de comparação).
+function fmtTimes(v: number, base: number, decimals = 1): string {
+  if (base <= 0) return "—";
+  return `${v.toFixed(decimals)}×`;
 }
 
 export function IndicatorsTab({ state }: { state: AppState }) {
-  // B9: regime efetivo (considera desenquadramento do Simples — verdade absoluta)
-  const regime = useMemo(() => resolveEffectiveRegime(state), [state]);
+  // (I1+I9) Modelo central: regime efetivo + DRE + indicadores + CAGR memoizados.
+  const { dre, ind, cagrReceitas12m } = useFinanceModel(state);
 
-  // B8: memoizar engine pesada (buildDRE + calcIndicators)
-  const dre = useMemo(() => buildDRE(state, regime).dre, [state, regime]);
-  const ind = useMemo(() => calcIndicators(state, dre), [state, dre]);
-
-  // B4: CAGR via helper central (preserva distância real em meses)
-  const cagrReceitas12m = useMemo(() => cagr12m(dre.receitaLiquida), [dre.receitaLiquida]);
-
-  // B3: separar custos operacionais de despesas financeiras no gráfico mensal
+  // (I7) D&A é linha própria nos dois charts — padroniza classificação com o waterfall.
   const monthlyChart = useMemo(
     () => MESES.map((m, i) => ({
       mes: m,
       Receita: dre.receitaLiquida[i],
-      Operacionais: dre.cpv[i] + dre.despesasOperacionais[i] + dre.depreciacao[i],
+      Operacionais: dre.cpv[i] + dre.despesasOperacionais[i],
+      "D&A": dre.depreciacao[i],
       Financeiros: dre.custosFinanceirosTotal[i],
       Lucro: dre.lucroLiquido[i],
     })),
@@ -83,6 +77,8 @@ export function IndicatorsTab({ state }: { state: AppState }) {
 
   // Pré-calcula EBIT/EBITDA anuais para distinguir ∞ vs indefinido (B7)
   const ebitAnual = sum(dre.ebit);
+  // (I3) Gate correto dos cards de produtividade: headcount > 0 (não valor calculado).
+  const hasHeadcount = (state.numColaboradores ?? 0) > 0;
   const ebitdaAnual = sum(dre.ebitda);
 
   return (
@@ -112,7 +108,7 @@ export function IndicatorsTab({ state }: { state: AppState }) {
           }
           hint={{ description: "Diferença entre o que a operação precisa (NCG) e o que a empresa tem (CGD). Positivo = precisa de empréstimo de giro; Negativo = sobra caixa.", formula: "NCG − CGD" }}
         />
-        <CashConversionSmall ebitda={ebitdaAnual} fcf={ind.fcf} />
+        <CashConversionSmall conversao={ind.conversaoEbitdaCaixa} />
       </div>
 
       <div className="rounded-lg border border-border/60 bg-card/40 p-5">
@@ -126,6 +122,7 @@ export function IndicatorsTab({ state }: { state: AppState }) {
           <Ind label="Margem Líquida" v={fmtPct(ind.margemLiquida / 100)} desc="O lucro que efetivamente sobra para os sócios, após tudo pago (custos, despesas, juros e impostos)." formula="Lucro Líquido ÷ Receita Líquida × 100" />
           <Ind label="Margem de Contribuição" v={fmtPct(ind.margemContribuicao / 100)} desc="Quanto cada R$ vendido contribui para pagar os custos fixos e gerar lucro. Quanto maior, mais resiliente é o negócio." formula="(Receita − Custos Variáveis) ÷ Receita × 100" />
           <Ind label="Ponto de Equilíbrio" v={fmtBRL(ind.pontoEquilibrio)} desc="Receita mínima necessária para a empresa não ter prejuízo (cobrir todos os custos fixos)." formula="Custos Fixos ÷ Margem de Contribuição" />
+          <Ind label="Ponto Eq. Financeiro" v={fmtBRL(ind.pontoEquilibrioFinanceiro)} desc="Receita mínima para cobrir custos fixos que EXIGEM caixa (exclui depreciação, que é despesa não-caixa). Sempre menor que o Ponto de Equilíbrio contábil." formula="(Custos Fixos − Depreciação) ÷ Margem de Contribuição" />
           <Ind label="ROE" v={fmtPct(ind.roe / 100)} desc="Retorno sobre o Patrimônio Líquido. Mostra quanto a empresa gera de lucro para cada R$ investido pelos sócios. Compare com a Selic." formula="Lucro Líquido ÷ Patrimônio Líquido × 100" />
           <Ind label="ROA" v={fmtPct(ind.roa / 100)} desc="Retorno sobre o Ativo Total. Mostra a eficiência da empresa em gerar lucro com todos os seus recursos (próprios + terceiros)." formula="Lucro Líquido ÷ Ativo Total × 100" />
           <Ind label="ROIC" v={fmtPct(ind.roic / 100)} tone={ind.roic >= ind.wacc ? "pos" : "neg"} desc="Retorno sobre o Capital Investido na operação. Se ROIC > WACC, a empresa CRIA valor; se ROIC < WACC, DESTRÓI valor." formula="NOPAT ÷ Capital Investido × 100  (NOPAT = EBIT × (1 − IR))" />
@@ -150,9 +147,10 @@ export function IndicatorsTab({ state }: { state: AppState }) {
           />
           <Ind label="GAO" v={ind.gao !== 0 ? `${ind.gao.toFixed(2)}×` : "—"} tone={ind.gao > 3 ? "warn" : ind.gao > 0 ? "pos" : undefined} desc="Grau de Alavancagem Operacional. Se a receita variar 1%, o EBIT varia GAO%. Quanto maior, mais sensível o lucro ao volume — bom em alta, perigoso em queda." formula="Margem de Contribuição (R$) ÷ EBIT" />
           <Ind label="Qualidade do Lucro" v={ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}×` : "—"} tone={ind.qualidadeLucro >= 1 ? "pos" : "neg"} desc="O lucro contábil está virando caixa? ≥1 saudável; <1 indica lucro 'no papel' (preso em NCG, inadimplência ou estoques)." formula="Fluxo de Caixa Operacional ÷ Lucro Líquido" />
-          <Ind label="Receita / Colaborador" v={ind.receitaPorColaborador > 0 ? fmtBRL(ind.receitaPorColaborador) : "—"} desc="Faturamento gerado por colaborador no ano. Benchmark de produtividade. Ajuste o nº de colaboradores em Configurações Rápidas (sidebar)." formula="Receita Líquida ÷ Nº de Colaboradores" />
-          <Ind label="EBITDA / Colaborador" v={ind.receitaPorColaborador > 0 ? fmtBRL(ind.ebitdaPorColaborador) : "—"} tone={ind.ebitdaPorColaborador >= 0 ? "pos" : "neg"} desc="Geração operacional (EBITDA) por colaborador no ano. Mede o resultado operacional que cada pessoa do time produz, antes de juros, impostos e depreciação." formula="EBITDA ÷ Nº de Colaboradores" />
-          <Ind label="Lucro / Colaborador" v={ind.receitaPorColaborador > 0 ? fmtBRL(ind.lucroPorColaborador) : "—"} tone={ind.lucroPorColaborador >= 0 ? "pos" : "neg"} desc="Lucro líquido gerado por colaborador no ano. Mede a conversão de mão de obra em resultado." formula="Lucro Líquido ÷ Nº de Colaboradores" />
+          <Ind label="Faturamento / Colaborador" v={hasHeadcount ? fmtBRL(ind.faturamentoPorColaborador) : "—"} desc="Receita BRUTA gerada por colaborador no ano — métrica clássica de benchmarking de produtividade. Ajuste o nº de colaboradores em Configurações Rápidas (sidebar)." formula="Receita Bruta ÷ Nº de Colaboradores" />
+          <Ind label="Receita Líq. / Colaborador" v={hasHeadcount ? fmtBRL(ind.receitaPorColaborador) : "—"} desc="Receita LÍQUIDA (após deduções e impostos sobre venda) por colaborador. Comparável entre regimes tributários." formula="Receita Líquida ÷ Nº de Colaboradores" />
+          <Ind label="EBITDA / Colaborador" v={hasHeadcount ? fmtBRL(ind.ebitdaPorColaborador) : "—"} tone={ind.ebitdaPorColaborador >= 0 ? "pos" : "neg"} desc="Geração operacional (EBITDA) por colaborador no ano. Mede o resultado operacional que cada pessoa do time produz, antes de juros, impostos e depreciação." formula="EBITDA ÷ Nº de Colaboradores" />
+          <Ind label="Lucro / Colaborador" v={hasHeadcount ? fmtBRL(ind.lucroPorColaborador) : "—"} tone={ind.lucroPorColaborador >= 0 ? "pos" : "neg"} desc="Lucro líquido gerado por colaborador no ano. Mede a conversão de mão de obra em resultado." formula="Lucro Líquido ÷ Nº de Colaboradores" />
           <Ind label="Folha / Receita" v={ind.custoPessoalSobreReceita > 0 ? fmtPct(ind.custoPessoalSobreReceita / 100) : "—"} tone={ind.custoPessoalSobreReceita > 35 ? "neg" : ind.custoPessoalSobreReceita > 0 ? "pos" : undefined} desc="Peso da folha total (CLT + pró-labore + MOD, com encargos) sobre a receita. Acima de 35% acende alerta em serviços." formula="Folha Total Anual ÷ Receita Líquida × 100" />
         </div>
       </div>
@@ -168,6 +166,7 @@ export function IndicatorsTab({ state }: { state: AppState }) {
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="Receita" fill="#00E5A0" />
               <Bar dataKey="Operacionais" fill="#FF6B6B" />
+              <Bar dataKey="D&A" fill="#C77DFF" />
               <Bar dataKey="Financeiros" fill="#F5B85B" />
               <Bar dataKey="Lucro" fill="#5BA8F5" />
             </BarChart>
@@ -237,8 +236,9 @@ function Ind({ label, v, desc, formula, tone }: { label: string; v: string; desc
   );
 }
 
-function CashConversionSmall({ ebitda, fcf }: { ebitda: number; fcf: number }) {
-  const conversaoEbitda = ebitda > 0 ? (fcf / ebitda) * 100 : 0;
+// (I2) Consome ind.conversaoEbitdaCaixa — não recalcula localmente.
+function CashConversionSmall({ conversao }: { conversao: number }) {
+  const conversaoEbitda = conversao;
   const tone = conversaoEbitda >= 70 ? "pos" : conversaoEbitda >= 40 ? "default" : "neg";
 
   return (

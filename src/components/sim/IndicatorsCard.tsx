@@ -1,14 +1,12 @@
-import { useMemo } from "react";
 import { AppState } from "@/lib/finance/types";
-import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
+import { useFinanceModel } from "@/lib/finance/useFinanceModel";
 import { fmtBRL, fmtPct } from "@/lib/finance/format";
 import { HelpTip, SectionTitle } from "./primitives";
 
 export function IndicatorsCard({ state }: { state: AppState }) {
-  const ind = useMemo(() => {
-    const { dre } = buildDRE(state, state.tax.regime);
-    return calcIndicators(state, dre);
-  }, [state]);
+  // (I1) Verdade absoluta: regime EFETIVO (considera desenquadramento do Simples).
+  // (I9) Modelo central memoizado — evita recomputar buildDRE/calcIndicators.
+  const { ind } = useFinanceModel(state);
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5">
