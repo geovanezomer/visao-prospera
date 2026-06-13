@@ -700,6 +700,10 @@ export interface Indicators {
   fcf: number;
   /** FCF ÷ EBITDA × 100 */
   conversaoEbitdaCaixa: number;
+  /** Margem de Contribuição (R$) ÷ EBIT — elasticidade do lucro à receita. */
+  gao: number;
+  /** FCF ÷ Lucro Líquido — quanto do lucro contábil vira caixa. */
+  qualidadeLucro: number;
   dividaOnerosa: number;
   passivoCirculante: number;
   ativoCirculante: number;
