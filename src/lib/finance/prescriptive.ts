@@ -452,8 +452,10 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
   // ===== 7. Diagnóstico do Regime Tributário (sempre exibido) =====
   {
     const reg = compareRegimes(state);
+    const regimes: AppState["tax"]["regime"][] = ["simples", "presumido", "real"];
     const atual = reg[state.tax.regime];
-    const ranked = (Object.entries(reg) as [keyof typeof reg, typeof atual][])
+    const ranked = regimes
+      .map((k) => [k, reg[k]] as const)
       .slice()
       .sort((a, b) => a[1].annual - b[1].annual);
     const melhor = ranked[0];
