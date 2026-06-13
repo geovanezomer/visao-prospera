@@ -457,6 +457,7 @@ function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof buildC
             <Row label="Saldo inicial" values={aggregate(cf.saldoInicial, period, "first")} muted rawTotal={cf.saldoInicial[0]} />
             <SectionRow label="ATIVIDADES OPERACIONAIS" cols={cols.length} />
             <Row label="(+) Recebimentos de clientes" values={aggregate(cf.recebimentos, period, "sum")} tone="pos" />
+            <Row label="(+) Receitas financeiras (aplicações)" values={aggregate(cf.receitasFinanceiras, period, "sum")} tone="pos" rawTotal={sum(cf.receitasFinanceiras)} />
             <Row label="(−) Pagamentos a fornecedores (CPV)" values={aggregate(cf.pagamentosFornecedores.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(cf.pagamentosFornecedores)} />
             <Row label="(−) Pagamentos de custos fixos" values={aggregate(cf.pagamentosFixos.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(cf.pagamentosFixos)} />
             <Row label="(−) Pagamentos de custos variáveis" values={aggregate(cf.pagamentosVariaveis.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(cf.pagamentosVariaveis)} />
