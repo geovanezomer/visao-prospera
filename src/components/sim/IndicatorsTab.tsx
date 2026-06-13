@@ -148,6 +148,11 @@ export function IndicatorsTab({ state }: { state: AppState }) {
             desc="Taxa de Crescimento Anual Composta (CAGR) da Receita Líquida ao longo dos 12 meses. Mostra o ritmo equivalente anualizado de crescimento entre o primeiro e o último mês com receita."
             formula="(Receita_fim ÷ Receita_início)^(12 ÷ meses) − 1"
           />
+          <Ind label="GAO" v={ind.gao !== 0 ? `${ind.gao.toFixed(2)}×` : "—"} tone={ind.gao > 3 ? "warn" : ind.gao > 0 ? "pos" : undefined} desc="Grau de Alavancagem Operacional. Se a receita variar 1%, o EBIT varia GAO%. Quanto maior, mais sensível o lucro ao volume — bom em alta, perigoso em queda." formula="Margem de Contribuição (R$) ÷ EBIT" />
+          <Ind label="Qualidade do Lucro" v={ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}×` : "—"} tone={ind.qualidadeLucro >= 1 ? "pos" : "neg"} desc="O lucro contábil está virando caixa? ≥1 saudável; <1 indica lucro 'no papel' (preso em NCG, inadimplência ou estoques)." formula="Fluxo de Caixa Operacional ÷ Lucro Líquido" />
+          <Ind label="Receita / Colaborador" v={ind.receitaPorColaborador > 0 ? fmtBRL(ind.receitaPorColaborador) : "—"} desc="Faturamento gerado por colaborador no ano. Benchmark de produtividade. Ajuste o nº de colaboradores em Configurações Rápidas (sidebar)." formula="Receita Líquida ÷ Nº de Colaboradores" />
+          <Ind label="Lucro / Colaborador" v={ind.receitaPorColaborador > 0 ? fmtBRL(ind.lucroPorColaborador) : "—"} tone={ind.lucroPorColaborador >= 0 ? "pos" : "neg"} desc="Lucro líquido gerado por colaborador no ano. Mede a conversão de mão de obra em resultado." formula="Lucro Líquido ÷ Nº de Colaboradores" />
+          <Ind label="Folha / Receita" v={ind.custoPessoalSobreReceita > 0 ? fmtPct(ind.custoPessoalSobreReceita / 100) : "—"} tone={ind.custoPessoalSobreReceita > 35 ? "neg" : ind.custoPessoalSobreReceita > 0 ? "pos" : undefined} desc="Peso da folha total (CLT + pró-labore + MOD, com encargos) sobre a receita. Acima de 35% acende alerta em serviços." formula="Folha Total Anual ÷ Receita Líquida × 100" />
         </div>
       </div>
 
