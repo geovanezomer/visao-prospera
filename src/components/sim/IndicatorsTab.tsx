@@ -113,6 +113,13 @@ export function IndicatorsTab({ state }: { state: AppState }) {
           <Ind label="Necessidade de Capital de Giro" v={fmtBRL(ind.ncg)} tone="warn" desc="Necessidade de Capital de Giro — quanto de dinheiro a operação 'consome' permanentemente para girar (estoques + clientes − fornecedores)." formula="(Ciclo Financeiro ÷ 30) × Custos Mensais" />
           <Ind label="Payback (anos)" v={Number.isFinite(ind.payback) ? ind.payback.toFixed(1) : "—"} desc="Tempo estimado para o lucro acumulado recuperar todo o capital investido pelos sócios." formula="Patrimônio Líquido ÷ Lucro Líquido Anual" />
           <Ind label="FCF estimado" v={fmtBRL(ind.fcf)} tone={ind.fcf >= 0 ? "pos" : "neg"} desc="Free Cash Flow — geração de caixa livre após impostos e investimento em capital de giro. É o que sobra para sócios e dívida." formula="EBITDA − Impostos − Δ NCG" />
+          <Ind
+            label="CAGR Receitas 12m"
+            v={Number.isFinite(cagrReceitas12m) ? fmtPct(cagrReceitas12m) : "—"}
+            tone={Number.isFinite(cagrReceitas12m) ? (cagrReceitas12m >= 0 ? "pos" : "neg") : undefined}
+            desc="Taxa de Crescimento Anual Composta (CAGR) da Receita Líquida ao longo dos 12 meses. Mostra o ritmo equivalente anualizado de crescimento entre o primeiro e o último mês com receita."
+            formula="(Receita_M12 ÷ Receita_M1)^(12 ÷ (n−1)) − 1"
+          />
         </div>
       </div>
 
