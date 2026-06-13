@@ -134,8 +134,22 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
               EC 132/2023 + LC 214/2025. Clique em uma fase para simular toda a tela naquele momento do cronograma.
             </p>
           </div>
-          {emReforma && <Badge className="bg-primary/20 text-primary border border-primary/30">Reforma ativa</Badge>}
+          <div className="flex items-center gap-2">
+            {emReforma && <Badge className="bg-primary/20 text-primary border border-primary/30">Reforma ativa</Badge>}
+            <div className="flex flex-col items-end gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Regime ativo (DRE)</span>
+              <Select value={state.tax.regime} onValueChange={(v) => set({ regime: v as TaxRegime })}>
+                <SelectTrigger className="h-8 w-48"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="simples">Simples Nacional</SelectItem>
+                  <SelectItem value="presumido">Lucro Presumido</SelectItem>
+                  <SelectItem value="real">Lucro Real</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
+
 
         {/* Timeline visual clicável */}
         <div className="mt-5">
@@ -454,18 +468,8 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
             </Fragment>
           ))}
         </div>
-        <div className="border-t border-border/60 p-4 text-xs text-muted-foreground">
-          Use o regime ativo no app na aba <b>DRE</b>. Atualmente:{" "}
-          <Select value={state.tax.regime} onValueChange={(v) => set({ regime: v as TaxRegime })}>
-            <SelectTrigger className="ml-2 inline-flex h-7 w-44"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="simples">Simples Nacional</SelectItem>
-              <SelectItem value="presumido">Lucro Presumido</SelectItem>
-              <SelectItem value="real">Lucro Real</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
+
 
       {/* Comparativo Atual vs. Reforma — tabela + gráfico */}
       <div className="rounded-lg border border-border/60 bg-card/40">
