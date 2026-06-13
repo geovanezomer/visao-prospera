@@ -152,9 +152,7 @@ export function folhaAnual(state: AppState): number {
   return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c, state.tax.regime)), 0);
 }
 
-/** Limite anual de receita bruta para permanência no Simples Nacional (LC 123/06).
- *  @deprecated Use getSimplesLimite(tax) de taxDefaults.ts. */
-export const LIMITE_SIMPLES = 4_800_000;
+// SSOT-10: LIMITE_SIMPLES removido — use SIMPLES_LIMITE / getSimplesLimite(tax) de taxDefaults.ts.
 
 export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
   const anexo = state.tax.simplesAnexo;
