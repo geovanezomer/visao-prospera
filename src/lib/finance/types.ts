@@ -266,6 +266,8 @@ export interface StrategicAnswers {
 export interface AppState {
   businessType: BusinessType;
   companyName: string;
+  /** Número de colaboradores (headcount). Base para indicadores de produtividade. */
+  numColaboradores?: number;
   revenue: Revenue;
   costs: CostLine[];
   capital: CapitalStructure;
