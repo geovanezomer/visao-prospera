@@ -5,8 +5,24 @@ import {
   getSimplesLimite, getFatorRMinimoPct,
   getSimplesTable, getPresumidoBases,
   getReformaTransicaoIbsMult, getReformaTransicaoIcmsIssMult,
+  DEFAULT_ENCARGOS_PCT_SIMPLES,
 } from "./taxDefaults";
 import { sum, zeros12, fill12 } from "./format";
+
+/**
+ * SSOT-1 — Dívida Líquida canônica usada por Valuation e Indicadores.
+ * Prefere caixa ocioso (excedente não-operacional). Fallback para
+ * disponibilidades totais para compatibilidade com balanços antigos.
+ * Retorna valor RAW (pode ser negativo quando caixa > dívida).
+ */
+export function computeNetDebt(state: AppState): number {
+  const D = Math.max(0, state.capital.dividaOnerosa ?? 0);
+  const cash = Math.max(
+    0,
+    state.capital.caixaOcioso ?? state.capital.disponibilidades ?? 0,
+  );
+  return D - cash;
+}
 
 /** 
  * Soma mensal das linhas livres de dedução da Receita (devoluções, perdas, descontos, etc.). 
@@ -111,10 +127,9 @@ export function fixedCostBase(values: number[]): number {
 export function effectiveMonthValues(c: CostLine, regime?: TaxRegime): number[] {
   const raw = c.fixed ? fill12(fixedCostBase(c.values)) : c.values.slice();
   if (c.encargosAuto) {
-    // Auditoria: Se regime for Simples Nacional, os encargos patronais (CPP) já estão no DAS.
-    // Reduzimos o multiplicador padrão para evitar bitributação, mantendo apenas FGTS/Férias/13º (~25-30%).
+    // SSOT-12: encargos reduzidos no Simples (CPP já no DAS).
     const isSimples = regime === "simples";
-    const defaultRate = isSimples ? 30 : DEFAULT_ENCARGOS_PCT;
+    const defaultRate = isSimples ? DEFAULT_ENCARGOS_PCT_SIMPLES : DEFAULT_ENCARGOS_PCT;
     const factor = 1 + (c.encargosPct ?? defaultRate) / 100;
     return raw.map((v) => v * factor);
   }
@@ -137,9 +152,7 @@ export function folhaAnual(state: AppState): number {
   return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c, state.tax.regime)), 0);
 }
 
-/** Limite anual de receita bruta para permanência no Simples Nacional (LC 123/06).
- *  @deprecated Use getSimplesLimite(tax) de taxDefaults.ts. */
-export const LIMITE_SIMPLES = 4_800_000;
+// SSOT-10: LIMITE_SIMPLES removido — use SIMPLES_LIMITE / getSimplesLimite(tax) de taxDefaults.ts.
 
 export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
   const anexo = state.tax.simplesAnexo;
@@ -819,7 +832,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const CAP_PAYBACK = 99;    // payback em anos máx
   const coberturaJuros = jurosAnual > 1 ? Math.min(CAP_COB, ebitAnual / jurosAnual) : CAP_COB;
   const giroAtivo = capital.ativoTotal > 0 ? receitaLiqAnual / capital.ativoTotal : 0;
-  const dividaLiq = D - capital.disponibilidades;
+  const dividaLiq = computeNetDebt(state); // SSOT-1: helper único usado por Valuation também
   const dividaLiqEbitda = ebitdaAnual > 1
     ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitdaAnual))
     : (dividaLiq <= 0 ? 0 : CAP_DL_EBITDA);
@@ -957,13 +970,26 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
   return out;
 }
 
+/**
+ * SSOT-4: comparativo de regimes COM lucro líquido e regime ótimo embutidos.
+ * Antes, TaxTab e compliance/tax.ts reimplementavam llBy/best/delta separadamente.
+ */
 export function compareRegimes(state: AppState) {
   const baseLair = buildDRE(state, "presumido").dre.lair;
-  return {
-    simples: calcSimples(state),
-    presumido: calcPresumido(state),
-    real: calcReal(state, baseLair),
+  const simples = calcSimples(state);
+  const presumido = calcPresumido(state);
+  const real = calcReal(state, baseLair);
+  const llBy: Record<TaxRegime, number> = {
+    simples: sum(buildDRE(state, "simples").dre.lucroLiquido),
+    presumido: sum(buildDRE(state, "presumido").dre.lucroLiquido),
+    real: sum(buildDRE(state, "real").dre.lucroLiquido),
   };
+  const desenquadrado = simplesExcedeLimite(state);
+  const candidates: TaxRegime[] = desenquadrado
+    ? ["presumido", "real"]
+    : ["simples", "presumido", "real"];
+  const best = candidates.reduce((a, b) => (llBy[b] > llBy[a] ? b : a));
+  return { simples, presumido, real, llBy, best, desenquadradoSimples: desenquadrado };
 }
 
 /** Projeção da carga efetiva (%) por era para um dado regime, mantendo o resto do estado fixo. */

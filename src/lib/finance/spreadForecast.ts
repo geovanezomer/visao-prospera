@@ -1,5 +1,5 @@
 import { AppState } from "./types";
-import { buildDRE, calcIndicators } from "./calculations";
+import { buildDRE, calcIndicators, irShieldForRegime } from "./calculations";
 import { buildForecast, DEFAULT_FORECAST_CFG } from "./forecast";
 import { sum } from "./format";
 
@@ -42,7 +42,8 @@ export function buildSpreadForecast(state: AppState, horizonYears = 5): SpreadFo
   const depAnual = sum(dre.depreciacao);
   const impostosAnual = sum(dre.impostos);
   const lairAnual = sum(dre.lair);
-  const irShield = 0.34;
+  // SSOT-2: shield fiscal correto por regime — em Presumido/Simples = 0.
+  const irShield = irShieldForRegime(state.tax.regime);
   const tcEfetiva = lairAnual > 0 ? Math.min(0.5, impostosAnual / lairAnual) : irShield;
 
   const PL = Math.max(0, state.capital.patrimonioLiquido);

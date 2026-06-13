@@ -8,7 +8,7 @@
  * com Indicadores/Diagnóstico/Simulador (verdade absoluta única).
  */
 import { AppState, BusinessType, TaxRegime } from "./types";
-import { buildDRE, calcIndicators, resolveEffectiveRegime } from "./calculations";
+import { buildDRE, calcIndicators, resolveEffectiveRegime, computeNetDebt } from "./calculations";
 import { buildForecast, ForecastConfig, DEFAULT_FORECAST_CFG } from "./forecast";
 import { computeStrategic, StrategicResult } from "./strategic";
 import { sum } from "./format";
@@ -115,12 +115,11 @@ function ensureModel(state: AppState, pre?: PrecomputedValuationModel): Precompu
   return { regime, dre, ind };
 }
 
-// V4: dívida líquida = dívida onerosa − caixa ocioso (≥ 0; valuation
-// não credita "caixa negativo" como reforço de equity).
+// SSOT-1: helper único computeNetDebt() de calculations.ts. Valuation usa o
+// resultado RAW limitado a zero (valuation não credita "caixa negativo" como
+// reforço de equity).
 function netDebt(state: AppState): number {
-  const divida = Math.max(0, state.capital.dividaOnerosa ?? 0);
-  const caixa = Math.max(0, state.capital.caixaOcioso ?? 0);
-  return Math.max(0, divida - caixa);
+  return Math.max(0, computeNetDebt(state));
 }
 
 // =====================================================================

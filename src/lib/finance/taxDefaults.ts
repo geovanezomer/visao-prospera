@@ -39,8 +39,16 @@ export const COFINS_NAO_CUM_PCT = 7.6;
 // =====================================================================
 /** Limite anual de receita bruta para permanência no Simples Nacional (LC 123/06). */
 export const SIMPLES_LIMITE = 4_800_000;
+/** Sublimite estadual (LC 123/06 art. 13-A): acima deste valor ICMS/ISS saem do DAS
+ *  e passam a ser recolhidos pelo regime normal estadual. SSOT-11. */
+export const SIMPLES_SUBLIMITE_ESTADUAL = 3_600_000;
 /** Fator R — relação folha/RBT12 mínima para migrar Anexo V → III (%). */
 export const FATOR_R_MINIMO_PCT = 28;
+/** Encargos patronais padrão (CLT) para folha geral (%). */
+export const DEFAULT_ENCARGOS_PCT_GERAL = 75;
+/** Encargos patronais reduzidos para Simples Nacional — CPP já no DAS,
+ *  resta FGTS + Férias + 13º (~30%). SSOT-12. */
+export const DEFAULT_ENCARGOS_PCT_SIMPLES = 30;
 
 /** Faixa do Simples Nacional: [teto da faixa em R$, alíquota nominal (%), parcela a deduzir (R$)]. */
 export type SimplesFaixa = [number, number, number];
