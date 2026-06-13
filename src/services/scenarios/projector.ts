@@ -39,8 +39,10 @@ export interface ProjectionResult {
 export function project(state: AppState, months: number, a: Partial<ProjectionAssumptions> = {}): ProjectionResult {
   const ass: ProjectionAssumptions = { ...DEFAULT_PROJ, ...a };
   const { dre } = buildDRE(state, state.tax.regime);
-  // base = média mensal do ano-base
-  const baseReceita = sum(dre.receitaBruta) / 12;
+  // SSOT-3: usar Receita LÍQUIDA como base (denominador da margem EBITDA),
+  // alinhado com calcIndicators e buildForecast. Antes usava Receita Bruta,
+  // o que inflava a margem em 5–15pp em Presumido/Simples.
+  const baseReceita = sum(dre.receitaLiquida) / 12;
   const baseVar = sum(dre.custosVariaveis) / 12;
   const baseFix = sum(dre.custosFixos) / 12;
 
@@ -57,7 +59,6 @@ export function project(state: AppState, months: number, a: Partial<ProjectionAs
       const target = receita * (ass.targetEbitdaMarginPct / 100);
       const current = receita - cv - cf;
       const adjust = current - target;
-      // ajusta cortando proporcional aos fixos (premissa: fixos são alvo de corte)
       if (adjust < 0) cf = Math.max(0, cf + adjust);
     }
     const ebitda = receita - cv - cf;
