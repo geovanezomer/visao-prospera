@@ -615,6 +615,10 @@ export interface Indicators {
   giroAtivo: number;
   /** (Dívida Total − Caixa) ÷ EBITDA */
   dividaLiqEbitda: number;
+  /** (Dívida Total − Caixa) ÷ EBIT */
+  dividaLiqEbit: number;
+  /** (Dívida Total − Caixa) ÷ Patrimônio Líquido */
+  dividaLiqPl: number;
   /** Patrimônio Líquido ÷ Lucro Líquido Anual */
   payback: number;
   /** EBITDA − Impostos − Δ NCG */
@@ -730,6 +734,12 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const dividaLiqEbitda = ebitdaAnual > 1
     ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitdaAnual))
     : (dividaLiq <= 0 ? 0 : CAP_DL_EBITDA);
+  const dividaLiqEbit = ebitAnual > 1
+    ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitAnual))
+    : (dividaLiq <= 0 ? 0 : CAP_DL_EBITDA);
+  const dividaLiqPl = PL > 1
+    ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / PL))
+    : (dividaLiq <= 0 ? 0 : CAP_DL_EBITDA);
   const payback = llAnual > 1 ? Math.min(CAP_PAYBACK, PL / llAnual) : (PL <= 0 ? 0 : CAP_PAYBACK);
   // FCF simplificado: EBITDA − Impostos − ΔNCG (Auditoria).
   // ΔNCG estimado como a diferença entre a NCG atual e o capital de giro disponível.
@@ -745,7 +755,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     cicloFinanceiro, ncg, gapCapitalGiro,
     liquidezCorrente, liquidezSeca, liquidezImediata,
     endividamentoGeral, grauEndividamento, coberturaJuros, giroAtivo,
-    dividaLiqEbitda, payback, fcf,
+    dividaLiqEbitda, dividaLiqEbit, dividaLiqPl, payback, fcf,
     conversaoEbitdaCaixa: ebitdaAnual > 0 ? (fcf / ebitdaAnual) * 100 : 0,
     dividaOnerosa: D, passivoCirculante, ativoCirculante,
   };
