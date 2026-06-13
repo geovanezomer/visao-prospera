@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AppState, TaxRegime } from "@/lib/finance/types";
 import { applySimulator, computeSimView, countActiveLevers, DEFAULT_SIM, PRESETS, SimDREView, SimulatorParams } from "@/lib/finance/simulator";
+import { useFinanceModel } from "@/lib/finance/useFinanceModel";
 import { fmtBRL, fmtBRLCompact, fmtPct } from "@/lib/finance/format";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
