@@ -156,6 +156,36 @@ export function simplesExcedeLimite(state: AppState): boolean {
   return sum(state.revenue.bruta) > getSimplesLimite(state.tax);
 }
 
+/**
+ * Resolve o regime tributário EFETIVO considerando desenquadramento do Simples.
+ * Se o usuário escolheu Simples mas a RBT12 estourou o limite, força Presumido.
+ * Esta é a VERDADE ABSOLUTA usada por todas as abas (Indicadores, Saúde, Forecast, etc.).
+ */
+export function resolveEffectiveRegime(state: AppState): TaxRegime {
+  if (state.tax.regime === "simples" && simplesExcedeLimite(state)) {
+    return "presumido";
+  }
+  return state.tax.regime;
+}
+
+/**
+ * CAGR (Taxa de Crescimento Anual Composta) sobre uma série mensal.
+ * Usa o 1º e o último mês com valor > 0, preservando a distância real em meses
+ * (evita inflar o expoente quando há meses zerados no meio da série).
+ * Retorna NaN quando indeterminado.
+ */
+export function cagr12m(serie: number[]): number {
+  if (!serie || serie.length < 2) return NaN;
+  const firstIdx = serie.findIndex((v) => v > 0);
+  let lastIdx = -1;
+  for (let i = serie.length - 1; i >= 0; i--) {
+    if (serie[i] > 0) { lastIdx = i; break; }
+  }
+  if (firstIdx < 0 || lastIdx <= firstIdx) return NaN;
+  const periodos = lastIdx - firstIdx; // distância real (meses)
+  return Math.pow(serie[lastIdx] / serie[firstIdx], 12 / periodos) - 1;
+}
+
 // =====================================================================
 // IMPOSTOS
 // =====================================================================
