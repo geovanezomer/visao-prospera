@@ -1,5 +1,5 @@
 import { AppState, TaxRegime } from "./types";
-import { buildDRE, type DRE, type MonthlyTax } from "./calculations";
+import { buildDRE, resolveEffectiveRegime, splitReceitasFinanceiras, type DRE, type MonthlyTax } from "./calculations";
 import { MESES, sum, zeros12 } from "./format";
 
 export interface CashFlow {
