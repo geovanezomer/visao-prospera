@@ -615,6 +615,10 @@ export interface Indicators {
   giroAtivo: number;
   /** (Dívida Total − Caixa) ÷ EBITDA */
   dividaLiqEbitda: number;
+  /** (Dívida Total − Caixa) ÷ EBIT */
+  dividaLiqEbit: number;
+  /** (Dívida Total − Caixa) ÷ Patrimônio Líquido */
+  dividaLiqPl: number;
   /** Patrimônio Líquido ÷ Lucro Líquido Anual */
   payback: number;
   /** EBITDA − Impostos − Δ NCG */
