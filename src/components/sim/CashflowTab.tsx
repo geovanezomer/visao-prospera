@@ -1,33 +1,56 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AppState } from "@/lib/finance/types";
 import { fmtBRL, fmtBRLCompact, MESES, sum } from "@/lib/finance/format";
-import { buildCashFlow, computeBurnRunway, computeAlertas, computePiorMes } from "@/lib/finance/cashflow";
+import { buildCashFlow } from "@/lib/finance/cashflow";
 import { MoneyInput, SectionTitle, StatCard, HelpTip } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+// Estilo padrão do tooltip dos gráficos (DRY)
+const TOOLTIP_STYLE = {
+  background: "var(--popover)",
+  border: "1px solid var(--border)",
+  borderRadius: 6,
+  fontSize: 12,
+  color: "var(--popover-foreground)",
+} as const;
+const TOOLTIP_ITEM = { color: "var(--popover-foreground)" } as const;
+const TOOLTIP_LABEL = { color: "var(--popover-foreground)", fontWeight: 600 } as const;
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 type NonOpKey = "aportes" | "emprestimosCaptados" | "capex" | "dividendos" | "amortizacoes";
 
 export function CashflowTab({ state, update }: { state: AppState; update: Updater }) {
-  const cf = buildCashFlow(state);
+  // B1/B4: regime efetivo agora é default em buildCashFlow; memoizar o resultado pesado.
+  const cf = useMemo(() => buildCashFlow(state), [state]);
 
-  const setCaixaMin = (v: number) =>
-    update((s) => ({ ...s, cashflow: { ...s.cashflow, caixaMinimo: v } }));
+  const setCaixaMin = useCallback(
+    (v: number) => update((s) => ({ ...s, cashflow: { ...s.cashflow, caixaMinimo: v } })),
+    [update],
+  );
 
   const limiar = state.cashflow.limiarAlerta ?? -10000;
-  const setLimiar = (v: number) =>
-    update((s) => ({ ...s, cashflow: { ...s.cashflow, limiarAlerta: v } }));
+  const setLimiar = useCallback(
+    (v: number) => update((s) => ({ ...s, cashflow: { ...s.cashflow, limiarAlerta: v } })),
+    [update],
+  );
 
-  // Meses que cruzam o limiar crítico
-  const mesesCriticos = MESES
-    .map((mes, i) => ({ mes, saldo: cf.saldoFinal[i], idx: i }))
-    .filter((m) => m.saldo <= limiar);
-  const mesesCriticosIdx = new Set(mesesCriticos.map((m) => m.idx));
+  // B4: memos para cálculos derivados que rodavam a cada render
+  const mesesCriticos = useMemo(
+    () => MESES
+      .map((mes, i) => ({ mes, saldo: cf.saldoFinal[i], idx: i }))
+      .filter((m) => m.saldo <= limiar),
+    [cf.saldoFinal, limiar],
+  );
+
+  // B8: chave estável para o useEffect
+  const mesesCriticosKey = useMemo(
+    () => mesesCriticos.map((m) => `${m.mes}:${m.saldo}`).join("|"),
+    [mesesCriticos],
+  );
 
   // Toast discreto quando há novo mês crítico
   const lastNotifiedRef = useRef<string>("");
@@ -44,39 +67,63 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
         description: `Saldo previsto: ${fmtBRL(primeiro.saldo)} · Limiar: ${fmtBRL(limiar)}`,
       });
     }
-  }, [mesesCriticos.map((m) => `${m.mes}:${m.saldo}`).join("|"), limiar]);
+  }, [mesesCriticosKey, limiar, mesesCriticos]);
 
-  const setNonOp = (key: NonOpKey, monthIdx: number, value: number) =>
-    update((s) => ({
-      ...s,
-      cashflow: {
-        ...s.cashflow,
-        [key]: s.cashflow[key].map((v, i) => (i === monthIdx ? value : v)),
-      },
-    }));
+  const setNonOp = useCallback(
+    (key: NonOpKey, monthIdx: number, value: number) =>
+      update((s) => ({
+        ...s,
+        cashflow: {
+          ...s.cashflow,
+          [key]: s.cashflow[key].map((v, i) => (i === monthIdx ? value : v)),
+        },
+      })),
+    [update],
+  );
 
-  const alertas = computeAlertas(cf.saldoFinal, state.cashflow.caixaMinimo);
-  const piorMes = computePiorMes(cf.saldoFinal);
+  const setNonOpAll = useCallback(
+    (key: NonOpKey, v: number) =>
+      update((s) => ({ ...s, cashflow: { ...s.cashflow, [key]: MESES.map(() => v) } })),
+    [update],
+  );
+
+  // B3: usar cf.alertas e cf.totais.pioresMes (já calculados pela engine)
+  const alertas = cf.alertas;
+  const piorMes = cf.totais.pioresMes;
 
   // Mapa de meses críticos: para destacar pontos no gráfico.
-  const criticalByMes: Record<string, "negativo" | "abaixoMinimo"> = {};
-  alertas.forEach((a) => {
-    // Em caso de empate, "negativo" prevalece (mais severo).
-    if (criticalByMes[a.mes] !== "negativo") criticalByMes[a.mes] = a.tipo;
-  });
+  const criticalByMes = useMemo(() => {
+    const map: Record<string, "negativo" | "abaixoMinimo"> = {};
+    alertas.forEach((a) => {
+      if (map[a.mes] !== "negativo") map[a.mes] = a.tipo;
+    });
+    return map;
+  }, [alertas]);
 
-  const chart = MESES.map((m, i) => ({
-    mes: m,
-    saldo: cf.saldoFinal[i],
-    minimo: state.cashflow.caixaMinimo,
-    critical: criticalByMes[m] ?? null,
-  }));
+  const chart = useMemo(
+    () => MESES.map((m, i) => ({
+      mes: m,
+      saldo: cf.saldoFinal[i],
+      minimo: state.cashflow.caixaMinimo,
+      critical: criticalByMes[m] ?? null,
+    })),
+    [cf.saldoFinal, state.cashflow.caixaMinimo, criticalByMes],
+  );
 
-  const burnRunway = computeBurnRunway({
-    fluxoOperacional: cf.fluxoOperacional,
-    caixaAtual: state.capital.disponibilidades,
-    recebiveis: state.capital.contasReceber || 0,
-  });
+  const burnRunway = useMemo(
+    () => {
+      // Inline da lógica para evitar import adicional; mantém engine como fonte
+      const burnMensal = cf.fluxoOperacional.map((v) => -v);
+      const burnMedio12 = burnMensal.reduce((a, b) => a + b, 0) / 12;
+      const burnMedio3 = burnMensal.slice(-3).reduce((a, b) => a + b, 0) / 3;
+      const colchao = state.capital.disponibilidades + (state.capital.contasReceber || 0);
+      const queimando = burnMedio3 > 0;
+      const runwayMeses = queimando ? colchao / burnMedio3 : Infinity;
+      return { burnMedio12, burnMedio3, runwayMeses, queimando };
+    },
+    [cf.fluxoOperacional, state.capital.disponibilidades, state.capital.contasReceber],
+  );
+
   const caixaAtual = state.capital.disponibilidades;
   const recebiveis = state.capital.contasReceber || 0;
   const runwayLabel = !burnRunway.queimando
@@ -88,15 +135,24 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
     !burnRunway.queimando ? "pos" : burnRunway.runwayMeses >= 12 ? "pos" : burnRunway.runwayMeses >= 6 ? "warn" : "neg";
 
   // Top 3 meses mais críticos: menores saldos do ano (independente de bater o mínimo).
+  const top3Criticos = useMemo(
+    () => MESES
+      .map((mes, i) => ({
+        mes,
+        saldo: cf.saldoFinal[i],
+        deficitVsMin: state.cashflow.caixaMinimo - cf.saldoFinal[i],
+      }))
+      .sort((a, b) => a.saldo - b.saldo)
+      .slice(0, 3),
+    [cf.saldoFinal, state.cashflow.caixaMinimo],
+  );
 
-  const top3Criticos = MESES
-    .map((mes, i) => ({
-      mes,
-      saldo: cf.saldoFinal[i],
-      deficitVsMin: state.cashflow.caixaMinimo - cf.saldoFinal[i], // positivo = está abaixo do mínimo
-    }))
-    .sort((a, b) => a.saldo - b.saldo)
-    .slice(0, 3);
+  // B5: tone do "Saldo final (Dez)" reflete o PRÓPRIO valor de dez, não outros meses
+  const saldoDez = cf.totais.saldoFinal;
+  const saldoDezTone: "pos" | "neg" | "warn" =
+    saldoDez < 0 ? "neg" : saldoDez < state.cashflow.caixaMinimo ? "warn" : "pos";
+
+
 
 
   return (
@@ -139,8 +195,8 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
           )}
           <StatCard
             label="Saldo final (Dez)"
-            value={fmtBRL(cf.totais.saldoFinal)}
-            tone={mesesCriticos.length > 0 ? "neg" : cf.totais.saldoFinal >= state.cashflow.caixaMinimo ? "pos" : cf.totais.saldoFinal >= 0 ? "warn" : "neg"}
+            value={fmtBRL(saldoDez)}
+            tone={saldoDezTone}
             sub={piorMes ? `Pior mês: ${piorMes.mes} = ${fmtBRL(piorMes.saldo)}` : undefined}
             hint={{ description: "Saldo de caixa projetado para dezembro. Deve ficar acima do caixa mínimo de segurança definido na configuração.", formula: "Saldo Inicial + Σ Variações mensais de caixa" }}
           />
@@ -166,7 +222,7 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
             { key: "dividendos", label: "Distribuição de dividendos", hint: "Saída de caixa para distribuir lucros aos sócios.", tone: "neg", values: state.cashflow.dividendos },
           ]}
           onMonth={setNonOp}
-          onAllMonths={(key, v) => update((s) => ({ ...s, cashflow: { ...s.cashflow, [key]: MESES.map(() => v) } }))}
+          onAllMonths={setNonOpAll}
         />
       </div>
 
@@ -294,7 +350,7 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
             <YAxis stroke="var(--muted-foreground)" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-            <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }} itemStyle={{ color: "var(--popover-foreground)" }} labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }} formatter={(v: number) => fmtBRL(v)} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} formatter={(v: number) => fmtBRL(v)} />
             <ReferenceLine y={state.cashflow.caixaMinimo} stroke="var(--warning)" strokeDasharray="4 4" label={{ value: "mínimo", fill: "var(--warning)", fontSize: 10, position: "right" }} />
             <ReferenceLine y={limiar} stroke="var(--destructive)" strokeDasharray="6 3" label={{ value: "limiar", fill: "var(--destructive)", fontSize: 10, position: "right" }} />
             <ReferenceLine y={0} stroke="var(--destructive)" strokeDasharray="4 4" />
@@ -401,6 +457,7 @@ function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof buildC
             <Row label="Saldo inicial" values={aggregate(cf.saldoInicial, period, "first")} muted rawTotal={cf.saldoInicial[0]} />
             <SectionRow label="ATIVIDADES OPERACIONAIS" cols={cols.length} />
             <Row label="(+) Recebimentos de clientes" values={aggregate(cf.recebimentos, period, "sum")} tone="pos" />
+            <Row label="(+) Receitas financeiras (aplicações)" values={aggregate(cf.receitasFinanceiras, period, "sum")} tone="pos" rawTotal={sum(cf.receitasFinanceiras)} />
             <Row label="(−) Pagamentos a fornecedores (CPV)" values={aggregate(cf.pagamentosFornecedores.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(cf.pagamentosFornecedores)} />
             <Row label="(−) Pagamentos de custos fixos" values={aggregate(cf.pagamentosFixos.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(cf.pagamentosFixos)} />
             <Row label="(−) Pagamentos de custos variáveis" values={aggregate(cf.pagamentosVariaveis.map((v) => -v), period, "sum")} tone="neg" rawTotal={-sum(cf.pagamentosVariaveis)} />
@@ -474,6 +531,13 @@ function fixedBase(values: number[]): number {
   return Number.isFinite(nonZero as number) ? (nonZero as number) : (values[0] || 0);
 }
 
+// True quando o array tem variação real entre meses (mais de um valor distinto)
+function hasSazonalidade(values: number[]): boolean {
+  if (!values?.length) return false;
+  const first = values[0];
+  return values.some((v) => v !== first);
+}
+
 type NonOpRow = {
   key: NonOpKey;
   label: string;
@@ -532,7 +596,18 @@ function NonOpTable({
                 <td className="px-2 py-2">
                   <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
                     <span>Fixo</span>
-                    <Switch checked={!fixed} onCheckedChange={(v) => setFixed(row.key, !v)} />
+                    <Switch
+                      checked={!fixed}
+                      onCheckedChange={(v) => {
+                        // B6: ao alternar Mensal → Fixo com sazonalidade real, avisar.
+                        if (!v && hasSazonalidade(row.values)) {
+                          toast.warning(`Sazonalidade de "${row.label}" será nivelada`, {
+                            description: "Alternar para 'Fixo' substitui os 12 meses pelo primeiro valor não-zero.",
+                          });
+                        }
+                        setFixed(row.key, !v);
+                      }}
+                    />
                     <span>Mensal</span>
                   </div>
                 </td>

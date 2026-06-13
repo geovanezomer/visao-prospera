@@ -1,10 +1,12 @@
 import { AppState, TaxRegime } from "./types";
-import { buildDRE, type DRE, type MonthlyTax } from "./calculations";
+import { buildDRE, resolveEffectiveRegime, splitReceitasFinanceiras, type DRE, type MonthlyTax } from "./calculations";
 import { MESES, sum, zeros12 } from "./format";
 
 export interface CashFlow {
   saldoInicial: number[];
   recebimentos: number[];
+  /** Rendimentos de aplicações financeiras realizados em caixa (operacional). */
+  receitasFinanceiras: number[];
   pagamentosFornecedores: number[];
   pagamentosFixos: number[];
   pagamentosVariaveis: number[];
@@ -26,6 +28,7 @@ export interface CashFlow {
   impostosAnoSeguinte: number;
   totais: {
     recebimentos: number;
+    receitasFinanceiras: number;
     pagamentosTotais: number;
     fluxoOperacional: number;
     fluxoInvestimento: number;
@@ -138,6 +141,7 @@ export function computePagamentosOperacionais(dre: DRE): {
  */
 export function computeFluxos(args: {
   recebimentos: number[];
+  receitasFinanceiras: number[];
   fornecedores: number[];
   fixos: number[];
   variaveis: number[];
@@ -160,7 +164,8 @@ export function computeFluxos(args: {
   const variacaoCaixa = zeros12();
   for (let i = 0; i < 12; i++) {
     fluxoOperacional[i] =
-      args.recebimentos[i] - args.fornecedores[i] - args.fixos[i] -
+      args.recebimentos[i] + args.receitasFinanceiras[i] -
+      args.fornecedores[i] - args.fixos[i] -
       args.variaveis[i] - args.financeiros[i] - args.impostos[i];
     fluxoInvestimento[i] = -args.capex[i];
     fluxoFinanciamento[i] =
@@ -234,7 +239,7 @@ export function computeBurnRunway(args: {
 // =====================================================================
 // Orquestrador — mesma assinatura e retorno do legado.
 // =====================================================================
-export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.regime): CashFlow {
+export function buildCashFlow(state: AppState, regime: TaxRegime = resolveEffectiveRegime(state)): CashFlow {
   const { dre, tax } = buildDRE(state, regime);
   const { capital, cashflow } = state;
 
@@ -242,6 +247,8 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.reg
   const fornec = computeFornecedores(state, dre);
   const imp = computeImpostos(tax);
   const op = computePagamentosOperacionais(dre);
+  // B2: rendimentos de aplicações financeiras realizam-se em caixa no mês de competência
+  const { financeiras: receitasFinanceiras } = splitReceitasFinanceiras(state);
 
   const aportes = cashflow.aportes.slice();
   const emprestimosCaptados = cashflow.emprestimosCaptados.slice();
@@ -251,6 +258,7 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.reg
 
   const fluxos = computeFluxos({
     recebimentos: rec.inAno,
+    receitasFinanceiras,
     fornecedores: fornec.inAno,
     fixos: op.fixos,
     variaveis: op.variaveis,
@@ -266,6 +274,7 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.reg
   return {
     saldoInicial,
     recebimentos: rec.inAno,
+    receitasFinanceiras,
     pagamentosFornecedores: fornec.inAno,
     pagamentosFixos: op.fixos,
     pagamentosVariaveis: op.variaveis,
@@ -284,6 +293,7 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = state.tax.reg
     impostosAnoSeguinte: imp.transbordo,
     totais: {
       recebimentos: sum(rec.inAno),
+      receitasFinanceiras: sum(receitasFinanceiras),
       pagamentosTotais:
         sum(fornec.inAno) + sum(op.fixos) + sum(op.variaveis) +
         sum(op.financeiros) + sum(imp.inAno),
