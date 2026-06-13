@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { AppState } from "@/lib/finance/types";
-import { buildDRE, calcIndicators, diagnose, irShieldForRegime } from "@/lib/finance/calculations";
-import { buildCashFlow } from "@/lib/finance/cashflow";
+import { buildDRE, calcIndicators, diagnose, irShieldForRegime, resolveEffectiveRegime, type DRE, type Indicators } from "@/lib/finance/calculations";
+import { buildCashFlow, type CashFlow } from "@/lib/finance/cashflow";
 import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
 import { AlertTriangle, TrendingDown, Scissors, ShieldAlert } from "lucide-react";
 import { HelpTip, SectionTitle } from "./primitives";
@@ -11,17 +11,25 @@ import { HelpTip, SectionTitle } from "./primitives";
  *  • DSCR (Debt Service Coverage Ratio) = EBITDA / (Juros + Amortizações).
  *  • Pior mês de caixa (saldo final mínimo do ano).
  *  • Diagnósticos `danger` automáticos.
- *  • Break-even dinâmico: corte mínimo de custo fixo para fechar o gap de caixa,
- *    com impacto estimado em EBITDA e VPL (perpetuidade).
+ *  • Break-even dinâmico: corte mínimo de custo fixo para fechar o gap de caixa.
  *
- * Nada novo na lógica de negócio — só consolida métricas já calculadas em um
- * card de leitura imediata para o consultor durante a reunião.
+ * Aceita um `model` precomputado para evitar recalcular DRE/indicadores/CF
+ * quando a DiagnosisTab já fez isso no pai (corrige duplicação de engine).
  */
-export function CriticalAlertsBanner({ state }: { state: AppState }) {
+export interface CriticalAlertsModel {
+  dre: DRE;
+  ind: Indicators;
+  cf: CashFlow;
+  regime: AppState["tax"]["regime"];
+}
+
+export function CriticalAlertsBanner({ state, model }: { state: AppState; model?: CriticalAlertsModel }) {
   const data = useMemo(() => {
-    const { dre } = buildDRE(state, state.tax.regime);
-    const ind = calcIndicators(state, dre);
-    const cf = buildCashFlow(state);
+    // Verdade absoluta: regime efetivo (Simples pode ter excedido limite).
+    const regime = model?.regime ?? resolveEffectiveRegime(state);
+    const dre = model?.dre ?? buildDRE(state, regime).dre;
+    const ind = model?.ind ?? calcIndicators(state, dre);
+    const cf = model?.cf ?? buildCashFlow(state);
     const diag = diagnose(state, dre, ind);
 
     const ebitdaAnual = sum(dre.ebitda);
@@ -35,26 +43,26 @@ export function CriticalAlertsBanner({ state }: { state: AppState }) {
     const caixaMin = state.cashflow.caixaMinimo || 0;
     const gap = pior ? Math.max(0, caixaMin - pior.saldo) : 0;
 
-    // Break-even cut: quanto cortar em custo fixo ANUAL para zerar o gap.
-    // Conservador: assume o gap como déficit recorrente — se for one-shot,
-    // o consultor decide; o card só sinaliza o piso necessário.
+    // Break-even cut: corte ANUAL em custo fixo para zerar o gap mensal recorrente.
     const custosFixosAnuais = sum(dre.custosFixos);
     const cutPctFixos = custosFixosAnuais > 0 ? (gap / custosFixosAnuais) * 100 : 0;
-    const shield = irShieldForRegime(state.tax.regime);
-    const waccDecimal = Math.max(0.005, ind.wacc / 100);
-    // Perpetuidade do FCF incremental: corte × (1 − IR) ÷ WACC.
-    const vplDelta = gap > 0 ? (gap * (1 - shield)) / waccDecimal : 0;
+    // Shield do regime EFETIVO (não o nominal — se Simples virou Presumido, shield muda).
+    const shield = irShieldForRegime(regime);
+    // Gap é déficit pontual do pior mês — não perpétuo. Tratamos como economia
+    // ONE-SHOT: VPL ≈ Corte × (1 − IR). Multiplicar por 1/WACC inflaria 10–20×.
+    const vplDelta = gap > 0 ? gap * (1 - shield) : 0;
 
     const dangers = diag.filter((d) => d.level === "danger");
 
-    return { ind, ebitdaAnual, jurosAnual, amortAnual, servicoDivida, dscr, pior, caixaMin, gap, custosFixosAnuais, cutPctFixos, vplDelta, dangers };
-  }, [state]);
+    return { ind, ebitdaAnual, jurosAnual, amortAnual, servicoDivida, dscr, pior, caixaMin, gap, custosFixosAnuais, cutPctFixos, shield, vplDelta, dangers };
+  }, [state, model]);
 
-  const { ind, dscr, pior, caixaMin, gap, custosFixosAnuais, cutPctFixos, vplDelta, dangers } = data;
+  const { ind, jurosAnual, dscr, pior, caixaMin, gap, custosFixosAnuais, cutPctFixos, shield, vplDelta, dangers } = data;
 
   const dscrTone = dscr == null ? "neutral" : dscr < 1.2 ? "danger" : dscr < 1.5 ? "warn" : "ok";
   const piorTone = !pior ? "neutral" : pior.saldo < 0 ? "danger" : pior.saldo < caixaMin ? "warn" : "ok";
-  const cobTone = ind.coberturaJuros < 2 ? "danger" : ind.coberturaJuros < 3 ? "warn" : "ok";
+  // Sem juros (dívida zerada), cobertura não é alerta — vira neutro em vez de cair no ramo "ok" fragilmente.
+  const cobTone = jurosAnual <= 1 ? "neutral" : ind.coberturaJuros < 2 ? "danger" : ind.coberturaJuros < 3 ? "warn" : "ok";
 
   const hasAnyAlert = dscrTone === "danger" || piorTone === "danger" || cobTone === "danger" || gap > 0 || dangers.length > 0;
 
@@ -86,11 +94,12 @@ export function CriticalAlertsBanner({ state }: { state: AppState }) {
           <Metric
             icon={<AlertTriangle className="h-4 w-4" />}
             label="Cobertura de juros"
-            value={Number.isFinite(ind.coberturaJuros) ? `${ind.coberturaJuros.toFixed(1)}×` : "∞"}
+            // coberturaJuros é capada em CAP_COB (999) — sempre finita.
+            value={jurosAnual <= 1 ? "—" : `${ind.coberturaJuros.toFixed(1)}×`}
             tone={cobTone}
             desc="Quantas vezes o EBIT cobre os juros do ano."
             formula="EBIT ÷ Juros"
-            sub={ind.coberturaJuros < 2 ? "⚠ Risco real de inadimplência financeira" : "OK"}
+            sub={jurosAnual <= 1 ? "Sem juros relevantes no período" : ind.coberturaJuros < 2 ? "⚠ Risco real de inadimplência financeira" : "OK"}
           />
           <Metric
             icon={<TrendingDown className="h-4 w-4" />}
@@ -108,7 +117,7 @@ export function CriticalAlertsBanner({ state }: { state: AppState }) {
             <div className="flex items-center gap-2 text-sm font-semibold">
               <Scissors className="h-4 w-4 text-[var(--warning)]" />
               Break-even dinâmico — corte mínimo para fechar o gap
-              <HelpTip text="Quanto cortar em custos fixos anuais para o saldo do pior mês atingir o caixa mínimo. Impacto em VPL assume o corte como recorrente, capitalizado por perpetuidade." formula="Gap ÷ Custos Fixos · ΔVPL ≈ Corte × (1 − IR) ÷ WACC" />
+              <HelpTip text="Quanto cortar em custos fixos anuais para o saldo do pior mês atingir o caixa mínimo. Impacto em VPL trata o gap como déficit pontual (one-shot), aplicando apenas o escudo fiscal — sem perpetuidade." formula="Gap ÷ Custos Fixos · ΔVPL ≈ Gap × (1 − IR)" />
             </div>
             <div className="mt-3 grid gap-3 md:grid-cols-3 text-xs">
               <Cell label="Gap a cobrir" v={fmtBRL(gap)} tone="warn" />
@@ -118,10 +127,10 @@ export function CriticalAlertsBanner({ state }: { state: AppState }) {
                 sub={custosFixosAnuais > 0 ? `Base: ${fmtBRL(custosFixosAnuais)}/ano` : "Sem custos fixos cadastrados"}
               />
               <Cell
-                label="Impacto em VPL (perpetuidade)"
+                label="Impacto em VPL (one-shot)"
                 v={`+${fmtBRL(vplDelta)}`}
                 tone="pos"
-                sub={`WACC ${fmtPct(ind.wacc / 100)} · shield ${fmtPct(irShieldForRegime(state.tax.regime))}`}
+                sub={`Regime efetivo · shield ${fmtPct(shield)}`}
               />
             </div>
             <p className="mt-3 text-[11px] italic text-muted-foreground">

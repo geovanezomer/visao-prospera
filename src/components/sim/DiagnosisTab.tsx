@@ -1,7 +1,8 @@
 import { useMemo } from "react";
-import { AppState, Scenario } from "@/lib/finance/types";
+import { AppState } from "@/lib/finance/types";
 import { buildPrescriptiveCards, PrescriptiveCard } from "@/lib/finance/prescriptive";
-import { buildDRE, calcIndicators, diagnose } from "@/lib/finance/calculations";
+import { diagnose } from "@/lib/finance/calculations";
+import { useFinanceModel } from "@/lib/finance/useFinanceModel";
 import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "lucide-react";
 import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
@@ -9,20 +10,12 @@ import { HealthScoreCard, SensitivityCard } from "./AnalysisTab";
 import { CriticalAlertsBanner } from "./CriticalAlertsBanner";
 
 
-export function DiagnosisTab({
-  state,
-}: {
-  state: AppState;
-  scenarios?: Scenario[];
-  loadScenario?: (s: AppState) => void;
-  removeScenario?: (id: string) => void;
-}) {
+export function DiagnosisTab({ state }: { state: AppState }) {
+  // Modelo central: 1 buildDRE + 1 calcIndicators + 1 buildCashFlow para a aba inteira,
+  // reusados pelos filhos (CriticalAlertsBanner, HealthScoreCard). Antes: 3–4× recálculos por render.
+  const model = useFinanceModel(state);
   const cards = useMemo(() => buildPrescriptiveCards(state), [state]);
-  const diagnostics = useMemo(() => {
-    const { dre } = buildDRE(state, state.tax.regime);
-    const ind = calcIndicators(state, dre);
-    return diagnose(state, dre, ind);
-  }, [state]);
+  const diagnostics = useMemo(() => diagnose(state, model.dre, model.ind), [state, model.dre, model.ind]);
 
   const diagIcon = (l: string) =>
     l === "ok" ? <CheckCircle2 className="h-4 w-4 text-pos" /> :
@@ -31,11 +24,11 @@ export function DiagnosisTab({
 
   return (
     <div className="space-y-6">
-      {/* Alertas críticos consolidados — leitura imediata */}
-      <CriticalAlertsBanner state={state} />
+      {/* Alertas críticos consolidados — leitura imediata (reusa o model central) */}
+      <CriticalAlertsBanner state={state} model={{ dre: model.dre, ind: model.ind, cf: model.cf, regime: model.regime }} />
 
-      {/* Análises avançadas */}
-      <HealthScoreCard state={state} />
+      {/* Análises avançadas (reusa o model central) */}
+      <HealthScoreCard state={state} precomputed={{ dre: model.dre, ind: model.ind, cf: model.cf }} />
       <SensitivityCard state={state} />
 
       {/* Diagnóstico financeiro */}

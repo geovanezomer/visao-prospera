@@ -1,7 +1,14 @@
 import { AppState } from "./types";
-import { buildDRE, calcIndicators } from "./calculations";
-import { buildCashFlow } from "./cashflow";
+import { buildDRE, calcIndicators, resolveEffectiveRegime, type Indicators, type DRE } from "./calculations";
+import { buildCashFlow, type CashFlow } from "./cashflow";
 import { computeStrategic, type StrategicResult } from "./strategic";
+
+/** Permite reaproveitar DRE/indicadores/CF já calculados (evita 3× recálculo do engine). */
+export interface HealthPrecomputed {
+  dre?: DRE;
+  ind?: Indicators;
+  cf?: CashFlow;
+}
 
 export interface HealthDimension {
   key: string;
@@ -50,10 +57,11 @@ function gradeFromScore(s: number): HealthScore["grade"] {
   return "E";
 }
 
-export function computeHealth(state: AppState): HealthScore {
-  const { dre } = buildDRE(state, state.tax.regime);
-  const ind = calcIndicators(state, dre);
-  const cf = buildCashFlow(state);
+export function computeHealth(state: AppState, precomputed?: HealthPrecomputed): HealthScore {
+  // Verdade absoluta: usa regime efetivo (Simples pode ter excedido limite → Presumido).
+  const dre = precomputed?.dre ?? buildDRE(state, resolveEffectiveRegime(state)).dre;
+  const ind = precomputed?.ind ?? calcIndicators(state, dre);
+  const cf = precomputed?.cf ?? buildCashFlow(state);
   const piorCaixa = cf.totais.pioresMes?.saldo ?? 0;
   const margemEbitda = ind.margemEbitda;
   const margemLiquida = ind.margemLiquida;
@@ -88,21 +96,23 @@ export function computeHealth(state: AppState): HealthScore {
     },
     {
       key: "alav",
+      // calcIndicators já aplica cap em CAP_DL_EBITDA (99) — sempre finito.
       label: "Alavancagem (D.Líq/EBITDA)",
-      score: inverseBand(Number.isFinite(ind.dividaLiqEbitda) ? ind.dividaLiqEbitda : 10, 0, 5),
+      score: inverseBand(ind.dividaLiqEbitda, 0, 5),
       weight: 0.12,
-      value: Number.isFinite(ind.dividaLiqEbitda) ? `${ind.dividaLiqEbitda.toFixed(1)}×` : "∞",
+      value: `${ind.dividaLiqEbitda.toFixed(1)}×`,
       comment: ind.dividaLiqEbitda > 3 ? "Dívida alta — limita captação e pressiona caixa." : "Endividamento sob controle.",
-      status: statusFromScore(inverseBand(Number.isFinite(ind.dividaLiqEbitda) ? ind.dividaLiqEbitda : 10, 0, 5)),
+      status: statusFromScore(inverseBand(ind.dividaLiqEbitda, 0, 5)),
     },
     {
       key: "cob",
+      // calcIndicators já aplica cap em CAP_COB (999) — sempre finito.
       label: "Cobertura de Juros",
-      score: band(Number.isFinite(ind.coberturaJuros) ? Math.min(ind.coberturaJuros, 10) : 10, 0, 6),
+      score: band(Math.min(ind.coberturaJuros, 10), 0, 6),
       weight: 0.08,
-      value: Number.isFinite(ind.coberturaJuros) ? `${ind.coberturaJuros.toFixed(1)}×` : "∞",
+      value: `${ind.coberturaJuros.toFixed(1)}×`,
       comment: ind.coberturaJuros < 2 ? "EBIT mal cobre os juros — risco de default." : "Lucro operacional cobre confortavelmente o serviço da dívida.",
-      status: statusFromScore(band(Number.isFinite(ind.coberturaJuros) ? Math.min(ind.coberturaJuros, 10) : 10, 0, 6)),
+      status: statusFromScore(band(Math.min(ind.coberturaJuros, 10), 0, 6)),
     },
     {
       key: "liq",

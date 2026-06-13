@@ -1,5 +1,5 @@
 import { AppState, CostLine } from "./types";
-import { buildDRE, calcIndicators, compareRegimes, monthValues } from "./calculations";
+import { buildDRE, calcIndicators, compareRegimes, folhaAnual, monthValues, resolveEffectiveRegime } from "./calculations";
 import { buildCashFlow } from "./cashflow";
 import { sum } from "./format";
 
@@ -48,7 +48,8 @@ export interface MetricSnapshot {
 }
 
 export function snapshot(state: AppState): MetricSnapshot {
-  const { dre, tax } = buildDRE(state, state.tax.regime);
+  // Usa regime efetivo (Simples pode ter excedido limite).
+  const { dre, tax } = buildDRE(state, resolveEffectiveRegime(state));
   const ind = calcIndicators(state, dre);
   const cf = buildCashFlow(state);
   return {
@@ -236,13 +237,15 @@ const BENCHMARK_FOLHA_RECEITA: Record<AppState["businessType"], [number, number]
 
 export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
   const cards: PrescriptiveCard[] = [];
-  const { dre } = buildDRE(state, state.tax.regime);
+  // Regime efetivo (verdade absoluta — alinhado com IndicatorsTab/CashflowTab).
+  const { dre } = buildDRE(state, resolveEffectiveRegime(state));
   const ind = calcIndicators(state, dre);
   const cf = buildCashFlow(state);
   const receitaLiqAnual = sum(dre.receitaLiquida);
   const { totalMensal: folhaMensal } = laborCltLinesTotal(state);
-  const folhaAnual = folhaMensal * 12;
-  const folhaPct = receitaLiqAnual > 0 ? (folhaAnual / receitaLiqAnual) * 100 : 0;
+  // Reusa fonte canônica do engine — evita divergência com IndicatorsCard ("Folha/Receita").
+  const folhaAnoCanon = folhaAnual(state);
+  const folhaPct = receitaLiqAnual > 0 ? (folhaAnoCanon / receitaLiqAnual) * 100 : 0;
   const [folhaMin, folhaMax] = BENCHMARK_FOLHA_RECEITA[state.businessType];
 
   // ===== 1. Folha alta =====
