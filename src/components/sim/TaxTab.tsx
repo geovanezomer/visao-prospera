@@ -287,6 +287,71 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
         <div className="border-b border-border/60 p-4">
           <SectionTitle>Comparativo anual entre regimes</SectionTitle>
         </div>
+
+        {/* Barras proporcionais — Lucro Líquido por regime */}
+        <div className="border-b border-border/60 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Lucro líquido anual por regime
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              Quanto maior a barra, mais sobra para a empresa
+            </div>
+          </div>
+          {(() => {
+            const regs: TaxRegime[] = ["simples", "presumido", "real"];
+            const labels: Record<TaxRegime, string> = {
+              simples: "Simples Nacional", presumido: "Lucro Presumido", real: "Lucro Real",
+            };
+            const values = regs.map(r => llBy[r]);
+            const maxAbs = Math.max(1, ...values.map(v => Math.abs(v)));
+            const bestVal = llBy[best];
+            return (
+              <div className="space-y-3">
+                {regs.map(r => {
+                  const v = llBy[r];
+                  const widthPct = (Math.abs(v) / maxAbs) * 100;
+                  const isBest = r === best;
+                  const isCurrent = r === state.tax.regime;
+                  const delta = v - bestVal; // negativo = perde para o melhor
+                  const deltaPct = bestVal !== 0 ? (delta / Math.abs(bestVal)) * 100 : 0;
+                  return (
+                    <div key={r}>
+                      <div className="mb-1 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-semibold ${isBest ? "text-pos" : "text-foreground"}`}>{labels[r]}</span>
+                          {isBest && <Badge className="h-4 bg-pos/20 text-pos border border-pos/40 px-1.5 text-[9px]">MELHOR</Badge>}
+                          {isCurrent && <Badge variant="outline" className="h-4 px-1.5 text-[9px]">Ativo</Badge>}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="num text-sm font-semibold tabular-nums">{fmtBRL(v)}</span>
+                          {!isBest && (
+                            <span className="num text-[11px] text-neg tabular-nums">
+                              {delta >= 0 ? "+" : ""}{fmtBRL(delta)} ({deltaPct.toFixed(1)}%)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="h-3 w-full overflow-hidden rounded-full bg-border/40">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            v < 0 ? "bg-neg" : isBest ? "bg-pos" : "bg-primary/60"
+                          }`}
+                          style={{ width: `${widthPct}%` }}
+                        />
+                      </div>
+                      <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+                        <span>Tributos: <span className="num">{fmtBRL(regimes[r].annual)}</span></span>
+                        <span>Carga: <span className="num">{fmtPct(regimes[r].effective / 100)}</span></span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
+
         <div className="grid grid-cols-4 gap-px bg-border/40">
           <div className="bg-card p-4 text-xs uppercase tracking-wider text-muted-foreground">Indicador</div>
           {(["simples", "presumido", "real"] as TaxRegime[]).map((r) => (
