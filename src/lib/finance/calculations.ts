@@ -441,6 +441,8 @@ export interface DRE {
   cpv: number[];
   lucroBruto: number[];
   despesasOperacionais: number[];
+  /** Outras receitas operacionais (aluguéis recebidos, venda de ativos etc.) — somadas no EBITDA. */
+  outrasReceitasOperacionais: number[];
   ebitda: number[];
   depreciacao: number[];
   ebit: number[];
@@ -457,6 +459,27 @@ export interface DRE {
   custosFixos: number[];
   custosVariaveis: number[];
   folhaCltAnual: number;
+}
+
+/**
+ * Classifica as linhas de `revenue.receitasFinanceiras` por natureza contábil:
+ * - `financeiras`: rendimento de aplicações e ids customizados → entram no Resultado Financeiro
+ *   e são tributadas (PIS/COFINS no Real, base de IRPJ/CSLL no Presumido).
+ * - `operacionais`: aluguéis recebidos e venda de ativos → entram acima do EBITDA
+ *   como "Outras Receitas Operacionais".
+ *
+ * Critério por id (default p/ retrocompat: financeira).
+ */
+export function splitReceitasFinanceiras(state: AppState): { financeiras: number[]; operacionais: number[] } {
+  const financeiras = zeros12();
+  const operacionais = zeros12();
+  const OPERACIONAIS_IDS = new Set(["alugueis", "venda_ativos"]);
+  for (const rf of state.revenue.receitasFinanceiras ?? []) {
+    const vals = rf.valores ?? [];
+    const bucket = OPERACIONAIS_IDS.has(rf.id) ? operacionais : financeiras;
+    for (let i = 0; i < 12; i++) bucket[i] += Number(vals[i]) || 0;
+  }
+  return { financeiras, operacionais };
 }
 
 export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: MonthlyTax } {
