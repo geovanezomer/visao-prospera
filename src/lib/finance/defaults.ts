@@ -1,5 +1,6 @@
 import { AppState, BusinessType, CostLine, COST_VENDAS_TABLE_CONFIG } from "./types";
 import { fill12 } from "./format";
+import { coerceMonths } from "./safeMath";
 
 const baseRevenue = [13000, 14000, 15500, 15000, 16000, 17000, 15500, 14500, 16000, 17500, 18500, 21000];
 
