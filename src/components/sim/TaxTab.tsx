@@ -297,32 +297,50 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
 
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card
-          title="Simples Nacional"
-          regime="simples"
-          annual={regimes.simples.annual}
-          effective={regimes.simples.effective}
-          badge={`Anexo ${state.tax.simplesAnexo}${state.tax.simplesAnexo === "III" ? " · Fator R ≥ 28%" : ""}`}
-        >
-          <div>
-            <label className="text-xs text-muted-foreground">Anexo</label>
-            <Select value={state.tax.simplesAnexo} onValueChange={(v) => set({ simplesAnexo: v as SimplesAnexo })}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {(["I", "II", "III", "IV", "V"] as const).map((a) => (
-                  <SelectItem key={a} value={a}>Anexo {a}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {desenquadradoSimples ? (
+          <div className="relative rounded-lg border border-border/40 bg-card/20 p-5 opacity-60">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-semibold text-muted-foreground line-through">Simples Nacional</h3>
+                <Badge variant="outline" className="border-warning/50 bg-warning/10 text-[10px] text-warning">
+                  Desenquadrado
+                </Badge>
+              </div>
+              <div className="text-3xl font-bold tracking-tight text-muted-foreground/50">—</div>
+              <div className="text-xs text-muted-foreground">indisponível</div>
+            </div>
+            <div className="mt-4 rounded-md border border-warning/30 bg-warning/5 p-3 text-[11px] text-muted-foreground">
+              RBT12 ({fmtBRL(rbAnual)}) ultrapassa o teto de {fmtBRL(simplesLimite)}. Ajuste o teto em <b>Parâmetros → Simples Nacional</b> se a legislação mudar.
+            </div>
           </div>
-          <Row label="RBT12" value={fmtBRL(rbAnual)} />
-          <Row label="Alíquota Efetiva" value={fmtPct(aliqEf / 100)} />
-          <Row label="DAS (unificado)" value={fmtBRL(regimes.simples.annual)} strong />
-          
-          <div className="mt-3 rounded-md bg-accent/30 p-3 text-[11px] text-muted-foreground">
-            Anexos: <b>I</b> comércio · <b>II</b> indústria · <b>III</b> serviços (Fator R ≥ 28%) · <b>IV</b> serviços específicos · <b>V</b> serviços intelectuais.
-          </div>
-        </Card>
+        ) : (
+          <Card
+            title="Simples Nacional"
+            regime="simples"
+            annual={regimes.simples.annual}
+            effective={regimes.simples.effective}
+            badge={`Anexo ${state.tax.simplesAnexo}${state.tax.simplesAnexo === "III" ? " · Fator R ≥ 28%" : ""}`}
+          >
+            <div>
+              <label className="text-xs text-muted-foreground">Anexo</label>
+              <Select value={state.tax.simplesAnexo} onValueChange={(v) => set({ simplesAnexo: v as SimplesAnexo })}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(["I", "II", "III", "IV", "V"] as const).map((a) => (
+                    <SelectItem key={a} value={a}>Anexo {a}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Row label="RBT12" value={fmtBRL(rbAnual)} />
+            <Row label="Alíquota Efetiva" value={fmtPct(aliqEf / 100)} />
+            <Row label="DAS (unificado)" value={fmtBRL(regimes.simples.annual)} strong />
+
+            <div className="mt-3 rounded-md bg-accent/30 p-3 text-[11px] text-muted-foreground">
+              Anexos: <b>I</b> comércio · <b>II</b> indústria · <b>III</b> serviços (Fator R ≥ 28%) · <b>IV</b> serviços específicos · <b>V</b> serviços intelectuais.
+            </div>
+          </Card>
+        )}
 
         <Card
           title="Lucro Presumido"
