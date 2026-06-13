@@ -141,6 +141,7 @@ export function computePagamentosOperacionais(dre: DRE): {
  */
 export function computeFluxos(args: {
   recebimentos: number[];
+  receitasFinanceiras: number[];
   fornecedores: number[];
   fixos: number[];
   variaveis: number[];
@@ -163,7 +164,8 @@ export function computeFluxos(args: {
   const variacaoCaixa = zeros12();
   for (let i = 0; i < 12; i++) {
     fluxoOperacional[i] =
-      args.recebimentos[i] - args.fornecedores[i] - args.fixos[i] -
+      args.recebimentos[i] + args.receitasFinanceiras[i] -
+      args.fornecedores[i] - args.fixos[i] -
       args.variaveis[i] - args.financeiros[i] - args.impostos[i];
     fluxoInvestimento[i] = -args.capex[i];
     fluxoFinanciamento[i] =
