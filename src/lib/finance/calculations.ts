@@ -131,7 +131,7 @@ export function monthValues(c: CostLine, regime?: TaxRegime): number[] {
 // =====================================================================
 const LABOR_KEYWORDS = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra|m\.o\.|clt/i;
 
-function folhaAnual(state: AppState): number {
+export function folhaAnual(state: AppState): number {
   const laborCosts = state.costs
     .filter((c) => c.category !== "financeiro" && (c.encargosAuto || LABOR_KEYWORDS.test(c.label)));
   return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c, state.tax.regime)), 0);
