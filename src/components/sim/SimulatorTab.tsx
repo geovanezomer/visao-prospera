@@ -99,11 +99,26 @@ export function SimulatorTab({
       <StatusBar active={active} base={baseView} sim={simView} inconsistencies={inconsistencies}
         onApply={applyToBase} onSave={onSave} onReset={reset} />
 
-      {/* Grid 2 colunas */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_clamp(380px,30vw,460px)]">
+      {/* Grid 2 colunas — DRE ocupa 1/2 da largura da página */}
+      <div className="grid gap-4 lg:grid-cols-2">
         {/* Sliders */}
         <div className="space-y-3">
-          <Accordion type="multiple" defaultValue={["receita", "custos", "giro", "divida", "trib"]} className="space-y-2">
+          <Accordion type="multiple" defaultValue={["trib", "receita", "custos", "giro", "divida"]} className="space-y-2">
+            <Group value="trib" title="Tributário">
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-foreground">Mudar regime tributário</div>
+                <Select value={p.regimeOverride} onValueChange={(v) => set("regimeOverride", v as TaxRegime | "base")}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="base">Manter regime atual ({state.tax.regime})</SelectItem>
+                    <SelectItem value="simples">Simples Nacional</SelectItem>
+                    <SelectItem value="presumido">Lucro Presumido</SelectItem>
+                    <SelectItem value="real">Lucro Real</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </Group>
+
             <Group value="receita" title="Receita & Preço">
               <SliderRow label="Preço de venda" hint="Aumenta/reduz tabela. Custos variáveis não acompanham." min={-30} max={30} step={1} value={p.priceDeltaPct} onChange={(v) => set("priceDeltaPct", v)} suffix="%" current={`Receita atual: ${fmtBRLCompact(baseView.receitaBruta)}`} signed />
               <SliderRow label="Volume de vendas" hint="Receita + CPV variável acompanham. Mede alavancagem operacional." min={-50} max={50} step={1} value={p.volumeDeltaPct} onChange={(v) => set("volumeDeltaPct", v)} suffix="%" signed />
