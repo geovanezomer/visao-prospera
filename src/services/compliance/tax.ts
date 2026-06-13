@@ -52,8 +52,8 @@ export function taxAuditToMarkdown(state: AppState): string {
     md += `2. **Otimização:** Você já está no regime de menor carga nominal.\n`;
   }
 
-  if (state.tax.regime === "simples" && rbAnual > 3600000) {
-    md += `3. **Sublimite do Simples:** Atenção! Acima de R$ 3,6M o ICMS/ISS é recolhido por fora (regime normal).\n`;
+  if (state.tax.regime === "simples" && rbAnual > SIMPLES_SUBLIMITE_ESTADUAL) {
+    md += `3. **Sublimite do Simples:** Atenção! Acima de ${fmtBRL(SIMPLES_SUBLIMITE_ESTADUAL)} o ICMS/ISS é recolhido por fora (regime normal).\n`;
   }
 
   md += `\n### 💡 Sugestão de Pergunta para o Consultor:\n`;
