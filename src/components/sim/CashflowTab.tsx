@@ -1,33 +1,56 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AppState } from "@/lib/finance/types";
 import { fmtBRL, fmtBRLCompact, MESES, sum } from "@/lib/finance/format";
-import { buildCashFlow, computeBurnRunway, computeAlertas, computePiorMes } from "@/lib/finance/cashflow";
+import { buildCashFlow } from "@/lib/finance/cashflow";
 import { MoneyInput, SectionTitle, StatCard, HelpTip } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+// Estilo padrão do tooltip dos gráficos (DRY)
+const TOOLTIP_STYLE = {
+  background: "var(--popover)",
+  border: "1px solid var(--border)",
+  borderRadius: 6,
+  fontSize: 12,
+  color: "var(--popover-foreground)",
+} as const;
+const TOOLTIP_ITEM = { color: "var(--popover-foreground)" } as const;
+const TOOLTIP_LABEL = { color: "var(--popover-foreground)", fontWeight: 600 } as const;
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 type NonOpKey = "aportes" | "emprestimosCaptados" | "capex" | "dividendos" | "amortizacoes";
 
 export function CashflowTab({ state, update }: { state: AppState; update: Updater }) {
-  const cf = buildCashFlow(state);
+  // B1/B4: regime efetivo agora é default em buildCashFlow; memoizar o resultado pesado.
+  const cf = useMemo(() => buildCashFlow(state), [state]);
 
-  const setCaixaMin = (v: number) =>
-    update((s) => ({ ...s, cashflow: { ...s.cashflow, caixaMinimo: v } }));
+  const setCaixaMin = useCallback(
+    (v: number) => update((s) => ({ ...s, cashflow: { ...s.cashflow, caixaMinimo: v } })),
+    [update],
+  );
 
   const limiar = state.cashflow.limiarAlerta ?? -10000;
-  const setLimiar = (v: number) =>
-    update((s) => ({ ...s, cashflow: { ...s.cashflow, limiarAlerta: v } }));
+  const setLimiar = useCallback(
+    (v: number) => update((s) => ({ ...s, cashflow: { ...s.cashflow, limiarAlerta: v } })),
+    [update],
+  );
 
-  // Meses que cruzam o limiar crítico
-  const mesesCriticos = MESES
-    .map((mes, i) => ({ mes, saldo: cf.saldoFinal[i], idx: i }))
-    .filter((m) => m.saldo <= limiar);
-  const mesesCriticosIdx = new Set(mesesCriticos.map((m) => m.idx));
+  // B4: memos para cálculos derivados que rodavam a cada render
+  const mesesCriticos = useMemo(
+    () => MESES
+      .map((mes, i) => ({ mes, saldo: cf.saldoFinal[i], idx: i }))
+      .filter((m) => m.saldo <= limiar),
+    [cf.saldoFinal, limiar],
+  );
+
+  // B8: chave estável para o useEffect
+  const mesesCriticosKey = useMemo(
+    () => mesesCriticos.map((m) => `${m.mes}:${m.saldo}`).join("|"),
+    [mesesCriticos],
+  );
 
   // Toast discreto quando há novo mês crítico
   const lastNotifiedRef = useRef<string>("");
@@ -44,39 +67,63 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
         description: `Saldo previsto: ${fmtBRL(primeiro.saldo)} · Limiar: ${fmtBRL(limiar)}`,
       });
     }
-  }, [mesesCriticos.map((m) => `${m.mes}:${m.saldo}`).join("|"), limiar]);
+  }, [mesesCriticosKey, limiar, mesesCriticos]);
 
-  const setNonOp = (key: NonOpKey, monthIdx: number, value: number) =>
-    update((s) => ({
-      ...s,
-      cashflow: {
-        ...s.cashflow,
-        [key]: s.cashflow[key].map((v, i) => (i === monthIdx ? value : v)),
-      },
-    }));
+  const setNonOp = useCallback(
+    (key: NonOpKey, monthIdx: number, value: number) =>
+      update((s) => ({
+        ...s,
+        cashflow: {
+          ...s.cashflow,
+          [key]: s.cashflow[key].map((v, i) => (i === monthIdx ? value : v)),
+        },
+      })),
+    [update],
+  );
 
-  const alertas = computeAlertas(cf.saldoFinal, state.cashflow.caixaMinimo);
-  const piorMes = computePiorMes(cf.saldoFinal);
+  const setNonOpAll = useCallback(
+    (key: NonOpKey, v: number) =>
+      update((s) => ({ ...s, cashflow: { ...s.cashflow, [key]: MESES.map(() => v) } })),
+    [update],
+  );
+
+  // B3: usar cf.alertas e cf.totais.pioresMes (já calculados pela engine)
+  const alertas = cf.alertas;
+  const piorMes = cf.totais.pioresMes;
 
   // Mapa de meses críticos: para destacar pontos no gráfico.
-  const criticalByMes: Record<string, "negativo" | "abaixoMinimo"> = {};
-  alertas.forEach((a) => {
-    // Em caso de empate, "negativo" prevalece (mais severo).
-    if (criticalByMes[a.mes] !== "negativo") criticalByMes[a.mes] = a.tipo;
-  });
+  const criticalByMes = useMemo(() => {
+    const map: Record<string, "negativo" | "abaixoMinimo"> = {};
+    alertas.forEach((a) => {
+      if (map[a.mes] !== "negativo") map[a.mes] = a.tipo;
+    });
+    return map;
+  }, [alertas]);
 
-  const chart = MESES.map((m, i) => ({
-    mes: m,
-    saldo: cf.saldoFinal[i],
-    minimo: state.cashflow.caixaMinimo,
-    critical: criticalByMes[m] ?? null,
-  }));
+  const chart = useMemo(
+    () => MESES.map((m, i) => ({
+      mes: m,
+      saldo: cf.saldoFinal[i],
+      minimo: state.cashflow.caixaMinimo,
+      critical: criticalByMes[m] ?? null,
+    })),
+    [cf.saldoFinal, state.cashflow.caixaMinimo, criticalByMes],
+  );
 
-  const burnRunway = computeBurnRunway({
-    fluxoOperacional: cf.fluxoOperacional,
-    caixaAtual: state.capital.disponibilidades,
-    recebiveis: state.capital.contasReceber || 0,
-  });
+  const burnRunway = useMemo(
+    () => {
+      // Inline da lógica para evitar import adicional; mantém engine como fonte
+      const burnMensal = cf.fluxoOperacional.map((v) => -v);
+      const burnMedio12 = burnMensal.reduce((a, b) => a + b, 0) / 12;
+      const burnMedio3 = burnMensal.slice(-3).reduce((a, b) => a + b, 0) / 3;
+      const colchao = state.capital.disponibilidades + (state.capital.contasReceber || 0);
+      const queimando = burnMedio3 > 0;
+      const runwayMeses = queimando ? colchao / burnMedio3 : Infinity;
+      return { burnMedio12, burnMedio3, runwayMeses, queimando };
+    },
+    [cf.fluxoOperacional, state.capital.disponibilidades, state.capital.contasReceber],
+  );
+
   const caixaAtual = state.capital.disponibilidades;
   const recebiveis = state.capital.contasReceber || 0;
   const runwayLabel = !burnRunway.queimando
@@ -88,15 +135,24 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
     !burnRunway.queimando ? "pos" : burnRunway.runwayMeses >= 12 ? "pos" : burnRunway.runwayMeses >= 6 ? "warn" : "neg";
 
   // Top 3 meses mais críticos: menores saldos do ano (independente de bater o mínimo).
+  const top3Criticos = useMemo(
+    () => MESES
+      .map((mes, i) => ({
+        mes,
+        saldo: cf.saldoFinal[i],
+        deficitVsMin: state.cashflow.caixaMinimo - cf.saldoFinal[i],
+      }))
+      .sort((a, b) => a.saldo - b.saldo)
+      .slice(0, 3),
+    [cf.saldoFinal, state.cashflow.caixaMinimo],
+  );
 
-  const top3Criticos = MESES
-    .map((mes, i) => ({
-      mes,
-      saldo: cf.saldoFinal[i],
-      deficitVsMin: state.cashflow.caixaMinimo - cf.saldoFinal[i], // positivo = está abaixo do mínimo
-    }))
-    .sort((a, b) => a.saldo - b.saldo)
-    .slice(0, 3);
+  // B5: tone do "Saldo final (Dez)" reflete o PRÓPRIO valor de dez, não outros meses
+  const saldoDez = cf.totais.saldoFinal;
+  const saldoDezTone: "pos" | "neg" | "warn" =
+    saldoDez < 0 ? "neg" : saldoDez < state.cashflow.caixaMinimo ? "warn" : "pos";
+
+
 
 
   return (
