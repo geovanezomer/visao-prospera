@@ -1,50 +1,76 @@
+import { useMemo } from "react";
 import { AppState } from "@/lib/finance/types";
-import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/lib/finance/format";
-import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
+import { fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
+import { buildDRE, calcIndicators, cagr12m, resolveEffectiveRegime } from "@/lib/finance/calculations";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 const CHART_COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15", "#F472B6", "#34D399", "#A78BFA", "#FB923C"];
 
+// Estilo padrão de tooltip dos charts (DRY — antes repetido 4×)
+const TOOLTIP_STYLE = {
+  background: "var(--popover)",
+  border: "1px solid var(--border)",
+  borderRadius: 6,
+  fontSize: 12,
+  color: "var(--popover-foreground)",
+} as const;
+const TOOLTIP_ITEM = { color: "var(--popover-foreground)" } as const;
+const TOOLTIP_LABEL = { color: "var(--popover-foreground)", fontWeight: 600 } as const;
+
+// Helper: formata "vezes" tratando ∞ (sem dívida) vs indefinido (EBIT≤0)
+function fmtTimes(v: number, ebitOrEbitda: number, decimals = 1): string {
+  if (Number.isFinite(v)) return `${v.toFixed(decimals)}×`;
+  // Dívida ≈ 0 → infinito real (positivo); EBIT/EBITDA ≤ 0 → indefinido
+  return ebitOrEbitda > 0 ? "∞" : "—";
+}
+
 export function IndicatorsTab({ state }: { state: AppState }) {
-  const regime = state.tax.regime;
-  const { dre } = buildDRE(state, regime);
-  const ind = calcIndicators(state, dre);
+  // B9: regime efetivo (considera desenquadramento do Simples — verdade absoluta)
+  const regime = useMemo(() => resolveEffectiveRegime(state), [state]);
 
-  // CAGR Receitas 12 meses: taxa equivalente anualizada entre o 1º e o 12º mês de receita líquida.
-  // Fórmula: (Receita_M12 / Receita_M1)^(12 / (n-1)) - 1, onde n = nº de meses com receita > 0.
-  const cagrReceitas12m = (() => {
-    const serie = dre.receitaLiquida.filter((v) => v > 0);
-    if (serie.length < 2) return NaN;
-    const inicio = serie[0];
-    const fim = serie[serie.length - 1];
-    if (inicio <= 0 || fim <= 0) return NaN;
-    const periodos = serie.length - 1; // meses entre o 1º e o último
-    return Math.pow(fim / inicio, 12 / periodos) - 1;
-  })();
+  // B8: memoizar engine pesada (buildDRE + calcIndicators)
+  const dre = useMemo(() => buildDRE(state, regime).dre, [state, regime]);
+  const ind = useMemo(() => calcIndicators(state, dre), [state, dre]);
 
-  const monthlyChart = MESES.map((m, i) => ({
-    mes: m,
-    Receita: dre.receitaLiquida[i],
-    Custos: dre.cpv[i] + dre.despesasOperacionais[i] + dre.custosFinanceirosTotal[i] + dre.depreciacao[i],
-    Lucro: dre.lucroLiquido[i],
-  }));
+  // B4: CAGR via helper central (preserva distância real em meses)
+  const cagrReceitas12m = useMemo(() => cagr12m(dre.receitaLiquida), [dre.receitaLiquida]);
 
-  const acumulado = dre.lucroLiquido.reduce<{ mes: string; valor: number }[]>((acc, v, i) => {
-    const last = i === 0 ? 0 : acc[i - 1].valor;
-    acc.push({ mes: MESES[i], valor: last + v });
-    return acc;
-  }, []);
+  // B3: separar custos operacionais de despesas financeiras no gráfico mensal
+  const monthlyChart = useMemo(
+    () => MESES.map((m, i) => ({
+      mes: m,
+      Receita: dre.receitaLiquida[i],
+      Operacionais: dre.cpv[i] + dre.despesasOperacionais[i] + dre.depreciacao[i],
+      Financeiros: dre.custosFinanceirosTotal[i],
+      Lucro: dre.lucroLiquido[i],
+    })),
+    [dre],
+  );
 
-  const costPie = Object.entries(dre.despesasPorCategoria)
-    .map(([k, v]) => ({ name: k, value: sum(v) }))
-    .filter((x) => x.value > 0)
-    .sort((a, b) => b.value - a.value);
+  // B10: memoizar acumulado
+  const acumulado = useMemo(
+    () => dre.lucroLiquido.reduce<{ mes: string; valor: number }[]>((acc, v, i) => {
+      const last = i === 0 ? 0 : acc[i - 1].valor;
+      acc.push({ mes: MESES[i], valor: last + v });
+      return acc;
+    }, []),
+    [dre.lucroLiquido],
+  );
+
+  const costPie = useMemo(
+    () => Object.entries(dre.despesasPorCategoria)
+      .map(([k, v]) => ({ name: k, value: sum(v) }))
+      .filter((x) => x.value > 0)
+      .sort((a, b) => b.value - a.value),
+    [dre.despesasPorCategoria],
+  );
 
   const cvLabel = state.businessType === "industria" ? "CPV" : state.businessType === "comercio" ? "CMV" : "CSP";
   const ll = sum(dre.lucroLiquido);
-  const waterfall = [
+
+  const waterfall = useMemo(() => [
     { name: "Receita Bruta", value: sum(dre.receitaBruta) },
     { name: "− Imp. Vendas", value: -sum(dre.impostosVendas) },
     { name: `− ${cvLabel}`, value: -sum(dre.cpv) },
@@ -53,7 +79,11 @@ export function IndicatorsTab({ state }: { state: AppState }) {
     { name: "± Financ.", value: sum(dre.resultadoFinanceiro) },
     { name: "− IRPJ/CSLL", value: -sum(dre.impostos) },
     { name: "Lucro Líq.", value: ll },
-  ];
+  ], [dre, cvLabel, ll]);
+
+  // Pré-calcula EBIT/EBITDA anuais para distinguir ∞ vs indefinido (B7)
+  const ebitAnual = sum(dre.ebit);
+  const ebitdaAnual = sum(dre.ebitda);
 
   return (
     <div className="space-y-6">
@@ -82,7 +112,7 @@ export function IndicatorsTab({ state }: { state: AppState }) {
           }
           hint={{ description: "Diferença entre o que a operação precisa (NCG) e o que a empresa tem (CGD). Positivo = precisa de empréstimo de giro; Negativo = sobra caixa.", formula: "NCG − CGD" }}
         />
-        <CashConversionSmall ebitda={sum(dre.ebitda)} fcf={ind.fcf} />
+        <CashConversionSmall ebitda={ebitdaAnual} fcf={ind.fcf} />
       </div>
 
       <div className="rounded-lg border border-border/60 bg-card/40 p-5">
@@ -103,14 +133,12 @@ export function IndicatorsTab({ state }: { state: AppState }) {
           <Ind label="Liquidez Corrente" v={ind.liquidezCorrente.toFixed(2)} tone={ind.liquidezCorrente >= 1 ? "pos" : "neg"} desc="Capacidade de pagar dívidas de curto prazo com recursos de curto prazo. Acima de 1,0 indica folga; abaixo, aperto." formula="Ativo Circulante ÷ Passivo Circulante" />
           <Ind label="Liquidez Seca" v={ind.liquidezSeca.toFixed(2)} desc="Versão mais rigorosa da liquidez corrente: exclui estoques (que podem demorar a virar caixa). Ideal acima de 1,0." formula="(Ativo Circulante − Estoques) ÷ Passivo Circulante" />
           <Ind label="Liquidez Imediata" v={ind.liquidezImediata.toFixed(2)} desc="Capacidade de pagar dívidas de curto prazo IMEDIATAMENTE, só com dinheiro em caixa e aplicações." formula="Disponibilidades ÷ Passivo Circulante" />
-          <Ind label="Endividamento Geral" v={fmtPct(ind.endividamentoGeral / 100)} desc="Percentual do ativo financiado por dívidas (terceiros). Acima de 60% costuma indicar alto risco financeiro." formula="Passivo Total ÷ Ativo Total × 100" />
-          <Ind label="Cobertura de Juros" v={Number.isFinite(ind.coberturaJuros) ? `${ind.coberturaJuros.toFixed(1)}×` : "∞"} tone={ind.coberturaJuros >= 2 ? "pos" : "neg"} desc="Quantas vezes o lucro operacional cobre as despesas de juros. Abaixo de 2× é zona de risco." formula="EBIT ÷ Despesas Financeiras" />
+          <Ind label="Endividamento Geral" v={fmtPct(ind.endividamentoGeral / 100)} tone={ind.endividamentoGeral <= 60 ? "pos" : "neg"} desc="Percentual do ativo financiado por dívidas (terceiros). Acima de 60% costuma indicar alto risco financeiro." formula="Passivo Total ÷ Ativo Total × 100" />
+          <Ind label="Cobertura de Juros" v={fmtTimes(ind.coberturaJuros, ebitAnual)} tone={ind.coberturaJuros >= 2 ? "pos" : "neg"} desc="Quantas vezes o lucro operacional cobre as despesas de juros. Abaixo de 2× é zona de risco." formula="EBIT ÷ Despesas Financeiras" />
           <Ind label="Giro do Ativo" v={`${ind.giroAtivo.toFixed(2)}×`} desc="Quantas vezes o ativo total 'gira' em vendas no ano. Mede eficiência: quanto maior, mais a empresa produz com o que tem." formula="Receita Líquida ÷ Ativo Total" />
-          <Ind label="Dívida Líq. / EBITDA" v={Number.isFinite(ind.dividaLiqEbitda) ? `${ind.dividaLiqEbitda.toFixed(1)}×` : "∞"} tone={ind.dividaLiqEbitda <= 3 ? "pos" : "neg"} desc="Em quantos anos de geração de caixa (EBITDA) a empresa quitaria sua dívida líquida. Acima de 3× preocupa bancos." formula="(Dívida Total − Caixa) ÷ EBITDA" />
-          <Ind label="Dívida Líq. / EBIT" v={Number.isFinite(ind.dividaLiqEbit) ? `${ind.dividaLiqEbit.toFixed(1)}×` : "∞"} tone={ind.dividaLiqEbit <= 4 ? "pos" : "neg"} desc="Quantos anos de lucro operacional (já líquido da depreciação) seriam necessários para quitar a dívida líquida. Mais conservador que Dívida/EBITDA." formula="(Dívida Total − Caixa) ÷ EBIT" />
-          <Ind label="Dívida Líq. / PL" v={Number.isFinite(ind.dividaLiqPl) ? `${ind.dividaLiqPl.toFixed(2)}×` : "∞"} tone={ind.dividaLiqPl <= 1 ? "pos" : "neg"} desc="Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio." formula="(Dívida Total − Caixa) ÷ Patrimônio Líquido" />
-          <Ind label="Passivos / Ativos" v={fmtPct(ind.endividamentoGeral / 100)} tone={ind.endividamentoGeral <= 60 ? "pos" : "neg"} desc="Percentual do ativo financiado por dívidas (terceiros). Acima de 60% costuma indicar alto risco financeiro." formula="Passivo Total ÷ Ativo Total × 100" />
-          <Ind label="Necessidade de Capital de Giro" v={fmtBRL(ind.ncg)} tone="warn" desc="Necessidade de Capital de Giro — quanto de dinheiro a operação 'consome' permanentemente para girar (estoques + clientes − fornecedores)." formula="(Ciclo Financeiro ÷ 30) × Custos Mensais" />
+          <Ind label="Dívida Líq. / EBITDA" v={fmtTimes(ind.dividaLiqEbitda, ebitdaAnual)} tone={ind.dividaLiqEbitda <= 3 ? "pos" : "neg"} desc="Em quantos anos de geração de caixa (EBITDA) a empresa quitaria sua dívida líquida. Acima de 3× preocupa bancos." formula="(Dívida Total − Caixa) ÷ EBITDA" />
+          <Ind label="Dívida Líq. / EBIT" v={fmtTimes(ind.dividaLiqEbit, ebitAnual)} tone={ind.dividaLiqEbit <= 4 ? "pos" : "neg"} desc="Quantos anos de lucro operacional (já líquido da depreciação) seriam necessários para quitar a dívida líquida. Mais conservador que Dívida/EBITDA." formula="(Dívida Total − Caixa) ÷ EBIT" />
+          <Ind label="Dívida Líq. / PL" v={Number.isFinite(ind.dividaLiqPl) ? `${ind.dividaLiqPl.toFixed(2)}×` : "—"} tone={ind.dividaLiqPl <= 1 ? "pos" : "neg"} desc="Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio." formula="(Dívida Total − Caixa) ÷ Patrimônio Líquido" />
           <Ind label="Payback (anos)" v={Number.isFinite(ind.payback) ? ind.payback.toFixed(1) : "—"} desc="Tempo estimado para o lucro acumulado recuperar todo o capital investido pelos sócios." formula="Patrimônio Líquido ÷ Lucro Líquido Anual" />
           <Ind label="FCF estimado" v={fmtBRL(ind.fcf)} tone={ind.fcf >= 0 ? "pos" : "neg"} desc="Free Cash Flow — geração de caixa livre após impostos e investimento em capital de giro. É o que sobra para sócios e dívida." formula="EBITDA − Impostos − Δ NCG" />
           <Ind
@@ -118,7 +146,7 @@ export function IndicatorsTab({ state }: { state: AppState }) {
             v={Number.isFinite(cagrReceitas12m) ? fmtPct(cagrReceitas12m) : "—"}
             tone={Number.isFinite(cagrReceitas12m) ? (cagrReceitas12m >= 0 ? "pos" : "neg") : undefined}
             desc="Taxa de Crescimento Anual Composta (CAGR) da Receita Líquida ao longo dos 12 meses. Mostra o ritmo equivalente anualizado de crescimento entre o primeiro e o último mês com receita."
-            formula="(Receita_M12 ÷ Receita_M1)^(12 ÷ (n−1)) − 1"
+            formula="(Receita_fim ÷ Receita_início)^(12 ÷ meses) − 1"
           />
         </div>
       </div>
@@ -130,10 +158,11 @@ export function IndicatorsTab({ state }: { state: AppState }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
               <XAxis dataKey="mes" stroke="#9ca3af" fontSize={11} />
               <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }} itemStyle={{ color: "var(--popover-foreground)" }} labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }} formatter={(v: number) => fmtBRL(v)} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} formatter={(v: number) => fmtBRL(v)} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="Receita" fill="#00E5A0" />
-              <Bar dataKey="Custos" fill="#FF6B6B" />
+              <Bar dataKey="Operacionais" fill="#FF6B6B" />
+              <Bar dataKey="Financeiros" fill="#F5B85B" />
               <Bar dataKey="Lucro" fill="#5BA8F5" />
             </BarChart>
           </ResponsiveContainer>
@@ -145,19 +174,19 @@ export function IndicatorsTab({ state }: { state: AppState }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
               <XAxis dataKey="mes" stroke="#9ca3af" fontSize={11} />
               <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }} itemStyle={{ color: "var(--popover-foreground)" }} labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }} formatter={(v: number) => fmtBRL(v)} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} formatter={(v: number) => fmtBRL(v)} />
               <Line type="monotone" dataKey="valor" stroke="#00E5A0" strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Composição de custos (anual)">
+        <ChartCard title="Composição de despesas operacionais (anual)">
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
               <Pie data={costPie} dataKey="value" nameKey="name" outerRadius={100} innerRadius={50}>
                 {costPie.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
               </Pie>
-              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }} itemStyle={{ color: "var(--popover-foreground)" }} labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }} formatter={(v: number) => fmtBRL(v)} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} formatter={(v: number) => fmtBRL(v)} />
               <Legend wrapperStyle={{ fontSize: 10 }} />
             </PieChart>
           </ResponsiveContainer>
@@ -169,7 +198,7 @@ export function IndicatorsTab({ state }: { state: AppState }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
               <XAxis dataKey="name" stroke="#9ca3af" fontSize={11} />
               <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }} itemStyle={{ color: "var(--popover-foreground)" }} labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }} formatter={(v: number) => fmtBRL(v)} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} formatter={(v: number) => fmtBRL(v)} />
               <Bar dataKey="value">
                 {waterfall.map((d, i) => <Cell key={i} fill={d.value >= 0 ? "#00E5A0" : "#FF6B6B"} />)}
               </Bar>
@@ -205,7 +234,7 @@ function Ind({ label, v, desc, formula, tone }: { label: string; v: string; desc
 function CashConversionSmall({ ebitda, fcf }: { ebitda: number; fcf: number }) {
   const conversaoEbitda = ebitda > 0 ? (fcf / ebitda) * 100 : 0;
   const tone = conversaoEbitda >= 70 ? "pos" : conversaoEbitda >= 40 ? "default" : "neg";
-  
+
   return (
     <div className="rounded-lg border border-border/60 bg-card/60 p-4">
       <div className="flex items-center justify-between gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
