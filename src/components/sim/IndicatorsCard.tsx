@@ -39,6 +39,9 @@ export function IndicatorsCard({ state }: { state: AppState }) {
         <Ind label="Qualidade do Lucro" v={ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}×` : "—"} tone={ind.qualidadeLucro >= 1 ? "pos" : "neg"} desc="O lucro contábil está virando caixa? ≥1 saudável; <1 lucro 'no papel' (NCG, inadimplência)." formula="Fluxo de Caixa Operacional ÷ Lucro Líquido" />
         <Ind label="Payback (anos)" v={Number.isFinite(ind.payback) ? ind.payback.toFixed(1) : "—"} desc="Tempo para o lucro recuperar o capital investido." formula="PL ÷ Lucro Líquido Anual" />
         <Ind label="FCF estimado" v={fmtBRL(ind.fcf)} tone={ind.fcf >= 0 ? "pos" : "neg"} desc="Free Cash Flow estimado." formula="EBITDA − Impostos − Δ NCG" />
+        <Ind label="Receita / Colaborador" v={ind.receitaPorColaborador > 0 ? fmtBRL(ind.receitaPorColaborador) : "—"} desc="Faturamento gerado por colaborador no ano. Benchmark de produtividade — ajuste o nº de colaboradores em Configurações Rápidas." formula="Receita Líquida ÷ Nº de Colaboradores" />
+        <Ind label="Lucro / Colaborador" v={ind.receitaPorColaborador > 0 ? fmtBRL(ind.lucroPorColaborador) : "—"} tone={ind.lucroPorColaborador >= 0 ? "pos" : "neg"} desc="Lucro líquido gerado por colaborador no ano. Mede a conversão de mão de obra em resultado." formula="Lucro Líquido ÷ Nº de Colaboradores" />
+        <Ind label="Folha / Receita" v={ind.custoPessoalSobreReceita > 0 ? fmtPct(ind.custoPessoalSobreReceita / 100) : "—"} tone={ind.custoPessoalSobreReceita > 35 ? "neg" : ind.custoPessoalSobreReceita > 0 ? "pos" : undefined} desc="Peso da folha (CLT + pró-labore + MOD, com encargos) sobre a receita. Acima de 35% acende alerta em serviços." formula="Folha Total Anual ÷ Receita Líquida × 100" />
       </div>
     </div>
   );
