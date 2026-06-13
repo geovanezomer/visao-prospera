@@ -92,12 +92,9 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
   );
 
   // ----- Engine: memoizada (B1) — recomputa só quando state muda -----
+  // SSOT-4: compareRegimes já devolve llBy, best e desenquadradoSimples.
   const regimes = useMemo(() => compareRegimes(state), [state]);
-  const llBy: Record<TaxRegime, number> = useMemo(() => ({
-    simples: sum(buildDRE(state, "simples").dre.lucroLiquido),
-    presumido: sum(buildDRE(state, "presumido").dre.lucroLiquido),
-    real: sum(buildDRE(state, "real").dre.lucroLiquido),
-  }), [state]);
+  const llBy = regimes.llBy;
   const projAtiva = useMemo(
     () => compareErasForRegime(state, state.tax.regime),
     [state],
@@ -111,14 +108,8 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
   );
 
   const simplesLimite = state.tax.ratesOverride?.simplesLimite ?? SIMPLES_LIMITE;
-  const desenquadradoSimples = rbAnual > simplesLimite;
-
-  // Quando desenquadrado, Simples sai da disputa do "mais vantajoso"
-  const best: TaxRegime = useMemo(() => {
-    const pool = (Object.entries(llBy) as [TaxRegime, number][])
-      .filter(([r]) => !(desenquadradoSimples && r === "simples"));
-    return pool.reduce((a, b) => (b[1] > a[1] ? b : a))[0];
-  }, [llBy, desenquadradoSimples]);
+  const desenquadradoSimples = regimes.desenquadradoSimples;
+  const best: TaxRegime = regimes.best;
 
   // B2/B7: auto-migrar regime quando desenquadrado, com guarda contra
   // oscilação (só dispara UMA vez por transição "ficou desenquadrado")
