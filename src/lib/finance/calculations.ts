@@ -860,7 +860,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     dividaLiqEbitda, dividaLiqEbit, dividaLiqPl, payback, fcf,
     conversaoEbitdaCaixa: ebitdaAnual > 0 ? (fcf / ebitdaAnual) * 100 : 0,
     gao, qualidadeLucro,
-    receitaPorColaborador, lucroPorColaborador, custoPessoalSobreReceita,
+    receitaPorColaborador, ebitdaPorColaborador, lucroPorColaborador, custoPessoalSobreReceita,
     dividaOnerosa: D, passivoCirculante, ativoCirculante,
   };
 }
