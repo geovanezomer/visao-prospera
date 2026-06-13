@@ -11,7 +11,7 @@ import {
   folhaAnual,
   buildDRE,
 } from "@/lib/finance/calculations";
-import { getPresumidoBases, SIMPLES_LIMITE } from "@/lib/finance/taxDefaults";
+import { getPresumidoBases, SIMPLES_LIMITE, SIMPLES_SUBLIMITE_ESTADUAL } from "@/lib/finance/taxDefaults";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { HelpTip, PctInput, SectionTitle } from "./primitives";
