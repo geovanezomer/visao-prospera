@@ -86,8 +86,15 @@ export function presumidoBases(business: BusinessType): { irpj: number; csll: nu
 // =====================================================================
 // Encargos automáticos sobre folha CLT
 // =====================================================================
+/** Classificação canônica: linhas que compõem o CPV/CMV/CSP (geram crédito tributário
+ *  e escalam com receita no forecast). Usado em buildDRE, calcReal e forecast. */
+export function isCpvCost(c: CostLine): boolean {
+  return c.category === "custo_vendas" || c.category === "direto_venda";
+}
+
 export function fixedCostBase(values: number[]): number {
   const normalized = values.length === 12 ? values : fill12(values[0] || 0);
+
   const first = normalized[0] || 0;
   // Se todos os meses são iguais, retorna o valor.
   if (normalized.every((v) => v === first)) return first;
