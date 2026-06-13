@@ -1,6 +1,6 @@
 // Projeção plurianual (12/24/60 meses) baseada no DRE anual e em premissas de crescimento.
 import type { AppState } from "@/lib/finance/types";
-import { buildDRE } from "@/lib/finance/calculations";
+import { buildDRE, resolveEffectiveRegime } from "@/lib/finance/calculations";
 import { sum } from "@/lib/finance/format";
 
 export interface ProjectionAssumptions {
