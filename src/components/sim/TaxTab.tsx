@@ -13,13 +13,20 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
   const regimes = compareRegimes(state);
   const aliqEf = simplesAliquotaEfetiva(rbAnual, state.tax.simplesAnexo, state.tax);
 
+  // Teto do Simples Nacional — configurável em Parâmetros (atualmente em discussão no Congresso)
+  const simplesLimite = state.tax.ratesOverride?.simplesLimite ?? SIMPLES_LIMITE;
+  const desenquadradoSimples = rbAnual > simplesLimite;
+
   // net profits per regime
   const llBy: Record<TaxRegime, number> = {
     simples: sum(buildDRE(state, "simples").dre.lucroLiquido),
     presumido: sum(buildDRE(state, "presumido").dre.lucroLiquido),
     real: sum(buildDRE(state, "real").dre.lucroLiquido),
   };
-  const best = (Object.entries(llBy) as [TaxRegime, number][]).reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+  // Quando desenquadrado, Simples sai da disputa do "mais vantajoso"
+  const bestPool = (Object.entries(llBy) as [TaxRegime, number][])
+    .filter(([r]) => !(desenquadradoSimples && r === "simples"));
+  const best = bestPool.reduce((a, b) => (b[1] > a[1] ? b : a))[0];
 
   const Card = ({
     title,
