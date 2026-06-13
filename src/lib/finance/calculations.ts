@@ -835,14 +835,17 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const fcf = ebitdaAnual - impostosAnual - Math.max(0, ncg - capital.capitalGiroDisponivel);
 
   // GAO = MC ($) ÷ EBIT. Mede elasticidade do EBIT a variações na receita.
+  // (I4) Aceita EBIT negativo — GAO negativo é informação real ("alavancagem reversa").
   const mcReais = receitaLiqAnual - custosVarAnual;
-  const gao = ebitAnual > 1 ? Math.max(-99, Math.min(99, mcReais / ebitAnual)) : 0;
-  // Qualidade do Lucro = FCF ÷ LL. Acima de 1 = lucro vira caixa; abaixo = lucro "no papel".
-  const qualidadeLucro = llAnual > 1 ? Math.max(-9, Math.min(9, fcf / llAnual)) : 0;
+  const gao = Math.abs(ebitAnual) > 1 ? Math.max(-99, Math.min(99, mcReais / ebitAnual)) : 0;
+  // Qualidade do Lucro = FCF ÷ LL. (I4) Mantém sinal quando LL≠0 (negativo expõe "lucro de papel").
+  const qualidadeLucro = Math.abs(llAnual) > 1 ? Math.max(-9, Math.min(9, fcf / llAnual)) : 0;
 
   // Indicadores de produtividade por colaborador (headcount em Configurações Rápidas).
   const headcount = Math.max(0, state.numColaboradores ?? 0);
   const receitaPorColaborador = headcount > 0 ? receitaLiqAnual / headcount : 0;
+  // (I10) Faturamento = Receita BRUTA (padrão de benchmarking de mercado).
+  const faturamentoPorColaborador = headcount > 0 ? receitaBrutaAnual / headcount : 0;
   const ebitdaPorColaborador = headcount > 0 ? ebitdaAnual / headcount : 0;
   const lucroPorColaborador = headcount > 0 ? llAnual / headcount : 0;
   // Folha (CLT + pró-labore + MOD) com encargos sobre Receita Líquida.
@@ -862,7 +865,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     dividaLiqEbitda, dividaLiqEbit, dividaLiqPl, payback, fcf,
     conversaoEbitdaCaixa: ebitdaAnual > 0 ? (fcf / ebitdaAnual) * 100 : 0,
     gao, qualidadeLucro,
-    receitaPorColaborador, ebitdaPorColaborador, lucroPorColaborador, custoPessoalSobreReceita,
+    receitaPorColaborador, faturamentoPorColaborador, ebitdaPorColaborador, lucroPorColaborador, custoPessoalSobreReceita,
     dividaOnerosa: D, passivoCirculante, ativoCirculante,
   };
 }
