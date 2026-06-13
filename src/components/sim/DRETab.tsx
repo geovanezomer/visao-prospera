@@ -46,48 +46,88 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
   const descIncond = dedById("desc_incond")?.valores ?? Array(12).fill(0);
   const abatimentos = dedById("abatimentos")?.valores ?? Array(12).fill(0);
 
-  // Total de Custos Operacionais (sem CPV — CPV vai como linha própria antes do Lucro Bruto)
-  const totalCustos = dre.despesasOperacionais.map((c, i) => c + dre.custosFinanceirosTotal[i]);
+  // ===== Quebra de despesas por categoria (mensal) =====
+  const zeros = () => Array(12).fill(0);
+  const despComerciais = zeros();   // category = "variavel"
+  const despAdmin = zeros();         // category = "fixo"
+  const despFinanc = zeros();        // category = "financeiro"
+  for (const c of state.costs) {
+    const v = monthValues(c, state.tax.regime);
+    if (c.category === "variavel") for (let i = 0; i < 12; i++) despComerciais[i] += v[i];
+    else if (c.category === "fixo") for (let i = 0; i < 12; i++) despAdmin[i] += v[i];
+    else if (c.category === "financeiro") for (let i = 0; i < 12; i++) despFinanc[i] += v[i];
+  }
+  // Receitas Financeiras (somatório das rubricas em revenue.receitasFinanceiras)
+  const receitasFinMensal = zeros();
+  for (const rf of state.revenue.receitasFinanceiras ?? []) {
+    const vals = rf.valores ?? [];
+    for (let i = 0; i < 12; i++) receitasFinMensal[i] += Number(vals[i]) || 0;
+  }
+  // Ganho/Perda em alienação de ativos — sem input dedicado por enquanto
+  const ganhoAlienacao = zeros();
+  // Outras Despesas/Receitas Operacionais — inclui Depreciação & Amortização (negativa)
+  const outrasOperacionais = dre.depreciacao.map((d) => -d);
 
-  // Linhas detalhadas para o accordion — apenas as preenchidas (anual > 0)
-  // Exclui custo_vendas/direto_venda (que vão no CPV/CMV/CSP)
-  const linhasPreenchidas = state.costs
-    .filter((c) => c.category !== "custo_vendas" && c.category !== "direto_venda")
-    .map((c) => ({ label: c.label, category: c.category, values: monthValues(c, state.tax.regime) }))
-    .filter((x) => sum(x.values) > 0);
+  // Lucro Operacional / EBIT = Lucro Bruto − Comerciais − Administrativas + Outras Op.
+  // (matematicamente equivale a dre.ebit)
+  const lucroOperacional = dre.ebit;
+  // Lucro Antes do Financiamento e Tributos = EBIT + Receitas Financeiras + Ganho Alienação
+  const laft = lucroOperacional.map((e, i) => e + receitasFinMensal[i] + ganhoAlienacao[i]);
+  // EBT = LAFT − Despesas Financeiras (≡ dre.lair)
+  const ebt = dre.lair;
+
+  // Linhas para accordions
+  const linhaPorCat = (cat: CostCategory) =>
+    state.costs
+      .filter((c) => c.category === cat)
+      .map((c) => ({ label: c.label, values: monthValues(c, state.tax.regime) }))
+      .filter((x) => sum(x.values) > 0);
   // Linhas detalhadas do CPV/CMV/CSP
   const linhasCpv = state.costs
     .filter((c) => c.category === "custo_vendas" || c.category === "direto_venda")
     .map((c) => ({ label: c.label, values: monthValues(c, state.tax.regime) }))
     .filter((x) => sum(x.values) > 0);
-  const grupos: { id: CostCategory; titulo: string }[] = [
-    { id: "fixo", titulo: "Despesas Administrativas" },
-    { id: "variavel", titulo: "Despesas Comerciais" },
-    { id: "financeiro", titulo: "Despesas Financeiras" },
-  ];
 
-  const [openCustos, setOpenCustos] = useState(false);
+  // Estado dos accordions por grupo
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const toggleGroup = (id: string) => setOpenGroups((s) => ({ ...s, [id]: !s[id] }));
   const [openCpv, setOpenCpv] = useState(false);
 
-  const rows: Array<
-    | { kind: "linha"; k: string; v: number[]; strong?: boolean; tone?: "pos" | "neg"; margin?: number; highlight?: boolean }
-    | { kind: "custos" }
-    | { kind: "cpv" }
-  > = [
+  type GroupRow = {
+    kind: "grupo";
+    id: string;
+    titulo: string;
+    v: number[];           // valores mensais já com sinal (negativo p/ despesas)
+    tone: "neg" | "pos" | "mix";
+    lines: Array<{ label: string; values: number[] }>;
+    emptyMsg?: string;
+  };
+  type LinhaRow = { kind: "linha"; k: string; v: number[]; strong?: boolean; tone?: "pos" | "neg"; margin?: number; highlight?: boolean };
+  type CpvRow = { kind: "cpv" };
+
+  const rows: Array<LinhaRow | CpvRow | GroupRow> = [
     { kind: "linha", k: "(+) Receita Operacional Bruta", v: dre.receitaBruta, strong: true, tone: "pos" },
     { kind: "linha", k: "(−) Devoluções e Cancelamentos", v: dre.deducoesInadimplencia.map((x) => -x), tone: "neg" },
     { kind: "linha", k: "(−) Descontos Incondicionais", v: descIncond.map((x) => -x), tone: "neg" },
     { kind: "linha", k: "(−) Abatimentos", v: abatimentos.map((x) => -x), tone: "neg" },
-    { kind: "linha", k: regime === "simples" ? "(−) DAS Simples Nacional" : "(−) Impostos sobre Vendas (PIS/COFINS/ICMS/ISS/CBS/IBS)", v: dre.impostosVendas.map((x) => -x), tone: "neg" },
+    { kind: "linha", k: regime === "simples" ? "(−) DAS Simples Nacional" : "(−) Tributos sobre Receita (PIS/COFINS/ICMS/ISS/CBS/IBS)", v: dre.impostosVendas.map((x) => -x), tone: "neg" },
     { kind: "linha", k: "(=) Receita Operacional Líquida", v: dre.receitaLiquida, strong: true },
     { kind: "cpv" },
-    { kind: "linha", k: "(=) Lucro Bruto", v: dre.lucroBruto, strong: true, tone: sum(dre.lucroBruto) >= 0 ? "pos" : "neg" },
-    { kind: "custos" },
-    { kind: "linha", k: "(−) Depreciação & Amortização", v: dre.depreciacao.map((x) => -x), tone: "neg" },
-    { kind: "linha", k: "(=) LAIR — Lucro Antes do IR", v: dre.lair, strong: true },
-    { kind: "linha", k: "(−) IRPJ + CSLL", v: dre.impostos.map((x) => -x), tone: "neg" },
-    { kind: "linha", k: "(=) LUCRO LÍQUIDO", v: dre.lucroLiquido, strong: true, tone: ll >= 0 ? "pos" : "neg", margin: ind.margemLiquida, highlight: true },
+    { kind: "linha", k: "(=) LUCRO BRUTO", v: dre.lucroBruto, strong: true, tone: sum(dre.lucroBruto) >= 0 ? "pos" : "neg" },
+    { kind: "grupo", id: "comerciais", titulo: "(−) Despesas Comerciais", v: despComerciais.map((x) => -x), tone: "neg", lines: linhaPorCat("variavel"), emptyMsg: "Nenhuma despesa comercial cadastrada." },
+    { kind: "grupo", id: "admin", titulo: "(−) Despesas Administrativas", v: despAdmin.map((x) => -x), tone: "neg", lines: linhaPorCat("fixo"), emptyMsg: "Nenhuma despesa administrativa cadastrada." },
+    { kind: "grupo", id: "outras_op", titulo: "(±) Outras Despesas/Receitas Operacionais", v: outrasOperacionais, tone: "mix", lines: [{ label: "Depreciação & Amortização", values: dre.depreciacao }], emptyMsg: "Sem outras despesas/receitas operacionais." },
+    { kind: "linha", k: "(=) LUCRO OPERACIONAL / EBIT", v: lucroOperacional, strong: true, tone: sum(lucroOperacional) >= 0 ? "pos" : "neg" },
+    { kind: "grupo", id: "rec_fin", titulo: "(+) Receitas Financeiras", v: receitasFinMensal, tone: "pos", lines: (state.revenue.receitasFinanceiras ?? []).map((rf) => ({ label: rf.label, values: rf.valores ?? zeros() })).filter((x) => sum(x.values) > 0), emptyMsg: "Sem receitas financeiras cadastradas." },
+    { kind: "linha", k: "(±) Ganho/Perda em alienação de ativos", v: ganhoAlienacao, tone: "pos" },
+    { kind: "linha", k: "(=) LUCRO ANTES DO FINANCIAMENTO E TRIBUTOS", v: laft, strong: true, tone: sum(laft) >= 0 ? "pos" : "neg" },
+    { kind: "grupo", id: "desp_fin", titulo: "(−) Despesas Financeiras", v: despFinanc.map((x) => -x), tone: "neg", lines: linhaPorCat("financeiro"), emptyMsg: "Nenhuma despesa financeira cadastrada." },
+    { kind: "linha", k: "(=) LUCRO ANTES DO IR/CSLL (EBT)", v: ebt, strong: true, tone: sum(ebt) >= 0 ? "pos" : "neg" },
+    { kind: "linha", k: "(−) IR / CSLL", v: dre.impostos.map((x) => -x), tone: "neg" },
+    { kind: "linha", k: "(=) LUCRO LÍQUIDO DO EXERCÍCIO", v: dre.lucroLiquido, strong: true, tone: ll >= 0 ? "pos" : "neg", margin: ind.margemLiquida, highlight: true },
   ];
+
+
 
 
 
