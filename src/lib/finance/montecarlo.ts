@@ -90,7 +90,9 @@ export function runMonteCarlo(state: AppState, cfg: MCConfig = DEFAULT_MC): MCRe
 
   for (let it = 0; it < cfg.iterations; it++) {
     const shocked = shockState(state, cfg);
-    const { dre } = buildDRE(shocked, shocked.tax.regime);
+    // SSOT: regime EFETIVO sobre o estado shockado (RBT12 simulada pode
+    // ultrapassar o limite do Simples em iterações otimistas).
+    const { dre } = buildDRE(shocked, resolveEffectiveRegime(shocked));
     const cf = buildCashFlow(shocked);
     ebitdaArr.push(sum(dre.ebitda));
     llArr.push(sum(dre.lucroLiquido));
