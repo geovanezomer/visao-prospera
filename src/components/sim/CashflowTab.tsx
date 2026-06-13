@@ -350,7 +350,7 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
             <YAxis stroke="var(--muted-foreground)" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-            <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12, color: "var(--popover-foreground)" }} itemStyle={{ color: "var(--popover-foreground)" }} labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }} formatter={(v: number) => fmtBRL(v)} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} formatter={(v: number) => fmtBRL(v)} />
             <ReferenceLine y={state.cashflow.caixaMinimo} stroke="var(--warning)" strokeDasharray="4 4" label={{ value: "mínimo", fill: "var(--warning)", fontSize: 10, position: "right" }} />
             <ReferenceLine y={limiar} stroke="var(--destructive)" strokeDasharray="6 3" label={{ value: "limiar", fill: "var(--destructive)", fontSize: 10, position: "right" }} />
             <ReferenceLine y={0} stroke="var(--destructive)" strokeDasharray="4 4" />
