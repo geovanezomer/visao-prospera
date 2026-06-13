@@ -153,47 +153,82 @@ export function TaxTab({ state, update }: { state: AppState; update: (p: Partial
           })()}
         </div>
 
-        {/* Alíquotas de referência da fase ativa */}
-        {emReforma && (
-          <div className="mt-4 grid gap-3 md:grid-cols-4">
-            <div className="rounded-md bg-accent/30 p-2 text-xs">
-              <div className="text-muted-foreground">CBS (federal)</div>
-              <div className="num text-sm font-semibold">{reforma.cbsPct.toFixed(2)}%</div>
-            </div>
-            <div className="rounded-md bg-accent/30 p-2 text-xs">
-              <div className="text-muted-foreground">IBS (estadual+municipal)</div>
-              <div className="num text-sm font-semibold">{reforma.ibsPct.toFixed(2)}%</div>
-            </div>
-            <div className="rounded-md bg-accent/30 p-2 text-xs">
-              <div className="text-muted-foreground">PIS/COFINS residual</div>
-              <div className="num text-sm font-semibold">{(reforma.pisCofinsMult * 100).toFixed(0)}%</div>
-            </div>
-            <div className="rounded-md bg-accent/30 p-2 text-xs">
-              <div className="text-muted-foreground">ICMS/ISS residual</div>
-              <div className="num text-sm font-semibold">{(reforma.icmsIssMult * 100).toFixed(0)}%</div>
-            </div>
-          </div>
-        )}
+        {/* Alíquotas editáveis — Transição e Regime Pleno */}
+        {(() => {
+          const cbsPleno = state.tax.cbsAliquota ?? 8.8;
+          const ibsPleno = state.tax.ibsAliquotaRef ?? 17.7;
+          const ibsMult = (state.tax.ratesOverride?.reformaTransicaoIbsMult ?? 0.5);
+          const icmsIssMult = (state.tax.ratesOverride?.reformaTransicaoIcmsIssMult ?? 0.5);
+          const ibsTrans = ibsPleno * ibsMult;
+          const icmsIssResidual = icmsIssMult * 100;
+          const setOverride = (patch: Partial<NonNullable<typeof state.tax.ratesOverride>>) =>
+            set({ ratesOverride: { ...(state.tax.ratesOverride ?? {}), ...patch } });
+          return (
+            <div className="mt-5 grid gap-4 border-t border-border/40 pt-4 md:grid-cols-2">
+              {/* TRANSIÇÃO 2027–2032 */}
+              <div className="rounded-md border border-border/50 bg-accent/20 p-3">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Transição · 2027–2032
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                      CBS (%)
+                      <HelpTip text="CBS já entra plena em 2027 (extingue PIS/COFINS). Use o mesmo valor do Regime Pleno." />
+                    </label>
+                    <PctInput value={cbsPleno} onChange={(n) => set({ cbsAliquota: n })} />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                      IBS (%)
+                      <HelpTip text="IBS na transição (ponto médio do faseamento 20/40/60/80% — default ≈ 50% da alíquota plena)." />
+                    </label>
+                    <PctInput
+                      value={ibsTrans}
+                      onChange={(n) => setOverride({ reformaTransicaoIbsMult: ibsPleno > 0 ? n / ibsPleno : 0 })}
+                    />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                      ICMS/ISS res. (%)
+                      <HelpTip text="Fração residual de ICMS/ISS que ainda incide durante a transição (default 50%)." />
+                    </label>
+                    <PctInput
+                      value={icmsIssResidual}
+                      onChange={(n) => setOverride({ reformaTransicaoIcmsIssMult: n / 100 })}
+                    />
+                  </div>
+                </div>
+              </div>
 
-        <div className="mt-4 flex flex-wrap items-end gap-4 border-t border-border/40 pt-3">
-          <div>
-            <label className="flex items-center gap-1 text-xs text-muted-foreground">
-              CBS plena (%)
-              <HelpTip text="Alíquota de referência da Contribuição sobre Bens e Serviços (federal), substituta de PIS+COFINS. Referência MF/Senado: 8,8%." />
-            </label>
-            <PctInput value={state.tax.cbsAliquota ?? 8.8} onChange={(n) => set({ cbsAliquota: n })} />
-          </div>
-          <div>
-            <label className="flex items-center gap-1 text-xs text-muted-foreground">
-              IBS plena (%)
-              <HelpTip text="Alíquota de referência do Imposto sobre Bens e Serviços (estadual+municipal), substituto de ICMS+ISS. Referência: 17,7%." />
-            </label>
-            <PctInput value={state.tax.ibsAliquotaRef ?? 17.7} onChange={(n) => set({ ibsAliquotaRef: n })} />
-          </div>
-          <div className="ml-auto text-[11px] text-muted-foreground max-w-md">
-            Ajuste CBS/IBS para simular cenários otimista (≈26,5%) ou conservador (≈28%). O Simples mantém o DAS em todas as fases.
-          </div>
-        </div>
+              {/* REGIME PLENO 2033+ */}
+              <div className="rounded-md border border-border/50 bg-accent/20 p-3">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Regime Pleno · 2033+
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                      CBS (%)
+                      <HelpTip text="Contribuição sobre Bens e Serviços (federal). Referência MF/Senado: 8,8%." />
+                    </label>
+                    <PctInput value={cbsPleno} onChange={(n) => set({ cbsAliquota: n })} />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                      IBS (%)
+                      <HelpTip text="Imposto sobre Bens e Serviços (estadual + municipal). Referência: 17,7%." />
+                    </label>
+                    <PctInput value={ibsPleno} onChange={(n) => set({ ibsAliquotaRef: n })} />
+                  </div>
+                </div>
+                <div className="mt-2 text-[10.5px] text-muted-foreground">
+                  Soma de referência ≈ 26,5%. Ajuste para cenários conservadores (≈28%).
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
 
