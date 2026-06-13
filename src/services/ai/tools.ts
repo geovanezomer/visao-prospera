@@ -277,7 +277,7 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       // Usa params reais do simulador ativo se houver alavanca acionada; senão, base.
       const params: SimulatorParams = simParams ?? { ...DEFAULT_SIM };
       const target = simulatedState ?? state;
-      const { dre } = buildDRE(target, target.tax.regime);
+      const { dre } = buildDRE(target, resolveEffectiveRegime(target));
       const ind = calcIndicators(target, dre);
       const rec = saveScenario(company, {
         name: String(args.nome),
