@@ -12,7 +12,7 @@ import { listScenarios, saveScenario, deleteScenario, getScenario } from "@/serv
 import { listActions, createAction, updateAction, deleteAction, actionsToMarkdown, type ActionStatus } from "@/services/actions/store";
 import { regimeComparisonToMarkdown, taxAuditToMarkdown } from "@/services/compliance/tax";
 import { checklistToMarkdown } from "@/services/compliance/checklist";
-import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
+import { buildDRE, calcIndicators, resolveEffectiveRegime } from "@/lib/finance/calculations";
 
 export interface ToolDef {
   name: string;
