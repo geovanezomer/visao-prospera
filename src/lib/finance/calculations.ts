@@ -824,6 +824,12 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // ΔNCG estimado como a diferença entre a NCG atual e o capital de giro disponível.
   const fcf = ebitdaAnual - impostosAnual - Math.max(0, ncg - capital.capitalGiroDisponivel);
 
+  // GAO = MC ($) ÷ EBIT. Mede elasticidade do EBIT a variações na receita.
+  const mcReais = receitaLiqAnual - custosVarAnual;
+  const gao = ebitAnual > 1 ? Math.max(-99, Math.min(99, mcReais / ebitAnual)) : 0;
+  // Qualidade do Lucro = FCF ÷ LL. Acima de 1 = lucro vira caixa; abaixo = lucro "no papel".
+  const qualidadeLucro = llAnual > 1 ? Math.max(-9, Math.min(9, fcf / llAnual)) : 0;
+
   return {
     margemBruta: receitaLiqAnual > 0 ? (lucroBrutoAnual / receitaLiqAnual) * 100 : 0,
     margemEbitda: receitaLiqAnual > 0 ? (ebitdaAnual / receitaLiqAnual) * 100 : 0,
@@ -836,6 +842,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     endividamentoGeral, grauEndividamento, coberturaJuros, giroAtivo,
     dividaLiqEbitda, dividaLiqEbit, dividaLiqPl, payback, fcf,
     conversaoEbitdaCaixa: ebitdaAnual > 0 ? (fcf / ebitdaAnual) * 100 : 0,
+    gao, qualidadeLucro,
     dividaOnerosa: D, passivoCirculante, ativoCirculante,
   };
 }
