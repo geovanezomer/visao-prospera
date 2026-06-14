@@ -166,12 +166,18 @@ export function CashflowTab({ state, update }: { state: AppState; update: Update
         </div>
       )}
       {/* Sumário */}
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
         <StatCard
           label="Recebimentos no ano"
           value={fmtBRL(cf.totais.recebimentos)}
           tone="pos"
           hint={{ description: "Total efetivamente recebido em caixa no ano, já descontada a inadimplência e respeitando o PMR (prazo médio de recebimento).", formula: "Σ Recebimentos mensais (Receita Líquida defasada pelo PMR)" }}
+        />
+        <StatCard
+          label="Despesas no ano"
+          value={fmtBRL(cf.totais.pagamentosTotais)}
+          tone="neg"
+          hint={{ description: "Total de saídas operacionais de caixa no ano: fornecedores (PMP), custos fixos e variáveis, despesas financeiras e impostos pagos (defasados em 1 mês).", formula: "Σ (Fornecedores + Fixos + Variáveis + Financeiros + Impostos)" }}
         />
         <StatCard
           label="Fluxo Operacional"
