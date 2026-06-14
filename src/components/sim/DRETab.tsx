@@ -325,7 +325,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                           </span>
                         </td>
                         {showPeriods && aggregate(dre.cpv).map((v, i) => (
-                          <td key={i} className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} text-neg`}>
+                          <td key={i} className={`num px-2 py-2 text-right ${periodTxt} text-neg`}>
                             {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
                           </td>
                         ))}
