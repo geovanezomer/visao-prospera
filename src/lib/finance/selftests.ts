@@ -94,7 +94,7 @@ export function runFinanceSelfTests(): { results: SelfTestCase[]; allPassed: boo
   const allPassed = results.every((r) => r.pass);
   if (typeof console !== "undefined") {
     console.groupCollapsed(
-      `%c[GZ FinnancePRO] Auditoria — Self-tests Financeiros (${results.filter(r=>r.pass).length}/${results.length} OK)`,
+      `%c[FinnancePRO] Auditoria — Self-tests Financeiros (${results.filter(r=>r.pass).length}/${results.length} OK)`,
       allPassed ? "color:#22c55e" : "color:#ef4444",
     );
     console.table(results);

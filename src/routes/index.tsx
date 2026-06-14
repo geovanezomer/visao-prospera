@@ -45,8 +45,8 @@ function timeAgo(ts: number | null): string {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "GZ FinnancePRO — Diagnóstico & Simulação Empresarial" },
-      { name: "description", content: "GZ FinnancePRO: diagnóstico financeiro, DRE simulado, regime tributário, WACC e análise de cenários para empresas brasileiras." },
+      { title: "FinnancePRO — Diagnóstico & Simulação Empresarial" },
+      { name: "description", content: "FinnancePRO: diagnóstico financeiro, DRE simulado, regime tributário, WACC e análise de cenários para empresas brasileiras." },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -250,7 +250,7 @@ function SimulaPro() {
           </main>
 
           <footer className="border-t border-border/20 py-4 text-center text-[10px] text-muted-foreground">
-            <p>© 2026 GZ FinnancePRO | Geovane Zomer - Consultor Financeiro CVM 3354-5</p>
+            <p>© 2026 FinnancePRO | Geovane Zomer - Consultor Financeiro CVM 3354-5</p>
           </footer>
         </SidebarInset>
 

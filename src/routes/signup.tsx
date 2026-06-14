@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Cadastro indisponível — GZ FinnancePRO" },
-      { name: "description", content: "O cadastro de novas contas no GZ FinnancePRO está temporariamente desativado." },
+      { title: "Cadastro indisponível — FinnancePRO" },
+      { name: "description", content: "O cadastro de novas contas no FinnancePRO está temporariamente desativado." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -21,7 +21,7 @@ function SignupDisabledPage() {
           <Activity className="h-6 w-6" />
         </div>
         <p className="text-sm font-semibold tracking-tight">
-          GZ Finnance<span className="text-primary">PRO</span>
+          Finnance<span className="text-primary">PRO</span>
         </p>
 
         <div className="mt-8 rounded-lg border border-border bg-card/50 p-6">

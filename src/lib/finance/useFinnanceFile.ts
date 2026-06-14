@@ -220,7 +220,7 @@ export function useFinnanceFile({
 
   // Indicador "arquivo sujo" no título da aba do navegador.
   useEffect(() => {
-    const base = "GZ FinnancePRO — Diagnóstico & Simulação Empresarial";
+    const base = "FinnancePRO — Diagnóstico & Simulação Empresarial";
     const company = state.companyName?.trim();
     const prefix = dirty ? "● " : "";
     document.title = `${prefix}${company ? `${company} · ` : ""}${base}`;

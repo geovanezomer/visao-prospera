@@ -62,7 +62,7 @@ export function AppSidebar({ activeTab, setActiveTab, state, update, onSave, onO
           </div>
           <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-bold leading-none tracking-tight">
-              GZ FINNANCE<span className="text-primary">PRO</span>
+              FINNANCE<span className="text-primary">PRO</span>
             </span>
             <span className="mt-1 text-[9px] uppercase tracking-widest text-muted-foreground/80 truncate">Auditoria & Gestão</span>
           </div>

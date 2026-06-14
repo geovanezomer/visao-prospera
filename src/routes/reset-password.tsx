@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Nova senha — GZ FinnancePRO" },
+      { title: "Nova senha — FinnancePRO" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -65,7 +65,7 @@ function ResetPasswordPage() {
             <Activity className="h-5 w-5" />
           </div>
           <p className="text-base font-semibold tracking-tight">
-            GZ Finnance<span className="text-primary">PRO</span>
+            Finnance<span className="text-primary">PRO</span>
           </p>
         </div>
 
