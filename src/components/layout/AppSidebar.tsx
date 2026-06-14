@@ -82,7 +82,7 @@ export function AppSidebar({ activeTab, setActiveTab, state, update, onSave, onO
                   }}
                   tooltip={item.title}
                   className={cn(
-                    "transition-colors",
+                    "h-8 transition-colors",
                     activeTab === item.value 
                       ? "bg-primary/10 text-primary font-medium" 
                       : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
