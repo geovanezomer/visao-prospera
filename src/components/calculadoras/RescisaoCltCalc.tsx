@@ -36,6 +36,9 @@ export function RescisaoCltCalc() {
   const [possuiFeriasVencidas, setPossuiFeriasVencidas] = useState<boolean>(false);
   const [dependentesIR, setDependentesIR] = useState<number>(0);
   const [avisoPrevio, setAvisoPrevio] = useState<"indenizado" | "trabalhado" | "dispensado">("indenizado");
+  // Campos exclusivos do contrato de experiência rompido antes do prazo (CLT arts. 479/480)
+  const [diasRestantesExperiencia, setDiasRestantesExperiencia] = useState<number>(0);
+  const [rupturaExperienciaPor, setRupturaExperienciaPor] = useState<"empregador" | "empregado">("empregador");
 
   const resultado = useMemo(() => {
     try {
@@ -43,15 +46,17 @@ export function RescisaoCltCalc() {
         motivo, salarioBruto, diasTrabalhadosMes, mesesFeriasProporcionais,
         mesesDecimoProporcional, anosNaEmpresa, saldoFGTS, possuiFeriasVencidas,
         dependentesIR, avisoPrevio,
+        diasRestantesExperiencia, rupturaExperienciaPor,
       });
     } catch { return null; }
-  }, [motivo, salarioBruto, diasTrabalhadosMes, mesesFeriasProporcionais, mesesDecimoProporcional, anosNaEmpresa, saldoFGTS, possuiFeriasVencidas, dependentesIR, avisoPrevio]);
+  }, [motivo, salarioBruto, diasTrabalhadosMes, mesesFeriasProporcionais, mesesDecimoProporcional, anosNaEmpresa, saldoFGTS, possuiFeriasVencidas, dependentesIR, avisoPrevio, diasRestantesExperiencia, rupturaExperienciaPor]);
 
   function limpar() {
     setMotivo("sem_justa_causa");
     setSalarioBruto(0); setDiasTrabalhadosMes(0); setMesesFeriasProporcionais(0);
     setMesesDecimoProporcional(0); setAnosNaEmpresa(0); setSaldoFGTS(0);
     setPossuiFeriasVencidas(false); setDependentesIR(0); setAvisoPrevio("indenizado");
+    setDiasRestantesExperiencia(0); setRupturaExperienciaPor("empregador");
   }
 
   return (
