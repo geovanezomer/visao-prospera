@@ -95,5 +95,6 @@ export function useScenarios() {
     });
   };
   const remove = (id: string) => setScenarios((arr) => arr.filter((s) => s.id !== id));
-  return { scenarios, save, remove };
+  const replaceAll = (next: Scenario[]) => setScenarios(next.slice(-5));
+  return { scenarios, save, remove, replaceAll };
 }
