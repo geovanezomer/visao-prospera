@@ -100,6 +100,23 @@ export function RescisaoCltCalc() {
             <p className="mb-1 font-medium text-primary">Sobre este tipo de rescisão</p>
             <p>{motivoDescricao[motivo]}</p>
           </div>
+
+          {motivo === "termino_experiencia" && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Dias restantes do contrato" hint="0 = término no prazo. >0 = rescisão antecipada (CLT arts. 479/480).">
+                <Input type="number" min={0} value={diasRestantesExperiencia || ""} onChange={(e) => setDiasRestantesExperiencia(Number(e.target.value) || 0)} />
+              </Field>
+              <Field label="Quem rompeu antes do prazo?" hint="Empregador paga 50% (art. 479). Empregado desconta 50% (art. 480).">
+                <Select value={rupturaExperienciaPor} onValueChange={(v) => setRupturaExperienciaPor(v as typeof rupturaExperienciaPor)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="empregador">Empregador</SelectItem>
+                    <SelectItem value="empregado">Empregado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+          )}
         </CardContent>
       </Card>
 
