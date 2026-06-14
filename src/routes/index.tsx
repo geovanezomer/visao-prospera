@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { RotateCcw, Presentation, X, FileText } from "lucide-react";
 import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
 import { Badge } from "@/components/ui/badge";
+import { CalculadorasTab } from "@/components/calculadoras/CalculadorasTab";
 
 // Formata "há X" relativo para o breadcrumb do header.
 function timeAgo(ts: number | null): string {
