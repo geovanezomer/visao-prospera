@@ -1,110 +1,102 @@
-# Plano: Consultor IA Completo — Módulos Invisíveis + Upload de Documentos
 
-## Visão geral
+# Sistema de Arquivos .finnance (estilo Excalidraw)
 
-Sua intuição está certa: os 3 módulos **não precisam de UI própria** — eles vivem como **camadas de dados/serviços** que o chat acessa via *tool calling*. Isso mantém a interface limpa e dá superpoderes ao CFO conversacional.
+Transformar o FinancePRO num app file-based: estado do trabalho vira um arquivo `.finnance` (JSON) que o consultor salva no disco, abre, compartilha por e-mail/Drive/WhatsApp — sem depender do `localStorage` daquele navegador específico.
 
-Adicionamos também **upload de imagens e PDFs** direto no chat (balancetes, contratos, notas, prints de relatórios externos).
+## Como o Excalidraw faz (referência)
 
----
+1. **Estado em memória + autosave no localStorage** como rede de segurança (recupera se fechar a aba).
+2. **Save to file** → serializa cena em JSON com `type`, `version`, `source`, payload → `Blob` → `<a download="nome.excalidraw">`.
+3. **Open** → `<input type="file">` (ou drag-drop) → lê JSON → valida `type === "excalidraw"` → migra por `version` → carrega no estado.
+4. **Nome do arquivo no header** + indicador "modificado" (●) quando há mudanças não salvas.
+5. **Atalhos** Ctrl+S / Ctrl+O, e prompt `beforeunload` quando há alterações não salvas.
 
-## 1. Módulo: Benchmark Setorial + Macro (invisível)
+Vamos replicar isso 1:1, adaptado ao nosso `AppState` + `Scenario[]`.
 
-**O que faz:** dá ao chat respostas tipo *"sua margem de 12% está acima da mediana do varejo (8%)"* e *"com Selic projetada em 10%, seu WACC deveria ser ~14%"*.
+## Formato do arquivo `.finnance`
 
-**Implementação:**
-- `src/services/benchmark/sectors.ts` — base estática JSON com medianas/quartis por setor CNAE (margem bruta, EBITDA, líquida, giro, endividamento, prazo médio). Fontes: Sebrae/Serasa/IBGE consolidadas manualmente em ~20 setores principais.
-- `src/services/macro/bcb.ts` — fetch das séries do **Banco Central (API SGS pública, sem chave)**: Selic, IPCA, CDI, câmbio USD/EUR. Cache de 6h em localStorage.
-- Exposto ao chat via novas tools: `get_benchmark(setor, indicador)`, `get_macro(serie, periodo)`, `comparar_com_setor(indicador)`.
-
-## 2. Módulo: Cenários Versionados (invisível ao usuário, visível ao chat)
-
-**O que faz:** o chat consegue *"salve este cenário como 'Otimista Q1'"*, *"compare base vs otimista"*, *"projete 24 meses com crescimento de 5% a.m."*.
-
-**Implementação:**
-- `src/services/scenarios/store.ts` — persistência em localStorage por empresa: `{ id, nome, criadoEm, alavancas, dreProjetado, indicadores }`.
-- `src/services/scenarios/projector.ts` — engine de projeção 12/24/60 meses usando alavancas atuais + curva configurável.
-- `src/services/scenarios/sensitivity.ts` — análise de sensibilidade (varia ±20% cada premissa, mede impacto no valuation/EBITDA).
-- Tools: `salvar_cenario(nome)`, `listar_cenarios()`, `comparar_cenarios(a, b)`, `projetar(meses, premissas)`, `sensibilidade(metrica)`.
-
-## 3. Módulo: Plano de Ação + Compliance (invisível)
-
-**O que faz:** rastreia decisões e dá checklist tributário/fiscal sob demanda.
-
-**Implementação:**
-- `src/services/actions/store.ts` — localStorage: `{ id, titulo, origem (alerta/chat), responsavel, prazo, status, criadoEm, resolvidoEm, impactoEsperado }`.
-- `src/services/compliance/tax.ts` — simulador de regime tributário (Simples × Presumido × Real) com break-even por faturamento/margem.
-- `src/services/compliance/checklist.ts` — lista de obrigações (DEFIS, ECF, SPED, eSocial) com periodicidade.
-- Tools: `criar_acao(titulo, prazo, responsavel)`, `listar_acoes(status)`, `marcar_concluida(id)`, `simular_regime_tributario()`, `checklist_compliance()`.
-
-## 4. Upload de Documentos no Chat
-
-**O que faz:** anexar PDFs (balancete, contrato, NF), imagens (print de relatório, foto de documento) e a IA lê o conteúdo.
-
-**Implementação:**
-- Botão de clipe no `AIChatSheet.tsx` → `<input type="file" accept="image/*,application/pdf">`.
-- **Imagens:** convertidas para base64 e enviadas como `image_url` nas mensagens (OpenAI Vision via gpt-4o / LM Studio com modelo vision local).
-- **PDFs:** extração client-side via `pdfjs-dist` (texto) — anexado como bloco de contexto na mensagem. Para PDFs escaneados, avisa o usuário que precisa OCR (futuro).
-- Limite: 10MB por arquivo, max 3 arquivos por mensagem.
-- Indicador visual de arquivos anexados (chips removíveis) antes de enviar.
-- Arquivos ficam apenas em memória da conversa (não persistem em localStorage para evitar estourar quota).
-
-## 5. Integração com o systemPrompt
-
-Atualizar `systemPrompt.ts` para informar ao modelo:
-- Quais tools novas existem e quando usar (ex: *"sempre que o usuário perguntar 'isso é bom?' chame `comparar_com_setor`"*).
-- Que pode receber imagens/PDFs e deve extrair números relevantes para o snapshot.
-- Glossário expandido com termos tributários (Fator R, Anexo III/V, PIS/COFINS cumulativo vs não-cumulativo).
-
----
-
-## Estrutura de arquivos
-
-```text
-src/
-├── services/
-│   ├── ai/
-│   │   ├── tools.ts                    # EXPANDIR — registrar novas tools
-│   │   ├── systemPrompt.ts             # EXPANDIR — instruir uso + glossário
-│   │   └── attachments.ts              # NOVO — processar imagens/PDFs
-│   ├── benchmark/
-│   │   ├── sectors.ts                  # NOVO — base setorial
-│   │   └── sectors.data.json           # NOVO — dados
-│   ├── macro/
-│   │   └── bcb.ts                      # NOVO — API BCB SGS
-│   ├── scenarios/
-│   │   ├── store.ts                    # NOVO
-│   │   ├── projector.ts                # NOVO
-│   │   └── sensitivity.ts              # NOVO
-│   ├── actions/
-│   │   └── store.ts                    # NOVO
-│   └── compliance/
-│       ├── tax.ts                      # NOVO
-│       └── checklist.ts                # NOVO
-└── components/ai/
-    ├── AIChatSheet.tsx                 # EDITAR — botão upload + chips
-    └── AttachmentChip.tsx              # NOVO — UI dos anexos
+```json
+{
+  "type": "gz-finnance",
+  "version": 1,
+  "source": "GZ FinnancePRO",
+  "savedAt": "2026-06-14T12:00:00.000Z",
+  "app": { "name": "FinancePRO", "version": "1.x" },
+  "state": { /* AppState completo */ },
+  "scenarios": [ /* Scenario[] salvos */ ],
+  "meta": {
+    "companyName": "ACME LTDA",
+    "businessType": "servicos",
+    "notes": ""
+  }
+}
 ```
 
-## Dependências novas
+- `type` + `version` permitem migração futura (mesma estratégia de `migrateState` que já existe em `defaults.ts`).
+- Nome default do arquivo: `{companyName}-{YYYY-MM-DD}.finnance` (sanitizado).
 
-- `pdfjs-dist` (extração de texto de PDF no browser)
+## Mudanças de UX
 
-## Ordem de implementação (entrego tudo num único batch)
+**Sidebar → Configurações Rápidas** (substituindo o botão "Exportar" atual, que hoje só chama `window.print`):
 
-1. Tools registry expandido + systemPrompt atualizado
-2. Benchmark + Macro (mais imediato em ROI)
-3. Cenários + projetor
-4. Plano de ação + Compliance tributário
-5. Upload de imagens (Vision) e PDFs no chat
-6. Sanity check: testar fluxo "envie balancete PDF → IA lê → compara com setor → sugere ação → salva no plano"
+- 💾 **Salvar** — baixa `.finnance` (Ctrl+S).
+- 📂 **Abrir** — file picker para `.finnance` (Ctrl+O); confirma sobrescrever se houver mudanças não salvas.
+- 📄 **Novo** — reseta para `DEFAULT_STATE` (com confirmação).
+- 🖨️ **Exportar PDF** — mantém o `window.print()` antigo, renomeado, para preservar a função de relatório.
 
-## Observações importantes
+**Header**: nome do arquivo atual + indicador `●` de "dirty" (não salvo).
+**beforeunload**: aviso nativo se `dirty === true`.
 
-- **Tudo em localStorage** mantém a arquitetura sem backend, fiel ao seu setup Docker/local.
-- **Benchmarks** começam com ~20 setores; fácil expandir depois.
-- **Vision** funciona nativo no OpenAI (`gpt-4o`); no LM Studio depende do modelo carregado (ex: `llava`, `qwen2-vl`). Detectamos e avisamos.
-- **Modelos invisíveis ≠ inacessíveis ao usuário**: se ele quiser, pode pedir *"liste meus cenários salvos"* ou *"mostre meu plano de ação"* — a IA responde formatado.
-- Mantém compatibilidade total com o que já foi construído (snapshot, threads, auditor mode, etc.).
+## Arquitetura técnica
 
-Posso implementar?
+### Novos arquivos
+
+- `src/lib/finance/fileFormat.ts` — schema Zod `FinnanceFile`, `serialize(state, scenarios, meta)`, `parse(json)`, `migrateFile(raw)`. Reusa `migrateState` de `defaults.ts`.
+- `src/lib/finance/fileIO.ts` — helpers browser-only:
+  - `downloadFinnanceFile(payload, filename)` — Blob + `<a download>`.
+  - `pickFinnanceFile(): Promise<FinnanceFile>` — abre `<input type="file" accept=".finnance,application/json">`, lê com `FileReader`, valida com Zod.
+  - `sanitizeFilename(name)`.
+- `src/lib/finance/useFinnanceFile.ts` — hook que orquestra:
+  - `currentFileName`, `dirty`, `save()`, `saveAs()`, `open()`, `newFile()`.
+  - Marca `dirty=true` ao detectar mudança em `state`/`scenarios` (compara com snapshot do último save).
+  - Registra `beforeunload` quando `dirty`.
+  - Registra atalhos Ctrl+S / Ctrl+O em `window`.
+
+### Arquivos alterados
+
+- `src/routes/index.tsx` — instancia `useFinnanceFile`, passa handlers para a `AppSidebar`, exibe nome de arquivo + indicador dirty no header.
+- `src/components/layout/AppSidebar.tsx` — substitui `onExport` por `onSave`, `onOpen`, `onNew`, `onExportPdf`; ajusta ícones (`Save`, `FolderOpen`, `FilePlus`, `Printer`).
+- `src/lib/finance/store.ts` — **mantém** o autosave no localStorage como rede de segurança (igual Excalidraw). Adiciona um `loadFromFile(file)` que aceita um `FinnanceFile` validado e substitui `state` + `scenarios` atomicamente.
+
+### Validação e segurança
+
+- Zod schema rigoroso em `fileFormat.ts` rejeita arquivos sem `type: "gz-finnance"` ou com `version` desconhecida.
+- Migrations versionadas: `migrateFile(raw)` aplica transformações entre versões antes de validar.
+- Toast (`sonner`) para feedback: "Arquivo salvo", "Arquivo inválido", "Versão futura — atualize o app".
+- Confirmação (`ConfirmDialog` já existe) antes de Abrir/Novo quando `dirty`.
+
+## Compatibilidade
+
+- LocalStorage continua sendo a fonte de dados ao abrir o app (autosave + persistência entre sessões), como no Excalidraw.
+- Usuários antigos não precisam fazer nada — o app abre como antes; agora ganham Salvar/Abrir.
+- Cenários salvos viajam junto com o arquivo (hoje ficam isolados no navegador).
+
+## Fora de escopo (próximos passos possíveis)
+
+- Compartilhamento por link (server-side storage no Cloud).
+- Versionamento/histórico de arquivos.
+- Import de `.xlsx` ou outros formatos.
+
+## Resumo dos arquivos
+
+```text
+NOVOS:
+  src/lib/finance/fileFormat.ts       # schema + serialize/parse/migrate
+  src/lib/finance/fileIO.ts           # download/pick browser helpers
+  src/lib/finance/useFinnanceFile.ts  # hook orquestrador
+
+EDITADOS:
+  src/routes/index.tsx                # wire-up + header file indicator
+  src/components/layout/AppSidebar.tsx# botões Salvar/Abrir/Novo/PDF
+  src/lib/finance/store.ts            # loadFromFile()
+```
