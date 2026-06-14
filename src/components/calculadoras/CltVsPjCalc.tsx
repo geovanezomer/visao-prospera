@@ -3,7 +3,7 @@
  * Cálculo reativo. Apenas abas Resumo e Detalhamento (sem Breakeven nem Fluxo Mensal).
  */
 import { useMemo, useState } from "react";
-import { Briefcase, Info, RotateCcw, Scale, TrendingUp } from "lucide-react";
+import { Info, RotateCcw, Scale } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
