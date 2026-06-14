@@ -18,6 +18,7 @@ services:
       - "3000:3000"
     env_file:
       - .env
+      - .env.local
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -34,7 +35,9 @@ services:
     ports:
       - "5173:5173"
     env_file:
+    env_file:
       - .env
+      - .env.local
     environment:
       - HOST=0.0.0.0
       - PORT=5173
