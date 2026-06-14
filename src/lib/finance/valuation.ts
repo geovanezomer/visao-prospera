@@ -185,8 +185,11 @@ function buildDCF(state: AppState, params: ValuationParams, m: PrecomputedValuat
     warnings.push(`Spread WACC − g abaixo de 0,5% (${(spread * 100).toFixed(2)}pp). Perpetuidade de Gordon não converge — usando fallback FCL × 5.`);
   }
 
+  // Auditoria bug #8: Gordon clássico = FCF_{T+1} / (WACC − g). `lastYearFCF` JÁ é
+  // o FCF do último ano projetado (período T), que internamente já cresceu. Aplicar
+  // (1+g) extra resulta em dupla contagem de um período de crescimento.
   const terminalValue = spread >= 0.005
-    ? (lastYearFCF * (1 + g)) / spread
+    ? lastYearFCF / spread
     : lastYearFCF * 5; // fallback p/ WACC≈g (perpetuidade não converge)
   const npvTerminal = terminalValue / Math.pow(1 + waccMonthly, fcfProjected.length);
 

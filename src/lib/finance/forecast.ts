@@ -83,7 +83,9 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   const cpvBase = dre.cpv.slice();
   const cpvAnoBase = sum(cpvBase);
   const cpvRatioBase = cpvAnoBase / receitaAnoBase;       // CPV / receita
-  const depMensal = dre.depreciacao[0] || 0;
+  // Auditoria bug #6: usar média anual da depreciação (estava usando só janeiro,
+  // o que distorce projeções quando há capex ativado no meio do ano).
+  const depMensal = sum(dre.depreciacao) / 12;
   const taxRatioBase = sum(tax.monthly) / receitaAnoBase; // alíquota efetiva sobre receita bruta
   // Resultado financeiro projetado como proporção da receita (aproximação razoável
   // enquanto a estrutura de dívida não é re-projetada). Inclui juros pagos − juros recebidos.
