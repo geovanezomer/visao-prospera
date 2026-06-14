@@ -42,7 +42,7 @@ function timeAgo(ts: number | null): string {
   return new Date(ts).toLocaleDateString("pt-BR");
 }
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/app")({
   head: () => ({
     meta: [
       { title: "FinnancePRO — Diagnóstico & Simulação Empresarial" },
