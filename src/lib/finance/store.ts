@@ -55,8 +55,16 @@ export function useAppState() {
     try { localStorage.setItem(stateKey(username), JSON.stringify(state)); } catch {}
   }, [state, hydrated, username]);
 
+  // SSOT: TODO patch passa por migrateState — sanitiza Months[12],
+  // normaliza valores inválidos (NaN/Infinity/strings) e garante a
+  // invariante de tipos antes de salvar no localStorage. Substitui a
+  // necessidade de um schema Zod completo para AppState (que tem 100+
+  // campos aninhados) sem perder a proteção contra dados corrompidos.
   const update = useCallback((patch: Partial<AppState> | ((s: AppState) => AppState)) => {
-    setState((s) => (typeof patch === "function" ? patch(s) : { ...s, ...patch }));
+    setState((s) => {
+      const next = typeof patch === "function" ? patch(s) : { ...s, ...patch };
+      return migrateState(next);
+    });
   }, []);
 
   const reset = useCallback(() => setState(DEFAULT_STATE), []);
