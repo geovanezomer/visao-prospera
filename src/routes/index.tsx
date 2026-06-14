@@ -117,22 +117,7 @@ function SimulaPro() {
                   Modo Reunião · ESC para sair
                 </Badge>
               )}
-              <Button
-                size="sm"
-                variant={meetingMode ? "default" : "outline"}
-                onClick={() => setMeetingMode((v) => !v)}
-                className="h-8"
-                title="Modo Reunião: oculta menus, amplia fontes e destaca KPIs para apresentação ao cliente"
-              >
-                {meetingMode ? <X className="h-3.5 w-3.5 sm:mr-2" /> : <Presentation className="h-3.5 w-3.5 sm:mr-2" />}
-                <span className="hidden sm:inline">{meetingMode ? "Sair Reunião" : "Modo Reunião"}</span>
-              </Button>
-              <Button size="sm" variant="outline" onClick={exportReport} className="h-8" data-meeting-hide="true">
-                <Download className="h-3.5 w-3.5 sm:mr-2" /> 
-                <span className="hidden sm:inline">Exportar</span>
-              </Button>
               <div data-meeting-hide="true" className="contents">
-                <TaxSettingsDialog state={state} update={update} />
                 <ConfirmDialog
                   title="Restaurar dados?"
                   description="Isso resetará todos os valores atuais."
