@@ -80,6 +80,15 @@ const PLAN_DISPLAY: Record<PlanId, PlanDisplay> = {
   },
 };
 
+type PaymentsEnvironment = "sandbox" | "live";
+
+function getPaymentsEnvironment(): PaymentsEnvironment {
+  const token = import.meta.env.VITE_PAYMENTS_CLIENT_TOKEN;
+  if (token?.startsWith("pk_test_")) return "sandbox";
+  if (token?.startsWith("pk_live_")) return "live";
+  throw new Error("Pagamentos não configurados para este ambiente. Finalize o Go Live antes de abrir o checkout em produção.");
+}
+
 function PlansPage() {
   const { user, hydrated, logout } = useAuth();
   const navigate = useNavigate();
@@ -99,14 +108,15 @@ function PlansPage() {
     setLoadingPlan(planId);
     try {
       const plan = PLANS_CATALOG[planId];
-      const { url } = await checkoutFn({
-        data: { priceId: plan.priceId, origin: window.location.origin },
+      const result = await checkoutFn({
+        data: { priceId: plan.priceId, origin: window.location.origin, environment: getPaymentsEnvironment() },
       });
+      if ("error" in result) throw new Error(result.error);
       // Redireciona para checkout hospedado pelo Stripe
-      window.location.href = url;
+      window.location.href = result.url;
     } catch (e) {
       console.error("Erro ao iniciar checkout:", e);
-      setError("Não foi possível abrir o checkout. Tente novamente em alguns segundos.");
+      setError(e instanceof Error ? e.message : "Não foi possível abrir o checkout. Tente novamente em alguns segundos.");
       setLoadingPlan(null);
     }
   };
