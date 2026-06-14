@@ -26,8 +26,8 @@ import { cn } from "@/lib/utils";
 
 
 interface AppSidebarProps {
-  activeTab: TabKey | "ai";
-  setActiveTab: (tab: TabKey | "ai") => void;
+  activeTab: TabKey | "ai" | "calculadoras";
+  setActiveTab: (tab: TabKey | "ai" | "calculadoras") => void;
   state: AppState;
   update: (patch: Partial<AppState> | ((s: AppState) => AppState)) => void;
   onSave: () => void;
