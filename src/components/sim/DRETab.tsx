@@ -284,7 +284,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                         return (
                           <tr key={`${row.id}_${li}`} className="border-t border-border/20">
                             <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">{l.label}</td>
-                            {view === "mensal" && l.values.map((v, i) => {
+                            {showPeriods && aggregate(l.values).map((v, i) => {
                               const sv = v * sgn;
                               return (
                                 <td key={i} className={`num px-2 py-1.5 text-right text-xs ${sv < 0 ? "text-neg" : sv > 0 ? "text-pos" : "text-muted-foreground"}`}>
@@ -292,6 +292,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                                 </td>
                               );
                             })}
+
                             <td className={`num px-4 py-1.5 text-right text-xs ${lTotal < 0 ? "text-neg" : lTotal > 0 ? "text-pos" : ""}`}>{fmtBRL(lTotal)}</td>
                             <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">{fmtPct(rb > 0 ? Math.abs(lTotal) / rb : 0)}</td>
                           </tr>
