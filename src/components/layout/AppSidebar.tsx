@@ -71,7 +71,7 @@ export function AppSidebar({ activeTab, setActiveTab, state, update, onSave, onO
 
       <SidebarContent className="py-2">
         <SidebarGroup>
-          <SidebarMenu>
+          <SidebarMenu className="gap-0.5">
             {NAV_ITEMS.map((item) => (
               <SidebarMenuItem key={item.value}>
                 <SidebarMenuButton
