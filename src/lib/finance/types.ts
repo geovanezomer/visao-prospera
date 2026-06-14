@@ -275,7 +275,14 @@ export interface StrategicAnswers {
   regulatory: RegulatoryAnswers;
 }
 
+/** Versão atual do schema do AppState. Incrementar a cada breaking change
+ *  no formato persistido — `migrateAppStateVersion` em defaults.ts deve
+ *  ter um case correspondente para fazer a transição. */
+export const APP_STATE_SCHEMA_VERSION = 1;
+
 export interface AppState {
+  /** Versão do schema persistido. Quando ausente, assume v0 (legado pré-versionamento). */
+  schemaVersion?: number;
   businessType: BusinessType;
   companyName: string;
   /** Número de colaboradores (headcount). Base para indicadores de produtividade. */
@@ -289,6 +296,7 @@ export interface AppState {
   /** Respostas qualitativas do módulo de Análise Estratégica (opcional). */
   strategic?: StrategicAnswers;
 }
+
 
 export interface Scenario {
   id: string;

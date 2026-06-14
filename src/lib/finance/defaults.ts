@@ -1,7 +1,35 @@
 import { z } from "zod";
-import { AppState, BusinessType, CostLine, COST_VENDAS_TABLE_CONFIG } from "./types";
+import { AppState, BusinessType, CostLine, COST_VENDAS_TABLE_CONFIG, APP_STATE_SCHEMA_VERSION } from "./types";
 import { fill12 } from "./format";
 import { coerceMonths } from "./safeMath";
+
+// ─── Migrações de schema versionadas ──────────────────────────────────
+// A cada breaking change no formato persistido do AppState:
+//   1) incrementar APP_STATE_SCHEMA_VERSION em types.ts
+//   2) adicionar uma função aqui mapeando V → V+1
+//   3) registrar em SCHEMA_MIGRATIONS abaixo
+// O `migrateState` legado (que normaliza Months[12], adiciona rubricas
+// novas via `ensure`, etc.) continua rodando depois e cobre mudanças
+// não-breaking. Esse mecanismo aqui é só para mudanças disruptivas.
+type SchemaMigration = (s: AppState) => AppState;
+
+const SCHEMA_MIGRATIONS: Record<number, SchemaMigration> = {
+  // Exemplo (quando for necessário):
+  // 1: (s) => ({ ...s, novoCampo: valorDefault, schemaVersion: 2 }),
+};
+
+/** Aplica migrações sequencialmente de `from` até a versão atual. */
+function applySchemaMigrations(s: AppState): AppState {
+  let current = s;
+  let v = current.schemaVersion ?? 0;
+  while (v < APP_STATE_SCHEMA_VERSION) {
+    const fn = SCHEMA_MIGRATIONS[v];
+    if (!fn) break; // sem migração registrada; pula para a versão final
+    current = fn(current);
+    v = (current.schemaVersion ?? v) + (current.schemaVersion === undefined ? 1 : 0);
+  }
+  return { ...current, schemaVersion: APP_STATE_SCHEMA_VERSION };
+}
 
 // Schema Zod do shape de topo do AppState. Validação defensiva no boot
 // e no import de arquivo .finnance — garante que `migrateState` recebe
@@ -338,5 +366,7 @@ export function migrateState(s: AppState): AppState {
   cashflow.dividendos = coerceMonths(cashflow.dividendos);
   cashflow.amortizacoes = coerceMonths(cashflow.amortizacoes);
 
-  return { ...rest, revenue, capital, tax, costs, cashflow, strategic };
+  // Aplica migrações versionadas (breaking changes) e estampa schemaVersion atual.
+  return applySchemaMigrations({ ...rest, revenue, capital, tax, costs, cashflow, strategic });
 }
+
