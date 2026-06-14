@@ -1,0 +1,269 @@
+/**
+ * Engine de cálculo de Rescisão Trabalhista CLT.
+ *
+ * Bases legais:
+ *  - CLT arts. 477, 478, 479, 482 (justa causa), 484-A (acordo), 487-491 (aviso prévio).
+ *  - Lei 12.506/2011: aviso prévio proporcional (30 + 3 dias/ano completo, máx 90).
+ *  - Lei 8.036/90 art. 18: multa FGTS de 40% (sem justa) ou 20% (acordo art. 484-A).
+ *  - CF art. 7º, XVII: férias + 1/3 constitucional.
+ *  - Tabelas INSS e IRRF 2025 (vigentes desde mai/2025).
+ *  - Isenções consolidadas: aviso prévio indenizado e férias indenizadas + 1/3 NÃO sofrem
+ *    incidência de INSS nem IRRF (REsp 1.230.957, STJ; Tema 985 STF).
+ *
+ * Engine pura — sem dependência de UI.
+ */
+import { z } from "zod";
+
+// ============================================================================
+// Tipos
+// ============================================================================
+
+export type MotivoRescisao =
+  | "sem_justa_causa"
+  | "justa_causa"
+  | "pedido_demissao"
+  | "acordo_484a"
+  | "rescisao_indireta"
+  | "termino_experiencia";
+
+export const motivosLabel: Record<MotivoRescisao, string> = {
+  sem_justa_causa: "Demissão sem justa causa",
+  justa_causa: "Demissão por justa causa",
+  pedido_demissao: "Pedido de demissão",
+  acordo_484a: "Acordo (art. 484-A)",
+  rescisao_indireta: "Rescisão indireta",
+  termino_experiencia: "Término de contrato de experiência",
+};
+
+export const motivoDescricao: Record<MotivoRescisao, string> = {
+  sem_justa_causa: "O empregador demite sem motivo disciplinar. Trabalhador tem direito a todas as verbas: saldo, férias proporcionais + 1/3, 13º proporcional, aviso prévio indenizado, multa de 40% do FGTS e saque integral.",
+  justa_causa: "Demissão motivada por falta grave (art. 482 CLT). Trabalhador recebe apenas saldo de salário e férias vencidas (se houver). Sem 13º proporcional, sem aviso, sem multa, sem saque FGTS.",
+  pedido_demissao: "Trabalhador solicita o desligamento. Recebe saldo, 13º proporcional, férias proporcionais + 1/3 e vencidas. Sem aviso indenizado, sem multa FGTS e sem saque (a menos que cumpra aviso).",
+  acordo_484a: "Distrato comum entre empresa e empregado. Aviso prévio e multa FGTS pela metade (20%). Saque de 80% do FGTS. Demais verbas integrais.",
+  rescisao_indireta: "‘Justa causa do empregador’ — falta grave do empregador (art. 483). Mesmas verbas da demissão sem justa causa.",
+  termino_experiencia: "Fim do contrato de experiência no prazo. Sem aviso prévio e sem multa de 40%, mas com saque do FGTS. Demais verbas proporcionais.",
+};
+
+// ============================================================================
+// Tabelas 2025 (INSS / IRRF)
+// ============================================================================
+
+/** Faixas progressivas do INSS — vigentes mai/2025. */
+const INSS_FAIXAS = [
+  { ate: 1518.00, aliquota: 0.075 },
+  { ate: 2793.88, aliquota: 0.09 },
+  { ate: 4190.83, aliquota: 0.12 },
+  { ate: 8157.41, aliquota: 0.14 }, // teto
+] as const;
+
+/** Faixas IRRF mensais 2025 (após dedução simplificada opcional). */
+const IRRF_FAIXAS = [
+  { ate: 2428.80, aliquota: 0.0, deduzir: 0 },
+  { ate: 2826.65, aliquota: 0.075, deduzir: 182.16 },
+  { ate: 3751.05, aliquota: 0.15, deduzir: 394.16 },
+  { ate: 4664.68, aliquota: 0.225, deduzir: 675.49 },
+  { ate: Infinity, aliquota: 0.275, deduzir: 908.73 },
+] as const;
+
+/** Dedução por dependente (IRRF 2025). */
+const DEP_DEDUCAO = 189.59;
+
+/** Calcula INSS progressivo (cap no teto). */
+export function calcularINSS(base: number): number {
+  if (base <= 0) return 0;
+  let restante = Math.min(base, INSS_FAIXAS[INSS_FAIXAS.length - 1].ate);
+  let anterior = 0;
+  let total = 0;
+  for (const f of INSS_FAIXAS) {
+    const faixa = Math.max(0, Math.min(restante, f.ate) - anterior);
+    total += faixa * f.aliquota;
+    anterior = f.ate;
+    if (restante <= f.ate) break;
+  }
+  return Math.round(total * 100) / 100;
+}
+
+/** Calcula IRRF mensal com dedução de INSS e dependentes. */
+export function calcularIRRF(baseComINSS: number, inss: number, dependentes: number): number {
+  const base = Math.max(0, baseComINSS - inss - dependentes * DEP_DEDUCAO);
+  for (const f of IRRF_FAIXAS) {
+    if (base <= f.ate) {
+      const ir = Math.max(0, base * f.aliquota - f.deduzir);
+      return Math.round(ir * 100) / 100;
+    }
+  }
+  return 0;
+}
+
+// ============================================================================
+// Schema de entrada
+// ============================================================================
+
+export const rescisaoInputSchema = z.object({
+  motivo: z.enum([
+    "sem_justa_causa", "justa_causa", "pedido_demissao",
+    "acordo_484a", "rescisao_indireta", "termino_experiencia",
+  ]),
+  salarioBruto: z.number().min(0),
+  diasTrabalhadosMes: z.number().int().min(0).max(31).default(0),
+  mesesFeriasProporcionais: z.number().int().min(0).max(12).default(0),
+  mesesDecimoProporcional: z.number().int().min(0).max(12).default(0),
+  anosNaEmpresa: z.number().min(0).default(0),
+  saldoFGTS: z.number().min(0).default(0),
+  possuiFeriasVencidas: z.boolean().default(false),
+  dependentesIR: z.number().int().min(0).default(0),
+  /** Aviso prévio trabalhado (verba já paga pela folha) ou indenizado. */
+  avisoPrevio: z.enum(["indenizado", "trabalhado", "dispensado"]).default("indenizado"),
+});
+
+export type RescisaoInput = z.infer<typeof rescisaoInputSchema>;
+
+// ============================================================================
+// Saída
+// ============================================================================
+
+export interface VerbaRescisoria {
+  rotulo: string;
+  valor: number;
+  base?: string;
+  incideINSS: boolean;
+  incideIRRF: boolean;
+}
+
+export interface RescisaoOutput {
+  motivo: MotivoRescisao;
+  diasAvisoPrevio: number;
+  verbas: VerbaRescisoria[];
+  totalBruto: number;
+  inss: number;
+  irrf: number;
+  totalLiquido: number;
+  saqueFGTS: number;
+  multaFGTS: number;
+}
+
+// ============================================================================
+// Regras por motivo
+// ============================================================================
+
+interface RegrasMotivo {
+  saldoSalario: boolean;
+  decimoProporcional: boolean;
+  feriasProporcionais: boolean;
+  feriasVencidas: boolean;
+  /** 0 = sem; 1 = integral; 0.5 = metade (acordo 484-A) */
+  avisoFator: number;
+  /** 0 = sem; 0.20 = acordo; 0.40 = sem justa causa */
+  multaFGTSPct: number;
+  /** 0 = não saca; 0.80 = acordo; 1 = saque integral */
+  saqueFGTSPct: number;
+}
+
+const REGRAS: Record<MotivoRescisao, RegrasMotivo> = {
+  sem_justa_causa:    { saldoSalario: true, decimoProporcional: true, feriasProporcionais: true, feriasVencidas: true, avisoFator: 1,   multaFGTSPct: 0.40, saqueFGTSPct: 1 },
+  rescisao_indireta:  { saldoSalario: true, decimoProporcional: true, feriasProporcionais: true, feriasVencidas: true, avisoFator: 1,   multaFGTSPct: 0.40, saqueFGTSPct: 1 },
+  acordo_484a:        { saldoSalario: true, decimoProporcional: true, feriasProporcionais: true, feriasVencidas: true, avisoFator: 0.5, multaFGTSPct: 0.20, saqueFGTSPct: 0.80 },
+  pedido_demissao:    { saldoSalario: true, decimoProporcional: true, feriasProporcionais: true, feriasVencidas: true, avisoFator: 0,   multaFGTSPct: 0,    saqueFGTSPct: 0 },
+  justa_causa:        { saldoSalario: true, decimoProporcional: false, feriasProporcionais: false, feriasVencidas: true, avisoFator: 0, multaFGTSPct: 0,    saqueFGTSPct: 0 },
+  termino_experiencia:{ saldoSalario: true, decimoProporcional: true, feriasProporcionais: true, feriasVencidas: true, avisoFator: 0,   multaFGTSPct: 0,    saqueFGTSPct: 1 },
+};
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/** Aviso prévio proporcional (Lei 12.506/2011): 30 + 3 dias por ano completo (máx 90). */
+export function diasAvisoProporcional(anos: number): number {
+  const adicional = Math.floor(Math.max(0, anos)) * 3;
+  return Math.min(90, 30 + adicional);
+}
+
+// ============================================================================
+// Cálculo principal
+// ============================================================================
+
+export function calcularRescisao(inputBruto: RescisaoInput): RescisaoOutput {
+  const i = rescisaoInputSchema.parse(inputBruto);
+  const regras = REGRAS[i.motivo];
+  const salarioDia = i.salarioBruto / 30;
+
+  const verbas: VerbaRescisoria[] = [];
+
+  // --- Saldo de salário (incide INSS e IRRF) ---
+  if (regras.saldoSalario && i.diasTrabalhadosMes > 0) {
+    const v = round2(salarioDia * i.diasTrabalhadosMes);
+    verbas.push({ rotulo: `Saldo de salário (${i.diasTrabalhadosMes} dias)`, valor: v, base: `R$ ${i.salarioBruto.toFixed(2)} ÷ 30 × ${i.diasTrabalhadosMes}`, incideINSS: true, incideIRRF: true });
+  }
+
+  // --- Aviso prévio ---
+  const diasAviso = regras.avisoFator > 0 ? diasAvisoProporcional(i.anosNaEmpresa) : 0;
+  const valorAviso = round2(salarioDia * diasAviso * regras.avisoFator);
+  if (valorAviso > 0) {
+    // Aviso indenizado: sem INSS/IRRF. Trabalhado: incide normalmente.
+    const indenizado = i.avisoPrevio !== "trabalhado";
+    verbas.push({
+      rotulo: `Aviso prévio ${indenizado ? "indenizado" : "trabalhado"} (${diasAviso} dias${regras.avisoFator < 1 ? " × 50%" : ""})`,
+      valor: valorAviso,
+      base: `${diasAviso} dias × R$ ${salarioDia.toFixed(2)}`,
+      incideINSS: !indenizado,
+      incideIRRF: !indenizado,
+    });
+  }
+
+  // --- 13º proporcional ---
+  if (regras.decimoProporcional && i.mesesDecimoProporcional > 0) {
+    const v = round2((i.salarioBruto / 12) * i.mesesDecimoProporcional);
+    verbas.push({ rotulo: `13º proporcional (${i.mesesDecimoProporcional}/12)`, valor: v, base: `${i.mesesDecimoProporcional}/12 × R$ ${i.salarioBruto.toFixed(2)}`, incideINSS: true, incideIRRF: true });
+  }
+
+  // --- Férias proporcionais + 1/3 (indenizadas — isentas) ---
+  if (regras.feriasProporcionais && i.mesesFeriasProporcionais > 0) {
+    const ferias = round2((i.salarioBruto / 12) * i.mesesFeriasProporcionais);
+    const tercoFerias = round2(ferias / 3);
+    verbas.push({ rotulo: `Férias proporcionais (${i.mesesFeriasProporcionais}/12)`, valor: ferias, base: `${i.mesesFeriasProporcionais}/12 × R$ ${i.salarioBruto.toFixed(2)}`, incideINSS: false, incideIRRF: false });
+    verbas.push({ rotulo: "1/3 sobre férias proporcionais", valor: tercoFerias, incideINSS: false, incideIRRF: false });
+  }
+
+  // --- Férias vencidas + 1/3 ---
+  if (regras.feriasVencidas && i.possuiFeriasVencidas) {
+    const fv = round2(i.salarioBruto);
+    const t3 = round2(fv / 3);
+    verbas.push({ rotulo: "Férias vencidas", valor: fv, incideINSS: false, incideIRRF: false });
+    verbas.push({ rotulo: "1/3 sobre férias vencidas", valor: t3, incideINSS: false, incideIRRF: false });
+  }
+
+  // --- Multa FGTS (isenta de INSS/IRRF) ---
+  const multaFGTS = round2(i.saldoFGTS * regras.multaFGTSPct);
+  if (multaFGTS > 0) {
+    verbas.push({ rotulo: `Multa FGTS (${(regras.multaFGTSPct * 100).toFixed(0)}%)`, valor: multaFGTS, base: `${(regras.multaFGTSPct * 100).toFixed(0)}% × saldo FGTS`, incideINSS: false, incideIRRF: false });
+  }
+
+  // --- Totais e impostos ---
+  const totalBruto = round2(verbas.reduce((a, v) => a + v.valor, 0));
+
+  // INSS calculado sobre verbas com incidência (saldo + aviso trabalhado).
+  // 13º proporcional gera INSS/IRRF em cálculo SEPARADO (não soma com saldo).
+  const baseSaldoEAviso = verbas.filter(v => v.incideINSS && !v.rotulo.startsWith("13º")).reduce((a, v) => a + v.valor, 0);
+  const decimo = verbas.find(v => v.rotulo.startsWith("13º"))?.valor ?? 0;
+
+  const inssSaldo = calcularINSS(baseSaldoEAviso);
+  const inssDecimo = calcularINSS(decimo);
+  const inss = round2(inssSaldo + inssDecimo);
+
+  const irrfSaldo = calcularIRRF(baseSaldoEAviso, inssSaldo, i.dependentesIR);
+  const irrfDecimo = calcularIRRF(decimo, inssDecimo, 0); // dependentes só uma vez (na folha)
+  const irrf = round2(irrfSaldo + irrfDecimo);
+
+  const totalLiquido = round2(totalBruto - inss - irrf);
+  const saqueFGTS = round2(i.saldoFGTS * regras.saqueFGTSPct);
+
+  return {
+    motivo: i.motivo,
+    diasAvisoPrevio: diasAviso,
+    verbas,
+    totalBruto,
+    inss,
+    irrf,
+    totalLiquido,
+    saqueFGTS,
+    multaFGTS,
+  };
+}
