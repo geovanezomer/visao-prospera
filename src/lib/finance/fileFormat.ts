@@ -25,6 +25,14 @@ export const FinnanceFileSchema = z.object({
   app: z.object({ name: z.string(), version: z.string().optional() }).optional(),
   state: z.record(z.string(), z.any()),
   scenarios: z.array(ScenarioSchema).default([]),
+  // Dados auxiliares persistidos por empresa: cenários do simulador e plano
+  // de ação. Schema permissivo — validação efetiva acontece nos serviços.
+  extras: z
+    .object({
+      actions: z.array(z.record(z.string(), z.any())).optional(),
+      simScenarios: z.array(z.record(z.string(), z.any())).optional(),
+    })
+    .optional(),
   meta: z
     .object({
       companyName: z.string().optional(),
@@ -32,6 +40,8 @@ export const FinnanceFileSchema = z.object({
       taxRegime: z.string().optional(),
       numColaboradores: z.number().optional(),
       scenarioCount: z.number().optional(),
+      actionCount: z.number().optional(),
+      simScenarioCount: z.number().optional(),
       sections: z.array(z.string()).optional(),
       notes: z.string().optional(),
     })
