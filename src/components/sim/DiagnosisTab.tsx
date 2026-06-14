@@ -8,6 +8,7 @@ import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
 import { HealthScoreCard, SensitivityCard } from "./AnalysisTab";
 import { CriticalAlertsBanner } from "./CriticalAlertsBanner";
+import { WaterfallCard } from "./WaterfallCard";
 
 
 export function DiagnosisTab({ state }: { state: AppState }) {
@@ -26,6 +27,11 @@ export function DiagnosisTab({ state }: { state: AppState }) {
     <div className="space-y-6">
       {/* Alertas críticos consolidados — leitura imediata (reusa o model central) */}
       <CriticalAlertsBanner state={state} model={{ dre: model.dre, ind: model.ind, cf: model.cf, regime: model.regime }} />
+
+      {/* Waterfall — âncora visual da conversa: mostra onde o resultado se perde */}
+      <WaterfallCard dre={model.dre} ind={model.ind} />
+
+
 
       {/* Análises avançadas (reusa o model central) */}
       <HealthScoreCard state={state} precomputed={{ dre: model.dre, ind: model.ind, cf: model.cf }} />
