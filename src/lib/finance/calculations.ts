@@ -8,6 +8,7 @@ import {
   DEFAULT_ENCARGOS_PCT_SIMPLES,
 } from "./taxDefaults";
 import { sum, zeros12, fill12 } from "./format";
+import { safeDivide, safePct, safeNumber } from "./safeMath";
 
 /**
  * SSOT-1 — Dívida Líquida canônica usada por Valuation e Indicadores.
@@ -760,10 +761,13 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const jurosAnual = sum(dre.custosFinanceirosTotal);
   const impostosAnual = sum(dre.impostos);
 
-  const margemContribuicao = receitaLiqAnual > 0 ? ((receitaLiqAnual - custosVarAnual) / receitaLiqAnual) * 100 : 0;
-  const pontoEquilibrio = margemContribuicao > 0 ? custosFixosAnual / (margemContribuicao / 100) : 0;
+  // SSOT: safeMath previne NaN/Infinity em qualquer divisão de indicador.
+  const margemContribuicao = safePct(receitaLiqAnual - custosVarAnual, receitaLiqAnual);
+  const pontoEquilibrio = margemContribuicao > 0
+    ? safeDivide(custosFixosAnual, margemContribuicao / 100)
+    : 0;
   const pontoEquilibrioFinanceiro = margemContribuicao > 0
-    ? (custosFixosAnual - sum(dre.depreciacao)) / (margemContribuicao / 100)
+    ? safeDivide(custosFixosAnual - sum(dre.depreciacao), margemContribuicao / 100)
     : 0;
 
   // ---- Estrutura de capital baseada em campos REAIS ----
@@ -790,9 +794,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const caixaOcioso = Math.max(0, capital.caixaOcioso ?? 0);
   const ciBase = capital.ativoTotal > 0 ? capital.ativoTotal : (PL + D + pno);
   const capitalInvestido = Math.max(1, ciBase - caixaOcioso - pno);
-  const roic = capitalInvestido > 0 ? (nopat / capitalInvestido) * 100 : 0;
-  const roe = PL > 0 ? (llAnual / PL) * 100 : 0;
-  const roa = capital.ativoTotal > 0 ? (llAnual / capital.ativoTotal) * 100 : 0;
+  const roic = safePct(nopat, capitalInvestido);
+  const roe = PL > 0 ? safePct(llAnual, PL) : 0;
+  const roa = capital.ativoTotal > 0 ? safePct(llAnual, capital.ativoTotal) : 0;
 
   // ---- Ciclo / NCG / Gap ----
   // PME = Estoque MÉDIO ÷ CPV diário (Auditoria). Usa (inicial+final)/2 quando ambos informados.
@@ -834,8 +838,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const CAP_COB = 999;       // cobertura de juros máx exibível
   const CAP_DL_EBITDA = 99;  // dívida líq / EBITDA máx
   const CAP_PAYBACK = 99;    // payback em anos máx
-  const coberturaJuros = jurosAnual > 1 ? Math.min(CAP_COB, ebitAnual / jurosAnual) : CAP_COB;
-  const giroAtivo = capital.ativoTotal > 0 ? receitaLiqAnual / capital.ativoTotal : 0;
+  const coberturaJuros = jurosAnual > 1 ? Math.min(CAP_COB, safeDivide(ebitAnual, jurosAnual, CAP_COB)) : CAP_COB;
+  const giroAtivo = capital.ativoTotal > 0 ? safeDivide(receitaLiqAnual, capital.ativoTotal) : 0;
   const dividaLiq = computeNetDebt(state); // SSOT-1: helper único usado por Valuation também
   const dividaLiqEbitda = ebitdaAnual > 1
     ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitdaAnual))
@@ -870,17 +874,17 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const custoPessoalSobreReceita = receitaLiqAnual > 0 ? (folha / receitaLiqAnual) * 100 : 0;
 
   return {
-    margemBruta: receitaLiqAnual > 0 ? (lucroBrutoAnual / receitaLiqAnual) * 100 : 0,
-    margemEbitda: receitaLiqAnual > 0 ? (ebitdaAnual / receitaLiqAnual) * 100 : 0,
-    margemEbit: receitaLiqAnual > 0 ? (ebitAnual / receitaLiqAnual) * 100 : 0,
-    margemLiquida: receitaLiqAnual > 0 ? (llAnual / receitaLiqAnual) * 100 : 0,
+    margemBruta: safePct(lucroBrutoAnual, receitaLiqAnual),
+    margemEbitda: safePct(ebitdaAnual, receitaLiqAnual),
+    margemEbit: safePct(ebitAnual, receitaLiqAnual),
+    margemLiquida: safePct(llAnual, receitaLiqAnual),
     margemContribuicao, pontoEquilibrio, pontoEquilibrioFinanceiro,
-    roe, roa, roic, wacc,
+    roe, roa, roic, wacc: safeNumber(wacc),
     cicloFinanceiro, ncg, gapCapitalGiro,
     liquidezCorrente, liquidezSeca, liquidezImediata,
     endividamentoGeral, grauEndividamento, coberturaJuros, giroAtivo,
-    dividaLiqEbitda, dividaLiqEbit, dividaLiqPl, payback, fcf,
-    conversaoEbitdaCaixa: ebitdaAnual > 0 ? (fcf / ebitdaAnual) * 100 : 0,
+    dividaLiqEbitda, dividaLiqEbit, dividaLiqPl, payback, fcf: safeNumber(fcf),
+    conversaoEbitdaCaixa: ebitdaAnual > 0 ? safePct(fcf, ebitdaAnual) : 0,
     gao, qualidadeLucro,
     receitaPorColaborador, faturamentoPorColaborador, ebitdaPorColaborador, lucroPorColaborador, custoPessoalSobreReceita,
     dividaOnerosa: D, passivoCirculante, ativoCirculante,
