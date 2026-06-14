@@ -15,7 +15,7 @@ import { useEffect } from "react";
 
 
 import { Activity, LogOut, Building2, Factory, Store, Briefcase, Users, Save, FolderOpen, Calculator } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+
 import { NAV_ITEMS } from "./nav-config";
 import { TabKey, BusinessType, AppState } from "@/lib/finance/types";
 import { useAuth } from "@/lib/auth";
