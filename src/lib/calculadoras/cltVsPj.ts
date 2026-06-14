@@ -150,11 +150,17 @@ export function calcularPJ(regime: RegimePJ, i: CltVsPjInput): ResultadoPJ {
   // Pró-labore: 28% do faturamento, mínimo 1 salário-mínimo (no MEI o pró-labore é opcional —
   // se faturamento ≤ teto, manter mínimo para fins previdenciários é boa prática).
   const proLabore = Math.max(SALARIO_MINIMO_2025, fat * i.proLaborePct);
-  // INSS pró-labore: 11% até o teto
+  // INSS pró-labore: 11% até o teto.
+  // ATENÇÃO: o MEI já recolhe a contribuição previdenciária (5% do salário mínimo)
+  // embutida no DAS fixo, logo NÃO se aplica 11% adicional sobre o pró-labore.
   const baseInss = Math.min(proLabore, TETO_INSS_2025);
-  const inssProLabore = Math.round(baseInss * 0.11 * 100) / 100;
-  // IRRF sobre (pró-labore − INSS) — sem dependentes (apuração simplificada)
-  const irrfProLabore = calcularIRRF(proLabore, inssProLabore, 0);
+  const inssProLabore = regime === "mei"
+    ? 0
+    : Math.round(baseInss * 0.11 * 100) / 100;
+  // IRRF sobre (pró-labore − INSS) — sem dependentes (apuração simplificada).
+  // MEI: como não há pró-labore formal nem retenção de INSS de contribuinte
+  // individual, também não há retenção de IRRF típica do pró-labore.
+  const irrfProLabore = regime === "mei" ? 0 : calcularIRRF(proLabore, inssProLabore, 0);
 
   const custosFixos = i.contabilidadeMensal + i.planoSaudeMensal;
 
