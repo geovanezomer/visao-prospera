@@ -59,6 +59,7 @@ function SimulaPro() {
   const simulatedState = useMemo(() => applySimulator(state, simParams), [state, simParams]);
   const simActive = countActiveLevers(simParams);
 
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const fileApi = useFinnanceFile({
     state,
     scenarios,
@@ -66,6 +67,7 @@ function SimulaPro() {
     replaceScenarios,
     resetState: reset,
     hydrated: stateHydrated,
+    confirm,
   });
 
   useEffect(() => {
