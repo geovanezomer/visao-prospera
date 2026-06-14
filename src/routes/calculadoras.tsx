@@ -7,6 +7,7 @@ import { SalarioLiquidoCalc } from "@/components/calculadoras/SalarioLiquidoCalc
 import { HorasExtrasCalc } from "@/components/calculadoras/HorasExtrasCalc";
 import { SacVsPriceCalc } from "@/components/calculadoras/SacVsPriceCalc";
 import { JurosCompostosCalc } from "@/components/calculadoras/JurosCompostosCalc";
+import { IndependenciaCalc } from "@/components/calculadoras/IndependenciaCalc";
 
 export const Route = createFileRoute("/calculadoras")({
   head: () => ({
@@ -37,6 +38,7 @@ function CalculadorasPage() {
           <TabsTrigger value="horas-extras">Horas Extras</TabsTrigger>
           <TabsTrigger value="sac-vs-price">SAC vs PRICE</TabsTrigger>
           <TabsTrigger value="juros-compostos">Juros Compostos</TabsTrigger>
+          <TabsTrigger value="independencia">Independência</TabsTrigger>
         </TabsList>
 
         <TabsContent value="custo-funcionario">
@@ -59,6 +61,9 @@ function CalculadorasPage() {
         </TabsContent>
         <TabsContent value="juros-compostos">
           <JurosCompostosCalc />
+        </TabsContent>
+        <TabsContent value="independencia">
+          <IndependenciaCalc />
         </TabsContent>
       </Tabs>
     </div>
