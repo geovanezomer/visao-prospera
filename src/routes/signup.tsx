@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { ArrowRight, Lock, Mail, User as UserIcon, CheckCircle2 } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
@@ -8,6 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PLANS_CATALOG, type PlanId } from "@/lib/plans";
+import { createCheckoutSession } from "@/lib/checkout.functions";
+
+// Detecta ambiente de pagamento a partir do token público do Stripe.
+function getPaymentsEnvironment(): "sandbox" | "live" {
+  const token = import.meta.env.VITE_PAYMENTS_CLIENT_TOKEN;
+  if (token?.startsWith("pk_test_")) return "sandbox";
+  if (token?.startsWith("pk_live_")) return "live";
+  throw new Error("Pagamentos não configurados para este ambiente.");
+}
 
 // Search schema: ?plan=mensal|anual|vitalicio (opcional)
 const searchSchema = z.object({
