@@ -34,6 +34,7 @@ function CalculadorasPage() {
           <TabsTrigger value="clt-vs-pj">CLT vs PJ</TabsTrigger>
           <TabsTrigger value="salario-liquido">Salário Líquido</TabsTrigger>
           <TabsTrigger value="horas-extras">Horas Extras</TabsTrigger>
+          <TabsTrigger value="sac-vs-price">SAC vs PRICE</TabsTrigger>
         </TabsList>
 
         <TabsContent value="custo-funcionario">
