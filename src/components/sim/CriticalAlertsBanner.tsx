@@ -55,10 +55,15 @@ export function CriticalAlertsBanner({ state, model }: { state: AppState; model?
 
     const dangers = diag.filter((d) => d.level === "danger");
 
-    return { ind, ebitdaAnual, jurosAnual, amortAnual, servicoDivida, dscr, pior, caixaMin, gap, custosFixosAnuais, cutPctFixos, shield, vplDelta, dangers };
+    // Validação cruzada entre abas: incoerências estruturais/fiscais/operacionais.
+    // Reusa o `dre` e `ind` já calculados acima — não há custo extra de engine.
+    const crossWarnings = crossValidate(state, { dre, ind });
+    const crossGrouped = groupBySeverity(crossWarnings);
+
+    return { ind, ebitdaAnual, jurosAnual, amortAnual, servicoDivida, dscr, pior, caixaMin, gap, custosFixosAnuais, cutPctFixos, shield, vplDelta, dangers, crossWarnings, crossGrouped };
   }, [state, model]);
 
-  const { ind, jurosAnual, dscr, pior, caixaMin, gap, custosFixosAnuais, cutPctFixos, shield, vplDelta, dangers } = data;
+  const { ind, jurosAnual, dscr, pior, caixaMin, gap, custosFixosAnuais, cutPctFixos, shield, vplDelta, dangers, crossGrouped } = data;
 
   const dscrTone = dscr == null ? "neutral" : dscr < 1.2 ? "danger" : dscr < 1.5 ? "warn" : "ok";
   const piorTone = !pior ? "neutral" : pior.saldo < 0 ? "danger" : pior.saldo < caixaMin ? "warn" : "ok";
