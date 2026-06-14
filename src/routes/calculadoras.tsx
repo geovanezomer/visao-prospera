@@ -47,6 +47,9 @@ function CalculadorasPage() {
         <TabsContent value="salario-liquido">
           <SalarioLiquidoCalc />
         </TabsContent>
+        <TabsContent value="horas-extras">
+          <HorasExtrasCalc />
+        </TabsContent>
       </Tabs>
     </div>
   );
