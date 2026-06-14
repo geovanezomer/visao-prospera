@@ -161,7 +161,87 @@ export function CriticalAlertsBanner({ state, model }: { state: AppState; model?
           </div>
         )}
       </div>
+
+      <CrossValidationSection grouped={crossGrouped} />
     </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Validação cruzada entre abas — incoerências estruturais/fiscais/operacionais.
+// Renderizada como card separado abaixo do banner de alertas críticos.
+// Errors sempre visíveis; warns/info colapsáveis via <details>.
+// ─────────────────────────────────────────────────────────────────────
+function CrossValidationSection({
+  grouped,
+}: {
+  grouped: { error: ValidationWarning[]; warn: ValidationWarning[]; info: ValidationWarning[] };
+}) {
+  const totalWarns = grouped.warn.length + grouped.info.length;
+  if (grouped.error.length === 0 && totalWarns === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-border/60 bg-card/40 p-4">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <AlertOctagon className="h-4 w-4 text-primary" />
+        Validação cruzada entre abas
+        <HelpTip text="Incoerências estruturais, fiscais e operacionais detectadas no estado atual. Diferente do diagnóstico clínico, aqui são problemas de consistência de DADOS — corrija antes de apresentar ao cliente." />
+        <span className="ml-auto text-[10px] font-normal text-muted-foreground">
+          {grouped.error.length > 0 && <span className="text-destructive font-semibold">{grouped.error.length} erro(s)</span>}
+          {grouped.error.length > 0 && totalWarns > 0 && " · "}
+          {totalWarns > 0 && <span>{totalWarns} aviso(s)</span>}
+        </span>
+      </div>
+
+      {grouped.error.length > 0 && (
+        <div className="mt-3 space-y-1.5">
+          {grouped.error.map((w) => (
+            <WarningRow key={w.id} w={w} />
+          ))}
+        </div>
+      )}
+
+      {totalWarns > 0 && (
+        <details className="mt-3 group">
+          <summary className="cursor-pointer text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground">
+            ▸ Mostrar {totalWarns} aviso(s) e info(s)
+          </summary>
+          <div className="mt-2 space-y-1.5">
+            {grouped.warn.map((w) => <WarningRow key={w.id} w={w} />)}
+            {grouped.info.map((w) => <WarningRow key={w.id} w={w} />)}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
+function WarningRow({ w }: { w: ValidationWarning }) {
+  const sevColor =
+    w.severity === "error" ? "border-destructive/40 bg-destructive/5"
+    : w.severity === "warn" ? "border-[var(--warning)]/40 bg-[var(--warning)]/5"
+    : "border-border/40 bg-background/40";
+  const Icon =
+    w.severity === "error" ? AlertOctagon
+    : w.severity === "warn" ? AlertTriangle
+    : Info;
+  const iconColor =
+    w.severity === "error" ? "text-destructive"
+    : w.severity === "warn" ? "text-[var(--warning)]"
+    : "text-muted-foreground";
+  return (
+    <div className={`flex items-start gap-2 rounded-md border p-2.5 text-xs ${sevColor}`}>
+      <Icon className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${iconColor}`} />
+      <div className="min-w-0 flex-1">
+        <div className="font-semibold text-foreground">{w.title}</div>
+        <div className="mt-0.5 text-muted-foreground">{w.detail}</div>
+        {w.fixHint && (
+          <div className="mt-1 text-[11px] italic text-muted-foreground/80">
+            <span className="font-semibold not-italic">Como corrigir:</span> {w.fixHint}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
