@@ -150,12 +150,12 @@ export function IndependenciaCalc() {
       linhas: linhasMostradas, patAlvo, totInvAlvo, totRendAlvo, rendaMensalAlvo,
       pctFire, progressoAtual,
     };
-  }, [idadeAtual, idadeAlvo, gastosMensais, patrimonio, aporteMensal, retornoAnual, taxaRetirada]);
+  }, [idadeAtual, idadeAlvo, gastosMensais, patrimonio, aporteMensal, retornoAnual, taxaRetirada, inflacaoAnual]);
 
   function limpar() {
     setIdadeAtual(0); setIdadeAlvo(0); setGastosMensais(0);
     setPatrimonio(0); setAporteMensal(0); setRetornoAnual(0); setTaxaRetirada(0);
-    setPagina(0);
+    setInflacaoAnual(0); setPagina(0);
   }
 
   const chartData = sim.linhas.map((l) => ({
