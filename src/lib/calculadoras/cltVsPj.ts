@@ -29,9 +29,57 @@ export const regimePJLabel: Record<RegimePJ, string> = {
 /** Parâmetros tributários por regime (ajustáveis). */
 export const PARAMETROS_PJ = {
   mei: { aliquotaImpostos: 0, dasFixoMensal: 80, tetoFaturamentoAnual: 81000 },
+  // Simples: alíquota efetiva é CALCULADA por faixa (Anexo III) — ver aliquotaSimplesAnexoIII().
+  // Mantemos um fallback informativo de ~9,3% para fins de tooltip apenas.
   simples: { aliquotaImpostos: 0.093, dasFixoMensal: 0, tetoFaturamentoAnual: 4_800_000 },
   presumido: { aliquotaImpostos: 0.1633, dasFixoMensal: 0, tetoFaturamentoAnual: 78_000_000 },
 } as const;
+
+/**
+ * Tabela do Simples Nacional — Anexo III (serviços em geral).
+ * LC 123/2006 e atualizações. Cada faixa: até (RBT12), alíquota nominal, parcela a deduzir.
+ * Alíquota efetiva = (RBT12 × Aliq − PD) ÷ RBT12.
+ */
+const SIMPLES_ANEXO_III: readonly { ate: number; aliq: number; pd: number }[] = [
+  { ate: 180_000,    aliq: 0.0600, pd: 0 },
+  { ate: 360_000,    aliq: 0.1120, pd: 9_360 },
+  { ate: 720_000,    aliq: 0.1350, pd: 17_640 },
+  { ate: 1_800_000,  aliq: 0.1600, pd: 35_640 },
+  { ate: 3_600_000,  aliq: 0.2100, pd: 125_640 },
+  { ate: 4_800_000,  aliq: 0.3300, pd: 648_000 },
+];
+
+/**
+ * Alíquota efetiva do Simples Nacional Anexo III dado o faturamento mensal.
+ * Usa o próprio faturamento × 12 como proxy de RBT12 (válido para regime estável).
+ */
+export function aliquotaSimplesAnexoIII(faturamentoMensal: number): number {
+  const rbt12 = Math.max(0, faturamentoMensal * 12);
+  if (rbt12 === 0) return 0;
+  const faixa = SIMPLES_ANEXO_III.find((f) => rbt12 <= f.ate) ?? SIMPLES_ANEXO_III[SIMPLES_ANEXO_III.length - 1];
+  const efetiva = (rbt12 * faixa.aliq - faixa.pd) / rbt12;
+  return Math.max(0, efetiva);
+}
+
+/**
+ * Tabela de tributação EXCLUSIVA da PLR (Lei 14.020/2020 art. 11; valores anuais).
+ * Vigente desde 2014, atualizada por leis posteriores.
+ */
+const PLR_FAIXAS: readonly { ate: number; aliq: number; deducao: number }[] = [
+  { ate: 7_640.80,  aliq: 0.000, deducao: 0 },
+  { ate: 9_922.28,  aliq: 0.075, deducao: 573.06 },
+  { ate: 13_167.00, aliq: 0.150, deducao: 1_317.23 },
+  { ate: 16_380.38, aliq: 0.225, deducao: 2_304.76 },
+  { ate: Infinity,  aliq: 0.275, deducao: 3_123.78 },
+];
+
+/** Calcula IR exclusivo de PLR conforme tabela anual. */
+export function irrfPlr(plrAnual: number): number {
+  if (plrAnual <= 0) return 0;
+  const faixa = PLR_FAIXAS.find((f) => plrAnual <= f.ate) ?? PLR_FAIXAS[PLR_FAIXAS.length - 1];
+  const imposto = plrAnual * faixa.aliq - faixa.deducao;
+  return Math.max(0, Math.round(imposto * 100) / 100);
+}
 
 export const TETO_INSS_2025 = 8157.41;
 export const SALARIO_MINIMO_2025 = 1518.00;
