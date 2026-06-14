@@ -63,10 +63,10 @@ export function useAppState() {
   useEffect(() => {
     return onRemoteChange(async (key) => {
       if (key !== stateKey(username)) return;
-      const fresh = await loadKey<Partial<AppState>>(key);
+      const fresh = await loadKey<unknown>(key);
       if (fresh) {
         suppressSave.current = true;
-        setState(migrateState({ ...DEFAULT_STATE, ...fresh }));
+        setState(validateAndMigrate(fresh));
       }
     });
   }, [username]);
