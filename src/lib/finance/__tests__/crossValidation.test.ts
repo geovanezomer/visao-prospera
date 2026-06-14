@@ -92,9 +92,13 @@ describe("crossValidate — Tier 3 (operacional)", () => {
   });
 
   it("detecta CAPEX > EBITDA anual", () => {
+    // Estado lucrativo (margens saudáveis) + CAPEX desproporcional
     const s = createState({
-      revenue: { bruta: m12(20_000) },
-      cashflow: { capex: m12(50_000) }, // 600k/ano de capex vs EBITDA pequeno
+      revenue: { bruta: m12(500_000) }, // 6M/ano, regime simples ainda
+      costs: [
+        { id: "cmv", label: "CMV", category: "custo_vendas", values: m12(150_000), fixed: false },
+      ],
+      cashflow: { capex: m12(400_000) }, // 4.8M/ano em CAPEX
     });
     const ws = crossValidate(s);
     expect(ws.find((x) => x.id === "operacional.capex_maior_que_ebitda")).toBeDefined();
