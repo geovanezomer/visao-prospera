@@ -30,6 +30,15 @@ function snapshot(state: AppState, scenarios: Scenario[]): string {
   try { return JSON.stringify({ s: state, sc: scenarios }); } catch { return ""; }
 }
 
+// Chave do draft por empresa (auto-save de recuperação F5).
+const draftKey = (company: string) => `gzfp:draft:${(company || "sem-empresa").trim().toLowerCase()}`;
+
+interface DraftEnvelope {
+  ts: number;
+  state: AppState;
+  scenarios: Scenario[];
+}
+
 export function useFinnanceFile({
   state,
   scenarios,
@@ -47,7 +56,9 @@ export function useFinnanceFile({
 
   const [currentFileName, setCurrentFileName] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [lastModified, setLastModified] = useState<number | null>(null);
   const lastSavedSnapshot = useRef<string>("");
+  const recoveryChecked = useRef(false);
 
   // Inicializa o snapshot na primeira hidratação para evitar dirty falso.
   useEffect(() => {
@@ -57,12 +68,54 @@ export function useFinnanceFile({
     }
   }, [hydrated, state, scenarios]);
 
-  // Marca dirty quando o conteúdo diverge do último salvamento.
+  // Marca dirty + última modificação quando o conteúdo diverge do último salvamento.
   useEffect(() => {
     if (!hydrated) return;
     const cur = snapshot(state, scenarios);
-    setDirty(cur !== lastSavedSnapshot.current);
+    const isDirty = cur !== lastSavedSnapshot.current;
+    setDirty(isDirty);
+    if (isDirty) setLastModified(Date.now());
   }, [state, scenarios, hydrated]);
+
+  // Auto-save de rascunho por empresa (debounced 800ms). Permite recuperar
+  // alterações após F5 ou crash sem precisar salvar arquivo físico.
+  useEffect(() => {
+    if (!hydrated || !dirty) return;
+    const t = setTimeout(() => {
+      try {
+        const env: DraftEnvelope = { ts: Date.now(), state, scenarios };
+        localStorage.setItem(draftKey(state.companyName), JSON.stringify(env));
+      } catch { /* quota / privacy mode — ignora */ }
+    }, 800);
+    return () => clearTimeout(t);
+  }, [state, scenarios, hydrated, dirty]);
+
+  // Recuperação de rascunho na primeira hidratação. Se houver draft mais
+  // recente que o estado atual para a mesma empresa, oferece recuperar.
+  useEffect(() => {
+    if (!hydrated || recoveryChecked.current) return;
+    recoveryChecked.current = true;
+    try {
+      const raw = localStorage.getItem(draftKey(state.companyName));
+      if (!raw) return;
+      const env: DraftEnvelope = JSON.parse(raw);
+      const currentSnap = snapshot(state, scenarios);
+      const draftSnap = snapshot(env.state, env.scenarios ?? []);
+      if (draftSnap === currentSnap) return;
+      toast.info("Rascunho não salvo encontrado", {
+        description: `Alterações de ${new Date(env.ts).toLocaleString("pt-BR")} na empresa "${env.state.companyName}".`,
+        duration: 15000,
+        action: {
+          label: "Recuperar",
+          onClick: () => {
+            setState(env.state);
+            replaceScenarios(env.scenarios ?? []);
+            toast.success("Rascunho recuperado");
+          },
+        },
+      });
+    } catch { /* draft corrompido — ignora */ }
+  }, [hydrated, state, scenarios, setState, replaceScenarios]);
 
   const save = useCallback(() => {
     const name = currentFileName ?? defaultFilename(state);
@@ -74,6 +127,9 @@ export function useFinnanceFile({
       lastSavedSnapshot.current = snapshot(state, scenarios);
       setCurrentFileName(name);
       setDirty(false);
+      setLastModified(Date.now());
+      // Limpa o draft — não há mais alterações pendentes.
+      try { localStorage.removeItem(draftKey(state.companyName)); } catch { /* ignora */ }
       toast.success(`Arquivo salvo: ${name}`);
     } catch (err) {
       toast.error("Falha ao salvar arquivo", {
@@ -106,6 +162,7 @@ export function useFinnanceFile({
       // Snapshot do novo conteúdo evita marcar dirty logo após abrir.
       lastSavedSnapshot.current = snapshot(nextState, nextScen);
       setDirty(false);
+      setLastModified(Date.now());
       toast.success(`Arquivo aberto: ${filename}`);
     } catch (err) {
       // Cancelamento do picker não é erro.
@@ -131,8 +188,20 @@ export function useFinnanceFile({
     // Snapshot só será recalculado no próximo efeito; força reset agora.
     lastSavedSnapshot.current = "";
     setDirty(false);
+    setLastModified(null);
     toast.success("Novo arquivo criado");
   }, [dirty, resetState, replaceScenarios, askConfirm]);
+
+  const resetWithConfirm = useCallback(async () => {
+    const ok = await askConfirm({
+      title: "Restaurar dados?",
+      description: "Isso resetará todos os valores atuais para o padrão.",
+      confirmLabel: "Restaurar",
+      destructive: true,
+    });
+    if (!ok) return;
+    resetState();
+  }, [askConfirm, resetState]);
 
   // Aviso nativo do navegador ao fechar a aba com alterações pendentes.
   useEffect(() => {
@@ -145,22 +214,35 @@ export function useFinnanceFile({
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
 
-  // Atalhos Ctrl/Cmd+S e Ctrl/Cmd+O.
+  // Atalhos: Ctrl/Cmd+S salvar, Ctrl/Cmd+O abrir, Ctrl/Cmd+Shift+R reset.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey;
       if (!mod) return;
-      if (e.key === "s" || e.key === "S") {
+      const k = e.key.toLowerCase();
+      if (k === "s") {
         e.preventDefault();
         save();
-      } else if (e.key === "o" || e.key === "O") {
+      } else if (k === "o") {
         e.preventDefault();
         void open();
+      } else if (k === "r" && e.shiftKey) {
+        e.preventDefault();
+        void resetWithConfirm();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [save, open]);
+  }, [save, open, resetWithConfirm]);
 
-  return { currentFileName, dirty, save, open, newFile };
+  // Indicador "arquivo sujo" no título da aba do navegador.
+  useEffect(() => {
+    const base = "GZ FinnancePRO — Diagnóstico & Simulação Empresarial";
+    const company = state.companyName?.trim();
+    const prefix = dirty ? "● " : "";
+    document.title = `${prefix}${company ? `${company} · ` : ""}${base}`;
+    return () => { document.title = base; };
+  }, [dirty, state.companyName]);
+
+  return { currentFileName, dirty, lastModified, save, open, newFile, resetWithConfirm };
 }
