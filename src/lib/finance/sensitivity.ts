@@ -23,9 +23,10 @@ function applyDriver(state: AppState, driver: DriverKey, deltaPct: number): AppS
     return { ...state, revenue: { ...state.revenue, bruta: state.revenue.bruta.map((v) => v * f) } };
   }
   if (driver === "volume") {
-    // volume sobe receita e custos variáveis proporcionalmente
+    // volume sobe receita e custos variáveis proporcionalmente.
+    // Inclui `direto_venda` (CPV de serviços/comércio) — auditoria bug #1.
     const costs = state.costs.map((c) =>
-      c.category === "custo_vendas" || c.category === "variavel"
+      c.category === "custo_vendas" || c.category === "direto_venda" || c.category === "variavel"
         ? { ...c, values: c.values.map((v) => v * f) }
         : c,
     );

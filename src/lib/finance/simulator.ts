@@ -111,17 +111,19 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       s.revenue.deducoes = s.revenue.deducoes.map((d) => ({ ...d, valores: d.valores.map((v) => v * f) }));
     }
     s.costs = s.costs.map((c) =>
-      c.category === "custo_vendas" || c.category === "variavel"
+      c.category === "custo_vendas" || c.category === "direto_venda" || c.category === "variavel"
         ? { ...c, values: c.values.map((v) => v * f) }
         : c,
     );
   }
 
-  // 3) CPV
+  // 3) CPV — escala TODAS as linhas tratadas como CPV (custo_vendas E direto_venda).
   if (p.cpvDeltaPct !== 0) {
     const f = 1 + p.cpvDeltaPct / 100;
     s.costs = s.costs.map((c) =>
-      c.category === "custo_vendas" ? { ...c, values: c.values.map((v) => v * f) } : c,
+      (c.category === "custo_vendas" || c.category === "direto_venda")
+        ? { ...c, values: c.values.map((v) => v * f) }
+        : c,
     );
   }
 

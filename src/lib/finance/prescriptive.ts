@@ -82,9 +82,16 @@ function scaleLine(state: AppState, id: string, factor: number): AppState {
 }
 
 function scaleCategory(state: AppState, category: CostLine["category"], factor: number): AppState {
-  const costs = cloneCosts(state.costs).map((c) =>
-    c.category === category ? { ...c, values: c.values.map((v) => v * factor) } : c,
-  );
+  // Auditoria bug #1: "custo_vendas" e "direto_venda" são tratados como CPV no DRE
+  // (ver isCpvCost). Escalar apenas um deles cria inconsistência. Quando o alvo for
+  // "custo_vendas", escalamos as duas categorias em conjunto.
+  const isCpvTarget = category === "custo_vendas";
+  const costs = cloneCosts(state.costs).map((c) => {
+    const hit = isCpvTarget
+      ? (c.category === "custo_vendas" || c.category === "direto_venda")
+      : c.category === category;
+    return hit ? { ...c, values: c.values.map((v) => v * factor) } : c;
+  });
   return { ...state, costs };
 }
 
@@ -216,8 +223,12 @@ export function severanceCostPerPosition(salarioBase: number, mesesTrabalhados =
 function dismissWithSeverance(state: AppState, positions: number, salarioBase: number, monthIdx = 0): AppState {
   const severance = severanceCostPerPosition(salarioBase) * positions;
   const novo = reduceLaborByPositions(state, positions, salarioBase);
-  const cashflow = { ...novo.cashflow, capex: novo.cashflow.capex.slice() };
-  cashflow.capex[monthIdx] = (cashflow.capex[monthIdx] || 0) + severance;
+  // Auditoria bug #5: rescisão é despesa OPERACIONAL one-shot, não capex.
+  // Lançamos em `amortizacoes` (saída de caixa não-operacional sem distorcer
+  // EBITDA nem o Fluxo de Investimento). A redução estrutural de folha já
+  // captura o ganho recorrente; aqui apenas registramos a saída pontual.
+  const cashflow = { ...novo.cashflow, amortizacoes: novo.cashflow.amortizacoes.slice() };
+  cashflow.amortizacoes[monthIdx] = (cashflow.amortizacoes[monthIdx] || 0) + severance;
   return { ...novo, cashflow };
 }
 

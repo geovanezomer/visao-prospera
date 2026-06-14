@@ -45,13 +45,15 @@ export function buildSpreadForecast(state: AppState, horizonYears = 5): SpreadFo
   const impostosAnual = sum(dre.impostos);
   const lairAnual = sum(dre.lair);
   // SSOT-2: shield fiscal correto por regime EFETIVO — em Presumido/Simples = 0.
-  const irShield = irShieldForRegime(regime);
+  // Auditoria bug #2: passa lairAnual para respeitar adicional 10% IRPJ (> R$240k).
+  const irShield = irShieldForRegime(regime, lairAnual);
   const tcEfetiva = lairAnual > 0 ? Math.min(0.5, impostosAnual / lairAnual) : irShield;
 
   const PL = Math.max(0, state.capital.patrimonioLiquido);
   const D = Math.max(0, state.capital.dividaOnerosa);
   const caixaOcioso = Math.max(0, state.capital.caixaOcioso ?? 0);
-  const passivosNaoOnerosos = Math.max(0, state.capital.passivosNaoOnerosos ?? 0);
+  // Auditoria bug #3: alinhar com calcIndicators — PNO usa fallback para `fornecedores`.
+  const passivosNaoOnerosos = Math.max(0, state.capital.passivosNaoOnerosos ?? state.capital.fornecedores ?? 0);
   const ciBase = Math.max(1, PL + D - caixaOcioso - passivosNaoOnerosos);
 
   // Capex projetado por ano (vem do cashflow.capex mensal, replicado em todos os anos do forecast)

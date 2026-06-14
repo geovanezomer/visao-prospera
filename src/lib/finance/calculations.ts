@@ -745,10 +745,14 @@ export interface Indicators {
  * Juros sobre empréstimos só são DEDUTÍVEIS da base do IRPJ/CSLL no Lucro Real.
  * Em Presumido a base é presumida sobre receita — juros não abatem.
  * Em Simples (DAS) também não há dedução.
+ *
+ * Auditoria bug #2: o adicional de 10% do IRPJ só incide quando o lucro anual
+ * ultrapassa R$240k (4 × R$60k/trimestre). Abaixo disso, a alíquota marginal
+ * efetiva é 24% (15% IRPJ + 9% CSLL), não 34%.
  */
-export function irShieldForRegime(regime: TaxRegime): number {
-  if (regime === "real") return 0.34; // IRPJ 15% + Adic 10% + CSLL 9%
-  return 0;                            // presumido / simples
+export function irShieldForRegime(regime: TaxRegime, lairAnual: number = Infinity): number {
+  if (regime !== "real") return 0; // presumido / simples
+  return lairAnual > 240_000 ? 0.34 : 0.24;
 }
 
 export function calcIndicators(state: AppState, dre: DRE): Indicators {
@@ -782,7 +786,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const wD = V > 0 ? D / V : 1 - capital.proprio / 100;
 
   // SSOT: WACC usa shield do regime EFETIVO (Simples acima do limite vira Presumido sem shield).
-  const irShield = irShieldForRegime(resolveEffectiveRegime(state));
+  // Auditoria bug #2: shield agora respeita o adicional 10% IRPJ (só > R$240k de LAIR anual).
+  const irShield = irShieldForRegime(resolveEffectiveRegime(state), lairAnual);
   const wacc = wE * capital.ke + wD * capital.kd * (1 - irShield);
 
   // ---- NOPAT e ROIC corretos (Auditoria) ----
