@@ -69,7 +69,12 @@ function SimulaPro() {
   const [activeTab, setActiveTab] = useState<TabKey | "ai">("dre");
   const [simParams, setSimParams] = useState<SimulatorParams>(DEFAULT_SIM);
   const [meetingMode, setMeetingMode] = useState(false);
-  const simulatedState = useMemo(() => applySimulator(state, simParams), [state, simParams]);
+  // Ticker que força re-render a cada 30s para atualizar o "salvo há X" do breadcrumb.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
   const simActive = countActiveLevers(simParams);
 
   const { confirm, dialog: confirmDialog } = useConfirm();
