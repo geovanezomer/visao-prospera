@@ -26,6 +26,7 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Presentation, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
+import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/")({
@@ -131,6 +132,7 @@ function SimulaPro() {
                 </Badge>
               )}
               <div data-meeting-hide="true" className="contents">
+                <TaxSettingsDialog state={state} update={update} />
                 <Button
                   size="sm"
                   variant={meetingMode ? "default" : "ghost"}

@@ -20,7 +20,7 @@ import { TabKey, BusinessType, AppState } from "@/lib/finance/types";
 import { useAuth } from "@/lib/auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
+
 import { cn } from "@/lib/utils";
 
 
@@ -150,9 +150,6 @@ export function AppSidebar({ activeTab, setActiveTab, state, update, onSave, onO
                 <FolderOpen className="h-3.5 w-3.5 mr-2" />
                 <span>Abrir</span>
               </Button>
-              <div data-meeting-hide="true">
-                <TaxSettingsDialog state={state} update={update} />
-              </div>
             </div>
           </div>
         </SidebarGroup>
