@@ -52,7 +52,7 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
 
         const secret =
           env === "live"
-            ? process.env.PAYMENTS_WEBHOOK_SECRET
+            ? process.env.PAYMENTS_LIVE_WEBHOOK_SECRET
             : process.env.PAYMENTS_SANDBOX_WEBHOOK_SECRET;
 
         if (!secret) {
