@@ -8,6 +8,7 @@ import {
   serialize,
 } from "./fileFormat";
 import { downloadFinnanceFile, pickFinnanceFile } from "./fileIO";
+import { collectExtras, applyExtras } from "./fileExtras";
 
 interface ConfirmFn {
   (opts: { title: string; description?: string; confirmLabel?: string; destructive?: boolean }): Promise<boolean>;
