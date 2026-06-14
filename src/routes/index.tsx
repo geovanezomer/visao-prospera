@@ -93,7 +93,10 @@ function SimulaPro() {
             }
           }} 
           state={state} 
-          update={update} 
+          update={update}
+          meetingMode={meetingMode}
+          setMeetingMode={setMeetingMode}
+          onExport={exportReport}
         />
 
         
