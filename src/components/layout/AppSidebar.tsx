@@ -20,7 +20,7 @@ import { TabKey, BusinessType, AppState } from "@/lib/finance/types";
 import { useAuth } from "@/lib/auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
+
 import { cn } from "@/lib/utils";
 
 
