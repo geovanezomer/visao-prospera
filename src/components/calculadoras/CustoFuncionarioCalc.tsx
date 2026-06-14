@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAppState } from "@/lib/finance/store";
 import {
@@ -290,47 +290,52 @@ export function CustoFuncionarioCalc() {
             <ResumoCard rotulo="Custo Anual" valor={resultado.custoAnualTotal} tone="foreground" sub="× 12 meses" />
           </div>
 
-          {/* Detalhamento */}
+          {/* Detalhamento — cards separados */}
           <Card>
-            <CardContent className="pt-6">
-              <Accordion type="single" collapsible defaultValue="encargos">
-                <AccordionItem value="encargos">
-                  <AccordionTrigger className="text-sm">Encargos Patronais — detalhamento</AccordionTrigger>
-                  <AccordionContent>
-                    <DetalheTable linhas={resultado.encargos.itens} total={resultado.encargos.total} />
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="provisoes">
-                  <AccordionTrigger className="text-sm">Provisões Mensais — detalhamento</AccordionTrigger>
-                  <AccordionContent>
-                    <DetalheTable linhas={resultado.provisoes.itens} total={resultado.provisoes.total} />
-                  </AccordionContent>
-                </AccordionItem>
-                {resultado.beneficios.itens.length > 0 && (
-                  <AccordionItem value="beneficios">
-                    <AccordionTrigger className="text-sm">Benefícios — detalhamento</AccordionTrigger>
-                    <AccordionContent>
-                      <DetalheTable linhas={resultado.beneficios.itens} total={resultado.beneficios.total} />
-                    </AccordionContent>
-                  </AccordionItem>
+            <CardHeader>
+              <CardTitle className="text-sm">Encargos Patronais — detalhamento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DetalheTable linhas={resultado.encargos.itens} total={resultado.encargos.total} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Provisões Mensais — detalhamento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DetalheTable linhas={resultado.provisoes.itens} total={resultado.provisoes.total} />
+            </CardContent>
+          </Card>
+
+          {resultado.beneficios.itens.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Benefícios — detalhamento</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DetalheTable linhas={resultado.beneficios.itens} total={resultado.beneficios.total} />
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Resumo do Custo Total</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1.5 text-sm">
+                <LinhaResumo rotulo="Salário Bruto" valor={resultado.salarioBruto} />
+                <LinhaResumo rotulo="(+) Encargos Patronais" valor={resultado.encargos.total} tone="destructive" />
+                <LinhaResumo rotulo="(+) Provisões Mensais" valor={resultado.provisoes.total} tone="warning" />
+                {resultado.beneficios.total > 0 && (
+                  <LinhaResumo rotulo="(+) Benefícios" valor={resultado.beneficios.total} tone="primary" />
                 )}
-                <AccordionItem value="resumo">
-                  <AccordionTrigger className="text-sm">Resumo do Custo Total</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-1.5 text-sm">
-                      <LinhaResumo rotulo="Salário Bruto" valor={resultado.salarioBruto} />
-                      <LinhaResumo rotulo="(+) Encargos Patronais" valor={resultado.encargos.total} tone="destructive" />
-                      <LinhaResumo rotulo="(+) Provisões Mensais" valor={resultado.provisoes.total} tone="warning" />
-                      {resultado.beneficios.total > 0 && (
-                        <LinhaResumo rotulo="(+) Benefícios" valor={resultado.beneficios.total} tone="primary" />
-                      )}
-                      <Separator className="my-2" />
-                      <LinhaResumo rotulo="Custo Mensal Total" valor={resultado.custoMensalTotal} bold tone="primary" />
-                      <LinhaResumo rotulo="Custo Anual Total (× 12)" valor={resultado.custoAnualTotal} bold />
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+                <Separator className="my-2" />
+                <LinhaResumo rotulo="Custo Mensal Total" valor={resultado.custoMensalTotal} bold tone="primary" />
+                <LinhaResumo rotulo="Custo Anual Total (× 12)" valor={resultado.custoAnualTotal} bold />
+              </div>
             </CardContent>
           </Card>
         </>
