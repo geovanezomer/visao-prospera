@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
     meta: [
-      { title: "Recuperar senha — GZ FinnancePRO" },
+      { title: "Recuperar senha — FinnancePRO" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -44,7 +44,7 @@ function ForgotPasswordPage() {
             <Activity className="h-5 w-5" />
           </div>
           <p className="text-base font-semibold tracking-tight">
-            GZ Finnance<span className="text-primary">PRO</span>
+            Finnance<span className="text-primary">PRO</span>
           </p>
         </div>
 

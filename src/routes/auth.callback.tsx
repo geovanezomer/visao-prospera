@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 export const Route = createFileRoute("/auth/callback")({
   head: () => ({
     meta: [
-      { title: "Confirmando — GZ FinnancePRO" },
+      { title: "Confirmando — FinnancePRO" },
       { name: "robots", content: "noindex" },
     ],
   }),

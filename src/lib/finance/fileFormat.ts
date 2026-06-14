@@ -68,7 +68,7 @@ export function serialize(
   return {
     type: FINNANCE_FILE_TYPE,
     version: FINNANCE_FILE_VERSION,
-    source: "GZ FinnancePRO",
+    source: "FinnancePRO",
     savedAt: new Date().toISOString(),
     app: { name: "FinancePRO", version: "1.x" },
     state: state as unknown as Record<string, unknown>,

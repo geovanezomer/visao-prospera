@@ -14,7 +14,8 @@ import {
 import { useEffect } from "react";
 
 
-import { Activity, LogOut, Building2, Factory, Store, Briefcase, Users, Save, FolderOpen, Calculator } from "lucide-react";
+import { LogOut, Building2, Factory, Store, Briefcase, Users, Save, FolderOpen, Calculator } from "lucide-react";
+import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 
 import { NAV_ITEMS } from "./nav-config";
 import { TabKey, BusinessType, AppState } from "@/lib/finance/types";
@@ -57,12 +58,10 @@ export function AppSidebar({ activeTab, setActiveTab, state, update, onSave, onO
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="border-b border-sidebar-border/50 py-4">
         <div className="flex items-center gap-3 px-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
-            <Activity className="h-5 w-5" />
-          </div>
+          <img src={logoAsset.url} alt="FinnancePRO" className="h-8 w-8 shrink-0 rounded-md object-contain" />
           <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-bold leading-none tracking-tight">
-              GZ FINNANCE<span className="text-primary">PRO</span>
+              FINNANCE<span className="text-primary">PRO</span>
             </span>
             <span className="mt-1 text-[9px] uppercase tracking-widest text-muted-foreground/80 truncate">Auditoria & Gestão</span>
           </div>
