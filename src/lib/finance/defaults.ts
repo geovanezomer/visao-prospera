@@ -1,6 +1,42 @@
+import { z } from "zod";
 import { AppState, BusinessType, CostLine, COST_VENDAS_TABLE_CONFIG } from "./types";
 import { fill12 } from "./format";
 import { coerceMonths } from "./safeMath";
+
+// Schema Zod do shape de topo do AppState. Validação defensiva no boot
+// e no import de arquivo .finnance — garante que `migrateState` recebe
+// um objeto com as chaves esperadas (campos internos são sanitizados
+// depois por coerceMonths / ensure / RELABEL no próprio migrateState).
+// Intencionalmente raso: validar 100+ campos aninhados seria custo alto
+// para pouco ganho — o objetivo é apenas rejeitar JSONs estruturalmente
+// inválidos (arquivo corrompido, manipulado, ou de outro app).
+const appStateShape = z.object({
+  businessType: z.enum(["industria", "comercio", "servicos"]).optional(),
+  companyName: z.string().optional(),
+  numColaboradores: z.number().optional(),
+  revenue: z.object({}).passthrough().optional(),
+  costs: z.array(z.object({}).passthrough()).optional(),
+  capital: z.object({}).passthrough().optional(),
+  tax: z.object({}).passthrough().optional(),
+  cashflow: z.object({}).passthrough().optional(),
+  strategic: z.object({}).passthrough().optional(),
+}).passthrough();
+
+/**
+ * Valida o shape de topo + aplica migrateState. Retorna DEFAULT_STATE
+ * quando o input é estruturalmente inválido (não é objeto, faltam
+ * chaves críticas com tipo errado, etc.).
+ */
+export function validateAndMigrate(input: unknown): AppState {
+  const parsed = appStateShape.safeParse(input);
+  if (!parsed.success) {
+    if (typeof console !== "undefined") {
+      console.warn("[FinancePRO] AppState inválido no boot — usando DEFAULT_STATE.", parsed.error.issues);
+    }
+    return DEFAULT_STATE;
+  }
+  return migrateState({ ...DEFAULT_STATE, ...(parsed.data as Partial<AppState>) });
+}
 
 const baseRevenue = [13000, 14000, 15500, 15000, 16000, 17000, 15500, 14500, 16000, 17500, 18500, 21000];
 
