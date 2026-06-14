@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustoFuncionarioCalc } from "@/components/calculadoras/CustoFuncionarioCalc";
 import { RescisaoCltCalc } from "@/components/calculadoras/RescisaoCltCalc";
+import { CltVsPjCalc } from "@/components/calculadoras/CltVsPjCalc";
 
 export const Route = createFileRoute("/calculadoras")({
   head: () => ({
@@ -27,8 +28,8 @@ function CalculadorasPage() {
         <TabsList className="mb-6 flex h-auto w-full flex-wrap justify-start gap-1 bg-muted/40 p-1">
           <TabsTrigger value="custo-funcionario">Custo de Funcionário</TabsTrigger>
           <TabsTrigger value="rescisao">Rescisão CLT</TabsTrigger>
+          <TabsTrigger value="clt-vs-pj">CLT vs PJ</TabsTrigger>
           <TabsTrigger value="prolabore" disabled>Pró-labore</TabsTrigger>
-          <TabsTrigger value="regimes" disabled>Simples × Presumido × Real</TabsTrigger>
           <TabsTrigger value="markup" disabled>Markup / Precificação</TabsTrigger>
         </TabsList>
 
@@ -37,6 +38,9 @@ function CalculadorasPage() {
         </TabsContent>
         <TabsContent value="rescisao">
           <RescisaoCltCalc />
+        </TabsContent>
+        <TabsContent value="clt-vs-pj">
+          <CltVsPjCalc />
         </TabsContent>
       </Tabs>
     </div>
