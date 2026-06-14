@@ -1,102 +1,83 @@
+## Página `/calculadoras` com sistema de abas + 1ª calculadora: Custo de Funcionário CLT
 
-# Sistema de Arquivos .finnance (estilo Excalidraw)
+### Estrutura
 
-Transformar o FinancePRO num app file-based: estado do trabalho vira um arquivo `.finnance` (JSON) que o consultor salva no disco, abre, compartilha por e-mail/Drive/WhatsApp — sem depender do `localStorage` daquele navegador específico.
+Refatorar `src/routes/calculadoras.tsx` para usar Tabs (`shadcn/ui`) preparado para receber várias calculadoras. Hoje só a aba **Custo de Funcionário** ativa; demais ficam como placeholders ("Em breve").
 
-## Como o Excalidraw faz (referência)
-
-1. **Estado em memória + autosave no localStorage** como rede de segurança (recupera se fechar a aba).
-2. **Save to file** → serializa cena em JSON com `type`, `version`, `source`, payload → `Blob` → `<a download="nome.excalidraw">`.
-3. **Open** → `<input type="file">` (ou drag-drop) → lê JSON → valida `type === "excalidraw"` → migra por `version` → carrega no estado.
-4. **Nome do arquivo no header** + indicador "modificado" (●) quando há mudanças não salvas.
-5. **Atalhos** Ctrl+S / Ctrl+O, e prompt `beforeunload` quando há alterações não salvas.
-
-Vamos replicar isso 1:1, adaptado ao nosso `AppState` + `Scenario[]`.
-
-## Formato do arquivo `.finnance`
-
-```json
-{
-  "type": "gz-finnance",
-  "version": 1,
-  "source": "GZ FinnancePRO",
-  "savedAt": "2026-06-14T12:00:00.000Z",
-  "app": { "name": "FinancePRO", "version": "1.x" },
-  "state": { /* AppState completo */ },
-  "scenarios": [ /* Scenario[] salvos */ ],
-  "meta": {
-    "companyName": "ACME LTDA",
-    "businessType": "servicos",
-    "notes": ""
-  }
-}
+```
+src/routes/calculadoras.tsx           → shell com <Tabs>
+src/components/calculadoras/
+  CustoFuncionarioCalc.tsx            → UI da calculadora
+src/lib/calculadoras/
+  custoFuncionario.ts                 → engine pura (pure functions + Zod)
+  custoFuncionario.test.ts            → testes dos cenários (Simples / Geral / com benefícios)
 ```
 
-- `type` + `version` permitem migração futura (mesma estratégia de `migrateState` que já existe em `defaults.ts`).
-- Nome default do arquivo: `{companyName}-{YYYY-MM-DD}.finnance` (sanitizado).
+### Integração com o regime do menu lateral
 
-## Mudanças de UX
+O regime tributário já existe no SSOT em `state.tax.regime` (`"simples" | "presumido" | "real"`) do `useFinanceModel`. A calculadora **lê** esse valor e pré-seleciona o regime — o usuário ainda pode trocar manualmente só para simular, mas o default vem do app.
 
-**Sidebar → Configurações Rápidas** (substituindo o botão "Exportar" atual, que hoje só chama `window.print`):
+- `simples` → "Simples Nacional" (INSS patronal + Terceiros embutidos no DAS; recolhe à parte: FGTS 8 % e RAT)
+- `presumido` / `real` → "Regime Geral" (folha cheia: INSS 20 % + RAT 1–3 % + Terceiros 5,8 % + FGTS 8 %)
 
-- 💾 **Salvar** — baixa `.finnance` (Ctrl+S).
-- 📂 **Abrir** — file picker para `.finnance` (Ctrl+O); confirma sobrescrever se houver mudanças não salvas.
-- 📄 **Novo** — reseta para `DEFAULT_STATE` (com confirmação).
-- 🖨️ **Exportar PDF** — mantém o `window.print()` antigo, renomeado, para preservar a função de relatório.
+### Engine financeira (normas vigentes — CLT + Decreto 3.048/99 + LC 123/2006)
 
-**Header**: nome do arquivo atual + indicador `●` de "dirty" (não salvo).
-**beforeunload**: aviso nativo se `dirty === true`.
+**Encargos patronais (Regime Geral):**
+- INSS Patronal: 20 % sobre salário bruto (art. 22, I, Lei 8.212/91)
+- RAT (Risco de Acidente de Trabalho): 1 % / 2 % / 3 % conforme grau de risco (input do usuário, default 1 %)
+- Terceiros (Sistema S — SENAI/SESC/SEBRAE/INCRA/Salário-Educação): 5,8 % (default; varia por CNAE)
+- FGTS: 8 % (art. 15, Lei 8.036/90)
 
-## Arquitetura técnica
+**Encargos patronais (Simples Nacional):**
+- INSS Patronal e Terceiros: 0 % (substituídos pelo DAS — exceto Anexo IV)
+- RAT: 1 %/2 %/3 % (continua devido à parte)
+- FGTS: 8 % (continua devido à parte)
 
-### Novos arquivos
+**Provisões mensais (1/12 avos):**
+- 13º salário: 8,3333 % (1/12)
+- FGTS sobre 13º: 8 % × 8,3333 % = 0,6667 %
+- Férias + 1/3 constitucional: 11,1111 % (1/12 × 4/3)
+- FGTS sobre férias: 8 % × 11,1111 % = 0,8889 %
 
-- `src/lib/finance/fileFormat.ts` — schema Zod `FinnanceFile`, `serialize(state, scenarios, meta)`, `parse(json)`, `migrateFile(raw)`. Reusa `migrateState` de `defaults.ts`.
-- `src/lib/finance/fileIO.ts` — helpers browser-only:
-  - `downloadFinnanceFile(payload, filename)` — Blob + `<a download>`.
-  - `pickFinnanceFile(): Promise<FinnanceFile>` — abre `<input type="file" accept=".finnance,application/json">`, lê com `FileReader`, valida com Zod.
-  - `sanitizeFilename(name)`.
-- `src/lib/finance/useFinnanceFile.ts` — hook que orquestra:
-  - `currentFileName`, `dirty`, `save()`, `saveAs()`, `open()`, `newFile()`.
-  - Marca `dirty=true` ao detectar mudança em `state`/`scenarios` (compara com snapshot do último save).
-  - Registra `beforeunload` quando `dirty`.
-  - Registra atalhos Ctrl+S / Ctrl+O em `window`.
+**Benefícios (opcionais, inputs):**
+- Vale-Transporte: empresa banca o que exceder 6 % do salário (Lei 7.418/85, art. 4º). UI: usuário informa custo mensal do VT; sistema calcula `max(0, custoVT − 0,06 × salário)`.
+- Vale-Refeição/Alimentação: input livre (custo integral para a empresa, dedutível IRPJ/CSLL no Lucro Real)
+- Plano de Saúde: input livre
+- Outros Benefícios: input livre
 
-### Arquivos alterados
-
-- `src/routes/index.tsx` — instancia `useFinnanceFile`, passa handlers para a `AppSidebar`, exibe nome de arquivo + indicador dirty no header.
-- `src/components/layout/AppSidebar.tsx` — substitui `onExport` por `onSave`, `onOpen`, `onNew`, `onExportPdf`; ajusta ícones (`Save`, `FolderOpen`, `FilePlus`, `Printer`).
-- `src/lib/finance/store.ts` — **mantém** o autosave no localStorage como rede de segurança (igual Excalidraw). Adiciona um `loadFromFile(file)` que aceita um `FinnanceFile` validado e substitui `state` + `scenarios` atomicamente.
-
-### Validação e segurança
-
-- Zod schema rigoroso em `fileFormat.ts` rejeita arquivos sem `type: "gz-finnance"` ou com `version` desconhecida.
-- Migrations versionadas: `migrateFile(raw)` aplica transformações entre versões antes de validar.
-- Toast (`sonner`) para feedback: "Arquivo salvo", "Arquivo inválido", "Versão futura — atualize o app".
-- Confirmação (`ConfirmDialog` já existe) antes de Abrir/Novo quando `dirty`.
-
-## Compatibilidade
-
-- LocalStorage continua sendo a fonte de dados ao abrir o app (autosave + persistência entre sessões), como no Excalidraw.
-- Usuários antigos não precisam fazer nada — o app abre como antes; agora ganham Salvar/Abrir.
-- Cenários salvos viajam junto com o arquivo (hoje ficam isolados no navegador).
-
-## Fora de escopo (próximos passos possíveis)
-
-- Compartilhamento por link (server-side storage no Cloud).
-- Versionamento/histórico de arquivos.
-- Import de `.xlsx` ou outros formatos.
-
-## Resumo dos arquivos
-
-```text
-NOVOS:
-  src/lib/finance/fileFormat.ts       # schema + serialize/parse/migrate
-  src/lib/finance/fileIO.ts           # download/pick browser helpers
-  src/lib/finance/useFinnanceFile.ts  # hook orquestrador
-
-EDITADOS:
-  src/routes/index.tsx                # wire-up + header file indicator
-  src/components/layout/AppSidebar.tsx# botões Salvar/Abrir/Novo/PDF
-  src/lib/finance/store.ts            # loadFromFile()
+**Fórmula final:**
 ```
+custoMensal = salário
+            + (salário × (alíquotaPatronal + RAT + FGTS))
+            + (salário × (provisão13 + FGTSsobre13 + provisãoFérias + FGTSsobreFérias))
+            + benefícios
+custoAnual  = custoMensal × 12
+fatorMultiplicador = custoMensal / salário
+```
+
+Todos os números calculados com `Math.round(x*100)/100` ao final; cálculos internos em centavos para evitar floating-point.
+
+Validação Zod: salário ≥ R$ 1.000 (não checa salário-mínimo dinâmico — só sanity), RAT ∈ {1,2,3}, benefícios ≥ 0.
+
+### UI (melhorada vs. mockup)
+
+Layout em 2 colunas (desktop) / stack (mobile), seguindo design tokens (sem cores hardcoded):
+
+- **Coluna esquerda** — Card "Remuneração": Salário Bruto, Regime (Select pré-preenchido do SSOT com badge "vindo do seu plano" + botão "sobrescrever"), Grau de Risco RAT (Select 1/2/3 %), % Terceiros (input avançado, recolhido por padrão).
+- **Coluna direita** — Card "Benefícios": VT (checkbox + valor), VR/VA, Plano de Saúde, Outros.
+- **Resultado** (full-width, card destaque com gradient sutil dos tokens): Custo Mensal Total em display grande, fator multiplicador (ex. "1,68× o salário bruto"), badge do regime.
+- **Breakdown** em 3 cards menores: Encargos Patronais, Provisões Mensais, Benefícios, Custo Anual.
+- **Detalhamento** em accordion expansível com tabela linha-a-linha (base, alíquota, valor) — substitui os 3 cards grandes do mockup, mais limpo.
+- **"Entenda a calculadora"** em `<Collapsible>` no fim com fórmula + dicas (texto similar ao do mockup, atualizado com referências legais).
+
+Cálculo **reativo** (sem botão "Calcular") — atualiza a cada mudança via `useMemo`. O botão "Limpar" mantém-se.
+
+### Fora de escopo (não muda)
+
+- Sidebar, outras rotas, engine financeira principal (`lib/finance/*`) ficam intocados.
+- Não cria persistência — calculadora é stateless por sessão.
+- Reforma CBS/IBS não afeta folha de pagamento (mantida fora do escopo desta calc).
+
+### Próximas calculadoras (placeholders nas abas, implementação futura)
+
+Sugiro slots para: Pró-labore, Rescisão CLT, Simples vs Presumido vs Real (mini), VPL/TIR rápido, Markup. Confirma se quer esses títulos ou outros antes de eu reservar as abas?
