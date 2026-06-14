@@ -14,22 +14,27 @@ import {
 import { useEffect } from "react";
 
 
-import { Activity, LogOut, Building2, Factory, Store, Briefcase, Users } from "lucide-react";
+import { Activity, LogOut, Building2, Factory, Store, Briefcase, Users, Presentation, X, Download } from "lucide-react";
 import { NAV_ITEMS } from "./nav-config";
-import { TabKey, BusinessType } from "@/lib/finance/types";
+import { TabKey, BusinessType, AppState } from "@/lib/finance/types";
 import { useAuth } from "@/lib/auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
 import { cn } from "@/lib/utils";
 
 
 interface AppSidebarProps {
   activeTab: TabKey | "ai";
   setActiveTab: (tab: TabKey | "ai") => void;
-  state: any;
-  update: any;
+  state: AppState;
+  update: (patch: Partial<AppState> | ((s: AppState) => AppState)) => void;
+  meetingMode: boolean;
+  setMeetingMode: (v: boolean | ((p: boolean) => boolean)) => void;
+  onExport: () => void;
 }
 
-export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSidebarProps) {
+export function AppSidebar({ activeTab, setActiveTab, state, update, meetingMode, setMeetingMode, onExport }: AppSidebarProps) {
   const { user, logout } = useAuth();
   const { setOpenMobile } = useSidebar();
 
