@@ -131,7 +131,7 @@ function SimulaPro() {
     return () => window.removeEventListener("keydown", onKey);
   }, [meetingMode]);
 
-  if (!hydrated || !user) {
+  if (!hydrated || !user || !subChecked) {
     return <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">Carregando…</div>;
   }
 
