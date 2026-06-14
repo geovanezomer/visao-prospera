@@ -150,9 +150,6 @@ export function AppSidebar({ activeTab, setActiveTab, state, update, onSave, onO
                 <FolderOpen className="h-3.5 w-3.5 mr-2" />
                 <span>Abrir</span>
               </Button>
-              <div data-meeting-hide="true">
-                <TaxSettingsDialog state={state} update={update} />
-              </div>
             </div>
           </div>
         </SidebarGroup>
