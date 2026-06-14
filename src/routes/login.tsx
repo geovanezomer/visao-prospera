@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Activity, ArrowRight, Lock, Mail } from "lucide-react";
+import { ArrowRight, Lock, Mail } from "lucide-react";
+import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,9 +53,7 @@ function LoginPage() {
         }}
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/20 text-primary ring-1 ring-primary/30">
-            <Activity className="h-5 w-5" />
-          </div>
+          <img src={logoAsset.url} alt="FinnancePRO" className="h-10 w-10 rounded-md object-contain" />
           <div>
             <p className="text-sm font-semibold tracking-tight">
               Finnance<span className="text-primary">PRO</span>
@@ -83,9 +82,7 @@ function LoginPage() {
       <section className="flex items-center justify-center px-6 py-12 lg:px-12">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/15 text-primary">
-              <Activity className="h-5 w-5" />
-            </div>
+            <img src={logoAsset.url} alt="FinnancePRO" className="h-9 w-9 rounded-md object-contain" />
             <p className="text-base font-semibold tracking-tight">
               Finnance<span className="text-primary">PRO</span>
             </p>

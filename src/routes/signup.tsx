@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Activity, ArrowRight, Lock } from "lucide-react";
+import { ArrowRight, Lock } from "lucide-react";
+import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/signup")({
@@ -17,9 +18,7 @@ function SignupDisabledPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12 text-foreground">
       <div className="w-full max-w-md text-center">
-        <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-md bg-primary/15 text-primary">
-          <Activity className="h-6 w-6" />
-        </div>
+        <img src={logoAsset.url} alt="FinnancePRO" className="mx-auto mb-6 h-12 w-12 rounded-md object-contain" />
         <p className="text-sm font-semibold tracking-tight">
           Finnance<span className="text-primary">PRO</span>
         </p>
