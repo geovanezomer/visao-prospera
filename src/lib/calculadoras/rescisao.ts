@@ -248,6 +248,33 @@ export function calcularRescisao(inputBruto: RescisaoInput): RescisaoOutput {
     verbas.push({ rotulo: `Multa FGTS (${(regras.multaFGTSPct * 100).toFixed(0)}%)`, valor: multaFGTS, base: `${(regras.multaFGTSPct * 100).toFixed(0)}% × saldo FGTS`, incideINSS: false, incideIRRF: false });
   }
 
+  // --- Indenização do contrato de experiência rompido antes do prazo (CLT arts. 479/480) ---
+  // Empregador rompe antes: paga ao empregado 50% do que faltaria (art. 479).
+  // Empregado rompe antes: pode ser descontado em 50% do que faltaria (art. 480) — exibido como verba negativa.
+  if (i.motivo === "termino_experiencia" && i.diasRestantesExperiencia > 0) {
+    const valorRestante = round2(salarioDia * i.diasRestantesExperiencia);
+    if (i.rupturaExperienciaPor === "empregador") {
+      const indenizacao = round2(valorRestante * 0.5);
+      verbas.push({
+        rotulo: `Indenização art. 479 CLT (${i.diasRestantesExperiencia} dias × 50%)`,
+        valor: indenizacao,
+        base: `50% × ${i.diasRestantesExperiencia} dias × R$ ${salarioDia.toFixed(2)}`,
+        incideINSS: false,
+        incideIRRF: false,
+      });
+    } else {
+      // Desconto do empregado — lançado como valor negativo
+      const desconto = round2(-valorRestante * 0.5);
+      verbas.push({
+        rotulo: `Indenização art. 480 CLT (desconto — ${i.diasRestantesExperiencia} dias × 50%)`,
+        valor: desconto,
+        base: `–50% × ${i.diasRestantesExperiencia} dias × R$ ${salarioDia.toFixed(2)}`,
+        incideINSS: false,
+        incideIRRF: false,
+      });
+    }
+  }
+
   // --- Totais e impostos ---
   const totalBruto = round2(verbas.reduce((a, v) => a + v.valor, 0));
 
