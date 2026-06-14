@@ -65,7 +65,7 @@ function SimulaPro() {
     if (hydrated && !user) navigate({ to: "/login" });
   }, [hydrated, user, navigate]);
 
-  const { state, update, reset, setState, hydrated: stateHydrated } = useAppState();
+  const { state, update, reset, setState, hydrated: stateHydrated, autosaveStatus } = useAppState();
   const { scenarios, save, remove, replaceAll: replaceScenarios } = useScenarios();
   const [activeTab, setActiveTab] = useState<TabKey | "ai" | "calculadoras">("dre");
   const [simParams, setSimParams] = useState<SimulatorParams>(DEFAULT_SIM);
