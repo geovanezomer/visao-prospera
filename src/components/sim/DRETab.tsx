@@ -290,7 +290,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                             {showPeriods && aggregate(l.values).map((v, i) => {
                               const sv = v * sgn;
                               return (
-                                <td key={i} className={`num px-2 py-1.5 text-right text-xs ${sv < 0 ? "text-neg" : sv > 0 ? "text-pos" : "text-muted-foreground"}`}>
+                                <td key={i} className={`num px-2 py-1.5 text-right ${periodTxt} ${sv < 0 ? "text-neg" : sv > 0 ? "text-pos" : "text-muted-foreground"}`}>
                                   {sv === 0 ? "—" : fmtBRLCompact(sv)}
                                 </td>
                               );
