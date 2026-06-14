@@ -23,14 +23,22 @@ export interface ToolDef {
 export const TOOLS: ToolDef[] = [
   // --- Dados internos ---
   { name: "get_premissas", description: "Premissas da empresa (regime, capital, prazos, caixa mínimo).", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_receitas", description: "Configuração de receitas: bruta mensal, deduções customizadas, inadimplência, PMR/PMP mensais e receitas financeiras.", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_despesas", description: "Lista completa de linhas de despesa (CPV/CMV, fixos, variáveis, folha CLT com encargos) com totais e categoria.", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_capital", description: "Estrutura de capital detalhada: PL, dívida onerosa, ativo/passivo circulante, contas a receber, fornecedores, estoques, Ke/Kd, capex ativado.", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_regime_tributario", description: "Configuração tributária completa: regime nominal vs efetivo, anexo Simples, Fator R, alíquotas ISS/ICMS/PIS/COFINS/CBS/IBS, era da Reforma e carga apurada.", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_dre", description: "DRE completa anual e mensal.", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_indicadores", description: "Indicadores financeiros (margens, ROE/ROIC, liquidez, endividamento, ciclo).", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_fluxo_caixa", description: "Fluxo de caixa mensal, pior mês e alertas.", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_valuation", description: "Valuation: EV, equity, múltiplos, DCF, confiança.", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_diagnostico", description: "Diagnóstico automático e alertas de risco.", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_saude_financeira", description: "Score de saúde (financeiro + total).", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_governanca", description: "Respostas qualitativas de governança e sucessão (sócio afastado, processos documentados, plano de sucessão, quem fecha contrato).", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_estrategico", description: "Análise estratégica qualitativa completa (concentração de clientes/fornecedores, competitivo, regulatório, governança) em JSON.", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_prescritivo", description: "Recomendações prescritivas.", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_comparativo_simulado", description: "Compara base × cenário simulado ativo.", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_tudo", description: "Snapshot COMPLETO da empresa: premissas, receitas, despesas, capital, regime, DRE, indicadores, caixa, valuation, diagnóstico, saúde, governança, estratégico e prescritivo. Use quando precisar de visão 360° para uma decisão.", parameters: { type: "object", properties: {}, required: [] } },
+
   {
     name: "simular_alavanca",
     description: "Aplica alavancas temporárias e retorna impacto. Use para responder 'e se cortar 20% dos fixos?'.",
@@ -215,15 +223,28 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
   const company = state.companyName || "default";
   switch (name) {
     case "get_premissas": return sec.premissas;
+    case "get_receitas": return sec.receitas;
+    case "get_despesas": return sec.despesas;
+    case "get_capital": return sec.capital;
+    case "get_regime_tributario": return sec.regime;
     case "get_dre": return sec.dre;
     case "get_indicadores": return sec.indicadores;
     case "get_fluxo_caixa": return sec.caixa;
     case "get_valuation": return sec.valuation;
     case "get_diagnostico": return sec.diagnostico;
     case "get_saude_financeira": return sec.saude;
+    case "get_governanca": return sec.governanca || "_Módulo de Governança não preenchido pelo consultor._";
+    case "get_estrategico": return sec.estrategico || "_Análise estratégica não preenchida pelo consultor._";
     case "get_prescritivo": return sec.prescritivo;
     case "get_comparativo_simulado":
       return sec.comparativo ?? "Nenhum cenário simulado ativo — todas as alavancas estão em 0.";
+    case "get_tudo":
+      return [
+        sec.premissas, sec.receitas, sec.despesas, sec.capital, sec.regime,
+        sec.dre, sec.indicadores, sec.caixa, sec.valuation, sec.diagnostico,
+        sec.saude, sec.governanca, sec.estrategico, sec.prescritivo, sec.comparativo,
+      ].filter(Boolean).join("\n\n---\n\n");
+
 
     case "simular_alavanca": {
       const params: SimulatorParams = {
