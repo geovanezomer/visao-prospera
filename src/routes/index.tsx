@@ -315,7 +315,7 @@ function LandingPage() {
                   variant={p.highlight ? "default" : "outline"}
                   className="w-full h-11"
                 >
-                  <Link to="/signup">
+                  <Link to="/signup" search={{ plan: p.id as "mensal" | "anual" | "vitalicio" }}>
                     {p.cta}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
