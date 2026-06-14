@@ -206,6 +206,10 @@ function SimulaPro() {
                   simActive={simActive} 
                   simParams={simParams} 
                 />
+              ) : activeTab === "calculadoras" ? (
+                <div className="animate-in fade-in duration-500">
+                  <CalculadorasTab />
+                </div>
               ) : (
                 <div className="space-y-6 animate-in fade-in duration-500">
                   {activeTab === "receitas" && <RevenueTab state={state} update={update} />}
