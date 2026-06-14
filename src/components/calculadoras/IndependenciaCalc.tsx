@@ -70,12 +70,19 @@ export function IndependenciaCalc() {
   const [aporteMensal, setAporteMensal] = useState<number>(1000);
   const [retornoAnual, setRetornoAnual] = useState<number>(10);
   const [taxaRetirada, setTaxaRetirada] = useState<number>(4);
+  // Inflação anual esperada (IPCA): a simulação roda em termos REAIS,
+  // ou seja, todos os valores ficam em poder de compra de hoje.
+  const [inflacaoAnual, setInflacaoAnual] = useState<number>(4);
   const [pagina, setPagina] = useState(0);
 
   const sim = useMemo(() => {
     const gastoAnual = gastosMensais * 12;
     const numeroFire = taxaRetirada > 0 ? gastoAnual / (taxaRetirada / 100) : 0;
-    const r = retornoAnual / 100;
+    // Retorno REAL = (1 + nominal) / (1 + inflação) − 1 (Equação de Fisher).
+    // Mantém o cálculo do número FIRE em reais de hoje e neutraliza a inflação.
+    const rNominal = retornoAnual / 100;
+    const iInfl = inflacaoAnual / 100;
+    const r = (1 + rNominal) / (1 + iInfl) - 1;
     const aporteAno = aporteMensal * 12;
 
     // Simulação ano a ano até atingir FIRE (cap de 80 anos para evitar loop)
