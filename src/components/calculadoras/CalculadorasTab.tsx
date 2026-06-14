@@ -27,7 +27,7 @@ export function CalculadorasTab() {
           <TabsTrigger value="custo-funcionario">Custo de Funcionário</TabsTrigger>
           <TabsTrigger value="rescisao">Rescisão CLT</TabsTrigger>
           <TabsTrigger value="clt-vs-pj">CLT vs PJ</TabsTrigger>
-          <TabsTrigger value="salario-liquido">Salário Líquido</TabsTrigger>
+          <TabsTrigger value="salario-liquido">Salário</TabsTrigger>
           <TabsTrigger value="horas-extras">Horas Extras</TabsTrigger>
           <TabsTrigger value="sac-vs-price">SAC vs PRICE</TabsTrigger>
           <TabsTrigger value="juros-compostos">Juros Compostos</TabsTrigger>
