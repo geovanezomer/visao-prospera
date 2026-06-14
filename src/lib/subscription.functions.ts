@@ -13,10 +13,21 @@ export type SubscriptionStatus = {
   current_period_end: string | null;
 };
 
+// E-mails com acesso ADMIN vitalício — nunca exigem plano.
+const ADMIN_LIFETIME_EMAILS = new Set<string>([
+  "contato@geovanezomer.com.br",
+]);
+
 export const getMySubscription = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<SubscriptionStatus> => {
-    const { supabase, userId } = context;
+    const { supabase, userId, claims } = context;
+
+    // Bypass admin: acesso vitalício, sem checar tabela de assinaturas.
+    const email = (claims as { email?: string } | null)?.email?.toLowerCase();
+    if (email && ADMIN_LIFETIME_EMAILS.has(email)) {
+      return { active: true, plan: "admin", status: "lifetime", current_period_end: null };
+    }
     const { data, error } = await supabase
       .from("subscriptions")
       .select("plan,status,current_period_end")
