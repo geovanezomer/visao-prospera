@@ -67,7 +67,9 @@ export function useFinnanceFile({
   const save = useCallback(() => {
     const name = currentFileName ?? defaultFilename(state);
     try {
-      const payload = serialize(state, scenarios);
+      // Coleta cenários do simulador + plano de ação da empresa atual.
+      const extras = collectExtras(state.companyName);
+      const payload = serialize(state, scenarios, extras);
       downloadFinnanceFile(payload, name);
       lastSavedSnapshot.current = snapshot(state, scenarios);
       setCurrentFileName(name);
@@ -91,9 +93,15 @@ export function useFinnanceFile({
       if (!ok) return;
     }
     try {
-      const { state: nextState, scenarios: nextScen, filename } = await pickFinnanceFile();
+      const { state: nextState, scenarios: nextScen, extras, filename } = await pickFinnanceFile();
       setState(nextState);
       replaceScenarios(nextScen);
+      // Replica os extras no localStorage sob a empresa do arquivo aberto,
+      // garantindo que ações e cenários do simulador apareçam no novo PC.
+      applyExtras(nextState.companyName, {
+        actions: (extras.actions ?? []) as never,
+        simScenarios: (extras.simScenarios ?? []) as never,
+      });
       setCurrentFileName(filename);
       // Snapshot do novo conteúdo evita marcar dirty logo após abrir.
       lastSavedSnapshot.current = snapshot(nextState, nextScen);
