@@ -19,11 +19,14 @@ async function readFirstAsync<T>(keys: string[]): Promise<T | null> {
   return null;
 }
 
+export type AutosaveStatus = "idle" | "saving" | "saved" | "error";
+
 export function useAppState() {
   const { user } = useAuth();
   const username = user?.id ?? "guest";
   const [state, setState] = useState<AppState>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
+  const [autosaveStatus, setAutosaveStatus] = useState<AutosaveStatus>("idle");
   // Evita race ao trocar de sessão (estado do user A escrito na key do user B).
   const hydratedFor = useRef<string | null>(null);
   // Suprime salvamento quando o estado foi recebido via broadcast de outra aba.
@@ -50,14 +53,35 @@ export function useAppState() {
     void hydrate();
   }, [hydrate]);
 
+  // Autosave com debounce de 300ms. Marca "saving" imediatamente para
+  // feedback visual, salva após o usuário parar de digitar, e converge
+  // para "saved" (ou "error" em caso de falha de IDB+localStorage).
+  // Após 2s sem novas mutações, volta a "idle" para evitar ruído visual.
   useEffect(() => {
     if (!hydrated || hydratedFor.current !== username) return;
     if (suppressSave.current) {
       suppressSave.current = false;
       return;
     }
-    void saveKey(stateKey(username), state).then(() => broadcastChange(stateKey(username)));
+    setAutosaveStatus("saving");
+    const t = setTimeout(async () => {
+      try {
+        await saveKey(stateKey(username), state);
+        broadcastChange(stateKey(username));
+        setAutosaveStatus("saved");
+      } catch {
+        setAutosaveStatus("error");
+      }
+    }, 300);
+    return () => clearTimeout(t);
   }, [state, hydrated, username]);
+
+  // Após "saved", volta a "idle" depois de 2s — evita poluir o header.
+  useEffect(() => {
+    if (autosaveStatus !== "saved") return;
+    const t = setTimeout(() => setAutosaveStatus("idle"), 2000);
+    return () => clearTimeout(t);
+  }, [autosaveStatus]);
 
   // Sincroniza com outras abas
   useEffect(() => {
@@ -83,7 +107,7 @@ export function useAppState() {
 
   const reset = useCallback(() => setState(DEFAULT_STATE), []);
 
-  return { state, setState, update, reset, hydrated };
+  return { state, setState, update, reset, hydrated, autosaveStatus };
 }
 
 export function useScenarios() {
