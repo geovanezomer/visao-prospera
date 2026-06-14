@@ -18,6 +18,8 @@ type StripePrice = {
   recurring: { interval: string } | null;
 };
 
+type StripeList<T> = { data: T[] };
+
 type StripeSession = {
   id: string;
   url: string;
@@ -29,23 +31,35 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { stripeFetch, toFormBody } = await import("./stripe.server");
 
-    // 1) Consulta o price para descobrir se é recorrente
-    const price = await stripeFetch<StripePrice>(`/v1/prices/${encodeURIComponent(data.priceId)}`);
+    // 1) Resolve o price.
+    //    Os IDs no .env são lookup_keys (ex: "plano_mensal_recorrente"),
+    //    NÃO IDs internos do Stripe (price_xxx). Buscamos via ?lookup_keys[].
+    //    Se o input já vier no formato price_xxx, usamos direto.
+    let price: StripePrice;
+    if (data.priceId.startsWith("price_")) {
+      price = await stripeFetch<StripePrice>(`/v1/prices/${encodeURIComponent(data.priceId)}`);
+    } else {
+      const list = await stripeFetch<StripeList<StripePrice>>(
+        `/v1/prices?lookup_keys[]=${encodeURIComponent(data.priceId)}&limit=1`,
+      );
+      if (!list.data.length) {
+        throw new Error(`Price não encontrado para lookup_key='${data.priceId}'. Verifique se o produto foi sincronizado no Stripe.`);
+      }
+      price = list.data[0];
+    }
     const isSubscription = price.recurring !== null;
     const mode: "subscription" | "payment" = isSubscription ? "subscription" : "payment";
 
     const userId = context.userId;
     const email = (context.claims as { email?: string } | undefined)?.email;
 
-    // 2) Monta o body do checkout session.
-    //    metadata.user_id é replicado em subscription_data / payment_intent_data
-    //    para que o webhook consiga correlacionar mesmo em eventos posteriores.
+    // 2) Monta o body do checkout session usando o ID real (price.id).
     const body: Record<string, string | number | undefined> = {
       mode,
-      "line_items[0][price]": data.priceId,
+      "line_items[0][price]": price.id,
       "line_items[0][quantity]": 1,
       success_url: `${data.origin}/app?checkout=success`,
-      cancel_url: `${data.origin}/?checkout=cancel`,
+      cancel_url: `${data.origin}/planos?canceled=1`,
       customer_email: email,
       "metadata[user_id]": userId,
       "metadata[price_id]": data.priceId,
