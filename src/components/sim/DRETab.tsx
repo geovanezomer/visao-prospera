@@ -31,6 +31,9 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
   const QUARTERS = ["1º Tri", "2º Tri", "3º Tri", "4º Tri"];
   const periodLabels = view === "mensal" ? MESES : view === "trimestral" ? QUARTERS : [];
   const showPeriods = view !== "anual";
+  // Tamanho de fonte das células de período: trimestral fica maior, parecido com a coluna Anual.
+  const periodTxt = view === "trimestral" ? "text-sm" : "text-xs";
+  const periodHeadTxt = view === "trimestral" ? "text-xs" : "text-[10px]";
   // Agrega um vetor mensal (12) conforme o período selecionado.
   const aggregate = (arr: number[]): number[] => {
     if (view === "mensal") return arr;
