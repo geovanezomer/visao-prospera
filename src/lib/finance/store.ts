@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, Scenario } from "./types";
-import { DEFAULT_STATE, migrateState } from "./defaults";
+import { DEFAULT_STATE, migrateState, validateAndMigrate } from "./defaults";
 import { useAuth } from "@/lib/auth";
 import { loadKey, saveKey, broadcastChange, onRemoteChange } from "./persistence";
 
@@ -33,13 +33,12 @@ export function useAppState() {
     setHydrated(false);
     hydratedFor.current = null;
     try {
-      const stored = await loadKey<Partial<AppState>>(stateKey(username));
-      const fromLegacy = stored ?? (await readFirstAsync<Partial<AppState>>(LEGACY_STATE));
-      if (fromLegacy) {
-        setState(migrateState({ ...DEFAULT_STATE, ...fromLegacy }));
-      } else {
-        setState(DEFAULT_STATE);
-      }
+      const stored = await loadKey<unknown>(stateKey(username));
+      const fromLegacy = stored ?? (await readFirstAsync<unknown>(LEGACY_STATE));
+      // validateAndMigrate: Zod no shape de topo + migrateState (sanitiza
+      // Months[12], normaliza NaN/Infinity, garante invariantes). Se o
+      // JSON estiver corrompido ou manipulado, cai em DEFAULT_STATE.
+      setState(fromLegacy ? validateAndMigrate(fromLegacy) : DEFAULT_STATE);
     } catch {
       setState(DEFAULT_STATE);
     }
@@ -64,10 +63,10 @@ export function useAppState() {
   useEffect(() => {
     return onRemoteChange(async (key) => {
       if (key !== stateKey(username)) return;
-      const fresh = await loadKey<Partial<AppState>>(key);
+      const fresh = await loadKey<unknown>(key);
       if (fresh) {
         suppressSave.current = true;
-        setState(migrateState({ ...DEFAULT_STATE, ...fresh }));
+        setState(validateAndMigrate(fresh));
       }
     });
   }, [username]);
