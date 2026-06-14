@@ -146,16 +146,6 @@ export function AppSidebar({ activeTab, setActiveTab, state, update, meetingMode
                   {currentFileName}
                 </div>
               )}
-              <Button
-                size="sm"
-                variant={meetingMode ? "default" : "outline"}
-                onClick={() => setMeetingMode((v) => !v)}
-                className="h-8 w-full justify-start"
-                title="Modo Reunião: oculta menus, amplia fontes e destaca KPIs para apresentação ao cliente"
-              >
-                {meetingMode ? <X className="h-3.5 w-3.5 mr-2" /> : <Presentation className="h-3.5 w-3.5 mr-2" />}
-                <span>{meetingMode ? "Sair Reunião" : "Modo Reunião"}</span>
-              </Button>
               <Button size="sm" variant="default" onClick={onSave} className="h-8 w-full justify-start" data-meeting-hide="true" title="Salvar arquivo .finnance (Ctrl+S)">
                 <Save className="h-3.5 w-3.5 mr-2" />
                 <span>Salvar{dirty ? " ●" : ""}</span>
@@ -163,14 +153,6 @@ export function AppSidebar({ activeTab, setActiveTab, state, update, meetingMode
               <Button size="sm" variant="outline" onClick={onOpen} className="h-8 w-full justify-start" data-meeting-hide="true" title="Abrir arquivo .finnance (Ctrl+O)">
                 <FolderOpen className="h-3.5 w-3.5 mr-2" />
                 <span>Abrir</span>
-              </Button>
-              <Button size="sm" variant="ghost" onClick={onNew} className="h-8 w-full justify-start" data-meeting-hide="true" title="Começar um novo arquivo">
-                <FilePlus className="h-3.5 w-3.5 mr-2" />
-                <span>Novo</span>
-              </Button>
-              <Button size="sm" variant="ghost" onClick={onExportPdf} className="h-8 w-full justify-start" data-meeting-hide="true" title="Imprimir / Exportar como PDF">
-                <Printer className="h-3.5 w-3.5 mr-2" />
-                <span>Exportar PDF</span>
               </Button>
               <div data-meeting-hide="true">
                 <TaxSettingsDialog state={state} update={update} />
