@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustoFuncionarioCalc } from "@/components/calculadoras/CustoFuncionarioCalc";
 import { RescisaoCltCalc } from "@/components/calculadoras/RescisaoCltCalc";
 import { CltVsPjCalc } from "@/components/calculadoras/CltVsPjCalc";
+import { SalarioLiquidoCalc } from "@/components/calculadoras/SalarioLiquidoCalc";
 
 export const Route = createFileRoute("/calculadoras")({
   head: () => ({
@@ -29,7 +30,7 @@ function CalculadorasPage() {
           <TabsTrigger value="custo-funcionario">Custo de Funcionário</TabsTrigger>
           <TabsTrigger value="rescisao">Rescisão CLT</TabsTrigger>
           <TabsTrigger value="clt-vs-pj">CLT vs PJ</TabsTrigger>
-          <TabsTrigger value="prolabore" disabled>Pró-labore</TabsTrigger>
+          <TabsTrigger value="salario-liquido">Salário Líquido</TabsTrigger>
           <TabsTrigger value="markup" disabled>Markup / Precificação</TabsTrigger>
         </TabsList>
 
@@ -41,6 +42,9 @@ function CalculadorasPage() {
         </TabsContent>
         <TabsContent value="clt-vs-pj">
           <CltVsPjCalc />
+        </TabsContent>
+        <TabsContent value="salario-liquido">
+          <SalarioLiquidoCalc />
         </TabsContent>
       </Tabs>
     </div>
