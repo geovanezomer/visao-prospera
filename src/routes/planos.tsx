@@ -3,7 +3,7 @@
 // Inicia o checkout Stripe via server function `createCheckoutSession`.
 // ============================================================================
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -90,9 +90,9 @@ function PlansPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Redireciona usuário não autenticado para o cadastro
-  if (typeof window !== "undefined" && hydrated && !user) {
-    navigate({ to: "/signup" });
-  }
+  useEffect(() => {
+    if (hydrated && !user) navigate({ to: "/signup" });
+  }, [hydrated, user, navigate]);
 
   const handleSelectPlan = async (planId: PlanId) => {
     setError(null);
