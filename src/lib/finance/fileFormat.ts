@@ -40,7 +40,14 @@ export const FinnanceFileSchema = z.object({
 
 export type FinnanceFile = z.infer<typeof FinnanceFileSchema>;
 
-/** Serializa o estado atual + cenários no envelope .finnance. */
+/**
+ * Serializa o estado completo + cenários no envelope .finnance.
+ * Inclui automaticamente TODAS as seções do app, pois o AppState agrega:
+ *  - Configurações Rápidas: companyName, businessType, numColaboradores, tax
+ *  - Receitas (revenue), Despesas (costs), Capital (capital)
+ *  - Regime Tributário (tax — regime, alíquotas, ISS, Simples, etc.)
+ *  - Governança (strategic) e Fluxo de Caixa (cashflow)
+ */
 export function serialize(state: AppState, scenarios: Scenario[]): FinnanceFile {
   return {
     type: FINNANCE_FILE_TYPE,
@@ -53,6 +60,19 @@ export function serialize(state: AppState, scenarios: Scenario[]): FinnanceFile 
     meta: {
       companyName: state.companyName,
       businessType: state.businessType,
+      taxRegime: state.tax?.regime,
+      numColaboradores: state.numColaboradores,
+      scenarioCount: scenarios.length,
+      // Snapshot legível das seções cobertas — facilita auditoria do arquivo.
+      sections: [
+        "configuracoes-rapidas",
+        "receitas",
+        "despesas",
+        "capital",
+        "tributos",
+        "caixa",
+        "governanca",
+      ],
     },
   };
 }
