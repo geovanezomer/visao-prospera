@@ -235,7 +235,9 @@ function SimulaPro() {
                       window.location.href = url;
                     } catch (err) {
                       console.error("Falha ao abrir portal:", err);
-                      alert("Não foi possível abrir o portal de assinatura.");
+                      toast.error("Não foi possível abrir o portal de assinatura.", {
+                        description: "Tente novamente em alguns segundos.",
+                      });
                     }
                   }}
                   title="Gerenciar assinatura, trocar plano, cartão e faturas"
