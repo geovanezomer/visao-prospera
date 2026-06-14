@@ -10,7 +10,8 @@ import {
   Wand2, 
   BarChart3,
   Bot,
-  Activity
+  Activity,
+  Landmark
 } from "lucide-react";
 import { TabKey } from "@/lib/finance/types";
 
@@ -31,6 +32,6 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Governança", icon: ShieldCheck, value: "governanca" },
   { title: "Diagnóstico", icon: Search, value: "resultados" },
   { title: "Simulador", icon: Wand2, value: "simulador" },
-  { title: "Valuation", icon: LayoutDashboard, value: "valuation" },
+  { title: "Valuation", icon: Landmark, value: "valuation" },
   { title: "Consultor IA", icon: Bot, value: "ai" },
 ];
