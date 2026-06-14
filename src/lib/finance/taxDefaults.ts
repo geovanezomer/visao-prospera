@@ -76,10 +76,16 @@ export const PRESUMIDO_BASES_DEFAULT: Record<BusinessType, PresumidoBases> = {
 
 // =====================================================================
 // REFORMA TRIBUTÁRIA — multiplicadores da fase de transição (2027–2032)
+// [CBS/IBS] LC 214/2025 + EC 132/2023
+// Cronograma oficial faseamento IBS: 2027=10%, 2028=20%, 2029=30%,
+// 2030=40%, 2031=60%, 2032=80%, 2033+=100% (pleno).
+// Reciprocamente ICMS/ISS são reduzidos no mesmo ritmo.
+// O ponto médio (~50%) é a aproximação default; o usuário pode sobrepor
+// via ratesOverride para simular um ano específico da transição.
 // =====================================================================
-/** Multiplicador de IBS na transição (ponto médio do faseamento 20/40/60/80%). */
+/** [CBS/IBS] Multiplicador médio de IBS durante a transição. */
 export const REFORMA_TRANSICAO_IBS_MULT = 0.5;
-/** Multiplicador de ICMS/ISS na transição (redução média de 50%). */
+/** [CBS/IBS] Multiplicador médio de ICMS/ISS durante a transição (redução simétrica). */
 export const REFORMA_TRANSICAO_ICMS_ISS_MULT = 0.5;
 
 // =====================================================================
