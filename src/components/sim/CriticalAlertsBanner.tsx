@@ -70,7 +70,7 @@ export function CriticalAlertsBanner({ state, model }: { state: AppState; model?
   // Sem juros (dívida zerada), cobertura não é alerta — vira neutro em vez de cair no ramo "ok" fragilmente.
   const cobTone = jurosAnual <= 1 ? "neutral" : ind.coberturaJuros < 2 ? "danger" : ind.coberturaJuros < 3 ? "warn" : "ok";
 
-  const hasAnyAlert = dscrTone === "danger" || piorTone === "danger" || cobTone === "danger" || gap > 0 || dangers.length > 0;
+  const hasAnyAlert = dscrTone === "danger" || piorTone === "danger" || cobTone === "danger" || gap > 0 || dangers.length > 0 || crossGrouped.error.length > 0;
 
   return (
     <section className="space-y-3">
