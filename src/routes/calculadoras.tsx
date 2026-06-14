@@ -7,6 +7,7 @@ import { SalarioLiquidoCalc } from "@/components/calculadoras/SalarioLiquidoCalc
 import { HorasExtrasCalc } from "@/components/calculadoras/HorasExtrasCalc";
 import { SacVsPriceCalc } from "@/components/calculadoras/SacVsPriceCalc";
 import { JurosCompostosCalc } from "@/components/calculadoras/JurosCompostosCalc";
+import { IndependenciaCalc } from "@/components/calculadoras/IndependenciaCalc";
 
 export const Route = createFileRoute("/calculadoras")({
   head: () => ({
