@@ -46,12 +46,19 @@ export function HorasExtrasCalc() {
     const total50 = valor50 * qtd50;
     const totalNoturna = valorNoturna * qtdNoturna;
     const total100 = valor100 * qtd100;
-    const totalExtras = total50 + totalNoturna + total100;
+    const totalExtrasSemDSR = total50 + totalNoturna + total100;
+    // Reflexo de DSR sobre horas extras habituais (Lei 605/49, Súmula 172 TST).
+    // Aproximação com mês médio: 5 dom./feriados ÷ 22 dias úteis ≈ 22,73% sobre HE.
+    // Esta é a fórmula consolidada usada em folha quando não há calendário específico.
+    const DSR_FATOR = 5 / 22;
+    const totalDSR = totalExtrasSemDSR * DSR_FATOR;
+    const totalExtras = totalExtrasSemDSR + totalDSR;
     const salarioTotal = salarioBruto + totalExtras;
     const pctAcrescimo = salarioBruto > 0 ? totalExtras / salarioBruto : 0;
     return {
       horasMes, horaNormal, valor50, valorNoturna, valor100,
-      total50, totalNoturna, total100, totalExtras, salarioTotal, pctAcrescimo,
+      total50, totalNoturna, total100, totalExtrasSemDSR, totalDSR,
+      totalExtras, salarioTotal, pctAcrescimo,
     };
   }, [salarioBruto, jornada, qtd50, qtdNoturna, qtd100]);
 
@@ -182,16 +189,18 @@ export function HorasExtrasCalc() {
               footer={
                 <div className="space-y-1 text-xs">
                   <Row label="Salário base" value={<span className="text-foreground">{fmtBRL(salarioBruto)}</span>} />
-                  <Row label="Extras" value={<span className="text-primary">+ {fmtBRL(r.totalExtras)}</span>} />
+                  <Row label="HE (sem DSR)" value={<span className="text-primary">+ {fmtBRL(r.totalExtrasSemDSR)}</span>} />
+                  <Row label="DSR sobre HE" value={<span className="text-primary">+ {fmtBRL(r.totalDSR)}</span>} />
                 </div>
               }
             />
           </div>
 
           <p className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
-            <strong className="text-foreground">Nota:</strong> O salário total corresponde ao salário base somado a todas as horas extras.
-            Os valores apresentados são brutos, antes de descontos de INSS e IRRF. A hora noturna considera o adicional noturno de
-            20% acrescido ao adicional de hora extra de 50%, totalizando 80% sobre a hora normal.
+            <strong className="text-foreground">Nota:</strong> O salário total inclui o reflexo de DSR (Descanso Semanal
+            Remunerado) sobre as horas extras habituais, na proporção média de 5 dom./feriados ÷ 22 dias úteis ≈ 22,73%
+            (Lei 605/49, Súmula 172 TST). Valores brutos, antes de INSS e IRRF. A hora noturna considera o adicional
+            noturno de 20% acrescido ao adicional de hora extra de 50%, totalizando 80% sobre a hora normal.
           </p>
         </>
       )}

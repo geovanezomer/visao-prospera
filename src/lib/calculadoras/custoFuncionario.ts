@@ -172,6 +172,13 @@ export function calcularCustoFuncionario(
   const totalEncargos = round2(encargos.reduce((acc, l) => acc + l.valor, 0));
 
   // ----- Provisões mensais (1/12 avos) -----
+  // Encargos patronais (INSS Patronal + RAT + Terceiros) também incidem sobre
+  // 13º e férias (art. 22, I, Lei 8.212/91). Aplicamos a MESMA alíquota patronal
+  // que incide sobre a folha, na base da provisão mensal correspondente.
+  const aliqInssProv = incluiInssPatronal ? ALIQUOTAS_GERAL.inssPatronal : 0;
+  const aliqTerceirosProv = incluiTerceiros ? aliquotaTerceiros : 0;
+  const aliqPatronalSobreProv = aliqInssProv + rat + aliqTerceirosProv;
+
   const provisoes: LinhaCusto[] = [
     {
       rotulo: "13º Salário (1/12)",
@@ -198,6 +205,24 @@ export function calcularCustoFuncionario(
       valor: round2(salarioBruto * PROVISOES.fgtsSobreFerias),
     },
   ];
+
+  // Encargos patronais sobre 13º e férias — somente se houver alíquota aplicável
+  if (aliqPatronalSobreProv > 0) {
+    provisoes.push(
+      {
+        rotulo: "Encargos patronais sobre 13º (INSS + RAT + Terceiros)",
+        base: salarioBruto,
+        aliquota: PROVISOES.decimo * aliqPatronalSobreProv,
+        valor: round2(salarioBruto * PROVISOES.decimo * aliqPatronalSobreProv),
+      },
+      {
+        rotulo: "Encargos patronais sobre Férias (INSS + RAT + Terceiros)",
+        base: salarioBruto,
+        aliquota: PROVISOES.ferias * aliqPatronalSobreProv,
+        valor: round2(salarioBruto * PROVISOES.ferias * aliqPatronalSobreProv),
+      },
+    );
+  }
 
   const totalProvisoes = round2(provisoes.reduce((acc, l) => acc + l.valor, 0));
 

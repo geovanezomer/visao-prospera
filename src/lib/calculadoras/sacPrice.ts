@@ -39,6 +39,9 @@ export function taxaAnualParaMensal(taxaAnualPct: number): number {
   return Math.pow(1 + taxaAnualPct / 100, 1 / 12) - 1;
 }
 
+// Arredonda em centavos para evitar drift de ponto flutuante em prazos longos.
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
 export function calcularSAC(pv: number, taxaMensal: number, n: number): ResultadoSistema {
   const amort = pv / n;
   let saldo = pv;
@@ -46,12 +49,12 @@ export function calcularSAC(pv: number, taxaMensal: number, n: number): Resultad
   let totalPago = 0;
   let totalJuros = 0;
   for (let m = 1; m <= n; m++) {
-    const juros = saldo * taxaMensal;
-    const parcela = amort + juros;
+    const juros = round2(saldo * taxaMensal);
+    const parcela = round2(amort + juros);
     saldo = Math.max(0, saldo - amort);
-    totalPago += parcela;
-    totalJuros += juros;
-    parcelas.push({ mes: m, parcela, amortizacao: amort, juros, saldoDevedor: saldo });
+    totalPago = round2(totalPago + parcela);
+    totalJuros = round2(totalJuros + juros);
+    parcelas.push({ mes: m, parcela, amortizacao: round2(amort), juros, saldoDevedor: round2(saldo) });
   }
   return {
     parcelas,
@@ -64,19 +67,20 @@ export function calcularSAC(pv: number, taxaMensal: number, n: number): Resultad
 
 export function calcularPRICE(pv: number, taxaMensal: number, n: number): ResultadoSistema {
   const i = taxaMensal;
-  const parcelaFixa =
-    i === 0 ? pv / n : (pv * (i * Math.pow(1 + i, n))) / (Math.pow(1 + i, n) - 1);
+  const parcelaFixa = round2(
+    i === 0 ? pv / n : (pv * (i * Math.pow(1 + i, n))) / (Math.pow(1 + i, n) - 1),
+  );
   let saldo = pv;
   const parcelas: LinhaAmortizacao[] = [];
   let totalPago = 0;
   let totalJuros = 0;
   for (let m = 1; m <= n; m++) {
-    const juros = saldo * i;
-    const amort = parcelaFixa - juros;
+    const juros = round2(saldo * i);
+    const amort = round2(parcelaFixa - juros);
     saldo = Math.max(0, saldo - amort);
-    totalPago += parcelaFixa;
-    totalJuros += juros;
-    parcelas.push({ mes: m, parcela: parcelaFixa, amortizacao: amort, juros, saldoDevedor: saldo });
+    totalPago = round2(totalPago + parcelaFixa);
+    totalJuros = round2(totalJuros + juros);
+    parcelas.push({ mes: m, parcela: parcelaFixa, amortizacao: amort, juros, saldoDevedor: round2(saldo) });
   }
   return {
     parcelas,

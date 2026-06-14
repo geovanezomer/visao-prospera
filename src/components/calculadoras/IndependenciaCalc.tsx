@@ -82,7 +82,8 @@ export function IndependenciaCalc() {
     const linhas: LinhaAno[] = [];
     let p = patrimonio;
     let totalInvestido = patrimonio;
-    let anosParaFire: number | null = null;
+    // Se o patrimônio inicial já cobre o número FIRE, a meta foi atingida no ano 0.
+    let anosParaFire: number | null = numeroFire > 0 && patrimonio >= numeroFire ? 0 : null;
     const maxAnos = 80;
     for (let ano = 1; ano <= maxAnos; ano++) {
       const rendimentoAno = p * r + aporteAno * (r / 2); // aporte distribuído
