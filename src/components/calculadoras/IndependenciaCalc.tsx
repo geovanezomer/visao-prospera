@@ -251,6 +251,13 @@ export function IndependenciaCalc() {
               A regra dos 4% sugere retirar 4% do patrimônio por ano
             </p>
           </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label className="text-xs">Inflação anual esperada (IPCA)</Label>
+            <SuffixInput value={inflacaoAnual} suffix="% a.a." onChange={setInflacaoAnual} step={0.5} />
+            <p className="text-[11px] text-muted-foreground">
+              A simulação roda em <strong>termos reais</strong> (poder de compra de hoje). Retorno real = (1+nominal)/(1+inflação)−1.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
