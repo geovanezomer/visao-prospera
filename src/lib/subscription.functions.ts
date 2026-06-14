@@ -31,7 +31,13 @@ export const getMySubscription = createServerFn({ method: "GET" })
     }
     if (!data) return { active: false, plan: null, status: null, current_period_end: null };
 
-    const active = ["active", "trialing", "lifetime"].includes(data.status);
+    // Ativo se: status em (active, trialing, lifetime)
+    // OU cancelado mas ainda dentro do período pago (grace period até current_period_end)
+    const now = Date.now();
+    const periodEndMs = data.current_period_end ? new Date(data.current_period_end).getTime() : null;
+    const inGracePeriod =
+      data.status === "canceled" && periodEndMs !== null && periodEndMs > now;
+    const active = ["active", "trialing", "lifetime"].includes(data.status) || inGracePeriod;
     return {
       active,
       plan: data.plan,
