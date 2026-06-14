@@ -123,7 +123,7 @@ export function useFinnanceFile({
     lastSavedSnapshot.current = "";
     setDirty(false);
     toast.success("Novo arquivo criado");
-  }, [dirty, resetState, replaceScenarios]);
+  }, [dirty, resetState, replaceScenarios, askConfirm]);
 
   // Aviso nativo do navegador ao fechar a aba com alterações pendentes.
   useEffect(() => {
