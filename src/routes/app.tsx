@@ -24,7 +24,7 @@ import { TabKey } from "@/lib/finance/types";
 import { applySimulator, countActiveLevers, DEFAULT_SIM, SimulatorParams } from "@/lib/finance/simulator";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Presentation, X, FileText } from "lucide-react";
+import { RotateCcw, Presentation, X, FileText, CreditCard } from "lucide-react";
 import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
 import { Badge } from "@/components/ui/badge";
 import { CalculadorasTab } from "@/components/calculadoras/CalculadorasTab";
@@ -221,6 +221,27 @@ function SimulaPro() {
               )}
               <div data-meeting-hide="true" className="contents">
                 <TaxSettingsDialog state={state} update={update} />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8"
+                  onClick={async () => {
+                    try {
+                      const { createPortalSession } = await import("@/lib/portal.functions");
+                      const { url } = await createPortalSession({
+                        data: { returnUrl: window.location.origin + "/app" },
+                      });
+                      window.location.href = url;
+                    } catch (err) {
+                      console.error("Falha ao abrir portal:", err);
+                      alert("Não foi possível abrir o portal de assinatura.");
+                    }
+                  }}
+                  title="Gerenciar assinatura, trocar plano, cartão e faturas"
+                >
+                  <CreditCard className="h-3.5 w-3.5 sm:mr-2" />
+                  <span className="hidden sm:inline">Assinatura</span>
+                </Button>
                 <Button
                   size="sm"
                   variant={meetingMode ? "default" : "ghost"}
