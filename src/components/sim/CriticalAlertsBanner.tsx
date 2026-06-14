@@ -2,8 +2,9 @@ import { useMemo } from "react";
 import { AppState } from "@/lib/finance/types";
 import { buildDRE, calcIndicators, diagnose, irShieldForRegime, resolveEffectiveRegime, type DRE, type Indicators } from "@/lib/finance/calculations";
 import { buildCashFlow, type CashFlow } from "@/lib/finance/cashflow";
+import { crossValidate, groupBySeverity, type ValidationWarning } from "@/lib/finance/crossValidation";
 import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
-import { AlertTriangle, TrendingDown, Scissors, ShieldAlert } from "lucide-react";
+import { AlertTriangle, TrendingDown, Scissors, ShieldAlert, Info, AlertOctagon } from "lucide-react";
 import { HelpTip, SectionTitle } from "./primitives";
 
 /**
