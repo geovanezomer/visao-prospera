@@ -131,6 +131,7 @@ function SimulaPro() {
                 </Badge>
               )}
               <div data-meeting-hide="true" className="contents">
+                <TaxSettingsDialog state={state} update={update} />
                 <Button
                   size="sm"
                   variant={meetingMode ? "default" : "ghost"}
