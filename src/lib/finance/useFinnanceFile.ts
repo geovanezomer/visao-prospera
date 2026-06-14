@@ -36,7 +36,14 @@ export function useFinnanceFile({
   replaceScenarios,
   resetState,
   hydrated,
+  confirm,
 }: Args) {
+  // Fallback para window.confirm caso o consumidor não injete um confirm customizado.
+  const askConfirm: ConfirmFn = useCallback(
+    async (opts) => (confirm ? confirm(opts) : window.confirm(opts.description ?? opts.title)),
+    [confirm],
+  );
+
   const [currentFileName, setCurrentFileName] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const lastSavedSnapshot = useRef<string>("");
