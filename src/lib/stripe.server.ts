@@ -53,6 +53,7 @@ export async function stripeFetch<T = unknown>(
     method: init.method ?? "GET",
     headers: {
       Authorization: `Bearer ${lovableKey}`,
+      "Lovable-API-Key": lovableKey,
       "X-Connection-Api-Key": apiKey,
       "Content-Type": "application/x-www-form-urlencoded",
     },
