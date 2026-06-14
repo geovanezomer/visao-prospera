@@ -22,8 +22,9 @@ const fmtBRL = (n: number) =>
 const fmtPct = (n: number) => `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 
 const DEP_DEDUCAO = 189.59;
-const SALARIO_FAMILIA_TETO = 1906.56;
-const SALARIO_FAMILIA_VALOR = 62.04;
+// Salário-família 2025 — Portaria Interministerial MPS/MF nº 6, de 10/01/2025
+const SALARIO_FAMILIA_TETO = 1906.04;
+const SALARIO_FAMILIA_VALOR = 65.00;
 
 export function SalarioLiquidoCalc() {
   const [salarioBruto, setSalarioBruto] = useState<number>(5000);
