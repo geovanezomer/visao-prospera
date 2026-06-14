@@ -16,16 +16,28 @@ import { ChevronRight } from "lucide-react";
 const CHART_COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15", "#F472B6", "#34D399", "#A78BFA", "#FB923C"];
 
 export function DRETab({ state, update }: { state: AppState; update: Updater }) {
-  const [view, setView] = useState<"mensal" | "anual">("anual");
+  const [view, setView] = useState<"mensal" | "trimestral" | "anual">("trimestral");
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 1024) setView("anual");
+      if (window.innerWidth < 1024 && view === "mensal") setView("trimestral");
     };
     window.addEventListener("resize", handleResize);
     handleResize();
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [view]);
+
+  // Períodos exibidos na tabela conforme o modo de visualização.
+  const QUARTERS = ["1º Tri", "2º Tri", "3º Tri", "4º Tri"];
+  const periodLabels = view === "mensal" ? MESES : view === "trimestral" ? QUARTERS : [];
+  const showPeriods = view !== "anual";
+  // Agrega um vetor mensal (12) conforme o período selecionado.
+  const aggregate = (arr: number[]): number[] => {
+    if (view === "mensal") return arr;
+    if (view === "trimestral") return [0, 1, 2, 3].map((q) => arr[q * 3] + arr[q * 3 + 1] + arr[q * 3 + 2]);
+    return [];
+  };
+
 
   const regime = state.tax.regime;
   const { dre, tax } = buildDRE(state, regime);
@@ -35,6 +47,14 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
   const mesesCriticosIdx = new Set(
     cf.saldoFinal.map((s, i) => (s <= limiar ? i : -1)).filter((i) => i >= 0)
   );
+  // Critical para o período renderizado: no modo mensal usa o índice direto;
+  // no trimestral, o período é "crítico" se qualquer mês do trimestre estiver.
+  const periodCritical = (i: number): boolean => {
+    if (view === "mensal") return mesesCriticosIdx.has(i);
+    if (view === "trimestral") return [0, 1, 2].some((o) => mesesCriticosIdx.has(i * 3 + o));
+    return false;
+  };
+
 
   const cvLabel = COST_VENDAS_LABEL[state.businessType];
 
@@ -167,14 +187,15 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <div className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
-            {(["anual", "mensal"] as const).map((v) => (
+            {(["anual", "trimestral", "mensal"] as const).map((v) => (
               <button key={v} onClick={() => setView(v)}
                 className={`rounded px-3 py-1 text-xs transition-all ${view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"} ${v === "mensal" ? "hidden lg:block" : ""}`}>
-                {v === "anual" ? "Anual" : "Mensal"}
+                {v === "anual" ? "Anual" : v === "trimestral" ? "Trimestral" : "Mensal"}
               </button>
             ))}
 
           </div>
+
           {/* Seleção de regime fica na aba Tributário — aqui apenas refletimos o regime ativo abaixo. */}
         </div>
         <div className="text-xs text-muted-foreground">
@@ -209,8 +230,8 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
           <table className="w-full min-w-[600px] md:min-w-full text-[clamp(0.65rem,1vw+0.3rem,0.875rem)] table-fixed md:table-auto">
             <colgroup>
               <col className="w-[120px] sm:w-auto" />
-              {view === "mensal" && MESES.map((_, i) => (
-                <col key={i} className="w-[70px]" />
+              {showPeriods && periodLabels.map((_, i) => (
+                <col key={i} className={view === "mensal" ? "w-[70px]" : "w-[90px]"} />
               ))}
               <col className="w-[90px] md:w-auto" />
               <col className="w-[50px] md:w-auto" />
@@ -219,10 +240,10 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
             <thead>
               <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 <th className="px-4 py-2 text-left">Descrição</th>
-                {view === "mensal" && MESES.map((m, i) => (
+                {showPeriods && periodLabels.map((m, i) => (
                   <th
                     key={m}
-                    className={`px-2 py-2 text-right ${mesesCriticosIdx.has(i) ? "border-l-2 border-r-2 border-destructive/60 text-destructive" : ""}`}
+                    className={`px-2 py-2 text-right ${periodCritical(i) ? "border-l-2 border-r-2 border-destructive/60 text-destructive" : ""}`}
                   >
                     {m}
                   </th>
@@ -231,6 +252,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                 <th className="px-3 py-2 text-right">% Rec</th>
               </tr>
             </thead>
+
             <tbody>
               {rows.map((row, idx) => {
                 if (row.kind === "grupo") {
@@ -247,11 +269,12 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                             {row.titulo}
                           </span>
                         </td>
-                        {view === "mensal" && row.v.map((v, i) => (
-                          <td key={i} className={`num px-2 py-2 text-right text-xs ${mesesCriticosIdx.has(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}>
+                        {showPeriods && aggregate(row.v).map((v, i) => (
+                          <td key={i} className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}>
                             {v === 0 ? "—" : fmtBRLCompact(v)}
                           </td>
                         ))}
+
                         <td className={`num px-4 py-2 text-right font-semibold ${total < 0 ? "text-neg" : total > 0 ? toneCls || "text-foreground" : ""}`}>{fmtBRL(total)}</td>
                         <td className="num px-3 py-2 text-right text-xs text-muted-foreground">{fmtPct(pct)}</td>
                       </tr>
@@ -261,7 +284,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                         return (
                           <tr key={`${row.id}_${li}`} className="border-t border-border/20">
                             <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">{l.label}</td>
-                            {view === "mensal" && l.values.map((v, i) => {
+                            {showPeriods && aggregate(l.values).map((v, i) => {
                               const sv = v * sgn;
                               return (
                                 <td key={i} className={`num px-2 py-1.5 text-right text-xs ${sv < 0 ? "text-neg" : sv > 0 ? "text-pos" : "text-muted-foreground"}`}>
@@ -269,6 +292,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                                 </td>
                               );
                             })}
+
                             <td className={`num px-4 py-1.5 text-right text-xs ${lTotal < 0 ? "text-neg" : lTotal > 0 ? "text-pos" : ""}`}>{fmtBRL(lTotal)}</td>
                             <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">{fmtPct(rb > 0 ? Math.abs(lTotal) / rb : 0)}</td>
                           </tr>
@@ -276,7 +300,8 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                       })}
                       {isOpen && row.lines.length === 0 && (
                         <tr className="border-t border-border/20">
-                          <td colSpan={view === "mensal" ? 15 : 3} className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground">
+                          <td colSpan={(showPeriods ? periodLabels.length : 0) + 3} className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground">
+
                             {row.emptyMsg ?? "Sem itens cadastrados."}
                           </td>
                         </tr>
@@ -296,11 +321,12 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                             (−) {cvLabel.long}
                           </span>
                         </td>
-                        {view === "mensal" && dre.cpv.map((v, i) => (
-                          <td key={i} className={`num px-2 py-2 text-right text-xs ${mesesCriticosIdx.has(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} text-neg`}>
+                        {showPeriods && aggregate(dre.cpv).map((v, i) => (
+                          <td key={i} className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} text-neg`}>
                             {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
                           </td>
                         ))}
+
                         <td className="num px-4 py-2 text-right font-semibold text-neg">− {fmtBRL(total)}</td>
                         <td className="num px-3 py-2 text-right text-xs text-muted-foreground">{fmtPct(pct)}</td>
                       </tr>
@@ -309,11 +335,12 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                         return (
                           <tr key={`cpv_${li}`} className="border-t border-border/20">
                             <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">{l.label}</td>
-                            {view === "mensal" && l.values.map((v, i) => (
+                            {showPeriods && aggregate(l.values).map((v, i) => (
                               <td key={i} className="num px-2 py-1.5 text-right text-xs text-muted-foreground">
                                 {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
                               </td>
                             ))}
+
                             <td className="num px-4 py-1.5 text-right text-xs text-neg">− {fmtBRL(lTotal)}</td>
                             <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">{fmtPct(rb > 0 ? lTotal / rb : 0)}</td>
                           </tr>
@@ -321,7 +348,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                       })}
                       {openCpv && linhasCpv.length === 0 && (
                         <tr className="border-t border-border/20">
-                          <td colSpan={view === "mensal" ? 15 : 3} className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground">
+                          <td colSpan={(showPeriods ? periodLabels.length : 0) + 3} className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground">
                             Nenhum item classificado como {cvLabel.short} ainda. Cadastre custos na categoria "Custo de Vendas" na aba Custos.
                           </td>
                         </tr>
@@ -336,11 +363,12 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                 return (
                   <tr key={idx} className={`border-t border-border/30 ${row.highlight ? "bg-primary/10" : row.strong ? "bg-accent/20" : ""}`}>
                     <td className={`px-3 py-2 ${row.strong ? "font-semibold" : "text-muted-foreground"} text-[10px] sm:text-xs truncate`}>{row.k}</td>
-                    {view === "mensal" && row.v.map((v, i) => (
-                      <td key={i} className={`num px-2 py-2 text-right text-xs ${mesesCriticosIdx.has(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}>
+                    {showPeriods && aggregate(row.v).map((v, i) => (
+                      <td key={i} className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}>
                         {v === 0 ? "—" : fmtBRLCompact(v)}
                       </td>
                     ))}
+
                     <td className={`num px-4 py-2 text-right ${row.strong ? "font-semibold" : ""} ${total < 0 ? "text-neg" : total > 0 ? toneCls || "text-foreground" : ""}`}>
                       {fmtBRL(total)}
                       {row.margin !== undefined && <div className="text-[10px] font-normal text-muted-foreground">Margem {row.margin.toFixed(1)}%</div>}
