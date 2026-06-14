@@ -55,7 +55,7 @@ function ResetPasswordPage() {
       setError(res.error);
       return;
     }
-    navigate({ to: "/" });
+    navigate({ to: "/app" });
   };
 
   return (
