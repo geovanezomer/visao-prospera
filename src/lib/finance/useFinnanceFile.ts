@@ -227,5 +227,5 @@ export function useFinnanceFile({
     return () => { document.title = base; };
   }, [dirty, state.companyName]);
 
-  return { currentFileName, dirty, lastModified, save, open, newFile, resetWithConfirm };
+  return { currentFileName, dirty, lastModified, save, open, resetWithConfirm };
 }
