@@ -32,6 +32,10 @@ export const estimateTokens = (s: string) => Math.ceil(s.length / 4);
 
 export interface SnapshotSections {
   premissas: string;
+  receitas: string;
+  despesas: string;
+  capital: string;
+  regime: string;
   dre: string;
   indicadores: string;
   diagnostico: string;
@@ -40,8 +44,10 @@ export interface SnapshotSections {
   saude: string;
   prescritivo: string;
   estrategico: string;
+  governanca: string;
   comparativo?: string; // estado base vs simulado
 }
+
 
 export function buildSections(state: AppState, simulatedState?: AppState): SnapshotSections {
   // SSOT: usa regime efetivo (downgrade automático Simples→Presumido se excedeu limite),
@@ -251,8 +257,98 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     }
   }
 
+  // ----- Receitas (config bruta) -----
+  const recLines: string[] = [`## Receitas (inputs)`];
+  {
+    const r = state.revenue;
+    recLines.push(`- **Receita Bruta anual:** ${brl(sum(r.bruta))}${r.brutaFixa ? " (modo fixo)" : ""}`);
+    recLines.push(table(["Mês", "Receita Bruta", "Inadimplência %"],
+      MESES.map((m, i) => [m, brl(r.bruta[i]), pct(r.inadimplencia[i] ?? 0, 2)])));
+    recLines.push(`- **PMR médio:** ${r.pmr}d${r.pmrFixo ? " (fixo)" : " (mensal variável)"} · **PMP médio:** ${r.pmp}d${r.pmpFixo ? " (fixo)" : ""}`);
+    recLines.push(`- **Inadimplência tratada como:** ${r.inadimplenciaComoPDD ? "PDD (despesa operacional)" : "Dedução de receita"}`);
+    if (r.deducoes?.length) {
+      recLines.push(`### Deduções customizadas`);
+      r.deducoes.forEach(d => recLines.push(`- ${d.label}: ${brl(sum(d.valores))}`));
+    }
+    if (r.receitasFinanceiras?.length) {
+      recLines.push(`### Receitas Financeiras`);
+      r.receitasFinanceiras.forEach(d => recLines.push(`- ${d.label}: ${brl(sum(d.valores))}`));
+    }
+  }
+
+  // ----- Despesas (linhas detalhadas) -----
+  const despLines: string[] = [`## Despesas (linhas detalhadas)`];
+  {
+    const rows = state.costs.map(c => [
+      c.label,
+      c.category,
+      c.fixed ? "Fixa" : "Variável",
+      brl(sum(c.values)),
+      c.encargosAuto ? `Folha CLT (encargos ${pct((c.encargosPct ?? 70))})` : "",
+    ]);
+    despLines.push(table(["Linha", "Categoria", "Tipo", "Anual", "Obs."], rows));
+    const totalFixos = state.costs.filter(c => c.fixed).reduce((a, c) => a + sum(c.values), 0);
+    const totalVar = state.costs.filter(c => !c.fixed).reduce((a, c) => a + sum(c.values), 0);
+    despLines.push(`\n**Total Fixos:** ${brl(totalFixos)} · **Total Variáveis:** ${brl(totalVar)} · **Total Geral:** ${brl(totalFixos + totalVar)}`);
+  }
+
+  // ----- Capital (estrutura) -----
+  const capLines: string[] = [`## Estrutura de Capital`];
+  {
+    const c = state.capital;
+    capLines.push(table(["Campo", "Valor"], [
+      ["Patrimônio Líquido", brl(c.patrimonioLiquido)],
+      ["Dívida Onerosa", brl(c.dividaOnerosa)],
+      ["Ativo Total", brl(c.ativoTotal)],
+      ["Ativo Circulante", brl(c.ativoCirculante)],
+      ["Passivo Circulante", brl(c.passivoCirculante)],
+      ["Estoques", brl(c.estoques)],
+      ["Disponibilidades", brl(c.disponibilidades)],
+      ["Contas a Receber", brl(c.contasReceber)],
+      ["Fornecedores", brl(c.fornecedores)],
+      ["Caixa Ocioso", brl(c.caixaOcioso ?? 0)],
+      ["Capital Giro Disponível", brl(c.capitalGiroDisponivel)],
+      ["Depreciação Mensal", brl(c.depreciacaoMensal)],
+      ["Ke (custo do equity)", pct(c.ke * 100, 2)],
+      ["Kd (custo da dívida)", pct(c.kd * 100, 2)],
+    ]));
+    if (c.capexAtivacao?.length) {
+      capLines.push(`\n### Capex ativado no ano`);
+      c.capexAtivacao.forEach(a => capLines.push(`- ${a.label}: ${brl(a.valor)} (mês ${a.mes}, ${a.vidaUtilMeses}m)`));
+    }
+  }
+
+  // ----- Regime Tributário (config) -----
+  const regLines: string[] = [`## Regime Tributário (config)`];
+  {
+    const t = state.tax;
+    regLines.push(`- **Regime nominal:** ${t.regime} · **Efetivo:** ${effectiveRegime}${effectiveRegime !== t.regime ? " (downgrade automático)" : ""}`);
+    regLines.push(`- **Era tributária:** ${t.era ?? "atual"} · **Anexo Simples:** ${t.simplesAnexo} · **Fator R:** ${pct(t.fatorR)}${t.fatorRAuto ? " (auto)" : ""}`);
+    regLines.push(`- **ISS/ICMS débito:** ${pct(t.issIcms)} · **ICMS crédito:** ${pct(t.aliquotaICMSCredito ?? 0)}`);
+    regLines.push(`- **PIS/COFINS créditos:** PIS ${pct(t.pisCreditos)} · COFINS ${pct(t.cofinsCreditos)}`);
+    regLines.push(`- **Bases Presumido:** IRPJ ${pct(t.presumidoBaseIRPJ)} · CSLL ${pct(t.presumidoBaseCSLL)}`);
+    regLines.push(`- **CBS:** ${pct(t.cbsAliquota ?? 8.8)} · **IBS ref:** ${pct(t.ibsAliquotaRef ?? 17.7)}`);
+    if (t.issDeducoes) regLines.push(`- **Deduções ISS (materiais/subempreitada):** ${brl(t.issDeducoes)}`);
+    if (built?.tax?.totalAnual !== undefined) regLines.push(`- **Carga tributária total apurada (ano):** ${brl(built.tax.totalAnual)}`);
+  }
+
+  // ----- Governança (qualitativo) -----
+  const govLines: string[] = [];
+  if (state.strategic?.governance) {
+    const g = state.strategic.governance;
+    govLines.push(`## Governança & Sucessão`);
+    govLines.push(`- **Sócio afastado 60d:** ${g.socioAfastado60d ?? "—"}`);
+    govLines.push(`- **Quem fecha contrato:** ${g.quemFechaContrato ?? "—"}`);
+    govLines.push(`- **Processos documentados:** ${g.processosDocumentados ?? "—"}`);
+    govLines.push(`- **Plano de sucessão:** ${g.planoSucessao ?? "—"}`);
+  }
+
   return {
     premissas: p.join("\n"),
+    receitas: recLines.join("\n"),
+    despesas: despLines.join("\n"),
+    capital: capLines.join("\n"),
+    regime: regLines.join("\n"),
     dre: dreLines.join("\n"),
     indicadores: indLines.join("\n"),
     diagnostico: diagLines.join("\n"),
@@ -261,9 +357,11 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     saude: healthLines.join("\n"),
     prescritivo: presLines.join("\n"),
     estrategico: estrLines.join("\n"),
+    governanca: govLines.join("\n"),
     comparativo: compLines,
   };
 }
+
 
 /**
  * Monta o snapshot full respeitando um orçamento de tokens.
@@ -272,8 +370,8 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
  */
 export function buildSnapshot(state: AppState, simulatedState?: AppState, maxTokens = 6000): string {
   const s = buildSections(state, simulatedState);
-  const essential = [s.premissas, s.dre, s.indicadores, s.valuation, s.comparativo].filter(Boolean) as string[];
-  const optional = [s.diagnostico, s.caixa, s.saude, s.prescritivo, s.estrategico].filter(Boolean);
+  const essential = [s.premissas, s.regime, s.dre, s.indicadores, s.valuation, s.comparativo].filter(Boolean) as string[];
+  const optional = [s.receitas, s.despesas, s.capital, s.caixa, s.diagnostico, s.saude, s.prescritivo, s.governanca, s.estrategico].filter(Boolean);
 
   const parts: string[] = [...essential];
   let used = estimateTokens(parts.join("\n\n"));
@@ -285,6 +383,7 @@ export function buildSnapshot(state: AppState, simulatedState?: AppState, maxTok
   }
   return parts.join("\n\n");
 }
+
 
 // ============================================================
 // Cache por hash do estado (evita reconstruir sem mudanças)
