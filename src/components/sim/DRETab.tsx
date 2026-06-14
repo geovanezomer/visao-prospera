@@ -269,11 +269,12 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                             {row.titulo}
                           </span>
                         </td>
-                        {view === "mensal" && row.v.map((v, i) => (
-                          <td key={i} className={`num px-2 py-2 text-right text-xs ${mesesCriticosIdx.has(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}>
+                        {showPeriods && aggregate(row.v).map((v, i) => (
+                          <td key={i} className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}>
                             {v === 0 ? "—" : fmtBRLCompact(v)}
                           </td>
                         ))}
+
                         <td className={`num px-4 py-2 text-right font-semibold ${total < 0 ? "text-neg" : total > 0 ? toneCls || "text-foreground" : ""}`}>{fmtBRL(total)}</td>
                         <td className="num px-3 py-2 text-right text-xs text-muted-foreground">{fmtPct(pct)}</td>
                       </tr>
