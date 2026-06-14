@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   calcularRescisao,
@@ -191,56 +191,52 @@ export function RescisaoCltCalc() {
           </div>
 
           <Card>
-            <CardContent className="pt-6">
-              <Accordion type="single" collapsible defaultValue="verbas">
-                <AccordionItem value="verbas">
-                  <AccordionTrigger className="text-sm">Verbas Rescisórias — detalhamento</AccordionTrigger>
-                  <AccordionContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Verba</TableHead>
-                          <TableHead className="text-center">INSS</TableHead>
-                          <TableHead className="text-center">IRRF</TableHead>
-                          <TableHead className="text-right">Valor</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {resultado.verbas.length === 0 && (
-                          <TableRow><TableCell colSpan={4} className="text-center text-xs text-muted-foreground">Nenhuma verba para este motivo com os dados informados.</TableCell></TableRow>
-                        )}
-                        {resultado.verbas.map((v, idx) => (
-                          <TableRow key={idx}>
-                            <TableCell className="text-xs">
-                              {v.rotulo}
-                              {v.base && <div className="text-[10px] text-muted-foreground">{v.base}</div>}
-                            </TableCell>
-                            <TableCell className="text-center text-xs">{v.incideINSS ? "Sim" : "—"}</TableCell>
-                            <TableCell className="text-center text-xs">{v.incideIRRF ? "Sim" : "—"}</TableCell>
-                            <TableCell className="text-right text-xs font-medium">{fmtBRL(v.valor)}</TableCell>
-                          </TableRow>
-                        ))}
-                        <TableRow className="border-t-2">
-                          <TableCell colSpan={3} className="text-xs font-semibold">Subtotal Bruto</TableCell>
-                          <TableCell className="text-right text-sm font-bold">{fmtBRL(resultado.totalBruto)}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-xs text-destructive">(–) INSS</TableCell>
-                          <TableCell className="text-right text-xs text-destructive">{fmtBRL(resultado.inss)}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-xs text-destructive">(–) IRRF</TableCell>
-                          <TableCell className="text-right text-xs text-destructive">{fmtBRL(resultado.irrf)}</TableCell>
-                        </TableRow>
-                        <TableRow className="border-t bg-primary/5">
-                          <TableCell colSpan={3} className="text-sm font-bold text-primary">Total Líquido</TableCell>
-                          <TableCell className="text-right text-base font-bold text-primary">{fmtBRL(resultado.totalLiquido)}</TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+            <CardHeader>
+              <CardTitle className="text-sm">Verbas Rescisórias — detalhamento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Verba</TableHead>
+                    <TableHead className="text-center">INSS</TableHead>
+                    <TableHead className="text-center">IRRF</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {resultado.verbas.length === 0 && (
+                    <TableRow><TableCell colSpan={4} className="text-center text-xs text-muted-foreground">Nenhuma verba para este motivo com os dados informados.</TableCell></TableRow>
+                  )}
+                  {resultado.verbas.map((v, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell className="text-xs">
+                        {v.rotulo}
+                        {v.base && <div className="text-[10px] text-muted-foreground">{v.base}</div>}
+                      </TableCell>
+                      <TableCell className="text-center text-xs">{v.incideINSS ? "Sim" : "—"}</TableCell>
+                      <TableCell className="text-center text-xs">{v.incideIRRF ? "Sim" : "—"}</TableCell>
+                      <TableCell className="text-right text-xs font-medium">{fmtBRL(v.valor)}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="border-t-2">
+                    <TableCell colSpan={3} className="text-xs font-semibold">Subtotal Bruto</TableCell>
+                    <TableCell className="text-right text-sm font-bold">{fmtBRL(resultado.totalBruto)}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-xs text-destructive">(–) INSS</TableCell>
+                    <TableCell className="text-right text-xs text-destructive">{fmtBRL(resultado.inss)}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-xs text-destructive">(–) IRRF</TableCell>
+                    <TableCell className="text-right text-xs text-destructive">{fmtBRL(resultado.irrf)}</TableCell>
+                  </TableRow>
+                  <TableRow className="border-t bg-primary/5">
+                    <TableCell colSpan={3} className="text-sm font-bold text-primary">Total Líquido</TableCell>
+                    <TableCell className="text-right text-base font-bold text-primary">{fmtBRL(resultado.totalLiquido)}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </>
