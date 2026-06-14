@@ -190,11 +190,22 @@ export function calcularPJ(regime: RegimePJ, i: CltVsPjInput): ResultadoPJ {
   const params = PARAMETROS_PJ[regime];
   const fat = i.faturamentoPJMensal;
 
-  // Impostos: MEI usa DAS fixo, demais usam alíquota efetiva sobre faturamento
-  const impostosMensal = regime === "mei"
-    ? params.dasFixoMensal
-    : Math.round(fat * params.aliquotaImpostos * 100) / 100;
-  const aliquotaEfetiva = fat > 0 ? impostosMensal / fat : params.aliquotaImpostos;
+  // Impostos:
+  //  - MEI: DAS fixo mensal
+  //  - Simples Nacional: alíquota efetiva calculada pela tabela progressiva do Anexo III
+  //  - Lucro Presumido: alíquota efetiva consolidada (~16,33%)
+  let aliquotaEfetiva: number;
+  let impostosMensal: number;
+  if (regime === "mei") {
+    impostosMensal = params.dasFixoMensal;
+    aliquotaEfetiva = fat > 0 ? impostosMensal / fat : 0;
+  } else if (regime === "simples") {
+    aliquotaEfetiva = aliquotaSimplesAnexoIII(fat);
+    impostosMensal = Math.round(fat * aliquotaEfetiva * 100) / 100;
+  } else {
+    aliquotaEfetiva = params.aliquotaImpostos;
+    impostosMensal = Math.round(fat * aliquotaEfetiva * 100) / 100;
+  }
 
   // Pró-labore: 28% do faturamento, mínimo 1 salário-mínimo (no MEI o pró-labore é opcional —
   // se faturamento ≤ teto, manter mínimo para fins previdenciários é boa prática).
