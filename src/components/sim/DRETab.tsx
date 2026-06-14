@@ -230,8 +230,8 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
           <table className="w-full min-w-[600px] md:min-w-full text-[clamp(0.65rem,1vw+0.3rem,0.875rem)] table-fixed md:table-auto">
             <colgroup>
               <col className="w-[120px] sm:w-auto" />
-              {view === "mensal" && MESES.map((_, i) => (
-                <col key={i} className="w-[70px]" />
+              {showPeriods && periodLabels.map((_, i) => (
+                <col key={i} className={view === "mensal" ? "w-[70px]" : "w-[90px]"} />
               ))}
               <col className="w-[90px] md:w-auto" />
               <col className="w-[50px] md:w-auto" />
@@ -240,10 +240,10 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
             <thead>
               <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 <th className="px-4 py-2 text-left">Descrição</th>
-                {view === "mensal" && MESES.map((m, i) => (
+                {showPeriods && periodLabels.map((m, i) => (
                   <th
                     key={m}
-                    className={`px-2 py-2 text-right ${mesesCriticosIdx.has(i) ? "border-l-2 border-r-2 border-destructive/60 text-destructive" : ""}`}
+                    className={`px-2 py-2 text-right ${periodCritical(i) ? "border-l-2 border-r-2 border-destructive/60 text-destructive" : ""}`}
                   >
                     {m}
                   </th>
@@ -252,6 +252,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                 <th className="px-3 py-2 text-right">% Rec</th>
               </tr>
             </thead>
+
             <tbody>
               {rows.map((row, idx) => {
                 if (row.kind === "grupo") {
