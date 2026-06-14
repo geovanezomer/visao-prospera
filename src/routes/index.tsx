@@ -74,7 +74,7 @@ function SimulaPro() {
   useEffect(() => {
     const id = setInterval(() => setTick((n) => n + 1), 30_000);
     return () => clearInterval(id);
-  }, []);
+  const simulatedState = useMemo(() => applySimulator(state, simParams), [state, simParams]);
   const simActive = countActiveLevers(simParams);
 
   const { confirm, dialog: confirmDialog } = useConfirm();
