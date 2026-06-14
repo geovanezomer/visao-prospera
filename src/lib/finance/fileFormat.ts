@@ -51,14 +51,20 @@ export const FinnanceFileSchema = z.object({
 export type FinnanceFile = z.infer<typeof FinnanceFileSchema>;
 
 /**
- * Serializa o estado completo + cenários no envelope .finnance.
+ * Serializa o estado completo + cenários + extras no envelope .finnance.
  * Inclui automaticamente TODAS as seções do app, pois o AppState agrega:
  *  - Configurações Rápidas: companyName, businessType, numColaboradores, tax
  *  - Receitas (revenue), Despesas (costs), Capital (capital)
  *  - Regime Tributário (tax — regime, alíquotas, ISS, Simples, etc.)
  *  - Governança (strategic) e Fluxo de Caixa (cashflow)
+ * `extras` (opcional) carrega cenários do simulador e plano de ação, que
+ * são persistidos por empresa fora do AppState.
  */
-export function serialize(state: AppState, scenarios: Scenario[]): FinnanceFile {
+export function serialize(
+  state: AppState,
+  scenarios: Scenario[],
+  extras?: { actions?: unknown[]; simScenarios?: unknown[] },
+): FinnanceFile {
   return {
     type: FINNANCE_FILE_TYPE,
     version: FINNANCE_FILE_VERSION,
@@ -67,13 +73,20 @@ export function serialize(state: AppState, scenarios: Scenario[]): FinnanceFile 
     app: { name: "FinancePRO", version: "1.x" },
     state: state as unknown as Record<string, unknown>,
     scenarios,
+    extras: extras
+      ? {
+          actions: (extras.actions as Record<string, unknown>[] | undefined) ?? [],
+          simScenarios: (extras.simScenarios as Record<string, unknown>[] | undefined) ?? [],
+        }
+      : undefined,
     meta: {
       companyName: state.companyName,
       businessType: state.businessType,
       taxRegime: state.tax?.regime,
       numColaboradores: state.numColaboradores,
       scenarioCount: scenarios.length,
-      // Snapshot legível das seções cobertas — facilita auditoria do arquivo.
+      actionCount: extras?.actions?.length ?? 0,
+      simScenarioCount: extras?.simScenarios?.length ?? 0,
       sections: [
         "configuracoes-rapidas",
         "receitas",
@@ -82,6 +95,8 @@ export function serialize(state: AppState, scenarios: Scenario[]): FinnanceFile 
         "tributos",
         "caixa",
         "governanca",
+        "acoes",
+        "cenarios-simulador",
       ],
     },
   };
