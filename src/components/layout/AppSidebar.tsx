@@ -14,22 +14,27 @@ import {
 import { useEffect } from "react";
 
 
-import { Activity, LogOut, Building2, Factory, Store, Briefcase, Users } from "lucide-react";
+import { Activity, LogOut, Building2, Factory, Store, Briefcase, Users, Presentation, X, Download } from "lucide-react";
 import { NAV_ITEMS } from "./nav-config";
-import { TabKey, BusinessType } from "@/lib/finance/types";
+import { TabKey, BusinessType, AppState } from "@/lib/finance/types";
 import { useAuth } from "@/lib/auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
 import { cn } from "@/lib/utils";
 
 
 interface AppSidebarProps {
   activeTab: TabKey | "ai";
   setActiveTab: (tab: TabKey | "ai") => void;
-  state: any;
-  update: any;
+  state: AppState;
+  update: (patch: Partial<AppState> | ((s: AppState) => AppState)) => void;
+  meetingMode: boolean;
+  setMeetingMode: (v: boolean | ((p: boolean) => boolean)) => void;
+  onExport: () => void;
 }
 
-export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSidebarProps) {
+export function AppSidebar({ activeTab, setActiveTab, state, update, meetingMode, setMeetingMode, onExport }: AppSidebarProps) {
   const { user, logout } = useAuth();
   const { setOpenMobile } = useSidebar();
 
@@ -127,6 +132,26 @@ export function AppSidebar({ activeTab, setActiveTab, state, update }: AppSideba
                 placeholder="Nº de colaboradores"
               />
               <span className="text-[10px] text-muted-foreground shrink-0">colab.</span>
+            </div>
+
+            <div className="mt-2 space-y-1.5 border-t border-sidebar-border/50 pt-3">
+              <Button
+                size="sm"
+                variant={meetingMode ? "default" : "outline"}
+                onClick={() => setMeetingMode((v) => !v)}
+                className="h-8 w-full justify-start"
+                title="Modo Reunião: oculta menus, amplia fontes e destaca KPIs para apresentação ao cliente"
+              >
+                {meetingMode ? <X className="h-3.5 w-3.5 mr-2" /> : <Presentation className="h-3.5 w-3.5 mr-2" />}
+                <span>{meetingMode ? "Sair Reunião" : "Modo Reunião"}</span>
+              </Button>
+              <Button size="sm" variant="outline" onClick={onExport} className="h-8 w-full justify-start" data-meeting-hide="true">
+                <Download className="h-3.5 w-3.5 mr-2" />
+                <span>Exportar</span>
+              </Button>
+              <div data-meeting-hide="true">
+                <TaxSettingsDialog state={state} update={update} />
+              </div>
             </div>
           </div>
         </SidebarGroup>
