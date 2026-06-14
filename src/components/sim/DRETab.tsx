@@ -335,11 +335,12 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                         return (
                           <tr key={`cpv_${li}`} className="border-t border-border/20">
                             <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">{l.label}</td>
-                            {view === "mensal" && l.values.map((v, i) => (
+                            {showPeriods && aggregate(l.values).map((v, i) => (
                               <td key={i} className="num px-2 py-1.5 text-right text-xs text-muted-foreground">
                                 {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
                               </td>
                             ))}
+
                             <td className="num px-4 py-1.5 text-right text-xs text-neg">− {fmtBRL(lTotal)}</td>
                             <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">{fmtPct(rb > 0 ? lTotal / rb : 0)}</td>
                           </tr>
