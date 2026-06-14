@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Activity, ArrowRight, Lock } from "lucide-react";
+import { ArrowRight, Lock } from "lucide-react";
+import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,9 +62,7 @@ function ResetPasswordPage() {
     <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/15 text-primary">
-            <Activity className="h-5 w-5" />
-          </div>
+          <img src={logoAsset.url} alt="FinnancePRO" className="h-9 w-9 rounded-md object-contain" />
           <p className="text-base font-semibold tracking-tight">
             Finnance<span className="text-primary">PRO</span>
           </p>
