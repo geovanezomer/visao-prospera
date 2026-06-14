@@ -73,8 +73,12 @@ function SignupPage() {
       return;
     }
 
-    // Sessão já ativa — manda pra escolha de plano (ou plano pré-selecionado)
-    navigate({ to: "/planos", search: planInfo ? { plan: planInfo } : undefined });
+    // Sessão já ativa — manda pra escolha de plano
+    if (planInfo) {
+      navigate({ to: "/planos", search: { plan: planInfo } });
+    } else {
+      navigate({ to: "/planos" });
+    }
   };
 
   if (success) {
