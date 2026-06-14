@@ -14,7 +14,7 @@ import {
 import { useEffect } from "react";
 
 
-import { Activity, LogOut, Building2, Factory, Store, Briefcase, Users, Presentation, X, Download } from "lucide-react";
+import { Activity, LogOut, Building2, Factory, Store, Briefcase, Users, Presentation, X, Save, FolderOpen, FilePlus, Printer } from "lucide-react";
 import { NAV_ITEMS } from "./nav-config";
 import { TabKey, BusinessType, AppState } from "@/lib/finance/types";
 import { useAuth } from "@/lib/auth";
@@ -31,10 +31,15 @@ interface AppSidebarProps {
   update: (patch: Partial<AppState> | ((s: AppState) => AppState)) => void;
   meetingMode: boolean;
   setMeetingMode: (v: boolean | ((p: boolean) => boolean)) => void;
-  onExport: () => void;
+  onSave: () => void;
+  onOpen: () => void;
+  onNew: () => void;
+  onExportPdf: () => void;
+  currentFileName: string | null;
+  dirty: boolean;
 }
 
-export function AppSidebar({ activeTab, setActiveTab, state, update, meetingMode, setMeetingMode, onExport }: AppSidebarProps) {
+export function AppSidebar({ activeTab, setActiveTab, state, update, meetingMode, setMeetingMode, onSave, onOpen, onNew, onExportPdf, currentFileName, dirty }: AppSidebarProps) {
   const { user, logout } = useAuth();
   const { setOpenMobile } = useSidebar();
 
