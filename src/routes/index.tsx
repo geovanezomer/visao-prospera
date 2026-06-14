@@ -16,14 +16,13 @@ import { SimulatorTab } from "@/components/sim/SimulatorTab";
 import { ValuationTab } from "@/components/sim/ValuationTab";
 import { IndicatorsTab } from "@/components/sim/IndicatorsTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
-import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
 import { AIFab } from "@/components/ai/AIFab";
 import { AIView } from "@/components/ai/AIView";
 import { TabKey } from "@/lib/finance/types";
 import { applySimulator, countActiveLevers, DEFAULT_SIM, SimulatorParams } from "@/lib/finance/simulator";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Button } from "@/components/ui/button";
-import { Download, RotateCcw, Menu, Presentation, X } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 
