@@ -770,12 +770,16 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const impostosAnual = sum(dre.impostos);
 
   // SSOT: safeMath previne NaN/Infinity em qualquer divisão de indicador.
+  // Auditoria #9: juros são custo fixo financeiro — devem entrar no Ponto de Equilíbrio.
+  // PE contábil cobre todos os custos fixos (operacionais + financeiros).
+  // PE financeiro exclui depreciação (não é desembolso) mas mantém os juros (são caixa).
+  const custosFixosComJuros = custosFixosAnual + jurosAnual;
   const margemContribuicao = safePct(receitaLiqAnual - custosVarAnual, receitaLiqAnual);
   const pontoEquilibrio = margemContribuicao > 0
-    ? safeDivide(custosFixosAnual, margemContribuicao / 100)
+    ? safeDivide(custosFixosComJuros, margemContribuicao / 100)
     : 0;
   const pontoEquilibrioFinanceiro = margemContribuicao > 0
-    ? safeDivide(custosFixosAnual - sum(dre.depreciacao), margemContribuicao / 100)
+    ? safeDivide(custosFixosComJuros - sum(dre.depreciacao), margemContribuicao / 100)
     : 0;
 
   // ---- Estrutura de capital baseada em campos REAIS ----
@@ -787,8 +791,11 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
 
   // SSOT: WACC usa shield do regime EFETIVO (Simples acima do limite vira Presumido sem shield).
   // Auditoria bug #2: shield agora respeita o adicional 10% IRPJ (só > R$240k de LAIR anual).
+  // Auditoria #4: Ke ≤ 0 é financeiramente impossível (custo do capital próprio mínimo ≥ taxa livre de risco).
+  // Fallback: piso de 8% a.a. (≈ Selic neutra) — evita WACC artificialmente baixo que infla VPL/ROIC vs WACC.
   const irShield = irShieldForRegime(resolveEffectiveRegime(state), lairAnual);
-  const wacc = wE * capital.ke + wD * capital.kd * (1 - irShield);
+  const keSeguro = capital.ke > 0 ? capital.ke : 0.08;
+  const wacc = wE * keSeguro + wD * capital.kd * (1 - irShield);
 
   // ---- NOPAT e ROIC corretos (Auditoria) ----
   // NOPAT = EBIT − impostos operacionais. Quando lair anual <= 0, usamos fallback EBIT × (1 − shield).
