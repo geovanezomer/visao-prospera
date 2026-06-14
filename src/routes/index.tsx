@@ -67,7 +67,7 @@ function SimulaPro() {
 
   const { state, update, reset, setState, hydrated: stateHydrated } = useAppState();
   const { scenarios, save, remove, replaceAll: replaceScenarios } = useScenarios();
-  const [activeTab, setActiveTab] = useState<TabKey | "ai">("dre");
+  const [activeTab, setActiveTab] = useState<TabKey | "ai" | "calculadoras">("dre");
   const [simParams, setSimParams] = useState<SimulatorParams>(DEFAULT_SIM);
   const [meetingMode, setMeetingMode] = useState(false);
   // Ticker que força re-render a cada 30s para atualizar o "salvo há X" do breadcrumb.
