@@ -311,15 +311,19 @@ function checkTier3Operacional(
     });
   }
 
-  // 3.4 CAPEX acumulado > EBITDA anual (queima estrutural)
+  // 3.4 CAPEX anual > max(EBITDA, 0) — queima estrutural se EBITDA não cobre investimento
   const capexAnual = sum(state.cashflow.capex);
-  if (capexAnual > 0 && ebitdaAnual > 0 && capexAnual > ebitdaAnual) {
+  const ebitdaCobertura = Math.max(ebitdaAnual, 0);
+  if (capexAnual > 0 && capexAnual > ebitdaCobertura) {
+    const detailEbitda = ebitdaAnual > 0
+      ? `> EBITDA (R$ ${fmt(ebitdaAnual)})`
+      : `com EBITDA ${ebitdaAnual < 0 ? "NEGATIVO" : "zero"} (R$ ${fmt(ebitdaAnual)})`;
     out.push({
       id: "operacional.capex_maior_que_ebitda",
       severity: "warn",
       category: "operacional",
-      title: "CAPEX anual maior que o EBITDA",
-      detail: `CAPEX (R$ ${fmt(capexAnual)}) > EBITDA (R$ ${fmt(ebitdaAnual)}). Sem captação ou aporte, queima de caixa estrutural.`,
+      title: "CAPEX não coberto pela geração operacional",
+      detail: `CAPEX anual (R$ ${fmt(capexAnual)}) ${detailEbitda}. Sem captação ou aporte, queima de caixa estrutural.`,
       fixHint: "Verifique se há aportes/empréstimos suficientes na aba Caixa para financiar o investimento.",
       location: "caixa",
     });
