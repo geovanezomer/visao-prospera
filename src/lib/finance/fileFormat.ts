@@ -29,6 +29,10 @@ export const FinnanceFileSchema = z.object({
     .object({
       companyName: z.string().optional(),
       businessType: z.string().optional(),
+      taxRegime: z.string().optional(),
+      numColaboradores: z.number().optional(),
+      scenarioCount: z.number().optional(),
+      sections: z.array(z.string()).optional(),
       notes: z.string().optional(),
     })
     .optional(),
