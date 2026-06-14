@@ -38,6 +38,7 @@ function CalculadorasPage() {
           <TabsTrigger value="horas-extras">Horas Extras</TabsTrigger>
           <TabsTrigger value="sac-vs-price">SAC vs PRICE</TabsTrigger>
           <TabsTrigger value="juros-compostos">Juros Compostos</TabsTrigger>
+          <TabsTrigger value="independencia">Independência</TabsTrigger>
         </TabsList>
 
         <TabsContent value="custo-funcionario">
