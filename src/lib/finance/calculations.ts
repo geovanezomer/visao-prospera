@@ -731,6 +731,10 @@ export interface Indicators {
   lucroPorColaborador: number;
   /** Folha total anual (com encargos) ÷ Receita Líquida × 100. */
   custoPessoalSobreReceita: number;
+  /** (Receita − Ponto de Equilíbrio) ÷ Receita × 100 — folga de receita antes do prejuízo. */
+  margemSeguranca: number;
+  /** EBITDA ÷ (Juros + Amortizações de Principal) — métrica bancária de cobertura do serviço da dívida. */
+  dscr: number;
   dividaOnerosa: number;
   passivoCirculante: number;
   ativoCirculante: number;
@@ -873,6 +877,21 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const folha = folhaAnual(state);
   const custoPessoalSobreReceita = receitaLiqAnual > 0 ? (folha / receitaLiqAnual) * 100 : 0;
 
+  // Margem de Segurança Operacional: folga entre Receita e Ponto de Equilíbrio.
+  // Acima de 25% é confortável; <10% é zona crítica. Capa em ±999 para evitar Infinity.
+  const margemSeguranca = receitaLiqAnual > 0 && pontoEquilibrio > 0
+    ? Math.max(-999, Math.min(999, ((receitaLiqAnual - pontoEquilibrio) / receitaLiqAnual) * 100))
+    : 0;
+
+  // DSCR — Debt Service Coverage Ratio: EBITDA ÷ (Juros + Amortizações de Principal).
+  // Visão bancária do serviço da dívida (juros + principal). <1,25× trava renovação; >1,50× destrava.
+  const amortizPrincipalAnual = sum(state.cashflow.amortizacoes);
+  const servicoDivida = jurosAnual + amortizPrincipalAnual;
+  const CAP_DSCR = 99;
+  const dscr = servicoDivida > 1
+    ? Math.max(-CAP_DSCR, Math.min(CAP_DSCR, ebitdaAnual / servicoDivida))
+    : (ebitdaAnual <= 0 ? 0 : CAP_DSCR);
+
   return {
     margemBruta: safePct(lucroBrutoAnual, receitaLiqAnual),
     margemEbitda: safePct(ebitdaAnual, receitaLiqAnual),
@@ -887,6 +906,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     conversaoEbitdaCaixa: ebitdaAnual > 0 ? safePct(fcf, ebitdaAnual) : 0,
     gao, qualidadeLucro,
     receitaPorColaborador, faturamentoPorColaborador, ebitdaPorColaborador, lucroPorColaborador, custoPessoalSobreReceita,
+    margemSeguranca, dscr,
     dividaOnerosa: D, passivoCirculante, ativoCirculante,
   };
 }
