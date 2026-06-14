@@ -52,6 +52,9 @@ function CalculadorasPage() {
         <TabsContent value="horas-extras">
           <HorasExtrasCalc />
         </TabsContent>
+        <TabsContent value="sac-vs-price">
+          <SacVsPriceCalc />
+        </TabsContent>
       </Tabs>
     </div>
   );
