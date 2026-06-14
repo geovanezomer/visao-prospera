@@ -94,6 +94,19 @@ export function AppSidebar({ activeTab, setActiveTab, state, update, onSave, onO
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
+            <li className="my-1 border-t border-sidebar-border/50" aria-hidden="true" />
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                tooltip="Calculadoras"
+                className="h-7 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              >
+                <Link to="/calculadoras" onClick={() => setOpenMobile(false)}>
+                  <Calculator className="h-4 w-4" />
+                  <span>Calculadoras</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
 
