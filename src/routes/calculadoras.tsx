@@ -4,6 +4,7 @@ import { CustoFuncionarioCalc } from "@/components/calculadoras/CustoFuncionario
 import { RescisaoCltCalc } from "@/components/calculadoras/RescisaoCltCalc";
 import { CltVsPjCalc } from "@/components/calculadoras/CltVsPjCalc";
 import { SalarioLiquidoCalc } from "@/components/calculadoras/SalarioLiquidoCalc";
+import { HorasExtrasCalc } from "@/components/calculadoras/HorasExtrasCalc";
 
 export const Route = createFileRoute("/calculadoras")({
   head: () => ({
