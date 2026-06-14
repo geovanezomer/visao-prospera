@@ -24,7 +24,7 @@ import { TabKey } from "@/lib/finance/types";
 import { applySimulator, countActiveLevers, DEFAULT_SIM, SimulatorParams } from "@/lib/finance/simulator";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Button } from "@/components/ui/button";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Presentation, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 
