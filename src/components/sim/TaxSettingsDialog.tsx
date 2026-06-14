@@ -68,8 +68,8 @@ export function TaxSettingsDialog({ state, update }: Props) {
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setTimeout(() => setStepIdx(0), 200); }}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" title="Parâmetros tributários (assistente)">
-          <Settings className="mr-2 h-4 w-4" /> Parâmetros
+        <Button size="sm" variant="ghost" title="Tributos (assistente de parâmetros tributários)">
+          <Settings className="mr-2 h-4 w-4" /> Tributos
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[88vh] overflow-hidden p-0">
