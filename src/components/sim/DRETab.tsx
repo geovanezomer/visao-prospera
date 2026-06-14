@@ -47,6 +47,14 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
   const mesesCriticosIdx = new Set(
     cf.saldoFinal.map((s, i) => (s <= limiar ? i : -1)).filter((i) => i >= 0)
   );
+  // Critical para o período renderizado: no modo mensal usa o índice direto;
+  // no trimestral, o período é "crítico" se qualquer mês do trimestre estiver.
+  const periodCritical = (i: number): boolean => {
+    if (view === "mensal") return mesesCriticosIdx.has(i);
+    if (view === "trimestral") return [0, 1, 2].some((o) => mesesCriticosIdx.has(i * 3 + o));
+    return false;
+  };
+
 
   const cvLabel = COST_VENDAS_LABEL[state.businessType];
 
