@@ -114,6 +114,18 @@ export const rescisaoInputSchema = z.object({
   dependentesIR: z.number().int().min(0).default(0),
   /** Aviso prévio trabalhado (verba já paga pela folha) ou indenizado. */
   avisoPrevio: z.enum(["indenizado", "trabalhado", "dispensado"]).default("indenizado"),
+  /**
+   * Dias restantes do contrato de experiência (apenas para motivo
+   * "termino_experiencia" rescindido ANTES do prazo).
+   * Se 0, considera-se término no prazo (sem indenização art. 479/480).
+   */
+  diasRestantesExperiencia: z.number().int().min(0).default(0),
+  /**
+   * Quem rompeu o contrato de experiência antes do prazo:
+   *  - "empregador": indenização do art. 479 CLT (empregador paga 50% do que faltava)
+   *  - "empregado": indenização do art. 480 CLT (empregado paga 50%, exibido como desconto)
+   */
+  rupturaExperienciaPor: z.enum(["empregador", "empregado"]).default("empregador"),
 });
 
 export type RescisaoInput = z.infer<typeof rescisaoInputSchema>;
@@ -234,6 +246,33 @@ export function calcularRescisao(inputBruto: RescisaoInput): RescisaoOutput {
   const multaFGTS = round2(i.saldoFGTS * regras.multaFGTSPct);
   if (multaFGTS > 0) {
     verbas.push({ rotulo: `Multa FGTS (${(regras.multaFGTSPct * 100).toFixed(0)}%)`, valor: multaFGTS, base: `${(regras.multaFGTSPct * 100).toFixed(0)}% × saldo FGTS`, incideINSS: false, incideIRRF: false });
+  }
+
+  // --- Indenização do contrato de experiência rompido antes do prazo (CLT arts. 479/480) ---
+  // Empregador rompe antes: paga ao empregado 50% do que faltaria (art. 479).
+  // Empregado rompe antes: pode ser descontado em 50% do que faltaria (art. 480) — exibido como verba negativa.
+  if (i.motivo === "termino_experiencia" && i.diasRestantesExperiencia > 0) {
+    const valorRestante = round2(salarioDia * i.diasRestantesExperiencia);
+    if (i.rupturaExperienciaPor === "empregador") {
+      const indenizacao = round2(valorRestante * 0.5);
+      verbas.push({
+        rotulo: `Indenização art. 479 CLT (${i.diasRestantesExperiencia} dias × 50%)`,
+        valor: indenizacao,
+        base: `50% × ${i.diasRestantesExperiencia} dias × R$ ${salarioDia.toFixed(2)}`,
+        incideINSS: false,
+        incideIRRF: false,
+      });
+    } else {
+      // Desconto do empregado — lançado como valor negativo
+      const desconto = round2(-valorRestante * 0.5);
+      verbas.push({
+        rotulo: `Indenização art. 480 CLT (desconto — ${i.diasRestantesExperiencia} dias × 50%)`,
+        valor: desconto,
+        base: `–50% × ${i.diasRestantesExperiencia} dias × R$ ${salarioDia.toFixed(2)}`,
+        incideINSS: false,
+        incideIRRF: false,
+      });
+    }
   }
 
   // --- Totais e impostos ---

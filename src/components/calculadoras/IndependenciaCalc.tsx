@@ -70,12 +70,19 @@ export function IndependenciaCalc() {
   const [aporteMensal, setAporteMensal] = useState<number>(1000);
   const [retornoAnual, setRetornoAnual] = useState<number>(10);
   const [taxaRetirada, setTaxaRetirada] = useState<number>(4);
+  // Inflação anual esperada (IPCA): a simulação roda em termos REAIS,
+  // ou seja, todos os valores ficam em poder de compra de hoje.
+  const [inflacaoAnual, setInflacaoAnual] = useState<number>(4);
   const [pagina, setPagina] = useState(0);
 
   const sim = useMemo(() => {
     const gastoAnual = gastosMensais * 12;
     const numeroFire = taxaRetirada > 0 ? gastoAnual / (taxaRetirada / 100) : 0;
-    const r = retornoAnual / 100;
+    // Retorno REAL = (1 + nominal) / (1 + inflação) − 1 (Equação de Fisher).
+    // Mantém o cálculo do número FIRE em reais de hoje e neutraliza a inflação.
+    const rNominal = retornoAnual / 100;
+    const iInfl = inflacaoAnual / 100;
+    const r = (1 + rNominal) / (1 + iInfl) - 1;
     const aporteAno = aporteMensal * 12;
 
     // Simulação ano a ano até atingir FIRE (cap de 80 anos para evitar loop)
@@ -143,12 +150,12 @@ export function IndependenciaCalc() {
       linhas: linhasMostradas, patAlvo, totInvAlvo, totRendAlvo, rendaMensalAlvo,
       pctFire, progressoAtual,
     };
-  }, [idadeAtual, idadeAlvo, gastosMensais, patrimonio, aporteMensal, retornoAnual, taxaRetirada]);
+  }, [idadeAtual, idadeAlvo, gastosMensais, patrimonio, aporteMensal, retornoAnual, taxaRetirada, inflacaoAnual]);
 
   function limpar() {
     setIdadeAtual(0); setIdadeAlvo(0); setGastosMensais(0);
     setPatrimonio(0); setAporteMensal(0); setRetornoAnual(0); setTaxaRetirada(0);
-    setPagina(0);
+    setInflacaoAnual(0); setPagina(0);
   }
 
   const chartData = sim.linhas.map((l) => ({
@@ -242,6 +249,13 @@ export function IndependenciaCalc() {
             <SuffixInput value={taxaRetirada} suffix="%" onChange={setTaxaRetirada} step={0.5} />
             <p className="text-[11px] text-muted-foreground">
               A regra dos 4% sugere retirar 4% do patrimônio por ano
+            </p>
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label className="text-xs">Inflação anual esperada (IPCA)</Label>
+            <SuffixInput value={inflacaoAnual} suffix="% a.a." onChange={setInflacaoAnual} step={0.5} />
+            <p className="text-[11px] text-muted-foreground">
+              A simulação roda em <strong>termos reais</strong> (poder de compra de hoje). Retorno real = (1+nominal)/(1+inflação)−1.
             </p>
           </div>
         </CardContent>

@@ -36,6 +36,9 @@ export function RescisaoCltCalc() {
   const [possuiFeriasVencidas, setPossuiFeriasVencidas] = useState<boolean>(false);
   const [dependentesIR, setDependentesIR] = useState<number>(0);
   const [avisoPrevio, setAvisoPrevio] = useState<"indenizado" | "trabalhado" | "dispensado">("indenizado");
+  // Campos exclusivos do contrato de experiência rompido antes do prazo (CLT arts. 479/480)
+  const [diasRestantesExperiencia, setDiasRestantesExperiencia] = useState<number>(0);
+  const [rupturaExperienciaPor, setRupturaExperienciaPor] = useState<"empregador" | "empregado">("empregador");
 
   const resultado = useMemo(() => {
     try {
@@ -43,15 +46,17 @@ export function RescisaoCltCalc() {
         motivo, salarioBruto, diasTrabalhadosMes, mesesFeriasProporcionais,
         mesesDecimoProporcional, anosNaEmpresa, saldoFGTS, possuiFeriasVencidas,
         dependentesIR, avisoPrevio,
+        diasRestantesExperiencia, rupturaExperienciaPor,
       });
     } catch { return null; }
-  }, [motivo, salarioBruto, diasTrabalhadosMes, mesesFeriasProporcionais, mesesDecimoProporcional, anosNaEmpresa, saldoFGTS, possuiFeriasVencidas, dependentesIR, avisoPrevio]);
+  }, [motivo, salarioBruto, diasTrabalhadosMes, mesesFeriasProporcionais, mesesDecimoProporcional, anosNaEmpresa, saldoFGTS, possuiFeriasVencidas, dependentesIR, avisoPrevio, diasRestantesExperiencia, rupturaExperienciaPor]);
 
   function limpar() {
     setMotivo("sem_justa_causa");
     setSalarioBruto(0); setDiasTrabalhadosMes(0); setMesesFeriasProporcionais(0);
     setMesesDecimoProporcional(0); setAnosNaEmpresa(0); setSaldoFGTS(0);
     setPossuiFeriasVencidas(false); setDependentesIR(0); setAvisoPrevio("indenizado");
+    setDiasRestantesExperiencia(0); setRupturaExperienciaPor("empregador");
   }
 
   return (
@@ -95,6 +100,23 @@ export function RescisaoCltCalc() {
             <p className="mb-1 font-medium text-primary">Sobre este tipo de rescisão</p>
             <p>{motivoDescricao[motivo]}</p>
           </div>
+
+          {motivo === "termino_experiencia" && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Dias restantes do contrato" hint="0 = término no prazo. >0 = rescisão antecipada (CLT arts. 479/480).">
+                <Input type="number" min={0} value={diasRestantesExperiencia || ""} onChange={(e) => setDiasRestantesExperiencia(Number(e.target.value) || 0)} />
+              </Field>
+              <Field label="Quem rompeu antes do prazo?" hint="Empregador paga 50% (art. 479). Empregado desconta 50% (art. 480).">
+                <Select value={rupturaExperienciaPor} onValueChange={(v) => setRupturaExperienciaPor(v as typeof rupturaExperienciaPor)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="empregador">Empregador</SelectItem>
+                    <SelectItem value="empregado">Empregado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+          )}
         </CardContent>
       </Card>
 
