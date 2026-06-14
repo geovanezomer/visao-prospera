@@ -1,4 +1,8 @@
 // Plano de ação rastreável — localStorage.
+// IDs via nanoid (21 chars URL-safe). Soft delete: itens marcados com
+// isDeleted=true são filtrados em listActions; permanecem no storage
+// para suportar futuras features (undo, sync multi-aba, auditoria).
+import { nanoid } from "nanoid";
 
 export type ActionStatus = "aberta" | "em_andamento" | "concluida" | "cancelada";
 
@@ -14,16 +18,24 @@ export interface ActionItem {
   createdAt: number;
   updatedAt: number;
   resolvedAt?: number;
+  /** Soft delete — filtrado em listActions por padrão. */
+  isDeleted?: boolean;
 }
 
 const KEY = (company: string) => `gz-finance-actions-${company || "default"}`;
 
-export function listActions(company: string, filter?: { status?: ActionStatus }): ActionItem[] {
+/** Lê o array bruto (inclui soft-deleted). Uso interno. */
+function readRaw(company: string): ActionItem[] {
   try {
     const raw = localStorage.getItem(KEY(company));
-    const all: ActionItem[] = raw ? JSON.parse(raw) : [];
-    return filter?.status ? all.filter(a => a.status === filter.status) : all;
+    return raw ? JSON.parse(raw) : [];
   } catch { return []; }
+}
+
+export function listActions(company: string, filter?: { status?: ActionStatus; includeDeleted?: boolean }): ActionItem[] {
+  const all = readRaw(company);
+  const visible = filter?.includeDeleted ? all : all.filter(a => !a.isDeleted);
+  return filter?.status ? visible.filter(a => a.status === filter.status) : visible;
 }
 
 export function createAction(
@@ -32,7 +44,7 @@ export function createAction(
 ): ActionItem {
   const now = Date.now();
   const item: ActionItem = {
-    id: `a-${now}-${Math.random().toString(36).slice(2, 6)}`,
+    id: nanoid(),
     titulo: input.titulo,
     descricao: input.descricao,
     origem: input.origem ?? "chat",
@@ -43,14 +55,14 @@ export function createAction(
     createdAt: now,
     updatedAt: now,
   };
-  const all = listActions(company);
+  const all = readRaw(company);
   all.unshift(item);
   localStorage.setItem(KEY(company), JSON.stringify(all));
   return item;
 }
 
 export function updateAction(company: string, id: string, patch: Partial<ActionItem>): ActionItem | null {
-  const all = listActions(company);
+  const all = readRaw(company);
   const idx = all.findIndex(a => a.id === id);
   if (idx < 0) return null;
   const now = Date.now();
@@ -60,8 +72,21 @@ export function updateAction(company: string, id: string, patch: Partial<ActionI
   return all[idx];
 }
 
+/** Soft delete: marca isDeleted=true e atualiza updatedAt. Não remove do storage. */
 export function deleteAction(company: string, id: string) {
-  const all = listActions(company).filter(a => a.id !== id);
+  const all = readRaw(company);
+  const idx = all.findIndex(a => a.id === id);
+  if (idx < 0) return;
+  all[idx] = { ...all[idx], isDeleted: true, updatedAt: Date.now() };
+  localStorage.setItem(KEY(company), JSON.stringify(all));
+}
+
+/** Restaura um item soft-deleted (suporte a futuro undo). */
+export function restoreAction(company: string, id: string) {
+  const all = readRaw(company);
+  const idx = all.findIndex(a => a.id === id);
+  if (idx < 0) return;
+  all[idx] = { ...all[idx], isDeleted: false, updatedAt: Date.now() };
   localStorage.setItem(KEY(company), JSON.stringify(all));
 }
 
