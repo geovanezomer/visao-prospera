@@ -10,20 +10,20 @@ const GATEWAY_BASE = "https://connector-gateway.lovable.dev/stripe";
 /**
  * Resolve a chave da API Stripe baseado no ambiente.
  * - sandbox: STRIPE_SANDBOX_API_KEY (test)
- * - live:    STRIPE_API_KEY (produção, injetado após go-live)
+ * - live:    STRIPE_LIVE_API_KEY (produção, injetado após go-live)
  */
 function getStripeKey(env: "sandbox" | "live"): string {
   const key =
     env === "live"
-      ? process.env.STRIPE_API_KEY
+      ? process.env.STRIPE_LIVE_API_KEY
       : process.env.STRIPE_SANDBOX_API_KEY;
   if (!key) throw new Error(`Chave Stripe ausente para ambiente '${env}'.`);
   return key;
 }
 
-/** Detecta automaticamente o ambiente: se STRIPE_API_KEY (live) existe, usa live. */
+/** Detecta automaticamente o ambiente: se STRIPE_LIVE_API_KEY (live) existe, usa live. */
 export function getCurrentStripeEnv(): "sandbox" | "live" {
-  return process.env.STRIPE_API_KEY ? "live" : "sandbox";
+  return process.env.STRIPE_LIVE_API_KEY ? "live" : "sandbox";
 }
 
 /** Converte objeto plano em x-www-form-urlencoded (formato exigido pela API Stripe). */
