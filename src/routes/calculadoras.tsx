@@ -62,6 +62,9 @@ function CalculadorasPage() {
         <TabsContent value="juros-compostos">
           <JurosCompostosCalc />
         </TabsContent>
+        <TabsContent value="independencia">
+          <IndependenciaCalc />
+        </TabsContent>
       </Tabs>
     </div>
   );
