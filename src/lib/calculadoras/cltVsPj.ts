@@ -142,8 +142,9 @@ export function calcularCLT(i: CltVsPjInput): ResultadoCLT {
   const irrfFerias = calcularIRRF(baseFerias, inssFerias, 0);
   const feriasLiquidas = Math.round((baseFerias - inssFerias - irrfFerias) * 100) / 100;
 
-  // PLR — tributação especial (Lei 10.101/00). Simplificação: aplica IRRF exclusivo (~10% efetivo aprox)
-  const plrLiquido = Math.round(i.plrAnual * 0.9 * 100) / 100;
+  // PLR — tributação EXCLUSIVA da fonte (Lei 14.020/2020, art. 11), aplicada
+  // pela tabela anual com isenção até R$ 7.640,80.
+  const plrLiquido = Math.round((i.plrAnual - irrfPlr(i.plrAnual)) * 100) / 100;
 
   const beneficiosAnuais = i.beneficiosCLTMensal * 12;
   const fgtsAnual = Math.round(i.salarioBrutoCLT * 0.08 * 12 * 100) / 100;
