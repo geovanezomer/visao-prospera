@@ -32,7 +32,7 @@ function CalculadorasPage() {
           <TabsTrigger value="rescisao">Rescisão CLT</TabsTrigger>
           <TabsTrigger value="clt-vs-pj">CLT vs PJ</TabsTrigger>
           <TabsTrigger value="salario-liquido">Salário Líquido</TabsTrigger>
-          <TabsTrigger value="markup" disabled>Markup / Precificação</TabsTrigger>
+          <TabsTrigger value="horas-extras">Horas Extras</TabsTrigger>
         </TabsList>
 
         <TabsContent value="custo-funcionario">
