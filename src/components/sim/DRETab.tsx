@@ -348,7 +348,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                       })}
                       {openCpv && linhasCpv.length === 0 && (
                         <tr className="border-t border-border/20">
-                          <td colSpan={view === "mensal" ? 15 : 3} className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground">
+                          <td colSpan={(showPeriods ? periodLabels.length : 0) + 3} className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground">
                             Nenhum item classificado como {cvLabel.short} ainda. Cadastre custos na categoria "Custo de Vendas" na aba Custos.
                           </td>
                         </tr>
