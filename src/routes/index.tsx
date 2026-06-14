@@ -65,7 +65,7 @@ function SimulaPro() {
     if (hydrated && !user) navigate({ to: "/login" });
   }, [hydrated, user, navigate]);
 
-  const { state, update, reset, setState, hydrated: stateHydrated } = useAppState();
+  const { state, update, reset, setState, hydrated: stateHydrated, autosaveStatus } = useAppState();
   const { scenarios, save, remove, replaceAll: replaceScenarios } = useScenarios();
   const [activeTab, setActiveTab] = useState<TabKey | "ai" | "calculadoras">("dre");
   const [simParams, setSimParams] = useState<SimulatorParams>(DEFAULT_SIM);
@@ -161,6 +161,27 @@ function SimulaPro() {
                   <span className={fileApi.dirty ? "text-amber-500" : ""}>
                     {fileApi.dirty ? "● não salvo" : `salvo ${timeAgo(fileApi.lastModified)}`}
                   </span>
+                  {autosaveStatus !== "idle" && (
+                    <>
+                      <span className="opacity-40">·</span>
+                      <span
+                        className={
+                          autosaveStatus === "error"
+                            ? "text-destructive"
+                            : autosaveStatus === "saving"
+                            ? "text-muted-foreground"
+                            : "text-emerald-500"
+                        }
+                        title="Autosave local (IndexedDB)"
+                      >
+                        {autosaveStatus === "saving"
+                          ? "Salvando…"
+                          : autosaveStatus === "saved"
+                          ? "✓ Salvo"
+                          : "Erro ao salvar"}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
