@@ -24,10 +24,22 @@ import { TabKey } from "@/lib/finance/types";
 import { applySimulator, countActiveLevers, DEFAULT_SIM, SimulatorParams } from "@/lib/finance/simulator";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Presentation, X } from "lucide-react";
-import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
+import { RotateCcw, Presentation, X, FileText } from "lucide-react";
 import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
 import { Badge } from "@/components/ui/badge";
+
+// Formata "há X" relativo para o breadcrumb do header.
+function timeAgo(ts: number | null): string {
+  if (!ts) return "—";
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 5) return "agora";
+  if (s < 60) return `há ${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `há ${m}min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `há ${h}h`;
+  return new Date(ts).toLocaleDateString("pt-BR");
+}
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -116,12 +128,33 @@ function SimulaPro() {
         
         <SidebarInset className="flex flex-col">
           <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/80 px-4 backdrop-blur sm:px-6">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <SidebarTrigger className="h-9 w-9" data-meeting-hide="true" />
-              <div className="flex items-center gap-2 md:gap-4">
-                <h2 className="text-sm font-medium capitalize text-muted-foreground md:text-base">
+              <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                <h2 className="text-sm font-medium capitalize text-muted-foreground md:text-base shrink-0">
                   {activeTab === "ai" ? "Consultor IA" : activeTab}
                 </h2>
+                {/* Breadcrumb: empresa · arquivo · última modificação. */}
+                <div
+                  className="hidden md:flex items-center gap-1.5 min-w-0 text-[11px] text-muted-foreground border-l border-border/40 pl-3"
+                  title={fileApi.currentFileName ?? "Arquivo não salvo"}
+                  data-meeting-hide="true"
+                >
+                  <FileText className="h-3 w-3 shrink-0" />
+                  <span className="truncate font-medium text-foreground/80">
+                    {state.companyName?.trim() || "Sem empresa"}
+                  </span>
+                  {fileApi.currentFileName && (
+                    <>
+                      <span className="opacity-40">·</span>
+                      <span className="truncate">{fileApi.currentFileName}</span>
+                    </>
+                  )}
+                  <span className="opacity-40">·</span>
+                  <span className={fileApi.dirty ? "text-amber-500" : ""}>
+                    {fileApi.dirty ? "● não salvo" : `salvo ${timeAgo(fileApi.lastModified)}`}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -143,19 +176,16 @@ function SimulaPro() {
                   {meetingMode ? <X className="h-3.5 w-3.5 sm:mr-2" /> : <Presentation className="h-3.5 w-3.5 sm:mr-2" />}
                   <span className="hidden sm:inline">{meetingMode ? "Sair Reunião" : "Modo Reunião"}</span>
                 </Button>
-                <ConfirmDialog
-                  title="Restaurar dados?"
-                  description="Isso resetará todos os valores atuais."
-                  confirmLabel="Restaurar"
-                  destructive
-                  onConfirm={reset}
-                  trigger={
-                    <Button size="sm" variant="ghost" className="h-8">
-                      <RotateCcw className="h-3.5 w-3.5 sm:mr-2" /> 
-                      <span className="hidden sm:inline">Reset</span>
-                    </Button>
-                  }
-                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8"
+                  onClick={() => void fileApi.resetWithConfirm()}
+                  title="Restaurar dados (Ctrl+Shift+R)"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 sm:mr-2" />
+                  <span className="hidden sm:inline">Reset</span>
+                </Button>
               </div>
             </div>
           </header>
