@@ -9,6 +9,10 @@ import {
 } from "./fileFormat";
 import { downloadFinnanceFile, pickFinnanceFile } from "./fileIO";
 
+interface ConfirmFn {
+  (opts: { title: string; description?: string; confirmLabel?: string; destructive?: boolean }): Promise<boolean>;
+}
+
 interface Args {
   state: AppState;
   scenarios: Scenario[];
@@ -16,6 +20,8 @@ interface Args {
   replaceScenarios: (s: Scenario[]) => void;
   resetState: () => void;
   hydrated: boolean;
+  /** Confirm programático (padronizado via AlertDialog). Fallback: window.confirm. */
+  confirm?: ConfirmFn;
 }
 
 // Hash barato e estável para detectar "dirty" sem deep-equal pesado.
