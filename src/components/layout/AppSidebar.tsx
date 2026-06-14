@@ -133,6 +133,26 @@ export function AppSidebar({ activeTab, setActiveTab, state, update, meetingMode
               />
               <span className="text-[10px] text-muted-foreground shrink-0">colab.</span>
             </div>
+
+            <div className="mt-2 space-y-1.5 border-t border-sidebar-border/50 pt-3">
+              <Button
+                size="sm"
+                variant={meetingMode ? "default" : "outline"}
+                onClick={() => setMeetingMode((v) => !v)}
+                className="h-8 w-full justify-start"
+                title="Modo Reunião: oculta menus, amplia fontes e destaca KPIs para apresentação ao cliente"
+              >
+                {meetingMode ? <X className="h-3.5 w-3.5 mr-2" /> : <Presentation className="h-3.5 w-3.5 mr-2" />}
+                <span>{meetingMode ? "Sair Reunião" : "Modo Reunião"}</span>
+              </Button>
+              <Button size="sm" variant="outline" onClick={onExport} className="h-8 w-full justify-start" data-meeting-hide="true">
+                <Download className="h-3.5 w-3.5 mr-2" />
+                <span>Exportar</span>
+              </Button>
+              <div data-meeting-hide="true">
+                <TaxSettingsDialog state={state} update={update} />
+              </div>
+            </div>
           </div>
         </SidebarGroup>
       </SidebarContent>
