@@ -339,7 +339,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                           <tr key={`cpv_${li}`} className="border-t border-border/20">
                             <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">{l.label}</td>
                             {showPeriods && aggregate(l.values).map((v, i) => (
-                              <td key={i} className="num px-2 py-1.5 text-right text-xs text-muted-foreground">
+                              <td key={i} className={`num px-2 py-1.5 text-right ${periodTxt} text-muted-foreground`}>
                                 {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
                               </td>
                             ))}
