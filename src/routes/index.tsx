@@ -24,7 +24,7 @@ import { TabKey } from "@/lib/finance/types";
 import { applySimulator, countActiveLevers, DEFAULT_SIM, SimulatorParams } from "@/lib/finance/simulator";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Button } from "@/components/ui/button";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Presentation, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/sim/ConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 
@@ -88,9 +88,8 @@ function SimulaPro() {
     return <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">Carregando…</div>;
   }
 
-  const exportPdf = () => {
-    window.print();
-  };
+
+
 
   return (
     <SidebarProvider>
@@ -106,12 +105,8 @@ function SimulaPro() {
           }} 
           state={state} 
           update={update}
-          meetingMode={meetingMode}
-          setMeetingMode={setMeetingMode}
           onSave={fileApi.save}
           onOpen={fileApi.open}
-          onNew={fileApi.newFile}
-          onExportPdf={exportPdf}
           currentFileName={fileApi.currentFileName}
           dirty={fileApi.dirty}
         />
@@ -136,6 +131,16 @@ function SimulaPro() {
                 </Badge>
               )}
               <div data-meeting-hide="true" className="contents">
+                <Button
+                  size="sm"
+                  variant={meetingMode ? "default" : "ghost"}
+                  onClick={() => setMeetingMode((v) => !v)}
+                  className="h-8"
+                  title="Modo Reunião: oculta menus, amplia fontes e destaca KPIs"
+                >
+                  {meetingMode ? <X className="h-3.5 w-3.5 sm:mr-2" /> : <Presentation className="h-3.5 w-3.5 sm:mr-2" />}
+                  <span className="hidden sm:inline">{meetingMode ? "Sair Reunião" : "Modo Reunião"}</span>
+                </Button>
                 <ConfirmDialog
                   title="Restaurar dados?"
                   description="Isso resetará todos os valores atuais."
