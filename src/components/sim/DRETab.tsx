@@ -246,7 +246,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                 {showPeriods && periodLabels.map((m, i) => (
                   <th
                     key={m}
-                    className={`px-2 py-2 text-right ${periodCritical(i) ? "border-l-2 border-r-2 border-destructive/60 text-destructive" : ""}`}
+                    className={`px-2 py-2 text-right ${periodHeadTxt} ${periodCritical(i) ? "text-destructive" : ""}`}
                   >
                     {m}
                   </th>
