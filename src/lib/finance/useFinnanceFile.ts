@@ -9,6 +9,10 @@ import {
 } from "./fileFormat";
 import { downloadFinnanceFile, pickFinnanceFile } from "./fileIO";
 
+interface ConfirmFn {
+  (opts: { title: string; description?: string; confirmLabel?: string; destructive?: boolean }): Promise<boolean>;
+}
+
 interface Args {
   state: AppState;
   scenarios: Scenario[];
@@ -16,6 +20,8 @@ interface Args {
   replaceScenarios: (s: Scenario[]) => void;
   resetState: () => void;
   hydrated: boolean;
+  /** Confirm programático (padronizado via AlertDialog). Fallback: window.confirm. */
+  confirm?: ConfirmFn;
 }
 
 // Hash barato e estável para detectar "dirty" sem deep-equal pesado.
@@ -30,7 +36,14 @@ export function useFinnanceFile({
   replaceScenarios,
   resetState,
   hydrated,
+  confirm,
 }: Args) {
+  // Fallback para window.confirm caso o consumidor não injete um confirm customizado.
+  const askConfirm: ConfirmFn = useCallback(
+    async (opts) => (confirm ? confirm(opts) : window.confirm(opts.description ?? opts.title)),
+    [confirm],
+  );
+
   const [currentFileName, setCurrentFileName] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const lastSavedSnapshot = useRef<string>("");
@@ -68,9 +81,12 @@ export function useFinnanceFile({
 
   const open = useCallback(async () => {
     if (dirty) {
-      const ok = window.confirm(
-        "Você tem alterações não salvas. Deseja descartá-las e abrir outro arquivo?",
-      );
+      const ok = await askConfirm({
+        title: "Descartar alterações?",
+        description: "Você tem alterações não salvas. Deseja descartá-las e abrir outro arquivo?",
+        confirmLabel: "Descartar e abrir",
+        destructive: true,
+      });
       if (!ok) return;
     }
     try {
@@ -88,13 +104,16 @@ export function useFinnanceFile({
       if (msg.includes("Nenhum arquivo")) return;
       toast.error("Não foi possível abrir o arquivo", { description: msg });
     }
-  }, [dirty, setState, replaceScenarios]);
+  }, [dirty, setState, replaceScenarios, askConfirm]);
 
-  const newFile = useCallback(() => {
+  const newFile = useCallback(async () => {
     if (dirty) {
-      const ok = window.confirm(
-        "Você tem alterações não salvas. Deseja descartá-las e começar um novo arquivo?",
-      );
+      const ok = await askConfirm({
+        title: "Começar um novo arquivo?",
+        description: "Você tem alterações não salvas. Deseja descartá-las e começar do zero?",
+        confirmLabel: "Descartar e criar novo",
+        destructive: true,
+      });
       if (!ok) return;
     }
     resetState();
@@ -104,7 +123,7 @@ export function useFinnanceFile({
     lastSavedSnapshot.current = "";
     setDirty(false);
     toast.success("Novo arquivo criado");
-  }, [dirty, resetState, replaceScenarios]);
+  }, [dirty, resetState, replaceScenarios, askConfirm]);
 
   // Aviso nativo do navegador ao fechar a aba com alterações pendentes.
   useEffect(() => {

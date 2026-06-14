@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAppState, useScenarios } from "@/lib/finance/store";
 import { useFinnanceFile } from "@/lib/finance/useFinnanceFile";
+import { useConfirm } from "@/hooks/useConfirm";
 import { useAuth } from "@/lib/auth";
 import { TabsContent } from "@/components/ui/tabs";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -58,6 +59,7 @@ function SimulaPro() {
   const simulatedState = useMemo(() => applySimulator(state, simParams), [state, simParams]);
   const simActive = countActiveLevers(simParams);
 
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const fileApi = useFinnanceFile({
     state,
     scenarios,
@@ -65,6 +67,7 @@ function SimulaPro() {
     replaceScenarios,
     resetState: reset,
     hydrated: stateHydrated,
+    confirm,
   });
 
   useEffect(() => {
@@ -185,6 +188,7 @@ function SimulaPro() {
         <div data-meeting-hide="true" className="contents">
           <ScenarioBar state={state} scenarios={scenarios} save={save} remove={remove} load={setState} />
         </div>
+        {confirmDialog}
         {/* AI FAB REMOVIDO POR SOLICITAÇÃO DO USUÁRIO */}
       </div>
     </SidebarProvider>
