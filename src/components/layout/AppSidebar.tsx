@@ -156,28 +156,33 @@ export function AppSidebar({ activeTab, setActiveTab, state, update, onSave, onO
 
       <SidebarFooter className="border-t border-sidebar-border/50 p-2">
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton 
-              className="w-full justify-start gap-3"
-              onClick={() => { 
-                logout(); 
-              }}
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="group-data-[collapsible=icon]:hidden">Sair</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
           {user && (
-            <div className="mt-2 flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:hidden border-t border-sidebar-border/30 pt-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
-                {user.displayName?.charAt(0).toUpperCase() || "U"}
-              </div>
+            <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:hidden">
+              <button
+                type="button"
+                onClick={() => logout()}
+                title="Sair"
+                aria-label="Sair"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-destructive/15 hover:text-destructive"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
               <div className="flex flex-col overflow-hidden">
                 <span className="truncate text-xs font-semibold leading-none">{user.displayName}</span>
                 <span className="mt-1 truncate text-[10px] text-muted-foreground leading-none">{user.email}</span>
               </div>
             </div>
           )}
+          <SidebarMenuItem className="group-data-[collapsible=icon]:block hidden">
+            <SidebarMenuButton
+              tooltip="Sair"
+              className="w-full justify-start gap-3"
+              onClick={() => logout()}
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Sair</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
