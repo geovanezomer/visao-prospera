@@ -81,9 +81,12 @@ export function useFinnanceFile({
 
   const open = useCallback(async () => {
     if (dirty) {
-      const ok = window.confirm(
-        "Você tem alterações não salvas. Deseja descartá-las e abrir outro arquivo?",
-      );
+      const ok = await askConfirm({
+        title: "Descartar alterações?",
+        description: "Você tem alterações não salvas. Deseja descartá-las e abrir outro arquivo?",
+        confirmLabel: "Descartar e abrir",
+        destructive: true,
+      });
       if (!ok) return;
     }
     try {
@@ -101,13 +104,16 @@ export function useFinnanceFile({
       if (msg.includes("Nenhum arquivo")) return;
       toast.error("Não foi possível abrir o arquivo", { description: msg });
     }
-  }, [dirty, setState, replaceScenarios]);
+  }, [dirty, setState, replaceScenarios, askConfirm]);
 
-  const newFile = useCallback(() => {
+  const newFile = useCallback(async () => {
     if (dirty) {
-      const ok = window.confirm(
-        "Você tem alterações não salvas. Deseja descartá-las e começar um novo arquivo?",
-      );
+      const ok = await askConfirm({
+        title: "Começar um novo arquivo?",
+        description: "Você tem alterações não salvas. Deseja descartá-las e começar do zero?",
+        confirmLabel: "Descartar e criar novo",
+        destructive: true,
+      });
       if (!ok) return;
     }
     resetState();
