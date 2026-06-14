@@ -131,6 +131,16 @@ function SimulaPro() {
                 </Badge>
               )}
               <div data-meeting-hide="true" className="contents">
+                <Button
+                  size="sm"
+                  variant={meetingMode ? "default" : "ghost"}
+                  onClick={() => setMeetingMode((v) => !v)}
+                  className="h-8"
+                  title="Modo Reunião: oculta menus, amplia fontes e destaca KPIs"
+                >
+                  {meetingMode ? <X className="h-3.5 w-3.5 sm:mr-2" /> : <Presentation className="h-3.5 w-3.5 sm:mr-2" />}
+                  <span className="hidden sm:inline">{meetingMode ? "Sair Reunião" : "Modo Reunião"}</span>
+                </Button>
                 <ConfirmDialog
                   title="Restaurar dados?"
                   description="Isso resetará todos os valores atuais."
