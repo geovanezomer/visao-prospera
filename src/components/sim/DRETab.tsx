@@ -31,6 +31,9 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
   const QUARTERS = ["1º Tri", "2º Tri", "3º Tri", "4º Tri"];
   const periodLabels = view === "mensal" ? MESES : view === "trimestral" ? QUARTERS : [];
   const showPeriods = view !== "anual";
+  // Tamanho de fonte das células de período: trimestral fica maior, parecido com a coluna Anual.
+  const periodTxt = view === "trimestral" ? "text-sm" : "text-xs";
+  const periodHeadTxt = view === "trimestral" ? "text-xs" : "text-[10px]";
   // Agrega um vetor mensal (12) conforme o período selecionado.
   const aggregate = (arr: number[]): number[] => {
     if (view === "mensal") return arr;
@@ -243,7 +246,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                 {showPeriods && periodLabels.map((m, i) => (
                   <th
                     key={m}
-                    className={`px-2 py-2 text-right ${periodCritical(i) ? "border-l-2 border-r-2 border-destructive/60 text-destructive" : ""}`}
+                    className={`px-2 py-2 text-right ${periodHeadTxt} ${periodCritical(i) ? "text-destructive" : ""}`}
                   >
                     {m}
                   </th>
@@ -270,7 +273,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                           </span>
                         </td>
                         {showPeriods && aggregate(row.v).map((v, i) => (
-                          <td key={i} className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}>
+                          <td key={i} className={`num px-2 py-2 text-right ${periodTxt} ${periodCritical(i) ? "text-destructive" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}>
                             {v === 0 ? "—" : fmtBRLCompact(v)}
                           </td>
                         ))}
@@ -287,7 +290,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                             {showPeriods && aggregate(l.values).map((v, i) => {
                               const sv = v * sgn;
                               return (
-                                <td key={i} className={`num px-2 py-1.5 text-right text-xs ${sv < 0 ? "text-neg" : sv > 0 ? "text-pos" : "text-muted-foreground"}`}>
+                                <td key={i} className={`num px-2 py-1.5 text-right ${periodTxt} ${sv < 0 ? "text-neg" : sv > 0 ? "text-pos" : "text-muted-foreground"}`}>
                                   {sv === 0 ? "—" : fmtBRLCompact(sv)}
                                 </td>
                               );
@@ -322,7 +325,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                           </span>
                         </td>
                         {showPeriods && aggregate(dre.cpv).map((v, i) => (
-                          <td key={i} className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} text-neg`}>
+                          <td key={i} className={`num px-2 py-2 text-right ${periodTxt} text-neg`}>
                             {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
                           </td>
                         ))}
@@ -336,7 +339,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                           <tr key={`cpv_${li}`} className="border-t border-border/20">
                             <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">{l.label}</td>
                             {showPeriods && aggregate(l.values).map((v, i) => (
-                              <td key={i} className="num px-2 py-1.5 text-right text-xs text-muted-foreground">
+                              <td key={i} className={`num px-2 py-1.5 text-right ${periodTxt} text-muted-foreground`}>
                                 {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
                               </td>
                             ))}
@@ -364,7 +367,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
                   <tr key={idx} className={`border-t border-border/30 ${row.highlight ? "bg-primary/10" : row.strong ? "bg-accent/20" : ""}`}>
                     <td className={`px-3 py-2 ${row.strong ? "font-semibold" : "text-muted-foreground"} text-[10px] sm:text-xs truncate`}>{row.k}</td>
                     {showPeriods && aggregate(row.v).map((v, i) => (
-                      <td key={i} className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "border-l-2 border-r-2 border-destructive/60" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}>
+                      <td key={i} className={`num px-2 py-2 text-right ${periodTxt} ${periodCritical(i) ? "text-destructive" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}>
                         {v === 0 ? "—" : fmtBRLCompact(v)}
                       </td>
                     ))}
