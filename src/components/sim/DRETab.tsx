@@ -16,16 +16,28 @@ import { ChevronRight } from "lucide-react";
 const CHART_COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15", "#F472B6", "#34D399", "#A78BFA", "#FB923C"];
 
 export function DRETab({ state, update }: { state: AppState; update: Updater }) {
-  const [view, setView] = useState<"mensal" | "anual">("anual");
+  const [view, setView] = useState<"mensal" | "trimestral" | "anual">("trimestral");
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 1024) setView("anual");
+      if (window.innerWidth < 1024 && view === "mensal") setView("trimestral");
     };
     window.addEventListener("resize", handleResize);
     handleResize();
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [view]);
+
+  // Períodos exibidos na tabela conforme o modo de visualização.
+  const QUARTERS = ["1º Tri", "2º Tri", "3º Tri", "4º Tri"];
+  const periodLabels = view === "mensal" ? MESES : view === "trimestral" ? QUARTERS : [];
+  const showPeriods = view !== "anual";
+  // Agrega um vetor mensal (12) conforme o período selecionado.
+  const aggregate = (arr: number[]): number[] => {
+    if (view === "mensal") return arr;
+    if (view === "trimestral") return [0, 1, 2, 3].map((q) => arr[q * 3] + arr[q * 3 + 1] + arr[q * 3 + 2]);
+    return [];
+  };
+
 
   const regime = state.tax.regime;
   const { dre, tax } = buildDRE(state, regime);
