@@ -1,4 +1,6 @@
 // Cenários salvos por empresa — localStorage.
+// IDs via nanoid. Soft delete habilita futuras features (undo, sync).
+import { nanoid } from "nanoid";
 import type { SimulatorParams } from "@/lib/finance/simulator";
 
 export interface ScenarioRecord {
@@ -16,19 +18,26 @@ export interface ScenarioRecord {
   };
   createdAt: number;
   updatedAt: number;
+  /** Soft delete — filtrado em listScenarios por padrão. */
+  isDeleted?: boolean;
 }
 
 const KEY = (company: string) => `gz-finance-scenarios-${company || "default"}`;
 
-export function listScenarios(company: string): ScenarioRecord[] {
+function readRaw(company: string): ScenarioRecord[] {
   try {
     const raw = localStorage.getItem(KEY(company));
     return raw ? JSON.parse(raw) : [];
   } catch { return []; }
 }
 
+export function listScenarios(company: string, opts?: { includeDeleted?: boolean }): ScenarioRecord[] {
+  const all = readRaw(company);
+  return opts?.includeDeleted ? all : all.filter(s => !s.isDeleted);
+}
+
 export function saveScenario(company: string, rec: Omit<ScenarioRecord, "id" | "createdAt" | "updatedAt"> & Partial<Pick<ScenarioRecord, "id">>): ScenarioRecord {
-  const all = listScenarios(company);
+  const all = readRaw(company);
   const now = Date.now();
   if (rec.id) {
     const idx = all.findIndex(s => s.id === rec.id);
@@ -40,7 +49,7 @@ export function saveScenario(company: string, rec: Omit<ScenarioRecord, "id" | "
   }
   const newRec: ScenarioRecord = {
     ...rec,
-    id: `sc-${now}-${Math.random().toString(36).slice(2, 7)}`,
+    id: nanoid(),
     createdAt: now,
     updatedAt: now,
   };
@@ -49,8 +58,20 @@ export function saveScenario(company: string, rec: Omit<ScenarioRecord, "id" | "
   return newRec;
 }
 
+/** Soft delete: marca isDeleted=true. Não remove do storage. */
 export function deleteScenario(company: string, id: string) {
-  const all = listScenarios(company).filter(s => s.id !== id);
+  const all = readRaw(company);
+  const idx = all.findIndex(s => s.id === id);
+  if (idx < 0) return;
+  all[idx] = { ...all[idx], isDeleted: true, updatedAt: Date.now() };
+  localStorage.setItem(KEY(company), JSON.stringify(all));
+}
+
+export function restoreScenario(company: string, id: string) {
+  const all = readRaw(company);
+  const idx = all.findIndex(s => s.id === id);
+  if (idx < 0) return;
+  all[idx] = { ...all[idx], isDeleted: false, updatedAt: Date.now() };
   localStorage.setItem(KEY(company), JSON.stringify(all));
 }
 
