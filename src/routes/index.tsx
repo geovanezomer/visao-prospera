@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { RotateCcw, Presentation, X, FileText } from "lucide-react";
 import { TaxSettingsDialog } from "@/components/sim/TaxSettingsDialog";
 import { Badge } from "@/components/ui/badge";
+import { CalculadorasTab } from "@/components/calculadoras/CalculadorasTab";
 
 // Formata "há X" relativo para o breadcrumb do header.
 function timeAgo(ts: number | null): string {
@@ -66,7 +67,7 @@ function SimulaPro() {
 
   const { state, update, reset, setState, hydrated: stateHydrated } = useAppState();
   const { scenarios, save, remove, replaceAll: replaceScenarios } = useScenarios();
-  const [activeTab, setActiveTab] = useState<TabKey | "ai">("dre");
+  const [activeTab, setActiveTab] = useState<TabKey | "ai" | "calculadoras">("dre");
   const [simParams, setSimParams] = useState<SimulatorParams>(DEFAULT_SIM);
   const [meetingMode, setMeetingMode] = useState(false);
   // Ticker que força re-render a cada 30s para atualizar o "salvo há X" do breadcrumb.
@@ -205,6 +206,10 @@ function SimulaPro() {
                   simActive={simActive} 
                   simParams={simParams} 
                 />
+              ) : activeTab === "calculadoras" ? (
+                <div className="animate-in fade-in duration-500">
+                  <CalculadorasTab />
+                </div>
               ) : (
                 <div className="space-y-6 animate-in fade-in duration-500">
                   {activeTab === "receitas" && <RevenueTab state={state} update={update} />}

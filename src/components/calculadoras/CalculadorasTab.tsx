@@ -1,4 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+/**
+ * Aba "Calculadoras" — agrupa todas as calculadoras financeiras/trabalhistas
+ * em sub-abas, renderizada dentro do shell do FinnancePRO (sidebar/header/footer).
+ */
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustoFuncionarioCalc } from "@/components/calculadoras/CustoFuncionarioCalc";
 import { RescisaoCltCalc } from "@/components/calculadoras/RescisaoCltCalc";
@@ -9,19 +12,9 @@ import { SacVsPriceCalc } from "@/components/calculadoras/SacVsPriceCalc";
 import { JurosCompostosCalc } from "@/components/calculadoras/JurosCompostosCalc";
 import { IndependenciaCalc } from "@/components/calculadoras/IndependenciaCalc";
 
-export const Route = createFileRoute("/calculadoras")({
-  head: () => ({
-    meta: [
-      { title: "Calculadoras — GZ FinnancePRO" },
-      { name: "description", content: "Calculadoras financeiras: custo de funcionário, pró-labore, rescisão e mais." },
-    ],
-  }),
-  component: CalculadorasPage,
-});
-
-function CalculadorasPage() {
+export function CalculadorasTab() {
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8">
+    <div className="w-full">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Calculadoras</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -41,30 +34,14 @@ function CalculadorasPage() {
           <TabsTrigger value="independencia">Independência</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="custo-funcionario">
-          <CustoFuncionarioCalc />
-        </TabsContent>
-        <TabsContent value="rescisao">
-          <RescisaoCltCalc />
-        </TabsContent>
-        <TabsContent value="clt-vs-pj">
-          <CltVsPjCalc />
-        </TabsContent>
-        <TabsContent value="salario-liquido">
-          <SalarioLiquidoCalc />
-        </TabsContent>
-        <TabsContent value="horas-extras">
-          <HorasExtrasCalc />
-        </TabsContent>
-        <TabsContent value="sac-vs-price">
-          <SacVsPriceCalc />
-        </TabsContent>
-        <TabsContent value="juros-compostos">
-          <JurosCompostosCalc />
-        </TabsContent>
-        <TabsContent value="independencia">
-          <IndependenciaCalc />
-        </TabsContent>
+        <TabsContent value="custo-funcionario"><CustoFuncionarioCalc /></TabsContent>
+        <TabsContent value="rescisao"><RescisaoCltCalc /></TabsContent>
+        <TabsContent value="clt-vs-pj"><CltVsPjCalc /></TabsContent>
+        <TabsContent value="salario-liquido"><SalarioLiquidoCalc /></TabsContent>
+        <TabsContent value="horas-extras"><HorasExtrasCalc /></TabsContent>
+        <TabsContent value="sac-vs-price"><SacVsPriceCalc /></TabsContent>
+        <TabsContent value="juros-compostos"><JurosCompostosCalc /></TabsContent>
+        <TabsContent value="independencia"><IndependenciaCalc /></TabsContent>
       </Tabs>
     </div>
   );

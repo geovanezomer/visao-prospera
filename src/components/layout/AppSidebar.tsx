@@ -15,7 +15,7 @@ import { useEffect } from "react";
 
 
 import { Activity, LogOut, Building2, Factory, Store, Briefcase, Users, Save, FolderOpen, Calculator } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+
 import { NAV_ITEMS } from "./nav-config";
 import { TabKey, BusinessType, AppState } from "@/lib/finance/types";
 import { useAuth } from "@/lib/auth";
@@ -26,8 +26,8 @@ import { cn } from "@/lib/utils";
 
 
 interface AppSidebarProps {
-  activeTab: TabKey | "ai";
-  setActiveTab: (tab: TabKey | "ai") => void;
+  activeTab: TabKey | "ai" | "calculadoras";
+  setActiveTab: (tab: TabKey | "ai" | "calculadoras") => void;
   state: AppState;
   update: (patch: Partial<AppState> | ((s: AppState) => AppState)) => void;
   onSave: () => void;
@@ -97,14 +97,21 @@ export function AppSidebar({ activeTab, setActiveTab, state, update, onSave, onO
             <li className="my-1 border-t border-sidebar-border/50" aria-hidden="true" />
             <SidebarMenuItem>
               <SidebarMenuButton
-                asChild
+                isActive={activeTab === "calculadoras"}
+                onClick={() => {
+                  setActiveTab("calculadoras");
+                  setOpenMobile(false);
+                }}
                 tooltip="Calculadoras"
-                className="h-7 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                className={cn(
+                  "h-7 transition-colors",
+                  activeTab === "calculadoras"
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                )}
               >
-                <Link to="/calculadoras" onClick={() => setOpenMobile(false)}>
-                  <Calculator className="h-4 w-4" />
-                  <span>Calculadoras</span>
-                </Link>
+                <Calculator className="h-4 w-4" />
+                <span>Calculadoras</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
