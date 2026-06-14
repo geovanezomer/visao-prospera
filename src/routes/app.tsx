@@ -60,9 +60,36 @@ export const Route = createFileRoute("/app")({
 function SimulaPro() {
   const { user, hydrated } = useAuth();
   const navigate = useNavigate();
+  // Gate de assinatura: bloqueia acesso ao app se o usuário não tiver plano ativo.
+  const [subChecked, setSubChecked] = useState(false);
 
   useEffect(() => {
-    if (hydrated && !user) navigate({ to: "/login" });
+    if (!hydrated) return;
+    if (!user) {
+      navigate({ to: "/login" });
+      return;
+    }
+    // Importa dinamicamente para evitar bundling do server-fn helper no SSR inicial.
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getMySubscription } = await import("@/lib/subscription.functions");
+        const sub = await getMySubscription();
+        if (cancelled) return;
+        if (!sub.active) {
+          navigate({ to: "/planos" });
+          return;
+        }
+        setSubChecked(true);
+      } catch (err) {
+        console.error("Falha ao verificar assinatura:", err);
+        // Em caso de falha de rede, libera o app (failsafe pra não travar usuário pagante)
+        if (!cancelled) setSubChecked(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [hydrated, user, navigate]);
 
   const { state, update, reset, setState, hydrated: stateHydrated, autosaveStatus } = useAppState();
