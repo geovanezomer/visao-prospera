@@ -57,6 +57,9 @@ function CalculadorasPage() {
         <TabsContent value="sac-vs-price">
           <SacVsPriceCalc />
         </TabsContent>
+        <TabsContent value="juros-compostos">
+          <JurosCompostosCalc />
+        </TabsContent>
       </Tabs>
     </div>
   );
