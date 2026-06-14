@@ -1,14 +1,14 @@
 import { 
   LayoutDashboard, 
   Receipt, 
-  PiggyBank, 
+  ReceiptText,
   Gavel, 
   Wallet, 
   ShieldCheck, 
   FileSpreadsheet, 
   Search, 
   Wand2, 
-  Presentation,
+  BarChart3,
   Bot,
   Activity
 } from "lucide-react";
@@ -22,9 +22,9 @@ export type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { title: "Receitas", icon: Receipt, value: "receitas" },
-  { title: "Despesas", icon: PiggyBank, value: "custos" },
+  { title: "Despesas", icon: ReceiptText, value: "custos" },
   { title: "Capital", icon: Wallet, value: "capital" },
-  { title: "Fluxo de Caixa", icon: Presentation, value: "caixa" },
+  { title: "Fluxo de Caixa", icon: BarChart3, value: "caixa" },
   { title: "Regime Tributário", icon: Gavel, value: "tributos" },
   { title: "Indicadores", icon: Activity, value: "indicadores" },
   { title: "DRE", icon: FileSpreadsheet, value: "dre" },
