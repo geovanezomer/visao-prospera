@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, Scenario } from "./types";
-import { DEFAULT_STATE, migrateState } from "./defaults";
+import { DEFAULT_STATE, migrateState, validateAndMigrate } from "./defaults";
 import { useAuth } from "@/lib/auth";
 import { loadKey, saveKey, broadcastChange, onRemoteChange } from "./persistence";
 
