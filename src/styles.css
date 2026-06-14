@@ -112,8 +112,12 @@
 
 /* ===== MODO REUNIÃO / APRESENTAÇÃO ===== */
 .meeting-mode { font-size: 17px; }
-.meeting-mode [data-sidebar="sidebar"],
 .meeting-mode [data-meeting-hide="true"] { display: none !important; }
+/* Esconde toda a sidebar (wrapper + spacer fixo) e zera a largura reservada */
+.meeting-mode .group.peer { display: none !important; }
+.meeting-mode { --sidebar-width: 0px; --sidebar-width-icon: 0px; }
+.meeting-mode main { max-width: 100% !important; }
+.meeting-mode main > div { max-width: 100% !important; }
 .meeting-mode header.sticky { background: var(--color-background) !important; backdrop-filter: none; }
 .meeting-mode .mono, .meeting-mode .num { font-size: 1.05em; }
 .meeting-mode main { padding-top: 0.5rem; }
