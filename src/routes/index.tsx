@@ -106,12 +106,8 @@ function SimulaPro() {
           }} 
           state={state} 
           update={update}
-          meetingMode={meetingMode}
-          setMeetingMode={setMeetingMode}
           onSave={fileApi.save}
           onOpen={fileApi.open}
-          onNew={fileApi.newFile}
-          onExportPdf={exportPdf}
           currentFileName={fileApi.currentFileName}
           dirty={fileApi.dirty}
         />
