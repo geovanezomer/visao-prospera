@@ -172,25 +172,8 @@ export function useFinnanceFile({
     }
   }, [dirty, setState, replaceScenarios, askConfirm]);
 
-  const newFile = useCallback(async () => {
-    if (dirty) {
-      const ok = await askConfirm({
-        title: "Começar um novo arquivo?",
-        description: "Você tem alterações não salvas. Deseja descartá-las e começar do zero?",
-        confirmLabel: "Descartar e criar novo",
-        destructive: true,
-      });
-      if (!ok) return;
-    }
-    resetState();
-    replaceScenarios([]);
-    setCurrentFileName(null);
-    // Snapshot só será recalculado no próximo efeito; força reset agora.
-    lastSavedSnapshot.current = "";
-    setDirty(false);
-    setLastModified(null);
-    toast.success("Novo arquivo criado");
-  }, [dirty, resetState, replaceScenarios, askConfirm]);
+  // (removido: newFile — botão "Novo" foi descontinuado da UI;
+  // o fluxo padrão é "Abrir" outro arquivo ou usar Reset.)
 
   const resetWithConfirm = useCallback(async () => {
     const ok = await askConfirm({
