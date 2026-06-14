@@ -20,11 +20,13 @@ const fmtCompact = (n: number) => {
 // Status de cor: verde (saudável), amarelo (atenção), vermelho (crítico)
 type Status = "ok" | "warn" | "crit";
 
+// Os tokens do projeto são oklch — usar var() direto (hsl() quebraria a cor)
 const COLORS: Record<Status, string> = {
-  ok: "hsl(var(--success, 142 72% 45%))",
-  warn: "hsl(var(--warning, 38 92% 50%))",
-  crit: "hsl(var(--destructive, 0 84% 60%))",
+  ok: "var(--success)",
+  warn: "var(--warning)",
+  crit: "var(--destructive)",
 };
+
 
 // Faixa cinza para "base" invisível usada na técnica de waterfall com BarChart empilhado
 const BASE_FILL = "transparent";
@@ -257,30 +259,37 @@ export function WaterfallCard({ dre, ind }: { dre: DreLike; ind: IndLike }) {
         </div>
       )}
 
-      <div className="h-[360px] w-full">
+      <div className="h-[380px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={steps} margin={{ top: 24, right: 16, left: 8, bottom: 48 }}>
+          <BarChart data={steps} margin={{ top: 28, right: 16, left: 8, bottom: 56 }}>
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               angle={-25}
               textAnchor="end"
               interval={0}
-              height={60}
+              height={64}
+              tickLine={false}
+              axisLine={{ stroke: "var(--border)" }}
             />
             <YAxis
-              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               tickFormatter={fmtCompact}
-              width={70}
+              width={72}
+              tickLine={false}
+              axisLine={{ stroke: "var(--border)" }}
             />
             <Tooltip
-              cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
+              cursor={{ fill: "color-mix(in oklab, var(--muted) 40%, transparent)" }}
               contentStyle={{
-                background: "hsl(var(--popover))",
-                border: "1px solid hsl(var(--border))",
+                background: "var(--popover)",
+                border: "1px solid var(--border)",
                 borderRadius: 8,
                 fontSize: 12,
+                color: "var(--popover-foreground)",
               }}
+              itemStyle={{ color: "var(--popover-foreground)" }}
+              labelStyle={{ color: "var(--popover-foreground)", fontWeight: 600 }}
               formatter={(_v: number, _k: string, item: { payload?: Step }) => {
                 const p = item?.payload;
                 if (!p) return ["", ""];
@@ -293,18 +302,19 @@ export function WaterfallCard({ dre, ind }: { dre: DreLike; ind: IndLike }) {
             {/* Valor visível, colorido por status */}
             <Bar dataKey="value" stackId="w" isAnimationActive={false} radius={[4, 4, 0, 0]}>
               {steps.map((s, i) => (
-                <Cell key={i} fill={COLORS[s.status]} fillOpacity={s.isTotal ? 1 : 0.85} />
+                <Cell key={i} fill={COLORS[s.status]} fillOpacity={s.isTotal ? 1 : 0.82} />
               ))}
               <LabelList
                 dataKey="raw"
                 position="top"
                 formatter={(v: number) => fmtCompact(v)}
-                style={{ fontSize: 10, fill: "hsl(var(--foreground))", fontWeight: 600 }}
+                style={{ fontSize: 10, fill: "var(--foreground)", fontWeight: 600 }}
               />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
+
 
       <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
