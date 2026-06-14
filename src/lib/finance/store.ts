@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, Scenario } from "./types";
 import { DEFAULT_STATE, migrateState } from "./defaults";
 import { useAuth } from "@/lib/auth";
+import { loadKey, saveKey, broadcastChange, onRemoteChange } from "./persistence";
 
 const stateKey = (u: string) => `gzfp:state:${u}`;
 const scenKey = (u: string) => `gzfp:scenarios:${u}`;
@@ -10,12 +11,10 @@ const scenKey = (u: string) => `gzfp:scenarios:${u}`;
 const LEGACY_STATE = ["simulapro:state:v2", "simulapro:state:v1"];
 const LEGACY_SCEN = ["simulapro:scenarios:v2", "simulapro:scenarios:v1"];
 
-function readFirst(keys: string[]): string | null {
+async function readFirstAsync<T>(keys: string[]): Promise<T | null> {
   for (const k of keys) {
-    try {
-      const v = localStorage.getItem(k);
-      if (v) return v;
-    } catch {}
+    const v = await loadKey<T>(k);
+    if (v != null) return v;
   }
   return null;
 }
@@ -25,20 +24,19 @@ export function useAppState() {
   const username = user?.id ?? "guest";
   const [state, setState] = useState<AppState>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
-  // Garante que só salvamos no localStorage do usuário que foi efetivamente
-  // hidratado — evita race ao trocar de sessão (estado do user A escrito
-  // na key do user B antes da hidratação do B rodar).
+  // Evita race ao trocar de sessão (estado do user A escrito na key do user B).
   const hydratedFor = useRef<string | null>(null);
+  // Suprime salvamento quando o estado foi recebido via broadcast de outra aba.
+  const suppressSave = useRef(false);
 
-  // Re-hydrate whenever the logged-in user changes.
-  useEffect(() => {
+  const hydrate = useCallback(async () => {
     setHydrated(false);
     hydratedFor.current = null;
     try {
-      const raw = localStorage.getItem(stateKey(username)) ?? readFirst(LEGACY_STATE);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setState(migrateState({ ...DEFAULT_STATE, ...parsed }));
+      const stored = await loadKey<Partial<AppState>>(stateKey(username));
+      const fromLegacy = stored ?? (await readFirstAsync<Partial<AppState>>(LEGACY_STATE));
+      if (fromLegacy) {
+        setState(migrateState({ ...DEFAULT_STATE, ...fromLegacy }));
       } else {
         setState(DEFAULT_STATE);
       }
@@ -50,16 +48,33 @@ export function useAppState() {
   }, [username]);
 
   useEffect(() => {
-    if (!hydrated) return;
-    if (hydratedFor.current !== username) return;
-    try { localStorage.setItem(stateKey(username), JSON.stringify(state)); } catch {}
+    void hydrate();
+  }, [hydrate]);
+
+  useEffect(() => {
+    if (!hydrated || hydratedFor.current !== username) return;
+    if (suppressSave.current) {
+      suppressSave.current = false;
+      return;
+    }
+    void saveKey(stateKey(username), state).then(() => broadcastChange(stateKey(username)));
   }, [state, hydrated, username]);
+
+  // Sincroniza com outras abas
+  useEffect(() => {
+    return onRemoteChange(async (key) => {
+      if (key !== stateKey(username)) return;
+      const fresh = await loadKey<Partial<AppState>>(key);
+      if (fresh) {
+        suppressSave.current = true;
+        setState(migrateState({ ...DEFAULT_STATE, ...fresh }));
+      }
+    });
+  }, [username]);
 
   // SSOT: TODO patch passa por migrateState — sanitiza Months[12],
   // normaliza valores inválidos (NaN/Infinity/strings) e garante a
-  // invariante de tipos antes de salvar no localStorage. Substitui a
-  // necessidade de um schema Zod completo para AppState (que tem 100+
-  // campos aninhados) sem perder a proteção contra dados corrompidos.
+  // invariante de tipos antes de salvar.
   const update = useCallback((patch: Partial<AppState> | ((s: AppState) => AppState)) => {
     setState((s) => {
       const next = typeof patch === "function" ? patch(s) : { ...s, ...patch };
@@ -77,22 +92,40 @@ export function useScenarios() {
   const username = user?.id ?? "guest";
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const suppressSave = useRef(false);
 
   useEffect(() => {
-    setHydrated(false);
-    try {
-      const raw = localStorage.getItem(scenKey(username)) ?? readFirst(LEGACY_SCEN);
-      setScenarios(raw ? JSON.parse(raw) : []);
-    } catch {
-      setScenarios([]);
-    }
-    setHydrated(true);
+    let cancelled = false;
+    (async () => {
+      setHydrated(false);
+      try {
+        const stored = await loadKey<Scenario[]>(scenKey(username));
+        const fromLegacy = stored ?? (await readFirstAsync<Scenario[]>(LEGACY_SCEN));
+        if (!cancelled) setScenarios(fromLegacy ?? []);
+      } catch {
+        if (!cancelled) setScenarios([]);
+      }
+      if (!cancelled) setHydrated(true);
+    })();
+    return () => { cancelled = true; };
   }, [username]);
 
   useEffect(() => {
     if (!hydrated) return;
-    try { localStorage.setItem(scenKey(username), JSON.stringify(scenarios)); } catch {}
+    if (suppressSave.current) { suppressSave.current = false; return; }
+    void saveKey(scenKey(username), scenarios).then(() => broadcastChange(scenKey(username)));
   }, [scenarios, hydrated, username]);
+
+  useEffect(() => {
+    return onRemoteChange(async (key) => {
+      if (key !== scenKey(username)) return;
+      const fresh = await loadKey<Scenario[]>(key);
+      if (fresh) {
+        suppressSave.current = true;
+        setScenarios(fresh);
+      }
+    });
+  }, [username]);
 
   const save = (name: string, state: AppState) => {
     setScenarios((arr) => {
