@@ -49,13 +49,22 @@ function SimulaPro() {
     if (hydrated && !user) navigate({ to: "/login" });
   }, [hydrated, user, navigate]);
 
-  const { state, update, reset, setState } = useAppState();
-  const { scenarios, save, remove } = useScenarios();
+  const { state, update, reset, setState, hydrated: stateHydrated } = useAppState();
+  const { scenarios, save, remove, replaceAll: replaceScenarios } = useScenarios();
   const [activeTab, setActiveTab] = useState<TabKey | "ai">("dre");
   const [simParams, setSimParams] = useState<SimulatorParams>(DEFAULT_SIM);
   const [meetingMode, setMeetingMode] = useState(false);
   const simulatedState = useMemo(() => applySimulator(state, simParams), [state, simParams]);
   const simActive = countActiveLevers(simParams);
+
+  const fileApi = useFinnanceFile({
+    state,
+    scenarios,
+    setState,
+    replaceScenarios,
+    resetState: reset,
+    hydrated: stateHydrated,
+  });
 
   useEffect(() => {
     const root = document.documentElement;
@@ -75,7 +84,7 @@ function SimulaPro() {
     return <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">Carregando…</div>;
   }
 
-  const exportReport = () => {
+  const exportPdf = () => {
     window.print();
   };
 
@@ -95,8 +104,14 @@ function SimulaPro() {
           update={update}
           meetingMode={meetingMode}
           setMeetingMode={setMeetingMode}
-          onExport={exportReport}
+          onSave={fileApi.save}
+          onOpen={fileApi.open}
+          onNew={fileApi.newFile}
+          onExportPdf={exportPdf}
+          currentFileName={fileApi.currentFileName}
+          dirty={fileApi.dirty}
         />
+
 
         
         <SidebarInset className="flex flex-col">
