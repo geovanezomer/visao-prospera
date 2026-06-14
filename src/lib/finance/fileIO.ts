@@ -22,6 +22,7 @@ export function downloadFinnanceFile(payload: FinnanceFile, filename: string): v
 export function pickFinnanceFile(): Promise<{
   state: AppState;
   scenarios: Scenario[];
+  extras: { actions: unknown[]; simScenarios: unknown[] };
   file: FinnanceFile;
   filename: string;
 }> {

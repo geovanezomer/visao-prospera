@@ -25,6 +25,14 @@ export const FinnanceFileSchema = z.object({
   app: z.object({ name: z.string(), version: z.string().optional() }).optional(),
   state: z.record(z.string(), z.any()),
   scenarios: z.array(ScenarioSchema).default([]),
+  // Dados auxiliares persistidos por empresa: cenários do simulador e plano
+  // de ação. Schema permissivo — validação efetiva acontece nos serviços.
+  extras: z
+    .object({
+      actions: z.array(z.record(z.string(), z.any())).optional(),
+      simScenarios: z.array(z.record(z.string(), z.any())).optional(),
+    })
+    .optional(),
   meta: z
     .object({
       companyName: z.string().optional(),
@@ -32,6 +40,8 @@ export const FinnanceFileSchema = z.object({
       taxRegime: z.string().optional(),
       numColaboradores: z.number().optional(),
       scenarioCount: z.number().optional(),
+      actionCount: z.number().optional(),
+      simScenarioCount: z.number().optional(),
       sections: z.array(z.string()).optional(),
       notes: z.string().optional(),
     })
@@ -41,14 +51,20 @@ export const FinnanceFileSchema = z.object({
 export type FinnanceFile = z.infer<typeof FinnanceFileSchema>;
 
 /**
- * Serializa o estado completo + cenários no envelope .finnance.
+ * Serializa o estado completo + cenários + extras no envelope .finnance.
  * Inclui automaticamente TODAS as seções do app, pois o AppState agrega:
  *  - Configurações Rápidas: companyName, businessType, numColaboradores, tax
  *  - Receitas (revenue), Despesas (costs), Capital (capital)
  *  - Regime Tributário (tax — regime, alíquotas, ISS, Simples, etc.)
  *  - Governança (strategic) e Fluxo de Caixa (cashflow)
+ * `extras` (opcional) carrega cenários do simulador e plano de ação, que
+ * são persistidos por empresa fora do AppState.
  */
-export function serialize(state: AppState, scenarios: Scenario[]): FinnanceFile {
+export function serialize(
+  state: AppState,
+  scenarios: Scenario[],
+  extras?: { actions?: unknown[]; simScenarios?: unknown[] },
+): FinnanceFile {
   return {
     type: FINNANCE_FILE_TYPE,
     version: FINNANCE_FILE_VERSION,
@@ -57,13 +73,20 @@ export function serialize(state: AppState, scenarios: Scenario[]): FinnanceFile 
     app: { name: "FinancePRO", version: "1.x" },
     state: state as unknown as Record<string, unknown>,
     scenarios,
+    extras: extras
+      ? {
+          actions: (extras.actions as Record<string, unknown>[] | undefined) ?? [],
+          simScenarios: (extras.simScenarios as Record<string, unknown>[] | undefined) ?? [],
+        }
+      : undefined,
     meta: {
       companyName: state.companyName,
       businessType: state.businessType,
       taxRegime: state.tax?.regime,
       numColaboradores: state.numColaboradores,
       scenarioCount: scenarios.length,
-      // Snapshot legível das seções cobertas — facilita auditoria do arquivo.
+      actionCount: extras?.actions?.length ?? 0,
+      simScenarioCount: extras?.simScenarios?.length ?? 0,
       sections: [
         "configuracoes-rapidas",
         "receitas",
@@ -72,6 +95,8 @@ export function serialize(state: AppState, scenarios: Scenario[]): FinnanceFile 
         "tributos",
         "caixa",
         "governanca",
+        "acoes",
+        "cenarios-simulador",
       ],
     },
   };
@@ -94,6 +119,7 @@ function migrateFile(raw: unknown): unknown {
 export function parseFinnanceFile(raw: unknown): {
   state: AppState;
   scenarios: Scenario[];
+  extras: { actions: unknown[]; simScenarios: unknown[] };
   file: FinnanceFile;
 } {
   const migrated = migrateFile(raw);
@@ -106,7 +132,11 @@ export function parseFinnanceFile(raw: unknown): {
     ...sc,
     state: migrateState({ ...DEFAULT_STATE, ...(sc.state as Partial<AppState>) }),
   })) as Scenario[];
-  return { state, scenarios, file: parsed };
+  const extras = {
+    actions: parsed.extras?.actions ?? [],
+    simScenarios: parsed.extras?.simScenarios ?? [],
+  };
+  return { state, scenarios, extras, file: parsed };
 }
 
 /** Remove caracteres inválidos para nome de arquivo cross-OS. */
