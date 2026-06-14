@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAppState, useScenarios } from "@/lib/finance/store";
+import { useFinnanceFile } from "@/lib/finance/useFinnanceFile";
 import { useAuth } from "@/lib/auth";
 import { TabsContent } from "@/components/ui/tabs";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
