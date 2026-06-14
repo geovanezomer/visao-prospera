@@ -187,14 +187,15 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <div className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
-            {(["anual", "mensal"] as const).map((v) => (
+            {(["anual", "trimestral", "mensal"] as const).map((v) => (
               <button key={v} onClick={() => setView(v)}
                 className={`rounded px-3 py-1 text-xs transition-all ${view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"} ${v === "mensal" ? "hidden lg:block" : ""}`}>
-                {v === "anual" ? "Anual" : "Mensal"}
+                {v === "anual" ? "Anual" : v === "trimestral" ? "Trimestral" : "Mensal"}
               </button>
             ))}
 
           </div>
+
           {/* Seleção de regime fica na aba Tributário — aqui apenas refletimos o regime ativo abaixo. */}
         </div>
         <div className="text-xs text-muted-foreground">
