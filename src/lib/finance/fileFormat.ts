@@ -119,6 +119,7 @@ function migrateFile(raw: unknown): unknown {
 export function parseFinnanceFile(raw: unknown): {
   state: AppState;
   scenarios: Scenario[];
+  extras: { actions: unknown[]; simScenarios: unknown[] };
   file: FinnanceFile;
 } {
   const migrated = migrateFile(raw);
@@ -131,7 +132,11 @@ export function parseFinnanceFile(raw: unknown): {
     ...sc,
     state: migrateState({ ...DEFAULT_STATE, ...(sc.state as Partial<AppState>) }),
   })) as Scenario[];
-  return { state, scenarios, file: parsed };
+  const extras = {
+    actions: parsed.extras?.actions ?? [],
+    simScenarios: parsed.extras?.simScenarios ?? [],
+  };
+  return { state, scenarios, extras, file: parsed };
 }
 
 /** Remove caracteres inválidos para nome de arquivo cross-OS. */
