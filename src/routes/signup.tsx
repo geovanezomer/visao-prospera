@@ -40,8 +40,11 @@ function SignupPage() {
 
   // Já logado? Vai direto pro fluxo (planos ou /app)
   useEffect(() => {
-    if (hydrated && user) {
-      navigate({ to: preselectedPlan ? "/planos" : "/app", search: preselectedPlan ? { plan: preselectedPlan } : undefined });
+    if (!hydrated || !user) return;
+    if (preselectedPlan) {
+      navigate({ to: "/planos", search: { plan: preselectedPlan } });
+    } else {
+      navigate({ to: "/app" });
     }
   }, [hydrated, user, navigate, preselectedPlan]);
 
