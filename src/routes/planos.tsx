@@ -89,10 +89,9 @@ function PlansPage() {
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Sem usuário logado → manda pra cadastro
-  if (hydrated && !user) {
+  // Redireciona usuário não autenticado para o cadastro
+  if (typeof window !== "undefined" && hydrated && !user) {
     navigate({ to: "/signup" });
-    return null;
   }
 
   const handleSelectPlan = async (planId: PlanId) => {
