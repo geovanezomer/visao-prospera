@@ -48,15 +48,34 @@ function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // Já logado? Vai direto pro fluxo (planos ou /app)
+  const checkoutFn = useServerFn(createCheckoutSession);
+
+  // Dispara checkout direto para o plano escolhido (pula a tela /planos).
+  const startCheckout = async (planId: PlanId) => {
+    try {
+      const plan = PLANS_CATALOG[planId];
+      const result = await checkoutFn({
+        data: { priceId: plan.priceId, origin: window.location.origin, environment: getPaymentsEnvironment() },
+      });
+      if ("error" in result) throw new Error(result.error);
+      window.location.href = result.url;
+    } catch (e) {
+      console.error("Erro ao iniciar checkout:", e);
+      setError(e instanceof Error ? e.message : "Não foi possível abrir o checkout.");
+      setLoading(false);
+    }
+  };
+
+  // Já logado? Se tem plano selecionado, vai direto para o checkout; senão /app.
   useEffect(() => {
     if (!hydrated || !user) return;
     if (preselectedPlan) {
-      navigate({ to: "/planos", search: { plan: preselectedPlan } });
+      void startCheckout(preselectedPlan);
     } else {
       navigate({ to: "/app" });
     }
-  }, [hydrated, user, navigate, preselectedPlan]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, user, preselectedPlan]);
 
   const planInfo: PlanId | null = preselectedPlan ?? null;
 
@@ -71,22 +90,24 @@ function SignupPage() {
 
     setLoading(true);
     const res = await signup(email, password, displayName);
-    setLoading(false);
 
     if (!res.ok) {
+      setLoading(false);
       setError(res.error);
       return;
     }
 
     if (res.needsConfirmation) {
+      setLoading(false);
       setSuccess(true);
       return;
     }
 
-    // Sessão já ativa — manda pra escolha de plano
+    // Sessão já ativa — se tem plano, vai direto pro checkout; senão pra escolha.
     if (planInfo) {
-      navigate({ to: "/planos", search: { plan: planInfo } });
+      await startCheckout(planInfo);
     } else {
+      setLoading(false);
       navigate({ to: "/planos" });
     }
   };
