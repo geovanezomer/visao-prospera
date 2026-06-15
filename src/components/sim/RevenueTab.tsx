@@ -143,9 +143,18 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       const safe = sanitize(v);
       update((s) => ({ ...s, revenue: { ...s.revenue, bruta: s.revenue.bruta.map((x, j) => (j === i ? safe : x)) } }));
     } else if (row.kind === "inadimplencia") {
-      // Agora v é o PERCENTUAL digitado diretamente (0..100). Sem conversão dependente da Bruta.
-      const pct = sanitize(v, { min: 0, max: 100 });
-      update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } }));
+      // Em modo %, v é o percentual digitado. Em modo R$, converte R$→% usando a Bruta do mês.
+      if (inadimpEmBRL) {
+        const brl = sanitize(v);
+        update((s) => {
+          const bruta = s.revenue.bruta[i] || 0;
+          const pct = bruta > 0 ? Math.min(100, (brl / bruta) * 100) : 0;
+          return { ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } };
+        });
+      } else {
+        const pct = sanitize(v, { min: 0, max: 100 });
+        update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } }));
+      }
     } else if (row.kind === "deducao" && row.dedId) {
       const safe = sanitize(v);
       if (row.dedId === "pdd_rec") {
