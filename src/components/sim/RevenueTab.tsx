@@ -71,10 +71,22 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
   const { inadimpBRL, descDed, abatDed, usaPDD, liquidas, brutaAnual, deducoesAnual, liqAnual, monthsWithRevenue, mediaYTD } = derived;
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
 
+  const inadimpModo: "pct" | "brl" = r.inadimplenciaModo ?? "pct";
+  const inadimpEmBRL = inadimpModo === "brl";
+
   const rows: Row[] = [
     { id: "row_bruta", kind: "bruta", unit: "brl", label: "Receita Bruta", values: r.bruta, brlValues: r.bruta, fixed: !!r.brutaFixa, tone: "pos" },
-    // Inadimplência editada DIRETAMENTE em % (evita conversão R$↔% instável quando a Bruta muda).
-    { id: "row_inad", kind: "inadimplencia", unit: "pct", label: "Inadimplência (%)", values: r.inadimplencia, brlValues: inadimpBRL, fixed: !!r.inadimplenciaFixa, tone: "neg" },
+    // Inadimplência pode ser editada em % (padrão) ou em R$ (convertido para % usando a Bruta do mês).
+    {
+      id: "row_inad",
+      kind: "inadimplencia",
+      unit: inadimpEmBRL ? "brl" : "pct",
+      label: inadimpEmBRL ? "Inadimplência (R$)" : "Inadimplência (%)",
+      values: inadimpEmBRL ? inadimpBRL : r.inadimplencia,
+      brlValues: inadimpBRL,
+      fixed: !!r.inadimplenciaFixa,
+      tone: "neg",
+    },
     { id: "row_desc", kind: "deducao", unit: "brl", dedId: "desc_incond", label: "Descontos Incondicionais", values: descDed.valores, brlValues: descDed.valores, fixed: !!descDed.fixed, tone: "neg" },
     { id: "row_abat", kind: "deducao", unit: "brl", dedId: "abatimentos", label: "Abatimentos", values: abatDed.valores, brlValues: abatDed.valores, fixed: !!abatDed.fixed, tone: "neg" },
   ];
