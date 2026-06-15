@@ -271,10 +271,10 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
 
       <SectionBlock
         title="Receita Mensal — 12 meses"
-        hint="Receita Bruta e deduções. A coluna de inadimplência é digitada em %; o valor em R$ aparece no total anual."
+        hint="Receita Bruta e deduções. A inadimplência pode ser digitada em % ou em R$ — internamente é armazenada como % da Bruta para manter consistência com a engine financeira."
         accentClass="border-l-[color:var(--success)]"
       >
-        <div className="flex items-center gap-2 px-4 py-2 bg-accent/20 rounded-md mb-4 mx-2">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 bg-accent/20 rounded-md mb-4 mx-2">
           <label className="text-[11px] text-muted-foreground flex items-center gap-2 cursor-pointer">
             <Switch
               checked={usaPDD}
@@ -284,6 +284,17 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
             <HelpTip
               text="Quando ATIVO: a inadimplência esperada não reduz a Receita Líquida — vira PDD (despesa operacional, abaixo do Lucro Bruto), seguindo CPC 47/IFRS 9. Quando DESATIVO: a inadimplência é deduzida diretamente da Receita Bruta. Em ambos os casos, a base de PIS/COFINS/ISS continua sendo a Receita Bruta — o toggle muda apenas a classificação na DRE."
               formula="PDD líquida = Inadimplência − Recuperação"
+            />
+          </label>
+          <label className="text-[11px] text-muted-foreground flex items-center gap-2 cursor-pointer">
+            <Switch
+              checked={inadimpEmBRL}
+              onCheckedChange={(v) => update((s) => ({ ...s, revenue: { ...s.revenue, inadimplenciaModo: v ? "brl" : "pct" } }))}
+            />
+            Digitar inadimplência em R$
+            <HelpTip
+              text="Quando ATIVO: você informa o valor da inadimplência em reais por mês — o sistema converte automaticamente para % da Receita Bruta do mês (storage interno permanece em %). Quando DESATIVO (padrão): edição direta em %. Não há impacto em cálculos da DRE, fluxo de caixa, impostos ou indicadores — apenas muda a forma de entrada."
+              formula="% mês = R$ inadimplência ÷ Receita Bruta do mês × 100"
             />
           </label>
         </div>
