@@ -173,8 +173,20 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       const safe = sanitize(v);
       update((s) => ({ ...s, revenue: { ...s.revenue, bruta: fill12(safe) } }));
     } else if (row.kind === "inadimplencia") {
-      const pct = sanitize(v, { min: 0, max: 100 });
-      update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: fill12(pct) } }));
+      // Em modo R$: aplica o mesmo valor R$ em todos os meses, recalculando o % conforme a Bruta de cada mês.
+      if (inadimpEmBRL) {
+        const brl = sanitize(v);
+        update((s) => ({
+          ...s,
+          revenue: {
+            ...s.revenue,
+            inadimplencia: s.revenue.bruta.map((b) => (b > 0 ? Math.min(100, (brl / b) * 100) : 0)),
+          },
+        }));
+      } else {
+        const pct = sanitize(v, { min: 0, max: 100 });
+        update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: fill12(pct) } }));
+      }
     } else if (row.kind === "deducao" && row.dedId) {
       const safe = sanitize(v);
       if (row.dedId === "pdd_rec") {
