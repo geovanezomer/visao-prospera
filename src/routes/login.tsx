@@ -27,7 +27,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (hydrated && user) navigate({ to: "/app" });
+    if (hydrated && user) navigate({ to: "/" });
   }, [hydrated, user, navigate]);
 
   const onSubmit = async (e: FormEvent) => {
@@ -40,7 +40,7 @@ function LoginPage() {
       setError(res.error);
       return;
     }
-    navigate({ to: "/app" });
+    navigate({ to: "/" });
   };
 
   return (

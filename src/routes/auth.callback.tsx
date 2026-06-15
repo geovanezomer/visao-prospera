@@ -22,7 +22,7 @@ function AuthCallbackPage() {
   useEffect(() => {
     if (!hydrated) return;
     const t = setTimeout(() => {
-      navigate({ to: user ? "/app" : "/login" });
+      navigate({ to: user ? "/" : "/login" });
     }, 800);
     return () => clearTimeout(t);
   }, [hydrated, user, navigate]);
