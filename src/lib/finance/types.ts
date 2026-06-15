@@ -78,6 +78,8 @@ export interface Revenue {
   brutaFixa?: boolean;
   /** Modo fixo para a linha Inadimplência % (mesmo % nos 12 meses). */
   inadimplenciaFixa?: boolean;
+  /** Modo de edição da inadimplência: "pct" (padrão) ou "brl". Storage é sempre em %. */
+  inadimplenciaModo?: "pct" | "brl";
   /** Receitas Financeiras (rendimentos de aplicações, aluguéis, venda de ativos, etc.). */
   receitasFinanceiras?: RevenueDeducao[];
 }

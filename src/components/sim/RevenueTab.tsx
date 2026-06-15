@@ -71,10 +71,22 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
   const { inadimpBRL, descDed, abatDed, usaPDD, liquidas, brutaAnual, deducoesAnual, liqAnual, monthsWithRevenue, mediaYTD } = derived;
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
 
+  const inadimpModo: "pct" | "brl" = r.inadimplenciaModo ?? "pct";
+  const inadimpEmBRL = inadimpModo === "brl";
+
   const rows: Row[] = [
     { id: "row_bruta", kind: "bruta", unit: "brl", label: "Receita Bruta", values: r.bruta, brlValues: r.bruta, fixed: !!r.brutaFixa, tone: "pos" },
-    // Inadimplência editada DIRETAMENTE em % (evita conversão R$↔% instável quando a Bruta muda).
-    { id: "row_inad", kind: "inadimplencia", unit: "pct", label: "Inadimplência (%)", values: r.inadimplencia, brlValues: inadimpBRL, fixed: !!r.inadimplenciaFixa, tone: "neg" },
+    // Inadimplência pode ser editada em % (padrão) ou em R$ (convertido para % usando a Bruta do mês).
+    {
+      id: "row_inad",
+      kind: "inadimplencia",
+      unit: inadimpEmBRL ? "brl" : "pct",
+      label: inadimpEmBRL ? "Inadimplência (R$)" : "Inadimplência (%)",
+      values: inadimpEmBRL ? inadimpBRL : r.inadimplencia,
+      brlValues: inadimpBRL,
+      fixed: !!r.inadimplenciaFixa,
+      tone: "neg",
+    },
     { id: "row_desc", kind: "deducao", unit: "brl", dedId: "desc_incond", label: "Descontos Incondicionais", values: descDed.valores, brlValues: descDed.valores, fixed: !!descDed.fixed, tone: "neg" },
     { id: "row_abat", kind: "deducao", unit: "brl", dedId: "abatimentos", label: "Abatimentos", values: abatDed.valores, brlValues: abatDed.valores, fixed: !!abatDed.fixed, tone: "neg" },
   ];
@@ -131,9 +143,18 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       const safe = sanitize(v);
       update((s) => ({ ...s, revenue: { ...s.revenue, bruta: s.revenue.bruta.map((x, j) => (j === i ? safe : x)) } }));
     } else if (row.kind === "inadimplencia") {
-      // Agora v é o PERCENTUAL digitado diretamente (0..100). Sem conversão dependente da Bruta.
-      const pct = sanitize(v, { min: 0, max: 100 });
-      update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } }));
+      // Em modo %, v é o percentual digitado. Em modo R$, converte R$→% usando a Bruta do mês.
+      if (inadimpEmBRL) {
+        const brl = sanitize(v);
+        update((s) => {
+          const bruta = s.revenue.bruta[i] || 0;
+          const pct = bruta > 0 ? Math.min(100, (brl / bruta) * 100) : 0;
+          return { ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } };
+        });
+      } else {
+        const pct = sanitize(v, { min: 0, max: 100 });
+        update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } }));
+      }
     } else if (row.kind === "deducao" && row.dedId) {
       const safe = sanitize(v);
       if (row.dedId === "pdd_rec") {
@@ -152,8 +173,20 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
       const safe = sanitize(v);
       update((s) => ({ ...s, revenue: { ...s.revenue, bruta: fill12(safe) } }));
     } else if (row.kind === "inadimplencia") {
-      const pct = sanitize(v, { min: 0, max: 100 });
-      update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: fill12(pct) } }));
+      // Em modo R$: aplica o mesmo valor R$ em todos os meses, recalculando o % conforme a Bruta de cada mês.
+      if (inadimpEmBRL) {
+        const brl = sanitize(v);
+        update((s) => ({
+          ...s,
+          revenue: {
+            ...s.revenue,
+            inadimplencia: s.revenue.bruta.map((b) => (b > 0 ? Math.min(100, (brl / b) * 100) : 0)),
+          },
+        }));
+      } else {
+        const pct = sanitize(v, { min: 0, max: 100 });
+        update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: fill12(pct) } }));
+      }
     } else if (row.kind === "deducao" && row.dedId) {
       const safe = sanitize(v);
       if (row.dedId === "pdd_rec") {
@@ -238,10 +271,10 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
 
       <SectionBlock
         title="Receita Mensal — 12 meses"
-        hint="Receita Bruta e deduções. A coluna de inadimplência é digitada em %; o valor em R$ aparece no total anual."
+        hint="Receita Bruta e deduções. A inadimplência pode ser digitada em % ou em R$ — internamente é armazenada como % da Bruta para manter consistência com a engine financeira."
         accentClass="border-l-[color:var(--success)]"
       >
-        <div className="flex items-center gap-2 px-4 py-2 bg-accent/20 rounded-md mb-4 mx-2">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 bg-accent/20 rounded-md mb-4 mx-2">
           <label className="text-[11px] text-muted-foreground flex items-center gap-2 cursor-pointer">
             <Switch
               checked={usaPDD}
@@ -251,6 +284,17 @@ export function RevenueTab({ state, update }: { state: AppState; update: (p: Par
             <HelpTip
               text="Quando ATIVO: a inadimplência esperada não reduz a Receita Líquida — vira PDD (despesa operacional, abaixo do Lucro Bruto), seguindo CPC 47/IFRS 9. Quando DESATIVO: a inadimplência é deduzida diretamente da Receita Bruta. Em ambos os casos, a base de PIS/COFINS/ISS continua sendo a Receita Bruta — o toggle muda apenas a classificação na DRE."
               formula="PDD líquida = Inadimplência − Recuperação"
+            />
+          </label>
+          <label className="text-[11px] text-muted-foreground flex items-center gap-2 cursor-pointer">
+            <Switch
+              checked={inadimpEmBRL}
+              onCheckedChange={(v) => update((s) => ({ ...s, revenue: { ...s.revenue, inadimplenciaModo: v ? "brl" : "pct" } }))}
+            />
+            Digitar inadimplência em R$
+            <HelpTip
+              text="Quando ATIVO: você informa o valor da inadimplência em reais por mês — o sistema converte automaticamente para % da Receita Bruta do mês (storage interno permanece em %). Quando DESATIVO (padrão): edição direta em %. Não há impacto em cálculos da DRE, fluxo de caixa, impostos ou indicadores — apenas muda a forma de entrada."
+              formula="% mês = R$ inadimplência ÷ Receita Bruta do mês × 100"
             />
           </label>
         </div>
