@@ -159,6 +159,35 @@ function sanitizeConfig(input: unknown): AIConfig {
   };
 }
 
+function sanitizeThreads(input: unknown): ChatThread[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .filter(isRecord)
+    .map((t) => ({
+      id: stringOr(t.id, ""),
+      title: stringOr(t.title, "Conversa principal"),
+      createdAt: finiteOr(t.createdAt, Date.now()),
+      updatedAt: finiteOr(t.updatedAt, Date.now()),
+    }))
+    .filter((t) => t.id);
+}
+
+function sanitizeMessages(input: unknown): ChatMessage[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .filter(isRecord)
+    .map((m) => {
+      const role = m.role === "user" || m.role === "assistant" || m.role === "tool" ? m.role : "assistant";
+      return {
+        role,
+        content: stringOr(m.content, ""),
+        ts: finiteOr(m.ts, Date.now()),
+        toolName: typeof m.toolName === "string" ? m.toolName : undefined,
+        attachments: Array.isArray(m.attachments) ? m.attachments as ChatMessage["attachments"] : undefined,
+      } satisfies ChatMessage;
+    });
+}
+
 export function loadConfig(): AIConfig {
   try {
     const raw = localStorage.getItem(CFG_KEY);
@@ -217,7 +246,7 @@ const LEGACY_KEY = (company: string) => `gz-finance-ai-chat-${company || "defaul
 export function loadThreads(company: string): ChatThread[] {
   try {
     const raw = localStorage.getItem(THREADS_KEY(company));
-    if (raw) return JSON.parse(raw);
+    if (raw) return sanitizeThreads(JSON.parse(raw));
     // migração: chave legada -> thread default
     const legacy = localStorage.getItem(LEGACY_KEY(company));
     if (legacy) {
@@ -232,18 +261,18 @@ export function loadThreads(company: string): ChatThread[] {
 }
 
 export function saveThreads(company: string, threads: ChatThread[]) {
-  try { localStorage.setItem(THREADS_KEY(company), JSON.stringify(threads)); } catch {}
+  try { localStorage.setItem(THREADS_KEY(company), JSON.stringify(sanitizeThreads(threads))); } catch {}
 }
 
 export function loadMessages(company: string, tid: string): ChatMessage[] {
   try {
     const raw = localStorage.getItem(MSGS_KEY(company, tid));
-    return raw ? JSON.parse(raw) : [];
+    return raw ? sanitizeMessages(JSON.parse(raw)) : [];
   } catch { return []; }
 }
 
 export function saveMessages(company: string, tid: string, msgs: ChatMessage[]) {
-  try { localStorage.setItem(MSGS_KEY(company, tid), JSON.stringify(msgs.slice(-100))); } catch {}
+  try { localStorage.setItem(MSGS_KEY(company, tid), JSON.stringify(sanitizeMessages(msgs).slice(-100))); } catch {}
 }
 
 export function deleteThread(company: string, tid: string) {
