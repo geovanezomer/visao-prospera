@@ -346,10 +346,12 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
     case "get_comparativo_simulado":
       return sec.comparativo ?? "Nenhum cenário simulado ativo — todas as alavancas estão em 0.";
     case "get_resumo_executivo": {
-      const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-      const ind = calcIndicators(state, dre);
-      const val = buildValuation(state, defaultValuationParams(state.businessType));
-      const health = computeHealth(state);
+      // Reusa cache numérico — evita refazer buildDRE/calcIndicators/buildValuation/computeHealth.
+      const d = sec.data;
+      const dre = d?.dre ?? buildDRE(state, resolveEffectiveRegime(state)).dre;
+      const ind = d?.ind ?? calcIndicators(state, dre);
+      const val = d?.val ?? buildValuation(state, defaultValuationParams(state.businessType));
+      const health = d?.health ?? computeHealth(state);
       return [
         "## Resumo Executivo",
         `- Receita Bruta Anual: ${brl(sum(dre.receitaBruta))}`,
