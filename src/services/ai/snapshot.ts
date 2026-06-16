@@ -473,6 +473,15 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     estrategico: estrLines.join("\n"),
     governanca: govLines.join("\n"),
     comparativo: compLines,
+    // Expõe os números já calculados para que tools como get_resumo_executivo e
+    // get_alertas_criticos não precisem refazer buildDRE/calcIndicators/diagnose.
+    data: {
+      dre,
+      ind,
+      val,
+      health,
+      alerts: dre && ind ? tryRun(() => diagnose(state, dre, ind), []) : [],
+    },
   };
 }
 
