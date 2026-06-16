@@ -277,6 +277,54 @@ function compareSectorMd(state: AppState, sector: SectorBenchmark): string {
   return rows.join("\n");
 }
 
+// === Writers para Forecast e Sensitivity (engines do lib/finance — SSOT com a UI) ===
+function forecastToMarkdown(cfg: ForecastConfig, r: ForecastResult): string {
+  const lines: string[] = [];
+  lines.push(`## Projeção ${cfg.horizonteMeses} meses (engine buildForecast)`);
+  lines.push(`- Crescimento receita: ${cfg.crescimentoMensalPct.toFixed(2)}% a.m. · Inflação fixos: ${cfg.inflacaoFixosAA}% a.a. · Ganho escala CPV: ${cfg.ganhoEscalaCpvAA}% a.a.`);
+  lines.push(`- Step folha: a cada ${cfg.stepReceitaPct}% de receita extra → +${cfg.stepFolhaPct}% folha · Capex inicial: ${brl(cfg.capexInicial)}`);
+  lines.push("");
+  lines.push(`**Acumulado:** Receita ${brl(r.totalReceita)} · EBITDA ${brl(r.totalEbitda)} · Lucro ${brl(r.totalLucro)} · FCL ${brl(r.totalFcl)} · ΔNCG ${brl(r.totalDeltaNcg)}`);
+  lines.push(`**Métricas de retorno:** VPL ${brl(r.vpl)} · TIR ${r.tir != null ? `${r.tir.toFixed(2)}% a.m.` : (r.tirError ?? "n/d")} · Payback ${r.paybackMeses != null ? `${r.paybackMeses} meses` : "não recuperado"} · Taxa desconto ${(r.taxaDescontoMensal * 100).toFixed(2)}% a.m.`);
+  // Resumo anual
+  const yearly: { ano: number; receita: number; ebitda: number; fcl: number }[] = [];
+  for (let y = 0; y * 12 < r.meses.length; y++) {
+    const chunk = r.meses.slice(y * 12, (y + 1) * 12);
+    yearly.push({
+      ano: y + 1,
+      receita: chunk.reduce((s, m) => s + m.receita, 0),
+      ebitda: chunk.reduce((s, m) => s + m.ebitda, 0),
+      fcl: chunk.reduce((s, m) => s + m.fcl, 0),
+    });
+  }
+  lines.push("\n| Ano | Receita | EBITDA | Margem | FCL |\n| --- | --- | --- | --- | --- |");
+  yearly.forEach(y => {
+    const mg = y.receita > 0 ? (y.ebitda / y.receita) * 100 : 0;
+    lines.push(`| ${y.ano} | ${brl(y.receita)} | ${brl(y.ebitda)} | ${mg.toFixed(1)}% | ${brl(y.fcl)} |`);
+  });
+  return lines.join("\n");
+}
+
+function sensitivityToMarkdown(r: SensitivityResult): string {
+  const out: string[] = [];
+  out.push(`## Sensibilidade — ${r.outputLabel} (baseline ${brl(r.baseline)})`);
+  out.push(`_Deltas testados: ${r.deltas.map(d => `${d >= 0 ? "+" : ""}${d}%`).join(", ")}_`);
+  out.push("");
+  out.push(`| Driver | ${r.deltas.map(d => `${d >= 0 ? "+" : ""}${d}%`).join(" | ")} | Elasticidade |`);
+  out.push(`| --- | ${r.deltas.map(() => "---").join(" | ")} | --- |`);
+  r.rows.forEach(row => {
+    const cells = r.deltas.map(d => {
+      const c = row.cells.find(x => x.deltaPct === d);
+      return c ? `${c.pctChange >= 0 ? "+" : ""}${c.pctChange.toFixed(1)}%` : "—";
+    });
+    out.push(`| ${row.label} | ${cells.join(" | ")} | ${row.elasticity.toFixed(2)} |`);
+  });
+  const top = r.rows[0];
+  if (top) out.push(`\n**Maior alavanca:** ${top.label} (elasticidade ${top.elasticity.toFixed(2)}).`);
+  return out.join("\n");
+}
+
+
 export function runTool(name: string, args: any, state: AppState, simulatedState?: AppState, simParams?: SimulatorParams): string | Promise<string> {
   const sec = getSectionsCached(state, simulatedState);
   const company = state.companyName || "default";
