@@ -1,31 +1,19 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Settings, Trash2, Send, Loader2, User, Plus, MessageSquare, Download, Edit2, Sparkles, X, Paperclip } from "lucide-react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { Bot, Settings, Trash2, Send, Loader2, User, Plus, MessageSquare, X, Paperclip } from "lucide-react";
 import { AIConfigDialog } from "./AIConfigDialog";
-import {
-  AIConfig, ChatMessage, ChatThread, createThread, deleteThread, loadConfig, loadMessages,
-  loadThreads, renameThread, saveConfig, saveMessages, saveThreads, touchThread,
-} from "@/services/ai/providers";
-import { chatWithTools, streamChat, type LLMMessage, type ToolCall } from "@/services/ai/client";
-import { buildSnapshot, getSectionsCached } from "@/services/ai/snapshot";
-import { buildLlmMessages } from "@/services/ai/historyUtils";
-import { buildSystemPrompt } from "@/services/ai/systemPrompt";
-import { runTool } from "@/services/ai/tools";
-import { processFile, buildPdfContext, buildVisionMessageContent, confidenceLabel, MAX_FILES_PER_MSG, type ChatAttachment } from "@/services/ai/attachments";
 import type { AppState } from "@/lib/finance/types";
-import { resolveEffectiveRegime } from "@/lib/finance/calculations";
 import type { SimulatorParams } from "@/lib/finance/simulator";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
+import { AuditReport, isAuditReport } from "./AuditReport";
+import { useAIChat } from "@/hooks/useAIChat";
 
 const ReactMarkdown = lazy(() => import("react-markdown") as any);
-import { AuditReport, isAuditReport } from "./AuditReport";
 
 const handleCopy = (s: string) => {
   navigator.clipboard.writeText(s).then(() => toast.success("Copiado"));
 };
-
 
 interface Props {
   state: AppState;
@@ -34,236 +22,31 @@ interface Props {
   simParams?: SimulatorParams;
 }
 
-import { buildDynamicSuggestions } from "@/services/ai/suggestions";
-
 export function AIView({ state, simulatedState, simActive, simParams }: Props) {
-  const [config, setConfig] = useState<AIConfig>(() => loadConfig());
-  const [threads, setThreads] = useState<ChatThread[]>(() => loadThreads(state.companyName));
-  const [activeId, setActiveId] = useState<string>(() => {
-    const ts = loadThreads(state.companyName);
-    return ts[0]?.id ?? "";
-  });
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [streaming, setStreaming] = useState(false);
+  const {
+    config, updateConfig,
+    messages, input, setInput, streaming,
+    attachments, removeAttachment, processingFile,
+    threads, activeId, setActiveId,
+    suggestions, simHasChanges,
+    send, handleFiles,
+    handleNewThread, handleDeleteThread,
+  } = useAIChat({ state, simulatedState, simActive, simParams });
+
   const [configOpen, setConfigOpen] = useState(false);
   const [showThreads, setShowThreads] = useState(false);
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [renameVal, setRenameVal] = useState("");
-  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
-  const [processingFile, setProcessingFile] = useState(false);
-  const [processingMsg, setProcessingMsg] = useState<string>("");
-  const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const ts = loadThreads(state.companyName);
-    if (ts.length === 0) {
-      const t = createThread(state.companyName, "Conversa principal");
-      setThreads([t]);
-      setActiveId(t.id);
-      setMessages([]);
-    } else {
-      setThreads(ts);
-      const cur = ts.find(t => t.id === activeId) ?? ts[0];
-      setActiveId(cur.id);
-      setMessages(loadMessages(state.companyName, cur.id));
-    }
-  }, [state.companyName]);
-
-  useEffect(() => {
-    if (activeId) setMessages(loadMessages(state.companyName, activeId));
-  }, [activeId, state.companyName]);
-
-  useEffect(() => {
-    if (activeId) saveMessages(state.companyName, activeId, messages);
-  }, [messages, state.companyName, activeId]);
-
+  // === Auto-scroll ===
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, streaming]);
 
-  const simHasChanges = !!simActive && simActive > 0;
-  const snapshot = useMemo(() => {
-    if (!config.includeSnapshot || config.useTools) return "";
-    try {
-      getSectionsCached(state, simHasChanges ? simulatedState : undefined);
-      return buildSnapshot(state, simHasChanges ? simulatedState : undefined);
-    } catch { return ""; }
-  }, [state, simulatedState, simHasChanges, config.includeSnapshot, config.useTools]);
-
-  // Contexto runtime: data, empresa, regime efetivo (com downgrade Simples→Presumido).
-  const runtimeContext = useMemo(() => {
-    try {
-      const eff = resolveEffectiveRegime(state);
-      const t = state.tax;
-      const nominal = t.regime;
-      const base = eff !== nominal ? `${eff} (nominal: ${nominal} — downgrade por exceder limite)` : eff;
-      const extra = eff === "simples"
-        ? ` · Anexo ${t.simplesAnexo}, Fator R ${(t.fatorR * 100).toFixed(1)}%`
-        : "";
-      return { companyName: state.companyName, regimeLabel: base + extra };
-    } catch {
-      return { companyName: state.companyName, regimeLabel: state.tax?.regime };
-    }
-  }, [state.companyName, state.tax]);
-
-  // Sugestões dinâmicas baseadas no diagnose() — surfa alertas reais (caixa neg, DSCR, etc).
-  const suggestions = useMemo(() => buildDynamicSuggestions(state), [state]);
-
-  const buildSysPrompt = (auditMode?: boolean) =>
-    buildSystemPrompt({
-      snapshot,
-      includeSnapshot: config.includeSnapshot,
-      useTools: config.useTools,
-      extra: config.extraSystemPrompt,
-      soul: config.soul,
-      skills: config.skills,
-      auditMode,
-      context: runtimeContext,
-    });
-
-  const send = async (text: string, opts?: { auditMode?: boolean; replaceLast?: boolean }) => {
-    const content = text.trim();
-    if ((!content && !opts?.auditMode && attachments.length === 0) || streaming) return;
-    if (!activeId) return;
-
-    const atts = attachments.slice();
-    const pdfCtx = buildPdfContext(atts);
-    const displayContent = content + (pdfCtx ? `\n\n_(📎 ${atts.length} anexo${atts.length > 1 ? "s" : ""})_` : "");
-
-    let history = messages.slice();
-    if (opts?.replaceLast) {
-      while (history.length && history[history.length - 1].role !== "user") history.pop();
-    } else if (content || atts.length) {
-      const userMsg: ChatMessage = {
-        role: "user",
-        content: displayContent,
-        ts: Date.now(),
-        attachments: atts.map(a => ({ name: a.name, type: a.type, size: a.size, error: a.error })),
-      } as ChatMessage;
-      history = [...history, userMsg];
-    }
-
-    setMessages(history);
-    setInput("");
-    setAttachments([]);
-    setStreaming(true);
-    touchThread(state.companyName, activeId);
-
-    const sysPrompt = buildSysPrompt(opts?.auditMode);
-    const ac = new AbortController();
-    abortRef.current = ac;
-
-    const fullUserText = content + pdfCtx;
-    const hasImages = atts.some(a => a.type === "image" && a.dataUrl && !a.error);
-    const lastUserContent = hasImages ? buildVisionMessageContent(fullUserText, atts) : fullUserText;
-
-    const buildLlmHistory = (forTools: boolean): LLMMessage[] =>
-      buildLlmMessages({
-        systemPrompt: sysPrompt,
-        history,
-        forTools,
-        lastUserContent,
-      });
-
-    if (config.useTools) {
-      const llm = buildLlmHistory(true);
-      const collected: ToolCall[] = [];
-      try {
-        const out = await chatWithTools(
-          config,
-          llm,
-          (name, args) => runTool(name, args, state, simHasChanges ? simulatedState : undefined, simParams),
-          {
-            signal: ac.signal,
-            onProgress: (e) => {
-              if (e.type === "tool") {
-                collected.push(e.call);
-                // Toast quando a tool muda o estado (criar_acao, salvar_cenario...).
-                if (e.call.name === "criar_acao") toast.success("Ação adicionada ao plano", { description: "Painel de ações atualizado." });
-                else if (e.call.name === "salvar_cenario") toast.success("Cenário salvo", { description: "Disponível no menu de cenários." });
-                else if (e.call.name === "atualizar_acao") toast.success("Ação atualizada");
-                else if (e.call.name === "deletar_acao") toast.success("Ação removida");
-                setMessages([
-                  ...history,
-                  ...collected.map(c => ({
-                    role: "tool" as const,
-                    content: c.result ?? "",
-                    toolName: c.name,
-                    ts: Date.now(),
-                  })),
-                ]);
-              }
-            },
-          },
-        );
-        setMessages([
-          ...history,
-          ...collected.map(c => ({ role: "tool" as const, content: c.result ?? "", toolName: c.name, ts: Date.now() })),
-          { role: "assistant", content: out.finalText, ts: Date.now() },
-        ]);
-      } catch (e: any) {
-        setMessages([ ...history, { role: "assistant", content: errToMd(e), ts: Date.now() } ]);
-      } finally {
-        setStreaming(false);
-        abortRef.current = null;
-      }
-      return;
-    }
-
-    const llm = buildLlmHistory(false);
-    let acc = "";
-    setMessages([...history, { role: "assistant", content: "", ts: Date.now() }]);
-    try {
-      for await (const delta of streamChat(config, llm, ac.signal)) {
-        acc += delta;
-        setMessages(prev => {
-          const copy = prev.slice();
-          copy[copy.length - 1] = { role: "assistant", content: acc, ts: Date.now() };
-          return copy;
-        });
-      }
-    } catch (e: any) {
-      setMessages(prev => {
-        const copy = prev.slice();
-        copy[copy.length - 1] = {
-          role: "assistant",
-          content: (acc ? acc + "\n\n" : "") + errToMd(e),
-          ts: Date.now(),
-        };
-        return copy;
-      });
-    } finally {
-      setStreaming(false);
-      abortRef.current = null;
-    }
+  const onFilesChange = async (files: FileList | null) => {
+    await handleFiles(files);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
-
-  const handleFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const remaining = MAX_FILES_PER_MSG - attachments.length;
-    if (remaining <= 0) { toast.error(`Máx ${MAX_FILES_PER_MSG} anexos.`); return; }
-    const toProcess = Array.from(files).slice(0, remaining);
-    setProcessingFile(true);
-    try {
-      const results: ChatAttachment[] = [];
-      for (const f of toProcess) {
-        setProcessingMsg(`Lendo ${f.name}…`);
-        const att = await processFile(f, (m) => setProcessingMsg(m));
-        if (att.error) toast.error(`${att.name}: ${att.error}`);
-        results.push(att);
-      }
-      setAttachments(prev => [...prev, ...results]);
-    } finally {
-      setProcessingFile(false);
-      setProcessingMsg("");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  const errToMd = (e: any) => `**Erro:** ${e.message || "Falha desconhecida"}`;
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
@@ -291,11 +74,7 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
       <div className="flex flex-1 overflow-hidden">
         {showThreads && (
           <div className="w-64 border-r border-border/40 bg-card/10 overflow-y-auto p-4 space-y-2">
-            <Button onClick={() => {
-              const t = createThread(state.companyName, `Conversa ${threads.length + 1}`);
-              setThreads([t, ...threads]);
-              setActiveId(t.id);
-            }} variant="outline" className="w-full justify-start gap-2 mb-4">
+            <Button onClick={handleNewThread} variant="outline" className="w-full justify-start gap-2 mb-4">
               <Plus className="h-4 w-4" /> Nova Conversa
             </Button>
             {threads.map(t => (
@@ -304,8 +83,7 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
                 <span className="flex-1 truncate">{t.title}</span>
                 <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" onClick={(e) => {
                   e.stopPropagation();
-                  deleteThread(state.companyName, t.id);
-                  setThreads(threads.filter(x => x.id !== t.id));
+                  handleDeleteThread(t.id);
                 }} />
               </div>
             ))}
@@ -384,7 +162,7 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
                   {attachments.map(a => (
                     <div key={a.id} className="flex items-center gap-1.5 bg-background border border-border/40 rounded-full pl-2.5 pr-1.5 py-1 text-[11px]">
                       <span className="truncate max-w-[120px]">{a.name}</span>
-                      <button onClick={() => setAttachments(prev => prev.filter(x => x.id !== a.id))} className="text-muted-foreground hover:text-destructive">
+                      <button onClick={() => removeAttachment(a.id)} className="text-muted-foreground hover:text-destructive">
                         <X className="h-3 w-3" />
                       </button>
                     </div>
@@ -392,7 +170,7 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
                 </div>
               )}
               <div className="relative flex items-end gap-2 bg-background border border-border/60 rounded-xl px-3 py-2 shadow-inner focus-within:border-primary/50 transition-colors">
-                <input type="file" multiple ref={fileInputRef} className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+                <input type="file" multiple ref={fileInputRef} className="hidden" onChange={(e) => void onFilesChange(e.target.files)} />
                 <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-muted-foreground hover:text-primary" onClick={() => fileInputRef.current?.click()} disabled={processingFile}>
                   {processingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
                 </Button>
@@ -413,7 +191,7 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
         </div>
       </div>
 
-      <AIConfigDialog open={configOpen} onOpenChange={setConfigOpen} config={config} onSave={(c) => { setConfig(c); saveConfig(c); }} />
+      <AIConfigDialog open={configOpen} onOpenChange={setConfigOpen} config={config} onSave={updateConfig} />
     </div>
   );
 }
