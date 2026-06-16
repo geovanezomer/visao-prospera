@@ -119,12 +119,21 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     // Descreve as alavancas simuladas ativas em linguagem natural (ex: "fixos -20%, PMR -5d").
     const describeSim = (): string | undefined => {
       if (!simHasChanges || !simParams) return undefined;
+      const p = simParams;
       const parts: string[] = [];
-      if (simParams.receitaPct) parts.push(`receita ${simParams.receitaPct > 0 ? "+" : ""}${simParams.receitaPct}%`);
-      if (simParams.cpvPct) parts.push(`CPV ${simParams.cpvPct > 0 ? "+" : ""}${simParams.cpvPct}%`);
-      if (simParams.fixosPct) parts.push(`fixos ${simParams.fixosPct > 0 ? "+" : ""}${simParams.fixosPct}%`);
-      if (simParams.pmrDelta) parts.push(`PMR ${simParams.pmrDelta > 0 ? "+" : ""}${simParams.pmrDelta}d`);
-      if (simParams.pmpDelta) parts.push(`PMP ${simParams.pmpDelta > 0 ? "+" : ""}${simParams.pmpDelta}d`);
+      if (p.priceDeltaPct) parts.push(`preço ${p.priceDeltaPct > 0 ? "+" : ""}${p.priceDeltaPct}%`);
+      if (p.volumeDeltaPct) parts.push(`volume ${p.volumeDeltaPct > 0 ? "+" : ""}${p.volumeDeltaPct}%`);
+      if (p.cpvDeltaPct) parts.push(`CPV ${p.cpvDeltaPct > 0 ? "+" : ""}${p.cpvDeltaPct}%`);
+      if (p.payrollDeltaPct) parts.push(`folha ${p.payrollDeltaPct > 0 ? "+" : ""}${p.payrollDeltaPct}%`);
+      if (p.fixedCutPct) parts.push(`fixos ${p.fixedCutPct > 0 ? "-" : "+"}${Math.abs(p.fixedCutPct)}% (top ${p.fixedCutTopN})`);
+      if (p.outsourcePctCpv) parts.push(`terceirizar ${p.outsourcePctCpv}% CPV`);
+      if (p.pmrDeltaDays) parts.push(`PMR ${p.pmrDeltaDays > 0 ? "+" : ""}${p.pmrDeltaDays}d`);
+      if (p.pmpDeltaDays) parts.push(`PMP ${p.pmpDeltaDays > 0 ? "+" : ""}${p.pmpDeltaDays}d`);
+      if (p.antecipPctAm) parts.push(`antecipação ${p.antecipPctAm}% a.m.`);
+      if (p.loanPrincipal) parts.push(`empréstimo R$${p.loanPrincipal.toLocaleString("pt-BR")}`);
+      if (p.debtPaydownPct) parts.push(`quitar ${p.debtPaydownPct}% dívida`);
+      if (p.kdDeltaPp) parts.push(`Kd ${p.kdDeltaPp > 0 ? "+" : ""}${p.kdDeltaPp}p.p.`);
+      if (p.regimeOverride && p.regimeOverride !== "base") parts.push(`regime → ${p.regimeOverride}`);
       return parts.length ? `Simulação ativa (${parts.join(", ")})` : undefined;
     };
     try {
