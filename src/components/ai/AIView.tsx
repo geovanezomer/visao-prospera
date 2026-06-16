@@ -99,6 +99,8 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
       includeSnapshot: config.includeSnapshot,
       useTools: config.useTools,
       extra: config.extraSystemPrompt,
+      soul: config.soul,
+      skills: config.skills,
       auditMode,
     });
 
