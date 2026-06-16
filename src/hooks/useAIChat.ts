@@ -61,6 +61,17 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
   const [processingMsg, setProcessingMsg] = useState<string>("");
   const abortRef = useRef<AbortController | null>(null);
 
+  // Injeta briefing inicial estilo CFO em conversa nova/vazia.
+  const injectBriefingIfEmpty = (companyName: string, threadId: string, currentMsgs: ChatMessage[]) => {
+    if (currentMsgs.length > 0) return currentMsgs;
+    const md = buildOpeningBriefing(state);
+    if (!md) return currentMsgs;
+    const briefingMsg: ChatMessage = { role: "assistant", content: md, ts: Date.now() };
+    const next = [briefingMsg];
+    saveMessages(companyName, threadId, next);
+    return next;
+  };
+
   // === Bootstrap por empresa ===
   useEffect(() => {
     const ts = loadThreads(state.companyName);
@@ -68,19 +79,24 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       const t = createThread(state.companyName, "Conversa principal");
       setThreads([t]);
       setActiveId(t.id);
-      setMessages([]);
+      setMessages(injectBriefingIfEmpty(state.companyName, t.id, []));
     } else {
       setThreads(ts);
       const cur = ts.find(t => t.id === activeId) ?? ts[0];
       setActiveId(cur.id);
-      setMessages(loadMessages(state.companyName, cur.id));
+      const loaded = loadMessages(state.companyName, cur.id);
+      setMessages(injectBriefingIfEmpty(state.companyName, cur.id, loaded));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.companyName]);
 
   // === Carrega msgs ao trocar thread ===
   useEffect(() => {
-    if (activeId) setMessages(loadMessages(state.companyName, activeId));
+    if (activeId) {
+      const loaded = loadMessages(state.companyName, activeId);
+      setMessages(injectBriefingIfEmpty(state.companyName, activeId, loaded));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId, state.companyName]);
 
   // === Persiste msgs ===
