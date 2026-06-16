@@ -89,9 +89,9 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
     if (!config.includeSnapshot || config.useTools) return "";
     try {
       getSectionsCached(state, simHasChanges ? simulatedState : undefined);
-      return buildSnapshot(state, simHasChanges ? simulatedState : undefined, config.maxTokensSnapshot);
+      return buildSnapshot(state, simHasChanges ? simulatedState : undefined);
     } catch { return ""; }
-  }, [state, simulatedState, simHasChanges, config.includeSnapshot, config.useTools, config.maxTokensSnapshot]);
+  }, [state, simulatedState, simHasChanges, config.includeSnapshot, config.useTools]);
 
   const buildSysPrompt = (auditMode?: boolean) =>
     buildSystemPrompt({
