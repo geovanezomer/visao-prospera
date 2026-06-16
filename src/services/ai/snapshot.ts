@@ -30,6 +30,14 @@ export const estimateTokens = (s: string) => Math.ceil(s.length / 4);
 // CAMADAS — cada uma retorna uma string markdown independente
 // ============================================================
 
+export interface SnapshotNumeric {
+  dre: ReturnType<typeof buildDRE>["dre"] | null;
+  ind: ReturnType<typeof calcIndicators> | null;
+  val: ReturnType<typeof buildValuation> | null;
+  health: ReturnType<typeof computeHealth> | null;
+  alerts: ReturnType<typeof diagnose>;
+}
+
 export interface SnapshotSections {
   premissas: string;
   receitas: string;
@@ -46,6 +54,8 @@ export interface SnapshotSections {
   estrategico: string;
   governanca: string;
   comparativo?: string; // estado base vs simulado
+  /** Dados numéricos pré-calculados — reutilizáveis por tools sem recalcular. */
+  data?: SnapshotNumeric;
 }
 
 
@@ -463,6 +473,15 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     estrategico: estrLines.join("\n"),
     governanca: govLines.join("\n"),
     comparativo: compLines,
+    // Expõe os números já calculados para que tools como get_resumo_executivo e
+    // get_alertas_criticos não precisem refazer buildDRE/calcIndicators/diagnose.
+    data: {
+      dre,
+      ind,
+      val,
+      health,
+      alerts: dre && ind ? tryRun(() => diagnose(state, dre, ind), []) : [],
+    },
   };
 }
 

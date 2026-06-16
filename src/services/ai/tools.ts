@@ -6,8 +6,8 @@ import { applySimulator, DEFAULT_SIM, type SimulatorParams } from "@/lib/finance
 import { buildSections, getSectionsCached } from "./snapshot";
 import { findSector, listSectors, rank, type SectorBenchmark } from "@/services/benchmark/sectors";
 import { fetchSerie, getMacroSnapshot, getSerieFormatted, MACRO_SERIES_KEYS, type SerieKey } from "@/services/macro/bcb";
-import { project, projectionToMarkdown, DEFAULT_PROJ } from "@/services/scenarios/projector";
-import { sensitivity, sensitivityToMarkdown, type SensMetric } from "@/services/scenarios/sensitivity";
+import { buildForecast, DEFAULT_FORECAST_CFG, type ForecastConfig, type ForecastResult } from "@/lib/finance/forecast";
+import { runSensitivity, type DriverKey, type OutputKey, type SensitivityResult } from "@/lib/finance/sensitivity";
 import { listScenarios, saveScenario, deleteScenario, getScenario } from "@/services/scenarios/store";
 import { listActions, createAction, updateAction, deleteAction, actionsToMarkdown, type ActionStatus } from "@/services/actions/store";
 import { regimeComparisonToMarkdown, taxAuditToMarkdown } from "@/services/compliance/tax";
@@ -120,27 +120,41 @@ export const TOOLS: ToolDef[] = [
     parameters: { type: "object", properties: { idOuNome: { type: "string" } }, required: ["idOuNome"] },
   },
   {
+    name: "carregar_cenario",
+    description: "Carrega um cenário salvo e aplica suas alavancas no simulador (atualiza a UI). Use quando o consultor disser 'aplique o cenário X' ou 'volte para o cenário Otimista'. Para listar os cenários disponíveis, use listar_cenarios.",
+    parameters: { type: "object", properties: { idOuNome: { type: "string", description: "ID ou nome exato do cenário." } }, required: ["idOuNome"] },
+  },
+  {
     name: "projetar",
-    description: "Projeta receita/EBITDA para N meses com premissas de crescimento.",
+    description: "Projeção plurianual estruturada (mesmo engine da aba Análise — buildForecast). Gera receita/EBITDA/Lucro/FCL/NCG mês-a-mês com escalonamento de folha por step, ganho de escala no CPV e cálculo de VPL/TIR/Payback. Use quando o consultor pedir 'projete os próximos N meses' ou 'qual o VPL desse projeto?'.",
     parameters: {
       type: "object",
       properties: {
-        meses: { type: "number", description: "12, 24, 36 ou 60." },
-        crescReceitaMensalPct: { type: "number" },
-        inflVariavelMensalPct: { type: "number" },
-        inflFixoMensalPct: { type: "number" },
-        margemEbitdaAlvoPct: { type: "number" },
+        meses: { type: "number", description: "Horizonte em meses (12, 24, 36, 60)." },
+        crescimentoMensalPct: { type: "number", description: "Crescimento composto mensal da receita (%). Default 1,0." },
+        inflacaoFixosAA: { type: "number", description: "Inflação anual dos custos fixos (%). Default 5." },
+        ganhoEscalaCpvAA: { type: "number", description: "Ganho de escala anual no CPV (%). Default 0." },
+        stepReceitaPct: { type: "number", description: "A cada X% de receita extra vs base, folha sobe 1 step. Default 50." },
+        stepFolhaPct: { type: "number", description: "Incremento de folha por step (%). Default 25." },
+        capexInicial: { type: "number", description: "Investimento inicial em t=0 (R$). Default 0." },
       },
       required: ["meses"],
     },
   },
   {
     name: "sensibilidade",
-    description: "Análise de sensibilidade: varia ±20% receita/CPV/fixos e mede impacto na métrica escolhida.",
+    description: "Análise de sensibilidade (mesmo engine da aba Análise — runSensitivity). Varia preço/volume/CPV/folha/fixos/juros em ±5/10/15% e mede impacto no output escolhido. Retorna elasticidade média por driver.",
     parameters: {
       type: "object",
-      properties: { metrica: { type: "string", enum: ["ebitda", "lucroLiquido", "valuation", "margemEbitda"] } },
-      required: ["metrica"],
+      properties: {
+        output: { type: "string", enum: ["ebitda", "lucroLiquido", "saldoCaixa", "roic"], description: "Métrica de saída. Default: ebitda." },
+        drivers: {
+          type: "array",
+          items: { type: "string", enum: ["preco", "volume", "cpv", "folha", "fixos", "juros"] },
+          description: "Drivers a testar. Default: todos.",
+        },
+      },
+      required: [],
     },
   },
 
@@ -263,6 +277,54 @@ function compareSectorMd(state: AppState, sector: SectorBenchmark): string {
   return rows.join("\n");
 }
 
+// === Writers para Forecast e Sensitivity (engines do lib/finance — SSOT com a UI) ===
+function forecastToMarkdown(cfg: ForecastConfig, r: ForecastResult): string {
+  const lines: string[] = [];
+  lines.push(`## Projeção ${cfg.horizonteMeses} meses (engine buildForecast)`);
+  lines.push(`- Crescimento receita: ${cfg.crescimentoMensalPct.toFixed(2)}% a.m. · Inflação fixos: ${cfg.inflacaoFixosAA}% a.a. · Ganho escala CPV: ${cfg.ganhoEscalaCpvAA}% a.a.`);
+  lines.push(`- Step folha: a cada ${cfg.stepReceitaPct}% de receita extra → +${cfg.stepFolhaPct}% folha · Capex inicial: ${brl(cfg.capexInicial)}`);
+  lines.push("");
+  lines.push(`**Acumulado:** Receita ${brl(r.totalReceita)} · EBITDA ${brl(r.totalEbitda)} · Lucro ${brl(r.totalLucro)} · FCL ${brl(r.totalFcl)} · ΔNCG ${brl(r.totalDeltaNcg)}`);
+  lines.push(`**Métricas de retorno:** VPL ${brl(r.vpl)} · TIR ${r.tir != null ? `${r.tir.toFixed(2)}% a.m.` : (r.tirError ?? "n/d")} · Payback ${r.paybackMeses != null ? `${r.paybackMeses} meses` : "não recuperado"} · Taxa desconto ${(r.taxaDescontoMensal * 100).toFixed(2)}% a.m.`);
+  // Resumo anual
+  const yearly: { ano: number; receita: number; ebitda: number; fcl: number }[] = [];
+  for (let y = 0; y * 12 < r.meses.length; y++) {
+    const chunk = r.meses.slice(y * 12, (y + 1) * 12);
+    yearly.push({
+      ano: y + 1,
+      receita: chunk.reduce((s, m) => s + m.receita, 0),
+      ebitda: chunk.reduce((s, m) => s + m.ebitda, 0),
+      fcl: chunk.reduce((s, m) => s + m.fcl, 0),
+    });
+  }
+  lines.push("\n| Ano | Receita | EBITDA | Margem | FCL |\n| --- | --- | --- | --- | --- |");
+  yearly.forEach(y => {
+    const mg = y.receita > 0 ? (y.ebitda / y.receita) * 100 : 0;
+    lines.push(`| ${y.ano} | ${brl(y.receita)} | ${brl(y.ebitda)} | ${mg.toFixed(1)}% | ${brl(y.fcl)} |`);
+  });
+  return lines.join("\n");
+}
+
+function sensitivityToMarkdown(r: SensitivityResult): string {
+  const out: string[] = [];
+  out.push(`## Sensibilidade — ${r.outputLabel} (baseline ${brl(r.baseline)})`);
+  out.push(`_Deltas testados: ${r.deltas.map(d => `${d >= 0 ? "+" : ""}${d}%`).join(", ")}_`);
+  out.push("");
+  out.push(`| Driver | ${r.deltas.map(d => `${d >= 0 ? "+" : ""}${d}%`).join(" | ")} | Elasticidade |`);
+  out.push(`| --- | ${r.deltas.map(() => "---").join(" | ")} | --- |`);
+  r.rows.forEach(row => {
+    const cells = r.deltas.map(d => {
+      const c = row.cells.find(x => x.deltaPct === d);
+      return c ? `${c.pctChange >= 0 ? "+" : ""}${c.pctChange.toFixed(1)}%` : "—";
+    });
+    out.push(`| ${row.label} | ${cells.join(" | ")} | ${row.elasticity.toFixed(2)} |`);
+  });
+  const top = r.rows[0];
+  if (top) out.push(`\n**Maior alavanca:** ${top.label} (elasticidade ${top.elasticity.toFixed(2)}).`);
+  return out.join("\n");
+}
+
+
 export function runTool(name: string, args: any, state: AppState, simulatedState?: AppState, simParams?: SimulatorParams): string | Promise<string> {
   const sec = getSectionsCached(state, simulatedState);
   const company = state.companyName || "default";
@@ -284,10 +346,12 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
     case "get_comparativo_simulado":
       return sec.comparativo ?? "Nenhum cenário simulado ativo — todas as alavancas estão em 0.";
     case "get_resumo_executivo": {
-      const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-      const ind = calcIndicators(state, dre);
-      const val = buildValuation(state, defaultValuationParams(state.businessType));
-      const health = computeHealth(state);
+      // Reusa cache numérico — evita refazer buildDRE/calcIndicators/buildValuation/computeHealth.
+      const d = sec.data;
+      const dre = d?.dre ?? buildDRE(state, resolveEffectiveRegime(state)).dre;
+      const ind = d?.ind ?? calcIndicators(state, dre);
+      const val = d?.val ?? buildValuation(state, defaultValuationParams(state.businessType));
+      const health = d?.health ?? computeHealth(state);
       return [
         "## Resumo Executivo",
         `- Receita Bruta Anual: ${brl(sum(dre.receitaBruta))}`,
@@ -308,9 +372,13 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       ].filter(Boolean).join("\n\n---\n\n");
 
     case "get_alertas_criticos": {
-      const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-      const ind = calcIndicators(state, dre);
-      const alerts = diagnose(state, dre, ind);
+      // Reusa cache numérico — diagnose() é caro e idempotente para o mesmo state.
+      let alerts = sec.data?.alerts;
+      if (!alerts) {
+        const { dre } = buildDRE(state, resolveEffectiveRegime(state));
+        const ind = calcIndicators(state, dre);
+        alerts = diagnose(state, dre, ind);
+      }
       const critical = alerts.filter(a => a.level === "danger");
       const warning = alerts.filter(a => a.level === "warn");
       if (!alerts.length) return "✅ Nenhum alerta crítico ou de atenção identificado.";
@@ -430,20 +498,42 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       return `🗑️ Cenário **${rec.name}** removido.`;
     }
     case "projetar": {
-      const months = Number(args?.meses) || 12;
-      const res = project(state, months, {
-        ...DEFAULT_PROJ,
-        revenueGrowthMonthlyPct: Number(args?.crescReceitaMensalPct ?? DEFAULT_PROJ.revenueGrowthMonthlyPct),
-        variableInflMonthlyPct: Number(args?.inflVariavelMensalPct ?? DEFAULT_PROJ.variableInflMonthlyPct),
-        fixedInflMonthlyPct: Number(args?.inflFixoMensalPct ?? DEFAULT_PROJ.fixedInflMonthlyPct),
-        targetEbitdaMarginPct: args?.margemEbitdaAlvoPct !== undefined ? Number(args.margemEbitdaAlvoPct) : undefined,
-      });
-      return projectionToMarkdown(res);
+      const cfg: ForecastConfig = {
+        ...DEFAULT_FORECAST_CFG,
+        horizonteMeses: Number(args?.meses) || DEFAULT_FORECAST_CFG.horizonteMeses,
+        crescimentoMensalPct: Number(args?.crescimentoMensalPct ?? DEFAULT_FORECAST_CFG.crescimentoMensalPct),
+        inflacaoFixosAA: Number(args?.inflacaoFixosAA ?? DEFAULT_FORECAST_CFG.inflacaoFixosAA),
+        ganhoEscalaCpvAA: Number(args?.ganhoEscalaCpvAA ?? DEFAULT_FORECAST_CFG.ganhoEscalaCpvAA),
+        stepReceitaPct: Number(args?.stepReceitaPct ?? DEFAULT_FORECAST_CFG.stepReceitaPct),
+        stepFolhaPct: Number(args?.stepFolhaPct ?? DEFAULT_FORECAST_CFG.stepFolhaPct),
+        capexInicial: Number(args?.capexInicial ?? DEFAULT_FORECAST_CFG.capexInicial),
+      };
+      const res = buildForecast(state, cfg);
+      return forecastToMarkdown(cfg, res);
     }
     case "sensibilidade": {
-      const m = (args?.metrica as SensMetric) || "ebitda";
-      const rows = sensitivity(state, m);
-      return sensitivityToMarkdown(m, rows);
+      const out = (args?.output as OutputKey) || "ebitda";
+      const drivers = Array.isArray(args?.drivers) && args.drivers.length
+        ? (args.drivers as DriverKey[])
+        : undefined;
+      const res = runSensitivity(state, out, drivers);
+      return sensitivityToMarkdown(res);
+    }
+    case "carregar_cenario": {
+      const idOrName = String(args?.idOuNome || "").trim();
+      if (!idOrName) return "Parâmetro 'idOuNome' obrigatório.";
+      const rec = getScenario(company, idOrName);
+      if (!rec) return `Cenário "${idOrName}" não encontrado. Use listar_cenarios.`;
+      // Dispara evento que routes/index.tsx escuta para aplicar os params no simulador.
+      try {
+        window.dispatchEvent(new CustomEvent("gz-apply-simulator-params", {
+          detail: rec.params ?? null, // null = limpar (cenário base)
+        }));
+      } catch {
+        return `⚠️ Não foi possível aplicar o cenário **${rec.name}** (ambiente sem window).`;
+      }
+      const tag = rec.params ? "alavancas restauradas" : "estado base restaurado (sem alavancas)";
+      return `✅ Cenário **${rec.name}** carregado — ${tag}. A UI do simulador foi atualizada.`;
     }
 
     // --- Ações ---
