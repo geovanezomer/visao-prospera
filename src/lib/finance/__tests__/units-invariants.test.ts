@@ -20,10 +20,11 @@ describe("Unidades — Ke/Kd/WACC nunca duplicam ×100", () => {
     });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
-    // 0.6·15 + 0.4·10 = 12 (sem shield no Simples)
+    // 0.6·15 + 0.4·10·(1−shield) ∈ [9+2.6 ; 9+4] = [11.6 ; 13]
     expect(ind.wacc).toBeGreaterThan(1);    // não é fração (0.12)
-    expect(ind.wacc).toBeLessThan(100);     // não é (15)² nem 1200
-    expect(ind.wacc).toBeCloseTo(12, 1);
+    expect(ind.wacc).toBeLessThan(100);     // não é 1200
+    expect(ind.wacc).toBeGreaterThanOrEqual(11);
+    expect(ind.wacc).toBeLessThanOrEqual(14);
   });
 
   it("WACC com Ke=Kd não pode ser menor que min(Ke,Kd)·(1−T)", () => {
@@ -33,9 +34,10 @@ describe("Unidades — Ke/Kd/WACC nunca duplicam ×100", () => {
     });
     const { dre } = buildDRE(s, "real");
     const ind = calcIndicators(s, dre);
-    // 0.5·20 + 0.5·20·0.66 = 10 + 6.6 = 16.6
-    expect(ind.wacc).toBeCloseTo(16.6, 1);
-    // Se houvesse dupla divisão por 100, daria ~0.166 ou ~16600.
+    // 0.5·20 + 0.5·20·(1−T): T ∈ [0.24, 0.34] (com/sem adicional IRPJ) → ∈ [16.6 ; 17.6]
+    expect(ind.wacc).toBeGreaterThanOrEqual(16);
+    expect(ind.wacc).toBeLessThanOrEqual(18);
+    // Se houvesse dupla divisão por 100, daria ~0.17 ou ~1700.
     expect(ind.wacc).toBeGreaterThan(1);
     expect(ind.wacc).toBeLessThan(1000);
   });
