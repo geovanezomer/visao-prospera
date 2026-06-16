@@ -12,7 +12,10 @@ export function regimeComparisonToMarkdown(state: AppState): string {
   const delta = llBy[best] - llBy[current];
 
   let md = `## Comparativo de Regimes Tributários (Anual)\n\n`;
-  md += `_Análise referente à era: **${era}** ${era !== "atual" ? "(Reforma Tributária)" : ""}_\n\n`;
+  md += `_Análise referente à era: **${era}** ${era !== "atual" ? "(Reforma Tributária)" : ""}_\n`;
+  if (era === "transicao") md += `\n> ⚠️ Valores incluem **CBS/IBS parciais** e PIS/COFINS+ICMS/ISS em redução proporcional conforme cronograma LC 214/2025 (2027–2032).\n`;
+  if (era === "pleno") md += `\n> ℹ️ Valores refletem o regime **pleno CBS+IBS** (2033+), sem tributos legados.\n`;
+  md += `\n`;
   md += `| Regime | Tributos Totais | Lucro Líquido | Eficácia |\n`;
   md += `| --- | --- | --- | --- |\n`;
   md += `| **Simples** | ${fmtBRL(regimes.simples.annual)} | ${fmtBRL(llBy.simples)} | ${best === "simples" ? "🏆 Melhor" : ""} |\n`;
