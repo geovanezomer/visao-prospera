@@ -121,26 +121,35 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: "projetar",
-    description: "Projeta receita/EBITDA para N meses com premissas de crescimento.",
+    description: "Projeção plurianual estruturada (mesmo engine da aba Análise — buildForecast). Gera receita/EBITDA/Lucro/FCL/NCG mês-a-mês com escalonamento de folha por step, ganho de escala no CPV e cálculo de VPL/TIR/Payback. Use quando o consultor pedir 'projete os próximos N meses' ou 'qual o VPL desse projeto?'.",
     parameters: {
       type: "object",
       properties: {
-        meses: { type: "number", description: "12, 24, 36 ou 60." },
-        crescReceitaMensalPct: { type: "number" },
-        inflVariavelMensalPct: { type: "number" },
-        inflFixoMensalPct: { type: "number" },
-        margemEbitdaAlvoPct: { type: "number" },
+        meses: { type: "number", description: "Horizonte em meses (12, 24, 36, 60)." },
+        crescimentoMensalPct: { type: "number", description: "Crescimento composto mensal da receita (%). Default 1,0." },
+        inflacaoFixosAA: { type: "number", description: "Inflação anual dos custos fixos (%). Default 5." },
+        ganhoEscalaCpvAA: { type: "number", description: "Ganho de escala anual no CPV (%). Default 0." },
+        stepReceitaPct: { type: "number", description: "A cada X% de receita extra vs base, folha sobe 1 step. Default 50." },
+        stepFolhaPct: { type: "number", description: "Incremento de folha por step (%). Default 25." },
+        capexInicial: { type: "number", description: "Investimento inicial em t=0 (R$). Default 0." },
       },
       required: ["meses"],
     },
   },
   {
     name: "sensibilidade",
-    description: "Análise de sensibilidade: varia ±20% receita/CPV/fixos e mede impacto na métrica escolhida.",
+    description: "Análise de sensibilidade (mesmo engine da aba Análise — runSensitivity). Varia preço/volume/CPV/folha/fixos/juros em ±5/10/15% e mede impacto no output escolhido. Retorna elasticidade média por driver.",
     parameters: {
       type: "object",
-      properties: { metrica: { type: "string", enum: ["ebitda", "lucroLiquido", "valuation", "margemEbitda"] } },
-      required: ["metrica"],
+      properties: {
+        output: { type: "string", enum: ["ebitda", "lucroLiquido", "saldoCaixa", "roic"], description: "Métrica de saída. Default: ebitda." },
+        drivers: {
+          type: "array",
+          items: { type: "string", enum: ["preco", "volume", "cpv", "folha", "fixos", "juros"] },
+          description: "Drivers a testar. Default: todos.",
+        },
+      },
+      required: [],
     },
   },
 
