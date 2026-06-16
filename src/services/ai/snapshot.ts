@@ -152,11 +152,6 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
         catsMensal.map(([k, v]) => [k, ...(v as number[]).map(x => brl(x)), brl(sum(v as number[]))]),
       ));
     }
-    const cats = Object.entries(dre.despesasPorCategoria || {}).filter(([, v]) => sum(v as number[]) > 0);
-    if (cats.length) {
-      dreLines.push(`\n### Despesas por categoria (ano)`);
-      cats.forEach(([k, v]) => dreLines.push(`- ${k}: ${brl(sum(v as number[]))}`));
-    }
   }
 
   // ----- Indicadores -----
