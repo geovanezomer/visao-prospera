@@ -465,6 +465,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     despesas: despLines.join("\n"),
     capital: capLines.join("\n"),
     regime: regLines.join("\n"),
+    eras: erasLines.join("\n"),
     dre: dreLines.join("\n"),
     indicadores: indLines.join("\n"),
     diagnostico: diagLines.join("\n"),
