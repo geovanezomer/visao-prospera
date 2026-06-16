@@ -477,6 +477,34 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
     case "simular_regime_tributario": return regimeComparisonToMarkdown(state);
     case "diagnostico_tributario": return taxAuditToMarkdown(state);
     case "checklist_compliance": return checklistToMarkdown(state);
+    case "simular_transicao_reforma": {
+      const regime = (args?.regime as "simples" | "presumido" | "real") || resolveEffectiveRegime(state);
+      const years: number[] = Array.isArray(args?.anos) && args.anos.length
+        ? args.anos.map((y: any) => Number(y)).filter((y: number) => Number.isFinite(y))
+        : [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033];
+      const rows = compareYearsForRegime(state, regime, years);
+      const lines = [
+        `## Transição Tributária ano-a-ano — regime **${regime}**`,
+        ``,
+        `Cronograma oficial LC 214/2025 (cobrança híbrida CBS+IBS × PIS/COFINS+ICMS/ISS):`,
+        ``,
+        `| Ano | CBS | IBS | PIS/COFINS | ICMS/ISS | Carga efetiva | Anual |`,
+        `|---|---:|---:|---:|---:|---:|---:|`,
+      ];
+      rows.forEach(r => {
+        lines.push(
+          `| ${r.year} | ${r.rates.cbsPct.toFixed(2)}% | ${r.rates.ibsPct.toFixed(2)}% | ${(r.rates.pisCofinsMult * 100).toFixed(0)}% | ${(r.rates.icmsIssMult * 100).toFixed(0)}% | ${r.effective.toFixed(2)}% | ${brl(r.annual)} |`,
+        );
+      });
+      // Ano mais caro vs mais barato
+      const sorted = [...rows].sort((a, b) => a.annual - b.annual);
+      const min = sorted[0], max = sorted[sorted.length - 1];
+      const delta = max.annual - min.annual;
+      lines.push(``, `**Pico:** ${max.year} (${brl(max.annual)} · ${max.effective.toFixed(2)}%) · **Vale:** ${min.year} (${brl(min.annual)}) · **Δ:** ${brl(delta)} entre extremos.`);
+      lines.push(`\n_Mantém preços e custos constantes; isola o efeito da Reforma._`);
+      return lines.join("\n");
+    }
+
 
     default:
       return `Ferramenta desconhecida: ${name}`;
