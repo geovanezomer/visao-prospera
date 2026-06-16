@@ -49,12 +49,9 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // === Auto-scroll ===
-  // mantido aqui pois depende do scrollRef local ao JSX deste componente.
-  if (scrollRef.current) {
-    queueMicrotask(() => {
-      if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    });
-  }
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages, streaming]);
 
   const handleRename = (id: string) => {
     if (!renameVal.trim()) { setRenamingId(null); return; }
