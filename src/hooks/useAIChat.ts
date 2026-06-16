@@ -64,7 +64,8 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
   // Injeta briefing inicial estilo CFO em conversa nova/vazia.
   const injectBriefingIfEmpty = (companyName: string, threadId: string, currentMsgs: ChatMessage[]) => {
     if (currentMsgs.length > 0) return currentMsgs;
-    const md = buildOpeningBriefing(state);
+    // M-3: passa as seções já cacheadas para evitar recalcular DRE/indicadores/health/diagnose.
+    const md = buildOpeningBriefing(state, getSectionsCached(state));
     if (!md) return currentMsgs;
     const briefingMsg: ChatMessage = { role: "assistant", content: md, ts: Date.now() };
     const next = [briefingMsg];
