@@ -114,8 +114,19 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     } catch { return ""; }
   }, [state, simulatedState, simHasChanges, config.includeSnapshot, config.useTools]);
 
-  // Contexto runtime: empresa + regime efetivo (com downgrade Simples→Presumido).
+  // Contexto runtime: empresa + regime efetivo (com downgrade Simples→Presumido) + cenário simulado ativo.
   const runtimeContext = useMemo(() => {
+    // Descreve as alavancas simuladas ativas em linguagem natural (ex: "fixos -20%, PMR -5d").
+    const describeSim = (): string | undefined => {
+      if (!simHasChanges || !simParams) return undefined;
+      const parts: string[] = [];
+      if (simParams.receitaPct) parts.push(`receita ${simParams.receitaPct > 0 ? "+" : ""}${simParams.receitaPct}%`);
+      if (simParams.cpvPct) parts.push(`CPV ${simParams.cpvPct > 0 ? "+" : ""}${simParams.cpvPct}%`);
+      if (simParams.fixosPct) parts.push(`fixos ${simParams.fixosPct > 0 ? "+" : ""}${simParams.fixosPct}%`);
+      if (simParams.pmrDelta) parts.push(`PMR ${simParams.pmrDelta > 0 ? "+" : ""}${simParams.pmrDelta}d`);
+      if (simParams.pmpDelta) parts.push(`PMP ${simParams.pmpDelta > 0 ? "+" : ""}${simParams.pmpDelta}d`);
+      return parts.length ? `Simulação ativa (${parts.join(", ")})` : undefined;
+    };
     try {
       const eff = resolveEffectiveRegime(state);
       const t = state.tax;
@@ -124,11 +135,11 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       const extra = eff === "simples"
         ? ` · Anexo ${t.simplesAnexo}, Fator R ${(t.fatorR * 100).toFixed(1)}%`
         : "";
-      return { companyName: state.companyName, regimeLabel: base + extra };
+      return { companyName: state.companyName, regimeLabel: base + extra, cenarioAtivo: describeSim() };
     } catch {
-      return { companyName: state.companyName, regimeLabel: state.tax?.regime };
+      return { companyName: state.companyName, regimeLabel: state.tax?.regime, cenarioAtivo: describeSim() };
     }
-  }, [state.companyName, state.tax]);
+  }, [state.companyName, state.tax, simHasChanges, simParams]);
 
   // Sugestões dinâmicas baseadas no diagnose().
   const suggestions = useMemo(
