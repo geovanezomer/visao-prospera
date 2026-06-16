@@ -114,8 +114,28 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     } catch { return ""; }
   }, [state, simulatedState, simHasChanges, config.includeSnapshot, config.useTools]);
 
-  // Contexto runtime: empresa + regime efetivo (com downgrade Simples→Presumido).
+  // Contexto runtime: empresa + regime efetivo (com downgrade Simples→Presumido) + cenário simulado ativo.
   const runtimeContext = useMemo(() => {
+    // Descreve as alavancas simuladas ativas em linguagem natural (ex: "fixos -20%, PMR -5d").
+    const describeSim = (): string | undefined => {
+      if (!simHasChanges || !simParams) return undefined;
+      const p = simParams;
+      const parts: string[] = [];
+      if (p.priceDeltaPct) parts.push(`preço ${p.priceDeltaPct > 0 ? "+" : ""}${p.priceDeltaPct}%`);
+      if (p.volumeDeltaPct) parts.push(`volume ${p.volumeDeltaPct > 0 ? "+" : ""}${p.volumeDeltaPct}%`);
+      if (p.cpvDeltaPct) parts.push(`CPV ${p.cpvDeltaPct > 0 ? "+" : ""}${p.cpvDeltaPct}%`);
+      if (p.payrollDeltaPct) parts.push(`folha ${p.payrollDeltaPct > 0 ? "+" : ""}${p.payrollDeltaPct}%`);
+      if (p.fixedCutPct) parts.push(`fixos ${p.fixedCutPct > 0 ? "-" : "+"}${Math.abs(p.fixedCutPct)}% (top ${p.fixedCutTopN})`);
+      if (p.outsourcePctCpv) parts.push(`terceirizar ${p.outsourcePctCpv}% CPV`);
+      if (p.pmrDeltaDays) parts.push(`PMR ${p.pmrDeltaDays > 0 ? "+" : ""}${p.pmrDeltaDays}d`);
+      if (p.pmpDeltaDays) parts.push(`PMP ${p.pmpDeltaDays > 0 ? "+" : ""}${p.pmpDeltaDays}d`);
+      if (p.antecipPctAm) parts.push(`antecipação ${p.antecipPctAm}% a.m.`);
+      if (p.loanPrincipal) parts.push(`empréstimo R$${p.loanPrincipal.toLocaleString("pt-BR")}`);
+      if (p.debtPaydownPct) parts.push(`quitar ${p.debtPaydownPct}% dívida`);
+      if (p.kdDeltaPp) parts.push(`Kd ${p.kdDeltaPp > 0 ? "+" : ""}${p.kdDeltaPp}p.p.`);
+      if (p.regimeOverride && p.regimeOverride !== "base") parts.push(`regime → ${p.regimeOverride}`);
+      return parts.length ? `Simulação ativa (${parts.join(", ")})` : undefined;
+    };
     try {
       const eff = resolveEffectiveRegime(state);
       const t = state.tax;
@@ -124,11 +144,11 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       const extra = eff === "simples"
         ? ` · Anexo ${t.simplesAnexo}, Fator R ${(t.fatorR * 100).toFixed(1)}%`
         : "";
-      return { companyName: state.companyName, regimeLabel: base + extra };
+      return { companyName: state.companyName, regimeLabel: base + extra, cenarioAtivo: describeSim() };
     } catch {
-      return { companyName: state.companyName, regimeLabel: state.tax?.regime };
+      return { companyName: state.companyName, regimeLabel: state.tax?.regime, cenarioAtivo: describeSim() };
     }
-  }, [state.companyName, state.tax]);
+  }, [state.companyName, state.tax, simHasChanges, simParams]);
 
   // Sugestões dinâmicas baseadas no diagnose().
   const suggestions = useMemo(
@@ -230,7 +250,8 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
                 if (e.call.name === "criar_acao") toast.success("Ação adicionada ao plano", { description: "Painel de ações atualizado." });
                 else if (e.call.name === "salvar_cenario") toast.success("Cenário salvo", { description: "Disponível no menu de cenários." });
                 else if (e.call.name === "atualizar_acao") toast.success("Ação atualizada");
-                else if (e.call.name === "deletar_acao") toast.success("Ação removida");
+                else if (e.call.name === "excluir_acao") toast.success("Ação removida");
+                else if (e.call.name === "excluir_cenario") toast.success("Cenário removido");
                 setMessages([
                   ...history,
                   ...collected.map(c => ({
