@@ -495,7 +495,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
 export function buildSnapshot(state: AppState, simulatedState?: AppState): string {
   const s = buildSections(state, simulatedState);
   const all = [
-    s.premissas, s.regime, s.dre, s.indicadores, s.valuation, s.comparativo,
+    s.premissas, s.regime, s.eras, s.dre, s.indicadores, s.valuation, s.comparativo,
     s.receitas, s.despesas, s.capital, s.caixa, s.diagnostico,
     s.saude, s.prescritivo, s.governanca, s.estrategico,
   ].filter(Boolean) as string[];
