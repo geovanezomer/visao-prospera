@@ -645,7 +645,7 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       const min = sorted[0], max = sorted[sorted.length - 1];
       const delta = max.annual - min.annual;
       lines.push(``, `**Pico:** ${max.year} (${brl(max.annual)} · ${max.effective.toFixed(2)}%) · **Vale:** ${min.year} (${brl(min.annual)}) · **Δ:** ${brl(delta)} entre extremos.`);
-      lines.push(`\n_Mantém preços e custos constantes; isola o efeito da Reforma._`);
+      lines.push(`\n_Mantém preços e custos constantes; isola o efeito da Reforma. Para o resumo agregado em 3 eras, use \`get_eras_reforma\`._`);
       return lines.join("\n");
     }
 
