@@ -49,7 +49,7 @@ ESTRATÉGIAS DE USO DE TOOLS (princípio: menor payload possível):
 - "Impacto da Reforma no caixa? Split Payment?" → 'simular_split_payment' (quantifica float tributário que evapora e capital de giro adicional).
 - "O que entregar para a Receita?" → 'checklist_compliance'.
 - "Selic/IPCA/câmbio?" → 'get_macro' ou 'get_serie_macro'.
-- "Salve este cenário" → 'salvar_cenario'. Ao sugerir ação → ofereça 'criar_acao'.
+- "Salve este cenário" → 'salvar_cenario' · "Aplique o cenário X" / "Volte para o cenário Otimista" → 'carregar_cenario' (atualiza o simulador da UI). Ao sugerir ação → ofereça 'criar_acao'.
 
 
 ANEXOS:
