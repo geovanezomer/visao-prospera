@@ -6,8 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, CheckCircle2, XCircle, AlertTriangle, X } from "lucide-react";
-import { AIConfig, Provider, switchProvider } from "@/services/ai/providers";
+import { Loader2, CheckCircle2, XCircle, AlertTriangle, X, Plus, Trash2, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
+import { AIConfig, Provider, switchProvider, DEFAULT_SOUL, DEFAULT_SKILLS, Skill } from "@/services/ai/providers";
 import { listModels, testConnection } from "@/services/ai/client";
 
 interface Props {
@@ -137,8 +137,39 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
               </div>
             </div>
 
+            {/* SOUL — identidade editável do agente */}
+            <div className="space-y-1.5 rounded-md border border-primary/30 bg-primary/5 p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-semibold">🧠 SOUL — Identidade do agente</Label>
+                  <p className="text-[10px] text-muted-foreground">Quem o agente É. Substitui a persona padrão (CFO + Tributarista + Matemático).</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-[10px]"
+                  onClick={() => setDraft({ ...draft, soul: DEFAULT_SOUL })}
+                  title="Restaurar SOUL padrão"
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" /> Padrão
+                </Button>
+              </div>
+              <Textarea
+                rows={6}
+                value={draft.soul}
+                onChange={(e) => setDraft({ ...draft, soul: e.target.value })}
+                className="text-xs font-mono"
+              />
+            </div>
+
+            {/* SKILLS — capacidades modulares com toggle */}
+            <SkillsEditor
+              skills={draft.skills}
+              onChange={(skills) => setDraft({ ...draft, skills })}
+            />
+
             <div className="space-y-1.5">
-              <Label className="text-xs">Instruções extras (suplemento do system prompt)</Label>
+              <Label className="text-xs">Instruções extras (suplemento livre)</Label>
               <Textarea
                 rows={3}
                 placeholder="Ex.: foque em empresas de tecnologia · responda sempre com 3 bullets · etc."
@@ -166,6 +197,102 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
             <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button onClick={() => { onSave(draft); onOpenChange(false); }}>Salvar</Button>
           </div>
+    </div>
+  );
+}
+
+// ============================================================
+// SkillsEditor — lista de skills com toggle on/off, edição inline e CRUD.
+// ============================================================
+function SkillsEditor({ skills, onChange }: { skills: Skill[]; onChange: (s: Skill[]) => void }) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const toggle = (id: string) =>
+    onChange(skills.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s));
+
+  const update = (id: string, patch: Partial<Skill>) =>
+    onChange(skills.map(s => s.id === id ? { ...s, ...patch } : s));
+
+  const remove = (id: string) =>
+    onChange(skills.filter(s => s.id !== id));
+
+  const add = () => {
+    const id = `custom-${Date.now()}`;
+    onChange([...skills, { id, name: "Nova skill", description: "", body: "", enabled: true, builtin: false }]);
+    setExpanded(id);
+  };
+
+  const resetToDefaults = () => {
+    // mantém customizadas e substitui as builtin pelas padrões
+    const customs = skills.filter(s => !s.builtin);
+    onChange([...DEFAULT_SKILLS, ...customs]);
+  };
+
+  return (
+    <div className="space-y-2 rounded-md border border-primary/30 bg-primary/5 p-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <Label className="text-sm font-semibold">⚡ SKILLS — Capacidades modulares</Label>
+          <p className="text-[10px] text-muted-foreground">O que o agente SABE FAZER. Ative só o que precisa para a conversa.</p>
+        </div>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={resetToDefaults} title="Restaurar skills padrão">
+            <RotateCcw className="h-3 w-3 mr-1" /> Padrão
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={add}>
+            <Plus className="h-3 w-3 mr-1" /> Nova
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        {skills.length === 0 && (
+          <p className="text-[11px] text-muted-foreground italic">Nenhuma skill configurada.</p>
+        )}
+        {skills.map((s) => {
+          const open = expanded === s.id;
+          return (
+            <div key={s.id} className="rounded border border-border/40 bg-background/50">
+              <div className="flex items-center gap-2 px-2 py-1.5">
+                <button
+                  type="button"
+                  onClick={() => setExpanded(open ? null : s.id)}
+                  className="text-muted-foreground hover:text-foreground"
+                  title={open ? "Recolher" : "Editar"}
+                >
+                  {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium truncate">{s.name}</div>
+                  <div className="text-[10px] text-muted-foreground truncate">{s.description}</div>
+                </div>
+                <Switch checked={s.enabled} onCheckedChange={() => toggle(s.id)} />
+                {!s.builtin && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => remove(s.id)} title="Remover">
+                    <Trash2 className="h-3 w-3 text-destructive" />
+                  </Button>
+                )}
+              </div>
+              {open && (
+                <div className="space-y-2 border-t border-border/30 p-2">
+                  <div>
+                    <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Nome</Label>
+                    <Input value={s.name} onChange={(e) => update(s.id, { name: e.target.value })} className="h-7 text-xs" />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Descrição (1 linha)</Label>
+                    <Input value={s.description} onChange={(e) => update(s.id, { description: e.target.value })} className="h-7 text-xs" />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">Conteúdo (anexado ao system prompt quando ativa)</Label>
+                    <Textarea rows={6} value={s.body} onChange={(e) => update(s.id, { body: e.target.value })} className="text-xs font-mono" />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
