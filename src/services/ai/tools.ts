@@ -6,8 +6,8 @@ import { applySimulator, DEFAULT_SIM, type SimulatorParams } from "@/lib/finance
 import { buildSections, getSectionsCached } from "./snapshot";
 import { findSector, listSectors, rank, type SectorBenchmark } from "@/services/benchmark/sectors";
 import { fetchSerie, getMacroSnapshot, getSerieFormatted, MACRO_SERIES_KEYS, type SerieKey } from "@/services/macro/bcb";
-import { project, projectionToMarkdown, DEFAULT_PROJ } from "@/services/scenarios/projector";
-import { sensitivity, sensitivityToMarkdown, type SensMetric } from "@/services/scenarios/sensitivity";
+import { buildForecast, DEFAULT_FORECAST_CFG, type ForecastConfig, type ForecastResult } from "@/lib/finance/forecast";
+import { runSensitivity, type DriverKey, type OutputKey, type SensitivityResult } from "@/lib/finance/sensitivity";
 import { listScenarios, saveScenario, deleteScenario, getScenario } from "@/services/scenarios/store";
 import { listActions, createAction, updateAction, deleteAction, actionsToMarkdown, type ActionStatus } from "@/services/actions/store";
 import { regimeComparisonToMarkdown, taxAuditToMarkdown } from "@/services/compliance/tax";
