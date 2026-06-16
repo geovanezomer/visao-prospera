@@ -11,6 +11,11 @@ import {
 import { chatWithTools, streamChat, type LLMMessage, type ToolCall } from "@/services/ai/client";
 import { buildSnapshot, getSectionsCached } from "@/services/ai/snapshot";
 import { buildLlmMessages } from "@/services/ai/historyUtils";
+import { estimateTokens } from "@/services/ai/snapshot";
+
+// Limite de tokens do histórico enviado ao LLM (exclui system prompt).
+// Se ultrapassado, comprime o miolo preservando contexto inicial + recente.
+const MAX_HISTORY_TOKENS = 6000;
 import { buildSystemPrompt } from "@/services/ai/systemPrompt";
 import { runTool } from "@/services/ai/tools";
 import {
