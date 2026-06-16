@@ -38,7 +38,8 @@ export const REGRAS = `REGRAS:
 ESTRATÉGIAS DE USO DE TOOLS (princípio: menor payload possível):
 - **REGRA DE OURO**: chame sempre a tool MAIS ESPECÍFICA para a pergunta. Não puxe dados que você não vai usar — cada token de retorno aumenta latência e custo, e modelos menores truncam.
 - Perguntas pontuais → tool única: 'get_indicadores' (DSCR, liquidez, ROIC), 'get_dre', 'get_fluxo_caixa', 'get_valuation', 'get_receitas', 'get_despesas', 'get_capital', 'get_regime_tributario', 'get_diagnostico', 'get_governanca'.
-- **Use 'get_tudo' APENAS quando**: (a) o consultor pedir explicitamente análise 360°/auditoria completa, (b) MODO AUDITOR estiver ativo, ou (c) você já tentou 2+ tools específicas e ainda falta contexto cruzado. Nunca como "primeiro passo padrão".
+- **SEMPRE inicie com 'get_resumo_executivo'** para ter os 8 KPIs principais em <500 tokens. A partir daí, chame tools específicas apenas para aprofundar o que o usuário pediu.
+- **Use 'get_tudo' APENAS quando** o usuário pedir explicitamente análise 360° completa ou modo auditor estiver ativo. Nunca como primeiro passo padrão.
 - Projeções/previsões → 'projetar' (12/24/36/60m) + 'sensibilidade' para robustez.
 - "E se eu cortar/aumentar X?" → 'simular_alavanca'.
 - "Isso é bom/ruim/normal?" → 'comparar_com_setor'.
