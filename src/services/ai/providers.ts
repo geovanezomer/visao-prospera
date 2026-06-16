@@ -101,7 +101,6 @@ export const DEFAULT_CONFIG: AIConfig = {
   skills: DEFAULT_SKILLS,
   extraSystemPrompt: "",
   timeoutMs: 120_000,
-  maxTokensSnapshot: 6000,
 };
 
 const CFG_KEY = "gz-finance-ai-config";
