@@ -24,7 +24,7 @@ export interface SimulatorParams {
   // Custos & Pessoal
   cpvDeltaPct: number;          // -20..+30  → multiplica linhas custo_vendas
   payrollDeltaPct: number;      // -30..+30  → multiplica linhas com encargosAuto
-  fixedCutPct: number;          // 0..50     → % de redução nos top-N fixos
+  fixedCutPct: number;          // -50..+50  → positivo = corte, negativo = aumento nos top-N fixos
   fixedCutTopN: number;         // 1..5
   outsourcePctCpv: number;      // 0..100    → % do CPV substituído
   outsourceFixedMonthly: number;// R$/mês fixo contratado
@@ -135,10 +135,10 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     );
   }
 
-  // 5) Corte de fixos
-  if (p.fixedCutPct > 0) {
+  // 5) Ajuste de fixos (top-N) — positivo = corte; negativo = aumento.
+  if (p.fixedCutPct !== 0) {
     const ids = topNFixedIds(s, p.fixedCutTopN);
-    const f = 1 - p.fixedCutPct / 100;
+    const f = 1 - p.fixedCutPct / 100; // ex: +20 → 0.80 (corte 20%); -20 → 1.20 (aumento 20%)
     s.costs = s.costs.map((c) => (ids.has(c.id) ? { ...c, values: c.values.map((v) => v * f) } : c));
   }
 
@@ -384,7 +384,7 @@ export function countActiveLevers(p: SimulatorParams): number {
   if (p.volumeDeltaPct !== 0) n++;
   if (p.cpvDeltaPct !== 0) n++;
   if (p.payrollDeltaPct !== 0) n++;
-  if (p.fixedCutPct > 0) n++;
+  if (p.fixedCutPct !== 0) n++;
   if (p.outsourcePctCpv > 0) n++;
   if (p.pmrDeltaDays !== 0) n++;
   if (p.pmpDeltaDays !== 0) n++;

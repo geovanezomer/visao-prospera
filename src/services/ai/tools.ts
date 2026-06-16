@@ -289,9 +289,12 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
         ...DEFAULT_SIM,
         priceDeltaPct: Number(args?.receitaPct) || 0,
         cpvDeltaPct: Number(args?.cpvPct) || 0,
-        fixedCutPct: Math.max(0, -(Number(args?.fixosPct) || 0)),
-        pmrDeltaDays: Math.min(0, Number(args?.pmrDelta) || 0),
-        pmpDeltaDays: Math.max(0, Number(args?.pmpDelta) || 0),
+        // fixosPct: negativo=corte / positivo=aumento. Simulator usa fixedCutPct invertido
+        // (positivo=corte), por isso aplicamos a negação aqui.
+        fixedCutPct: -(Number(args?.fixosPct) || 0),
+        // PMR/PMP passam direto com qualquer sinal — simulator já lida com ambos.
+        pmrDeltaDays: Number(args?.pmrDelta) || 0,
+        pmpDeltaDays: Number(args?.pmpDelta) || 0,
       };
       const simulated = applySimulator(state, params);
       const simSec = buildSections(state, simulated);
