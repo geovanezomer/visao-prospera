@@ -3,20 +3,19 @@
 // isDeleted=true são filtrados em listActions; permanecem no storage
 // para suportar futuras features (undo, sync multi-aba, auditoria).
 import { nanoid } from "nanoid";
-import { useEffect, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 
 // =====================================================================
 // Event bus — notifica painéis React quando o store muda (criar/editar/
 // remover ação). Resolve o problema das tools serem fire-and-forget: ao
 // chamar criar_acao no chat, qualquer painel inscrito re-renderiza.
-// Também dispara em outras abas via 'storage' event.
+// Também escuta 'storage' event para sincronizar entre abas.
 // =====================================================================
 type Listener = () => void;
 const listeners = new Set<Listener>();
 
 function emit() {
   for (const l of listeners) l();
-  // Notifica outras abas
   try { window.dispatchEvent(new CustomEvent("gz-actions-changed")); } catch {}
 }
 
@@ -33,21 +32,25 @@ export function subscribeActions(listener: Listener): () => void {
   };
 }
 
-/** Hook reativo: re-renderiza sempre que createAction/updateAction/deleteAction são chamados. */
-export function useActions(company: string, filter?: { status?: ActionStatus; includeDeleted?: boolean }): ActionItem[] {
-  // useSyncExternalStore precisa de snapshot estável; re-lemos a cada notificação.
-  const subscribe = (cb: () => void) => subscribeActions(cb);
-  const getSnapshot = () => JSON.stringify(readRaw(company));
-  const raw = useSyncExternalStore(subscribe, getSnapshot, () => "[]");
-  // Deserializa só quando muda (string compare é barato).
-  return useEffect.length // dummy para satisfazer linter — useEffect não usado aqui
-    ? applyFilter(JSON.parse(raw) as ActionItem[], filter)
-    : applyFilter(JSON.parse(raw) as ActionItem[], filter);
-}
-
 function applyFilter(all: ActionItem[], filter?: { status?: ActionStatus; includeDeleted?: boolean }): ActionItem[] {
   const visible = filter?.includeDeleted ? all : all.filter(a => !a.isDeleted);
   return filter?.status ? visible.filter(a => a.status === filter.status) : visible;
+}
+
+/** Hook reativo: re-renderiza sempre que o store muda (chat ou UI). */
+export function useActions(company: string, filter?: { status?: ActionStatus; includeDeleted?: boolean }): ActionItem[] {
+  const snapshot = useSyncExternalStore(
+    subscribeActions,
+    () => `${company}::${localStorage.getItem(KEY(company)) ?? ""}`,
+    () => `${company}::`,
+  );
+  const raw = snapshot.slice(company.length + 2);
+  try {
+    const all = raw ? (JSON.parse(raw) as ActionItem[]) : [];
+    return applyFilter(all, filter);
+  } catch {
+    return [];
+  }
 }
 
 export type ActionStatus = "aberta" | "em_andamento" | "concluida" | "cancelada";
