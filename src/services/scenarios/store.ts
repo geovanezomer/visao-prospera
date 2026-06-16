@@ -1,7 +1,40 @@
 // Cenários salvos por empresa — localStorage.
 // IDs via nanoid. Soft delete habilita futuras features (undo, sync).
 import { nanoid } from "nanoid";
+import { useSyncExternalStore } from "react";
 import type { SimulatorParams } from "@/lib/finance/simulator";
+
+// Event bus reativo (mesmo padrão de actions/store).
+type Listener = () => void;
+const listeners = new Set<Listener>();
+function emit() {
+  for (const l of listeners) l();
+  try { window.dispatchEvent(new CustomEvent("gz-scenarios-changed")); } catch {}
+}
+export function subscribeScenarios(listener: Listener): () => void {
+  listeners.add(listener);
+  const onStorage = (e: StorageEvent) => { if (e.key?.startsWith("gz-finance-scenarios-")) listener(); };
+  const onCustom = () => listener();
+  window.addEventListener("storage", onStorage);
+  window.addEventListener("gz-scenarios-changed", onCustom);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener("gz-scenarios-changed", onCustom);
+  };
+}
+export function useScenarios(company: string, opts?: { includeDeleted?: boolean }): ScenarioRecord[] {
+  const snap = useSyncExternalStore(
+    subscribeScenarios,
+    () => `${company}::${localStorage.getItem(`gz-finance-scenarios-${company || "default"}`) ?? ""}`,
+    () => `${company}::`,
+  );
+  const raw = snap.slice(company.length + 2);
+  try {
+    const all = raw ? (JSON.parse(raw) as ScenarioRecord[]) : [];
+    return opts?.includeDeleted ? all : all.filter(s => !s.isDeleted);
+  } catch { return []; }
+}
 
 export interface ScenarioRecord {
   id: string;
@@ -43,7 +76,7 @@ export function saveScenario(company: string, rec: Omit<ScenarioRecord, "id" | "
     const idx = all.findIndex(s => s.id === rec.id);
     if (idx >= 0) {
       all[idx] = { ...all[idx], ...rec, updatedAt: now } as ScenarioRecord;
-      localStorage.setItem(KEY(company), JSON.stringify(all));
+      localStorage.setItem(KEY(company), JSON.stringify(all)); emit();
       return all[idx];
     }
   }
@@ -54,7 +87,7 @@ export function saveScenario(company: string, rec: Omit<ScenarioRecord, "id" | "
     updatedAt: now,
   };
   all.unshift(newRec);
-  localStorage.setItem(KEY(company), JSON.stringify(all));
+  localStorage.setItem(KEY(company), JSON.stringify(all)); emit();
   return newRec;
 }
 
@@ -64,7 +97,7 @@ export function deleteScenario(company: string, id: string) {
   const idx = all.findIndex(s => s.id === id);
   if (idx < 0) return;
   all[idx] = { ...all[idx], isDeleted: true, updatedAt: Date.now() };
-  localStorage.setItem(KEY(company), JSON.stringify(all));
+  localStorage.setItem(KEY(company), JSON.stringify(all)); emit();
 }
 
 export function restoreScenario(company: string, id: string) {
@@ -72,7 +105,7 @@ export function restoreScenario(company: string, id: string) {
   const idx = all.findIndex(s => s.id === id);
   if (idx < 0) return;
   all[idx] = { ...all[idx], isDeleted: false, updatedAt: Date.now() };
-  localStorage.setItem(KEY(company), JSON.stringify(all));
+  localStorage.setItem(KEY(company), JSON.stringify(all)); emit();
 }
 
 export function getScenario(company: string, idOrName: string): ScenarioRecord | undefined {

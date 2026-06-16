@@ -3,6 +3,55 @@
 // isDeleted=true são filtrados em listActions; permanecem no storage
 // para suportar futuras features (undo, sync multi-aba, auditoria).
 import { nanoid } from "nanoid";
+import { useSyncExternalStore } from "react";
+
+// =====================================================================
+// Event bus — notifica painéis React quando o store muda (criar/editar/
+// remover ação). Resolve o problema das tools serem fire-and-forget: ao
+// chamar criar_acao no chat, qualquer painel inscrito re-renderiza.
+// Também escuta 'storage' event para sincronizar entre abas.
+// =====================================================================
+type Listener = () => void;
+const listeners = new Set<Listener>();
+
+function emit() {
+  for (const l of listeners) l();
+  try { window.dispatchEvent(new CustomEvent("gz-actions-changed")); } catch {}
+}
+
+export function subscribeActions(listener: Listener): () => void {
+  listeners.add(listener);
+  const onStorage = (e: StorageEvent) => { if (e.key?.startsWith("gz-finance-actions-")) listener(); };
+  const onCustom = () => listener();
+  window.addEventListener("storage", onStorage);
+  window.addEventListener("gz-actions-changed", onCustom);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener("gz-actions-changed", onCustom);
+  };
+}
+
+function applyFilter(all: ActionItem[], filter?: { status?: ActionStatus; includeDeleted?: boolean }): ActionItem[] {
+  const visible = filter?.includeDeleted ? all : all.filter(a => !a.isDeleted);
+  return filter?.status ? visible.filter(a => a.status === filter.status) : visible;
+}
+
+/** Hook reativo: re-renderiza sempre que o store muda (chat ou UI). */
+export function useActions(company: string, filter?: { status?: ActionStatus; includeDeleted?: boolean }): ActionItem[] {
+  const snapshot = useSyncExternalStore(
+    subscribeActions,
+    () => `${company}::${localStorage.getItem(KEY(company)) ?? ""}`,
+    () => `${company}::`,
+  );
+  const raw = snapshot.slice(company.length + 2);
+  try {
+    const all = raw ? (JSON.parse(raw) as ActionItem[]) : [];
+    return applyFilter(all, filter);
+  } catch {
+    return [];
+  }
+}
 
 export type ActionStatus = "aberta" | "em_andamento" | "concluida" | "cancelada";
 
@@ -58,6 +107,7 @@ export function createAction(
   const all = readRaw(company);
   all.unshift(item);
   localStorage.setItem(KEY(company), JSON.stringify(all));
+  emit();
   return item;
 }
 
@@ -69,6 +119,7 @@ export function updateAction(company: string, id: string, patch: Partial<ActionI
   all[idx] = { ...all[idx], ...patch, updatedAt: now };
   if (patch.status === "concluida" && !all[idx].resolvedAt) all[idx].resolvedAt = now;
   localStorage.setItem(KEY(company), JSON.stringify(all));
+  emit();
   return all[idx];
 }
 
@@ -79,6 +130,7 @@ export function deleteAction(company: string, id: string) {
   if (idx < 0) return;
   all[idx] = { ...all[idx], isDeleted: true, updatedAt: Date.now() };
   localStorage.setItem(KEY(company), JSON.stringify(all));
+  emit();
 }
 
 /** Restaura um item soft-deleted (suporte a futuro undo). */
@@ -88,6 +140,7 @@ export function restoreAction(company: string, id: string) {
   if (idx < 0) return;
   all[idx] = { ...all[idx], isDeleted: false, updatedAt: Date.now() };
   localStorage.setItem(KEY(company), JSON.stringify(all));
+  emit();
 }
 
 export function actionsToMarkdown(items: ActionItem[]): string {
