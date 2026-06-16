@@ -18,6 +18,7 @@ import { chatWithTools, streamChat, type LLMMessage, type ToolCall } from "@/ser
 import { buildSnapshot, getSectionsCached } from "@/services/ai/snapshot";
 import { buildLlmMessages } from "@/services/ai/historyUtils";
 import { buildSystemPrompt } from "@/services/ai/systemPrompt";
+import { AuditReport, isAuditReport } from "./AuditReport";
 import { runTool } from "@/services/ai/tools";
 import { processFile, buildPdfContext, buildVisionMessageContent, confidenceLabel, MAX_FILES_PER_MSG, type ChatAttachment } from "@/services/ai/attachments";
 import type { AppState } from "@/lib/finance/types";
