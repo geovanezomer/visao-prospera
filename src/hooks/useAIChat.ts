@@ -324,7 +324,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     setThreads(next);
     saveThreads(state.companyName, next);
     setActiveId(t.id);
-    setMessages([]);
+    setMessages(injectBriefingIfEmpty(state.companyName, t.id, []));
   };
 
   const handleDeleteThread = (id: string) => {
