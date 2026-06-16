@@ -490,7 +490,7 @@ export function runTool(name: string, args: ToolArgs, state: AppState, simulated
 
     // --- Setor ---
     case "listar_setores": {
-      const list = listSectors(args?.tipo);
+      const list = listSectors(args?.tipo as any);
       return `## Setores disponíveis\n\n${list.map(s => `- **${s.id}** — ${s.label} (${s.businessType})`).join("\n")}`;
     }
     case "comparar_com_setor": {
