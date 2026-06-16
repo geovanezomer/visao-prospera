@@ -60,7 +60,7 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: "comparar_com_setor",
-    description: "Compara indicadores da empresa com benchmarks setoriais (P25/P50/P75). Use SEMPRE que o usuário perguntar 'isso é bom?', 'está acima da média?', 'como me comparo com o mercado?'. **NÃO pergunte o setor ao usuário e NÃO chame 'listar_setores' antes** — o parâmetro 'setor' é opcional e por padrão a tool usa automaticamente o businessType cadastrado da empresa (servicos/comercio/industria). Só passe 'setor' se o usuário citar explicitamente um nicho diferente (ex: 'farmácia', 'saas').",
+    description: "Compara os indicadores da empresa com benchmarks de mercado. O parâmetro setor é opcional — se omitido, usa automaticamente o tipo de negócio da empresa cadastrada.",
     parameters: {
       type: "object",
       properties: {
