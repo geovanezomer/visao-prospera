@@ -93,13 +93,16 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
         ["(−) CPV/CMV/CSP", brl(sum(dre.cpv))],
         ["= Lucro Bruto", brl(sum(dre.lucroBruto))],
         ["(−) Despesas Operacionais", brl(sum(dre.despesasOperacionais))],
+        ["(+) Outras Receitas Operacionais", brl(sum(dre.outrasReceitasOperacionais))],
         ["= EBITDA", brl(sum(dre.ebitda))],
         ["(−) Depreciação", brl(sum(dre.depreciacao))],
         ["= EBIT", brl(sum(dre.ebit))],
         ["(+/−) Resultado Financeiro", brl(sum(dre.resultadoFinanceiro))],
+        ["(−) Custos Financeiros (juros)", brl(sum(dre.custosFinanceirosTotal))],
         ["= LAIR", brl(sum(dre.lair))],
         ["(−) IRPJ + CSLL", brl(sum(dre.impostos))],
         ["= Lucro Líquido", brl(sum(dre.lucroLiquido))],
+        ["Custos Operacionais (total)", brl(sum(dre.custosOperacionaisTotal))],
         ["Custos Fixos (ano)", brl(sum(dre.custosFixos))],
         ["Custos Variáveis (ano)", brl(sum(dre.custosVariaveis))],
         ["Folha CLT (anual)", brl(dre.folhaCltAnual)],
@@ -117,13 +120,16 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
       ["(−) CPV/CMV/CSP", dre.cpv],
       ["= Lucro Bruto", dre.lucroBruto],
       ["(−) Despesas Operacionais", dre.despesasOperacionais],
+      ["(+) Outras Receitas Operacionais", dre.outrasReceitasOperacionais],
       ["= EBITDA", dre.ebitda],
       ["(−) Depreciação", dre.depreciacao],
       ["= EBIT", dre.ebit],
       ["(+/−) Resultado Financeiro", dre.resultadoFinanceiro],
+      ["(−) Custos Financeiros (juros)", dre.custosFinanceirosTotal],
       ["= LAIR", dre.lair],
       ["(−) IRPJ + CSLL", dre.impostos],
       ["= Lucro Líquido", dre.lucroLiquido],
+      ["Custos Operacionais (total)", dre.custosOperacionaisTotal],
       ["Custos Fixos", dre.custosFixos],
       ["Custos Variáveis", dre.custosVariaveis],
       ["Carga tributária total", dre.impostosTotal],
@@ -166,8 +172,10 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
         ["Margem EBIT", pct(ind.margemEbit)],
         ["Margem Líquida", pct(ind.margemLiquida)],
         ["Margem de Contribuição", pct(ind.margemContribuicao)],
+        ["Margem de Segurança", pct(ind.margemSeguranca)],
         ["Ponto Equilíbrio (op.)", brl(ind.pontoEquilibrio)],
         ["Ponto Equilíbrio (fin.)", brl(ind.pontoEquilibrioFinanceiro)],
+        ["GAO (alavancagem op.)", fmtNum(safe(ind.gao), 2) + "x"],
         ["ROE", pct(ind.roe)], ["ROA", pct(ind.roa)], ["ROIC", pct(ind.roic)],
         ["WACC", pct(ind.wacc * 100, 2)],
         ["Ciclo Financeiro (d)", fmtNum(safe(ind.cicloFinanceiro), 0)],
@@ -179,10 +187,23 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
         ["Endividamento Geral", pct(ind.endividamentoGeral)],
         ["Grau Endivid. (D/PL)", pct(ind.grauEndividamento)],
         ["Cobertura Juros (EBIT/Juros)", fmtNum(safe(ind.coberturaJuros), 2) + "x"],
+        ["DSCR (EBITDA/Serviço Dívida)", fmtNum(safe(ind.dscr), 2) + "x"],
         ["Giro Ativo", fmtNum(safe(ind.giroAtivo), 2)],
         ["Dívida Líq./EBITDA", fmtNum(safe(ind.dividaLiqEbitda), 2) + "x"],
+        ["Dívida Líq./EBIT", fmtNum(safe(ind.dividaLiqEbit), 2) + "x"],
+        ["Dívida Líq./PL", fmtNum(safe(ind.dividaLiqPl), 2) + "x"],
+        ["Dívida Onerosa", brl(ind.dividaOnerosa)],
+        ["Ativo Circulante", brl(ind.ativoCirculante)],
+        ["Passivo Circulante", brl(ind.passivoCirculante)],
         ["Payback PL (anos)", fmtNum(safe(ind.payback), 1)],
         ["FCF (proxy)", brl(ind.fcf)],
+        ["Conversão EBITDA→Caixa", pct(ind.conversaoEbitdaCaixa)],
+        ["Qualidade do Lucro (FCF/LL)", fmtNum(safe(ind.qualidadeLucro), 2)],
+        ["Receita Líq./Colaborador", brl(ind.receitaPorColaborador)],
+        ["Faturamento/Colaborador", brl(ind.faturamentoPorColaborador)],
+        ["EBITDA/Colaborador", brl(ind.ebitdaPorColaborador)],
+        ["Lucro/Colaborador", brl(ind.lucroPorColaborador)],
+        ["Custo Pessoal/Receita", pct(ind.custoPessoalSobreReceita)],
       ],
     ));
   }
@@ -200,20 +221,43 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
   // ----- Fluxo de caixa -----
   const cfLines: string[] = [];
   if (cf) {
-    cfLines.push(`## Fluxo de Caixa Mensal`);
+    cfLines.push(`## Fluxo de Caixa Mensal — completo (R$)`);
+    // Tabela 1: entradas e saídas operacionais detalhadas
+    cfLines.push(`\n### Entradas e Pagamentos Operacionais`);
     cfLines.push(table(
-      ["Mês", "Recebim.", "Pagam.Op.", "Fluxo Op.", "Capex", "Financ.", "Saldo Final"],
+      ["Mês", "Saldo Ini.", "Recebim.", "Rec.Financ.", "Pag.Forn.", "Pag.Fixos", "Pag.Variáv.", "Pag.Financ.", "Pag.Impostos", "Fluxo Op."],
       MESES.map((m, i) => [
         m,
+        brl(cf.saldoInicial[i]),
         brl(cf.recebimentos[i]),
-        brl(cf.pagamentosFornecedores[i] + cf.pagamentosFixos[i] + cf.pagamentosVariaveis[i] + cf.pagamentosFinanceiros[i] + cf.pagamentosImpostos[i]),
+        brl(cf.receitasFinanceiras[i]),
+        brl(cf.pagamentosFornecedores[i]),
+        brl(cf.pagamentosFixos[i]),
+        brl(cf.pagamentosVariaveis[i]),
+        brl(cf.pagamentosFinanceiros[i]),
+        brl(cf.pagamentosImpostos[i]),
         brl(cf.fluxoOperacional[i]),
+      ]),
+    ));
+    // Tabela 2: investimento, financiamento e saldo
+    cfLines.push(`\n### Investimento, Financiamento e Saldo`);
+    cfLines.push(table(
+      ["Mês", "Capex", "Fluxo Inv.", "Aportes", "Emprést.Capt.", "Amortiz.", "Dividendos", "Fluxo Fin.", "Var.Caixa", "Saldo Final"],
+      MESES.map((m, i) => [
+        m,
         brl(cf.capex[i]),
+        brl(cf.fluxoInvestimento[i]),
+        brl(cf.aportes[i]),
+        brl(cf.emprestimosCaptados[i]),
+        brl(cf.amortizacoes[i]),
+        brl(cf.dividendos[i]),
         brl(cf.fluxoFinanciamento[i]),
+        brl(cf.variacaoCaixa[i]),
         brl(cf.saldoFinal[i]),
       ]),
     ));
-    cfLines.push(`\n**Totais:** Recebim. ${brl(cf.totais.recebimentos)} · Fluxo Op. ${brl(cf.totais.fluxoOperacional)} · Invest. ${brl(cf.totais.fluxoInvestimento)} · Financ. ${brl(cf.totais.fluxoFinanciamento)} · Variação ${brl(cf.totais.variacao)} · Saldo final ${brl(cf.totais.saldoFinal)}`);
+    cfLines.push(`\n**Totais:** Recebim. ${brl(cf.totais.recebimentos)} · Rec.Financ. ${brl(cf.totais.receitasFinanceiras)} · Pagam.Totais ${brl(cf.totais.pagamentosTotais)} · Fluxo Op. ${brl(cf.totais.fluxoOperacional)} · Invest. ${brl(cf.totais.fluxoInvestimento)} · Financ. ${brl(cf.totais.fluxoFinanciamento)} · Variação ${brl(cf.totais.variacao)} · Saldo final ${brl(cf.totais.saldoFinal)}`);
+    cfLines.push(`**Transbordo ano seguinte:** Contas a Receber ${brl(cf.contasReceberAnoSeguinte)} · Fornecedores ${brl(cf.fornecedoresAnoSeguinte)} · Impostos ${brl(cf.impostosAnoSeguinte)}`);
     if (cf.totais.pioresMes) cfLines.push(`**Pior mês:** ${cf.totais.pioresMes.mes} → ${brl(cf.totais.pioresMes.saldo)}`);
     if (cf.alertas?.length) {
       cfLines.push(`**Alertas:**`);
