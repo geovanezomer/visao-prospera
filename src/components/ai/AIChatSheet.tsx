@@ -103,9 +103,9 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
     try {
       // toca cache
       getSectionsCached(state, simHasChanges ? simulatedState : undefined);
-      return buildSnapshot(state, simHasChanges ? simulatedState : undefined, config.maxTokensSnapshot);
+      return buildSnapshot(state, simHasChanges ? simulatedState : undefined);
     } catch { return ""; }
-  }, [state, simulatedState, simHasChanges, config.includeSnapshot, config.useTools, config.maxTokensSnapshot]);
+  }, [state, simulatedState, simHasChanges, config.includeSnapshot, config.useTools]);
 
   const buildSysPrompt = (auditMode?: boolean) =>
     buildSystemPrompt({
