@@ -23,6 +23,7 @@ import {
   MAX_FILES_PER_MSG, type ChatAttachment,
 } from "@/services/ai/attachments";
 import { buildDynamicSuggestions } from "@/services/ai/suggestions";
+import { buildOpeningBriefing } from "@/services/ai/briefing";
 import type { AppState } from "@/lib/finance/types";
 import { resolveEffectiveRegime } from "@/lib/finance/calculations";
 import type { SimulatorParams } from "@/lib/finance/simulator";
