@@ -62,6 +62,43 @@ export function buildOpeningBriefing(state: AppState): string | null {
       pontos.push(`gap de capital de giro de **${brl(ind.gapCapitalGiro)}** não financiado`);
     }
 
+    // === Riscos qualitativos da página Governança/Estratégico ===
+    // Tratamos como "alertas de risco estrutural" complementares aos financeiros.
+    const riscos: string[] = [];
+    const s = state.strategic;
+    if (s) {
+      const c = s.concentration;
+      if (c?.pctMaiorCliente !== undefined && c.pctMaiorCliente >= 30) {
+        riscos.push(`maior cliente concentra **${c.pctMaiorCliente.toFixed(0)}%** da receita`);
+      }
+      if (c?.pctMaiorFornecedor !== undefined && c.pctMaiorFornecedor >= 30) {
+        riscos.push(`maior fornecedor concentra **${c.pctMaiorFornecedor.toFixed(0)}%** do CPV`);
+      }
+      if (c?.dependeCanal === "sim") {
+        riscos.push(`dependência crítica de **um único canal** de aquisição`);
+      }
+      const g = s.governance;
+      if (g?.socioAfastado60d === "para") {
+        riscos.push(`negócio **para** se sócio se afasta 60 dias (risco-chave)`);
+      } else if (g?.socioAfastado60d === "perde_eficiencia" && pontos.length + riscos.length < 5) {
+        riscos.push(`empresa perde eficiência sem o sócio (dependência operacional)`);
+      }
+      if (g?.processosDocumentados === "nenhum") {
+        riscos.push(`**nenhum processo documentado** (risco de continuidade)`);
+      }
+      if (g?.planoSucessao === "nao" || g?.planoSucessao === "nunca") {
+        riscos.push(`sem plano de sucessão`);
+      }
+      if (g?.quemFechaContrato === "ninguem") {
+        riscos.push(`ninguém autorizado a fechar contrato (gargalo comercial)`);
+      }
+      if (s.regulatory?.exposicaoRegulatoria === "sim") {
+        riscos.push(`exposição regulatória/licenças crítica`);
+      }
+    }
+    // Adiciona até 2 riscos qualitativos ao briefing (mantém 5 linhas)
+    riscos.slice(0, 2).forEach(r => pontos.push(r));
+
     // Se não houver nada crítico/atenção, devolve briefing positivo curto
     if (!pontos.length && !criticos.length && !atencao.length) {
       return [
