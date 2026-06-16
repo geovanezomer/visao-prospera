@@ -445,9 +445,8 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
 
 /**
  * Monta o snapshot full SEM limite de tokens — envia todas as seções disponíveis.
- * O parâmetro `_maxTokens` é mantido por compatibilidade, mas é ignorado.
  */
-export function buildSnapshot(state: AppState, simulatedState?: AppState, _maxTokens?: number): string {
+export function buildSnapshot(state: AppState, simulatedState?: AppState): string {
   const s = buildSections(state, simulatedState);
   const all = [
     s.premissas, s.regime, s.dre, s.indicadores, s.valuation, s.comparativo,
