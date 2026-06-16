@@ -1,3 +1,4 @@
+import * as React from "react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import remarkGfm from "remark-gfm";
 import { Bot, Settings, Trash2, Send, Loader2, User, Plus, MessageSquare, X, Paperclip } from "lucide-react";
@@ -168,7 +169,7 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                     </div>
                     <div className={`group relative flex flex-col gap-2 rounded-2xl px-5 py-3 text-sm shadow-sm max-w-[85%] ${m.role === "user" ? "bg-primary/15 border border-primary/20" : "bg-card/80 border border-border/60"}`}>
                       <Suspense fallback={<div className="h-20 animate-pulse bg-muted rounded" />}>
-                        <ReactMarkdown className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-black/50 prose-pre:p-3 prose-pre:rounded-lg">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-black/50 prose-pre:p-3 prose-pre:rounded-lg">
                           {m.content}
                         </ReactMarkdown>
                       </Suspense>
