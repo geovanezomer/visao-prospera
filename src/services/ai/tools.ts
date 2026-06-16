@@ -259,6 +259,23 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
     case "get_prescritivo": return sec.prescritivo;
     case "get_comparativo_simulado":
       return sec.comparativo ?? "Nenhum cenário simulado ativo — todas as alavancas estão em 0.";
+    case "get_resumo_executivo": {
+      const { dre } = buildDRE(state, resolveEffectiveRegime(state));
+      const ind = calcIndicators(state, dre);
+      const val = buildValuation(state, defaultValuationParams(state.businessType));
+      const health = computeHealth(state);
+      return [
+        "## Resumo Executivo",
+        `- Receita Bruta Anual: ${brl(sum(dre.receitaBruta))}`,
+        `- EBITDA: ${brl(sum(dre.ebitda))} (${pct(ind.margemEbitda)})`,
+        `- Lucro Líquido: ${brl(sum(dre.lucroLiquido))} (${pct(ind.margemLiquida)})`,
+        `- DSCR: ${ind.dscr.toFixed(2)}x ${ind.dscr < 1.5 ? "⚠️ abaixo de 1,5x" : "✅"}`,
+        `- NCG: ${brl(ind.ncg)} | Gap Capital de Giro: ${brl(ind.gapCapitalGiro)}`,
+        `- EV (base): ${brl(val.enterpriseValue.base)}`,
+        `- Score de Saúde: ${health.total.toFixed(0)}/100 — ${health.grade} (${health.status})`,
+        `- Pior mês de caixa: chame get_fluxo_caixa para detalhar`,
+      ].join("\n");
+    }
     case "get_tudo":
       return [
         sec.premissas, sec.receitas, sec.despesas, sec.capital, sec.regime,
