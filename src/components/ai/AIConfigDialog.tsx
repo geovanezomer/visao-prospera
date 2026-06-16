@@ -117,6 +117,17 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
                 <Label className="text-xs">Timeout (s): {Math.round(draft.timeoutMs / 1000)}</Label>
                 <Slider value={[draft.timeoutMs / 1000]} min={15} max={300} step={5} onValueChange={([v]) => setDraft({ ...draft, timeoutMs: v * 1000 })} />
               </div>
+              <div className="space-y-1.5 col-span-2">
+                <Label className="text-xs">Sugestões dinâmicas na tela inicial: {draft.maxSuggestions ?? 6}</Label>
+                <Slider
+                  value={[draft.maxSuggestions ?? 6]}
+                  min={4}
+                  max={6}
+                  step={1}
+                  onValueChange={([v]) => setDraft({ ...draft, maxSuggestions: v })}
+                />
+                <p className="text-[10px] text-muted-foreground">Quantas perguntas contextualizadas (baseadas no diagnóstico) aparecem antes da primeira mensagem.</p>
+              </div>
             </div>
 
 

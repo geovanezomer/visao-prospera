@@ -80,6 +80,7 @@ export interface AIConfig {
   skills: Skill[];            // habilidades modulares on/off
   extraSystemPrompt: string;  // suplemento livre (compat legado)
   timeoutMs: number;
+  maxSuggestions: number;     // 4–6 sugestões dinâmicas na tela inicial
 }
 
 export const PROVIDER_DEFAULTS: Record<Provider, Pick<AIConfig, "baseUrl" | "model">> = {
@@ -101,6 +102,7 @@ export const DEFAULT_CONFIG: AIConfig = {
   skills: DEFAULT_SKILLS,
   extraSystemPrompt: "",
   timeoutMs: 120_000,
+  maxSuggestions: 6,
 };
 
 const CFG_KEY = "gz-finance-ai-config";
