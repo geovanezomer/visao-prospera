@@ -322,7 +322,21 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
               </div>
             ) : (
               <div className="max-w-4xl mx-auto space-y-6">
-                {messages.map((m, i) => (
+                {messages.map((m, i) => {
+                  // Modo Auditor: relatório estruturado renderizado em card próprio.
+                  if (m.role === "assistant" && isAuditReport(m.content)) {
+                    return (
+                      <div key={i} className="flex gap-4">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-card border-border/40">
+                          <Bot className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <AuditReport content={m.content} onCopy={handleCopy} />
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
                   <div key={i} className={`flex gap-4 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
                     <div className={`flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-lg border ${m.role === "user" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border/40"}`}>
                       {m.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
@@ -335,7 +349,8 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
                       </Suspense>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 {streaming && (
                   <div className="flex gap-4 animate-in fade-in duration-500">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-card border-border/40">
