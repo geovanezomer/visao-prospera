@@ -54,6 +54,28 @@ ANEXOS:
 
 import type { Skill } from "./providers";
 
+// Cabeçalho de CONTEXTO sempre injetado — garante que a IA saiba data,
+// empresa ativa e regime tributário em vigor (vital em reunião com cliente).
+export interface RuntimeContext {
+  companyName?: string;
+  regimeLabel?: string;   // ex: "Simples Nacional (Anexo III, Fator R 32%)"
+  cenarioAtivo?: string;  // nome do cenário/simulação ativa, se houver
+}
+
+export function buildContextHeader(ctx: RuntimeContext = {}): string {
+  const now = new Date();
+  const dataStr = now.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+  const mesAno = now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const lines = [
+    "### CONTEXTO DA SESSÃO (use sempre que se referir a 'hoje', 'agora', 'a empresa', 'o regime')",
+    `- **Data atual:** ${dataStr} (referência fiscal: ${mesAno})`,
+    `- **Empresa ativa:** ${ctx.companyName?.trim() || "(sem nome cadastrado)"}`,
+    `- **Regime tributário vigente:** ${ctx.regimeLabel?.trim() || "(não informado)"}`,
+  ];
+  if (ctx.cenarioAtivo?.trim()) lines.push(`- **Cenário ativo:** ${ctx.cenarioAtivo.trim()}`);
+  return lines.join("\n");
+}
+
 export function buildSystemPrompt(opts: {
   snapshot?: string;
   includeSnapshot: boolean;
@@ -62,10 +84,11 @@ export function buildSystemPrompt(opts: {
   auditMode?: boolean;
   soul?: string;
   skills?: Skill[];
+  context?: RuntimeContext;
 }): string {
   // SOUL substitui a PERSONA fixa quando fornecido (editável em Configurações).
   const soul = (opts.soul && opts.soul.trim()) ? opts.soul.trim() : PERSONA;
-  const parts: string[] = [soul, "", SISTEMA, "", REGRAS, "", GLOSSARIO];
+  const parts: string[] = [soul, "", buildContextHeader(opts.context), "", SISTEMA, "", REGRAS, "", GLOSSARIO];
 
   // SKILLS ativas — anexadas como blocos modulares.
   const activeSkills = (opts.skills || []).filter(s => s.enabled && s.body.trim());
