@@ -107,6 +107,7 @@ export function createAction(
   const all = readRaw(company);
   all.unshift(item);
   localStorage.setItem(KEY(company), JSON.stringify(all));
+  emit();
   return item;
 }
 
@@ -118,6 +119,7 @@ export function updateAction(company: string, id: string, patch: Partial<ActionI
   all[idx] = { ...all[idx], ...patch, updatedAt: now };
   if (patch.status === "concluida" && !all[idx].resolvedAt) all[idx].resolvedAt = now;
   localStorage.setItem(KEY(company), JSON.stringify(all));
+  emit();
   return all[idx];
 }
 
@@ -128,6 +130,7 @@ export function deleteAction(company: string, id: string) {
   if (idx < 0) return;
   all[idx] = { ...all[idx], isDeleted: true, updatedAt: Date.now() };
   localStorage.setItem(KEY(company), JSON.stringify(all));
+  emit();
 }
 
 /** Restaura um item soft-deleted (suporte a futuro undo). */
@@ -137,6 +140,7 @@ export function restoreAction(company: string, id: string) {
   if (idx < 0) return;
   all[idx] = { ...all[idx], isDeleted: false, updatedAt: Date.now() };
   localStorage.setItem(KEY(company), JSON.stringify(all));
+  emit();
 }
 
 export function actionsToMarkdown(items: ActionItem[]): string {
