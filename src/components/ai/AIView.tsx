@@ -181,6 +181,11 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
             onProgress: (e) => {
               if (e.type === "tool") {
                 collected.push(e.call);
+                // Toast quando a tool muda o estado (criar_acao, salvar_cenario...).
+                if (e.call.name === "criar_acao") toast.success("Ação adicionada ao plano", { description: "Painel de ações atualizado." });
+                else if (e.call.name === "salvar_cenario") toast.success("Cenário salvo", { description: "Disponível no menu de cenários." });
+                else if (e.call.name === "atualizar_acao") toast.success("Ação atualizada");
+                else if (e.call.name === "deletar_acao") toast.success("Ação removida");
                 setMessages([
                   ...history,
                   ...collected.map(c => ({
