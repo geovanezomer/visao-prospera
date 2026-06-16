@@ -94,6 +94,22 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
     } catch { return ""; }
   }, [state, simulatedState, simHasChanges, config.includeSnapshot, config.useTools]);
 
+  // Contexto runtime: data, empresa, regime efetivo (com downgrade Simples→Presumido).
+  const runtimeContext = useMemo(() => {
+    try {
+      const eff = resolveEffectiveRegime(state);
+      const t = state.tax;
+      const nominal = t.regime;
+      const base = eff !== nominal ? `${eff} (nominal: ${nominal} — downgrade por exceder limite)` : eff;
+      const extra = eff === "simples"
+        ? ` · Anexo ${t.simplesAnexo}, Fator R ${(t.fatorR * 100).toFixed(1)}%`
+        : "";
+      return { companyName: state.companyName, regimeLabel: base + extra };
+    } catch {
+      return { companyName: state.companyName, regimeLabel: state.tax?.regime };
+    }
+  }, [state.companyName, state.tax]);
+
   const buildSysPrompt = (auditMode?: boolean) =>
     buildSystemPrompt({
       snapshot,
@@ -103,6 +119,7 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
       soul: config.soul,
       skills: config.skills,
       auditMode,
+      context: runtimeContext,
     });
 
   const send = async (text: string, opts?: { auditMode?: boolean; replaceLast?: boolean }) => {
