@@ -76,7 +76,7 @@ export function saveScenario(company: string, rec: Omit<ScenarioRecord, "id" | "
     const idx = all.findIndex(s => s.id === rec.id);
     if (idx >= 0) {
       all[idx] = { ...all[idx], ...rec, updatedAt: now } as ScenarioRecord;
-      localStorage.setItem(KEY(company), JSON.stringify(all));
+      localStorage.setItem(KEY(company), JSON.stringify(all)); emit();
       return all[idx];
     }
   }
@@ -87,7 +87,7 @@ export function saveScenario(company: string, rec: Omit<ScenarioRecord, "id" | "
     updatedAt: now,
   };
   all.unshift(newRec);
-  localStorage.setItem(KEY(company), JSON.stringify(all));
+  localStorage.setItem(KEY(company), JSON.stringify(all)); emit();
   return newRec;
 }
 
@@ -97,7 +97,7 @@ export function deleteScenario(company: string, id: string) {
   const idx = all.findIndex(s => s.id === id);
   if (idx < 0) return;
   all[idx] = { ...all[idx], isDeleted: true, updatedAt: Date.now() };
-  localStorage.setItem(KEY(company), JSON.stringify(all));
+  localStorage.setItem(KEY(company), JSON.stringify(all)); emit();
 }
 
 export function restoreScenario(company: string, id: string) {
@@ -105,7 +105,7 @@ export function restoreScenario(company: string, id: string) {
   const idx = all.findIndex(s => s.id === id);
   if (idx < 0) return;
   all[idx] = { ...all[idx], isDeleted: false, updatedAt: Date.now() };
-  localStorage.setItem(KEY(company), JSON.stringify(all));
+  localStorage.setItem(KEY(company), JSON.stringify(all)); emit();
 }
 
 export function getScenario(company: string, idOrName: string): ScenarioRecord | undefined {
