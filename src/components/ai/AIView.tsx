@@ -20,6 +20,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 
 const ReactMarkdown = lazy(() => import("react-markdown") as any);
+import { AuditReport, isAuditReport } from "./AuditReport";
+
+const handleCopy = (s: string) => {
+  navigator.clipboard.writeText(s).then(() => toast.success("Copiado"));
+};
 
 
 interface Props {
