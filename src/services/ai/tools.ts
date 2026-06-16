@@ -13,6 +13,13 @@ import { listActions, createAction, updateAction, deleteAction, actionsToMarkdow
 import { regimeComparisonToMarkdown, taxAuditToMarkdown } from "@/services/compliance/tax";
 import { checklistToMarkdown } from "@/services/compliance/checklist";
 import { buildDRE, calcIndicators, resolveEffectiveRegime } from "@/lib/finance/calculations";
+import { buildValuation, defaultValuationParams } from "@/lib/finance/valuation";
+import { computeHealth } from "@/lib/finance/health";
+
+// Helpers locais de formatação (espelho dos usados em snapshot.ts).
+const brl = (n: number) => (Number.isFinite(n) ? n : 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const pct = (n: number) => `${((Number.isFinite(n) ? n : 0) * 100).toFixed(1).replace(".", ",")}%`;
+const sum = (a: number[]) => a.reduce((x, y) => x + (Number.isFinite(y) ? y : 0), 0);
 
 export interface ToolDef {
   name: string;
