@@ -84,8 +84,9 @@ export interface AIConfig {
 }
 
 export const PROVIDER_DEFAULTS: Record<Provider, Pick<AIConfig, "baseUrl" | "model">> = {
-  lmstudio: { baseUrl: "http://127.0.0.1:1234/v1", model: "local-model" },
-  openai:   { baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
+  lmstudio:  { baseUrl: "http://127.0.0.1:1234/v1", model: "local-model" },
+  openai:    { baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
+  anthropic: { baseUrl: "https://api.anthropic.com/v1", model: "claude-sonnet-4-5-20250929" },
 };
 
 export const DEFAULT_CONFIG: AIConfig = {
