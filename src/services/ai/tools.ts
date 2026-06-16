@@ -53,7 +53,7 @@ export const TOOLS: ToolDef[] = [
 
   {
     name: "simular_alavanca",
-    description: "Aplica alavancas temporárias e retorna impacto. Use para responder 'e se cortar 20% dos fixos?'.",
+    description: "Aplica alavancas e retorna impacto imediato em EBITDA, margem e valuation.\nConvenção de sinais — siga exatamente:\n- receitaPct: positivo = aumento (ex: 10 = +10% receita), negativo = queda\n- cpvPct: negativo = redução de custo (ex: -15 = cortar 15% do CPV), positivo = aumento\n- fixosPct: negativo = corte (ex: -20 = cortar 20% dos fixos), positivo = aumento\n- pmrDelta: negativo = reduzir prazo de recebimento (melhora caixa), positivo = piorar\n- pmpDelta: positivo = ampliar prazo com fornecedor (melhora caixa), negativo = reduzir\nExemplos: 'cortar 20% dos fixos' → fixosPct: -20 | 'reduzir PMR em 5 dias' → pmrDelta: -5",
     parameters: {
       type: "object",
       properties: {
