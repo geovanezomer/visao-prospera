@@ -205,23 +205,40 @@ export async function chatWithTools(
   const maxRounds = opts?.maxRounds ?? 5;
   const calls: ToolCall[] = [];
   const messages = initialMessages.slice();
+  const anth = isAnthropic(cfg);
 
   for (let i = 0; i < maxRounds; i++) {
     const { signal: s, cancel } = withTimeout(cfg, opts?.signal);
     let res: Response;
     try {
-      res = await fetchWithRetry(`${cfg.baseUrl}/chat/completions`, {
-        method: "POST",
-        signal: s,
-        headers: headers(cfg),
-        body: JSON.stringify({
+      const url = anth ? `${cfg.baseUrl}/messages` : `${cfg.baseUrl}/chat/completions`;
+      let body: any;
+      if (anth) {
+        const { system, rest } = splitSystemAndMessages(messages);
+        body = {
+          model: cfg.model,
+          max_tokens: 4096,
+          temperature: cfg.temperature,
+          stream: false,
+          ...(system ? { system } : {}),
+          messages: toAnthropicMessages(rest),
+          tools: asAnthropicTools(),
+        };
+      } else {
+        body = {
           model: cfg.model,
           messages,
           temperature: cfg.temperature,
           tools: asOpenAITools(),
           tool_choice: "auto",
           stream: false,
-        }),
+        };
+      }
+      res = await fetchWithRetry(url, {
+        method: "POST",
+        signal: s,
+        headers: headers(cfg),
+        body: JSON.stringify(body),
       });
     } finally { cancel(); }
 
@@ -230,6 +247,36 @@ export async function chatWithTools(
       throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
     }
     const json = await res.json();
+
+    if (anth) {
+      // Resposta Anthropic: { content: [{type:"text"|"tool_use", ...}], stop_reason }
+      const blocks: any[] = Array.isArray(json?.content) ? json.content : [];
+      const toolUses = blocks.filter(b => b.type === "tool_use");
+      const textOut = blocks.filter(b => b.type === "text").map(b => b.text || "").join("");
+
+      if (toolUses.length > 0) {
+        // Reconstroi como tool_calls no nosso formato unificado para o histórico.
+        const tcs = toolUses.map(tu => ({
+          id: tu.id,
+          type: "function" as const,
+          function: { name: tu.name, arguments: JSON.stringify(tu.input || {}) },
+        }));
+        messages.push({ role: "assistant", content: textOut, tool_calls: tcs });
+        for (const tu of toolUses) {
+          const result = await runTool(tu.name, tu.input || {});
+          const call: ToolCall = { id: tu.id, name: tu.name, arguments: tu.input || {}, result };
+          calls.push(call);
+          opts?.onProgress?.({ type: "tool", call });
+          messages.push({ role: "tool", tool_call_id: tu.id, name: tu.name, content: result });
+        }
+        continue;
+      }
+
+      if (opts?.onProgress) opts.onProgress({ type: "text", delta: textOut });
+      return { finalText: textOut, toolCalls: calls };
+    }
+
+    // OpenAI-compatível.
     const choice = json?.choices?.[0];
     const msg = choice?.message;
     const toolCalls = msg?.tool_calls;
