@@ -73,14 +73,29 @@ ANEXOS:
 - Se o consultor enviar **imagens** (prints de relatórios, gráficos, NF) — descreva os números visíveis e relacione com os dados do sistema.
 - Se enviar **PDFs** — o texto extraído virá ao final da mensagem do usuário entre delimitadores '--- Página N ---'. Use esses números para complementar a análise (ex: balancete, contrato, demonstrativo bancário).`;
 
+import type { Skill } from "./providers";
+
 export function buildSystemPrompt(opts: {
   snapshot?: string;
   includeSnapshot: boolean;
   useTools: boolean;
   extra?: string;
   auditMode?: boolean;
+  soul?: string;
+  skills?: Skill[];
 }): string {
-  const parts = [PERSONA, "", SISTEMA, "", REGRAS, "", GLOSSARIO];
+  // SOUL substitui a PERSONA fixa quando fornecido (editável em Configurações).
+  const soul = (opts.soul && opts.soul.trim()) ? opts.soul.trim() : PERSONA;
+  const parts: string[] = [soul, "", SISTEMA, "", REGRAS, "", GLOSSARIO];
+
+  // SKILLS ativas — anexadas como blocos modulares.
+  const activeSkills = (opts.skills || []).filter(s => s.enabled && s.body.trim());
+  if (activeSkills.length > 0) {
+    parts.push("", "### SKILLS ATIVAS");
+    for (const s of activeSkills) {
+      parts.push("", `#### ${s.name}`, s.body.trim());
+    }
+  }
 
   if (opts.useTools) {
     parts.push("", `MODO TOOL-CALLING ATIVO: use as funções disponíveis para buscar os dados exatos sob demanda. Não invente — chame a função.`);
