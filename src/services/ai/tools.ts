@@ -292,8 +292,8 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       const { dre } = buildDRE(state, resolveEffectiveRegime(state));
       const ind = calcIndicators(state, dre);
       const alerts = diagnose(state, dre, ind);
-      const critical = alerts.filter(a => a.level === "critical");
-      const warning = alerts.filter(a => a.level === "warning");
+      const critical = alerts.filter(a => a.level === "danger");
+      const warning = alerts.filter(a => a.level === "warn");
       if (!alerts.length) return "✅ Nenhum alerta crítico ou de atenção identificado.";
       const lines = ["## Alertas do Diagnóstico"];
       if (critical.length) {
