@@ -424,7 +424,7 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
                 </p>
                 <div className="space-y-1.5">
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Sugestões</p>
-                  {SUGGESTIONS.map((s, i) => (
+                  {suggestions.map((s: string, i: number) => (
                     <button key={i} onClick={() => void send(s)} className="block w-full rounded-md border border-border/40 px-2.5 py-1.5 text-left text-xs hover:bg-muted/40">
                       {s}
                     </button>
