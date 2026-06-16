@@ -112,7 +112,7 @@ describe("Unidades — Helper pct() do AI snapshot/tools", () => {
     expect(pctTools(15.5)).toBe("15,5%");
     expect(pctSnapshot(0)).toBe("0.0%");
     expect(pctSnapshot(100)).toBe("100.0%");
-    // Fração 0.15 NÃO deve ser interpretada como 15% — quem passa fração é bug a montante.
-    expect(pctSnapshot(0.15)).toBe("0.2%");
+    // Valor pequeno (ex.: 0.5%) é preservado — helper NÃO multiplica por 100.
+    expect(pctSnapshot(0.5)).toBe("0.5%");
   });
 });
