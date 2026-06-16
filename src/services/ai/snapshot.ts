@@ -1,6 +1,6 @@
 // Snapshot em camadas + estimativa de tokens + sanitização + cache por hash.
 import type { AppState } from "@/lib/finance/types";
-import { buildDRE, calcIndicators, diagnose, resolveEffectiveRegime } from "@/lib/finance/calculations";
+import { buildDRE, calcIndicators, diagnose, resolveEffectiveRegime, compareErasForRegime } from "@/lib/finance/calculations";
 import { buildCashFlow } from "@/lib/finance/cashflow";
 import { buildValuation, defaultValuationParams } from "@/lib/finance/valuation";
 import { computeHealth } from "@/lib/finance/health";
@@ -411,6 +411,30 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     if (t.issDeducoes) regLines.push(`- **Deduções ISS (materiais/subempreitada):** ${brl(t.issDeducoes)}`);
     if (built?.tax?.totalAnual !== undefined) regLines.push(`- **Carga tributária total apurada (ano):** ${brl(built.tax.totalAnual)}`);
   }
+
+  // ----- Comparativo de eras da Reforma Tributária -----
+  // Mostra os mesmos números da tabela TaxTab que o consultor está olhando.
+  const erasComparativo = tryRun(
+    () => compareErasForRegime(state, state.tax.regime),
+    [] as ReturnType<typeof compareErasForRegime>,
+  );
+  if (erasComparativo.length === 3) {
+    regLines.push(`\n### Impacto da Reforma Tributária — ${state.tax.regime}`);
+    regLines.push(`| Era | Período | Tributos (ano) | Carga Efetiva | Δ vs. Atual |`);
+    regLines.push(`| --- | --- | --- | --- | --- |`);
+    const base = erasComparativo[0].annual;
+    erasComparativo.forEach(p => {
+      const delta = p.annual - base;
+      const deltaTxt = p.era === "atual"
+        ? "—"
+        : `${delta >= 0 ? "+" : ""}${brl(delta)} (${base !== 0 ? ((delta / base) * 100).toFixed(1) : "0.0"}%)`;
+      const periodo = p.era === "atual" ? "até 2026" : p.era === "transicao" ? "2027–2032" : "2033+";
+      regLines.push(`| ${p.era} | ${periodo} | ${brl(p.annual)} | ${pct(p.effective)} | ${deltaTxt} |`);
+    });
+    const eraAtiva = state.tax.era ?? "atual";
+    regLines.push(`\n_Era selecionada pelo consultor: **${eraAtiva}**_`);
+  }
+
 
   // ----- Governança (qualitativo) -----
   const govLines: string[] = [];
