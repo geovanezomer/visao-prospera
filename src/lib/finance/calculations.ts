@@ -897,7 +897,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // Auditoria #4: Ke ≤ 0 é financeiramente impossível (custo do capital próprio mínimo ≥ taxa livre de risco).
   // Fallback: piso de 8% a.a. (≈ Selic neutra) — evita WACC artificialmente baixo que infla VPL/ROIC vs WACC.
   const irShield = irShieldForRegime(resolveEffectiveRegime(state), lairAnual);
-  const keSeguro = capital.ke > 0 ? capital.ke : 0.08;
+  // Auditoria #4 (unidades): Ke é armazenado em % (ex.: 15 = 15% a.a.). O piso de 8% a.a.
+  // deve ser 8 — não 0.08 — senão o WACC sai 100× menor quando Ke ≤ 0.
+  const keSeguro = capital.ke > 0 ? capital.ke : 8;
   const wacc = wE * keSeguro + wD * capital.kd * (1 - irShield);
 
   // ---- NOPAT e ROIC corretos (Auditoria) ----
