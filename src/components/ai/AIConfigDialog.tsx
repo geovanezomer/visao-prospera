@@ -79,11 +79,21 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
               <Input value={draft.baseUrl} onChange={(e) => setDraft({ ...draft, baseUrl: e.target.value })} />
             </div>
 
-            {draft.provider === "openai" && (
+            {(draft.provider === "openai" || draft.provider === "anthropic") && (
               <>
                 <div className="space-y-1.5">
                   <Label>API Key</Label>
-                  <Input type="password" placeholder="sk-..." value={draft.apiKey} onChange={(e) => setDraft({ ...draft, apiKey: e.target.value })} />
+                  <Input
+                    type="password"
+                    placeholder={draft.provider === "openai" ? "sk-..." : "sk-ant-..."}
+                    value={draft.apiKey}
+                    onChange={(e) => setDraft({ ...draft, apiKey: e.target.value })}
+                  />
+                  {draft.provider === "anthropic" && (
+                    <p className="text-[10px] text-muted-foreground">
+                      Crie uma chave em console.anthropic.com → Settings → API Keys.
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center justify-between rounded-md border border-border/40 p-2.5">
                   <div>
