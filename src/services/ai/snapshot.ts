@@ -190,7 +190,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
         ["Ponto Equilíbrio (fin.)", brl(ind.pontoEquilibrioFinanceiro)],
         ["GAO (alavancagem op.)", fmtNum(safe(ind.gao), 2) + "x"],
         ["ROE", pct(ind.roe)], ["ROA", pct(ind.roa)], ["ROIC", pct(ind.roic)],
-        ["WACC", pct(ind.wacc * 100, 2)],
+        ["WACC", pct(ind.wacc, 2)],
         ["Ciclo Financeiro (d)", fmtNum(safe(ind.cicloFinanceiro), 0)],
         ["NCG", brl(ind.ncg)],
         ["Gap Cap. Giro", brl(ind.gapCapitalGiro)],
