@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, CheckCircle2, XCircle, AlertTriangle, X, Plus, Trash2, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, X, Plus, Trash2, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
 import { AIConfig, Provider, switchProvider, DEFAULT_SOUL, DEFAULT_SKILLS, Skill } from "@/services/ai/providers";
 import { listModels, testConnection } from "@/services/ai/client";
 
