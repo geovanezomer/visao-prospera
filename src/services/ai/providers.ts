@@ -1,7 +1,7 @@
 // Configuração de provedores de IA + threads + system prompt extra.
 // 100% client-side, localStorage.
 
-export type Provider = "lmstudio" | "openai";
+export type Provider = "lmstudio" | "openai" | "anthropic";
 
 // SKILL: capacidade modular opt-in que é anexada ao system prompt quando ativa.
 export interface Skill {
