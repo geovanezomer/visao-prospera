@@ -313,7 +313,7 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {SUGGESTIONS.map((s, i) => (
+                  {suggestions.map((s: string, i: number) => (
                     <button key={i} onClick={() => void send(s)} className="text-left text-sm p-4 rounded-lg border border-border/40 hover:bg-accent hover:border-primary/50 transition-all">
                       {s}
                     </button>
