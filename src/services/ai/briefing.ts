@@ -10,17 +10,23 @@ import { buildDRE, calcIndicators, resolveEffectiveRegime, diagnose } from "@/li
 import { buildCashFlow } from "@/lib/finance/cashflow";
 import { computeHealth } from "@/lib/finance/health";
 import { findSector } from "@/services/benchmark/sectors";
+import type { SnapshotSections } from "./snapshot";
 
+// M-1: alinhado com tools.ts (mesma assinatura, mesmo Intl).
 const brl = (n: number) => (Number.isFinite(n) ? n : 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
-export function buildOpeningBriefing(state: AppState): string | null {
+/**
+ * M-3: aceita `sections` opcional. Quando vier do cache (getSectionsCached em useAIChat),
+ * reaproveita dre/ind/health/alerts já calculados em vez de refazer os 5 buildXxx.
+ */
+export function buildOpeningBriefing(state: AppState, sections?: SnapshotSections): string | null {
   try {
     const company = state.companyName || "a empresa";
-    const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-    const ind = calcIndicators(state, dre);
+    const dre = sections?.data?.dre ?? buildDRE(state, resolveEffectiveRegime(state)).dre;
+    const ind = sections?.data?.ind ?? calcIndicators(state, dre);
     const cf = buildCashFlow(state);
-    const health = computeHealth(state);
-    const alerts = diagnose(state, dre, ind);
+    const health = sections?.data?.health ?? computeHealth(state);
+    const alerts = sections?.data?.alerts ?? diagnose(state, dre, ind);
     const criticos = alerts.filter(a => a.level === "danger");
     const atencao = alerts.filter(a => a.level === "warn");
 
