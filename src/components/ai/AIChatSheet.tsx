@@ -120,6 +120,9 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
     }
   }, [state.companyName, state.tax]);
 
+  // Sugestões dinâmicas baseadas no diagnose() — surfa alertas reais (caixa neg, DSCR, etc).
+  const suggestions = useMemo(() => buildDynamicSuggestions(state), [state]);
+
   const buildSysPrompt = (auditMode?: boolean) =>
     buildSystemPrompt({
       snapshot,
