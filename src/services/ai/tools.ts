@@ -348,23 +348,30 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
     }
     case "salvar_cenario": {
       if (!args?.nome) return "Parâmetro 'nome' obrigatório.";
-      // Usa params reais do simulador ativo se houver alavanca acionada; senão, base.
-      const params: SimulatorParams = simParams ?? { ...DEFAULT_SIM };
-      const target = simulatedState ?? state;
+      // Detecta se há alguma alavanca não-zero ativa no simulador.
+      const hasLevers = simParams != null &&
+        Object.values(simParams).some(v => typeof v === "number" && v !== 0);
+
+      // Quando há alavanca → captura simulatedState + simParams.
+      // Quando não há   → captura state base + params=undefined (cenário base).
+      const target = hasLevers ? (simulatedState ?? state) : state;
+      const paramsToSave = hasLevers ? simParams : undefined;
+
       const { dre } = buildDRE(target, resolveEffectiveRegime(target));
       const ind = calcIndicators(target, dre);
       const rec = saveScenario(company, {
         name: String(args.nome),
         notes: args?.notas ? String(args.notas) : undefined,
-        params,
+        params: paramsToSave,
         summary: {
           ebitda: dre.ebitda.reduce((a, b) => a + b, 0),
           margemEbitda: ind.margemEbitda,
           lucroLiquido: dre.lucroLiquido.reduce((a, b) => a + b, 0),
         },
       });
-      const hasLevers = simParams && Object.values(simParams).some(v => typeof v === "number" && v !== 0);
-      const note = hasLevers ? "_(parâmetros do simulador ativo capturados)_" : "_(cenário base — nenhuma alavanca ativa)_";
+      const note = hasLevers
+        ? "_(parâmetros do simulador ativo capturados)_"
+        : "_(cenário base salvo — nenhuma alavanca ativa)_";
       return `✅ Cenário **${rec.name}** salvo (id: ${rec.id}). ${note}`;
     }
     case "excluir_cenario": {

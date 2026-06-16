@@ -40,7 +40,8 @@ export interface ScenarioRecord {
   id: string;
   name: string;
   notes?: string;
-  params: SimulatorParams;
+  /** Opcional: undefined = cenário base (sem alavancas ativas no simulador). */
+  params?: SimulatorParams;
   /** Resumo persistido para listagem rápida. */
   summary?: {
     ebitda: number;
