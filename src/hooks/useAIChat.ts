@@ -114,7 +114,10 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
   }, [state.companyName, state.tax]);
 
   // Sugestões dinâmicas baseadas no diagnose().
-  const suggestions = useMemo(() => buildDynamicSuggestions(state), [state]);
+  const suggestions = useMemo(
+    () => buildDynamicSuggestions(state, config.maxSuggestions),
+    [state, config.maxSuggestions],
+  );
 
   const buildSysPrompt = (auditMode?: boolean) =>
     buildSystemPrompt({
