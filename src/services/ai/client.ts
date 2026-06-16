@@ -1,7 +1,6 @@
 // Cliente unificado: streaming, tool-calling, retry, timeout.
 // Suporta provedores OpenAI-compatíveis (OpenAI, LM Studio) e Anthropic (Claude).
 import type { AIConfig } from "./providers";
-import { asOpenAITools, asAnthropicTools } from "./tools";
 
 export interface LLMMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -211,6 +210,7 @@ export async function chatWithTools(
     const { signal: s, cancel } = withTimeout(cfg, opts?.signal);
     let res: Response;
     try {
+      const { asOpenAITools, asAnthropicTools } = await import("./tools");
       const url = anth ? `${cfg.baseUrl}/messages` : `${cfg.baseUrl}/chat/completions`;
       let body: any;
       if (anth) {
