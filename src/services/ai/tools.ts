@@ -12,7 +12,7 @@ import { listScenarios, saveScenario, deleteScenario, getScenario } from "@/serv
 import { listActions, createAction, updateAction, deleteAction, actionsToMarkdown, type ActionStatus } from "@/services/actions/store";
 import { regimeComparisonToMarkdown, taxAuditToMarkdown } from "@/services/compliance/tax";
 import { checklistToMarkdown } from "@/services/compliance/checklist";
-import { buildDRE, calcIndicators, resolveEffectiveRegime } from "@/lib/finance/calculations";
+import { buildDRE, calcIndicators, resolveEffectiveRegime, diagnose } from "@/lib/finance/calculations";
 import { buildValuation, defaultValuationParams } from "@/lib/finance/valuation";
 import { computeHealth } from "@/lib/finance/health";
 
@@ -50,6 +50,11 @@ export const TOOLS: ToolDef[] = [
     parameters: { type: "object", properties: {}, required: [] },
   },
   { name: "get_tudo", description: "Snapshot COMPLETO da empresa: premissas, receitas, despesas, capital, regime, DRE, indicadores, caixa, valuation, diagnóstico, saúde, governança, estratégico e prescritivo. Use quando precisar de visão 360° para uma decisão.", parameters: { type: "object", properties: {}, required: [] } },
+  {
+    name: "get_alertas_criticos",
+    description: "Retorna apenas os alertas críticos e de atenção do diagnóstico automático com número exato e fonte. Use como segundo passo após get_resumo_executivo para identificar onde aprofundar a análise. Mais eficiente que get_diagnostico quando só precisa saber 'o que está errado'.",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
 
   {
     name: "simular_alavanca",
@@ -282,6 +287,28 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
         sec.dre, sec.indicadores, sec.caixa, sec.valuation, sec.diagnostico,
         sec.saude, sec.governanca, sec.estrategico, sec.prescritivo, sec.comparativo,
       ].filter(Boolean).join("\n\n---\n\n");
+
+    case "get_alertas_criticos": {
+      const { dre } = buildDRE(state, resolveEffectiveRegime(state));
+      const ind = calcIndicators(state, dre);
+      const alerts = diagnose(state, dre, ind);
+      const critical = alerts.filter(a => a.level === "danger");
+      const warning = alerts.filter(a => a.level === "warn");
+      if (!alerts.length) return "✅ Nenhum alerta crítico ou de atenção identificado.";
+      const lines = ["## Alertas do Diagnóstico"];
+      if (critical.length) {
+        lines.push("\n### 🔴 Críticos");
+        critical.forEach(a => lines.push(`- **${a.title}** — ${a.message}`));
+      }
+      if (warning.length) {
+        lines.push("\n### 🟡 Atenção");
+        warning.forEach(a => lines.push(`- **${a.title}** — ${a.message}`));
+      }
+      lines.push(`\nTotal: ${critical.length} crítico(s), ${warning.length} atenção. ` +
+        `Chame as tools específicas para aprofundar cada tema.`);
+      return lines.join("\n");
+    }
+
 
 
     case "simular_alavanca": {
