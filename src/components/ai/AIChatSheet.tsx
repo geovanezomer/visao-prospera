@@ -16,6 +16,7 @@ import {
 } from "@/services/ai/providers";
 import { chatWithTools, streamChat, type LLMMessage, type ToolCall } from "@/services/ai/client";
 import { buildSnapshot, getSectionsCached } from "@/services/ai/snapshot";
+import { buildLlmMessages } from "@/services/ai/historyUtils";
 import { buildSystemPrompt } from "@/services/ai/systemPrompt";
 import { runTool } from "@/services/ai/tools";
 import { processFile, buildPdfContext, buildVisionMessageContent, confidenceLabel, MAX_FILES_PER_MSG, type ChatAttachment } from "@/services/ai/attachments";
@@ -155,19 +156,13 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
     const hasImages = atts.some(a => a.type === "image" && a.dataUrl && !a.error);
     const lastUserContent = hasImages ? buildVisionMessageContent(fullUserText, atts) : fullUserText;
 
-    const buildLlmHistory = (forTools: boolean): LLMMessage[] => {
-      const base: LLMMessage[] = [{ role: "system", content: sysPrompt }];
-      const filtered = history.filter(m => forTools ? (m.role === "user" || m.role === "assistant") : true);
-      filtered.forEach((m, idx) => {
-        const isLastUser = idx === filtered.length - 1 && m.role === "user";
-        const role = (m.role === "tool" ? "assistant" : m.role) as LLMMessage["role"];
-        base.push({
-          role,
-          content: isLastUser ? (lastUserContent as any) : m.content,
-        });
+    const buildLlmHistory = (forTools: boolean): LLMMessage[] =>
+      buildLlmMessages({
+        systemPrompt: sysPrompt,
+        history,
+        forTools,
+        lastUserContent,
       });
-      return base;
-    };
 
     // === Caminho 1: TOOL CALLING ===
     if (config.useTools) {
