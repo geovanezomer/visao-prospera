@@ -196,7 +196,20 @@ export const TOOLS: ToolDef[] = [
     description: "Lista obrigações fiscais/trabalhistas aplicáveis ao regime atual.",
     parameters: { type: "object", properties: {}, required: [] },
   },
+  {
+    name: "simular_transicao_reforma",
+    description: "Simula a carga tributária ano-a-ano no cronograma oficial da LC 214/2025 (2026–2033), considerando a cobrança híbrida (CBS+IBS parcial × PIS/COFINS+ICMS/ISS em redução gradual). Use quando o usuário perguntar sobre impacto da Reforma em anos específicos ('quanto vou pagar em 2030?', 'em que ano fica mais caro?'). Por padrão simula o regime atual da empresa nos anos 2026–2033.",
+    parameters: {
+      type: "object",
+      properties: {
+        regime: { type: "string", enum: ["simples", "presumido", "real"], description: "Regime a simular. Default: regime efetivo atual." },
+        anos: { type: "array", items: { type: "number" }, description: "Anos a comparar. Default: [2026,2027,2028,2029,2030,2031,2032,2033]." },
+      },
+      required: [],
+    },
+  },
 ];
+
 
 export function asOpenAITools() {
   return TOOLS.map(t => ({
