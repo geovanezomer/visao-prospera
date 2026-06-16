@@ -372,9 +372,13 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       ].filter(Boolean).join("\n\n---\n\n");
 
     case "get_alertas_criticos": {
-      const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-      const ind = calcIndicators(state, dre);
-      const alerts = diagnose(state, dre, ind);
+      // Reusa cache numérico — diagnose() é caro e idempotente para o mesmo state.
+      let alerts = sec.data?.alerts;
+      if (!alerts) {
+        const { dre } = buildDRE(state, resolveEffectiveRegime(state));
+        const ind = calcIndicators(state, dre);
+        alerts = diagnose(state, dre, ind);
+      }
       const critical = alerts.filter(a => a.level === "danger");
       const warning = alerts.filter(a => a.level === "warn");
       if (!alerts.length) return "✅ Nenhum alerta crítico ou de atenção identificado.";
