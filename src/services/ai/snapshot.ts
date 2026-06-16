@@ -508,7 +508,14 @@ export function buildSnapshot(state: AppState, simulatedState?: AppState): strin
 
 // ============================================================
 // Cache por hash do estado (evita reconstruir sem mudanças)
-// ============================================================
+// ------------------------------------------------------------
+// Pressuposto (K-3): o cache é singleton de módulo. Trocas de empresa são
+// protegidas pelo prefixo `companyName::` no key. Mutações fora do AppState
+// (ex: actions/scenarios em localStorage) NÃO invalidam o cache — tools que
+// dependem desses stores (listar_acoes, listar_cenarios, criar_acao, etc.)
+// não usam `sec`, leem o store direto. Manter esse invariante ao adicionar tools.
+// Para forçar invalidação em testes, incremente CACHE_VERSION.
+const CACHE_VERSION = "v2";
 let cacheKey = "";
 let cacheVal: SnapshotSections | null = null;
 let cacheSimKey = "";
