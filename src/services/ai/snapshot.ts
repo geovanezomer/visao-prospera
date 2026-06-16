@@ -106,15 +106,51 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
         ["Carga tributária total", brl(sum(dre.impostosTotal))],
       ],
     ));
-    dreLines.push(`\n### DRE Mensal — Receita / EBITDA / LL`);
+    dreLines.push(`\n### DRE Mensal completo (R$) — todas as linhas`);
+    const monthlyRows: Array<[string, number[]]> = [
+      ["Receita Bruta", dre.receitaBruta],
+      ["(−) Deduções inadimplência", dre.deducoesInadimplencia],
+      ["(−) Outras deduções", dre.outrasDeducoes],
+      ["(−) Impostos sobre venda", dre.impostosVendas],
+      ["(−) PDD", dre.pdd],
+      ["= Receita Líquida", dre.receitaLiquida],
+      ["(−) CPV/CMV/CSP", dre.cpv],
+      ["= Lucro Bruto", dre.lucroBruto],
+      ["(−) Despesas Operacionais", dre.despesasOperacionais],
+      ["= EBITDA", dre.ebitda],
+      ["(−) Depreciação", dre.depreciacao],
+      ["= EBIT", dre.ebit],
+      ["(+/−) Resultado Financeiro", dre.resultadoFinanceiro],
+      ["= LAIR", dre.lair],
+      ["(−) IRPJ + CSLL", dre.impostos],
+      ["= Lucro Líquido", dre.lucroLiquido],
+      ["Custos Fixos", dre.custosFixos],
+      ["Custos Variáveis", dre.custosVariaveis],
+      ["Carga tributária total", dre.impostosTotal],
+    ];
+    // Tabela mensal: linhas = contas, colunas = meses
     dreLines.push(table(
-      ["Mês", "Receita", "EBITDA", "LL"],
-      MESES.map((m, i) => [m, brl(dre.receitaBruta[i]), brl(dre.ebitda[i]), brl(dre.lucroLiquido[i])]),
+      ["Linha", ...MESES],
+      monthlyRows.map(([label, arr]) => [label, ...arr.map(v => brl(v))]),
     ));
-    const cats = Object.entries(dre.despesasPorCategoria || {}).filter(([, v]) => sum(v as number[]) > 0);
-    if (cats.length) {
-      dreLines.push(`\n### Despesas por categoria (ano)`);
-      cats.forEach(([k, v]) => dreLines.push(`- ${k}: ${brl(sum(v as number[]))}`));
+
+    // Tabela trimestral (Q1..Q4)
+    const quarters = [[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
+    const qSum = (arr: number[]) => quarters.map(q => q.reduce((a, i) => a + safe(arr[i]), 0));
+    dreLines.push(`\n### DRE Trimestral completo (R$)`);
+    dreLines.push(table(
+      ["Linha", "Q1", "Q2", "Q3", "Q4"],
+      monthlyRows.map(([label, arr]) => [label, ...qSum(arr).map(v => brl(v))]),
+    ));
+
+    // Despesas por categoria — mensal
+    const catsMensal = Object.entries(dre.despesasPorCategoria || {}).filter(([, v]) => sum(v as number[]) > 0);
+    if (catsMensal.length) {
+      dreLines.push(`\n### Despesas Operacionais por categoria — mensal (R$)`);
+      dreLines.push(table(
+        ["Categoria", ...MESES, "Anual"],
+        catsMensal.map(([k, v]) => [k, ...(v as number[]).map(x => brl(x)), brl(sum(v as number[]))]),
+      ));
     }
   }
 
