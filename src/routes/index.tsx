@@ -104,6 +104,16 @@ function SimulaPro() {
     return () => window.removeEventListener("keydown", onKey);
   }, [meetingMode]);
 
+  // Escuta evento da IA ("carregar_cenario") para aplicar/limpar params do simulador.
+  useEffect(() => {
+    const onApply = (e: Event) => {
+      const detail = (e as CustomEvent).detail as SimulatorParams | null | undefined;
+      setSimParams(detail ?? DEFAULT_SIM);
+    };
+    window.addEventListener("gz-apply-simulator-params", onApply);
+    return () => window.removeEventListener("gz-apply-simulator-params", onApply);
+  }, []);
+
   if (!hydrated || !user) {
     return <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">Carregando…</div>;
   }
