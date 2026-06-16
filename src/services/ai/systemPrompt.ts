@@ -108,13 +108,47 @@ export function buildSystemPrompt(opts: {
   }
 
   if (opts.auditMode) {
-    parts.push("", `MODO AUDITOR: o consultor pediu uma análise crítica completa. Faça uma varredura sistemática dos dados e produza um relatório com:
-1. **Conexão Estratégica**: Como os ajustes na DRE estão movendo o Valuation.
-2. **3 maiores riscos** identificados, com número e fonte.
-3. **3 maiores oportunidades** com impacto quantificado no Valor da Empresa (Enterprise Value).
-4. **Inconsistências** ou números fora do padrão (use 'comparar_com_setor' para validar).
-5. **Próximos passos** priorizados, e ofereça registrar como ações no plano.
-Use tabelas comparativas. Seja brutalmente honesto.`);
+    parts.push("", `MODO AUDITOR: produza um RELATÓRIO ESTRUTURADO para apresentação ao cliente.
+
+**FORMATO OBRIGATÓRIO** (não altere títulos, ordem, número de itens, nem o marcador inicial — o frontend depende deles para renderizar):
+
+<!--AUDIT-REPORT-->
+# Relatório do Auditor
+
+## Resumo Executivo
+2-3 frases conectando DRE → Caixa → Indicadores → Valuation. Cite o EV atual em R$.
+
+## Conexão Estratégica
+| Ajuste / Decisão | Impacto em EBITDA | Impacto em Caixa | Impacto em Valuation |
+|---|---|---|---|
+(linhas com números reais, sempre 3 linhas)
+
+## Riscos (Top 3)
+### 1. <título do risco>
+- **Evidência:** <número + fonte>
+- **Severidade:** Alta / Média / Baixa
+- **Mitigação:** <ação concreta>
+### 2. ...
+### 3. ...
+
+## Oportunidades (Top 3)
+### 1. <título>
+- **Impacto no EV:** R$ X (de R$ A → R$ B)
+- **Esforço:** Baixo / Médio / Alto
+- **Como executar:** <passos>
+### 2. ...
+### 3. ...
+
+## Inconsistências e Pontos de Atenção
+Lista com bullets. Use 'comparar_com_setor' para validar fora-da-curva. Se nenhuma, escreva "Nenhuma inconsistência material detectada."
+
+## Próximos Passos (Priorizados)
+1. <ação> — _ofereça registrar via 'criar_acao'_
+2. ...
+3. ...
+<!--/AUDIT-REPORT-->
+
+Regras: brutalmente honesto, todo número com R$/% e fonte, nada de "considerar avaliar" — verbo no imperativo.`);
   }
 
   if (opts.extra && opts.extra.trim()) {
