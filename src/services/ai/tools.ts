@@ -631,9 +631,9 @@ export function runTool(name: string, args: ToolArgs, state: AppState, simulated
       if (!args?.id) return "Parâmetro 'id' obrigatório.";
       const a = updateAction(company, String(args.id), {
         status: args?.status as ActionStatus | undefined,
-        responsavel: args?.responsavel,
-        prazo: args?.prazo,
-        impactoEsperado: args?.impactoEsperado,
+        responsavel: args?.responsavel as string | undefined,
+        prazo: args?.prazo as string | undefined,
+        impactoEsperado: args?.impactoEsperado as string | undefined,
       });
       return a ? `✅ Ação atualizada: **${a.titulo}** → ${a.status}.` : "Ação não encontrada.";
     }
