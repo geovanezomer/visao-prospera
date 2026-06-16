@@ -11,6 +11,11 @@ import {
 import { chatWithTools, streamChat, type LLMMessage, type ToolCall } from "@/services/ai/client";
 import { buildSnapshot, getSectionsCached } from "@/services/ai/snapshot";
 import { buildLlmMessages } from "@/services/ai/historyUtils";
+import { estimateTokens } from "@/services/ai/snapshot";
+
+// Limite de tokens do histórico enviado ao LLM (exclui system prompt).
+// Se ultrapassado, comprime o miolo preservando contexto inicial + recente.
+const MAX_HISTORY_TOKENS = 6000;
 import { buildSystemPrompt } from "@/services/ai/systemPrompt";
 import { runTool } from "@/services/ai/tools";
 import {
@@ -159,13 +164,34 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     const hasImages = atts.some(a => a.type === "image" && a.dataUrl && !a.error);
     const lastUserContent = hasImages ? buildVisionMessageContent(fullUserText, atts) : fullUserText;
 
-    const buildLlmHistory = (forTools: boolean): LLMMessage[] =>
-      buildLlmMessages({
+    const buildLlmHistory = (forTools: boolean): LLMMessage[] => {
+      const full = buildLlmMessages({
         systemPrompt: sysPrompt,
         history,
         forTools,
         lastUserContent,
       });
+      // Separa system prompt (sempre preservado) do restante do histórico.
+      const sys = full[0]?.role === "system" ? [full[0]] : [];
+      const rest = sys.length ? full.slice(1) : full;
+
+      // Soma tokens só do conteúdo textual (strings); parts vision não contam aqui.
+      const tokens = rest.reduce((acc, m) => {
+        const c = m.content;
+        return acc + (typeof c === "string" ? estimateTokens(c) : 0);
+      }, 0);
+
+      if (tokens <= MAX_HISTORY_TOKENS || rest.length <= 8) return full;
+
+      // Preserva 2 primeiras + 6 últimas; substitui o miolo por marcador.
+      const head = rest.slice(0, 2);
+      const tail = rest.slice(-6);
+      const omitted: LLMMessage = {
+        role: "assistant",
+        content: "_(histórico anterior omitido para economizar contexto)_",
+      };
+      return [...sys, ...head, omitted, ...tail];
+    };
 
     // === Caminho 1: TOOL CALLING ===
     if (config.useTools) {
