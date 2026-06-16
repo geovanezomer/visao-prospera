@@ -1,0 +1,105 @@
+// Briefing automático estilo "CFO entra na sala com a pauta pronta".
+// Roda silenciosamente ao abrir uma conversa NOVA e injeta a primeira mensagem
+// do assistente com 3-5 pontos críticos + pergunta de abertura.
+//
+// 100% local (sem chamar LLM): usa diagnose + calcIndicators + buildCashFlow +
+// computeHealth + benchmark do setor. Determinístico, instantâneo, sem custo.
+
+import type { AppState } from "@/lib/finance/types";
+import { buildDRE, calcIndicators, resolveEffectiveRegime, diagnose } from "@/lib/finance/calculations";
+import { buildCashFlow } from "@/lib/finance/cashflow";
+import { computeHealth } from "@/lib/finance/health";
+import { findSector } from "@/services/benchmark/sectors";
+
+const brl = (n: number) => (Number.isFinite(n) ? n : 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+export function buildOpeningBriefing(state: AppState): string | null {
+  try {
+    const company = state.companyName || "a empresa";
+    const { dre } = buildDRE(state, resolveEffectiveRegime(state));
+    const ind = calcIndicators(state, dre);
+    const cf = buildCashFlow(state);
+    const health = computeHealth(state);
+    const alerts = diagnose(state, dre, ind);
+    const criticos = alerts.filter(a => a.level === "danger");
+    const atencao = alerts.filter(a => a.level === "warn");
+
+    // === Coleta pontos críticos (máx 3) — prioridade: caixa < 0, DSCR baixo, margem vs setor ===
+    const pontos: string[] = [];
+
+    // 1) Pior mês de caixa negativo
+    const pior = cf.totais.pioresMes;
+    if (pior && pior.saldo < 0) {
+      pontos.push(`caixa negativo em **${pior.mes}** (${brl(pior.saldo)})`);
+    }
+
+    // 2) DSCR abaixo de 1,5x
+    if (Number.isFinite(ind.dscr) && ind.dscr < 1.5) {
+      pontos.push(`DSCR em **${ind.dscr.toFixed(2)}x** ${ind.dscr < 1 ? "(não cobre o serviço da dívida)" : "(risco de covenant)"}`);
+    }
+
+    // 3) Margem EBITDA vs setor
+    const sector = findSector(state.businessType);
+    if (sector && Number.isFinite(ind.margemEbitda)) {
+      const delta = ind.margemEbitda - sector.margemEbitda.p50;
+      if (delta < -2) {
+        pontos.push(`margem EBITDA **${Math.abs(delta).toFixed(1)}p.p. abaixo** da mediana do setor (${ind.margemEbitda.toFixed(1)}% vs ${sector.margemEbitda.p50}%)`);
+      }
+    }
+
+    // 4) Alavancagem
+    if (pontos.length < 3 && Number.isFinite(ind.dividaLiqEbitda) && ind.dividaLiqEbitda > 3) {
+      pontos.push(`Dívida Líq./EBITDA em **${ind.dividaLiqEbitda.toFixed(1)}x** (acima do limite saudável de 3x)`);
+    }
+
+    // 5) Cobertura de juros
+    if (pontos.length < 3 && Number.isFinite(ind.coberturaJuros) && ind.coberturaJuros < 2) {
+      pontos.push(`cobertura de juros em **${ind.coberturaJuros.toFixed(1)}x** (EBIT mal cobre os juros)`);
+    }
+
+    // 6) Gap de capital de giro
+    if (pontos.length < 3 && ind.gapCapitalGiro > 0) {
+      pontos.push(`gap de capital de giro de **${brl(ind.gapCapitalGiro)}** não financiado`);
+    }
+
+    // Se não houver nada crítico/atenção, devolve briefing positivo curto
+    if (!pontos.length && !criticos.length && !atencao.length) {
+      return [
+        `👋 **Briefing — ${company}**`,
+        ``,
+        `Rodei o diagnóstico inicial e **não identifiquei pontos críticos**. Score de saúde: **${health.total.toFixed(0)}/100 (${health.grade})**.`,
+        ``,
+        `Por onde você quer começar? Posso aprofundar em valuation, projeções, simulação de alavancas ou comparação setorial.`,
+      ].join("\n");
+    }
+
+    // Se não pegou nada nos pontos mas há alertas, usa títulos dos primeiros alertas
+    if (!pontos.length) {
+      criticos.concat(atencao).slice(0, 3).forEach(a => pontos.push(a.title.toLowerCase()));
+    }
+
+    const linha = pontos.length === 1
+      ? `**1 ponto crítico**: ${pontos[0]}`
+      : `**${pontos.length} pontos críticos**: ${pontos.slice(0, -1).join("; ")}${pontos.length > 1 ? " e " : ""}${pontos[pontos.length - 1]}`;
+
+    // Sugestões de partida baseadas nos pontos detectados
+    const opcoes: string[] = [];
+    if (pior && pior.saldo < 0) opcoes.push("**fluxo de caixa** (entender o gap)");
+    if (Number.isFinite(ind.dscr) && ind.dscr < 1.5) opcoes.push("**estrutura da dívida** (renegociação)");
+    if (sector && ind.margemEbitda < sector.margemEbitda.p50 - 2) opcoes.push("**alavancas de margem** (onde cortar)");
+    if (opcoes.length < 2) opcoes.push("**simulação de cenários**");
+    if (opcoes.length < 3) opcoes.push("**análise 360°**");
+
+    return [
+      `👋 **Briefing — ${company}**`,
+      ``,
+      `Antes de começar, rodei o diagnóstico. ${linha}.`,
+      ``,
+      `Score de saúde: **${health.total.toFixed(0)}/100 (${health.grade})** · ${criticos.length} alerta(s) crítico(s), ${atencao.length} de atenção.`,
+      ``,
+      `Por onde quer começar? Sugiro: ${opcoes.slice(0, 3).join(", ")}.`,
+    ].join("\n");
+  } catch {
+    return null;
+  }
+}
