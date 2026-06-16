@@ -275,9 +275,19 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       return `## Setores disponíveis\n\n${list.map(s => `- **${s.id}** — ${s.label} (${s.businessType})`).join("\n")}`;
     }
     case "comparar_com_setor": {
-      // Resolução automática: 1) parâmetro explícito → 2) businessType do state → 3) primeiro disponível.
-      let sector = args?.setor ? findSector(String(args.setor)) : undefined;
+      // Resolução automática:
+      // 1) parâmetro explícito → findSector(args.setor)
+      // 2) businessType do state → findSector(state.businessType)
+      // 3) último recurso → listSectors(state.businessType)[0] ?? listSectors()[0]
+      let sector: SectorBenchmark | undefined;
       let auto = false;
+      if (args?.setor) {
+        sector = findSector(String(args.setor));
+      }
+      if (!sector && state.businessType) {
+        sector = findSector(String(state.businessType));
+        if (sector) auto = true;
+      }
       if (!sector) {
         sector = listSectors(state.businessType)[0] ?? listSectors()[0];
         auto = true;
