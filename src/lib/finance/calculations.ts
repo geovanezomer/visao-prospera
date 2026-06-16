@@ -1117,17 +1117,20 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
  * SSOT-4: comparativo de regimes COM lucro líquido e regime ótimo embutidos.
  * Antes, TaxTab e compliance/tax.ts reimplementavam llBy/best/delta separadamente.
  */
-export function compareRegimes(state: AppState) {
-  const baseLair = buildDRE(state, "presumido").dre.lair;
-  const simples = calcSimples(state);
-  const presumido = calcPresumido(state);
-  const real = calcReal(state, baseLair);
+export function compareRegimes(state: AppState, era?: TaxEra) {
+  // Se uma era for passada, aplica override no state antes de rodar os engines —
+  // garante que Simples/Presumido/Real sejam comparados sob o mesmo regime de Reforma.
+  const s: AppState = era ? { ...state, tax: { ...state.tax, era } } : state;
+  const baseLair = buildDRE(s, "presumido").dre.lair;
+  const simples = calcSimples(s);
+  const presumido = calcPresumido(s);
+  const real = calcReal(s, baseLair);
   const llBy: Record<TaxRegime, number> = {
-    simples: sum(buildDRE(state, "simples").dre.lucroLiquido),
-    presumido: sum(buildDRE(state, "presumido").dre.lucroLiquido),
-    real: sum(buildDRE(state, "real").dre.lucroLiquido),
+    simples: sum(buildDRE(s, "simples").dre.lucroLiquido),
+    presumido: sum(buildDRE(s, "presumido").dre.lucroLiquido),
+    real: sum(buildDRE(s, "real").dre.lucroLiquido),
   };
-  const desenquadrado = simplesExcedeLimite(state);
+  const desenquadrado = simplesExcedeLimite(s);
   const candidates: TaxRegime[] = desenquadrado
     ? ["presumido", "real"]
     : ["simples", "presumido", "real"];
