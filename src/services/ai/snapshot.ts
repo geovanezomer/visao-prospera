@@ -44,6 +44,8 @@ export interface SnapshotSections {
   despesas: string;
   capital: string;
   regime: string;
+  /** Comparativo de eras da Reforma (atual/transição/pleno) — separado de `regime` para evitar duplicação com simular_transicao_reforma. */
+  eras: string;
   dre: string;
   indicadores: string;
   diagnostico: string;
