@@ -128,11 +128,6 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs">Limite tokens snapshot: {draft.maxTokensSnapshot}</Label>
-              <Slider value={[draft.maxTokensSnapshot]} min={1500} max={20000} step={500} onValueChange={([v]) => setDraft({ ...draft, maxTokensSnapshot: v })} />
-              <p className="text-[10px] text-muted-foreground">Modelos pequenos: 2k–4k. GPT-4o-mini: 12k+. Modelos locais 32k+: 16k–20k.</p>
-            </div>
 
             <div className="space-y-2 rounded-md border border-border/40 p-3">
               <div className="flex items-center justify-between">
