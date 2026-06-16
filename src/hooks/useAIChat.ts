@@ -17,7 +17,6 @@ import { estimateTokens } from "@/services/ai/snapshot";
 // Se ultrapassado, comprime o miolo preservando contexto inicial + recente.
 const MAX_HISTORY_TOKENS = 6000;
 import { buildSystemPrompt } from "@/services/ai/systemPrompt";
-import { runTool } from "@/services/ai/tools";
 import {
   processFile, buildPdfContext, buildVisionMessageContent, confidenceLabel,
   MAX_FILES_PER_MSG, type ChatAttachment,
@@ -239,6 +238,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       const llm = buildLlmHistory(true);
       const collected: ToolCall[] = [];
       try {
+        const { runTool } = await import("@/services/ai/tools");
         const out = await chatWithTools(
           config,
           llm,

@@ -108,11 +108,62 @@ export const DEFAULT_CONFIG: AIConfig = {
 const CFG_KEY = "gz-finance-ai-config";
 const SESSION_KEY_BAG = "gz-finance-ai-sessionkey";
 
+const PROVIDERS: Provider[] = ["lmstudio", "openai", "anthropic"];
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+const finiteOr = (v: unknown, fallback: number) =>
+  typeof v === "number" && Number.isFinite(v) ? v : fallback;
+
+const stringOr = (v: unknown, fallback: string) =>
+  typeof v === "string" ? v : fallback;
+
+const boolOr = (v: unknown, fallback: boolean) =>
+  typeof v === "boolean" ? v : fallback;
+
+function sanitizeSkills(input: unknown): Skill[] {
+  if (!Array.isArray(input)) return DEFAULT_SKILLS;
+  const parsed = input
+    .filter(isRecord)
+    .map((s) => ({
+      id: stringOr(s.id, ""),
+      name: stringOr(s.name, "Habilidade"),
+      description: stringOr(s.description, ""),
+      body: stringOr(s.body, ""),
+      enabled: boolOr(s.enabled, true),
+      builtin: typeof s.builtin === "boolean" ? s.builtin : undefined,
+    }))
+    .filter((s) => s.id && s.body);
+  return parsed.length ? parsed : DEFAULT_SKILLS;
+}
+
+function sanitizeConfig(input: unknown): AIConfig {
+  const raw = isRecord(input) ? input : {};
+  const provider = PROVIDERS.includes(raw.provider as Provider) ? raw.provider as Provider : DEFAULT_CONFIG.provider;
+  const defaults = PROVIDER_DEFAULTS[provider];
+  return {
+    provider,
+    baseUrl: stringOr(raw.baseUrl, defaults.baseUrl),
+    apiKey: stringOr(raw.apiKey, DEFAULT_CONFIG.apiKey),
+    persistKey: boolOr(raw.persistKey, DEFAULT_CONFIG.persistKey),
+    model: stringOr(raw.model, defaults.model),
+    temperature: finiteOr(raw.temperature, DEFAULT_CONFIG.temperature),
+    includeSnapshot: boolOr(raw.includeSnapshot, DEFAULT_CONFIG.includeSnapshot),
+    useTools: boolOr(raw.useTools, DEFAULT_CONFIG.useTools),
+    soul: stringOr(raw.soul, DEFAULT_CONFIG.soul),
+    skills: sanitizeSkills(raw.skills),
+    extraSystemPrompt: stringOr(raw.extraSystemPrompt, DEFAULT_CONFIG.extraSystemPrompt),
+    timeoutMs: Math.max(10_000, finiteOr(raw.timeoutMs, DEFAULT_CONFIG.timeoutMs)),
+    maxSuggestions: Math.max(4, Math.min(6, Math.floor(finiteOr(raw.maxSuggestions, DEFAULT_CONFIG.maxSuggestions)))),
+  };
+}
+
 export function loadConfig(): AIConfig {
   try {
     const raw = localStorage.getItem(CFG_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
-    const cfg = { ...DEFAULT_CONFIG, ...parsed } as AIConfig;
+    const cfg = sanitizeConfig(parsed);
     if (!cfg.persistKey) {
       cfg.apiKey = sessionStorage.getItem(SESSION_KEY_BAG) || "";
     }
@@ -124,13 +175,14 @@ export function loadConfig(): AIConfig {
 
 export function saveConfig(cfg: AIConfig) {
   try {
-    if (cfg.persistKey) {
+    const safe = sanitizeConfig(cfg);
+    if (safe.persistKey) {
       sessionStorage.removeItem(SESSION_KEY_BAG);
-      localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+      localStorage.setItem(CFG_KEY, JSON.stringify(safe));
     } else {
-      sessionStorage.setItem(SESSION_KEY_BAG, cfg.apiKey || "");
+      sessionStorage.setItem(SESSION_KEY_BAG, safe.apiKey || "");
       // grava sem a chave
-      localStorage.setItem(CFG_KEY, JSON.stringify({ ...cfg, apiKey: "" }));
+      localStorage.setItem(CFG_KEY, JSON.stringify({ ...safe, apiKey: "" }));
     }
   } catch {}
 }

@@ -18,7 +18,6 @@ import { SimulatorTab } from "@/components/sim/SimulatorTab";
 import { ValuationTab } from "@/components/sim/ValuationTab";
 import { IndicatorsTab } from "@/components/sim/IndicatorsTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
-import { AIFab } from "@/components/ai/AIFab";
 import { AIView } from "@/components/ai/AIView";
 import { TabKey } from "@/lib/finance/types";
 import { applySimulator, countActiveLevers, DEFAULT_SIM, SimulatorParams } from "@/lib/finance/simulator";

@@ -1,4 +1,6 @@
+import * as React from "react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import remarkGfm from "remark-gfm";
 import { Bot, Settings, Trash2, Send, Loader2, User, Plus, MessageSquare, X, Paperclip } from "lucide-react";
 import { AIConfigDialog } from "./AIConfigDialog";
 import type { AppState } from "@/lib/finance/types";
@@ -10,6 +12,34 @@ import { AuditReport, isAuditReport } from "./AuditReport";
 import { useAIChat } from "@/hooks/useAIChat";
 
 const ReactMarkdown = lazy(() => import("react-markdown") as any);
+
+class AIViewBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
+  state: { error: Error | null } = { error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error("Falha ao renderizar Consultor IA", error);
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="flex min-h-[420px] flex-col items-center justify-center gap-3 bg-background p-6 text-center">
+        <Bot className="h-8 w-8 text-primary" />
+        <h2 className="text-lg font-semibold">Consultor IA indisponível</h2>
+        <p className="max-w-md text-sm text-muted-foreground">
+          Houve uma falha local ao abrir o chat. Recarregue a página ou limpe as configurações do chat em ⚙️.
+        </p>
+        <Button variant="outline" onClick={() => this.setState({ error: null })}>
+          Tentar novamente
+        </Button>
+      </div>
+    );
+  }
+}
 
 const handleCopy = (s: string) => {
   navigator.clipboard.writeText(s).then(() => toast.success("Copiado"));
@@ -23,6 +53,14 @@ interface Props {
 }
 
 export function AIView({ state, simulatedState, simActive, simParams }: Props) {
+  return (
+    <AIViewBoundary>
+      <AIViewContent state={state} simulatedState={simulatedState} simActive={simActive} simParams={simParams} />
+    </AIViewBoundary>
+  );
+}
+
+function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
   const {
     config, updateConfig,
     messages, input, setInput, streaming,
@@ -131,7 +169,7 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
                     </div>
                     <div className={`group relative flex flex-col gap-2 rounded-2xl px-5 py-3 text-sm shadow-sm max-w-[85%] ${m.role === "user" ? "bg-primary/15 border border-primary/20" : "bg-card/80 border border-border/60"}`}>
                       <Suspense fallback={<div className="h-20 animate-pulse bg-muted rounded" />}>
-                        <ReactMarkdown className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-black/50 prose-pre:p-3 prose-pre:rounded-lg">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-black/50 prose-pre:p-3 prose-pre:rounded-lg">
                           {m.content}
                         </ReactMarkdown>
                       </Suspense>
