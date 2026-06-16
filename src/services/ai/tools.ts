@@ -476,7 +476,8 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
         pmpDeltaDays: Number(args?.pmpDelta) || 0,
       };
       const simulated = applySimulator(state, params);
-      const simSec = buildSections(state, simulated);
+      // M-5: aproveita cache — getSectionsCached só recalcula se `simulated` mudou.
+      const simSec = getSectionsCached(state, simulated);
       return simSec.comparativo ?? "Simulação aplicada, mas sem comparativo disponível.";
     }
 
