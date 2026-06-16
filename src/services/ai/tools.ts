@@ -188,6 +188,15 @@ export function asOpenAITools() {
   }));
 }
 
+// Anthropic usa um formato ligeiramente diferente: input_schema no topo.
+export function asAnthropicTools() {
+  return TOOLS.map(t => ({
+    name: t.name,
+    description: t.description,
+    input_schema: t.parameters,
+  }));
+}
+
 // ============================================================
 // Execução
 // ============================================================
