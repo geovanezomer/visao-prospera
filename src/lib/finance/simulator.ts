@@ -384,7 +384,7 @@ export function countActiveLevers(p: SimulatorParams): number {
   if (p.volumeDeltaPct !== 0) n++;
   if (p.cpvDeltaPct !== 0) n++;
   if (p.payrollDeltaPct !== 0) n++;
-  if (p.fixedCutPct > 0) n++;
+  if (p.fixedCutPct !== 0) n++;
   if (p.outsourcePctCpv > 0) n++;
   if (p.pmrDeltaDays !== 0) n++;
   if (p.pmpDeltaDays !== 0) n++;
