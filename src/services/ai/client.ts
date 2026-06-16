@@ -115,16 +115,29 @@ export async function* streamChat(
 ): AsyncGenerator<string, void, unknown> {
   const { signal: s, cancel } = withTimeout(cfg, signal);
   try {
-    const res = await fetchWithRetry(`${cfg.baseUrl}/chat/completions`, {
+    // Branch: Anthropic usa /v1/messages com formato próprio.
+    const anth = isAnthropic(cfg);
+    const url = anth ? `${cfg.baseUrl}/messages` : `${cfg.baseUrl}/chat/completions`;
+    let body: any;
+    if (anth) {
+      const { system, rest } = splitSystemAndMessages(messages);
+      body = {
+        model: cfg.model,
+        max_tokens: 4096,
+        temperature: cfg.temperature,
+        stream: true,
+        ...(system ? { system } : {}),
+        messages: toAnthropicMessages(rest),
+      };
+    } else {
+      body = { model: cfg.model, messages, temperature: cfg.temperature, stream: true };
+    }
+
+    const res = await fetchWithRetry(url, {
       method: "POST",
       signal: s,
       headers: headers(cfg),
-      body: JSON.stringify({
-        model: cfg.model,
-        messages,
-        temperature: cfg.temperature,
-        stream: true,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok || !res.body) {
@@ -148,8 +161,18 @@ export async function* streamChat(
         if (payload === "[DONE]") return;
         try {
           const obj = JSON.parse(payload);
-          const delta = obj?.choices?.[0]?.delta?.content;
-          if (typeof delta === "string" && delta) yield delta;
+          if (anth) {
+            // Anthropic SSE: content_block_delta com delta.text.
+            if (obj?.type === "content_block_delta" && obj?.delta?.type === "text_delta") {
+              const txt = obj.delta.text;
+              if (typeof txt === "string" && txt) yield txt;
+            } else if (obj?.type === "message_stop") {
+              return;
+            }
+          } else {
+            const delta = obj?.choices?.[0]?.delta?.content;
+            if (typeof delta === "string" && delta) yield delta;
+          }
         } catch {}
       }
     }
