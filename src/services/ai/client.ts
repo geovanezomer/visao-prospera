@@ -300,5 +300,10 @@ export async function chatWithTools(
     return { finalText, toolCalls: calls };
   }
 
+  // M-6: telemetria — atingir maxRounds geralmente indica loop de tool calling.
+  console.warn("[ai/client] maxRounds atingido sem resposta final", {
+    rounds: maxRounds,
+    calls: calls.map(c => c.name),
+  });
   return { finalText: "_(Limite de rodadas de tool-calling atingido sem resposta final.)_", toolCalls: calls };
 }
