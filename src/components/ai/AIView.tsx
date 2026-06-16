@@ -29,14 +29,7 @@ interface Props {
   simParams?: SimulatorParams;
 }
 
-const SUGGESTIONS = [
-  "Qual o VPL do meu negócio e o que ele significa na prática?",
-  "Por que o caixa fica negativo? Em que mês? Quanto preciso aportar?",
-  "Meu DSCR e cobertura de juros são saudáveis?",
-  "Onde estão meus maiores custos fixos e o que cortar primeiro?",
-  "E se eu cortar 15% dos custos fixos? Qual o impacto?",
-  "Que ações me dariam o maior impacto no valuation?",
-];
+import { buildDynamicSuggestions } from "@/services/ai/suggestions";
 
 export function AIView({ state, simulatedState, simActive, simParams }: Props) {
   const [config, setConfig] = useState<AIConfig>(() => loadConfig());
@@ -110,6 +103,9 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
       return { companyName: state.companyName, regimeLabel: state.tax?.regime };
     }
   }, [state.companyName, state.tax]);
+
+  // Sugestões dinâmicas baseadas no diagnose() — surfa alertas reais (caixa neg, DSCR, etc).
+  const suggestions = useMemo(() => buildDynamicSuggestions(state), [state]);
 
   const buildSysPrompt = (auditMode?: boolean) =>
     buildSystemPrompt({
@@ -317,7 +313,7 @@ export function AIView({ state, simulatedState, simActive, simParams }: Props) {
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {SUGGESTIONS.map((s, i) => (
+                  {suggestions.map((s: string, i: number) => (
                     <button key={i} onClick={() => void send(s)} className="text-left text-sm p-4 rounded-lg border border-border/40 hover:bg-accent hover:border-primary/50 transition-all">
                       {s}
                     </button>

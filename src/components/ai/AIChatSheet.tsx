@@ -36,14 +36,9 @@ interface Props {
   simParams?: SimulatorParams;
 }
 
-const SUGGESTIONS = [
-  "Qual o VPL do meu negócio e o que ele significa na prática?",
-  "Por que o caixa fica negativo? Em que mês? Quanto preciso aportar?",
-  "Meu DSCR e cobertura de juros são saudáveis?",
-  "Onde estão meus maiores custos fixos e o que cortar primeiro?",
-  "E se eu cortar 15% dos custos fixos? Qual o impacto?",
-  "Que ações me dariam o maior impacto no valuation?",
-];
+// Sugestões agora vêm de buildDynamicSuggestions() (baseadas no diagnose()).
+// Mantemos a constante apenas como fallback caso o cálculo falhe.
+import { buildDynamicSuggestions } from "@/services/ai/suggestions";
 
 export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActive, simParams }: Props) {
   const [config, setConfig] = useState<AIConfig>(() => loadConfig());
@@ -124,6 +119,9 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
       return { companyName: state.companyName, regimeLabel: state.tax?.regime };
     }
   }, [state.companyName, state.tax]);
+
+  // Sugestões dinâmicas baseadas no diagnose() — surfa alertas reais (caixa neg, DSCR, etc).
+  const suggestions = useMemo(() => buildDynamicSuggestions(state), [state]);
 
   const buildSysPrompt = (auditMode?: boolean) =>
     buildSystemPrompt({
@@ -429,7 +427,7 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
                 </p>
                 <div className="space-y-1.5">
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Sugestões</p>
-                  {SUGGESTIONS.map((s, i) => (
+                  {suggestions.map((s: string, i: number) => (
                     <button key={i} onClick={() => void send(s)} className="block w-full rounded-md border border-border/40 px-2.5 py-1.5 text-left text-xs hover:bg-muted/40">
                       {s}
                     </button>
