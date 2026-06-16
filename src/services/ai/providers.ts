@@ -216,6 +216,19 @@ export function saveConfig(cfg: AIConfig) {
   } catch {}
 }
 
+export function resetAIStorage() {
+  try {
+    sessionStorage.removeItem(SESSION_KEY_BAG);
+    const prefixes = [CFG_KEY, "gz-finance-ai-threads-", "gz-finance-ai-chat-"];
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && prefixes.some((prefix) => key === prefix || key.startsWith(prefix))) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch {}
+}
+
 export function switchProvider(cfg: AIConfig, provider: Provider): AIConfig {
   const d = PROVIDER_DEFAULTS[provider];
   return { ...cfg, provider, baseUrl: d.baseUrl, model: d.model };
