@@ -5,12 +5,14 @@ import { sum, fmtBRL } from "@/lib/finance/format";
 
 export function regimeComparisonToMarkdown(state: AppState): string {
   // SSOT-4: usa llBy/best já calculados pela engine — não recalcula localmente.
-  const regimes = compareRegimes(state);
+  const era = state.tax.era ?? "atual";
+  const regimes = compareRegimes(state, era);
   const { llBy, best } = regimes;
   const current = state.tax.regime;
   const delta = llBy[best] - llBy[current];
 
   let md = `## Comparativo de Regimes Tributários (Anual)\n\n`;
+  md += `_Análise referente à era: **${era}** ${era !== "atual" ? "(Reforma Tributária)" : ""}_\n\n`;
   md += `| Regime | Tributos Totais | Lucro Líquido | Eficácia |\n`;
   md += `| --- | --- | --- | --- |\n`;
   md += `| **Simples** | ${fmtBRL(regimes.simples.annual)} | ${fmtBRL(llBy.simples)} | ${best === "simples" ? "🏆 Melhor" : ""} |\n`;
