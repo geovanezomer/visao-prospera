@@ -525,8 +525,9 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       const all = listScenarios(company);
       if (!all.length) return "_Nenhum cenário salvo._";
       return "## Cenários salvos\n\n" + all.map(s => {
-        const sum = s.summary ? ` — EBITDA ${Math.round(s.summary.ebitda).toLocaleString("pt-BR")} (${s.summary.margemEbitda.toFixed(1)}%)` : "";
-        return `- **${s.name}** (${s.id})${sum}`;
+        // K-2: renomeado de `sum` para `sumLine` para não shadowar o helper global do módulo.
+        const sumLine = s.summary ? ` — EBITDA ${Math.round(s.summary.ebitda).toLocaleString("pt-BR")} (${s.summary.margemEbitda.toFixed(1)}%)` : "";
+        return `- **${s.name}** (${s.id})${sumLine}`;
       }).join("\n");
     }
     case "salvar_cenario": {
