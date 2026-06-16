@@ -541,7 +541,9 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       }
 
       const cargaMensalTotal = tax.annual / 12;
-      const kd = state.capital.kd ?? 0;
+      // Kd pode vir em fração (0,18) ou em % (18). Normaliza para fração.
+      const kdRaw = state.capital.kd ?? 0;
+      const kd = kdRaw > 1 ? kdRaw / 100 : kdRaw;
       const custoAnual = floatTotal * kd;
 
       const md = [
