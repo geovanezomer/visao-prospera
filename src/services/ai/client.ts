@@ -1,6 +1,7 @@
 // Cliente unificado: streaming, tool-calling, retry, timeout.
+// Suporta provedores OpenAI-compatíveis (OpenAI, LM Studio) e Anthropic (Claude).
 import type { AIConfig } from "./providers";
-import { asOpenAITools } from "./tools";
+import { asOpenAITools, asAnthropicTools } from "./tools";
 
 export interface LLMMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -10,10 +11,24 @@ export interface LLMMessage {
   name?: string;
 }
 
-const headers = (cfg: AIConfig) => ({
-  "Content-Type": "application/json",
-  ...(cfg.apiKey ? { Authorization: `Bearer ${cfg.apiKey}` } : {}),
-});
+const isAnthropic = (cfg: AIConfig) => cfg.provider === "anthropic";
+
+// Cabeçalhos por provedor. Anthropic exige x-api-key + anthropic-version
+// e (no browser) o opt-in `anthropic-dangerous-direct-browser-access`.
+const headers = (cfg: AIConfig): Record<string, string> => {
+  if (isAnthropic(cfg)) {
+    return {
+      "Content-Type": "application/json",
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+      ...(cfg.apiKey ? { "x-api-key": cfg.apiKey } : {}),
+    };
+  }
+  return {
+    "Content-Type": "application/json",
+    ...(cfg.apiKey ? { Authorization: `Bearer ${cfg.apiKey}` } : {}),
+  };
+};
 
 function withTimeout(cfg: AIConfig, signal?: AbortSignal): { signal: AbortSignal; cancel: () => void } {
   const ac = new AbortController();
