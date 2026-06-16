@@ -684,6 +684,21 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       const kd = kdRaw > 1 ? kdRaw / 100 : kdRaw;
       const custoAnual = floatTotal * kd;
 
+      // Fallback explícito quando tax.detail não foi preenchido (DRE não detalha tributos por rubrica).
+      if (linhas.length === 0) {
+        return [
+          `## Impacto do Split Payment — regime **${regime}**`,
+          ``,
+          `⚠️ **Detalhamento tributário indisponível.** O cálculo do float exige a quebra da carga por rubrica (PIS, COFINS, ICMS, ISS, CBS, IBS, DAS, IRPJ, CSLL), e \`tax.detail\` está vazio para este estado.`,
+          ``,
+          `**Carga tributária total (referência):** ${brl(tax.annual)} ao ano · ${brl(cargaMensalTotal)} ao mês.`,
+          ``,
+          `**Como destravar:** confirme que a aba Tributos foi calculada (clique em "Recalcular" na TaxTab) ou utilize \`simular_transicao_reforma\` para o cronograma ano-a-ano da Reforma.`,
+        ].join("\n");
+      }
+
+
+
       const md = [
         `## Impacto do Split Payment — regime **${regime}**`,
         ``,
