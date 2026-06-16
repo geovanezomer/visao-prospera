@@ -221,20 +221,43 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
   // ----- Fluxo de caixa -----
   const cfLines: string[] = [];
   if (cf) {
-    cfLines.push(`## Fluxo de Caixa Mensal`);
+    cfLines.push(`## Fluxo de Caixa Mensal — completo (R$)`);
+    // Tabela 1: entradas e saídas operacionais detalhadas
+    cfLines.push(`\n### Entradas e Pagamentos Operacionais`);
     cfLines.push(table(
-      ["Mês", "Recebim.", "Pagam.Op.", "Fluxo Op.", "Capex", "Financ.", "Saldo Final"],
+      ["Mês", "Saldo Ini.", "Recebim.", "Rec.Financ.", "Pag.Forn.", "Pag.Fixos", "Pag.Variáv.", "Pag.Financ.", "Pag.Impostos", "Fluxo Op."],
       MESES.map((m, i) => [
         m,
+        brl(cf.saldoInicial[i]),
         brl(cf.recebimentos[i]),
-        brl(cf.pagamentosFornecedores[i] + cf.pagamentosFixos[i] + cf.pagamentosVariaveis[i] + cf.pagamentosFinanceiros[i] + cf.pagamentosImpostos[i]),
+        brl(cf.receitasFinanceiras[i]),
+        brl(cf.pagamentosFornecedores[i]),
+        brl(cf.pagamentosFixos[i]),
+        brl(cf.pagamentosVariaveis[i]),
+        brl(cf.pagamentosFinanceiros[i]),
+        brl(cf.pagamentosImpostos[i]),
         brl(cf.fluxoOperacional[i]),
+      ]),
+    ));
+    // Tabela 2: investimento, financiamento e saldo
+    cfLines.push(`\n### Investimento, Financiamento e Saldo`);
+    cfLines.push(table(
+      ["Mês", "Capex", "Fluxo Inv.", "Aportes", "Emprést.Capt.", "Amortiz.", "Dividendos", "Fluxo Fin.", "Var.Caixa", "Saldo Final"],
+      MESES.map((m, i) => [
+        m,
         brl(cf.capex[i]),
+        brl(cf.fluxoInvestimento[i]),
+        brl(cf.aportes[i]),
+        brl(cf.emprestimosCaptados[i]),
+        brl(cf.amortizacoes[i]),
+        brl(cf.dividendos[i]),
         brl(cf.fluxoFinanciamento[i]),
+        brl(cf.variacaoCaixa[i]),
         brl(cf.saldoFinal[i]),
       ]),
     ));
-    cfLines.push(`\n**Totais:** Recebim. ${brl(cf.totais.recebimentos)} · Fluxo Op. ${brl(cf.totais.fluxoOperacional)} · Invest. ${brl(cf.totais.fluxoInvestimento)} · Financ. ${brl(cf.totais.fluxoFinanciamento)} · Variação ${brl(cf.totais.variacao)} · Saldo final ${brl(cf.totais.saldoFinal)}`);
+    cfLines.push(`\n**Totais:** Recebim. ${brl(cf.totais.recebimentos)} · Rec.Financ. ${brl(cf.totais.receitasFinanceiras)} · Pagam.Totais ${brl(cf.totais.pagamentosTotais)} · Fluxo Op. ${brl(cf.totais.fluxoOperacional)} · Invest. ${brl(cf.totais.fluxoInvestimento)} · Financ. ${brl(cf.totais.fluxoFinanciamento)} · Variação ${brl(cf.totais.variacao)} · Saldo final ${brl(cf.totais.saldoFinal)}`);
+    cfLines.push(`**Transbordo ano seguinte:** Contas a Receber ${brl(cf.contasReceberAnoSeguinte)} · Fornecedores ${brl(cf.fornecedoresAnoSeguinte)} · Impostos ${brl(cf.impostosAnoSeguinte)}`);
     if (cf.totais.pioresMes) cfLines.push(`**Pior mês:** ${cf.totais.pioresMes.mes} → ${brl(cf.totais.pioresMes.saldo)}`);
     if (cf.alertas?.length) {
       cfLines.push(`**Alertas:**`);
