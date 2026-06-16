@@ -113,6 +113,8 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
       includeSnapshot: config.includeSnapshot,
       useTools: config.useTools,
       extra: config.extraSystemPrompt,
+      soul: config.soul,
+      skills: config.skills,
       auditMode,
     });
 
