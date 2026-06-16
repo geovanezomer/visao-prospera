@@ -364,24 +364,17 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
 
 
 /**
- * Monta o snapshot full respeitando um orçamento de tokens.
- * Prioridade: premissas + DRE + indicadores + valuation + comparativo são sempre mantidos.
- * Demais são incluídas até saturar o orçamento.
+ * Monta o snapshot full SEM limite de tokens — envia todas as seções disponíveis.
+ * O parâmetro `_maxTokens` é mantido por compatibilidade, mas é ignorado.
  */
-export function buildSnapshot(state: AppState, simulatedState?: AppState, maxTokens = 6000): string {
+export function buildSnapshot(state: AppState, simulatedState?: AppState, _maxTokens?: number): string {
   const s = buildSections(state, simulatedState);
-  const essential = [s.premissas, s.regime, s.dre, s.indicadores, s.valuation, s.comparativo].filter(Boolean) as string[];
-  const optional = [s.receitas, s.despesas, s.capital, s.caixa, s.diagnostico, s.saude, s.prescritivo, s.governanca, s.estrategico].filter(Boolean);
-
-  const parts: string[] = [...essential];
-  let used = estimateTokens(parts.join("\n\n"));
-  for (const opt of optional) {
-    const t = estimateTokens(opt);
-    if (used + t > maxTokens) continue;
-    parts.push(opt);
-    used += t;
-  }
-  return parts.join("\n\n");
+  const all = [
+    s.premissas, s.regime, s.dre, s.indicadores, s.valuation, s.comparativo,
+    s.receitas, s.despesas, s.capital, s.caixa, s.diagnostico,
+    s.saude, s.prescritivo, s.governanca, s.estrategico,
+  ].filter(Boolean) as string[];
+  return all.join("\n\n");
 }
 
 
