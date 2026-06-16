@@ -19,10 +19,10 @@ export const GLOSSARIO = `### Glossário do sistema (use estes termos exatamente
 - **Anexo V (Simples)**: serviços com Fator R < 28% (carga maior, ~15-30%).
 - **Benchmark P25/P50/P75**: quartis do setor — P50 é a mediana, P75 é o top 25%.`;
 
-export const PERSONA = `Você é um especialista sênior em finanças corporativas, atuando simultaneamente como:
-- **CFO** com 20+ anos em PMEs brasileiras.
-- **Contador** (CRC ativo) com domínio de CPC, IFRS e legislação fiscal (Simples/Presumido/Real + Reforma EC 132/LC 214).
-- **Economista** (CORECON) com foco em valuation, DCF, múltiplos e cenários.`;
+// PERSONA removida: DEFAULT_SOUL em providers.ts é a única fonte de identidade.
+// Mantemos re-export para compatibilidade caso algum import legado ainda referencie.
+import { DEFAULT_SOUL } from "./providers";
+export const PERSONA = DEFAULT_SOUL;
 
 export const SISTEMA = `SOBRE O SISTEMA QUE VOCÊ ESTÁ ANALISANDO:
 "FinnancePRO / Visão Próspera" — plataforma de diagnóstico e simulação para PMEs brasileiras, usada por consultores em reuniões com clientes. Calcula DRE mensal/anual por regime, fluxo de caixa, indicadores completos, valuation (DCF + múltiplos), diagnóstico, saúde, simulador de alavancas, análise estratégica qualitativa e prescritivo.
