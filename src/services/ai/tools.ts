@@ -336,6 +336,52 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
     case "get_despesas": return sec.despesas;
     case "get_capital": return sec.capital;
     case "get_regime_tributario": return sec.regime;
+    case "get_eras_reforma":
+      return sec.eras || "_Comparativo de eras indisponível (verifique a configuração tributária)._";
+    case "get_wacc": {
+      // Drill-down do WACC reaproveitando os números do cache numérico (sec.data).
+      const ind = sec.data?.ind;
+      const cap = state.capital;
+      const PL = Math.max(0, cap.patrimonioLiquido);
+      const D = Math.max(0, cap.dividaOnerosa);
+      const V = PL + D;
+      const wE = V > 0 ? PL / V : (cap.proprio ?? 0) / 100;
+      const wD = V > 0 ? D / V : 1 - (cap.proprio ?? 0) / 100;
+      const ke = cap.ke > 0 ? cap.ke : 0.08;
+      const kd = cap.kd ?? 0;
+      const effRegime = resolveEffectiveRegime(state);
+      const wacc = ind?.wacc ?? 0;
+      // Shield implícito: wacc = wE·Ke + wD·Kd·(1 − t)  ⇒  t = 1 − (wacc − wE·Ke) / (wD·Kd)
+      const tShield = wD > 0 && kd > 0
+        ? Math.max(0, Math.min(0.5, 1 - ((wacc / 100) - wE * ke) / (wD * kd)))
+        : 0;
+      const contribE = wE * ke * 100;
+      const contribD = wD * kd * (1 - tShield) * 100;
+      const roic = ind?.roic ?? 0;
+      const veredito = roic >= wacc
+        ? `✅ **Cria valor**: ROIC ${roic.toFixed(2)}% ≥ WACC ${wacc.toFixed(2)}% (spread +${(roic - wacc).toFixed(2)} pp).`
+        : `🚨 **Destrói valor**: ROIC ${roic.toFixed(2)}% < WACC ${wacc.toFixed(2)}% (spread ${(roic - wacc).toFixed(2)} pp).`;
+      return [
+        `## WACC — drill-down (regime efetivo: ${effRegime})`,
+        ``,
+        `**Fórmula:** wE·Ke + wD·Kd·(1 − t)`,
+        ``,
+        `| Componente | Valor |`,
+        `|---|---:|`,
+        `| Patrimônio Líquido (PL) | ${brl(PL)} |`,
+        `| Dívida onerosa (D) | ${brl(D)} |`,
+        `| Peso equity (wE) | ${(wE * 100).toFixed(1)}% |`,
+        `| Peso dívida (wD) | ${(wD * 100).toFixed(1)}% |`,
+        `| Custo do equity (Ke) | ${(ke * 100).toFixed(2)}% |`,
+        `| Custo da dívida (Kd) | ${(kd * 100).toFixed(2)}% |`,
+        `| Shield tributário (t) | ${(tShield * 100).toFixed(1)}% ${tShield === 0 ? "_(Simples/Presumido: sem dedução de juros)_" : ""} |`,
+        `| Contribuição do equity (wE·Ke) | ${contribE.toFixed(2)} pp |`,
+        `| Contribuição da dívida (wD·Kd·(1−t)) | ${contribD.toFixed(2)} pp |`,
+        `| **WACC final** | **${wacc.toFixed(2)}%** |`,
+        ``,
+        veredito,
+      ].join("\n");
+    }
     case "get_dre": return sec.dre;
     case "get_indicadores": return sec.indicadores;
     case "get_fluxo_caixa": return sec.caixa;
