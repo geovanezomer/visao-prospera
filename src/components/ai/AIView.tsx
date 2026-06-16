@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AuditReport, isAuditReport } from "./AuditReport";
 import { useAIChat } from "@/hooks/useAIChat";
+import { resetAIStorage } from "@/services/ai/providers";
 
 const ReactMarkdown = lazy(() => import("react-markdown") as any);
 
-class AIViewBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
-  state: { error: Error | null } = { error: null };
+class AIViewBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null; resetNonce: number }> {
+  state: { error: Error | null; resetNonce: number } = { error: null, resetNonce: 0 };
 
   static getDerivedStateFromError(error: Error) {
     return { error };
@@ -24,17 +25,27 @@ class AIViewBoundary extends React.Component<{ children: React.ReactNode }, { er
     console.error("Falha ao renderizar Consultor IA", error);
   }
 
+  private recover = () => {
+    resetAIStorage();
+    this.setState((state) => ({ error: null, resetNonce: state.resetNonce + 1 }));
+  };
+
   render() {
-    if (!this.state.error) return this.props.children;
+    if (!this.state.error) return <React.Fragment key={this.state.resetNonce}>{this.props.children}</React.Fragment>;
     return (
       <div className="flex min-h-[420px] flex-col items-center justify-center gap-3 bg-background p-6 text-center">
         <Bot className="h-8 w-8 text-primary" />
         <h2 className="text-lg font-semibold">Consultor IA indisponível</h2>
         <p className="max-w-md text-sm text-muted-foreground">
-          Houve uma falha local ao abrir o chat. Recarregue a página ou limpe as configurações do chat em ⚙️.
+          Houve uma falha local ao abrir o chat. Vou recriar as configurações e conversas locais de IA para recuperar o acesso.
         </p>
-        <Button variant="outline" onClick={() => this.setState({ error: null })}>
-          Tentar novamente
+        {import.meta.env.DEV && this.state.error.message && (
+          <pre className="max-w-xl overflow-auto rounded border border-border/40 bg-muted/20 p-3 text-left text-[11px] text-muted-foreground">
+            {this.state.error.message}
+          </pre>
+        )}
+        <Button variant="outline" onClick={this.recover}>
+          Recriar chat local
         </Button>
       </div>
     );
