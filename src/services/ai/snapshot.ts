@@ -533,8 +533,8 @@ export function getSectionsCached(state: AppState, simulatedState?: AppState): S
   // Inclui companyName explicitamente no key para evitar vazamento cross-empresa
   // mesmo que dois estados produzam hashes JSON idênticos por coincidência.
   const company = state.companyName || "(sem-empresa)";
-  const k = `${company}::${fastHash(state)}`;
-  const sk = simulatedState ? `${company}::${fastHash(simulatedState)}` : "";
+  const k = `${CACHE_VERSION}::${company}::${fastHash(state)}`;
+  const sk = simulatedState ? `${CACHE_VERSION}::${company}::${fastHash(simulatedState)}` : "";
   if (k === cacheKey && sk === cacheSimKey && cacheVal) return cacheVal;
   const v = buildSections(state, simulatedState);
   cacheKey = k; cacheSimKey = sk; cacheVal = v;
