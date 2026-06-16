@@ -329,7 +329,14 @@ function sensitivityToMarkdown(r: SensitivityResult): string {
 }
 
 
-export function runTool(name: string, args: any, state: AppState, simulatedState?: AppState, simParams?: SimulatorParams): string | Promise<string> {
+/** K-1: tipo leve para `args`, sem perder a flexibilidade do JSON do LLM. */
+export type ToolArgs = Record<string, unknown>;
+
+export function runTool(name: string, args: ToolArgs, state: AppState, simulatedState?: AppState, simParams?: SimulatorParams): string | Promise<string> {
+  // M-6: telemetria mínima para inspeção em dev (apenas debug — não polui o console em produção).
+  if (typeof console !== "undefined" && console.debug) {
+    console.debug(`[ai/tool] ${name}`, args);
+  }
   const sec = getSectionsCached(state, simulatedState);
   const company = state.companyName || "default";
   switch (name) {
