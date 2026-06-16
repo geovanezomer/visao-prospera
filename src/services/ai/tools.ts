@@ -12,7 +12,7 @@ import { listScenarios, saveScenario, deleteScenario, getScenario } from "@/serv
 import { listActions, createAction, updateAction, deleteAction, actionsToMarkdown, type ActionStatus } from "@/services/actions/store";
 import { regimeComparisonToMarkdown, taxAuditToMarkdown } from "@/services/compliance/tax";
 import { checklistToMarkdown } from "@/services/compliance/checklist";
-import { buildDRE, calcIndicators, resolveEffectiveRegime, diagnose } from "@/lib/finance/calculations";
+import { buildDRE, calcIndicators, resolveEffectiveRegime, diagnose, compareYearsForRegime } from "@/lib/finance/calculations";
 import { buildValuation, defaultValuationParams } from "@/lib/finance/valuation";
 import { computeHealth } from "@/lib/finance/health";
 
@@ -196,7 +196,20 @@ export const TOOLS: ToolDef[] = [
     description: "Lista obrigações fiscais/trabalhistas aplicáveis ao regime atual.",
     parameters: { type: "object", properties: {}, required: [] },
   },
+  {
+    name: "simular_transicao_reforma",
+    description: "Simula a carga tributária ano-a-ano no cronograma oficial da LC 214/2025 (2026–2033), considerando a cobrança híbrida (CBS+IBS parcial × PIS/COFINS+ICMS/ISS em redução gradual). Use quando o usuário perguntar sobre impacto da Reforma em anos específicos ('quanto vou pagar em 2030?', 'em que ano fica mais caro?'). Por padrão simula o regime atual da empresa nos anos 2026–2033.",
+    parameters: {
+      type: "object",
+      properties: {
+        regime: { type: "string", enum: ["simples", "presumido", "real"], description: "Regime a simular. Default: regime efetivo atual." },
+        anos: { type: "array", items: { type: "number" }, description: "Anos a comparar. Default: [2026,2027,2028,2029,2030,2031,2032,2033]." },
+      },
+      required: [],
+    },
+  },
 ];
+
 
 export function asOpenAITools() {
   return TOOLS.map(t => ({
@@ -464,6 +477,34 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
     case "simular_regime_tributario": return regimeComparisonToMarkdown(state);
     case "diagnostico_tributario": return taxAuditToMarkdown(state);
     case "checklist_compliance": return checklistToMarkdown(state);
+    case "simular_transicao_reforma": {
+      const regime = (args?.regime as "simples" | "presumido" | "real") || resolveEffectiveRegime(state);
+      const years: number[] = Array.isArray(args?.anos) && args.anos.length
+        ? args.anos.map((y: any) => Number(y)).filter((y: number) => Number.isFinite(y))
+        : [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033];
+      const rows = compareYearsForRegime(state, regime, years);
+      const lines = [
+        `## Transição Tributária ano-a-ano — regime **${regime}**`,
+        ``,
+        `Cronograma oficial LC 214/2025 (cobrança híbrida CBS+IBS × PIS/COFINS+ICMS/ISS):`,
+        ``,
+        `| Ano | CBS | IBS | PIS/COFINS | ICMS/ISS | Carga efetiva | Anual |`,
+        `|---|---:|---:|---:|---:|---:|---:|`,
+      ];
+      rows.forEach(r => {
+        lines.push(
+          `| ${r.year} | ${r.rates.cbsPct.toFixed(2)}% | ${r.rates.ibsPct.toFixed(2)}% | ${(r.rates.pisCofinsMult * 100).toFixed(0)}% | ${(r.rates.icmsIssMult * 100).toFixed(0)}% | ${r.effective.toFixed(2)}% | ${brl(r.annual)} |`,
+        );
+      });
+      // Ano mais caro vs mais barato
+      const sorted = [...rows].sort((a, b) => a.annual - b.annual);
+      const min = sorted[0], max = sorted[sorted.length - 1];
+      const delta = max.annual - min.annual;
+      lines.push(``, `**Pico:** ${max.year} (${brl(max.annual)} · ${max.effective.toFixed(2)}%) · **Vale:** ${min.year} (${brl(min.annual)}) · **Δ:** ${brl(delta)} entre extremos.`);
+      lines.push(`\n_Mantém preços e custos constantes; isola o efeito da Reforma._`);
+      return lines.join("\n");
+    }
+
 
     default:
       return `Ferramenta desconhecida: ${name}`;

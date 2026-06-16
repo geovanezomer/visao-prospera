@@ -81,6 +81,109 @@ export function getReformaRates(era: TaxEra | undefined, cfg: TaxConfig): Reform
   }
 }
 
+// ---------------------------------------------------------------------
+// Cronograma ano-a-ano da Reforma — LC 214/2025 + EC 132/2023
+// ---------------------------------------------------------------------
+/** Fração do IBS pleno cobrada no ano (0..1). Cronograma oficial:
+ *  - 2026–2028: 0,1% absoluto (fase de teste) → fração ≈ 0,1/ibsPleno.
+ *  - 2029=10%, 2030=20%, 2031=30%, 2032=40%, 2033+=100%. */
+export function getIbsFractionForYear(year: number, ibsFull: number): number {
+  if (year < 2026) return 0;
+  if (year <= 2028) return ibsFull > 0 ? 0.1 / ibsFull : 0;
+  if (year === 2029) return 0.10;
+  if (year === 2030) return 0.20;
+  if (year === 2031) return 0.30;
+  if (year === 2032) return 0.40;
+  return 1;
+}
+
+/** Fração de ICMS/ISS antigos ainda cobrada no ano:
+ *  2026–2028=100%; 2029=90%; 2030=80%; 2031=70%; 2032=60%; 2033+=0%. */
+export function getIcmsIssFractionForYear(year: number): number {
+  if (year < 2026) return 1;
+  if (year <= 2028) return 1;
+  if (year === 2029) return 0.90;
+  if (year === 2030) return 0.80;
+  if (year === 2031) return 0.70;
+  if (year === 2032) return 0.60;
+  return 0;
+}
+
+/** Fração de PIS/COFINS antigos: 2026=100% (CBS 0,9% compensável); 2027+=0%. */
+export function getPisCofinsFractionForYear(year: number): number {
+  if (year < 2026) return 1;
+  if (year === 2026) return 1;
+  return 0;
+}
+
+/** CBS absoluta (%) no ano: 2026=0,9% (teste); 2027+ = alíquota plena configurada. */
+export function getCbsPctForYear(year: number, cbsFull: number): number {
+  if (year < 2026) return 0;
+  if (year === 2026) return 0.9;
+  return cbsFull;
+}
+
+/** Versão ano-a-ano de `getReformaRates`, honrando o cronograma da LC 214/2025.
+ *  Use para simulações longitudinais 2026–2033 em vez do agrupamento triplo. */
+export function getReformaRatesForYear(year: number, cfg: TaxConfig): ReformaRates {
+  const cbsFull = cfg.cbsAliquota ?? 8.8;
+  const ibsFull = cfg.ibsAliquotaRef ?? 17.7;
+  if (year < 2026) return { cbsPct: 0, ibsPct: 0, pisCofinsMult: 1, icmsIssMult: 1 };
+  return {
+    cbsPct: getCbsPctForYear(year, cbsFull),
+    ibsPct: ibsFull * getIbsFractionForYear(year, ibsFull),
+    pisCofinsMult: getPisCofinsFractionForYear(year),
+    icmsIssMult: getIcmsIssFractionForYear(year),
+  };
+}
+
+/** Mapeia o ano para a `TaxEra` discreta correspondente — usado para reaproveitar
+ *  o engine atual sem reescrever buildDRE/calcReal. */
+export function eraForYear(year: number): TaxEra {
+  if (year < 2026) return "atual";
+  if (year >= 2033) return "pleno";
+  return "transicao";
+}
+
+/** Projeção da carga efetiva ano-a-ano para um regime, aplicando o cronograma
+ *  oficial. Reaproveita o engine existente sobrescrevendo os multiplicadores de
+ *  transição via `ratesOverride`. Para 2026 força CBS=0,9% (teste). */
+export function compareYearsForRegime(
+  state: AppState,
+  regime: TaxRegime,
+  years: number[],
+): { year: number; era: TaxEra; effective: number; annual: number; rates: ReformaRates }[] {
+  const ibsFull = state.tax.ibsAliquotaRef ?? 17.7;
+  return years.map((year) => {
+    const rates = getReformaRatesForYear(year, state.tax);
+    const ibsFrac = ibsFull > 0 ? rates.ibsPct / ibsFull : 0;
+    const era = eraForYear(year);
+    const s: AppState = {
+      ...state,
+      tax: {
+        ...state.tax,
+        era,
+        cbsAliquota: era === "transicao" && year === 2026 ? 0.9 : (state.tax.cbsAliquota ?? 8.8),
+        ratesOverride: {
+          ...(state.tax.ratesOverride ?? {}),
+          reformaTransicaoIbsMult: ibsFrac,
+          reformaTransicaoIcmsIssMult: rates.icmsIssMult,
+        },
+      },
+    };
+    let tax: MonthlyTax;
+    if (regime === "simples") tax = calcSimples(s);
+    else if (regime === "presumido") tax = calcPresumido(s);
+    else {
+      const baseLair = buildDRE(s, "real").dre.lair;
+      tax = calcReal(s, baseLair);
+    }
+    return { year, era, effective: tax.effective, annual: tax.annual, rates };
+  });
+}
+
+
+
 // =====================================================================
 // SIMPLES NACIONAL — tabelas vivem em taxDefaults.ts (editáveis via painel)
 // =====================================================================
