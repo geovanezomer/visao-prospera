@@ -208,7 +208,13 @@ export const TOOLS: ToolDef[] = [
       required: [],
     },
   },
+  {
+    name: "simular_split_payment",
+    description: "Calcula o impacto do Split Payment no fluxo de caixa e necessidade de capital de giro. O Split Payment retém o tributo no momento do pagamento eliminando o float atual. Use quando o consultor perguntar sobre impacto da reforma no caixa.",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
 ];
+
 
 
 export function asOpenAITools() {
