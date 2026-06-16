@@ -10,7 +10,7 @@ import {
   Paperclip, FileText, ImageIcon, X,
 } from "lucide-react";
 import { AIConfigDialog } from "./AIConfigDialog";
-import { renameThread, loadThreads, type ChatMessage } from "@/services/ai/providers";
+import { renameThread, type ChatMessage } from "@/services/ai/providers";
 import { confidenceLabel, MAX_FILES_PER_MSG } from "@/services/ai/attachments";
 import { AuditReport, isAuditReport } from "./AuditReport";
 import type { AppState } from "@/lib/finance/types";
