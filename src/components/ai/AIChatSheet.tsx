@@ -21,6 +21,7 @@ import { buildSystemPrompt } from "@/services/ai/systemPrompt";
 import { runTool } from "@/services/ai/tools";
 import { processFile, buildPdfContext, buildVisionMessageContent, confidenceLabel, MAX_FILES_PER_MSG, type ChatAttachment } from "@/services/ai/attachments";
 import type { AppState } from "@/lib/finance/types";
+import { resolveEffectiveRegime } from "@/lib/finance/calculations";
 import type { SimulatorParams } from "@/lib/finance/simulator";
 import { toast } from "sonner";
 
@@ -108,6 +109,22 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
     } catch { return ""; }
   }, [state, simulatedState, simHasChanges, config.includeSnapshot, config.useTools]);
 
+  // Contexto runtime: data, empresa, regime efetivo (com downgrade Simples→Presumido aplicado).
+  const runtimeContext = useMemo(() => {
+    try {
+      const eff = resolveEffectiveRegime(state);
+      const t = state.tax;
+      const nominal = t.regime;
+      const base = eff !== nominal ? `${eff} (nominal: ${nominal} — downgrade por exceder limite)` : eff;
+      const extra = eff === "simples"
+        ? ` · Anexo ${t.simplesAnexo}, Fator R ${(t.fatorR * 100).toFixed(1)}%`
+        : "";
+      return { companyName: state.companyName, regimeLabel: base + extra };
+    } catch {
+      return { companyName: state.companyName, regimeLabel: state.tax?.regime };
+    }
+  }, [state.companyName, state.tax]);
+
   const buildSysPrompt = (auditMode?: boolean) =>
     buildSystemPrompt({
       snapshot,
@@ -117,6 +134,7 @@ export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActi
       soul: config.soul,
       skills: config.skills,
       auditMode,
+      context: runtimeContext,
     });
 
   const send = async (text: string, opts?: { auditMode?: boolean; replaceLast?: boolean }) => {
