@@ -62,6 +62,42 @@ export async function listModels(cfg: AIConfig): Promise<string[]> {
   return (Array.isArray(json?.data) ? json.data : []).map((m: any) => m.id).filter(Boolean);
 }
 
+// ============================================================
+// Helpers Anthropic — converte do nosso formato unificado.
+// ============================================================
+function splitSystemAndMessages(msgs: LLMMessage[]): { system: string; rest: LLMMessage[] } {
+  const systems = msgs.filter(m => m.role === "system").map(m => m.content).filter(Boolean);
+  const rest = msgs.filter(m => m.role !== "system");
+  return { system: systems.join("\n\n"), rest };
+}
+
+// Converte mensagens unificadas para o formato Anthropic (content blocks).
+function toAnthropicMessages(msgs: LLMMessage[]): any[] {
+  const out: any[] = [];
+  for (const m of msgs) {
+    if (m.role === "assistant") {
+      const blocks: any[] = [];
+      if (m.content) blocks.push({ type: "text", text: m.content });
+      if (m.tool_calls?.length) {
+        for (const tc of m.tool_calls) {
+          let input: any = {};
+          try { input = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {}; } catch {}
+          blocks.push({ type: "tool_use", id: tc.id, name: tc.function.name, input });
+        }
+      }
+      out.push({ role: "assistant", content: blocks });
+    } else if (m.role === "tool") {
+      out.push({
+        role: "user",
+        content: [{ type: "tool_result", tool_use_id: m.tool_call_id!, content: m.content }],
+      });
+    } else {
+      out.push({ role: "user", content: m.content });
+    }
+  }
+  return out;
+}
+
 export async function testConnection(cfg: AIConfig): Promise<{ ok: boolean; message: string }> {
   try {
     const models = await listModels(cfg);
