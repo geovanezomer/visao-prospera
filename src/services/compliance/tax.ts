@@ -29,13 +29,15 @@ export function regimeComparisonToMarkdown(state: AppState): string {
 }
 
 export function taxAuditToMarkdown(state: AppState): string {
+  const era = state.tax.era ?? "atual";
   const rbAnual = sum(state.revenue.bruta);
   const { dre } = buildDRE(state, state.tax.regime);
   const llAnual = sum(dre.lucroLiquido);
-  const regimes = compareRegimes(state);
+  const regimes = compareRegimes(state, era);
   const currentRegime = state.tax.regime;
-  
+
   let md = `## Diagnóstico Tributário Detalhado\n\n`;
+  md += `_Análise referente à era: **${era}** ${era !== "atual" ? "(Reforma Tributária)" : ""}_\n\n`;
   md += `- **Regime Atual:** ${currentRegime.toUpperCase()}\n`;
   md += `- **Faturamento (RBT12):** ${fmtBRL(rbAnual)}\n`;
   md += `- **Lucro Líquido Real:** ${fmtBRL(llAnual)}\n\n`;
