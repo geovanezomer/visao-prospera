@@ -83,7 +83,8 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     `- **Negócio:** ${state.businessType}`,
     `- **Regime:** ${regimeLabel}${effectiveRegime === "simples" ? ` (Anexo ${state.tax.simplesAnexo}, Fator R ${pct(state.tax.fatorR)})` : ""}`,
     `- **Era tributária:** ${state.tax.era ?? "atual"}`,
-    `- **Ke ${pct(state.capital.ke * 100)} | Kd ${pct(state.capital.kd * 100)}**`,
+    // C-1 fix: state.capital.ke / kd já estão em % (ex.: 15 = 15%). Não multiplicar por 100.
+    `- **Ke ${pct(state.capital.ke, 2)} | Kd ${pct(state.capital.kd, 2)}**`,
     `- **PL:** ${brl(state.capital.patrimonioLiquido)} | **Dívida onerosa:** ${brl(state.capital.dividaOnerosa)} | **Ativo total:** ${brl(state.capital.ativoTotal)}`,
     `- **PMR ${state.revenue.pmr}d · PMP ${state.revenue.pmp}d**`,
     `- **Caixa mínimo:** ${brl(state.cashflow.caixaMinimo)}`,
@@ -189,7 +190,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
         ["Ponto Equilíbrio (fin.)", brl(ind.pontoEquilibrioFinanceiro)],
         ["GAO (alavancagem op.)", fmtNum(safe(ind.gao), 2) + "x"],
         ["ROE", pct(ind.roe)], ["ROA", pct(ind.roa)], ["ROIC", pct(ind.roic)],
-        ["WACC", pct(ind.wacc * 100, 2)],
+        ["WACC", pct(ind.wacc, 2)],
         ["Ciclo Financeiro (d)", fmtNum(safe(ind.cicloFinanceiro), 0)],
         ["NCG", brl(ind.ncg)],
         ["Gap Cap. Giro", brl(ind.gapCapitalGiro)],
@@ -289,7 +290,9 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     valLines.push(`- **Haircut:** ${pct(val.haircutApplied * 100)}`);
     if (val.dcfDetails) {
       const d = val.dcfDetails as any;
-      valLines.push(`- **DCF:** WACC ${pct(safe(d.wacc) * 100, 2)} · g ${pct(safe(d.terminalGrowth) * 100, 2)} · VP fluxos ${brl(safe(d.presentValueFlows))} · VP terminal ${brl(safe(d.presentValueTerminal))}`);
+      // C-1 fix: dcfDetails.wacc é armazenado em % (valuation.ts:198 `waccAnnual * 100`).
+      // terminalGrowth permanece em fração (ex.: 0.025) — multiplica × 100 só nele.
+      valLines.push(`- **DCF:** WACC ${pct(safe(d.wacc), 2)} · g ${pct(safe(d.terminalGrowth) * 100, 2)} · VP fluxos ${brl(safe(d.presentValueFlows))} · VP terminal ${brl(safe(d.presentValueTerminal))}`);
     }
     if (val.narrative) valLines.push(`> ${val.narrative}`);
   }
@@ -401,8 +404,8 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
       ["Caixa Ocioso", brl(c.caixaOcioso ?? 0)],
       ["Capital Giro Disponível", brl(c.capitalGiroDisponivel)],
       ["Depreciação Mensal", brl(c.depreciacaoMensal)],
-      ["Ke (custo do equity)", pct(c.ke * 100, 2)],
-      ["Kd (custo da dívida)", pct(c.kd * 100, 2)],
+      ["Ke (custo do equity)", pct(c.ke, 2)],
+      ["Kd (custo da dívida)", pct(c.kd, 2)],
     ]));
     if (c.capexAtivacao?.length) {
       capLines.push(`\n### Capex ativado no ano`);
@@ -505,7 +508,14 @@ export function buildSnapshot(state: AppState, simulatedState?: AppState): strin
 
 // ============================================================
 // Cache por hash do estado (evita reconstruir sem mudanças)
-// ============================================================
+// ------------------------------------------------------------
+// Pressuposto (K-3): o cache é singleton de módulo. Trocas de empresa são
+// protegidas pelo prefixo `companyName::` no key. Mutações fora do AppState
+// (ex: actions/scenarios em localStorage) NÃO invalidam o cache — tools que
+// dependem desses stores (listar_acoes, listar_cenarios, criar_acao, etc.)
+// não usam `sec`, leem o store direto. Manter esse invariante ao adicionar tools.
+// Para forçar invalidação em testes, incremente CACHE_VERSION.
+const CACHE_VERSION = "v2";
 let cacheKey = "";
 let cacheVal: SnapshotSections | null = null;
 let cacheSimKey = "";
@@ -523,8 +533,8 @@ export function getSectionsCached(state: AppState, simulatedState?: AppState): S
   // Inclui companyName explicitamente no key para evitar vazamento cross-empresa
   // mesmo que dois estados produzam hashes JSON idênticos por coincidência.
   const company = state.companyName || "(sem-empresa)";
-  const k = `${company}::${fastHash(state)}`;
-  const sk = simulatedState ? `${company}::${fastHash(simulatedState)}` : "";
+  const k = `${CACHE_VERSION}::${company}::${fastHash(state)}`;
+  const sk = simulatedState ? `${CACHE_VERSION}::${company}::${fastHash(simulatedState)}` : "";
   if (k === cacheKey && sk === cacheSimKey && cacheVal) return cacheVal;
   const v = buildSections(state, simulatedState);
   cacheKey = k; cacheSimKey = sk; cacheVal = v;
