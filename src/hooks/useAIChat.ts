@@ -335,7 +335,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       const fallback = next[0] ?? createThread(state.companyName, "Conversa principal");
       if (!next.length) { setThreads([fallback]); saveThreads(state.companyName, [fallback]); }
       setActiveId(fallback.id);
-      setMessages(loadMessages(state.companyName, fallback.id));
+      setMessages(injectBriefingIfEmpty(state.companyName, fallback.id, loadMessages(state.companyName, fallback.id)));
     }
   };
 
