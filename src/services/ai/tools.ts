@@ -511,8 +511,60 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       return lines.join("\n");
     }
 
+    case "simular_split_payment": {
+      // Prazos médios de recolhimento (dias após o mês de competência).
+      const PRAZOS: { match: RegExp; dias: number; label: string }[] = [
+        { match: /^DAS Simples/i, dias: 20, label: "DAS (Simples)" },
+        { match: /^PIS/i,          dias: 25, label: "PIS" },
+        { match: /^COFINS/i,       dias: 25, label: "COFINS" },
+        { match: /^CBS/i,          dias: 25, label: "CBS" },
+        { match: /^IBS/i,          dias: 10, label: "IBS" },
+        { match: /^ISS/i,          dias: 10, label: "ISS" },
+        { match: /^ICMS/i,         dias: 10, label: "ICMS" },
+        { match: /^IRPJ|^Adicional IRPJ|^CSLL/i, dias: 45, label: "IRPJ/CSLL (trimestral)" },
+      ];
+      const regime = resolveEffectiveRegime(state);
+      const { tax } = buildDRE(state, regime);
+      const detail = tax.detail || {};
+
+      // Float = Σ (carga_anual / 12) × (prazo_dias / 30)
+      let floatTotal = 0;
+      const linhas: { label: string; mensal: number; dias: number; float: number }[] = [];
+      for (const [chave, valorAnual] of Object.entries(detail)) {
+        if (!Number.isFinite(valorAnual) || valorAnual <= 0) continue;
+        const cfg = PRAZOS.find(p => p.match.test(chave));
+        if (!cfg) continue;
+        const mensal = valorAnual / 12;
+        const flt = mensal * (cfg.dias / 30);
+        floatTotal += flt;
+        linhas.push({ label: chave, mensal, dias: cfg.dias, float: flt });
+      }
+
+      const cargaMensalTotal = tax.annual / 12;
+      const kd = state.capital.kd ?? 0;
+      const custoAnual = floatTotal * kd;
+
+      const md = [
+        `## Impacto do Split Payment — regime **${regime}**`,
+        ``,
+        `| Tributo | Carga mensal | Prazo atual | Float (R$) |`,
+        `|---|---:|---:|---:|`,
+        ...linhas.map(l => `| ${l.label} | ${brl(l.mensal)} | ${l.dias}d | ${brl(l.float)} |`),
+        `| **Total** | **${brl(cargaMensalTotal)}** | — | **${brl(floatTotal)}** |`,
+        ``,
+        `### Síntese`,
+        `- **Carga tributária mensal:** ${brl(cargaMensalTotal)}`,
+        `- **Float tributário atual:** ${brl(floatTotal)} — capital de terceiros (governo) que a empresa "usa" hoje entre apurar e recolher.`,
+        `- **Capital de giro adicional com Split Payment:** ${brl(floatTotal)} (esse valor some permanentemente do caixa operacional).`,
+        `- **Custo financeiro anual** (× Kd ${(kd * 100).toFixed(1)}%): **${brl(custoAnual)}**/ano.`,
+        ``,
+        `> _Impacto estimado para regime ${regime} — Split Payment entra na transição 2027-2032 conforme LC 214/2025._`,
+      ].join("\n");
+      return md;
+    }
 
     default:
       return `Ferramenta desconhecida: ${name}`;
   }
 }
+
