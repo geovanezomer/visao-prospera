@@ -24,7 +24,7 @@ export interface SimulatorParams {
   // Custos & Pessoal
   cpvDeltaPct: number;          // -20..+30  → multiplica linhas custo_vendas
   payrollDeltaPct: number;      // -30..+30  → multiplica linhas com encargosAuto
-  fixedCutPct: number;          // 0..50     → % de redução nos top-N fixos
+  fixedCutPct: number;          // -50..+50  → positivo = corte, negativo = aumento nos top-N fixos
   fixedCutTopN: number;         // 1..5
   outsourcePctCpv: number;      // 0..100    → % do CPV substituído
   outsourceFixedMonthly: number;// R$/mês fixo contratado
