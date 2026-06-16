@@ -16,9 +16,11 @@ import { buildDRE, calcIndicators, resolveEffectiveRegime, diagnose, compareYear
 import { buildValuation, defaultValuationParams } from "@/lib/finance/valuation";
 import { computeHealth } from "@/lib/finance/health";
 
-// Helpers locais de formatação (espelho dos usados em snapshot.ts).
+// Helpers locais de formatação (alinhados com snapshot.ts — recebem valor JÁ em %).
+// Auditoria C-1: a versão antiga multiplicava por 100 e quebrava valores que já vinham em %
+// (ex.: ind.margemEbitda=25.3 era exibido como "2530,0%"). Mantemos a mesma semântica do snapshot.
 const brl = (n: number) => (Number.isFinite(n) ? n : 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-const pct = (n: number) => `${((Number.isFinite(n) ? n : 0) * 100).toFixed(1).replace(".", ",")}%`;
+const pct = (n: number, d = 1) => `${(Number.isFinite(n) ? n : 0).toFixed(d).replace(".", ",")}%`;
 const sum = (a: number[]) => a.reduce((x, y) => x + (Number.isFinite(y) ? y : 0), 0);
 
 export interface ToolDef {
