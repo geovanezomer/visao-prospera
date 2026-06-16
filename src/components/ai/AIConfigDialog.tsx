@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, CheckCircle2, XCircle, AlertTriangle, X, Plus, Trash2, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, X, Plus, Trash2, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
 import { AIConfig, Provider, switchProvider, DEFAULT_SOUL, DEFAULT_SKILLS, Skill } from "@/services/ai/providers";
 import { listModels, testConnection } from "@/services/ai/client";
 
@@ -64,15 +64,6 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
               </Select>
             </div>
 
-            {(draft.provider === "openai" || draft.provider === "anthropic") && (
-              <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2.5 text-[11px] text-amber-300 flex gap-2">
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                <span>
-                  Ao usar {draft.provider === "openai" ? "OpenAI" : "Anthropic"}, seus dados financeiros são enviados para{" "}
-                  <b>{draft.provider === "openai" ? "api.openai.com" : "api.anthropic.com"}</b>. Para 100% local, escolha LM Studio.
-                </span>
-              </div>
-            )}
 
             <div className="space-y-1.5">
               <Label>Base URL</Label>
