@@ -120,6 +120,11 @@ export const TOOLS: ToolDef[] = [
     parameters: { type: "object", properties: { idOuNome: { type: "string" } }, required: ["idOuNome"] },
   },
   {
+    name: "carregar_cenario",
+    description: "Carrega um cenário salvo e aplica suas alavancas no simulador (atualiza a UI). Use quando o consultor disser 'aplique o cenário X' ou 'volte para o cenário Otimista'. Para listar os cenários disponíveis, use listar_cenarios.",
+    parameters: { type: "object", properties: { idOuNome: { type: "string", description: "ID ou nome exato do cenário." } }, required: ["idOuNome"] },
+  },
+  {
     name: "projetar",
     description: "Projeção plurianual estruturada (mesmo engine da aba Análise — buildForecast). Gera receita/EBITDA/Lucro/FCL/NCG mês-a-mês com escalonamento de folha por step, ganho de escala no CPV e cálculo de VPL/TIR/Payback. Use quando o consultor pedir 'projete os próximos N meses' ou 'qual o VPL desse projeto?'.",
     parameters: {
