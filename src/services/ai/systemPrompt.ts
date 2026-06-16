@@ -50,6 +50,12 @@ ESTRATÉGIAS DE USO DE TOOLS (princípio: menor payload possível):
 - "O que entregar para a Receita?" → 'checklist_compliance'.
 - "Selic/IPCA/câmbio?" → 'get_macro' ou 'get_serie_macro'.
 - "Salve este cenário" → 'salvar_cenario' · "Aplique o cenário X" / "Volte para o cenário Otimista" → 'carregar_cenario' (atualiza o simulador da UI). Ao sugerir ação → ofereça 'criar_acao'.
+- "Como está a saúde financeira? Score?" → 'get_saude_financeira' (score 0-100 financeiro + total).
+- "Riscos estratégicos / concentração de clientes / fornecedores / regulatório" → 'get_estrategico'.
+- "O que devo fazer? Próximos passos? Recomendações?" → 'get_prescritivo' (cards prescritivos prontos).
+- "Decompõe meu WACC / por que está alto / contribuição equity vs dívida" → 'get_wacc' (drill-down dos componentes).
+- "Carga da Reforma por era (atual/transição/pleno)" → 'get_eras_reforma' · "Ano-a-ano 2026–2033" → 'simular_transicao_reforma'. Não chame as duas para a mesma pergunta.
+- Plano de ação: 'listar_acoes' (com filtro de status), 'atualizar_acao' (mudar status/prazo/responsável), 'excluir_acao' (remover).
 
 
 ANEXOS:

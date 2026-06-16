@@ -44,6 +44,8 @@ export interface SnapshotSections {
   despesas: string;
   capital: string;
   regime: string;
+  /** Comparativo de eras da Reforma (atual/transição/pleno) — separado de `regime` para evitar duplicação com simular_transicao_reforma. */
+  eras: string;
   dre: string;
   indicadores: string;
   diagnostico: string;
@@ -422,16 +424,16 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     if (built?.tax?.totalAnual !== undefined) regLines.push(`- **Carga tributária total apurada (ano):** ${brl(built.tax.totalAnual)}`);
   }
 
-  // ----- Comparativo de eras da Reforma Tributária -----
-  // Mostra os mesmos números da tabela TaxTab que o consultor está olhando.
+  // ----- Comparativo de eras da Reforma Tributária (seção separada para dedup com simular_transicao_reforma) -----
+  const erasLines: string[] = [];
   const erasComparativo = tryRun(
     () => compareErasForRegime(state, state.tax.regime),
     [] as ReturnType<typeof compareErasForRegime>,
   );
   if (erasComparativo.length === 3) {
-    regLines.push(`\n### Impacto da Reforma Tributária — ${state.tax.regime}`);
-    regLines.push(`| Era | Período | Tributos (ano) | Carga Efetiva | Δ vs. Atual |`);
-    regLines.push(`| --- | --- | --- | --- | --- |`);
+    erasLines.push(`## Impacto da Reforma Tributária — ${state.tax.regime}`);
+    erasLines.push(`| Era | Período | Tributos (ano) | Carga Efetiva | Δ vs. Atual |`);
+    erasLines.push(`| --- | --- | --- | --- | --- |`);
     const base = erasComparativo[0].annual;
     erasComparativo.forEach(p => {
       const delta = p.annual - base;
@@ -439,10 +441,10 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
         ? "—"
         : `${delta >= 0 ? "+" : ""}${brl(delta)} (${base !== 0 ? ((delta / base) * 100).toFixed(1) : "0.0"}%)`;
       const periodo = p.era === "atual" ? "até 2026" : p.era === "transicao" ? "2027–2032" : "2033+";
-      regLines.push(`| ${p.era} | ${periodo} | ${brl(p.annual)} | ${pct(p.effective)} | ${deltaTxt} |`);
+      erasLines.push(`| ${p.era} | ${periodo} | ${brl(p.annual)} | ${pct(p.effective)} | ${deltaTxt} |`);
     });
     const eraAtiva = state.tax.era ?? "atual";
-    regLines.push(`\n_Era selecionada pelo consultor: **${eraAtiva}**_`);
+    erasLines.push(`\n_Era selecionada pelo consultor: **${eraAtiva}**_`);
   }
 
 
@@ -463,6 +465,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     despesas: despLines.join("\n"),
     capital: capLines.join("\n"),
     regime: regLines.join("\n"),
+    eras: erasLines.join("\n"),
     dre: dreLines.join("\n"),
     indicadores: indLines.join("\n"),
     diagnostico: diagLines.join("\n"),
@@ -492,7 +495,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
 export function buildSnapshot(state: AppState, simulatedState?: AppState): string {
   const s = buildSections(state, simulatedState);
   const all = [
-    s.premissas, s.regime, s.dre, s.indicadores, s.valuation, s.comparativo,
+    s.premissas, s.regime, s.eras, s.dre, s.indicadores, s.valuation, s.comparativo,
     s.receitas, s.despesas, s.capital, s.caixa, s.diagnostico,
     s.saude, s.prescritivo, s.governanca, s.estrategico,
   ].filter(Boolean) as string[];

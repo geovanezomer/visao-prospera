@@ -33,7 +33,9 @@ export const TOOLS: ToolDef[] = [
   { name: "get_receitas", description: "Configuração de receitas: bruta mensal, deduções customizadas, inadimplência, PMR/PMP mensais e receitas financeiras.", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_despesas", description: "Lista completa de linhas de despesa (CPV/CMV, fixos, variáveis, folha CLT com encargos) com totais e categoria.", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_capital", description: "Estrutura de capital detalhada: PL, dívida onerosa, ativo/passivo circulante, contas a receber, fornecedores, estoques, Ke/Kd, capex ativado.", parameters: { type: "object", properties: {}, required: [] } },
-  { name: "get_regime_tributario", description: "Configuração tributária completa: regime nominal vs efetivo, anexo Simples, Fator R, alíquotas ISS/ICMS/PIS/COFINS/CBS/IBS, era da Reforma e carga apurada.", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_regime_tributario", description: "Configuração tributária (regime nominal vs efetivo, anexo Simples, Fator R, alíquotas ISS/ICMS/PIS/COFINS/CBS/IBS, era ativa, carga apurada). NÃO inclui comparativo de eras — use 'get_eras_reforma' para o resumo 3-eras ou 'simular_transicao_reforma' para o detalhe ano-a-ano.", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_eras_reforma", description: "Tabela compacta com a carga tributária nas 3 eras da Reforma (atual até 2026 · transição 2027–2032 · pleno 2033+) e Δ vs. atual. Mesmos números que o consultor vê na TaxTab. Use quando o usuário pedir um overview rápido por era; para granularidade ano-a-ano use 'simular_transicao_reforma'.", parameters: { type: "object", properties: {}, required: [] } },
+  { name: "get_wacc", description: "Drill-down do WACC: pesos (wE/wD), Ke, Kd, alíquota efetiva, shield tributário (zero em Simples/Presumido), contribuições parciais ao WACC final e comparação com ROIC (cria/destrói valor).", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_dre", description: "DRE completa anual e mensal.", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_indicadores", description: "Indicadores financeiros (margens, ROE/ROIC, liquidez, endividamento, ciclo).", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_fluxo_caixa", description: "Fluxo de caixa mensal, pior mês e alertas.", parameters: { type: "object", properties: {}, required: [] } },
@@ -334,6 +336,52 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
     case "get_despesas": return sec.despesas;
     case "get_capital": return sec.capital;
     case "get_regime_tributario": return sec.regime;
+    case "get_eras_reforma":
+      return sec.eras || "_Comparativo de eras indisponível (verifique a configuração tributária)._";
+    case "get_wacc": {
+      // Drill-down do WACC reaproveitando os números do cache numérico (sec.data).
+      const ind = sec.data?.ind;
+      const cap = state.capital;
+      const PL = Math.max(0, cap.patrimonioLiquido);
+      const D = Math.max(0, cap.dividaOnerosa);
+      const V = PL + D;
+      const wE = V > 0 ? PL / V : (cap.proprio ?? 0) / 100;
+      const wD = V > 0 ? D / V : 1 - (cap.proprio ?? 0) / 100;
+      const ke = cap.ke > 0 ? cap.ke : 0.08;
+      const kd = cap.kd ?? 0;
+      const effRegime = resolveEffectiveRegime(state);
+      const wacc = ind?.wacc ?? 0;
+      // Shield implícito: wacc = wE·Ke + wD·Kd·(1 − t)  ⇒  t = 1 − (wacc − wE·Ke) / (wD·Kd)
+      const tShield = wD > 0 && kd > 0
+        ? Math.max(0, Math.min(0.5, 1 - ((wacc / 100) - wE * ke) / (wD * kd)))
+        : 0;
+      const contribE = wE * ke * 100;
+      const contribD = wD * kd * (1 - tShield) * 100;
+      const roic = ind?.roic ?? 0;
+      const veredito = roic >= wacc
+        ? `✅ **Cria valor**: ROIC ${roic.toFixed(2)}% ≥ WACC ${wacc.toFixed(2)}% (spread +${(roic - wacc).toFixed(2)} pp).`
+        : `🚨 **Destrói valor**: ROIC ${roic.toFixed(2)}% < WACC ${wacc.toFixed(2)}% (spread ${(roic - wacc).toFixed(2)} pp).`;
+      return [
+        `## WACC — drill-down (regime efetivo: ${effRegime})`,
+        ``,
+        `**Fórmula:** wE·Ke + wD·Kd·(1 − t)`,
+        ``,
+        `| Componente | Valor |`,
+        `|---|---:|`,
+        `| Patrimônio Líquido (PL) | ${brl(PL)} |`,
+        `| Dívida onerosa (D) | ${brl(D)} |`,
+        `| Peso equity (wE) | ${(wE * 100).toFixed(1)}% |`,
+        `| Peso dívida (wD) | ${(wD * 100).toFixed(1)}% |`,
+        `| Custo do equity (Ke) | ${(ke * 100).toFixed(2)}% |`,
+        `| Custo da dívida (Kd) | ${(kd * 100).toFixed(2)}% |`,
+        `| Shield tributário (t) | ${(tShield * 100).toFixed(1)}% ${tShield === 0 ? "_(Simples/Presumido: sem dedução de juros)_" : ""} |`,
+        `| Contribuição do equity (wE·Ke) | ${contribE.toFixed(2)} pp |`,
+        `| Contribuição da dívida (wD·Kd·(1−t)) | ${contribD.toFixed(2)} pp |`,
+        `| **WACC final** | **${wacc.toFixed(2)}%** |`,
+        ``,
+        veredito,
+      ].join("\n");
+    }
     case "get_dre": return sec.dre;
     case "get_indicadores": return sec.indicadores;
     case "get_fluxo_caixa": return sec.caixa;
@@ -597,7 +645,7 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       const min = sorted[0], max = sorted[sorted.length - 1];
       const delta = max.annual - min.annual;
       lines.push(``, `**Pico:** ${max.year} (${brl(max.annual)} · ${max.effective.toFixed(2)}%) · **Vale:** ${min.year} (${brl(min.annual)}) · **Δ:** ${brl(delta)} entre extremos.`);
-      lines.push(`\n_Mantém preços e custos constantes; isola o efeito da Reforma._`);
+      lines.push(`\n_Mantém preços e custos constantes; isola o efeito da Reforma. Para o resumo agregado em 3 eras, use \`get_eras_reforma\`._`);
       return lines.join("\n");
     }
 
@@ -635,6 +683,21 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       const kdRaw = state.capital.kd ?? 0;
       const kd = kdRaw > 1 ? kdRaw / 100 : kdRaw;
       const custoAnual = floatTotal * kd;
+
+      // Fallback explícito quando tax.detail não foi preenchido (DRE não detalha tributos por rubrica).
+      if (linhas.length === 0) {
+        return [
+          `## Impacto do Split Payment — regime **${regime}**`,
+          ``,
+          `⚠️ **Detalhamento tributário indisponível.** O cálculo do float exige a quebra da carga por rubrica (PIS, COFINS, ICMS, ISS, CBS, IBS, DAS, IRPJ, CSLL), e \`tax.detail\` está vazio para este estado.`,
+          ``,
+          `**Carga tributária total (referência):** ${brl(tax.annual)} ao ano · ${brl(cargaMensalTotal)} ao mês.`,
+          ``,
+          `**Como destravar:** confirme que a aba Tributos foi calculada (clique em "Recalcular" na TaxTab) ou utilize \`simular_transicao_reforma\` para o cronograma ano-a-ano da Reforma.`,
+        ].join("\n");
+      }
+
+
 
       const md = [
         `## Impacto do Split Payment — regime **${regime}**`,
