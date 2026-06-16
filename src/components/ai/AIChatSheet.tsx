@@ -36,14 +36,9 @@ interface Props {
   simParams?: SimulatorParams;
 }
 
-const SUGGESTIONS = [
-  "Qual o VPL do meu negócio e o que ele significa na prática?",
-  "Por que o caixa fica negativo? Em que mês? Quanto preciso aportar?",
-  "Meu DSCR e cobertura de juros são saudáveis?",
-  "Onde estão meus maiores custos fixos e o que cortar primeiro?",
-  "E se eu cortar 15% dos custos fixos? Qual o impacto?",
-  "Que ações me dariam o maior impacto no valuation?",
-];
+// Sugestões agora vêm de buildDynamicSuggestions() (baseadas no diagnose()).
+// Mantemos a constante apenas como fallback caso o cálculo falhe.
+import { buildDynamicSuggestions } from "@/services/ai/suggestions";
 
 export function AIChatSheet({ open, onOpenChange, state, simulatedState, simActive, simParams }: Props) {
   const [config, setConfig] = useState<AIConfig>(() => loadConfig());
