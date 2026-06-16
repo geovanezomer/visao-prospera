@@ -135,10 +135,10 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     );
   }
 
-  // 5) Corte de fixos
-  if (p.fixedCutPct > 0) {
+  // 5) Ajuste de fixos (top-N) — positivo = corte; negativo = aumento.
+  if (p.fixedCutPct !== 0) {
     const ids = topNFixedIds(s, p.fixedCutTopN);
-    const f = 1 - p.fixedCutPct / 100;
+    const f = 1 - p.fixedCutPct / 100; // ex: +20 → 0.80 (corte 20%); -20 → 1.20 (aumento 20%)
     s.costs = s.costs.map((c) => (ids.has(c.id) ? { ...c, values: c.values.map((v) => v * f) } : c));
   }
 
