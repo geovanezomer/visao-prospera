@@ -404,8 +404,8 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
       ["Caixa Ocioso", brl(c.caixaOcioso ?? 0)],
       ["Capital Giro Disponível", brl(c.capitalGiroDisponivel)],
       ["Depreciação Mensal", brl(c.depreciacaoMensal)],
-      ["Ke (custo do equity)", pct(c.ke * 100, 2)],
-      ["Kd (custo da dívida)", pct(c.kd * 100, 2)],
+      ["Ke (custo do equity)", pct(c.ke, 2)],
+      ["Kd (custo da dívida)", pct(c.kd, 2)],
     ]));
     if (c.capexAtivacao?.length) {
       capLines.push(`\n### Capex ativado no ano`);
