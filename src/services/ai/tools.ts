@@ -44,6 +44,11 @@ export const TOOLS: ToolDef[] = [
   { name: "get_estrategico", description: "Análise estratégica qualitativa completa (concentração de clientes/fornecedores, competitivo, regulatório, governança) em JSON.", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_prescritivo", description: "Recomendações prescritivas.", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_comparativo_simulado", description: "Compara base × cenário simulado ativo.", parameters: { type: "object", properties: {}, required: [] } },
+  {
+    name: "get_resumo_executivo",
+    description: "Retorna os 8 KPIs mais importantes da empresa em menos de 500 tokens. Use SEMPRE como primeiro passo antes de qualquer análise. Só chame tools específicas se precisar aprofundar um tema. Nunca chame get_tudo como primeiro passo.",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
   { name: "get_tudo", description: "Snapshot COMPLETO da empresa: premissas, receitas, despesas, capital, regime, DRE, indicadores, caixa, valuation, diagnóstico, saúde, governança, estratégico e prescritivo. Use quando precisar de visão 360° para uma decisão.", parameters: { type: "object", properties: {}, required: [] } },
 
   {
