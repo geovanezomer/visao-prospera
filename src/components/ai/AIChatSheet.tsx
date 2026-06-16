@@ -573,6 +573,18 @@ function MessageView({ msg, onCopy }: { msg: ChatMessage; onCopy: (s: string) =>
     );
   }
 
+  // Modo Auditor: relatório estruturado renderizado em card próprio.
+  if (isAuditReport(msg.content)) {
+    return (
+      <div className="flex gap-2 group">
+        <Bot className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <div className="flex-1 min-w-0">
+          <AuditReport content={msg.content} onCopy={onCopy} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex gap-2 group">
       <Bot className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
