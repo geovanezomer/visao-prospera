@@ -13,6 +13,13 @@ import { listActions, createAction, updateAction, deleteAction, actionsToMarkdow
 import { regimeComparisonToMarkdown, taxAuditToMarkdown } from "@/services/compliance/tax";
 import { checklistToMarkdown } from "@/services/compliance/checklist";
 import { buildDRE, calcIndicators, resolveEffectiveRegime } from "@/lib/finance/calculations";
+import { buildValuation, defaultValuationParams } from "@/lib/finance/valuation";
+import { computeHealth } from "@/lib/finance/health";
+
+// Helpers locais de formatação (espelho dos usados em snapshot.ts).
+const brl = (n: number) => (Number.isFinite(n) ? n : 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const pct = (n: number) => `${((Number.isFinite(n) ? n : 0) * 100).toFixed(1).replace(".", ",")}%`;
+const sum = (a: number[]) => a.reduce((x, y) => x + (Number.isFinite(y) ? y : 0), 0);
 
 export interface ToolDef {
   name: string;
@@ -37,6 +44,11 @@ export const TOOLS: ToolDef[] = [
   { name: "get_estrategico", description: "Análise estratégica qualitativa completa (concentração de clientes/fornecedores, competitivo, regulatório, governança) em JSON.", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_prescritivo", description: "Recomendações prescritivas.", parameters: { type: "object", properties: {}, required: [] } },
   { name: "get_comparativo_simulado", description: "Compara base × cenário simulado ativo.", parameters: { type: "object", properties: {}, required: [] } },
+  {
+    name: "get_resumo_executivo",
+    description: "Retorna os 8 KPIs mais importantes da empresa em menos de 500 tokens. Use SEMPRE como primeiro passo antes de qualquer análise. Só chame tools específicas se precisar aprofundar um tema. Nunca chame get_tudo como primeiro passo.",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
   { name: "get_tudo", description: "Snapshot COMPLETO da empresa: premissas, receitas, despesas, capital, regime, DRE, indicadores, caixa, valuation, diagnóstico, saúde, governança, estratégico e prescritivo. Use quando precisar de visão 360° para uma decisão.", parameters: { type: "object", properties: {}, required: [] } },
 
   {
@@ -247,6 +259,23 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
     case "get_prescritivo": return sec.prescritivo;
     case "get_comparativo_simulado":
       return sec.comparativo ?? "Nenhum cenário simulado ativo — todas as alavancas estão em 0.";
+    case "get_resumo_executivo": {
+      const { dre } = buildDRE(state, resolveEffectiveRegime(state));
+      const ind = calcIndicators(state, dre);
+      const val = buildValuation(state, defaultValuationParams(state.businessType));
+      const health = computeHealth(state);
+      return [
+        "## Resumo Executivo",
+        `- Receita Bruta Anual: ${brl(sum(dre.receitaBruta))}`,
+        `- EBITDA: ${brl(sum(dre.ebitda))} (${pct(ind.margemEbitda)})`,
+        `- Lucro Líquido: ${brl(sum(dre.lucroLiquido))} (${pct(ind.margemLiquida)})`,
+        `- DSCR: ${ind.dscr.toFixed(2)}x ${ind.dscr < 1.5 ? "⚠️ abaixo de 1,5x" : "✅"}`,
+        `- NCG: ${brl(ind.ncg)} | Gap Capital de Giro: ${brl(ind.gapCapitalGiro)}`,
+        `- EV (base): ${brl(val.enterpriseValue.base)}`,
+        `- Score de Saúde: ${health.total.toFixed(0)}/100 — ${health.grade} (${health.status})`,
+        `- Pior mês de caixa: chame get_fluxo_caixa para detalhar`,
+      ].join("\n");
+    }
     case "get_tudo":
       return [
         sec.premissas, sec.receitas, sec.despesas, sec.capital, sec.regime,
