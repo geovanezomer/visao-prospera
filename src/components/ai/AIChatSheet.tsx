@@ -18,6 +18,7 @@ import { chatWithTools, streamChat, type LLMMessage, type ToolCall } from "@/ser
 import { buildSnapshot, getSectionsCached } from "@/services/ai/snapshot";
 import { buildLlmMessages } from "@/services/ai/historyUtils";
 import { buildSystemPrompt } from "@/services/ai/systemPrompt";
+import { AuditReport, isAuditReport } from "./AuditReport";
 import { runTool } from "@/services/ai/tools";
 import { processFile, buildPdfContext, buildVisionMessageContent, confidenceLabel, MAX_FILES_PER_MSG, type ChatAttachment } from "@/services/ai/attachments";
 import type { AppState } from "@/lib/finance/types";
@@ -569,6 +570,18 @@ function MessageView({ msg, onCopy }: { msg: ChatMessage; onCopy: (s: string) =>
       <div className="flex justify-end gap-2">
         <div className="max-w-[85%] rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground whitespace-pre-wrap">{msg.content}</div>
         <User className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Modo Auditor: relatório estruturado renderizado em card próprio.
+  if (isAuditReport(msg.content)) {
+    return (
+      <div className="flex gap-2 group">
+        <Bot className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <div className="flex-1 min-w-0">
+          <AuditReport content={msg.content} onCopy={onCopy} />
+        </div>
       </div>
     );
   }
