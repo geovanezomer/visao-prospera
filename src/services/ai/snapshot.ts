@@ -83,7 +83,8 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     `- **Negócio:** ${state.businessType}`,
     `- **Regime:** ${regimeLabel}${effectiveRegime === "simples" ? ` (Anexo ${state.tax.simplesAnexo}, Fator R ${pct(state.tax.fatorR)})` : ""}`,
     `- **Era tributária:** ${state.tax.era ?? "atual"}`,
-    `- **Ke ${pct(state.capital.ke * 100)} | Kd ${pct(state.capital.kd * 100)}**`,
+    // C-1 fix: state.capital.ke / kd já estão em % (ex.: 15 = 15%). Não multiplicar por 100.
+    `- **Ke ${pct(state.capital.ke, 2)} | Kd ${pct(state.capital.kd, 2)}**`,
     `- **PL:** ${brl(state.capital.patrimonioLiquido)} | **Dívida onerosa:** ${brl(state.capital.dividaOnerosa)} | **Ativo total:** ${brl(state.capital.ativoTotal)}`,
     `- **PMR ${state.revenue.pmr}d · PMP ${state.revenue.pmp}d**`,
     `- **Caixa mínimo:** ${brl(state.cashflow.caixaMinimo)}`,
