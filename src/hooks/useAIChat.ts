@@ -230,7 +230,8 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
                 if (e.call.name === "criar_acao") toast.success("Ação adicionada ao plano", { description: "Painel de ações atualizado." });
                 else if (e.call.name === "salvar_cenario") toast.success("Cenário salvo", { description: "Disponível no menu de cenários." });
                 else if (e.call.name === "atualizar_acao") toast.success("Ação atualizada");
-                else if (e.call.name === "deletar_acao") toast.success("Ação removida");
+                else if (e.call.name === "excluir_acao") toast.success("Ação removida");
+                else if (e.call.name === "excluir_cenario") toast.success("Cenário removido");
                 setMessages([
                   ...history,
                   ...collected.map(c => ({
