@@ -50,6 +50,11 @@ export const TOOLS: ToolDef[] = [
     parameters: { type: "object", properties: {}, required: [] },
   },
   { name: "get_tudo", description: "Snapshot COMPLETO da empresa: premissas, receitas, despesas, capital, regime, DRE, indicadores, caixa, valuation, diagnóstico, saúde, governança, estratégico e prescritivo. Use quando precisar de visão 360° para uma decisão.", parameters: { type: "object", properties: {}, required: [] } },
+  {
+    name: "get_alertas_criticos",
+    description: "Retorna apenas os alertas críticos e de atenção do diagnóstico automático com número exato e fonte. Use como segundo passo após get_resumo_executivo para identificar onde aprofundar a análise. Mais eficiente que get_diagnostico quando só precisa saber 'o que está errado'.",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
 
   {
     name: "simular_alavanca",
