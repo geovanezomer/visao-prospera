@@ -16,19 +16,38 @@ const STATIC_FALLBACK = [
 ];
 
 /**
- * Converte um título de diagnóstico em pergunta executiva para o consultor.
- * Mantém o título original como contexto e força a IA a explicar/quantificar.
+ * Converte um diagnóstico em pergunta executiva, usando números reais
+ * (DSCR, margens) quando disponíveis nos indicadores.
  */
-function diagnosticToQuestion(title: string, message: string): string {
+function diagnosticToQuestion(title: string, message: string, ind?: { dscr?: number; margemLiquida?: number; margemEbitda?: number }): string {
   const t = title.toLowerCase();
+
   if (t.includes("caixa") || t.includes("liquidez")) {
     return `Diagnóstico apontou "${title}" — em quais meses o caixa fica crítico e qual aporte mínimo resolve?`;
   }
+
+  // DSCR — usa o valor real do indicador para pergunta cirúrgica.
   if (t.includes("dscr") || t.includes("cobertura de juros") || t.includes("alavancagem") || t.includes("dívida")) {
-    return `"${title}": qual o DSCR atual, quanto de EBIT precisaria para chegar a 1,5× e que alavancas movem isso?`;
+    const dscr = ind?.dscr;
+    if (typeof dscr === "number" && isFinite(dscr)) {
+      const fmt = dscr.toFixed(2).replace(".", ",");
+      const gap = Math.max(0, 1.5 - dscr);
+      const gapTxt = gap > 0 ? ` (gap de ${gap.toFixed(2).replace(".", ",")}× até a meta de 1,5×)` : "";
+      if (dscr < 1) {
+        return `DSCR atual em ${fmt}× — EBITDA NÃO cobre o serviço da dívida${gapTxt}. Quanto de EBITDA falta para chegar a 1,5× e que 3 alavancas movem isso mais rápido (alongar prazo, reduzir taxa, cortar custo)?`;
+      }
+      if (dscr < 1.5) {
+        return `DSCR em ${fmt}× — abaixo da zona segura (1,5×)${gapTxt}. Que ações elevam para 1,5×–2× sem comprometer o crescimento?`;
+      }
+      return `"${title}" — DSCR em ${fmt}×. Está acima de 1,5× mas o diagnóstico marcou risco: qual cenário de stress (queda de receita / aumento de juros) derrubaria isso?`;
+    }
+    return `"${title}": qual o DSCR atual, quanto de EBITDA precisaria para chegar a 1,5× e que alavancas movem isso?`;
   }
+
   if (t.includes("margem")) {
-    return `"${title}" — quebra a margem por componente (preço, custo variável, fixo) e mostra onde está o vazamento.`;
+    const m = ind?.margemLiquida ?? ind?.margemEbitda;
+    const mTxt = typeof m === "number" && isFinite(m) ? ` (atual ${(m * 100).toFixed(1).replace(".", ",")}%)` : "";
+    return `"${title}"${mTxt} — quebra a margem por componente (preço, custo variável, fixo) e mostra onde está o vazamento.`;
   }
   if (t.includes("folha") || t.includes("mão de obra") || t.includes("pessoal")) {
     return `"${title}": simule corte de 10% e 20% na folha e mostre impacto em EBITDA, caixa e valuation.`;
@@ -48,7 +67,6 @@ function diagnosticToQuestion(title: string, message: string): string {
   if (t.includes("receita")) {
     return `"${title}" — diagnostique a causa e proponha cenário mínimo para viabilidade.`;
   }
-  // genérico: usa o próprio título
   return `"${title}" — explique a causa raiz com números e proponha 2 ações para resolver.`;
 }
 
