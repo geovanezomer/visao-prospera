@@ -288,6 +288,28 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
         sec.saude, sec.governanca, sec.estrategico, sec.prescritivo, sec.comparativo,
       ].filter(Boolean).join("\n\n---\n\n");
 
+    case "get_alertas_criticos": {
+      const { dre } = buildDRE(state, resolveEffectiveRegime(state));
+      const ind = calcIndicators(state, dre);
+      const alerts = diagnose(state, dre, ind);
+      const critical = alerts.filter(a => a.level === "critical");
+      const warning = alerts.filter(a => a.level === "warning");
+      if (!alerts.length) return "✅ Nenhum alerta crítico ou de atenção identificado.";
+      const lines = ["## Alertas do Diagnóstico"];
+      if (critical.length) {
+        lines.push("\n### 🔴 Críticos");
+        critical.forEach(a => lines.push(`- **${a.title}** — ${a.message}`));
+      }
+      if (warning.length) {
+        lines.push("\n### 🟡 Atenção");
+        warning.forEach(a => lines.push(`- **${a.title}** — ${a.message}`));
+      }
+      lines.push(`\nTotal: ${critical.length} crítico(s), ${warning.length} atenção. ` +
+        `Chame as tools específicas para aprofundar cada tema.`);
+      return lines.join("\n");
+    }
+
+
 
     case "simular_alavanca": {
       const params: SimulatorParams = {
