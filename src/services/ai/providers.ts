@@ -80,7 +80,6 @@ export interface AIConfig {
   skills: Skill[];            // habilidades modulares on/off
   extraSystemPrompt: string;  // suplemento livre (compat legado)
   timeoutMs: number;
-  maxTokensSnapshot: number;  // limite estimado de tokens do snapshot
 }
 
 export const PROVIDER_DEFAULTS: Record<Provider, Pick<AIConfig, "baseUrl" | "model">> = {
