@@ -439,20 +439,42 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       return `🗑️ Cenário **${rec.name}** removido.`;
     }
     case "projetar": {
-      const months = Number(args?.meses) || 12;
-      const res = project(state, months, {
-        ...DEFAULT_PROJ,
-        revenueGrowthMonthlyPct: Number(args?.crescReceitaMensalPct ?? DEFAULT_PROJ.revenueGrowthMonthlyPct),
-        variableInflMonthlyPct: Number(args?.inflVariavelMensalPct ?? DEFAULT_PROJ.variableInflMonthlyPct),
-        fixedInflMonthlyPct: Number(args?.inflFixoMensalPct ?? DEFAULT_PROJ.fixedInflMonthlyPct),
-        targetEbitdaMarginPct: args?.margemEbitdaAlvoPct !== undefined ? Number(args.margemEbitdaAlvoPct) : undefined,
-      });
-      return projectionToMarkdown(res);
+      const cfg: ForecastConfig = {
+        ...DEFAULT_FORECAST_CFG,
+        horizonteMeses: Number(args?.meses) || DEFAULT_FORECAST_CFG.horizonteMeses,
+        crescimentoMensalPct: Number(args?.crescimentoMensalPct ?? DEFAULT_FORECAST_CFG.crescimentoMensalPct),
+        inflacaoFixosAA: Number(args?.inflacaoFixosAA ?? DEFAULT_FORECAST_CFG.inflacaoFixosAA),
+        ganhoEscalaCpvAA: Number(args?.ganhoEscalaCpvAA ?? DEFAULT_FORECAST_CFG.ganhoEscalaCpvAA),
+        stepReceitaPct: Number(args?.stepReceitaPct ?? DEFAULT_FORECAST_CFG.stepReceitaPct),
+        stepFolhaPct: Number(args?.stepFolhaPct ?? DEFAULT_FORECAST_CFG.stepFolhaPct),
+        capexInicial: Number(args?.capexInicial ?? DEFAULT_FORECAST_CFG.capexInicial),
+      };
+      const res = buildForecast(state, cfg);
+      return forecastToMarkdown(cfg, res);
     }
     case "sensibilidade": {
-      const m = (args?.metrica as SensMetric) || "ebitda";
-      const rows = sensitivity(state, m);
-      return sensitivityToMarkdown(m, rows);
+      const out = (args?.output as OutputKey) || "ebitda";
+      const drivers = Array.isArray(args?.drivers) && args.drivers.length
+        ? (args.drivers as DriverKey[])
+        : undefined;
+      const res = runSensitivity(state, out, drivers);
+      return sensitivityToMarkdown(res);
+    }
+    case "carregar_cenario": {
+      const idOrName = String(args?.idOuNome || "").trim();
+      if (!idOrName) return "Parâmetro 'idOuNome' obrigatório.";
+      const rec = getScenario(company, idOrName);
+      if (!rec) return `Cenário "${idOrName}" não encontrado. Use listar_cenarios.`;
+      // Dispara evento que routes/index.tsx escuta para aplicar os params no simulador.
+      try {
+        window.dispatchEvent(new CustomEvent("gz-apply-simulator-params", {
+          detail: rec.params ?? null, // null = limpar (cenário base)
+        }));
+      } catch {
+        return `⚠️ Não foi possível aplicar o cenário **${rec.name}** (ambiente sem window).`;
+      }
+      const tag = rec.params ? "alavancas restauradas" : "estado base restaurado (sem alavancas)";
+      return `✅ Cenário **${rec.name}** carregado — ${tag}. A UI do simulador foi atualizada.`;
     }
 
     // --- Ações ---
