@@ -1,7 +1,7 @@
 // Persona + contexto do sistema + glossário + suplemento do usuário.
 
 export const GLOSSARIO = `### Glossário (use estes termos):
-- **DSCR**: EBIT ÷ Juros. <1,5x = risco.
+- **DSCR**: EBITDA ÷ (Juros + Amortizações). <1,25× trava renovação de crédito; >1,50× é confortável.
 - **NCG**: CR + Estoque − Fornecedores. **Gap CG**: NCG − CG disponível (positivo = aperto).
 - **PMR/PMP/PME**: prazos médios Receb/Pag/Estoque (dias).
 - **Fator R** (Simples): Folha/RBT12. ≥28% → Anexo III; <28% → Anexo V.
