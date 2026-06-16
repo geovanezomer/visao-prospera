@@ -341,7 +341,11 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
     case "get_eras_reforma":
       return sec.eras || "_Comparativo de eras indisponível (verifique a configuração tributária)._";
     case "get_wacc": {
-      // Drill-down do WACC reaproveitando os números do cache numérico (sec.data).
+      // Drill-down do WACC. UNIDADES (auditoria C-2):
+      // - state.capital.ke / kd já estão em PERCENT (ex.: 15 = 15%).
+      // - ind.wacc também em PERCENT (ex.: 11.64 = 11.64%).
+      // - ind.roic em PERCENT.
+      // Logo, comparações e contribuições parciais ficam todas em pp/%, sem multiplicar por 100.
       const ind = sec.data?.ind;
       const cap = state.capital;
       const PL = Math.max(0, cap.patrimonioLiquido);
@@ -349,20 +353,23 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
       const V = PL + D;
       const wE = V > 0 ? PL / V : (cap.proprio ?? 0) / 100;
       const wD = V > 0 ? D / V : 1 - (cap.proprio ?? 0) / 100;
-      const ke = cap.ke > 0 ? cap.ke : 0.08;
+      // Fallback alinhado com calculations.ts (ke mínima ~8%), mas em UNIDADE % (não fração).
+      const ke = cap.ke > 0 ? cap.ke : 8;
       const kd = cap.kd ?? 0;
       const effRegime = resolveEffectiveRegime(state);
-      const wacc = ind?.wacc ?? 0;
-      // Shield implícito: wacc = wE·Ke + wD·Kd·(1 − t)  ⇒  t = 1 − (wacc − wE·Ke) / (wD·Kd)
+      const waccPct = ind?.wacc ?? 0;          // já em %
+      const roicPct = ind?.roic ?? 0;          // já em %
+      // Shield implícito: wacc = wE·Ke + wD·Kd·(1 − t)  ⇒  t = 1 − (wacc − wE·Ke)/(wD·Kd).
+      // Todas as variáveis em %, então a razão se cancela e dá fração [0..1].
       const tShield = wD > 0 && kd > 0
-        ? Math.max(0, Math.min(0.5, 1 - ((wacc / 100) - wE * ke) / (wD * kd)))
+        ? Math.max(0, Math.min(0.5, 1 - (waccPct - wE * ke) / (wD * kd)))
         : 0;
-      const contribE = wE * ke * 100;
-      const contribD = wD * kd * (1 - tShield) * 100;
-      const roic = ind?.roic ?? 0;
-      const veredito = roic >= wacc
-        ? `✅ **Cria valor**: ROIC ${roic.toFixed(2)}% ≥ WACC ${wacc.toFixed(2)}% (spread +${(roic - wacc).toFixed(2)} pp).`
-        : `🚨 **Destrói valor**: ROIC ${roic.toFixed(2)}% < WACC ${wacc.toFixed(2)}% (spread ${(roic - wacc).toFixed(2)} pp).`;
+      const contribE = wE * ke;                          // pp (% × peso)
+      const contribD = wD * kd * (1 - tShield);          // pp
+      const spread = roicPct - waccPct;
+      const veredito = roicPct >= waccPct
+        ? `✅ **Cria valor**: ROIC ${roicPct.toFixed(2)}% ≥ WACC ${waccPct.toFixed(2)}% (spread +${spread.toFixed(2)} pp).`
+        : `🚨 **Destrói valor**: ROIC ${roicPct.toFixed(2)}% < WACC ${waccPct.toFixed(2)}% (spread ${spread.toFixed(2)} pp).`;
       return [
         `## WACC — drill-down (regime efetivo: ${effRegime})`,
         ``,
@@ -374,17 +381,25 @@ export function runTool(name: string, args: any, state: AppState, simulatedState
         `| Dívida onerosa (D) | ${brl(D)} |`,
         `| Peso equity (wE) | ${(wE * 100).toFixed(1)}% |`,
         `| Peso dívida (wD) | ${(wD * 100).toFixed(1)}% |`,
-        `| Custo do equity (Ke) | ${(ke * 100).toFixed(2)}% |`,
-        `| Custo da dívida (Kd) | ${(kd * 100).toFixed(2)}% |`,
+        `| Custo do equity (Ke) | ${ke.toFixed(2)}% |`,
+        `| Custo da dívida (Kd) | ${kd.toFixed(2)}% |`,
         `| Shield tributário (t) | ${(tShield * 100).toFixed(1)}% ${tShield === 0 ? "_(Simples/Presumido: sem dedução de juros)_" : ""} |`,
         `| Contribuição do equity (wE·Ke) | ${contribE.toFixed(2)} pp |`,
         `| Contribuição da dívida (wD·Kd·(1−t)) | ${contribD.toFixed(2)} pp |`,
-        `| **WACC final** | **${wacc.toFixed(2)}%** |`,
+        `| **WACC final** | **${waccPct.toFixed(2)}%** |`,
         ``,
         veredito,
       ].join("\n");
     }
-    case "get_dre": return sec.dre;
+    case "get_dre": {
+      // M-4: guardrail de tokens. DRE mensal + trimestral + anual pode ultrapassar 4k tokens
+      // facilmente — avisa o LLM para preferir o resumo se a pergunta for pontual.
+      const tok = Math.ceil((sec.dre?.length || 0) / 4);
+      const header = tok > 3000
+        ? `> ⚠️ Payload grande (~${tok} tokens). Para KPIs pontuais use \`get_resumo_executivo\`; só consuma a DRE completa quando precisar do detalhe mensal.\n\n`
+        : "";
+      return header + sec.dre;
+    }
     case "get_indicadores": return sec.indicadores;
     case "get_fluxo_caixa": return sec.caixa;
     case "get_valuation": return sec.valuation;
