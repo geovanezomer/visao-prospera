@@ -137,8 +137,39 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
               </div>
             </div>
 
+            {/* SOUL — identidade editável do agente */}
+            <div className="space-y-1.5 rounded-md border border-primary/30 bg-primary/5 p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-semibold">🧠 SOUL — Identidade do agente</Label>
+                  <p className="text-[10px] text-muted-foreground">Quem o agente É. Substitui a persona padrão (CFO + Tributarista + Matemático).</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-[10px]"
+                  onClick={() => setDraft({ ...draft, soul: DEFAULT_SOUL })}
+                  title="Restaurar SOUL padrão"
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" /> Padrão
+                </Button>
+              </div>
+              <Textarea
+                rows={6}
+                value={draft.soul}
+                onChange={(e) => setDraft({ ...draft, soul: e.target.value })}
+                className="text-xs font-mono"
+              />
+            </div>
+
+            {/* SKILLS — capacidades modulares com toggle */}
+            <SkillsEditor
+              skills={draft.skills}
+              onChange={(skills) => setDraft({ ...draft, skills })}
+            />
+
             <div className="space-y-1.5">
-              <Label className="text-xs">Instruções extras (suplemento do system prompt)</Label>
+              <Label className="text-xs">Instruções extras (suplemento livre)</Label>
               <Textarea
                 rows={3}
                 placeholder="Ex.: foque em empresas de tecnologia · responda sempre com 3 bullets · etc."
