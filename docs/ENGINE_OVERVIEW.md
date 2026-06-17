@@ -120,8 +120,8 @@ Campos principais:
 | `companyName`, `cnpj`, `businessType` | string | Identificação e segmentação |
 | `taxRegime` | `TaxRegime` | `simples` / `presumido` / `real` |
 | `taxEra` | `TaxEra` | `legado`, `transicao`, `reforma_plena` |
-| `revenues[]` | `Revenue[]` | Receitas por linha (preço × volume × 12 meses) |
-| `revenueDeducoes` | `Months` | Devoluções, descontos, abatimentos |
+| `revenue` | `Revenue` | Receita bruta mensal (12 meses) + inadimplência + PMR/PMP + flags de PDD |
+| `revenueDeducoes` | `RevenueDeducao[]` | Linhas de deduções (devoluções, descontos, abatimentos, IRRF exclusivo na fonte) |
 | `costs[]` | `CostLine[]` | CPV/CMV/CSP + fixos + variáveis + financeiros |
 | `capitalStructure` | `CapitalStructure` | Dívida, equity, juros, NCG abertura |
 | `capexAtivacao` | `CapexAtivacao` | CAPEX/ativação + depreciação |
