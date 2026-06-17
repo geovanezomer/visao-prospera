@@ -115,7 +115,7 @@ async function extractPdfText(file: File): Promise<{ text: string; numPages: num
   for (let i = 1; i <= maxPages; i++) {
     const page = await doc.getPage(i);
     const content = await page.getTextContent();
-    const pageText = content.items.map((it: any) => it.str).join(" ");
+    const pageText = content.items.map((it) => it.str).join(" ");
     parts.push(`--- Página ${i} ---\n${pageText}`);
   }
   if (doc.numPages > maxPages)
