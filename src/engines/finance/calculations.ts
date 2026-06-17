@@ -417,20 +417,7 @@ export interface Indicators {
   ativoCirculante: number;
 }
 
-/**
- * Shield fiscal correto por regime (Auditoria Jun/2026).
- * Juros sobre empréstimos só são DEDUTÍVEIS da base do IRPJ/CSLL no Lucro Real.
- * Em Presumido a base é presumida sobre receita — juros não abatem.
- * Em Simples (DAS) também não há dedução.
- *
- * Auditoria bug #2: o adicional de 10% do IRPJ só incide quando o lucro anual
- * ultrapassa R$240k (4 × R$60k/trimestre). Abaixo disso, a alíquota marginal
- * efetiva é 24% (15% IRPJ + 9% CSLL), não 34%.
- */
-export function irShieldForRegime(regime: TaxRegime, lairAnual: number = Infinity): number {
-  if (regime !== "real") return 0; // presumido / simples
-  return lairAnual > 240_000 ? 0.34 : 0.24;
-}
+// `irShieldForRegime` movido para ./tax/real.ts (Fase 2) — re-export no topo.
 
 export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const { capital, revenue } = state;
