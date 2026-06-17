@@ -99,7 +99,7 @@ export const depreciacaoLinear = SLN;          // Straight-line
 export const depreciacaoSaldoFixo = DB;         // Fixed-declining balance
 export const depreciacaoSaldoDuplo = DDB;       // Double-declining balance
 export const depreciacaoSomaDigitos = SYD;      // Sum-of-years' digits
-export const depreciacaoVariavel = VDB;         // Variable declining balance
+
 
 // ─────────────────────────────────────────────────────────────────────
 // Estatística (Monte Carlo, sensitivity, análise de cenários)
