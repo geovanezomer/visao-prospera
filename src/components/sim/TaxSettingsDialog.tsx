@@ -183,6 +183,11 @@ export function TaxSettingsDialog() {
           {step.key === "federais" && <StepFederais ov={ov} patchOv={patchOv} />}
           {step.key === "simples" && <StepSimples ov={ov} patchOv={patchOv} />}
           {step.key === "presumido" && (
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 sm:max-h-[58vh]">
+          {step.key === "intro" && <StepIntro customCount={customCount} />}
+          {step.key === "federais" && <StepFederais ov={ov} patchOv={patchOv} />}
+          {step.key === "simples" && <StepSimples ov={ov} patchOv={patchOv} />}
+          {step.key === "presumido" && (
             <StepPresumido ov={ov} patchOv={patchOv} state={state} update={update} />
           )}
           {step.key === "reforma" && (
@@ -191,34 +196,45 @@ export function TaxSettingsDialog() {
           {step.key === "revisao" && <StepRevisao customCount={customCount} resetAll={resetAll} />}
         </div>
 
-        <div className="flex items-center justify-between border-t border-border/60 px-6 py-3">
+        <div className="flex items-center justify-between gap-2 border-t border-border/60 px-3 sm:px-6 py-3 shrink-0 bg-card">
           <Button
             variant="ghost"
             size="sm"
             onClick={resetAll}
+            className="min-h-[40px]"
             title="Restaurar todos os campos aos valores oficiais"
           >
-            <RotateCcw className="mr-2 h-3.5 w-3.5" /> Restaurar tudo
+            <RotateCcw className="mr-1 sm:mr-2 h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Restaurar tudo</span>
+            <span className="sm:hidden">Reset</span>
           </Button>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
+              className="min-h-[40px]"
               disabled={isFirst}
               onClick={() => setStepIdx((i) => Math.max(0, i - 1))}
             >
-              <ChevronLeft className="mr-1 h-3.5 w-3.5" /> Voltar
+              <ChevronLeft className="h-3.5 w-3.5 sm:mr-1" />
+              <span className="hidden sm:inline">Voltar</span>
             </Button>
+            <span className="text-xs text-muted-foreground tabular-nums sm:hidden">
+              {stepIdx + 1}/{STEPS.length}
+            </span>
             {isLast ? (
-              <Button size="sm" onClick={close}>
+              <Button size="sm" className="min-h-[40px]" onClick={close}>
                 <Check className="mr-1 h-3.5 w-3.5" /> Concluir
               </Button>
             ) : (
               <Button
                 size="sm"
+                className="min-h-[40px]"
                 onClick={() => setStepIdx((i) => Math.min(STEPS.length - 1, i + 1))}
               >
-                Avançar <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Avançar</span>
+                <span className="sm:hidden">Próximo</span>
+                <ChevronRight className="ml-1 h-3.5 w-3.5" />
               </Button>
             )}
           </div>
