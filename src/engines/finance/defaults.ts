@@ -290,6 +290,7 @@ export const DEFAULT_STATE: AppState = {
     era: "atual",
     cbsAliquota: 8.8,
     ibsAliquotaRef: 17.7,
+    fornecedorSimplesNacionalPct: 0,
   },
   cashflow: {
     caixaMinimo: 15000,
