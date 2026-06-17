@@ -811,9 +811,17 @@ export interface Indicators {
   margemLiquida: number;
   /** (Receita Líquida − Custos Variáveis) ÷ Receita Líquida × 100 */
   margemContribuicao: number;
-  /** Custos Fixos ÷ Margem de Contribuição */
+  /**
+   * PE TOTAL (cobertura financeira completa): (Custos Fixos + Depreciação + Juros) ÷ MC.
+   * Inclui juros porque, para a PME, juros são custo fixo financeiro recorrente.
+   */
   pontoEquilibrio: number;
-  /** (Custos Fixos − Depreciação) ÷ Margem de Contribuição */
+  /**
+   * PE OPERACIONAL CLÁSSICO (acadêmico/bancos): Custos Fixos ÷ MC — sem juros, sem depreciação fora.
+   * Cobre apenas os custos fixos operacionais; juros e impostos ficam abaixo do EBIT.
+   */
+  pontoEquilibrioOperacional: number;
+  /** (Custos Fixos + Juros) ÷ Margem de Contribuição — exclui depreciação (não-caixa), mantém juros. */
   pontoEquilibrioFinanceiro: number;
   /** Lucro Líquido ÷ Patrimônio Líquido × 100 */
   roe: number;
