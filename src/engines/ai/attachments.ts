@@ -80,9 +80,28 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-async function loadPdfjs(): Promise<any> {
+// pdfjs-dist não publica tipos completos para o subpath `build/pdf.mjs`.
+// Tipamos só o subconjunto que usamos para não vazar `any` para os call-sites.
+interface PdfTextItem {
+  str: string;
+}
+interface PdfPage {
+  getTextContent(): Promise<{ items: PdfTextItem[] }>;
+  getViewport(opts: { scale: number }): { width: number; height: number };
+  render(opts: unknown): { promise: Promise<void> };
+}
+interface PdfDocument {
+  numPages: number;
+  getPage(i: number): Promise<PdfPage>;
+}
+interface PdfjsLib {
+  GlobalWorkerOptions: { workerSrc: string };
+  getDocument(opts: { data: ArrayBuffer }): { promise: Promise<PdfDocument> };
+}
+
+async function loadPdfjs(): Promise<PdfjsLib> {
   // @ts-expect-error - sem tipos para subpath
-  const pdfjs: any = await import("pdfjs-dist/build/pdf.mjs");
+  const pdfjs = (await import("pdfjs-dist/build/pdf.mjs")) as PdfjsLib;
   pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@6.0.227/build/pdf.worker.min.mjs`;
   return pdfjs;
 }
