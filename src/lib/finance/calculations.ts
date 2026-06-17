@@ -755,13 +755,20 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   const lucroLiquido = lair.map((l, i) => l - impostosLucro[i]);
   const custosOperacionaisTotal = cpv.map((c, i) => c + despOp[i]);
 
+  // Base contábil dos impostos sobre lucro — informativo para a UI.
+  // No Presumido a base é receita × % de presunção (não o LAIR exibido na DRE);
+  // sinalizamos isso para que o consultor saiba que IRPJ/CSLL na linha abaixo do LAIR
+  // não foi calculado sobre o LAIR real, evitando leitura distorcida.
+  const impostosLucroBase: DRE["impostosLucroBase"] =
+    regime === "simples" ? "nao_aplica" : regime === "presumido" ? "receita_presumida" : "lair";
+
   return {
     dre: {
       receitaBruta, deducoesInadimplencia, outrasDeducoes, impostosVendas, pdd, receitaLiquida,
       cpv, lucroBruto, despesasOperacionais: despOp,
       outrasReceitasOperacionais,
       ebitda, depreciacao, ebit, resultadoFinanceiro, lair,
-      impostos: impostosLucro, impostosTotal, lucroLiquido,
+      impostos: impostosLucro, impostosLucroBase, impostosTotal, lucroLiquido,
       despesasPorCategoria, custosFinanceirosTotal, custosOperacionaisTotal,
       custosFixos, custosVariaveis,
       folhaCltAnual: folhaAnual(state),
