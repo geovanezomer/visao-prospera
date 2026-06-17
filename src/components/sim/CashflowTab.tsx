@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useFinance } from "@/engines/finance/AppStateContext";
+import { useEffect, useMemo, useRef } from "react";
+import { useFinance, usePatchCashflow } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
-import { AppState } from "@/engines/finance/types";
 import { fmtBRL, MESES } from "@/engines/finance/format";
 import { buildCashFlow } from "@/engines/finance/cashflow";
 import { MoneyInput, SectionTitle, StatCard } from "./primitives";
