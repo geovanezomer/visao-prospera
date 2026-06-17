@@ -59,6 +59,8 @@ describe("arquitetura de pastas", () => {
   it("nenhum arquivo usa caminhos antigos @/services/* ou @/lib/calculadoras/*", () => {
     const offenders: string[] = [];
     for (const file of walk(join(ROOT, "src"))) {
+      // Ignora o próprio teste arquitetural (cita os caminhos por motivo de regex).
+      if (file.endsWith("architecture.test.ts")) continue;
       const src = readFileSync(file, "utf8");
       if (/@\/services\//.test(src) || /@\/lib\/calculadoras/.test(src)) {
         offenders.push(relative(ROOT, file));
