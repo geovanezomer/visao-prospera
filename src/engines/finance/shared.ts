@@ -92,6 +92,11 @@ export function cagr12m(serie: number[]): number {
     if (serie[i] > 0) { lastIdx = i; break; }
   }
   if (firstIdx < 0 || lastIdx <= firstIdx) return NaN;
+  // Auditoria #14: exige pelo menos 3 meses positivos no intervalo — evita
+  // calcular CAGR sobre série com gaps grandes (dados faltantes vs zeros reais
+  // tornam-se indistinguíveis e produzem taxa irreal).
+  const positivosNoIntervalo = serie.slice(firstIdx, lastIdx + 1).filter((v) => v > 0).length;
+  if (positivosNoIntervalo < 3) return NaN;
   const periodos = lastIdx - firstIdx; // distância real (meses)
   return Math.pow(serie[lastIdx] / serie[firstIdx], 12 / periodos) - 1;
 }
