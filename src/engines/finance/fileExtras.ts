@@ -6,8 +6,8 @@
 // Ambos são escopados por `companyName`. Para garantir que outro consultor
 // abra o .finnance e veja exatamente o mesmo dossiê, replicamos o conteúdo
 // no localStorage local sob a chave da empresa do arquivo aberto.
-import type { ScenarioRecord } from "@/services/scenarios/store";
-import type { ActionItem } from "@/services/actions/store";
+import type { ScenarioRecord } from "@/engines/scenarios/store";
+import type { ActionItem } from "@/engines/actions/store";
 
 const ACTIONS_KEY = (company: string) => `gz-finance-actions-${company || "default"}`;
 const SIMSCEN_KEY = (company: string) => `gz-finance-scenarios-${company || "default"}`;

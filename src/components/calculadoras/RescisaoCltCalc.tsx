@@ -20,7 +20,7 @@ import {
   motivoDescricao,
   motivosLabel,
   type MotivoRescisao,
-} from "@/lib/calculadoras/rescisao";
+} from "@/engines/calculadoras/rescisao";
 
 const fmtBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });

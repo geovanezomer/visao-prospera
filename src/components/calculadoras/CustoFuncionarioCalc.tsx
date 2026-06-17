@@ -22,7 +22,7 @@ import {
   labelRegime,
   type GrauRAT,
   type RegimeEmpresa,
-} from "@/lib/calculadoras/custoFuncionario";
+} from "@/engines/calculadoras/custoFuncionario";
 
 const fmtBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });

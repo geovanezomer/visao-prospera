@@ -9,7 +9,7 @@ import type { AppState } from "@/engines/finance/types";
 import { buildDRE, calcIndicators, resolveEffectiveRegime, diagnose } from "@/engines/finance/calculations";
 import { buildCashFlow } from "@/engines/finance/cashflow";
 import { computeHealth } from "@/engines/finance/health";
-import { findSector } from "@/services/benchmark/sectors";
+import { findSector } from "@/engines/benchmark/sectors";
 import type { SnapshotSections } from "./snapshot";
 
 // M-1: alinhado com tools.ts (mesma assinatura, mesmo Intl).

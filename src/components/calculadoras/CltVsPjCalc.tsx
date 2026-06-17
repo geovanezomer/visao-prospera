@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   compararCltVsPj, regimePJLabel,
   type RegimePJ,
-} from "@/lib/calculadoras/cltVsPj";
+} from "@/engines/calculadoras/cltVsPj";
 
 const fmtBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
