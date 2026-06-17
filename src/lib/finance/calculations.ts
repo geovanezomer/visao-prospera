@@ -1000,7 +1000,12 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     : (ciAtivo > 0 ? ciAtivo : (PL + D + pno) - pno);
   const capitalInvestido = Math.max(1, ciBase - caixaOcioso);
   const roic = safePct(nopat, capitalInvestido);
-  const roe = PL > 0 ? safePct(llAnual, PL) : 0;
+  // ROE com PL MÉDIO (CFA/Damodaran) quando abertura informada — corrige viés em
+  // empresas em crescimento (PL final > inicial subestima ROE) ou com prejuízo
+  // acumulado (PL final < inicial superestima ROE). Fallback: PL fim de período.
+  const plAbertura = Math.max(0, capital.patrimonioLiquidoAbertura ?? 0);
+  const plMedio = plAbertura > 0 ? (plAbertura + PL) / 2 : PL;
+  const roe = plMedio > 0 ? safePct(llAnual, plMedio) : 0;
   const roa = capital.ativoTotal > 0 ? safePct(llAnual, capital.ativoTotal) : 0;
 
   // ---- Ciclo / NCG / Gap ----
