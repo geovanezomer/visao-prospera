@@ -1,4 +1,5 @@
 import {
+import { useFinance } from "@/engines/finance/AppStateContext";
   Sidebar,
   SidebarContent,
   SidebarFooter,
