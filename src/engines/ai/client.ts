@@ -301,8 +301,12 @@ export async function chatWithTools(
         | { type: "text"; text?: string }
         | { type: "tool_use"; id: string; name: string; input?: Record<string, unknown> };
       const rawBlocks = (json as { content?: unknown }).content;
-      const blocks: AnthRespBlock[] = Array.isArray(rawBlocks) ? (rawBlocks as AnthRespBlock[]) : [];
-      const toolUses = blocks.filter((b): b is Extract<AnthRespBlock, { type: "tool_use" }> => b.type === "tool_use");
+      const blocks: AnthRespBlock[] = Array.isArray(rawBlocks)
+        ? (rawBlocks as AnthRespBlock[])
+        : [];
+      const toolUses = blocks.filter(
+        (b): b is Extract<AnthRespBlock, { type: "tool_use" }> => b.type === "tool_use",
+      );
       const textOut = blocks
         .filter((b): b is Extract<AnthRespBlock, { type: "text" }> => b.type === "text")
         .map((b) => b.text || "")
@@ -332,7 +336,11 @@ export async function chatWithTools(
     }
 
     // OpenAI-compatível.
-    const choices = (json as { choices?: Array<{ message?: { content?: string; tool_calls?: OpenAIToolCallRaw[] } }> }).choices;
+    const choices = (
+      json as {
+        choices?: Array<{ message?: { content?: string; tool_calls?: OpenAIToolCallRaw[] } }>;
+      }
+    ).choices;
     const msg = choices?.[0]?.message;
     const toolCalls = msg?.tool_calls;
 
