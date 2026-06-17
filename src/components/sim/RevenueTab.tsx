@@ -43,7 +43,7 @@ type Row = {
 };
 
 export function RevenueTab() {
-  const { state, update } = useFinance();
+  const { state } = useFinance();
   const patchRevenue = usePatchRevenue();
   const r = state.revenue;
 
