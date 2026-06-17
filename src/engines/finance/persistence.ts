@@ -115,6 +115,7 @@ export async function removeKey(key: string): Promise<void> {
 }
 
 // ─── Broadcast multi-aba ──────────────────────────────────────────────
+// Nome legado mantido para compat com abas já abertas em deploys antigos.
 const CHANNEL_NAME = "gzfp:sync";
 let channel: BroadcastChannel | null = null;
 
