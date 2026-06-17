@@ -20,6 +20,15 @@ import { receitaTributavel, splitReceitasFinanceiras } from "../shared";
 import { isCpvCost, effectiveMonthValues } from "../costs";
 import { getReformaRates } from "./reforma";
 import { adicionalIrpjTrimestral, type MonthlyTax } from "./shared";
+import { calcCbs, calcIbs } from "tributos-br";
+
+// [CBS/IBS] Helpers: usam tributos-br (LC 214/2025) para garantir
+// arredondamento HALF_UP (padrão SEFAZ) sobre cada multiplicação
+// alíquota × base, evitando drift de centavos em apurações mensais.
+const cbsValor = (base: number, pct: number): number =>
+  pct > 0 && base > 0 ? Number(calcCbs({ base: base.toString(), aliquota: (pct / 100).toString() }).imposto) : 0;
+const ibsValor = (base: number, pct: number): number =>
+  pct > 0 && base > 0 ? Number(calcIbs({ base: base.toString(), aliquota: (pct / 100).toString() }).imposto) : 0;
 
 /** @deprecated Use getPresumidoBases(tax, business) de taxDefaults.ts. Mantido para retro-compat. */
 export function presumidoBases(business: BusinessType): { irpj: number; csll: number } {
