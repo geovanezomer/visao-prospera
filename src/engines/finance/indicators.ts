@@ -126,6 +126,10 @@ export interface Indicators {
   dividaOnerosa: number;
   passivoCirculante: number;
   ativoCirculante: number;
+  /** (Impostos sobre Vendas + IRPJ/CSLL) ÷ Receita Bruta × 100 — carga tributária total sobre a receita. */
+  impostosSobreReceita: number;
+  /** (Impostos sobre Vendas + IRPJ/CSLL) ÷ Lucro Líquido × 100 — quanto de imposto para cada R$ de lucro. */
+  impostosSobreLucro: number;
 }
 
 export function calcIndicators(state: AppState, dre: DRE): Indicators {
