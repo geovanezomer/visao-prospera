@@ -35,8 +35,8 @@ describe("fileFormat — pipeline de migrators", () => {
       expect(parsed.type).toBe("gz-finnance");
     });
 
-    it(`openGzfp(${name}) normaliza state preservando companyName`, () => {
-      const opened = openGzfp(raw);
+    it(`parseFinnanceFile(${name}) normaliza state preservando companyName`, () => {
+      const opened = parseFinnanceFile(raw);
       const expected = (raw as { state?: { companyName?: string } }).state?.companyName;
       if (expected) {
         expect(opened.state.companyName).toBe(expected);
