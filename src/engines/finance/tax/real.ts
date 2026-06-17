@@ -140,9 +140,12 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
 
 /**
  * Escudo fiscal de juros (1 − alíquota marginal de IRPJ+CSLL) usado em WACC.
- * Apenas o Lucro Real captura o escudo. Simples/Presumido = 0 (juros não geram dedutibilidade efetiva).
+ * Apenas o Lucro Real captura o escudo. Simples/Presumido = 0.
+ * Auditoria bug #2: o adicional de 10% do IRPJ só incide quando o lucro anual
+ * ultrapassa R$240k (4 × R$60k/trimestre). Abaixo disso, a alíquota marginal
+ * efetiva é 24% (15% IRPJ + 9% CSLL), não 34%.
  */
-export function irShieldForRegime(regime: TaxRegime, _lairAnual: number = Infinity): number {
-  if (regime !== "real") return 0;
-  return 0.34; // 25% IRPJ + Adicional efetivo + 9% CSLL ≈ 34% (aproximação clássica).
+export function irShieldForRegime(regime: TaxRegime, lairAnual: number = Infinity): number {
+  if (regime !== "real") return 0; // presumido / simples
+  return lairAnual > 240_000 ? 0.34 : 0.24;
 }
