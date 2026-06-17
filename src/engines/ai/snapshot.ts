@@ -72,18 +72,17 @@ export interface SnapshotSections {
 
 export function buildSections(state: AppState, simulatedState?: AppState): SnapshotSections {
   // Aliases dos tipos derivados — evita `any` nos fallbacks de `tryRun`.
-  type DRE = ReturnType<typeof buildDRE>["dre"];
+  type BuiltDRE = ReturnType<typeof buildDRE>;
   type Ind = ReturnType<typeof calcIndicators>;
   type CF = ReturnType<typeof buildCashFlow>;
   type Val = ReturnType<typeof buildValuation>;
   type Health = ReturnType<typeof computeHealth>;
-  type Diag = ReturnType<typeof diagnose>;
   type Cards = ReturnType<typeof buildPrescriptiveCards>;
 
   // SSOT: usa regime efetivo (downgrade automático Simples→Presumido se excedeu limite),
   // alinhado com TaxTab, IndicatorsTab, ValuationTab e demais consumidores.
   const effectiveRegime = tryRun(() => resolveEffectiveRegime(state), state.tax.regime);
-  const built = tryRun<{ dre: DRE } | null>(() => buildDRE(state, effectiveRegime), null);
+  const built = tryRun<BuiltDRE | null>(() => buildDRE(state, effectiveRegime), null);
   const dre = built?.dre ?? null;
   const ind = dre ? tryRun<Ind | null>(() => calcIndicators(state, dre), null) : null;
   const cf = tryRun<CF | null>(() => buildCashFlow(state), null);
