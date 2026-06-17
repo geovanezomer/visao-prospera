@@ -189,20 +189,24 @@ export async function* streamChat(
         const payload = t.slice(5).trim();
         if (payload === "[DONE]") return;
         try {
-          const obj = JSON.parse(payload);
+          const obj = JSON.parse(payload) as Record<string, unknown>;
           if (anth) {
             // Anthropic SSE: content_block_delta com delta.text.
-            if (obj?.type === "content_block_delta" && obj?.delta?.type === "text_delta") {
-              const txt = obj.delta.text;
+            const delta = (obj as { delta?: { type?: string; text?: unknown } }).delta;
+            if (obj?.type === "content_block_delta" && delta?.type === "text_delta") {
+              const txt = delta.text;
               if (typeof txt === "string" && txt) yield txt;
             } else if (obj?.type === "message_stop") {
               return;
             }
           } else {
-            const delta = obj?.choices?.[0]?.delta?.content;
+            const choices = (obj as { choices?: Array<{ delta?: { content?: unknown } }> }).choices;
+            const delta = choices?.[0]?.delta?.content;
             if (typeof delta === "string" && delta) yield delta;
           }
-        } catch {}
+        } catch {
+          // Linha SSE inválida — ignora e segue para a próxima
+        }
       }
     }
   } finally {
