@@ -890,8 +890,12 @@ export interface Indicators {
   paybackCapex: number;
   /** @deprecated Use `amortizacaoPlPorLucro` (mesma fórmula). Mantido para retrocompat. */
   payback: number;
-  /** EBITDA − Impostos − Δ NCG */
+  /** FCF Operacional (CFO): EBITDA − Impostos − Δ NCG. ANTES do CAPEX. */
   fcf: number;
+  /** CAPEX anual total: plano mensal + ativações do ano. */
+  capexAnual: number;
+  /** FCF após CAPEX (≈ FCFF): CFO − CAPEX. Caixa livre real. */
+  fcfAposCapex: number;
   /** FCF ÷ EBITDA × 100 */
   conversaoEbitdaCaixa: number;
   /** Margem de Contribuição (R$) ÷ EBIT — elasticidade do lucro à receita. */
