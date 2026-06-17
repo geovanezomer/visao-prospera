@@ -1053,8 +1053,19 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const liquidezImediata = passivoCirculante > 1 ? Math.min(CAP_LIQ, capital.disponibilidades / passivoCirculante) : CAP_LIQ;
 
   // ---- Endividamento (apenas dívida onerosa para alavancagem) ----
-  const passivoTotalEstim = capital.ativoTotal - PL;
-  const endividamentoGeral = capital.ativoTotal > 0 ? (passivoTotalEstim / capital.ativoTotal) * 100 : 0;
+  // Quando Ativo Total não foi informado, usamos fallback: passivo conhecido
+  // (Dívida Onerosa + PNO) ÷ proxy de Ativo (PL + D + PNO). Evita exibir "0%"
+  // silenciosamente como se fosse "sem dívida" — flag sinaliza estimativa à UI.
+  const endividamentoGeralDadosCompletos = capital.ativoTotal > 0;
+  let endividamentoGeral = 0;
+  if (endividamentoGeralDadosCompletos) {
+    const passivoTotalEstim = Math.max(0, capital.ativoTotal - PL);
+    endividamentoGeral = (passivoTotalEstim / capital.ativoTotal) * 100;
+  } else {
+    const passivoConhecido = D + pno;
+    const ativoProxy = PL + D + pno;
+    endividamentoGeral = ativoProxy > 0 ? (passivoConhecido / ativoProxy) * 100 : 0;
+  }
   const grauEndividamento = PL > 0 ? (D / PL) * 100 : 0;
   // Caps neutros para evitar Infinity/NaN propagando em métricas compostas.
   const CAP_COB = 999;       // cobertura de juros máx exibível
