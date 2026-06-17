@@ -1059,6 +1059,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // DSCR — Debt Service Coverage Ratio: EBITDA ÷ (Juros + Amortizações de Principal).
   // Visão bancária do serviço da dívida (juros + principal). <1,25× trava renovação; >1,50× destrava.
   const amortizPrincipalAnual = sum(state.cashflow.amortizacoes);
+  const dscrAmortizacoesInformadas = amortizPrincipalAnual > 0;
   const servicoDivida = jurosAnual + amortizPrincipalAnual;
   const CAP_DSCR = 99;
   const dscr = servicoDivida > 1
