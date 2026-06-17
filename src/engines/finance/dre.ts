@@ -1,12 +1,23 @@
 // =====================================================================
 // DRE — montagem da Demonstração de Resultado do Exercício (mensal × 12).
-// Extraído de calculations.ts (Fase 3) — comportamento idêntico.
-// Mantida como uma função única `buildDRE`; quebrar em sub-funções é
-// Fase 5 (fora deste escopo) para evitar regressão no comportamento.
+//
+// `buildDRE` é a função pública. Internamente, é composta por quatro
+// sub-funções puras com responsabilidades claras:
+//
+//   1. computeImpostosVendas — 1ª passagem de tributos (independem do LAIR)
+//   2. classifyCosts         — distribui custos em CPV / OpEx / Fixo / Variável
+//                              e aplica PDD líquida de recuperação
+//   3. computeDepreciacao    — depreciação base + ativações + capex
+//   4. computeImpostosLucro  — 2ª passagem (IRPJ/CSLL no Real usa LAIR já líquido)
+//
+// Estas funções não são exportadas: são detalhes de implementação. A API
+// pública continua sendo `buildDRE` + tipo `DRE`. Quebrar a função monolítica
+// reduz o blast radius de mudanças (ex.: ajuste em IRPJ não toca classificação
+// de custos) e facilita raciocínio sobre cada etapa isoladamente.
 // =====================================================================
 
 import { AppState, TaxRegime } from "./types";
-import { sum, zeros12, fill12 } from "./format";
+import { zeros12, fill12 } from "./format";
 import { outrasDeducoesMensal, splitReceitasFinanceiras } from "./shared";
 import { effectiveMonthValues } from "./costs";
 import { folhaAnual } from "./regime";
@@ -55,44 +66,62 @@ export interface DRE {
   folhaCltAnual: number;
 }
 
-export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: MonthlyTax } {
-  const { revenue, costs, capital } = state;
-  const usaPDD = !!revenue.inadimplenciaComoPDD;
+// ---------------------------------------------------------------------
+// (1) Primeira passagem tributária — extrai impostos sobre venda.
+// Para Simples/Presumido o `tax` calculado já é o definitivo (não dependem
+// de LAIR). Para Real, calculamos com LAIR=0 e refazemos a passagem de
+// IRPJ/CSLL em `computeImpostosLucro` com o LAIR já apurado.
+// ---------------------------------------------------------------------
+function computeImpostosVendas(state: AppState, regime: TaxRegime): MonthlyTax {
+  if (regime === "simples") return calcSimples(state);
+  if (regime === "presumido") return calcPresumido(state);
+  return calcReal(state, zeros12());
+}
 
-  const receitaBruta = revenue.bruta.slice();
-  const inadimp = revenue.bruta.map((r, i) => r * (revenue.inadimplencia[i] / 100));
-  const deducoesInadimplencia = usaPDD ? zeros12() : inadimp.slice();
-  const pdd = usaPDD ? inadimp.slice() : zeros12();
+interface CostBuckets {
+  cpv: number[];
+  despOp: number[];
+  custosFixos: number[];
+  custosVariaveis: number[];
+  custosFinanceirosTotal: number[];
+  despesasPorCategoria: Record<string, number[]>;
+  pddFinal: number[]; // PDD líquida de recuperação aplicada às despesas
+}
 
-  // ---- Primeira passagem: descobrir impostos sobre venda (independem do LAIR) ----
-  // Simples/Presumido: dependem só de receita; Real: PIS/COFINS/ICMS/CBS/IBS também
-  // só dependem de receita+CPV, não de LAIR. Calculamos com LAIR=0 só para extrair vendas.
-  let taxPre: MonthlyTax;
-  if (regime === "simples") taxPre = calcSimples(state);
-  else if (regime === "presumido") taxPre = calcPresumido(state);
-  else taxPre = calcReal(state, zeros12());
-  const impostosVendas = taxPre.monthlyVendas.slice();
-
-  const outrasDeducoes = outrasDeducoesMensal(state);
-
-  // Receita Líquida = Bruta − Inadimplência (se não-PDD) − Outras Deduções − Impostos sobre Venda (CPC/IFRS 15)
-  const receitaLiquida = receitaBruta.map((r, i) => r - deducoesInadimplencia[i] - outrasDeducoes[i] - impostosVendas[i]);
-
+// ---------------------------------------------------------------------
+// (2) Classificação de custos.
+// Distribui cada linha em CPV vs Despesa Operacional (natureza contábil)
+// e em Fixo vs Variável (comportamento — driver da Margem de Contribuição
+// e do Ponto de Equilíbrio). Aplica também a PDD líquida quando inadimplência
+// é contabilizada como provisão.
+// ---------------------------------------------------------------------
+function classifyCosts(
+  state: AppState,
+  regime: TaxRegime,
+  usaPDD: boolean,
+  pddBruta: number[],
+): CostBuckets {
+  const { costs, revenue } = state;
   const cpv = zeros12();
   const despOp = zeros12();
   const custosFixos = zeros12();
   const custosVariaveis = zeros12();
+  const custosFinanceirosTotal = zeros12();
   const despesasPorCategoria: Record<string, number[]> = {};
+  const pddFinal = pddBruta.slice();
 
   for (const c of costs) {
-    if (c.category === "financeiro") continue;
     const v = effectiveMonthValues(c, regime);
+    if (c.category === "financeiro") {
+      for (let i = 0; i < 12; i++) custosFinanceirosTotal[i] += v[i];
+      continue;
+    }
     despesasPorCategoria[c.label] = v;
     const isCpv = c.category === "custo_vendas" || c.category === "direto_venda";
     const isOpVar = c.category === "variavel";
     // Comportamento (fixo/variável) para MC/PE. Default deriva da category;
-    // override manual via `comportamento` cobre casos como folha CLT no CPV (variável
-    // contábil, mas fixo no curto prazo — distorce MC/PE se não for sinalizado).
+    // override manual via `comportamento` cobre casos como folha CLT no CPV
+    // (variável contábil, mas fixo no curto prazo — distorce MC/PE se não for sinalizado).
     const comportamento: "fixo" | "variavel" =
       c.comportamento ?? ((isCpv || isOpVar) ? "variavel" : "fixo");
     for (let i = 0; i < 12; i++) {
@@ -106,28 +135,27 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   if (usaPDD) {
     const revArray = revenue.pddReversaoMensal || zeros12();
     for (let i = 0; i < 12; i++) {
-      const pddLiq = Math.max(0, pdd[i] - (revArray[i] || 0));
-      pdd[i] = pddLiq;
+      const pddLiq = Math.max(0, pddBruta[i] - (revArray[i] || 0));
+      pddFinal[i] = pddLiq;
       despOp[i] += pddLiq;
       // PDD escala com a receita (% da inadimplência sobre a receita bruta) — é custo VARIÁVEL,
       // não fixo. Classificar como fixo superestima o Ponto de Equilíbrio e distorce a Margem
       // de Contribuição.
       custosVariaveis[i] += pddLiq;
     }
-    despesasPorCategoria["PDD — Perdas por inadimplência (líq. recup.)"] = pdd.slice();
+    despesasPorCategoria["PDD — Perdas por inadimplência (líq. recup.)"] = pddFinal.slice();
   }
 
-  const custosFinanceirosTotal = zeros12();
-  for (const c of costs.filter((x) => x.category === "financeiro")) {
-    const v = effectiveMonthValues(c, regime);
-    for (let i = 0; i < 12; i++) custosFinanceirosTotal[i] += v[i];
-  }
+  return { cpv, despOp, custosFixos, custosVariaveis, custosFinanceirosTotal, despesasPorCategoria, pddFinal };
+}
 
-  const lucroBruto = receitaLiquida.map((r, i) => r - cpv[i]);
-  // Outras Receitas Operacionais (aluguéis, venda de ativos) — entram acima do EBITDA.
-  const { financeiras: rendimentosFinanceiros, operacionais: outrasReceitasOperacionais } = splitReceitasFinanceiras(state);
-  const ebitda = lucroBruto.map((g, i) => g - despOp[i] + outrasReceitasOperacionais[i]);
-
+// ---------------------------------------------------------------------
+// (3) Depreciação — base mensal + ativações em custos + capex programado.
+// Cada ativação começa no mês informado e distribui linearmente sobre a
+// vida útil declarada (sem valor residual).
+// ---------------------------------------------------------------------
+function computeDepreciacao(state: AppState): number[] {
+  const { capital, costs } = state;
   const depreciacao = fill12(capital.depreciacaoMensal);
   for (const c of costs) {
     if (!c.ativacao || c.ativacao.vidaUtilMeses <= 0 || c.ativacao.valor <= 0) continue;
@@ -141,39 +169,101 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     const depAdd = ca.valor / ca.vidaUtilMeses;
     for (let i = startIdx; i < 12; i++) depreciacao[i] += depAdd;
   }
+  return depreciacao;
+}
+
+// ---------------------------------------------------------------------
+// (4) Segunda passagem tributária — IRPJ/CSLL sobre o LAIR já apurado.
+// Apenas o Lucro Real reprocessa aqui (depende do LAIR). Simples reutiliza
+// o `taxPre` (DAS já contém IRPJ/CSLL). Presumido reutiliza também — sua
+// base IRPJ/CSLL é receita × % de presunção, não o LAIR contábil.
+// ---------------------------------------------------------------------
+function computeImpostosLucro(
+  state: AppState,
+  regime: TaxRegime,
+  lair: number[],
+  taxPre: MonthlyTax,
+): { tax: MonthlyTax; impostosLucroBase: DRE["impostosLucroBase"] } {
+  if (regime === "simples") return { tax: taxPre, impostosLucroBase: "nao_aplica" };
+  if (regime === "presumido") return { tax: taxPre, impostosLucroBase: "receita_presumida" };
+  return { tax: calcReal(state, lair), impostosLucroBase: "lair" };
+}
+
+// ---------------------------------------------------------------------
+// API pública — orquestra as sub-funções acima na ordem correta.
+// ---------------------------------------------------------------------
+export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: MonthlyTax } {
+  const { revenue } = state;
+  const usaPDD = !!revenue.inadimplenciaComoPDD;
+
+  // Receita bruta e separação inadimplência ↔ PDD
+  const receitaBruta = revenue.bruta.slice();
+  const inadimp = revenue.bruta.map((r, i) => r * (revenue.inadimplencia[i] / 100));
+  const deducoesInadimplencia = usaPDD ? zeros12() : inadimp.slice();
+  const pddSeed = usaPDD ? inadimp.slice() : zeros12();
+
+  // (1) Impostos sobre venda + Receita Líquida (CPC/IFRS 15)
+  const taxPre = computeImpostosVendas(state, regime);
+  const impostosVendas = taxPre.monthlyVendas.slice();
+  const outrasDeducoes = outrasDeducoesMensal(state);
+  const receitaLiquida = receitaBruta.map(
+    (r, i) => r - deducoesInadimplencia[i] - outrasDeducoes[i] - impostosVendas[i],
+  );
+
+  // (2) Classificação de custos (CPV/OpEx, Fixo/Variável, PDD líquida)
+  const buckets = classifyCosts(state, regime, usaPDD, pddSeed);
+
+  // Lucro Bruto → EBITDA → EBIT
+  const lucroBruto = receitaLiquida.map((r, i) => r - buckets.cpv[i]);
+  // Aluguéis e venda de ativos: operacionais (entram no EBITDA).
+  // Rendimentos financeiros: vão para o Resultado Financeiro (abaixo do EBIT).
+  const { financeiras: rendimentosFinanceiros, operacionais: outrasReceitasOperacionais } =
+    splitReceitasFinanceiras(state);
+  const ebitda = lucroBruto.map((g, i) => g - buckets.despOp[i] + outrasReceitasOperacionais[i]);
+
+  // (3) Depreciação
+  const depreciacao = computeDepreciacao(state);
   const ebit = ebitda.map((e, i) => e - depreciacao[i]);
-  // Resultado Financeiro = Rendimentos Financeiros (rend_aplic etc.) − Custos Financeiros.
-  // Aluguéis e venda de ativos NÃO entram aqui (são operacionais, já no EBITDA).
-  const resultadoFinanceiro = ebit.map((_, i) => rendimentosFinanceiros[i] - custosFinanceirosTotal[i]);
+
+  // Resultado Financeiro = rendimentos − custos financeiros
+  const resultadoFinanceiro = ebit.map(
+    (_, i) => rendimentosFinanceiros[i] - buckets.custosFinanceirosTotal[i],
+  );
   const lair = ebit.map((e, i) => e + resultadoFinanceiro[i]);
 
-  // ---- Segunda passagem: impostos sobre LUCRO usando o LAIR já líquido de impostos sobre venda ----
-  let tax: MonthlyTax;
-  if (regime === "simples") tax = taxPre;                  // sem IRPJ/CSLL separados
-  else if (regime === "presumido") tax = taxPre;           // IRPJ/CSLL com base presumida sobre receita (não muda)
-  else tax = calcReal(state, lair);                        // recalcula com LAIR correto
-
+  // (4) Impostos sobre lucro (com LAIR já correto no Real)
+  const { tax, impostosLucroBase } = computeImpostosLucro(state, regime, lair, taxPre);
   const impostosLucro = tax.monthlyLucro;
   const impostosTotal = impostosVendas.map((v, i) => v + impostosLucro[i]);
   const lucroLiquido = lair.map((l, i) => l - impostosLucro[i]);
-  const custosOperacionaisTotal = cpv.map((c, i) => c + despOp[i]);
-
-  // Base contábil dos impostos sobre lucro — informativo para a UI.
-  // No Presumido a base é receita × % de presunção (não o LAIR exibido na DRE);
-  // sinalizamos isso para que o consultor saiba que IRPJ/CSLL na linha abaixo do LAIR
-  // não foi calculado sobre o LAIR real, evitando leitura distorcida.
-  const impostosLucroBase: DRE["impostosLucroBase"] =
-    regime === "simples" ? "nao_aplica" : regime === "presumido" ? "receita_presumida" : "lair";
+  const custosOperacionaisTotal = buckets.cpv.map((c, i) => c + buckets.despOp[i]);
 
   return {
     dre: {
-      receitaBruta, deducoesInadimplencia, outrasDeducoes, impostosVendas, pdd, receitaLiquida,
-      cpv, lucroBruto, despesasOperacionais: despOp,
+      receitaBruta,
+      deducoesInadimplencia,
+      outrasDeducoes,
+      impostosVendas,
+      pdd: buckets.pddFinal,
+      receitaLiquida,
+      cpv: buckets.cpv,
+      lucroBruto,
+      despesasOperacionais: buckets.despOp,
       outrasReceitasOperacionais,
-      ebitda, depreciacao, ebit, resultadoFinanceiro, lair,
-      impostos: impostosLucro, impostosLucroBase, impostosTotal, lucroLiquido,
-      despesasPorCategoria, custosFinanceirosTotal, custosOperacionaisTotal,
-      custosFixos, custosVariaveis,
+      ebitda,
+      depreciacao,
+      ebit,
+      resultadoFinanceiro,
+      lair,
+      impostos: impostosLucro,
+      impostosLucroBase,
+      impostosTotal,
+      lucroLiquido,
+      despesasPorCategoria: buckets.despesasPorCategoria,
+      custosFinanceirosTotal: buckets.custosFinanceirosTotal,
+      custosOperacionaisTotal,
+      custosFixos: buckets.custosFixos,
+      custosVariaveis: buckets.custosVariaveis,
       folhaCltAnual: folhaAnual(state),
     },
     tax,

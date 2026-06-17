@@ -1,7 +1,7 @@
 // =====================================================================
 // CUSTOS — helpers puros de classificação e normalização mensal
 // =====================================================================
-// Extraído de calculations.ts (Fase 1) — comportamento idêntico.
+// Submódulo coeso da engine financeira — funções puras, sem dependência de UI.
 // `folhaAnual` permanece em ./regime.ts para evitar ciclo de imports
 // (regime ↔ folha ↔ effectiveMonthValues).
 

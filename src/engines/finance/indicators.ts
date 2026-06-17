@@ -1,6 +1,6 @@
 // =====================================================================
 // INDICADORES — margens, PE, ROIC/WACC, liquidez, endividamento, FCF.
-// Extraído de calculations.ts (Fase 3) — comportamento idêntico.
+// Submódulo coeso da engine financeira — funções puras, sem dependência de UI.
 // Função única `calcIndicators`; sem extração de sub-blocos nesta fase.
 // =====================================================================
 

@@ -1,7 +1,7 @@
 // =====================================================================
 // SIMPLES NACIONAL — cálculo do DAS e alíquota efetiva por anexo.
 // Tabelas vivem em taxDefaults.ts (editáveis via painel).
-// Extraído de calculations.ts (Fase 2) — comportamento idêntico.
+// Submódulo coeso da engine financeira — funções puras, sem dependência de UI.
 // [CBS/IBS] A reforma mantém o Simples opcional (LC 214/2025 art. 41);
 // quem optar segue pagando DAS único e NÃO compõe CBS/IBS aqui.
 // =====================================================================

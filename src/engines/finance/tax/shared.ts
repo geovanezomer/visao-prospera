@@ -1,6 +1,6 @@
 // =====================================================================
 // TAX/SHARED — tipo MonthlyTax e helpers compartilhados pelos regimes.
-// Extraído de calculations.ts (Fase 2).
+// Submódulo coeso da engine financeira — funções puras, sem dependência de UI.
 // =====================================================================
 
 import { TaxConfig } from "../types";
