@@ -133,8 +133,10 @@ async function ocrPdf(
   const maxPages = Math.min(doc.numPages, OCR_MAX_PAGES);
 
   const { createWorker } = await import("tesseract.js");
-  const worker: any = await createWorker(["por", "eng"], 1, {
-    logger: (m: any) => {
+  // Tesseract.js logger emite progresso parcial; tipamos só o que consumimos.
+  type TesseractProgress = { status?: string; progress?: number };
+  const worker = await createWorker(["por", "eng"], 1, {
+    logger: (m: TesseractProgress) => {
       if (m?.status === "recognizing text" && typeof m.progress === "number") {
         onProgress?.(`OCR ${Math.round(m.progress * 100)}%`);
       }
