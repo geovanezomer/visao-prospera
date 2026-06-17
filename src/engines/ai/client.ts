@@ -147,7 +147,7 @@ export async function* streamChat(
     // Branch: Anthropic usa /v1/messages com formato próprio.
     const anth = isAnthropic(cfg);
     const url = anth ? `${cfg.baseUrl}/messages` : `${cfg.baseUrl}/chat/completions`;
-    let body: any;
+    let body: Record<string, unknown>;
     if (anth) {
       const { system, rest } = splitSystemAndMessages(messages);
       body = {
