@@ -117,8 +117,6 @@ export function parseFinnanceFile(raw: unknown): OpenedFile {
   };
 }
 
-/** Alias de compatibilidade — call-sites antigos seguem funcionando. */
-export const parseFinnanceFile = openGzfp;
 
 /** Remove caracteres inválidos para nome de arquivo cross-OS. */
 export function sanitizeFilename(name: string): string {
