@@ -34,6 +34,8 @@ documentos como referência pontual.
 | `dre.ts` | `buildDRE` — Demonstração de Resultados |
 | `indicators.ts` | `calcIndicators` — margens, ROIC/WACC, NCG, FCF, payback |
 | `calculations.ts` | Barrel interno (DRE + indicators + diagnose) |
+| `financialModel.ts` | **SSOT pure-function** — `buildFinancialModel(state)` agrega regime + DRE + indicators + cashflow + valuation + health + CAGR num único objeto, com cache por hash (`getFinancialModelCached`) |
+| `useFinanceModel.ts` | Hook React que memoiza `buildFinancialModel` por `state` e expõe campos legados (`regime`, `dre`, `ind`, `cf`, `cagrReceitas12m`) + `model` completo |
 | `diagnose.ts` | Heurísticas de alertas (EBIT≤0, FCF<0, runway baixo…) |
 | `cashflow.ts` | DFC mensal + burn/runway |
 | `costs.ts` | Soma e classificação de custos |
