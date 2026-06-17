@@ -3,9 +3,9 @@
  * reutilizado na aba "Resultados". Renderiza índice, haircut, matriz 2x2,
  * highlights por dimensão e quadrantes.
  */
-import { AppState } from "@/lib/finance/types";
-import { computeStrategic, quadrant, type SubScore } from "@/lib/finance/strategic";
-import { computeHealth } from "@/lib/finance/health";
+import { AppState } from "@/engines/finance/types";
+import { computeStrategic, quadrant, type SubScore } from "@/engines/finance/strategic";
+import { computeHealth } from "@/engines/finance/health";
 import { SectionTitle, StatCard } from "./primitives";
 import { AlertTriangle, CheckCircle2, ChevronRight, HelpCircle, TriangleAlert } from "lucide-react";
 

@@ -14,7 +14,7 @@ import {
   Concorrentes,
   SwitchingCost,
   ExposicaoRegulatoria,
-} from "@/lib/finance/types";
+} from "@/engines/finance/types";
 import { SectionTitle, HelpTip } from "./primitives";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";

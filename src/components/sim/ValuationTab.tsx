@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AppState } from "@/lib/finance/types";
+import { AppState } from "@/engines/finance/types";
 import {
   buildValuation,
   defaultValuationParams,
@@ -9,9 +9,9 @@ import {
   runValuationSelfTests,
   logValuationTrace,
   ValuationTestCase,
-} from "@/lib/finance/valuation";
-import { useFinanceModel } from "@/lib/finance/useFinanceModel";
-import { fmtBRLCompact, fmtPct, sum } from "@/lib/finance/format";
+} from "@/engines/finance/valuation";
+import { useFinanceModel } from "@/engines/finance/useFinanceModel";
+import { fmtBRLCompact, fmtPct, sum } from "@/engines/finance/format";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";

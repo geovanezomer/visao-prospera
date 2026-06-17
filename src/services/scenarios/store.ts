@@ -2,7 +2,7 @@
 // IDs via nanoid. Soft delete habilita futuras features (undo, sync).
 import { nanoid } from "nanoid";
 import { useSyncExternalStore } from "react";
-import type { SimulatorParams } from "@/lib/finance/simulator";
+import type { SimulatorParams } from "@/engines/finance/simulator";
 
 // Event bus reativo (mesmo padrão de actions/store).
 type Listener = () => void;

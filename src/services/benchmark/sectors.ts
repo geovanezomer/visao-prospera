@@ -2,7 +2,7 @@
 // Fontes: consolidação SEBRAE/Serasa Experian/IBGE PIA-PAS/PMC + literatura de valuation BR.
 // Valores em % salvo onde indicado. Atualizar anualmente.
 
-import type { BusinessType } from "@/lib/finance/types";
+import type { BusinessType } from "@/engines/finance/types";
 
 export interface SectorBenchmark {
   id: string;

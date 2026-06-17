@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { AppState, TaxRegime } from "@/lib/finance/types";
-import { applySimulator, computeSimView, countActiveLevers, DEFAULT_SIM, PRESETS, SimDREView, SimulatorParams } from "@/lib/finance/simulator";
-import { useFinanceModel } from "@/lib/finance/useFinanceModel";
-import { fmtBRL, fmtBRLCompact, fmtPct } from "@/lib/finance/format";
+import { AppState, TaxRegime } from "@/engines/finance/types";
+import { applySimulator, computeSimView, countActiveLevers, DEFAULT_SIM, PRESETS, SimDREView, SimulatorParams } from "@/engines/finance/simulator";
+import { useFinanceModel } from "@/engines/finance/useFinanceModel";
+import { fmtBRL, fmtBRLCompact, fmtPct } from "@/engines/finance/format";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,8 +13,8 @@ import { SectionTitle, HelpTip } from "./primitives";
 import { ForecastCard, MonteCarloCard } from "./AnalysisTab";
 import { IndicatorsCard } from "./IndicatorsCard";
 import { ArrowDownRight, ArrowUpRight, Minus, RotateCcw, Save, SlidersHorizontal, TriangleAlert, Wand2, Sparkles } from "lucide-react";
-import { SIMPLES_LIMITE } from "@/lib/finance/taxDefaults";
-import { sum } from "@/lib/finance/format";
+import { SIMPLES_LIMITE } from "@/engines/finance/taxDefaults";
+import { sum } from "@/engines/finance/format";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 

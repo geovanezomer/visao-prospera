@@ -1,20 +1,20 @@
 // Tool registry — function calling (OpenAI-compatible).
 // Cada tool retorna markdown que o LLM injeta como resultado para o próximo turno.
 
-import type { AppState } from "@/lib/finance/types";
-import { applySimulator, DEFAULT_SIM, type SimulatorParams } from "@/lib/finance/simulator";
+import type { AppState } from "@/engines/finance/types";
+import { applySimulator, DEFAULT_SIM, type SimulatorParams } from "@/engines/finance/simulator";
 import { buildSections, getSectionsCached } from "./snapshot";
 import { findSector, listSectors, rank, type SectorBenchmark } from "@/services/benchmark/sectors";
 import { fetchSerie, getMacroSnapshot, getSerieFormatted, MACRO_SERIES_KEYS, type SerieKey } from "@/services/macro/bcb";
-import { buildForecast, DEFAULT_FORECAST_CFG, type ForecastConfig, type ForecastResult } from "@/lib/finance/forecast";
-import { runSensitivity, type DriverKey, type OutputKey, type SensitivityResult } from "@/lib/finance/sensitivity";
+import { buildForecast, DEFAULT_FORECAST_CFG, type ForecastConfig, type ForecastResult } from "@/engines/finance/forecast";
+import { runSensitivity, type DriverKey, type OutputKey, type SensitivityResult } from "@/engines/finance/sensitivity";
 import { listScenarios, saveScenario, deleteScenario, getScenario } from "@/services/scenarios/store";
 import { listActions, createAction, updateAction, deleteAction, actionsToMarkdown, type ActionStatus } from "@/services/actions/store";
 import { regimeComparisonToMarkdown, taxAuditToMarkdown } from "@/services/compliance/tax";
 import { checklistToMarkdown } from "@/services/compliance/checklist";
-import { buildDRE, calcIndicators, resolveEffectiveRegime, diagnose, compareYearsForRegime } from "@/lib/finance/calculations";
-import { buildValuation, defaultValuationParams } from "@/lib/finance/valuation";
-import { computeHealth } from "@/lib/finance/health";
+import { buildDRE, calcIndicators, resolveEffectiveRegime, diagnose, compareYearsForRegime } from "@/engines/finance/calculations";
+import { buildValuation, defaultValuationParams } from "@/engines/finance/valuation";
+import { computeHealth } from "@/engines/finance/health";
 
 // Helpers locais de formatação (alinhados com snapshot.ts — recebem valor JÁ em %).
 // Auditoria C-1: a versão antiga multiplicava por 100 e quebrava valores que já vinham em %

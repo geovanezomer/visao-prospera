@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Save, GitCompare, Trash2 } from "lucide-react";
-import { AppState, Scenario } from "@/lib/finance/types";
-import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
-import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
+import { AppState, Scenario } from "@/engines/finance/types";
+import { buildDRE, calcIndicators } from "@/engines/finance/calculations";
+import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 export function ScenarioBar({

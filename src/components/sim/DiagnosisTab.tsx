@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import { AppState } from "@/lib/finance/types";
-import { buildPrescriptiveCards, PrescriptiveCard } from "@/lib/finance/prescriptive";
-import { diagnose } from "@/lib/finance/calculations";
-import { useFinanceModel } from "@/lib/finance/useFinanceModel";
+import { AppState } from "@/engines/finance/types";
+import { buildPrescriptiveCards, PrescriptiveCard } from "@/engines/finance/prescriptive";
+import { diagnose } from "@/engines/finance/calculations";
+import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "lucide-react";
 import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";

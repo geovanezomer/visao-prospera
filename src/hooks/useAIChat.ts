@@ -7,25 +7,25 @@ import { toast } from "sonner";
 import {
   AIConfig, ChatMessage, ChatThread, createThread, deleteThread, loadConfig, loadMessages,
   loadThreads, saveConfig, saveMessages, saveThreads, touchThread,
-} from "@/services/ai/providers";
-import { chatWithTools, streamChat, type LLMMessage, type ToolCall } from "@/services/ai/client";
-import { buildSnapshot, getSectionsCached } from "@/services/ai/snapshot";
-import { buildLlmMessages } from "@/services/ai/historyUtils";
-import { estimateTokens } from "@/services/ai/snapshot";
+} from "@/engines/ai/providers";
+import { chatWithTools, streamChat, type LLMMessage, type ToolCall } from "@/engines/ai/client";
+import { buildSnapshot, getSectionsCached } from "@/engines/ai/snapshot";
+import { buildLlmMessages } from "@/engines/ai/historyUtils";
+import { estimateTokens } from "@/engines/ai/snapshot";
 
 // Limite de tokens do histórico enviado ao LLM (exclui system prompt).
 // Se ultrapassado, comprime o miolo preservando contexto inicial + recente.
 const MAX_HISTORY_TOKENS = 6000;
-import { buildSystemPrompt } from "@/services/ai/systemPrompt";
+import { buildSystemPrompt } from "@/engines/ai/systemPrompt";
 import {
   processFile, buildPdfContext, buildVisionMessageContent, confidenceLabel,
   MAX_FILES_PER_MSG, type ChatAttachment,
-} from "@/services/ai/attachments";
-import { buildDynamicSuggestions } from "@/services/ai/suggestions";
-import { buildOpeningBriefing } from "@/services/ai/briefing";
-import type { AppState } from "@/lib/finance/types";
-import { resolveEffectiveRegime } from "@/lib/finance/calculations";
-import type { SimulatorParams } from "@/lib/finance/simulator";
+} from "@/engines/ai/attachments";
+import { buildDynamicSuggestions } from "@/engines/ai/suggestions";
+import { buildOpeningBriefing } from "@/engines/ai/briefing";
+import type { AppState } from "@/engines/finance/types";
+import { resolveEffectiveRegime } from "@/engines/finance/calculations";
+import type { SimulatorParams } from "@/engines/finance/simulator";
 
 export interface UseAIChatParams {
   state: AppState;
@@ -238,7 +238,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       const llm = buildLlmHistory(true);
       const collected: ToolCall[] = [];
       try {
-        const { runTool } = await import("@/services/ai/tools");
+        const { runTool } = await import("@/engines/ai/tools");
         const out = await chatWithTools(
           config,
           llm,

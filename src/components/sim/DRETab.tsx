@@ -1,10 +1,10 @@
 import { useState, Fragment, useEffect } from "react";
-import { AppState, TaxRegime, COST_VENDAS_LABEL, TAX_ERA_SHORT, CostCategory } from "@/lib/finance/types";
+import { AppState, TaxRegime, COST_VENDAS_LABEL, TAX_ERA_SHORT, CostCategory } from "@/engines/finance/types";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
-import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/lib/finance/format";
-import { buildDRE, calcIndicators, monthValues } from "@/lib/finance/calculations";
-import { buildCashFlow } from "@/lib/finance/cashflow";
+import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/engines/finance/format";
+import { buildDRE, calcIndicators, monthValues } from "@/engines/finance/calculations";
+import { buildCashFlow } from "@/engines/finance/cashflow";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { HelpTip, SectionTitle, StatCard } from "./primitives";

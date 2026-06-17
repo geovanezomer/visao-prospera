@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useAppState } from "@/lib/finance/store";
+import { useAppState } from "@/engines/finance/store";
 import {
   calcularCustoFuncionario,
   labelRegime,

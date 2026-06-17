@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIChatSheet } from "./AIChatSheet";
-import type { AppState } from "@/lib/finance/types";
-import type { SimulatorParams } from "@/lib/finance/simulator";
+import type { AppState } from "@/engines/finance/types";
+import type { SimulatorParams } from "@/engines/finance/simulator";
 
 interface Props {
   state: AppState;
