@@ -358,7 +358,7 @@ export function traceValuation(
     ...(dcf ? [
       { label: "WACC (a.a.)",        formula: "Capital.wacc()", value: dcf.wacc, note: "% ao ano" },
       { label: "VPN fluxos DCF",     formula: `Σ FCL_t / (1+wacc_m)^t · t=1..${dcf.horizonMonths}`, value: dcf.npvFlows },
-      { label: "Valor terminal (Gordon)", formula: `FCL_LTM·(1+g) / (WACC − g) = .../(${(dcf.wacc/100 - dcf.growthTerminal).toFixed(4)})`, value: dcf.terminalValue },
+      { label: "Valor terminal (Gordon)", formula: `FCL_LTM / (WACC − g) = ${dcf.fcfProjected.slice(-12).reduce((a,b)=>a+b,0).toFixed(0)} / ${(dcf.wacc/100 - dcf.growthTerminal).toFixed(4)}`, value: dcf.terminalValue, note: "Auditoria #7: (1+g) removido — FCL_LTM já é período T." },
       { label: "VP do terminal",     formula: `VT / (1+wacc_m)^N`, value: dcf.npvTerminal },
       { label: "EV DCF (VPN+VP_terminal)", formula: "VPN_fluxos + VP_terminal", value: evDCF },
     ] : [{ label: "DCF", formula: "indisponível (forecast inválido)", value: 0 }]),
