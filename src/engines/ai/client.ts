@@ -71,8 +71,10 @@ async function fetchWithRetry(url: string, init: RequestInit, retries = 2): Prom
 export async function listModels(cfg: AIConfig): Promise<string[]> {
   const res = await fetch(`${cfg.baseUrl}/models`, { headers: headers(cfg) });
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text().catch(() => "")}`);
-  const json = await res.json();
-  return (Array.isArray(json?.data) ? json.data : []).map((m: any) => m.id).filter(Boolean);
+  const json = (await res.json()) as { data?: Array<{ id?: string }> };
+  return (Array.isArray(json?.data) ? json.data : [])
+    .map((m) => m.id)
+    .filter((id): id is string => Boolean(id));
 }
 
 // ============================================================
