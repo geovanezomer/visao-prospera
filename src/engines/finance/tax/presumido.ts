@@ -20,6 +20,15 @@ import { receitaTributavel, splitReceitasFinanceiras } from "../shared";
 import { isCpvCost, effectiveMonthValues } from "../costs";
 import { getReformaRates } from "./reforma";
 import { adicionalIrpjTrimestral, type MonthlyTax } from "./shared";
+import { calcCbs, calcIbs } from "tributos-br";
+
+// [CBS/IBS] Helpers: usam tributos-br (LC 214/2025) para garantir
+// arredondamento HALF_UP (padrão SEFAZ) sobre cada multiplicação
+// alíquota × base, evitando drift de centavos em apurações mensais.
+const cbsValor = (base: number, pct: number): number =>
+  pct > 0 && base > 0 ? Number(calcCbs({ base: base.toString(), aliquota: (pct / 100).toString() }).imposto) : 0;
+const ibsValor = (base: number, pct: number): number =>
+  pct > 0 && base > 0 ? Number(calcIbs({ base: base.toString(), aliquota: (pct / 100).toString() }).imposto) : 0;
 
 /** @deprecated Use getPresumidoBases(tax, business) de taxDefaults.ts. Mantido para retro-compat. */
 export function presumidoBases(business: BusinessType): { irpj: number; csll: number } {
@@ -97,14 +106,14 @@ export function calcPresumido(state: AppState): MonthlyTax {
     let cbs = 0,
       ibs = 0;
     if (reforma.cbsPct > 0) {
-      const dCbs = r * (reforma.cbsPct / 100);
-      const cCbs = cpvMonthly[i] * (reforma.cbsPct / 100) + saldoCBS;
+      const dCbs = cbsValor(r, reforma.cbsPct);
+      const cCbs = cbsValor(cpvMonthly[i], reforma.cbsPct) + saldoCBS;
       cbs = Math.max(0, dCbs - cCbs);
       saldoCBS = Math.max(0, cCbs - dCbs);
     }
     if (reforma.ibsPct > 0) {
-      const dIbs = r * (reforma.ibsPct / 100);
-      const cIbs = cpvMonthly[i] * (reforma.ibsPct / 100) + saldoIBS;
+      const dIbs = ibsValor(r, reforma.ibsPct);
+      const cIbs = ibsValor(cpvMonthly[i], reforma.ibsPct) + saldoIBS;
       ibs = Math.max(0, dIbs - cIbs);
       saldoIBS = Math.max(0, cIbs - dIbs);
     }
