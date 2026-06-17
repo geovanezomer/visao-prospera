@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useFinance } from "@/engines/finance/AppStateContext";
+import { useEffect, useMemo, useRef } from "react";
+import { useFinance, usePatchCashflow } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
-import { AppState } from "@/engines/finance/types";
 import { fmtBRL, MESES } from "@/engines/finance/format";
 import { buildCashFlow } from "@/engines/finance/cashflow";
 import { MoneyInput, SectionTitle, StatCard } from "./primitives";
@@ -36,21 +35,15 @@ const TOOLTIP_LABEL = { color: "var(--popover-foreground)", fontWeight: 600 } as
 // Orquestrador da aba Cashflow — KPIs, alertas, NonOpTable, DFCTable, runway e gráfico.
 // As tabelas detalhadas vivem em src/components/sim/cashflow/*.tsx.
 export function CashflowTab() {
-  const { state, update } = useFinance();
+  const { state } = useFinance();
+  const patchCashflow = usePatchCashflow();
   // Regime efetivo é default em buildCashFlow; memoizar o resultado pesado.
   const cf = useMemo(() => buildCashFlow(state), [state]);
 
-  const setCaixaMin = useCallback(
-    (v: number) => update((s: AppState) => ({ ...s, cashflow: { ...s.cashflow, caixaMinimo: v } })),
-    [update],
-  );
+  const setCaixaMin = (v: number) => patchCashflow({ caixaMinimo: v });
 
   const limiar = state.cashflow.limiarAlerta ?? -10000;
-  const setLimiar = useCallback(
-    (v: number) =>
-      update((s: AppState) => ({ ...s, cashflow: { ...s.cashflow, limiarAlerta: v } })),
-    [update],
-  );
+  const setLimiar = (v: number) => patchCashflow({ limiarAlerta: v });
 
   const mesesCriticos = useMemo(
     () =>
@@ -83,23 +76,14 @@ export function CashflowTab() {
     }
   }, [mesesCriticosKey, limiar, mesesCriticos]);
 
-  const setNonOp = useCallback(
-    (key: NonOpKey, monthIdx: number, value: number) =>
-      update((s: AppState) => ({
-        ...s,
-        cashflow: {
-          ...s.cashflow,
-          [key]: s.cashflow[key].map((v, i) => (i === monthIdx ? value : v)),
-        },
-      })),
-    [update],
-  );
+  const setNonOp = (key: NonOpKey, monthIdx: number, value: number) =>
+    patchCashflow((cur) => ({
+      [key]: cur[key].map((v, i) => (i === monthIdx ? value : v)),
+    }));
 
-  const setNonOpAll = useCallback(
-    (key: NonOpKey, v: number) =>
-      update((s: AppState) => ({ ...s, cashflow: { ...s.cashflow, [key]: MESES.map(() => v) } })),
-    [update],
-  );
+  const setNonOpAll = (key: NonOpKey, v: number) =>
+    patchCashflow({ [key]: MESES.map(() => v) });
+
 
   // Usar cf.alertas e cf.totais.pioresMes (já calculados pela engine)
   const alertas = cf.alertas;

@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
-import { useFinance } from "@/engines/finance/AppStateContext";
+import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
 import {
   AppState,
@@ -107,12 +107,9 @@ const ANEXO_BUSINESS_OK: Record<SimplesAnexo, BusinessType[]> = {
 };
 
 export function TaxTab() {
-  const { state, update } = useFinance();
+  const { state } = useFinance();
+  const set = usePatchTax();
   const rbAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
-  const set = useCallback(
-    (patch: Partial<typeof state.tax>) => update((s) => ({ ...s, tax: { ...s.tax, ...patch } })),
-    [update],
-  );
 
   // ----- Engine: memoizada (B1) — recomputa só quando state muda -----
   // SSOT-4: compareRegimes já devolve llBy, best e desenquadradoSimples.
@@ -196,8 +193,8 @@ export function TaxTab() {
 
   const setOverride = useCallback(
     (patch: Partial<NonNullable<typeof state.tax.ratesOverride>>) =>
-      set({ ratesOverride: { ...(state.tax.ratesOverride ?? {}), ...patch } }),
-    [set, state.tax.ratesOverride],
+      set((cur) => ({ ratesOverride: { ...(cur.ratesOverride ?? {}), ...patch } })),
+    [set],
   );
 
   return (

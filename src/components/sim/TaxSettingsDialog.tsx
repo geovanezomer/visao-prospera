@@ -30,7 +30,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { NumInput } from "./primitives";
 import type { AppState, SimplesAnexo, BusinessType } from "@/engines/finance/types";
-import { useFinance, type FinanceUpdater } from "@/engines/finance/AppStateContext";
+import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import {
   IRPJ_PCT,
   IRPJ_ADICIONAL_PCT,
@@ -75,18 +75,16 @@ const STEPS: { key: StepKey; label: string; icon: typeof Settings }[] = [
 ];
 
 export function TaxSettingsDialog() {
-  const { state, update } = useFinance();
+  const { state } = useFinance();
+  const patchTax = usePatchTax();
   const [open, setOpen] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
   const ov = state.tax.ratesOverride ?? {};
 
   const patchOv = (patch: Partial<TaxRatesOverride>) =>
-    update((s) => ({
-      ...s,
-      tax: { ...s.tax, ratesOverride: { ...(s.tax.ratesOverride ?? {}), ...patch } },
-    }));
+    patchTax((cur) => ({ ratesOverride: { ...(cur.ratesOverride ?? {}), ...patch } }));
 
-  const resetAll = () => update((s) => ({ ...s, tax: { ...s.tax, ratesOverride: undefined } }));
+  const resetAll = () => patchTax({ ratesOverride: undefined });
 
   // Conta quantos parâmetros foram customizados — usado no resumo final.
   const customCount = useMemo(() => {
@@ -183,10 +181,10 @@ export function TaxSettingsDialog() {
           {step.key === "federais" && <StepFederais ov={ov} patchOv={patchOv} />}
           {step.key === "simples" && <StepSimples ov={ov} patchOv={patchOv} />}
           {step.key === "presumido" && (
-            <StepPresumido ov={ov} patchOv={patchOv} state={state} update={update} />
+            <StepPresumido ov={ov} patchOv={patchOv} state={state} patchTax={patchTax} />
           )}
           {step.key === "reforma" && (
-            <StepReforma ov={ov} patchOv={patchOv} state={state} update={update} />
+            <StepReforma ov={ov} patchOv={patchOv} state={state} patchTax={patchTax} />
           )}
           {step.key === "revisao" && <StepRevisao customCount={customCount} resetAll={resetAll} />}
         </div>
@@ -455,12 +453,12 @@ function StepPresumido({
   ov,
   patchOv,
   state,
-  update,
+  patchTax,
 }: {
   ov: TaxRatesOverride;
   patchOv: (p: Partial<TaxRatesOverride>) => void;
   state: AppState;
-  update: FinanceUpdater;
+  patchTax: ReturnType<typeof usePatchTax>;
 }) {
   return (
     <div className="space-y-4">
@@ -536,8 +534,8 @@ function StepPresumido({
           defaultVal={5}
           help="Defina a alíquota do município onde sua empresa está estabelecida (entre 2% e 5%)."
           value={state.tax.issIcms ?? 5}
-          onChange={(v) => update((s) => ({ ...s, tax: { ...s.tax, issIcms: v } }))}
-          onReset={() => update((s) => ({ ...s, tax: { ...s.tax, issIcms: 5 } }))}
+          onChange={(v) => patchTax({ issIcms: v })}
+          onReset={() => patchTax({ issIcms: 5 })}
         />
       </Section>
     </div>
@@ -548,12 +546,12 @@ function StepReforma({
   ov,
   patchOv,
   state,
-  update,
+  patchTax,
 }: {
   ov: TaxRatesOverride;
   patchOv: (p: Partial<TaxRatesOverride>) => void;
   state: AppState;
-  update: FinanceUpdater;
+  patchTax: ReturnType<typeof usePatchTax>;
 }) {
   return (
     <div className="space-y-4">
@@ -572,8 +570,8 @@ function StepReforma({
           defaultVal={8.8}
           help="Contribuição sobre Bens e Serviços (federal). Estimativa oficial: 8,8%. Substitui PIS+COFINS."
           value={state.tax.cbsAliquota ?? 8.8}
-          onChange={(v) => update((s) => ({ ...s, tax: { ...s.tax, cbsAliquota: v } }))}
-          onReset={() => update((s) => ({ ...s, tax: { ...s.tax, cbsAliquota: undefined } }))}
+          onChange={(v) => patchTax({ cbsAliquota: v })}
+          onReset={() => patchTax({ cbsAliquota: undefined })}
         />
         <FriendlyRow
           label="IBS — alíquota de referência"
@@ -581,8 +579,8 @@ function StepReforma({
           defaultVal={17.7}
           help="Imposto sobre Bens e Serviços (estadual+municipal). Estimativa de referência: 17,7%. Substitui ICMS+ISS."
           value={state.tax.ibsAliquotaRef ?? 17.7}
-          onChange={(v) => update((s) => ({ ...s, tax: { ...s.tax, ibsAliquotaRef: v } }))}
-          onReset={() => update((s) => ({ ...s, tax: { ...s.tax, ibsAliquotaRef: undefined } }))}
+          onChange={(v) => patchTax({ ibsAliquotaRef: v })}
+          onReset={() => patchTax({ ibsAliquotaRef: undefined })}
         />
         <FriendlyRow
           label="% do CPV vindo de fornecedor Simples Nacional"
@@ -590,12 +588,8 @@ function StepReforma({
           defaultVal={0}
           help="Percentual das compras (CPV) feitas a fornecedores no Simples Nacional sem destaque de CBS/IBS. Nessas notas o crédito é PRESUMIDO (~3% CBS, ~1,2% IBS), não a alíquota cheia. Aumentar este valor reduz o crédito tributável e aumenta o imposto efetivo a pagar. Default 0% (assume todos fornecedores no regime regular)."
           value={state.tax.fornecedorSimplesNacionalPct ?? 0}
-          onChange={(v) =>
-            update((s) => ({ ...s, tax: { ...s.tax, fornecedorSimplesNacionalPct: v } }))
-          }
-          onReset={() =>
-            update((s) => ({ ...s, tax: { ...s.tax, fornecedorSimplesNacionalPct: undefined } }))
-          }
+          onChange={(v) => patchTax({ fornecedorSimplesNacionalPct: v })}
+          onReset={() => patchTax({ fornecedorSimplesNacionalPct: undefined })}
         />
         <SnPresumidoExplainer
           snPct={state.tax.fornecedorSimplesNacionalPct ?? 0}
