@@ -139,9 +139,12 @@ export function TaxSettingsDialog() {
       </DialogTrigger>
       <DialogContent className="max-w-3xl w-screen h-[100dvh] max-h-[100dvh] rounded-none sm:rounded-lg sm:h-auto sm:max-h-[88vh] overflow-hidden p-0 flex flex-col">
         <DialogHeader className="border-b border-border/60 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 shrink-0">
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <step.icon className="h-5 w-5 text-primary" />
-            Assistente de parâmetros tributários — {step.label}
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <step.icon className="h-5 w-5 text-primary shrink-0" />
+            <span className="truncate">
+              <span className="hidden sm:inline">Assistente de parâmetros tributários — </span>
+              {step.label}
+            </span>
           </DialogTitle>
           <DialogDescription>
             Passo {stepIdx + 1} de {STEPS.length}. Todos os campos já vêm preenchidos com os valores
