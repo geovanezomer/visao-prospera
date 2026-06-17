@@ -453,12 +453,12 @@ function StepPresumido({
   ov,
   patchOv,
   state,
-  update,
+  patchTax,
 }: {
   ov: TaxRatesOverride;
   patchOv: (p: Partial<TaxRatesOverride>) => void;
   state: AppState;
-  update: FinanceUpdater;
+  patchTax: ReturnType<typeof usePatchTax>;
 }) {
   return (
     <div className="space-y-4">
