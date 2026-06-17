@@ -811,9 +811,17 @@ export interface Indicators {
   margemLiquida: number;
   /** (Receita Líquida − Custos Variáveis) ÷ Receita Líquida × 100 */
   margemContribuicao: number;
-  /** Custos Fixos ÷ Margem de Contribuição */
+  /**
+   * PE TOTAL (cobertura financeira completa): (Custos Fixos + Depreciação + Juros) ÷ MC.
+   * Inclui juros porque, para a PME, juros são custo fixo financeiro recorrente.
+   */
   pontoEquilibrio: number;
-  /** (Custos Fixos − Depreciação) ÷ Margem de Contribuição */
+  /**
+   * PE OPERACIONAL CLÁSSICO (acadêmico/bancos): Custos Fixos ÷ MC — sem juros, sem depreciação fora.
+   * Cobre apenas os custos fixos operacionais; juros e impostos ficam abaixo do EBIT.
+   */
+  pontoEquilibrioOperacional: number;
+  /** (Custos Fixos + Juros) ÷ Margem de Contribuição — exclui depreciação (não-caixa), mantém juros. */
   pontoEquilibrioFinanceiro: number;
   /** Lucro Líquido ÷ Patrimônio Líquido × 100 */
   roe: number;
@@ -911,13 +919,20 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // Auditoria #9: juros são custo fixo financeiro — devem entrar no Ponto de Equilíbrio.
   // PE contábil cobre todos os custos fixos (operacionais + financeiros).
   // PE financeiro exclui depreciação (não é desembolso) mas mantém os juros (são caixa).
+  // PE OPERACIONAL (clássico): apenas custos fixos operacionais — juros ficam abaixo do EBIT.
+  // PE TOTAL: inclui juros (custo fixo financeiro recorrente, perspectiva de cobertura total).
+  // PE FINANCEIRO (caixa): exclui depreciação (não-caixa) mas mantém juros (são desembolso).
   const custosFixosComJuros = custosFixosAnual + jurosAnual;
   const margemContribuicao = safePct(receitaLiqAnual - custosVarAnual, receitaLiqAnual);
+  const mcFrac = margemContribuicao / 100;
+  const pontoEquilibrioOperacional = margemContribuicao > 0
+    ? safeDivide(custosFixosAnual, mcFrac)
+    : 0;
   const pontoEquilibrio = margemContribuicao > 0
-    ? safeDivide(custosFixosComJuros, margemContribuicao / 100)
+    ? safeDivide(custosFixosComJuros, mcFrac)
     : 0;
   const pontoEquilibrioFinanceiro = margemContribuicao > 0
-    ? safeDivide(custosFixosComJuros - sum(dre.depreciacao), margemContribuicao / 100)
+    ? safeDivide(custosFixosComJuros - sum(dre.depreciacao), mcFrac)
     : 0;
 
   // ---- Estrutura de capital baseada em campos REAIS ----
@@ -1049,7 +1064,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     margemEbitda: safePct(ebitdaAnual, receitaLiqAnual),
     margemEbit: safePct(ebitAnual, receitaLiqAnual),
     margemLiquida: safePct(llAnual, receitaLiqAnual),
-    margemContribuicao, pontoEquilibrio, pontoEquilibrioFinanceiro,
+    margemContribuicao, pontoEquilibrio, pontoEquilibrioOperacional, pontoEquilibrioFinanceiro,
     roe, roa, roic, wacc: safeNumber(wacc),
     cicloFinanceiro, ncg, gapCapitalGiro,
     liquidezCorrente, liquidezSeca, liquidezImediata,
