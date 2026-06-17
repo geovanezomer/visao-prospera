@@ -44,6 +44,7 @@ type Row = {
 
 export function RevenueTab() {
   const { state, update } = useFinance();
+  const patchRevenue = usePatchRevenue();
   const r = state.revenue;
 
   // -------- Derivados memoizados --------
