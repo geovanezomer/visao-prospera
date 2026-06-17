@@ -21,6 +21,11 @@ export interface ReformaRates {
   ibsPct: number;
   pisCofinsMult: number;
   icmsIssMult: number;
+  /** Auditoria #11: carga IVA combinada estimada no ano (CBS + IBS + ICMS·mult), em %.
+   *  Permite à UI sinalizar overshoot tributário durante a transição. */
+  cargaCombinadaPct?: number;
+  /** Auditoria #11: true quando a carga combinada supera a carga atual (default ICMS 18%). */
+  alertaTransicao?: boolean;
 }
 
 export function getReformaRates(era: TaxEra | undefined, cfg: TaxConfig): ReformaRates {
