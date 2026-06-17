@@ -3,7 +3,9 @@
  * Roda no console (F12) e pode ser chamado pela aba Valuation → Auditoria.
  */
 import { DEFAULT_STATE } from "./defaults";
-import { buildDRE, calcIndicators, irShieldForRegime } from "./calculations";
+import { buildDRE } from "./dre";
+import { calcIndicators } from "./indicators";
+import { irShieldForRegime } from "./tax/real";
 import { irr, irrDetailed, npv } from "./forecast";
 
 export interface SelfTestCase {

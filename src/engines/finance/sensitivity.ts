@@ -1,5 +1,7 @@
 import { AppState } from "./types";
-import { buildDRE, calcIndicators, resolveEffectiveRegime } from "./calculations";
+import { buildDRE } from "./dre";
+import { calcIndicators } from "./indicators";
+import { resolveEffectiveRegime } from "./regime";
 import { buildCashFlow } from "./cashflow";
 import { sum } from "./format";
 

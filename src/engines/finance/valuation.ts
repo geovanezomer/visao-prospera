@@ -8,7 +8,10 @@
  * com Indicadores/Diagnóstico/Simulador (verdade absoluta única).
  */
 import { AppState, BusinessType, TaxRegime } from "./types";
-import { buildDRE, calcIndicators, resolveEffectiveRegime, computeNetDebt } from "./calculations";
+import { buildDRE } from "./dre";
+import { calcIndicators } from "./indicators";
+import { resolveEffectiveRegime } from "./regime";
+import { computeNetDebt } from "./shared";
 import { buildForecast, ForecastConfig, DEFAULT_FORECAST_CFG } from "./forecast";
 import { computeStrategic, StrategicResult } from "./strategic";
 import { sum } from "./format";
@@ -137,7 +140,7 @@ function ensureModel(state: AppState, pre?: PrecomputedValuationModel): Precompu
   return { regime, dre, ind };
 }
 
-// SSOT-1: helper único computeNetDebt() de calculations.ts. Valuation usa o
+// SSOT-1: helper único computeNetDebt() de shared.ts. Valuation usa o
 // resultado RAW limitado a zero (valuation não credita "caixa negativo" como
 // reforço de equity).
 function netDebt(state: AppState): number {

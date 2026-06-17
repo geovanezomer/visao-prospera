@@ -8,7 +8,8 @@
  * explícita — vide discussão de auditoria em jun/2026.
  */
 import { describe, it, expect } from "vitest";
-import { buildDRE, fixedCostBase, effectiveMonthValues } from "../calculations";
+import { buildDRE } from "../dre";
+import { fixedCostBase, effectiveMonthValues } from "../costs";
 import { buildCashFlow } from "../cashflow";
 import { irr, irrDetailed, npv } from "../forecast";
 import { sum } from "../format";

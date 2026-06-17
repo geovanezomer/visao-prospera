@@ -8,7 +8,7 @@ import {
   resolveEffectiveRegime,
   type DRE,
   type Indicators,
-} from "@/engines/finance/calculations";
+} from "@/engines/finance";
 import { buildCashFlow, type CashFlow } from "@/engines/finance/cashflow";
 import {
   crossValidate,

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { fmtBRL, sum } from "@/engines/finance/format";
-import { buildDRE, calcIndicators } from "@/engines/finance/calculations";
+import { buildDRE, calcIndicators } from "@/engines/finance";
 import { MoneyInput, HelpTip } from "./primitives";
 
 import { IntroCard } from "./capital/IntroCard";

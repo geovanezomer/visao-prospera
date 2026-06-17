@@ -8,7 +8,7 @@ import {
   calcIndicators,
   diagnose,
   resolveEffectiveRegime,
-} from "@/engines/finance/calculations";
+} from "@/engines/finance";
 import { buildCashFlow } from "@/engines/finance/cashflow";
 
 const STATIC_FALLBACK = [

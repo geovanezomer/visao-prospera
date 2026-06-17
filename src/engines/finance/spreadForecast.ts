@@ -1,10 +1,8 @@
 import { AppState } from "./types";
-import {
-  buildDRE,
-  calcIndicators,
-  irShieldForRegime,
-  resolveEffectiveRegime,
-} from "./calculations";
+import { buildDRE } from "./dre";
+import { calcIndicators } from "./indicators";
+import { irShieldForRegime } from "./tax/real";
+import { resolveEffectiveRegime } from "./regime";
 import { buildForecast, DEFAULT_FORECAST_CFG } from "./forecast";
 import { sum } from "./format";
 

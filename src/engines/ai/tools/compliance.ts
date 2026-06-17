@@ -7,7 +7,7 @@ import {
   buildDRE,
   compareYearsForRegime,
   resolveEffectiveRegime,
-} from "@/engines/finance/calculations";
+} from "@/engines/finance";
 import { brl, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
 const defs: ToolDef[] = [

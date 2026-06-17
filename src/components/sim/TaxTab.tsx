@@ -18,7 +18,7 @@ import {
   resolveSimplesAnexo,
   folhaAnual,
   buildDRE,
-} from "@/engines/finance/calculations";
+} from "@/engines/finance";
 import {
   getPresumidoBases,
   SIMPLES_LIMITE,

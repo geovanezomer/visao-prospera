@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildDRE } from "../calculations";
+import { buildDRE } from "../dre";
 import { sum } from "../format";
 import { createState, m12 } from "./helpers";
 

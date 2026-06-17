@@ -1,11 +1,8 @@
 import { AppState } from "./types";
-import {
-  buildDRE,
-  calcIndicators,
-  effectiveMonthValues,
-  isCpvCost,
-  resolveEffectiveRegime,
-} from "./calculations";
+import { buildDRE } from "./dre";
+import { calcIndicators } from "./indicators";
+import { effectiveMonthValues, isCpvCost } from "./costs";
+import { resolveEffectiveRegime } from "./regime";
 import { sum } from "./format";
 
 export interface ForecastMonth {

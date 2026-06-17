@@ -1,11 +1,7 @@
 import { AppState } from "./types";
-import {
-  buildDRE,
-  calcIndicators,
-  resolveEffectiveRegime,
-  type Indicators,
-  type DRE,
-} from "./calculations";
+import { buildDRE, type DRE } from "./dre";
+import { calcIndicators, type Indicators } from "./indicators";
+import { resolveEffectiveRegime } from "./regime";
 import { buildCashFlow, type CashFlow } from "./cashflow";
 import { computeStrategic, type StrategicResult } from "./strategic";
 

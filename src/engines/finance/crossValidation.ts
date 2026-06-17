@@ -11,14 +11,9 @@
 // disponíveis (evita recomputar engine no DiagnosisTab que já tem o model).
 // ============================================================================
 import type { AppState } from "./types";
-import {
-  buildDRE,
-  calcIndicators,
-  resolveEffectiveRegime,
-  folhaAnual,
-  type DRE,
-  type Indicators,
-} from "./calculations";
+import { buildDRE, type DRE } from "./dre";
+import { calcIndicators, type Indicators } from "./indicators";
+import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { getSimplesLimite } from "./taxDefaults";
 import { sum } from "./format";
 
