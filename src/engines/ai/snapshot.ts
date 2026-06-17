@@ -373,7 +373,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     valLines.push(`- **Confiança:** ${val.confidenceScore} — ${val.confidenceRationale}`);
     valLines.push(`- **Haircut:** ${pct(val.haircutApplied * 100)}`);
     if (val.dcfDetails) {
-      const d = val.dcfDetails as any;
+      const d = val.dcfDetails;
       // C-1 fix: dcfDetails.wacc é armazenado em % (valuation.ts:198 `waccAnnual * 100`).
       // terminalGrowth permanece em fração (ex.: 0.025) — multiplica × 100 só nele.
       valLines.push(
