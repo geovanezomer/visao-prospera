@@ -74,10 +74,10 @@ export function serialize(
     state: state as unknown as Record<string, unknown>,
     scenarios: scenarios as unknown as FinnanceFile["scenarios"],
     extras: extras
-      ? {
-          actions: (extras.actions as unknown[] | undefined) ?? [],
-          simScenarios: (extras.simScenarios as unknown[] | undefined) ?? [],
-        }
+      ? ({
+          actions: extras.actions ?? [],
+          simScenarios: extras.simScenarios ?? [],
+        } as FinnanceFile["extras"])
       : undefined,
     meta: {
       companyName: state.companyName,
