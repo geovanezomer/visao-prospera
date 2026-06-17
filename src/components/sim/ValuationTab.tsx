@@ -69,7 +69,6 @@ export function ValuationTab({
         method: cur.method,
       },
     }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source.businessType]);
   const set = (p: Partial<ValuationParams>) => setParams((s) => ({ ...s, ...p }));
 

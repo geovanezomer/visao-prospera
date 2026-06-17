@@ -537,11 +537,11 @@ export function traceValuation(
 // =====================================================================
 export function logValuationTrace(state: AppState, params: ValuationParams, sourceLabel: string) {
   const t = traceValuation(state, params);
-  // eslint-disable-next-line no-console
+
   console.groupCollapsed(`[Valuation] memória de cálculo · ${sourceLabel}`);
-  // eslint-disable-next-line no-console
+
   console.table(t.steps.map((s) => ({ etapa: s.label, formula: s.formula, valor: s.value })));
-  // eslint-disable-next-line no-console
+
   console.groupEnd();
 }
 
@@ -625,13 +625,12 @@ export function runValuationSelfTests(): { results: ValuationTestCase[]; allPass
 
   const allPassed = results.every((r) => r.pass);
 
-  // eslint-disable-next-line no-console
   console.groupCollapsed(
     `[Valuation Self-Tests] ${results.filter((r) => r.pass).length}/${results.length} OK`,
   );
-  // eslint-disable-next-line no-console
+
   console.table(results);
-  // eslint-disable-next-line no-console
+
   console.groupEnd();
 
   return { results, allPassed };

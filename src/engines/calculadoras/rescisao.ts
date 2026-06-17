@@ -77,7 +77,7 @@ const DEP_DEDUCAO = 189.59;
 /** Calcula INSS progressivo (cap no teto). */
 export function calcularINSS(base: number): number {
   if (base <= 0) return 0;
-  let restante = Math.min(base, INSS_FAIXAS[INSS_FAIXAS.length - 1].ate);
+  const restante = Math.min(base, INSS_FAIXAS[INSS_FAIXAS.length - 1].ate);
   let anterior = 0;
   let total = 0;
   for (const f of INSS_FAIXAS) {

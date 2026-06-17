@@ -86,7 +86,7 @@ function topNFixedIds(state: AppState, n: number): Set<string> {
 }
 
 export function applySimulator(base: AppState, p: SimulatorParams): AppState {
-  let s: AppState = {
+  const s: AppState = {
     ...base,
     revenue: {
       ...base.revenue,
