@@ -150,15 +150,20 @@ export function useScenarios() {
     });
   }, [username]);
 
+  // Limite generoso de cenários por usuário; consultores CVM costumam
+  // manter dezenas de simulações por cliente. Mantemos um teto apenas
+  // para proteger o IndexedDB de crescer indefinidamente.
+  const MAX_SCENARIOS = 100;
+
   const save = (name: string, state: AppState) => {
     setScenarios((arr) => {
       const id = typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
         : `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-      return [...arr, { id, name, createdAt: Date.now(), state }].slice(-5);
+      return [...arr, { id, name, createdAt: Date.now(), state }].slice(-MAX_SCENARIOS);
     });
   };
   const remove = (id: string) => setScenarios((arr) => arr.filter((s) => s.id !== id));
-  const replaceAll = (next: Scenario[]) => setScenarios(next.slice(-5));
+  const replaceAll = (next: Scenario[]) => setScenarios(next.slice(-MAX_SCENARIOS));
   return { scenarios, save, remove, replaceAll };
 }
