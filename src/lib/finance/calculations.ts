@@ -881,6 +881,12 @@ export interface Indicators {
   margemSeguranca: number;
   /** EBITDA ÷ (Juros + Amortizações de Principal) — métrica bancária de cobertura do serviço da dívida. */
   dscr: number;
+  /**
+   * true quando `state.cashflow.amortizacoes` traz algum valor > 0 no ano.
+   * Se false, o DSCR colapsa para a Cobertura de Juros (EBITDA ÷ Juros) — o consultor
+   * precisa saber que o resultado pode estar superestimado por falta do cronograma.
+   */
+  dscrAmortizacoesInformadas: boolean;
   dividaOnerosa: number;
   passivoCirculante: number;
   ativoCirculante: number;
@@ -1053,6 +1059,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // DSCR — Debt Service Coverage Ratio: EBITDA ÷ (Juros + Amortizações de Principal).
   // Visão bancária do serviço da dívida (juros + principal). <1,25× trava renovação; >1,50× destrava.
   const amortizPrincipalAnual = sum(state.cashflow.amortizacoes);
+  const dscrAmortizacoesInformadas = amortizPrincipalAnual > 0;
   const servicoDivida = jurosAnual + amortizPrincipalAnual;
   const CAP_DSCR = 99;
   const dscr = servicoDivida > 1
@@ -1073,7 +1080,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     conversaoEbitdaCaixa: ebitdaAnual > 0 ? safePct(fcf, ebitdaAnual) : 0,
     gao, qualidadeLucro,
     receitaPorColaborador, faturamentoPorColaborador, ebitdaPorColaborador, lucroPorColaborador, custoPessoalSobreReceita,
-    margemSeguranca, dscr,
+    margemSeguranca, dscr, dscrAmortizacoesInformadas,
     dividaOnerosa: D, passivoCirculante, ativoCirculante,
   };
 }
