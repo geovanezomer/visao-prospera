@@ -71,19 +71,28 @@ export interface SnapshotSections {
 }
 
 export function buildSections(state: AppState, simulatedState?: AppState): SnapshotSections {
+  // Aliases dos tipos derivados — evita `any` nos fallbacks de `tryRun`.
+  type DRE = ReturnType<typeof buildDRE>["dre"];
+  type Ind = ReturnType<typeof calcIndicators>;
+  type CF = ReturnType<typeof buildCashFlow>;
+  type Val = ReturnType<typeof buildValuation>;
+  type Health = ReturnType<typeof computeHealth>;
+  type Diag = ReturnType<typeof diagnose>;
+  type Cards = ReturnType<typeof buildPrescriptiveCards>;
+
   // SSOT: usa regime efetivo (downgrade automático Simples→Presumido se excedeu limite),
   // alinhado com TaxTab, IndicatorsTab, ValuationTab e demais consumidores.
   const effectiveRegime = tryRun(() => resolveEffectiveRegime(state), state.tax.regime);
-  const built = tryRun(() => buildDRE(state, effectiveRegime), null as any);
+  const built = tryRun<{ dre: DRE } | null>(() => buildDRE(state, effectiveRegime), null);
   const dre = built?.dre ?? null;
-  const ind = dre ? tryRun(() => calcIndicators(state, dre), null as any) : null;
-  const cf = tryRun(() => buildCashFlow(state), null as any);
-  const val = tryRun(
+  const ind = dre ? tryRun<Ind | null>(() => calcIndicators(state, dre), null) : null;
+  const cf = tryRun<CF | null>(() => buildCashFlow(state), null);
+  const val = tryRun<Val | null>(
     () => buildValuation(state, defaultValuationParams(state.businessType)),
-    null as any,
+    null,
   );
-  const health = tryRun(() => computeHealth(state), null as any);
-  const cards = tryRun(() => buildPrescriptiveCards(state), [] as any[]);
+  const health = tryRun<Health | null>(() => computeHealth(state), null);
+  const cards = tryRun<Cards>(() => buildPrescriptiveCards(state), [] as Cards);
 
   // ----- premissas -----
   const regimeLabel =
