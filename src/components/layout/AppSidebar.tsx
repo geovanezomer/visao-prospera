@@ -1,5 +1,4 @@
 import {
-import { useFinance } from "@/engines/finance/AppStateContext";
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -19,6 +18,7 @@ import { LogOut, Building2, Factory, Store, Briefcase, Users, Save, FolderOpen, 
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 
 import { NAV_ITEMS } from "./nav-config";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { TabKey, BusinessType, AppState } from "@/engines/finance/types";
 import { useAuth } from "@/lib/auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
