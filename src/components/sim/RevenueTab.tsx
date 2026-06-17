@@ -395,9 +395,7 @@ export function RevenueTab() {
           <label className="text-[11px] text-muted-foreground flex items-center gap-2 cursor-pointer">
             <Switch
               checked={usaPDD}
-              onCheckedChange={(v) =>
-                update((s) => ({ ...s, revenue: { ...s.revenue, inadimplenciaComoPDD: v } }))
-              }
+              onCheckedChange={(v) => patchRevenue({ inadimplenciaComoPDD: v })}
             />
             Contabilizar inadimplência como PDD (Despesa Operacional)
             <HelpTip
@@ -408,13 +406,9 @@ export function RevenueTab() {
           <label className="text-[11px] text-muted-foreground flex items-center gap-2 cursor-pointer">
             <Switch
               checked={inadimpEmBRL}
-              onCheckedChange={(v) =>
-                update((s) => ({
-                  ...s,
-                  revenue: { ...s.revenue, inadimplenciaModo: v ? "brl" : "pct" },
-                }))
-              }
+              onCheckedChange={(v) => patchRevenue({ inadimplenciaModo: v ? "brl" : "pct" })}
             />
+
             Digitar inadimplência em R$
             <HelpTip
               text="Quando ATIVO: você informa o valor da inadimplência em reais por mês — o sistema converte automaticamente para % da Receita Bruta do mês (storage interno permanece em %). Quando DESATIVO (padrão): edição direta em %. Não há impacto em cálculos da DRE, fluxo de caixa, impostos ou indicadores — apenas muda a forma de entrada."
