@@ -679,7 +679,7 @@ let cacheKey = "";
 let cacheVal: SnapshotSections | null = null;
 let cacheSimKey = "";
 
-function fastHash(o: any): string {
+function fastHash(o: unknown): string {
   try {
     const s = JSON.stringify(o);
     let h = 0;
