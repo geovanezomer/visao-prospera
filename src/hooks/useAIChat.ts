@@ -200,6 +200,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       snapshot,
       includeSnapshot: config.includeSnapshot,
       useTools: config.useTools,
+      useMetaTools: config.useMetaTools,
       extra: config.extraSystemPrompt,
       soul: config.soul,
       skills: config.skills,
@@ -293,6 +294,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
             runTool(name, args, state, simHasChanges ? simulatedState : undefined, simParams),
           {
             signal: ac.signal,
+            metaTools: config.useMetaTools,
             onProgress: (e) => {
               if (e.type === "tool") {
                 collected.push(e.call);

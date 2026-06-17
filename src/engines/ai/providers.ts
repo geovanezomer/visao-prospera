@@ -79,6 +79,7 @@ export interface AIConfig {
   temperature: number;
   includeSnapshot: boolean;
   useTools: boolean; // function calling (snapshot lazy)
+  useMetaTools: boolean; // tool deferral: expõe apenas tool_search/tool_invoke
   soul: string; // identidade editável do agente
   skills: Skill[]; // habilidades modulares on/off
   extraSystemPrompt: string; // suplemento livre (compat legado)
@@ -101,6 +102,7 @@ export const DEFAULT_CONFIG: AIConfig = {
   temperature: 0.3,
   includeSnapshot: true,
   useTools: false,
+  useMetaTools: true,
   soul: DEFAULT_SOUL,
   skills: DEFAULT_SKILLS,
   extraSystemPrompt: "",
@@ -154,6 +156,7 @@ function sanitizeConfig(input: unknown): AIConfig {
     temperature: finiteOr(raw.temperature, DEFAULT_CONFIG.temperature),
     includeSnapshot: boolOr(raw.includeSnapshot, DEFAULT_CONFIG.includeSnapshot),
     useTools: boolOr(raw.useTools, DEFAULT_CONFIG.useTools),
+    useMetaTools: boolOr(raw.useMetaTools, DEFAULT_CONFIG.useMetaTools),
     soul: stringOr(raw.soul, DEFAULT_CONFIG.soul),
     skills: sanitizeSkills(raw.skills),
     extraSystemPrompt: stringOr(raw.extraSystemPrompt, DEFAULT_CONFIG.extraSystemPrompt),

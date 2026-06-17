@@ -244,9 +244,12 @@ export async function chatWithTools(
     maxRounds?: number;
     signal?: AbortSignal;
     onProgress?: (e: { type: "tool"; call: ToolCall } | { type: "text"; delta: string }) => void;
+    /** Quando true (default), expõe apenas tool_search/tool_invoke ao LLM. */
+    metaTools?: boolean;
   },
 ): Promise<ToolRoundResult> {
   const maxRounds = opts?.maxRounds ?? 5;
+  const useMeta = opts?.metaTools !== false;
   const calls: ToolCall[] = [];
   const messages = initialMessages.slice();
   const anth = isAnthropic(cfg);
@@ -255,7 +258,11 @@ export async function chatWithTools(
     const { signal: s, cancel } = withTimeout(cfg, opts?.signal);
     let res: Response;
     try {
-      const { asOpenAITools, asAnthropicTools } = await import("./tools");
+      const { asOpenAITools, asAnthropicTools, asOpenAIMetaTools, asAnthropicMetaTools } =
+        await import("./tools");
+      const openAiTools = useMeta ? asOpenAIMetaTools() : asOpenAITools();
+      const anthropicTools = useMeta ? asAnthropicMetaTools() : asAnthropicTools();
+
       const url = anth ? `${cfg.baseUrl}/messages` : `${cfg.baseUrl}/chat/completions`;
       let body: Record<string, unknown>;
       if (anth) {
@@ -267,14 +274,14 @@ export async function chatWithTools(
           stream: false,
           ...(system ? { system } : {}),
           messages: toAnthropicMessages(rest),
-          tools: asAnthropicTools(),
+          tools: anthropicTools,
         };
       } else {
         body = {
           model: cfg.model,
           messages,
           temperature: cfg.temperature,
-          tools: asOpenAITools(),
+          tools: openAiTools,
           tool_choice: "auto",
           stream: false,
         };
