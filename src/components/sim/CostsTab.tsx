@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
 import { PrazoTable } from "./PrazoTable";
+import { MonthlyCardList } from "./MonthlyCardList";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
