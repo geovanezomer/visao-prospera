@@ -11,7 +11,7 @@ import {
   calcIndicators,
   resolveEffectiveRegime,
   diagnose,
-} from "@/engines/finance/calculations";
+} from "@/engines/finance";
 import { buildCashFlow } from "@/engines/finance/cashflow";
 import { computeHealth } from "@/engines/finance/health";
 import { findSector } from "@/engines/benchmark/sectors";

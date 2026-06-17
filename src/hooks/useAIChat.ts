@@ -38,7 +38,7 @@ import {
 import { buildDynamicSuggestions } from "@/engines/ai/suggestions";
 import { buildOpeningBriefing } from "@/engines/ai/briefing";
 import type { AppState } from "@/engines/finance/types";
-import { resolveEffectiveRegime } from "@/engines/finance/calculations";
+import { resolveEffectiveRegime } from "@/engines/finance";
 import type { SimulatorParams } from "@/engines/finance/simulator";
 
 export interface UseAIChatParams {

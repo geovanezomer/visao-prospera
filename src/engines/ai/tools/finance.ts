@@ -6,7 +6,7 @@ import {
   calcIndicators,
   resolveEffectiveRegime,
   diagnose,
-} from "@/engines/finance/calculations";
+} from "@/engines/finance";
 import { buildValuation, defaultValuationParams } from "@/engines/finance/valuation";
 import { computeHealth } from "@/engines/finance/health";
 import { brl, pct, sum, type ToolDef, type ToolHandler, type ToolModule } from "./shared";

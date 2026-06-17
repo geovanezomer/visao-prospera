@@ -2,7 +2,7 @@
 // CALCULATIONS — fachada legada do engine financeiro.
 // Após o refactor (Fases 1–4), todo o conteúdo foi extraído para
 // submódulos coesos. Este arquivo agora existe APENAS para preservar
-// a API pública consumida pelos call sites (`@/engines/finance/calculations`).
+// a API pública consumida pelos call sites (`@/engines/finance`).
 //
 // @deprecated Para código novo, importe direto do submódulo específico:
 //   - ./tax/simples · ./tax/presumido · ./tax/real · ./tax/compare · ./tax/reforma

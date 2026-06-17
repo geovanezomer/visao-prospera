@@ -1,5 +1,5 @@
 import type { AppState } from "@/engines/finance/types";
-import { buildDRE, compareRegimes, resolveEffectiveRegime } from "@/engines/finance/calculations";
+import { buildDRE, compareRegimes, resolveEffectiveRegime } from "@/engines/finance";
 import { SIMPLES_SUBLIMITE_ESTADUAL } from "@/engines/finance/taxDefaults";
 import { sum, fmtBRL } from "@/engines/finance/format";
 

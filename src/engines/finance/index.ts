@@ -3,7 +3,7 @@
  *
  * Este é o ponto de entrada oficial — consumidores (UI, AI tools, rotas)
  * devem preferir importar daqui em vez de submódulos profundos. Submódulos
- * permanecem importáveis (ex.: `@/engines/finance/calculations`) para casos
+ * permanecem importáveis (ex.: `@/engines/finance`) para casos
  * de tree-shaking fino, testes, e re-exports que ainda não foram migrados,
  * mas novos call sites devem usar este barrel.
  *

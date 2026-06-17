@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { AppState } from "@/engines/finance/types";
 import { buildPrescriptiveCards, PrescriptiveCard } from "@/engines/finance/prescriptive";
-import { diagnose } from "@/engines/finance/calculations";
+import { diagnose } from "@/engines/finance";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "lucide-react";
 import { StrategicSummary } from "./StrategicSummary";

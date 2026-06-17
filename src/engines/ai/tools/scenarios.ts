@@ -6,7 +6,7 @@ import {
   deleteScenario,
   getScenario,
 } from "@/engines/scenarios/store";
-import { buildDRE, calcIndicators, resolveEffectiveRegime } from "@/engines/finance/calculations";
+import { buildDRE, calcIndicators, resolveEffectiveRegime } from "@/engines/finance";
 import { type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
 const defs: ToolDef[] = [

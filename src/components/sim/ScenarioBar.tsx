@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Save, GitCompare, Trash2 } from "lucide-react";
 import { AppState, Scenario } from "@/engines/finance/types";
-import { buildDRE, calcIndicators } from "@/engines/finance/calculations";
+import { buildDRE, calcIndicators } from "@/engines/finance";
 import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
 import { ConfirmDialog } from "./ConfirmDialog";
 

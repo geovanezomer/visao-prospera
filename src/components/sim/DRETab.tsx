@@ -10,7 +10,7 @@ import {
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/engines/finance/format";
-import { buildDRE, calcIndicators, monthValues } from "@/engines/finance/calculations";
+import { buildDRE, calcIndicators, monthValues } from "@/engines/finance";
 import { buildCashFlow } from "@/engines/finance/cashflow";
 import {
   Select,

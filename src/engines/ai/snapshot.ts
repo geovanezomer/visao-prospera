@@ -6,7 +6,7 @@ import {
   diagnose,
   resolveEffectiveRegime,
   compareErasForRegime,
-} from "@/engines/finance/calculations";
+} from "@/engines/finance";
 import { buildCashFlow } from "@/engines/finance/cashflow";
 import { buildValuation, defaultValuationParams } from "@/engines/finance/valuation";
 import { computeHealth } from "@/engines/finance/health";
