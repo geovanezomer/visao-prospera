@@ -193,12 +193,17 @@ export function buildPdfContext(atts: ChatAttachment[]): string {
 }
 
 /** Para chamada multimodal: parts no formato OpenAI vision. */
-export function buildVisionMessageContent(text: string, atts: ChatAttachment[]): any {
+export type VisionPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+export type VisionContent = string | VisionPart[];
+
+export function buildVisionMessageContent(text: string, atts: ChatAttachment[]): VisionContent {
   const images = atts.filter((a) => a.type === "image" && a.dataUrl);
   if (!images.length) return text; // string normal
   return [
     { type: "text", text },
-    ...images.map((img) => ({ type: "image_url", image_url: { url: img.dataUrl! } })),
+    ...images.map((img) => ({ type: "image_url" as const, image_url: { url: img.dataUrl! } })),
   ];
 }
 
