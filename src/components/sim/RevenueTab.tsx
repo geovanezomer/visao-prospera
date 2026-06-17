@@ -565,7 +565,37 @@ function RevenueTable({
     );
 
   return (
-    <div className="scrollbar-thin w-full overflow-x-auto overflow-y-hidden">
+    <>
+      <MonthlyCardList
+        rows={rows.map((r) => ({
+          id: r.id,
+          label: r.label,
+          unit: r.unit,
+          values: r.values,
+          brlValues: r.brlValues,
+          fixed: r.fixed,
+          tone: r.tone,
+        }))}
+        receitaAnual={brutaAnual}
+        footer={
+          footer
+            ? { label: footer.label, total: footer.total, tone: footer.tone }
+            : undefined
+        }
+        onMonth={(id, i, v) => {
+          const row = rows.find((r) => r.id === id);
+          if (row) onMonth(row, i, v);
+        }}
+        onAllMonths={(id, v) => {
+          const row = rows.find((r) => r.id === id);
+          if (row) onAllMonths(row, v);
+        }}
+        onFixed={(id, f) => {
+          const row = rows.find((r) => r.id === id);
+          if (row) onFixed(row, f);
+        }}
+      />
+    <div className="scrollbar-thin hidden md:block w-full overflow-x-auto overflow-y-hidden">
       <table className="w-full min-w-[800px] text-[clamp(0.75rem,1vw+0.5rem,0.875rem)] md:min-w-[1000px]">
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
