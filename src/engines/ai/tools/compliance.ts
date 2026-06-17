@@ -139,4 +139,4 @@ const handlers: Record<string, ToolHandler> = {
   },
 };
 
-export const complianceTools: ToolModule = { defs, handlers };
+export const complianceTools: ToolModule = { category: "compliance", description: "Checklist e tributos (CBS/IBS, Simples, Lucro Real/Presumido)", defs, handlers };

@@ -33,4 +33,4 @@ const handlers: Record<string, ToolHandler> = {
   },
 };
 
-export const macroTools: ToolModule = { defs, handlers };
+export const macroTools: ToolModule = { category: "macro", description: "Indicadores macroeconômicos (BCB, Selic, IPCA)", defs, handlers };

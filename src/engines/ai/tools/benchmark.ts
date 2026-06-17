@@ -77,4 +77,4 @@ const handlers: Record<string, ToolHandler> = {
   },
 };
 
-export const benchmarkTools: ToolModule = { defs, handlers };
+export const benchmarkTools: ToolModule = { category: "benchmark", description: "Benchmarks setoriais e comparativos", defs, handlers };

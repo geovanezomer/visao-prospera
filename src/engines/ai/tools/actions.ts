@@ -74,4 +74,4 @@ const handlers: Record<string, ToolHandler> = {
   },
 };
 
-export const actionsTools: ToolModule = { defs, handlers };
+export const actionsTools: ToolModule = { category: "actions", description: "Ações registradas e diretrizes de uso", defs, handlers };
