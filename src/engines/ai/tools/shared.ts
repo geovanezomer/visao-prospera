@@ -26,7 +26,26 @@ export interface ToolContext {
 
 export type ToolHandler = (args: ToolArgs, ctx: ToolContext) => string | Promise<string>;
 
+/**
+ * Categorias do registry — agrupam tools por domínio para facilitar
+ * manutenção, filtragem por contexto (ex.: somente "finance" no chat
+ * de análise) e evitar regressão de "arquivo único".
+ */
+export type ToolCategory =
+  | "finance"
+  | "simulator"
+  | "benchmark"
+  | "macro"
+  | "scenarios"
+  | "actions"
+  | "compliance"
+  | "reports";
+
 export interface ToolModule {
+  /** Identificador da categoria — também usado em filtros. */
+  category: ToolCategory;
+  /** Descrição curta para docs/devtools. */
+  description?: string;
   defs: ToolDef[];
   handlers: Record<string, ToolHandler>;
 }
