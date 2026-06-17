@@ -351,7 +351,30 @@ function CostTable({
     );
   }
   return (
-    <div className="scrollbar-thin w-full overflow-x-auto overflow-y-hidden">
+    <>
+      <MonthlyCardList
+        rows={lines.map((c) => {
+          const vals = monthValues(c, regime);
+          return {
+            id: c.id,
+            label: c.label,
+            unit: "brl",
+            values: c.values.length === 12 ? c.values : fill12(c.values[0] || 0),
+            brlValues: vals,
+            fixed: c.fixed,
+            tone: "neg",
+            editableLabel: !!c.custom,
+            removable: !!c.custom,
+          };
+        })}
+        receitaAnual={receitaBrutaAnual}
+        onMonth={onMonth}
+        onAllMonths={onAllMonths}
+        onFixed={onFixed}
+        onLabel={onLabel}
+        onRemove={onRemove}
+      />
+    <div className="scrollbar-thin hidden md:block w-full overflow-x-auto overflow-y-hidden">
       <table className="w-full min-w-[900px] text-[clamp(0.75rem,1vw+0.5rem,0.875rem)] md:min-w-[1200px]">
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
