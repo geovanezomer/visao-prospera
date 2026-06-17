@@ -57,8 +57,12 @@ export function DRETab() {
   const [view, setView] = useState<"mensal" | "trimestral" | "anual">("trimestral");
 
   useEffect(() => {
+    // Mobile/tablet defaults: em telas pequenas, reduz colunas automaticamente
+    // para a tabela caber sem scroll horizontal severo.
     const handleResize = () => {
-      if (window.innerWidth < 1024 && view === "mensal") setView("trimestral");
+      const w = window.innerWidth;
+      if (w < 640 && view !== "anual") setView("anual"); // <sm: só Anual + %Rec
+      else if (w >= 640 && w < 1024 && view === "mensal") setView("trimestral");
     };
     window.addEventListener("resize", handleResize);
     handleResize();
@@ -423,8 +427,10 @@ export function DRETab() {
             </colgroup>
 
             <thead>
-              <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                <th className="px-4 py-2 text-left">Descrição</th>
+              <tr className="bg-card text-[10px] uppercase tracking-wider text-muted-foreground">
+                <th className="sticky left-0 z-20 bg-card px-4 py-2 text-left shadow-[1px_0_0_0_var(--border)]">
+                  Descrição
+                </th>
                 {showPeriods &&
                   periodLabels.map((m, i) => (
                     <th
@@ -453,7 +459,7 @@ export function DRETab() {
                         className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20"
                         onClick={() => toggleGroup(row.id)}
                       >
-                        <td className="px-3 py-2 text-[10px] sm:text-xs font-semibold truncate">
+                        <td className="sticky left-0 z-10 bg-inherit px-3 py-2 text-[10px] sm:text-xs font-semibold truncate shadow-[1px_0_0_0_var(--border)]">
                           <span className="inline-flex items-center gap-1">
                             <ChevronRight
                               className={`h-3 w-3 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`}
@@ -485,8 +491,8 @@ export function DRETab() {
                           const sgn = row.tone === "neg" ? -1 : 1;
                           const lTotal = sum(l.values) * sgn;
                           return (
-                            <tr key={`${row.id}_${li}`} className="border-t border-border/20">
-                              <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">
+                            <tr key={`${row.id}_${li}`} className="border-t border-border/20 bg-card">
+                              <td className="sticky left-0 z-10 bg-inherit px-4 py-1.5 pl-8 text-xs text-muted-foreground shadow-[1px_0_0_0_var(--border)]">
                                 {l.label}
                               </td>
                               {showPeriods &&
@@ -514,7 +520,7 @@ export function DRETab() {
                           );
                         })}
                       {isOpen && row.lines.length === 0 && (
-                        <tr className="border-t border-border/20">
+                        <tr className="border-t border-border/20 bg-card">
                           <td
                             colSpan={(showPeriods ? periodLabels.length : 0) + 3}
                             className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground"
@@ -535,7 +541,7 @@ export function DRETab() {
                         className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20"
                         onClick={() => setOpenCpv((v) => !v)}
                       >
-                        <td className="px-3 py-2 text-[10px] sm:text-xs font-semibold truncate">
+                        <td className="sticky left-0 z-10 bg-inherit px-3 py-2 text-[10px] sm:text-xs font-semibold truncate shadow-[1px_0_0_0_var(--border)]">
                           <span className="inline-flex items-center gap-1">
                             <ChevronRight
                               className={`h-3 w-3 shrink-0 transition-transform ${openCpv ? "rotate-90" : ""}`}
@@ -564,8 +570,8 @@ export function DRETab() {
                         linhasCpv.map((l, li) => {
                           const lTotal = sum(l.values);
                           return (
-                            <tr key={`cpv_${li}`} className="border-t border-border/20">
-                              <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">
+                            <tr key={`cpv_${li}`} className="border-t border-border/20 bg-card">
+                              <td className="sticky left-0 z-10 bg-inherit px-4 py-1.5 pl-8 text-xs text-muted-foreground shadow-[1px_0_0_0_var(--border)]">
                                 {l.label}
                               </td>
                               {showPeriods &&
@@ -588,7 +594,7 @@ export function DRETab() {
                           );
                         })}
                       {openCpv && linhasCpv.length === 0 && (
-                        <tr className="border-t border-border/20">
+                        <tr className="border-t border-border/20 bg-card">
                           <td
                             colSpan={(showPeriods ? periodLabels.length : 0) + 3}
                             className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground"
@@ -609,10 +615,10 @@ export function DRETab() {
                 return (
                   <tr
                     key={idx}
-                    className={`border-t border-border/30 ${row.highlight ? "bg-primary/10" : row.strong ? "bg-accent/20" : ""}`}
+                    className={`border-t border-border/30 ${row.highlight ? "bg-primary/10" : row.strong ? "bg-accent/20" : "bg-card"}`}
                   >
                     <td
-                      className={`px-3 py-2 ${row.strong ? "font-semibold" : "text-muted-foreground"} text-[10px] sm:text-xs truncate`}
+                      className={`sticky left-0 z-10 bg-inherit shadow-[1px_0_0_0_var(--border)] px-3 py-2 ${row.strong ? "font-semibold" : "text-muted-foreground"} text-[10px] sm:text-xs truncate`}
                     >
                       {row.k}
                     </td>
