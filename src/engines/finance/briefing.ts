@@ -119,11 +119,12 @@ export function classify(
     else if (valor < faixa.excelente) nivel = "ok";
     else nivel = "excelente";
   } else {
-    // menor_melhor: cortes invertidos. Lembrando que para D.Liq/EBITDA:
-    // critico=4 > atencao=3 > ok=2 > excelente=1
+    // menor_melhor: cortes decrescentes (critico > atencao > ok > excelente).
+    // A faixa "ok" cobre (excelente, atencao] — não usa o campo `ok` como corte
+    // duro porque seria redundante com `atencao` na ordenação invertida.
     if (valor > faixa.critico) nivel = "critico";
     else if (valor > faixa.atencao) nivel = "atencao";
-    else if (valor > faixa.ok) nivel = "ok";
+    else if (valor > faixa.excelente) nivel = "ok";
     else nivel = "excelente";
   }
 
