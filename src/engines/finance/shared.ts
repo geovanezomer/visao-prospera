@@ -1,6 +1,6 @@
 // =====================================================================
 // SHARED — helpers puros usados por DRE, regimes tributários e indicadores.
-// Extraído de calculations.ts (Fase 2) — comportamento idêntico.
+// Submódulo coeso da engine financeira — funções puras, sem dependência de UI.
 // Mantido em arquivo neutro para evitar ciclos: tax/* importam daqui.
 // =====================================================================
 

@@ -4,7 +4,7 @@
 // [CBS/IBS] CBS/IBS são não-cumulativos plenos (créditos amplos).
 // PIS/COFINS sobre receitas financeiras seguem Decreto 8.426/2015
 // (0,65% + 4%) — extintos quando pisCofinsMult=0.
-// Extraído de calculations.ts (Fase 2) — comportamento idêntico.
+// Submódulo coeso da engine financeira — funções puras, sem dependência de UI.
 // =====================================================================
 
 import { AppState, TaxRegime } from "../types";

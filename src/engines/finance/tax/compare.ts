@@ -1,7 +1,7 @@
 // =====================================================================
 // COMPARE — comparativos de regimes tributários e projeção ano-a-ano
 // sob o cronograma da Reforma (LC 214/2025).
-// Extraído de calculations.ts (Fase 3) — comportamento idêntico.
+// Submódulo coeso da engine financeira — funções puras, sem dependência de UI.
 // =====================================================================
 
 import { AppState, TaxRegime, TaxEra } from "../types";

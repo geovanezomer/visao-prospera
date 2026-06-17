@@ -4,7 +4,7 @@
 // [CBS/IBS] CBS substitui PIS/COFINS e IBS substitui ICMS/ISS conforme
 // cronograma (ver tax/reforma.ts). Créditos sobre CPV seguem a regra
 // ampla (CBS/IBS são não-cumulativos full).
-// Extraído de calculations.ts (Fase 2) — comportamento idêntico.
+// Submódulo coeso da engine financeira — funções puras, sem dependência de UI.
 // =====================================================================
 
 import { AppState, BusinessType, TaxConfig } from "../types";

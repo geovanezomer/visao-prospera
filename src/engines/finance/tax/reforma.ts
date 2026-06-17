@@ -2,7 +2,7 @@
 // REFORMA TRIBUTÁRIA — CBS/IBS (EC 132/2023 + LC 214/2025)
 // =====================================================================
 // Módulo puro: parâmetros e cronograma ano-a-ano da reforma.
-// Extraído de calculations.ts (Fase 1 do refactor) — comportamento idêntico.
+// Submódulo coeso da engine financeira — funções puras, sem dependência de UI.
 
 import { TaxEra, TaxConfig } from "../types";
 import {

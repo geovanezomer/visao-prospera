@@ -1,7 +1,7 @@
 // =====================================================================
 // REGIME TRIBUTÁRIO — resolução do regime efetivo, Fator R, folha anual
 // =====================================================================
-// Extraído de calculations.ts (Fase 1) — comportamento idêntico.
+// Submódulo coeso da engine financeira — funções puras, sem dependência de UI.
 // `folhaAnual` mora aqui (e não em costs.ts) para evitar ciclo de
 // imports com `resolveEffectiveRegime`.
 
