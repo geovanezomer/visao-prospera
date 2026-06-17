@@ -268,10 +268,11 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
   // ----- Diagnóstico -----
   const diagLines: string[] = [];
   if (dre && ind) {
-    const diag = tryRun(() => diagnose(state, dre, ind), [] as any[]);
+    type DiagItem = ReturnType<typeof diagnose>[number];
+    const diag = tryRun<DiagItem[]>(() => diagnose(state, dre, ind), []);
     if (diag.length) {
       diagLines.push(`## Diagnóstico`);
-      diag.forEach((d: any) =>
+      diag.forEach((d) =>
         diagLines.push(`- **[${d.level.toUpperCase()}] ${d.title}** — ${d.message}`),
       );
     }
