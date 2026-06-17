@@ -193,8 +193,8 @@ export function TaxTab() {
 
   const setOverride = useCallback(
     (patch: Partial<NonNullable<typeof state.tax.ratesOverride>>) =>
-      set({ ratesOverride: { ...(state.tax.ratesOverride ?? {}), ...patch } }),
-    [set, state.tax.ratesOverride],
+      set((cur) => ({ ratesOverride: { ...(cur.ratesOverride ?? {}), ...patch } })),
+    [set],
   );
 
   return (
