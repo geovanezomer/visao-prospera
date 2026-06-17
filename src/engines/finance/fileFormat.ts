@@ -72,12 +72,12 @@ export function serialize(
     savedAt: new Date().toISOString(),
     app: { name: "FinancePRO", version: "1.x" },
     state: state as unknown as Record<string, unknown>,
-    scenarios,
+    scenarios: scenarios as unknown as FinnanceFile["scenarios"],
     extras: extras
-      ? {
-          actions: (extras.actions as Record<string, unknown>[] | undefined) ?? [],
-          simScenarios: (extras.simScenarios as Record<string, unknown>[] | undefined) ?? [],
-        }
+      ? ({
+          actions: extras.actions ?? [],
+          simScenarios: extras.simScenarios ?? [],
+        } as FinnanceFile["extras"])
       : undefined,
     meta: {
       companyName: state.companyName,
