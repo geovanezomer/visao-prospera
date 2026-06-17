@@ -130,8 +130,10 @@ export function computePagamentosOperacionais(dre: DRE): {
   financeiros: number[];
 } {
   return {
-    fixos: dre.custosFixos.map((v, i) => v - (dre.pdd?.[i] ?? 0)),
-    variaveis: dre.custosVariaveis.map((tot, i) => tot - dre.cpv[i]),
+    fixos: dre.custosFixos.slice(),
+    // PDD agora é classificada em custosVariaveis (escala com receita). Continua removida do
+    // desembolso operacional pois é não-caixa (CPC 47/IFRS 9 — a perda já está nos recebimentos).
+    variaveis: dre.custosVariaveis.map((tot, i) => tot - dre.cpv[i] - (dre.pdd?.[i] ?? 0)),
     financeiros: dre.custosFinanceirosTotal.slice(),
   };
 }
