@@ -52,7 +52,9 @@ function loadCache(): Record<string, MacroSerie> {
 function saveCache(c: Record<string, MacroSerie>) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(c));
-  } catch {}
+  } catch {
+    // localStorage cheio ou indisponível (modo privado) — cache fica só em memória nesta sessão
+  }
 }
 
 export async function fetchSerie(key: SerieKey, lastN = 12): Promise<MacroSerie> {
@@ -106,8 +108,9 @@ export async function getSerieFormatted(key: SerieKey, lastN = 12): Promise<stri
     if (!s.data.length) return `Sem dados para ${LABELS[key]}.`;
     const rows = s.data.map((p) => `| ${p.date} | ${p.value} |`).join("\n");
     return `### ${s.label}\n\n| Data | Valor |\n| --- | --- |\n${rows}`;
-  } catch (e: any) {
-    return `Erro ao buscar ${LABELS[key]}: ${e?.message || e}`;
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return `Erro ao buscar ${LABELS[key]}: ${msg}`;
   }
 }
 

@@ -49,11 +49,12 @@ export interface UseAIChatParams {
 }
 
 // Converte um erro de transporte/modelo em markdown amigável.
-export function errToMd(e: any): string {
-  const msg = e?.message || String(e);
+export function errToMd(e: unknown): string {
+  const err = e as { message?: string; name?: string } | undefined;
+  const msg = err?.message || String(e);
   if (/timeout/i.test(msg))
     return `**⏱️ Timeout** — o modelo demorou demais. Aumente o timeout em ⚙️.`;
-  if (/AbortError/i.test(e?.name || "")) return "_(geração interrompida)_";
+  if (/AbortError/i.test(err?.name || "")) return "_(geração interrompida)_";
   if (/401|403/.test(msg)) return `**🔑 Autenticação falhou** — verifique a API Key em ⚙️.`;
   if (/429/.test(msg)) return `**🚦 Rate limit** — aguarde alguns segundos e tente novamente.`;
   if (/Failed to fetch|NetworkError/i.test(msg))
@@ -329,7 +330,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
           })),
           { role: "assistant", content: out.finalText, ts: Date.now() },
         ]);
-      } catch (e: any) {
+      } catch (e: unknown) {
         setMessages([...history, { role: "assistant", content: errToMd(e), ts: Date.now() }]);
       } finally {
         setStreaming(false);
@@ -351,7 +352,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
           return copy;
         });
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       setMessages((prev) => {
         const copy = prev.slice();
         copy[copy.length - 1] = {

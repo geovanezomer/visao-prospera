@@ -220,7 +220,9 @@ export function saveConfig(cfg: AIConfig) {
       // grava sem a chave
       localStorage.setItem(CFG_KEY, JSON.stringify({ ...safe, apiKey: "" }));
     }
-  } catch {}
+  } catch {
+    // storage indisponível (modo privado / quota) — config segue só em memória
+  }
 }
 
 export function resetAIStorage() {
@@ -233,7 +235,9 @@ export function resetAIStorage() {
         localStorage.removeItem(key);
       }
     }
-  } catch {}
+  } catch {
+    // storage indisponível — reset best-effort
+  }
 }
 
 export function switchProvider(cfg: AIConfig, provider: Provider): AIConfig {
@@ -291,7 +295,9 @@ export function loadThreads(company: string): ChatThread[] {
 export function saveThreads(company: string, threads: ChatThread[]) {
   try {
     localStorage.setItem(THREADS_KEY(company), JSON.stringify(sanitizeThreads(threads)));
-  } catch {}
+  } catch {
+    // storage indisponível — threads não persistem nesta sessão
+  }
 }
 
 export function loadMessages(company: string, tid: string): ChatMessage[] {
@@ -309,7 +315,9 @@ export function saveMessages(company: string, tid: string, msgs: ChatMessage[]) 
       MSGS_KEY(company, tid),
       JSON.stringify(sanitizeMessages(msgs).slice(-100)),
     );
-  } catch {}
+  } catch {
+    // storage indisponível — mensagens não persistem nesta sessão
+  }
 }
 
 export function deleteThread(company: string, tid: string) {
@@ -317,7 +325,9 @@ export function deleteThread(company: string, tid: string) {
     localStorage.removeItem(MSGS_KEY(company, tid));
     const ts = loadThreads(company).filter((t) => t.id !== tid);
     saveThreads(company, ts);
-  } catch {}
+  } catch {
+    // storage indisponível — exclusão best-effort
+  }
 }
 
 export function createThread(company: string, title?: string): ChatThread {

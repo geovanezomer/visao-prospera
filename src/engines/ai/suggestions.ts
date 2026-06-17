@@ -126,7 +126,11 @@ export function buildDynamicSuggestions(state: AppState, max = 6): string[] {
     const seen = new Set<string>();
     for (const d of sorted) {
       if (out.length >= cap) break;
-      const q = diagnosticToQuestion(d.title, d.message, ind as any);
+      const q = diagnosticToQuestion(
+        d.title,
+        d.message,
+        ind as Parameters<typeof diagnosticToQuestion>[2],
+      );
       if (seen.has(q)) continue;
       seen.add(q);
       out.push(q);

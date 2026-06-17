@@ -11,7 +11,9 @@ function emit() {
   for (const l of listeners) l();
   try {
     window.dispatchEvent(new CustomEvent("gz-scenarios-changed"));
-  } catch {}
+  } catch {
+    // SSR / ambiente sem window — broadcast via CustomEvent é best-effort
+  }
 }
 export function subscribeScenarios(listener: Listener): () => void {
   listeners.add(listener);

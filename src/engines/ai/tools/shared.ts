@@ -9,7 +9,7 @@ import type { getSectionsCached } from "../snapshot";
 export interface ToolDef {
   name: string;
   description: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
 }
 
 /** Tipo leve para `args`, sem perder a flexibilidade do JSON do LLM. */

@@ -23,6 +23,8 @@ import { AuditReport, isAuditReport } from "./AuditReport";
 import { useAIChat } from "@/hooks/useAIChat";
 import { resetAIStorage } from "@/engines/ai/providers";
 
+// react-markdown não tem assinatura compatível direta com lazy() — usamos cast pontual.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ReactMarkdown = lazy(() => import("react-markdown") as any);
 
 class AIViewBoundary extends React.Component<

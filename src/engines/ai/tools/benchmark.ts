@@ -69,7 +69,7 @@ const defs: ToolDef[] = [
 
 const handlers: Record<string, ToolHandler> = {
   listar_setores: (args) => {
-    const list = listSectors(args?.tipo as any);
+    const list = listSectors(args?.tipo as Parameters<typeof listSectors>[0]);
     return `## Setores disponíveis\n\n${list.map((s) => `- **${s.id}** — ${s.label} (${s.businessType})`).join("\n")}`;
   },
 

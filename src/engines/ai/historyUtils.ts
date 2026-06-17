@@ -29,7 +29,8 @@ function tokensOf(msgs: LLMMessage[]): number {
       total += estimateTokens(m.content);
     } else if (Array.isArray(m.content)) {
       // Vision: soma só os textos; imagens não contam tokens textuais.
-      for (const part of m.content as any[]) {
+      type VisionPart = { type?: string; text?: string };
+      for (const part of m.content as VisionPart[]) {
         if (part?.type === "text" && typeof part.text === "string") {
           total += estimateTokens(part.text);
         } else {
@@ -60,7 +61,7 @@ export function mapHistoryToLlm(opts: {
     const role = (m.role === "tool" ? "assistant" : m.role) as LLMMessage["role"];
     out.push({
       role,
-      content: isLastUser ? (lastUserContent as any) : m.content,
+      content: isLastUser ? (lastUserContent as LLMMessage["content"]) : m.content,
     });
   });
   return out;

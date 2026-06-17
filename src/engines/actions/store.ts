@@ -18,7 +18,9 @@ function emit() {
   for (const l of listeners) l();
   try {
     window.dispatchEvent(new CustomEvent("gz-actions-changed"));
-  } catch {}
+  } catch {
+    // SSR / ambiente sem window — multi-tab via CustomEvent é best-effort
+  }
 }
 
 export function subscribeActions(listener: Listener): () => void {
