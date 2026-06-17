@@ -3,11 +3,11 @@
 //   1. Passa pelo pipeline runMigrations() sem erro.
 //   2. Sai com `version === CURRENT_VERSION`.
 //   3. É aceita pelo CurrentSchema (FinnanceFileSchema).
-//   4. Pode ser normalizada via openGzfp() sem perda do `companyName`.
+//   4. Pode ser normalizada via parseFinnanceFile() sem perda do `companyName`.
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { CURRENT_VERSION, FinnanceFileSchema, openGzfp, runMigrations } from "../index";
+import { CURRENT_VERSION, FinnanceFileSchema, parseFinnanceFile, runMigrations } from "../index";
 
 const FIXTURES_DIR = join(__dirname, "fixtures");
 
