@@ -140,7 +140,7 @@ function ensureModel(state: AppState, pre?: PrecomputedValuationModel): Precompu
   return { regime, dre, ind };
 }
 
-// SSOT-1: helper único computeNetDebt() de calculations.ts. Valuation usa o
+// SSOT-1: helper único computeNetDebt() de shared.ts. Valuation usa o
 // resultado RAW limitado a zero (valuation não credita "caixa negativo" como
 // reforço de equity).
 function netDebt(state: AppState): number {

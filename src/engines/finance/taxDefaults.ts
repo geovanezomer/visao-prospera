@@ -2,8 +2,8 @@
  * Valores oficiais "fonte da verdade" para alíquotas e tabelas tributárias
  * brasileiras + resolvers que aplicam overrides do usuário (TaxConfig.ratesOverride).
  *
- * Toda constante mágica que antes vivia em `calculations.ts` foi movida para cá.
- * O `calculations.ts` agora consulta este módulo via funções `getX(tax)`.
+ * Toda constante mágica que antes vivia em `dre.ts`/`indicators.ts`/`tax/*` foi movida para cá.
+ * O `dre.ts`/`indicators.ts`/`tax/*` agora consulta este módulo via funções `getX(tax)`.
  *
  * Política: undefined em ratesOverride → retorna o padrão oficial. Permite
  * "esvaziar um campo no painel = voltar ao oficial" sem precisar limpar nada.
