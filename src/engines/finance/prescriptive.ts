@@ -141,7 +141,7 @@ function addLoan(
   let jurosLine = costs.find((c) => /juros/i.test(c.label));
   if (!jurosLine) {
     jurosLine = {
-      id: `juros_${Date.now().toString(36)}`,
+      id: genId("juros_"),
       label: "Juros sobre empréstimos",
       category: "financeiro",
       values: Array(12).fill(0),
