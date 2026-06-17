@@ -27,7 +27,8 @@ export const DEFAULT_SKILLS: Skill[] = [
   {
     id: "auditor-critico",
     name: "Auditor Crítico",
-    description: "Varredura sistemática: 3 riscos, 3 oportunidades, inconsistências e próximos passos.",
+    description:
+      "Varredura sistemática: 3 riscos, 3 oportunidades, inconsistências e próximos passos.",
     enabled: true,
     builtin: true,
     body: `MODO AUDITOR ATIVO: ao analisar a empresa, produza um diagnóstico crítico com:
@@ -41,7 +42,8 @@ Seja brutalmente honesto. Use tabelas comparativas.`,
   {
     id: "reforma-tributaria",
     name: "Reforma Tributária CBS/IBS",
-    description: "Especialista em LC 214/2025 — transição, Split Payment, Cashback, impacto em preço e margem.",
+    description:
+      "Especialista em LC 214/2025 — transição, Split Payment, Cashback, impacto em preço e margem.",
     enabled: true,
     builtin: true,
     body: `ESPECIALISTA EM REFORMA TRIBUTÁRIA (LC 214/2025):
@@ -54,7 +56,8 @@ Seja brutalmente honesto. Use tabelas comparativas.`,
   {
     id: "valuation-dcf",
     name: "Valuation & DCF Avançado",
-    description: "Aprofunda valuation: DCF, múltiplos, WACC por CAPM, terminal, Monte Carlo e sensibilidade.",
+    description:
+      "Aprofunda valuation: DCF, múltiplos, WACC por CAPM, terminal, Monte Carlo e sensibilidade.",
     enabled: true,
     builtin: true,
     body: `ESPECIALISTA EM VALUATION:
@@ -71,21 +74,21 @@ export interface AIConfig {
   provider: Provider;
   baseUrl: string;
   apiKey: string;
-  persistKey: boolean;        // se false, chave só vive na sessão
+  persistKey: boolean; // se false, chave só vive na sessão
   model: string;
   temperature: number;
   includeSnapshot: boolean;
-  useTools: boolean;          // function calling (snapshot lazy)
-  soul: string;               // identidade editável do agente
-  skills: Skill[];            // habilidades modulares on/off
-  extraSystemPrompt: string;  // suplemento livre (compat legado)
+  useTools: boolean; // function calling (snapshot lazy)
+  soul: string; // identidade editável do agente
+  skills: Skill[]; // habilidades modulares on/off
+  extraSystemPrompt: string; // suplemento livre (compat legado)
   timeoutMs: number;
-  maxSuggestions: number;     // 4–6 sugestões dinâmicas na tela inicial
+  maxSuggestions: number; // 4–6 sugestões dinâmicas na tela inicial
 }
 
 export const PROVIDER_DEFAULTS: Record<Provider, Pick<AIConfig, "baseUrl" | "model">> = {
-  lmstudio:  { baseUrl: "http://127.0.0.1:1234/v1", model: "local-model" },
-  openai:    { baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
+  lmstudio: { baseUrl: "http://127.0.0.1:1234/v1", model: "local-model" },
+  openai: { baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
   anthropic: { baseUrl: "https://api.anthropic.com/v1", model: "claude-sonnet-4-5-20250929" },
 };
 
@@ -116,11 +119,9 @@ const isRecord = (v: unknown): v is Record<string, unknown> =>
 const finiteOr = (v: unknown, fallback: number) =>
   typeof v === "number" && Number.isFinite(v) ? v : fallback;
 
-const stringOr = (v: unknown, fallback: string) =>
-  typeof v === "string" ? v : fallback;
+const stringOr = (v: unknown, fallback: string) => (typeof v === "string" ? v : fallback);
 
-const boolOr = (v: unknown, fallback: boolean) =>
-  typeof v === "boolean" ? v : fallback;
+const boolOr = (v: unknown, fallback: boolean) => (typeof v === "boolean" ? v : fallback);
 
 function sanitizeSkills(input: unknown): Skill[] {
   if (!Array.isArray(input)) return DEFAULT_SKILLS;
@@ -140,7 +141,9 @@ function sanitizeSkills(input: unknown): Skill[] {
 
 function sanitizeConfig(input: unknown): AIConfig {
   const raw = isRecord(input) ? input : {};
-  const provider = PROVIDERS.includes(raw.provider as Provider) ? raw.provider as Provider : DEFAULT_CONFIG.provider;
+  const provider = PROVIDERS.includes(raw.provider as Provider)
+    ? (raw.provider as Provider)
+    : DEFAULT_CONFIG.provider;
   const defaults = PROVIDER_DEFAULTS[provider];
   return {
     provider,
@@ -155,7 +158,10 @@ function sanitizeConfig(input: unknown): AIConfig {
     skills: sanitizeSkills(raw.skills),
     extraSystemPrompt: stringOr(raw.extraSystemPrompt, DEFAULT_CONFIG.extraSystemPrompt),
     timeoutMs: Math.max(10_000, finiteOr(raw.timeoutMs, DEFAULT_CONFIG.timeoutMs)),
-    maxSuggestions: Math.max(4, Math.min(6, Math.floor(finiteOr(raw.maxSuggestions, DEFAULT_CONFIG.maxSuggestions)))),
+    maxSuggestions: Math.max(
+      4,
+      Math.min(6, Math.floor(finiteOr(raw.maxSuggestions, DEFAULT_CONFIG.maxSuggestions))),
+    ),
   };
 }
 
@@ -174,18 +180,19 @@ function sanitizeThreads(input: unknown): ChatThread[] {
 
 function sanitizeMessages(input: unknown): ChatMessage[] {
   if (!Array.isArray(input)) return [];
-  return input
-    .filter(isRecord)
-    .map((m) => {
-      const role = m.role === "user" || m.role === "assistant" || m.role === "tool" ? m.role : "assistant";
-      return {
-        role,
-        content: stringOr(m.content, ""),
-        ts: finiteOr(m.ts, Date.now()),
-        toolName: typeof m.toolName === "string" ? m.toolName : undefined,
-        attachments: Array.isArray(m.attachments) ? m.attachments as ChatMessage["attachments"] : undefined,
-      } satisfies ChatMessage;
-    });
+  return input.filter(isRecord).map((m) => {
+    const role =
+      m.role === "user" || m.role === "assistant" || m.role === "tool" ? m.role : "assistant";
+    return {
+      role,
+      content: stringOr(m.content, ""),
+      ts: finiteOr(m.ts, Date.now()),
+      toolName: typeof m.toolName === "string" ? m.toolName : undefined,
+      attachments: Array.isArray(m.attachments)
+        ? (m.attachments as ChatMessage["attachments"])
+        : undefined,
+    } satisfies ChatMessage;
+  });
 }
 
 export function loadConfig(): AIConfig {
@@ -253,7 +260,8 @@ export interface ChatThread {
 }
 
 const THREADS_KEY = (company: string) => `gz-finance-ai-threads-${company || "default"}`;
-const MSGS_KEY = (company: string, tid: string) => `gz-finance-ai-chat-${company || "default"}-${tid}`;
+const MSGS_KEY = (company: string, tid: string) =>
+  `gz-finance-ai-chat-${company || "default"}-${tid}`;
 const LEGACY_KEY = (company: string) => `gz-finance-ai-chat-${company || "default"}`;
 
 export function loadThreads(company: string): ChatThread[] {
@@ -263,35 +271,51 @@ export function loadThreads(company: string): ChatThread[] {
     // migração: chave legada -> thread default
     const legacy = localStorage.getItem(LEGACY_KEY(company));
     if (legacy) {
-      const t: ChatThread = { id: "default", title: "Conversa principal", createdAt: Date.now(), updatedAt: Date.now() };
+      const t: ChatThread = {
+        id: "default",
+        title: "Conversa principal",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
       localStorage.setItem(THREADS_KEY(company), JSON.stringify([t]));
       localStorage.setItem(MSGS_KEY(company, "default"), legacy);
       localStorage.removeItem(LEGACY_KEY(company));
       return [t];
     }
     return [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 export function saveThreads(company: string, threads: ChatThread[]) {
-  try { localStorage.setItem(THREADS_KEY(company), JSON.stringify(sanitizeThreads(threads))); } catch {}
+  try {
+    localStorage.setItem(THREADS_KEY(company), JSON.stringify(sanitizeThreads(threads)));
+  } catch {}
 }
 
 export function loadMessages(company: string, tid: string): ChatMessage[] {
   try {
     const raw = localStorage.getItem(MSGS_KEY(company, tid));
     return raw ? sanitizeMessages(JSON.parse(raw)) : [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 export function saveMessages(company: string, tid: string, msgs: ChatMessage[]) {
-  try { localStorage.setItem(MSGS_KEY(company, tid), JSON.stringify(sanitizeMessages(msgs).slice(-100))); } catch {}
+  try {
+    localStorage.setItem(
+      MSGS_KEY(company, tid),
+      JSON.stringify(sanitizeMessages(msgs).slice(-100)),
+    );
+  } catch {}
 }
 
 export function deleteThread(company: string, tid: string) {
   try {
     localStorage.removeItem(MSGS_KEY(company, tid));
-    const ts = loadThreads(company).filter(t => t.id !== tid);
+    const ts = loadThreads(company).filter((t) => t.id !== tid);
     saveThreads(company, ts);
   } catch {}
 }
@@ -310,11 +334,13 @@ export function createThread(company: string, title?: string): ChatThread {
 }
 
 export function renameThread(company: string, tid: string, title: string) {
-  const ts = loadThreads(company).map(t => t.id === tid ? { ...t, title, updatedAt: Date.now() } : t);
+  const ts = loadThreads(company).map((t) =>
+    t.id === tid ? { ...t, title, updatedAt: Date.now() } : t,
+  );
   saveThreads(company, ts);
 }
 
 export function touchThread(company: string, tid: string) {
-  const ts = loadThreads(company).map(t => t.id === tid ? { ...t, updatedAt: Date.now() } : t);
+  const ts = loadThreads(company).map((t) => (t.id === tid ? { ...t, updatedAt: Date.now() } : t));
   saveThreads(company, ts);
 }

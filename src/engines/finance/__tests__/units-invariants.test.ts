@@ -21,8 +21,8 @@ describe("Unidades — Ke/Kd/WACC nunca duplicam ×100", () => {
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
     // 0.6·15 + 0.4·10·(1−shield) ∈ [9+2.6 ; 9+4] = [11.6 ; 13]
-    expect(ind.wacc).toBeGreaterThan(1);    // não é fração (0.12)
-    expect(ind.wacc).toBeLessThan(100);     // não é 1200
+    expect(ind.wacc).toBeGreaterThan(1); // não é fração (0.12)
+    expect(ind.wacc).toBeLessThan(100); // não é 1200
     expect(ind.wacc).toBeGreaterThanOrEqual(11);
     expect(ind.wacc).toBeLessThanOrEqual(14);
   });
@@ -56,7 +56,13 @@ describe("Unidades — Ke/Kd/WACC nunca duplicam ×100", () => {
   it("ROIC e WACC estão no MESMO domínio (% units) — comparáveis", () => {
     const s = createState({
       revenue: { bruta: m12(200_000) },
-      capital: { ke: 12, kd: 9, patrimonioLiquido: 800_000, dividaOnerosa: 200_000, ativoTotal: 1_500_000 },
+      capital: {
+        ke: 12,
+        kd: 9,
+        patrimonioLiquido: 800_000,
+        dividaOnerosa: 200_000,
+        ativoTotal: 1_500_000,
+      },
     });
     const { dre } = buildDRE(s, "real");
     const ind = calcIndicators(s, dre);
@@ -102,8 +108,7 @@ describe("Unidades — Ke/Kd/WACC nunca duplicam ×100", () => {
 describe("Unidades — Helper pct() do AI snapshot/tools", () => {
   it("pct() formata como-está (não multiplica por 100)", async () => {
     // Replica a assinatura usada em snapshot.ts:15 e tools.ts:23.
-    const pctSnapshot = (n: number, d = 1) =>
-      `${(Number.isFinite(n) ? n : 0).toFixed(d)}%`;
+    const pctSnapshot = (n: number, d = 1) => `${(Number.isFinite(n) ? n : 0).toFixed(d)}%`;
     const pctTools = (n: number, d = 1) =>
       `${(Number.isFinite(n) ? n : 0).toFixed(d).replace(".", ",")}%`;
 

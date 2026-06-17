@@ -20,11 +20,9 @@ import { DEFAULT_SIM, type SimulatorParams } from "./simulator";
 // renderizar com shape inválido.
 const simKey = (userId: string) => `gzfp:simParams:v${FINNANCE_FILE_VERSION}:${userId}`;
 
-export function usePersistedSimParams(userId: string): [
-  SimulatorParams,
-  React.Dispatch<React.SetStateAction<SimulatorParams>>,
-  { hydrated: boolean },
-] {
+export function usePersistedSimParams(
+  userId: string,
+): [SimulatorParams, React.Dispatch<React.SetStateAction<SimulatorParams>>, { hydrated: boolean }] {
   const [params, setParams] = useState<SimulatorParams>(DEFAULT_SIM);
   const [hydrated, setHydrated] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

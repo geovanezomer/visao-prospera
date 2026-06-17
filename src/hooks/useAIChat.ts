@@ -5,8 +5,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  AIConfig, ChatMessage, ChatThread, createThread, deleteThread, loadConfig, loadMessages,
-  loadThreads, saveConfig, saveMessages, saveThreads, touchThread,
+  AIConfig,
+  ChatMessage,
+  ChatThread,
+  createThread,
+  deleteThread,
+  loadConfig,
+  loadMessages,
+  loadThreads,
+  saveConfig,
+  saveMessages,
+  saveThreads,
+  touchThread,
 } from "@/engines/ai/providers";
 import { chatWithTools, streamChat, type LLMMessage, type ToolCall } from "@/engines/ai/client";
 import { buildSnapshot, getSectionsCached } from "@/engines/ai/snapshot";
@@ -18,8 +28,12 @@ import { estimateTokens } from "@/engines/ai/snapshot";
 const MAX_HISTORY_TOKENS = 6000;
 import { buildSystemPrompt } from "@/engines/ai/systemPrompt";
 import {
-  processFile, buildPdfContext, buildVisionMessageContent, confidenceLabel,
-  MAX_FILES_PER_MSG, type ChatAttachment,
+  processFile,
+  buildPdfContext,
+  buildVisionMessageContent,
+  confidenceLabel,
+  MAX_FILES_PER_MSG,
+  type ChatAttachment,
 } from "@/engines/ai/attachments";
 import { buildDynamicSuggestions } from "@/engines/ai/suggestions";
 import { buildOpeningBriefing } from "@/engines/ai/briefing";
@@ -37,11 +51,13 @@ export interface UseAIChatParams {
 // Converte um erro de transporte/modelo em markdown amigável.
 export function errToMd(e: any): string {
   const msg = e?.message || String(e);
-  if (/timeout/i.test(msg)) return `**⏱️ Timeout** — o modelo demorou demais. Aumente o timeout em ⚙️.`;
+  if (/timeout/i.test(msg))
+    return `**⏱️ Timeout** — o modelo demorou demais. Aumente o timeout em ⚙️.`;
   if (/AbortError/i.test(e?.name || "")) return "_(geração interrompida)_";
   if (/401|403/.test(msg)) return `**🔑 Autenticação falhou** — verifique a API Key em ⚙️.`;
   if (/429/.test(msg)) return `**🚦 Rate limit** — aguarde alguns segundos e tente novamente.`;
-  if (/Failed to fetch|NetworkError/i.test(msg)) return `**🔌 Sem conexão** com o endpoint. LM Studio rodando? URL correta?`;
+  if (/Failed to fetch|NetworkError/i.test(msg))
+    return `**🔌 Sem conexão** com o endpoint. LM Studio rodando? URL correta?`;
   return `**Erro:** ${msg}`;
 }
 
@@ -61,7 +77,11 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
   const abortRef = useRef<AbortController | null>(null);
 
   // Injeta briefing inicial estilo CFO em conversa nova/vazia.
-  const injectBriefingIfEmpty = (companyName: string, threadId: string, currentMsgs: ChatMessage[]) => {
+  const injectBriefingIfEmpty = (
+    companyName: string,
+    threadId: string,
+    currentMsgs: ChatMessage[],
+  ) => {
     if (currentMsgs.length > 0) return currentMsgs;
     // M-3: passa as seções já cacheadas para evitar recalcular DRE/indicadores/health/diagnose.
     const md = buildOpeningBriefing(state, getSectionsCached(state));
@@ -82,7 +102,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       setMessages(injectBriefingIfEmpty(state.companyName, t.id, []));
     } else {
       setThreads(ts);
-      const cur = ts.find(t => t.id === activeId) ?? ts[0];
+      const cur = ts.find((t) => t.id === activeId) ?? ts[0];
       setActiveId(cur.id);
       const loaded = loadMessages(state.companyName, cur.id);
       setMessages(injectBriefingIfEmpty(state.companyName, cur.id, loaded));
@@ -111,7 +131,9 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     try {
       getSectionsCached(state, simHasChanges ? simulatedState : undefined);
       return buildSnapshot(state, simHasChanges ? simulatedState : undefined);
-    } catch { return ""; }
+    } catch {
+      return "";
+    }
   }, [state, simulatedState, simHasChanges, config.includeSnapshot, config.useTools]);
 
   // Contexto runtime: empresa + regime efetivo (com downgrade Simples→Presumido) + cenário simulado ativo.
@@ -122,10 +144,15 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       const p = simParams;
       const parts: string[] = [];
       if (p.priceDeltaPct) parts.push(`preço ${p.priceDeltaPct > 0 ? "+" : ""}${p.priceDeltaPct}%`);
-      if (p.volumeDeltaPct) parts.push(`volume ${p.volumeDeltaPct > 0 ? "+" : ""}${p.volumeDeltaPct}%`);
+      if (p.volumeDeltaPct)
+        parts.push(`volume ${p.volumeDeltaPct > 0 ? "+" : ""}${p.volumeDeltaPct}%`);
       if (p.cpvDeltaPct) parts.push(`CPV ${p.cpvDeltaPct > 0 ? "+" : ""}${p.cpvDeltaPct}%`);
-      if (p.payrollDeltaPct) parts.push(`folha ${p.payrollDeltaPct > 0 ? "+" : ""}${p.payrollDeltaPct}%`);
-      if (p.fixedCutPct) parts.push(`fixos ${p.fixedCutPct > 0 ? "-" : "+"}${Math.abs(p.fixedCutPct)}% (top ${p.fixedCutTopN})`);
+      if (p.payrollDeltaPct)
+        parts.push(`folha ${p.payrollDeltaPct > 0 ? "+" : ""}${p.payrollDeltaPct}%`);
+      if (p.fixedCutPct)
+        parts.push(
+          `fixos ${p.fixedCutPct > 0 ? "-" : "+"}${Math.abs(p.fixedCutPct)}% (top ${p.fixedCutTopN})`,
+        );
       if (p.outsourcePctCpv) parts.push(`terceirizar ${p.outsourcePctCpv}% CPV`);
       if (p.pmrDeltaDays) parts.push(`PMR ${p.pmrDeltaDays > 0 ? "+" : ""}${p.pmrDeltaDays}d`);
       if (p.pmpDeltaDays) parts.push(`PMP ${p.pmpDeltaDays > 0 ? "+" : ""}${p.pmpDeltaDays}d`);
@@ -133,20 +160,31 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       if (p.loanPrincipal) parts.push(`empréstimo R$${p.loanPrincipal.toLocaleString("pt-BR")}`);
       if (p.debtPaydownPct) parts.push(`quitar ${p.debtPaydownPct}% dívida`);
       if (p.kdDeltaPp) parts.push(`Kd ${p.kdDeltaPp > 0 ? "+" : ""}${p.kdDeltaPp}p.p.`);
-      if (p.regimeOverride && p.regimeOverride !== "base") parts.push(`regime → ${p.regimeOverride}`);
+      if (p.regimeOverride && p.regimeOverride !== "base")
+        parts.push(`regime → ${p.regimeOverride}`);
       return parts.length ? `Simulação ativa (${parts.join(", ")})` : undefined;
     };
     try {
       const eff = resolveEffectiveRegime(state);
       const t = state.tax;
       const nominal = t.regime;
-      const base = eff !== nominal ? `${eff} (nominal: ${nominal} — downgrade por exceder limite)` : eff;
-      const extra = eff === "simples"
-        ? ` · Anexo ${t.simplesAnexo}, Fator R ${(t.fatorR * 100).toFixed(1)}%`
-        : "";
-      return { companyName: state.companyName, regimeLabel: base + extra, cenarioAtivo: describeSim() };
+      const base =
+        eff !== nominal ? `${eff} (nominal: ${nominal} — downgrade por exceder limite)` : eff;
+      const extra =
+        eff === "simples"
+          ? ` · Anexo ${t.simplesAnexo}, Fator R ${(t.fatorR * 100).toFixed(1)}%`
+          : "";
+      return {
+        companyName: state.companyName,
+        regimeLabel: base + extra,
+        cenarioAtivo: describeSim(),
+      };
     } catch {
-      return { companyName: state.companyName, regimeLabel: state.tax?.regime, cenarioAtivo: describeSim() };
+      return {
+        companyName: state.companyName,
+        regimeLabel: state.tax?.regime,
+        cenarioAtivo: describeSim(),
+      };
     }
   }, [state.companyName, state.tax, simHasChanges, simParams]);
 
@@ -175,7 +213,8 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
 
     const atts = attachments.slice();
     const pdfCtx = buildPdfContext(atts);
-    const displayContent = content + (pdfCtx ? `\n\n_(📎 ${atts.length} anexo${atts.length > 1 ? "s" : ""})_` : "");
+    const displayContent =
+      content + (pdfCtx ? `\n\n_(📎 ${atts.length} anexo${atts.length > 1 ? "s" : ""})_` : "");
 
     let history = messages.slice();
     if (opts?.replaceLast) {
@@ -185,7 +224,12 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
         role: "user",
         content: displayContent,
         ts: Date.now(),
-        attachments: atts.map(a => ({ name: a.name, type: a.type, size: a.size, error: a.error })),
+        attachments: atts.map((a) => ({
+          name: a.name,
+          type: a.type,
+          size: a.size,
+          error: a.error,
+        })),
       } as ChatMessage;
       history = [...history, userMsg];
     }
@@ -201,8 +245,10 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     abortRef.current = ac;
 
     const fullUserText = content + pdfCtx;
-    const hasImages = atts.some(a => a.type === "image" && a.dataUrl && !a.error);
-    const lastUserContent = hasImages ? buildVisionMessageContent(fullUserText, atts) : fullUserText;
+    const hasImages = atts.some((a) => a.type === "image" && a.dataUrl && !a.error);
+    const lastUserContent = hasImages
+      ? buildVisionMessageContent(fullUserText, atts)
+      : fullUserText;
 
     const buildLlmHistory = (forTools: boolean): LLMMessage[] => {
       const full = buildLlmMessages({
@@ -242,20 +288,27 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
         const out = await chatWithTools(
           config,
           llm,
-          (name, args) => runTool(name, args, state, simHasChanges ? simulatedState : undefined, simParams),
+          (name, args) =>
+            runTool(name, args, state, simHasChanges ? simulatedState : undefined, simParams),
           {
             signal: ac.signal,
             onProgress: (e) => {
               if (e.type === "tool") {
                 collected.push(e.call);
-                if (e.call.name === "criar_acao") toast.success("Ação adicionada ao plano", { description: "Painel de ações atualizado." });
-                else if (e.call.name === "salvar_cenario") toast.success("Cenário salvo", { description: "Disponível no menu de cenários." });
+                if (e.call.name === "criar_acao")
+                  toast.success("Ação adicionada ao plano", {
+                    description: "Painel de ações atualizado.",
+                  });
+                else if (e.call.name === "salvar_cenario")
+                  toast.success("Cenário salvo", {
+                    description: "Disponível no menu de cenários.",
+                  });
                 else if (e.call.name === "atualizar_acao") toast.success("Ação atualizada");
                 else if (e.call.name === "excluir_acao") toast.success("Ação removida");
                 else if (e.call.name === "excluir_cenario") toast.success("Cenário removido");
                 setMessages([
                   ...history,
-                  ...collected.map(c => ({
+                  ...collected.map((c) => ({
                     role: "tool" as const,
                     content: c.result ?? "",
                     toolName: c.name,
@@ -268,7 +321,12 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
         );
         setMessages([
           ...history,
-          ...collected.map(c => ({ role: "tool" as const, content: c.result ?? "", toolName: c.name, ts: Date.now() })),
+          ...collected.map((c) => ({
+            role: "tool" as const,
+            content: c.result ?? "",
+            toolName: c.name,
+            ts: Date.now(),
+          })),
           { role: "assistant", content: out.finalText, ts: Date.now() },
         ]);
       } catch (e: any) {
@@ -287,14 +345,14 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     try {
       for await (const delta of streamChat(config, llm, ac.signal)) {
         acc += delta;
-        setMessages(prev => {
+        setMessages((prev) => {
           const copy = prev.slice();
           copy[copy.length - 1] = { role: "assistant", content: acc, ts: Date.now() };
           return copy;
         });
       }
     } catch (e: any) {
-      setMessages(prev => {
+      setMessages((prev) => {
         const copy = prev.slice();
         copy[copy.length - 1] = {
           role: "assistant",
@@ -312,7 +370,10 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const remaining = MAX_FILES_PER_MSG - attachments.length;
-    if (remaining <= 0) { toast.error(`Máx ${MAX_FILES_PER_MSG} anexos por mensagem.`); return; }
+    if (remaining <= 0) {
+      toast.error(`Máx ${MAX_FILES_PER_MSG} anexos por mensagem.`);
+      return;
+    }
     const toProcess = Array.from(files).slice(0, remaining);
     setProcessingFile(true);
     try {
@@ -323,12 +384,13 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
         if (att.error) toast.error(`${att.name}: ${att.error}`);
         else if (att.ocrUsed) {
           const lbl = confidenceLabel(att.ocrConfidence);
-          if (lbl.tone === "bad") toast.warning(`${att.name}: OCR com confiança ${lbl.label}. Revise antes de usar.`);
+          if (lbl.tone === "bad")
+            toast.warning(`${att.name}: OCR com confiança ${lbl.label}. Revise antes de usar.`);
           else toast.success(`${att.name}: OCR concluído — confiança ${lbl.label}.`);
         }
         results.push(att);
       }
-      setAttachments(prev => [...prev, ...results]);
+      setAttachments((prev) => [...prev, ...results]);
     } finally {
       setProcessingFile(false);
       setProcessingMsg("");
@@ -336,7 +398,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
   };
 
   const removeAttachment = (id: string) =>
-    setAttachments(prev => prev.filter(a => a.id !== id));
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
 
   const handleStop = () => abortRef.current?.abort();
 
@@ -351,23 +413,32 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
 
   const handleDeleteThread = (id: string) => {
     deleteThread(state.companyName, id);
-    const next = threads.filter(t => t.id !== id);
+    const next = threads.filter((t) => t.id !== id);
     setThreads(next);
     if (id === activeId) {
       const fallback = next[0] ?? createThread(state.companyName, "Conversa principal");
-      if (!next.length) { setThreads([fallback]); saveThreads(state.companyName, [fallback]); }
+      if (!next.length) {
+        setThreads([fallback]);
+        saveThreads(state.companyName, [fallback]);
+      }
       setActiveId(fallback.id);
-      setMessages(injectBriefingIfEmpty(state.companyName, fallback.id, loadMessages(state.companyName, fallback.id)));
+      setMessages(
+        injectBriefingIfEmpty(
+          state.companyName,
+          fallback.id,
+          loadMessages(state.companyName, fallback.id),
+        ),
+      );
     }
   };
 
   const handleRegenerate = () => {
-    const lastUser = [...messages].reverse().find(m => m.role === "user");
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
     if (lastUser) void send(lastUser.content, { replaceLast: true });
   };
 
   const handleEditLast = () => {
-    const lastUser = [...messages].reverse().find(m => m.role === "user");
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
     if (lastUser) {
       setInput(lastUser.content);
       const idx = messages.lastIndexOf(lastUser);
@@ -382,21 +453,39 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
   const reloadThreads = () => setThreads(loadThreads(state.companyName));
 
   // Atualiza config + persiste.
-  const updateConfig = (c: AIConfig) => { setConfig(c); saveConfig(c); };
+  const updateConfig = (c: AIConfig) => {
+    setConfig(c);
+    saveConfig(c);
+  };
 
   return {
     // estado
-    config, updateConfig,
-    messages, setMessages,
-    input, setInput,
+    config,
+    updateConfig,
+    messages,
+    setMessages,
+    input,
+    setInput,
     streaming,
-    attachments, removeAttachment,
-    processingFile, processingMsg,
-    threads, activeId, setActiveId,
-    snapshot, suggestions, simHasChanges,
+    attachments,
+    removeAttachment,
+    processingFile,
+    processingMsg,
+    threads,
+    activeId,
+    setActiveId,
+    snapshot,
+    suggestions,
+    simHasChanges,
     // ações
-    send, handleFiles, handleStop,
-    handleRegenerate, handleEditLast, handleAudit,
-    handleNewThread, handleDeleteThread, reloadThreads,
+    send,
+    handleFiles,
+    handleStop,
+    handleRegenerate,
+    handleEditLast,
+    handleAudit,
+    handleNewThread,
+    handleDeleteThread,
+    reloadThreads,
   };
 }

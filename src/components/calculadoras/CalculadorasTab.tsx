@@ -34,14 +34,30 @@ export function CalculadorasTab() {
           <TabsTrigger value="independencia">Independência</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="custo-funcionario"><CustoFuncionarioCalc /></TabsContent>
-        <TabsContent value="rescisao"><RescisaoCltCalc /></TabsContent>
-        <TabsContent value="clt-vs-pj"><CltVsPjCalc /></TabsContent>
-        <TabsContent value="salario-liquido"><SalarioLiquidoCalc /></TabsContent>
-        <TabsContent value="horas-extras"><HorasExtrasCalc /></TabsContent>
-        <TabsContent value="sac-vs-price"><SacVsPriceCalc /></TabsContent>
-        <TabsContent value="juros-compostos"><JurosCompostosCalc /></TabsContent>
-        <TabsContent value="independencia"><IndependenciaCalc /></TabsContent>
+        <TabsContent value="custo-funcionario">
+          <CustoFuncionarioCalc />
+        </TabsContent>
+        <TabsContent value="rescisao">
+          <RescisaoCltCalc />
+        </TabsContent>
+        <TabsContent value="clt-vs-pj">
+          <CltVsPjCalc />
+        </TabsContent>
+        <TabsContent value="salario-liquido">
+          <SalarioLiquidoCalc />
+        </TabsContent>
+        <TabsContent value="horas-extras">
+          <HorasExtrasCalc />
+        </TabsContent>
+        <TabsContent value="sac-vs-price">
+          <SacVsPriceCalc />
+        </TabsContent>
+        <TabsContent value="juros-compostos">
+          <JurosCompostosCalc />
+        </TabsContent>
+        <TabsContent value="independencia">
+          <IndependenciaCalc />
+        </TabsContent>
       </Tabs>
     </div>
   );

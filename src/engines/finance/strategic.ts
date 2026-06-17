@@ -31,10 +31,10 @@ import type {
 export type SubScore = {
   key: "concentration" | "suppliers" | "governance" | "competitive" | "regulatory";
   label: string;
-  score: number;          // 0–100 (100 = melhor)
+  score: number; // 0–100 (100 = melhor)
   filled: boolean;
   status: "ok" | "warn" | "danger" | "unknown";
-  highlights: string[];   // bullets curtos pra mostrar no card
+  highlights: string[]; // bullets curtos pra mostrar no card
 };
 
 export type StrategicResult = {
@@ -94,8 +94,10 @@ function estimateHHI(a: ConcentrationAnswers): number | undefined {
   for (let i = 0; i < 20; i++) {
     const dr = Math.max(1e-6, Math.abs(1 - r));
     const den = r > 1 ? r - 1 : 1 - r;
-    const f = s1 * (1 - Math.pow(r, n)) / Math.max(1e-6, 1 - r) - target;
-    const dfdr = s1 * ((-n * Math.pow(r, n - 1)) * (1 - r) + (1 - Math.pow(r, n))) / Math.max(1e-9, Math.pow(1 - r, 2));
+    const f = (s1 * (1 - Math.pow(r, n))) / Math.max(1e-6, 1 - r) - target;
+    const dfdr =
+      (s1 * (-n * Math.pow(r, n - 1) * (1 - r) + (1 - Math.pow(r, n)))) /
+      Math.max(1e-9, Math.pow(1 - r, 2));
     if (Math.abs(f) < 1e-4 || Math.abs(dfdr) < 1e-12) break;
     r = clamp(r - f / dfdr, 0.01, 0.999);
   }
@@ -109,9 +111,7 @@ function estimateHHI(a: ConcentrationAnswers): number | undefined {
 
 function scoreConcentration(a: ConcentrationAnswers): SubScore {
   const filled =
-    a.pctMaiorCliente != null ||
-    a.clientesPara80Pct != null ||
-    a.tempoMaiorCliente != null;
+    a.pctMaiorCliente != null || a.clientesPara80Pct != null || a.tempoMaiorCliente != null;
 
   if (!filled) {
     return {
@@ -144,7 +144,8 @@ function scoreConcentration(a: ConcentrationAnswers): SubScore {
     const cls = hhi > 2500 ? "alta" : hhi > 1500 ? "moderada" : "baixa";
     highlights.push(`HHI estimado ${hhi.toLocaleString("pt-BR")} (${cls} — parâmetro CADE)`);
   }
-  if (a.tempoMaiorCliente === "lt1") highlights.push("Maior cliente < 1 ano: relação ainda não testada");
+  if (a.tempoMaiorCliente === "lt1")
+    highlights.push("Maior cliente < 1 ano: relação ainda não testada");
 
   return {
     key: "concentration",
@@ -177,13 +178,16 @@ function scoreSuppliers(a: ConcentrationAnswers): SubScore {
     const f = a.pctMaiorFornecedor;
     // 0% → 100, 50% → 50, 100% → 0
     score -= f * 0.8;
-    if (f >= 50) highlights.push(`Maior fornecedor = ${f.toFixed(0)}% do CPV (alto risco de ruptura)`);
+    if (f >= 50)
+      highlights.push(`Maior fornecedor = ${f.toFixed(0)}% do CPV (alto risco de ruptura)`);
     else if (f >= 30) highlights.push(`Maior fornecedor = ${f.toFixed(0)}% do CPV`);
     else highlights.push(`Maior fornecedor = ${f.toFixed(0)}% do CPV (diversificado)`);
   }
   if (a.dependeCanal === "sim") {
     score -= 25;
-    highlights.push("Dependência de um único canal de aquisição (Google Ads, marketplace, parceiro único)");
+    highlights.push(
+      "Dependência de um único canal de aquisição (Google Ads, marketplace, parceiro único)",
+    );
   } else if (a.dependeCanal === "parcial") {
     score -= 10;
     highlights.push("Dependência parcial de um canal de aquisição");
@@ -233,8 +237,10 @@ function scoreGovernance(a: GovernanceAnswers): SubScore {
 
   if (a.socioAfastado60d) {
     parts.push(map.socioAfastado60d[a.socioAfastado60d]);
-    if (a.socioAfastado60d === "para") highlights.push("Operação para se o sócio se afastar (bus factor = 1)");
-    else if (a.socioAfastado60d === "perde_eficiencia") highlights.push("Operação sobrevive ao afastamento do sócio, mas com perdas");
+    if (a.socioAfastado60d === "para")
+      highlights.push("Operação para se o sócio se afastar (bus factor = 1)");
+    else if (a.socioAfastado60d === "perde_eficiencia")
+      highlights.push("Operação sobrevive ao afastamento do sócio, mas com perdas");
   }
   if (a.quemFechaContrato) {
     parts.push(map.quemFechaContrato[a.quemFechaContrato]);
@@ -243,11 +249,13 @@ function scoreGovernance(a: GovernanceAnswers): SubScore {
   }
   if (a.processosDocumentados) {
     parts.push(map.processosDocumentados[a.processosDocumentados]);
-    if (a.processosDocumentados === "nenhum") highlights.push("Processos não documentados: alto custo de substituição de pessoas");
+    if (a.processosDocumentados === "nenhum")
+      highlights.push("Processos não documentados: alto custo de substituição de pessoas");
   }
   if (a.planoSucessao) {
     parts.push(map.planoSucessao[a.planoSucessao]);
-    if (a.planoSucessao === "nunca" || a.planoSucessao === "nao") highlights.push("Sem plano de sucessão para posições-chave");
+    if (a.planoSucessao === "nunca" || a.planoSucessao === "nao")
+      highlights.push("Sem plano de sucessão para posições-chave");
   }
 
   const score = clamp(parts.reduce((s, x) => s + x, 0) / parts.length);
@@ -285,7 +293,14 @@ function scoreCompetitive(a: CompetitiveAnswers): SubScore {
   const map = {
     reajustePrecos: { sem_resistencia: 100, com_resistencia: 65, nao_repassou: 25, reduziu: 5 },
     elasticidade10pct: { menos_5: 100, "5_20": 60, mais_20: 15, nao_sei: 40 },
-    razaoContratacao: { marca: 95, qualidade: 85, unica_opcao: 80, relacionamento: 60, prazo: 55, preco: 20 },
+    razaoContratacao: {
+      marca: 95,
+      qualidade: 85,
+      unica_opcao: 80,
+      relacionamento: 60,
+      prazo: 55,
+      preco: 20,
+    },
     concorrentes: { nenhum: 100, "1-3": 80, "4-10": 55, "10+": 25, nao_sei: 40 },
     switchingCost: { alto: 100, medio: 65, baixo: 30, commodity: 10 },
   } as const;
@@ -297,16 +312,20 @@ function scoreCompetitive(a: CompetitiveAnswers): SubScore {
     parts.push(map.reajustePrecos[a.reajustePrecos]);
     if (a.reajustePrecos === "reduziu" || a.reajustePrecos === "nao_repassou")
       highlights.push("Sem poder de precificação — guerra de preço corrói margem");
-    if (a.reajustePrecos === "sem_resistencia") highlights.push("Forte poder de precificação (preço sobe sem resistência)");
+    if (a.reajustePrecos === "sem_resistencia")
+      highlights.push("Forte poder de precificação (preço sobe sem resistência)");
   }
   if (a.elasticidade10pct) {
     parts.push(map.elasticidade10pct[a.elasticidade10pct]);
-    if (a.elasticidade10pct === "mais_20") highlights.push("Demanda muito elástica: 10% no preço derruba 20%+ dos clientes");
+    if (a.elasticidade10pct === "mais_20")
+      highlights.push("Demanda muito elástica: 10% no preço derruba 20%+ dos clientes");
   }
   if (a.razaoContratacao) {
     parts.push(map.razaoContratacao[a.razaoContratacao]);
-    if (a.razaoContratacao === "preco") highlights.push("Cliente compra por preço — sem moat competitivo");
-    if (a.razaoContratacao === "marca" || a.razaoContratacao === "qualidade") highlights.push("Diferencial percebido além de preço");
+    if (a.razaoContratacao === "preco")
+      highlights.push("Cliente compra por preço — sem moat competitivo");
+    if (a.razaoContratacao === "marca" || a.razaoContratacao === "qualidade")
+      highlights.push("Diferencial percebido além de preço");
   }
   if (a.concorrentes) {
     parts.push(map.concorrentes[a.concorrentes]);
@@ -314,8 +333,10 @@ function scoreCompetitive(a: CompetitiveAnswers): SubScore {
   }
   if (a.switchingCost) {
     parts.push(map.switchingCost[a.switchingCost]);
-    if (a.switchingCost === "commodity") highlights.push("Produto commodity — sem barreira de troca");
-    if (a.switchingCost === "alto") highlights.push("Alto switching cost: cliente preso por integração/contrato");
+    if (a.switchingCost === "commodity")
+      highlights.push("Produto commodity — sem barreira de troca");
+    if (a.switchingCost === "alto")
+      highlights.push("Alto switching cost: cliente preso por integração/contrato");
   }
 
   const score = clamp(parts.reduce((s, x) => s + x, 0) / parts.length);
@@ -346,8 +367,11 @@ function scoreRegulatory(a: RegulatoryAnswers): SubScore {
   const score = map[a.exposicaoRegulatoria];
   const highlights: string[] = [];
   if (a.exposicaoRegulatoria === "sim")
-    highlights.push("Dependência de licença/certificação/contrato público/câmbio — risco binário fora do controle");
-  else if (a.exposicaoRegulatoria === "parcial") highlights.push("Exposição parcial a fatores regulatórios ou cambiais");
+    highlights.push(
+      "Dependência de licença/certificação/contrato público/câmbio — risco binário fora do controle",
+    );
+  else if (a.exposicaoRegulatoria === "parcial")
+    highlights.push("Exposição parcial a fatores regulatórios ou cambiais");
   else highlights.push("Sem dependência regulatória ou cambial relevante");
   return {
     key: "regulatory",
@@ -362,7 +386,7 @@ function scoreRegulatory(a: RegulatoryAnswers): SubScore {
 // ----------------- Agregação -----------------
 
 const WEIGHTS: Record<SubScore["key"], number> = {
-  concentration: 0.30,
+  concentration: 0.3,
   suppliers: 0.15,
   governance: 0.25,
   competitive: 0.25,
@@ -370,8 +394,12 @@ const WEIGHTS: Record<SubScore["key"], number> = {
 };
 
 export function computeStrategic(state: AppState): StrategicResult {
-  const s: StrategicAnswers =
-    state.strategic ?? { concentration: {}, governance: {}, competitive: {}, regulatory: {} };
+  const s: StrategicAnswers = state.strategic ?? {
+    concentration: {},
+    governance: {},
+    competitive: {},
+    regulatory: {},
+  };
 
   const subs: SubScore[] = [
     scoreConcentration(s.concentration),
@@ -391,7 +419,8 @@ export function computeStrategic(state: AppState): StrategicResult {
       haircut: 0,
       level: "indefinido",
       subscores: subs,
-      headline: "Análise estratégica não preenchida — health score reflete apenas o lado financeiro.",
+      headline:
+        "Análise estratégica não preenchida — health score reflete apenas o lado financeiro.",
     };
   }
 
@@ -401,8 +430,8 @@ export function computeStrategic(state: AppState): StrategicResult {
 
   // Haircut: 0 a 0.40, ativando abaixo de 75
   let haircut = 0;
-  if (index < 75) haircut = ((75 - index) / 75) * 0.40;
-  haircut = Math.max(0, Math.min(0.40, haircut));
+  if (index < 75) haircut = ((75 - index) / 75) * 0.4;
+  haircut = Math.max(0, Math.min(0.4, haircut));
 
   const level: StrategicResult["level"] =
     index >= 75 ? "robusto" : index >= 55 ? "adequado" : index >= 35 ? "frágil" : "crítico";
@@ -422,13 +451,20 @@ export function computeStrategic(state: AppState): StrategicResult {
   };
 }
 
-function buildHeadline(level: StrategicResult["level"], subs: SubScore[], filledCount: number): string {
+function buildHeadline(
+  level: StrategicResult["level"],
+  subs: SubScore[],
+  filledCount: number,
+): string {
   const worst = [...subs].filter((s) => s.filled).sort((a, b) => a.score - b.score)[0];
   const base =
-    level === "robusto" ? "Risco estratégico baixo — empresa diversificada e com governança sólida"
-    : level === "adequado" ? "Risco estratégico moderado — pontos de atenção mapeados"
-    : level === "frágil" ? "Risco estratégico elevado — exposições relevantes além do balanço"
-    : "Risco estratégico crítico — vulnerabilidades fora do controle imediato";
+    level === "robusto"
+      ? "Risco estratégico baixo — empresa diversificada e com governança sólida"
+      : level === "adequado"
+        ? "Risco estratégico moderado — pontos de atenção mapeados"
+        : level === "frágil"
+          ? "Risco estratégico elevado — exposições relevantes além do balanço"
+          : "Risco estratégico crítico — vulnerabilidades fora do controle imediato";
   const suf = worst ? `. Maior fragilidade: ${worst.label.toLowerCase()}.` : ".";
   return `${base}${suf} (${filledCount}/5 dimensões respondidas)`;
 }
@@ -436,20 +472,47 @@ function buildHeadline(level: StrategicResult["level"], subs: SubScore[], filled
 /** Quadrante 2x2 financeiro × estratégico. */
 export type Quadrant = "robusta" | "fragil_rica" | "vulneravel" | "critica" | "indefinida";
 
-export function quadrant(financialScore: number, strategic: StrategicResult): {
-  q: Quadrant; label: string; description: string;
+export function quadrant(
+  financialScore: number,
+  strategic: StrategicResult,
+): {
+  q: Quadrant;
+  label: string;
+  description: string;
 } {
   if (!strategic.hasAnyAnswer) {
     return {
       q: "indefinida",
       label: "Estratégico não avaliado",
-      description: "Preencha o módulo de Análise Estratégica para posicionar a empresa no quadrante.",
+      description:
+        "Preencha o módulo de Análise Estratégica para posicionar a empresa no quadrante.",
     };
   }
   const finStrong = financialScore >= 60;
   const stratLow = strategic.index >= 55;
-  if (finStrong && stratLow) return { q: "robusta", label: "Robusta", description: "Saúde financeira forte e risco estratégico baixo. Posição defensável." };
-  if (finStrong && !stratLow) return { q: "fragil_rica", label: "Frágil-rica", description: "Números bons sustentados por estrutura vulnerável. Resultado pode ruir num único evento." };
-  if (!finStrong && stratLow) return { q: "vulneravel", label: "Vulnerável", description: "Estratégia sólida, mas finanças apertadas. Atuar antes que o caixa estrangule a operação." };
-  return { q: "critica", label: "Crítica", description: "Finanças e estratégia comprometidas. Reestruturação ampla é necessária." };
+  if (finStrong && stratLow)
+    return {
+      q: "robusta",
+      label: "Robusta",
+      description: "Saúde financeira forte e risco estratégico baixo. Posição defensável.",
+    };
+  if (finStrong && !stratLow)
+    return {
+      q: "fragil_rica",
+      label: "Frágil-rica",
+      description:
+        "Números bons sustentados por estrutura vulnerável. Resultado pode ruir num único evento.",
+    };
+  if (!finStrong && stratLow)
+    return {
+      q: "vulneravel",
+      label: "Vulnerável",
+      description:
+        "Estratégia sólida, mas finanças apertadas. Atuar antes que o caixa estrangule a operação.",
+    };
+  return {
+    q: "critica",
+    label: "Crítica",
+    description: "Finanças e estratégia comprometidas. Reestruturação ampla é necessária.",
+  };
 }

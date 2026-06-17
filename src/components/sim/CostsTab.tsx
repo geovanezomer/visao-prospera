@@ -16,7 +16,6 @@ export function CostsTab() {
   const { state, update } = useFinance();
   const receitaBrutaAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
 
-
   // Aviso inline quando o usuário tenta digitar valor negativo (revertido para 0)
   const [negWarn, setNegWarn] = useState<string | null>(null);
   useEffect(() => {
@@ -37,7 +36,9 @@ export function CostsTab() {
       safe = 0;
       const label = cur?.label ?? "Descrição";
       const suffix = i === null ? "valor fixo" : MESES[i];
-      setNegWarn(`"${label}" — ${suffix}: valores negativos não são permitidos. Use uma linha dedicada para recuperações/créditos. Revertido para R$ 0.`);
+      setNegWarn(
+        `"${label}" — ${suffix}: valores negativos não são permitidos. Use uma linha dedicada para recuperações/créditos. Revertido para R$ 0.`,
+      );
     }
     return safe;
   };
@@ -48,7 +49,12 @@ export function CostsTab() {
       ...s,
       costs: s.costs.map((c) =>
         c.id === id
-          ? { ...c, values: (c.values.length === 12 ? c.values : fill12(c.values[0] || 0)).map((x, j) => (j === i ? safe : x)) }
+          ? {
+              ...c,
+              values: (c.values.length === 12 ? c.values : fill12(c.values[0] || 0)).map((x, j) =>
+                j === i ? safe : x,
+              ),
+            }
           : c,
       ),
     }));
@@ -89,23 +95,33 @@ export function CostsTab() {
 
   const setLabel = (id: string, label: string) => updateLine(id, { label });
 
-
-
-
-
   // totais (memoizados — recalcular só quando custos ou regime mudam)
   const { totCV, totFix, totVar, totFin, totCPV, totGeral } = useMemo(() => {
     const regime = state.tax.regime;
-    let cv = 0, fix = 0, vr = 0, fn = 0, cpv = 0;
+    let cv = 0,
+      fix = 0,
+      vr = 0,
+      fn = 0,
+      cpv = 0;
     for (const c of state.costs) {
       const v = sum(monthValues(c, regime));
-      if (c.category === "custo_vendas") { cv += v; cpv += v; }
-      else if (c.category === "direto_venda") { cpv += v; }
-      else if (c.category === "fixo") fix += v;
+      if (c.category === "custo_vendas") {
+        cv += v;
+        cpv += v;
+      } else if (c.category === "direto_venda") {
+        cpv += v;
+      } else if (c.category === "fixo") fix += v;
       else if (c.category === "variavel") vr += v;
       else if (c.category === "financeiro") fn += v;
     }
-    return { totCV: cv, totFix: fix, totVar: vr, totFin: fn, totCPV: cpv, totGeral: cpv + fix + vr + fn };
+    return {
+      totCV: cv,
+      totFix: fix,
+      totVar: vr,
+      totFin: fn,
+      totCPV: cpv,
+      totGeral: cpv + fix + vr + fn,
+    };
   }, [state.costs, state.tax.regime]);
 
   const pctRec = useCallback(
@@ -151,14 +167,18 @@ export function CostsTab() {
           sub={fmtPct(pctRec(totFin)) + " da receita"}
           hint="Juros, IOF, antecipação de recebíveis, tarifas bancárias, maquininha."
         />
-        <StatCard label="Total de Custos" value={fmtBRL(totGeral)} tone="neg" sub={fmtPct(pctRec(totGeral)) + " da receita"} hint={{ description: "Soma de todos os custos. Quanto menor o % sobre a receita, mais saudável a operação.", formula: "CPV/CMV/CSP + Custos Fixos + Variáveis + Financeiros" }} />
+        <StatCard
+          label="Total de Custos"
+          value={fmtBRL(totGeral)}
+          tone="neg"
+          sub={fmtPct(pctRec(totGeral)) + " da receita"}
+          hint={{
+            description:
+              "Soma de todos os custos. Quanto menor o % sobre a receita, mais saudável a operação.",
+            formula: "CPV/CMV/CSP + Custos Fixos + Variáveis + Financeiros",
+          }}
+        />
       </div>
-
-
-
-
-
-
 
       {/* Custos Diretos de Venda (CMV/CPV/CSP) */}
       <SectionBlock
@@ -264,7 +284,10 @@ export function CostsTab() {
             const base = s.revenue.pmpMensal ?? fill12(s.revenue.pmp || 0);
             if (fixed) {
               const ref = base.find((x) => x !== 0) ?? base[0] ?? 0;
-              return { ...s, revenue: { ...s.revenue, pmpFixo: true, pmpMensal: fill12(ref), pmp: ref } };
+              return {
+                ...s,
+                revenue: { ...s.revenue, pmpFixo: true, pmpMensal: fill12(ref), pmp: ref },
+              };
             }
             return { ...s, revenue: { ...s.revenue, pmpFixo: false } };
           })
@@ -273,7 +296,6 @@ export function CostsTab() {
     </div>
   );
 }
-
 
 function SectionBlock({
   title,
@@ -301,9 +323,6 @@ function SectionBlock({
   );
 }
 
-
-
-
 function CostTable({
   lines,
   receitaBrutaAnual,
@@ -323,9 +342,12 @@ function CostTable({
   onLabel: (id: string, label: string) => void;
   onRemove: (id: string) => void;
 }) {
-
   if (lines.length === 0) {
-    return <div className="px-4 py-3 text-xs text-muted-foreground">Nenhuma rubrica nesta categoria. Use “+ Adicionar linha”.</div>;
+    return (
+      <div className="px-4 py-3 text-xs text-muted-foreground">
+        Nenhuma rubrica nesta categoria. Use “+ Adicionar linha”.
+      </div>
+    );
   }
   return (
     <div className="scrollbar-thin w-full overflow-x-auto overflow-y-hidden">
@@ -335,7 +357,9 @@ function CostTable({
             <th className="w-56 px-3 py-2">Descrição</th>
             <th className="w-24 px-2 py-2 text-center">Modo</th>
             {MESES.map((m) => (
-              <th key={m} className="px-1 py-2 text-right">{m}</th>
+              <th key={m} className="px-1 py-2 text-right">
+                {m}
+              </th>
             ))}
             <th className="px-3 py-2 text-right">Anual</th>
             <th className="w-14 px-2 py-2 text-right">% Rec</th>
@@ -371,7 +395,9 @@ function CostTable({
                 {c.fixed ? (
                   <td className="px-1 py-1" colSpan={12}>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase text-muted-foreground">Valor aplicado em todos os meses:</span>
+                      <span className="text-[10px] uppercase text-muted-foreground">
+                        Valor aplicado em todos os meses:
+                      </span>
                       <div className="w-36">
                         <MoneyInput
                           value={fixedCostBase(c.values)}
@@ -389,7 +415,9 @@ function CostTable({
                 )}
 
                 <td className="num px-3 py-2 text-right text-neg">{fmtBRL(anual)}</td>
-                <td className="num px-2 py-2 text-right text-xs text-muted-foreground">{fmtPct(pct)}</td>
+                <td className="num px-2 py-2 text-right text-xs text-muted-foreground">
+                  {fmtPct(pct)}
+                </td>
                 <td className="px-1 py-2 text-center">
                   {c.custom && (
                     <button
@@ -409,4 +437,3 @@ function CostTable({
     </div>
   );
 }
-

@@ -26,15 +26,15 @@ export type GrauRAT = 1 | 2 | 3;
 
 /** Alíquotas patronais base sobre o salário bruto, no Regime Geral. */
 export const ALIQUOTAS_GERAL = {
-  inssPatronal: 0.20, // 20% INSS patronal
-  terceiros: 0.058,   // 5,8% Sistema S (default — varia por CNAE)
+  inssPatronal: 0.2, // 20% INSS patronal
+  terceiros: 0.058, // 5,8% Sistema S (default — varia por CNAE)
 } as const;
 
 /** Provisões mensais (1/12 avos), aplicadas sobre o salário bruto. */
 export const PROVISOES = {
-  decimo: 1 / 12,                     // 8,3333%
-  fgtsSobreDecimo: 0.08 * (1 / 12),   // 0,6667%
-  ferias: (1 / 12) * (4 / 3),         // 11,1111% (1/12 + 1/3 constitucional)
+  decimo: 1 / 12, // 8,3333%
+  fgtsSobreDecimo: 0.08 * (1 / 12), // 0,6667%
+  ferias: (1 / 12) * (4 / 3), // 11,1111% (1/12 + 1/3 constitucional)
   fgtsSobreFerias: 0.08 * (1 / 12) * (4 / 3), // 0,8889%
 } as const;
 
@@ -55,7 +55,7 @@ export const custoFuncionarioInputSchema = z.object({
   simplesAnexoIV: z.boolean().default(false),
   grauRAT: z.union([z.literal(1), z.literal(2), z.literal(3)]).default(1),
   /** Alíquota de Terceiros (Sistema S) — varia por CNAE. Default 5,8%. */
-  aliquotaTerceiros: z.number().min(0).max(0.10).default(0.058),
+  aliquotaTerceiros: z.number().min(0).max(0.1).default(0.058),
   beneficios: z.object({
     vt: z.object({
       ativo: z.boolean().default(false),
@@ -242,13 +242,28 @@ export function calcularCustoFuncionario(
     });
   }
   if (beneficios.vr > 0) {
-    itensBeneficios.push({ rotulo: "Vale-Refeição / Alimentação", base: beneficios.vr, aliquota: null, valor: round2(beneficios.vr) });
+    itensBeneficios.push({
+      rotulo: "Vale-Refeição / Alimentação",
+      base: beneficios.vr,
+      aliquota: null,
+      valor: round2(beneficios.vr),
+    });
   }
   if (beneficios.planoSaude > 0) {
-    itensBeneficios.push({ rotulo: "Plano de Saúde", base: beneficios.planoSaude, aliquota: null, valor: round2(beneficios.planoSaude) });
+    itensBeneficios.push({
+      rotulo: "Plano de Saúde",
+      base: beneficios.planoSaude,
+      aliquota: null,
+      valor: round2(beneficios.planoSaude),
+    });
   }
   if (beneficios.outros > 0) {
-    itensBeneficios.push({ rotulo: "Outros Benefícios", base: beneficios.outros, aliquota: null, valor: round2(beneficios.outros) });
+    itensBeneficios.push({
+      rotulo: "Outros Benefícios",
+      base: beneficios.outros,
+      aliquota: null,
+      valor: round2(beneficios.outros),
+    });
   }
 
   const totalBeneficios = round2(itensBeneficios.reduce((acc, l) => acc + l.valor, 0));
@@ -272,5 +287,9 @@ export function calcularCustoFuncionario(
 
 /** Label legível para o regime. */
 export function labelRegime(r: RegimeEmpresa): string {
-  return r === "simples" ? "Simples Nacional" : r === "presumido" ? "Lucro Presumido" : "Lucro Real";
+  return r === "simples"
+    ? "Simples Nacional"
+    : r === "presumido"
+      ? "Lucro Presumido"
+      : "Lucro Real";
 }

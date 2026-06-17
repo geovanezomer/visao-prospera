@@ -1,5 +1,10 @@
 import { AppState } from "./types";
-import { buildDRE, calcIndicators, irShieldForRegime, resolveEffectiveRegime } from "./calculations";
+import {
+  buildDRE,
+  calcIndicators,
+  irShieldForRegime,
+  resolveEffectiveRegime,
+} from "./calculations";
 import { buildForecast, DEFAULT_FORECAST_CFG } from "./forecast";
 import { sum } from "./format";
 
@@ -53,7 +58,10 @@ export function buildSpreadForecast(state: AppState, horizonYears = 5): SpreadFo
   const D = Math.max(0, state.capital.dividaOnerosa);
   const caixaOcioso = Math.max(0, state.capital.caixaOcioso ?? 0);
   // Auditoria bug #3: alinhar com calcIndicators — PNO usa fallback para `fornecedores`.
-  const passivosNaoOnerosos = Math.max(0, state.capital.passivosNaoOnerosos ?? state.capital.fornecedores ?? 0);
+  const passivosNaoOnerosos = Math.max(
+    0,
+    state.capital.passivosNaoOnerosos ?? state.capital.fornecedores ?? 0,
+  );
   const ciBase = Math.max(1, PL + D - caixaOcioso - passivosNaoOnerosos);
 
   // Capex projetado por ano (vem do cashflow.capex mensal, replicado em todos os anos do forecast)
@@ -84,13 +92,17 @@ export function buildSpreadForecast(state: AppState, horizonYears = 5): SpreadFo
   }
 
   // Detecta projeção degenerada: spreads praticamente iguais ao do ano-base.
-  const variacao = Math.max(...years.map((y) => y.spread)) - Math.min(...years.map((y) => y.spread));
+  const variacao =
+    Math.max(...years.map((y) => y.spread)) - Math.min(...years.map((y) => y.spread));
   const degenerate = variacao < 0.1; // menos de 0.1 p.p. de variação em 5 anos
 
   // Ano em que cruza o break-even (de neg para pos, ou pos para neg).
   let breakEvenYear: number | null = null;
   for (let i = 1; i < years.length; i++) {
-    if (Math.sign(years[i].spread) !== Math.sign(years[i - 1].spread) && years[i - 1].spread !== 0) {
+    if (
+      Math.sign(years[i].spread) !== Math.sign(years[i - 1].spread) &&
+      years[i - 1].spread !== 0
+    ) {
       breakEvenYear = years[i].ano;
       break;
     }

@@ -26,22 +26,39 @@ export function WaccRoicMeter({ wacc, roic }: { wacc: number; roic: number }) {
           </div>
           <h3 className="mt-1 text-lg font-semibold flex items-center gap-2">
             {creating ? (
-              <><TrendingUp className="h-5 w-5 text-pos" /> <span className="text-pos">Criando valor</span></>
+              <>
+                <TrendingUp className="h-5 w-5 text-pos" />{" "}
+                <span className="text-pos">Criando valor</span>
+              </>
             ) : (
-              <><TrendingDown className="h-5 w-5 text-neg" /> <span className="text-neg">Destruindo valor</span></>
+              <>
+                <TrendingDown className="h-5 w-5 text-neg" />{" "}
+                <span className="text-neg">Destruindo valor</span>
+              </>
             )}
           </h3>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-            {creating
-              ? <>Cada R$ investido rende <strong className="text-pos">+{delta.toFixed(2)} p.p.</strong> acima do custo do capital. Mantenha o ritmo e reinvista nas alavancas que sustentam esse spread.</>
-              : <>Cada R$ investido rende <strong className="text-neg">{delta.toFixed(2)} p.p.</strong> abaixo do custo do capital. Para corrigir: melhore margem, gire mais o capital ou reduza o custo da dívida.</>
-            }
+            {creating ? (
+              <>
+                Cada R$ investido rende{" "}
+                <strong className="text-pos">+{delta.toFixed(2)} p.p.</strong> acima do custo do
+                capital. Mantenha o ritmo e reinvista nas alavancas que sustentam esse spread.
+              </>
+            ) : (
+              <>
+                Cada R$ investido rende{" "}
+                <strong className="text-neg">{delta.toFixed(2)} p.p.</strong> abaixo do custo do
+                capital. Para corrigir: melhore margem, gire mais o capital ou reduza o custo da
+                dívida.
+              </>
+            )}
           </p>
         </div>
         <div className="shrink-0 text-right">
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Spread</div>
           <div className={`mono text-3xl font-bold ${creating ? "text-pos" : "text-neg"}`}>
-            {delta >= 0 ? "+" : ""}{delta.toFixed(2)}
+            {delta >= 0 ? "+" : ""}
+            {delta.toFixed(2)}
             <span className="ml-1 text-sm font-normal text-muted-foreground">p.p.</span>
           </div>
         </div>
@@ -67,7 +84,19 @@ export function WaccRoicMeter({ wacc, roic }: { wacc: number; roic: number }) {
   );
 }
 
-function MeterBar({ label, subLabel, value, pct, color }: { label: string; subLabel: string; value: number; pct: number; color: string }) {
+function MeterBar({
+  label,
+  subLabel,
+  value,
+  pct,
+  color,
+}: {
+  label: string;
+  subLabel: string;
+  value: number;
+  pct: number;
+  color: string;
+}) {
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between text-xs">
@@ -75,7 +104,9 @@ function MeterBar({ label, subLabel, value, pct, color }: { label: string; subLa
           <span className="font-semibold">{label}</span>
           <span className="ml-1.5 text-[10px] text-muted-foreground">{subLabel}</span>
         </span>
-        <span className="mono font-semibold" style={{ color }}>{value.toFixed(2)}%</span>
+        <span className="mono font-semibold" style={{ color }}>
+          {value.toFixed(2)}%
+        </span>
       </div>
       <div className="h-3 w-full overflow-hidden rounded-full bg-border/30">
         <div

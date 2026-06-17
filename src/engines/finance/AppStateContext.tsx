@@ -28,9 +28,7 @@ import {
 } from "react";
 import type { AppState } from "./types";
 
-export type FinanceUpdater = (
-  p: Partial<AppState> | ((s: AppState) => AppState),
-) => void;
+export type FinanceUpdater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
 // Store interno: ref-stable, emite para listeners a cada mudança de state.
 // Mantém `update` estável para que `useFinanceUpdate()` nunca cause re-render.

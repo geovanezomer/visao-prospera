@@ -26,9 +26,17 @@ export type Severity = "info" | "warn" | "error";
 export type Category = "estrutural" | "fiscal" | "operacional";
 /** Ponteiro para a aba/seção da UI — habilita deep-link no futuro. */
 export type Location =
-  | "receitas" | "custos" | "capital" | "tributos" | "caixa"
-  | "governanca" | "dre" | "indicadores" | "resultados"
-  | "simulador" | "valuation";
+  | "receitas"
+  | "custos"
+  | "capital"
+  | "tributos"
+  | "caixa"
+  | "governanca"
+  | "dre"
+  | "indicadores"
+  | "resultados"
+  | "simulador"
+  | "valuation";
 
 export interface ValidationWarning {
   /** ID estável (não mudar) — usado para dedupe, snooze futuro e tests. */
@@ -71,10 +79,7 @@ const LIMITS = {
  * Roda todos os checks de validação cruzada e retorna a lista de warnings.
  * Ordenada por severidade (error → warn → info), depois por categoria.
  */
-export function crossValidate(
-  state: AppState,
-  model?: CrossValidateModel,
-): ValidationWarning[] {
+export function crossValidate(state: AppState, model?: CrossValidateModel): ValidationWarning[] {
   const regime = resolveEffectiveRegime(state);
   const dre = model?.dre ?? buildDRE(state, regime).dre;
   const ind = model?.ind ?? calcIndicators(state, dre);
@@ -87,18 +92,14 @@ export function crossValidate(
   // Ordena: error > warn > info, depois estrutural > fiscal > operacional
   const sevRank: Record<Severity, number> = { error: 0, warn: 1, info: 2 };
   const catRank: Record<Category, number> = { estrutural: 0, fiscal: 1, operacional: 2 };
-  return out.sort((a, b) =>
-    sevRank[a.severity] - sevRank[b.severity] ||
-    catRank[a.category] - catRank[b.category],
+  return out.sort(
+    (a, b) =>
+      sevRank[a.severity] - sevRank[b.severity] || catRank[a.category] - catRank[b.category],
   );
 }
 
 // ─── TIER 1 — Erros estruturais ──────────────────────────────────────
-function checkTier1Estrutural(
-  state: AppState,
-  dre: DRE,
-  ind: Indicators,
-): ValidationWarning[] {
+function checkTier1Estrutural(state: AppState, dre: DRE, ind: Indicators): ValidationWarning[] {
   const out: ValidationWarning[] = [];
   const receitaBrutaAnual = sum(dre.receitaBruta);
   const receitaLiqAnual = sum(dre.receitaLiquida);
@@ -116,7 +117,8 @@ function checkTier1Estrutural(
       category: "estrutural",
       title: "Margem bruta estrutural negativa",
       detail: `CPV anual (R$ ${fmt(cpvAnual)}) excede a Receita Bruta (R$ ${fmt(receitaBrutaAnual)}). Cada venda gera prejuízo bruto.`,
-      fixHint: "Revise os valores de CPV/CMV/CSP na aba Custos ou aumente o preço de venda na aba Receitas.",
+      fixHint:
+        "Revise os valores de CPV/CMV/CSP na aba Custos ou aumente o preço de venda na aba Receitas.",
       location: "custos",
     });
   }
@@ -129,7 +131,8 @@ function checkTier1Estrutural(
       category: "estrutural",
       title: "Folha total maior que a receita líquida",
       detail: `Folha anual com encargos (R$ ${fmt(folha)}) supera a Receita Líquida (R$ ${fmt(receitaLiqAnual)}).`,
-      fixHint: "Verifique se há linhas de folha duplicadas, salários superdimensionados ou receita subestimada.",
+      fixHint:
+        "Verifique se há linhas de folha duplicadas, salários superdimensionados ou receita subestimada.",
       location: "custos",
     });
   }
@@ -151,22 +154,29 @@ function checkTier1Estrutural(
 
   // 1.4 Dividendos > Lucro Líquido projetado (distribuição além do permitido)
   if (dividendos > 0 && dividendos > ll) {
-    const detail = ll <= 0
-      ? `Distribuição de R$ ${fmt(dividendos)} com Lucro Líquido projetado ${ll < 0 ? "NEGATIVO" : "zero"} (R$ ${fmt(ll)}). Vedado pela Lei 6.404/76 art. 201 (salvo reservas).`
-      : `Dividendos (R$ ${fmt(dividendos)}) superam o Lucro Líquido projetado (R$ ${fmt(ll)}).`;
+    const detail =
+      ll <= 0
+        ? `Distribuição de R$ ${fmt(dividendos)} com Lucro Líquido projetado ${ll < 0 ? "NEGATIVO" : "zero"} (R$ ${fmt(ll)}). Vedado pela Lei 6.404/76 art. 201 (salvo reservas).`
+        : `Dividendos (R$ ${fmt(dividendos)}) superam o Lucro Líquido projetado (R$ ${fmt(ll)}).`;
     out.push({
       id: "estrutural.dividendos_maior_que_ll",
       severity: "error",
       category: "estrutural",
       title: "Dividendos excedem o Lucro Líquido",
       detail,
-      fixHint: "Reduza a distribuição na aba Caixa ou use reservas de lucros acumulados (não modeladas aqui).",
+      fixHint:
+        "Reduza a distribuição na aba Caixa ou use reservas de lucros acumulados (não modeladas aqui).",
       location: "caixa",
     });
   }
 
   // 1.5 ROIC < WACC — destruição de valor (econômico, não contábil)
-  if (Number.isFinite(ind.roic) && Number.isFinite(ind.wacc) && ind.wacc > 0 && ind.roic < ind.wacc) {
+  if (
+    Number.isFinite(ind.roic) &&
+    Number.isFinite(ind.wacc) &&
+    ind.wacc > 0 &&
+    ind.roic < ind.wacc
+  ) {
     out.push({
       id: "estrutural.roic_menor_que_wacc",
       severity: "warn",
@@ -182,10 +192,7 @@ function checkTier1Estrutural(
 }
 
 // ─── TIER 2 — Inconsistências fiscais ────────────────────────────────
-function checkTier2Fiscal(
-  state: AppState,
-  dre: DRE,
-): ValidationWarning[] {
+function checkTier2Fiscal(state: AppState, dre: DRE): ValidationWarning[] {
   const out: ValidationWarning[] = [];
   const { tax } = state;
   const rbt12 = sum(dre.receitaBruta); // RBT12 derivado da receita bruta anual
@@ -200,7 +207,8 @@ function checkTier2Fiscal(
       category: "fiscal",
       title: "Simples Nacional acima do limite — desenquadramento obrigatório",
       detail: `RBT12 derivado (R$ ${fmt(rbt12)}) excede o limite de R$ ${fmt(limiteSimples)}. LC 123/2006 art. 3º §9º.`,
-      fixHint: "Migre para Lucro Presumido ou Real na aba Tributos — o app já calcula regime efetivo automaticamente, mas a configuração nominal está incorreta.",
+      fixHint:
+        "Migre para Lucro Presumido ou Real na aba Tributos — o app já calcula regime efetivo automaticamente, mas a configuração nominal está incorreta.",
       location: "tributos",
     });
   }
@@ -214,7 +222,8 @@ function checkTier2Fiscal(
       category: "fiscal",
       title: "Lucro Real opcional",
       detail: `Receita anual (R$ ${fmt(rbt12)}) abaixo do limite de obrigatoriedade do Lucro Real (R$ ${fmt(LIMITS.LUCRO_REAL_OBRIG)}). Empresa poderia optar por Presumido.`,
-      fixHint: "Compare cargas tributárias entre Real e Presumido na aba Tributos. Real só vale a pena com margem baixa ou muitos créditos.",
+      fixHint:
+        "Compare cargas tributárias entre Real e Presumido na aba Tributos. Real só vale a pena com margem baixa ou muitos créditos.",
       location: "tributos",
     });
   }
@@ -248,7 +257,8 @@ function checkTier2Fiscal(
       category: "fiscal",
       title: "Dedução de ISS acima de 50% da base",
       detail: `Deduções de ISS (R$ ${fmt(issDed)}/ano) representam >${((issDed / baseIss) * 100).toFixed(0)}% da base. Lei 116/2003 art. 7º §2º só permite materiais e subempreitada — varia por município.`,
-      fixHint: "Confirme com o cliente a comprovação documental de materiais/subempreitada antes de apresentar a economia.",
+      fixHint:
+        "Confirme com o cliente a comprovação documental de materiais/subempreitada antes de apresentar a economia.",
       location: "tributos",
     });
   }
@@ -257,11 +267,7 @@ function checkTier2Fiscal(
 }
 
 // ─── TIER 3 — Inconsistências operacionais ───────────────────────────
-function checkTier3Operacional(
-  state: AppState,
-  dre: DRE,
-  ind: Indicators,
-): ValidationWarning[] {
+function checkTier3Operacional(state: AppState, dre: DRE, ind: Indicators): ValidationWarning[] {
   const out: ValidationWarning[] = [];
   const receitaLiqAnual = sum(dre.receitaLiquida);
   const ebitdaAnual = sum(dre.ebitda);
@@ -289,7 +295,8 @@ function checkTier3Operacional(
       category: "operacional",
       title: "Ciclo financeiro insustentável",
       detail: `Ciclo = PMR + PME − PMP = ${ind.cicloFinanceiro.toFixed(0)} dias (> ${LIMITS.CICLO_MAX_DIAS}). Cada R$ 1 de receita gera necessidade prolongada de capital de giro.`,
-      fixHint: "Negocie prazo com fornecedores (PMP↑), reduza estoque médio (PME↓) ou encurte prazo de recebimento (PMR↓).",
+      fixHint:
+        "Negocie prazo com fornecedores (PMP↑), reduza estoque médio (PME↓) ou encurte prazo de recebimento (PMR↓).",
       location: "indicadores",
     });
   }
@@ -306,7 +313,8 @@ function checkTier3Operacional(
       category: "operacional",
       title: "Alavancagem financeira em zona crítica",
       detail: `Dívida Líquida / EBITDA = ${ind.dividaLiqEbitda.toFixed(1)}× (> ${LIMITS.DIV_EBITDA_MAX}×). Cobertura insuficiente para servir a dívida com geração operacional.`,
-      fixHint: "Renegocie alongamento de dívida ou capitalize via aporte de sócios — modelado na aba Caixa.",
+      fixHint:
+        "Renegocie alongamento de dívida ou capitalize via aporte de sócios — modelado na aba Caixa.",
       location: "capital",
     });
   }
@@ -315,16 +323,18 @@ function checkTier3Operacional(
   const capexAnual = sum(state.cashflow.capex);
   const ebitdaCobertura = Math.max(ebitdaAnual, 0);
   if (capexAnual > 0 && capexAnual > ebitdaCobertura) {
-    const detailEbitda = ebitdaAnual > 0
-      ? `> EBITDA (R$ ${fmt(ebitdaAnual)})`
-      : `com EBITDA ${ebitdaAnual < 0 ? "NEGATIVO" : "zero"} (R$ ${fmt(ebitdaAnual)})`;
+    const detailEbitda =
+      ebitdaAnual > 0
+        ? `> EBITDA (R$ ${fmt(ebitdaAnual)})`
+        : `com EBITDA ${ebitdaAnual < 0 ? "NEGATIVO" : "zero"} (R$ ${fmt(ebitdaAnual)})`;
     out.push({
       id: "operacional.capex_maior_que_ebitda",
       severity: "warn",
       category: "operacional",
       title: "CAPEX não coberto pela geração operacional",
       detail: `CAPEX anual (R$ ${fmt(capexAnual)}) ${detailEbitda}. Sem captação ou aporte, queima de caixa estrutural.`,
-      fixHint: "Verifique se há aportes/empréstimos suficientes na aba Caixa para financiar o investimento.",
+      fixHint:
+        "Verifique se há aportes/empréstimos suficientes na aba Caixa para financiar o investimento.",
       location: "caixa",
     });
   }
@@ -332,17 +342,15 @@ function checkTier3Operacional(
   // 3.5 Caixa mínimo excessivo (> 3× receita média mensal)
   const receitaMediaMensal = receitaLiqAnual / 12;
   const caixaMin = state.cashflow.caixaMinimo ?? 0;
-  if (
-    receitaMediaMensal > 0 &&
-    caixaMin > receitaMediaMensal * LIMITS.CAIXA_MIN_MULTI_EXCESSO
-  ) {
+  if (receitaMediaMensal > 0 && caixaMin > receitaMediaMensal * LIMITS.CAIXA_MIN_MULTI_EXCESSO) {
     out.push({
       id: "operacional.caixa_minimo_excessivo",
       severity: "info",
       category: "operacional",
       title: "Caixa mínimo possivelmente excessivo",
       detail: `Caixa mínimo (R$ ${fmt(caixaMin)}) é ${(caixaMin / receitaMediaMensal).toFixed(1)}× a receita média mensal. Capital parado deixa de gerar retorno.`,
-      fixHint: "Reduza o caixa mínimo ou aplique o excesso em renda fixa (rendimento na aba Receitas).",
+      fixHint:
+        "Reduza o caixa mínimo ou aplique o excesso em renda fixa (rendimento na aba Receitas).",
       location: "caixa",
     });
   }

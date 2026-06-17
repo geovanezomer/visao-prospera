@@ -53,7 +53,7 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
     });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
-    expect(ind.roe).toBeCloseTo(((s.revenue.bruta.reduce((a, b) => a + b, 0) > 0) ? ind.roe : 0), 1);
+    expect(ind.roe).toBeCloseTo(s.revenue.bruta.reduce((a, b) => a + b, 0) > 0 ? ind.roe : 0, 1);
     // estrutural: roe finito e proporcional a 1/PL
     expect(Number.isFinite(ind.roe)).toBe(true);
   });
@@ -77,8 +77,11 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
   it("ROIC finito mesmo com Capital Investido degenerado", () => {
     const s = createState({
       capital: {
-        ativoTotal: 0, patrimonioLiquido: 0, dividaOnerosa: 0,
-        passivosNaoOnerosos: 0, fornecedores: 0,
+        ativoTotal: 0,
+        patrimonioLiquido: 0,
+        dividaOnerosa: 0,
+        passivosNaoOnerosos: 0,
+        fornecedores: 0,
       },
     });
     const { dre } = buildDRE(s, "simples");

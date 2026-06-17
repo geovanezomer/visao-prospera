@@ -5,10 +5,7 @@ import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/auth/callback")({
   head: () => ({
-    meta: [
-      { title: "Confirmando — FinnancePRO" },
-      { name: "robots", content: "noindex" },
-    ],
+    meta: [{ title: "Confirmando — FinnancePRO" }, { name: "robots", content: "noindex" }],
   }),
   component: AuthCallbackPage,
 });
@@ -31,7 +28,11 @@ function AuthCallbackPage() {
     <main className="flex min-h-screen items-center justify-center bg-background px-6">
       <div className="text-center">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
-          {user ? <CheckCircle2 className="h-6 w-6" /> : <Activity className="h-6 w-6 animate-pulse" />}
+          {user ? (
+            <CheckCircle2 className="h-6 w-6" />
+          ) : (
+            <Activity className="h-6 w-6 animate-pulse" />
+          )}
         </div>
         <h1 className="text-lg font-semibold tracking-tight">
           {user ? "E-mail confirmado" : "Confirmando seu e-mail…"}

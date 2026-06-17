@@ -18,7 +18,10 @@ export function CapexAtivacaoSection({
   };
   const addExample = () => {
     const id = `cx_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
-    onChange([...items, { id, label: "Notebook (exemplo)", mes: 1, valor: 5000, vidaUtilMeses: 36 }]);
+    onChange([
+      ...items,
+      { id, label: "Notebook (exemplo)", mes: 1, valor: 5000, vidaUtilMeses: 36 },
+    ]);
   };
   const upd = (id: string, patch: Partial<CapexAtivacao>) =>
     onChange(items.map((x) => (x.id === id ? { ...x, ...patch } : x)));
@@ -36,7 +39,9 @@ export function CapexAtivacaoSection({
           <SectionTitle hint="Cada item gera depreciação adicional linear (valor ÷ vida útil) a partir do mês de ativação até o fim do ano. Atualiza EBIT, IR (no Real) e ROIC automaticamente.">
             Investimentos em equipamentos e ativos
           </SectionTitle>
-          <div className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">Capex · Ativação de Imobilizado no ano</div>
+          <div className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+            Capex · Ativação de Imobilizado no ano
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">
@@ -51,9 +56,15 @@ export function CapexAtivacaoSection({
       {items.length === 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-4 text-xs">
           <div className="text-muted-foreground">
-            Nenhuma ativação cadastrada. Use para máquinas, software, reformas, móveis e qualquer ativo que entre em operação no meio do ano.
+            Nenhuma ativação cadastrada. Use para máquinas, software, reformas, móveis e qualquer
+            ativo que entre em operação no meio do ano.
           </div>
-          <Button size="sm" variant="ghost" onClick={addExample} className="h-7 text-xs text-primary hover:text-primary">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={addExample}
+            className="h-7 text-xs text-primary hover:text-primary"
+          >
             <Lightbulb className="mr-1 h-3.5 w-3.5" />
             Adicionar exemplo: Notebook R$ 5.000 / 36 meses
           </Button>

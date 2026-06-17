@@ -36,12 +36,18 @@ export const motivosLabel: Record<MotivoRescisao, string> = {
 };
 
 export const motivoDescricao: Record<MotivoRescisao, string> = {
-  sem_justa_causa: "O empregador demite sem motivo disciplinar. Trabalhador tem direito a todas as verbas: saldo, férias proporcionais + 1/3, 13º proporcional, aviso prévio indenizado, multa de 40% do FGTS e saque integral.",
-  justa_causa: "Demissão motivada por falta grave (art. 482 CLT). Trabalhador recebe apenas saldo de salário e férias vencidas (se houver). Sem 13º proporcional, sem aviso, sem multa, sem saque FGTS.",
-  pedido_demissao: "Trabalhador solicita o desligamento. Recebe saldo, 13º proporcional, férias proporcionais + 1/3 e vencidas. Sem aviso indenizado, sem multa FGTS e sem saque (a menos que cumpra aviso).",
-  acordo_484a: "Distrato comum entre empresa e empregado. Aviso prévio e multa FGTS pela metade (20%). Saque de 80% do FGTS. Demais verbas integrais.",
-  rescisao_indireta: "‘Justa causa do empregador’ — falta grave do empregador (art. 483). Mesmas verbas da demissão sem justa causa.",
-  termino_experiencia: "Fim do contrato de experiência no prazo. Sem aviso prévio e sem multa de 40%, mas com saque do FGTS. Demais verbas proporcionais.",
+  sem_justa_causa:
+    "O empregador demite sem motivo disciplinar. Trabalhador tem direito a todas as verbas: saldo, férias proporcionais + 1/3, 13º proporcional, aviso prévio indenizado, multa de 40% do FGTS e saque integral.",
+  justa_causa:
+    "Demissão motivada por falta grave (art. 482 CLT). Trabalhador recebe apenas saldo de salário e férias vencidas (se houver). Sem 13º proporcional, sem aviso, sem multa, sem saque FGTS.",
+  pedido_demissao:
+    "Trabalhador solicita o desligamento. Recebe saldo, 13º proporcional, férias proporcionais + 1/3 e vencidas. Sem aviso indenizado, sem multa FGTS e sem saque (a menos que cumpra aviso).",
+  acordo_484a:
+    "Distrato comum entre empresa e empregado. Aviso prévio e multa FGTS pela metade (20%). Saque de 80% do FGTS. Demais verbas integrais.",
+  rescisao_indireta:
+    "‘Justa causa do empregador’ — falta grave do empregador (art. 483). Mesmas verbas da demissão sem justa causa.",
+  termino_experiencia:
+    "Fim do contrato de experiência no prazo. Sem aviso prévio e sem multa de 40%, mas com saque do FGTS. Demais verbas proporcionais.",
 };
 
 // ============================================================================
@@ -50,7 +56,7 @@ export const motivoDescricao: Record<MotivoRescisao, string> = {
 
 /** Faixas progressivas do INSS — vigentes mai/2025. */
 const INSS_FAIXAS = [
-  { ate: 1518.00, aliquota: 0.075 },
+  { ate: 1518.0, aliquota: 0.075 },
   { ate: 2793.88, aliquota: 0.09 },
   { ate: 4190.83, aliquota: 0.12 },
   { ate: 8157.41, aliquota: 0.14 }, // teto
@@ -58,7 +64,7 @@ const INSS_FAIXAS = [
 
 /** Faixas IRRF mensais 2025 (após dedução simplificada opcional). */
 const IRRF_FAIXAS = [
-  { ate: 2428.80, aliquota: 0.0, deduzir: 0 },
+  { ate: 2428.8, aliquota: 0.0, deduzir: 0 },
   { ate: 2826.65, aliquota: 0.075, deduzir: 182.16 },
   { ate: 3751.05, aliquota: 0.15, deduzir: 394.16 },
   { ate: 4664.68, aliquota: 0.225, deduzir: 675.49 },
@@ -101,8 +107,12 @@ export function calcularIRRF(baseComINSS: number, inss: number, dependentes: num
 
 export const rescisaoInputSchema = z.object({
   motivo: z.enum([
-    "sem_justa_causa", "justa_causa", "pedido_demissao",
-    "acordo_484a", "rescisao_indireta", "termino_experiencia",
+    "sem_justa_causa",
+    "justa_causa",
+    "pedido_demissao",
+    "acordo_484a",
+    "rescisao_indireta",
+    "termino_experiencia",
   ]),
   salarioBruto: z.number().min(0),
   diasTrabalhadosMes: z.number().int().min(0).max(31).default(0),
@@ -172,12 +182,60 @@ interface RegrasMotivo {
 }
 
 const REGRAS: Record<MotivoRescisao, RegrasMotivo> = {
-  sem_justa_causa:    { saldoSalario: true, decimoProporcional: true, feriasProporcionais: true, feriasVencidas: true, avisoFator: 1,   multaFGTSPct: 0.40, saqueFGTSPct: 1 },
-  rescisao_indireta:  { saldoSalario: true, decimoProporcional: true, feriasProporcionais: true, feriasVencidas: true, avisoFator: 1,   multaFGTSPct: 0.40, saqueFGTSPct: 1 },
-  acordo_484a:        { saldoSalario: true, decimoProporcional: true, feriasProporcionais: true, feriasVencidas: true, avisoFator: 0.5, multaFGTSPct: 0.20, saqueFGTSPct: 0.80 },
-  pedido_demissao:    { saldoSalario: true, decimoProporcional: true, feriasProporcionais: true, feriasVencidas: true, avisoFator: 0,   multaFGTSPct: 0,    saqueFGTSPct: 0 },
-  justa_causa:        { saldoSalario: true, decimoProporcional: false, feriasProporcionais: false, feriasVencidas: true, avisoFator: 0, multaFGTSPct: 0,    saqueFGTSPct: 0 },
-  termino_experiencia:{ saldoSalario: true, decimoProporcional: true, feriasProporcionais: true, feriasVencidas: true, avisoFator: 0,   multaFGTSPct: 0,    saqueFGTSPct: 1 },
+  sem_justa_causa: {
+    saldoSalario: true,
+    decimoProporcional: true,
+    feriasProporcionais: true,
+    feriasVencidas: true,
+    avisoFator: 1,
+    multaFGTSPct: 0.4,
+    saqueFGTSPct: 1,
+  },
+  rescisao_indireta: {
+    saldoSalario: true,
+    decimoProporcional: true,
+    feriasProporcionais: true,
+    feriasVencidas: true,
+    avisoFator: 1,
+    multaFGTSPct: 0.4,
+    saqueFGTSPct: 1,
+  },
+  acordo_484a: {
+    saldoSalario: true,
+    decimoProporcional: true,
+    feriasProporcionais: true,
+    feriasVencidas: true,
+    avisoFator: 0.5,
+    multaFGTSPct: 0.2,
+    saqueFGTSPct: 0.8,
+  },
+  pedido_demissao: {
+    saldoSalario: true,
+    decimoProporcional: true,
+    feriasProporcionais: true,
+    feriasVencidas: true,
+    avisoFator: 0,
+    multaFGTSPct: 0,
+    saqueFGTSPct: 0,
+  },
+  justa_causa: {
+    saldoSalario: true,
+    decimoProporcional: false,
+    feriasProporcionais: false,
+    feriasVencidas: true,
+    avisoFator: 0,
+    multaFGTSPct: 0,
+    saqueFGTSPct: 0,
+  },
+  termino_experiencia: {
+    saldoSalario: true,
+    decimoProporcional: true,
+    feriasProporcionais: true,
+    feriasVencidas: true,
+    avisoFator: 0,
+    multaFGTSPct: 0,
+    saqueFGTSPct: 1,
+  },
 };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -202,7 +260,13 @@ export function calcularRescisao(inputBruto: RescisaoInput): RescisaoOutput {
   // --- Saldo de salário (incide INSS e IRRF) ---
   if (regras.saldoSalario && i.diasTrabalhadosMes > 0) {
     const v = round2(salarioDia * i.diasTrabalhadosMes);
-    verbas.push({ rotulo: `Saldo de salário (${i.diasTrabalhadosMes} dias)`, valor: v, base: `R$ ${i.salarioBruto.toFixed(2)} ÷ 30 × ${i.diasTrabalhadosMes}`, incideINSS: true, incideIRRF: true });
+    verbas.push({
+      rotulo: `Saldo de salário (${i.diasTrabalhadosMes} dias)`,
+      valor: v,
+      base: `R$ ${i.salarioBruto.toFixed(2)} ÷ 30 × ${i.diasTrabalhadosMes}`,
+      incideINSS: true,
+      incideIRRF: true,
+    });
   }
 
   // --- Aviso prévio ---
@@ -223,15 +287,32 @@ export function calcularRescisao(inputBruto: RescisaoInput): RescisaoOutput {
   // --- 13º proporcional ---
   if (regras.decimoProporcional && i.mesesDecimoProporcional > 0) {
     const v = round2((i.salarioBruto / 12) * i.mesesDecimoProporcional);
-    verbas.push({ rotulo: `13º proporcional (${i.mesesDecimoProporcional}/12)`, valor: v, base: `${i.mesesDecimoProporcional}/12 × R$ ${i.salarioBruto.toFixed(2)}`, incideINSS: true, incideIRRF: true });
+    verbas.push({
+      rotulo: `13º proporcional (${i.mesesDecimoProporcional}/12)`,
+      valor: v,
+      base: `${i.mesesDecimoProporcional}/12 × R$ ${i.salarioBruto.toFixed(2)}`,
+      incideINSS: true,
+      incideIRRF: true,
+    });
   }
 
   // --- Férias proporcionais + 1/3 (indenizadas — isentas) ---
   if (regras.feriasProporcionais && i.mesesFeriasProporcionais > 0) {
     const ferias = round2((i.salarioBruto / 12) * i.mesesFeriasProporcionais);
     const tercoFerias = round2(ferias / 3);
-    verbas.push({ rotulo: `Férias proporcionais (${i.mesesFeriasProporcionais}/12)`, valor: ferias, base: `${i.mesesFeriasProporcionais}/12 × R$ ${i.salarioBruto.toFixed(2)}`, incideINSS: false, incideIRRF: false });
-    verbas.push({ rotulo: "1/3 sobre férias proporcionais", valor: tercoFerias, incideINSS: false, incideIRRF: false });
+    verbas.push({
+      rotulo: `Férias proporcionais (${i.mesesFeriasProporcionais}/12)`,
+      valor: ferias,
+      base: `${i.mesesFeriasProporcionais}/12 × R$ ${i.salarioBruto.toFixed(2)}`,
+      incideINSS: false,
+      incideIRRF: false,
+    });
+    verbas.push({
+      rotulo: "1/3 sobre férias proporcionais",
+      valor: tercoFerias,
+      incideINSS: false,
+      incideIRRF: false,
+    });
   }
 
   // --- Férias vencidas + 1/3 ---
@@ -239,13 +320,24 @@ export function calcularRescisao(inputBruto: RescisaoInput): RescisaoOutput {
     const fv = round2(i.salarioBruto);
     const t3 = round2(fv / 3);
     verbas.push({ rotulo: "Férias vencidas", valor: fv, incideINSS: false, incideIRRF: false });
-    verbas.push({ rotulo: "1/3 sobre férias vencidas", valor: t3, incideINSS: false, incideIRRF: false });
+    verbas.push({
+      rotulo: "1/3 sobre férias vencidas",
+      valor: t3,
+      incideINSS: false,
+      incideIRRF: false,
+    });
   }
 
   // --- Multa FGTS (isenta de INSS/IRRF) ---
   const multaFGTS = round2(i.saldoFGTS * regras.multaFGTSPct);
   if (multaFGTS > 0) {
-    verbas.push({ rotulo: `Multa FGTS (${(regras.multaFGTSPct * 100).toFixed(0)}%)`, valor: multaFGTS, base: `${(regras.multaFGTSPct * 100).toFixed(0)}% × saldo FGTS`, incideINSS: false, incideIRRF: false });
+    verbas.push({
+      rotulo: `Multa FGTS (${(regras.multaFGTSPct * 100).toFixed(0)}%)`,
+      valor: multaFGTS,
+      base: `${(regras.multaFGTSPct * 100).toFixed(0)}% × saldo FGTS`,
+      incideINSS: false,
+      incideIRRF: false,
+    });
   }
 
   // --- Indenização do contrato de experiência rompido antes do prazo (CLT arts. 479/480) ---
@@ -280,8 +372,10 @@ export function calcularRescisao(inputBruto: RescisaoInput): RescisaoOutput {
 
   // INSS calculado sobre verbas com incidência (saldo + aviso trabalhado).
   // 13º proporcional gera INSS/IRRF em cálculo SEPARADO (não soma com saldo).
-  const baseSaldoEAviso = verbas.filter(v => v.incideINSS && !v.rotulo.startsWith("13º")).reduce((a, v) => a + v.valor, 0);
-  const decimo = verbas.find(v => v.rotulo.startsWith("13º"))?.valor ?? 0;
+  const baseSaldoEAviso = verbas
+    .filter((v) => v.incideINSS && !v.rotulo.startsWith("13º"))
+    .reduce((a, v) => a + v.valor, 0);
+  const decimo = verbas.find((v) => v.rotulo.startsWith("13º"))?.valor ?? 0;
 
   const inssSaldo = calcularINSS(baseSaldoEAviso);
   const inssDecimo = calcularINSS(decimo);

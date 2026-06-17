@@ -86,15 +86,42 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "FinnancePRO" },
       { name: "twitter:description", content: "Diagnóstico & Simulação Financeira" },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ccesxdNjHKg20zgbBNAkTxtms2r1/social-images/social-1780074348673-logo.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/ccesxdNjHKg20zgbBNAkTxtms2r1/social-images/social-1780074348673-logo.webp" },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/ccesxdNjHKg20zgbBNAkTxtms2r1/social-images/social-1780074348673-logo.webp",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/ccesxdNjHKg20zgbBNAkTxtms2r1/social-images/social-1780074348673-logo.webp",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/png", sizes: "96x96", href: "/__l5e/assets-v1/febbcf92-de98-4f7b-a0f1-db4deb3dc4b2/favicon-96x96.png" },
-      { rel: "icon", type: "image/png", sizes: "192x192", href: "/__l5e/assets-v1/480e6bea-4f93-43e4-8b24-9e471d769091/web-app-manifest-192x192.png" },
-      { rel: "icon", type: "image/png", sizes: "512x512", href: "/__l5e/assets-v1/fd8a7196-3533-41dd-aa42-2094c0b84a91/web-app-manifest-512x512.png" },
-      { rel: "apple-touch-icon", sizes: "180x180", href: "/__l5e/assets-v1/1ce793f8-a897-49a2-b577-aa2b78926aca/apple-touch-icon.png" },
+      {
+        rel: "icon",
+        type: "image/png",
+        sizes: "96x96",
+        href: "/__l5e/assets-v1/febbcf92-de98-4f7b-a0f1-db4deb3dc4b2/favicon-96x96.png",
+      },
+      {
+        rel: "icon",
+        type: "image/png",
+        sizes: "192x192",
+        href: "/__l5e/assets-v1/480e6bea-4f93-43e4-8b24-9e471d769091/web-app-manifest-192x192.png",
+      },
+      {
+        rel: "icon",
+        type: "image/png",
+        sizes: "512x512",
+        href: "/__l5e/assets-v1/fd8a7196-3533-41dd-aa42-2094c0b84a91/web-app-manifest-512x512.png",
+      },
+      {
+        rel: "apple-touch-icon",
+        sizes: "180x180",
+        href: "/__l5e/assets-v1/1ce793f8-a897-49a2-b577-aa2b78926aca/apple-touch-icon.png",
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -136,7 +163,9 @@ function AuthCacheInvalidator() {
   const router = useRouter();
   const queryClient = useQueryClient();
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
         router.invalidate();
         queryClient.invalidateQueries();

@@ -11,12 +11,7 @@
 // =====================================================================
 
 // Helpers compartilhados
-export {
-  computeNetDebt,
-  outrasDeducoesMensal,
-  splitReceitasFinanceiras,
-  cagr12m,
-} from "./shared";
+export { computeNetDebt, outrasDeducoesMensal, splitReceitasFinanceiras, cagr12m } from "./shared";
 
 // Reforma Tributária (CBS/IBS — LC 214/2025)
 export {
@@ -31,12 +26,7 @@ export {
 } from "./tax/reforma";
 
 // Custos e regime efetivo
-export {
-  isCpvCost,
-  fixedCostBase,
-  effectiveMonthValues,
-  monthValues,
-} from "./costs";
+export { isCpvCost, fixedCostBase, effectiveMonthValues, monthValues } from "./costs";
 export {
   folhaAnual,
   resolveSimplesAnexo,
@@ -51,11 +41,7 @@ export { calcReal, irShieldForRegime } from "./tax/real";
 export type { MonthlyTax } from "./tax/shared";
 
 // Comparadores de regime / era
-export {
-  compareYearsForRegime,
-  compareRegimes,
-  compareErasForRegime,
-} from "./tax/compare";
+export { compareYearsForRegime, compareRegimes, compareErasForRegime } from "./tax/compare";
 
 // DRE, Indicadores e Diagnóstico
 export { type DRE, buildDRE } from "./dre";

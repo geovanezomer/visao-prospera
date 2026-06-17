@@ -1,20 +1,56 @@
 import { useState, Fragment, useEffect } from "react";
 import { useFinance } from "@/engines/finance/AppStateContext";
-import { AppState, TaxRegime, COST_VENDAS_LABEL, TAX_ERA_SHORT, CostCategory } from "@/engines/finance/types";
+import {
+  AppState,
+  TaxRegime,
+  COST_VENDAS_LABEL,
+  TAX_ERA_SHORT,
+  CostCategory,
+} from "@/engines/finance/types";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/engines/finance/format";
 import { buildDRE, calcIndicators, monthValues } from "@/engines/finance/calculations";
 import { buildCashFlow } from "@/engines/finance/cashflow";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight } from "lucide-react";
 
-
-
-const CHART_COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15", "#F472B6", "#34D399", "#A78BFA", "#FB923C"];
+const CHART_COLORS = [
+  "#00E5A0",
+  "#5BA8F5",
+  "#F5B85B",
+  "#C77DFF",
+  "#FF6B6B",
+  "#7DD3FC",
+  "#FACC15",
+  "#F472B6",
+  "#34D399",
+  "#A78BFA",
+  "#FB923C",
+];
 
 export function DRETab() {
   const { state, update } = useFinance();
@@ -36,10 +72,10 @@ export function DRETab() {
   // Agrega um vetor mensal (12) conforme o período selecionado.
   const aggregate = (arr: number[]): number[] => {
     if (view === "mensal") return arr;
-    if (view === "trimestral") return [0, 1, 2, 3].map((q) => arr[q * 3] + arr[q * 3 + 1] + arr[q * 3 + 2]);
+    if (view === "trimestral")
+      return [0, 1, 2, 3].map((q) => arr[q * 3] + arr[q * 3 + 1] + arr[q * 3 + 2]);
     return [];
   };
-
 
   const regime = state.tax.regime;
   const { dre, tax } = buildDRE(state, regime);
@@ -47,7 +83,7 @@ export function DRETab() {
   const cf = buildCashFlow(state, regime);
   const limiar = state.cashflow.limiarAlerta ?? -10000;
   const mesesCriticosIdx = new Set(
-    cf.saldoFinal.map((s, i) => (s <= limiar ? i : -1)).filter((i) => i >= 0)
+    cf.saldoFinal.map((s, i) => (s <= limiar ? i : -1)).filter((i) => i >= 0),
   );
   // Critical para o período renderizado: no modo mensal usa o índice direto;
   // no trimestral, o período é "crítico" se qualquer mês do trimestre estiver.
@@ -56,7 +92,6 @@ export function DRETab() {
     if (view === "trimestral") return [0, 1, 2].some((o) => mesesCriticosIdx.has(i * 3 + o));
     return false;
   };
-
 
   const cvLabel = COST_VENDAS_LABEL[state.businessType];
 
@@ -70,9 +105,9 @@ export function DRETab() {
 
   // ===== Quebra de despesas por categoria (mensal) =====
   const zeros = () => Array(12).fill(0);
-  const despComerciais = zeros();   // category = "variavel"
-  const despAdmin = zeros();         // category = "fixo"
-  const despFinanc = zeros();        // category = "financeiro"
+  const despComerciais = zeros(); // category = "variavel"
+  const despAdmin = zeros(); // category = "fixo"
+  const despFinanc = zeros(); // category = "financeiro"
   for (const c of state.costs) {
     const v = monthValues(c, state.tax.regime);
     if (c.category === "variavel") for (let i = 0; i < 12; i++) despComerciais[i] += v[i];
@@ -119,45 +154,151 @@ export function DRETab() {
     kind: "grupo";
     id: string;
     titulo: string;
-    v: number[];           // valores mensais já com sinal (negativo p/ despesas)
+    v: number[]; // valores mensais já com sinal (negativo p/ despesas)
     tone: "neg" | "pos" | "mix";
     lines: Array<{ label: string; values: number[] }>;
     emptyMsg?: string;
   };
-  type LinhaRow = { kind: "linha"; k: string; v: number[]; strong?: boolean; tone?: "pos" | "neg"; margin?: number; highlight?: boolean };
+  type LinhaRow = {
+    kind: "linha";
+    k: string;
+    v: number[];
+    strong?: boolean;
+    tone?: "pos" | "neg";
+    margin?: number;
+    highlight?: boolean;
+  };
   type CpvRow = { kind: "cpv" };
 
   const rows: Array<LinhaRow | CpvRow | GroupRow> = [
-    { kind: "linha", k: "(+) Receita Operacional Bruta", v: dre.receitaBruta, strong: true, tone: "pos" },
-    { kind: "linha", k: "(−) Devoluções e Cancelamentos", v: dre.deducoesInadimplencia.map((x) => -x), tone: "neg" },
+    {
+      kind: "linha",
+      k: "(+) Receita Operacional Bruta",
+      v: dre.receitaBruta,
+      strong: true,
+      tone: "pos",
+    },
+    {
+      kind: "linha",
+      k: "(−) Devoluções e Cancelamentos",
+      v: dre.deducoesInadimplencia.map((x) => -x),
+      tone: "neg",
+    },
     { kind: "linha", k: "(−) Descontos Incondicionais", v: descIncond.map((x) => -x), tone: "neg" },
     { kind: "linha", k: "(−) Abatimentos", v: abatimentos.map((x) => -x), tone: "neg" },
-    { kind: "linha", k: regime === "simples" ? "(−) DAS Simples Nacional" : "(−) Tributos sobre Receita (PIS/COFINS/ICMS/ISS/CBS/IBS)", v: dre.impostosVendas.map((x) => -x), tone: "neg" },
+    {
+      kind: "linha",
+      k:
+        regime === "simples"
+          ? "(−) DAS Simples Nacional"
+          : "(−) Tributos sobre Receita (PIS/COFINS/ICMS/ISS/CBS/IBS)",
+      v: dre.impostosVendas.map((x) => -x),
+      tone: "neg",
+    },
     { kind: "linha", k: "(=) Receita Operacional Líquida", v: dre.receitaLiquida, strong: true },
     { kind: "cpv" },
-    { kind: "linha", k: "(=) LUCRO BRUTO", v: dre.lucroBruto, strong: true, tone: sum(dre.lucroBruto) >= 0 ? "pos" : "neg" },
-    { kind: "grupo", id: "comerciais", titulo: "(−) Despesas Comerciais", v: despComerciais.map((x) => -x), tone: "neg", lines: linhaPorCat("variavel"), emptyMsg: "Nenhuma despesa comercial cadastrada." },
-    { kind: "grupo", id: "admin", titulo: "(−) Despesas Administrativas", v: despAdmin.map((x) => -x), tone: "neg", lines: linhaPorCat("fixo"), emptyMsg: "Nenhuma despesa administrativa cadastrada." },
-    { kind: "grupo", id: "outras_op", titulo: "(±) Outras Despesas/Receitas Operacionais", v: outrasOperacionais, tone: "mix", lines: [{ label: "Depreciação & Amortização", values: dre.depreciacao }], emptyMsg: "Sem outras despesas/receitas operacionais." },
-    { kind: "linha", k: "(=) LUCRO OPERACIONAL / EBIT", v: lucroOperacional, strong: true, tone: sum(lucroOperacional) >= 0 ? "pos" : "neg" },
-    { kind: "grupo", id: "rec_fin", titulo: "(+) Receitas Financeiras", v: receitasFinMensal, tone: "pos", lines: (state.revenue.receitasFinanceiras ?? []).map((rf) => ({ label: rf.label, values: rf.valores ?? zeros() })).filter((x) => sum(x.values) > 0), emptyMsg: "Sem receitas financeiras cadastradas." },
+    {
+      kind: "linha",
+      k: "(=) LUCRO BRUTO",
+      v: dre.lucroBruto,
+      strong: true,
+      tone: sum(dre.lucroBruto) >= 0 ? "pos" : "neg",
+    },
+    {
+      kind: "grupo",
+      id: "comerciais",
+      titulo: "(−) Despesas Comerciais",
+      v: despComerciais.map((x) => -x),
+      tone: "neg",
+      lines: linhaPorCat("variavel"),
+      emptyMsg: "Nenhuma despesa comercial cadastrada.",
+    },
+    {
+      kind: "grupo",
+      id: "admin",
+      titulo: "(−) Despesas Administrativas",
+      v: despAdmin.map((x) => -x),
+      tone: "neg",
+      lines: linhaPorCat("fixo"),
+      emptyMsg: "Nenhuma despesa administrativa cadastrada.",
+    },
+    {
+      kind: "grupo",
+      id: "outras_op",
+      titulo: "(±) Outras Despesas/Receitas Operacionais",
+      v: outrasOperacionais,
+      tone: "mix",
+      lines: [{ label: "Depreciação & Amortização", values: dre.depreciacao }],
+      emptyMsg: "Sem outras despesas/receitas operacionais.",
+    },
+    {
+      kind: "linha",
+      k: "(=) LUCRO OPERACIONAL / EBIT",
+      v: lucroOperacional,
+      strong: true,
+      tone: sum(lucroOperacional) >= 0 ? "pos" : "neg",
+    },
+    {
+      kind: "grupo",
+      id: "rec_fin",
+      titulo: "(+) Receitas Financeiras",
+      v: receitasFinMensal,
+      tone: "pos",
+      lines: (state.revenue.receitasFinanceiras ?? [])
+        .map((rf) => ({ label: rf.label, values: rf.valores ?? zeros() }))
+        .filter((x) => sum(x.values) > 0),
+      emptyMsg: "Sem receitas financeiras cadastradas.",
+    },
     { kind: "linha", k: "(±) Ganho/Perda em alienação de ativos", v: ganhoAlienacao, tone: "pos" },
-    { kind: "linha", k: "(=) LUCRO ANTES DO FINANCIAMENTO E TRIBUTOS", v: laft, strong: true, tone: sum(laft) >= 0 ? "pos" : "neg" },
-    { kind: "grupo", id: "desp_fin", titulo: "(−) Despesas Financeiras", v: despFinanc.map((x) => -x), tone: "neg", lines: linhaPorCat("financeiro"), emptyMsg: "Nenhuma despesa financeira cadastrada." },
-    { kind: "linha", k: "(=) LUCRO ANTES DO IR/CSLL (EBT)", v: ebt, strong: true, tone: sum(ebt) >= 0 ? "pos" : "neg" },
-    { kind: "linha", k: dre.impostosLucroBase === "receita_presumida" ? "(−) IR / CSLL (base presumida sobre receita)" : "(−) IR / CSLL", v: dre.impostos.map((x) => -x), tone: "neg" },
-    { kind: "linha", k: "(=) LUCRO LÍQUIDO DO EXERCÍCIO", v: dre.lucroLiquido, strong: true, tone: ll >= 0 ? "pos" : "neg", margin: ind.margemLiquida, highlight: true },
+    {
+      kind: "linha",
+      k: "(=) LUCRO ANTES DO FINANCIAMENTO E TRIBUTOS",
+      v: laft,
+      strong: true,
+      tone: sum(laft) >= 0 ? "pos" : "neg",
+    },
+    {
+      kind: "grupo",
+      id: "desp_fin",
+      titulo: "(−) Despesas Financeiras",
+      v: despFinanc.map((x) => -x),
+      tone: "neg",
+      lines: linhaPorCat("financeiro"),
+      emptyMsg: "Nenhuma despesa financeira cadastrada.",
+    },
+    {
+      kind: "linha",
+      k: "(=) LUCRO ANTES DO IR/CSLL (EBT)",
+      v: ebt,
+      strong: true,
+      tone: sum(ebt) >= 0 ? "pos" : "neg",
+    },
+    {
+      kind: "linha",
+      k:
+        dre.impostosLucroBase === "receita_presumida"
+          ? "(−) IR / CSLL (base presumida sobre receita)"
+          : "(−) IR / CSLL",
+      v: dre.impostos.map((x) => -x),
+      tone: "neg",
+    },
+    {
+      kind: "linha",
+      k: "(=) LUCRO LÍQUIDO DO EXERCÍCIO",
+      v: dre.lucroLiquido,
+      strong: true,
+      tone: ll >= 0 ? "pos" : "neg",
+      margin: ind.margemLiquida,
+      highlight: true,
+    },
   ];
-
-
-
-
 
   // chart data
   const monthlyChart = MESES.map((m, i) => ({
     mes: m,
     Receita: dre.receitaLiquida[i],
-    Custos: dre.cpv[i] + dre.despesasOperacionais[i] + dre.custosFinanceirosTotal[i] + dre.depreciacao[i],
+    Custos:
+      dre.cpv[i] + dre.despesasOperacionais[i] + dre.custosFinanceirosTotal[i] + dre.depreciacao[i],
     Lucro: dre.lucroLiquido[i],
   }));
 
@@ -183,58 +324,100 @@ export function DRETab() {
     { name: "Lucro Líq.", value: ll },
   ];
 
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <div className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
             {(["anual", "trimestral", "mensal"] as const).map((v) => (
-              <button key={v} onClick={() => setView(v)}
-                className={`rounded px-3 py-1 text-xs transition-all ${view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"} ${v === "mensal" ? "hidden lg:block" : ""}`}>
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`rounded px-3 py-1 text-xs transition-all ${view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"} ${v === "mensal" ? "hidden lg:block" : ""}`}
+              >
                 {v === "anual" ? "Anual" : v === "trimestral" ? "Trimestral" : "Mensal"}
               </button>
             ))}
-
           </div>
 
           {/* Seleção de regime fica na aba Tributário — aqui apenas refletimos o regime ativo abaixo. */}
         </div>
         <div className="text-xs text-muted-foreground">
-          Período: <span className="num">Jan</span> a <span className="num">Dez</span> · Regime ativo:{" "}
-          <Badge variant="outline" className="ml-1">{regime === "simples" ? "Simples" : regime === "presumido" ? "Presumido" : "Real"}</Badge>
+          Período: <span className="num">Jan</span> a <span className="num">Dez</span> · Regime
+          ativo:{" "}
+          <Badge variant="outline" className="ml-1">
+            {regime === "simples" ? "Simples" : regime === "presumido" ? "Presumido" : "Real"}
+          </Badge>
           <span className="ml-2">· Era:</span>
-          <Badge variant="outline" className={`ml-1 ${(state.tax.era ?? "atual") !== "atual" ? "border-primary/50 text-primary" : ""}`}>
+          <Badge
+            variant="outline"
+            className={`ml-1 ${(state.tax.era ?? "atual") !== "atual" ? "border-primary/50 text-primary" : ""}`}
+          >
             {TAX_ERA_SHORT[state.tax.era ?? "atual"]}
           </Badge>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-5">
-        <StatCard label="Faturamento" value={fmtBRL(rb)} tone="pos" hint={{ description: "Faturamento bruto anual.", formula: "Σ Receita Bruta" }} />
-        <StatCard label="EBITDA" value={fmtBRL(sum(dre.ebitda))} sub={`${ind.margemEbitda.toFixed(1)}%`} tone={sum(dre.ebitda) >= 0 ? "pos" : "neg"} hint={{ description: "Caixa operacional.", formula: "Lucro Bruto − Despesas" }} />
-        <StatCard label="EBIT" value={fmtBRL(sum(dre.ebit))} sub={`${ind.margemEbit.toFixed(1)}%`} tone={sum(dre.ebit) >= 0 ? "pos" : "neg"} hint={{ description: "Resultado operacional após depreciação/amortização (LAJIR).", formula: "EBITDA − Depreciação/Amortização" }} />
-        <StatCard label="Lucro Líq." value={fmtBRL(ll)} sub={`${ind.margemLiquida.toFixed(1)}%`} tone={ll >= 0 ? "pos" : "neg"} hint={{ description: "Resultado final.", formula: "LAIR − Impostos" }} />
-        <StatCard label="Impostos" value={fmtBRL(tax.annual)} tone="warn" sub={`${fmtPct(tax.effective / 100)}`} hint={{ description: "Carga tributária.", formula: "Impostos ÷ Receita Bruta" }} />
+        <StatCard
+          label="Faturamento"
+          value={fmtBRL(rb)}
+          tone="pos"
+          hint={{ description: "Faturamento bruto anual.", formula: "Σ Receita Bruta" }}
+        />
+        <StatCard
+          label="EBITDA"
+          value={fmtBRL(sum(dre.ebitda))}
+          sub={`${ind.margemEbitda.toFixed(1)}%`}
+          tone={sum(dre.ebitda) >= 0 ? "pos" : "neg"}
+          hint={{ description: "Caixa operacional.", formula: "Lucro Bruto − Despesas" }}
+        />
+        <StatCard
+          label="EBIT"
+          value={fmtBRL(sum(dre.ebit))}
+          sub={`${ind.margemEbit.toFixed(1)}%`}
+          tone={sum(dre.ebit) >= 0 ? "pos" : "neg"}
+          hint={{
+            description: "Resultado operacional após depreciação/amortização (LAJIR).",
+            formula: "EBITDA − Depreciação/Amortização",
+          }}
+        />
+        <StatCard
+          label="Lucro Líq."
+          value={fmtBRL(ll)}
+          sub={`${ind.margemLiquida.toFixed(1)}%`}
+          tone={ll >= 0 ? "pos" : "neg"}
+          hint={{ description: "Resultado final.", formula: "LAIR − Impostos" }}
+        />
+        <StatCard
+          label="Impostos"
+          value={fmtBRL(tax.annual)}
+          tone="warn"
+          sub={`${fmtPct(tax.effective / 100)}`}
+          hint={{ description: "Carga tributária.", formula: "Impostos ÷ Receita Bruta" }}
+        />
       </div>
-
-
 
       {/* DRE Table */}
       <div className="rounded-lg border border-border/60 bg-card/40 overflow-hidden shadow-sm">
         <div className="border-b border-border/60 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="text-sm sm:text-base font-semibold">D.R.E. — Demonstração do Resultado do Exercício</h3>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Regime de Competência</p>
+            <h3 className="text-sm sm:text-base font-semibold">
+              D.R.E. — Demonstração do Resultado do Exercício
+            </h3>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              Regime de Competência
+            </p>
           </div>
         </div>
         <div className="scrollbar-none w-full overflow-x-auto overflow-y-hidden touch-pan-x">
           <table className="w-full min-w-[600px] md:min-w-full text-[clamp(0.65rem,1vw+0.3rem,0.875rem)] table-fixed md:table-auto">
             <colgroup>
               <col className="w-[120px] sm:w-auto" />
-              {showPeriods && periodLabels.map((_, i) => (
-                <col key={i} className={view === "mensal" ? "w-[70px]" : "w-[90px]"} />
-              ))}
+              {showPeriods &&
+                periodLabels.map((_, i) => (
+                  <col key={i} className={view === "mensal" ? "w-[70px]" : "w-[90px]"} />
+                ))}
               <col className="w-[90px] md:w-auto" />
               <col className="w-[50px] md:w-auto" />
             </colgroup>
@@ -242,14 +425,15 @@ export function DRETab() {
             <thead>
               <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 <th className="px-4 py-2 text-left">Descrição</th>
-                {showPeriods && periodLabels.map((m, i) => (
-                  <th
-                    key={m}
-                    className={`px-2 py-2 text-right ${periodCritical(i) ? "text-destructive" : ""}`}
-                  >
-                    {m}
-                  </th>
-                ))}
+                {showPeriods &&
+                  periodLabels.map((m, i) => (
+                    <th
+                      key={m}
+                      className={`px-2 py-2 text-right ${periodCritical(i) ? "text-destructive" : ""}`}
+                    >
+                      {m}
+                    </th>
+                  ))}
                 <th className="px-4 py-2 text-right">Anual</th>
                 <th className="px-3 py-2 text-right">% Rec</th>
               </tr>
@@ -261,49 +445,80 @@ export function DRETab() {
                   const total = sum(row.v);
                   const pct = rb > 0 ? Math.abs(total) / rb : 0;
                   const isOpen = !!openGroups[row.id];
-                  const toneCls = row.tone === "neg" ? "text-neg" : row.tone === "pos" ? "text-pos" : "";
+                  const toneCls =
+                    row.tone === "neg" ? "text-neg" : row.tone === "pos" ? "text-pos" : "";
                   return (
                     <Fragment key={idx}>
-                      <tr className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20" onClick={() => toggleGroup(row.id)}>
+                      <tr
+                        className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20"
+                        onClick={() => toggleGroup(row.id)}
+                      >
                         <td className="px-3 py-2 text-[10px] sm:text-xs font-semibold truncate">
                           <span className="inline-flex items-center gap-1">
-                            <ChevronRight className={`h-3 w-3 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                            <ChevronRight
+                              className={`h-3 w-3 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`}
+                            />
                             {row.titulo}
                           </span>
                         </td>
-                        {showPeriods && aggregate(row.v).map((v, i) => (
-                          <td key={i} className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}>
-                            {v === 0 ? "—" : fmtBRLCompact(v)}
-                          </td>
-                        ))}
+                        {showPeriods &&
+                          aggregate(row.v).map((v, i) => (
+                            <td
+                              key={i}
+                              className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}
+                            >
+                              {v === 0 ? "—" : fmtBRLCompact(v)}
+                            </td>
+                          ))}
 
-                        <td className={`num px-4 py-2 text-right font-semibold ${total < 0 ? "text-neg" : total > 0 ? toneCls || "text-foreground" : ""}`}>{fmtBRL(total)}</td>
-                        <td className="num px-3 py-2 text-right text-xs text-muted-foreground">{fmtPct(pct)}</td>
+                        <td
+                          className={`num px-4 py-2 text-right font-semibold ${total < 0 ? "text-neg" : total > 0 ? toneCls || "text-foreground" : ""}`}
+                        >
+                          {fmtBRL(total)}
+                        </td>
+                        <td className="num px-3 py-2 text-right text-xs text-muted-foreground">
+                          {fmtPct(pct)}
+                        </td>
                       </tr>
-                      {isOpen && row.lines.map((l, li) => {
-                        const sgn = row.tone === "neg" ? -1 : 1;
-                        const lTotal = sum(l.values) * sgn;
-                        return (
-                          <tr key={`${row.id}_${li}`} className="border-t border-border/20">
-                            <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">{l.label}</td>
-                            {showPeriods && aggregate(l.values).map((v, i) => {
-                              const sv = v * sgn;
-                              return (
-                                <td key={i} className={`num px-2 py-1.5 text-right text-xs ${sv < 0 ? "text-neg" : sv > 0 ? "text-pos" : "text-muted-foreground"}`}>
-                                  {sv === 0 ? "—" : fmtBRLCompact(sv)}
-                                </td>
-                              );
-                            })}
+                      {isOpen &&
+                        row.lines.map((l, li) => {
+                          const sgn = row.tone === "neg" ? -1 : 1;
+                          const lTotal = sum(l.values) * sgn;
+                          return (
+                            <tr key={`${row.id}_${li}`} className="border-t border-border/20">
+                              <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">
+                                {l.label}
+                              </td>
+                              {showPeriods &&
+                                aggregate(l.values).map((v, i) => {
+                                  const sv = v * sgn;
+                                  return (
+                                    <td
+                                      key={i}
+                                      className={`num px-2 py-1.5 text-right text-xs ${sv < 0 ? "text-neg" : sv > 0 ? "text-pos" : "text-muted-foreground"}`}
+                                    >
+                                      {sv === 0 ? "—" : fmtBRLCompact(sv)}
+                                    </td>
+                                  );
+                                })}
 
-                            <td className={`num px-4 py-1.5 text-right text-xs ${lTotal < 0 ? "text-neg" : lTotal > 0 ? "text-pos" : ""}`}>{fmtBRL(lTotal)}</td>
-                            <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">{fmtPct(rb > 0 ? Math.abs(lTotal) / rb : 0)}</td>
-                          </tr>
-                        );
-                      })}
+                              <td
+                                className={`num px-4 py-1.5 text-right text-xs ${lTotal < 0 ? "text-neg" : lTotal > 0 ? "text-pos" : ""}`}
+                              >
+                                {fmtBRL(lTotal)}
+                              </td>
+                              <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">
+                                {fmtPct(rb > 0 ? Math.abs(lTotal) / rb : 0)}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       {isOpen && row.lines.length === 0 && (
                         <tr className="border-t border-border/20">
-                          <td colSpan={(showPeriods ? periodLabels.length : 0) + 3} className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground">
-
+                          <td
+                            colSpan={(showPeriods ? periodLabels.length : 0) + 3}
+                            className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground"
+                          >
                             {row.emptyMsg ?? "Sem itens cadastrados."}
                           </td>
                         </tr>
@@ -316,42 +531,70 @@ export function DRETab() {
                   const pct = rb > 0 ? total / rb : 0;
                   return (
                     <Fragment key={idx}>
-                      <tr className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20" onClick={() => setOpenCpv((v) => !v)}>
+                      <tr
+                        className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20"
+                        onClick={() => setOpenCpv((v) => !v)}
+                      >
                         <td className="px-3 py-2 text-[10px] sm:text-xs font-semibold truncate">
                           <span className="inline-flex items-center gap-1">
-                            <ChevronRight className={`h-3 w-3 shrink-0 transition-transform ${openCpv ? "rotate-90" : ""}`} />
+                            <ChevronRight
+                              className={`h-3 w-3 shrink-0 transition-transform ${openCpv ? "rotate-90" : ""}`}
+                            />
                             (−) {cvLabel.long}
                           </span>
                         </td>
-                        {showPeriods && aggregate(dre.cpv).map((v, i) => (
-                          <td key={i} className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "" : ""} text-neg`}>
-                            {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
-                          </td>
-                        ))}
+                        {showPeriods &&
+                          aggregate(dre.cpv).map((v, i) => (
+                            <td
+                              key={i}
+                              className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "" : ""} text-neg`}
+                            >
+                              {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
+                            </td>
+                          ))}
 
-                        <td className="num px-4 py-2 text-right font-semibold text-neg">− {fmtBRL(total)}</td>
-                        <td className="num px-3 py-2 text-right text-xs text-muted-foreground">{fmtPct(pct)}</td>
+                        <td className="num px-4 py-2 text-right font-semibold text-neg">
+                          − {fmtBRL(total)}
+                        </td>
+                        <td className="num px-3 py-2 text-right text-xs text-muted-foreground">
+                          {fmtPct(pct)}
+                        </td>
                       </tr>
-                      {openCpv && linhasCpv.map((l, li) => {
-                        const lTotal = sum(l.values);
-                        return (
-                          <tr key={`cpv_${li}`} className="border-t border-border/20">
-                            <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">{l.label}</td>
-                            {showPeriods && aggregate(l.values).map((v, i) => (
-                              <td key={i} className="num px-2 py-1.5 text-right text-xs text-muted-foreground">
-                                {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
+                      {openCpv &&
+                        linhasCpv.map((l, li) => {
+                          const lTotal = sum(l.values);
+                          return (
+                            <tr key={`cpv_${li}`} className="border-t border-border/20">
+                              <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">
+                                {l.label}
                               </td>
-                            ))}
+                              {showPeriods &&
+                                aggregate(l.values).map((v, i) => (
+                                  <td
+                                    key={i}
+                                    className="num px-2 py-1.5 text-right text-xs text-muted-foreground"
+                                  >
+                                    {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
+                                  </td>
+                                ))}
 
-                            <td className="num px-4 py-1.5 text-right text-xs text-neg">− {fmtBRL(lTotal)}</td>
-                            <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">{fmtPct(rb > 0 ? lTotal / rb : 0)}</td>
-                          </tr>
-                        );
-                      })}
+                              <td className="num px-4 py-1.5 text-right text-xs text-neg">
+                                − {fmtBRL(lTotal)}
+                              </td>
+                              <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">
+                                {fmtPct(rb > 0 ? lTotal / rb : 0)}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       {openCpv && linhasCpv.length === 0 && (
                         <tr className="border-t border-border/20">
-                          <td colSpan={(showPeriods ? periodLabels.length : 0) + 3} className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground">
-                            Nenhum item classificado como {cvLabel.short} ainda. Cadastre custos na categoria "Custo de Vendas" na aba Custos.
+                          <td
+                            colSpan={(showPeriods ? periodLabels.length : 0) + 3}
+                            className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground"
+                          >
+                            Nenhum item classificado como {cvLabel.short} ainda. Cadastre custos na
+                            categoria "Custo de Vendas" na aba Custos.
                           </td>
                         </tr>
                       )}
@@ -361,31 +604,48 @@ export function DRETab() {
 
                 const total = sum(row.v);
                 const pct = rb > 0 ? total / rb : 0;
-                const toneCls = row.tone === "pos" ? "text-pos" : row.tone === "neg" ? "text-neg" : "";
+                const toneCls =
+                  row.tone === "pos" ? "text-pos" : row.tone === "neg" ? "text-neg" : "";
                 return (
-                  <tr key={idx} className={`border-t border-border/30 ${row.highlight ? "bg-primary/10" : row.strong ? "bg-accent/20" : ""}`}>
-                    <td className={`px-3 py-2 ${row.strong ? "font-semibold" : "text-muted-foreground"} text-[10px] sm:text-xs truncate`}>{row.k}</td>
-                    {showPeriods && aggregate(row.v).map((v, i) => (
-                      <td key={i} className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}>
-                        {v === 0 ? "—" : fmtBRLCompact(v)}
-                      </td>
-                    ))}
-
-                    <td className={`num px-4 py-2 text-right ${row.strong ? "font-semibold" : ""} ${total < 0 ? "text-neg" : total > 0 ? toneCls || "text-foreground" : ""}`}>
-                      {fmtBRL(total)}
-                      {row.margin !== undefined && <div className="text-[10px] font-normal text-muted-foreground">Margem {row.margin.toFixed(1)}%</div>}
+                  <tr
+                    key={idx}
+                    className={`border-t border-border/30 ${row.highlight ? "bg-primary/10" : row.strong ? "bg-accent/20" : ""}`}
+                  >
+                    <td
+                      className={`px-3 py-2 ${row.strong ? "font-semibold" : "text-muted-foreground"} text-[10px] sm:text-xs truncate`}
+                    >
+                      {row.k}
                     </td>
-                    <td className="num px-3 py-2 text-right text-xs text-muted-foreground">{fmtPct(pct)}</td>
+                    {showPeriods &&
+                      aggregate(row.v).map((v, i) => (
+                        <td
+                          key={i}
+                          className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}
+                        >
+                          {v === 0 ? "—" : fmtBRLCompact(v)}
+                        </td>
+                      ))}
+
+                    <td
+                      className={`num px-4 py-2 text-right ${row.strong ? "font-semibold" : ""} ${total < 0 ? "text-neg" : total > 0 ? toneCls || "text-foreground" : ""}`}
+                    >
+                      {fmtBRL(total)}
+                      {row.margin !== undefined && (
+                        <div className="text-[10px] font-normal text-muted-foreground">
+                          Margem {row.margin.toFixed(1)}%
+                        </div>
+                      )}
+                    </td>
+                    <td className="num px-3 py-2 text-right text-xs text-muted-foreground">
+                      {fmtPct(pct)}
+                    </td>
                   </tr>
                 );
               })}
-
-
             </tbody>
           </table>
         </div>
       </div>
-
     </div>
   );
 }
@@ -399,8 +659,27 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-function Ind({ label, v, desc, formula, tone }: { label: string; v: string; desc?: string; formula?: string; tone?: "pos" | "neg" | "warn" }) {
-  const cls = tone === "pos" ? "text-pos" : tone === "neg" ? "text-neg" : tone === "warn" ? "text-[var(--warning)]" : "";
+function Ind({
+  label,
+  v,
+  desc,
+  formula,
+  tone,
+}: {
+  label: string;
+  v: string;
+  desc?: string;
+  formula?: string;
+  tone?: "pos" | "neg" | "warn";
+}) {
+  const cls =
+    tone === "pos"
+      ? "text-pos"
+      : tone === "neg"
+        ? "text-neg"
+        : tone === "warn"
+          ? "text-[var(--warning)]"
+          : "";
   return (
     <div className="rounded-md border border-border/40 bg-background/40 p-3">
       <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">

@@ -41,8 +41,13 @@ export function ConfirmDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
-            onClick={() => { onConfirm(); setOpen(false); }}
-            className={cn(destructive && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
+            onClick={() => {
+              onConfirm();
+              setOpen(false);
+            }}
+            className={cn(
+              destructive && "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+            )}
           >
             {confirmLabel}
           </AlertDialogAction>
@@ -61,4 +66,7 @@ export const chartTooltipStyle = {
 } as const;
 
 export const chartTooltipItemStyle = { color: "var(--popover-foreground)" } as const;
-export const chartTooltipLabelStyle = { color: "var(--popover-foreground)", fontWeight: 600 } as const;
+export const chartTooltipLabelStyle = {
+  color: "var(--popover-foreground)",
+  fontWeight: 600,
+} as const;

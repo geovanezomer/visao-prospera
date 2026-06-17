@@ -7,12 +7,7 @@
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  CURRENT_VERSION,
-  FinnanceFileSchema,
-  openGzfp,
-  runMigrations,
-} from "../index";
+import { CURRENT_VERSION, FinnanceFileSchema, openGzfp, runMigrations } from "../index";
 
 const FIXTURES_DIR = join(__dirname, "fixtures");
 
@@ -56,9 +51,7 @@ describe("fileFormat — pipeline de migrators", () => {
       // Resultado estável: aplicar o pipeline sobre um arquivo já migrado
       // deve ser no-op (mesma forma, mesma versão).
       expect(twice).toEqual(once);
-      expect((twice as { version: number }).version).toBe(
-        (once as { version: number }).version,
-      );
+      expect((twice as { version: number }).version).toBe((once as { version: number }).version);
     });
   }
 

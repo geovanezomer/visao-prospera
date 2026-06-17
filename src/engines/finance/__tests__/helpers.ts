@@ -15,8 +15,8 @@ import type { AppState } from "../types";
 type DeepPartial<T> = T extends (infer U)[]
   ? U[] // arrays substituídos por inteiro
   : T extends object
-  ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : T;
+    ? { [K in keyof T]?: DeepPartial<T[K]> }
+    : T;
 
 function deepMerge<T>(base: T, override: DeepPartial<T> | undefined): T {
   if (override === undefined || override === null) return base;

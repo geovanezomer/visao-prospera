@@ -10,7 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { simularSacPrice, type ResultadoSistema } from "@/engines/calculadoras/sacPrice";
 
 const fmtBRL = (n: number) =>
@@ -40,8 +47,11 @@ export function SacVsPriceCalc() {
   }, [valor, taxaAnual, meses]);
 
   function limpar() {
-    setValor(0); setTaxaAnual(0); setMeses(0);
-    setPaginaSac(0); setPaginaPrice(0);
+    setValor(0);
+    setTaxaAnual(0);
+    setMeses(0);
+    setPaginaSac(0);
+    setPaginaPrice(0);
   }
 
   return (
@@ -64,7 +74,9 @@ export function SacVsPriceCalc() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><Step n={1} /> Valor do Financiamento</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Step n={1} /> Valor do Financiamento
+            </CardTitle>
             <CardDescription>Quanto deseja financiar</CardDescription>
           </CardHeader>
           <CardContent>
@@ -76,7 +88,9 @@ export function SacVsPriceCalc() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><Step n={2} /> Taxa e Prazo</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Step n={2} /> Taxa e Prazo
+            </CardTitle>
             <CardDescription>Juros anuais e prazo em meses</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -84,7 +98,12 @@ export function SacVsPriceCalc() {
               <SuffixInput value={taxaAnual} suffix="% a.a." step={0.1} onChange={setTaxaAnual} />
             </Field>
             <Field label="Prazo (meses)">
-              <SuffixInput value={meses} suffix="meses" step={12} onChange={(v) => setMeses(Math.round(v))} />
+              <SuffixInput
+                value={meses}
+                suffix="meses"
+                step={12}
+                onChange={(v) => setMeses(Math.round(v))}
+              />
             </Field>
             <div className="flex flex-wrap gap-2 pt-1">
               {PRAZOS_RAPIDOS.map((p) => (
@@ -116,39 +135,59 @@ export function SacVsPriceCalc() {
                   <strong className="text-foreground">{meses} meses</strong>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Taxa: {taxaAnual.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% a.a.{" "}
-                  ({fmtPct(sim.taxaMensal)} a.m.)
+                  Taxa: {taxaAnual.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% a.a. (
+                  {fmtPct(sim.taxaMensal)} a.m.)
                 </p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="text-center">
-                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">SAC</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                    SAC
+                  </p>
                   <p className="mt-1 text-3xl font-bold text-emerald-700 dark:text-emerald-400 sm:text-4xl">
                     {fmtBRL(sim.sac.totalPago)}
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">juros: {fmtBRL(sim.sac.totalJuros)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    juros: {fmtBRL(sim.sac.totalJuros)}
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs font-bold uppercase tracking-wider text-primary">PRICE</p>
-                  <p className="mt-1 text-3xl font-bold text-primary sm:text-4xl">{fmtBRL(sim.price.totalPago)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">juros: {fmtBRL(sim.price.totalJuros)}</p>
+                  <p className="mt-1 text-3xl font-bold text-primary sm:text-4xl">
+                    {fmtBRL(sim.price.totalPago)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    juros: {fmtBRL(sim.price.totalJuros)}
+                  </p>
                 </div>
               </div>
 
               {/* Barras de juros */}
               <div className="space-y-3">
-                <BarraJuros label="SAC - juros" valor={sim.sac.totalJuros} total={sim.sac.totalPago} color="bg-emerald-500" />
-                <BarraJuros label="PRICE - juros" valor={sim.price.totalJuros} total={sim.price.totalPago} color="bg-primary" />
+                <BarraJuros
+                  label="SAC - juros"
+                  valor={sim.sac.totalJuros}
+                  total={sim.sac.totalPago}
+                  color="bg-emerald-500"
+                />
+                <BarraJuros
+                  label="PRICE - juros"
+                  valor={sim.price.totalJuros}
+                  total={sim.price.totalPago}
+                  color="bg-primary"
+                />
               </div>
             </CardContent>
           </Card>
 
           <p className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
             No sistema <strong className="text-foreground">SAC</strong>, você economiza{" "}
-            <strong className="text-emerald-700 dark:text-emerald-400">{fmtBRL(sim.economiaJurosSac)}</strong> em juros comparado ao
-            PRICE. Porém, as primeiras parcelas do SAC são mais altas
-            ({fmtBRL(sim.sac.primeiraParcela)} vs {fmtBRL(sim.price.primeiraParcela)}).
+            <strong className="text-emerald-700 dark:text-emerald-400">
+              {fmtBRL(sim.economiaJurosSac)}
+            </strong>{" "}
+            em juros comparado ao PRICE. Porém, as primeiras parcelas do SAC são mais altas (
+            {fmtBRL(sim.sac.primeiraParcela)} vs {fmtBRL(sim.price.primeiraParcela)}).
           </p>
 
           {/* Resumo por sistema */}
@@ -214,27 +253,34 @@ export function SacVsPriceCalc() {
         <Card>
           <CollapsibleTrigger asChild>
             <button className="flex w-full items-center justify-between p-4 text-left text-sm font-medium hover:bg-muted/40">
-              <span className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> Entenda a calculadora</span>
+              <span className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-primary" /> Entenda a calculadora
+              </span>
               <span className="text-xs text-muted-foreground">expandir</span>
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-3 border-t pt-4 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">Como funciona o simulador de financiamento (SAC vs PRICE)?</p>
+              <p className="font-medium text-foreground">
+                Como funciona o simulador de financiamento (SAC vs PRICE)?
+              </p>
               <p>
-                No Brasil, os dois sistemas de amortização mais usados em financiamentos imobiliários e de veículos são o
-                <strong> SAC</strong> (Sistema de Amortização Constante) e a <strong>Tabela PRICE</strong> (Sistema Francês
-                de Amortização). A diferença fundamental está na composição das parcelas ao longo do tempo.
+                No Brasil, os dois sistemas de amortização mais usados em financiamentos
+                imobiliários e de veículos são o<strong> SAC</strong> (Sistema de Amortização
+                Constante) e a <strong>Tabela PRICE</strong> (Sistema Francês de Amortização). A
+                diferença fundamental está na composição das parcelas ao longo do tempo.
               </p>
               <ul className="ml-4 list-disc space-y-1">
                 <li>
-                  <strong>SAC:</strong> a amortização (parte que reduz o saldo devedor) é constante em todas as parcelas. Como os
-                  juros incidem sobre o saldo devedor (que diminui a cada mês), as parcelas começam maiores e vão diminuindo. É o
-                  mais usado em financiamentos imobiliários no Brasil.
+                  <strong>SAC:</strong> a amortização (parte que reduz o saldo devedor) é constante
+                  em todas as parcelas. Como os juros incidem sobre o saldo devedor (que diminui a
+                  cada mês), as parcelas começam maiores e vão diminuindo. É o mais usado em
+                  financiamentos imobiliários no Brasil.
                 </li>
                 <li>
-                  <strong>PRICE:</strong> a parcela total é fixa durante todo o contrato. No início, a maior parte da parcela são
-                  juros; com o tempo, a proporção se inverte. É o sistema padrão para financiamento de veículos e empréstimos pessoais.
+                  <strong>PRICE:</strong> a parcela total é fixa durante todo o contrato. No início,
+                  a maior parte da parcela são juros; com o tempo, a proporção se inverte. É o
+                  sistema padrão para financiamento de veículos e empréstimos pessoais.
                 </li>
               </ul>
 
@@ -253,19 +299,39 @@ export function SacVsPriceCalc() {
               <div className="rounded-md bg-muted/40 p-3 text-center font-mono text-xs">
                 Parcela fixa = Valor financiado × [i × (1+i)<sup>n</sup>] ÷ [(1+i)<sup>n</sup> − 1]
               </div>
-              <p className="text-xs">Onde <code>i</code> = taxa mensal e <code>n</code> = número de parcelas.</p>
+              <p className="text-xs">
+                Onde <code>i</code> = taxa mensal e <code>n</code> = número de parcelas.
+              </p>
 
               <div className="space-y-1 pt-2">
                 <p className="font-medium text-foreground">Dicas</p>
                 <ul className="ml-4 list-disc space-y-1">
-                  <li><strong>SAC é quase sempre mais barato:</strong> por amortizar mais rápido, o SAC reduz o saldo devedor mais cedo e gera menos juros no total. Prefira SAC sempre que a primeira parcela (mais alta) couber no orçamento.</li>
-                  <li><strong>Comprometimento máximo de 30% da renda:</strong> bancos aprovam até 30% da renda bruta familiar para a parcela. Mas considere usar no máximo 25% da renda líquida — imprevistos acontecem e você precisa de folga no orçamento.</li>
-                  <li><strong>Amortize com o FGTS a cada 2 anos:</strong> trabalhadores CLT podem usar o FGTS para amortizar o saldo devedor do financiamento imobiliário a cada 2 anos. Reduzir o saldo devedor antecipadamente é a forma mais eficiente de economizar juros.</li>
-                  <li><strong>Compare o CET, não apenas a taxa:</strong> o Custo Efetivo Total (CET) inclui seguros obrigatórios, taxas de administração e avaliação. Dois bancos com a mesma taxa nominal podem ter CETs muito diferentes.</li>
+                  <li>
+                    <strong>SAC é quase sempre mais barato:</strong> por amortizar mais rápido, o
+                    SAC reduz o saldo devedor mais cedo e gera menos juros no total. Prefira SAC
+                    sempre que a primeira parcela (mais alta) couber no orçamento.
+                  </li>
+                  <li>
+                    <strong>Comprometimento máximo de 30% da renda:</strong> bancos aprovam até 30%
+                    da renda bruta familiar para a parcela. Mas considere usar no máximo 25% da
+                    renda líquida — imprevistos acontecem e você precisa de folga no orçamento.
+                  </li>
+                  <li>
+                    <strong>Amortize com o FGTS a cada 2 anos:</strong> trabalhadores CLT podem usar
+                    o FGTS para amortizar o saldo devedor do financiamento imobiliário a cada 2
+                    anos. Reduzir o saldo devedor antecipadamente é a forma mais eficiente de
+                    economizar juros.
+                  </li>
+                  <li>
+                    <strong>Compare o CET, não apenas a taxa:</strong> o Custo Efetivo Total (CET)
+                    inclui seguros obrigatórios, taxas de administração e avaliação. Dois bancos com
+                    a mesma taxa nominal podem ter CETs muito diferentes.
+                  </li>
                 </ul>
               </div>
               <p className="pt-2 text-xs">
-                Bases: Resolução CMN 4.676/2018 (SFH/SFI), normas Banco Central sobre CET (Resolução CMN 3.517/2007).
+                Bases: Resolução CMN 4.676/2018 (SFH/SFI), normas Banco Central sobre CET (Resolução
+                CMN 3.517/2007).
               </p>
             </CardContent>
           </CollapsibleContent>
@@ -280,7 +346,11 @@ export function SacVsPriceCalc() {
 // ============================================================================
 
 function Step({ n }: { n: number }) {
-  return <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{n}</span>;
+  return (
+    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+      {n}
+    </span>
+  );
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -295,15 +365,32 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function MoneyInput({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   return (
     <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">R$</span>
-      <Input type="number" min={0} step={1000} className="pl-10" value={value || ""} onChange={(e) => onChange(Number(e.target.value) || 0)} />
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+        R$
+      </span>
+      <Input
+        type="number"
+        min={0}
+        step={1000}
+        className="pl-10"
+        value={value || ""}
+        onChange={(e) => onChange(Number(e.target.value) || 0)}
+      />
     </div>
   );
 }
 
 function SuffixInput({
-  value, suffix, step = 1, onChange,
-}: { value: number; suffix: string; step?: number; onChange: (n: number) => void }) {
+  value,
+  suffix,
+  step = 1,
+  onChange,
+}: {
+  value: number;
+  suffix: string;
+  step?: number;
+  onChange: (n: number) => void;
+}) {
   return (
     <div className="relative">
       <Input
@@ -314,18 +401,32 @@ function SuffixInput({
         value={value || ""}
         onChange={(e) => onChange(Number(e.target.value) || 0)}
       />
-      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">{suffix}</span>
+      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+        {suffix}
+      </span>
     </div>
   );
 }
 
-function BarraJuros({ label, valor, total, color }: { label: string; valor: number; total: number; color: string }) {
+function BarraJuros({
+  label,
+  valor,
+  total,
+  color,
+}: {
+  label: string;
+  valor: number;
+  total: number;
+  color: string;
+}) {
   const pct = total > 0 ? (valor / total) * 100 : 0;
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-xs">
         <span className="text-foreground">{label}</span>
-        <span className="text-muted-foreground">{pct.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% do total</span>
+        <span className="text-muted-foreground">
+          {pct.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% do total
+        </span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-muted">
         <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
@@ -335,8 +436,14 @@ function BarraJuros({ label, valor, total, color }: { label: string; valor: numb
 }
 
 function ResumoSistema({
-  titulo, cor, sistema,
-}: { titulo: string; cor: "emerald" | "primary"; sistema: ResultadoSistema }) {
+  titulo,
+  cor,
+  sistema,
+}: {
+  titulo: string;
+  cor: "emerald" | "primary";
+  sistema: ResultadoSistema;
+}) {
   const colorClass = cor === "emerald" ? "text-emerald-700 dark:text-emerald-400" : "text-primary";
   return (
     <Card>
@@ -367,8 +474,16 @@ function ResumoSistema({
 }
 
 function TabelaAmortizacao({
-  titulo, sistema, pagina, setPagina,
-}: { titulo: string; sistema: ResultadoSistema; pagina: number; setPagina: (n: number) => void }) {
+  titulo,
+  sistema,
+  pagina,
+  setPagina,
+}: {
+  titulo: string;
+  sistema: ResultadoSistema;
+  pagina: number;
+  setPagina: (n: number) => void;
+}) {
   const totalPaginas = Math.max(1, Math.ceil(sistema.parcelas.length / PAGE_SIZE));
   const inicio = pagina * PAGE_SIZE;
   const linhas = sistema.parcelas.slice(inicio, inicio + PAGE_SIZE);
@@ -382,18 +497,28 @@ function TabelaAmortizacao({
           <TableHeader>
             <TableRow>
               <TableHead className="text-xs uppercase tracking-wider">Mês</TableHead>
-              <TableHead className="text-right text-xs uppercase tracking-wider">Prestação</TableHead>
-              <TableHead className="text-right text-xs uppercase tracking-wider">Amortização</TableHead>
+              <TableHead className="text-right text-xs uppercase tracking-wider">
+                Prestação
+              </TableHead>
+              <TableHead className="text-right text-xs uppercase tracking-wider">
+                Amortização
+              </TableHead>
               <TableHead className="text-right text-xs uppercase tracking-wider">Juros</TableHead>
-              <TableHead className="text-right text-xs uppercase tracking-wider">Saldo devedor</TableHead>
+              <TableHead className="text-right text-xs uppercase tracking-wider">
+                Saldo devedor
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {linhas.map((l) => (
               <TableRow key={l.mes}>
                 <TableCell className="text-sm text-primary">{l.mes}</TableCell>
-                <TableCell className="text-right text-sm font-medium">{fmtBRL(l.parcela)}</TableCell>
-                <TableCell className="text-right text-sm text-emerald-600 dark:text-emerald-500">{fmtBRL(l.amortizacao)}</TableCell>
+                <TableCell className="text-right text-sm font-medium">
+                  {fmtBRL(l.parcela)}
+                </TableCell>
+                <TableCell className="text-right text-sm text-emerald-600 dark:text-emerald-500">
+                  {fmtBRL(l.amortizacao)}
+                </TableCell>
                 <TableCell className="text-right text-sm text-primary">{fmtBRL(l.juros)}</TableCell>
                 <TableCell className="text-right text-sm">{fmtBRL(l.saldoDevedor)}</TableCell>
               </TableRow>
@@ -408,7 +533,9 @@ function TabelaAmortizacao({
           >
             Anterior
           </button>
-          <span>{pagina + 1} / {totalPaginas}</span>
+          <span>
+            {pagina + 1} / {totalPaginas}
+          </span>
           <button
             onClick={() => setPagina(Math.min(totalPaginas - 1, pagina + 1))}
             disabled={pagina >= totalPaginas - 1}

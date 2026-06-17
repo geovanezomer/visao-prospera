@@ -5,7 +5,14 @@
 import type { AppState } from "@/engines/finance/types";
 import type { SimulatorParams } from "@/engines/finance/simulator";
 import { getSectionsCached } from "../snapshot";
-import type { ToolArgs, ToolCategory, ToolContext, ToolDef, ToolHandler, ToolModule } from "./shared";
+import type {
+  ToolArgs,
+  ToolCategory,
+  ToolContext,
+  ToolDef,
+  ToolHandler,
+  ToolModule,
+} from "./shared";
 
 import { financeTools } from "./finance";
 import { simulatorTools } from "./simulator";
@@ -15,7 +22,14 @@ import { scenariosTools } from "./scenarios";
 import { actionsTools } from "./actions";
 import { complianceTools } from "./compliance";
 
-export type { ToolDef, ToolArgs, ToolHandler, ToolContext, ToolModule, ToolCategory } from "./shared";
+export type {
+  ToolDef,
+  ToolArgs,
+  ToolHandler,
+  ToolContext,
+  ToolModule,
+  ToolCategory,
+} from "./shared";
 
 // Ordem dos módulos define a ordem em que o LLM vê as tools.
 const MODULES: ToolModule[] = [
@@ -28,7 +42,7 @@ const MODULES: ToolModule[] = [
   complianceTools,
 ];
 
-export const TOOLS: ToolDef[] = MODULES.flatMap(m => m.defs);
+export const TOOLS: ToolDef[] = MODULES.flatMap((m) => m.defs);
 
 // Mapa nome → handler + nome → categoria. Em dev, alerta se houver colisão.
 const HANDLERS: Record<string, ToolHandler> = {};
@@ -44,18 +58,21 @@ for (const m of MODULES) {
 }
 
 /** Categorias disponíveis, na ordem em que aparecem no registry. */
-export const TOOL_CATEGORIES: ToolCategory[] = MODULES.map(m => m.category);
+export const TOOL_CATEGORIES: ToolCategory[] = MODULES.map((m) => m.category);
 
 /** Metadados por categoria — útil para UI/devtools e documentação. */
 export const TOOL_CATEGORY_META: Record<ToolCategory, { description?: string; count: number }> =
-  MODULES.reduce((acc, m) => {
-    acc[m.category] = { description: m.description, count: m.defs.length };
-    return acc;
-  }, {} as Record<ToolCategory, { description?: string; count: number }>);
+  MODULES.reduce(
+    (acc, m) => {
+      acc[m.category] = { description: m.description, count: m.defs.length };
+      return acc;
+    },
+    {} as Record<ToolCategory, { description?: string; count: number }>,
+  );
 
 /** Lista as tools de uma categoria — útil para filtrar o que o LLM enxerga. */
 export function getToolsByCategory(category: ToolCategory): ToolDef[] {
-  const mod = MODULES.find(m => m.category === category);
+  const mod = MODULES.find((m) => m.category === category);
   return mod ? mod.defs : [];
 }
 
@@ -65,7 +82,7 @@ export function getToolCategory(name: string): ToolCategory | undefined {
 }
 
 export function asOpenAITools() {
-  return TOOLS.map(t => ({
+  return TOOLS.map((t) => ({
     type: "function" as const,
     function: { name: t.name, description: t.description, parameters: t.parameters },
   }));
@@ -73,7 +90,7 @@ export function asOpenAITools() {
 
 // Anthropic usa formato ligeiramente diferente: input_schema no topo.
 export function asAnthropicTools() {
-  return TOOLS.map(t => ({
+  return TOOLS.map((t) => ({
     name: t.name,
     description: t.description,
     input_schema: t.parameters,

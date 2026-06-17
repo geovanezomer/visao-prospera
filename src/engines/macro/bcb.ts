@@ -2,19 +2,22 @@
 // Doc: https://dadosabertos.bcb.gov.br/dataset/
 
 const SERIES = {
-  selic: 432,      // Meta Selic % a.a.
+  selic: 432, // Meta Selic % a.a.
   selicDiaria: 11, // Selic diária
-  cdi: 12,         // CDI
-  ipca: 433,       // IPCA mensal %
-  ipca12m: 13522,  // IPCA acumulado 12m
-  igpm: 189,       // IGP-M mensal
-  cambioUsd: 1,    // USD/BRL compra
+  cdi: 12, // CDI
+  ipca: 433, // IPCA mensal %
+  ipca12m: 13522, // IPCA acumulado 12m
+  igpm: 189, // IGP-M mensal
+  cambioUsd: 1, // USD/BRL compra
   cambioEur: 21619,
 } as const;
 
 export type SerieKey = keyof typeof SERIES;
 
-interface BcbPoint { data: string; valor: string; }
+interface BcbPoint {
+  data: string;
+  valor: string;
+}
 export interface MacroSerie {
   key: SerieKey;
   code: number;
@@ -42,10 +45,14 @@ function loadCache(): Record<string, MacroSerie> {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
+  } catch {
+    return {};
+  }
 }
 function saveCache(c: Record<string, MacroSerie>) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(c)); } catch {}
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(c));
+  } catch {}
 }
 
 export async function fetchSerie(key: SerieKey, lastN = 12): Promise<MacroSerie> {
@@ -59,12 +66,17 @@ export async function fetchSerie(key: SerieKey, lastN = 12): Promise<MacroSerie>
   const res = await fetch(url, { method: "GET" });
   if (!res.ok) throw new Error(`BCB ${code}: HTTP ${res.status}`);
   const arr: BcbPoint[] = await res.json();
-  const data = arr.map(p => ({
-    date: p.data,
-    value: parseFloat(p.valor.replace(",", ".")),
-  })).filter(p => Number.isFinite(p.value));
+  const data = arr
+    .map((p) => ({
+      date: p.data,
+      value: parseFloat(p.valor.replace(",", ".")),
+    }))
+    .filter((p) => Number.isFinite(p.value));
   const serie: MacroSerie = {
-    key, code, label: LABELS[key], data,
+    key,
+    code,
+    label: LABELS[key],
+    data,
     latest: data[data.length - 1] ?? null,
     fetchedAt: Date.now(),
   };
@@ -75,7 +87,7 @@ export async function fetchSerie(key: SerieKey, lastN = 12): Promise<MacroSerie>
 
 export async function getMacroSnapshot(): Promise<string> {
   const keys: SerieKey[] = ["selic", "cdi", "ipca12m", "igpm", "cambioUsd"];
-  const results = await Promise.allSettled(keys.map(k => fetchSerie(k, 1)));
+  const results = await Promise.allSettled(keys.map((k) => fetchSerie(k, 1)));
   const lines: string[] = ["## Indicadores Macroeconômicos (BCB)"];
   results.forEach((r, i) => {
     const k = keys[i];
@@ -92,7 +104,7 @@ export async function getSerieFormatted(key: SerieKey, lastN = 12): Promise<stri
   try {
     const s = await fetchSerie(key, lastN);
     if (!s.data.length) return `Sem dados para ${LABELS[key]}.`;
-    const rows = s.data.map(p => `| ${p.date} | ${p.value} |`).join("\n");
+    const rows = s.data.map((p) => `| ${p.date} | ${p.value} |`).join("\n");
     return `### ${s.label}\n\n| Data | Valor |\n| --- | --- |\n${rows}`;
   } catch (e: any) {
     return `Erro ao buscar ${LABELS[key]}: ${e?.message || e}`;

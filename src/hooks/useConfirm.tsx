@@ -50,9 +50,7 @@ export function useConfirm() {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{opts?.title}</AlertDialogTitle>
-          {opts?.description && (
-            <AlertDialogDescription>{opts.description}</AlertDialogDescription>
-          )}
+          {opts?.description && <AlertDialogDescription>{opts.description}</AlertDialogDescription>}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => finish(false)}>

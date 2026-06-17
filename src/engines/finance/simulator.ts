@@ -7,7 +7,14 @@
  */
 
 import { AppState, CostLine, TaxRegime } from "./types";
-import { buildDRE, calcIndicators, monthValues, resolveEffectiveRegime, type DRE, type Indicators } from "./calculations";
+import {
+  buildDRE,
+  calcIndicators,
+  monthValues,
+  resolveEffectiveRegime,
+  type DRE,
+  type Indicators,
+} from "./calculations";
 import { buildValuation, defaultValuationParams } from "./valuation";
 import { buildCashFlow, type CashFlow } from "./cashflow";
 import { fill12, sum } from "./format";
@@ -18,28 +25,28 @@ const isLaborLine = (c: CostLine) => c.encargosAuto === true || LABOR_RE.test(c.
 
 export interface SimulatorParams {
   // Receita & Preço
-  priceDeltaPct: number;        // -30..+30  → multiplica receita
-  volumeDeltaPct: number;       // -50..+50  → multiplica receita + CPV variável
+  priceDeltaPct: number; // -30..+30  → multiplica receita
+  volumeDeltaPct: number; // -50..+50  → multiplica receita + CPV variável
 
   // Custos & Pessoal
-  cpvDeltaPct: number;          // -20..+30  → multiplica linhas custo_vendas
-  payrollDeltaPct: number;      // -30..+30  → multiplica linhas com encargosAuto
-  fixedCutPct: number;          // -50..+50  → positivo = corte, negativo = aumento nos top-N fixos
-  fixedCutTopN: number;         // 1..5
-  outsourcePctCpv: number;      // 0..100    → % do CPV substituído
-  outsourceFixedMonthly: number;// R$/mês fixo contratado
+  cpvDeltaPct: number; // -20..+30  → multiplica linhas custo_vendas
+  payrollDeltaPct: number; // -30..+30  → multiplica linhas com encargosAuto
+  fixedCutPct: number; // -50..+50  → positivo = corte, negativo = aumento nos top-N fixos
+  fixedCutTopN: number; // 1..5
+  outsourcePctCpv: number; // 0..100    → % do CPV substituído
+  outsourceFixedMonthly: number; // R$/mês fixo contratado
 
   // Capital de Giro
-  pmrDeltaDays: number;         // -60..0    (sempre reduz ou 0)
-  pmpDeltaDays: number;         // 0..+60    (sempre aumenta ou 0)
-  antecipPctAm: number;         // 0..6      custo % a.m. sobre 50% da receita
+  pmrDeltaDays: number; // -60..0    (sempre reduz ou 0)
+  pmpDeltaDays: number; // 0..+60    (sempre aumenta ou 0)
+  antecipPctAm: number; // 0..6      custo % a.m. sobre 50% da receita
 
   // Dívida & Juros
-  loanPrincipal: number;        // R$ captado no mês 1
-  loanTermMonths: number;       // 6..60
-  loanRatePctAm: number;        // 0.5..5 % a.m.
-  debtPaydownPct: number;       // 0..100  % do principal quitado no mês 1
-  kdDeltaPp: number;            // -5..+5  pontos percentuais ao ano
+  loanPrincipal: number; // R$ captado no mês 1
+  loanTermMonths: number; // 6..60
+  loanRatePctAm: number; // 0.5..5 % a.m.
+  debtPaydownPct: number; // 0..100  % do principal quitado no mês 1
+  kdDeltaPp: number; // -5..+5  pontos percentuais ao ano
 
   // Tributário
   regimeOverride: TaxRegime | "base"; // base = não muda
@@ -87,11 +94,19 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       inadimplencia: base.revenue.inadimplencia.slice(),
       // Clona deduções e receitas financeiras profundas — para aplicar volume sem mutar o estado base.
       deducoes: base.revenue.deducoes?.map((d) => ({ ...d, valores: d.valores.slice() })),
-      receitasFinanceiras: base.revenue.receitasFinanceiras?.map((d) => ({ ...d, valores: d.valores.slice() })),
+      receitasFinanceiras: base.revenue.receitasFinanceiras?.map((d) => ({
+        ...d,
+        valores: d.valores.slice(),
+      })),
     },
     costs: cloneCosts(base.costs),
     capital: { ...base.capital },
-    cashflow: { ...base.cashflow, emprestimosCaptados: base.cashflow.emprestimosCaptados.slice(), amortizacoes: base.cashflow.amortizacoes.slice(), capex: base.cashflow.capex.slice() },
+    cashflow: {
+      ...base.cashflow,
+      emprestimosCaptados: base.cashflow.emprestimosCaptados.slice(),
+      amortizacoes: base.cashflow.amortizacoes.slice(),
+      capex: base.cashflow.capex.slice(),
+    },
     tax: { ...base.tax },
   };
 
@@ -108,7 +123,10 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     const f = 1 + p.volumeDeltaPct / 100;
     s.revenue.bruta = s.revenue.bruta.map((v) => v * f);
     if (s.revenue.deducoes) {
-      s.revenue.deducoes = s.revenue.deducoes.map((d) => ({ ...d, valores: d.valores.map((v) => v * f) }));
+      s.revenue.deducoes = s.revenue.deducoes.map((d) => ({
+        ...d,
+        valores: d.valores.map((v) => v * f),
+      }));
     }
     s.costs = s.costs.map((c) =>
       c.category === "custo_vendas" || c.category === "direto_venda" || c.category === "variavel"
@@ -121,7 +139,7 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
   if (p.cpvDeltaPct !== 0) {
     const f = 1 + p.cpvDeltaPct / 100;
     s.costs = s.costs.map((c) =>
-      (c.category === "custo_vendas" || c.category === "direto_venda")
+      c.category === "custo_vendas" || c.category === "direto_venda"
         ? { ...c, values: c.values.map((v) => v * f) }
         : c,
     );
@@ -139,7 +157,9 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
   if (p.fixedCutPct !== 0) {
     const ids = topNFixedIds(s, p.fixedCutTopN);
     const f = 1 - p.fixedCutPct / 100; // ex: +20 → 0.80 (corte 20%); -20 → 1.20 (aumento 20%)
-    s.costs = s.costs.map((c) => (ids.has(c.id) ? { ...c, values: c.values.map((v) => v * f) } : c));
+    s.costs = s.costs.map((c) =>
+      ids.has(c.id) ? { ...c, values: c.values.map((v) => v * f) } : c,
+    );
   }
 
   // 6) Terceirização — reduz CPV proporcionalmente ao % terceirizado e adiciona
@@ -218,7 +238,10 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
   // 11) Captar empréstimo NOVO (PRICE) — depois da quitação, para não ser quitado junto
   if (p.loanPrincipal > 0 && p.loanTermMonths > 0) {
     const i = p.loanRatePctAm / 100;
-    const pmt = i === 0 ? p.loanPrincipal / p.loanTermMonths : p.loanPrincipal * (i / (1 - Math.pow(1 + i, -p.loanTermMonths)));
+    const pmt =
+      i === 0
+        ? p.loanPrincipal / p.loanTermMonths
+        : p.loanPrincipal * (i / (1 - Math.pow(1 + i, -p.loanTermMonths)));
     const jurosArr = Array(12).fill(0);
     const amortArr = s.cashflow.amortizacoes.slice();
     let saldo = p.loanPrincipal;
@@ -270,14 +293,14 @@ export interface SimDREView {
   outrasOperacionais: number; // inclui D&A com sinal negativo
   ebitda: number;
   depreciacao: number;
-  ebit: number;                // = Lucro Operacional
+  ebit: number; // = Lucro Operacional
   // Bloco financeiro
   receitasFinanceiras: number;
   ganhoAlienacao: number;
-  laft: number;                // Lucro Antes do Financiamento e Tributos
+  laft: number; // Lucro Antes do Financiamento e Tributos
   despesasFinanceiras: number;
   resultadoFinanceiro: number; // receitasFin − despesasFin (compat)
-  lair: number;                // = EBT
+  lair: number; // = EBT
   impostos: number;
   lucroLiquido: number;
 
@@ -320,7 +343,9 @@ export function computeSimView(state: AppState, precomputed?: SimViewPrecomputed
   const abatim = sum(dedById("abatimentos")?.valores ?? []);
 
   // Comerciais (variavel) / Administrativas (fixo) / Financeiras (financeiro) — usa regime EFETIVO.
-  let despComerciais = 0, despAdmin = 0, despFinanc = 0;
+  let despComerciais = 0,
+    despAdmin = 0,
+    despFinanc = 0;
   for (const c of state.costs) {
     const v = sum(monthValues(c, regime));
     if (c.category === "variavel") despComerciais += v;
@@ -398,8 +423,36 @@ export function countActiveLevers(p: SimulatorParams): number {
 
 export const PRESETS: { id: string; label: string; params: Partial<SimulatorParams> }[] = [
   { id: "neutro", label: "Resetar", params: {} },
-  { id: "crise_leve", label: "Crise leve", params: { volumeDeltaPct: -10, cpvDeltaPct: 5, kdDeltaPp: 1 } },
-  { id: "crise_dura", label: "Crise dura", params: { volumeDeltaPct: -25, cpvDeltaPct: 10, kdDeltaPp: 3, fixedCutPct: 10, fixedCutTopN: 3 } },
-  { id: "expansao", label: "Expansão", params: { volumeDeltaPct: 25, payrollDeltaPct: 15, priceDeltaPct: 3 } },
-  { id: "reestruturacao", label: "Reestruturação", params: { fixedCutPct: 20, fixedCutTopN: 3, payrollDeltaPct: -15, debtPaydownPct: 30, pmrDeltaDays: -10 } },
+  {
+    id: "crise_leve",
+    label: "Crise leve",
+    params: { volumeDeltaPct: -10, cpvDeltaPct: 5, kdDeltaPp: 1 },
+  },
+  {
+    id: "crise_dura",
+    label: "Crise dura",
+    params: {
+      volumeDeltaPct: -25,
+      cpvDeltaPct: 10,
+      kdDeltaPp: 3,
+      fixedCutPct: 10,
+      fixedCutTopN: 3,
+    },
+  },
+  {
+    id: "expansao",
+    label: "Expansão",
+    params: { volumeDeltaPct: 25, payrollDeltaPct: 15, priceDeltaPct: 3 },
+  },
+  {
+    id: "reestruturacao",
+    label: "Reestruturação",
+    params: {
+      fixedCutPct: 20,
+      fixedCutTopN: 3,
+      payrollDeltaPct: -15,
+      debtPaydownPct: 30,
+      pmrDeltaDays: -10,
+    },
+  },
 ];

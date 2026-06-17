@@ -40,12 +40,28 @@ export function CapitalStructureCard({
     if (patrimonioLiquido < 0) {
       alavMsg = "Patrimônio líquido negativo — passivo a descoberto. D/PL perde sentido.";
       alavTone = "neg";
-    } else if (dpl > 2) { alavMsg = `Endividamento alto: D/PL = ${dpl.toFixed(1)}× (saudável ≤ 2×)`; alavTone = "neg"; }
-    else if (dpl >= 0.5) { alavMsg = `Alavancagem equilibrada: D/PL = ${dpl.toFixed(1)}×`; alavTone = "pos"; }
-    else if (dpl > 0) { alavMsg = `Pouco alavancada: D/PL = ${dpl.toFixed(1)}× — espaço para usar mais dívida`; alavTone = "warn"; }
-    else { alavMsg = "Sem dívida onerosa: empresa 100% financiada pelos sócios"; alavTone = "pos"; }
+    } else if (dpl > 2) {
+      alavMsg = `Endividamento alto: D/PL = ${dpl.toFixed(1)}× (saudável ≤ 2×)`;
+      alavTone = "neg";
+    } else if (dpl >= 0.5) {
+      alavMsg = `Alavancagem equilibrada: D/PL = ${dpl.toFixed(1)}×`;
+      alavTone = "pos";
+    } else if (dpl > 0) {
+      alavMsg = `Pouco alavancada: D/PL = ${dpl.toFixed(1)}× — espaço para usar mais dívida`;
+      alavTone = "warn";
+    } else {
+      alavMsg = "Sem dívida onerosa: empresa 100% financiada pelos sócios";
+      alavTone = "pos";
+    }
   }
-  const toneCls = alavTone === "neg" ? "text-neg" : alavTone === "warn" ? "text-warning" : alavTone === "pos" ? "text-pos" : "text-muted-foreground";
+  const toneCls =
+    alavTone === "neg"
+      ? "text-neg"
+      : alavTone === "warn"
+        ? "text-warning"
+        : alavTone === "pos"
+          ? "text-pos"
+          : "text-muted-foreground";
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
@@ -53,7 +69,9 @@ export function CapitalStructureCard({
         <SectionTitle hint="Proporção entre capital dos sócios e dívida com terceiros. Define a 'mistura' do combustível da empresa.">
           De onde vem o dinheiro da empresa
         </SectionTitle>
-        <div className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">Estrutura de Capital</div>
+        <div className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+          Estrutura de Capital
+        </div>
       </div>
 
       <div>
@@ -92,17 +110,18 @@ export function CapitalStructureCard({
         />
         {derived && (
           <p className="mt-1 text-[10px] text-muted-foreground/80 italic">
-            Proporção calculada automaticamente a partir do Patrimônio Líquido e da Dívida Onerosa informados abaixo. Ajuste pelos campos em R$ para alterar.
+            Proporção calculada automaticamente a partir do Patrimônio Líquido e da Dívida Onerosa
+            informados abaixo. Ajuste pelos campos em R$ para alterar.
           </p>
         )}
         {hasAbs && (
           <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-            Sua empresa é financiada por <span className="font-semibold text-pos">{fmtBRL(valSocios)}</span> dos sócios e <span className="font-semibold text-warning">{fmtBRL(valBancos)}</span> de bancos.
+            Sua empresa é financiada por{" "}
+            <span className="font-semibold text-pos">{fmtBRL(valSocios)}</span> dos sócios e{" "}
+            <span className="font-semibold text-warning">{fmtBRL(valBancos)}</span> de bancos.
           </p>
         )}
-        {alavMsg && (
-          <p className={`mt-1 text-[11px] font-medium ${toneCls}`}>{alavMsg}</p>
-        )}
+        {alavMsg && <p className={`mt-1 text-[11px] font-medium ${toneCls}`}>{alavMsg}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

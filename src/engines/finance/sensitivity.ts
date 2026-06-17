@@ -20,7 +20,10 @@ function applyDriver(state: AppState, driver: DriverKey, deltaPct: number): AppS
   const f = 1 + deltaPct / 100;
   if (driver === "preco") {
     // preço sobe receita e mantém custos
-    return { ...state, revenue: { ...state.revenue, bruta: state.revenue.bruta.map((v) => v * f) } };
+    return {
+      ...state,
+      revenue: { ...state.revenue, bruta: state.revenue.bruta.map((v) => v * f) },
+    };
   }
   if (driver === "volume") {
     // volume sobe receita e custos variáveis proporcionalmente.
@@ -30,12 +33,17 @@ function applyDriver(state: AppState, driver: DriverKey, deltaPct: number): AppS
         ? { ...c, values: c.values.map((v) => v * f) }
         : c,
     );
-    return { ...state, costs, revenue: { ...state.revenue, bruta: state.revenue.bruta.map((v) => v * f) } };
+    return {
+      ...state,
+      costs,
+      revenue: { ...state.revenue, bruta: state.revenue.bruta.map((v) => v * f) },
+    };
   }
   const costs = state.costs.map((c) => {
     const isLabor = c.encargosAuto || LABOR_RE.test(c.label);
     let hit = false;
-    if (driver === "cpv" && (c.category === "custo_vendas" || c.category === "direto_venda")) hit = true;
+    if (driver === "cpv" && (c.category === "custo_vendas" || c.category === "direto_venda"))
+      hit = true;
     if (driver === "folha" && isLabor) hit = true;
     if (driver === "fixos" && c.category === "fixo" && !isLabor) hit = true;
     if (driver === "juros" && c.category === "financeiro") hit = true;
@@ -47,9 +55,9 @@ function applyDriver(state: AppState, driver: DriverKey, deltaPct: number): AppS
 export interface SensitivityRow {
   driver: DriverKey;
   label: string;
-  baseline: number;          // valor base do output
+  baseline: number; // valor base do output
   cells: { deltaPct: number; value: number; pctChange: number }[];
-  elasticity: number;        // % do output / % do input (média dos cells ≠ 0)
+  elasticity: number; // % do output / % do input (média dos cells ≠ 0)
 }
 
 export type OutputKey = "ebitda" | "lucroLiquido" | "saldoCaixa" | "roic";
@@ -79,7 +87,11 @@ export interface SensitivityResult {
   rows: SensitivityRow[];
 }
 
-export function runSensitivity(state: AppState, output: OutputKey, drivers: DriverKey[] = ["preco", "volume", "cpv", "folha", "fixos", "juros"]): SensitivityResult {
+export function runSensitivity(
+  state: AppState,
+  output: OutputKey,
+  drivers: DriverKey[] = ["preco", "volume", "cpv", "folha", "fixos", "juros"],
+): SensitivityResult {
   const baseline = readOutput(state, output);
   const rows: SensitivityRow[] = drivers.map((d) => {
     const cells = DEFAULT_DELTAS.map((dp) => {
@@ -90,7 +102,10 @@ export function runSensitivity(state: AppState, output: OutputKey, drivers: Driv
     const elasticityVals = cells
       .filter((c) => c.deltaPct !== 0)
       .map((c) => c.pctChange / c.deltaPct);
-    const elasticity = elasticityVals.length > 0 ? elasticityVals.reduce((a, b) => a + b, 0) / elasticityVals.length : 0;
+    const elasticity =
+      elasticityVals.length > 0
+        ? elasticityVals.reduce((a, b) => a + b, 0) / elasticityVals.length
+        : 0;
     return { driver: d, label: DRIVER_LABEL[d], baseline, cells, elasticity };
   });
   // ordenar por sensibilidade absoluta

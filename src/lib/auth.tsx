@@ -16,7 +16,11 @@ type AuthCtx = {
   session: Session | null;
   hydrated: boolean;
   login: (email: string, password: string) => Promise<AuthResult>;
-  signup: (email: string, password: string, displayName: string) => Promise<AuthResult & { needsConfirmation?: boolean }>;
+  signup: (
+    email: string,
+    password: string,
+    displayName: string,
+  ) => Promise<AuthResult & { needsConfirmation?: boolean }>;
   requestPasswordReset: (email: string) => Promise<AuthResult>;
   updatePassword: (newPassword: string) => Promise<AuthResult>;
   logout: () => Promise<void>;
@@ -42,10 +46,14 @@ function toAuthUser(u: User | null | undefined): AuthUser | null {
 function friendlyError(message: string): string {
   const m = message.toLowerCase();
   if (m.includes("invalid login")) return "E-mail ou senha inválidos.";
-  if (m.includes("email not confirmed")) return "Confirme seu e-mail antes de entrar. Veja sua caixa de entrada.";
-  if (m.includes("user already registered")) return "Este e-mail já está cadastrado. Faça login ou recupere sua senha.";
-  if (m.includes("password should be at least")) return "A senha precisa ter pelo menos 8 caracteres.";
-  if (m.includes("password is known to be weak") || m.includes("pwned")) return "Esta senha já vazou em incidentes públicos. Escolha outra.";
+  if (m.includes("email not confirmed"))
+    return "Confirme seu e-mail antes de entrar. Veja sua caixa de entrada.";
+  if (m.includes("user already registered"))
+    return "Este e-mail já está cadastrado. Faça login ou recupere sua senha.";
+  if (m.includes("password should be at least"))
+    return "A senha precisa ter pelo menos 8 caracteres.";
+  if (m.includes("password is known to be weak") || m.includes("pwned"))
+    return "Esta senha já vazou em incidentes públicos. Escolha outra.";
   if (m.includes("rate limit")) return "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
   return message;
 }
@@ -57,7 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Listener FIRST so we don't miss events.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       setUser(toAuthUser(newSession?.user));
     });
@@ -115,7 +125,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <Ctx.Provider value={{ user, session, hydrated, login, signup, requestPasswordReset, updatePassword, logout }}>
+    <Ctx.Provider
+      value={{
+        user,
+        session,
+        hydrated,
+        login,
+        signup,
+        requestPasswordReset,
+        updatePassword,
+        logout,
+      }}
+    >
       {children}
     </Ctx.Provider>
   );

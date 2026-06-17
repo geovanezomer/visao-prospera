@@ -11,11 +11,7 @@ import { simplesExcedeLimite } from "../regime";
 import { calcSimples } from "./simples";
 import { calcPresumido } from "./presumido";
 import { calcReal } from "./real";
-import {
-  getReformaRatesForYear,
-  eraForYear,
-  type ReformaRates,
-} from "./reforma";
+import { getReformaRatesForYear, eraForYear, type ReformaRates } from "./reforma";
 import type { MonthlyTax } from "./shared";
 
 /**
@@ -80,7 +76,10 @@ export function compareRegimes(state: AppState, era?: TaxEra) {
 }
 
 /** Projeção da carga efetiva (%) por era para um dado regime, mantendo o resto do estado fixo. */
-export function compareErasForRegime(state: AppState, regime: TaxRegime): { era: TaxEra; effective: number; annual: number }[] {
+export function compareErasForRegime(
+  state: AppState,
+  regime: TaxRegime,
+): { era: TaxEra; effective: number; annual: number }[] {
   const eras: TaxEra[] = ["atual", "transicao", "pleno"];
   return eras.map((era) => {
     const s: AppState = { ...state, tax: { ...state.tax, era } };

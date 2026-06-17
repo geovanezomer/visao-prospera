@@ -19,8 +19,9 @@ export function folhaAnual(state: AppState): number {
   // SSOT: regime EFETIVO. Encargos do Simples são reduzidos automaticamente
   // dentro de effectiveMonthValues quando aplicável.
   const regime = resolveEffectiveRegime(state);
-  const laborCosts = state.costs
-    .filter((c) => c.category !== "financeiro" && (c.encargosAuto || LABOR_KEYWORDS.test(c.label)));
+  const laborCosts = state.costs.filter(
+    (c) => c.category !== "financeiro" && (c.encargosAuto || LABOR_KEYWORDS.test(c.label)),
+  );
   return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c, regime)), 0);
 }
 
@@ -33,7 +34,7 @@ export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
   if (rbt12 <= 0 || rbt12 > getSimplesLimite(state.tax)) return anexo;
   const fatorR = folhaAnual(state) / rbt12;
   const minPct = getFatorRMinimoPct(state.tax);
-  return fatorR >= (minPct / 100) ? "III" : "V";
+  return fatorR >= minPct / 100 ? "III" : "V";
 }
 
 /** Retorna true se RBT12 ultrapassa o limite do Simples Nacional (desenquadramento obrigatório). */

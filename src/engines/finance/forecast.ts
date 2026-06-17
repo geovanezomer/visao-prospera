@@ -1,12 +1,18 @@
 import { AppState } from "./types";
-import { buildDRE, calcIndicators, effectiveMonthValues, isCpvCost, resolveEffectiveRegime } from "./calculations";
+import {
+  buildDRE,
+  calcIndicators,
+  effectiveMonthValues,
+  isCpvCost,
+  resolveEffectiveRegime,
+} from "./calculations";
 import { sum } from "./format";
 
 export interface ForecastMonth {
-  idx: number;            // 0..N-1
-  ano: number;            // 1..
-  mes: number;            // 1..12
-  label: string;          // "Y1 Jan"
+  idx: number; // 0..N-1
+  ano: number; // 1..
+  mes: number; // 1..12
+  label: string; // "Y1 Jan"
   receita: number;
   ebitda: number;
   lucroLiquido: number;
@@ -16,7 +22,7 @@ export interface ForecastMonth {
   deltaNcg: number;
   /** FCL = EBITDA − impostos − capex − ΔNCG. */
   fcl: number;
-  saldoCaixa: number;     // acumulado
+  saldoCaixa: number; // acumulado
 }
 
 export interface ForecastConfig {
@@ -54,7 +60,7 @@ export interface ForecastResult {
   totalFcl: number;
   totalDeltaNcg: number;
   vpl: number;
-  tir: number | null;     // %a.m.
+  tir: number | null; // %a.m.
   tirError?: string;
   paybackMeses: number | null;
   taxaDescontoMensal: number;
@@ -78,11 +84,11 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   // quando a RBT12 estoura o limite do Simples (downgrade para Presumido).
   const regime = resolveEffectiveRegime(state);
   const { dre, tax } = buildDRE(state, regime);
-  const receitaBase = dre.receitaBruta.slice();          // 12
+  const receitaBase = dre.receitaBruta.slice(); // 12
   const receitaAnoBase = sum(receitaBase) || 1;
   const cpvBase = dre.cpv.slice();
   const cpvAnoBase = sum(cpvBase);
-  const cpvRatioBase = cpvAnoBase / receitaAnoBase;       // CPV / receita
+  const cpvRatioBase = cpvAnoBase / receitaAnoBase; // CPV / receita
   // Auditoria bug #6: usar média anual da depreciação (estava usando só janeiro,
   // o que distorce projeções quando há capex ativado no meio do ano).
   const depMensal = sum(dre.depreciacao) / 12;
@@ -130,8 +136,10 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
 
   // NCG inicial (mesma lógica de calcIndicators)
   const { capital, revenue } = state;
-  const crBase0 = capital.contasReceber > 0 ? capital.contasReceber : (receitaAnoBase / 360) * revenue.pmr;
-  const fornecBase0 = capital.fornecedores > 0 ? capital.fornecedores : (cpvAnoBase / 360) * revenue.pmp;
+  const crBase0 =
+    capital.contasReceber > 0 ? capital.contasReceber : (receitaAnoBase / 360) * revenue.pmr;
+  const fornecBase0 =
+    capital.fornecedores > 0 ? capital.fornecedores : (cpvAnoBase / 360) * revenue.pmp;
   const estoqueBase0 = capital.estoques;
   const ncg0 = crBase0 + estoqueBase0 - fornecBase0;
 
@@ -151,7 +159,7 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   for (let i = 0; i < horizon; i++) {
     const ano = Math.floor(i / 12) + 1;
     const mes = i % 12;
-    const label = `Y${ano} ${["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][mes]}`;
+    const label = `Y${ano} ${["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"][mes]}`;
 
     const fatorReceita = Math.pow(1 + g, i);
     const receita = receitaBase[mes] * fatorReceita;
@@ -165,8 +173,9 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     // Folha: saltos discretos. Step baseado na receita acumulada do ano corrente vs base.
     // Usa média da receita mensal anualizada do mês corrente vs base.
     const receitaAnualizada = receita * 12;
-    const crescimentoVsBase = Math.max(0, (receitaAnualizada / receitaAnoBase) - 1);
-    const stepsFolha = cfg.stepReceitaPct > 0 ? Math.floor(crescimentoVsBase * 100 / cfg.stepReceitaPct) : 0;
+    const crescimentoVsBase = Math.max(0, receitaAnualizada / receitaAnoBase - 1);
+    const stepsFolha =
+      cfg.stepReceitaPct > 0 ? Math.floor((crescimentoVsBase * 100) / cfg.stepReceitaPct) : 0;
     const multFolha = Math.pow(1 + cfg.stepFolhaPct / 100, stepsFolha);
     const folhaCpv = folhaCpvMensalBase * multFolha;
     const folhaFixa = folhaFixaMensalBase * multFolha;
@@ -208,7 +217,10 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     // input degenerado (ex.: receita=0 + ratios indefinidos) escape.
     const safe = (n: number) => (Number.isFinite(n) ? n : 0);
     meses.push({
-      idx: i, ano, mes: mes + 1, label,
+      idx: i,
+      ano,
+      mes: mes + 1,
+      label,
       receita: safe(receita),
       ebitda: safe(ebitda),
       lucroLiquido: safe(lucroLiquido),
@@ -258,11 +270,12 @@ export function irr(flows: number[], guess = 0.01): number | null {
 
   let r = guess;
   for (let iter = 0; iter < 80; iter++) {
-    let f = 0, df = 0;
+    let f = 0,
+      df = 0;
     for (let t = 0; t < flows.length; t++) {
       const d = Math.pow(1 + r, t);
       f += flows[t] / d;
-      if (t > 0) df += -t * flows[t] / (d * (1 + r));
+      if (t > 0) df += (-t * flows[t]) / (d * (1 + r));
     }
     if (Math.abs(f) < 1e-7) return r;
     if (!Number.isFinite(df) || Math.abs(df) < 1e-12) break;
@@ -271,7 +284,8 @@ export function irr(flows: number[], guess = 0.01): number | null {
     if (!Number.isFinite(next) || next <= -0.999) break;
     r = next;
   }
-  let lo = -0.99, hi = 10;
+  let lo = -0.99,
+    hi = 10;
   const vLo = npv(flows, lo);
   const vHi = npv(flows, hi);
   if (!Number.isFinite(vLo) || !Number.isFinite(vHi) || vLo * vHi > 0) return null;
@@ -279,7 +293,8 @@ export function irr(flows: number[], guess = 0.01): number | null {
     const mid = (lo + hi) / 2;
     const v = npv(flows, mid);
     if (Math.abs(v) < 1e-6) return mid;
-    if (npv(flows, lo) * v < 0) hi = mid; else lo = mid;
+    if (npv(flows, lo) * v < 0) hi = mid;
+    else lo = mid;
   }
   return null;
 }
@@ -288,7 +303,8 @@ export function irr(flows: number[], guess = 0.01): number | null {
 export function irrDetailed(flows: number[]): { value: number | null; error?: string } {
   const hasPos = flows.some((f) => f > 0);
   const hasNeg = flows.some((f) => f < 0);
-  if (!hasPos || !hasNeg) return { value: null, error: "Fluxos sem sinais opostos — TIR indefinida." };
+  if (!hasPos || !hasNeg)
+    return { value: null, error: "Fluxos sem sinais opostos — TIR indefinida." };
   const v = irr(flows);
   return v == null
     ? { value: null, error: "Newton-Raphson e bisseção não convergiram para esses fluxos." }

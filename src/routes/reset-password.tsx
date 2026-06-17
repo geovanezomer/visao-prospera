@@ -9,10 +9,7 @@ import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
-    meta: [
-      { title: "Nova senha — FinnancePRO" },
-      { name: "robots", content: "noindex" },
-    ],
+    meta: [{ title: "Nova senha — FinnancePRO" }, { name: "robots", content: "noindex" }],
   }),
   component: ResetPasswordPage,
 });
@@ -62,7 +59,11 @@ function ResetPasswordPage() {
     <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex items-center gap-3">
-          <img src={logoAsset.url} alt="FinnancePRO" className="h-9 w-9 rounded-md object-contain" />
+          <img
+            src={logoAsset.url}
+            alt="FinnancePRO"
+            className="h-9 w-9 rounded-md object-contain"
+          />
           <p className="text-base font-semibold tracking-tight">
             Finnance<span className="text-primary">PRO</span>
           </p>

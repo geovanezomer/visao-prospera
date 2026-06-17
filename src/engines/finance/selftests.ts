@@ -23,12 +23,19 @@ export function runFinanceSelfTests(): { results: SelfTestCase[]; allPassed: boo
 
   // 1) irShieldForRegime
   add("irShield Real = 0.34", 0.34, irShieldForRegime("real"), irShieldForRegime("real") === 0.34);
-  add("irShield Presumido = 0 (Auditoria)", 0, irShieldForRegime("presumido"), irShieldForRegime("presumido") === 0);
+  add(
+    "irShield Presumido = 0 (Auditoria)",
+    0,
+    irShieldForRegime("presumido"),
+    irShieldForRegime("presumido") === 0,
+  );
   add("irShield Simples = 0", 0, irShieldForRegime("simples"), irShieldForRegime("simples") === 0);
 
   // 2) NOPAT/ROIC com caso da auditoria (EBIT 100k, impostos 30k → NOPAT 70k, CI 500k → ROIC 14%)
   {
-    const ebit = 100_000, imp = 30_000, ci = 500_000;
+    const ebit = 100_000,
+      imp = 30_000,
+      ci = 500_000;
     const tc = imp / ebit;
     const nopat = ebit - ebit * tc;
     const roic = (nopat / ci) * 100;
@@ -52,19 +59,23 @@ export function runFinanceSelfTests(): { results: SelfTestCase[]; allPassed: boo
   // 5) ICMS carry-over: mês1 débito 10k crédito 15k → 0 + saldo 5k; mês2 débito 2k → 0
   {
     let saldo = 0;
-    const m1deb = 10_000, m1cr = 15_000;
+    const m1deb = 10_000,
+      m1cr = 15_000;
     const m1pago = Math.max(0, m1deb - (m1cr + saldo));
-    saldo = Math.max(0, (m1cr + saldo) - m1deb);
-    const m2deb = 2_000, m2cr = 0;
+    saldo = Math.max(0, m1cr + saldo - m1deb);
+    const m2deb = 2_000,
+      m2cr = 0;
     const m2pago = Math.max(0, m2deb - (m2cr + saldo));
-    saldo = Math.max(0, (m2cr + saldo) - m2deb);
+    saldo = Math.max(0, m2cr + saldo - m2deb);
     add("ICMS mês 1 pago (carry-over)", 0, m1pago, m1pago === 0);
     add("ICMS mês 2 pago (consome saldo credor)", 0, m2pago, m2pago === 0);
   }
 
   // 6) Gordon degenerado: WACC=g → fallback FCL×10
   {
-    const fcl = 600_000, g = 0.10, wacc = 0.10;
+    const fcl = 600_000,
+      g = 0.1,
+      wacc = 0.1;
     const spread = wacc - g;
     const vt = spread >= 0.005 ? (fcl * (1 + g)) / spread : fcl * 10;
     add("Gordon fallback quando WACC≈g", 6_000_000, vt, approx(vt, 6_000_000));
@@ -73,7 +84,12 @@ export function runFinanceSelfTests(): { results: SelfTestCase[]; allPassed: boo
   // 7) TIR convergente
   {
     const v = irr([-1000, 400, 400, 400, 400]);
-    add("TIR converge (~21.86%)", "≈0.2186", v?.toFixed(4) ?? "null", v != null && approx(v, 0.2186, 0.01));
+    add(
+      "TIR converge (~21.86%)",
+      "≈0.2186",
+      v?.toFixed(4) ?? "null",
+      v != null && approx(v, 0.2186, 0.01),
+    );
   }
 
   // 8) TIR sem sinais opostos → diagnosticada
@@ -86,15 +102,23 @@ export function runFinanceSelfTests(): { results: SelfTestCase[]; allPassed: boo
   {
     const { dre } = buildDRE(DEFAULT_STATE, DEFAULT_STATE.tax.regime);
     const ind = calcIndicators(DEFAULT_STATE, dre);
-    const allFinite = Number.isFinite(ind.roic) && Number.isFinite(ind.wacc) && Number.isFinite(ind.liquidezCorrente);
+    const allFinite =
+      Number.isFinite(ind.roic) &&
+      Number.isFinite(ind.wacc) &&
+      Number.isFinite(ind.liquidezCorrente);
     add("Indicadores finitos no DEFAULT_STATE", "true", String(allFinite), allFinite);
-    add("Liquidez corrente ≤ 99 (cap)", "≤99", ind.liquidezCorrente.toFixed(2), ind.liquidezCorrente <= 99);
+    add(
+      "Liquidez corrente ≤ 99 (cap)",
+      "≤99",
+      ind.liquidezCorrente.toFixed(2),
+      ind.liquidezCorrente <= 99,
+    );
   }
 
   const allPassed = results.every((r) => r.pass);
   if (typeof console !== "undefined") {
     console.groupCollapsed(
-      `%c[FinnancePRO] Auditoria — Self-tests Financeiros (${results.filter(r=>r.pass).length}/${results.length} OK)`,
+      `%c[FinnancePRO] Auditoria — Self-tests Financeiros (${results.filter((r) => r.pass).length}/${results.length} OK)`,
       allPassed ? "color:#22c55e" : "color:#ef4444",
     );
     console.table(results);

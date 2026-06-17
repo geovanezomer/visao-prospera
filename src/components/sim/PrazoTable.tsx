@@ -11,7 +11,7 @@ function avg(values: number[]): number {
 function fixedBase(values: number[]): number {
   if (!values?.length) return 0;
   const nz = values.find((v) => Number(v) !== 0);
-  return Number.isFinite(nz as number) ? (nz as number) : (values[0] || 0);
+  return Number.isFinite(nz as number) ? (nz as number) : values[0] || 0;
 }
 
 /**
@@ -57,7 +57,9 @@ export function PrazoTable({
                 <th className="w-56 px-3 py-2">Descrição</th>
                 <th className="w-24 px-2 py-2 text-center">Modo</th>
                 {MESES.map((m) => (
-                  <th key={m} className="px-1 py-2 text-right">{m}</th>
+                  <th key={m} className="px-1 py-2 text-right">
+                    {m}
+                  </th>
                 ))}
                 <th className="px-3 py-2 text-right">{summaryLabel}</th>
                 <th className="w-14 px-2 py-2 text-right">—</th>
@@ -79,9 +81,16 @@ export function PrazoTable({
                 {fixed ? (
                   <td className="px-1 py-1" colSpan={12}>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase text-muted-foreground">Dias aplicados em todos os meses:</span>
+                      <span className="text-[10px] uppercase text-muted-foreground">
+                        Dias aplicados em todos os meses:
+                      </span>
                       <div className="w-36">
-                        <NumInput integer min={0} value={fixedBase(vals)} onChange={(n) => onAllMonths(n)} />
+                        <NumInput
+                          integer
+                          min={0}
+                          value={fixedBase(vals)}
+                          onChange={(n) => onAllMonths(n)}
+                        />
                       </div>
                     </div>
                   </td>
@@ -103,4 +112,3 @@ export function PrazoTable({
     </div>
   );
 }
-

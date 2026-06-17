@@ -43,8 +43,14 @@ describe("buildValuation — cenário lucrativo", () => {
 
   it("Liquidity discount reduz o EV proporcionalmente", () => {
     const s = profitableState();
-    const sem = buildValuation(s, { ...defaultValuationParams(s.businessType), liquidityDiscount: 0 });
-    const com = buildValuation(s, { ...defaultValuationParams(s.businessType), liquidityDiscount: 0.3 });
+    const sem = buildValuation(s, {
+      ...defaultValuationParams(s.businessType),
+      liquidityDiscount: 0,
+    });
+    const com = buildValuation(s, {
+      ...defaultValuationParams(s.businessType),
+      liquidityDiscount: 0.3,
+    });
     expect(com.enterpriseValue.base).toBeLessThan(sem.enterpriseValue.base);
   });
 

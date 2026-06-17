@@ -1,5 +1,11 @@
 import { AppState, TaxRegime } from "./types";
-import { buildDRE, resolveEffectiveRegime, splitReceitasFinanceiras, type DRE, type MonthlyTax } from "./calculations";
+import {
+  buildDRE,
+  resolveEffectiveRegime,
+  splitReceitasFinanceiras,
+  type DRE,
+  type MonthlyTax,
+} from "./calculations";
 import { MESES, sum, zeros12 } from "./format";
 
 export interface CashFlow {
@@ -51,7 +57,10 @@ export interface CashFlow {
  *   → inAno=[0, 100, 100, ..., 100] (11 meses)
  *   → transbordo = 100 (mês 12 cai em jan/ano+1)
  */
-export function shiftByDaysSplit(values: number[], lagDays: number): { inAno: number[]; transbordo: number } {
+export function shiftByDaysSplit(
+  values: number[],
+  lagDays: number,
+): { inAno: number[]; transbordo: number } {
   const lag = Math.max(0, Math.round(lagDays / 30));
   if (lag === 0) return { inAno: values.slice(), transbordo: 0 };
   const out = zeros12();
@@ -68,7 +77,10 @@ export function shiftByDaysSplit(values: number[], lagDays: number): { inAno: nu
  * Variante por mês: cada mês `i` tem seu próprio lag (em dias).
  * Útil quando o PMR/PMP varia ao longo do ano (sazonalidade, mix de clientes etc.).
  */
-export function shiftByDaysSplitMonthly(values: number[], lagDaysByMonth: number[]): { inAno: number[]; transbordo: number } {
+export function shiftByDaysSplitMonthly(
+  values: number[],
+  lagDaysByMonth: number[],
+): { inAno: number[]; transbordo: number } {
   const out = zeros12();
   let transbordo = 0;
   for (let i = 0; i < 12; i++) {
@@ -95,7 +107,10 @@ function hasMonthlyVariation(arr: number[] | undefined): boolean {
  * Recebimentos = (Receita Bruta − Inadimplência) deslocados pelo PMR.
  * Usa `pmrMensal` quando há sazonalidade real; caso contrário, escalar `pmr`.
  */
-export function computeRecebimentos(state: AppState, dre: DRE): { inAno: number[]; transbordo: number } {
+export function computeRecebimentos(
+  state: AppState,
+  dre: DRE,
+): { inAno: number[]; transbordo: number } {
   const recebivelMensal = dre.receitaBruta.map((r, i) => r - (dre.deducoesInadimplencia[i] ?? 0));
   if (hasMonthlyVariation(state.revenue.pmrMensal)) {
     return shiftByDaysSplitMonthly(recebivelMensal, state.revenue.pmrMensal!);
@@ -106,7 +121,10 @@ export function computeRecebimentos(state: AppState, dre: DRE): { inAno: number[
 /**
  * Pagamentos a fornecedores = CPV/CMV/CSP deslocados pelo PMP (mensal quando há sazonalidade).
  */
-export function computeFornecedores(state: AppState, dre: DRE): { inAno: number[]; transbordo: number } {
+export function computeFornecedores(
+  state: AppState,
+  dre: DRE,
+): { inAno: number[]; transbordo: number } {
   if (hasMonthlyVariation(state.revenue.pmpMensal)) {
     return shiftByDaysSplitMonthly(dre.cpv, state.revenue.pmpMensal!);
   }
@@ -166,9 +184,13 @@ export function computeFluxos(args: {
   const variacaoCaixa = zeros12();
   for (let i = 0; i < 12; i++) {
     fluxoOperacional[i] =
-      args.recebimentos[i] + args.receitasFinanceiras[i] -
-      args.fornecedores[i] - args.fixos[i] -
-      args.variaveis[i] - args.financeiros[i] - args.impostos[i];
+      args.recebimentos[i] +
+      args.receitasFinanceiras[i] -
+      args.fornecedores[i] -
+      args.fixos[i] -
+      args.variaveis[i] -
+      args.financeiros[i] -
+      args.impostos[i];
     fluxoInvestimento[i] = -args.capex[i];
     fluxoFinanciamento[i] =
       args.aportes[i] + args.emprestimosCaptados[i] - args.amortizacoes[i] - args.dividendos[i];
@@ -180,7 +202,10 @@ export function computeFluxos(args: {
 /**
  * Acumula saldo mês a mês: saldoInicial[i+1] = saldoFinal[i].
  */
-export function computeSaldos(saldoInicial0: number, variacaoCaixa: number[]): {
+export function computeSaldos(
+  saldoInicial0: number,
+  variacaoCaixa: number[],
+): {
   saldoInicial: number[];
   saldoFinal: number[];
 } {
@@ -202,7 +227,8 @@ export function computeAlertas(saldoFinal: number[], caixaMinimo: number): CashF
   const out: CashFlow["alertas"] = [];
   for (let i = 0; i < 12; i++) {
     if (saldoFinal[i] < 0) out.push({ mes: MESES[i], saldo: saldoFinal[i], tipo: "negativo" });
-    else if (saldoFinal[i] < caixaMinimo) out.push({ mes: MESES[i], saldo: saldoFinal[i], tipo: "abaixoMinimo" });
+    else if (saldoFinal[i] < caixaMinimo)
+      out.push({ mes: MESES[i], saldo: saldoFinal[i], tipo: "abaixoMinimo" });
   }
   return out;
 }
@@ -241,7 +267,10 @@ export function computeBurnRunway(args: {
 // =====================================================================
 // Orquestrador — mesma assinatura e retorno do legado.
 // =====================================================================
-export function buildCashFlow(state: AppState, regime: TaxRegime = resolveEffectiveRegime(state)): CashFlow {
+export function buildCashFlow(
+  state: AppState,
+  regime: TaxRegime = resolveEffectiveRegime(state),
+): CashFlow {
   const { dre, tax } = buildDRE(state, regime);
   const { capital, cashflow } = state;
 
@@ -266,10 +295,17 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = resolveEffect
     variaveis: op.variaveis,
     financeiros: op.financeiros,
     impostos: imp.inAno,
-    capex, aportes, emprestimosCaptados, amortizacoes, dividendos,
+    capex,
+    aportes,
+    emprestimosCaptados,
+    amortizacoes,
+    dividendos,
   });
 
-  const { saldoInicial, saldoFinal } = computeSaldos(capital.disponibilidades, fluxos.variacaoCaixa);
+  const { saldoInicial, saldoFinal } = computeSaldos(
+    capital.disponibilidades,
+    fluxos.variacaoCaixa,
+  );
   const alertas = computeAlertas(saldoFinal, cashflow.caixaMinimo);
   const pior = computePiorMes(saldoFinal);
 
@@ -283,7 +319,10 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = resolveEffect
     pagamentosFinanceiros: op.financeiros,
     pagamentosImpostos: imp.inAno,
     fluxoOperacional: fluxos.fluxoOperacional,
-    aportes, emprestimosCaptados, amortizacoes, dividendos,
+    aportes,
+    emprestimosCaptados,
+    amortizacoes,
+    dividendos,
     fluxoFinanciamento: fluxos.fluxoFinanciamento,
     capex,
     fluxoInvestimento: fluxos.fluxoInvestimento,
@@ -297,8 +336,11 @@ export function buildCashFlow(state: AppState, regime: TaxRegime = resolveEffect
       recebimentos: sum(rec.inAno),
       receitasFinanceiras: sum(receitasFinanceiras),
       pagamentosTotais:
-        sum(fornec.inAno) + sum(op.fixos) + sum(op.variaveis) +
-        sum(op.financeiros) + sum(imp.inAno),
+        sum(fornec.inAno) +
+        sum(op.fixos) +
+        sum(op.variaveis) +
+        sum(op.financeiros) +
+        sum(imp.inAno),
       fluxoOperacional: sum(fluxos.fluxoOperacional),
       fluxoInvestimento: sum(fluxos.fluxoInvestimento),
       fluxoFinanciamento: sum(fluxos.fluxoFinanciamento),

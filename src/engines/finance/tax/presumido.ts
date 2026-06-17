@@ -10,8 +10,10 @@
 import { AppState, BusinessType, TaxConfig } from "../types";
 import { sum, zeros12 } from "../format";
 import {
-  getIrpjPct, getCsllPct,
-  getPisCumPct, getCofinsCumPct,
+  getIrpjPct,
+  getCsllPct,
+  getPisCumPct,
+  getCofinsCumPct,
   getPresumidoBases,
 } from "../taxDefaults";
 import { receitaTributavel, splitReceitasFinanceiras } from "../shared";
@@ -35,7 +37,11 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const isMercadoria = businessType === "comercio" || businessType === "industria";
   const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
   const reforma = getReformaRates(tax.era, tax);
-  const usaReforma = reforma.cbsPct > 0 || reforma.ibsPct > 0 || reforma.pisCofinsMult < 1 || reforma.icmsIssMult < 1;
+  const usaReforma =
+    reforma.cbsPct > 0 ||
+    reforma.ibsPct > 0 ||
+    reforma.pisCofinsMult < 1 ||
+    reforma.icmsIssMult < 1;
   const irpjAliq = getIrpjPct(tax) / 100;
   const csllAliq = getCsllPct(tax) / 100;
   const pisAliq = getPisCumPct(tax) / 100;
@@ -64,8 +70,16 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const baseCSLLMensal = trib.map((r, i) => r * baseCSLL + (rendFinTrib[i] || 0));
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
 
-  let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
-  let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
+  let irpjTotal = 0,
+    csllTotal = 0,
+    pisTotal = 0,
+    cofinsTotal = 0,
+    issTotal = 0,
+    cbsTotal = 0,
+    ibsTotal = 0;
+  let saldoCredorICMS = 0,
+    saldoCBS = 0,
+    saldoIBS = 0;
   const monthlyVendas = zeros12();
   const monthlyLucro = zeros12();
   const monthly = trib.map((r, i) => {
@@ -80,7 +94,8 @@ export function calcPresumido(state: AppState): MonthlyTax {
     const issvBruto = Math.max(0, debito - creditoMes);
     const issv = issvBruto * reforma.icmsIssMult;
     saldoCredorICMS = Math.max(0, creditoMes - debito);
-    let cbs = 0, ibs = 0;
+    let cbs = 0,
+      ibs = 0;
     if (reforma.cbsPct > 0) {
       const dCbs = r * (reforma.cbsPct / 100);
       const cCbs = cpvMonthly[i] * (reforma.cbsPct / 100) + saldoCBS;
@@ -111,7 +126,7 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const annualLucro = sum(monthlyLucro);
   const rbAnual = sum(revenue.bruta);
   const detail: Record<string, number> = {
-    "IRPJ": irpjTotal - sum(adicionalMensal),
+    IRPJ: irpjTotal - sum(adicionalMensal),
     "Adicional IRPJ (10%)": sum(adicionalMensal),
     CSLL: csllTotal,
   };

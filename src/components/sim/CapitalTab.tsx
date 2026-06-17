@@ -4,7 +4,6 @@ import { fmtBRL, sum } from "@/engines/finance/format";
 import { buildDRE, calcIndicators } from "@/engines/finance/calculations";
 import { MoneyInput, HelpTip } from "./primitives";
 
-
 import { IntroCard } from "./capital/IntroCard";
 import { CapitalStructureCard } from "./capital/CapitalStructureCard";
 import { BalanceSheetCard } from "./capital/BalanceSheetCard";
@@ -23,30 +22,38 @@ export function CapitalTab() {
   const { dre } = useMemo(() => buildDRE(state, state.tax.regime), [state]);
   const ind = useMemo(() => calcIndicators(state, dre), [state, dre]);
 
-  const set = (patch: Partial<typeof c>) => update((s) => ({ ...s, capital: { ...s.capital, ...patch } }));
+  const set = (patch: Partial<typeof c>) =>
+    update((s) => ({ ...s, capital: { ...s.capital, ...patch } }));
 
   const wacc = ind.wacc;
   // Quando PL e Dívida estão preenchidos, a proporção real é PL/(PL+D) — o slider
   // vira leitura derivada para evitar contradição visual entre % e R$.
   const totalFinancAbs = Math.max(0, c.patrimonioLiquido) + Math.max(0, c.dividaOnerosa);
-  const proprioDerivado = totalFinancAbs > 0
-    ? (Math.max(0, c.patrimonioLiquido) / totalFinancAbs) * 100
-    : c.proprio;
+  const proprioDerivado =
+    totalFinancAbs > 0 ? (Math.max(0, c.patrimonioLiquido) / totalFinancAbs) * 100 : c.proprio;
   const terceiros = 100 - proprioDerivado;
 
   // Validações de inconsistência patrimonial.
   const warnings: string[] = [];
   if (c.dividaOnerosa > c.ativoTotal && c.ativoTotal > 0) {
-    warnings.push(`Dívida onerosa (${fmtBRL(c.dividaOnerosa)}) maior que o Ativo Total (${fmtBRL(c.ativoTotal)}) — situação de insolvência técnica. WACC e ROIC perdem significado neste cenário.`);
+    warnings.push(
+      `Dívida onerosa (${fmtBRL(c.dividaOnerosa)}) maior que o Ativo Total (${fmtBRL(c.ativoTotal)}) — situação de insolvência técnica. WACC e ROIC perdem significado neste cenário.`,
+    );
   }
   if (c.patrimonioLiquido < 0) {
-    warnings.push(`Patrimônio Líquido negativo (${fmtBRL(c.patrimonioLiquido)}) — passivo a descoberto. Reveja o balanço antes de interpretar ROE/ROIC.`);
+    warnings.push(
+      `Patrimônio Líquido negativo (${fmtBRL(c.patrimonioLiquido)}) — passivo a descoberto. Reveja o balanço antes de interpretar ROE/ROIC.`,
+    );
   }
   if (c.patrimonioLiquido > 0 && c.dividaOnerosa / c.patrimonioLiquido > 5) {
-    warnings.push(`Endividamento muito elevado: D/PL = ${(c.dividaOnerosa / c.patrimonioLiquido).toFixed(1)}× (saudável ≤ 2×). Risco financeiro relevante.`);
+    warnings.push(
+      `Endividamento muito elevado: D/PL = ${(c.dividaOnerosa / c.patrimonioLiquido).toFixed(1)}× (saudável ≤ 2×). Risco financeiro relevante.`,
+    );
   }
   if (c.ativoCirculante > 0 && c.ativoTotal > 0 && c.ativoCirculante > c.ativoTotal) {
-    warnings.push(`Ativo Circulante (${fmtBRL(c.ativoCirculante)}) maior que Ativo Total — confira os valores.`);
+    warnings.push(
+      `Ativo Circulante (${fmtBRL(c.ativoCirculante)}) maior que Ativo Total — confira os valores.`,
+    );
   }
 
   return (
@@ -55,9 +62,13 @@ export function CapitalTab() {
 
       {warnings.length > 0 && (
         <div className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-xs">
-          <div className="mb-1 font-semibold text-warning">⚠ Inconsistências patrimoniais detectadas</div>
+          <div className="mb-1 font-semibold text-warning">
+            ⚠ Inconsistências patrimoniais detectadas
+          </div>
           <ul className="ml-4 list-disc space-y-1 text-muted-foreground">
-            {warnings.map((w, i) => <li key={i}>{w}</li>)}
+            {warnings.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
           </ul>
         </div>
       )}
@@ -66,13 +77,29 @@ export function CapitalTab() {
         <div className="rounded-lg border border-border/60 bg-card/60 p-4">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
             Capital de Giro Disponível
-            <HelpTip text="Recursos próprios que a empresa tem disponíveis para financiar o ciclo operacional (capital permanente menos ativo permanente)." formula="(PL + Exigível a LP) − Ativo Permanente" />
+            <HelpTip
+              text="Recursos próprios que a empresa tem disponíveis para financiar o ciclo operacional (capital permanente menos ativo permanente)."
+              formula="(PL + Exigível a LP) − Ativo Permanente"
+            />
           </div>
-          <MoneyInput value={c.capitalGiroDisponivel} onChange={(n) => set({ capitalGiroDisponivel: n })} className="mt-2 text-lg" />
-          <div className="mt-1 text-[10px] text-muted-foreground">Qual é a disponibilidade de dinheiro imediata da empresa para giro, somando caixa e bancos</div>
+          <MoneyInput
+            value={c.capitalGiroDisponivel}
+            onChange={(n) => set({ capitalGiroDisponivel: n })}
+            className="mt-2 text-lg"
+          />
+          <div className="mt-1 text-[10px] text-muted-foreground">
+            Qual é a disponibilidade de dinheiro imediata da empresa para giro, somando caixa e
+            bancos
+          </div>
         </div>
         <div className="md:col-span-3">
-          <NCGExplanationCard ncg={ind.ncg} pmr={state.revenue.pmr} pmp={state.revenue.pmp} receitaDia={sum(dre.receitaBruta)/360} cpvDia={sum(dre.cpv)/360} />
+          <NCGExplanationCard
+            ncg={ind.ncg}
+            pmr={state.revenue.pmr}
+            pmp={state.revenue.pmp}
+            receitaDia={sum(dre.receitaBruta) / 360}
+            cpvDia={sum(dre.cpv) / 360}
+          />
         </div>
       </div>
 

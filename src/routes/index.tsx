@@ -22,7 +22,12 @@ import { IndicatorsTab } from "@/components/sim/IndicatorsTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
 import { AIView } from "@/components/ai/AIView";
 import { TabKey } from "@/engines/finance/types";
-import { applySimulator, countActiveLevers, DEFAULT_SIM, SimulatorParams } from "@/engines/finance/simulator";
+import {
+  applySimulator,
+  countActiveLevers,
+  DEFAULT_SIM,
+  SimulatorParams,
+} from "@/engines/finance/simulator";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Presentation, X, FileText } from "lucide-react";
@@ -47,12 +52,19 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "FinnancePRO — Diagnóstico & Simulação Empresarial" },
-      { name: "description", content: "FinnancePRO: diagnóstico financeiro, DRE simulado, regime tributário, WACC e análise de cenários para empresas brasileiras." },
+      {
+        name: "description",
+        content:
+          "FinnancePRO: diagnóstico financeiro, DRE simulado, regime tributário, WACC e análise de cenários para empresas brasileiras.",
+      },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap",
+      },
     ],
   }),
   component: SimulaPro,
@@ -101,7 +113,9 @@ function SimulaPro() {
 
   useEffect(() => {
     if (!meetingMode) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMeetingMode(false); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMeetingMode(false);
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [meetingMode]);
@@ -117,167 +131,194 @@ function SimulaPro() {
   }, []);
 
   if (!hydrated || !user) {
-    return <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">Carregando…</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+        Carregando…
+      </div>
+    );
   }
-
-
-
 
   return (
     <SidebarProvider>
       <FinanceProvider state={state} update={update}>
-      <div className="flex min-h-screen w-full bg-background text-foreground">
-        <AppSidebar 
-          activeTab={activeTab} 
-          setActiveTab={(tab) => {
-            setActiveTab(tab);
-            // No mobile, fecha a sidebar após selecionar
-            if (window.innerWidth < 768) {
-              document.dispatchEvent(new CustomEvent('close-mobile-sidebar'));
-            }
-          }} 
-          onSave={fileApi.save}
-          onOpen={fileApi.open}
-          currentFileName={fileApi.currentFileName}
-          dirty={fileApi.dirty}
-        />
+        <div className="flex min-h-screen w-full bg-background text-foreground">
+          <AppSidebar
+            activeTab={activeTab}
+            setActiveTab={(tab) => {
+              setActiveTab(tab);
+              // No mobile, fecha a sidebar após selecionar
+              if (window.innerWidth < 768) {
+                document.dispatchEvent(new CustomEvent("close-mobile-sidebar"));
+              }
+            }}
+            onSave={fileApi.save}
+            onOpen={fileApi.open}
+            currentFileName={fileApi.currentFileName}
+            dirty={fileApi.dirty}
+          />
 
-
-        
-        <SidebarInset className="flex flex-col">
-          <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/80 px-4 backdrop-blur sm:px-6">
-            <div className="flex items-center gap-2 min-w-0">
-              <SidebarTrigger className="h-9 w-9" data-meeting-hide="true" />
-              <div className="flex items-center gap-2 md:gap-4 min-w-0">
-                <h2 className="text-sm font-medium capitalize text-muted-foreground md:text-base shrink-0">
-                  {activeTab === "ai" ? "Consultor IA" : activeTab}
-                </h2>
-                {/* Breadcrumb: empresa · arquivo · última modificação. */}
-                <div
-                  className="hidden md:flex items-center gap-1.5 min-w-0 text-[11px] text-muted-foreground border-l border-border/40 pl-3"
-                  title={fileApi.currentFileName ?? "Arquivo não salvo"}
-                  data-meeting-hide="true"
-                >
-                  <FileText className="h-3 w-3 shrink-0" />
-                  <span className="truncate font-medium text-foreground/80">
-                    {state.companyName?.trim() || "Sem empresa"}
-                  </span>
-                  {fileApi.currentFileName && (
-                    <>
-                      <span className="opacity-40">·</span>
-                      <span className="truncate">{fileApi.currentFileName}</span>
-                    </>
-                  )}
-                  <span className="opacity-40">·</span>
-                  <span className={fileApi.dirty ? "text-amber-500" : ""}>
-                    {fileApi.dirty ? "● não salvo" : `salvo ${timeAgo(fileApi.lastModified)}`}
-                  </span>
-                  {autosaveStatus !== "idle" && (
-                    <>
-                      <span className="opacity-40">·</span>
-                      <span
-                        className={
-                          autosaveStatus === "error"
-                            ? "text-destructive"
-                            : autosaveStatus === "saving"
-                            ? "text-muted-foreground"
-                            : "text-emerald-500"
-                        }
-                        title="Autosave local (IndexedDB)"
-                      >
-                        {autosaveStatus === "saving"
-                          ? "Salvando…"
-                          : autosaveStatus === "saved"
-                          ? "✓ Salvo"
-                          : "Erro ao salvar"}
-                      </span>
-                    </>
-                  )}
+          <SidebarInset className="flex flex-col">
+            <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/80 px-4 backdrop-blur sm:px-6">
+              <div className="flex items-center gap-2 min-w-0">
+                <SidebarTrigger className="h-9 w-9" data-meeting-hide="true" />
+                <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                  <h2 className="text-sm font-medium capitalize text-muted-foreground md:text-base shrink-0">
+                    {activeTab === "ai" ? "Consultor IA" : activeTab}
+                  </h2>
+                  {/* Breadcrumb: empresa · arquivo · última modificação. */}
+                  <div
+                    className="hidden md:flex items-center gap-1.5 min-w-0 text-[11px] text-muted-foreground border-l border-border/40 pl-3"
+                    title={fileApi.currentFileName ?? "Arquivo não salvo"}
+                    data-meeting-hide="true"
+                  >
+                    <FileText className="h-3 w-3 shrink-0" />
+                    <span className="truncate font-medium text-foreground/80">
+                      {state.companyName?.trim() || "Sem empresa"}
+                    </span>
+                    {fileApi.currentFileName && (
+                      <>
+                        <span className="opacity-40">·</span>
+                        <span className="truncate">{fileApi.currentFileName}</span>
+                      </>
+                    )}
+                    <span className="opacity-40">·</span>
+                    <span className={fileApi.dirty ? "text-amber-500" : ""}>
+                      {fileApi.dirty ? "● não salvo" : `salvo ${timeAgo(fileApi.lastModified)}`}
+                    </span>
+                    {autosaveStatus !== "idle" && (
+                      <>
+                        <span className="opacity-40">·</span>
+                        <span
+                          className={
+                            autosaveStatus === "error"
+                              ? "text-destructive"
+                              : autosaveStatus === "saving"
+                                ? "text-muted-foreground"
+                                : "text-emerald-500"
+                          }
+                          title="Autosave local (IndexedDB)"
+                        >
+                          {autosaveStatus === "saving"
+                            ? "Salvando…"
+                            : autosaveStatus === "saved"
+                              ? "✓ Salvo"
+                              : "Erro ao salvar"}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2">
-              {meetingMode && (
-                <Badge variant="outline" className="hidden sm:inline-flex border-primary/40 bg-primary/10 text-primary text-[10px] uppercase tracking-wider">
-                  Modo Reunião · ESC para sair
-                </Badge>
-              )}
-              <div data-meeting-hide="true" className="contents">
-                <TaxSettingsDialog />
-                <Button
-                  size="sm"
-                  variant={meetingMode ? "default" : "ghost"}
-                  onClick={() => setMeetingMode((v) => !v)}
-                  className="h-8"
-                  title="Modo Reunião: oculta menus, amplia fontes e destaca KPIs"
-                >
-                  {meetingMode ? <X className="h-3.5 w-3.5 sm:mr-2" /> : <Presentation className="h-3.5 w-3.5 sm:mr-2" />}
-                  <span className="hidden sm:inline">{meetingMode ? "Sair Reunião" : "Modo Reunião"}</span>
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8"
-                  onClick={() => void fileApi.resetWithConfirm()}
-                  title="Restaurar dados (Ctrl+Shift+R)"
-                >
-                  <RotateCcw className="h-3.5 w-3.5 sm:mr-2" />
-                  <span className="hidden sm:inline">Reset</span>
-                </Button>
+              <div className="flex items-center gap-2">
+                {meetingMode && (
+                  <Badge
+                    variant="outline"
+                    className="hidden sm:inline-flex border-primary/40 bg-primary/10 text-primary text-[10px] uppercase tracking-wider"
+                  >
+                    Modo Reunião · ESC para sair
+                  </Badge>
+                )}
+                <div data-meeting-hide="true" className="contents">
+                  <TaxSettingsDialog />
+                  <Button
+                    size="sm"
+                    variant={meetingMode ? "default" : "ghost"}
+                    onClick={() => setMeetingMode((v) => !v)}
+                    className="h-8"
+                    title="Modo Reunião: oculta menus, amplia fontes e destaca KPIs"
+                  >
+                    {meetingMode ? (
+                      <X className="h-3.5 w-3.5 sm:mr-2" />
+                    ) : (
+                      <Presentation className="h-3.5 w-3.5 sm:mr-2" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {meetingMode ? "Sair Reunião" : "Modo Reunião"}
+                    </span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8"
+                    onClick={() => void fileApi.resetWithConfirm()}
+                    title="Restaurar dados (Ctrl+Shift+R)"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 sm:mr-2" />
+                    <span className="hidden sm:inline">Reset</span>
+                  </Button>
+                </div>
               </div>
-            </div>
-          </header>
+            </header>
 
-          <main className="flex-1 overflow-x-hidden overflow-y-auto">
-            <div className="mx-auto h-full max-w-[1600px] p-2 sm:p-4 md:p-6">
-              {/* Boundary garante que crash em uma aba não derruba o app inteiro
+            <main className="flex-1 overflow-x-hidden overflow-y-auto">
+              <div className="mx-auto h-full max-w-[1600px] p-2 sm:p-4 md:p-6">
+                {/* Boundary garante que crash em uma aba não derruba o app inteiro
                   e que componentes consumidos fora do FinanceProvider exibam
                   fallback amigável em vez de tela branca. */}
-              <FinanceErrorBoundary>
-                {activeTab === "ai" ? (
-                  <AIView
-                    state={state}
-                    simulatedState={simulatedState}
-                    simActive={simActive}
-                    simParams={simParams}
-                  />
-                ) : activeTab === "calculadoras" ? (
-                  <div className="animate-in fade-in duration-500">
-                    <CalculadorasTab />
-                  </div>
-                ) : (
-                  <div className="space-y-6 animate-in fade-in duration-500">
-                    {activeTab === "receitas" && <RevenueTab />}
-                    {activeTab === "custos" && <CostsTab />}
-                    {activeTab === "capital" && <CapitalTab />}
-                    {activeTab === "tributos" && <TaxTab />}
-                    {activeTab === "caixa" && <CashflowTab />}
-                    {activeTab === "governanca" && <StrategicTab />}
-                    {activeTab === "dre" && <DRETab />}
-                    {activeTab === "indicadores" && <IndicatorsTab />}
-                    {activeTab === "resultados" && <DiagnosisTab />}
-                    {activeTab === "simulador" && <SimulatorTab state={state} apply={update} saveScenario={save} params={simParams} setParams={setSimParams} />}
-                    {activeTab === "valuation" && <ValuationTab baseState={state} simulatedState={simulatedState} simActive={simActive} />}
-                  </div>
-                )}
-              </FinanceErrorBoundary>
-            </div>
-          </main>
+                <FinanceErrorBoundary>
+                  {activeTab === "ai" ? (
+                    <AIView
+                      state={state}
+                      simulatedState={simulatedState}
+                      simActive={simActive}
+                      simParams={simParams}
+                    />
+                  ) : activeTab === "calculadoras" ? (
+                    <div className="animate-in fade-in duration-500">
+                      <CalculadorasTab />
+                    </div>
+                  ) : (
+                    <div className="space-y-6 animate-in fade-in duration-500">
+                      {activeTab === "receitas" && <RevenueTab />}
+                      {activeTab === "custos" && <CostsTab />}
+                      {activeTab === "capital" && <CapitalTab />}
+                      {activeTab === "tributos" && <TaxTab />}
+                      {activeTab === "caixa" && <CashflowTab />}
+                      {activeTab === "governanca" && <StrategicTab />}
+                      {activeTab === "dre" && <DRETab />}
+                      {activeTab === "indicadores" && <IndicatorsTab />}
+                      {activeTab === "resultados" && <DiagnosisTab />}
+                      {activeTab === "simulador" && (
+                        <SimulatorTab
+                          state={state}
+                          apply={update}
+                          saveScenario={save}
+                          params={simParams}
+                          setParams={setSimParams}
+                        />
+                      )}
+                      {activeTab === "valuation" && (
+                        <ValuationTab
+                          baseState={state}
+                          simulatedState={simulatedState}
+                          simActive={simActive}
+                        />
+                      )}
+                    </div>
+                  )}
+                </FinanceErrorBoundary>
+              </div>
+            </main>
 
-          <footer className="border-t border-border/20 py-4 text-center text-[10px] text-muted-foreground">
-            <p>© 2026 FinnancePRO | Geovane Zomer - Consultor Financeiro CVM 3354-5</p>
-          </footer>
-        </SidebarInset>
+            <footer className="border-t border-border/20 py-4 text-center text-[10px] text-muted-foreground">
+              <p>© 2026 FinnancePRO | Geovane Zomer - Consultor Financeiro CVM 3354-5</p>
+            </footer>
+          </SidebarInset>
 
-        <div data-meeting-hide="true" className="contents">
-          <ScenarioBar state={state} scenarios={scenarios} save={save} remove={remove} load={setState} />
+          <div data-meeting-hide="true" className="contents">
+            <ScenarioBar
+              state={state}
+              scenarios={scenarios}
+              save={save}
+              remove={remove}
+              load={setState}
+            />
+          </div>
+          {confirmDialog}
+          {/* AI FAB REMOVIDO POR SOLICITAÇÃO DO USUÁRIO */}
         </div>
-        {confirmDialog}
-        {/* AI FAB REMOVIDO POR SOLICITAÇÃO DO USUÁRIO */}
-      </div>
       </FinanceProvider>
     </SidebarProvider>
   );
 }
-

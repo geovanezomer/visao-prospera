@@ -15,10 +15,7 @@ import { zeros12 } from "./format";
  */
 export function computeNetDebt(state: AppState): number {
   const D = Math.max(0, state.capital.dividaOnerosa ?? 0);
-  const cash = Math.max(
-    0,
-    state.capital.caixaOcioso ?? state.capital.disponibilidades ?? 0,
-  );
+  const cash = Math.max(0, state.capital.caixaOcioso ?? state.capital.disponibilidades ?? 0);
   return D - cash;
 }
 
@@ -89,7 +86,10 @@ export function cagr12m(serie: number[]): number {
   const firstIdx = serie.findIndex((v) => v > 0);
   let lastIdx = -1;
   for (let i = serie.length - 1; i >= 0; i--) {
-    if (serie[i] > 0) { lastIdx = i; break; }
+    if (serie[i] > 0) {
+      lastIdx = i;
+      break;
+    }
   }
   if (firstIdx < 0 || lastIdx <= firstIdx) return NaN;
   // Auditoria #14: exige pelo menos 3 meses positivos no intervalo — evita

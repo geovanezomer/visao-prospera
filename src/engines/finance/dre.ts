@@ -33,7 +33,7 @@ export interface DRE {
   outrasDeducoes: number[];
   /** Tributos sobre venda (PIS/COFINS/ICMS/ISS/CBS/IBS, ou DAS no Simples) — deduzidos antes da Receita Líquida (CPC/IFRS 15). */
   impostosVendas: number[];
-  pdd: number[];                    // 0 se !inadimplenciaComoPDD
+  pdd: number[]; // 0 se !inadimplenciaComoPDD
   receitaLiquida: number[];
   cpv: number[];
   lucroBruto: number[];
@@ -123,9 +123,10 @@ function classifyCosts(
     // override manual via `comportamento` cobre casos como folha CLT no CPV
     // (variável contábil, mas fixo no curto prazo — distorce MC/PE se não for sinalizado).
     const comportamento: "fixo" | "variavel" =
-      c.comportamento ?? ((isCpv || isOpVar) ? "variavel" : "fixo");
+      c.comportamento ?? (isCpv || isOpVar ? "variavel" : "fixo");
     for (let i = 0; i < 12; i++) {
-      if (isCpv) cpv[i] += v[i];          // CPV contábil preserva a natureza (não muda com override).
+      if (isCpv)
+        cpv[i] += v[i]; // CPV contábil preserva a natureza (não muda com override).
       else despOp[i] += v[i];
       if (comportamento === "variavel") custosVariaveis[i] += v[i];
       else custosFixos[i] += v[i];
@@ -146,7 +147,15 @@ function classifyCosts(
     despesasPorCategoria["PDD — Perdas por inadimplência (líq. recup.)"] = pddFinal.slice();
   }
 
-  return { cpv, despOp, custosFixos, custosVariaveis, custosFinanceirosTotal, despesasPorCategoria, pddFinal };
+  return {
+    cpv,
+    despOp,
+    custosFixos,
+    custosVariaveis,
+    custosFinanceirosTotal,
+    despesasPorCategoria,
+    pddFinal,
+  };
 }
 
 // ---------------------------------------------------------------------

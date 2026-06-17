@@ -1,12 +1,18 @@
 // Tools macro: snapshot e séries históricas do BCB.
 
-import { getMacroSnapshot, getSerieFormatted, MACRO_SERIES_KEYS, type SerieKey } from "@/engines/macro/bcb";
+import {
+  getMacroSnapshot,
+  getSerieFormatted,
+  MACRO_SERIES_KEYS,
+  type SerieKey,
+} from "@/engines/macro/bcb";
 import { type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
 const defs: ToolDef[] = [
   {
     name: "get_macro",
-    description: "Retorna os principais indicadores macro atuais (Selic, CDI, IPCA, IGP-M, câmbio) via API do Banco Central.",
+    description:
+      "Retorna os principais indicadores macro atuais (Selic, CDI, IPCA, IGP-M, câmbio) via API do Banco Central.",
     parameters: { type: "object", properties: {}, required: [] },
   },
   {
@@ -33,4 +39,9 @@ const handlers: Record<string, ToolHandler> = {
   },
 };
 
-export const macroTools: ToolModule = { category: "macro", description: "Indicadores macroeconômicos (BCB, Selic, IPCA)", defs, handlers };
+export const macroTools: ToolModule = {
+  category: "macro",
+  description: "Indicadores macroeconômicos (BCB, Selic, IPCA)",
+  defs,
+  handlers,
+};

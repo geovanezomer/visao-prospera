@@ -9,10 +9,7 @@ import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
-    meta: [
-      { title: "Recuperar senha — FinnancePRO" },
-      { name: "robots", content: "noindex" },
-    ],
+    meta: [{ title: "Recuperar senha — FinnancePRO" }, { name: "robots", content: "noindex" }],
   }),
   component: ForgotPasswordPage,
 });
@@ -41,7 +38,11 @@ function ForgotPasswordPage() {
     <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex items-center gap-3">
-          <img src={logoAsset.url} alt="FinnancePRO" className="h-9 w-9 rounded-md object-contain" />
+          <img
+            src={logoAsset.url}
+            alt="FinnancePRO"
+            className="h-9 w-9 rounded-md object-contain"
+          />
           <p className="text-base font-semibold tracking-tight">
             Finnance<span className="text-primary">PRO</span>
           </p>
@@ -57,7 +58,10 @@ function ForgotPasswordPage() {
               Se houver uma conta com <span className="font-medium text-foreground">{email}</span>,
               você receberá um link para redefinir sua senha.
             </p>
-            <Link to="/login" className="mt-5 inline-block text-sm font-medium text-primary hover:underline">
+            <Link
+              to="/login"
+              className="mt-5 inline-block text-sm font-medium text-primary hover:underline"
+            >
               Voltar para o login
             </Link>
           </div>

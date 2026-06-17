@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { AppState, BusinessType, CostLine, COST_VENDAS_TABLE_CONFIG, APP_STATE_SCHEMA_VERSION } from "./types";
+import {
+  AppState,
+  BusinessType,
+  CostLine,
+  COST_VENDAS_TABLE_CONFIG,
+  APP_STATE_SCHEMA_VERSION,
+} from "./types";
 import { fill12 } from "./format";
 import { coerceMonths } from "./safeMath";
 
@@ -38,17 +44,19 @@ function applySchemaMigrations(s: AppState): AppState {
 // Intencionalmente raso: validar 100+ campos aninhados seria custo alto
 // para pouco ganho — o objetivo é apenas rejeitar JSONs estruturalmente
 // inválidos (arquivo corrompido, manipulado, ou de outro app).
-const appStateShape = z.object({
-  businessType: z.enum(["industria", "comercio", "servicos"]).optional(),
-  companyName: z.string().optional(),
-  numColaboradores: z.number().optional(),
-  revenue: z.object({}).passthrough().optional(),
-  costs: z.array(z.object({}).passthrough()).optional(),
-  capital: z.object({}).passthrough().optional(),
-  tax: z.object({}).passthrough().optional(),
-  cashflow: z.object({}).passthrough().optional(),
-  strategic: z.object({}).passthrough().optional(),
-}).passthrough();
+const appStateShape = z
+  .object({
+    businessType: z.enum(["industria", "comercio", "servicos"]).optional(),
+    companyName: z.string().optional(),
+    numColaboradores: z.number().optional(),
+    revenue: z.object({}).passthrough().optional(),
+    costs: z.array(z.object({}).passthrough()).optional(),
+    capital: z.object({}).passthrough().optional(),
+    tax: z.object({}).passthrough().optional(),
+    cashflow: z.object({}).passthrough().optional(),
+    strategic: z.object({}).passthrough().optional(),
+  })
+  .passthrough();
 
 /**
  * Valida o shape de topo + aplica migrateState. Retorna DEFAULT_STATE
@@ -59,14 +67,19 @@ export function validateAndMigrate(input: unknown): AppState {
   const parsed = appStateShape.safeParse(input);
   if (!parsed.success) {
     if (typeof console !== "undefined") {
-      console.warn("[FinancePRO] AppState inválido no boot — usando DEFAULT_STATE.", parsed.error.issues);
+      console.warn(
+        "[FinancePRO] AppState inválido no boot — usando DEFAULT_STATE.",
+        parsed.error.issues,
+      );
     }
     return DEFAULT_STATE;
   }
   return migrateState({ ...DEFAULT_STATE, ...(parsed.data as Partial<AppState>) });
 }
 
-const baseRevenue = [13000, 14000, 15500, 15000, 16000, 17000, 15500, 14500, 16000, 17500, 18500, 21000];
+const baseRevenue = [
+  13000, 14000, 15500, 15000, 16000, 17000, 15500, 14500, 16000, 17500, 18500, 21000,
+];
 
 const line = (
   id: string,
@@ -87,14 +100,19 @@ const line = (
 
 function costVendasFor(business: BusinessType): CostLine[] {
   const config = COST_VENDAS_TABLE_CONFIG[business];
-  return config.map(c => line(c.id, c.label, "direto_venda", 0, c.subcategory, { fixed: false, values: fill12(0) }));
+  return config.map((c) =>
+    line(c.id, c.label, "direto_venda", 0, c.subcategory, { fixed: false, values: fill12(0) }),
+  );
 }
 
 function fixosFor(business: BusinessType): CostLine[] {
   const base: CostLine[] = [
     line("aluguel", "Aluguel", "fixo", 2500),
     line("prolabore", "Pró-labore (sócios)", "fixo", 3000),
-    line("admin_clt", "Salários administrativos (CLT)", "fixo", 2800, undefined, { encargosAuto: true, encargosPct: 70 }),
+    line("admin_clt", "Salários administrativos (CLT)", "fixo", 2800, undefined, {
+      encargosAuto: true,
+      encargosPct: 70,
+    }),
     line("beneficios", "Benefícios (VA/VR + Plano Saúde)", "fixo", 600),
     line("plr", "PLR / Divisão de Lucros", "fixo", 0),
     line("contabilidade", "Contabilidade", "fixo", 450),
@@ -105,7 +123,14 @@ function fixosFor(business: BusinessType): CostLine[] {
     line("seguros", "Seguros", "fixo", 0),
   ];
   if (business === "servicos") {
-    base.splice(3, 0, line("mod_terc", "Mão de Obra Direta (Terceirização)", "fixo", 4500, undefined, { encargosAuto: true, encargosPct: 70 }));
+    base.splice(
+      3,
+      0,
+      line("mod_terc", "Mão de Obra Direta (Terceirização)", "fixo", 4500, undefined, {
+        encargosAuto: true,
+        encargosPct: 70,
+      }),
+    );
   }
   return base;
 }
@@ -115,30 +140,67 @@ function variaveisFor(business: BusinessType): CostLine[] {
     line("marketing", "Marketing e publicidade", "variavel", 800),
     line("comissoes", "Comissões de vendas", "variavel", 600),
     line("frete_venda", "Fretes / Transportes", "variavel", 250),
-    line("frete_vendas", "Frete sobre vendas", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
-    line("combustivel", "Combustível", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
-    line("marketplace", "Marketplace", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
+    line("frete_vendas", "Frete sobre vendas", "variavel", 0, undefined, {
+      fixed: false,
+      values: fill12(0),
+    }),
+    line("combustivel", "Combustível", "variavel", 0, undefined, {
+      fixed: false,
+      values: fill12(0),
+    }),
+    line("marketplace", "Marketplace", "variavel", 0, undefined, {
+      fixed: false,
+      values: fill12(0),
+    }),
   ];
   if (business === "servicos") {
-    base.push(
-      line("insumos_serv", "Insumos / Matéria Prima", "variavel", 500),
-    );
+    base.push(line("insumos_serv", "Insumos / Matéria Prima", "variavel", 500));
   }
   if (business === "industria") {
     base.push(
-      line("mp_aco", "Matéria-prima principal", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
-      line("mp_aux", "Matéria-prima auxiliar / componentes", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
-      line("mod_prod", "Salários produção (MOD)", "variavel", 0, undefined, { fixed: false, values: fill12(0), encargosAuto: true, encargosPct: 70 }),
-      line("cif_energia", "Energia de fábrica", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
-      line("cif_manut", "Manutenção de máquinas", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
+      line("mp_aco", "Matéria-prima principal", "variavel", 0, undefined, {
+        fixed: false,
+        values: fill12(0),
+      }),
+      line("mp_aux", "Matéria-prima auxiliar / componentes", "variavel", 0, undefined, {
+        fixed: false,
+        values: fill12(0),
+      }),
+      line("mod_prod", "Salários produção (MOD)", "variavel", 0, undefined, {
+        fixed: false,
+        values: fill12(0),
+        encargosAuto: true,
+        encargosPct: 70,
+      }),
+      line("cif_energia", "Energia de fábrica", "variavel", 0, undefined, {
+        fixed: false,
+        values: fill12(0),
+      }),
+      line("cif_manut", "Manutenção de máquinas", "variavel", 0, undefined, {
+        fixed: false,
+        values: fill12(0),
+      }),
     );
   }
   if (business === "comercio") {
     base.push(
-      line("merc_principal", "Mercadoria para revenda", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
-      line("frete_compra", "Frete sobre compras", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
-      line("icms_st", "ICMS-ST / tributos não recuperáveis", "variavel", 0, undefined, { fixed: false, values: fill12(0), semCredito: true }),
-      line("embalagem", "Embalagem para venda", "variavel", 0, undefined, { fixed: false, values: fill12(0) }),
+      line("merc_principal", "Mercadoria para revenda", "variavel", 0, undefined, {
+        fixed: false,
+        values: fill12(0),
+      }),
+      line("frete_compra", "Frete sobre compras", "variavel", 0, undefined, {
+        fixed: false,
+        values: fill12(0),
+      }),
+      line("icms_st", "ICMS-ST / tributos não recuperáveis", "variavel", 0, undefined, {
+        fixed: false,
+        values: fill12(0),
+        semCredito: true,
+      }),
+      line("embalagem", "Embalagem para venda", "variavel", 0, undefined, {
+        fixed: false,
+        values: fill12(0),
+      }),
     );
   }
   return base;
@@ -151,11 +213,19 @@ const financeiros = (): CostLine[] => [
   line("tarifas_bancarias", "Tarifas bancárias", "financeiro", 0),
   line("multas_juros", "Multas e juros por atraso", "financeiro", 0),
   line("antecipacao", "Taxas de Antecipação", "financeiro", 0),
-  line("maquininha", "Maquininha Cartão", "financeiro", 0, undefined, { fixed: false, values: fill12(0) }),
+  line("maquininha", "Maquininha Cartão", "financeiro", 0, undefined, {
+    fixed: false,
+    values: fill12(0),
+  }),
 ];
 
 export function defaultCostsFor(business: BusinessType): CostLine[] {
-  return [...costVendasFor(business), ...fixosFor(business), ...variaveisFor(business), ...financeiros()];
+  return [
+    ...costVendasFor(business),
+    ...fixosFor(business),
+    ...variaveisFor(business),
+    ...financeiros(),
+  ];
 }
 
 export const DEFAULT_STATE: AppState = {
@@ -190,16 +260,16 @@ export const DEFAULT_STATE: AppState = {
     kd: 18,
     capitalGiroDisponivel: 15000,
     depreciacaoMensal: 400,
-    
+
     patrimonioLiquido: 60000,
     ativoTotal: 100000,
     estoques: 5000,
     disponibilidades: 18000,
     dividaOnerosa: 30000,
-    ativoCirculante: 0,           // 0 = autocalcular
-    passivoCirculante: 0,         // 0 = autocalcular
-    contasReceber: 0,             // 0 = autocalcular via PMR
-    fornecedores: 0,              // 0 = autocalcular via PMP
+    ativoCirculante: 0, // 0 = autocalcular
+    passivoCirculante: 0, // 0 = autocalcular
+    contasReceber: 0, // 0 = autocalcular via PMR
+    fornecedores: 0, // 0 = autocalcular via PMP
     caixaOcioso: 0,
     passivosNaoOnerosos: 0,
     estoqueInicial: 0,
@@ -230,7 +300,7 @@ export const DEFAULT_STATE: AppState = {
     dividendos: fill12(0),
     amortizacoes: fill12(0),
   },
-  
+
   strategic: {
     concentration: {},
     governance: {},
@@ -244,7 +314,7 @@ const LEGACY_CPV_IDS = new Set(["insumos", "fretes"]);
 
 export function migrateCostLine(c: CostLine): CostLine {
   // Auto-marca ICMS-ST como sem crédito (Auditoria Jun/2026)
-  const semCredito = c.semCredito ?? (c.subcategory === "icms_st");
+  const semCredito = c.semCredito ?? c.subcategory === "icms_st";
   if (c.category) return { ...c, semCredito };
   let category: CostLine["category"];
   if (c.group === "financeiro") category = "financeiro";
@@ -265,22 +335,43 @@ export function migrateState(s: AppState): AppState {
     iof: "IOF",
     antecipacao: "Taxas de Antecipação",
   };
-  let costs = s.costs ? s.costs.map(migrateCostLine).filter((c) => !REMOVED_IDS.has(c.id)) : DEFAULT_STATE.costs;
+  let costs = s.costs
+    ? s.costs.map(migrateCostLine).filter((c) => !REMOVED_IDS.has(c.id))
+    : DEFAULT_STATE.costs;
   costs = costs.map((c) => (RELABEL[c.id] ? { ...c, label: RELABEL[c.id] } : c));
   // Todas as categorias custo_vendas ou direto_venda são processadas
   costs = costs.map((c) => {
     if (c.category !== "custo_vendas" && c.category !== "direto_venda") return c;
-    if (s.businessType === "servicos" && c.subcategory === "mao_obra_direta" && c.category !== "direto_venda") {
-      return { ...c, category: "fixo", subcategory: undefined, label: c.label.includes("MOD") || c.label.toLowerCase().includes("salário") ? "Mão de Obra Direta (Terceirização)" : c.label };
+    if (
+      s.businessType === "servicos" &&
+      c.subcategory === "mao_obra_direta" &&
+      c.category !== "direto_venda"
+    ) {
+      return {
+        ...c,
+        category: "fixo",
+        subcategory: undefined,
+        label:
+          c.label.includes("MOD") || c.label.toLowerCase().includes("salário")
+            ? "Mão de Obra Direta (Terceirização)"
+            : c.label,
+      };
     }
     // Se for migração e ainda estiver como custo_vendas, move para direto_venda
     if (c.category === "custo_vendas") return { ...c, category: "direto_venda" };
     return c;
   });
   // Garante presença das rubricas novas
-  const ensure = (id: string, label: string, category: CostLine["category"], extras?: Partial<CostLine>) => {
+  const ensure = (
+    id: string,
+    label: string,
+    category: CostLine["category"],
+    extras?: Partial<CostLine>,
+  ) => {
     if (!costs.some((c) => c.id === id)) {
-      costs.push(line(id, label, category, 0, undefined, { fixed: false, values: fill12(0), ...extras }));
+      costs.push(
+        line(id, label, category, 0, undefined, { fixed: false, values: fill12(0), ...extras }),
+      );
     }
   };
   ensure("maquininha", "Maquininha Cartão", "financeiro");
@@ -311,16 +402,25 @@ export function migrateState(s: AppState): AppState {
   if (!Array.isArray(revenue.deducoes)) revenue.deducoes = [];
   // Garante Descontos Incondicionais e Abatimentos
   if (!revenue.deducoes.some((d) => d.id === "desc_incond")) {
-    revenue.deducoes = [...revenue.deducoes, { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true }];
+    revenue.deducoes = [
+      ...revenue.deducoes,
+      { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true },
+    ];
   }
   if (!revenue.deducoes.some((d) => d.id === "abatimentos")) {
-    revenue.deducoes = [...revenue.deducoes, { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true }];
+    revenue.deducoes = [
+      ...revenue.deducoes,
+      { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true },
+    ];
   }
   // Garante Receitas Financeiras padrão
   if (!Array.isArray(revenue.receitasFinanceiras)) revenue.receitasFinanceiras = [];
   const ensureRF = (id: string, label: string) => {
     if (!revenue.receitasFinanceiras!.some((d) => d.id === id)) {
-      revenue.receitasFinanceiras = [...revenue.receitasFinanceiras!, { id, label, valores: fill12(0), fixed: true }];
+      revenue.receitasFinanceiras = [
+        ...revenue.receitasFinanceiras!,
+        { id, label, valores: fill12(0), fixed: true },
+      ];
     }
   };
   ensureRF("rend_aplic", "Rendimento de aplicações");
@@ -358,7 +458,10 @@ export function migrateState(s: AppState): AppState {
   revenue.pmpMensal = coerceMonths(revenue.pmpMensal, revenue.pmp || 0);
   revenue.pddReversaoMensal = coerceMonths(revenue.pddReversaoMensal);
   revenue.deducoes = revenue.deducoes.map((d) => ({ ...d, valores: coerceMonths(d.valores) }));
-  revenue.receitasFinanceiras = (revenue.receitasFinanceiras ?? []).map((d) => ({ ...d, valores: coerceMonths(d.valores) }));
+  revenue.receitasFinanceiras = (revenue.receitasFinanceiras ?? []).map((d) => ({
+    ...d,
+    valores: coerceMonths(d.valores),
+  }));
   costs = costs.map((c) => ({ ...c, values: coerceMonths(c.values) }));
   cashflow.aportes = coerceMonths(cashflow.aportes);
   cashflow.emprestimosCaptados = coerceMonths(cashflow.emprestimosCaptados);
@@ -369,4 +472,3 @@ export function migrateState(s: AppState): AppState {
   // Aplica migrações versionadas (breaking changes) e estampa schemaVersion atual.
   return applySchemaMigrations({ ...rest, revenue, capital, tax, costs, cashflow, strategic });
 }
-

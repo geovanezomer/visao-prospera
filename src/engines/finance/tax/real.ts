@@ -9,10 +9,7 @@
 
 import { AppState, TaxRegime } from "../types";
 import { sum, zeros12 } from "../format";
-import {
-  getIrpjPct, getCsllPct,
-  getPisNaoCumPct, getCofinsNaoCumPct,
-} from "../taxDefaults";
+import { getIrpjPct, getCsllPct, getPisNaoCumPct, getCofinsNaoCumPct } from "../taxDefaults";
 import { receitaTributavel, splitReceitasFinanceiras } from "../shared";
 import { isCpvCost, effectiveMonthValues } from "../costs";
 import { getReformaRates } from "./reforma";
@@ -26,7 +23,11 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const isMercadoria = businessType === "comercio" || businessType === "industria";
   const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
   const reforma = getReformaRates(tax.era, tax);
-  const usaReforma = reforma.cbsPct > 0 || reforma.ibsPct > 0 || reforma.pisCofinsMult < 1 || reforma.icmsIssMult < 1;
+  const usaReforma =
+    reforma.cbsPct > 0 ||
+    reforma.ibsPct > 0 ||
+    reforma.pisCofinsMult < 1 ||
+    reforma.icmsIssMult < 1;
 
   const cpvMonthly = zeros12();
   const temCpvCredito = icmsCredAliq > 0 || usaReforma;
@@ -43,7 +44,8 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   // não compõem o lucro tributável: subtraímos do LAIR antes de calcular IRPJ/CSLL.
   // PIS/COFINS sobre receitas financeiras (Decreto 8.426/2015) continua incidindo sobre o
   // total — a regra de exclusão é específica de IRPJ/CSLL.
-  const { financeiras: rendFin, financeirasIrpjBase: rendFinTrib } = splitReceitasFinanceiras(state);
+  const { financeiras: rendFin, financeirasIrpjBase: rendFinTrib } =
+    splitReceitasFinanceiras(state);
   const rendFinExclusivo = rendFin.map((v, i) => v - (rendFinTrib[i] || 0));
 
   // Auditoria #8: carryforward de prejuízo fiscal (Lei 9.065/95 art. 42).
@@ -60,13 +62,14 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
       prejAcum += -sumQ; // acumula prejuízo do trimestre
       // baseIRPJMensal[i0..i0+2] permanecem 0
     } else {
-      const compensacao = Math.min(sumQ * 0.30, prejAcum);
+      const compensacao = Math.min(sumQ * 0.3, prejAcum);
       prejAcum -= compensacao;
       const ajustado = sumQ - compensacao;
       // Distribui proporcionalmente aos meses positivos do trimestre.
-      const posSum = Math.max(0, baseSignedMonthly[i0])
-        + Math.max(0, baseSignedMonthly[i0 + 1])
-        + Math.max(0, baseSignedMonthly[i0 + 2]);
+      const posSum =
+        Math.max(0, baseSignedMonthly[i0]) +
+        Math.max(0, baseSignedMonthly[i0 + 1]) +
+        Math.max(0, baseSignedMonthly[i0 + 2]);
       if (posSum > 0) {
         for (let k = 0; k < 3; k++) {
           const pos = Math.max(0, baseSignedMonthly[i0 + k]);
@@ -92,11 +95,20 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const PIS_RF = 0.0065;
   const COFINS_RF = 0.04;
 
-  let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
+  let irpjTotal = 0,
+    csllTotal = 0,
+    pisTotal = 0,
+    cofinsTotal = 0,
+    issTotal = 0,
+    cbsTotal = 0,
+    ibsTotal = 0;
   // Auditoria #6: saldos credores acumuláveis também para PIS/COFINS (como já existia para ICMS).
   // Em empresas sazonais, créditos do mês excedem o débito e devem rolar para meses seguintes.
-  let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
-  let saldoCredorPIS = 0, saldoCredorCOFINS = 0;
+  let saldoCredorICMS = 0,
+    saldoCBS = 0,
+    saldoIBS = 0;
+  let saldoCredorPIS = 0,
+    saldoCredorCOFINS = 0;
   const monthlyVendas = zeros12();
   const monthlyLucro = zeros12();
   const monthly = trib.map((r, i) => {
@@ -123,7 +135,8 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     const issvBruto = Math.max(0, debito - creditoMes);
     const issv = issvBruto * reforma.icmsIssMult;
     saldoCredorICMS = Math.max(0, creditoMes - debito);
-    let cbs = 0, ibs = 0;
+    let cbs = 0,
+      ibs = 0;
     if (reforma.cbsPct > 0) {
       const dCbs = r * (reforma.cbsPct / 100);
       const cCbs = cpvMonthly[i] * (reforma.cbsPct / 100) + saldoCBS;
@@ -154,7 +167,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const annualLucro = sum(monthlyLucro);
   const rbAnual = sum(revenue.bruta);
   const detail: Record<string, number> = {
-    "IRPJ": irpjTotal - sum(adicionalMensal),
+    IRPJ: irpjTotal - sum(adicionalMensal),
     "Adicional IRPJ (10%)": sum(adicionalMensal),
     CSLL: csllTotal,
   };

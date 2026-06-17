@@ -70,13 +70,17 @@ describe("ratesOverride — Simples Nacional", () => {
     const dobrado = createState({
       revenue: { bruta: m12(15000) },
       tax: {
-        regime: "simples", simplesAnexo: "III",
+        regime: "simples",
+        simplesAnexo: "III",
         ratesOverride: {
           simplesTables: {
             III: [
               [180000, 12.0, 0], // dobramos a alíquota da 1ª faixa
-              [360000, 11.2, 9360], [720000, 13.5, 17640], [1800000, 16.0, 35640],
-              [3600000, 21.0, 125640], [4800000, 33.0, 648000],
+              [360000, 11.2, 9360],
+              [720000, 13.5, 17640],
+              [1800000, 16.0, 35640],
+              [3600000, 21.0, 125640],
+              [4800000, 33.0, 648000],
             ],
           },
         },
@@ -115,7 +119,9 @@ describe("ratesOverride — Lucro Presumido", () => {
       businessType: "servicos",
       revenue: { bruta: m12(50000) },
       tax: {
-        regime: "presumido", presumidoBaseIRPJ: 0, presumidoBaseCSLL: 0,
+        regime: "presumido",
+        presumidoBaseIRPJ: 0,
+        presumidoBaseCSLL: 0,
         ratesOverride: { presumidoBases: { servicos: { irpj: 16, csll: 16 } } },
       },
     });
@@ -133,7 +139,11 @@ describe("ratesOverride — Reforma tributária", () => {
     });
     const cheio = createState({
       revenue: { bruta: m12(50000) },
-      tax: { regime: "presumido", era: "transicao", ratesOverride: { reformaTransicaoIbsMult: 1.0 } },
+      tax: {
+        regime: "presumido",
+        era: "transicao",
+        ratesOverride: { reformaTransicaoIbsMult: 1.0 },
+      },
     });
     const a = buildDRE(base, "presumido").tax.annualVendas;
     const b = buildDRE(cheio, "presumido").tax.annualVendas;
@@ -149,7 +159,12 @@ describe("ratesOverride — Reforma tributária", () => {
     const semIss = createState({
       businessType: "servicos",
       revenue: { bruta: m12(50000) },
-      tax: { regime: "presumido", era: "transicao", issIcms: 5, ratesOverride: { reformaTransicaoIcmsIssMult: 0 } },
+      tax: {
+        regime: "presumido",
+        era: "transicao",
+        issIcms: 5,
+        ratesOverride: { reformaTransicaoIcmsIssMult: 0 },
+      },
     });
     const detailA = buildDRE(base, "presumido").tax.detail;
     const detailB = buildDRE(semIss, "presumido").tax.detail;

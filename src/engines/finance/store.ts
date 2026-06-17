@@ -130,12 +130,17 @@ export function useScenarios() {
       }
       if (!cancelled) setHydrated(true);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [username]);
 
   useEffect(() => {
     if (!hydrated) return;
-    if (suppressSave.current) { suppressSave.current = false; return; }
+    if (suppressSave.current) {
+      suppressSave.current = false;
+      return;
+    }
     void saveKey(scenKey(username), scenarios).then(() => broadcastChange(scenKey(username)));
   }, [scenarios, hydrated, username]);
 
@@ -157,9 +162,10 @@ export function useScenarios() {
 
   const save = (name: string, state: AppState) => {
     setScenarios((arr) => {
-      const id = typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      const id =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
       return [...arr, { id, name, createdAt: Date.now(), state }].slice(-MAX_SCENARIOS);
     });
   };

@@ -3,7 +3,11 @@
 
 import { regimeComparisonToMarkdown, taxAuditToMarkdown } from "@/engines/compliance/tax";
 import { checklistToMarkdown } from "@/engines/compliance/checklist";
-import { buildDRE, compareYearsForRegime, resolveEffectiveRegime } from "@/engines/finance/calculations";
+import {
+  buildDRE,
+  compareYearsForRegime,
+  resolveEffectiveRegime,
+} from "@/engines/finance/calculations";
 import { brl, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
 const defs: ToolDef[] = [
@@ -14,7 +18,8 @@ const defs: ToolDef[] = [
   },
   {
     name: "diagnostico_tributario",
-    description: "Gera um diagnóstico detalhado da situação fiscal atual, detectando economias potenciais (ex: migração para Real).",
+    description:
+      "Gera um diagnóstico detalhado da situação fiscal atual, detectando economias potenciais (ex: migração para Real).",
     parameters: { type: "object", properties: {}, required: [] },
   },
   {
@@ -24,19 +29,29 @@ const defs: ToolDef[] = [
   },
   {
     name: "simular_transicao_reforma",
-    description: "Simula a carga tributária ano-a-ano no cronograma oficial da LC 214/2025 (2026–2033), considerando a cobrança híbrida (CBS+IBS parcial × PIS/COFINS+ICMS/ISS em redução gradual). Use quando o usuário perguntar sobre impacto da Reforma em anos específicos ('quanto vou pagar em 2030?', 'em que ano fica mais caro?'). Por padrão simula o regime atual da empresa nos anos 2026–2033.",
+    description:
+      "Simula a carga tributária ano-a-ano no cronograma oficial da LC 214/2025 (2026–2033), considerando a cobrança híbrida (CBS+IBS parcial × PIS/COFINS+ICMS/ISS em redução gradual). Use quando o usuário perguntar sobre impacto da Reforma em anos específicos ('quanto vou pagar em 2030?', 'em que ano fica mais caro?'). Por padrão simula o regime atual da empresa nos anos 2026–2033.",
     parameters: {
       type: "object",
       properties: {
-        regime: { type: "string", enum: ["simples", "presumido", "real"], description: "Regime a simular. Default: regime efetivo atual." },
-        anos: { type: "array", items: { type: "number" }, description: "Anos a comparar. Default: [2026,2027,2028,2029,2030,2031,2032,2033]." },
+        regime: {
+          type: "string",
+          enum: ["simples", "presumido", "real"],
+          description: "Regime a simular. Default: regime efetivo atual.",
+        },
+        anos: {
+          type: "array",
+          items: { type: "number" },
+          description: "Anos a comparar. Default: [2026,2027,2028,2029,2030,2031,2032,2033].",
+        },
       },
       required: [],
     },
   },
   {
     name: "simular_split_payment",
-    description: "Calcula o impacto do Split Payment no fluxo de caixa e necessidade de capital de giro. O Split Payment retém o tributo no momento do pagamento eliminando o float atual. Use quando o consultor perguntar sobre impacto da reforma no caixa.",
+    description:
+      "Calcula o impacto do Split Payment no fluxo de caixa e necessidade de capital de giro. O Split Payment retém o tributo no momento do pagamento eliminando o float atual. Use quando o consultor perguntar sobre impacto da reforma no caixa.",
     parameters: { type: "object", properties: {}, required: [] },
   },
 ];
@@ -47,10 +62,12 @@ const handlers: Record<string, ToolHandler> = {
   checklist_compliance: (_a, { state }) => checklistToMarkdown(state),
 
   simular_transicao_reforma: (args, { state }) => {
-    const regime = (args?.regime as "simples" | "presumido" | "real") || resolveEffectiveRegime(state);
-    const years: number[] = Array.isArray(args?.anos) && args.anos.length
-      ? args.anos.map((y: any) => Number(y)).filter((y: number) => Number.isFinite(y))
-      : [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033];
+    const regime =
+      (args?.regime as "simples" | "presumido" | "real") || resolveEffectiveRegime(state);
+    const years: number[] =
+      Array.isArray(args?.anos) && args.anos.length
+        ? args.anos.map((y: any) => Number(y)).filter((y: number) => Number.isFinite(y))
+        : [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033];
     const rows = compareYearsForRegime(state, regime, years);
     const lines = [
       `## Transição Tributária ano-a-ano — regime **${regime}**`,
@@ -60,16 +77,22 @@ const handlers: Record<string, ToolHandler> = {
       `| Ano | CBS | IBS | PIS/COFINS | ICMS/ISS | Carga efetiva | Anual |`,
       `|---|---:|---:|---:|---:|---:|---:|`,
     ];
-    rows.forEach(r => {
+    rows.forEach((r) => {
       lines.push(
         `| ${r.year} | ${r.rates.cbsPct.toFixed(2)}% | ${r.rates.ibsPct.toFixed(2)}% | ${(r.rates.pisCofinsMult * 100).toFixed(0)}% | ${(r.rates.icmsIssMult * 100).toFixed(0)}% | ${r.effective.toFixed(2)}% | ${brl(r.annual)} |`,
       );
     });
     const sorted = [...rows].sort((a, b) => a.annual - b.annual);
-    const min = sorted[0], max = sorted[sorted.length - 1];
+    const min = sorted[0],
+      max = sorted[sorted.length - 1];
     const delta = max.annual - min.annual;
-    lines.push(``, `**Pico:** ${max.year} (${brl(max.annual)} · ${max.effective.toFixed(2)}%) · **Vale:** ${min.year} (${brl(min.annual)}) · **Δ:** ${brl(delta)} entre extremos.`);
-    lines.push(`\n_Mantém preços e custos constantes; isola o efeito da Reforma. Para o resumo agregado em 3 eras, use \`get_eras_reforma\`._`);
+    lines.push(
+      ``,
+      `**Pico:** ${max.year} (${brl(max.annual)} · ${max.effective.toFixed(2)}%) · **Vale:** ${min.year} (${brl(min.annual)}) · **Δ:** ${brl(delta)} entre extremos.`,
+    );
+    lines.push(
+      `\n_Mantém preços e custos constantes; isola o efeito da Reforma. Para o resumo agregado em 3 eras, use \`get_eras_reforma\`._`,
+    );
     return lines.join("\n");
   },
 
@@ -77,12 +100,12 @@ const handlers: Record<string, ToolHandler> = {
     // Prazos médios de recolhimento (dias após o mês de competência).
     const PRAZOS: { match: RegExp; dias: number; label: string }[] = [
       { match: /^DAS Simples/i, dias: 20, label: "DAS (Simples)" },
-      { match: /^PIS/i,          dias: 25, label: "PIS" },
-      { match: /^COFINS/i,       dias: 25, label: "COFINS" },
-      { match: /^CBS/i,          dias: 25, label: "CBS" },
-      { match: /^IBS/i,          dias: 10, label: "IBS" },
-      { match: /^ISS/i,          dias: 10, label: "ISS" },
-      { match: /^ICMS/i,         dias: 10, label: "ICMS" },
+      { match: /^PIS/i, dias: 25, label: "PIS" },
+      { match: /^COFINS/i, dias: 25, label: "COFINS" },
+      { match: /^CBS/i, dias: 25, label: "CBS" },
+      { match: /^IBS/i, dias: 10, label: "IBS" },
+      { match: /^ISS/i, dias: 10, label: "ISS" },
+      { match: /^ICMS/i, dias: 10, label: "ICMS" },
       { match: /^IRPJ|^Adicional IRPJ|^CSLL/i, dias: 45, label: "IRPJ/CSLL (trimestral)" },
     ];
     const regime = resolveEffectiveRegime(state);
@@ -94,7 +117,7 @@ const handlers: Record<string, ToolHandler> = {
     const linhas: { label: string; mensal: number; dias: number; float: number }[] = [];
     for (const [chave, valorAnual] of Object.entries(detail)) {
       if (!Number.isFinite(valorAnual) || valorAnual <= 0) continue;
-      const cfg = PRAZOS.find(p => p.match.test(chave));
+      const cfg = PRAZOS.find((p) => p.match.test(chave));
       if (!cfg) continue;
       const mensal = valorAnual / 12;
       const flt = mensal * (cfg.dias / 30);
@@ -125,7 +148,7 @@ const handlers: Record<string, ToolHandler> = {
       ``,
       `| Tributo | Carga mensal | Prazo atual | Float (R$) |`,
       `|---|---:|---:|---:|`,
-      ...linhas.map(l => `| ${l.label} | ${brl(l.mensal)} | ${l.dias}d | ${brl(l.float)} |`),
+      ...linhas.map((l) => `| ${l.label} | ${brl(l.mensal)} | ${l.dias}d | ${brl(l.float)} |`),
       `| **Total** | **${brl(cargaMensalTotal)}** | — | **${brl(floatTotal)}** |`,
       ``,
       `### Síntese`,
@@ -139,4 +162,9 @@ const handlers: Record<string, ToolHandler> = {
   },
 };
 
-export const complianceTools: ToolModule = { category: "compliance", description: "Checklist e tributos (CBS/IBS, Simples, Lucro Real/Presumido)", defs, handlers };
+export const complianceTools: ToolModule = {
+  category: "compliance",
+  description: "Checklist e tributos (CBS/IBS, Simples, Lucro Real/Presumido)",
+  defs,
+  handlers,
+};

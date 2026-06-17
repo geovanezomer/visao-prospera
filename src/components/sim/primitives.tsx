@@ -3,10 +3,17 @@ import { Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-
 export type HelpHint = string | { description: string; formula?: string; example?: string };
 
-export function HelpTip({ text, formula, example }: { text: string; formula?: string; example?: string }) {
+export function HelpTip({
+  text,
+  formula,
+  example,
+}: {
+  text: string;
+  formula?: string;
+  example?: string;
+}) {
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
@@ -19,7 +26,9 @@ export function HelpTip({ text, formula, example }: { text: string; formula?: st
           <div className="text-foreground">{text}</div>
           {formula && (
             <div className="rounded border border-border/60 bg-muted/40 px-2 py-1.5">
-              <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Fórmula</div>
+              <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Fórmula
+              </div>
               <div className="mono mt-0.5 text-[11px] text-primary">{formula}</div>
             </div>
           )}
@@ -202,11 +211,12 @@ export function PctInput({
         }}
         className="num w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 pr-6 text-right text-sm outline-none transition focus:border-primary focus:bg-input/70"
       />
-      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+        %
+      </span>
     </div>
   );
 }
-
 
 export function StatCard({
   label,
@@ -222,14 +232,25 @@ export function StatCard({
   sub?: ReactNode;
 }) {
   const toneClass =
-    tone === "pos" ? "text-pos" : tone === "neg" ? "text-neg" : tone === "warn" ? "text-[var(--warning)]" : "text-foreground";
+    tone === "pos"
+      ? "text-pos"
+      : tone === "neg"
+        ? "text-neg"
+        : tone === "warn"
+          ? "text-[var(--warning)]"
+          : "text-foreground";
   return (
     <div className="flex flex-col gap-0.5 rounded-lg border border-border/60 bg-card/60 p-2.5 transition-colors hover:border-border/80">
       <div className="flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[10px]">
         {label}
         {renderHint(hint)}
       </div>
-      <div className={cn("mono mt-0.5 text-sm font-semibold leading-tight sm:text-lg lg:text-xl break-words", toneClass)}>
+      <div
+        className={cn(
+          "mono mt-0.5 text-sm font-semibold leading-tight sm:text-lg lg:text-xl break-words",
+          toneClass,
+        )}
+      >
         {value}
       </div>
       {sub && <div className="mt-1 text-[10px] text-muted-foreground sm:text-xs">{sub}</div>}

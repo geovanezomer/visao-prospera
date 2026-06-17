@@ -1,5 +1,11 @@
 import { AppState } from "./types";
-import { buildDRE, calcIndicators, resolveEffectiveRegime, type Indicators, type DRE } from "./calculations";
+import {
+  buildDRE,
+  calcIndicators,
+  resolveEffectiveRegime,
+  type Indicators,
+  type DRE,
+} from "./calculations";
 import { buildCashFlow, type CashFlow } from "./cashflow";
 import { computeStrategic, type StrategicResult } from "./strategic";
 
@@ -13,9 +19,9 @@ export interface HealthPrecomputed {
 export interface HealthDimension {
   key: string;
   label: string;
-  score: number;       // 0-100
-  weight: number;      // 0-1
-  value: string;       // valor humano
+  score: number; // 0-100
+  weight: number; // 0-1
+  value: string; // valor humano
   comment: string;
   status: "ok" | "warn" | "danger";
 }
@@ -71,9 +77,14 @@ export function computeHealth(state: AppState, precomputed?: HealthPrecomputed):
       key: "rentab",
       label: "Rentabilidade (EBITDA)",
       score: band(margemEbitda, 0, 25),
-      weight: 0.20,
+      weight: 0.2,
       value: `${margemEbitda.toFixed(1)}%`,
-      comment: margemEbitda < 8 ? "Operação com pouca gordura — risco em qualquer choque." : margemEbitda > 20 ? "Margem operacional saudável." : "Dentro do esperado para PMEs.",
+      comment:
+        margemEbitda < 8
+          ? "Operação com pouca gordura — risco em qualquer choque."
+          : margemEbitda > 20
+            ? "Margem operacional saudável."
+            : "Dentro do esperado para PMEs.",
       status: statusFromScore(band(margemEbitda, 0, 25)),
     },
     {
@@ -82,7 +93,12 @@ export function computeHealth(state: AppState, precomputed?: HealthPrecomputed):
       score: band(margemLiquida, -5, 20),
       weight: 0.12,
       value: `${margemLiquida.toFixed(1)}%`,
-      comment: margemLiquida < 0 ? "Prejuízo — atenção crítica." : margemLiquida < 5 ? "Lucratividade fraca após impostos e juros." : "Lucratividade adequada.",
+      comment:
+        margemLiquida < 0
+          ? "Prejuízo — atenção crítica."
+          : margemLiquida < 5
+            ? "Lucratividade fraca após impostos e juros."
+            : "Lucratividade adequada.",
       status: statusFromScore(band(margemLiquida, -5, 20)),
     },
     {
@@ -91,7 +107,10 @@ export function computeHealth(state: AppState, precomputed?: HealthPrecomputed):
       score: band(ind.roic - ind.wacc, -10, 15),
       weight: 0.18,
       value: `${ind.roic.toFixed(1)}% − ${ind.wacc.toFixed(1)}%`,
-      comment: ind.roic < ind.wacc ? "Destrói valor: retorno do capital abaixo do custo." : "Cria valor econômico (ROIC > WACC).",
+      comment:
+        ind.roic < ind.wacc
+          ? "Destrói valor: retorno do capital abaixo do custo."
+          : "Cria valor econômico (ROIC > WACC).",
       status: ind.roic >= ind.wacc ? "ok" : "danger",
     },
     {
@@ -101,7 +120,10 @@ export function computeHealth(state: AppState, precomputed?: HealthPrecomputed):
       score: inverseBand(ind.dividaLiqEbitda, 0, 5),
       weight: 0.12,
       value: `${ind.dividaLiqEbitda.toFixed(1)}×`,
-      comment: ind.dividaLiqEbitda > 3 ? "Dívida alta — limita captação e pressiona caixa." : "Endividamento sob controle.",
+      comment:
+        ind.dividaLiqEbitda > 3
+          ? "Dívida alta — limita captação e pressiona caixa."
+          : "Endividamento sob controle.",
       status: statusFromScore(inverseBand(ind.dividaLiqEbitda, 0, 5)),
     },
     {
@@ -111,25 +133,41 @@ export function computeHealth(state: AppState, precomputed?: HealthPrecomputed):
       score: band(Math.min(ind.coberturaJuros, 10), 0, 6),
       weight: 0.08,
       value: `${ind.coberturaJuros.toFixed(1)}×`,
-      comment: ind.coberturaJuros < 2 ? "EBIT mal cobre os juros — risco de default." : "Lucro operacional cobre confortavelmente o serviço da dívida.",
+      comment:
+        ind.coberturaJuros < 2
+          ? "EBIT mal cobre os juros — risco de default."
+          : "Lucro operacional cobre confortavelmente o serviço da dívida.",
       status: statusFromScore(band(Math.min(ind.coberturaJuros, 10), 0, 6)),
     },
     {
       key: "liq",
       label: "Liquidez Corrente",
       score: band(ind.liquidezCorrente, 0.5, 2.0),
-      weight: 0.10,
+      weight: 0.1,
       value: ind.liquidezCorrente.toFixed(2),
-      comment: ind.liquidezCorrente < 1 ? "Passivo CP > Ativo CP — pode faltar caixa para honrar curto prazo." : "Capacidade de honrar obrigações de curto prazo.",
+      comment:
+        ind.liquidezCorrente < 1
+          ? "Passivo CP > Ativo CP — pode faltar caixa para honrar curto prazo."
+          : "Capacidade de honrar obrigações de curto prazo.",
       status: statusFromScore(band(ind.liquidezCorrente, 0.5, 2.0)),
     },
     {
       key: "caixa",
       label: "Pior mês de caixa",
-      score: piorCaixa >= state.cashflow.caixaMinimo ? 100 : piorCaixa < 0 ? 0 : band(piorCaixa, 0, state.cashflow.caixaMinimo || 1),
+      score:
+        piorCaixa >= state.cashflow.caixaMinimo
+          ? 100
+          : piorCaixa < 0
+            ? 0
+            : band(piorCaixa, 0, state.cashflow.caixaMinimo || 1),
       weight: 0.12,
       value: piorCaixa.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
-      comment: piorCaixa < 0 ? "Projeção mostra mês com caixa negativo." : piorCaixa < state.cashflow.caixaMinimo ? "Caixa fura o mínimo de segurança em algum mês." : "Caixa sempre acima do mínimo no horizonte projetado.",
+      comment:
+        piorCaixa < 0
+          ? "Projeção mostra mês com caixa negativo."
+          : piorCaixa < state.cashflow.caixaMinimo
+            ? "Caixa fura o mínimo de segurança em algum mês."
+            : "Caixa sempre acima do mínimo no horizonte projetado.",
       status: piorCaixa < 0 ? "danger" : piorCaixa < state.cashflow.caixaMinimo ? "warn" : "ok",
     },
     {
@@ -138,7 +176,12 @@ export function computeHealth(state: AppState, precomputed?: HealthPrecomputed):
       score: inverseBand(ind.cicloFinanceiro, -30, 90),
       weight: 0.08,
       value: `${ind.cicloFinanceiro} dias`,
-      comment: ind.cicloFinanceiro > 60 ? "Ciclo longo demanda muito capital de giro." : ind.cicloFinanceiro < 0 ? "Ciclo negativo libera caixa (recebe antes de pagar)." : "Ciclo gerenciável.",
+      comment:
+        ind.cicloFinanceiro > 60
+          ? "Ciclo longo demanda muito capital de giro."
+          : ind.cicloFinanceiro < 0
+            ? "Ciclo negativo libera caixa (recebe antes de pagar)."
+            : "Ciclo gerenciável.",
       status: statusFromScore(inverseBand(ind.cicloFinanceiro, -30, 90)),
     },
   ];
@@ -151,15 +194,20 @@ export function computeHealth(state: AppState, precomputed?: HealthPrecomputed):
   const grade = gradeFromScore(total);
 
   const baseHeadline =
-    grade === "A" ? "Empresa financeiramente saudável e cria valor econômico." :
-    grade === "B" ? "Estrutura sólida com pontos de melhoria pontuais." :
-    grade === "C" ? "Saúde mediana — vários indicadores em zona de atenção." :
-    grade === "D" ? "Sinais relevantes de fragilidade financeira." :
-    "Situação crítica — atuação imediata recomendada.";
+    grade === "A"
+      ? "Empresa financeiramente saudável e cria valor econômico."
+      : grade === "B"
+        ? "Estrutura sólida com pontos de melhoria pontuais."
+        : grade === "C"
+          ? "Saúde mediana — vários indicadores em zona de atenção."
+          : grade === "D"
+            ? "Sinais relevantes de fragilidade financeira."
+            : "Situação crítica — atuação imediata recomendada.";
 
-  const headline = strategic.hasAnyAnswer && haircut > 0
-    ? `${baseHeadline} Risco estratégico reduziu o score em ${(haircut * 100).toFixed(0)}%.`
-    : baseHeadline;
+  const headline =
+    strategic.hasAnyAnswer && haircut > 0
+      ? `${baseHeadline} Risco estratégico reduziu o score em ${(haircut * 100).toFixed(0)}%.`
+      : baseHeadline;
 
   return { financial, total, grade, status, dimensions: dims, headline, strategic, haircut };
 }

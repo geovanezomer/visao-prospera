@@ -51,34 +51,34 @@ src/
 
 ## Regras de import
 
-| De → Para                             | Permitido?            |
-| ------------------------------------- | --------------------- |
-| `components/*`  → `engines/*`         | ✅                    |
-| `engines/<a>/*` → `engines/<b>/*`     | ✅ (com parcimônia)   |
-| `engines/*`     → `lib/utils`         | ✅                    |
-| `lib/*`         → `engines/<dominio>` | 🚫 **bloqueado**      |
-| `routes/*`      → `engines/*`         | ✅                    |
-| `*`             → `@/services/*`      | 🚫 **descontinuado**  |
-| `*`             → `@/lib/calculadoras`| 🚫 **descontinuado**  |
-| `tools/<x>.ts`  → `tools/<y>.ts`      | 🚫 (use o index)      |
+| De → Para                         | Permitido?           |
+| --------------------------------- | -------------------- |
+| `components/*` → `engines/*`      | ✅                   |
+| `engines/<a>/*` → `engines/<b>/*` | ✅ (com parcimônia)  |
+| `engines/*` → `lib/utils`         | ✅                   |
+| `lib/*` → `engines/<dominio>`     | 🚫 **bloqueado**     |
+| `routes/*` → `engines/*`          | ✅                   |
+| `*` → `@/services/*`              | 🚫 **descontinuado** |
+| `*` → `@/lib/calculadoras`        | 🚫 **descontinuado** |
+| `tools/<x>.ts` → `tools/<y>.ts`   | 🚫 (use o index)     |
 
 Motivação: manter `lib/` reutilizável entre projetos e a engine financeira
 testável de forma isolada (pure functions + Zod nos inputs).
 
 ## Adicionando algo novo
 
-| Tipo de código                                    | Pasta                                  |
-| ------------------------------------------------- | -------------------------------------- |
-| Cálculo financeiro / indicador                    | `engines/finance/`                     |
-| Nova tool para a IA                               | `engines/ai/tools/<dominio>.ts`        |
-| Novo benchmark setorial                           | `engines/benchmark/`                   |
-| Nova regra tributária / checklist                 | `engines/compliance/`                  |
-| Nova fonte macro                                  | `engines/macro/`                       |
-| Nova calculadora (lógica)                         | `engines/calculadoras/`                |
-| Nova calculadora (UI)                             | `components/calculadoras/`             |
-| Helper de string/número/classe genérico           | `lib/utils.ts`                         |
-| Hook React transversal (não específico a domínio) | `hooks/`                               |
-| Hook React específico de uma engine               | junto da engine (`engines/<x>/use*.ts`)|
+| Tipo de código                                    | Pasta                                   |
+| ------------------------------------------------- | --------------------------------------- |
+| Cálculo financeiro / indicador                    | `engines/finance/`                      |
+| Nova tool para a IA                               | `engines/ai/tools/<dominio>.ts`         |
+| Novo benchmark setorial                           | `engines/benchmark/`                    |
+| Nova regra tributária / checklist                 | `engines/compliance/`                   |
+| Nova fonte macro                                  | `engines/macro/`                        |
+| Nova calculadora (lógica)                         | `engines/calculadoras/`                 |
+| Nova calculadora (UI)                             | `components/calculadoras/`              |
+| Helper de string/número/classe genérico           | `lib/utils.ts`                          |
+| Hook React transversal (não específico a domínio) | `hooks/`                                |
+| Hook React específico de uma engine               | junto da engine (`engines/<x>/use*.ts`) |
 
 ## Como adicionar uma tool de IA
 
@@ -96,7 +96,7 @@ O agregador detecta colisão de nomes (warn em dev) e expõe `TOOLS`, `runTool`,
 - **Engine = pure functions** (sem React, sem DOM). Inputs validados com Zod.
 - **UI = props + selectors do `AppStateContext`** (sem prop drilling profundo).
 - **Componente > 300 linhas** deve ser dividido (regra prática).
-- **Comentários em português** explicando *por quê*, não *o quê*.
+- **Comentários em português** explicando _por quê_, não _o quê_.
 - **Sinalizar reforma tributária** com `// [CBS/IBS]` quando o cálculo for afetado.
 
 ## Garantias automáticas
