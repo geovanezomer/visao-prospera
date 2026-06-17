@@ -75,7 +75,7 @@ const STEPS: { key: StepKey; label: string; icon: typeof Settings }[] = [
 ];
 
 export function TaxSettingsDialog() {
-  const { state, update } = useFinance();
+  const { state } = useFinance();
   const patchTax = usePatchTax();
   const [open, setOpen] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
