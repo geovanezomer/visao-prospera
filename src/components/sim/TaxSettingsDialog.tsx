@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { NumInput } from "./primitives";
 import type { AppState, SimplesAnexo, BusinessType } from "@/engines/finance/types";
+import { useFinance, type FinanceUpdater } from "@/engines/finance/AppStateContext";
 import {
   IRPJ_PCT, IRPJ_ADICIONAL_PCT, IRPJ_ADICIONAL_GATILHO_TRI, CSLL_PCT,
   PIS_CUM_PCT, COFINS_CUM_PCT, PIS_NAO_CUM_PCT, COFINS_NAO_CUM_PCT,
@@ -13,8 +14,6 @@ import {
   REFORMA_TRANSICAO_IBS_MULT, REFORMA_TRANSICAO_ICMS_ISS_MULT,
   type TaxRatesOverride, type SimplesFaixa,
 } from "@/engines/finance/taxDefaults";
-
-type Props = Record<string, never>;
 
 const ANEXOS: SimplesAnexo[] = ["I", "II", "III", "IV", "V"];
 const BUSINESS: { key: BusinessType; label: string; hint: string }[] = [
