@@ -19,10 +19,15 @@
 // ============= Tipos e contratos =============
 export type {
   Months, TabKey, BusinessType, TaxRegime, SimplesAnexo, TaxEra,
-  CostCategory, CostSubcategory, CostLine, RevenueLine, RevenueDeducao,
-  CapitalState, CashflowState, TaxConfig, AppState,
+  CostCategory, CostSubcategory, CostLine, Revenue, RevenueDeducao,
+  CapitalStructure, CapexAtivacao, CashFlowConfig, TaxConfig,
+  AppState, Scenario,
 } from "./types";
-export { TAB_KEYS } from "./types";
+export {
+  TAB_KEYS, TAX_ERAS, TAX_ERA_LABEL, TAX_ERA_SHORT,
+  APP_STATE_SCHEMA_VERSION, COST_VENDAS_LABEL, SUBCATEGORIES,
+  COST_VENDAS_TABLE_CONFIG, DEFAULT_ENCARGOS_PCT,
+} from "./types";
 
 // ============= Engine de cálculo (DRE + indicadores + tributos) =============
 export type { DRE, Indicators, MonthlyTax, ReformaRates, Diagnostic } from "./calculations";
