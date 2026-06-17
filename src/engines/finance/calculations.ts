@@ -1,52 +1,27 @@
-import { AppState, SimplesAnexo, TaxRegime, BusinessType, CostLine, DEFAULT_ENCARGOS_PCT, TaxEra, TaxConfig } from "./types";
+// =====================================================================
+// CALCULATIONS — fachada do engine financeiro.
+// Após o refactor (Fases 1–2), helpers, regimes tributários e helpers
+// puros vivem em submódulos. Aqui ficam apenas as funções ainda não
+// extraídas (buildDRE, calcIndicators, diagnose, comparadores) e
+// re-exports para preservar a API consumida pelos call sites.
+// =====================================================================
+import { AppState, TaxRegime, TaxConfig, TaxEra } from "./types";
 import {
-  getIrpjPct, getIrpjAdicionalPct, getIrpjAdicionalGatilhoTri, getCsllPct,
+  getIrpjPct, getCsllPct,
   getPisCumPct, getCofinsCumPct, getPisNaoCumPct, getCofinsNaoCumPct,
-  getSimplesLimite, getFatorRMinimoPct,
-  getSimplesTable, getPresumidoBases,
-  getReformaTransicaoIbsMult, getReformaTransicaoIcmsIssMult,
-  DEFAULT_ENCARGOS_PCT_SIMPLES,
 } from "./taxDefaults";
-import { sum, zeros12, fill12 } from "./format";
+import { sum, zeros12 } from "./format";
 import { safeDivide, safePct, safeNumber } from "./safeMath";
 
-/**
- * SSOT-1 — Dívida Líquida canônica usada por Valuation e Indicadores.
- * Prefere caixa ocioso (excedente não-operacional). Fallback para
- * disponibilidades totais para compatibilidade com balanços antigos.
- * Retorna valor RAW (pode ser negativo quando caixa > dívida).
- */
-export function computeNetDebt(state: AppState): number {
-  const D = Math.max(0, state.capital.dividaOnerosa ?? 0);
-  const cash = Math.max(
-    0,
-    state.capital.caixaOcioso ?? state.capital.disponibilidades ?? 0,
-  );
-  return D - cash;
-}
+// ---- Helpers compartilhados (./shared.ts) ----
+export {
+  computeNetDebt,
+  outrasDeducoesMensal,
+  splitReceitasFinanceiras,
+  cagr12m,
+} from "./shared";
+import { receitaTributavel, splitReceitasFinanceiras } from "./shared";
 
-/** 
- * Soma mensal das linhas livres de dedução da Receita (devoluções, perdas, descontos, etc.). 
- * @formula Σ (Revenue.deducoes.valores)
- */
-export function outrasDeducoesMensal(state: AppState): number[] {
-  const out = zeros12();
-  const deds = state.revenue.deducoes ?? [];
-  for (const d of deds) {
-    if (!Array.isArray(d.valores)) continue;
-    for (let i = 0; i < 12; i++) out[i] += Math.max(0, d.valores[i] || 0);
-  }
-  return out;
-}
-
-/** 
- * Receita Bruta menos outras deduções — base usada para impostos sobre venda. 
- * @formula Receita Bruta − Outras Deduções
- */
-function receitaTributavel(state: AppState): number[] {
-  const out = outrasDeducoesMensal(state);
-  return state.revenue.bruta.map((b, i) => Math.max(0, (b || 0) - out[i]));
-}
 
 // =====================================================================
 // REFORMA TRIBUTÁRIA — CBS/IBS (EC 132/2023 + LC 214/2025)
@@ -110,23 +85,18 @@ export function compareYearsForRegime(
 
 
 // =====================================================================
-// SIMPLES NACIONAL — tabelas vivem em taxDefaults.ts (editáveis via painel)
+// REGIMES TRIBUTÁRIOS — extraídos para ./tax/* (Fase 2 do refactor).
+// Re-exports preservam a API pública (engines/finance/calculations).
 // =====================================================================
-export function simplesAliquotaEfetiva(rbt12: number, anexo: SimplesAnexo, tax: TaxConfig): number {
-  const table = getSimplesTable(tax, anexo);
-  for (const [teto, aliq, deduz] of table) {
-    if (rbt12 <= teto) {
-      if (rbt12 === 0) return 0;
-      return Math.max(0, (rbt12 * (aliq / 100) - deduz) / rbt12) * 100;
-    }
-  }
-  return 33;
-}
+export { simplesAliquotaEfetiva, calcSimples } from "./tax/simples";
+export { presumidoBases, calcPresumido } from "./tax/presumido";
+export { calcReal, irShieldForRegime } from "./tax/real";
+export type { MonthlyTax } from "./tax/shared";
+import { calcSimples } from "./tax/simples";
+import { calcPresumido } from "./tax/presumido";
+import { calcReal } from "./tax/real";
+import type { MonthlyTax } from "./tax/shared";
 
-/** @deprecated Use getPresumidoBases(tax, business) de taxDefaults.ts. Mantido para retro-compat. */
-export function presumidoBases(business: BusinessType): { irpj: number; csll: number } {
-  return getPresumidoBases({ ratesOverride: undefined } as TaxConfig, business);
-}
 
 // =====================================================================
 // CUSTOS · REGIME · FOLHA — extraídos para ./costs.ts e ./regime.ts (Fase 1).
@@ -147,322 +117,14 @@ export {
 import { effectiveMonthValues, isCpvCost } from "./costs";
 import { resolveEffectiveRegime, resolveSimplesAnexo, simplesExcedeLimite, folhaAnual } from "./regime";
 
-/**
- * CAGR (Taxa de Crescimento Anual Composta) sobre uma série mensal.
- * Usa o 1º e o último mês com valor > 0, preservando a distância real em meses
- * (evita inflar o expoente quando há meses zerados no meio da série).
- * Retorna NaN quando indeterminado.
- */
-export function cagr12m(serie: number[]): number {
-  if (!serie || serie.length < 2) return NaN;
-  const firstIdx = serie.findIndex((v) => v > 0);
-  let lastIdx = -1;
-  for (let i = serie.length - 1; i >= 0; i--) {
-    if (serie[i] > 0) { lastIdx = i; break; }
-  }
-  if (firstIdx < 0 || lastIdx <= firstIdx) return NaN;
-  const periodos = lastIdx - firstIdx; // distância real (meses)
-  return Math.pow(serie[lastIdx] / serie[firstIdx], 12 / periodos) - 1;
-}
+// `cagr12m` re-exportado acima de ./shared.ts
+
 
 // =====================================================================
-// IMPOSTOS
+// IMPOSTOS — `MonthlyTax`, `calcSimples`, `calcPresumido`, `calcReal`
+// foram movidos para ./tax/* (Fase 2). Veja re-exports no topo.
 // =====================================================================
-export interface MonthlyTax {
-  /** Total mensal (vendas + lucro). Retro-compat. */
-  monthly: number[];
-  /** Impostos sobre venda — PIS/COFINS/ICMS/ISS/CBS/IBS (+ DAS no Simples). Deduzidos antes da Receita Líquida. */
-  monthlyVendas: number[];
-  /** Impostos sobre lucro — IRPJ + Adicional + CSLL. Deduzidos do LAIR. */
-  monthlyLucro: number[];
-  annual: number;
-  annualVendas: number;
-  annualLucro: number;
-  effective: number;
-  detail: Record<string, number>;
-}
 
-/** Adicional IRPJ trimestral: % sobre lucro trimestral acima do gatilho (R$20k × 3 meses por padrão). */
-function adicionalIrpjTrimestral(baseMensal: number[], tax: TaxConfig): number[] {
-  const out = zeros12();
-  const aliq = getIrpjAdicionalPct(tax) / 100;
-  const gatilho = getIrpjAdicionalGatilhoTri(tax);
-  for (let t = 0; t < 4; t++) {
-    const m0 = t * 3;
-    const baseTri = Math.max(0, (baseMensal[m0] || 0) + (baseMensal[m0 + 1] || 0) + (baseMensal[m0 + 2] || 0));
-    const excedente = Math.max(0, baseTri - gatilho);
-    const adic = excedente * aliq;
-    const totalBase = baseTri > 0 ? baseTri : 1;
-    for (let k = 0; k < 3; k++) {
-      const i = m0 + k;
-      out[i] = adic * ((baseMensal[i] || 0) / totalBase);
-    }
-  }
-  return out;
-}
-
-export function calcSimples(state: AppState): MonthlyTax {
-  const { revenue, tax } = state;
-  const trib = receitaTributavel(state);
-  const anexo = resolveSimplesAnexo(state);
-  const rbAnual = sum(trib);
-  const aliq = simplesAliquotaEfetiva(rbAnual, anexo, tax) / 100;
-  const monthly = trib.map((r) => r * aliq);
-  const annual = sum(monthly);
-  const rbBrutaAnual = sum(revenue.bruta);
-  const limite = getSimplesLimite(tax);
-  const excedeu = rbBrutaAnual > limite;
-  const detail: Record<string, number> = { [`DAS Simples (Anexo ${anexo})`]: annual };
-  if (excedeu) {
-    const limMi = (limite / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
-    detail[`⚠ Excedeu limite Simples (R$ ${limMi}M) — desenquadramento obrigatório`] = 0;
-  }
-  return {
-    monthly,
-    monthlyVendas: monthly.slice(),
-    monthlyLucro: zeros12(),
-    annual,
-    annualVendas: annual,
-    annualLucro: 0,
-    effective: rbBrutaAnual > 0 ? (annual / rbBrutaAnual) * 100 : 0,
-    detail,
-  };
-}
-
-export function calcPresumido(state: AppState): MonthlyTax {
-  const { revenue, tax, businessType } = state;
-  const trib = receitaTributavel(state);
-  const bases = getPresumidoBases(tax, businessType);
-  const baseIRPJ = (tax.presumidoBaseIRPJ || bases.irpj) / 100;
-  const baseCSLL = (tax.presumidoBaseCSLL || bases.csll) / 100;
-  const iss = tax.issIcms / 100;
-  const issDed = (tax.issDeducoes ?? 0) / 12;
-  const isMercadoria = businessType === "comercio" || businessType === "industria";
-  const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
-  const reforma = getReformaRates(tax.era, tax);
-  const usaReforma = reforma.cbsPct > 0 || reforma.ibsPct > 0 || reforma.pisCofinsMult < 1 || reforma.icmsIssMult < 1;
-  const irpjAliq = getIrpjPct(tax) / 100;
-  const csllAliq = getCsllPct(tax) / 100;
-  const pisAliq = getPisCumPct(tax) / 100;
-  const cofinsAliq = getCofinsCumPct(tax) / 100;
-
-  // CPV mensal — base de crédito (ICMS antigo e também CBS/IBS amplo na reforma).
-  // EXCLUI linhas marcadas semCredito (ICMS-ST etc.). Pós-2033 ICMS-ST deixa de existir,
-  // mas o flag continua sinalizando "tributo embutido no preço, sem crédito" — respeitamos.
-  const cpvMonthly = zeros12();
-  const temCpvCredito = icmsCredAliq > 0 || usaReforma;
-  if (temCpvCredito) {
-    for (const c of state.costs) {
-      if (!isCpvCost(c)) continue;
-      if (c.semCredito) continue;
-      const v = effectiveMonthValues(c);
-      for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
-    }
-  }
-
-
-  // [Receitas Financeiras] No Presumido, rendimentos de aplicações entram INTEGRAIS
-  // na base de IRPJ/CSLL (sem o redutor de 8/32%). Aluguéis/venda de ativos vão
-  // como "operacionais" (já tratados na DRE) e não somam aqui. Rendimentos com
-  // tributação EXCLUSIVA na fonte (IRRF definitivo) são excluídos da base.
-  const { financeirasIrpjBase: rendFinTrib } = splitReceitasFinanceiras(state);
-  const baseIRPJMensal = trib.map((r, i) => r * baseIRPJ + (rendFinTrib[i] || 0));
-  const baseCSLLMensal = trib.map((r, i) => r * baseCSLL + (rendFinTrib[i] || 0));
-  const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
-
-  let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
-  let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
-  const monthlyVendas = zeros12();
-  const monthlyLucro = zeros12();
-  const monthly = trib.map((r, i) => {
-    const irpj = baseIRPJMensal[i] * irpjAliq;
-    const adicional = adicionalMensal[i];
-    const csll = baseCSLLMensal[i] * csllAliq;
-    const pis = r * pisAliq * reforma.pisCofinsMult;
-    const cofins = r * cofinsAliq * reforma.pisCofinsMult;
-    const issBase = Math.max(0, r - issDed);
-    const debito = issBase * iss;
-    const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
-    const issvBruto = Math.max(0, debito - creditoMes);
-    const issv = issvBruto * reforma.icmsIssMult;
-    saldoCredorICMS = Math.max(0, creditoMes - debito);
-    let cbs = 0, ibs = 0;
-    if (reforma.cbsPct > 0) {
-      const dCbs = r * (reforma.cbsPct / 100);
-      const cCbs = cpvMonthly[i] * (reforma.cbsPct / 100) + saldoCBS;
-      cbs = Math.max(0, dCbs - cCbs);
-      saldoCBS = Math.max(0, cCbs - dCbs);
-    }
-    if (reforma.ibsPct > 0) {
-      const dIbs = r * (reforma.ibsPct / 100);
-      const cIbs = cpvMonthly[i] * (reforma.ibsPct / 100) + saldoIBS;
-      ibs = Math.max(0, dIbs - cIbs);
-      saldoIBS = Math.max(0, cIbs - dIbs);
-    }
-    irpjTotal += irpj + adicional;
-    csllTotal += csll;
-    pisTotal += pis;
-    cofinsTotal += cofins;
-    issTotal += issv;
-    cbsTotal += cbs;
-    ibsTotal += ibs;
-    const vendas = pis + cofins + issv + cbs + ibs;
-    const lucro = irpj + adicional + csll;
-    monthlyVendas[i] = vendas;
-    monthlyLucro[i] = lucro;
-    return vendas + lucro;
-  });
-  const annual = sum(monthly);
-  const annualVendas = sum(monthlyVendas);
-  const annualLucro = sum(monthlyLucro);
-  const rbAnual = sum(revenue.bruta);
-  const detail: Record<string, number> = {
-    "IRPJ": irpjTotal - sum(adicionalMensal),
-    "Adicional IRPJ (10%)": sum(adicionalMensal),
-    CSLL: csllTotal,
-  };
-  if (reforma.pisCofinsMult > 0) {
-    detail.PIS = pisTotal;
-    detail.COFINS = cofinsTotal;
-  }
-  if (reforma.icmsIssMult > 0) {
-    detail[isMercadoria ? "ICMS (líquido)" : "ISS"] = issTotal;
-  }
-  if (cbsTotal > 0) detail[`CBS (${reforma.cbsPct.toFixed(2)}%)`] = cbsTotal;
-  if (ibsTotal > 0) detail[`IBS (${reforma.ibsPct.toFixed(2)}%)`] = ibsTotal;
-  return {
-    monthly,
-    monthlyVendas,
-    monthlyLucro,
-    annual,
-    annualVendas,
-    annualLucro,
-    effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
-    detail,
-  };
-}
-
-export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax {
-  const { revenue, tax, businessType } = state;
-  const trib = receitaTributavel(state);
-  const iss = tax.issIcms / 100;
-  const issDed = (tax.issDeducoes ?? 0) / 12;
-  const isMercadoria = businessType === "comercio" || businessType === "industria";
-  const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
-  const reforma = getReformaRates(tax.era, tax);
-  const usaReforma = reforma.cbsPct > 0 || reforma.ibsPct > 0 || reforma.pisCofinsMult < 1 || reforma.icmsIssMult < 1;
-
-  const cpvMonthly = zeros12();
-  const temCpvCredito = icmsCredAliq > 0 || usaReforma;
-  if (temCpvCredito) {
-    for (const c of state.costs) {
-      if (!isCpvCost(c)) continue;
-      if (c.semCredito) continue;
-      const v = effectiveMonthValues(c);
-      for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
-    }
-  }
-
-
-  // [Receitas Financeiras] Rendimentos com tributação EXCLUSIVA na fonte (IRRF definitivo)
-  // não compõem o lucro tributável: subtraímos do LAIR antes de calcular IRPJ/CSLL.
-  // PIS/COFINS sobre receitas financeiras (Decreto 8.426/2015) continua incidindo sobre o
-  // total — a regra de exclusão é específica de IRPJ/CSLL.
-  const { financeiras: rendFin, financeirasIrpjBase: rendFinTrib } = splitReceitasFinanceiras(state);
-  const rendFinExclusivo = rendFin.map((v, i) => v - (rendFinTrib[i] || 0));
-  const baseIRPJMensal = baseLairMonthly.map((l, i) => Math.max(0, l - (rendFinExclusivo[i] || 0)));
-  const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
-
-  // Auditoria Jun/2026: ratear créditos anuais por mês
-  const pisCreditoMensal = Math.max(0, (tax.pisCreditos || 0) / 12);
-  const cofinsCreditoMensal = Math.max(0, (tax.cofinsCreditos || 0) / 12);
-  // Alíquotas dinâmicas
-  const irpjAliq = getIrpjPct(tax) / 100;
-  const csllAliq = getCsllPct(tax) / 100;
-  const pisAliq = getPisNaoCumPct(tax) / 100;
-  const cofinsAliq = getCofinsNaoCumPct(tax) / 100;
-  // PIS/COFINS sobre receitas financeiras é fixo: 0,65% + 4% (Decreto 8.426/2015).
-  // Sob a reforma plena, PIS/COFINS são extintos (pisCofinsMult=0) e zera automaticamente.
-  const PIS_RF = 0.0065;
-  const COFINS_RF = 0.04;
-  
-
-  let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
-  let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
-  const monthlyVendas = zeros12();
-  const monthlyLucro = zeros12();
-  const monthly = trib.map((r, i) => {
-    const lair = baseIRPJMensal[i];
-    const irpj = lair * irpjAliq;
-    const adicional = adicionalMensal[i];
-    const csll = lair * csllAliq;
-    const pisVenda = Math.max(0, r * pisAliq - pisCreditoMensal);
-    const cofinsVenda = Math.max(0, r * cofinsAliq - cofinsCreditoMensal);
-    const pisRF = (rendFin[i] || 0) * PIS_RF;
-    const cofinsRF = (rendFin[i] || 0) * COFINS_RF;
-    const pis = (pisVenda + pisRF) * reforma.pisCofinsMult;
-    const cofins = (cofinsVenda + cofinsRF) * reforma.pisCofinsMult;
-    const issBase = Math.max(0, r - issDed);
-    const debito = issBase * iss;
-    const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
-    const issvBruto = Math.max(0, debito - creditoMes);
-    const issv = issvBruto * reforma.icmsIssMult;
-    saldoCredorICMS = Math.max(0, creditoMes - debito);
-    let cbs = 0, ibs = 0;
-    if (reforma.cbsPct > 0) {
-      const dCbs = r * (reforma.cbsPct / 100);
-      const cCbs = cpvMonthly[i] * (reforma.cbsPct / 100) + saldoCBS;
-      cbs = Math.max(0, dCbs - cCbs);
-      saldoCBS = Math.max(0, cCbs - dCbs);
-    }
-    if (reforma.ibsPct > 0) {
-      const dIbs = r * (reforma.ibsPct / 100);
-      const cIbs = cpvMonthly[i] * (reforma.ibsPct / 100) + saldoIBS;
-      ibs = Math.max(0, dIbs - cIbs);
-      saldoIBS = Math.max(0, cIbs - dIbs);
-    }
-    irpjTotal += irpj + adicional;
-    csllTotal += csll;
-    pisTotal += pis;
-    cofinsTotal += cofins;
-    issTotal += issv;
-    cbsTotal += cbs;
-    ibsTotal += ibs;
-    const vendas = pis + cofins + issv + cbs + ibs;
-    const lucro = irpj + adicional + csll;
-    monthlyVendas[i] = vendas;
-    monthlyLucro[i] = lucro;
-    return vendas + lucro;
-  });
-  const annual = sum(monthly);
-  const annualVendas = sum(monthlyVendas);
-  const annualLucro = sum(monthlyLucro);
-  const rbAnual = sum(revenue.bruta);
-  const detail: Record<string, number> = {
-    "IRPJ": irpjTotal - sum(adicionalMensal),
-    "Adicional IRPJ (10%)": sum(adicionalMensal),
-    CSLL: csllTotal,
-  };
-  if (reforma.pisCofinsMult > 0) {
-    detail["PIS (não-cum.)"] = pisTotal;
-    detail["COFINS (não-cum.)"] = cofinsTotal;
-  }
-  if (reforma.icmsIssMult > 0) {
-    detail[isMercadoria ? "ICMS (líquido)" : "ISS"] = issTotal;
-  }
-  if (cbsTotal > 0) detail[`CBS (${reforma.cbsPct.toFixed(2)}%)`] = cbsTotal;
-  if (ibsTotal > 0) detail[`IBS (${reforma.ibsPct.toFixed(2)}%)`] = ibsTotal;
-  return {
-    monthly,
-    monthlyVendas,
-    monthlyLucro,
-    annual,
-    annualVendas,
-    annualLucro,
-    effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
-    detail,
-  };
-}
 
 // =====================================================================
 // DRE
@@ -507,40 +169,9 @@ export interface DRE {
   folhaCltAnual: number;
 }
 
-/**
- * Classifica as linhas de `revenue.receitasFinanceiras` por natureza contábil:
- * - `financeiras`: rendimento de aplicações e ids customizados → entram no Resultado Financeiro.
- * - `operacionais`: aluguéis recebidos e venda de ativos → entram acima do EBITDA.
- * - `financeirasIrpjBase`: subconjunto de `financeiras` que entra na base de IRPJ/CSLL —
- *   EXCLUI linhas marcadas com `tributacaoExclusivaFonte` (IRRF definitivo em aplicações
- *   financeiras; gross-up não compõe o lucro tributável conforme RIR/1999).
- *
- * Critério por id (default p/ retrocompat: financeira).
- */
-export function splitReceitasFinanceiras(state: AppState): {
-  financeiras: number[];
-  operacionais: number[];
-  financeirasIrpjBase: number[];
-} {
-  const financeiras = zeros12();
-  const operacionais = zeros12();
-  const financeirasIrpjBase = zeros12();
-  const OPERACIONAIS_IDS = new Set(["alugueis", "venda_ativos"]);
-  for (const rf of state.revenue.receitasFinanceiras ?? []) {
-    const vals = rf.valores ?? [];
-    const isOperacional = OPERACIONAIS_IDS.has(rf.id);
-    const exclusivaFonte = !!rf.tributacaoExclusivaFonte;
-    for (let i = 0; i < 12; i++) {
-      const v = Number(vals[i]) || 0;
-      if (isOperacional) operacionais[i] += v;
-      else {
-        financeiras[i] += v;
-        if (!exclusivaFonte) financeirasIrpjBase[i] += v;
-      }
-    }
-  }
-  return { financeiras, operacionais, financeirasIrpjBase };
-}
+// `splitReceitasFinanceiras` foi movido para ./shared.ts (Fase 2).
+// Re-export já declarado no topo deste arquivo.
+
 
 export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: MonthlyTax } {
   const { revenue, costs, capital } = state;
