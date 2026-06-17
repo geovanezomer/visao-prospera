@@ -13,7 +13,7 @@ import { sum, zeros12 } from "../format";
 import { getIrpjPct, getCsllPct, getPisNaoCumPct, getCofinsNaoCumPct } from "../taxDefaults";
 import { receitaTributavel, splitReceitasFinanceiras } from "../shared";
 import { isCpvCost, effectiveMonthValues } from "../costs";
-import { getReformaRates } from "./reforma";
+import { getReformaRates, getCbsCredCpvPct, getIbsCredCpvPct } from "./reforma";
 import { adicionalIrpjTrimestral, type MonthlyTax } from "./shared";
 
 // [CBS/IBS] Helpers: usam tributos-br (LC 214/2025) para garantir
@@ -32,6 +32,11 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const isMercadoria = businessType === "comercio" || businessType === "industria";
   const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
   const reforma = getReformaRates(tax.era, tax);
+  // [CBS/IBS] Alíquotas efetivas de crédito sobre CPV — ponderam fornecedor SN
+  // (crédito presumido) vs. regime regular (crédito cheio).
+  const snFornecedorPct = tax.fornecedorSimplesNacionalPct ?? 0;
+  const cbsCredPct = getCbsCredCpvPct(reforma.cbsPct, snFornecedorPct);
+  const ibsCredPct = getIbsCredCpvPct(reforma.ibsPct, snFornecedorPct);
   const usaReforma =
     reforma.cbsPct > 0 ||
     reforma.ibsPct > 0 ||
@@ -148,13 +153,13 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
       ibs = 0;
     if (reforma.cbsPct > 0) {
       const dCbs = cbsValor(r, reforma.cbsPct);
-      const cCbs = cbsValor(cpvMonthly[i], reforma.cbsPct) + saldoCBS;
+      const cCbs = cbsValor(cpvMonthly[i], cbsCredPct) + saldoCBS;
       cbs = Math.max(0, dCbs - cCbs);
       saldoCBS = Math.max(0, cCbs - dCbs);
     }
     if (reforma.ibsPct > 0) {
       const dIbs = ibsValor(r, reforma.ibsPct);
-      const cIbs = ibsValor(cpvMonthly[i], reforma.ibsPct) + saldoIBS;
+      const cIbs = ibsValor(cpvMonthly[i], ibsCredPct) + saldoIBS;
       ibs = Math.max(0, dIbs - cIbs);
       saldoIBS = Math.max(0, cIbs - dIbs);
     }
