@@ -408,7 +408,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     presLines.push(`## Recomendações Prescritivas`);
     cards
       .slice(0, 10)
-      .forEach((c: any) =>
+      .forEach((c) =>
         presLines.push(`- **${c.title || c.id}** — ${c.description || c.summary || ""}`),
       );
   }
