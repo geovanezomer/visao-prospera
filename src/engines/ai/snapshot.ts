@@ -394,7 +394,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     healthLines.push(`- **Headline:** ${health.headline}`);
     if (health.dimensions?.length) {
       healthLines.push(`### Dimensões:`);
-      health.dimensions.forEach((d: any) =>
+      health.dimensions.forEach((d) =>
         healthLines.push(
           `- **${d.label}** [${d.status}]: ${d.value} (score ${fmtNum(safe(d.score), 0)}, peso ${pct(safe(d.weight) * 100, 0)}) — ${d.comment}`,
         ),
