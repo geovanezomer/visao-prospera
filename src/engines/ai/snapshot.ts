@@ -361,10 +361,10 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     valLines.push(`## Valuation`);
     valLines.push(`- **Método:** ${val.method}`);
     valLines.push(
-      `- **EV:** ${brl(val.enterpriseValue.pessimista)} (pessim.) · **${brl(val.enterpriseValue.base)} (base)** · ${brl(val.enterpriseValue.otimista)} (otim.)`,
+      `- **EV:** ${brl(val.enterpriseValue.low)} (pessim.) · **${brl(val.enterpriseValue.base)} (base)** · ${brl(val.enterpriseValue.high)} (otim.)`,
     );
     valLines.push(
-      `- **Equity:** ${brl(val.equityValue.pessimista)} (pessim.) · **${brl(val.equityValue.base)} (base)** · ${brl(val.equityValue.otimista)} (otim.)`,
+      `- **Equity:** ${brl(val.equityValue.low)} (pessim.) · **${brl(val.equityValue.base)} (base)** · ${brl(val.equityValue.high)} (otim.)`,
     );
     valLines.push(
       `- **Múltiplos implícitos:** EV/EBITDA ${fmtNum(safe(val.impliedMultiple.evEbitda), 2)}x · EV/Receita ${fmtNum(safe(val.impliedMultiple.evRevenue), 2)}x`,
