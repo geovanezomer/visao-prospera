@@ -200,6 +200,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       snapshot,
       includeSnapshot: config.includeSnapshot,
       useTools: config.useTools,
+      useMetaTools: config.useMetaTools,
       extra: config.extraSystemPrompt,
       soul: config.soul,
       skills: config.skills,

@@ -94,6 +94,7 @@ export function buildSystemPrompt(opts: {
   snapshot?: string;
   includeSnapshot: boolean;
   useTools: boolean;
+  useMetaTools?: boolean;
   extra?: string;
   auditMode?: boolean;
   soul?: string;
@@ -124,10 +125,20 @@ export function buildSystemPrompt(opts: {
   }
 
   if (opts.useTools) {
-    parts.push(
-      "",
-      `MODO TOOL-CALLING ATIVO: use as funções disponíveis para buscar os dados exatos sob demanda. Não invente — chame a função.`,
-    );
+    if (opts.useMetaTools !== false) {
+      parts.push(
+        "",
+        `MODO TOOL-CALLING (META) ATIVO: você enxerga APENAS duas funções — \`tool_search\` e \`tool_invoke\`.
+- Use \`tool_search({ query, category? })\` para descobrir a tool certa (categorias: finance, simulator, benchmark, macro, scenarios, actions, compliance, reports). Os nomes citados nas REGRAS acima (get_resumo_executivo, get_indicadores, simular_alavanca, etc.) continuam válidos — busque por eles.
+- Use \`tool_invoke({ name, arguments })\` para executar. A resposta vem em JSON \`{ name, category, content }\` — leia o campo \`content\` (markdown com os números) e cite a fonte exata.
+- Faça invokes em paralelo quando precisar de várias tools. Não invente — chame a função.`,
+      );
+    } else {
+      parts.push(
+        "",
+        `MODO TOOL-CALLING ATIVO: use as funções disponíveis para buscar os dados exatos sob demanda. Não invente — chame a função.`,
+      );
+    }
   } else if (opts.includeSnapshot && opts.snapshot) {
     parts.push("", "<SNAPSHOT>", opts.snapshot, "</SNAPSHOT>");
   } else {
