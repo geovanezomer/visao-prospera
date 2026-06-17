@@ -41,7 +41,8 @@ type Row = {
   tone: "pos" | "neg";
 };
 
-export function RevenueTab({ state, update }: { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void }) {
+export function RevenueTab() {
+  const { state, update } = useFinance();
   const r = state.revenue;
 
   // -------- Derivados memoizados --------
