@@ -369,5 +369,11 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     dividaOnerosa: D,
     passivoCirculante,
     ativoCirculante,
+    impostosSobreReceita:
+      receitaBrutaAnual > 0
+        ? ((sum(dre.impostosVendas) + impostosAnual) / receitaBrutaAnual) * 100
+        : 0,
+    impostosSobreLucro:
+      llAnual > 1 ? ((sum(dre.impostosVendas) + impostosAnual) / llAnual) * 100 : 0,
   };
 }
