@@ -151,30 +151,56 @@ export function useFinanceUpdate(): FinanceUpdater {
 
 // ---------------------------------------------------------------------
 // Patch helpers — açúcar para `update((s) => ({ ...s, X: { ...s.X, ...p } }))`,
-// padrão que se repetia ~30× nas tabs (Revenue/Costs/Tax/Capital).
-// Cada helper faz merge raso (1 nível) — para edições aninhadas (ex.: dedução
-// específica numa lista) continue usando `update` diretamente.
+// padrão que se repetia ~30× nas tabs (Revenue/Costs/Tax/Capital/Cashflow).
+//
+// Cada helper faz merge raso (1 nível). O `patch` pode ser:
+//   - Partial<AppState[K]>                          → merge direto
+//   - (cur, full) => Partial<AppState[K]>           → merge dependente do
+//                                                     state anterior (ex.:
+//                                                     editar 1 mês de array)
+// Para edições profundamente aninhadas (ex.: item de uma lista) prefira a
+// forma funcional `(cur) => ({ campo: ... })` em vez de chamar `update`.
 // ---------------------------------------------------------------------
 type StateSlice = "revenue" | "tax" | "capital" | "cashflow";
+export type PatchInput<K extends StateSlice> =
+  | Partial<AppState[K]>
+  | ((cur: AppState[K], full: AppState) => Partial<AppState[K]>);
+
+/**
+ * Reducer puro — usado internamente pelos hooks e exportado para testes
+ * unitários. NÃO depende do React; retorna sempre uma nova referência (mantém
+ * imutabilidade do state e a igualdade referencial das fatias não tocadas).
+ */
+export function applyPatch<K extends StateSlice>(
+  state: AppState,
+  slice: K,
+  patch: PatchInput<K>,
+): AppState {
+  const cur = state[slice] as AppState[K];
+  const p =
+    typeof patch === "function"
+      ? (patch as (c: AppState[K], s: AppState) => Partial<AppState[K]>)(cur, state)
+      : patch;
+  return { ...state, [slice]: { ...(cur as object), ...p } } as AppState;
+}
 
 function makePatch<K extends StateSlice>(slice: K) {
   return function usePatchSlice() {
     const update = useFinanceUpdate();
     return useCallback(
-      (patch: Partial<AppState[K]>) =>
-        update((s) => ({ ...s, [slice]: { ...(s[slice] as object), ...patch } }) as AppState),
+      (patch: PatchInput<K>) => update((s) => applyPatch(s, slice, patch)),
       [update],
     );
   };
 }
 
-/** `patch(p)` → merge raso em `state.revenue`. */
+/** `patch(p | (cur)=>p)` → merge raso em `state.revenue`. */
 export const usePatchRevenue = makePatch("revenue");
-/** `patch(p)` → merge raso em `state.tax`. */
+/** `patch(p | (cur)=>p)` → merge raso em `state.tax`. */
 export const usePatchTax = makePatch("tax");
-/** `patch(p)` → merge raso em `state.capital`. */
+/** `patch(p | (cur)=>p)` → merge raso em `state.capital`. */
 export const usePatchCapital = makePatch("capital");
-/** `patch(p)` → merge raso em `state.cashflow`. */
+/** `patch(p | (cur)=>p)` → merge raso em `state.cashflow`. */
 export const usePatchCashflow = makePatch("cashflow");
 
 // ---------------------------------------------------------------------
