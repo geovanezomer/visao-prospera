@@ -269,6 +269,7 @@ function SimulaPro() {
         {confirmDialog}
         {/* AI FAB REMOVIDO POR SOLICITAÇÃO DO USUÁRIO */}
       </div>
+      </FinanceProvider>
     </SidebarProvider>
   );
 }
