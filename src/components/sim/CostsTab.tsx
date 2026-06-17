@@ -78,7 +78,7 @@ export function CostsTab() {
     }));
 
   const addLine = (category: CostCategory, subcategory?: string) => {
-    const id = `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+    const id = genId("c_");
     const newLine: CostLine = {
       id,
       label: "Nova rubrica",
