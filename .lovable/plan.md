@@ -1,83 +1,84 @@
-## Página `/calculadoras` com sistema de abas + 1ª calculadora: Custo de Funcionário CLT
+## Objetivo
 
-### Estrutura
+Eliminar o "time bomb" do `src/engines/finance/calculations.ts` (1.312 linhas, 35 exports, função `buildDRE` monolítica) sem quebrar os 89 testes verdes nem mudar o comportamento numérico. Não é refactor estético: é redução de risco de regressão e habilitação para evoluções da Reforma Tributária (CBS/IBS).
 
-Refatorar `src/routes/calculadoras.tsx` para usar Tabs (`shadcn/ui`) preparado para receber várias calculadoras. Hoje só a aba **Custo de Funcionário** ativa; demais ficam como placeholders ("Em breve").
+## Princípios
 
-```
-src/routes/calculadoras.tsx           → shell com <Tabs>
-src/components/calculadoras/
-  CustoFuncionarioCalc.tsx            → UI da calculadora
-src/lib/calculadoras/
-  custoFuncionario.ts                 → engine pura (pure functions + Zod)
-  custoFuncionario.test.ts            → testes dos cenários (Simples / Geral / com benefícios)
-```
+- **Comportamento idêntico** em cada fase (testes verdes obrigatórios entre fases).
+- **Re-export por compat**: `calculations.ts` permanece como fachada (re-exporta tudo) durante toda a migração. Nenhum call site quebra.
+- **Pure functions** isoladas, sem `any`, sem dependência de UI/store.
+- **Comentários em português** nos pontos críticos (regras tributárias, fórmulas).
+- **Um regime tributário por arquivo** — facilita pedidos futuros do tipo "ajuste IRPJ do Lucro Real" atingirem só `real.ts`.
 
-### Integração com o regime do menu lateral
+## Arquitetura alvo
 
-O regime tributário já existe no SSOT em `state.tax.regime` (`"simples" | "presumido" | "real"`) do `useFinanceModel`. A calculadora **lê** esse valor e pré-seleciona o regime — o usuário ainda pode trocar manualmente só para simular, mas o default vem do app.
-
-- `simples` → "Simples Nacional" (INSS patronal + Terceiros embutidos no DAS; recolhe à parte: FGTS 8 % e RAT)
-- `presumido` / `real` → "Regime Geral" (folha cheia: INSS 20 % + RAT 1–3 % + Terceiros 5,8 % + FGTS 8 %)
-
-### Engine financeira (normas vigentes — CLT + Decreto 3.048/99 + LC 123/2006)
-
-**Encargos patronais (Regime Geral):**
-- INSS Patronal: 20 % sobre salário bruto (art. 22, I, Lei 8.212/91)
-- RAT (Risco de Acidente de Trabalho): 1 % / 2 % / 3 % conforme grau de risco (input do usuário, default 1 %)
-- Terceiros (Sistema S — SENAI/SESC/SEBRAE/INCRA/Salário-Educação): 5,8 % (default; varia por CNAE)
-- FGTS: 8 % (art. 15, Lei 8.036/90)
-
-**Encargos patronais (Simples Nacional):**
-- INSS Patronal e Terceiros: 0 % (substituídos pelo DAS — exceto Anexo IV)
-- RAT: 1 %/2 %/3 % (continua devido à parte)
-- FGTS: 8 % (continua devido à parte)
-
-**Provisões mensais (1/12 avos):**
-- 13º salário: 8,3333 % (1/12)
-- FGTS sobre 13º: 8 % × 8,3333 % = 0,6667 %
-- Férias + 1/3 constitucional: 11,1111 % (1/12 × 4/3)
-- FGTS sobre férias: 8 % × 11,1111 % = 0,8889 %
-
-**Benefícios (opcionais, inputs):**
-- Vale-Transporte: empresa banca o que exceder 6 % do salário (Lei 7.418/85, art. 4º). UI: usuário informa custo mensal do VT; sistema calcula `max(0, custoVT − 0,06 × salário)`.
-- Vale-Refeição/Alimentação: input livre (custo integral para a empresa, dedutível IRPJ/CSLL no Lucro Real)
-- Plano de Saúde: input livre
-- Outros Benefícios: input livre
-
-**Fórmula final:**
-```
-custoMensal = salário
-            + (salário × (alíquotaPatronal + RAT + FGTS))
-            + (salário × (provisão13 + FGTSsobre13 + provisãoFérias + FGTSsobreFérias))
-            + benefícios
-custoAnual  = custoMensal × 12
-fatorMultiplicador = custoMensal / salário
+```text
+src/engines/finance/
+├── calculations.ts            (fachada: só re-exports, ~30 linhas)
+├── index.ts                   (barrel público existente)
+├── tax/
+│   ├── reforma.ts             ReformaRates, frações CBS/IBS por ano, era
+│   ├── simples.ts             calcSimples, simplesAliquotaEfetiva, anexo, limite
+│   ├── presumido.ts           calcPresumido, presumidoBases
+│   ├── real.ts                calcReal, irShieldForRegime
+│   ├── shared.ts              MonthlyTax (tipo), helpers comuns
+│   └── compare.ts             compareRegimes, compareErasForRegime, compareYearsForRegime
+├── costs.ts                   isCpvCost, fixedCostBase, monthValues, effectiveMonthValues, folhaAnual
+├── regime.ts                  resolveSimplesAnexo, resolveEffectiveRegime, simplesExcedeLimite
+├── dre.ts                     DRE (tipo), buildDRE, splitReceitasFinanceiras, outrasDeducoesMensal, computeNetDebt
+├── indicators.ts              Indicators (tipo), calcIndicators, cagr12m
+└── diagnose.ts                Diagnostic (tipo), diagnose
 ```
 
-Todos os números calculados com `Math.round(x*100)/100` ao final; cálculos internos em centavos para evitar floating-point.
+## Fases
 
-Validação Zod: salário ≥ R$ 1.000 (não checa salário-mínimo dinâmico — só sanity), RAT ∈ {1,2,3}, benefícios ≥ 0.
+### Fase 1 — Extrações sem risco (helpers puros)
+Mover sem alterar lógica:
+- `costs.ts` ← `isCpvCost`, `fixedCostBase`, `monthValues`, `effectiveMonthValues`, `folhaAnual`
+- `regime.ts` ← `resolveSimplesAnexo`, `simplesExcedeLimite`, `resolveEffectiveRegime`
+- `tax/reforma.ts` ← `ReformaRates`, `getReformaRates`, `getIbsFractionForYear`, `getIcmsIssFractionForYear`, `getPisCofinsFractionForYear`, `getCbsPctForYear`, `getReformaRatesForYear`, `eraForYear`
 
-### UI (melhorada vs. mockup)
+`calculations.ts` passa a re-exportar. Rodar `bunx vitest run`.
 
-Layout em 2 colunas (desktop) / stack (mobile), seguindo design tokens (sem cores hardcoded):
+### Fase 2 — Regimes tributários (1 arquivo por regime)
+- `tax/shared.ts` ← `MonthlyTax`
+- `tax/simples.ts` ← `simplesAliquotaEfetiva`, `calcSimples`
+- `tax/presumido.ts` ← `presumidoBases`, `calcPresumido`
+- `tax/real.ts` ← `calcReal`, `irShieldForRegime`
+- `tax/compare.ts` ← `compareYearsForRegime`, `compareRegimes`, `compareErasForRegime`
 
-- **Coluna esquerda** — Card "Remuneração": Salário Bruto, Regime (Select pré-preenchido do SSOT com badge "vindo do seu plano" + botão "sobrescrever"), Grau de Risco RAT (Select 1/2/3 %), % Terceiros (input avançado, recolhido por padrão).
-- **Coluna direita** — Card "Benefícios": VT (checkbox + valor), VR/VA, Plano de Saúde, Outros.
-- **Resultado** (full-width, card destaque com gradient sutil dos tokens): Custo Mensal Total em display grande, fator multiplicador (ex. "1,68× o salário bruto"), badge do regime.
-- **Breakdown** em 3 cards menores: Encargos Patronais, Provisões Mensais, Benefícios, Custo Anual.
-- **Detalhamento** em accordion expansível com tabela linha-a-linha (base, alíquota, valor) — substitui os 3 cards grandes do mockup, mais limpo.
-- **"Entenda a calculadora"** em `<Collapsible>` no fim com fórmula + dicas (texto similar ao do mockup, atualizado com referências legais).
+Cada arquivo importa só o que precisa de `reforma.ts` e `types.ts`. Comentários `// [CBS/IBS]` nos pontos afetados pela LC 214/2025.
 
-Cálculo **reativo** (sem botão "Calcular") — atualiza a cada mudança via `useMemo`. O botão "Limpar" mantém-se.
+### Fase 3 — DRE e derivados
+- `dre.ts` ← `DRE`, `computeNetDebt`, `outrasDeducoesMensal`, `splitReceitasFinanceiras`, `buildDRE`
+- `indicators.ts` ← `Indicators`, `calcIndicators`, `cagr12m`
+- `diagnose.ts` ← `Diagnostic`, `diagnose`
 
-### Fora de escopo (não muda)
+`buildDRE` permanece como **uma** função (quebrá-la internamente é Fase 5, fora deste escopo) — o ganho aqui é isolá-la num arquivo de ~150 linhas em vez de viver junto com tudo.
 
-- Sidebar, outras rotas, engine financeira principal (`lib/finance/*`) ficam intocados.
-- Não cria persistência — calculadora é stateless por sessão.
-- Reforma CBS/IBS não afeta folha de pagamento (mantida fora do escopo desta calc).
+### Fase 4 — Limpeza
+- `calculations.ts` vira fachada de ~30 linhas só com `export * from './tax/...'` etc., marcada `@deprecated — importe do submódulo específico`.
+- Atualizar `src/engines/finance/index.ts` para re-exportar dos novos módulos diretamente (barrel limpo).
+- Rodar lint + testes + build.
 
-### Próximas calculadoras (placeholders nas abas, implementação futura)
+## Garantias de não-regressão
 
-Sugiro slots para: Pró-labore, Rescisão CLT, Simples vs Presumido vs Real (mini), VPL/TIR rápido, Markup. Confirma se quer esses títulos ou outros antes de eu reservar as abas?
+1. Suite atual (89 testes) roda verde após **cada** fase, não só no final.
+2. Nenhum call site é tocado nas fases 1–3 (fachada preserva API).
+3. Sem mudanças de tipo público, sem renomes, sem reordenação de parâmetros.
+4. `any` residual: catalogar durante a migração e tratar em PR separado (não misturar refactor estrutural com tightening de tipos).
+
+## Fora de escopo (próximos passos)
+
+- Quebrar `buildDRE` internamente em sub-funções (`computeReceitaBruta`, `computeDeducoes`, `computeCustosFixos`, etc.) — Fase 5.
+- Remover `any` — Fase 6.
+- Mover `services/{benchmark,compliance}` para `engines/` — proposta anterior, independente.
+
+## Resultado esperado
+
+`calculations.ts`: 1.312 → ~30 linhas (fachada).  
+Maior arquivo novo: `dre.ts` ~250 linhas.  
+Risco de uma alteração de IRPJ-Real afetar Simples: eliminado (arquivos separados).  
+Compatibilidade com call sites: 100% (fachada + barrel).
+
+Confirma a execução começando pela **Fase 1**?
