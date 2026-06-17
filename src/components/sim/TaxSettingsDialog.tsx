@@ -137,11 +137,14 @@ export function TaxSettingsDialog() {
           <Settings className="mr-2 h-4 w-4" /> Tributos
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[88vh] overflow-hidden p-0">
-        <DialogHeader className="border-b border-border/60 px-6 pt-6 pb-4">
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <step.icon className="h-5 w-5 text-primary" />
-            Assistente de parâmetros tributários — {step.label}
+      <DialogContent className="max-w-3xl w-screen h-[100dvh] max-h-[100dvh] rounded-none sm:rounded-lg sm:h-auto sm:max-h-[88vh] overflow-hidden p-0 flex flex-col">
+        <DialogHeader className="border-b border-border/60 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <step.icon className="h-5 w-5 text-primary shrink-0" />
+            <span className="truncate">
+              <span className="hidden sm:inline">Assistente de parâmetros tributários — </span>
+              {step.label}
+            </span>
           </DialogTitle>
           <DialogDescription>
             Passo {stepIdx + 1} de {STEPS.length}. Todos os campos já vêm preenchidos com os valores
@@ -175,7 +178,7 @@ export function TaxSettingsDialog() {
           </div>
         </DialogHeader>
 
-        <div className="max-h-[58vh] overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 sm:max-h-[58vh]">
           {step.key === "intro" && <StepIntro customCount={customCount} />}
           {step.key === "federais" && <StepFederais ov={ov} patchOv={patchOv} />}
           {step.key === "simples" && <StepSimples ov={ov} patchOv={patchOv} />}
@@ -188,34 +191,45 @@ export function TaxSettingsDialog() {
           {step.key === "revisao" && <StepRevisao customCount={customCount} resetAll={resetAll} />}
         </div>
 
-        <div className="flex items-center justify-between border-t border-border/60 px-6 py-3">
+        <div className="flex items-center justify-between gap-2 border-t border-border/60 px-3 sm:px-6 py-3 shrink-0 bg-card">
           <Button
             variant="ghost"
             size="sm"
             onClick={resetAll}
+            className="min-h-[40px]"
             title="Restaurar todos os campos aos valores oficiais"
           >
-            <RotateCcw className="mr-2 h-3.5 w-3.5" /> Restaurar tudo
+            <RotateCcw className="mr-1 sm:mr-2 h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Restaurar tudo</span>
+            <span className="sm:hidden">Reset</span>
           </Button>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
+              className="min-h-[40px]"
               disabled={isFirst}
               onClick={() => setStepIdx((i) => Math.max(0, i - 1))}
             >
-              <ChevronLeft className="mr-1 h-3.5 w-3.5" /> Voltar
+              <ChevronLeft className="h-3.5 w-3.5 sm:mr-1" />
+              <span className="hidden sm:inline">Voltar</span>
             </Button>
+            <span className="text-xs text-muted-foreground tabular-nums sm:hidden">
+              {stepIdx + 1}/{STEPS.length}
+            </span>
             {isLast ? (
-              <Button size="sm" onClick={close}>
+              <Button size="sm" className="min-h-[40px]" onClick={close}>
                 <Check className="mr-1 h-3.5 w-3.5" /> Concluir
               </Button>
             ) : (
               <Button
                 size="sm"
+                className="min-h-[40px]"
                 onClick={() => setStepIdx((i) => Math.min(STEPS.length - 1, i + 1))}
               >
-                Avançar <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Avançar</span>
+                <span className="sm:hidden">Próximo</span>
+                <ChevronRight className="ml-1 h-3.5 w-3.5" />
               </Button>
             )}
           </div>
@@ -800,7 +814,7 @@ function FriendlyRow({
   const isDefault = value === defaultVal;
   return (
     <div className="rounded-md border border-border/40 bg-background/40 p-3">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-sm font-medium">
             <span>{label}</span>
@@ -822,15 +836,15 @@ function FriendlyRow({
             </b>
           </p>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-[110px]">
+        <div className="flex items-center gap-1 sm:shrink-0">
+          <div className="flex-1 sm:w-[110px] sm:flex-none">
             <NumInput value={value} onChange={onChange} />
           </div>
           <span className="w-6 text-center text-[10px] text-muted-foreground">{suffix}</span>
           <Button
             size="icon"
             variant="ghost"
-            className="h-7 w-7"
+            className="h-9 w-9 sm:h-7 sm:w-7"
             disabled={isDefault}
             onClick={onReset}
             title="Restaurar padrão"
