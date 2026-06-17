@@ -1094,10 +1094,19 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const dividaLiqPl = PL > 1
     ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / PL))
     : (dividaLiq <= 0 ? 0 : CAP_DL_EBITDA);
-  const payback = llAnual > 1 ? Math.min(CAP_PAYBACK, PL / llAnual) : (PL <= 0 ? 0 : CAP_PAYBACK);
+  // Amortização do PL pelo Lucro Contábil (período em anos) — NÃO é payback clássico.
+  const amortizacaoPlPorLucro = llAnual > 1 ? Math.min(CAP_PAYBACK, PL / llAnual) : (PL <= 0 ? 0 : CAP_PAYBACK);
+  const payback = amortizacaoPlPorLucro; // @deprecated alias para retrocompat
   // FCF simplificado: EBITDA − Impostos − ΔNCG (Auditoria).
   // ΔNCG estimado como a diferença entre a NCG atual e o capital de giro disponível.
   const fcf = ebitdaAnual - impostosAnual - Math.max(0, ncg - capital.capitalGiroDisponivel);
+  // Payback CLÁSSICO: CAPEX inicial ÷ FCF anual. CAPEX inicial = mês 1 do plano de CAPEX
+  // + ativações marcadas no mês 1. Métrica que bancos/analistas reconhecem como "payback".
+  const capexMes1 = (capital.capex?.[0] ?? 0)
+    + (capital.capexAtivacao ?? []).reduce((acc, ca) => acc + (ca && ca.mes === 1 ? (ca.valor || 0) : 0), 0);
+  const paybackCapex = capexMes1 > 0 && fcf > 1
+    ? Math.min(CAP_PAYBACK, capexMes1 / fcf)
+    : (capexMes1 <= 0 ? 0 : CAP_PAYBACK);
 
   // GAO = MC ($) ÷ EBIT. Mede elasticidade do EBIT a variações na receita.
   // (I4) Aceita EBIT negativo — GAO negativo é informação real ("alavancagem reversa").
