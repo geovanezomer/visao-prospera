@@ -459,7 +459,7 @@ export function DRETab() {
                         className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20"
                         onClick={() => toggleGroup(row.id)}
                       >
-                        <td className="px-3 py-2 text-[10px] sm:text-xs font-semibold truncate">
+                        <td className="sticky left-0 z-10 bg-inherit px-3 py-2 text-[10px] sm:text-xs font-semibold truncate shadow-[1px_0_0_0_var(--border)]">
                           <span className="inline-flex items-center gap-1">
                             <ChevronRight
                               className={`h-3 w-3 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`}
@@ -492,7 +492,7 @@ export function DRETab() {
                           const lTotal = sum(l.values) * sgn;
                           return (
                             <tr key={`${row.id}_${li}`} className="border-t border-border/20">
-                              <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">
+                              <td className="sticky left-0 z-10 bg-inherit px-4 py-1.5 pl-8 text-xs text-muted-foreground shadow-[1px_0_0_0_var(--border)]">
                                 {l.label}
                               </td>
                               {showPeriods &&
@@ -541,7 +541,7 @@ export function DRETab() {
                         className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20"
                         onClick={() => setOpenCpv((v) => !v)}
                       >
-                        <td className="px-3 py-2 text-[10px] sm:text-xs font-semibold truncate">
+                        <td className="sticky left-0 z-10 bg-inherit px-3 py-2 text-[10px] sm:text-xs font-semibold truncate shadow-[1px_0_0_0_var(--border)]">
                           <span className="inline-flex items-center gap-1">
                             <ChevronRight
                               className={`h-3 w-3 shrink-0 transition-transform ${openCpv ? "rotate-90" : ""}`}
@@ -571,7 +571,7 @@ export function DRETab() {
                           const lTotal = sum(l.values);
                           return (
                             <tr key={`cpv_${li}`} className="border-t border-border/20">
-                              <td className="px-4 py-1.5 pl-8 text-xs text-muted-foreground">
+                              <td className="sticky left-0 z-10 bg-inherit px-4 py-1.5 pl-8 text-xs text-muted-foreground shadow-[1px_0_0_0_var(--border)]">
                                 {l.label}
                               </td>
                               {showPeriods &&
