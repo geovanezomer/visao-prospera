@@ -5,7 +5,7 @@ import { compareRegimes } from "./tax/compare";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { monthValues } from "./costs";
 import { buildCashFlow } from "./cashflow";
-import { sum } from "./format";
+import { sum, genId } from "./format";
 
 export interface ActionImpact {
   label: string;
