@@ -46,6 +46,10 @@ export function DiagnosisTab() {
         model={{ dre: model.dre, ind: model.ind, cf: model.cf, regime: model.regime }}
       />
 
+      {/* Diagnóstico Executivo gerado pela IA — só renderiza se IA configurada */}
+      <DiagnosticoExecutivoCard briefing={briefing} />
+
+
       {/* Waterfall — âncora visual da conversa: mostra onde o resultado se perde */}
       <WaterfallCard dre={model.dre} ind={model.ind} />
 
