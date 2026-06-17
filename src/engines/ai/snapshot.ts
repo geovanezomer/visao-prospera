@@ -374,10 +374,10 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     valLines.push(`- **Haircut:** ${pct(val.haircutApplied * 100)}`);
     if (val.dcfDetails) {
       const d = val.dcfDetails;
-      // C-1 fix: dcfDetails.wacc é armazenado em % (valuation.ts:198 `waccAnnual * 100`).
-      // terminalGrowth permanece em fração (ex.: 0.025) — multiplica × 100 só nele.
+      // C-1 fix: dcfDetails.wacc é armazenado em % (valuation.ts:241 `waccAnnual * 100`).
+      // growthTerminal permanece em fração (ex.: 0.025) — multiplica × 100 só nele.
       valLines.push(
-        `- **DCF:** WACC ${pct(safe(d.wacc), 2)} · g ${pct(safe(d.terminalGrowth) * 100, 2)} · VP fluxos ${brl(safe(d.presentValueFlows))} · VP terminal ${brl(safe(d.presentValueTerminal))}`,
+        `- **DCF:** WACC ${pct(safe(d.wacc), 2)} · g ${pct(safe(d.growthTerminal) * 100, 2)} · VP fluxos ${brl(safe(d.npvFlows))} · VP terminal ${brl(safe(d.npvTerminal))}`,
       );
     }
     if (val.narrative) valLines.push(`> ${val.narrative}`);
