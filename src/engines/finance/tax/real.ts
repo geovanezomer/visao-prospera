@@ -13,7 +13,7 @@ import { sum, zeros12 } from "../format";
 import { getIrpjPct, getCsllPct, getPisNaoCumPct, getCofinsNaoCumPct } from "../taxDefaults";
 import { receitaTributavel, splitReceitasFinanceiras } from "../shared";
 import { isCpvCost, effectiveMonthValues } from "../costs";
-import { getReformaRates } from "./reforma";
+import { getReformaRates, getCbsCredCpvPct, getIbsCredCpvPct } from "./reforma";
 import { adicionalIrpjTrimestral, type MonthlyTax } from "./shared";
 
 // [CBS/IBS] Helpers: usam tributos-br (LC 214/2025) para garantir
