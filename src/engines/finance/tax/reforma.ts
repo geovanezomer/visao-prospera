@@ -92,12 +92,21 @@ export function getCbsPctForYear(year: number, cbsFull: number): number {
 export function getReformaRatesForYear(year: number, cfg: TaxConfig): ReformaRates {
   const cbsFull = cfg.cbsAliquota ?? 8.8;
   const ibsFull = cfg.ibsAliquotaRef ?? 17.7;
-  if (year < 2026) return { cbsPct: 0, ibsPct: 0, pisCofinsMult: 1, icmsIssMult: 1 };
+  if (year < 2026) return { cbsPct: 0, ibsPct: 0, pisCofinsMult: 1, icmsIssMult: 1, cargaCombinadaPct: 0, alertaTransicao: false };
+  const cbsPct = getCbsPctForYear(year, cbsFull);
+  const ibsPct = ibsFull * getIbsFractionForYear(year, ibsFull);
+  const icmsIssMult = getIcmsIssFractionForYear(year);
+  // Carga IVA combinada (estimada) = CBS + IBS + ICMS legado (~18%) × mult
+  const icmsLegado = (cfg.issIcms ?? 18) * icmsIssMult;
+  const cargaCombinadaPct = cbsPct + ibsPct + icmsLegado;
+  const cargaAtual = cfg.issIcms ?? 18;
   return {
-    cbsPct: getCbsPctForYear(year, cbsFull),
-    ibsPct: ibsFull * getIbsFractionForYear(year, ibsFull),
+    cbsPct,
+    ibsPct,
     pisCofinsMult: getPisCofinsFractionForYear(year),
-    icmsIssMult: getIcmsIssFractionForYear(year),
+    icmsIssMult,
+    cargaCombinadaPct,
+    alertaTransicao: cargaCombinadaPct > cargaAtual + 0.01,
   };
 }
 
