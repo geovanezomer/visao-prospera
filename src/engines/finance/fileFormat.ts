@@ -14,7 +14,7 @@ const ScenarioSchema = z.object({
   id: z.string(),
   name: z.string(),
   createdAt: z.number(),
-  state: z.record(z.string(), z.any()),
+  state: z.record(z.string(), z.unknown()),
 });
 
 export const FinnanceFileSchema = z.object({
@@ -23,14 +23,14 @@ export const FinnanceFileSchema = z.object({
   source: z.string().optional(),
   savedAt: z.string().optional(),
   app: z.object({ name: z.string(), version: z.string().optional() }).optional(),
-  state: z.record(z.string(), z.any()),
+  state: z.record(z.string(), z.unknown()),
   scenarios: z.array(ScenarioSchema).default([]),
   // Dados auxiliares persistidos por empresa: cenários do simulador e plano
   // de ação. Schema permissivo — validação efetiva acontece nos serviços.
   extras: z
     .object({
-      actions: z.array(z.record(z.string(), z.any())).optional(),
-      simScenarios: z.array(z.record(z.string(), z.any())).optional(),
+      actions: z.array(z.record(z.string(), z.unknown())).optional(),
+      simScenarios: z.array(z.record(z.string(), z.unknown())).optional(),
     })
     .optional(),
   meta: z
