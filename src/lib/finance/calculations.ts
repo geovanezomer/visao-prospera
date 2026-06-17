@@ -828,11 +828,14 @@ export interface Indicators {
    */
   pontoEquilibrio: number;
   /**
-   * PE OPERACIONAL CLÁSSICO (acadêmico/bancos): Custos Fixos ÷ MC — sem juros, sem depreciação fora.
-   * Cobre apenas os custos fixos operacionais; juros e impostos ficam abaixo do EBIT.
+   * PE OPERACIONAL CLÁSSICO (Garrison/Horngren): Custos Fixos Operacionais (com depreciação,
+   * SEM juros) ÷ MC. Juros e impostos ficam abaixo do EBIT — não pertencem ao PE contábil.
    */
   pontoEquilibrioOperacional: number;
-  /** (Custos Fixos + Juros) ÷ Margem de Contribuição — exclui depreciação (não-caixa), mantém juros. */
+  /**
+   * PE FINANCEIRO clássico (caixa): Custos Fixos Operacionais SEM depreciação e SEM juros ÷ MC.
+   * Receita mínima para cobrir os desembolsos OPERACIONAIS.
+   */
   pontoEquilibrioFinanceiro: number;
   /** Lucro Líquido ÷ Patrimônio Líquido × 100 */
   roe: number;
