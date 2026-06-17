@@ -58,8 +58,8 @@ export function NonOpTable({
             const anualDisplay =
               anual === 0 ? "—" : row.tone === "neg" ? `(${fmtBRL(anual)})` : fmtBRL(anual);
             return (
-              <tr key={row.key} className="border-t border-border/40 align-middle">
-                <td className="px-3 py-2">
+              <tr key={row.key} className="border-t border-border/40 bg-card align-middle">
+                <td className="sticky left-0 z-10 bg-inherit px-3 py-2 shadow-[1px_0_0_0_var(--border)]">
                   <div className="flex items-start gap-2">
                     <span
                       className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
