@@ -33,7 +33,7 @@ const STEPS: { key: StepKey; label: string; icon: typeof Settings }[] = [
   { key: "revisao",   label: "Revisão",     icon: Check     },
 ];
 
-export function TaxSettingsDialog(()) {
+export function TaxSettingsDialog() {
   const { state, update } = useFinance();
   const [open, setOpen] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
