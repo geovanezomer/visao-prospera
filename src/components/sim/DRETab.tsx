@@ -143,7 +143,7 @@ export function DRETab({ state, update }: { state: AppState; update: Updater }) 
     { kind: "linha", k: "(=) LUCRO ANTES DO FINANCIAMENTO E TRIBUTOS", v: laft, strong: true, tone: sum(laft) >= 0 ? "pos" : "neg" },
     { kind: "grupo", id: "desp_fin", titulo: "(−) Despesas Financeiras", v: despFinanc.map((x) => -x), tone: "neg", lines: linhaPorCat("financeiro"), emptyMsg: "Nenhuma despesa financeira cadastrada." },
     { kind: "linha", k: "(=) LUCRO ANTES DO IR/CSLL (EBT)", v: ebt, strong: true, tone: sum(ebt) >= 0 ? "pos" : "neg" },
-    { kind: "linha", k: "(−) IR / CSLL", v: dre.impostos.map((x) => -x), tone: "neg" },
+    { kind: "linha", k: dre.impostosLucroBase === "receita_presumida" ? "(−) IR / CSLL (base presumida sobre receita)" : "(−) IR / CSLL", v: dre.impostos.map((x) => -x), tone: "neg" },
     { kind: "linha", k: "(=) LUCRO LÍQUIDO DO EXERCÍCIO", v: dre.lucroLiquido, strong: true, tone: ll >= 0 ? "pos" : "neg", margin: ind.margemLiquida, highlight: true },
   ];
 
