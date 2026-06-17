@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { NumInput } from "./primitives";
 import type { AppState, SimplesAnexo, BusinessType } from "@/engines/finance/types";
+import { useFinance, type FinanceUpdater } from "@/engines/finance/AppStateContext";
 import {
   IRPJ_PCT, IRPJ_ADICIONAL_PCT, IRPJ_ADICIONAL_GATILHO_TRI, CSLL_PCT,
   PIS_CUM_PCT, COFINS_CUM_PCT, PIS_NAO_CUM_PCT, COFINS_NAO_CUM_PCT,
@@ -13,8 +14,6 @@ import {
   REFORMA_TRANSICAO_IBS_MULT, REFORMA_TRANSICAO_ICMS_ISS_MULT,
   type TaxRatesOverride, type SimplesFaixa,
 } from "@/engines/finance/taxDefaults";
-
-type Props = { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void };
 
 const ANEXOS: SimplesAnexo[] = ["I", "II", "III", "IV", "V"];
 const BUSINESS: { key: BusinessType; label: string; hint: string }[] = [
@@ -34,7 +33,8 @@ const STEPS: { key: StepKey; label: string; icon: typeof Settings }[] = [
   { key: "revisao",   label: "Revisão",     icon: Check     },
 ];
 
-export function TaxSettingsDialog({ state, update }: Props) {
+export function TaxSettingsDialog() {
+  const { state, update } = useFinance();
   const [open, setOpen] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
   const ov = state.tax.ratesOverride ?? {};
@@ -300,7 +300,7 @@ function StepSimples({ ov, patchOv }: { ov: TaxRatesOverride; patchOv: (p: Parti
 
 function StepPresumido({
   ov, patchOv, state, update,
-}: { ov: TaxRatesOverride; patchOv: (p: Partial<TaxRatesOverride>) => void; state: AppState; update: Props["update"] }) {
+}: { ov: TaxRatesOverride; patchOv: (p: Partial<TaxRatesOverride>) => void; state: AppState; update: FinanceUpdater }) {
   return (
     <div className="space-y-4">
       <Callout tone="info" title="Como funciona o Lucro Presumido?">
@@ -370,7 +370,7 @@ function StepPresumido({
 
 function StepReforma({
   ov, patchOv, state, update,
-}: { ov: TaxRatesOverride; patchOv: (p: Partial<TaxRatesOverride>) => void; state: AppState; update: Props["update"] }) {
+}: { ov: TaxRatesOverride; patchOv: (p: Partial<TaxRatesOverride>) => void; state: AppState; update: FinanceUpdater }) {
   return (
     <div className="space-y-4">
       <Callout tone="info" title="Reforma Tributária (EC 132/2023 + LC 214/2025)">

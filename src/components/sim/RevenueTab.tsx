@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { AppState, RevenueDeducao } from "@/engines/finance/types";
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/engines/finance/format";
 import { buildDRE } from "@/engines/finance/calculations";
@@ -40,7 +41,8 @@ type Row = {
   tone: "pos" | "neg";
 };
 
-export function RevenueTab({ state, update }: { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void }) {
+export function RevenueTab() {
+  const { state, update } = useFinance();
   const r = state.revenue;
 
   // -------- Derivados memoizados --------

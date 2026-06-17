@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
 import { AppState, BusinessType, SimplesAnexo, TaxEra, TaxRegime, TAX_ERA_SHORT } from "@/engines/finance/types";
 import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
@@ -83,7 +84,8 @@ const ANEXO_BUSINESS_OK: Record<SimplesAnexo, BusinessType[]> = {
   V: ["servicos"],
 };
 
-export function TaxTab({ state, update }: { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void }) {
+export function TaxTab() {
+  const { state, update } = useFinance();
   const rbAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
   const set = useCallback(
     (patch: Partial<typeof state.tax>) =>

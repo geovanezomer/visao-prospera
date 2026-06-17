@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
 import { AppState } from "@/engines/finance/types";
 import { fmtBRL, fmtBRLCompact, MESES, sum } from "@/engines/finance/format";
@@ -23,7 +24,8 @@ const TOOLTIP_LABEL = { color: "var(--popover-foreground)", fontWeight: 600 } as
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 type NonOpKey = "aportes" | "emprestimosCaptados" | "capex" | "dividendos" | "amortizacoes";
 
-export function CashflowTab({ state, update }: { state: AppState; update: Updater }) {
+export function CashflowTab() {
+  const { state, update } = useFinance();
   // B1/B4: regime efetivo agora é default em buildCashFlow; memoizar o resultado pesado.
   const cf = useMemo(() => buildCashFlow(state), [state]);
 

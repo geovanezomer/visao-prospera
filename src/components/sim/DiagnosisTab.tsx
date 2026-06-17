@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { AppState } from "@/engines/finance/types";
 import { buildPrescriptiveCards, PrescriptiveCard } from "@/engines/finance/prescriptive";
 import { diagnose } from "@/engines/finance/calculations";
@@ -11,7 +12,8 @@ import { CriticalAlertsBanner } from "./CriticalAlertsBanner";
 import { WaterfallCard } from "./WaterfallCard";
 
 
-export function DiagnosisTab({ state }: { state: AppState }) {
+export function DiagnosisTab() {
+  const state = useFinanceState();
   // Modelo central: 1 buildDRE + 1 calcIndicators + 1 buildCashFlow para a aba inteira,
   // reusados pelos filhos (CriticalAlertsBanner, HealthScoreCard). Antes: 3–4× recálculos por render.
   const model = useFinanceModel(state);

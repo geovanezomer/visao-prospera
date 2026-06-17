@@ -15,6 +15,7 @@ import {
   SwitchingCost,
   ExposicaoRegulatoria,
 } from "@/engines/finance/types";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { SectionTitle, HelpTip } from "./primitives";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,8 @@ function ensure(state: AppState): StrategicAnswers {
   };
 }
 
-export function StrategicTab({ state, update }: { state: AppState; update: Updater }) {
+export function StrategicTab() {
+  const { state, update } = useFinance();
   const answers = ensure(state);
 
   const setSection = <K extends keyof StrategicAnswers>(key: K, patch: Partial<StrategicAnswers[K]>) => {

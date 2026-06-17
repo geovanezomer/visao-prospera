@@ -1,4 +1,5 @@
 import { useState, Fragment, useEffect } from "react";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { AppState, TaxRegime, COST_VENDAS_LABEL, TAX_ERA_SHORT, CostCategory } from "@/engines/finance/types";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
@@ -15,7 +16,8 @@ import { ChevronRight } from "lucide-react";
 
 const CHART_COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15", "#F472B6", "#34D399", "#A78BFA", "#FB923C"];
 
-export function DRETab({ state, update }: { state: AppState; update: Updater }) {
+export function DRETab() {
+  const { state, update } = useFinance();
   const [view, setView] = useState<"mensal" | "trimestral" | "anual">("trimestral");
 
   useEffect(() => {

@@ -18,6 +18,7 @@ import { LogOut, Building2, Factory, Store, Briefcase, Users, Save, FolderOpen, 
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 
 import { NAV_ITEMS } from "./nav-config";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { TabKey, BusinessType, AppState } from "@/engines/finance/types";
 import { useAuth } from "@/lib/auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,15 +30,14 @@ import { cn } from "@/lib/utils";
 interface AppSidebarProps {
   activeTab: TabKey | "ai" | "calculadoras";
   setActiveTab: (tab: TabKey | "ai" | "calculadoras") => void;
-  state: AppState;
-  update: (patch: Partial<AppState> | ((s: AppState) => AppState)) => void;
   onSave: () => void;
   onOpen: () => void;
   currentFileName: string | null;
   dirty: boolean;
 }
 
-export function AppSidebar({ activeTab, setActiveTab, state, update, onSave, onOpen, currentFileName, dirty }: AppSidebarProps) {
+export function AppSidebar({ activeTab, setActiveTab, onSave, onOpen, currentFileName, dirty }: AppSidebarProps) {
+  const { state, update } = useFinance();
   const { user, logout } = useAuth();
   const { setOpenMobile } = useSidebar();
 
