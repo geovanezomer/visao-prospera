@@ -13,6 +13,7 @@ import {
   RazaoContratacao,
   Concorrentes,
   SwitchingCost,
+  ExposicaoRegulatoria,
 } from "@/engines/finance/types";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { SectionTitle, HelpTip } from "./primitives";
