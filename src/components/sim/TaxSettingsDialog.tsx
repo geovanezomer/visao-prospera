@@ -30,7 +30,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { NumInput } from "./primitives";
 import type { AppState, SimplesAnexo, BusinessType } from "@/engines/finance/types";
-import { useFinance, type FinanceUpdater } from "@/engines/finance/AppStateContext";
+import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import {
   IRPJ_PCT,
   IRPJ_ADICIONAL_PCT,
