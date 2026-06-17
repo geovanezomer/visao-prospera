@@ -455,27 +455,22 @@ export function RevenueTab() {
         values={r.pmrMensal ?? fill12(r.pmr || 0)}
         fixed={!!r.pmrFixo}
         onMonth={(i, v) =>
-          update((s) => {
-            const base = s.revenue.pmrMensal ?? fill12(s.revenue.pmr || 0);
+          patchRevenue((rev) => {
+            const base = rev.pmrMensal ?? fill12(rev.pmr || 0);
             const next = base.map((x, j) => (j === i ? v : x));
             const media = Math.round(next.reduce((a, b) => a + (b || 0), 0) / 12);
-            return { ...s, revenue: { ...s.revenue, pmrMensal: next, pmr: media } };
+            return { pmrMensal: next, pmr: media };
           })
         }
-        onAllMonths={(v) =>
-          update((s) => ({ ...s, revenue: { ...s.revenue, pmrMensal: fill12(v), pmr: v } }))
-        }
+        onAllMonths={(v) => patchRevenue({ pmrMensal: fill12(v), pmr: v })}
         onFixed={(fixed) =>
-          update((s) => {
-            const base = s.revenue.pmrMensal ?? fill12(s.revenue.pmr || 0);
+          patchRevenue((rev) => {
+            const base = rev.pmrMensal ?? fill12(rev.pmr || 0);
             if (fixed) {
               const ref = base.find((x) => x !== 0) ?? base[0] ?? 0;
-              return {
-                ...s,
-                revenue: { ...s.revenue, pmrFixo: true, pmrMensal: fill12(ref), pmr: ref },
-              };
+              return { pmrFixo: true, pmrMensal: fill12(ref), pmr: ref };
             }
-            return { ...s, revenue: { ...s.revenue, pmrFixo: false } };
+            return { pmrFixo: false };
           })
         }
       />
