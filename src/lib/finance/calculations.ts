@@ -1170,6 +1170,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     liquidezCorrente, liquidezSeca, liquidezImediata,
     endividamentoGeral, endividamentoGeralDadosCompletos, grauEndividamento, coberturaJuros, giroAtivo,
     dividaLiqEbitda, dividaLiqEbit, dividaLiqPl, payback, amortizacaoPlPorLucro, paybackCapex, fcf: safeNumber(fcf),
+    capexAnual: safeNumber(capexAnual), fcfAposCapex: safeNumber(fcfAposCapex),
     conversaoEbitdaCaixa: ebitdaAnual > 0 ? safePct(fcf, ebitdaAnual) : 0,
     gao, qualidadeLucro,
     receitaPorColaborador, faturamentoPorColaborador, ebitdaPorColaborador, lucroPorColaborador, custoPessoalSobreReceita,
