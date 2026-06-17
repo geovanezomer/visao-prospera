@@ -698,6 +698,87 @@ function Callout({
   );
 }
 
+/** Callout dinâmico: mostra a alíquota efetiva de crédito CBS/IBS e um
+ *  exemplo numérico, recalculado conforme o usuário altera o % SN. */
+function SnPresumidoExplainer({
+  snPct,
+  cbsPct,
+  ibsPct,
+}: {
+  snPct: number;
+  cbsPct: number;
+  ibsPct: number;
+}) {
+  const cbsCredEff = getCbsCredCpvPct(cbsPct, snPct);
+  const ibsCredEff = getIbsCredCpvPct(ibsPct, snPct);
+  const cpvExemplo = 100_000;
+  const credCbsEff = cpvExemplo * (cbsCredEff / 100);
+  const credIbsEff = cpvExemplo * (ibsCredEff / 100);
+  const credCbsCheio = cpvExemplo * (cbsPct / 100);
+  const credIbsCheio = cpvExemplo * (ibsPct / 100);
+  const perdaCbs = credCbsCheio - credCbsEff;
+  const perdaIbs = credIbsCheio - credIbsEff;
+  const fmt = (n: number) =>
+    n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  const pct = (n: number) => n.toFixed(2).replace(".", ",") + "%";
+  const tone = snPct > 0 ? "warn" : "info";
+  return (
+    <Callout
+      tone={tone}
+      title={
+        snPct > 0
+          ? `Com ${pct(snPct)} do CPV em fornecedor SN, seu crédito cai`
+          : "Como funciona o crédito presumido SN"
+      }
+    >
+      <div className="space-y-2 text-[13px]">
+        <p>
+          Fornecedor no Simples Nacional não destaca CBS/IBS na nota — o comprador (Lucro Real/
+          Presumido) só tem direito a um <b>crédito presumido</b> de{" "}
+          <b>{ALIQ_PRESUMIDA_CBS_SN.toFixed(1).replace(".", ",")}% CBS</b> e{" "}
+          <b>{ALIQ_PRESUMIDA_IBS_SN.toFixed(1).replace(".", ",")}% IBS</b>, e não da alíquota
+          cheia.
+        </p>
+        <div className="grid grid-cols-2 gap-2 rounded bg-background/60 p-2 font-mono text-[12px]">
+          <div>
+            <div className="text-foreground/60">Alíquota efetiva CBS</div>
+            <div className="text-base">{pct(cbsCredEff)}</div>
+            <div className="text-foreground/50">cheia: {pct(cbsPct)}</div>
+          </div>
+          <div>
+            <div className="text-foreground/60">Alíquota efetiva IBS</div>
+            <div className="text-base">{pct(ibsCredEff)}</div>
+            <div className="text-foreground/50">cheia: {pct(ibsPct)}</div>
+          </div>
+        </div>
+        <details className="text-[12px]">
+          <summary className="cursor-pointer text-foreground/70 hover:text-foreground">
+            Ver exemplo: CPV de {fmt(cpvExemplo)}/mês
+          </summary>
+          <div className="mt-2 space-y-1 rounded bg-background/60 p-2">
+            <div>
+              Crédito CBS: <b>{fmt(credCbsEff)}</b>{" "}
+              <span className="text-foreground/60">
+                (cheio {fmt(credCbsCheio)} − perda {fmt(perdaCbs)})
+              </span>
+            </div>
+            <div>
+              Crédito IBS: <b>{fmt(credIbsEff)}</b>{" "}
+              <span className="text-foreground/60">
+                (cheio {fmt(credIbsCheio)} − perda {fmt(perdaIbs)})
+              </span>
+            </div>
+            <div className="mt-1 border-t border-border/40 pt-1">
+              Imposto adicional a pagar/mês:{" "}
+              <b className="text-amber-500">{fmt(perdaCbs + perdaIbs)}</b>
+            </div>
+          </div>
+        </details>
+      </div>
+    </Callout>
+  );
+}
+
 /** Linha amigável: rótulo + ajuda em linguagem simples + input + reset + indicador "padrão/customizado". */
 function FriendlyRow({
   label,
