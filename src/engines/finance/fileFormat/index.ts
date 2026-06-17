@@ -69,10 +69,7 @@ export function serialize(
   };
 }
 
-/** Alias semântico para chamadas novas — equivalente a `serialize`. */
-export const saveGzfp = serialize;
-
-/** Resultado canônico de abrir um .finnance/.gzfp. */
+/** Resultado canônico de abrir um arquivo `.finnance`. */
 export interface OpenedFile {
   state: AppState;
   scenarios: Scenario[];
@@ -88,10 +85,9 @@ export interface OpenedFile {
 
 /**
  * Pipeline completo de leitura: migrate → validate → normalize.
- * `openGzfp` é o nome canônico; `parseFinnanceFile` é mantido como
- * alias para preservar imports legados.
+ * Nome canônico do parser do envelope `.finnance`.
  */
-export function openGzfp(raw: unknown): OpenedFile {
+export function parseFinnanceFile(raw: unknown): OpenedFile {
   const originalVersion =
     raw && typeof raw === "object" && typeof (raw as { version?: number }).version === "number"
       ? (raw as { version: number }).version
