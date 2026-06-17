@@ -4,9 +4,8 @@ import { DEFAULT_STATE, migrateState, validateAndMigrate } from "./defaults";
 import { useAuth } from "@/lib/auth";
 import { loadKey, saveKey, broadcastChange, onRemoteChange } from "./persistence";
 
-// Prefixo `gzfp:` é legado e intencionalmente preservado — ver persistence.ts.
-const stateKey = (u: string) => `gzfp:state:${u}`;
-const scenKey = (u: string) => `gzfp:scenarios:${u}`;
+const stateKey = (u: string) => `finnance:state:${u}`;
+const scenKey = (u: string) => `finnance:scenarios:${u}`;
 
 // Legacy keys (pre-auth) — migrated on first hydrate per user.
 const LEGACY_STATE = ["simulapro:state:v2", "simulapro:state:v1"];

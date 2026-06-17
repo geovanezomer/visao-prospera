@@ -18,8 +18,7 @@ import { DEFAULT_SIM, type SimulatorParams } from "./simulator";
 // Chave por usuário + versão. Bump em FINNANCE_FILE_VERSION descarta o
 // snapshot antigo (volta a DEFAULT_SIM) — preferimos perder a sim a
 // renderizar com shape inválido.
-// Prefixo `gzfp:` é legado e intencionalmente preservado — ver persistence.ts.
-const simKey = (userId: string) => `gzfp:simParams:v${FINNANCE_FILE_VERSION}:${userId}`;
+const simKey = (userId: string) => `finnance:simParams:v${FINNANCE_FILE_VERSION}:${userId}`;
 
 export function usePersistedSimParams(
   userId: string,

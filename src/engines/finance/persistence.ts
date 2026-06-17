@@ -1,13 +1,5 @@
 // Camada de persistência unificada: IndexedDB (principal) com fallback
-// silencioso para localStorage. Mantém compatibilidade com as chaves
-// (gzfp:state:*, gzfp:scenarios:*, gzfp:draft:*, gz-finance-scenarios-*)
-// migrando automaticamente no primeiro acesso.
-//
-// NOTA: o prefixo `gzfp:` é legado (nome antigo do projeto) e está
-// intencionalmente preservado em TODAS as chaves de storage e no
-// BroadcastChannel — renomear orfanaria os rascunhos e cenários já
-// salvos no navegador dos clientes. A extensão do arquivo exposto ao
-// usuário (`.finnance`) já é a correta; este prefixo é interno.
+// silencioso para localStorage.
 //
 // API pública intencionalmente síncrona-amigável: hooks consomem
 // `loadKey(key)` / `saveKey(key, value)` retornando Promises, com
@@ -115,8 +107,8 @@ export async function removeKey(key: string): Promise<void> {
 }
 
 // ─── Broadcast multi-aba ──────────────────────────────────────────────
-// Nome legado mantido para compat com abas já abertas em deploys antigos.
-const CHANNEL_NAME = "gzfp:sync";
+// Nome do canal de broadcast multi-aba.
+const CHANNEL_NAME = "finnance:sync";
 let channel: BroadcastChannel | null = null;
 
 function getChannel(): BroadcastChannel | null {
