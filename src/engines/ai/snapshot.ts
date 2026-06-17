@@ -406,9 +406,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
   const presLines: string[] = [];
   if (cards?.length) {
     presLines.push(`## Recomendações Prescritivas`);
-    cards
-      .slice(0, 10)
-      .forEach((c) => presLines.push(`- **${c.problem}** — ${c.cause}`));
+    cards.slice(0, 10).forEach((c) => presLines.push(`- **${c.problem}** — ${c.cause}`));
   }
 
   // ----- Estratégico -----
