@@ -55,7 +55,7 @@ export function taxAuditToMarkdown(state: AppState): string {
 
   md += `### 🔍 Análise de Oportunidades\n`;
   
-  if (state.tax.regime === "presumido" && llAnual < (rbAnual * 0.10)) {
+  if (currentRegime === "presumido" && llAnual < (rbAnual * 0.10)) {
     md += `1. **Alerta de Lucro Real:** Seu lucro líquido (${((llAnual/rbAnual)*100).toFixed(1)}%) está abaixo da margem presumida. A migração para o Lucro Real é altamente recomendada.\n`;
   }
   
@@ -65,7 +65,7 @@ export function taxAuditToMarkdown(state: AppState): string {
     md += `2. **Otimização:** Você já está no regime de menor carga nominal.\n`;
   }
 
-  if (state.tax.regime === "simples" && rbAnual > SIMPLES_SUBLIMITE_ESTADUAL) {
+  if (currentRegime === "simples" && rbAnual > SIMPLES_SUBLIMITE_ESTADUAL) {
     md += `3. **Sublimite do Simples:** Atenção! Acima de ${fmtBRL(SIMPLES_SUBLIMITE_ESTADUAL)} o ICMS/ISS é recolhido por fora (regime normal).\n`;
   }
 
