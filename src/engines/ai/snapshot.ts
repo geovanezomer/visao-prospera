@@ -566,8 +566,8 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     );
     if (t.issDeducoes)
       regLines.push(`- **Deduções ISS (materiais/subempreitada):** ${brl(t.issDeducoes)}`);
-    if (built?.tax?.totalAnual !== undefined)
-      regLines.push(`- **Carga tributária total apurada (ano):** ${brl(built.tax.totalAnual)}`);
+    if (built?.tax?.annual !== undefined)
+      regLines.push(`- **Carga tributária total apurada (ano):** ${brl(built.tax.annual)}`);
   }
 
   // ----- Comparativo de eras da Reforma Tributária (seção separada para dedup com simular_transicao_reforma) -----
