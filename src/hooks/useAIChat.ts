@@ -293,6 +293,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
             runTool(name, args, state, simHasChanges ? simulatedState : undefined, simParams),
           {
             signal: ac.signal,
+            metaTools: config.useMetaTools,
             onProgress: (e) => {
               if (e.type === "tool") {
                 collected.push(e.call);
