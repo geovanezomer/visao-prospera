@@ -111,13 +111,13 @@ export function calcPresumido(state: AppState): MonthlyTax {
       ibs = 0;
     if (reforma.cbsPct > 0) {
       const dCbs = cbsValor(r, reforma.cbsPct);
-      const cCbs = cbsValor(cpvMonthly[i], reforma.cbsPct) + saldoCBS;
+      const cCbs = cbsValor(cpvMonthly[i], cbsCredPct) + saldoCBS;
       cbs = Math.max(0, dCbs - cCbs);
       saldoCBS = Math.max(0, cCbs - dCbs);
     }
     if (reforma.ibsPct > 0) {
       const dIbs = ibsValor(r, reforma.ibsPct);
-      const cIbs = ibsValor(cpvMonthly[i], reforma.ibsPct) + saldoIBS;
+      const cIbs = ibsValor(cpvMonthly[i], ibsCredPct) + saldoIBS;
       ibs = Math.max(0, dIbs - cIbs);
       saldoIBS = Math.max(0, cIbs - dIbs);
     }
