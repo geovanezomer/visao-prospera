@@ -15,6 +15,7 @@ import { computeNetDebt } from "./shared";
 import { buildForecast, ForecastConfig, DEFAULT_FORECAST_CFG } from "./forecast";
 import { computeStrategic, StrategicResult } from "./strategic";
 import { sum } from "./format";
+import { vplExcel } from "./external";
 
 export type ValuationMethod = "multiples" | "dcf" | "blended";
 export type ConfidenceGrade = "A" | "B" | "C" | "D" | "E";
@@ -211,10 +212,9 @@ function buildDCF(
   );
   const waccMonthly = Math.pow(1 + waccAnnual, 1 / 12) - 1;
 
-  let npvFlows = 0;
-  for (let t = 0; t < fcfProjected.length; t++) {
-    npvFlows += fcfProjected[t] / Math.pow(1 + waccMonthly, t + 1);
-  }
+  // VPL Excel: desconta cada fcfProjected[t] em (1+w)^(t+1) — convenção padrão de DCF.
+  const npvRaw = vplExcel(waccMonthly, ...fcfProjected);
+  const npvFlows = npvRaw instanceof Error ? 0 : (npvRaw as number);
 
   // Valor terminal por Gordon. Spread mínimo de 0,5% (V7: alinhado com a UI).
   const lastYearFCF = fcfProjected.slice(-12).reduce((a, b) => a + b, 0);

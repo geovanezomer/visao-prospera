@@ -238,7 +238,7 @@ const REGRAS: Record<MotivoRescisao, RegrasMotivo> = {
   },
 };
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
+import { round2 } from "./utils";
 
 /** Aviso prévio proporcional (Lei 12.506/2011): 30 + 3 dias por ano completo (máx 90). */
 export function diasAvisoProporcional(anos: number): number {

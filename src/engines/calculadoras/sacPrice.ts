@@ -39,8 +39,8 @@ export function taxaAnualParaMensal(taxaAnualPct: number): number {
   return Math.pow(1 + taxaAnualPct / 100, 1 / 12) - 1;
 }
 
-// Arredonda em centavos para evitar drift de ponto flutuante em prazos longos.
-const round2 = (n: number) => Math.round(n * 100) / 100;
+import { parcela } from "@/engines/finance/external";
+import { round2 } from "./utils";
 
 export function calcularSAC(pv: number, taxaMensal: number, n: number): ResultadoSistema {
   const amort = pv / n;
@@ -73,9 +73,10 @@ export function calcularSAC(pv: number, taxaMensal: number, n: number): Resultad
 
 export function calcularPRICE(pv: number, taxaMensal: number, n: number): ResultadoSistema {
   const i = taxaMensal;
-  const parcelaFixa = round2(
-    i === 0 ? pv / n : (pv * (i * Math.pow(1 + i, n))) / (Math.pow(1 + i, n) - 1),
-  );
+  // Usa PMT (formulajs) via wrapper PT-BR. Excel retorna negativo para PV positivo
+  // (saída de caixa); invertemos o sinal para obter a parcela como valor positivo.
+  const pmt = parcela(i, n, pv);
+  const parcelaFixa = round2(pmt instanceof Error ? pv / n : -(pmt as number));
   let saldo = pv;
   const parcelas: LinhaAmortizacao[] = [];
   let totalPago = 0;
