@@ -132,7 +132,14 @@ function buildMultiples(state: AppState, params: ValuationParams, m: Precomputed
 
   const evFromEbitda = Math.max(0, ebitda) * Math.max(0, params.evEbitdaMultiple);
   const evFromRevenue = Math.max(0, revenue) * Math.max(0, params.evRevenueMultiple);
+  // P/L produz EQUITY VALUE (não EV). Para entrar no blend de Enterprise Values
+  // sem dupla dedução de dívida depois (Equity = EV − nd), convertemos:
+  //   EV_implícito_PL = Equity_PL + Dívida Líquida.
+  // Auditoria bug #1 (jun/2026): antes era somado direto como EV, causando
+  // dupla penalização pela dívida em empresas alavancadas.
+  const nd = netDebt(state);
   const equityFromPL = Math.max(0, ll) * Math.max(0, params.plMultiple);
+  const evFromPL = equityFromPL > 0 ? equityFromPL + nd : 0;
 
   // pesos: EBITDA 50% · Receita 30% · P/L 20%. Renormaliza pelos que > 0.
   const wE = ebitda > 0 && params.evEbitdaMultiple > 0 ? 0.5 : 0;
@@ -140,7 +147,7 @@ function buildMultiples(state: AppState, params: ValuationParams, m: Precomputed
   const wL = ll > 0 && params.plMultiple > 0 ? 0.2 : 0;
   const wTotal = wE + wR + wL || 1;
   const blendedEnterpriseValue =
-    (evFromEbitda * wE + evFromRevenue * wR + equityFromPL * wL) / wTotal;
+    (evFromEbitda * wE + evFromRevenue * wR + evFromPL * wL) / wTotal;
 
   return { ebitda, revenue, ll, evFromEbitda, evFromRevenue, equityFromPL, blendedEnterpriseValue };
 }
