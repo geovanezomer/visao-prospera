@@ -7,6 +7,33 @@
 import { TaxEra, TaxConfig } from "../types";
 import { getReformaTransicaoIbsMult, getReformaTransicaoIcmsIssMult } from "../taxDefaults";
 
+// [CBS/IBS] Créditos presumidos quando o fornecedor é Simples Nacional
+// (sem destaque na nota). O comprador no Lucro Real/Presumido não pode
+// tomar crédito da alíquota cheia — apenas dos percentuais abaixo.
+// Valores provisórios usados pelo mercado até regulamentação definitiva
+// (referência: conciliaai-ibs-cbs / LC 214/2025).
+export const ALIQ_PRESUMIDA_CBS_SN = 3.0;
+export const ALIQ_PRESUMIDA_IBS_SN = 1.2;
+
+/** [CBS/IBS] Retorna a alíquota EFETIVA de crédito CBS sobre o CPV (em %),
+ *  ponderando a parcela de fornecedores SN (crédito presumido) e a parcela
+ *  do regime regular (crédito = alíquota cheia). Capeada na alíquota cheia
+ *  para o caso de fases de teste (ex: CBS 0,9% em 2026, onde 3% > cheia). */
+export function getCbsCredCpvPct(cbsPct: number, snFornecedorPct: number): number {
+  if (cbsPct <= 0) return 0;
+  const snFrac = Math.max(0, Math.min(100, snFornecedorPct ?? 0)) / 100;
+  const presumida = Math.min(ALIQ_PRESUMIDA_CBS_SN, cbsPct);
+  return (1 - snFrac) * cbsPct + snFrac * presumida;
+}
+
+/** [CBS/IBS] Idem para IBS — ver `getCbsCredCpvPct`. */
+export function getIbsCredCpvPct(ibsPct: number, snFornecedorPct: number): number {
+  if (ibsPct <= 0) return 0;
+  const snFrac = Math.max(0, Math.min(100, snFornecedorPct ?? 0)) / 100;
+  const presumida = Math.min(ALIQ_PRESUMIDA_IBS_SN, ibsPct);
+  return (1 - snFrac) * ibsPct + snFrac * presumida;
+}
+
 /** Parâmetros vigentes da reforma para uma dada era.
  *  - cbsPct, ibsPct: alíquotas de débito sobre a receita bruta (%).
  *  - pisCofinsMult, icmsIssMult: multiplicador (0..1) sobre o que seria devido no sistema antigo.
