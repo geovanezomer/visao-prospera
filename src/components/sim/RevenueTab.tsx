@@ -683,5 +683,6 @@ function RevenueTable({
         </tbody>
       </table>
     </div>
+    </>
   );
 }
