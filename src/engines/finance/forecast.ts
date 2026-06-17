@@ -4,6 +4,7 @@ import { calcIndicators } from "./indicators";
 import { effectiveMonthValues, isCpvCost } from "./costs";
 import { resolveEffectiveRegime } from "./regime";
 import { sum } from "./format";
+import { vplClassico } from "./external";
 
 export interface ForecastMonth {
   idx: number; // 0..N-1

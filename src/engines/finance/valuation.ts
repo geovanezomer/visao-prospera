@@ -15,6 +15,7 @@ import { computeNetDebt } from "./shared";
 import { buildForecast, ForecastConfig, DEFAULT_FORECAST_CFG } from "./forecast";
 import { computeStrategic, StrategicResult } from "./strategic";
 import { sum } from "./format";
+import { vplExcel } from "./external";
 
 export type ValuationMethod = "multiples" | "dcf" | "blended";
 export type ConfidenceGrade = "A" | "B" | "C" | "D" | "E";
