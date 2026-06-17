@@ -6,7 +6,7 @@
 // Números reais (valor, %) vêm do briefing — NUNCA do texto da IA.
 // =====================================================================
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
+  Database,
   RefreshCw,
   Sparkles,
   TriangleAlert,
@@ -21,6 +22,7 @@ import {
 import type { Briefing } from "@/engines/finance/briefing";
 import type { IndicadorKey } from "@/data/thresholds";
 import { useDiagnosticoIA } from "@/hooks/useDiagnosticoIA";
+import { readTelemetry, clearTelemetry } from "@/engines/ai/diagnosticoTelemetry";
 
 // Labels humanos dos indicadores — usados nos chips.
 const INDICADOR_LABEL: Record<IndicadorKey, string> = {
