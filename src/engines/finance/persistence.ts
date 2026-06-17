@@ -1,7 +1,13 @@
 // Camada de persistência unificada: IndexedDB (principal) com fallback
 // silencioso para localStorage. Mantém compatibilidade com as chaves
-// legadas (gzfp:state:*, gzfp:scenarios:*, gzfp:draft:*, gz-finance-scenarios-*)
+// (gzfp:state:*, gzfp:scenarios:*, gzfp:draft:*, gz-finance-scenarios-*)
 // migrando automaticamente no primeiro acesso.
+//
+// NOTA: o prefixo `gzfp:` é legado (nome antigo do projeto) e está
+// intencionalmente preservado em TODAS as chaves de storage e no
+// BroadcastChannel — renomear orfanaria os rascunhos e cenários já
+// salvos no navegador dos clientes. A extensão do arquivo exposto ao
+// usuário (`.finnance`) já é a correta; este prefixo é interno.
 //
 // API pública intencionalmente síncrona-amigável: hooks consomem
 // `loadKey(key)` / `saveKey(key, value)` retornando Promises, com
