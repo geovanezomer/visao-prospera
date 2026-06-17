@@ -98,6 +98,14 @@ export interface CostLine {
   subcategory?: CostSubcategory;
   values: Months;
   fixed: boolean;
+  /**
+   * Comportamento da linha para MC/PE — desacopla a NATUREZA contábil (category)
+   * do COMPORTAMENTO em relação ao volume. Ex.: folha CLT no CPV de uma prestadora
+   * de serviços é "custo_vendas" contabilmente, mas é FIXO no curto prazo. Quando
+   * definido, sobrescreve a classificação automática derivada de `category`.
+   * Default: derivado da categoria (custo_vendas/direto_venda/variavel = variável; outros = fixo).
+   */
+  comportamento?: "fixo" | "variavel";
   custom?: boolean;
   /** Linha de folha CLT. Aplica encargos automáticos (INSS Patr + FGTS + RAT/S + provisão 13º/férias). */
   encargosAuto?: boolean;
