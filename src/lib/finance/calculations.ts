@@ -729,7 +729,10 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
       const pddLiq = Math.max(0, pdd[i] - (revArray[i] || 0));
       pdd[i] = pddLiq;
       despOp[i] += pddLiq;
-      custosFixos[i] += pddLiq;
+      // PDD escala com a receita (% da inadimplência sobre a receita bruta) — é custo VARIÁVEL,
+      // não fixo. Classificar como fixo superestima o Ponto de Equilíbrio e distorce a Margem
+      // de Contribuição.
+      custosVariaveis[i] += pddLiq;
     }
     despesasPorCategoria["PDD — Perdas por inadimplência (líq. recup.)"] = pdd.slice();
   }
