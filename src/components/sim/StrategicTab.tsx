@@ -1,5 +1,4 @@
 import {
-import { useFinance } from "@/engines/finance/AppStateContext";
   AppState,
   StrategicAnswers,
   ClientesPara80,
