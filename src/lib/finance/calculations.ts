@@ -1080,7 +1080,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     conversaoEbitdaCaixa: ebitdaAnual > 0 ? safePct(fcf, ebitdaAnual) : 0,
     gao, qualidadeLucro,
     receitaPorColaborador, faturamentoPorColaborador, ebitdaPorColaborador, lucroPorColaborador, custoPessoalSobreReceita,
-    margemSeguranca, dscr,
+    margemSeguranca, dscr, dscrAmortizacoesInformadas,
     dividaOnerosa: D, passivoCirculante, ativoCirculante,
   };
 }
