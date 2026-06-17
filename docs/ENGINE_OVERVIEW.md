@@ -59,6 +59,8 @@ src/engines/
 │   ├── dre.ts                buildDRE — Demonstração de Resultados
 │   ├── indicators.ts         calcIndicators — margens, ROIC, NCG, payback, FCF
 │   ├── calculations.ts       Barrel interno (DRE + indicators + diagnose)
+│   ├── financialModel.ts     SSOT pure-function — agrega regime+DRE+ind+cf+valuation+health (cache por hash)
+│   ├── useFinanceModel.ts    Hook React que memoiza buildFinancialModel(state)
 │   ├── diagnose.ts           Heurísticas de alertas (EBIT≤0, FCF<0, …)
 │   ├── cashflow.ts           DFC mensal + burn/runway
 │   ├── costs.ts              Soma e classificação de custos
