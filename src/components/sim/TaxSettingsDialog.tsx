@@ -33,7 +33,8 @@ const STEPS: { key: StepKey; label: string; icon: typeof Settings }[] = [
   { key: "revisao",   label: "Revisão",     icon: Check     },
 ];
 
-export function TaxSettingsDialog({ state, update }: Props) {
+export function TaxSettingsDialog(()) {
+  const { state, update } = useFinance();
   const [open, setOpen] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
   const ov = state.tax.ratesOverride ?? {};
@@ -299,7 +300,7 @@ function StepSimples({ ov, patchOv }: { ov: TaxRatesOverride; patchOv: (p: Parti
 
 function StepPresumido({
   ov, patchOv, state, update,
-}: { ov: TaxRatesOverride; patchOv: (p: Partial<TaxRatesOverride>) => void; state: AppState; update: Props["update"] }) {
+}: { ov: TaxRatesOverride; patchOv: (p: Partial<TaxRatesOverride>) => void; state: AppState; update: FinanceUpdater }) {
   return (
     <div className="space-y-4">
       <Callout tone="info" title="Como funciona o Lucro Presumido?">
@@ -369,7 +370,7 @@ function StepPresumido({
 
 function StepReforma({
   ov, patchOv, state, update,
-}: { ov: TaxRatesOverride; patchOv: (p: Partial<TaxRatesOverride>) => void; state: AppState; update: Props["update"] }) {
+}: { ov: TaxRatesOverride; patchOv: (p: Partial<TaxRatesOverride>) => void; state: AppState; update: FinanceUpdater }) {
   return (
     <div className="space-y-4">
       <Callout tone="info" title="Reforma Tributária (EC 132/2023 + LC 214/2025)">
