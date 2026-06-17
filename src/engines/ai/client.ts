@@ -220,7 +220,7 @@ export async function* streamChat(
 export interface ToolCall {
   id: string;
   name: string;
-  arguments: any;
+  arguments: Record<string, unknown>;
   result?: string;
 }
 
@@ -229,10 +229,16 @@ export interface ToolRoundResult {
   toolCalls: ToolCall[];
 }
 
+// Formato bruto das tool_calls retornadas pela API OpenAI-compatível.
+interface OpenAIToolCallRaw {
+  id: string;
+  function: { name: string; arguments: string };
+}
+
 export async function chatWithTools(
   cfg: AIConfig,
   initialMessages: LLMMessage[],
-  runTool: (name: string, args: any) => string | Promise<string>,
+  runTool: (name: string, args: Record<string, unknown>) => string | Promise<string>,
   opts?: {
     maxRounds?: number;
     signal?: AbortSignal;
@@ -250,7 +256,7 @@ export async function chatWithTools(
     try {
       const { asOpenAITools, asAnthropicTools } = await import("./tools");
       const url = anth ? `${cfg.baseUrl}/messages` : `${cfg.baseUrl}/chat/completions`;
-      let body: any;
+      let body: Record<string, unknown>;
       if (anth) {
         const { system, rest } = splitSystemAndMessages(messages);
         body = {
@@ -286,14 +292,18 @@ export async function chatWithTools(
       const text = await res.text().catch(() => "");
       throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
     }
-    const json = await res.json();
+    const json = (await res.json()) as Record<string, unknown>;
 
     if (anth) {
       // Resposta Anthropic: { content: [{type:"text"|"tool_use", ...}], stop_reason }
-      const blocks: any[] = Array.isArray(json?.content) ? json.content : [];
-      const toolUses = blocks.filter((b) => b.type === "tool_use");
+      type AnthRespBlock =
+        | { type: "text"; text?: string }
+        | { type: "tool_use"; id: string; name: string; input?: Record<string, unknown> };
+      const rawBlocks = (json as { content?: unknown }).content;
+      const blocks: AnthRespBlock[] = Array.isArray(rawBlocks) ? (rawBlocks as AnthRespBlock[]) : [];
+      const toolUses = blocks.filter((b): b is Extract<AnthRespBlock, { type: "tool_use" }> => b.type === "tool_use");
       const textOut = blocks
-        .filter((b) => b.type === "text")
+        .filter((b): b is Extract<AnthRespBlock, { type: "text" }> => b.type === "text")
         .map((b) => b.text || "")
         .join("");
 
@@ -306,8 +316,9 @@ export async function chatWithTools(
         }));
         messages.push({ role: "assistant", content: textOut, tool_calls: tcs });
         for (const tu of toolUses) {
-          const result = await runTool(tu.name, tu.input || {});
-          const call: ToolCall = { id: tu.id, name: tu.name, arguments: tu.input || {}, result };
+          const input = tu.input || {};
+          const result = await runTool(tu.name, input);
+          const call: ToolCall = { id: tu.id, name: tu.name, arguments: input, result };
           calls.push(call);
           opts?.onProgress?.({ type: "tool", call });
           messages.push({ role: "tool", tool_call_id: tu.id, name: tu.name, content: result });
@@ -320,17 +331,19 @@ export async function chatWithTools(
     }
 
     // OpenAI-compatível.
-    const choice = json?.choices?.[0];
-    const msg = choice?.message;
+    const choices = (json as { choices?: Array<{ message?: { content?: string; tool_calls?: OpenAIToolCallRaw[] } }> }).choices;
+    const msg = choices?.[0]?.message;
     const toolCalls = msg?.tool_calls;
 
     if (toolCalls && toolCalls.length > 0) {
-      messages.push({ role: "assistant", content: msg.content || "", tool_calls: toolCalls });
+      messages.push({ role: "assistant", content: msg?.content || "", tool_calls: toolCalls });
       for (const tc of toolCalls) {
-        let args: any = {};
+        let args: Record<string, unknown> = {};
         try {
           args = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {};
-        } catch {}
+        } catch {
+          // arguments JSON inválido — modelo recebe sinal pelo resultado da tool
+        }
         const result = await runTool(tc.function.name, args);
         const call: ToolCall = { id: tc.id, name: tc.function.name, arguments: args, result };
         calls.push(call);
