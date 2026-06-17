@@ -6,6 +6,7 @@ import { buildDRE } from "@/engines/finance";
 import { MoneyInput, PctInput, StatCard, SectionTitle, HelpTip } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { PrazoTable } from "./PrazoTable";
+import { MonthlyCardList } from "./MonthlyCardList";
 
 function fixedBase(values: number[]): number {
   if (!values?.length) return 0;
