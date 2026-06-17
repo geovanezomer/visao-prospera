@@ -162,7 +162,14 @@ function shockState(s: AppState, cfg: MCConfig, shocks: number[]): AppState {
 
 function distFrom(values: number[], label: string): MCDist {
   const sorted = values.slice().sort((a, b) => a - b);
-  const pct = (p: number) => sorted[Math.min(sorted.length - 1, Math.max(0, Math.floor((p / 100) * sorted.length)))];
+  // Auditoria #12: percentil sem viés — índice é floor(p × (n−1)) e não floor(p × n).
+  // A forma anterior deslocava P95 em ~0,5pp em 200 iterações.
+  const pct = (p: number) => {
+    const n = sorted.length;
+    if (n === 0) return 0;
+    const idx = Math.min(n - 1, Math.max(0, Math.floor((p / 100) * (n - 1))));
+    return sorted[idx];
+  };
   const mean = sum(sorted) / sorted.length;
   const median = pct(50);
   const probPositive = sorted.filter((v) => v > 0).length / sorted.length;

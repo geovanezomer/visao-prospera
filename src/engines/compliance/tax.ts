@@ -1,5 +1,5 @@
 import type { AppState } from "@/engines/finance/types";
-import { buildDRE, compareRegimes } from "@/engines/finance/calculations";
+import { buildDRE, compareRegimes, resolveEffectiveRegime } from "@/engines/finance/calculations";
 import { SIMPLES_SUBLIMITE_ESTADUAL } from "@/engines/finance/taxDefaults";
 import { sum, fmtBRL } from "@/engines/finance/format";
 
@@ -34,10 +34,13 @@ export function regimeComparisonToMarkdown(state: AppState): string {
 export function taxAuditToMarkdown(state: AppState): string {
   const era = state.tax.era ?? "atual";
   const rbAnual = sum(state.revenue.bruta);
-  const { dre } = buildDRE(state, state.tax.regime);
+  // Auditoria #5: usa regime EFETIVO (consistente com Indicadores/Diagnóstico/Valuation).
+  // Quando RBT12 estoura o limite do Simples, o regime efetivo migra para Presumido
+  // e a auditoria precisa refletir isso.
+  const currentRegime = resolveEffectiveRegime(state);
+  const { dre } = buildDRE(state, currentRegime);
   const llAnual = sum(dre.lucroLiquido);
   const regimes = compareRegimes(state, era);
-  const currentRegime = state.tax.regime;
 
   let md = `## Diagnóstico Tributário Detalhado\n\n`;
   md += `_Análise referente à era: **${era}** ${era !== "atual" ? "(Reforma Tributária)" : ""}_\n`;
@@ -52,7 +55,7 @@ export function taxAuditToMarkdown(state: AppState): string {
 
   md += `### 🔍 Análise de Oportunidades\n`;
   
-  if (state.tax.regime === "presumido" && llAnual < (rbAnual * 0.10)) {
+  if (currentRegime === "presumido" && llAnual < (rbAnual * 0.10)) {
     md += `1. **Alerta de Lucro Real:** Seu lucro líquido (${((llAnual/rbAnual)*100).toFixed(1)}%) está abaixo da margem presumida. A migração para o Lucro Real é altamente recomendada.\n`;
   }
   
@@ -62,7 +65,7 @@ export function taxAuditToMarkdown(state: AppState): string {
     md += `2. **Otimização:** Você já está no regime de menor carga nominal.\n`;
   }
 
-  if (state.tax.regime === "simples" && rbAnual > SIMPLES_SUBLIMITE_ESTADUAL) {
+  if (currentRegime === "simples" && rbAnual > SIMPLES_SUBLIMITE_ESTADUAL) {
     md += `3. **Sublimite do Simples:** Atenção! Acima de ${fmtBRL(SIMPLES_SUBLIMITE_ESTADUAL)} o ICMS/ISS é recolhido por fora (regime normal).\n`;
   }
 

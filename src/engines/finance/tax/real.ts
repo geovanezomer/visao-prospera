@@ -45,7 +45,38 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   // total — a regra de exclusão é específica de IRPJ/CSLL.
   const { financeiras: rendFin, financeirasIrpjBase: rendFinTrib } = splitReceitasFinanceiras(state);
   const rendFinExclusivo = rendFin.map((v, i) => v - (rendFinTrib[i] || 0));
-  const baseIRPJMensal = baseLairMonthly.map((l, i) => Math.max(0, l - (rendFinExclusivo[i] || 0)));
+
+  // Auditoria #8: carryforward de prejuízo fiscal (Lei 9.065/95 art. 42).
+  // Apuração trimestral: prejuízo de trimestres anteriores compensa até 30% do lucro
+  // dos trimestres seguintes. Sem isso, empresas sazonais com Q1 negativo e Q2+ positivo
+  // pagam IRPJ/CSLL sobre o bruto, sem compensação.
+  const baseSignedMonthly = baseLairMonthly.map((l, i) => l - (rendFinExclusivo[i] || 0));
+  const baseIRPJMensal = zeros12();
+  let prejAcum = 0;
+  for (let q = 0; q < 4; q++) {
+    const i0 = q * 3;
+    const sumQ = baseSignedMonthly[i0] + baseSignedMonthly[i0 + 1] + baseSignedMonthly[i0 + 2];
+    if (sumQ <= 0) {
+      prejAcum += -sumQ; // acumula prejuízo do trimestre
+      // baseIRPJMensal[i0..i0+2] permanecem 0
+    } else {
+      const compensacao = Math.min(sumQ * 0.30, prejAcum);
+      prejAcum -= compensacao;
+      const ajustado = sumQ - compensacao;
+      // Distribui proporcionalmente aos meses positivos do trimestre.
+      const posSum = Math.max(0, baseSignedMonthly[i0])
+        + Math.max(0, baseSignedMonthly[i0 + 1])
+        + Math.max(0, baseSignedMonthly[i0 + 2]);
+      if (posSum > 0) {
+        for (let k = 0; k < 3; k++) {
+          const pos = Math.max(0, baseSignedMonthly[i0 + k]);
+          baseIRPJMensal[i0 + k] = ajustado * (pos / posSum);
+        }
+      } else {
+        baseIRPJMensal[i0] = baseIRPJMensal[i0 + 1] = baseIRPJMensal[i0 + 2] = ajustado / 3;
+      }
+    }
+  }
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
 
   // Auditoria Jun/2026: ratear créditos anuais por mês
@@ -62,7 +93,10 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const COFINS_RF = 0.04;
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
+  // Auditoria #6: saldos credores acumuláveis também para PIS/COFINS (como já existia para ICMS).
+  // Em empresas sazonais, créditos do mês excedem o débito e devem rolar para meses seguintes.
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
+  let saldoCredorPIS = 0, saldoCredorCOFINS = 0;
   const monthlyVendas = zeros12();
   const monthlyLucro = zeros12();
   const monthly = trib.map((r, i) => {
@@ -70,8 +104,15 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     const irpj = lair * irpjAliq;
     const adicional = adicionalMensal[i];
     const csll = lair * csllAliq;
-    const pisVenda = Math.max(0, r * pisAliq - pisCreditoMensal);
-    const cofinsVenda = Math.max(0, r * cofinsAliq - cofinsCreditoMensal);
+    // Auditoria #6: PIS/COFINS não-cumulativos com saldo credor acumulável (como ICMS).
+    const debitoPis = r * pisAliq;
+    const creditoPisMes = pisCreditoMensal + saldoCredorPIS;
+    const pisVenda = Math.max(0, debitoPis - creditoPisMes);
+    saldoCredorPIS = Math.max(0, creditoPisMes - debitoPis);
+    const debitoCofins = r * cofinsAliq;
+    const creditoCofinsMes = cofinsCreditoMensal + saldoCredorCOFINS;
+    const cofinsVenda = Math.max(0, debitoCofins - creditoCofinsMes);
+    saldoCredorCOFINS = Math.max(0, creditoCofinsMes - debitoCofins);
     const pisRF = (rendFin[i] || 0) * PIS_RF;
     const cofinsRF = (rendFin[i] || 0) * COFINS_RF;
     const pis = (pisVenda + pisRF) * reforma.pisCofinsMult;

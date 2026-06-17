@@ -163,6 +163,12 @@ export interface CapitalStructure {
   /** Lista de Capex ativados ao longo do ano. Cada item gera depreciação adicional
    *  de `valor / vidaUtilMeses` a partir do mês `mes` (1..12) até o fim do ano. */
   capexAtivacao?: CapexAtivacao[];
+  /** NCG de abertura (R$). Quando informada, ΔNCG = NCG_atual − NCG_abertura
+   *  no cálculo do FCF (auditoria #3). Default usa `capitalGiroDisponivel`. */
+  ncgAbertura?: number;
+  /** Fração da dívida onerosa que vence em CP (0..1). Default 0.30.
+   *  Usado apenas quando `passivoCirculante` não foi informado pelo consultor (auditoria #10). */
+  dividaCurtoPrazoPct?: number;
 }
 
 export interface CapexAtivacao {

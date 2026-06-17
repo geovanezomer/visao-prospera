@@ -86,7 +86,13 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   // Auditoria bug #6: usar média anual da depreciação (estava usando só janeiro,
   // o que distorce projeções quando há capex ativado no meio do ano).
   const depMensal = sum(dre.depreciacao) / 12;
-  const taxRatioBase = sum(tax.monthly) / receitaAnoBase; // alíquota efetiva sobre receita bruta
+  // Auditoria #4: separa impostos sobre venda (proporcionais à receita) dos
+  // impostos sobre lucro (proporcionais à margem). No Lucro Real, IRPJ/CSLL
+  // dependem do LAIR, não da receita — manter um ratio único distorce projeções
+  // quando a margem projetada muda em relação ao ano-base.
+  const taxVendasRatio = sum(tax.monthlyVendas ?? []) / receitaAnoBase;
+  const lucroAnoBase = sum(dre.lair) || 1;
+  const taxLucroRatio = sum(tax.monthlyLucro ?? []) / Math.max(1, lucroAnoBase); // % sobre LAIR
   // Resultado financeiro projetado como proporção da receita (aproximação razoável
   // enquanto a estrutura de dívida não é re-projetada). Inclui juros pagos − juros recebidos.
   const resultadoFinanceiroRatioBase = sum(dre.resultadoFinanceiro) / receitaAnoBase;
@@ -131,6 +137,8 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
 
   const g = cfg.crescimentoMensalPct / 100;
   // Auditoria: aplica fatores ANUAIS elevados à fração do ano para evitar erro composto mensal.
+  // Auditoria #15: convenção contínua proporcional ao tempo (não saltos anuais discretos).
+  // Para o usuário, "5% a.a." traduz-se em ~0,407% a.m. composto, não em salto anual.
   const inflacaoFator = (i: number) => Math.pow(1 + cfg.inflacaoFixosAA / 100, i / 12);
   const escalaCpvFator = (i: number) => Math.pow(1 - cfg.ganhoEscalaCpvAA / 100, i / 12);
   const horizon = cfg.horizonteMeses;
@@ -174,7 +182,12 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     const ebitda = lucroBruto - despesasOp;
     const ebit = ebitda - depMensal;
     const resultadoFinanceiro = receita * resultadoFinanceiroRatioBase; // negativo para empresas alavancadas
-    const impostos = receita * taxRatioBase; // alíquota efetiva sobre receita (aproximação)
+    // Auditoria #4: impostos = parte sobre receita + parte sobre LAIR projetado.
+    // LAIR projetado = EBIT + resultado financeiro (antes de IRPJ/CSLL).
+    const lairProjetado = ebit + resultadoFinanceiro;
+    const impostosVendas = receita * taxVendasRatio;
+    const impostosLucro = Math.max(0, lairProjetado) * taxLucroRatio;
+    const impostos = impostosVendas + impostosLucro;
     const lucroLiquido = ebit + resultadoFinanceiro - impostos;
 
     // NCG do mês: anualiza receita e CPV do mês para PMR/PMP
@@ -186,7 +199,9 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     ncgAnterior = ncgT;
 
     const capex = (capexBase[mes] || 0) * fatorInflacao;
-    const fcl = ebitda - impostos - capex - deltaNcg;
+    // Auditoria #9: FCL (FCFE) inclui resultado financeiro (juros pagos/recebidos).
+    // Sem isso, empresas alavancadas têm FCL superestimado — alimentando VPL/TIR/DCF inflados.
+    const fcl = ebitda + resultadoFinanceiro - impostos - capex - deltaNcg;
     saldo += fcl;
 
     // Guarda final: nunca propagar NaN/Infinity para a UI mesmo que algum
