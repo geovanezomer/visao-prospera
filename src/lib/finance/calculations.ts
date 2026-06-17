@@ -1097,11 +1097,22 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // Amortização do PL pelo Lucro Contábil (período em anos) — NÃO é payback clássico.
   const amortizacaoPlPorLucro = llAnual > 1 ? Math.min(CAP_PAYBACK, PL / llAnual) : (PL <= 0 ? 0 : CAP_PAYBACK);
   const payback = amortizacaoPlPorLucro; // @deprecated alias para retrocompat
-  // FCF simplificado: EBITDA − Impostos − ΔNCG (Auditoria).
-  // ΔNCG estimado como a diferença entre a NCG atual e o capital de giro disponível.
+  // FCF OPERACIONAL (antes do CAPEX): EBITDA − Impostos − ΔNCG.
+  // Equivale ao CFO (Cash Flow from Operations) — usado no payback clássico (capacidade
+  // de geração de caixa pelo qual o CAPEX inicial é amortizado).
   const fcf = ebitdaAnual - impostosAnual - Math.max(0, ncg - capital.capitalGiroDisponivel);
-  // Payback CLÁSSICO: CAPEX inicial ÷ FCF anual. CAPEX inicial = mês 1 do plano de CAPEX
-  // + ativações marcadas no mês 1. Métrica que bancos/analistas reconhecem como "payback".
+  // CAPEX anual TOTAL: plano de CAPEX mensal + ativações do ano (todas, não só mês 1).
+  const capexAnual = sum(state.cashflow.capex ?? [])
+    + (capital.capexAtivacao ?? []).reduce((acc, ca) => acc + ((ca && (ca.valor || 0) > 0) ? (ca.valor || 0) : 0), 0);
+  // FCF APÓS CAPEX (≈ FCFF/Free Cash Flow to Firm): CFO − CAPEX. Mede caixa que
+  // sobra para credores e acionistas DEPOIS dos investimentos em ativo fixo.
+  // É a métrica correta para "Qualidade do Lucro" — empresa com EBITDA alto mas
+  // CAPEX pesado pode ter FCFF negativo apesar do lucro contábil positivo.
+  const fcfAposCapex = fcf - capexAnual;
+  // Payback CLÁSSICO: CAPEX inicial ÷ CFO anual. CAPEX inicial = mês 1 do plano de CAPEX
+  // + ativações marcadas no mês 1. Usa o CFO (antes do CAPEX recorrente) porque o
+  // próprio CAPEX inicial é o que está sendo amortizado — descontar CAPEX do denominador
+  // seria dupla contagem.
   const capexMes1 = (state.cashflow.capex?.[0] ?? 0)
     + (capital.capexAtivacao ?? []).reduce((acc, ca) => acc + (ca && ca.mes === 1 ? (ca.valor || 0) : 0), 0);
   const paybackCapex = capexMes1 > 0 && fcf > 1
@@ -1116,8 +1127,10 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // não inflar a MC e distorcer o GAO — sem o override, o GAO superestima a alavancagem.
   const mcReais = receitaLiqAnual - custosVarAnual;
   const gao = Math.abs(ebitAnual) > 1 ? Math.max(-99, Math.min(99, mcReais / ebitAnual)) : 0;
-  // Qualidade do Lucro = FCF ÷ LL. (I4) Mantém sinal quando LL≠0 (negativo expõe "lucro de papel").
-  const qualidadeLucro = Math.abs(llAnual) > 1 ? Math.max(-9, Math.min(9, fcf / llAnual)) : 0;
+  // Qualidade do Lucro = FCF APÓS CAPEX ÷ LL. Usa FCFF (não CFO) — uma empresa só converte
+  // lucro contábil em caixa LIVRE depois de financiar o CAPEX de manutenção/expansão.
+  // Negativo expõe "lucro de papel" (lucro contábil que não sobra como caixa livre).
+  const qualidadeLucro = Math.abs(llAnual) > 1 ? Math.max(-9, Math.min(9, fcfAposCapex / llAnual)) : 0;
 
   // Indicadores de produtividade por colaborador (headcount em Configurações Rápidas).
   const headcount = Math.max(0, state.numColaboradores ?? 0);
