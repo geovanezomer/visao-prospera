@@ -505,7 +505,13 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   }
 
 
-  const baseIRPJMensal = baseLairMonthly.map((l) => Math.max(0, l));
+  // [Receitas Financeiras] Rendimentos com tributação EXCLUSIVA na fonte (IRRF definitivo)
+  // não compõem o lucro tributável: subtraímos do LAIR antes de calcular IRPJ/CSLL.
+  // PIS/COFINS sobre receitas financeiras (Decreto 8.426/2015) continua incidindo sobre o
+  // total — a regra de exclusão é específica de IRPJ/CSLL.
+  const { financeiras: rendFin, financeirasIrpjBase: rendFinTrib } = splitReceitasFinanceiras(state);
+  const rendFinExclusivo = rendFin.map((v, i) => v - (rendFinTrib[i] || 0));
+  const baseIRPJMensal = baseLairMonthly.map((l, i) => Math.max(0, l - (rendFinExclusivo[i] || 0)));
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
 
   // Auditoria Jun/2026: ratear créditos anuais por mês
@@ -516,8 +522,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const csllAliq = getCsllPct(tax) / 100;
   const pisAliq = getPisNaoCumPct(tax) / 100;
   const cofinsAliq = getCofinsNaoCumPct(tax) / 100;
-  // [Receitas Financeiras] No Lucro Real não-cumulativo, PIS/COFINS sobre receitas
-  // financeiras é fixo: 0,65% (PIS) + 4% (COFINS) — Decreto 8.426/2015.
+  // PIS/COFINS sobre receitas financeiras é fixo: 0,65% + 4% (Decreto 8.426/2015).
   // Sob a reforma plena, PIS/COFINS são extintos (pisCofinsMult=0) e zera automaticamente.
   const PIS_RF = 0.0065;
   const COFINS_RF = 0.04;
