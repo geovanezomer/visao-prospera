@@ -29,15 +29,14 @@ import { cn } from "@/lib/utils";
 interface AppSidebarProps {
   activeTab: TabKey | "ai" | "calculadoras";
   setActiveTab: (tab: TabKey | "ai" | "calculadoras") => void;
-  state: AppState;
-  update: (patch: Partial<AppState> | ((s: AppState) => AppState)) => void;
   onSave: () => void;
   onOpen: () => void;
   currentFileName: string | null;
   dirty: boolean;
 }
 
-export function AppSidebar({ activeTab, setActiveTab, state, update, onSave, onOpen, currentFileName, dirty }: AppSidebarProps) {
+export function AppSidebar({ activeTab, setActiveTab, onSave, onOpen, currentFileName, dirty }: AppSidebarProps) {
+  const { state, update } = useFinance();
   const { user, logout } = useAuth();
   const { setOpenMobile } = useSidebar();
 
