@@ -404,10 +404,11 @@ export function calcPresumido(state: AppState): MonthlyTax {
 
   // [Receitas Financeiras] No Presumido, rendimentos de aplicações entram INTEGRAIS
   // na base de IRPJ/CSLL (sem o redutor de 8/32%). Aluguéis/venda de ativos vão
-  // como "operacionais" (já tratados na DRE) e não somam aqui.
-  const { financeiras: rendFin } = splitReceitasFinanceiras(state);
-  const baseIRPJMensal = trib.map((r, i) => r * baseIRPJ + (rendFin[i] || 0));
-  const baseCSLLMensal = trib.map((r, i) => r * baseCSLL + (rendFin[i] || 0));
+  // como "operacionais" (já tratados na DRE) e não somam aqui. Rendimentos com
+  // tributação EXCLUSIVA na fonte (IRRF definitivo) são excluídos da base.
+  const { financeirasIrpjBase: rendFinTrib } = splitReceitasFinanceiras(state);
+  const baseIRPJMensal = trib.map((r, i) => r * baseIRPJ + (rendFinTrib[i] || 0));
+  const baseCSLLMensal = trib.map((r, i) => r * baseCSLL + (rendFinTrib[i] || 0));
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
@@ -504,7 +505,13 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   }
 
 
-  const baseIRPJMensal = baseLairMonthly.map((l) => Math.max(0, l));
+  // [Receitas Financeiras] Rendimentos com tributação EXCLUSIVA na fonte (IRRF definitivo)
+  // não compõem o lucro tributável: subtraímos do LAIR antes de calcular IRPJ/CSLL.
+  // PIS/COFINS sobre receitas financeiras (Decreto 8.426/2015) continua incidindo sobre o
+  // total — a regra de exclusão é específica de IRPJ/CSLL.
+  const { financeiras: rendFin, financeirasIrpjBase: rendFinTrib } = splitReceitasFinanceiras(state);
+  const rendFinExclusivo = rendFin.map((v, i) => v - (rendFinTrib[i] || 0));
+  const baseIRPJMensal = baseLairMonthly.map((l, i) => Math.max(0, l - (rendFinExclusivo[i] || 0)));
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
 
   // Auditoria Jun/2026: ratear créditos anuais por mês
@@ -515,12 +522,11 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const csllAliq = getCsllPct(tax) / 100;
   const pisAliq = getPisNaoCumPct(tax) / 100;
   const cofinsAliq = getCofinsNaoCumPct(tax) / 100;
-  // [Receitas Financeiras] No Lucro Real não-cumulativo, PIS/COFINS sobre receitas
-  // financeiras é fixo: 0,65% (PIS) + 4% (COFINS) — Decreto 8.426/2015.
+  // PIS/COFINS sobre receitas financeiras é fixo: 0,65% + 4% (Decreto 8.426/2015).
   // Sob a reforma plena, PIS/COFINS são extintos (pisCofinsMult=0) e zera automaticamente.
   const PIS_RF = 0.0065;
   const COFINS_RF = 0.04;
-  const { financeiras: rendFin } = splitReceitasFinanceiras(state);
+  
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
@@ -644,23 +650,37 @@ export interface DRE {
 
 /**
  * Classifica as linhas de `revenue.receitasFinanceiras` por natureza contábil:
- * - `financeiras`: rendimento de aplicações e ids customizados → entram no Resultado Financeiro
- *   e são tributadas (PIS/COFINS no Real, base de IRPJ/CSLL no Presumido).
- * - `operacionais`: aluguéis recebidos e venda de ativos → entram acima do EBITDA
- *   como "Outras Receitas Operacionais".
+ * - `financeiras`: rendimento de aplicações e ids customizados → entram no Resultado Financeiro.
+ * - `operacionais`: aluguéis recebidos e venda de ativos → entram acima do EBITDA.
+ * - `financeirasIrpjBase`: subconjunto de `financeiras` que entra na base de IRPJ/CSLL —
+ *   EXCLUI linhas marcadas com `tributacaoExclusivaFonte` (IRRF definitivo em aplicações
+ *   financeiras; gross-up não compõe o lucro tributável conforme RIR/1999).
  *
  * Critério por id (default p/ retrocompat: financeira).
  */
-export function splitReceitasFinanceiras(state: AppState): { financeiras: number[]; operacionais: number[] } {
+export function splitReceitasFinanceiras(state: AppState): {
+  financeiras: number[];
+  operacionais: number[];
+  financeirasIrpjBase: number[];
+} {
   const financeiras = zeros12();
   const operacionais = zeros12();
+  const financeirasIrpjBase = zeros12();
   const OPERACIONAIS_IDS = new Set(["alugueis", "venda_ativos"]);
   for (const rf of state.revenue.receitasFinanceiras ?? []) {
     const vals = rf.valores ?? [];
-    const bucket = OPERACIONAIS_IDS.has(rf.id) ? operacionais : financeiras;
-    for (let i = 0; i < 12; i++) bucket[i] += Number(vals[i]) || 0;
+    const isOperacional = OPERACIONAIS_IDS.has(rf.id);
+    const exclusivaFonte = !!rf.tributacaoExclusivaFonte;
+    for (let i = 0; i < 12; i++) {
+      const v = Number(vals[i]) || 0;
+      if (isOperacional) operacionais[i] += v;
+      else {
+        financeiras[i] += v;
+        if (!exclusivaFonte) financeirasIrpjBase[i] += v;
+      }
+    }
   }
-  return { financeiras, operacionais };
+  return { financeiras, operacionais, financeirasIrpjBase };
 }
 
 export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: MonthlyTax } {

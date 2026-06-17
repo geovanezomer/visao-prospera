@@ -49,6 +49,13 @@ export interface RevenueDeducao {
   valores: Months;
   /** Se true, o mesmo valor é aplicado em todos os 12 meses (modo fixo). */
   fixed?: boolean;
+  /**
+   * Receitas Financeiras apenas: marca rendimentos sujeitos à tributação EXCLUSIVA na fonte
+   * (IRRF definitivo em aplicações financeiras de renda fixa/variável). Quando true, o
+   * rendimento NÃO entra na base de IRPJ/CSLL do Lucro Presumido nem do Lucro Real
+   * (evita superestimar imposto em PMEs com caixa ocioso relevante). Default: false.
+   */
+  tributacaoExclusivaFonte?: boolean;
 }
 
 export interface Revenue {
