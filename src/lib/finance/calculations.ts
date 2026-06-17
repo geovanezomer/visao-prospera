@@ -985,8 +985,14 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const cpvDiario = sum(dre.cpv) / 360;
   const pme = estoqueMedio > 0 && cpvDiario > 0 ? estoqueMedio / cpvDiario : 0;
   const cicloFinanceiro = revenue.pmr + pme - revenue.pmp;
-  // NCG: usa CR + Estoque − Fornecedores; fallback estimado se zerado
-  const crEstimado = capital.contasReceber > 0 ? capital.contasReceber : (receitaBrutaAnual / 360) * revenue.pmr;
+  // NCG: usa CR + Estoque − Fornecedores; fallback estimado se zerado.
+  // Auditoria: usar RECEITA LÍQUIDA (após deduções comerciais e impostos sobre venda)
+  // em vez de receita bruta evita superestimar o CR em 8–15% para regimes com carga
+  // tributária alta (ex.: Presumido com ISS 5% + PIS/COFINS). O cliente deve o preço
+  // líquido de devoluções/descontos incondicionais, não o faturamento bruto contábil.
+  const crEstimado = capital.contasReceber > 0
+    ? capital.contasReceber
+    : (receitaLiqAnual / 360) * revenue.pmr;
   const fornecEstimado = capital.fornecedores > 0
     ? capital.fornecedores
     : (sum(dre.cpv) / 360) * revenue.pmp;
