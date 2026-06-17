@@ -526,7 +526,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   // Sob a reforma plena, PIS/COFINS são extintos (pisCofinsMult=0) e zera automaticamente.
   const PIS_RF = 0.0065;
   const COFINS_RF = 0.04;
-  const { financeiras: rendFin } = splitReceitasFinanceiras(state);
+  
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
   let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
