@@ -274,14 +274,14 @@ export async function chatWithTools(
           stream: false,
           ...(system ? { system } : {}),
           messages: toAnthropicMessages(rest),
-          tools: asAnthropicTools(),
+          tools: anthropicTools,
         };
       } else {
         body = {
           model: cfg.model,
           messages,
           temperature: cfg.temperature,
-          tools: asOpenAITools(),
+          tools: openAiTools,
           tool_choice: "auto",
           stream: false,
         };
