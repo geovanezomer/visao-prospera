@@ -79,6 +79,7 @@ export interface AIConfig {
   temperature: number;
   includeSnapshot: boolean;
   useTools: boolean; // function calling (snapshot lazy)
+  useMetaTools: boolean; // tool deferral: expõe apenas tool_search/tool_invoke
   soul: string; // identidade editável do agente
   skills: Skill[]; // habilidades modulares on/off
   extraSystemPrompt: string; // suplemento livre (compat legado)
