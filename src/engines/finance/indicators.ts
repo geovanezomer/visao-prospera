@@ -199,9 +199,13 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const ativoCirculante = capital.ativoCirculante > 0
     ? capital.ativoCirculante
     : capital.disponibilidades + crEstimado + capital.estoques;
+  // Auditoria #10: a fração da dívida onerosa que vence em CP é configurável
+  // (`capital.dividaCurtoPrazoPct`, default 0.30). Estimativa só é usada quando
+  // o consultor não informou `passivoCirculante` real.
+  const dividaCpFrac = Math.min(1, Math.max(0, capital.dividaCurtoPrazoPct ?? 0.30));
   const passivoCirculante = capital.passivoCirculante > 0
     ? capital.passivoCirculante
-    : Math.max(0, fornecEstimado + D * 0.3); // estimativa: 30% da dívida vence em CP
+    : Math.max(0, fornecEstimado + D * dividaCpFrac);
 
   const CAP_LIQ = 99;
   const liquidezCorrente = passivoCirculante > 1 ? Math.min(CAP_LIQ, ativoCirculante / passivoCirculante) : CAP_LIQ;
@@ -238,15 +242,21 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const amortizacaoPlPorLucro = llAnual > 1 ? Math.min(CAP_PAYBACK, PL / llAnual) : (PL <= 0 ? 0 : CAP_PAYBACK);
   const payback = amortizacaoPlPorLucro; // @deprecated alias
 
-  const fcf = ebitdaAnual - impostosAnual - Math.max(0, ncg - capital.capitalGiroDisponivel);
+  // Auditoria #3: ΔNCG (variação anual) em vez do gap total.
+  // Usa `ncgAbertura` quando informada; senão `capitalGiroDisponivel` como
+  // proxy da NCG já financiada na abertura. Evita consumo de caixa inflado
+  // período após período em empresas em crescimento estável.
+  const ncgAbertura = Math.max(0, capital.ncgAbertura ?? capital.capitalGiroDisponivel ?? 0);
+  const deltaNcgAnual = Math.max(0, ncg - ncgAbertura);
+  const fcf = ebitdaAnual - impostosAnual - deltaNcgAnual;
   const capexAnual = sum(state.cashflow.capex ?? [])
     + (capital.capexAtivacao ?? []).reduce((acc, ca) => acc + ((ca && (ca.valor || 0) > 0) ? (ca.valor || 0) : 0), 0);
   const fcfAposCapex = fcf - capexAnual;
-  const capexMes1 = (state.cashflow.capex?.[0] ?? 0)
-    + (capital.capexAtivacao ?? []).reduce((acc, ca) => acc + (ca && ca.mes === 1 ? (ca.valor || 0) : 0), 0);
-  const paybackCapex = capexMes1 > 0 && fcf > 1
-    ? Math.min(CAP_PAYBACK, capexMes1 / fcf)
-    : (capexMes1 <= 0 ? 0 : CAP_PAYBACK);
+  // Auditoria #2: payback do CAPEX usa o CAPEX ANUAL TOTAL, não apenas o do mês 1.
+  // CAPEX distribuído ao longo do ano (obras, implantações) era subestimado em até 10×.
+  const paybackCapex = capexAnual > 0 && fcf > 1
+    ? Math.min(CAP_PAYBACK, capexAnual / fcf)
+    : (capexAnual <= 0 ? 0 : CAP_PAYBACK);
 
   const mcReais = receitaLiqAnual - custosVarAnual;
   const gao = Math.abs(ebitAnual) > 1 ? Math.max(-99, Math.min(99, mcReais / ebitAnual)) : 0;
