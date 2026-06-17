@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
 import { AppState, BusinessType, SimplesAnexo, TaxEra, TaxRegime, TAX_ERA_SHORT } from "@/engines/finance/types";
 import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";

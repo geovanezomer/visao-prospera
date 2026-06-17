@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
 import { AppState } from "@/engines/finance/types";
 import { fmtBRL, fmtBRLCompact, MESES, sum } from "@/engines/finance/format";

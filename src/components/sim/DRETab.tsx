@@ -1,4 +1,5 @@
 import { useState, Fragment, useEffect } from "react";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { AppState, TaxRegime, COST_VENDAS_LABEL, TAX_ERA_SHORT, CostCategory } from "@/engines/finance/types";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { AppState, CapexAtivacao } from "@/engines/finance/types";
 import { fmtBRL, fmtNum, sum } from "@/engines/finance/format";
 import { buildDRE, calcIndicators } from "@/engines/finance/calculations";

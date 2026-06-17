@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { AppState, RevenueDeducao } from "@/engines/finance/types";
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/engines/finance/format";
 import { buildDRE } from "@/engines/finance/calculations";

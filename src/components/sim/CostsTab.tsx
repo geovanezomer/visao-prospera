@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { AppState, CostCategory, CostLine, TaxRegime } from "@/engines/finance/types";
 import { fill12, fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
 import { fixedCostBase, monthValues } from "@/engines/finance/calculations";
