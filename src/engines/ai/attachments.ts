@@ -63,8 +63,9 @@ export async function processFile(file: File, onProgress?: OnProgress): Promise<
       base.pagesProcessed = ocr.pagesProcessed;
       if (!ocr.text.trim()) base.error = "OCR não extraiu texto utilizável.";
       return base;
-    } catch (e: any) {
-      return { ...base, error: `Falha ao ler PDF: ${e?.message || e}` };
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return { ...base, error: `Falha ao ler PDF: ${msg}` };
     }
   }
   return { ...base, error: `Tipo não suportado: ${file.type}.` };
