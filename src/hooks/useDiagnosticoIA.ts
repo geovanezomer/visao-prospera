@@ -1,10 +1,14 @@
 // =====================================================================
 // Hook para o Diagnóstico Executivo da IA.
 //
-// - Lê AIConfig do localStorage (mesma do chat — fonte única).
+// PR2: lê AIConfig, gera, valida, exibe.
+// PR3: adiciona cache persistente (localStorage) + telemetria local.
+//
 // - `enabled = false` → componente deve OCULTAR o card.
-// - Cache por briefingCacheKey + promptVersion: mesmo cenário não regera.
-// - `regenerate()` força refetch ignorando cache (botão "Regerar").
+// - Cache em memória + cache persistente (7 dias) por
+//   briefingHash + promptVersion + provider + model.
+// - `regenerate()` força refetch ignorando ambos os caches.
+// - Toda geração (ok, cache, erro) é registrada em telemetria local.
 // =====================================================================
 
 import { useCallback, useEffect, useState } from "react";
@@ -17,8 +21,10 @@ import {
 import { PROMPT_VERSION } from "@/engines/ai/diagnosticoPrompt";
 import type { Briefing } from "@/engines/finance/briefing";
 import { briefingCacheKey } from "@/engines/finance/briefing";
+import { getCached, setCached } from "@/engines/ai/diagnosticoCache";
+import { recordTelemetry } from "@/engines/ai/diagnosticoTelemetry";
 
-/** Cache em memória — chave inclui modelo + prompt version pra evitar reuso indevido. */
+/** Cache em memória (sessão) — evita relê localStorage a cada render. */
 const memCache = new Map<string, DiagnosticoResult>();
 
 function cacheKey(briefing: Briefing, cfg: AIConfig): string {
@@ -31,19 +37,21 @@ export interface UseDiagnosticoIA {
   data: DiagnosticoResult | null;
   loading: boolean;
   error: string | null;
+  /** True quando o `data` veio do cache (memória ou localStorage). */
+  cached: boolean;
   /** Força nova geração ignorando cache. */
   regenerate: () => void;
 }
 
 export function useDiagnosticoIA(briefing: Briefing | null): UseDiagnosticoIA {
-  // Re-lê config a cada mount (pega edição feita no AIConfigDialog).
   const [cfg, setCfg] = useState<AIConfig>(() => loadConfig());
   const [data, setData] = useState<DiagnosticoResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cached, setCached_] = useState(false);
   const [nonce, setNonce] = useState(0); // bump → força refetch
 
-  // Permite que o card reaja se o usuário abrir o dialog e mudar a config.
+  // Reage a mudanças de config feitas em outra aba/janela.
   useEffect(() => {
     const onStorage = () => setCfg(loadConfig());
     window.addEventListener("storage", onStorage);
@@ -57,38 +65,83 @@ export function useDiagnosticoIA(briefing: Briefing | null): UseDiagnosticoIA {
       setData(null);
       setError(null);
       setLoading(false);
+      setCached_(false);
       return;
     }
 
     const key = cacheKey(briefing, cfg);
+    const bhash = briefingCacheKey(briefing);
 
-    // Hit de cache (ignorado quando regenerate forçou nonce > 0 sem novo key).
+    // 1) Cache em memória
     if (nonce === 0) {
-      const cached = memCache.get(key);
-      if (cached) {
-        setData(cached);
+      const mem = memCache.get(key);
+      if (mem) {
+        setData(mem);
         setError(null);
         setLoading(false);
+        setCached_(true);
+        return;
+      }
+      // 2) Cache persistente (localStorage)
+      const persisted = getCached(key);
+      if (persisted) {
+        memCache.set(key, persisted);
+        setData(persisted);
+        setError(null);
+        setLoading(false);
+        setCached_(true);
+        recordTelemetry({
+          ts: new Date().toISOString(),
+          provider: cfg.provider,
+          model: cfg.model,
+          promptVersion: PROMPT_VERSION,
+          briefingHash: bhash,
+          durationMs: 0,
+          status: "cache",
+        });
         return;
       }
     }
 
     const ac = new AbortController();
     let cancelled = false;
+    const t0 = performance.now();
     setLoading(true);
     setError(null);
+    setCached_(false);
 
     gerarDiagnostico(briefing, cfg, ac.signal)
       .then((result) => {
         if (cancelled) return;
         memCache.set(key, result);
+        setCached(key, result);
         setData(result);
+        recordTelemetry({
+          ts: new Date().toISOString(),
+          provider: cfg.provider,
+          model: cfg.model,
+          promptVersion: PROMPT_VERSION,
+          briefingHash: bhash,
+          durationMs: Math.round(performance.now() - t0),
+          status: "ok",
+          outputChars: JSON.stringify(result.data).length,
+        });
       })
       .catch((e: unknown) => {
         if (cancelled || ac.signal.aborted) return;
         const msg = e instanceof Error ? e.message : String(e);
         setError(msg);
         setData(null);
+        recordTelemetry({
+          ts: new Date().toISOString(),
+          provider: cfg.provider,
+          model: cfg.model,
+          promptVersion: PROMPT_VERSION,
+          briefingHash: bhash,
+          durationMs: Math.round(performance.now() - t0),
+          status: "erro",
+          errorMsg: msg,
+        });
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -106,5 +159,5 @@ export function useDiagnosticoIA(briefing: Briefing | null): UseDiagnosticoIA {
     setNonce((n) => n + 1);
   }, [briefing, cfg]);
 
-  return { enabled, data, loading, error, regenerate };
+  return { enabled, data, loading, error, cached, regenerate };
 }
