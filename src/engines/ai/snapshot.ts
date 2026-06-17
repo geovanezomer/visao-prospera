@@ -427,14 +427,17 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
       () => resolveEffectiveRegime(simulatedState),
       simulatedState.tax.regime,
     );
-    const builtSim = tryRun(() => buildDRE(simulatedState, simRegime), null as any);
+    type BuiltDRE = ReturnType<typeof buildDRE>;
+    type Ind = ReturnType<typeof calcIndicators>;
+    type Val = ReturnType<typeof buildValuation>;
+    const builtSim = tryRun<BuiltDRE | null>(() => buildDRE(simulatedState, simRegime), null);
     const dreSim = builtSim?.dre ?? null;
     const indSim = dreSim
-      ? tryRun(() => calcIndicators(simulatedState, dreSim), null as any)
+      ? tryRun<Ind | null>(() => calcIndicators(simulatedState, dreSim), null)
       : null;
-    const valSim = tryRun(
+    const valSim = tryRun<Val | null>(
       () => buildValuation(simulatedState, defaultValuationParams(simulatedState.businessType)),
-      null as any,
+      null,
     );
     if (dreSim && ind && indSim) {
       const rows: string[][] = [
