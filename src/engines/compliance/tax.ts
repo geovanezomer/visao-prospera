@@ -34,10 +34,13 @@ export function regimeComparisonToMarkdown(state: AppState): string {
 export function taxAuditToMarkdown(state: AppState): string {
   const era = state.tax.era ?? "atual";
   const rbAnual = sum(state.revenue.bruta);
-  const { dre } = buildDRE(state, state.tax.regime);
+  // Auditoria #5: usa regime EFETIVO (consistente com Indicadores/Diagnóstico/Valuation).
+  // Quando RBT12 estoura o limite do Simples, o regime efetivo migra para Presumido
+  // e a auditoria precisa refletir isso.
+  const currentRegime = resolveEffectiveRegime(state);
+  const { dre } = buildDRE(state, currentRegime);
   const llAnual = sum(dre.lucroLiquido);
   const regimes = compareRegimes(state, era);
-  const currentRegime = state.tax.regime;
 
   let md = `## Diagnóstico Tributário Detalhado\n\n`;
   md += `_Análise referente à era: **${era}** ${era !== "atual" ? "(Reforma Tributária)" : ""}_\n`;
