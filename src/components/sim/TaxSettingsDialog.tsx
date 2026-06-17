@@ -814,7 +814,7 @@ function FriendlyRow({
   const isDefault = value === defaultVal;
   return (
     <div className="rounded-md border border-border/40 bg-background/40 p-3">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-sm font-medium">
             <span>{label}</span>
@@ -836,15 +836,15 @@ function FriendlyRow({
             </b>
           </p>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-[110px]">
+        <div className="flex items-center gap-1 sm:shrink-0">
+          <div className="flex-1 sm:w-[110px] sm:flex-none">
             <NumInput value={value} onChange={onChange} />
           </div>
           <span className="w-6 text-center text-[10px] text-muted-foreground">{suffix}</span>
           <Button
             size="icon"
             variant="ghost"
-            className="h-7 w-7"
+            className="h-9 w-9 sm:h-7 sm:w-7"
             disabled={isDefault}
             onClick={onReset}
             title="Restaurar padrão"
