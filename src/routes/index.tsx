@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAppState, useScenarios } from "@/engines/finance/store";
+import { FinanceProvider } from "@/engines/finance/AppStateContext";
 import { useFinnanceFile } from "@/engines/finance/useFinnanceFile";
 import { useConfirm } from "@/hooks/useConfirm";
 import { useAuth } from "@/lib/auth";
@@ -122,6 +123,7 @@ function SimulaPro() {
 
   return (
     <SidebarProvider>
+      <FinanceProvider state={state} update={update}>
       <div className="flex min-h-screen w-full bg-background text-foreground">
         <AppSidebar 
           activeTab={activeTab} 
@@ -132,8 +134,6 @@ function SimulaPro() {
               document.dispatchEvent(new CustomEvent('close-mobile-sidebar'));
             }
           }} 
-          state={state} 
-          update={update}
           onSave={fileApi.save}
           onOpen={fileApi.open}
           currentFileName={fileApi.currentFileName}
@@ -202,7 +202,7 @@ function SimulaPro() {
                 </Badge>
               )}
               <div data-meeting-hide="true" className="contents">
-                <TaxSettingsDialog state={state} update={update} />
+                <TaxSettingsDialog />
                 <Button
                   size="sm"
                   variant={meetingMode ? "default" : "ghost"}
@@ -242,15 +242,15 @@ function SimulaPro() {
                 </div>
               ) : (
                 <div className="space-y-6 animate-in fade-in duration-500">
-                  {activeTab === "receitas" && <RevenueTab state={state} update={update} />}
-                  {activeTab === "custos" && <CostsTab state={state} update={update} />}
-                  {activeTab === "capital" && <CapitalTab state={state} update={update} />}
-                  {activeTab === "tributos" && <TaxTab state={state} update={update} />}
-                  {activeTab === "caixa" && <CashflowTab state={state} update={update} />}
-                  {activeTab === "governanca" && <StrategicTab state={state} update={update} />}
-                  {activeTab === "dre" && <DRETab state={state} update={update} />}
-                  {activeTab === "indicadores" && <IndicatorsTab state={state} />}
-                  {activeTab === "resultados" && <DiagnosisTab state={state} />}
+                  {activeTab === "receitas" && <RevenueTab />}
+                  {activeTab === "custos" && <CostsTab />}
+                  {activeTab === "capital" && <CapitalTab />}
+                  {activeTab === "tributos" && <TaxTab />}
+                  {activeTab === "caixa" && <CashflowTab />}
+                  {activeTab === "governanca" && <StrategicTab />}
+                  {activeTab === "dre" && <DRETab />}
+                  {activeTab === "indicadores" && <IndicatorsTab />}
+                  {activeTab === "resultados" && <DiagnosisTab />}
                   {activeTab === "simulador" && <SimulatorTab state={state} apply={update} saveScenario={save} params={simParams} setParams={setSimParams} />}
                   {activeTab === "valuation" && <ValuationTab baseState={state} simulatedState={simulatedState} simActive={simActive} />}
                 </div>
