@@ -178,11 +178,6 @@ export function TaxSettingsDialog() {
           </div>
         </DialogHeader>
 
-        <div className="max-h-[58vh] overflow-y-auto px-6 py-5">
-          {step.key === "intro" && <StepIntro customCount={customCount} />}
-          {step.key === "federais" && <StepFederais ov={ov} patchOv={patchOv} />}
-          {step.key === "simples" && <StepSimples ov={ov} patchOv={patchOv} />}
-          {step.key === "presumido" && (
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 sm:max-h-[58vh]">
           {step.key === "intro" && <StepIntro customCount={customCount} />}
           {step.key === "federais" && <StepFederais ov={ov} patchOv={patchOv} />}
