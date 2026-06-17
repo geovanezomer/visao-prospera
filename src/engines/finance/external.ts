@@ -36,7 +36,6 @@ import {
   DB,
   DDB,
   SYD,
-  VDB,
 } from "@formulajs/formulajs";
 
 import {
