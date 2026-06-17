@@ -564,6 +564,19 @@ function StepReforma({
           onChange={(v) => update((s) => ({ ...s, tax: { ...s.tax, ibsAliquotaRef: v } }))}
           onReset={() => update((s) => ({ ...s, tax: { ...s.tax, ibsAliquotaRef: undefined } }))}
         />
+        <FriendlyRow
+          label="% do CPV vindo de fornecedor Simples Nacional"
+          suffix="%"
+          defaultVal={0}
+          help="Percentual das compras (CPV) feitas a fornecedores no Simples Nacional sem destaque de CBS/IBS. Nessas notas o crédito é PRESUMIDO (~3% CBS, ~1,2% IBS), não a alíquota cheia. Aumentar este valor reduz o crédito tributável e aumenta o imposto efetivo a pagar. Default 0% (assume todos fornecedores no regime regular)."
+          value={state.tax.fornecedorSimplesNacionalPct ?? 0}
+          onChange={(v) =>
+            update((s) => ({ ...s, tax: { ...s.tax, fornecedorSimplesNacionalPct: v } }))
+          }
+          onReset={() =>
+            update((s) => ({ ...s, tax: { ...s.tax, fornecedorSimplesNacionalPct: undefined } }))
+          }
+        />
       </Section>
 
       <Callout tone="warn" title="Multiplicadores de transição (uso avançado)">
