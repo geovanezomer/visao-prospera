@@ -115,6 +115,17 @@ export * from "./prescriptive";
 export * from "./strategic";
 export * from "./health";
 export * from "./crossValidation";
+export {
+  buildBriefing,
+  classify,
+  briefingCacheKey,
+  type Briefing,
+  type ClassificacaoIndicador,
+  type PadraoDetectado,
+  type AlavancaSugerida,
+  type ContextoEmpresa,
+  type Nivel,
+} from "./briefing";
 
 // ============= Helpers =============
 export * from "./format";
