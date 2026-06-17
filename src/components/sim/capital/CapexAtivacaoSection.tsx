@@ -1,5 +1,5 @@
 import { CapexAtivacao } from "@/engines/finance/types";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, genId } from "@/engines/finance/format";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Lightbulb } from "lucide-react";
 import { MoneyInput, NumInput, SectionTitle } from "../primitives";
