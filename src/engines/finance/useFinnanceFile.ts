@@ -149,7 +149,7 @@ export function useFinnanceFile({
       if (!ok) return;
     }
     try {
-      const { state: nextState, scenarios: nextScen, extras, filename } = await pickFinnanceFile();
+      const { state: nextState, scenarios: nextScen, extras, filename, originalVersion, currentVersion, migrated } = await pickFinnanceFile();
       setState(nextState);
       replaceScenarios(nextScen);
       // Replica os extras no localStorage sob a empresa do arquivo aberto,
@@ -163,7 +163,16 @@ export function useFinnanceFile({
       lastSavedSnapshot.current = snapshot(nextState, nextScen);
       setDirty(false);
       setLastModified(Date.now());
-      toast.success(`Arquivo aberto: ${filename}`);
+      if (migrated) {
+        // Avisa o usuário que o arquivo foi migrado para o schema corrente.
+        // Salvar agora regrava no formato novo (e mantém o original intacto até lá).
+        toast.info(`Arquivo migrado de v${originalVersion} → v${currentVersion}`, {
+          description: `"${filename}" foi atualizado para o formato atual do FinancePRO. Salve para regravar no novo formato.`,
+          duration: 10000,
+        });
+      } else {
+        toast.success(`Arquivo aberto: ${filename}`);
+      }
     } catch (err) {
       // Cancelamento do picker não é erro.
       const msg = err instanceof Error ? err.message : String(err);

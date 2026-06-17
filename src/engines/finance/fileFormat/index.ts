@@ -78,6 +78,12 @@ export interface OpenedFile {
   scenarios: Scenario[];
   extras: { actions: unknown[]; simScenarios: unknown[] };
   file: FinnanceFile;
+  /** Versão original do arquivo lido do disco (antes de migrar). */
+  originalVersion: number;
+  /** Versão corrente do schema — `originalVersion < currentVersion` ⇒ foi migrado. */
+  currentVersion: number;
+  /** True quando o pipeline aplicou pelo menos um migrator. */
+  migrated: boolean;
 }
 
 /**
@@ -86,6 +92,10 @@ export interface OpenedFile {
  * alias para preservar imports legados.
  */
 export function openGzfp(raw: unknown): OpenedFile {
+  const originalVersion =
+    raw && typeof raw === "object" && typeof (raw as { version?: number }).version === "number"
+      ? (raw as { version: number }).version
+      : 1;
   const migrated = runMigrations(raw, CURRENT_VERSION);
   const parsed = FinnanceFileSchema.parse(migrated);
   if (parsed.type !== FINNANCE_FILE_TYPE) {
@@ -100,7 +110,15 @@ export function openGzfp(raw: unknown): OpenedFile {
     actions: parsed.extras?.actions ?? [],
     simScenarios: parsed.extras?.simScenarios ?? [],
   };
-  return { state, scenarios, extras, file: parsed };
+  return {
+    state,
+    scenarios,
+    extras,
+    file: parsed,
+    originalVersion,
+    currentVersion: CURRENT_VERSION,
+    migrated: originalVersion < CURRENT_VERSION,
+  };
 }
 
 /** Alias de compatibilidade — call-sites antigos seguem funcionando. */

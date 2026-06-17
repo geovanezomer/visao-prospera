@@ -25,6 +25,9 @@ export function pickFinnanceFile(): Promise<{
   extras: { actions: unknown[]; simScenarios: unknown[] };
   file: FinnanceFile;
   filename: string;
+  originalVersion: number;
+  currentVersion: number;
+  migrated: boolean;
 }> {
   return new Promise((resolve, reject) => {
     const input = document.createElement("input");
