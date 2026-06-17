@@ -89,19 +89,28 @@ function splitSystemAndMessages(msgs: LLMMessage[]): { system: string; rest: LLM
   return { system: systems.join("\n\n"), rest };
 }
 
+// Blocos do formato Anthropic — só o subconjunto que produzimos/consumimos.
+type AnthBlock =
+  | { type: "text"; text: string }
+  | { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
+  | { type: "tool_result"; tool_use_id: string; content: string };
+type AnthMessage = { role: "user" | "assistant"; content: AnthBlock[] | string };
+
 // Converte mensagens unificadas para o formato Anthropic (content blocks).
-function toAnthropicMessages(msgs: LLMMessage[]): any[] {
-  const out: any[] = [];
+function toAnthropicMessages(msgs: LLMMessage[]): AnthMessage[] {
+  const out: AnthMessage[] = [];
   for (const m of msgs) {
     if (m.role === "assistant") {
-      const blocks: any[] = [];
+      const blocks: AnthBlock[] = [];
       if (m.content) blocks.push({ type: "text", text: m.content });
       if (m.tool_calls?.length) {
         for (const tc of m.tool_calls) {
-          let input: any = {};
+          let input: Record<string, unknown> = {};
           try {
             input = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {};
-          } catch {}
+          } catch {
+            // arguments mal-formado vira input vazio — modelo recebe sinal pelo resultado da tool
+          }
           blocks.push({ type: "tool_use", id: tc.id, name: tc.function.name, input });
         }
       }
@@ -122,8 +131,8 @@ export async function testConnection(cfg: AIConfig): Promise<{ ok: boolean; mess
   try {
     const models = await listModels(cfg);
     return { ok: true, message: `Conectado. ${models.length} modelo(s) disponível(is).` };
-  } catch (e: any) {
-    return { ok: false, message: e?.message || String(e) };
+  } catch (e: unknown) {
+    return { ok: false, message: e instanceof Error ? e.message : String(e) };
   }
 }
 
