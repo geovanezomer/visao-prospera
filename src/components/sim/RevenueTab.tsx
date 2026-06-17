@@ -173,23 +173,23 @@ export function RevenueTab() {
   }
 
   const updateDed = (id: string, label: string, mut: (d: RevenueDeducao) => RevenueDeducao) =>
-    update((s) => {
-      const list = s.revenue.deducoes ?? [];
+    patchRevenue((rev) => {
+      const list = rev.deducoes ?? [];
       const exists = list.find((d) => d.id === id);
       const base: RevenueDeducao = exists ?? { id, label, valores: fill12(0), fixed: true };
       const next = mut(base);
       const newList = exists ? list.map((d) => (d.id === id ? next : d)) : [...list, next];
-      return { ...s, revenue: { ...s.revenue, deducoes: newList } };
+      return { deducoes: newList };
     });
 
   const updateFin = (id: string, label: string, mut: (d: RevenueDeducao) => RevenueDeducao) =>
-    update((s) => {
-      const list = s.revenue.receitasFinanceiras ?? [];
+    patchRevenue((rev) => {
+      const list = rev.receitasFinanceiras ?? [];
       const exists = list.find((d) => d.id === id);
       const base: RevenueDeducao = exists ?? { id, label, valores: fill12(0), fixed: true };
       const next = mut(base);
       const newList = exists ? list.map((d) => (d.id === id ? next : d)) : [...list, next];
-      return { ...s, revenue: { ...s.revenue, receitasFinanceiras: newList } };
+      return { receitasFinanceiras: newList };
     });
 
   const finList = r.receitasFinanceiras ?? [];
@@ -237,46 +237,29 @@ export function RevenueTab() {
   const setMonth = (row: Row, i: number, v: number) => {
     if (row.kind === "bruta") {
       const safe = sanitize(v);
-      update((s) => ({
-        ...s,
-        revenue: { ...s.revenue, bruta: s.revenue.bruta.map((x, j) => (j === i ? safe : x)) },
-      }));
+      patchRevenue((rev) => ({ bruta: rev.bruta.map((x, j) => (j === i ? safe : x)) }));
     } else if (row.kind === "inadimplencia") {
       // Em modo %, v é o percentual digitado. Em modo R$, converte R$→% usando a Bruta do mês.
       if (inadimpEmBRL) {
         const brl = sanitize(v);
-        update((s) => {
-          const bruta = s.revenue.bruta[i] || 0;
+        patchRevenue((rev) => {
+          const bruta = rev.bruta[i] || 0;
           const pct = bruta > 0 ? Math.min(100, (brl / bruta) * 100) : 0;
-          return {
-            ...s,
-            revenue: {
-              ...s.revenue,
-              inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)),
-            },
-          };
+          return { inadimplencia: rev.inadimplencia.map((x, j) => (j === i ? pct : x)) };
         });
       } else {
         const pct = sanitize(v, { min: 0, max: 100 });
-        update((s) => ({
-          ...s,
-          revenue: {
-            ...s.revenue,
-            inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)),
-          },
+        patchRevenue((rev) => ({
+          inadimplencia: rev.inadimplencia.map((x, j) => (j === i ? pct : x)),
         }));
       }
     } else if (row.kind === "deducao" && row.dedId) {
       const safe = sanitize(v);
       if (row.dedId === "pdd_rec") {
-        update((s) => ({
-          ...s,
-          revenue: {
-            ...s.revenue,
-            pddReversaoMensal: (s.revenue.pddReversaoMensal || fill12(0)).map((x, j) =>
-              j === i ? safe : x,
-            ),
-          },
+        patchRevenue((rev) => ({
+          pddReversaoMensal: (rev.pddReversaoMensal || fill12(0)).map((x, j) =>
+            j === i ? safe : x,
+          ),
         }));
       } else {
         updateDed(row.dedId, row.label, (d) => ({
@@ -296,26 +279,22 @@ export function RevenueTab() {
   const setAllMonths = (row: Row, v: number) => {
     if (row.kind === "bruta") {
       const safe = sanitize(v);
-      update((s) => ({ ...s, revenue: { ...s.revenue, bruta: fill12(safe) } }));
+      patchRevenue({ bruta: fill12(safe) });
     } else if (row.kind === "inadimplencia") {
       // Em modo R$: aplica o mesmo valor R$ em todos os meses, recalculando o % conforme a Bruta de cada mês.
       if (inadimpEmBRL) {
         const brl = sanitize(v);
-        update((s) => ({
-          ...s,
-          revenue: {
-            ...s.revenue,
-            inadimplencia: s.revenue.bruta.map((b) => (b > 0 ? Math.min(100, (brl / b) * 100) : 0)),
-          },
+        patchRevenue((rev) => ({
+          inadimplencia: rev.bruta.map((b) => (b > 0 ? Math.min(100, (brl / b) * 100) : 0)),
         }));
       } else {
         const pct = sanitize(v, { min: 0, max: 100 });
-        update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: fill12(pct) } }));
+        patchRevenue({ inadimplencia: fill12(pct) });
       }
     } else if (row.kind === "deducao" && row.dedId) {
       const safe = sanitize(v);
       if (row.dedId === "pdd_rec") {
-        update((s) => ({ ...s, revenue: { ...s.revenue, pddReversaoMensal: fill12(safe) } }));
+        patchRevenue({ pddReversaoMensal: fill12(safe) });
       } else {
         updateDed(row.dedId, row.label, (d) => ({ ...d, valores: fill12(safe) }));
       }
@@ -327,33 +306,22 @@ export function RevenueTab() {
 
   const setFixed = (row: Row, fixed: boolean) => {
     if (row.kind === "bruta") {
-      update((s) => {
-        const base = fixed ? fixedBase(s.revenue.bruta) : s.revenue.bruta[0] || 0;
-        return {
-          ...s,
-          revenue: {
-            ...s.revenue,
-            brutaFixa: fixed,
-            bruta: fixed ? fill12(base) : s.revenue.bruta,
-          },
-        };
+      patchRevenue((rev) => {
+        const base = fixed ? fixedBase(rev.bruta) : rev.bruta[0] || 0;
+        return { brutaFixa: fixed, bruta: fixed ? fill12(base) : rev.bruta };
       });
     } else if (row.kind === "inadimplencia") {
-      update((s) => {
-        const base = fixed ? fixedBase(s.revenue.inadimplencia) : s.revenue.inadimplencia[0] || 0;
+      patchRevenue((rev) => {
+        const base = fixed ? fixedBase(rev.inadimplencia) : rev.inadimplencia[0] || 0;
         return {
-          ...s,
-          revenue: {
-            ...s.revenue,
-            inadimplenciaFixa: fixed,
-            inadimplencia: fixed ? fill12(base) : s.revenue.inadimplencia,
-          },
+          inadimplenciaFixa: fixed,
+          inadimplencia: fixed ? fill12(base) : rev.inadimplencia,
         };
       });
     } else if (row.kind === "deducao" && row.dedId) {
       if (row.dedId === "pdd_rec") {
         const base = fixed ? fixedBase(row.values) : row.values[0] || 0;
-        update((s) => ({ ...s, revenue: { ...s.revenue, pddReversaoMensal: fill12(base) } }));
+        patchRevenue({ pddReversaoMensal: fill12(base) });
       } else {
         updateDed(row.dedId, row.label, (d) => {
           const base = fixed ? fixedBase(d.valores) : d.valores[0] || 0;
@@ -367,6 +335,7 @@ export function RevenueTab() {
       });
     }
   };
+
 
   return (
     <div className="space-y-4 md:space-y-6">
