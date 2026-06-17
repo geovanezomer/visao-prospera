@@ -352,7 +352,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
       cfLines.push(`**Pior mês:** ${cf.totais.pioresMes.mes} → ${brl(cf.totais.pioresMes.saldo)}`);
     if (cf.alertas?.length) {
       cfLines.push(`**Alertas:**`);
-      cf.alertas.forEach((a: any) => cfLines.push(`- ${a.mes}: ${brl(a.saldo)} (${a.tipo})`));
+      cf.alertas.forEach((a) => cfLines.push(`- ${a.mes}: ${brl(a.saldo)} (${a.tipo})`));
     }
   }
 
