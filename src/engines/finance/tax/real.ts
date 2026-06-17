@@ -32,6 +32,11 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   const isMercadoria = businessType === "comercio" || businessType === "industria";
   const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
   const reforma = getReformaRates(tax.era, tax);
+  // [CBS/IBS] Alíquotas efetivas de crédito sobre CPV — ponderam fornecedor SN
+  // (crédito presumido) vs. regime regular (crédito cheio).
+  const snFornecedorPct = tax.fornecedorSimplesNacionalPct ?? 0;
+  const cbsCredPct = getCbsCredCpvPct(reforma.cbsPct, snFornecedorPct);
+  const ibsCredPct = getIbsCredCpvPct(reforma.ibsPct, snFornecedorPct);
   const usaReforma =
     reforma.cbsPct > 0 ||
     reforma.ibsPct > 0 ||
