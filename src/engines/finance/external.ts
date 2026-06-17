@@ -66,7 +66,9 @@ export const vplExcel = NPV;
 export function vplClassico(taxa: number, fluxos: number[]): number {
   if (!fluxos.length) return 0;
   const [inicial, ...resto] = fluxos;
-  return inicial + NPV(taxa, ...resto);
+  const desc = NPV(taxa, ...resto);
+  if (desc instanceof Error) throw desc;
+  return inicial + desc;
 }
 
 /** TIR — fluxos com período 0 = investimento inicial (negativo). */
