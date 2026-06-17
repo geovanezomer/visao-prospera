@@ -1,0 +1,137 @@
+// =====================================================================
+// LUCRO PRESUMIDO — IRPJ/CSLL sobre receita × % de presunção,
+// PIS/COFINS cumulativos, ISS/ICMS conforme atividade.
+// [CBS/IBS] CBS substitui PIS/COFINS e IBS substitui ICMS/ISS conforme
+// cronograma (ver tax/reforma.ts). Créditos sobre CPV seguem a regra
+// ampla (CBS/IBS são não-cumulativos full).
+// Extraído de calculations.ts (Fase 2) — comportamento idêntico.
+// =====================================================================
+
+import { AppState, BusinessType, TaxConfig } from "../types";
+import { sum, zeros12 } from "../format";
+import {
+  getIrpjPct, getCsllPct,
+  getPisCumPct, getCofinsCumPct,
+  getPresumidoBases,
+} from "../taxDefaults";
+import { receitaTributavel, splitReceitasFinanceiras } from "../shared";
+import { isCpvCost, effectiveMonthValues } from "../costs";
+import { getReformaRates } from "./reforma";
+import { adicionalIrpjTrimestral, type MonthlyTax } from "./shared";
+
+/** @deprecated Use getPresumidoBases(tax, business) de taxDefaults.ts. Mantido para retro-compat. */
+export function presumidoBases(business: BusinessType): { irpj: number; csll: number } {
+  return getPresumidoBases({ ratesOverride: undefined } as TaxConfig, business);
+}
+
+export function calcPresumido(state: AppState): MonthlyTax {
+  const { revenue, tax, businessType } = state;
+  const trib = receitaTributavel(state);
+  const bases = getPresumidoBases(tax, businessType);
+  const baseIRPJ = (tax.presumidoBaseIRPJ || bases.irpj) / 100;
+  const baseCSLL = (tax.presumidoBaseCSLL || bases.csll) / 100;
+  const iss = tax.issIcms / 100;
+  const issDed = (tax.issDeducoes ?? 0) / 12;
+  const isMercadoria = businessType === "comercio" || businessType === "industria";
+  const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
+  const reforma = getReformaRates(tax.era, tax);
+  const usaReforma = reforma.cbsPct > 0 || reforma.ibsPct > 0 || reforma.pisCofinsMult < 1 || reforma.icmsIssMult < 1;
+  const irpjAliq = getIrpjPct(tax) / 100;
+  const csllAliq = getCsllPct(tax) / 100;
+  const pisAliq = getPisCumPct(tax) / 100;
+  const cofinsAliq = getCofinsCumPct(tax) / 100;
+
+  // CPV mensal — base de crédito (ICMS antigo e também CBS/IBS amplo na reforma).
+  // EXCLUI linhas marcadas semCredito (ICMS-ST etc.). Pós-2033 ICMS-ST deixa de existir,
+  // mas o flag continua sinalizando "tributo embutido no preço, sem crédito" — respeitamos.
+  const cpvMonthly = zeros12();
+  const temCpvCredito = icmsCredAliq > 0 || usaReforma;
+  if (temCpvCredito) {
+    for (const c of state.costs) {
+      if (!isCpvCost(c)) continue;
+      if (c.semCredito) continue;
+      const v = effectiveMonthValues(c);
+      for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
+    }
+  }
+
+  // [Receitas Financeiras] No Presumido, rendimentos de aplicações entram INTEGRAIS
+  // na base de IRPJ/CSLL (sem o redutor de 8/32%). Aluguéis/venda de ativos vão
+  // como "operacionais" (já tratados na DRE) e não somam aqui. Rendimentos com
+  // tributação EXCLUSIVA na fonte (IRRF definitivo) são excluídos da base.
+  const { financeirasIrpjBase: rendFinTrib } = splitReceitasFinanceiras(state);
+  const baseIRPJMensal = trib.map((r, i) => r * baseIRPJ + (rendFinTrib[i] || 0));
+  const baseCSLLMensal = trib.map((r, i) => r * baseCSLL + (rendFinTrib[i] || 0));
+  const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
+
+  let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
+  let saldoCredorICMS = 0, saldoCBS = 0, saldoIBS = 0;
+  const monthlyVendas = zeros12();
+  const monthlyLucro = zeros12();
+  const monthly = trib.map((r, i) => {
+    const irpj = baseIRPJMensal[i] * irpjAliq;
+    const adicional = adicionalMensal[i];
+    const csll = baseCSLLMensal[i] * csllAliq;
+    const pis = r * pisAliq * reforma.pisCofinsMult;
+    const cofins = r * cofinsAliq * reforma.pisCofinsMult;
+    const issBase = Math.max(0, r - issDed);
+    const debito = issBase * iss;
+    const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
+    const issvBruto = Math.max(0, debito - creditoMes);
+    const issv = issvBruto * reforma.icmsIssMult;
+    saldoCredorICMS = Math.max(0, creditoMes - debito);
+    let cbs = 0, ibs = 0;
+    if (reforma.cbsPct > 0) {
+      const dCbs = r * (reforma.cbsPct / 100);
+      const cCbs = cpvMonthly[i] * (reforma.cbsPct / 100) + saldoCBS;
+      cbs = Math.max(0, dCbs - cCbs);
+      saldoCBS = Math.max(0, cCbs - dCbs);
+    }
+    if (reforma.ibsPct > 0) {
+      const dIbs = r * (reforma.ibsPct / 100);
+      const cIbs = cpvMonthly[i] * (reforma.ibsPct / 100) + saldoIBS;
+      ibs = Math.max(0, dIbs - cIbs);
+      saldoIBS = Math.max(0, cIbs - dIbs);
+    }
+    irpjTotal += irpj + adicional;
+    csllTotal += csll;
+    pisTotal += pis;
+    cofinsTotal += cofins;
+    issTotal += issv;
+    cbsTotal += cbs;
+    ibsTotal += ibs;
+    const vendas = pis + cofins + issv + cbs + ibs;
+    const lucro = irpj + adicional + csll;
+    monthlyVendas[i] = vendas;
+    monthlyLucro[i] = lucro;
+    return vendas + lucro;
+  });
+  const annual = sum(monthly);
+  const annualVendas = sum(monthlyVendas);
+  const annualLucro = sum(monthlyLucro);
+  const rbAnual = sum(revenue.bruta);
+  const detail: Record<string, number> = {
+    "IRPJ": irpjTotal - sum(adicionalMensal),
+    "Adicional IRPJ (10%)": sum(adicionalMensal),
+    CSLL: csllTotal,
+  };
+  if (reforma.pisCofinsMult > 0) {
+    detail.PIS = pisTotal;
+    detail.COFINS = cofinsTotal;
+  }
+  if (reforma.icmsIssMult > 0) {
+    detail[isMercadoria ? "ICMS (líquido)" : "ISS"] = issTotal;
+  }
+  if (cbsTotal > 0) detail[`CBS (${reforma.cbsPct.toFixed(2)}%)`] = cbsTotal;
+  if (ibsTotal > 0) detail[`IBS (${reforma.ibsPct.toFixed(2)}%)`] = ibsTotal;
+  return {
+    monthly,
+    monthlyVendas,
+    monthlyLucro,
+    annual,
+    annualVendas,
+    annualLucro,
+    effective: rbAnual > 0 ? (annual / rbAnual) * 100 : 0,
+    detail,
+  };
+}
