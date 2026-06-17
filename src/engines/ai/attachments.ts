@@ -155,7 +155,8 @@ async function ocrPdf(
       canvas.width = viewport.width;
       canvas.height = viewport.height;
       const ctx = canvas.getContext("2d")!;
-      await page.render({ canvasContext: ctx, viewport, canvas } as any).promise;
+      // pdfjs render aceita objeto com canvasContext+viewport; canvas extra é tolerado mas não é parte do tipo público.
+      await page.render({ canvasContext: ctx, viewport, canvas } as unknown as Parameters<PdfPage["render"]>[0]).promise;
       const { data } = await worker.recognize(canvas);
       parts.push(`--- Página ${i} (OCR) ---\n${data.text || ""}`);
       if (typeof data.confidence === "number") confidences.push(data.confidence);
