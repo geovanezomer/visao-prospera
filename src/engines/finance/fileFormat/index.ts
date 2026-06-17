@@ -1,0 +1,126 @@
+// Pasta fileFormat — orquestra schema + migrators + serialize/parse.
+// API pública estável: importadores continuam usando `@/engines/finance/fileFormat`.
+import { AppState, Scenario } from "../types";
+import { DEFAULT_STATE, migrateState } from "../defaults";
+import {
+  CURRENT_VERSION,
+  FINNANCE_FILE_EXT,
+  FINNANCE_FILE_TYPE,
+  FINNANCE_FILE_VERSION,
+  FinnanceFile,
+  FinnanceFileSchema,
+} from "./schema";
+import { runMigrations } from "./migrations";
+
+export {
+  CURRENT_VERSION,
+  FINNANCE_FILE_EXT,
+  FINNANCE_FILE_TYPE,
+  FINNANCE_FILE_VERSION,
+  FinnanceFileSchema,
+};
+export type { FinnanceFile };
+export type { Migration } from "./migrations";
+export { MIGRATIONS, runMigrations } from "./migrations";
+
+/**
+ * Serializa o estado completo + cenários + extras no envelope .finnance.
+ * Carimba sempre com `CURRENT_VERSION` — saveGzfp() é o alias semântico.
+ */
+export function serialize(
+  state: AppState,
+  scenarios: Scenario[],
+  extras?: { actions?: unknown[]; simScenarios?: unknown[] },
+): FinnanceFile {
+  return {
+    type: FINNANCE_FILE_TYPE,
+    version: CURRENT_VERSION,
+    source: "FinnancePRO",
+    savedAt: new Date().toISOString(),
+    app: { name: "FinancePRO", version: "1.x" },
+    state: state as unknown as Record<string, unknown>,
+    scenarios: scenarios as unknown as FinnanceFile["scenarios"],
+    extras: extras
+      ? ({
+          actions: extras.actions ?? [],
+          simScenarios: extras.simScenarios ?? [],
+        } as FinnanceFile["extras"])
+      : undefined,
+    meta: {
+      companyName: state.companyName,
+      businessType: state.businessType,
+      taxRegime: state.tax?.regime,
+      numColaboradores: state.numColaboradores,
+      scenarioCount: scenarios.length,
+      actionCount: extras?.actions?.length ?? 0,
+      simScenarioCount: extras?.simScenarios?.length ?? 0,
+      sections: [
+        "configuracoes-rapidas",
+        "receitas",
+        "despesas",
+        "capital",
+        "tributos",
+        "caixa",
+        "governanca",
+        "acoes",
+        "cenarios-simulador",
+      ],
+    },
+  };
+}
+
+/** Alias semântico para chamadas novas — equivalente a `serialize`. */
+export const saveGzfp = serialize;
+
+/** Resultado canônico de abrir um .finnance/.gzfp. */
+export interface OpenedFile {
+  state: AppState;
+  scenarios: Scenario[];
+  extras: { actions: unknown[]; simScenarios: unknown[] };
+  file: FinnanceFile;
+}
+
+/**
+ * Pipeline completo de leitura: migrate → validate → normalize.
+ * `openGzfp` é o nome canônico; `parseFinnanceFile` é mantido como
+ * alias para preservar imports legados.
+ */
+export function openGzfp(raw: unknown): OpenedFile {
+  const migrated = runMigrations(raw, CURRENT_VERSION);
+  const parsed = FinnanceFileSchema.parse(migrated);
+  if (parsed.type !== FINNANCE_FILE_TYPE) {
+    throw new Error("Arquivo não é um .finnance válido.");
+  }
+  const state = migrateState({ ...DEFAULT_STATE, ...(parsed.state as Partial<AppState>) });
+  const scenarios = (parsed.scenarios ?? []).map((sc) => ({
+    ...sc,
+    state: migrateState({ ...DEFAULT_STATE, ...(sc.state as Partial<AppState>) }),
+  })) as Scenario[];
+  const extras = {
+    actions: parsed.extras?.actions ?? [],
+    simScenarios: parsed.extras?.simScenarios ?? [],
+  };
+  return { state, scenarios, extras, file: parsed };
+}
+
+/** Alias de compatibilidade — call-sites antigos seguem funcionando. */
+export const parseFinnanceFile = openGzfp;
+
+/** Remove caracteres inválidos para nome de arquivo cross-OS. */
+export function sanitizeFilename(name: string): string {
+  return (
+    (name || "empresa")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9-_]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "empresa"
+  );
+}
+
+/** Gera nome default: {empresa}-{YYYY-MM-DD}.finnance */
+export function defaultFilename(state: AppState): string {
+  const d = new Date();
+  const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${sanitizeFilename(state.companyName)}-${ymd}${FINNANCE_FILE_EXT}`;
+}
