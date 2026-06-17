@@ -583,6 +583,11 @@ function StepReforma({
             update((s) => ({ ...s, tax: { ...s.tax, fornecedorSimplesNacionalPct: undefined } }))
           }
         />
+        <SnPresumidoExplainer
+          snPct={state.tax.fornecedorSimplesNacionalPct ?? 0}
+          cbsPct={state.tax.cbsAliquota ?? 8.8}
+          ibsPct={state.tax.ibsAliquotaRef ?? 17.7}
+        />
       </Section>
 
       <Callout tone="warn" title="Multiplicadores de transição (uso avançado)">
