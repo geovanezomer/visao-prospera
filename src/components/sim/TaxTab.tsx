@@ -107,12 +107,9 @@ const ANEXO_BUSINESS_OK: Record<SimplesAnexo, BusinessType[]> = {
 };
 
 export function TaxTab() {
-  const { state, update } = useFinance();
+  const { state } = useFinance();
+  const set = usePatchTax();
   const rbAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
-  const set = useCallback(
-    (patch: Partial<typeof state.tax>) => update((s) => ({ ...s, tax: { ...s.tax, ...patch } })),
-    [update],
-  );
 
   // ----- Engine: memoizada (B1) — recomputa só quando state muda -----
   // SSOT-4: compareRegimes já devolve llBy, best e desenquadradoSimples.
