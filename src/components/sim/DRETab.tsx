@@ -57,8 +57,12 @@ export function DRETab() {
   const [view, setView] = useState<"mensal" | "trimestral" | "anual">("trimestral");
 
   useEffect(() => {
+    // Mobile/tablet defaults: em telas pequenas, reduz colunas automaticamente
+    // para a tabela caber sem scroll horizontal severo.
     const handleResize = () => {
-      if (window.innerWidth < 1024 && view === "mensal") setView("trimestral");
+      const w = window.innerWidth;
+      if (w < 640 && view !== "anual") setView("anual"); // <sm: só Anual + %Rec
+      else if (w >= 640 && w < 1024 && view === "mensal") setView("trimestral");
     };
     window.addEventListener("resize", handleResize);
     handleResize();
