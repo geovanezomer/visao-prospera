@@ -534,8 +534,8 @@ function StepPresumido({
           defaultVal={5}
           help="Defina a alíquota do município onde sua empresa está estabelecida (entre 2% e 5%)."
           value={state.tax.issIcms ?? 5}
-          onChange={(v) => update((s) => ({ ...s, tax: { ...s.tax, issIcms: v } }))}
-          onReset={() => update((s) => ({ ...s, tax: { ...s.tax, issIcms: 5 } }))}
+          onChange={(v) => patchTax({ issIcms: v })}
+          onReset={() => patchTax({ issIcms: 5 })}
         />
       </Section>
     </div>
