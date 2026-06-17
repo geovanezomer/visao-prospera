@@ -1102,7 +1102,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const fcf = ebitdaAnual - impostosAnual - Math.max(0, ncg - capital.capitalGiroDisponivel);
   // Payback CLÁSSICO: CAPEX inicial ÷ FCF anual. CAPEX inicial = mês 1 do plano de CAPEX
   // + ativações marcadas no mês 1. Métrica que bancos/analistas reconhecem como "payback".
-  const capexMes1 = (capital.capex?.[0] ?? 0)
+  const capexMes1 = (state.cashflow.capex?.[0] ?? 0)
     + (capital.capexAtivacao ?? []).reduce((acc, ca) => acc + (ca && ca.mes === 1 ? (ca.valor || 0) : 0), 0);
   const paybackCapex = capexMes1 > 0 && fcf > 1
     ? Math.min(CAP_PAYBACK, capexMes1 / fcf)
