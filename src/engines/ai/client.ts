@@ -44,7 +44,7 @@ function withTimeout(
 }
 
 async function fetchWithRetry(url: string, init: RequestInit, retries = 2): Promise<Response> {
-  let lastErr: any;
+  let lastErr: unknown;
   for (let i = 0; i <= retries; i++) {
     try {
       const res = await fetch(url, init);
@@ -55,9 +55,10 @@ async function fetchWithRetry(url: string, init: RequestInit, retries = 2): Prom
         }
       }
       return res;
-    } catch (e: any) {
+    } catch (e: unknown) {
       lastErr = e;
-      if (e?.name === "AbortError") throw e;
+      // AbortError não deve ser retentado.
+      if (e instanceof Error && e.name === "AbortError") throw e;
       if (i < retries) {
         await new Promise((r) => setTimeout(r, 500 * (i + 1)));
         continue;
@@ -70,8 +71,10 @@ async function fetchWithRetry(url: string, init: RequestInit, retries = 2): Prom
 export async function listModels(cfg: AIConfig): Promise<string[]> {
   const res = await fetch(`${cfg.baseUrl}/models`, { headers: headers(cfg) });
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text().catch(() => "")}`);
-  const json = await res.json();
-  return (Array.isArray(json?.data) ? json.data : []).map((m: any) => m.id).filter(Boolean);
+  const json = (await res.json()) as { data?: Array<{ id?: string }> };
+  return (Array.isArray(json?.data) ? json.data : [])
+    .map((m) => m.id)
+    .filter((id): id is string => Boolean(id));
 }
 
 // ============================================================
@@ -86,19 +89,28 @@ function splitSystemAndMessages(msgs: LLMMessage[]): { system: string; rest: LLM
   return { system: systems.join("\n\n"), rest };
 }
 
+// Blocos do formato Anthropic — só o subconjunto que produzimos/consumimos.
+type AnthBlock =
+  | { type: "text"; text: string }
+  | { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
+  | { type: "tool_result"; tool_use_id: string; content: string };
+type AnthMessage = { role: "user" | "assistant"; content: AnthBlock[] | string };
+
 // Converte mensagens unificadas para o formato Anthropic (content blocks).
-function toAnthropicMessages(msgs: LLMMessage[]): any[] {
-  const out: any[] = [];
+function toAnthropicMessages(msgs: LLMMessage[]): AnthMessage[] {
+  const out: AnthMessage[] = [];
   for (const m of msgs) {
     if (m.role === "assistant") {
-      const blocks: any[] = [];
+      const blocks: AnthBlock[] = [];
       if (m.content) blocks.push({ type: "text", text: m.content });
       if (m.tool_calls?.length) {
         for (const tc of m.tool_calls) {
-          let input: any = {};
+          let input: Record<string, unknown> = {};
           try {
             input = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {};
-          } catch {}
+          } catch {
+            // arguments mal-formado vira input vazio — modelo recebe sinal pelo resultado da tool
+          }
           blocks.push({ type: "tool_use", id: tc.id, name: tc.function.name, input });
         }
       }
@@ -119,8 +131,8 @@ export async function testConnection(cfg: AIConfig): Promise<{ ok: boolean; mess
   try {
     const models = await listModels(cfg);
     return { ok: true, message: `Conectado. ${models.length} modelo(s) disponível(is).` };
-  } catch (e: any) {
-    return { ok: false, message: e?.message || String(e) };
+  } catch (e: unknown) {
+    return { ok: false, message: e instanceof Error ? e.message : String(e) };
   }
 }
 
@@ -135,7 +147,7 @@ export async function* streamChat(
     // Branch: Anthropic usa /v1/messages com formato próprio.
     const anth = isAnthropic(cfg);
     const url = anth ? `${cfg.baseUrl}/messages` : `${cfg.baseUrl}/chat/completions`;
-    let body: any;
+    let body: Record<string, unknown>;
     if (anth) {
       const { system, rest } = splitSystemAndMessages(messages);
       body = {
@@ -177,20 +189,24 @@ export async function* streamChat(
         const payload = t.slice(5).trim();
         if (payload === "[DONE]") return;
         try {
-          const obj = JSON.parse(payload);
+          const obj = JSON.parse(payload) as Record<string, unknown>;
           if (anth) {
             // Anthropic SSE: content_block_delta com delta.text.
-            if (obj?.type === "content_block_delta" && obj?.delta?.type === "text_delta") {
-              const txt = obj.delta.text;
+            const delta = (obj as { delta?: { type?: string; text?: unknown } }).delta;
+            if (obj?.type === "content_block_delta" && delta?.type === "text_delta") {
+              const txt = delta.text;
               if (typeof txt === "string" && txt) yield txt;
             } else if (obj?.type === "message_stop") {
               return;
             }
           } else {
-            const delta = obj?.choices?.[0]?.delta?.content;
+            const choices = (obj as { choices?: Array<{ delta?: { content?: unknown } }> }).choices;
+            const delta = choices?.[0]?.delta?.content;
             if (typeof delta === "string" && delta) yield delta;
           }
-        } catch {}
+        } catch {
+          // Linha SSE inválida — ignora e segue para a próxima
+        }
       }
     }
   } finally {
@@ -204,7 +220,7 @@ export async function* streamChat(
 export interface ToolCall {
   id: string;
   name: string;
-  arguments: any;
+  arguments: Record<string, unknown>;
   result?: string;
 }
 
@@ -213,10 +229,17 @@ export interface ToolRoundResult {
   toolCalls: ToolCall[];
 }
 
+// Formato bruto das tool_calls retornadas pela API OpenAI-compatível.
+interface OpenAIToolCallRaw {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
+}
+
 export async function chatWithTools(
   cfg: AIConfig,
   initialMessages: LLMMessage[],
-  runTool: (name: string, args: any) => string | Promise<string>,
+  runTool: (name: string, args: Record<string, unknown>) => string | Promise<string>,
   opts?: {
     maxRounds?: number;
     signal?: AbortSignal;
@@ -234,7 +257,7 @@ export async function chatWithTools(
     try {
       const { asOpenAITools, asAnthropicTools } = await import("./tools");
       const url = anth ? `${cfg.baseUrl}/messages` : `${cfg.baseUrl}/chat/completions`;
-      let body: any;
+      let body: Record<string, unknown>;
       if (anth) {
         const { system, rest } = splitSystemAndMessages(messages);
         body = {
@@ -270,14 +293,22 @@ export async function chatWithTools(
       const text = await res.text().catch(() => "");
       throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
     }
-    const json = await res.json();
+    const json = (await res.json()) as Record<string, unknown>;
 
     if (anth) {
       // Resposta Anthropic: { content: [{type:"text"|"tool_use", ...}], stop_reason }
-      const blocks: any[] = Array.isArray(json?.content) ? json.content : [];
-      const toolUses = blocks.filter((b) => b.type === "tool_use");
+      type AnthRespBlock =
+        | { type: "text"; text?: string }
+        | { type: "tool_use"; id: string; name: string; input?: Record<string, unknown> };
+      const rawBlocks = (json as { content?: unknown }).content;
+      const blocks: AnthRespBlock[] = Array.isArray(rawBlocks)
+        ? (rawBlocks as AnthRespBlock[])
+        : [];
+      const toolUses = blocks.filter(
+        (b): b is Extract<AnthRespBlock, { type: "tool_use" }> => b.type === "tool_use",
+      );
       const textOut = blocks
-        .filter((b) => b.type === "text")
+        .filter((b): b is Extract<AnthRespBlock, { type: "text" }> => b.type === "text")
         .map((b) => b.text || "")
         .join("");
 
@@ -290,8 +321,9 @@ export async function chatWithTools(
         }));
         messages.push({ role: "assistant", content: textOut, tool_calls: tcs });
         for (const tu of toolUses) {
-          const result = await runTool(tu.name, tu.input || {});
-          const call: ToolCall = { id: tu.id, name: tu.name, arguments: tu.input || {}, result };
+          const input = tu.input || {};
+          const result = await runTool(tu.name, input);
+          const call: ToolCall = { id: tu.id, name: tu.name, arguments: input, result };
           calls.push(call);
           opts?.onProgress?.({ type: "tool", call });
           messages.push({ role: "tool", tool_call_id: tu.id, name: tu.name, content: result });
@@ -304,17 +336,23 @@ export async function chatWithTools(
     }
 
     // OpenAI-compatível.
-    const choice = json?.choices?.[0];
-    const msg = choice?.message;
+    const choices = (
+      json as {
+        choices?: Array<{ message?: { content?: string; tool_calls?: OpenAIToolCallRaw[] } }>;
+      }
+    ).choices;
+    const msg = choices?.[0]?.message;
     const toolCalls = msg?.tool_calls;
 
     if (toolCalls && toolCalls.length > 0) {
-      messages.push({ role: "assistant", content: msg.content || "", tool_calls: toolCalls });
+      messages.push({ role: "assistant", content: msg?.content || "", tool_calls: toolCalls });
       for (const tc of toolCalls) {
-        let args: any = {};
+        let args: Record<string, unknown> = {};
         try {
           args = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {};
-        } catch {}
+        } catch {
+          // arguments JSON inválido — modelo recebe sinal pelo resultado da tool
+        }
         const result = await runTool(tc.function.name, args);
         const call: ToolCall = { id: tc.id, name: tc.function.name, arguments: args, result };
         calls.push(call);

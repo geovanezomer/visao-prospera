@@ -14,7 +14,7 @@ import { buildPrescriptiveCards } from "@/engines/finance/prescriptive";
 import { MESES, sum, fmtNum } from "@/engines/finance/format";
 
 // ===== Helpers =====
-const safe = (n: any) => (typeof n === "number" && Number.isFinite(n) ? n : 0);
+const safe = (n: unknown): number => (typeof n === "number" && Number.isFinite(n) ? n : 0);
 
 const brl = (n: number) =>
   `R$ ${safe(n).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -71,19 +71,27 @@ export interface SnapshotSections {
 }
 
 export function buildSections(state: AppState, simulatedState?: AppState): SnapshotSections {
+  // Aliases dos tipos derivados — evita `any` nos fallbacks de `tryRun`.
+  type BuiltDRE = ReturnType<typeof buildDRE>;
+  type Ind = ReturnType<typeof calcIndicators>;
+  type CF = ReturnType<typeof buildCashFlow>;
+  type Val = ReturnType<typeof buildValuation>;
+  type Health = ReturnType<typeof computeHealth>;
+  type Cards = ReturnType<typeof buildPrescriptiveCards>;
+
   // SSOT: usa regime efetivo (downgrade automático Simples→Presumido se excedeu limite),
   // alinhado com TaxTab, IndicatorsTab, ValuationTab e demais consumidores.
   const effectiveRegime = tryRun(() => resolveEffectiveRegime(state), state.tax.regime);
-  const built = tryRun(() => buildDRE(state, effectiveRegime), null as any);
+  const built = tryRun<BuiltDRE | null>(() => buildDRE(state, effectiveRegime), null);
   const dre = built?.dre ?? null;
-  const ind = dre ? tryRun(() => calcIndicators(state, dre), null as any) : null;
-  const cf = tryRun(() => buildCashFlow(state), null as any);
-  const val = tryRun(
+  const ind = dre ? tryRun<Ind | null>(() => calcIndicators(state, dre), null) : null;
+  const cf = tryRun<CF | null>(() => buildCashFlow(state), null);
+  const val = tryRun<Val | null>(
     () => buildValuation(state, defaultValuationParams(state.businessType)),
-    null as any,
+    null,
   );
-  const health = tryRun(() => computeHealth(state), null as any);
-  const cards = tryRun(() => buildPrescriptiveCards(state), [] as any[]);
+  const health = tryRun<Health | null>(() => computeHealth(state), null);
+  const cards = tryRun<Cards>(() => buildPrescriptiveCards(state), [] as Cards);
 
   // ----- premissas -----
   const regimeLabel =
@@ -260,10 +268,11 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
   // ----- Diagnóstico -----
   const diagLines: string[] = [];
   if (dre && ind) {
-    const diag = tryRun(() => diagnose(state, dre, ind), [] as any[]);
+    type DiagItem = ReturnType<typeof diagnose>[number];
+    const diag = tryRun<DiagItem[]>(() => diagnose(state, dre, ind), []);
     if (diag.length) {
       diagLines.push(`## Diagnóstico`);
-      diag.forEach((d: any) =>
+      diag.forEach((d) =>
         diagLines.push(`- **[${d.level.toUpperCase()}] ${d.title}** — ${d.message}`),
       );
     }
@@ -343,7 +352,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
       cfLines.push(`**Pior mês:** ${cf.totais.pioresMes.mes} → ${brl(cf.totais.pioresMes.saldo)}`);
     if (cf.alertas?.length) {
       cfLines.push(`**Alertas:**`);
-      cf.alertas.forEach((a: any) => cfLines.push(`- ${a.mes}: ${brl(a.saldo)} (${a.tipo})`));
+      cf.alertas.forEach((a) => cfLines.push(`- ${a.mes}: ${brl(a.saldo)} (${a.tipo})`));
     }
   }
 
@@ -353,10 +362,10 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     valLines.push(`## Valuation`);
     valLines.push(`- **Método:** ${val.method}`);
     valLines.push(
-      `- **EV:** ${brl(val.enterpriseValue.pessimista)} (pessim.) · **${brl(val.enterpriseValue.base)} (base)** · ${brl(val.enterpriseValue.otimista)} (otim.)`,
+      `- **EV:** ${brl(val.enterpriseValue.low)} (pessim.) · **${brl(val.enterpriseValue.base)} (base)** · ${brl(val.enterpriseValue.high)} (otim.)`,
     );
     valLines.push(
-      `- **Equity:** ${brl(val.equityValue.pessimista)} (pessim.) · **${brl(val.equityValue.base)} (base)** · ${brl(val.equityValue.otimista)} (otim.)`,
+      `- **Equity:** ${brl(val.equityValue.low)} (pessim.) · **${brl(val.equityValue.base)} (base)** · ${brl(val.equityValue.high)} (otim.)`,
     );
     valLines.push(
       `- **Múltiplos implícitos:** EV/EBITDA ${fmtNum(safe(val.impliedMultiple.evEbitda), 2)}x · EV/Receita ${fmtNum(safe(val.impliedMultiple.evRevenue), 2)}x`,
@@ -364,11 +373,11 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     valLines.push(`- **Confiança:** ${val.confidenceScore} — ${val.confidenceRationale}`);
     valLines.push(`- **Haircut:** ${pct(val.haircutApplied * 100)}`);
     if (val.dcfDetails) {
-      const d = val.dcfDetails as any;
-      // C-1 fix: dcfDetails.wacc é armazenado em % (valuation.ts:198 `waccAnnual * 100`).
-      // terminalGrowth permanece em fração (ex.: 0.025) — multiplica × 100 só nele.
+      const d = val.dcfDetails;
+      // C-1 fix: dcfDetails.wacc é armazenado em % (valuation.ts:241 `waccAnnual * 100`).
+      // growthTerminal permanece em fração (ex.: 0.025) — multiplica × 100 só nele.
       valLines.push(
-        `- **DCF:** WACC ${pct(safe(d.wacc), 2)} · g ${pct(safe(d.terminalGrowth) * 100, 2)} · VP fluxos ${brl(safe(d.presentValueFlows))} · VP terminal ${brl(safe(d.presentValueTerminal))}`,
+        `- **DCF:** WACC ${pct(safe(d.wacc), 2)} · g ${pct(safe(d.growthTerminal) * 100, 2)} · VP fluxos ${brl(safe(d.npvFlows))} · VP terminal ${brl(safe(d.npvTerminal))}`,
       );
     }
     if (val.narrative) valLines.push(`> ${val.narrative}`);
@@ -385,7 +394,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     healthLines.push(`- **Headline:** ${health.headline}`);
     if (health.dimensions?.length) {
       healthLines.push(`### Dimensões:`);
-      health.dimensions.forEach((d: any) =>
+      health.dimensions.forEach((d) =>
         healthLines.push(
           `- **${d.label}** [${d.status}]: ${d.value} (score ${fmtNum(safe(d.score), 0)}, peso ${pct(safe(d.weight) * 100, 0)}) — ${d.comment}`,
         ),
@@ -397,11 +406,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
   const presLines: string[] = [];
   if (cards?.length) {
     presLines.push(`## Recomendações Prescritivas`);
-    cards
-      .slice(0, 10)
-      .forEach((c: any) =>
-        presLines.push(`- **${c.title || c.id}** — ${c.description || c.summary || ""}`),
-      );
+    cards.slice(0, 10).forEach((c) => presLines.push(`- **${c.problem}** — ${c.cause}`));
   }
 
   // ----- Estratégico -----
@@ -420,14 +425,17 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
       () => resolveEffectiveRegime(simulatedState),
       simulatedState.tax.regime,
     );
-    const builtSim = tryRun(() => buildDRE(simulatedState, simRegime), null as any);
+    type BuiltDRE = ReturnType<typeof buildDRE>;
+    type Ind = ReturnType<typeof calcIndicators>;
+    type Val = ReturnType<typeof buildValuation>;
+    const builtSim = tryRun<BuiltDRE | null>(() => buildDRE(simulatedState, simRegime), null);
     const dreSim = builtSim?.dre ?? null;
     const indSim = dreSim
-      ? tryRun(() => calcIndicators(simulatedState, dreSim), null as any)
+      ? tryRun<Ind | null>(() => calcIndicators(simulatedState, dreSim), null)
       : null;
-    const valSim = tryRun(
+    const valSim = tryRun<Val | null>(
       () => buildValuation(simulatedState, defaultValuationParams(simulatedState.businessType)),
-      null as any,
+      null,
     );
     if (dreSim && ind && indSim) {
       const rows: string[][] = [
@@ -558,8 +566,8 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     );
     if (t.issDeducoes)
       regLines.push(`- **Deduções ISS (materiais/subempreitada):** ${brl(t.issDeducoes)}`);
-    if (built?.tax?.totalAnual !== undefined)
-      regLines.push(`- **Carga tributária total apurada (ano):** ${brl(built.tax.totalAnual)}`);
+    if (built?.tax?.annual !== undefined)
+      regLines.push(`- **Carga tributária total apurada (ano):** ${brl(built.tax.annual)}`);
   }
 
   // ----- Comparativo de eras da Reforma Tributária (seção separada para dedup com simular_transicao_reforma) -----
@@ -669,7 +677,7 @@ let cacheKey = "";
 let cacheVal: SnapshotSections | null = null;
 let cacheSimKey = "";
 
-function fastHash(o: any): string {
+function fastHash(o: unknown): string {
   try {
     const s = JSON.stringify(o);
     let h = 0;

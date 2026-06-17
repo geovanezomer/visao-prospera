@@ -63,8 +63,9 @@ export async function processFile(file: File, onProgress?: OnProgress): Promise<
       base.pagesProcessed = ocr.pagesProcessed;
       if (!ocr.text.trim()) base.error = "OCR não extraiu texto utilizável.";
       return base;
-    } catch (e: any) {
-      return { ...base, error: `Falha ao ler PDF: ${e?.message || e}` };
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return { ...base, error: `Falha ao ler PDF: ${msg}` };
     }
   }
   return { ...base, error: `Tipo não suportado: ${file.type}.` };
@@ -79,9 +80,28 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-async function loadPdfjs(): Promise<any> {
+// pdfjs-dist não publica tipos completos para o subpath `build/pdf.mjs`.
+// Tipamos só o subconjunto que usamos para não vazar `any` para os call-sites.
+interface PdfTextItem {
+  str: string;
+}
+interface PdfPage {
+  getTextContent(): Promise<{ items: PdfTextItem[] }>;
+  getViewport(opts: { scale: number }): { width: number; height: number };
+  render(opts: unknown): { promise: Promise<void> };
+}
+interface PdfDocument {
+  numPages: number;
+  getPage(i: number): Promise<PdfPage>;
+}
+interface PdfjsLib {
+  GlobalWorkerOptions: { workerSrc: string };
+  getDocument(opts: { data: ArrayBuffer }): { promise: Promise<PdfDocument> };
+}
+
+async function loadPdfjs(): Promise<PdfjsLib> {
   // @ts-expect-error - sem tipos para subpath
-  const pdfjs: any = await import("pdfjs-dist/build/pdf.mjs");
+  const pdfjs = (await import("pdfjs-dist/build/pdf.mjs")) as PdfjsLib;
   pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@6.0.227/build/pdf.worker.min.mjs`;
   return pdfjs;
 }
@@ -95,7 +115,7 @@ async function extractPdfText(file: File): Promise<{ text: string; numPages: num
   for (let i = 1; i <= maxPages; i++) {
     const page = await doc.getPage(i);
     const content = await page.getTextContent();
-    const pageText = content.items.map((it: any) => it.str).join(" ");
+    const pageText = content.items.map((it) => it.str).join(" ");
     parts.push(`--- Página ${i} ---\n${pageText}`);
   }
   if (doc.numPages > maxPages)
@@ -113,8 +133,10 @@ async function ocrPdf(
   const maxPages = Math.min(doc.numPages, OCR_MAX_PAGES);
 
   const { createWorker } = await import("tesseract.js");
-  const worker: any = await createWorker(["por", "eng"], 1, {
-    logger: (m: any) => {
+  // Tesseract.js logger emite progresso parcial; tipamos só o que consumimos.
+  type TesseractProgress = { status?: string; progress?: number };
+  const worker = await createWorker(["por", "eng"], 1, {
+    logger: (m: TesseractProgress) => {
       if (m?.status === "recognizing text" && typeof m.progress === "number") {
         onProgress?.(`OCR ${Math.round(m.progress * 100)}%`);
       }
@@ -133,7 +155,10 @@ async function ocrPdf(
       canvas.width = viewport.width;
       canvas.height = viewport.height;
       const ctx = canvas.getContext("2d")!;
-      await page.render({ canvasContext: ctx, viewport, canvas } as any).promise;
+      // pdfjs render aceita objeto com canvasContext+viewport; canvas extra é tolerado mas não é parte do tipo público.
+      await page.render({ canvasContext: ctx, viewport, canvas } as unknown as Parameters<
+        PdfPage["render"]
+      >[0]).promise;
       const { data } = await worker.recognize(canvas);
       parts.push(`--- Página ${i} (OCR) ---\n${data.text || ""}`);
       if (typeof data.confidence === "number") confidences.push(data.confidence);
@@ -170,12 +195,17 @@ export function buildPdfContext(atts: ChatAttachment[]): string {
 }
 
 /** Para chamada multimodal: parts no formato OpenAI vision. */
-export function buildVisionMessageContent(text: string, atts: ChatAttachment[]): any {
+export type VisionPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+export type VisionContent = string | VisionPart[];
+
+export function buildVisionMessageContent(text: string, atts: ChatAttachment[]): VisionContent {
   const images = atts.filter((a) => a.type === "image" && a.dataUrl);
   if (!images.length) return text; // string normal
   return [
     { type: "text", text },
-    ...images.map((img) => ({ type: "image_url", image_url: { url: img.dataUrl! } })),
+    ...images.map((img) => ({ type: "image_url" as const, image_url: { url: img.dataUrl! } })),
   ];
 }
 
