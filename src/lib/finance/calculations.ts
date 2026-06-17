@@ -716,10 +716,18 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     if (c.category === "financeiro") continue;
     const v = effectiveMonthValues(c, regime);
     despesasPorCategoria[c.label] = v;
+    const isCpv = c.category === "custo_vendas" || c.category === "direto_venda";
+    const isOpVar = c.category === "variavel";
+    // Comportamento (fixo/variável) para MC/PE. Default deriva da category;
+    // override manual via `comportamento` cobre casos como folha CLT no CPV (variável
+    // contábil, mas fixo no curto prazo — distorce MC/PE se não for sinalizado).
+    const comportamento: "fixo" | "variavel" =
+      c.comportamento ?? ((isCpv || isOpVar) ? "variavel" : "fixo");
     for (let i = 0; i < 12; i++) {
-      if (c.category === "custo_vendas" || c.category === "direto_venda") { cpv[i] += v[i]; custosVariaveis[i] += v[i]; }
-      else if (c.category === "variavel") { despOp[i] += v[i]; custosVariaveis[i] += v[i]; }
-      else { despOp[i] += v[i]; custosFixos[i] += v[i]; }
+      if (isCpv) cpv[i] += v[i];          // CPV contábil preserva a natureza (não muda com override).
+      else despOp[i] += v[i];
+      if (comportamento === "variavel") custosVariaveis[i] += v[i];
+      else custosFixos[i] += v[i];
     }
   }
 
