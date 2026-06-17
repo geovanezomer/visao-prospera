@@ -129,89 +129,23 @@ export function presumidoBases(business: BusinessType): { irpj: number; csll: nu
 }
 
 // =====================================================================
-// Encargos automáticos sobre folha CLT
+// CUSTOS · REGIME · FOLHA — extraídos para ./costs.ts e ./regime.ts (Fase 1).
+// Re-export preserva a API pública dos call sites e dos testes.
 // =====================================================================
-/** Classificação canônica: linhas que compõem o CPV/CMV/CSP (geram crédito tributário
- *  e escalam com receita no forecast). Usado em buildDRE, calcReal e forecast. */
-export function isCpvCost(c: CostLine): boolean {
-  return c.category === "custo_vendas" || c.category === "direto_venda";
-}
-
-export function fixedCostBase(values: number[]): number {
-  const normalized = values.length === 12 ? values : fill12(values[0] || 0);
-
-  const first = normalized[0] || 0;
-  // Se todos os meses são iguais, retorna o valor.
-  if (normalized.every((v) => v === first)) return first;
-  // Caso contrário (estado inconsistente para um custo marcado fixo),
-  // adota a edição mais recente — varre do mês 12 para trás procurando
-  // o último valor distinto do anterior. Generaliza o antigo heurístico
-  // que só detectava alteração no mês 12.
-  for (let i = normalized.length - 1; i > 0; i--) {
-    if (normalized[i] !== normalized[i - 1]) return normalized[i] || 0;
-  }
-  return normalized[normalized.length - 1] || first;
-}
-
-export function effectiveMonthValues(c: CostLine, regime?: TaxRegime): number[] {
-  const raw = c.fixed ? fill12(fixedCostBase(c.values)) : c.values.slice();
-  if (c.encargosAuto) {
-    // SSOT-12: encargos reduzidos no Simples (CPP já no DAS).
-    const isSimples = regime === "simples";
-    const defaultRate = isSimples ? DEFAULT_ENCARGOS_PCT_SIMPLES : DEFAULT_ENCARGOS_PCT;
-    const factor = 1 + (c.encargosPct ?? defaultRate) / 100;
-    return raw.map((v) => v * factor);
-  }
-  return raw;
-}
-
-/** Mantido para retro-compatibilidade — agora aplica encargos. */
-export function monthValues(c: CostLine, regime?: TaxRegime): number[] {
-  return effectiveMonthValues(c, regime);
-}
-
-// =====================================================================
-// Fator R automático: Anexo V vira III se folha/RBT12 ≥ 28%
-// =====================================================================
-const LABOR_KEYWORDS = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra|m\.o\.|clt/i;
-
-export function folhaAnual(state: AppState): number {
-  // SSOT: regime EFETIVO. Encargos do Simples são reduzidos automaticamente
-  // dentro de effectiveMonthValues quando aplicável.
-  const regime = resolveEffectiveRegime(state);
-  const laborCosts = state.costs
-    .filter((c) => c.category !== "financeiro" && (c.encargosAuto || LABOR_KEYWORDS.test(c.label)));
-  return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c, regime)), 0);
-}
-
-// SSOT-10: LIMITE_SIMPLES removido — use SIMPLES_LIMITE / getSimplesLimite(tax) de taxDefaults.ts.
-
-export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
-  const anexo = state.tax.simplesAnexo;
-  if (!state.tax.fatorRAuto || anexo !== "V") return anexo;
-  const rbt12 = sum(state.revenue.bruta);
-  if (rbt12 <= 0 || rbt12 > getSimplesLimite(state.tax)) return anexo;
-  const fatorR = folhaAnual(state) / rbt12;
-  const minPct = getFatorRMinimoPct(state.tax);
-  return fatorR >= (minPct / 100) ? "III" : "V";
-}
-
-/** Retorna true se RBT12 ultrapassa o limite do Simples Nacional (desenquadramento obrigatório). */
-export function simplesExcedeLimite(state: AppState): boolean {
-  return sum(state.revenue.bruta) > getSimplesLimite(state.tax);
-}
-
-/**
- * Resolve o regime tributário EFETIVO considerando desenquadramento do Simples.
- * Se o usuário escolheu Simples mas a RBT12 estourou o limite, força Presumido.
- * Esta é a VERDADE ABSOLUTA usada por todas as abas (Indicadores, Saúde, Forecast, etc.).
- */
-export function resolveEffectiveRegime(state: AppState): TaxRegime {
-  if (state.tax.regime === "simples" && simplesExcedeLimite(state)) {
-    return "presumido";
-  }
-  return state.tax.regime;
-}
+export {
+  isCpvCost,
+  fixedCostBase,
+  effectiveMonthValues,
+  monthValues,
+} from "./costs";
+export {
+  folhaAnual,
+  resolveSimplesAnexo,
+  simplesExcedeLimite,
+  resolveEffectiveRegime,
+} from "./regime";
+import { effectiveMonthValues, isCpvCost } from "./costs";
+import { resolveEffectiveRegime, folhaAnual } from "./regime";
 
 /**
  * CAGR (Taxa de Crescimento Anual Composta) sobre uma série mensal.
