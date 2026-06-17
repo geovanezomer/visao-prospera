@@ -857,8 +857,14 @@ export interface Indicators {
   liquidezSeca: number;
   /** Disponibilidades ÷ Passivo Circulante */
   liquidezImediata: number;
-  /** Passivo Total ÷ Ativo Total × 100 */
+  /** Passivo Total ÷ Ativo Total × 100. Quando `endividamentoGeralDadosCompletos=false`, é estimativa de fallback. */
   endividamentoGeral: number;
+  /**
+   * true quando Ativo Total foi informado pelo consultor — `endividamentoGeral` é valor real.
+   * false quando faltou Ativo Total: a engine usa fallback (Dívida Onerosa + PNO) ÷ proxy de
+   * Ativo (PL + D + PNO), evitando exibir "0%" silenciosamente como se fosse "sem dívida".
+   */
+  endividamentoGeralDadosCompletos: boolean;
   /** Dívida Onerosa ÷ Patrimônio Líquido × 100 */
   grauEndividamento: number;
   /** EBIT ÷ Despesas Financeiras */
