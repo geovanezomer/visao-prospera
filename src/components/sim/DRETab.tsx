@@ -491,7 +491,7 @@ export function DRETab() {
                           const sgn = row.tone === "neg" ? -1 : 1;
                           const lTotal = sum(l.values) * sgn;
                           return (
-                            <tr key={`${row.id}_${li}`} className="border-t border-border/20">
+                            <tr key={`${row.id}_${li}`} className="border-t border-border/20 bg-card">
                               <td className="sticky left-0 z-10 bg-inherit px-4 py-1.5 pl-8 text-xs text-muted-foreground shadow-[1px_0_0_0_var(--border)]">
                                 {l.label}
                               </td>
@@ -520,7 +520,7 @@ export function DRETab() {
                           );
                         })}
                       {isOpen && row.lines.length === 0 && (
-                        <tr className="border-t border-border/20">
+                        <tr className="border-t border-border/20 bg-card">
                           <td
                             colSpan={(showPeriods ? periodLabels.length : 0) + 3}
                             className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground"
@@ -570,7 +570,7 @@ export function DRETab() {
                         linhasCpv.map((l, li) => {
                           const lTotal = sum(l.values);
                           return (
-                            <tr key={`cpv_${li}`} className="border-t border-border/20">
+                            <tr key={`cpv_${li}`} className="border-t border-border/20 bg-card">
                               <td className="sticky left-0 z-10 bg-inherit px-4 py-1.5 pl-8 text-xs text-muted-foreground shadow-[1px_0_0_0_var(--border)]">
                                 {l.label}
                               </td>
@@ -594,7 +594,7 @@ export function DRETab() {
                           );
                         })}
                       {openCpv && linhasCpv.length === 0 && (
-                        <tr className="border-t border-border/20">
+                        <tr className="border-t border-border/20 bg-card">
                           <td
                             colSpan={(showPeriods ? periodLabels.length : 0) + 3}
                             className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground"
