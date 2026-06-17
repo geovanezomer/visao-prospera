@@ -182,7 +182,12 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     const ebitda = lucroBruto - despesasOp;
     const ebit = ebitda - depMensal;
     const resultadoFinanceiro = receita * resultadoFinanceiroRatioBase; // negativo para empresas alavancadas
-    const impostos = receita * taxRatioBase; // alíquota efetiva sobre receita (aproximação)
+    // Auditoria #4: impostos = parte sobre receita + parte sobre LAIR projetado.
+    // LAIR projetado = EBIT + resultado financeiro (antes de IRPJ/CSLL).
+    const lairProjetado = ebit + resultadoFinanceiro;
+    const impostosVendas = receita * taxVendasRatio;
+    const impostosLucro = Math.max(0, lairProjetado) * taxLucroRatio;
+    const impostos = impostosVendas + impostosLucro;
     const lucroLiquido = ebit + resultadoFinanceiro - impostos;
 
     // NCG do mês: anualiza receita e CPV do mês para PMR/PMP
@@ -194,7 +199,9 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     ncgAnterior = ncgT;
 
     const capex = (capexBase[mes] || 0) * fatorInflacao;
-    const fcl = ebitda - impostos - capex - deltaNcg;
+    // Auditoria #9: FCL (FCFE) inclui resultado financeiro (juros pagos/recebidos).
+    // Sem isso, empresas alavancadas têm FCL superestimado — alimentando VPL/TIR/DCF inflados.
+    const fcl = ebitda + resultadoFinanceiro - impostos - capex - deltaNcg;
     saldo += fcl;
 
     // Guarda final: nunca propagar NaN/Infinity para a UI mesmo que algum
