@@ -54,7 +54,7 @@ export function errToMd(e: unknown): string {
   const msg = err?.message || String(e);
   if (/timeout/i.test(msg))
     return `**⏱️ Timeout** — o modelo demorou demais. Aumente o timeout em ⚙️.`;
-  if (/AbortError/i.test(e?.name || "")) return "_(geração interrompida)_";
+  if (/AbortError/i.test(err?.name || "")) return "_(geração interrompida)_";
   if (/401|403/.test(msg)) return `**🔑 Autenticação falhou** — verifique a API Key em ⚙️.`;
   if (/429/.test(msg)) return `**🚦 Rate limit** — aguarde alguns segundos e tente novamente.`;
   if (/Failed to fetch|NetworkError/i.test(msg))
