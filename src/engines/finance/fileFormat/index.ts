@@ -24,8 +24,8 @@ export type { Migration } from "./migrations";
 export { MIGRATIONS, runMigrations } from "./migrations";
 
 /**
- * Serializa o estado completo + cenários + extras no envelope .finnance.
- * Carimba sempre com `CURRENT_VERSION` — saveGzfp() é o alias semântico.
+ * Serializa o estado completo + cenários + extras no envelope `.finnance`.
+ * Carimba sempre com `CURRENT_VERSION`.
  */
 export function serialize(
   state: AppState,
