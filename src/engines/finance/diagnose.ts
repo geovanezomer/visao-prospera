@@ -1,6 +1,6 @@
 // =====================================================================
 // DIAGNÓSTICO — gera alertas estratégicos (OK / Warn / Danger) a partir
-// da DRE e dos indicadores. Extraído de calculations.ts (Fase 3).
+// da DRE e dos indicadores. Funções puras, sem dependência de UI.
 // =====================================================================
 
 import { AppState } from "./types";
