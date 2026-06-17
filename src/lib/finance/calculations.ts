@@ -1064,7 +1064,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     margemEbitda: safePct(ebitdaAnual, receitaLiqAnual),
     margemEbit: safePct(ebitAnual, receitaLiqAnual),
     margemLiquida: safePct(llAnual, receitaLiqAnual),
-    margemContribuicao, pontoEquilibrio, pontoEquilibrioFinanceiro,
+    margemContribuicao, pontoEquilibrio, pontoEquilibrioOperacional, pontoEquilibrioFinanceiro,
     roe, roa, roic, wacc: safeNumber(wacc),
     cicloFinanceiro, ncg, gapCapitalGiro,
     liquidezCorrente, liquidezSeca, liquidezImediata,
