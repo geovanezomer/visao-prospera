@@ -248,7 +248,7 @@ estimado × esforço.
 
 Hook Zustand-like que:
 
-1. **Hidrata** do storage (`gzfp:state:<userId>`), com fallback para
+1. **Hidrata** do storage (`finnance:state:<userId>`), com fallback para
    chaves legadas (`simulapro:state:v2`, `:v1`).
 2. **Migra** via `validateAndMigrate` (atualiza versão do schema).
 3. **Autosave** debounced (`AutosaveStatus`: idle/saving/saved/error).
