@@ -145,7 +145,7 @@ export {
   resolveEffectiveRegime,
 } from "./regime";
 import { effectiveMonthValues, isCpvCost } from "./costs";
-import { resolveEffectiveRegime, folhaAnual } from "./regime";
+import { resolveEffectiveRegime, resolveSimplesAnexo, simplesExcedeLimite, folhaAnual } from "./regime";
 
 /**
  * CAGR (Taxa de Crescimento Anual Composta) sobre uma série mensal.
