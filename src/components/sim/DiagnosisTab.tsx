@@ -3,6 +3,7 @@ import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { AppState } from "@/engines/finance/types";
 import { buildPrescriptiveCards, PrescriptiveCard } from "@/engines/finance/prescriptive";
 import { diagnose } from "@/engines/finance";
+import { buildBriefing } from "@/engines/finance/briefing";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "lucide-react";
 import { StrategicSummary } from "./StrategicSummary";
@@ -10,6 +11,7 @@ import { SectionTitle } from "./primitives";
 import { HealthScoreCard, SensitivityCard } from "./AnalysisTab";
 import { CriticalAlertsBanner } from "./CriticalAlertsBanner";
 import { WaterfallCard } from "./WaterfallCard";
+import { DiagnosticoExecutivoCard } from "./DiagnosticoExecutivoCard";
 
 export function DiagnosisTab() {
   const state = useFinanceState();
@@ -19,6 +21,11 @@ export function DiagnosisTab() {
   const cards = useMemo(() => buildPrescriptiveCards(state), [state]);
   const diagnostics = useMemo(
     () => diagnose(state, model.dre, model.ind),
+    [state, model.dre, model.ind],
+  );
+  // Briefing estruturado — input determinístico para o card de IA.
+  const briefing = useMemo(
+    () => buildBriefing(state, model.dre, model.ind),
     [state, model.dre, model.ind],
   );
 
@@ -38,6 +45,10 @@ export function DiagnosisTab() {
         state={state}
         model={{ dre: model.dre, ind: model.ind, cf: model.cf, regime: model.regime }}
       />
+
+      {/* Diagnóstico Executivo gerado pela IA — só renderiza se IA configurada */}
+      <DiagnosticoExecutivoCard briefing={briefing} />
+
 
       {/* Waterfall — âncora visual da conversa: mostra onde o resultado se perde */}
       <WaterfallCard dre={model.dre} ind={model.ind} />
