@@ -46,7 +46,7 @@ export function StrategicTab() {
   const setSection = <K extends keyof StrategicAnswers>(key: K, patch: Partial<StrategicAnswers[K]>) => {
     update((s) => ({
       ...s,
-      strategic: { ...ensure(s), [key]: { ...ensure(s)[key], ...patch } },
+      strategic: { ...ensureStrategic(s.strategic), [key]: { ...ensureStrategic(s.strategic)[key], ...patch } },
     }));
   };
 
