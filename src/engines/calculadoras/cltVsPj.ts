@@ -133,8 +133,8 @@ export function calcularCLT(i: CltVsPjInput): ResultadoCLT {
   const { inss, irrf, liquido } = liquidoMensalCLT(i.salarioBrutoCLT, i.dependentesIR);
   const liquidoAnual = liquido * 12;
 
-  // 13º — cálculo separado (INSS+IRRF próprios)
-  const decimo = liquidoMensalCLT(i.salarioBrutoCLT, 0).liquido;
+  // 13º — cálculo separado (INSS+IRRF próprios), com dedução de dependentes (auditoria #13).
+  const decimo = liquidoMensalCLT(i.salarioBrutoCLT, i.dependentesIR).liquido;
 
   // Férias + 1/3
   const baseFerias = i.salarioBrutoCLT + i.salarioBrutoCLT / 3;
