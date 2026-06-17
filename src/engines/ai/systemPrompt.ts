@@ -68,13 +68,17 @@ import type { Skill } from "./providers";
 // empresa ativa e regime tributário em vigor (vital em reunião com cliente).
 export interface RuntimeContext {
   companyName?: string;
-  regimeLabel?: string;   // ex: "Simples Nacional (Anexo III, Fator R 32%)"
-  cenarioAtivo?: string;  // nome do cenário/simulação ativa, se houver
+  regimeLabel?: string; // ex: "Simples Nacional (Anexo III, Fator R 32%)"
+  cenarioAtivo?: string; // nome do cenário/simulação ativa, se houver
 }
 
 export function buildContextHeader(ctx: RuntimeContext = {}): string {
   const now = new Date();
-  const dataStr = now.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+  const dataStr = now.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
   const mesAno = now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   const lines = [
     "### CONTEXTO DA SESSÃO (use sempre que se referir a 'hoje', 'agora', 'a empresa', 'o regime')",
@@ -97,11 +101,21 @@ export function buildSystemPrompt(opts: {
   context?: RuntimeContext;
 }): string {
   // SOUL substitui a PERSONA fixa quando fornecido (editável em Configurações).
-  const soul = (opts.soul && opts.soul.trim()) ? opts.soul.trim() : PERSONA;
-  const parts: string[] = [soul, "", buildContextHeader(opts.context), "", SISTEMA, "", REGRAS, "", GLOSSARIO];
+  const soul = opts.soul && opts.soul.trim() ? opts.soul.trim() : PERSONA;
+  const parts: string[] = [
+    soul,
+    "",
+    buildContextHeader(opts.context),
+    "",
+    SISTEMA,
+    "",
+    REGRAS,
+    "",
+    GLOSSARIO,
+  ];
 
   // SKILLS ativas — anexadas como blocos modulares.
-  const activeSkills = (opts.skills || []).filter(s => s.enabled && s.body.trim());
+  const activeSkills = (opts.skills || []).filter((s) => s.enabled && s.body.trim());
   if (activeSkills.length > 0) {
     parts.push("", "### SKILLS ATIVAS");
     for (const s of activeSkills) {
@@ -110,15 +124,23 @@ export function buildSystemPrompt(opts: {
   }
 
   if (opts.useTools) {
-    parts.push("", `MODO TOOL-CALLING ATIVO: use as funções disponíveis para buscar os dados exatos sob demanda. Não invente — chame a função.`);
+    parts.push(
+      "",
+      `MODO TOOL-CALLING ATIVO: use as funções disponíveis para buscar os dados exatos sob demanda. Não invente — chame a função.`,
+    );
   } else if (opts.includeSnapshot && opts.snapshot) {
     parts.push("", "<SNAPSHOT>", opts.snapshot, "</SNAPSHOT>");
   } else {
-    parts.push("", "(SNAPSHOT desativado — avise o usuário que está sem acesso aos dados específicos.)");
+    parts.push(
+      "",
+      "(SNAPSHOT desativado — avise o usuário que está sem acesso aos dados específicos.)",
+    );
   }
 
   if (opts.auditMode) {
-    parts.push("", `MODO AUDITOR: produza um RELATÓRIO ESTRUTURADO para apresentação ao cliente.
+    parts.push(
+      "",
+      `MODO AUDITOR: produza um RELATÓRIO ESTRUTURADO para apresentação ao cliente.
 
 **FORMATO OBRIGATÓRIO** (não altere títulos, ordem, número de itens, nem o marcador inicial — o frontend depende deles para renderizar):
 
@@ -158,7 +180,8 @@ Lista com bullets. Use 'comparar_com_setor' para validar fora-da-curva. Se nenhu
 3. ...
 <!--/AUDIT-REPORT-->
 
-Regras: brutalmente honesto, todo número com R$/% e fonte, nada de "considerar avaliar" — verbo no imperativo.`);
+Regras: brutalmente honesto, todo número com R$/% e fonte, nada de "considerar avaliar" — verbo no imperativo.`,
+    );
   }
 
   if (opts.extra && opts.extra.trim()) {

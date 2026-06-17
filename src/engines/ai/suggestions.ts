@@ -3,7 +3,12 @@
 // como perguntas prontas que a IA pode responder com dados reais.
 
 import type { AppState } from "@/engines/finance/types";
-import { buildDRE, calcIndicators, diagnose, resolveEffectiveRegime } from "@/engines/finance/calculations";
+import {
+  buildDRE,
+  calcIndicators,
+  diagnose,
+  resolveEffectiveRegime,
+} from "@/engines/finance/calculations";
 import { buildCashFlow } from "@/engines/finance/cashflow";
 
 const STATIC_FALLBACK = [
@@ -19,7 +24,11 @@ const STATIC_FALLBACK = [
  * Converte um diagnóstico em pergunta executiva, usando números reais
  * (DSCR, margens) quando disponíveis nos indicadores.
  */
-function diagnosticToQuestion(title: string, message: string, ind?: { dscr?: number; margemLiquida?: number; margemEbitda?: number }): string {
+function diagnosticToQuestion(
+  title: string,
+  message: string,
+  ind?: { dscr?: number; margemLiquida?: number; margemEbitda?: number },
+): string {
   const t = title.toLowerCase();
 
   if (t.includes("caixa") || t.includes("liquidez")) {
@@ -27,12 +36,18 @@ function diagnosticToQuestion(title: string, message: string, ind?: { dscr?: num
   }
 
   // DSCR — usa o valor real do indicador para pergunta cirúrgica.
-  if (t.includes("dscr") || t.includes("cobertura de juros") || t.includes("alavancagem") || t.includes("dívida")) {
+  if (
+    t.includes("dscr") ||
+    t.includes("cobertura de juros") ||
+    t.includes("alavancagem") ||
+    t.includes("dívida")
+  ) {
     const dscr = ind?.dscr;
     if (typeof dscr === "number" && isFinite(dscr)) {
       const fmt = dscr.toFixed(2).replace(".", ",");
       const gap = Math.max(0, 1.5 - dscr);
-      const gapTxt = gap > 0 ? ` (gap de ${gap.toFixed(2).replace(".", ",")}× até a meta de 1,5×)` : "";
+      const gapTxt =
+        gap > 0 ? ` (gap de ${gap.toFixed(2).replace(".", ",")}× até a meta de 1,5×)` : "";
       if (dscr < 1) {
         return `DSCR atual em ${fmt}× — EBITDA NÃO cobre o serviço da dívida${gapTxt}. Quanto de EBITDA falta para chegar a 1,5× e que 3 alavancas movem isso mais rápido (alongar prazo, reduzir taxa, cortar custo)?`;
       }
@@ -46,7 +61,10 @@ function diagnosticToQuestion(title: string, message: string, ind?: { dscr?: num
 
   if (t.includes("margem")) {
     const m = ind?.margemLiquida ?? ind?.margemEbitda;
-    const mTxt = typeof m === "number" && isFinite(m) ? ` (atual ${(m * 100).toFixed(1).replace(".", ",")}%)` : "";
+    const mTxt =
+      typeof m === "number" && isFinite(m)
+        ? ` (atual ${(m * 100).toFixed(1).replace(".", ",")}%)`
+        : "";
     return `"${title}"${mTxt} — quebra a margem por componente (preço, custo variável, fixo) e mostra onde está o vazamento.`;
   }
   if (t.includes("folha") || t.includes("mão de obra") || t.includes("pessoal")) {
@@ -88,14 +106,15 @@ export function buildDynamicSuggestions(state: AppState, max = 6): string[] {
 
     // 1) Caixa negativo — usa o pior mês + aporte estimado (|saldo|).
     const pior = cf.totais.pioresMes;
-    const mesesNeg = cf.alertas.filter(a => a.tipo === "negativo");
+    const mesesNeg = cf.alertas.filter((a) => a.tipo === "negativo");
     if (pior && pior.saldo < 0) {
-      const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+      const brl = (n: number) =>
+        n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
       const aporteEstimado = Math.abs(pior.saldo);
       const qtd = mesesNeg.length;
       out.push(
         `Caixa fica negativo em ${qtd} mês(es) — pior é ${pior.mes} (${brl(pior.saldo)}). ` +
-        `Aporte estimado de ~${brl(aporteEstimado)} cobriria o vale; em que mês injetar para minimizar o capital parado?`
+          `Aporte estimado de ~${brl(aporteEstimado)} cobriria o vale; em que mês injetar para minimizar o capital parado?`,
       );
     }
 
@@ -116,7 +135,7 @@ export function buildDynamicSuggestions(state: AppState, max = 6): string[] {
     // 3) Completa com estáticas se sobrar espaço.
     for (const s of STATIC_FALLBACK) {
       if (out.length >= cap) break;
-      if (!out.some(o => o === s)) out.push(s);
+      if (!out.some((o) => o === s)) out.push(s);
     }
 
     return out.slice(0, cap);

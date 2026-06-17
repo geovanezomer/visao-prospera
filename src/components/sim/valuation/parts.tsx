@@ -4,8 +4,18 @@ import { MoneyInput } from "../primitives";
 import { fmtBRLCompact } from "@/engines/finance/format";
 
 export function MultRow({
-  label, base, value, onChange, ev,
-}: { label: string; base: number; value: number; onChange: (n: number) => void; ev: number }) {
+  label,
+  base,
+  value,
+  onChange,
+  ev,
+}: {
+  label: string;
+  base: number;
+  value: number;
+  onChange: (n: number) => void;
+  ev: number;
+}) {
   return (
     <tr className="border-b border-border/40">
       <td className="py-2.5 text-foreground">{label}</td>
@@ -21,16 +31,32 @@ export function MultRow({
 }
 
 export function SliderField({
-  label, value, min, max, step, suffix, onChange, hint,
+  label,
+  value,
+  min,
+  max,
+  step,
+  suffix,
+  onChange,
+  hint,
 }: {
-  label: string; value: number; min: number; max: number; step: number;
-  suffix?: string; onChange: (v: number) => void; hint?: string;
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  suffix?: string;
+  onChange: (v: number) => void;
+  hint?: string;
 }) {
   return (
     <div>
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">{label}</span>
-        <span className="mono font-semibold text-foreground">{value.toFixed(step < 1 ? 2 : 0)}{suffix}</span>
+        <span className="mono font-semibold text-foreground">
+          {value.toFixed(step < 1 ? 2 : 0)}
+          {suffix}
+        </span>
       </div>
       <Slider
         value={[value]}
@@ -47,10 +73,13 @@ export function SliderField({
 
 export function ConfidenceBadge({ grade }: { grade: string }) {
   const tone =
-    grade === "A" ? "border-pos/40 bg-pos/10 text-pos" :
-    grade === "B" ? "border-primary/40 bg-primary/10 text-primary" :
-    grade === "C" ? "border-[var(--warning)]/40 bg-[var(--warning)]/10 text-[var(--warning)]" :
-    "border-neg/40 bg-neg/10 text-neg";
+    grade === "A"
+      ? "border-pos/40 bg-pos/10 text-pos"
+      : grade === "B"
+        ? "border-primary/40 bg-primary/10 text-primary"
+        : grade === "C"
+          ? "border-[var(--warning)]/40 bg-[var(--warning)]/10 text-[var(--warning)]"
+          : "border-neg/40 bg-neg/10 text-neg";
   return (
     <div className={`rounded-md border px-3 py-1 text-xs font-semibold ${tone}`}>
       Confiança: {grade}
@@ -59,21 +88,37 @@ export function ConfidenceBadge({ grade }: { grade: string }) {
 }
 
 export function RangeCard({
-  tone, label, desc, value, base,
-}: { tone: "neg" | "primary" | "pos"; label: string; desc: string; value: number; base: number }) {
+  tone,
+  label,
+  desc,
+  value,
+  base,
+}: {
+  tone: "neg" | "primary" | "pos";
+  label: string;
+  desc: string;
+  value: number;
+  base: number;
+}) {
   const toneClasses =
-    tone === "neg" ? "border-neg/40 bg-neg/5" :
-    tone === "pos" ? "border-pos/40 bg-pos/5" :
-    "border-primary/40 bg-primary/5";
+    tone === "neg"
+      ? "border-neg/40 bg-neg/5"
+      : tone === "pos"
+        ? "border-pos/40 bg-pos/5"
+        : "border-primary/40 bg-primary/5";
   const textTone = tone === "neg" ? "text-neg" : tone === "pos" ? "text-pos" : "text-primary";
   const delta = base !== 0 ? ((value - base) / Math.abs(base)) * 100 : 0;
   return (
     <div className={`rounded-md border p-3 ${toneClasses}`}>
-      <div className={`text-[10px] font-semibold uppercase tracking-wider ${textTone}`}>{label}</div>
+      <div className={`text-[10px] font-semibold uppercase tracking-wider ${textTone}`}>
+        {label}
+      </div>
       <div className="mt-1 text-[10px] text-muted-foreground">{desc}</div>
       <div className={`mono mt-2 text-xl font-bold ${textTone}`}>{fmtBRLCompact(value)}</div>
       <div className="mt-1 text-[10px] text-muted-foreground">
-        {value === base ? "referência (100%)" : `${delta >= 0 ? "+" : ""}${delta.toFixed(0)}% vs base`}
+        {value === base
+          ? "referência (100%)"
+          : `${delta >= 0 ? "+" : ""}${delta.toFixed(0)}% vs base`}
       </div>
     </div>
   );
@@ -91,12 +136,26 @@ export function Reco({ icon, title, text }: { icon: string; title: string; text:
   );
 }
 
-export function KV({ k, v, fmt = "money", extra }: { k: string; v: number; fmt?: "money" | "pct" | "raw"; extra?: string }) {
-  const txt = fmt === "money" ? fmtBRLCompact(v) : fmt === "pct" ? `${v.toFixed(2)}%` : v.toString();
+export function KV({
+  k,
+  v,
+  fmt = "money",
+  extra,
+}: {
+  k: string;
+  v: number;
+  fmt?: "money" | "pct" | "raw";
+  extra?: string;
+}) {
+  const txt =
+    fmt === "money" ? fmtBRLCompact(v) : fmt === "pct" ? `${v.toFixed(2)}%` : v.toString();
   return (
     <div className="rounded border border-border/40 bg-background/40 px-2 py-1.5">
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{k}</div>
-      <div className="mono mt-0.5 font-semibold text-foreground">{txt}{extra ? ` ${extra}` : ""}</div>
+      <div className="mono mt-0.5 font-semibold text-foreground">
+        {txt}
+        {extra ? ` ${extra}` : ""}
+      </div>
     </div>
   );
 }

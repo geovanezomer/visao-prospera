@@ -17,24 +17,32 @@ export type Months = number[]; // length 12 (validado em runtime)
  *  Mantém o `value` dos componentes Tabs/TabsTrigger/TabsContent fortemente tipado:
  *  qualquer string fora deste union dispara erro de compilação. */
 export type TabKey =
-  | "receitas"     // 1. Receita mensal + deduções (CPC/IFRS 15)
-  | "custos"       // 2. CPV/CMV/CSP + fixos + variáveis + financeiros
-  | "capital"      // 3. Estrutura de capital, WACC, capex
-  | "tributos"     // 4. Regime tributário (Simples/Presumido/Real + reforma CBS/IBS)
-  | "caixa"        // 5. Fluxo de Caixa (DFC) + burn/runway
-  | "governanca"   // 6. Análise estratégica (concentração, governança, competitiva, regulatória)
-  | "dre"          // 7. DRE consolidada
-  | "indicadores"  // 8. Indicadores financeiros e gráficos
-  | "resultados"   // 9. Diagnóstico + cenários
-  | "simulador"    // 10. Simulador de alavancas
-  | "valuation";   // 11. Valuation (múltiplos + DCF)
+  | "receitas" // 1. Receita mensal + deduções (CPC/IFRS 15)
+  | "custos" // 2. CPV/CMV/CSP + fixos + variáveis + financeiros
+  | "capital" // 3. Estrutura de capital, WACC, capex
+  | "tributos" // 4. Regime tributário (Simples/Presumido/Real + reforma CBS/IBS)
+  | "caixa" // 5. Fluxo de Caixa (DFC) + burn/runway
+  | "governanca" // 6. Análise estratégica (concentração, governança, competitiva, regulatória)
+  | "dre" // 7. DRE consolidada
+  | "indicadores" // 8. Indicadores financeiros e gráficos
+  | "resultados" // 9. Diagnóstico + cenários
+  | "simulador" // 10. Simulador de alavancas
+  | "valuation"; // 11. Valuation (múltiplos + DCF)
 
 /** Lista canônica das abas, em ordem. Use em vez de hardcodar strings. */
 export const TAB_KEYS: readonly TabKey[] = [
-  "receitas", "custos", "capital", "tributos", "caixa",
-  "governanca", "dre", "indicadores", "resultados", "simulador", "valuation",
+  "receitas",
+  "custos",
+  "capital",
+  "tributos",
+  "caixa",
+  "governanca",
+  "dre",
+  "indicadores",
+  "resultados",
+  "simulador",
+  "valuation",
 ] as const;
-
 
 export type BusinessType = "servicos" | "comercio" | "industria";
 export type TaxRegime = "simples" | "presumido" | "real";
@@ -244,7 +252,6 @@ export interface CashFlowConfig {
   amortizacoes: Months;
 }
 
-
 // ============= Análise Estratégica (qualitativa, opcional) =============
 // Todas as respostas são opcionais. Se nenhuma seção for preenchida, o
 // módulo não gera score e não afeta o health financeiro.
@@ -280,7 +287,13 @@ export interface GovernanceAnswers {
 
 export type ReajustePrecos = "sem_resistencia" | "com_resistencia" | "nao_repassou" | "reduziu";
 export type Elasticidade = "menos_5" | "5_20" | "mais_20" | "nao_sei";
-export type RazaoContratacao = "preco" | "relacionamento" | "qualidade" | "unica_opcao" | "prazo" | "marca";
+export type RazaoContratacao =
+  | "preco"
+  | "relacionamento"
+  | "qualidade"
+  | "unica_opcao"
+  | "prazo"
+  | "marca";
 export type Concorrentes = "nenhum" | "1-3" | "4-10" | "10+" | "nao_sei";
 export type SwitchingCost = "alto" | "medio" | "baixo" | "commodity";
 
@@ -323,11 +336,10 @@ export interface AppState {
   capital: CapitalStructure;
   tax: TaxConfig;
   cashflow: CashFlowConfig;
-  
+
   /** Respostas qualitativas do módulo de Análise Estratégica (opcional). */
   strategic?: StrategicAnswers;
 }
-
 
 export interface Scenario {
   id: string;
@@ -361,7 +373,10 @@ export const SUBCATEGORIES: Record<BusinessType, { id: string; label: string }[]
   ],
 };
 
-export const COST_VENDAS_TABLE_CONFIG: Record<BusinessType, { id: string; label: string; subcategory: string }[]> = {
+export const COST_VENDAS_TABLE_CONFIG: Record<
+  BusinessType,
+  { id: string; label: string; subcategory: string }[]
+> = {
   industria: [
     { id: "mp", label: "Matéria-prima", subcategory: "materia_prima" },
     { id: "mod", label: "Mão de obra direta", subcategory: "materia_prima" },

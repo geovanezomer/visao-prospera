@@ -52,7 +52,11 @@ export interface ToolModule {
 
 // Helpers de formatação alinhados com snapshot.ts (recebem valor JÁ em %).
 export const brl = (n: number) =>
-  (Number.isFinite(n) ? n : 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  (Number.isFinite(n) ? n : 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  });
 export const pct = (n: number, d = 1) =>
   `${(Number.isFinite(n) ? n : 0).toFixed(d).replace(".", ",")}%`;
 export const sum = (a: number[]) => a.reduce((x, y) => x + (Number.isFinite(y) ? y : 0), 0);

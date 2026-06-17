@@ -12,7 +12,7 @@ export type CorrelationMatrix = number[][];
 
 export interface MCConfig {
   iterations: number;
-  precoSigmaPct: number;   // desvio-padrão em pp do crescimento de preço (ex 5 → ±5%)
+  precoSigmaPct: number; // desvio-padrão em pp do crescimento de preço (ex 5 → ±5%)
   volumeSigmaPct: number;
   cpvSigmaPct: number;
   folhaSigmaPct: number;
@@ -34,10 +34,10 @@ export interface MCConfig {
  * Ordem dos índices: 0=preço, 1=volume, 2=CPV, 3=folha.
  */
 export const DEFAULT_CORRELATIONS: CorrelationMatrix = [
-  [ 1.00, -0.30,  0.20,  0.10],
-  [-0.30,  1.00, -0.20,  0.30],
-  [ 0.20, -0.20,  1.00,  0.40],
-  [ 0.10,  0.30,  0.40,  1.00],
+  [1.0, -0.3, 0.2, 0.1],
+  [-0.3, 1.0, -0.2, 0.3],
+  [0.2, -0.2, 1.0, 0.4],
+  [0.1, 0.3, 0.4, 1.0],
 ];
 
 export const IDENTITY_CORRELATIONS: CorrelationMatrix = [
@@ -58,14 +58,14 @@ export const DEFAULT_MC: MCConfig = {
 
 export interface MCDist {
   label: string;
-  values: number[];           // ordenado
+  values: number[]; // ordenado
   mean: number;
   median: number;
   p5: number;
   p25: number;
   p75: number;
   p95: number;
-  probPositive: number;       // % de cenários com valor > 0
+  probPositive: number; // % de cenários com valor > 0
 }
 
 export interface MCResult {
@@ -96,7 +96,7 @@ function randn(): number {
  */
 export function choleskyDecompose(m: CorrelationMatrix): number[][] | null {
   const n = m.length;
-  if (n === 0 || !m.every(row => row.length === n)) return null;
+  if (n === 0 || !m.every((row) => row.length === n)) return null;
   const L: number[][] = Array.from({ length: n }, () => Array(n).fill(0));
   for (let i = 0; i < n; i++) {
     for (let j = 0; j <= i; j++) {
@@ -174,8 +174,14 @@ function distFrom(values: number[], label: string): MCDist {
   const median = pct(50);
   const probPositive = sorted.filter((v) => v > 0).length / sorted.length;
   return {
-    label, values: sorted, mean, median,
-    p5: pct(5), p25: pct(25), p75: pct(75), p95: pct(95),
+    label,
+    values: sorted,
+    mean,
+    median,
+    p5: pct(5),
+    p25: pct(25),
+    p75: pct(75),
+    p95: pct(95),
     probPositive,
   };
 }
@@ -210,7 +216,8 @@ export function runMonteCarlo(state: AppState, cfg: MCConfig = DEFAULT_MC): MCRe
     lucroLiquido: distFrom(llArr, "Lucro Líquido"),
     saldoCaixaFinal: distFrom(saldoArr, "Saldo de Caixa (Dez)"),
     probPrejuizo: llArr.filter((v) => v < 0).length / llArr.length,
-    probCaixaNegativo: saldoArr.filter((v) => v < state.cashflow.caixaMinimo).length / saldoArr.length,
+    probCaixaNegativo:
+      saldoArr.filter((v) => v < state.cashflow.caixaMinimo).length / saldoArr.length,
     correlationFellBackToIdentity: fellBack || undefined,
   };
 }
@@ -218,7 +225,8 @@ export function runMonteCarlo(state: AppState, cfg: MCConfig = DEFAULT_MC): MCRe
 // Histograma simples para gráfico (n bins)
 export function histogram(values: number[], bins = 30): { x: number; count: number }[] {
   if (values.length === 0) return [];
-  const min = values[0], max = values[values.length - 1];
+  const min = values[0],
+    max = values[values.length - 1];
   if (min === max) return [{ x: min, count: values.length }];
   const step = (max - min) / bins;
   const buckets = Array.from({ length: bins }, (_, i) => ({ x: min + step * (i + 0.5), count: 0 }));

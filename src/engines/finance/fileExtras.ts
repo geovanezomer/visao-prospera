@@ -18,7 +18,7 @@ export interface FileExtras {
 }
 
 export function collectExtras(company: string): FileExtras {
-  const safe = <T,>(key: string): T[] => {
+  const safe = <T>(key: string): T[] => {
     try {
       const raw = localStorage.getItem(key);
       return raw ? (JSON.parse(raw) as T[]) : [];

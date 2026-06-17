@@ -18,14 +18,22 @@ function compareSectorMd(state: AppState, sector: SectorBenchmark): string {
     { label: "Margem EBITDA", v: ind.margemEbitda, b: sector.margemEbitda, hi: true, unit: "%" },
     { label: "Margem Líquida", v: ind.margemLiquida, b: sector.margemLiquida, hi: true, unit: "%" },
     { label: "Giro do Ativo", v: ind.giroAtivo, b: sector.giroAtivo, hi: true, unit: "x" },
-    { label: "Endividamento", v: ind.endividamentoGeral, b: sector.endividamento, hi: false, unit: "%" },
+    {
+      label: "Endividamento",
+      v: ind.endividamentoGeral,
+      b: sector.endividamento,
+      hi: false,
+      unit: "%",
+    },
     { label: "PMR (dias)", v: state.revenue.pmr, b: sector.pmr, hi: false, unit: "d" },
     { label: "PMP (dias)", v: state.revenue.pmp, b: sector.pmp, hi: false, unit: "d" },
   ];
-  items.forEach(it => {
+  items.forEach((it) => {
     const r = rank(it.v, it.b, it.hi);
-    const fmt = (n: number) => it.unit === "x" ? n.toFixed(2) + "x" : `${n.toFixed(1)}${it.unit}`;
-    rows.push(`| ${it.label} | ${fmt(it.v)} | ${fmt(it.b.p25)} | ${fmt(it.b.p50)} | ${fmt(it.b.p75)} | ${r.label} |`);
+    const fmt = (n: number) => (it.unit === "x" ? n.toFixed(2) + "x" : `${n.toFixed(1)}${it.unit}`);
+    rows.push(
+      `| ${it.label} | ${fmt(it.v)} | ${fmt(it.b.p25)} | ${fmt(it.b.p50)} | ${fmt(it.b.p75)} | ${r.label} |`,
+    );
   });
   return rows.join("\n");
 }
@@ -33,16 +41,26 @@ function compareSectorMd(state: AppState, sector: SectorBenchmark): string {
 const defs: ToolDef[] = [
   {
     name: "listar_setores",
-    description: "Lista os setores disponíveis para comparação. Filtra opcionalmente por tipo (servicos/comercio/industria).",
-    parameters: { type: "object", properties: { tipo: { type: "string", enum: ["servicos", "comercio", "industria"] } }, required: [] },
+    description:
+      "Lista os setores disponíveis para comparação. Filtra opcionalmente por tipo (servicos/comercio/industria).",
+    parameters: {
+      type: "object",
+      properties: { tipo: { type: "string", enum: ["servicos", "comercio", "industria"] } },
+      required: [],
+    },
   },
   {
     name: "comparar_com_setor",
-    description: "Compara os indicadores da empresa com benchmarks de mercado. O parâmetro setor é opcional — se omitido, usa automaticamente o tipo de negócio da empresa cadastrada.",
+    description:
+      "Compara os indicadores da empresa com benchmarks de mercado. O parâmetro setor é opcional — se omitido, usa automaticamente o tipo de negócio da empresa cadastrada.",
     parameters: {
       type: "object",
       properties: {
-        setor: { type: "string", description: "Opcional. ID ou trecho do nome do setor (ex: 'varejo', 'saas'). Omita para usar automaticamente o businessType da empresa." },
+        setor: {
+          type: "string",
+          description:
+            "Opcional. ID ou trecho do nome do setor (ex: 'varejo', 'saas'). Omita para usar automaticamente o businessType da empresa.",
+        },
       },
       required: [],
     },
@@ -52,7 +70,7 @@ const defs: ToolDef[] = [
 const handlers: Record<string, ToolHandler> = {
   listar_setores: (args) => {
     const list = listSectors(args?.tipo as any);
-    return `## Setores disponíveis\n\n${list.map(s => `- **${s.id}** — ${s.label} (${s.businessType})`).join("\n")}`;
+    return `## Setores disponíveis\n\n${list.map((s) => `- **${s.id}** — ${s.label} (${s.businessType})`).join("\n")}`;
   },
 
   comparar_com_setor: (args, { state }) => {
@@ -77,4 +95,9 @@ const handlers: Record<string, ToolHandler> = {
   },
 };
 
-export const benchmarkTools: ToolModule = { category: "benchmark", description: "Benchmarks setoriais e comparativos", defs, handlers };
+export const benchmarkTools: ToolModule = {
+  category: "benchmark",
+  description: "Benchmarks setoriais e comparativos",
+  defs,
+  handlers,
+};

@@ -45,7 +45,8 @@ export async function processFile(file: File, onProgress?: OnProgress): Promise<
     try {
       onProgress?.(`Lendo ${file.name}…`);
       const { text, numPages } = await extractPdfText(file);
-      const avgCharsPerPage = numPages > 0 ? text.replace(/--- Página \d+ ---/g, "").trim().length / numPages : 0;
+      const avgCharsPerPage =
+        numPages > 0 ? text.replace(/--- Página \d+ ---/g, "").trim().length / numPages : 0;
       base.pagesProcessed = numPages;
 
       if (avgCharsPerPage >= MIN_CHARS_PER_PAGE) {
@@ -97,11 +98,15 @@ async function extractPdfText(file: File): Promise<{ text: string; numPages: num
     const pageText = content.items.map((it: any) => it.str).join(" ");
     parts.push(`--- Página ${i} ---\n${pageText}`);
   }
-  if (doc.numPages > maxPages) parts.push(`\n[Documento truncado: ${doc.numPages - maxPages} páginas adicionais não lidas]`);
+  if (doc.numPages > maxPages)
+    parts.push(`\n[Documento truncado: ${doc.numPages - maxPages} páginas adicionais não lidas]`);
   return { text: parts.join("\n\n"), numPages: maxPages };
 }
 
-async function ocrPdf(file: File, onProgress?: OnProgress): Promise<{ text: string; confidence: number; pagesProcessed: number }> {
+async function ocrPdf(
+  file: File,
+  onProgress?: OnProgress,
+): Promise<{ text: string; confidence: number; pagesProcessed: number }> {
   const pdfjs = await loadPdfjs();
   const buf = await file.arrayBuffer();
   const doc = await pdfjs.getDocument({ data: buf }).promise;
@@ -132,7 +137,8 @@ async function ocrPdf(file: File, onProgress?: OnProgress): Promise<{ text: stri
       const { data } = await worker.recognize(canvas);
       parts.push(`--- Página ${i} (OCR) ---\n${data.text || ""}`);
       if (typeof data.confidence === "number") confidences.push(data.confidence);
-      canvas.width = 0; canvas.height = 0; // libera memória
+      canvas.width = 0;
+      canvas.height = 0; // libera memória
     }
   } finally {
     await worker.terminate();
@@ -142,15 +148,17 @@ async function ocrPdf(file: File, onProgress?: OnProgress): Promise<{ text: stri
     parts.push(`\n[OCR truncado: ${doc.numPages - maxPages} páginas adicionais não processadas]`);
   }
 
-  const confidence = confidences.length ? confidences.reduce((a, b) => a + b, 0) / confidences.length : 0;
+  const confidence = confidences.length
+    ? confidences.reduce((a, b) => a + b, 0) / confidences.length
+    : 0;
   return { text: parts.join("\n\n"), confidence, pagesProcessed: maxPages };
 }
 
 /** Constrói o trecho extra a anexar à mensagem do usuário com textos de PDFs. */
 export function buildPdfContext(atts: ChatAttachment[]): string {
-  const pdfs = atts.filter(a => a.type === "pdf" && a.text);
+  const pdfs = atts.filter((a) => a.type === "pdf" && a.text);
   if (!pdfs.length) return "";
-  const sections = pdfs.map(a => {
+  const sections = pdfs.map((a) => {
     const meta = a.ocrUsed
       ? `_(Extraído via OCR — confiança média: **${a.ocrConfidence?.toFixed(1)}%**${
           (a.ocrConfidence ?? 0) < 70 ? " — ⚠️ baixa, trate o conteúdo com ceticismo" : ""
@@ -163,11 +171,11 @@ export function buildPdfContext(atts: ChatAttachment[]): string {
 
 /** Para chamada multimodal: parts no formato OpenAI vision. */
 export function buildVisionMessageContent(text: string, atts: ChatAttachment[]): any {
-  const images = atts.filter(a => a.type === "image" && a.dataUrl);
+  const images = atts.filter((a) => a.type === "image" && a.dataUrl);
   if (!images.length) return text; // string normal
   return [
     { type: "text", text },
-    ...images.map(img => ({ type: "image_url", image_url: { url: img.dataUrl! } })),
+    ...images.map((img) => ({ type: "image_url", image_url: { url: img.dataUrl! } })),
   ];
 }
 

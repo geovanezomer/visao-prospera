@@ -148,9 +148,11 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const custosFixosComJuros = custosFixosAnual + jurosAnual;
   const margemContribuicao = safePct(receitaLiqAnual - custosVarAnual, receitaLiqAnual);
   const mcFrac = margemContribuicao / 100;
-  const pontoEquilibrioOperacional = margemContribuicao > 0 ? safeDivide(custosFixosAnual, mcFrac) : 0;
+  const pontoEquilibrioOperacional =
+    margemContribuicao > 0 ? safeDivide(custosFixosAnual, mcFrac) : 0;
   const pontoEquilibrio = margemContribuicao > 0 ? safeDivide(custosFixosComJuros, mcFrac) : 0;
-  const pontoEquilibrioFinanceiro = margemContribuicao > 0 ? safeDivide(custosFixosOperacionaisSemDep, mcFrac) : 0;
+  const pontoEquilibrioFinanceiro =
+    margemContribuicao > 0 ? safeDivide(custosFixosOperacionaisSemDep, mcFrac) : 0;
 
   // ---- Estrutura de capital baseada em campos REAIS ----
   const PL = Math.max(0, capital.patrimonioLiquido);
@@ -173,7 +175,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const caixaOcioso = Math.max(0, capital.caixaOcioso ?? 0);
   const ciFinanciamento = PL + D;
   const ciAtivo = capital.ativoTotal > 0 ? capital.ativoTotal - pno : 0;
-  const ciBase = ciFinanciamento > 0 ? ciFinanciamento : (ciAtivo > 0 ? ciAtivo : (PL + D + pno) - pno);
+  const ciBase = ciFinanciamento > 0 ? ciFinanciamento : ciAtivo > 0 ? ciAtivo : PL + D + pno - pno;
   const capitalInvestido = Math.max(1, ciBase - caixaOcioso);
   const roic = safePct(nopat, capitalInvestido);
 
@@ -186,31 +188,42 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // ---- Ciclo / NCG / Gap ----
   const ei = Math.max(0, capital.estoqueInicial ?? 0);
   const ef = Math.max(0, capital.estoqueFinal ?? 0);
-  const estoqueMedio = ei > 0 && ef > 0 ? (ei + ef) / 2 : (ef > 0 ? ef : capital.estoques);
+  const estoqueMedio = ei > 0 && ef > 0 ? (ei + ef) / 2 : ef > 0 ? ef : capital.estoques;
   const cpvDiario = sum(dre.cpv) / 360;
   const pme = estoqueMedio > 0 && cpvDiario > 0 ? estoqueMedio / cpvDiario : 0;
   const cicloFinanceiro = revenue.pmr + pme - revenue.pmp;
-  const crEstimado = capital.contasReceber > 0 ? capital.contasReceber : (receitaLiqAnual / 360) * revenue.pmr;
-  const fornecEstimado = capital.fornecedores > 0 ? capital.fornecedores : (sum(dre.cpv) / 360) * revenue.pmp;
+  const crEstimado =
+    capital.contasReceber > 0 ? capital.contasReceber : (receitaLiqAnual / 360) * revenue.pmr;
+  const fornecEstimado =
+    capital.fornecedores > 0 ? capital.fornecedores : (sum(dre.cpv) / 360) * revenue.pmp;
   const ncg = crEstimado + estoqueMedio - fornecEstimado;
   const gapCapitalGiro = ncg - capital.capitalGiroDisponivel;
 
   // ---- Liquidez ----
-  const ativoCirculante = capital.ativoCirculante > 0
-    ? capital.ativoCirculante
-    : capital.disponibilidades + crEstimado + capital.estoques;
+  const ativoCirculante =
+    capital.ativoCirculante > 0
+      ? capital.ativoCirculante
+      : capital.disponibilidades + crEstimado + capital.estoques;
   // Auditoria #10: a fração da dívida onerosa que vence em CP é configurável
   // (`capital.dividaCurtoPrazoPct`, default 0.30). Estimativa só é usada quando
   // o consultor não informou `passivoCirculante` real.
-  const dividaCpFrac = Math.min(1, Math.max(0, capital.dividaCurtoPrazoPct ?? 0.30));
-  const passivoCirculante = capital.passivoCirculante > 0
-    ? capital.passivoCirculante
-    : Math.max(0, fornecEstimado + D * dividaCpFrac);
+  const dividaCpFrac = Math.min(1, Math.max(0, capital.dividaCurtoPrazoPct ?? 0.3));
+  const passivoCirculante =
+    capital.passivoCirculante > 0
+      ? capital.passivoCirculante
+      : Math.max(0, fornecEstimado + D * dividaCpFrac);
 
   const CAP_LIQ = 99;
-  const liquidezCorrente = passivoCirculante > 1 ? Math.min(CAP_LIQ, ativoCirculante / passivoCirculante) : CAP_LIQ;
-  const liquidezSeca = passivoCirculante > 1 ? Math.min(CAP_LIQ, (ativoCirculante - estoqueMedio) / passivoCirculante) : CAP_LIQ;
-  const liquidezImediata = passivoCirculante > 1 ? Math.min(CAP_LIQ, capital.disponibilidades / passivoCirculante) : CAP_LIQ;
+  const liquidezCorrente =
+    passivoCirculante > 1 ? Math.min(CAP_LIQ, ativoCirculante / passivoCirculante) : CAP_LIQ;
+  const liquidezSeca =
+    passivoCirculante > 1
+      ? Math.min(CAP_LIQ, (ativoCirculante - estoqueMedio) / passivoCirculante)
+      : CAP_LIQ;
+  const liquidezImediata =
+    passivoCirculante > 1
+      ? Math.min(CAP_LIQ, capital.disponibilidades / passivoCirculante)
+      : CAP_LIQ;
 
   // ---- Endividamento ----
   const endividamentoGeralDadosCompletos = capital.ativoTotal > 0;
@@ -227,19 +240,30 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const CAP_COB = 999;
   const CAP_DL_EBITDA = 99;
   const CAP_PAYBACK = 99;
-  const coberturaJuros = jurosAnual > 1 ? Math.min(CAP_COB, safeDivide(ebitAnual, jurosAnual, CAP_COB)) : CAP_COB;
+  const coberturaJuros =
+    jurosAnual > 1 ? Math.min(CAP_COB, safeDivide(ebitAnual, jurosAnual, CAP_COB)) : CAP_COB;
   const giroAtivo = capital.ativoTotal > 0 ? safeDivide(receitaLiqAnual, capital.ativoTotal) : 0;
   const dividaLiq = computeNetDebt(state); // SSOT-1: helper único.
-  const dividaLiqEbitda = ebitdaAnual > 1
-    ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitdaAnual))
-    : (dividaLiq <= 0 ? 0 : CAP_DL_EBITDA);
-  const dividaLiqEbit = ebitAnual > 1
-    ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitAnual))
-    : (dividaLiq <= 0 ? 0 : CAP_DL_EBITDA);
-  const dividaLiqPl = PL > 1
-    ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / PL))
-    : (dividaLiq <= 0 ? 0 : CAP_DL_EBITDA);
-  const amortizacaoPlPorLucro = llAnual > 1 ? Math.min(CAP_PAYBACK, PL / llAnual) : (PL <= 0 ? 0 : CAP_PAYBACK);
+  const dividaLiqEbitda =
+    ebitdaAnual > 1
+      ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitdaAnual))
+      : dividaLiq <= 0
+        ? 0
+        : CAP_DL_EBITDA;
+  const dividaLiqEbit =
+    ebitAnual > 1
+      ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitAnual))
+      : dividaLiq <= 0
+        ? 0
+        : CAP_DL_EBITDA;
+  const dividaLiqPl =
+    PL > 1
+      ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / PL))
+      : dividaLiq <= 0
+        ? 0
+        : CAP_DL_EBITDA;
+  const amortizacaoPlPorLucro =
+    llAnual > 1 ? Math.min(CAP_PAYBACK, PL / llAnual) : PL <= 0 ? 0 : CAP_PAYBACK;
   const payback = amortizacaoPlPorLucro; // @deprecated alias
 
   // Auditoria #3: ΔNCG (variação anual) em vez do gap total.
@@ -249,18 +273,26 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const ncgAbertura = Math.max(0, capital.ncgAbertura ?? capital.capitalGiroDisponivel ?? 0);
   const deltaNcgAnual = Math.max(0, ncg - ncgAbertura);
   const fcf = ebitdaAnual - impostosAnual - deltaNcgAnual;
-  const capexAnual = sum(state.cashflow.capex ?? [])
-    + (capital.capexAtivacao ?? []).reduce((acc, ca) => acc + ((ca && (ca.valor || 0) > 0) ? (ca.valor || 0) : 0), 0);
+  const capexAnual =
+    sum(state.cashflow.capex ?? []) +
+    (capital.capexAtivacao ?? []).reduce(
+      (acc, ca) => acc + (ca && (ca.valor || 0) > 0 ? ca.valor || 0 : 0),
+      0,
+    );
   const fcfAposCapex = fcf - capexAnual;
   // Auditoria #2: payback do CAPEX usa o CAPEX ANUAL TOTAL, não apenas o do mês 1.
   // CAPEX distribuído ao longo do ano (obras, implantações) era subestimado em até 10×.
-  const paybackCapex = capexAnual > 0 && fcf > 1
-    ? Math.min(CAP_PAYBACK, capexAnual / fcf)
-    : (capexAnual <= 0 ? 0 : CAP_PAYBACK);
+  const paybackCapex =
+    capexAnual > 0 && fcf > 1
+      ? Math.min(CAP_PAYBACK, capexAnual / fcf)
+      : capexAnual <= 0
+        ? 0
+        : CAP_PAYBACK;
 
   const mcReais = receitaLiqAnual - custosVarAnual;
   const gao = Math.abs(ebitAnual) > 1 ? Math.max(-99, Math.min(99, mcReais / ebitAnual)) : 0;
-  const qualidadeLucro = Math.abs(llAnual) > 1 ? Math.max(-9, Math.min(9, fcfAposCapex / llAnual)) : 0;
+  const qualidadeLucro =
+    Math.abs(llAnual) > 1 ? Math.max(-9, Math.min(9, fcfAposCapex / llAnual)) : 0;
 
   const headcount = Math.max(0, state.numColaboradores ?? 0);
   const receitaPorColaborador = headcount > 0 ? receitaLiqAnual / headcount : 0;
@@ -270,34 +302,68 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const folha = folhaAnual(state);
   const custoPessoalSobreReceita = receitaLiqAnual > 0 ? (folha / receitaLiqAnual) * 100 : 0;
 
-  const margemSeguranca = receitaLiqAnual > 0 && pontoEquilibrio > 0
-    ? Math.max(-999, Math.min(999, ((receitaLiqAnual - pontoEquilibrio) / receitaLiqAnual) * 100))
-    : 0;
+  const margemSeguranca =
+    receitaLiqAnual > 0 && pontoEquilibrio > 0
+      ? Math.max(-999, Math.min(999, ((receitaLiqAnual - pontoEquilibrio) / receitaLiqAnual) * 100))
+      : 0;
 
   const amortizPrincipalAnual = sum(state.cashflow.amortizacoes);
   const dscrAmortizacoesInformadas = amortizPrincipalAnual > 0;
   const servicoDivida = jurosAnual + amortizPrincipalAnual;
   const CAP_DSCR = 99;
-  const dscr = servicoDivida > 1
-    ? Math.max(-CAP_DSCR, Math.min(CAP_DSCR, ebitdaAnual / servicoDivida))
-    : (ebitdaAnual <= 0 ? 0 : CAP_DSCR);
+  const dscr =
+    servicoDivida > 1
+      ? Math.max(-CAP_DSCR, Math.min(CAP_DSCR, ebitdaAnual / servicoDivida))
+      : ebitdaAnual <= 0
+        ? 0
+        : CAP_DSCR;
 
   return {
     margemBruta: safePct(lucroBrutoAnual, receitaLiqAnual),
     margemEbitda: safePct(ebitdaAnual, receitaLiqAnual),
     margemEbit: safePct(ebitAnual, receitaLiqAnual),
     margemLiquida: safePct(llAnual, receitaLiqAnual),
-    margemContribuicao, pontoEquilibrio, pontoEquilibrioOperacional, pontoEquilibrioFinanceiro,
-    roe, roa, roic, wacc: safeNumber(wacc),
-    cicloFinanceiro, ncg, gapCapitalGiro,
-    liquidezCorrente, liquidezSeca, liquidezImediata,
-    endividamentoGeral, endividamentoGeralDadosCompletos, grauEndividamento, coberturaJuros, giroAtivo,
-    dividaLiqEbitda, dividaLiqEbit, dividaLiqPl, payback, amortizacaoPlPorLucro, paybackCapex, fcf: safeNumber(fcf),
-    capexAnual: safeNumber(capexAnual), fcfAposCapex: safeNumber(fcfAposCapex),
+    margemContribuicao,
+    pontoEquilibrio,
+    pontoEquilibrioOperacional,
+    pontoEquilibrioFinanceiro,
+    roe,
+    roa,
+    roic,
+    wacc: safeNumber(wacc),
+    cicloFinanceiro,
+    ncg,
+    gapCapitalGiro,
+    liquidezCorrente,
+    liquidezSeca,
+    liquidezImediata,
+    endividamentoGeral,
+    endividamentoGeralDadosCompletos,
+    grauEndividamento,
+    coberturaJuros,
+    giroAtivo,
+    dividaLiqEbitda,
+    dividaLiqEbit,
+    dividaLiqPl,
+    payback,
+    amortizacaoPlPorLucro,
+    paybackCapex,
+    fcf: safeNumber(fcf),
+    capexAnual: safeNumber(capexAnual),
+    fcfAposCapex: safeNumber(fcfAposCapex),
     conversaoEbitdaCaixa: ebitdaAnual > 0 ? safePct(fcf, ebitdaAnual) : 0,
-    gao, qualidadeLucro,
-    receitaPorColaborador, faturamentoPorColaborador, ebitdaPorColaborador, lucroPorColaborador, custoPessoalSobreReceita,
-    margemSeguranca, dscr, dscrAmortizacoesInformadas,
-    dividaOnerosa: D, passivoCirculante, ativoCirculante,
+    gao,
+    qualidadeLucro,
+    receitaPorColaborador,
+    faturamentoPorColaborador,
+    ebitdaPorColaborador,
+    lucroPorColaborador,
+    custoPessoalSobreReceita,
+    margemSeguranca,
+    dscr,
+    dscrAmortizacoesInformadas,
+    dividaOnerosa: D,
+    passivoCirculante,
+    ativoCirculante,
   };
 }

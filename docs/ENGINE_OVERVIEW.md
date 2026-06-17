@@ -117,18 +117,18 @@ sendo modelada**. Toda a engine é uma função pura sobre ele.
 
 Campos principais:
 
-| Campo | Tipo | Papel |
-|---|---|---|
-| `companyName`, `cnpj`, `businessType` | string | Identificação e segmentação |
-| `taxRegime` | `TaxRegime` | `simples` / `presumido` / `real` |
-| `taxEra` | `TaxEra` | `legado`, `transicao`, `reforma_plena` |
-| `revenue` | `Revenue` | Receita bruta mensal (12 meses) + inadimplência + PMR/PMP + flags de PDD |
-| `revenueDeducoes` | `RevenueDeducao[]` | Linhas de deduções (devoluções, descontos, abatimentos, IRRF exclusivo na fonte) |
-| `costs[]` | `CostLine[]` | CPV/CMV/CSP + fixos + variáveis + financeiros |
-| `capitalStructure` | `CapitalStructure` | Dívida, equity, juros, NCG abertura |
-| `capexAtivacao` | `CapexAtivacao` | CAPEX/ativação + depreciação |
-| `taxConfig` | `TaxConfig` | Alíquotas + regime + reforma CBS/IBS |
-| `cashFlowConfig` | `CashFlowConfig` | Saldo inicial + prazos médios (PMR/PMP) |
+| Campo                                 | Tipo               | Papel                                                                            |
+| ------------------------------------- | ------------------ | -------------------------------------------------------------------------------- |
+| `companyName`, `cnpj`, `businessType` | string             | Identificação e segmentação                                                      |
+| `taxRegime`                           | `TaxRegime`        | `simples` / `presumido` / `real`                                                 |
+| `taxEra`                              | `TaxEra`           | `legado`, `transicao`, `reforma_plena`                                           |
+| `revenue`                             | `Revenue`          | Receita bruta mensal (12 meses) + inadimplência + PMR/PMP + flags de PDD         |
+| `revenueDeducoes`                     | `RevenueDeducao[]` | Linhas de deduções (devoluções, descontos, abatimentos, IRRF exclusivo na fonte) |
+| `costs[]`                             | `CostLine[]`       | CPV/CMV/CSP + fixos + variáveis + financeiros                                    |
+| `capitalStructure`                    | `CapitalStructure` | Dívida, equity, juros, NCG abertura                                              |
+| `capexAtivacao`                       | `CapexAtivacao`    | CAPEX/ativação + depreciação                                                     |
+| `taxConfig`                           | `TaxConfig`        | Alíquotas + regime + reforma CBS/IBS                                             |
+| `cashFlowConfig`                      | `CashFlowConfig`   | Saldo inicial + prazos médios (PMR/PMP)                                          |
 
 > Toda série mensal usa o type `Months` (alias de `number[]` com
 > invariante de 12 posições finitas). Construa SEMPRE via `fill12` ou
@@ -343,13 +343,13 @@ Rodar: `bunx vitest run`. Hoje: **100/100 passando**.
 
 ## 10. Para onde olhar primeiro
 
-| Quero… | Abra |
-|---|---|
-| Entender o estado | `types.ts` |
-| Mudar DRE | `dre.ts` + `__tests__/dre.test.ts` |
-| Mudar indicador | `indicators.ts` |
-| Mudar regime tributário | `tax/<regime>.ts` + `taxDefaults.ts` |
-| Adicionar campo persistido | `types.ts` → bump `APP_STATE_SCHEMA_VERSION` → `defaults.ts/migrateState` |
-| Adicionar campo ao `.gzfp` | bump `CURRENT_VERSION` + nova migration (ver CONTRIBUTING) |
-| Adicionar alavanca no simulador | `simulator.ts` + `prescriptive.ts` |
-| Mudar valuation | `valuation.ts` (cuidado com EV vs Equity) |
+| Quero…                          | Abra                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------- |
+| Entender o estado               | `types.ts`                                                                |
+| Mudar DRE                       | `dre.ts` + `__tests__/dre.test.ts`                                        |
+| Mudar indicador                 | `indicators.ts`                                                           |
+| Mudar regime tributário         | `tax/<regime>.ts` + `taxDefaults.ts`                                      |
+| Adicionar campo persistido      | `types.ts` → bump `APP_STATE_SCHEMA_VERSION` → `defaults.ts/migrateState` |
+| Adicionar campo ao `.gzfp`      | bump `CURRENT_VERSION` + nova migration (ver CONTRIBUTING)                |
+| Adicionar alavanca no simulador | `simulator.ts` + `prescriptive.ts`                                        |
+| Mudar valuation                 | `valuation.ts` (cuidado com EV vs Equity)                                 |

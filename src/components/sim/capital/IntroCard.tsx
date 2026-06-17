@@ -21,12 +21,15 @@ export function IntroCard() {
         <button
           onClick={() => {
             setDismissed(false);
-            try { localStorage.removeItem(INTRO_KEY); } catch { /* */ }
+            try {
+              localStorage.removeItem(INTRO_KEY);
+            } catch {
+              /* */
+            }
           }}
           className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary"
         >
-          <Lightbulb className="h-3 w-3" />
-          O que é esta aba?
+          <Lightbulb className="h-3 w-3" />O que é esta aba?
         </button>
       </div>
     );
@@ -37,7 +40,11 @@ export function IntroCard() {
       <button
         onClick={() => {
           setDismissed(true);
-          try { localStorage.setItem(INTRO_KEY, "1"); } catch { /* */ }
+          try {
+            localStorage.setItem(INTRO_KEY, "1");
+          } catch {
+            /* */
+          }
         }}
         className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
         aria-label="Ocultar"
@@ -54,19 +61,29 @@ export function IntroCard() {
       <ol className="mt-2 grid gap-2 text-xs text-foreground sm:grid-cols-3">
         <li className="rounded-md border border-border/40 bg-background/40 p-3">
           <span className="font-semibold text-primary">1. De onde vem o dinheiro?</span>
-          <div className="mt-1 text-[11px] text-muted-foreground">Sócios ou bancos — e em que proporção.</div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            Sócios ou bancos — e em que proporção.
+          </div>
         </li>
         <li className="rounded-md border border-border/40 bg-background/40 p-3">
           <span className="font-semibold text-primary">2. Quanto custa esse dinheiro?</span>
-          <div className="mt-1 text-[11px] text-muted-foreground">Retorno que sócios esperam + juros dos bancos.</div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            Retorno que sócios esperam + juros dos bancos.
+          </div>
         </li>
         <li className="rounded-md border border-border/40 bg-background/40 p-3">
-          <span className="font-semibold text-primary">3. Quanto a empresa precisa para girar?</span>
-          <div className="mt-1 text-[11px] text-muted-foreground">Capital de giro para sustentar o dia a dia.</div>
+          <span className="font-semibold text-primary">
+            3. Quanto a empresa precisa para girar?
+          </span>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            Capital de giro para sustentar o dia a dia.
+          </div>
         </li>
       </ol>
       <p className="mt-3 text-[11px] text-muted-foreground">
-        No final, o termômetro <strong className="text-foreground">WACC × ROIC</strong> diz se o negócio está <span className="text-pos font-semibold">criando</span> ou <span className="text-neg font-semibold">destruindo</span> valor.
+        No final, o termômetro <strong className="text-foreground">WACC × ROIC</strong> diz se o
+        negócio está <span className="text-pos font-semibold">criando</span> ou{" "}
+        <span className="text-neg font-semibold">destruindo</span> valor.
       </p>
     </div>
   );

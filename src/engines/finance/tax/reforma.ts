@@ -5,10 +5,7 @@
 // Submódulo coeso da engine financeira — funções puras, sem dependência de UI.
 
 import { TaxEra, TaxConfig } from "../types";
-import {
-  getReformaTransicaoIbsMult,
-  getReformaTransicaoIcmsIssMult,
-} from "../taxDefaults";
+import { getReformaTransicaoIbsMult, getReformaTransicaoIcmsIssMult } from "../taxDefaults";
 
 /** Parâmetros vigentes da reforma para uma dada era.
  *  - cbsPct, ibsPct: alíquotas de débito sobre a receita bruta (%).
@@ -54,10 +51,10 @@ export function getReformaRates(era: TaxEra | undefined, cfg: TaxConfig): Reform
 export function getIbsFractionForYear(year: number, ibsFull: number): number {
   if (year < 2026) return 0;
   if (year <= 2028) return ibsFull > 0 ? 0.1 / ibsFull : 0;
-  if (year === 2029) return 0.10;
-  if (year === 2030) return 0.20;
-  if (year === 2031) return 0.30;
-  if (year === 2032) return 0.40;
+  if (year === 2029) return 0.1;
+  if (year === 2030) return 0.2;
+  if (year === 2031) return 0.3;
+  if (year === 2032) return 0.4;
   return 1;
 }
 
@@ -66,10 +63,10 @@ export function getIbsFractionForYear(year: number, ibsFull: number): number {
 export function getIcmsIssFractionForYear(year: number): number {
   if (year < 2026) return 1;
   if (year <= 2028) return 1;
-  if (year === 2029) return 0.90;
-  if (year === 2030) return 0.80;
-  if (year === 2031) return 0.70;
-  if (year === 2032) return 0.60;
+  if (year === 2029) return 0.9;
+  if (year === 2030) return 0.8;
+  if (year === 2031) return 0.7;
+  if (year === 2032) return 0.6;
   return 0;
 }
 
@@ -92,7 +89,15 @@ export function getCbsPctForYear(year: number, cbsFull: number): number {
 export function getReformaRatesForYear(year: number, cfg: TaxConfig): ReformaRates {
   const cbsFull = cfg.cbsAliquota ?? 8.8;
   const ibsFull = cfg.ibsAliquotaRef ?? 17.7;
-  if (year < 2026) return { cbsPct: 0, ibsPct: 0, pisCofinsMult: 1, icmsIssMult: 1, cargaCombinadaPct: 0, alertaTransicao: false };
+  if (year < 2026)
+    return {
+      cbsPct: 0,
+      ibsPct: 0,
+      pisCofinsMult: 1,
+      icmsIssMult: 1,
+      cargaCombinadaPct: 0,
+      alertaTransicao: false,
+    };
   const cbsPct = getCbsPctForYear(year, cbsFull);
   const ibsPct = ibsFull * getIbsFractionForYear(year, ibsFull);
   const icmsIssMult = getIcmsIssFractionForYear(year);

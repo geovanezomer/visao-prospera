@@ -1,6 +1,15 @@
 import { useMemo } from "react";
 import { AppState } from "@/engines/finance/types";
-import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  Cell,
+  LabelList,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { SectionTitle } from "./primitives";
 
 // Helper para somar arrays de 12 meses
@@ -26,7 +35,6 @@ const COLORS: Record<Status, string> = {
   warn: "var(--warning)",
   crit: "var(--destructive)",
 };
-
 
 // Faixa cinza para "base" invisível usada na técnica de waterfall com BarChart empilhado
 const BASE_FILL = "transparent";
@@ -70,8 +78,7 @@ interface IndLike {
 export function WaterfallCard({ dre, ind }: { dre: DreLike; ind: IndLike }) {
   const steps = useMemo<Step[]>(() => {
     const RB = sum(dre.receitaBruta);
-    const DED =
-      sum(dre.deducoesInadimplencia) + sum(dre.outrasDeducoes) + sum(dre.impostosVendas);
+    const DED = sum(dre.deducoesInadimplencia) + sum(dre.outrasDeducoes) + sum(dre.impostosVendas);
     const RL = sum(dre.receitaLiquida);
     const CPV = sum(dre.cpv);
     const LB = sum(dre.lucroBruto);
@@ -314,7 +321,6 @@ export function WaterfallCard({ dre, ind }: { dre: DreLike; ind: IndLike }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-
 
       <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">

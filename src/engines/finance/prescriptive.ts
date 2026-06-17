@@ -1,5 +1,12 @@
 import { AppState, CostLine } from "./types";
-import { buildDRE, calcIndicators, compareRegimes, folhaAnual, monthValues, resolveEffectiveRegime } from "./calculations";
+import {
+  buildDRE,
+  calcIndicators,
+  compareRegimes,
+  folhaAnual,
+  monthValues,
+  resolveEffectiveRegime,
+} from "./calculations";
 import { buildCashFlow } from "./cashflow";
 import { sum } from "./format";
 
@@ -88,7 +95,7 @@ function scaleCategory(state: AppState, category: CostLine["category"], factor: 
   const isCpvTarget = category === "custo_vendas";
   const costs = cloneCosts(state.costs).map((c) => {
     const hit = isCpvTarget
-      ? (c.category === "custo_vendas" || c.category === "direto_venda")
+      ? c.category === "custo_vendas" || c.category === "direto_venda"
       : c.category === category;
     return hit ? { ...c, values: c.values.map((v) => v * factor) } : c;
   });
@@ -116,12 +123,21 @@ function adjustRevenue(state: AppState, factor: number): AppState {
  * Atualiza: capital.dividaOnerosa (+principal), cashflow (captação + amortização do principal mês a mês)
  *           e a linha "juros sobre empréstimos" do DRE com os juros do mês.
  */
-function addLoan(state: AppState, principal: number, taxaMensal: number, prazoMeses: number, monthIdx = 0): AppState {
+function addLoan(
+  state: AppState,
+  principal: number,
+  taxaMensal: number,
+  prazoMeses: number,
+  monthIdx = 0,
+): AppState {
   const i = taxaMensal / 100;
-  const pmt = i === 0 ? principal / prazoMeses : principal * (i / (1 - Math.pow(1 + i, -prazoMeses)));
+  const pmt =
+    i === 0 ? principal / prazoMeses : principal * (i / (1 - Math.pow(1 + i, -prazoMeses)));
 
   const cashflow = { ...state.cashflow };
-  cashflow.emprestimosCaptados = state.cashflow.emprestimosCaptados.map((v, idx) => (idx === monthIdx ? v + principal : v));
+  cashflow.emprestimosCaptados = state.cashflow.emprestimosCaptados.map((v, idx) =>
+    idx === monthIdx ? v + principal : v,
+  );
   cashflow.amortizacoes = state.cashflow.amortizacoes.slice();
 
   const costs = cloneCosts(state.costs);
@@ -191,11 +207,18 @@ function topNFixedLines(state: AppState, n: number): CostLine[] {
 function laborCltLinesTotal(state: AppState): { lines: CostLine[]; totalMensal: number } {
   const re = /sal[áa]rio|folha|clt|mod|mão de obra/i;
   const lines = state.costs.filter((c) => c.category !== "financeiro" && re.test(c.label));
-  const totalMensal = lines.reduce((acc, c) => acc + (c.fixed ? c.values[0] : sum(c.values) / 12), 0);
+  const totalMensal = lines.reduce(
+    (acc, c) => acc + (c.fixed ? c.values[0] : sum(c.values) / 12),
+    0,
+  );
   return { lines, totalMensal };
 }
 
-function reduceLaborByPositions(state: AppState, positions: number, custoMedioPosicao: number): AppState {
+function reduceLaborByPositions(
+  state: AppState,
+  positions: number,
+  custoMedioPosicao: number,
+): AppState {
   const { lines, totalMensal } = laborCltLinesTotal(state);
   if (lines.length === 0 || totalMensal <= 0) return state;
   const corteMensal = Math.min(positions * custoMedioPosicao, totalMensal);
@@ -220,7 +243,12 @@ export function severanceCostPerPosition(salarioBase: number, mesesTrabalhados =
 }
 
 /** Demissão com custo rescisório como saída de caixa one-shot e redução estrutural da folha. */
-function dismissWithSeverance(state: AppState, positions: number, salarioBase: number, monthIdx = 0): AppState {
+function dismissWithSeverance(
+  state: AppState,
+  positions: number,
+  salarioBase: number,
+  monthIdx = 0,
+): AppState {
   const severance = severanceCostPerPosition(salarioBase) * positions;
   const novo = reduceLaborByPositions(state, positions, salarioBase);
   // Auditoria bug #5: rescisão é despesa OPERACIONAL one-shot, não capex.
@@ -269,7 +297,7 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
       metricLabel: "Folha / Receita Líquida",
       metricValue: `${folhaPct.toFixed(1)}%`,
       benchmark: `Setor ${state.businessType}: ${folhaMin}–${folhaMax}%`,
-      cause: `Folha mensal de ${(folhaMensal).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}. Quadro pode estar dimensionado para um faturamento maior que o atual.`,
+      cause: `Folha mensal de ${folhaMensal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}. Quadro pode estar dimensionado para um faturamento maior que o atual.`,
       actions: [
         {
           id: "dismiss_2_severance",
@@ -314,7 +342,8 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
       problem: "Empresa destrói valor econômico",
       metricLabel: "ROIC × WACC",
       metricValue: `${ind.roic.toFixed(1)}% < ${ind.wacc.toFixed(1)}%`,
-      cause: "O retorno do capital empregado não cobre o custo do capital. Ou margem está baixa, ou ativo está superdimensionado.",
+      cause:
+        "O retorno do capital empregado não cobre o custo do capital. Ou margem está baixa, ou ativo está superdimensionado.",
       actions: [
         {
           id: "cut_fixed_15",
@@ -339,7 +368,10 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           id: "reduce_assets",
           title: "Reduzir ativo total em 20% (venda de não-operacionais)",
           detail: "Libera capital ocioso. Aumenta giro do ativo e ROIC.",
-          apply: (s) => ({ ...s, capital: { ...s.capital, ativoTotal: s.capital.ativoTotal * 0.8 } }),
+          apply: (s) => ({
+            ...s,
+            capital: { ...s.capital, ativoTotal: s.capital.ativoTotal * 0.8 },
+          }),
         },
       ],
     });
@@ -348,14 +380,19 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
   // ===== 3. Caixa negativo / abaixo do mínimo =====
   if (cf.alertas.length > 0) {
     const pior = cf.totais.pioresMes;
-    const principal = Math.ceil(Math.abs(Math.min(pior?.saldo ?? 0, 0) + state.cashflow.caixaMinimo) / 1000) * 1000 || 30000;
+    const principal =
+      Math.ceil(Math.abs(Math.min(pior?.saldo ?? 0, 0) + state.cashflow.caixaMinimo) / 1000) *
+        1000 || 30000;
     cards.push({
       id: "caixa_negativo",
       severity: cf.alertas.some((a) => a.tipo === "negativo") ? "danger" : "warn",
       problem: "Caixa projetado fura o mínimo de segurança",
       metricLabel: "Pior mês de caixa",
-      metricValue: pior ? `${pior.mes}: ${pior.saldo.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}` : "—",
-      cause: "Mesmo lucrando, a empresa pode ficar sem dinheiro em caixa em determinado mês por descasamento entre recebimentos (PMR) e pagamentos (PMP) e/ou sazonalidade.",
+      metricValue: pior
+        ? `${pior.mes}: ${pior.saldo.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`
+        : "—",
+      cause:
+        "Mesmo lucrando, a empresa pode ficar sem dinheiro em caixa em determinado mês por descasamento entre recebimentos (PMR) e pagamentos (PMP) e/ou sazonalidade.",
       actions: [
         {
           id: "loan_giro",
@@ -388,7 +425,8 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
       metricLabel: "EBIT / Despesas Financeiras",
       metricValue: `${ind.coberturaJuros.toFixed(1)}×`,
       benchmark: "Saudável: > 3×",
-      cause: "O lucro operacional mal cobre os juros — risco de inadimplência financeira em qualquer choque.",
+      cause:
+        "O lucro operacional mal cobre os juros — risco de inadimplência financeira em qualquer choque.",
       actions: [
         {
           id: "renegotiate_rate",
@@ -399,7 +437,8 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
         {
           id: "amort_extra",
           title: "Quitar 30% do principal da dívida (uso de caixa)",
-          detail: "Reduz dívida onerosa e juros futuros proporcionalmente; consome caixa equivalente.",
+          detail:
+            "Reduz dívida onerosa e juros futuros proporcionalmente; consome caixa equivalente.",
           apply: (s) => payDownDebt(s, 0.3),
         },
       ],
@@ -413,7 +452,10 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
       severity: "warn",
       problem: "Necessidade de Capital de Giro não coberta",
       metricLabel: "Gap de Capital de Giro",
-      metricValue: ind.gapCapitalGiro.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
+      metricValue: ind.gapCapitalGiro.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }),
       cause: `Ciclo financeiro de ${ind.cicloFinanceiro} dias. Empresa financia o cliente por mais tempo do que o fornecedor financia a ela.`,
       actions: [
         {
@@ -442,7 +484,8 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
       metricLabel: "Margem Bruta",
       metricValue: `${ind.margemBruta.toFixed(1)}%`,
       benchmark: `Setor ${state.businessType}: ${mbMin}%+`,
-      cause: "Custo de Vendas (CMV/CPV/CSP) está alto em relação à receita — preço baixo ou custo direto elevado.",
+      cause:
+        "Custo de Vendas (CMV/CPV/CSP) está alto em relação à receita — preço baixo ou custo direto elevado.",
       actions: [
         {
           id: "price_8",
@@ -492,7 +535,8 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
         actions: [],
       });
     } else {
-      const severity: PrescriptiveCard["severity"] = economiaPct >= 15 ? "danger" : economiaPct >= 5 ? "warn" : "info";
+      const severity: PrescriptiveCard["severity"] =
+        economiaPct >= 15 ? "danger" : economiaPct >= 5 ? "warn" : "info";
       cards.push({
         id: "regime",
         severity,
@@ -504,7 +548,8 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           {
             id: "switch_regime",
             title: `Simular migração para ${labelRegime(melhor[0])}`,
-            detail: "Aplica o novo regime ao plano usando os parâmetros já configurados (anexo do Simples, presunção, etc.).",
+            detail:
+              "Aplica o novo regime ao plano usando os parâmetros já configurados (anexo do Simples, presunção, etc.).",
             apply: (s) => switchRegime(s, melhor[0] as AppState["tax"]["regime"]),
           },
         ],
@@ -584,27 +629,35 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
       metricLabel: "FCF / EBITDA · Giro do Ativo",
       metricValue: `${ebitdaAno > 0 ? conversaoFcf.toFixed(0) + "%" : "—"} · ${giroAtivo.toFixed(2)}×`,
       benchmark: benchConv,
-      cause: ebitdaAno <= 0
-        ? "Sem EBITDA não há fonte interna de caixa: cada mês depende de captação ou queima de reservas."
-        : conversaoFcf < 60
-          ? "EBITDA não está virando caixa: capital de giro pesado (PMR alto, estoques), capex recorrente ou alta carga de impostos comem a geração."
-          : giroAtivo < 0.5
-            ? "Ativos pouco produtivos: receita gerada por R$ investido está abaixo do esperado — há gordura no balanço."
-            : "Operação converte EBITDA em caixa com folga e gira o ativo de forma adequada.",
-      actions: severity === "ok" ? [] : [
-        {
-          id: "ef_reduce_pmr",
-          title: `Reduzir PMR (atual ${state.revenue.pmr}d → ${Math.max(0, state.revenue.pmr - 10)}d)`,
-          detail: "Acelera entrada de caixa — melhora direto a conversão FCF/EBITDA.",
-          apply: (s) => setPmr(s, s.revenue.pmr - 10),
-        },
-        {
-          id: "ef_reduce_assets",
-          title: "Liberar ativos ociosos (-10% do ativo total)",
-          detail: "Venda de imóveis, equipamentos subutilizados, baixa de estoque parado. Aumenta giro e ROIC.",
-          apply: (s) => ({ ...s, capital: { ...s.capital, ativoTotal: s.capital.ativoTotal * 0.9 } }),
-        },
-      ],
+      cause:
+        ebitdaAno <= 0
+          ? "Sem EBITDA não há fonte interna de caixa: cada mês depende de captação ou queima de reservas."
+          : conversaoFcf < 60
+            ? "EBITDA não está virando caixa: capital de giro pesado (PMR alto, estoques), capex recorrente ou alta carga de impostos comem a geração."
+            : giroAtivo < 0.5
+              ? "Ativos pouco produtivos: receita gerada por R$ investido está abaixo do esperado — há gordura no balanço."
+              : "Operação converte EBITDA em caixa com folga e gira o ativo de forma adequada.",
+      actions:
+        severity === "ok"
+          ? []
+          : [
+              {
+                id: "ef_reduce_pmr",
+                title: `Reduzir PMR (atual ${state.revenue.pmr}d → ${Math.max(0, state.revenue.pmr - 10)}d)`,
+                detail: "Acelera entrada de caixa — melhora direto a conversão FCF/EBITDA.",
+                apply: (s) => setPmr(s, s.revenue.pmr - 10),
+              },
+              {
+                id: "ef_reduce_assets",
+                title: "Liberar ativos ociosos (-10% do ativo total)",
+                detail:
+                  "Venda de imóveis, equipamentos subutilizados, baixa de estoque parado. Aumenta giro e ROIC.",
+                apply: (s) => ({
+                  ...s,
+                  capital: { ...s.capital, ativoTotal: s.capital.ativoTotal * 0.9 },
+                }),
+              },
+            ],
     });
   }
 
@@ -616,7 +669,8 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
       problem: "Empresa em zona saudável",
       metricLabel: "Nenhum alerta crítico detectado",
       metricValue: "✓",
-      cause: "Continue monitorando os indicadores mensalmente. Considere salvar este como cenário base.",
+      cause:
+        "Continue monitorando os indicadores mensalmente. Considere salvar este como cenário base.",
       actions: [],
     });
   }
@@ -625,5 +679,9 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
 }
 
 function labelRegime(r: AppState["tax"]["regime"]) {
-  return r === "simples" ? "Simples Nacional" : r === "presumido" ? "Lucro Presumido" : "Lucro Real";
+  return r === "simples"
+    ? "Simples Nacional"
+    : r === "presumido"
+      ? "Lucro Presumido"
+      : "Lucro Real";
 }

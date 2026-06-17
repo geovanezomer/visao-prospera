@@ -10,7 +10,7 @@ import { PrazoTable } from "./PrazoTable";
 function fixedBase(values: number[]): number {
   if (!values?.length) return 0;
   const nonZero = values.find((v) => Number(v) !== 0);
-  return Number.isFinite(nonZero as number) ? (nonZero as number) : (values[0] || 0);
+  return Number.isFinite(nonZero as number) ? (nonZero as number) : values[0] || 0;
 }
 
 /** Saneamento mínimo de inputs financeiros (substitui Zod inline). */
@@ -48,9 +48,20 @@ export function RevenueTab() {
   // -------- Derivados memoizados --------
   const derived = useMemo(() => {
     const inadimpBRL = r.bruta.map((b, i) => b * ((r.inadimplencia[i] || 0) / 100));
-    const findDed = (id: string): RevenueDeducao | undefined => r.deducoes?.find((d) => d.id === id);
-    const descDed = findDed("desc_incond") ?? { id: "desc_incond", label: "Descontos Incondicionais", valores: fill12(0), fixed: true };
-    const abatDed = findDed("abatimentos") ?? { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true };
+    const findDed = (id: string): RevenueDeducao | undefined =>
+      r.deducoes?.find((d) => d.id === id);
+    const descDed = findDed("desc_incond") ?? {
+      id: "desc_incond",
+      label: "Descontos Incondicionais",
+      valores: fill12(0),
+      fixed: true,
+    };
+    const abatDed = findDed("abatimentos") ?? {
+      id: "abatimentos",
+      label: "Abatimentos",
+      valores: fill12(0),
+      fixed: true,
+    };
     const usaPDD = !!r.inadimplenciaComoPDD;
 
     // VERDADE ABSOLUTA: deriva Receita Operacional da DRE central.
@@ -67,17 +78,48 @@ export function RevenueTab() {
     const monthsWithRevenue = liquidas.filter((_, i) => r.bruta[i] > 0).length;
     const mediaYTD = monthsWithRevenue > 0 ? liqAnual / monthsWithRevenue : 0;
 
-    return { inadimpBRL, descDed, abatDed, usaPDD, liquidas, brutaAnual, deducoesAnual, liqAnual, monthsWithRevenue, mediaYTD };
+    return {
+      inadimpBRL,
+      descDed,
+      abatDed,
+      usaPDD,
+      liquidas,
+      brutaAnual,
+      deducoesAnual,
+      liqAnual,
+      monthsWithRevenue,
+      mediaYTD,
+    };
   }, [state, r]);
 
-  const { inadimpBRL, descDed, abatDed, usaPDD, liquidas, brutaAnual, deducoesAnual, liqAnual, monthsWithRevenue, mediaYTD } = derived;
+  const {
+    inadimpBRL,
+    descDed,
+    abatDed,
+    usaPDD,
+    liquidas,
+    brutaAnual,
+    deducoesAnual,
+    liqAnual,
+    monthsWithRevenue,
+    mediaYTD,
+  } = derived;
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
 
   const inadimpModo: "pct" | "brl" = r.inadimplenciaModo ?? "pct";
   const inadimpEmBRL = inadimpModo === "brl";
 
   const rows: Row[] = [
-    { id: "row_bruta", kind: "bruta", unit: "brl", label: "Receita Bruta", values: r.bruta, brlValues: r.bruta, fixed: !!r.brutaFixa, tone: "pos" },
+    {
+      id: "row_bruta",
+      kind: "bruta",
+      unit: "brl",
+      label: "Receita Bruta",
+      values: r.bruta,
+      brlValues: r.bruta,
+      fixed: !!r.brutaFixa,
+      tone: "pos",
+    },
     // Inadimplência pode ser editada em % (padrão) ou em R$ (convertido para % usando a Bruta do mês).
     {
       id: "row_inad",
@@ -89,8 +131,28 @@ export function RevenueTab() {
       fixed: !!r.inadimplenciaFixa,
       tone: "neg",
     },
-    { id: "row_desc", kind: "deducao", unit: "brl", dedId: "desc_incond", label: "Descontos Incondicionais", values: descDed.valores, brlValues: descDed.valores, fixed: !!descDed.fixed, tone: "neg" },
-    { id: "row_abat", kind: "deducao", unit: "brl", dedId: "abatimentos", label: "Abatimentos", values: abatDed.valores, brlValues: abatDed.valores, fixed: !!abatDed.fixed, tone: "neg" },
+    {
+      id: "row_desc",
+      kind: "deducao",
+      unit: "brl",
+      dedId: "desc_incond",
+      label: "Descontos Incondicionais",
+      values: descDed.valores,
+      brlValues: descDed.valores,
+      fixed: !!descDed.fixed,
+      tone: "neg",
+    },
+    {
+      id: "row_abat",
+      kind: "deducao",
+      unit: "brl",
+      dedId: "abatimentos",
+      label: "Abatimentos",
+      values: abatDed.valores,
+      brlValues: abatDed.valores,
+      fixed: !!abatDed.fixed,
+      tone: "neg",
+    },
   ];
 
   if (usaPDD) {
@@ -135,15 +197,48 @@ export function RevenueTab() {
   const alugueis = findFin("alugueis", "Aluguéis Recebidos");
   const vendaAtivos = findFin("venda_ativos", "Venda de Ativos");
   const finRows: Row[] = [
-    { id: "row_rend", kind: "financeira", unit: "brl", finId: "rend_aplic", label: "Rendimento de aplicações", values: rendAplic.valores, brlValues: rendAplic.valores, fixed: !!rendAplic.fixed, tone: "pos" },
-    { id: "row_alug", kind: "financeira", unit: "brl", finId: "alugueis", label: "Aluguéis Recebidos (oper.)", values: alugueis.valores, brlValues: alugueis.valores, fixed: !!alugueis.fixed, tone: "pos" },
-    { id: "row_vatv", kind: "financeira", unit: "brl", finId: "venda_ativos", label: "Venda de Ativos (oper.)", values: vendaAtivos.valores, brlValues: vendaAtivos.valores, fixed: !!vendaAtivos.fixed, tone: "pos" },
+    {
+      id: "row_rend",
+      kind: "financeira",
+      unit: "brl",
+      finId: "rend_aplic",
+      label: "Rendimento de aplicações",
+      values: rendAplic.valores,
+      brlValues: rendAplic.valores,
+      fixed: !!rendAplic.fixed,
+      tone: "pos",
+    },
+    {
+      id: "row_alug",
+      kind: "financeira",
+      unit: "brl",
+      finId: "alugueis",
+      label: "Aluguéis Recebidos (oper.)",
+      values: alugueis.valores,
+      brlValues: alugueis.valores,
+      fixed: !!alugueis.fixed,
+      tone: "pos",
+    },
+    {
+      id: "row_vatv",
+      kind: "financeira",
+      unit: "brl",
+      finId: "venda_ativos",
+      label: "Venda de Ativos (oper.)",
+      values: vendaAtivos.valores,
+      brlValues: vendaAtivos.valores,
+      fixed: !!vendaAtivos.fixed,
+      tone: "pos",
+    },
   ];
 
   const setMonth = (row: Row, i: number, v: number) => {
     if (row.kind === "bruta") {
       const safe = sanitize(v);
-      update((s) => ({ ...s, revenue: { ...s.revenue, bruta: s.revenue.bruta.map((x, j) => (j === i ? safe : x)) } }));
+      update((s) => ({
+        ...s,
+        revenue: { ...s.revenue, bruta: s.revenue.bruta.map((x, j) => (j === i ? safe : x)) },
+      }));
     } else if (row.kind === "inadimplencia") {
       // Em modo %, v é o percentual digitado. Em modo R$, converte R$→% usando a Bruta do mês.
       if (inadimpEmBRL) {
@@ -151,22 +246,48 @@ export function RevenueTab() {
         update((s) => {
           const bruta = s.revenue.bruta[i] || 0;
           const pct = bruta > 0 ? Math.min(100, (brl / bruta) * 100) : 0;
-          return { ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } };
+          return {
+            ...s,
+            revenue: {
+              ...s.revenue,
+              inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)),
+            },
+          };
         });
       } else {
         const pct = sanitize(v, { min: 0, max: 100 });
-        update((s) => ({ ...s, revenue: { ...s.revenue, inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)) } }));
+        update((s) => ({
+          ...s,
+          revenue: {
+            ...s.revenue,
+            inadimplencia: s.revenue.inadimplencia.map((x, j) => (j === i ? pct : x)),
+          },
+        }));
       }
     } else if (row.kind === "deducao" && row.dedId) {
       const safe = sanitize(v);
       if (row.dedId === "pdd_rec") {
-        update((s) => ({ ...s, revenue: { ...s.revenue, pddReversaoMensal: (s.revenue.pddReversaoMensal || fill12(0)).map((x, j) => (j === i ? safe : x)) } }));
+        update((s) => ({
+          ...s,
+          revenue: {
+            ...s.revenue,
+            pddReversaoMensal: (s.revenue.pddReversaoMensal || fill12(0)).map((x, j) =>
+              j === i ? safe : x,
+            ),
+          },
+        }));
       } else {
-        updateDed(row.dedId, row.label, (d) => ({ ...d, valores: d.valores.map((x, j) => (j === i ? safe : x)) }));
+        updateDed(row.dedId, row.label, (d) => ({
+          ...d,
+          valores: d.valores.map((x, j) => (j === i ? safe : x)),
+        }));
       }
     } else if (row.kind === "financeira" && row.finId) {
       const safe = sanitize(v);
-      updateFin(row.finId, row.label, (d) => ({ ...d, valores: d.valores.map((x, j) => (j === i ? safe : x)) }));
+      updateFin(row.finId, row.label, (d) => ({
+        ...d,
+        valores: d.valores.map((x, j) => (j === i ? safe : x)),
+      }));
     }
   };
 
@@ -206,14 +327,25 @@ export function RevenueTab() {
     if (row.kind === "bruta") {
       update((s) => {
         const base = fixed ? fixedBase(s.revenue.bruta) : s.revenue.bruta[0] || 0;
-        return { ...s, revenue: { ...s.revenue, brutaFixa: fixed, bruta: fixed ? fill12(base) : s.revenue.bruta } };
+        return {
+          ...s,
+          revenue: {
+            ...s.revenue,
+            brutaFixa: fixed,
+            bruta: fixed ? fill12(base) : s.revenue.bruta,
+          },
+        };
       });
     } else if (row.kind === "inadimplencia") {
       update((s) => {
         const base = fixed ? fixedBase(s.revenue.inadimplencia) : s.revenue.inadimplencia[0] || 0;
         return {
           ...s,
-          revenue: { ...s.revenue, inadimplenciaFixa: fixed, inadimplencia: fixed ? fill12(base) : s.revenue.inadimplencia },
+          revenue: {
+            ...s.revenue,
+            inadimplenciaFixa: fixed,
+            inadimplencia: fixed ? fill12(base) : s.revenue.inadimplencia,
+          },
         };
       });
     } else if (row.kind === "deducao" && row.dedId) {
@@ -241,21 +373,31 @@ export function RevenueTab() {
           label="Receita Bruta Anual"
           value={fmtBRL(brutaAnual)}
           tone="pos"
-          hint={{ description: "Total faturado no ano antes de qualquer dedução.", formula: "Σ Receita Bruta dos 12 meses" }}
+          hint={{
+            description: "Total faturado no ano antes de qualquer dedução.",
+            formula: "Σ Receita Bruta dos 12 meses",
+          }}
         />
         <StatCard
           label="Deduções da Receita"
           value={fmtBRL(deducoesAnual)}
           tone="neg"
           sub={fmtPct(pctRec(deducoesAnual)) + " da receita"}
-          hint={{ description: "Devoluções, cancelamentos, descontos incondicionais e abatimentos.", formula: "Devoluções + Descontos Incondicionais + Abatimentos" }}
+          hint={{
+            description: "Devoluções, cancelamentos, descontos incondicionais e abatimentos.",
+            formula: "Devoluções + Descontos Incondicionais + Abatimentos",
+          }}
         />
         <StatCard
           label="Receita Operacional"
           value={fmtBRL(liqAnual)}
           tone="pos"
           sub={fmtPct(pctRec(liqAnual)) + " da receita"}
-          hint={{ description: "Receita após deduções (devoluções, cancelamentos, descontos e abatimentos). Os impostos sobre venda são abatidos depois, na DRE — só então temos a Receita Líquida contábil.", formula: "Receita Bruta − Deduções da Receita" }}
+          hint={{
+            description:
+              "Receita após deduções (devoluções, cancelamentos, descontos e abatimentos). Os impostos sobre venda são abatidos depois, na DRE — só então temos a Receita Líquida contábil.",
+            formula: "Receita Bruta − Deduções da Receita",
+          }}
         />
         <StatCard
           label="Média Mensal YTD"
@@ -265,7 +407,9 @@ export function RevenueTab() {
         />
         <StatCard
           label="Total de Receitas"
-          value={fmtBRL(brutaAnual + (r.receitasFinanceiras?.reduce((acc, f) => acc + sum(f.valores), 0) || 0))}
+          value={fmtBRL(
+            brutaAnual + (r.receitasFinanceiras?.reduce((acc, f) => acc + sum(f.valores), 0) || 0),
+          )}
           tone="pos"
           hint="Soma da Receita Operacional Bruta com as Receitas Financeiras e demais entradas (aluguéis, venda de ativos)."
         />
@@ -280,7 +424,9 @@ export function RevenueTab() {
           <label className="text-[11px] text-muted-foreground flex items-center gap-2 cursor-pointer">
             <Switch
               checked={usaPDD}
-              onCheckedChange={(v) => update((s) => ({ ...s, revenue: { ...s.revenue, inadimplenciaComoPDD: v } }))}
+              onCheckedChange={(v) =>
+                update((s) => ({ ...s, revenue: { ...s.revenue, inadimplenciaComoPDD: v } }))
+              }
             />
             Contabilizar inadimplência como PDD (Despesa Operacional)
             <HelpTip
@@ -291,7 +437,12 @@ export function RevenueTab() {
           <label className="text-[11px] text-muted-foreground flex items-center gap-2 cursor-pointer">
             <Switch
               checked={inadimpEmBRL}
-              onCheckedChange={(v) => update((s) => ({ ...s, revenue: { ...s.revenue, inadimplenciaModo: v ? "brl" : "pct" } }))}
+              onCheckedChange={(v) =>
+                update((s) => ({
+                  ...s,
+                  revenue: { ...s.revenue, inadimplenciaModo: v ? "brl" : "pct" },
+                }))
+              }
             />
             Digitar inadimplência em R$
             <HelpTip
@@ -354,7 +505,10 @@ export function RevenueTab() {
             const base = s.revenue.pmrMensal ?? fill12(s.revenue.pmr || 0);
             if (fixed) {
               const ref = base.find((x) => x !== 0) ?? base[0] ?? 0;
-              return { ...s, revenue: { ...s.revenue, pmrFixo: true, pmrMensal: fill12(ref), pmr: ref } };
+              return {
+                ...s,
+                revenue: { ...s.revenue, pmrFixo: true, pmrMensal: fill12(ref), pmr: ref },
+              };
             }
             return { ...s, revenue: { ...s.revenue, pmrFixo: false } };
           })
@@ -404,7 +558,11 @@ function RevenueTable({
   const footerToneClass = footer?.tone === "neg" ? "text-neg" : "text-pos";
 
   const renderCellInput = (row: Row, v: number, onChange: (n: number) => void) =>
-    row.unit === "pct" ? <PctInput value={v} onChange={onChange} /> : <MoneyInput value={v} onChange={onChange} />;
+    row.unit === "pct" ? (
+      <PctInput value={v} onChange={onChange} />
+    ) : (
+      <MoneyInput value={v} onChange={onChange} />
+    );
 
   return (
     <div className="scrollbar-thin w-full overflow-x-auto overflow-y-hidden">
@@ -414,7 +572,9 @@ function RevenueTable({
             <th className="w-56 px-3 py-2">Descrição</th>
             <th className="w-24 px-2 py-2 text-center">Modo</th>
             {MESES.map((m) => (
-              <th key={m} className="px-1 py-2 text-right">{m}</th>
+              <th key={m} className="px-1 py-2 text-right">
+                {m}
+              </th>
             ))}
             <th className="px-3 py-2 text-right">Anual</th>
             <th className="w-14 px-2 py-2 text-right">% Rec</th>
@@ -426,8 +586,10 @@ function RevenueTable({
             // Total ANUAL exibido sempre em R$ (mesmo quando input é %).
             const anual = sum(row.brlValues);
             const pct = pctRec(anual);
-            const toneClass = row.tone === "pos" ? "text-pos" : anual > 0 ? "text-neg" : "text-muted-foreground";
-            const anualDisplay = row.tone === "neg" && anual > 0 ? `− ${fmtBRL(anual)}` : fmtBRL(anual);
+            const toneClass =
+              row.tone === "pos" ? "text-pos" : anual > 0 ? "text-neg" : "text-muted-foreground";
+            const anualDisplay =
+              row.tone === "neg" && anual > 0 ? `− ${fmtBRL(anual)}` : fmtBRL(anual);
             return (
               <tr key={row.id} className="border-t border-border/40 align-middle">
                 <td className="px-3 py-2">
@@ -444,7 +606,9 @@ function RevenueTable({
                   <td className="px-1 py-1" colSpan={12}>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] uppercase text-muted-foreground">
-                        {row.unit === "pct" ? "% aplicado em todos os meses:" : "Valor aplicado em todos os meses:"}
+                        {row.unit === "pct"
+                          ? "% aplicado em todos os meses:"
+                          : "Valor aplicado em todos os meses:"}
                       </span>
                       <div className="w-36">
                         {renderCellInput(row, fixedBase(row.values), (n) => onAllMonths(row, n))}
@@ -459,7 +623,9 @@ function RevenueTable({
                   ))
                 )}
                 <td className={`num px-3 py-2 text-right ${toneClass}`}>{anualDisplay}</td>
-                <td className="num px-2 py-2 text-right text-xs text-muted-foreground">{fmtPct(pct)}</td>
+                <td className="num px-2 py-2 text-right text-xs text-muted-foreground">
+                  {fmtPct(pct)}
+                </td>
                 <td />
               </tr>
             );
@@ -467,12 +633,20 @@ function RevenueTable({
 
           {footer && (
             <tr className="border-t border-border/40 bg-accent/20 align-middle">
-              <td className="px-3 py-2 text-xs font-semibold" colSpan={2}>{footer.label}</td>
+              <td className="px-3 py-2 text-xs font-semibold" colSpan={2}>
+                {footer.label}
+              </td>
               {footer.values.map((v, i) => (
-                <td key={i} className={`num px-1 py-2 text-right text-[11px] ${footerToneClass}`}>{fmtBRLCompact(v)}</td>
+                <td key={i} className={`num px-1 py-2 text-right text-[11px] ${footerToneClass}`}>
+                  {fmtBRLCompact(v)}
+                </td>
               ))}
-              <td className={`num px-3 py-2 text-right font-semibold ${footerToneClass}`}>{fmtBRL(footer.total)}</td>
-              <td className="num px-2 py-2 text-right text-xs text-muted-foreground">{fmtPct(pctRec(footer.total))}</td>
+              <td className={`num px-3 py-2 text-right font-semibold ${footerToneClass}`}>
+                {fmtBRL(footer.total)}
+              </td>
+              <td className="num px-2 py-2 text-right text-xs text-muted-foreground">
+                {fmtPct(pctRec(footer.total))}
+              </td>
               <td />
             </tr>
           )}

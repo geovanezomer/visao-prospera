@@ -6,12 +6,12 @@ Docker instalado, sem precisar do Node nem Bun no host.
 
 ## Arquivos incluídos
 
-| Arquivo              | Função                                                |
-| -------------------- | ----------------------------------------------------- |
-| `Dockerfile`         | Build de produção (multi-stage, gera servidor Node)   |
-| `Dockerfile.dev`     | Container de desenvolvimento com hot reload           |
-| `docker-compose.yml` | Orquestra os serviços `app` (prod) e `app-dev` (dev)  |
-| `.dockerignore`      | Reduz o contexto enviado ao Docker daemon             |
+| Arquivo              | Função                                               |
+| -------------------- | ---------------------------------------------------- |
+| `Dockerfile`         | Build de produção (multi-stage, gera servidor Node)  |
+| `Dockerfile.dev`     | Container de desenvolvimento com hot reload          |
+| `docker-compose.yml` | Orquestra os serviços `app` (prod) e `app-dev` (dev) |
+| `.dockerignore`      | Reduz o contexto enviado ao Docker daemon            |
 
 ## Pré-requisitos
 
@@ -42,11 +42,13 @@ docker compose up app -d --build
 Acesse: **http://localhost:3000**
 
 Logs:
+
 ```bash
 docker compose logs -f app
 ```
 
 Parar:
+
 ```bash
 docker compose down
 ```
@@ -79,12 +81,14 @@ com o que está no host).
 ## Build manual (sem compose)
 
 Produção:
+
 ```bash
 docker build -t gzfinancepro:latest .
 docker run -d --name gzfinancepro -p 3000:3000 gzfinancepro:latest
 ```
 
 Desenvolvimento:
+
 ```bash
 docker build -f Dockerfile.dev -t gzfinancepro:dev .
 docker run --rm -it -p 5173:5173 -v "$(pwd)":/app -v /app/node_modules \
@@ -100,6 +104,7 @@ do navegador** — não há banco de dados no container. Não é preciso configu
 volume para dados; cada navegador mantém seus próprios cenários.
 
 Usuários padrão (definidos em código):
+
 - `adminfinancepro` / `admin7184#`
 - `clientefinancepro` / `cliente7184#`
 
@@ -116,6 +121,7 @@ Altere o mapeamento no `docker-compose.yml` para `"8080:3000"` e acesse em
 
 **Hot reload não funciona no Windows/macOS:**
 Em alguns hosts o file-watching via volume é lento. Force polling:
+
 ```bash
 docker compose --profile dev run --rm \
   -e CHOKIDAR_USEPOLLING=true -e WATCHPACK_POLLING=true \

@@ -11,7 +11,11 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Entrar — FinnancePRO" },
-      { name: "description", content: "Acesse o FinnancePRO: diagnóstico, DRE simulado, regime tributário e análise de cenários." },
+      {
+        name: "description",
+        content:
+          "Acesse o FinnancePRO: diagnóstico, DRE simulado, regime tributário e análise de cenários.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -53,7 +57,11 @@ function LoginPage() {
         }}
       >
         <div className="flex items-center gap-3">
-          <img src={logoAsset.url} alt="FinnancePRO" className="h-10 w-10 rounded-md object-contain" />
+          <img
+            src={logoAsset.url}
+            alt="FinnancePRO"
+            className="h-10 w-10 rounded-md object-contain"
+          />
           <div>
             <p className="text-sm font-semibold tracking-tight">
               Finnance<span className="text-primary">PRO</span>
@@ -69,8 +77,8 @@ function LoginPage() {
             Sua operação financeira, com clareza executiva em tempo real.
           </h1>
           <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Acesse a plataforma para acompanhar DRE simulado, regime tributário,
-            fluxo de caixa, WACC e cenários da sua empresa.
+            Acesse a plataforma para acompanhar DRE simulado, regime tributário, fluxo de caixa,
+            WACC e cenários da sua empresa.
           </p>
         </div>
 
@@ -82,16 +90,18 @@ function LoginPage() {
       <section className="flex items-center justify-center px-6 py-12 lg:px-12">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <img src={logoAsset.url} alt="FinnancePRO" className="h-9 w-9 rounded-md object-contain" />
+            <img
+              src={logoAsset.url}
+              alt="FinnancePRO"
+              className="h-9 w-9 rounded-md object-contain"
+            />
             <p className="text-base font-semibold tracking-tight">
               Finnance<span className="text-primary">PRO</span>
             </p>
           </div>
 
           <h2 className="text-2xl font-semibold tracking-tight">Bem-vindo de volta</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Acesse sua plataforma FinnancePRO.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Acesse sua plataforma FinnancePRO.</p>
 
           <form onSubmit={onSubmit} className="mt-6 space-y-4" autoComplete="on">
             <div className="space-y-1.5">
@@ -115,7 +125,10 @@ function LoginPage() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Senha</Label>
-                <Link to="/forgot-password" className="text-[11px] text-muted-foreground hover:text-foreground">
+                <Link
+                  to="/forgot-password"
+                  className="text-[11px] text-muted-foreground hover:text-foreground"
+                >
                   Esqueci a senha
                 </Link>
               </div>
@@ -146,7 +159,6 @@ function LoginPage() {
               {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
           </form>
-
 
           <p className="mt-8 text-[11px] leading-relaxed text-muted-foreground">
             Sua sessão e seus cenários ficam vinculados à sua conta.

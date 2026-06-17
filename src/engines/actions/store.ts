@@ -16,12 +16,16 @@ const listeners = new Set<Listener>();
 
 function emit() {
   for (const l of listeners) l();
-  try { window.dispatchEvent(new CustomEvent("gz-actions-changed")); } catch {}
+  try {
+    window.dispatchEvent(new CustomEvent("gz-actions-changed"));
+  } catch {}
 }
 
 export function subscribeActions(listener: Listener): () => void {
   listeners.add(listener);
-  const onStorage = (e: StorageEvent) => { if (e.key?.startsWith("gz-finance-actions-")) listener(); };
+  const onStorage = (e: StorageEvent) => {
+    if (e.key?.startsWith("gz-finance-actions-")) listener();
+  };
   const onCustom = () => listener();
   window.addEventListener("storage", onStorage);
   window.addEventListener("gz-actions-changed", onCustom);
@@ -32,13 +36,19 @@ export function subscribeActions(listener: Listener): () => void {
   };
 }
 
-function applyFilter(all: ActionItem[], filter?: { status?: ActionStatus; includeDeleted?: boolean }): ActionItem[] {
-  const visible = filter?.includeDeleted ? all : all.filter(a => !a.isDeleted);
-  return filter?.status ? visible.filter(a => a.status === filter.status) : visible;
+function applyFilter(
+  all: ActionItem[],
+  filter?: { status?: ActionStatus; includeDeleted?: boolean },
+): ActionItem[] {
+  const visible = filter?.includeDeleted ? all : all.filter((a) => !a.isDeleted);
+  return filter?.status ? visible.filter((a) => a.status === filter.status) : visible;
 }
 
 /** Hook reativo: re-renderiza sempre que o store muda (chat ou UI). */
-export function useActions(company: string, filter?: { status?: ActionStatus; includeDeleted?: boolean }): ActionItem[] {
+export function useActions(
+  company: string,
+  filter?: { status?: ActionStatus; includeDeleted?: boolean },
+): ActionItem[] {
   const snapshot = useSyncExternalStore(
     subscribeActions,
     () => `${company}::${localStorage.getItem(KEY(company)) ?? ""}`,
@@ -78,13 +88,18 @@ function readRaw(company: string): ActionItem[] {
   try {
     const raw = localStorage.getItem(KEY(company));
     return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
-export function listActions(company: string, filter?: { status?: ActionStatus; includeDeleted?: boolean }): ActionItem[] {
+export function listActions(
+  company: string,
+  filter?: { status?: ActionStatus; includeDeleted?: boolean },
+): ActionItem[] {
   const all = readRaw(company);
-  const visible = filter?.includeDeleted ? all : all.filter(a => !a.isDeleted);
-  return filter?.status ? visible.filter(a => a.status === filter.status) : visible;
+  const visible = filter?.includeDeleted ? all : all.filter((a) => !a.isDeleted);
+  return filter?.status ? visible.filter((a) => a.status === filter.status) : visible;
 }
 
 export function createAction(
@@ -111,9 +126,13 @@ export function createAction(
   return item;
 }
 
-export function updateAction(company: string, id: string, patch: Partial<ActionItem>): ActionItem | null {
+export function updateAction(
+  company: string,
+  id: string,
+  patch: Partial<ActionItem>,
+): ActionItem | null {
   const all = readRaw(company);
-  const idx = all.findIndex(a => a.id === id);
+  const idx = all.findIndex((a) => a.id === id);
   if (idx < 0) return null;
   const now = Date.now();
   all[idx] = { ...all[idx], ...patch, updatedAt: now };
@@ -126,7 +145,7 @@ export function updateAction(company: string, id: string, patch: Partial<ActionI
 /** Soft delete: marca isDeleted=true e atualiza updatedAt. Não remove do storage. */
 export function deleteAction(company: string, id: string) {
   const all = readRaw(company);
-  const idx = all.findIndex(a => a.id === id);
+  const idx = all.findIndex((a) => a.id === id);
   if (idx < 0) return;
   all[idx] = { ...all[idx], isDeleted: true, updatedAt: Date.now() };
   localStorage.setItem(KEY(company), JSON.stringify(all));
@@ -136,7 +155,7 @@ export function deleteAction(company: string, id: string) {
 /** Restaura um item soft-deleted (suporte a futuro undo). */
 export function restoreAction(company: string, id: string) {
   const all = readRaw(company);
-  const idx = all.findIndex(a => a.id === id);
+  const idx = all.findIndex((a) => a.id === id);
   if (idx < 0) return;
   all[idx] = { ...all[idx], isDeleted: false, updatedAt: Date.now() };
   localStorage.setItem(KEY(company), JSON.stringify(all));
@@ -145,8 +164,11 @@ export function restoreAction(company: string, id: string) {
 
 export function actionsToMarkdown(items: ActionItem[]): string {
   if (!items.length) return "_Nenhuma ação cadastrada._";
-  const rows = items.map(a =>
-    `| ${a.titulo} | ${a.status} | ${a.responsavel ?? "—"} | ${a.prazo ?? "—"} | ${a.impactoEsperado ?? "—"} |`
-  ).join("\n");
+  const rows = items
+    .map(
+      (a) =>
+        `| ${a.titulo} | ${a.status} | ${a.responsavel ?? "—"} | ${a.prazo ?? "—"} | ${a.impactoEsperado ?? "—"} |`,
+    )
+    .join("\n");
   return `| Ação | Status | Responsável | Prazo | Impacto |\n| --- | --- | --- | --- | --- |\n${rows}`;
 }

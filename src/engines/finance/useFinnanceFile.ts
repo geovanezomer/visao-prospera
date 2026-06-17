@@ -3,15 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { AppState, Scenario } from "./types";
-import {
-  defaultFilename,
-  serialize,
-} from "./fileFormat";
+import { defaultFilename, serialize } from "./fileFormat";
 import { downloadFinnanceFile, pickFinnanceFile } from "./fileIO";
 import { collectExtras, applyExtras } from "./fileExtras";
 
 interface ConfirmFn {
-  (opts: { title: string; description?: string; confirmLabel?: string; destructive?: boolean }): Promise<boolean>;
+  (opts: {
+    title: string;
+    description?: string;
+    confirmLabel?: string;
+    destructive?: boolean;
+  }): Promise<boolean>;
 }
 
 interface Args {
@@ -27,11 +29,16 @@ interface Args {
 
 // Hash barato e estável para detectar "dirty" sem deep-equal pesado.
 function snapshot(state: AppState, scenarios: Scenario[]): string {
-  try { return JSON.stringify({ s: state, sc: scenarios }); } catch { return ""; }
+  try {
+    return JSON.stringify({ s: state, sc: scenarios });
+  } catch {
+    return "";
+  }
 }
 
 // Chave do draft por empresa (auto-save de recuperação F5).
-const draftKey = (company: string) => `gzfp:draft:${(company || "sem-empresa").trim().toLowerCase()}`;
+const draftKey = (company: string) =>
+  `gzfp:draft:${(company || "sem-empresa").trim().toLowerCase()}`;
 
 interface DraftEnvelope {
   ts: number;
@@ -85,7 +92,9 @@ export function useFinnanceFile({
       try {
         const env: DraftEnvelope = { ts: Date.now(), state, scenarios };
         localStorage.setItem(draftKey(state.companyName), JSON.stringify(env));
-      } catch { /* quota / privacy mode — ignora */ }
+      } catch {
+        /* quota / privacy mode — ignora */
+      }
     }, 800);
     return () => clearTimeout(t);
   }, [state, scenarios, hydrated, dirty]);
@@ -114,7 +123,9 @@ export function useFinnanceFile({
           },
         },
       });
-    } catch { /* draft corrompido — ignora */ }
+    } catch {
+      /* draft corrompido — ignora */
+    }
   }, [hydrated, state, scenarios, setState, replaceScenarios]);
 
   const save = useCallback(() => {
@@ -129,7 +140,11 @@ export function useFinnanceFile({
       setDirty(false);
       setLastModified(Date.now());
       // Limpa o draft — não há mais alterações pendentes.
-      try { localStorage.removeItem(draftKey(state.companyName)); } catch { /* ignora */ }
+      try {
+        localStorage.removeItem(draftKey(state.companyName));
+      } catch {
+        /* ignora */
+      }
       toast.success(`Arquivo salvo: ${name}`);
     } catch (err) {
       toast.error("Falha ao salvar arquivo", {
@@ -149,7 +164,15 @@ export function useFinnanceFile({
       if (!ok) return;
     }
     try {
-      const { state: nextState, scenarios: nextScen, extras, filename, originalVersion, currentVersion, migrated } = await pickFinnanceFile();
+      const {
+        state: nextState,
+        scenarios: nextScen,
+        extras,
+        filename,
+        originalVersion,
+        currentVersion,
+        migrated,
+      } = await pickFinnanceFile();
       setState(nextState);
       replaceScenarios(nextScen);
       // Replica os extras no localStorage sob a empresa do arquivo aberto,
@@ -233,7 +256,9 @@ export function useFinnanceFile({
     const company = state.companyName?.trim();
     const prefix = dirty ? "● " : "";
     document.title = `${prefix}${company ? `${company} · ` : ""}${base}`;
-    return () => { document.title = base; };
+    return () => {
+      document.title = base;
+    };
   }, [dirty, state.companyName]);
 
   return { currentFileName, dirty, lastModified, save, open, resetWithConfirm };

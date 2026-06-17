@@ -18,38 +18,76 @@
 
 // ============= Tipos e contratos =============
 export type {
-  Months, TabKey, BusinessType, TaxRegime, SimplesAnexo, TaxEra,
-  CostCategory, CostSubcategory, CostLine, Revenue, RevenueDeducao,
-  CapitalStructure, CapexAtivacao, CashFlowConfig, TaxConfig,
-  AppState, Scenario,
+  Months,
+  TabKey,
+  BusinessType,
+  TaxRegime,
+  SimplesAnexo,
+  TaxEra,
+  CostCategory,
+  CostSubcategory,
+  CostLine,
+  Revenue,
+  RevenueDeducao,
+  CapitalStructure,
+  CapexAtivacao,
+  CashFlowConfig,
+  TaxConfig,
+  AppState,
+  Scenario,
 } from "./types";
 export {
-  TAB_KEYS, TAX_ERAS, TAX_ERA_LABEL, TAX_ERA_SHORT,
-  APP_STATE_SCHEMA_VERSION, COST_VENDAS_LABEL, SUBCATEGORIES,
-  COST_VENDAS_TABLE_CONFIG, DEFAULT_ENCARGOS_PCT,
+  TAB_KEYS,
+  TAX_ERAS,
+  TAX_ERA_LABEL,
+  TAX_ERA_SHORT,
+  APP_STATE_SCHEMA_VERSION,
+  COST_VENDAS_LABEL,
+  SUBCATEGORIES,
+  COST_VENDAS_TABLE_CONFIG,
+  DEFAULT_ENCARGOS_PCT,
 } from "./types";
 
 // ============= Engine de cálculo (DRE + indicadores + tributos) =============
 export type { DRE, Indicators, MonthlyTax, ReformaRates, Diagnostic } from "./calculations";
 export {
   // DRE
-  buildDRE, splitReceitasFinanceiras,
+  buildDRE,
+  splitReceitasFinanceiras,
   // Indicadores
-  calcIndicators, irShieldForRegime,
+  calcIndicators,
+  irShieldForRegime,
   // Diagnóstico
   diagnose,
   // Tributos
-  calcSimples, calcPresumido, calcReal,
-  simplesAliquotaEfetiva, presumidoBases,
-  resolveEffectiveRegime, resolveSimplesAnexo, simplesExcedeLimite,
+  calcSimples,
+  calcPresumido,
+  calcReal,
+  simplesAliquotaEfetiva,
+  presumidoBases,
+  resolveEffectiveRegime,
+  resolveSimplesAnexo,
+  simplesExcedeLimite,
   // Reforma CBS/IBS
-  getReformaRates, getReformaRatesForYear, eraForYear,
-  getIbsFractionForYear, getIcmsIssFractionForYear,
-  getPisCofinsFractionForYear, getCbsPctForYear,
-  compareYearsForRegime, compareRegimes, compareErasForRegime,
+  getReformaRates,
+  getReformaRatesForYear,
+  eraForYear,
+  getIbsFractionForYear,
+  getIcmsIssFractionForYear,
+  getPisCofinsFractionForYear,
+  getCbsPctForYear,
+  compareYearsForRegime,
+  compareRegimes,
+  compareErasForRegime,
   // Helpers de custos
-  isCpvCost, fixedCostBase, effectiveMonthValues, monthValues,
-  folhaAnual, outrasDeducoesMensal, computeNetDebt, cagr12m,
+  isCpvCost,
+  fixedCostBase,
+  effectiveMonthValues,
+  monthValues,
+  folhaAnual,
+  outrasDeducoesMensal,
+  computeNetDebt,
+  cagr12m,
 } from "./calculations";
 
 // ============= Estado e persistência =============
@@ -61,17 +99,18 @@ export { useFinnanceFile } from "./useFinnanceFile";
 export * from "./cashflow";
 
 // ============= Projeções e simulações =============
+export { applySimulator, countActiveLevers, DEFAULT_SIM, type SimulatorParams } from "./simulator";
 export {
-  applySimulator, countActiveLevers, DEFAULT_SIM,
-  type SimulatorParams,
-} from "./simulator";
-export {
-  buildForecast, DEFAULT_FORECAST_CFG,
-  type ForecastConfig, type ForecastResult,
+  buildForecast,
+  DEFAULT_FORECAST_CFG,
+  type ForecastConfig,
+  type ForecastResult,
 } from "./forecast";
 export {
   runSensitivity,
-  type DriverKey, type OutputKey, type SensitivityResult,
+  type DriverKey,
+  type OutputKey,
+  type SensitivityResult,
 } from "./sensitivity";
 export * from "./montecarlo";
 

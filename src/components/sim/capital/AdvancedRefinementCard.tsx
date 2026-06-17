@@ -26,7 +26,11 @@ export function AdvancedRefinementCard({
             Ajustes finos que melhoram ROIC, PME e liquidez — opcionais.
           </div>
         </div>
-        {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+        {open ? (
+          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        )}
       </button>
       {open && (
         <div className="grid gap-3 border-t border-border/40 p-4 sm:grid-cols-2">

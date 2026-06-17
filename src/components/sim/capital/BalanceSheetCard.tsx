@@ -1,7 +1,18 @@
 import { AppState } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
 import { SectionTitle } from "../primitives";
-import { Banknote, Package, Users, Coins, Landmark, Wallet, AlertTriangle, CheckCircle2, Camera, Settings2 } from "lucide-react";
+import {
+  Banknote,
+  Package,
+  Users,
+  Coins,
+  Landmark,
+  Wallet,
+  AlertTriangle,
+  CheckCircle2,
+  Camera,
+  Settings2,
+} from "lucide-react";
 import { StepCard, SimpleField, MiniStat, SummaryList, KpiTile, Field } from "./parts";
 
 // Fotografia do balanço hoje — 3 passos (Ativos · Dívidas+PL · Resumo) +
@@ -13,20 +24,24 @@ export function BalanceSheetCard({
   capital: AppState["capital"];
   onChange: (patch: Partial<AppState["capital"]>) => void;
 }) {
-  const ativoCircCalc = (capital.disponibilidades || 0) + (capital.estoques || 0) + (capital.contasReceber || 0);
+  const ativoCircCalc =
+    (capital.disponibilidades || 0) + (capital.estoques || 0) + (capital.contasReceber || 0);
 
   // Total de Passivos: evita dupla contagem (passivoCirculante explícito já
   // inclui fornecedores e parcela CP da dívida).
-  const totalPassivos = (capital.passivoCirculante || 0) > 0
-    ? (capital.dividaOnerosa || 0) + (capital.passivoCirculante || 0)
-    : (capital.dividaOnerosa || 0) + (capital.fornecedores || 0);
+  const totalPassivos =
+    (capital.passivoCirculante || 0) > 0
+      ? (capital.dividaOnerosa || 0) + (capital.passivoCirculante || 0)
+      : (capital.dividaOnerosa || 0) + (capital.fornecedores || 0);
 
   const plCalculado = (capital.ativoTotal || 0) - totalPassivos;
   const plInformado = capital.patrimonioLiquido || 0;
   const diff = Math.abs(plInformado - plCalculado);
-  const hasInconsistencia = capital.ativoTotal > 0 && diff > Math.max(100, capital.ativoTotal * 0.02);
+  const hasInconsistencia =
+    capital.ativoTotal > 0 && diff > Math.max(100, capital.ativoTotal * 0.02);
 
-  const capitalCirculante = ativoCircCalc - (capital.passivoCirculante || capital.fornecedores || 0);
+  const capitalCirculante =
+    ativoCircCalc - (capital.passivoCirculante || capital.fornecedores || 0);
   const dpl = plInformado > 0 ? (capital.dividaOnerosa || 0) / plInformado : 0;
   const solvencia = totalPassivos > 0 ? (capital.ativoTotal || 0) / totalPassivos : 0;
 
@@ -47,12 +62,43 @@ export function BalanceSheetCard({
       </div>
 
       {/* PASSO 1 — ATIVOS */}
-      <StepCard step={1} color="var(--success)" title="Dinheiro e bens da empresa" subtitle="Tudo que pode virar caixa em algum momento">
+      <StepCard
+        step={1}
+        color="var(--success)"
+        title="Dinheiro e bens da empresa"
+        subtitle="Tudo que pode virar caixa em algum momento"
+      >
         <div className="grid gap-3 sm:grid-cols-2">
-          <SimpleField icon={<Banknote className="h-4 w-4" />} label="Dinheiro em caixa e bancos" hint="Saldo em conta corrente + aplicações de liquidez imediata." value={capital.disponibilidades} onChange={(n) => onChange({ disponibilidades: n })} />
-          <SimpleField icon={<Package className="h-4 w-4" />} label="Estoque (produtos parados)" hint="Mercadorias, matéria-prima ou produtos acabados no estoque." value={capital.estoques} onChange={(n) => onChange({ estoques: n })} />
-          <SimpleField icon={<Users className="h-4 w-4" />} label="Clientes que te devem" hint="Saldo médio a receber de clientes. Deixe 0 para calcular automaticamente pelo prazo médio (PMR)." value={capital.contasReceber} onChange={(n) => onChange({ contasReceber: n })} placeholder="0 = calculado pelo prazo médio" />
-          <SimpleField icon={<Coins className="h-4 w-4" />} label="Total de ativos da empresa" hint="Soma de TUDO que a empresa possui: caixa, estoques, máquinas, imóveis, veículos, contas a receber etc." value={capital.ativoTotal} onChange={(n) => onChange({ ativoTotal: n })} emphasis />
+          <SimpleField
+            icon={<Banknote className="h-4 w-4" />}
+            label="Dinheiro em caixa e bancos"
+            hint="Saldo em conta corrente + aplicações de liquidez imediata."
+            value={capital.disponibilidades}
+            onChange={(n) => onChange({ disponibilidades: n })}
+          />
+          <SimpleField
+            icon={<Package className="h-4 w-4" />}
+            label="Estoque (produtos parados)"
+            hint="Mercadorias, matéria-prima ou produtos acabados no estoque."
+            value={capital.estoques}
+            onChange={(n) => onChange({ estoques: n })}
+          />
+          <SimpleField
+            icon={<Users className="h-4 w-4" />}
+            label="Clientes que te devem"
+            hint="Saldo médio a receber de clientes. Deixe 0 para calcular automaticamente pelo prazo médio (PMR)."
+            value={capital.contasReceber}
+            onChange={(n) => onChange({ contasReceber: n })}
+            placeholder="0 = calculado pelo prazo médio"
+          />
+          <SimpleField
+            icon={<Coins className="h-4 w-4" />}
+            label="Total de ativos da empresa"
+            hint="Soma de TUDO que a empresa possui: caixa, estoques, máquinas, imóveis, veículos, contas a receber etc."
+            value={capital.ativoTotal}
+            onChange={(n) => onChange({ ativoTotal: n })}
+            emphasis
+          />
         </div>
 
         <div className="mt-3 grid grid-cols-4 overflow-hidden rounded-md border border-border/40 text-center text-[10px]">
@@ -64,10 +110,28 @@ export function BalanceSheetCard({
       </StepCard>
 
       {/* PASSO 2 — DÍVIDAS + PL */}
-      <StepCard step={2} color="var(--destructive)" title="O que a empresa deve" subtitle="Dívidas, contas e obrigações">
+      <StepCard
+        step={2}
+        color="var(--destructive)"
+        title="O que a empresa deve"
+        subtitle="Dívidas, contas e obrigações"
+      >
         <div className="grid gap-3 sm:grid-cols-2">
-          <SimpleField icon={<Landmark className="h-4 w-4" />} label="Empréstimos e financiamentos" hint="Dívida com bancos que cobram juros. NÃO inclua fornecedores ou impostos parcelados sem juros." value={capital.dividaOnerosa} onChange={(n) => onChange({ dividaOnerosa: n })} />
-          <SimpleField icon={<Users className="h-4 w-4" />} label="Fornecedores a pagar" hint="Saldo médio que a empresa deve a fornecedores. Deixe 0 para calcular pelo prazo médio (PMP)." value={capital.fornecedores} onChange={(n) => onChange({ fornecedores: n })} placeholder="0 = calculado pelo prazo médio" />
+          <SimpleField
+            icon={<Landmark className="h-4 w-4" />}
+            label="Empréstimos e financiamentos"
+            hint="Dívida com bancos que cobram juros. NÃO inclua fornecedores ou impostos parcelados sem juros."
+            value={capital.dividaOnerosa}
+            onChange={(n) => onChange({ dividaOnerosa: n })}
+          />
+          <SimpleField
+            icon={<Users className="h-4 w-4" />}
+            label="Fornecedores a pagar"
+            hint="Saldo médio que a empresa deve a fornecedores. Deixe 0 para calcular pelo prazo médio (PMP)."
+            value={capital.fornecedores}
+            onChange={(n) => onChange({ fornecedores: n })}
+            placeholder="0 = calculado pelo prazo médio"
+          />
         </div>
 
         <div className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-4">
@@ -80,24 +144,39 @@ export function BalanceSheetCard({
           </div>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <SimpleField icon={<Wallet className="h-4 w-4" />} label="Patrimônio líquido dos sócios" hint="Capital social + reservas + lucros acumulados. O que sobraria para os sócios se a empresa quitasse todas as dívidas hoje." value={capital.patrimonioLiquido} onChange={(n) => onChange({ patrimonioLiquido: n })} emphasis />
+            <SimpleField
+              icon={<Wallet className="h-4 w-4" />}
+              label="Patrimônio líquido dos sócios"
+              hint="Capital social + reservas + lucros acumulados. O que sobraria para os sócios se a empresa quitasse todas as dívidas hoje."
+              value={capital.patrimonioLiquido}
+              onChange={(n) => onChange({ patrimonioLiquido: n })}
+              emphasis
+            />
 
             <div className="flex items-center justify-around rounded-md border border-border/40 bg-background/40 p-3 text-center">
               <div>
                 <div className="num text-sm font-semibold">{fmtBRL(capital.ativoTotal)}</div>
-                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Ativos</div>
+                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+                  Ativos
+                </div>
               </div>
               <span className="text-muted-foreground">−</span>
               <div>
                 <div className="num text-sm font-semibold text-neg">{fmtBRL(totalPassivos)}</div>
-                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Dívidas</div>
+                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+                  Dívidas
+                </div>
               </div>
               <span className="text-muted-foreground">=</span>
               <div>
-                <div className={`num text-sm font-semibold ${hasInconsistencia ? "text-warning" : "text-pos"}`}>
+                <div
+                  className={`num text-sm font-semibold ${hasInconsistencia ? "text-warning" : "text-pos"}`}
+                >
                   {fmtBRL(plCalculado)}
                 </div>
-                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">PL calculado</div>
+                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
+                  PL calculado
+                </div>
               </div>
             </div>
           </div>
@@ -107,9 +186,9 @@ export function BalanceSheetCard({
               <div className="flex items-start gap-2">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
-                  O PL informado (<strong>{fmtBRL(plInformado)}</strong>) não bate com a diferença entre
-                  Ativos e Dívidas (<strong>{fmtBRL(plCalculado)}</strong>).
-                  Diferença: <strong>{fmtBRL(diff)}</strong>.
+                  O PL informado (<strong>{fmtBRL(plInformado)}</strong>) não bate com a diferença
+                  entre Ativos e Dívidas (<strong>{fmtBRL(plCalculado)}</strong>). Diferença:{" "}
+                  <strong>{fmtBRL(diff)}</strong>.
                 </span>
               </div>
               <button
@@ -124,7 +203,12 @@ export function BalanceSheetCard({
       </StepCard>
 
       {/* PASSO 3 — RESUMO + KPIs */}
-      <StepCard step={3} color="var(--primary)" title="Resumo do balanço" subtitle="Confira antes de continuar">
+      <StepCard
+        step={3}
+        color="var(--primary)"
+        title="Resumo do balanço"
+        subtitle="Confira antes de continuar"
+      >
         <div className="grid gap-3 sm:grid-cols-2">
           <SummaryList
             title="ATIVOS"
@@ -168,9 +252,24 @@ export function BalanceSheetCard({
         ) : null}
 
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-          <KpiTile label="Capital circulante" value={fmtBRL(capitalCirculante)} tone={capitalCirculante >= 0 ? "pos" : "neg"} hint="Ativo circulante − Passivo circulante. Folga para honrar compromissos de curto prazo." />
-          <KpiTile label="Alavancagem D/PL" value={`${dpl.toFixed(2)}×`} tone={dpl <= 2 ? "pos" : dpl <= 3 ? "warn" : "neg"} hint="Dívida onerosa ÷ Patrimônio líquido. Saudável ≤ 2×." />
-          <KpiTile label="Solvência geral" value={`${solvencia.toFixed(2)}×`} tone={solvencia >= 1.5 ? "pos" : solvencia >= 1 ? "warn" : "neg"} hint="Ativo total ÷ Passivo total. Quanto a empresa tem para cada R$ 1 de dívida." />
+          <KpiTile
+            label="Capital circulante"
+            value={fmtBRL(capitalCirculante)}
+            tone={capitalCirculante >= 0 ? "pos" : "neg"}
+            hint="Ativo circulante − Passivo circulante. Folga para honrar compromissos de curto prazo."
+          />
+          <KpiTile
+            label="Alavancagem D/PL"
+            value={`${dpl.toFixed(2)}×`}
+            tone={dpl <= 2 ? "pos" : dpl <= 3 ? "warn" : "neg"}
+            hint="Dívida onerosa ÷ Patrimônio líquido. Saudável ≤ 2×."
+          />
+          <KpiTile
+            label="Solvência geral"
+            value={`${solvencia.toFixed(2)}×`}
+            tone={solvencia >= 1.5 ? "pos" : solvencia >= 1 ? "warn" : "neg"}
+            hint="Ativo total ÷ Passivo total. Quanto a empresa tem para cada R$ 1 de dívida."
+          />
         </div>
       </StepCard>
 
@@ -178,11 +277,18 @@ export function BalanceSheetCard({
       <div className="rounded-md border border-border/40 bg-background/30 p-3">
         <div className="mb-2 flex items-center gap-2">
           <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
-          <div className="text-xs font-semibold text-muted-foreground">Outros lançamentos mensais</div>
+          <div className="text-xs font-semibold text-muted-foreground">
+            Outros lançamentos mensais
+          </div>
           <span className="text-[10px] text-muted-foreground/70">Entram na DRE todo mês</span>
         </div>
         <div className="grid grid-cols-1 gap-3">
-          <Field label="Depreciação mensal" value={capital.depreciacaoMensal} onChange={(n) => onChange({ depreciacaoMensal: n })} hint="Perda contábil de valor de máquinas, equipamentos e imóveis no mês. Não sai do caixa, mas reduz o lucro tributável." />
+          <Field
+            label="Depreciação mensal"
+            value={capital.depreciacaoMensal}
+            onChange={(n) => onChange({ depreciacaoMensal: n })}
+            hint="Perda contábil de valor de máquinas, equipamentos e imóveis no mês. Não sai do caixa, mas reduz o lucro tributável."
+          />
         </div>
       </div>
     </div>

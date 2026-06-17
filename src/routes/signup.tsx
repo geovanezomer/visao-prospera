@@ -7,7 +7,10 @@ export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
       { title: "Cadastro indisponível — FinnancePRO" },
-      { name: "description", content: "O cadastro de novas contas no FinnancePRO está temporariamente desativado." },
+      {
+        name: "description",
+        content: "O cadastro de novas contas no FinnancePRO está temporariamente desativado.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -18,7 +21,11 @@ function SignupDisabledPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12 text-foreground">
       <div className="w-full max-w-md text-center">
-        <img src={logoAsset.url} alt="FinnancePRO" className="mx-auto mb-6 h-12 w-12 rounded-md object-contain" />
+        <img
+          src={logoAsset.url}
+          alt="FinnancePRO"
+          className="mx-auto mb-6 h-12 w-12 rounded-md object-contain"
+        />
         <p className="text-sm font-semibold tracking-tight">
           Finnance<span className="text-primary">PRO</span>
         </p>
@@ -27,10 +34,12 @@ function SignupDisabledPage() {
           <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
             <Lock className="h-5 w-5" />
           </div>
-          <h1 className="text-xl font-semibold tracking-tight">Cadastro temporariamente indisponível</h1>
+          <h1 className="text-xl font-semibold tracking-tight">
+            Cadastro temporariamente indisponível
+          </h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            No momento, o cadastro de novas contas está desativado. Se você já possui acesso,
-            entre com seu e-mail e senha.
+            No momento, o cadastro de novas contas está desativado. Se você já possui acesso, entre
+            com seu e-mail e senha.
           </p>
           <Button asChild className="mt-6 w-full">
             <Link to="/login">

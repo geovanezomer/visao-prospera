@@ -57,7 +57,9 @@ export async function loadKey<T = unknown>(key: string): Promise<T | null> {
     const parsed = JSON.parse(raw) as T;
     // Migração silenciosa para IndexedDB se disponível
     if (idbAvailable) {
-      saveKey(key, parsed).catch(() => { /* ignora */ });
+      saveKey(key, parsed).catch(() => {
+        /* ignora */
+      });
     }
     return parsed;
   } catch {
@@ -99,7 +101,11 @@ export async function removeKey(key: string): Promise<void> {
       idbAvailable = false;
     }
   }
-  try { localStorage.removeItem(key); } catch { /* ignora */ }
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    /* ignora */
+  }
 }
 
 // ─── Broadcast multi-aba ──────────────────────────────────────────────
@@ -121,7 +127,11 @@ function getChannel(): BroadcastChannel | null {
 export function broadcastChange(key: string): void {
   const ch = getChannel();
   if (!ch) return;
-  try { ch.postMessage({ type: "key-changed", key, ts: Date.now() }); } catch { /* ignora */ }
+  try {
+    ch.postMessage({ type: "key-changed", key, ts: Date.now() });
+  } catch {
+    /* ignora */
+  }
 }
 
 /** Escuta alterações vindas de outras abas. Retorna unsubscribe. */

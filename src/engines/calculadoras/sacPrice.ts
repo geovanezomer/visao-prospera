@@ -54,7 +54,13 @@ export function calcularSAC(pv: number, taxaMensal: number, n: number): Resultad
     saldo = Math.max(0, saldo - amort);
     totalPago = round2(totalPago + parcela);
     totalJuros = round2(totalJuros + juros);
-    parcelas.push({ mes: m, parcela, amortizacao: round2(amort), juros, saldoDevedor: round2(saldo) });
+    parcelas.push({
+      mes: m,
+      parcela,
+      amortizacao: round2(amort),
+      juros,
+      saldoDevedor: round2(saldo),
+    });
   }
   return {
     parcelas,
@@ -80,7 +86,13 @@ export function calcularPRICE(pv: number, taxaMensal: number, n: number): Result
     saldo = Math.max(0, saldo - amort);
     totalPago = round2(totalPago + parcelaFixa);
     totalJuros = round2(totalJuros + juros);
-    parcelas.push({ mes: m, parcela: parcelaFixa, amortizacao: amort, juros, saldoDevedor: round2(saldo) });
+    parcelas.push({
+      mes: m,
+      parcela: parcelaFixa,
+      amortizacao: amort,
+      juros,
+      saldoDevedor: round2(saldo),
+    });
   }
   return {
     parcelas,

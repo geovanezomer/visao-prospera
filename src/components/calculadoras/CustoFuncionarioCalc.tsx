@@ -11,11 +11,24 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useAppState } from "@/engines/finance/store";
 import {
   calcularCustoFuncionario,
@@ -69,7 +82,18 @@ export function CustoFuncionarioCalc() {
     } catch {
       return null;
     }
-  }, [salarioBruto, regime, simplesAnexoIV, grauRAT, aliquotaTerceiros, vtAtivo, vtCusto, vr, planoSaude, outros]);
+  }, [
+    salarioBruto,
+    regime,
+    simplesAnexoIV,
+    grauRAT,
+    aliquotaTerceiros,
+    vtAtivo,
+    vtCusto,
+    vr,
+    planoSaude,
+    outros,
+  ]);
 
   function limpar() {
     setSalarioBruto(DEFAULT_SALARIO);
@@ -107,7 +131,9 @@ export function CustoFuncionarioCalc() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">1</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                1
+              </span>
               Remuneração
             </CardTitle>
             <CardDescription>Salário bruto e regime tributário da empresa</CardDescription>
@@ -116,7 +142,9 @@ export function CustoFuncionarioCalc() {
             <div className="space-y-2">
               <Label htmlFor="salario">Salário Bruto</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">R$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+                  R$
+                </span>
                 <Input
                   id="salario"
                   type="number"
@@ -146,7 +174,9 @@ export function CustoFuncionarioCalc() {
                 )}
               </div>
               <Select value={regime} onValueChange={(v) => setRegime(v as RegimeEmpresa)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="simples">Simples Nacional</SelectItem>
                   <SelectItem value="presumido">Lucro Presumido</SelectItem>
@@ -155,7 +185,8 @@ export function CustoFuncionarioCalc() {
               </Select>
               {regime === "simples" && (
                 <p className="text-xs text-muted-foreground">
-                  No Simples Nacional o INSS patronal e os Terceiros estão inclusos no DAS (exceto Anexo IV).
+                  No Simples Nacional o INSS patronal e os Terceiros estão inclusos no DAS (exceto
+                  Anexo IV).
                 </p>
               )}
             </div>
@@ -167,7 +198,9 @@ export function CustoFuncionarioCalc() {
                   onCheckedChange={(c) => setSimplesAnexoIV(c === true)}
                   className="mt-0.5"
                 />
-                <span>Empresa enquadrada no <strong>Anexo IV</strong> (INSS patronal devido à parte)</span>
+                <span>
+                  Empresa enquadrada no <strong>Anexo IV</strong> (INSS patronal devido à parte)
+                </span>
               </label>
             )}
 
@@ -175,9 +208,16 @@ export function CustoFuncionarioCalc() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="rat" className="text-xs">Grau de Risco (RAT)</Label>
-                <Select value={String(grauRAT)} onValueChange={(v) => setGrauRAT(Number(v) as GrauRAT)}>
-                  <SelectTrigger id="rat"><SelectValue /></SelectTrigger>
+                <Label htmlFor="rat" className="text-xs">
+                  Grau de Risco (RAT)
+                </Label>
+                <Select
+                  value={String(grauRAT)}
+                  onValueChange={(v) => setGrauRAT(Number(v) as GrauRAT)}
+                >
+                  <SelectTrigger id="rat">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1">Leve (1%)</SelectItem>
                     <SelectItem value="2">Médio (2%)</SelectItem>
@@ -186,7 +226,9 @@ export function CustoFuncionarioCalc() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="terceiros" className="text-xs">Terceiros (% — varia por CNAE)</Label>
+                <Label htmlFor="terceiros" className="text-xs">
+                  Terceiros (% — varia por CNAE)
+                </Label>
                 <Input
                   id="terceiros"
                   type="number"
@@ -206,7 +248,9 @@ export function CustoFuncionarioCalc() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">2</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                2
+              </span>
               Benefícios
             </CardTitle>
             <CardDescription>Benefícios mensais pagos pela empresa</CardDescription>
@@ -219,10 +263,22 @@ export function CustoFuncionarioCalc() {
               </label>
               {vtAtivo && (
                 <div className="space-y-1 pl-6">
-                  <Label htmlFor="vt" className="text-xs text-muted-foreground">Custo mensal do VT</Label>
+                  <Label htmlFor="vt" className="text-xs text-muted-foreground">
+                    Custo mensal do VT
+                  </Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">R$</span>
-                    <Input id="vt" type="number" min={0} step={10} className="pl-10" value={vtCusto || ""} onChange={(e) => setVtCusto(Number(e.target.value) || 0)} />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+                      R$
+                    </span>
+                    <Input
+                      id="vt"
+                      type="number"
+                      min={0}
+                      step={10}
+                      className="pl-10"
+                      value={vtCusto || ""}
+                      onChange={(e) => setVtCusto(Number(e.target.value) || 0)}
+                    />
                   </div>
                   <p className="text-[11px] text-muted-foreground">
                     Funcionário paga até 6% do salário; empresa cobre o excedente (Lei 7.418/85).
@@ -232,26 +288,62 @@ export function CustoFuncionarioCalc() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="vr" className="text-xs">Vale-Refeição / Alimentação</Label>
+              <Label htmlFor="vr" className="text-xs">
+                Vale-Refeição / Alimentação
+              </Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">R$</span>
-                <Input id="vr" type="number" min={0} step={10} className="pl-10" value={vr || ""} onChange={(e) => setVr(Number(e.target.value) || 0)} />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+                  R$
+                </span>
+                <Input
+                  id="vr"
+                  type="number"
+                  min={0}
+                  step={10}
+                  className="pl-10"
+                  value={vr || ""}
+                  onChange={(e) => setVr(Number(e.target.value) || 0)}
+                />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="saude" className="text-xs">Plano de Saúde</Label>
+              <Label htmlFor="saude" className="text-xs">
+                Plano de Saúde
+              </Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">R$</span>
-                <Input id="saude" type="number" min={0} step={10} className="pl-10" value={planoSaude || ""} onChange={(e) => setPlanoSaude(Number(e.target.value) || 0)} />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+                  R$
+                </span>
+                <Input
+                  id="saude"
+                  type="number"
+                  min={0}
+                  step={10}
+                  className="pl-10"
+                  value={planoSaude || ""}
+                  onChange={(e) => setPlanoSaude(Number(e.target.value) || 0)}
+                />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="outros" className="text-xs">Outros Benefícios</Label>
+              <Label htmlFor="outros" className="text-xs">
+                Outros Benefícios
+              </Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">R$</span>
-                <Input id="outros" type="number" min={0} step={10} className="pl-10" value={outros || ""} onChange={(e) => setOutros(Number(e.target.value) || 0)} />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+                  R$
+                </span>
+                <Input
+                  id="outros"
+                  type="number"
+                  min={0}
+                  step={10}
+                  className="pl-10"
+                  value={outros || ""}
+                  onChange={(e) => setOutros(Number(e.target.value) || 0)}
+                />
               </div>
             </div>
           </CardContent>
@@ -284,10 +376,32 @@ export function CustoFuncionarioCalc() {
 
           {/* Cards-resumo */}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <ResumoCard rotulo="Encargos Patronais" valor={resultado.encargos.total} pct={resultado.encargos.total / resultado.salarioBruto} tone="destructive" sub="Sobre o salário" />
-            <ResumoCard rotulo="Provisões Mensais" valor={resultado.provisoes.total} pct={resultado.provisoes.total / resultado.salarioBruto} tone="warning" sub="13º, férias e FGTS" />
-            <ResumoCard rotulo="Benefícios" valor={resultado.beneficios.total} tone="primary" sub="VT, VR, saúde e outros" />
-            <ResumoCard rotulo="Custo Anual" valor={resultado.custoAnualTotal} tone="foreground" sub="× 12 meses" />
+            <ResumoCard
+              rotulo="Encargos Patronais"
+              valor={resultado.encargos.total}
+              pct={resultado.encargos.total / resultado.salarioBruto}
+              tone="destructive"
+              sub="Sobre o salário"
+            />
+            <ResumoCard
+              rotulo="Provisões Mensais"
+              valor={resultado.provisoes.total}
+              pct={resultado.provisoes.total / resultado.salarioBruto}
+              tone="warning"
+              sub="13º, férias e FGTS"
+            />
+            <ResumoCard
+              rotulo="Benefícios"
+              valor={resultado.beneficios.total}
+              tone="primary"
+              sub="VT, VR, saúde e outros"
+            />
+            <ResumoCard
+              rotulo="Custo Anual"
+              valor={resultado.custoAnualTotal}
+              tone="foreground"
+              sub="× 12 meses"
+            />
           </div>
 
           {/* Detalhamento — cards separados */}
@@ -315,7 +429,10 @@ export function CustoFuncionarioCalc() {
                 <CardTitle className="text-sm">Benefícios — detalhamento</CardTitle>
               </CardHeader>
               <CardContent>
-                <DetalheTable linhas={resultado.beneficios.itens} total={resultado.beneficios.total} />
+                <DetalheTable
+                  linhas={resultado.beneficios.itens}
+                  total={resultado.beneficios.total}
+                />
               </CardContent>
             </Card>
           )}
@@ -327,14 +444,35 @@ export function CustoFuncionarioCalc() {
             <CardContent>
               <div className="space-y-1.5 text-sm">
                 <LinhaResumo rotulo="Salário Bruto" valor={resultado.salarioBruto} />
-                <LinhaResumo rotulo="(+) Encargos Patronais" valor={resultado.encargos.total} tone="destructive" />
-                <LinhaResumo rotulo="(+) Provisões Mensais" valor={resultado.provisoes.total} tone="warning" />
+                <LinhaResumo
+                  rotulo="(+) Encargos Patronais"
+                  valor={resultado.encargos.total}
+                  tone="destructive"
+                />
+                <LinhaResumo
+                  rotulo="(+) Provisões Mensais"
+                  valor={resultado.provisoes.total}
+                  tone="warning"
+                />
                 {resultado.beneficios.total > 0 && (
-                  <LinhaResumo rotulo="(+) Benefícios" valor={resultado.beneficios.total} tone="primary" />
+                  <LinhaResumo
+                    rotulo="(+) Benefícios"
+                    valor={resultado.beneficios.total}
+                    tone="primary"
+                  />
                 )}
                 <Separator className="my-2" />
-                <LinhaResumo rotulo="Custo Mensal Total" valor={resultado.custoMensalTotal} bold tone="primary" />
-                <LinhaResumo rotulo="Custo Anual Total (× 12)" valor={resultado.custoAnualTotal} bold />
+                <LinhaResumo
+                  rotulo="Custo Mensal Total"
+                  valor={resultado.custoMensalTotal}
+                  bold
+                  tone="primary"
+                />
+                <LinhaResumo
+                  rotulo="Custo Anual Total (× 12)"
+                  valor={resultado.custoAnualTotal}
+                  bold
+                />
               </div>
             </CardContent>
           </Card>
@@ -346,22 +484,25 @@ export function CustoFuncionarioCalc() {
         <Card>
           <CollapsibleTrigger asChild>
             <button className="flex w-full items-center justify-between p-4 text-left text-sm font-medium hover:bg-muted/40">
-              <span className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> Entenda a calculadora</span>
+              <span className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-primary" /> Entenda a calculadora
+              </span>
               <span className="text-xs text-muted-foreground">expandir</span>
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-3 border-t pt-4 text-sm text-muted-foreground">
               <p>
-                Contratar via CLT custa muito mais que o salário combinado. O empregador arca com encargos
-                previdenciários (INSS patronal 20% + RAT 1–3% + Terceiros ~5,8%), FGTS 8% e provisões de 13º (8,33%)
-                e férias + 1/3 (11,11%). No Regime Geral o custo real fica entre <strong>1,6× e 1,8× o salário bruto</strong>
-                — sem contar benefícios.
+                Contratar via CLT custa muito mais que o salário combinado. O empregador arca com
+                encargos previdenciários (INSS patronal 20% + RAT 1–3% + Terceiros ~5,8%), FGTS 8% e
+                provisões de 13º (8,33%) e férias + 1/3 (11,11%). No Regime Geral o custo real fica
+                entre <strong>1,6× e 1,8× o salário bruto</strong>— sem contar benefícios.
               </p>
               <p>
-                Para empresas no <strong>Simples Nacional</strong>, INSS patronal e Terceiros estão embutidos no DAS
-                (exceto Anexo IV), mas FGTS, RAT e provisões continuam integrais. O custo efetivo costuma ficar próximo
-                de <strong>1,4×–1,5× o salário bruto</strong>, variando com a atividade e o anexo.
+                Para empresas no <strong>Simples Nacional</strong>, INSS patronal e Terceiros estão
+                embutidos no DAS (exceto Anexo IV), mas FGTS, RAT e provisões continuam integrais. O
+                custo efetivo costuma ficar próximo de <strong>1,4×–1,5× o salário bruto</strong>,
+                variando com a atividade e o anexo.
               </p>
               <div className="rounded-md bg-muted/40 p-3 font-mono text-xs">
                 custoMensal = salário × (1 + INSS + RAT + Terceiros + FGTS + Provisões) + benefícios
@@ -369,15 +510,27 @@ export function CustoFuncionarioCalc() {
               <div className="space-y-1 pt-2">
                 <p className="font-medium text-foreground">Dicas</p>
                 <ul className="ml-4 list-disc space-y-1">
-                  <li><strong>Negocie salário líquido, pague bruto:</strong> apresente o bruto ao candidato para evitar surpresas.</li>
-                  <li><strong>RAT varia por risco:</strong> escritório 1%, indústria leve 2%, construção/mineração 3%. Confirme o CNAE.</li>
-                  <li><strong>Benefícios têm impacto tributário:</strong> VR/VA são dedutíveis no IRPJ/CSLL (Lucro Real). VT tem isenção previdenciária.</li>
-                  <li><strong>Cuidado com PJ:</strong> reduz encargos mas gera risco de pejotização e passivo trabalhista.</li>
+                  <li>
+                    <strong>Negocie salário líquido, pague bruto:</strong> apresente o bruto ao
+                    candidato para evitar surpresas.
+                  </li>
+                  <li>
+                    <strong>RAT varia por risco:</strong> escritório 1%, indústria leve 2%,
+                    construção/mineração 3%. Confirme o CNAE.
+                  </li>
+                  <li>
+                    <strong>Benefícios têm impacto tributário:</strong> VR/VA são dedutíveis no
+                    IRPJ/CSLL (Lucro Real). VT tem isenção previdenciária.
+                  </li>
+                  <li>
+                    <strong>Cuidado com PJ:</strong> reduz encargos mas gera risco de pejotização e
+                    passivo trabalhista.
+                  </li>
                 </ul>
               </div>
               <p className="pt-2 text-xs">
-                Bases legais: Lei 8.212/91 (custeio previdenciário), Lei 8.036/90 (FGTS), Decreto 6.957/09 (FAP/RAT),
-                Lei 7.418/85 (VT), LC 123/2006 (Simples Nacional).
+                Bases legais: Lei 8.212/91 (custeio previdenciário), Lei 8.036/90 (FGTS), Decreto
+                6.957/09 (FAP/RAT), Lei 7.418/85 (VT), LC 123/2006 (Simples Nacional).
               </p>
             </CardContent>
           </CollapsibleContent>
@@ -400,7 +553,19 @@ const toneClass: Record<Tone, string> = {
   foreground: "text-foreground",
 };
 
-function ResumoCard({ rotulo, valor, pct, sub, tone = "foreground" }: { rotulo: string; valor: number; pct?: number; sub?: string; tone?: Tone }) {
+function ResumoCard({
+  rotulo,
+  valor,
+  pct,
+  sub,
+  tone = "foreground",
+}: {
+  rotulo: string;
+  valor: number;
+  pct?: number;
+  sub?: string;
+  tone?: Tone;
+}) {
   return (
     <Card>
       <CardContent className="space-y-1 py-4">
@@ -416,7 +581,13 @@ function ResumoCard({ rotulo, valor, pct, sub, tone = "foreground" }: { rotulo: 
   );
 }
 
-function DetalheTable({ linhas, total }: { linhas: { rotulo: string; base: number; aliquota: number | null; valor: number }[]; total: number }) {
+function DetalheTable({
+  linhas,
+  total,
+}: {
+  linhas: { rotulo: string; base: number; aliquota: number | null; valor: number }[];
+  total: number;
+}) {
   return (
     <Table>
       <TableHeader>
@@ -431,7 +602,9 @@ function DetalheTable({ linhas, total }: { linhas: { rotulo: string; base: numbe
         {linhas.map((l) => (
           <TableRow key={l.rotulo}>
             <TableCell className="text-xs">{l.rotulo}</TableCell>
-            <TableCell className="text-right text-xs text-muted-foreground">{fmtBRL(l.base)}</TableCell>
+            <TableCell className="text-right text-xs text-muted-foreground">
+              {fmtBRL(l.base)}
+            </TableCell>
             <TableCell className="text-right text-xs text-muted-foreground">
               {l.aliquota === null ? "—" : fmtPct(l.aliquota)}
             </TableCell>
@@ -439,7 +612,9 @@ function DetalheTable({ linhas, total }: { linhas: { rotulo: string; base: numbe
           </TableRow>
         ))}
         <TableRow className="border-t-2">
-          <TableCell colSpan={3} className="text-xs font-semibold">Total</TableCell>
+          <TableCell colSpan={3} className="text-xs font-semibold">
+            Total
+          </TableCell>
           <TableCell className="text-right text-sm font-bold">{fmtBRL(total)}</TableCell>
         </TableRow>
       </TableBody>
@@ -447,7 +622,17 @@ function DetalheTable({ linhas, total }: { linhas: { rotulo: string; base: numbe
   );
 }
 
-function LinhaResumo({ rotulo, valor, bold, tone = "foreground" }: { rotulo: string; valor: number; bold?: boolean; tone?: Tone }) {
+function LinhaResumo({
+  rotulo,
+  valor,
+  bold,
+  tone = "foreground",
+}: {
+  rotulo: string;
+  valor: number;
+  bold?: boolean;
+  tone?: Tone;
+}) {
   return (
     <div className={`flex items-center justify-between ${bold ? "font-bold" : ""}`}>
       <span className={bold ? "text-foreground" : "text-muted-foreground"}>{rotulo}</span>

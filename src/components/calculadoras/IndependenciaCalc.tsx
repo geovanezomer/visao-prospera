@@ -29,7 +29,14 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const fmtBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
@@ -108,7 +115,10 @@ export function IndependenciaCalc() {
         anosParaFire = ano;
         // continuar simulação até pelo menos idade-alvo
       }
-      if (ano >= Math.max(idadeAlvo - idadeAtual, anosParaFire ?? 0) && (anosParaFire !== null || ano >= maxAnos)) {
+      if (
+        ano >= Math.max(idadeAlvo - idadeAtual, anosParaFire ?? 0) &&
+        (anosParaFire !== null || ano >= maxAnos)
+      ) {
         break;
       }
     }
@@ -146,16 +156,41 @@ export function IndependenciaCalc() {
     const atingeNoTempo = idadeFire !== null && idadeFire <= idadeAlvo;
 
     return {
-      gastoAnual, numeroFire, anosParaFire, anosFracionarios, idadeFire, atingeNoTempo,
-      linhas: linhasMostradas, patAlvo, totInvAlvo, totRendAlvo, rendaMensalAlvo,
-      pctFire, progressoAtual,
+      gastoAnual,
+      numeroFire,
+      anosParaFire,
+      anosFracionarios,
+      idadeFire,
+      atingeNoTempo,
+      linhas: linhasMostradas,
+      patAlvo,
+      totInvAlvo,
+      totRendAlvo,
+      rendaMensalAlvo,
+      pctFire,
+      progressoAtual,
     };
-  }, [idadeAtual, idadeAlvo, gastosMensais, patrimonio, aporteMensal, retornoAnual, taxaRetirada, inflacaoAnual]);
+  }, [
+    idadeAtual,
+    idadeAlvo,
+    gastosMensais,
+    patrimonio,
+    aporteMensal,
+    retornoAnual,
+    taxaRetirada,
+    inflacaoAnual,
+  ]);
 
   function limpar() {
-    setIdadeAtual(0); setIdadeAlvo(0); setGastosMensais(0);
-    setPatrimonio(0); setAporteMensal(0); setRetornoAnual(0); setTaxaRetirada(0);
-    setInflacaoAnual(0); setPagina(0);
+    setIdadeAtual(0);
+    setIdadeAlvo(0);
+    setGastosMensais(0);
+    setPatrimonio(0);
+    setAporteMensal(0);
+    setRetornoAnual(0);
+    setTaxaRetirada(0);
+    setInflacaoAnual(0);
+    setPagina(0);
   }
 
   const chartData = sim.linhas.map((l) => ({
@@ -183,7 +218,9 @@ export function IndependenciaCalc() {
       {/* Inputs */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base"><Step n={1} /> Perfil pessoal</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Step n={1} /> Perfil pessoal
+          </CardTitle>
           <CardDescription>Sua idade atual e idade-alvo para aposentadoria</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
@@ -198,11 +235,18 @@ export function IndependenciaCalc() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base"><Step n={2} /> Gastos e patrimônio</CardTitle>
-          <CardDescription>Despesas mensais, quanto já tem investido e aporte mensal</CardDescription>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Step n={2} /> Gastos e patrimônio
+          </CardTitle>
+          <CardDescription>
+            Despesas mensais, quanto já tem investido e aporte mensal
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
-          <Field label="Gastos mensais" hint="Quanto gasta por mês (ou pretende gastar na aposentadoria)">
+          <Field
+            label="Gastos mensais"
+            hint="Quanto gasta por mês (ou pretende gastar na aposentadoria)"
+          >
             <MoneyInput value={gastosMensais} onChange={setGastosMensais} />
           </Field>
           <Field label="Patrimônio investido" hint="Opcional — pode começar do zero">
@@ -216,8 +260,12 @@ export function IndependenciaCalc() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base"><Step n={3} /> Taxas</CardTitle>
-          <CardDescription>Retorno anual esperado e taxa de retirada (regra dos 4%)</CardDescription>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Step n={3} /> Taxas
+          </CardTitle>
+          <CardDescription>
+            Retorno anual esperado e taxa de retirada (regra dos 4%)
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
@@ -232,7 +280,12 @@ export function IndependenciaCalc() {
                 />
               ))}
             </div>
-            <SuffixInput value={retornoAnual} suffix="% a.a." onChange={setRetornoAnual} step={0.5} />
+            <SuffixInput
+              value={retornoAnual}
+              suffix="% a.a."
+              onChange={setRetornoAnual}
+              step={0.5}
+            />
           </div>
           <div className="space-y-2">
             <Label className="text-xs">Taxa de retirada anual</Label>
@@ -253,9 +306,15 @@ export function IndependenciaCalc() {
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label className="text-xs">Inflação anual esperada (IPCA)</Label>
-            <SuffixInput value={inflacaoAnual} suffix="% a.a." onChange={setInflacaoAnual} step={0.5} />
+            <SuffixInput
+              value={inflacaoAnual}
+              suffix="% a.a."
+              onChange={setInflacaoAnual}
+              step={0.5}
+            />
             <p className="text-[11px] text-muted-foreground">
-              A simulação roda em <strong>termos reais</strong> (poder de compra de hoje). Retorno real = (1+nominal)/(1+inflação)−1.
+              A simulação roda em <strong>termos reais</strong> (poder de compra de hoje). Retorno
+              real = (1+nominal)/(1+inflação)−1.
             </p>
           </div>
         </CardContent>
@@ -284,7 +343,9 @@ export function IndependenciaCalc() {
               <p className="text-sm text-muted-foreground">Número FIRE (patrimônio necessário)</p>
               <p
                 className={`text-4xl font-bold tracking-tight sm:text-5xl ${
-                  sim.atingeNoTempo ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"
+                  sim.atingeNoTempo
+                    ? "text-emerald-700 dark:text-emerald-400"
+                    : "text-amber-700 dark:text-amber-400"
                 }`}
               >
                 {fmtBRL(sim.numeroFire)}
@@ -293,8 +354,10 @@ export function IndependenciaCalc() {
                 <p className="text-sm text-muted-foreground">
                   Você chega lá em{" "}
                   <strong className="text-foreground">
-                    {Math.floor(sim.anosFracionarios!)} ano{Math.floor(sim.anosFracionarios!) === 1 ? "" : "s"}{" "}
-                    e {Math.round((sim.anosFracionarios! - Math.floor(sim.anosFracionarios!)) * 12)} meses
+                    {Math.floor(sim.anosFracionarios!)} ano
+                    {Math.floor(sim.anosFracionarios!) === 1 ? "" : "s"} e{" "}
+                    {Math.round((sim.anosFracionarios! - Math.floor(sim.anosFracionarios!)) * 12)}{" "}
+                    meses
                   </strong>{" "}
                   (aos {Math.round(sim.idadeFire)} anos)
                 </p>
@@ -325,11 +388,16 @@ export function IndependenciaCalc() {
               <>Parabéns! Com esses parâmetros você atinge o FIRE antes da idade-alvo.</>
             ) : sim.idadeFire !== null ? (
               <>
-                Você atingirá o FIRE aos <strong className="text-foreground">{Math.round(sim.idadeFire)}</strong> anos,
-                mas sua meta era se aposentar antes. Aumente os aportes ou reduza os gastos para antecipar a independência.
+                Você atingirá o FIRE aos{" "}
+                <strong className="text-foreground">{Math.round(sim.idadeFire)}</strong> anos, mas
+                sua meta era se aposentar antes. Aumente os aportes ou reduza os gastos para
+                antecipar a independência.
               </>
             ) : (
-              <>O patrimônio projetado não cobre o Número FIRE. Reavalie aportes, retorno esperado ou gastos.</>
+              <>
+                O patrimônio projetado não cobre o Número FIRE. Reavalie aportes, retorno esperado
+                ou gastos.
+              </>
             )}
           </p>
 
@@ -351,13 +419,21 @@ export function IndependenciaCalc() {
               label="Total investido"
               value={fmtBRL(sim.totInvAlvo)}
               valueClass="text-emerald-700 dark:text-emerald-400"
-              foot={<Badge variant="outline" className="text-[10px]">Aportes acumulados</Badge>}
+              foot={
+                <Badge variant="outline" className="text-[10px]">
+                  Aportes acumulados
+                </Badge>
+              }
             />
             <KpiCard
               label="Total em rendimentos"
               value={fmtBRL(sim.totRendAlvo)}
               valueClass="text-primary"
-              foot={<Badge variant="outline" className="text-[10px]">Juros compostos</Badge>}
+              foot={
+                <Badge variant="outline" className="text-[10px]">
+                  Juros compostos
+                </Badge>
+              }
             />
           </div>
 
@@ -381,22 +457,53 @@ export function IndependenciaCalc() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="idade" tick={{ fontSize: 11 }} label={{ value: "Idade", position: "insideBottomRight", offset: -2, fontSize: 11 }} />
+                    <XAxis
+                      dataKey="idade"
+                      tick={{ fontSize: 11 }}
+                      label={{
+                        value: "Idade",
+                        position: "insideBottomRight",
+                        offset: -2,
+                        fontSize: 11,
+                      }}
+                    />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => fmtBRLShort(v)} />
                     <Tooltip
                       formatter={(value: number) => fmtBRL(value)}
                       labelFormatter={(label) => `${label} anos`}
-                      contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                      contentStyle={{
+                        background: "hsl(var(--popover))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 8,
+                        fontSize: 12,
+                      }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <ReferenceLine
                       y={sim.numeroFire}
                       stroke="rgb(245 158 11)"
                       strokeDasharray="5 4"
-                      label={{ value: "FIRE", position: "right", fill: "rgb(245 158 11)", fontSize: 11 }}
+                      label={{
+                        value: "FIRE",
+                        position: "right",
+                        fill: "rgb(245 158 11)",
+                        fontSize: 11,
+                      }}
                     />
-                    <Area type="monotone" dataKey="Investido" stackId="1" stroke="rgb(16 185 129)" fill="url(#gFireInv)" />
-                    <Area type="monotone" dataKey="Rendimentos" stackId="1" stroke="hsl(var(--primary))" fill="url(#gFireRend)" />
+                    <Area
+                      type="monotone"
+                      dataKey="Investido"
+                      stackId="1"
+                      stroke="rgb(16 185 129)"
+                      fill="url(#gFireInv)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="Rendimentos"
+                      stackId="1"
+                      stroke="hsl(var(--primary))"
+                      fill="url(#gFireRend)"
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -414,10 +521,18 @@ export function IndependenciaCalc() {
                   <TableRow>
                     <TableHead className="text-xs uppercase tracking-wider">Ano</TableHead>
                     <TableHead className="text-xs uppercase tracking-wider">Idade</TableHead>
-                    <TableHead className="text-right text-xs uppercase tracking-wider">Aportes no ano</TableHead>
-                    <TableHead className="text-right text-xs uppercase tracking-wider">Rendimento no ano</TableHead>
-                    <TableHead className="text-right text-xs uppercase tracking-wider">Total investido</TableHead>
-                    <TableHead className="text-right text-xs uppercase tracking-wider">Patrimônio</TableHead>
+                    <TableHead className="text-right text-xs uppercase tracking-wider">
+                      Aportes no ano
+                    </TableHead>
+                    <TableHead className="text-right text-xs uppercase tracking-wider">
+                      Rendimento no ano
+                    </TableHead>
+                    <TableHead className="text-right text-xs uppercase tracking-wider">
+                      Total investido
+                    </TableHead>
+                    <TableHead className="text-right text-xs uppercase tracking-wider">
+                      Patrimônio
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -426,9 +541,15 @@ export function IndependenciaCalc() {
                       <TableCell className="text-sm text-primary">{l.ano}</TableCell>
                       <TableCell className="text-sm">{l.idade} anos</TableCell>
                       <TableCell className="text-right text-sm">{fmtBRL(l.aporteAno)}</TableCell>
-                      <TableCell className="text-right text-sm text-primary">{fmtBRL(l.rendimentoAno)}</TableCell>
-                      <TableCell className="text-right text-sm">{fmtBRL(l.totalInvestido)}</TableCell>
-                      <TableCell className="text-right text-sm font-semibold">{fmtBRL(l.patrimonio)}</TableCell>
+                      <TableCell className="text-right text-sm text-primary">
+                        {fmtBRL(l.rendimentoAno)}
+                      </TableCell>
+                      <TableCell className="text-right text-sm">
+                        {fmtBRL(l.totalInvestido)}
+                      </TableCell>
+                      <TableCell className="text-right text-sm font-semibold">
+                        {fmtBRL(l.patrimonio)}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -442,9 +563,13 @@ export function IndependenciaCalc() {
                   >
                     Anterior
                   </button>
-                  <span>{pagina + 1} / {Math.ceil(sim.linhas.length / PAGE_SIZE)}</span>
+                  <span>
+                    {pagina + 1} / {Math.ceil(sim.linhas.length / PAGE_SIZE)}
+                  </span>
                   <button
-                    onClick={() => setPagina(Math.min(Math.ceil(sim.linhas.length / PAGE_SIZE) - 1, pagina + 1))}
+                    onClick={() =>
+                      setPagina(Math.min(Math.ceil(sim.linhas.length / PAGE_SIZE) - 1, pagina + 1))
+                    }
                     disabled={pagina >= Math.ceil(sim.linhas.length / PAGE_SIZE) - 1}
                     className="rounded px-2 py-1 hover:bg-muted disabled:opacity-40"
                   >
@@ -462,24 +587,29 @@ export function IndependenciaCalc() {
         <Card>
           <CollapsibleTrigger asChild>
             <button className="flex w-full items-center justify-between p-4 text-left text-sm font-medium hover:bg-muted/40">
-              <span className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> Entenda a calculadora</span>
+              <span className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-primary" /> Entenda a calculadora
+              </span>
               <span className="text-xs text-muted-foreground">expandir</span>
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-3 border-t pt-4 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">Como funciona a calculadora de independência financeira (FIRE)?</p>
-              <p>
-                O movimento <strong>FIRE</strong> (Financial Independence, Retire Early) se baseia em uma premissa simples:
-                acumular patrimônio suficiente para viver dos rendimentos, sem depender de salário. O cálculo central é o{" "}
-                <strong>Número FIRE</strong> — o patrimônio mínimo necessário para que a renda passiva cubra seus gastos
-                mensais indefinidamente.
+              <p className="font-medium text-foreground">
+                Como funciona a calculadora de independência financeira (FIRE)?
               </p>
               <p>
-                A base teórica é o <strong>Trinity Study</strong> (1998), que analisou 75 anos de dados do mercado americano
-                e concluiu que uma taxa de retirada de 4% ao ano preserva o patrimônio por pelo menos 30 anos com 95% de
-                probabilidade. No Brasil, onde juros reais são historicamente maiores, a taxa segura pode variar entre 3,5%
-                e 5% ao ano.
+                O movimento <strong>FIRE</strong> (Financial Independence, Retire Early) se baseia
+                em uma premissa simples: acumular patrimônio suficiente para viver dos rendimentos,
+                sem depender de salário. O cálculo central é o <strong>Número FIRE</strong> — o
+                patrimônio mínimo necessário para que a renda passiva cubra seus gastos mensais
+                indefinidamente.
+              </p>
+              <p>
+                A base teórica é o <strong>Trinity Study</strong> (1998), que analisou 75 anos de
+                dados do mercado americano e concluiu que uma taxa de retirada de 4% ao ano preserva
+                o patrimônio por pelo menos 30 anos com 95% de probabilidade. No Brasil, onde juros
+                reais são historicamente maiores, a taxa segura pode variar entre 3,5% e 5% ao ano.
               </p>
 
               <p className="pt-2 font-medium text-foreground">Fórmula</p>
@@ -496,15 +626,35 @@ export function IndependenciaCalc() {
               <div className="rounded-md bg-muted/40 p-3 text-center font-mono text-xs">
                 Anos = ln[(Número FIRE × r + Aporte anual) ÷ Aporte anual] ÷ ln(1 + r)
               </div>
-              <p className="text-xs">Onde <code>r</code> = taxa real de retorno anual dos investimentos.</p>
+              <p className="text-xs">
+                Onde <code>r</code> = taxa real de retorno anual dos investimentos.
+              </p>
 
               <div className="space-y-1 pt-2">
                 <p className="font-medium text-foreground">Dicas</p>
                 <ul className="ml-4 list-disc space-y-1">
-                  <li><strong>Reduzir gastos tem efeito duplo:</strong> gastar R$ 1.000 a menos por mês reduz o Número FIRE em R$ 300.000 E aumenta sua capacidade de aporte. É o atalho mais poderoso para FIRE.</li>
-                  <li><strong>No Brasil, considere 3,5% como taxa segura:</strong> os 4% originais são baseados no mercado americano. Com a volatilidade brasileira e inflação mais alta, usar 3,5% dá margem de segurança adicional.</li>
-                  <li><strong>FIRE não significa parar de trabalhar:</strong> a maioria dos adeptos busca liberdade para escolher trabalhos por prazer, não por necessidade. Renda extra pós-FIRE (mesmo que pequena) reduz drasticamente o risco do patrimônio acabar.</li>
-                  <li><strong>Diversifique entre classes de ativos:</strong> Tesouro IPCA+ para proteção inflacionária, FIIs para renda passiva mensal, e ações para crescimento de longo prazo. Uma carteira 100% em renda fixa pós-fixada pode não acompanhar a inflação real no longo prazo.</li>
+                  <li>
+                    <strong>Reduzir gastos tem efeito duplo:</strong> gastar R$ 1.000 a menos por
+                    mês reduz o Número FIRE em R$ 300.000 E aumenta sua capacidade de aporte. É o
+                    atalho mais poderoso para FIRE.
+                  </li>
+                  <li>
+                    <strong>No Brasil, considere 3,5% como taxa segura:</strong> os 4% originais são
+                    baseados no mercado americano. Com a volatilidade brasileira e inflação mais
+                    alta, usar 3,5% dá margem de segurança adicional.
+                  </li>
+                  <li>
+                    <strong>FIRE não significa parar de trabalhar:</strong> a maioria dos adeptos
+                    busca liberdade para escolher trabalhos por prazer, não por necessidade. Renda
+                    extra pós-FIRE (mesmo que pequena) reduz drasticamente o risco do patrimônio
+                    acabar.
+                  </li>
+                  <li>
+                    <strong>Diversifique entre classes de ativos:</strong> Tesouro IPCA+ para
+                    proteção inflacionária, FIIs para renda passiva mensal, e ações para crescimento
+                    de longo prazo. Uma carteira 100% em renda fixa pós-fixada pode não acompanhar a
+                    inflação real no longo prazo.
+                  </li>
                 </ul>
               </div>
             </CardContent>
@@ -520,10 +670,22 @@ export function IndependenciaCalc() {
 // ============================================================================
 
 function Step({ n }: { n: number }) {
-  return <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{n}</span>;
+  return (
+    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+      {n}
+    </span>
+  );
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">{label}</Label>
@@ -536,7 +698,9 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 function MoneyInput({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   return (
     <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">R$</span>
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+        R$
+      </span>
       <Input
         type="number"
         min={0}
@@ -550,8 +714,16 @@ function MoneyInput({ value, onChange }: { value: number; onChange: (n: number) 
 }
 
 function SuffixInput({
-  value, suffix, step = 1, onChange,
-}: { value: number; suffix: string; step?: number; onChange: (n: number) => void }) {
+  value,
+  suffix,
+  step = 1,
+  onChange,
+}: {
+  value: number;
+  suffix: string;
+  step?: number;
+  onChange: (n: number) => void;
+}) {
   return (
     <div className="relative">
       <Input
@@ -562,12 +734,22 @@ function SuffixInput({
         value={value || ""}
         onChange={(e) => onChange(Number(e.target.value) || 0)}
       />
-      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">{suffix}</span>
+      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+        {suffix}
+      </span>
     </div>
   );
 }
 
-function PresetButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function PresetButton({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}
@@ -583,13 +765,23 @@ function PresetButton({ label, active, onClick }: { label: string; active: boole
 }
 
 function KpiCard({
-  label, value, valueClass, foot,
-}: { label: string; value: string; valueClass?: string; foot?: React.ReactNode }) {
+  label,
+  value,
+  valueClass,
+  foot,
+}: {
+  label: string;
+  value: string;
+  valueClass?: string;
+  foot?: React.ReactNode;
+}) {
   return (
     <Card>
       <CardContent className="space-y-2 py-4">
         <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        <p className={`text-xl font-bold sm:text-2xl ${valueClass ?? "text-foreground"}`}>{value}</p>
+        <p className={`text-xl font-bold sm:text-2xl ${valueClass ?? "text-foreground"}`}>
+          {value}
+        </p>
         {foot && <div className="text-xs text-muted-foreground">{foot}</div>}
       </CardContent>
     </Card>

@@ -11,8 +11,16 @@ import { SectionTitle } from "../primitives";
 import { KV } from "./parts";
 
 // Painel de auditoria — memória de cálculo + self-tests opt-in.
-export function AuditPanel({ trace, onLogTrace }: { trace: ReturnType<typeof traceValuation>; onLogTrace: () => void }) {
-  const [tests, setTests] = useState<{ results: ValuationTestCase[]; allPassed: boolean } | null>(null);
+export function AuditPanel({
+  trace,
+  onLogTrace,
+}: {
+  trace: ReturnType<typeof traceValuation>;
+  onLogTrace: () => void;
+}) {
+  const [tests, setTests] = useState<{ results: ValuationTestCase[]; allPassed: boolean } | null>(
+    null,
+  );
   const runTests = () => setTests(runValuationSelfTests());
 
   return (
@@ -36,7 +44,12 @@ export function AuditPanel({ trace, onLogTrace }: { trace: ReturnType<typeof tra
           <KV k="Lucro Líquido (12m)" v={trace.inputs.ll} />
           <KV k="Dívida onerosa" v={trace.inputs.dividaOnerosa} />
           <KV k="WACC (%a.a.)" v={trace.inputs.wacc} fmt="pct" />
-          <KV k="Ke / Kd (%a.a.)" v={trace.inputs.ke} fmt="pct" extra={`${trace.inputs.kd.toFixed(2)}%`} />
+          <KV
+            k="Ke / Kd (%a.a.)"
+            v={trace.inputs.ke}
+            fmt="pct"
+            extra={`${trace.inputs.kd.toFixed(2)}%`}
+          />
           <KV k="m EV/EBITDA" v={trace.inputs.multEbitda} fmt="raw" />
           <KV k="m EV/Receita" v={trace.inputs.multReceita} fmt="raw" />
           <KV k="m P/L" v={trace.inputs.multPL} fmt="raw" />
@@ -59,7 +72,9 @@ export function AuditPanel({ trace, onLogTrace }: { trace: ReturnType<typeof tra
                 <tr key={i} className="border-b border-border/20">
                   <td className="py-1.5 text-foreground">{s.label}</td>
                   <td className="py-1.5 text-muted-foreground">{s.formula}</td>
-                  <td className="py-1.5 text-right font-semibold text-foreground">{fmtBRLCompact(s.value)}</td>
+                  <td className="py-1.5 text-right font-semibold text-foreground">
+                    {fmtBRLCompact(s.value)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -82,10 +97,12 @@ export function AuditPanel({ trace, onLogTrace }: { trace: ReturnType<typeof tra
 
         {tests ? (
           <>
-            <div className={`mt-4 rounded-md border p-3 text-xs ${tests.allPassed ? "border-pos/40 bg-pos/5 text-pos" : "border-neg/40 bg-neg/5 text-neg"}`}>
+            <div
+              className={`mt-4 rounded-md border p-3 text-xs ${tests.allPassed ? "border-pos/40 bg-pos/5 text-pos" : "border-neg/40 bg-neg/5 text-neg"}`}
+            >
               {tests.allPassed
                 ? `✅ Todos os ${tests.results.length} casos passaram dentro da tolerância de 0,5%.`
-                : `❌ ${tests.results.filter(r => !r.pass).length} de ${tests.results.length} casos falharam — abra o console (F12) para detalhes.`}
+                : `❌ ${tests.results.filter((r) => !r.pass).length} de ${tests.results.length} casos falharam — abra o console (F12) para detalhes.`}
             </div>
             <div className="mt-3 overflow-x-auto">
               <table className="w-full text-xs">
@@ -105,9 +122,17 @@ export function AuditPanel({ trace, onLogTrace }: { trace: ReturnType<typeof tra
                       <td className="py-1.5 text-foreground">{r.name}</td>
                       <td className="py-1.5 text-muted-foreground">{r.formula}</td>
                       <td className="py-1.5 text-right">{r.expected.toLocaleString("pt-BR")}</td>
-                      <td className="py-1.5 text-right">{r.actual.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</td>
-                      <td className="py-1.5 text-right text-muted-foreground">{r.delta.toFixed(4)}</td>
-                      <td className={`py-1.5 text-center font-semibold ${r.pass ? "text-pos" : "text-neg"}`}>{r.pass ? "OK" : "FAIL"}</td>
+                      <td className="py-1.5 text-right">
+                        {r.actual.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-1.5 text-right text-muted-foreground">
+                        {r.delta.toFixed(4)}
+                      </td>
+                      <td
+                        className={`py-1.5 text-center font-semibold ${r.pass ? "text-pos" : "text-neg"}`}
+                      >
+                        {r.pass ? "OK" : "FAIL"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -116,7 +141,10 @@ export function AuditPanel({ trace, onLogTrace }: { trace: ReturnType<typeof tra
           </>
         ) : (
           <p className="mt-3 text-xs text-muted-foreground">
-            Clique em "Rodar testes" para validar todas as fórmulas (EV/EBITDA, EV/Receita, P/L, blended ponderado, Gordon, DCF mensal, ajustes de controle/liquidez, haircut e Equity Value). A memória de cálculo da empresa atual também é registrada no console em tempo real a cada mudança de parâmetro.
+            Clique em "Rodar testes" para validar todas as fórmulas (EV/EBITDA, EV/Receita, P/L,
+            blended ponderado, Gordon, DCF mensal, ajustes de controle/liquidez, haircut e Equity
+            Value). A memória de cálculo da empresa atual também é registrada no console em tempo
+            real a cada mudança de parâmetro.
           </p>
         )}
       </section>

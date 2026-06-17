@@ -50,10 +50,13 @@ describe("arquitetura de pastas", () => {
     const offenders: string[] = [];
     for (const file of walk(join(ROOT, "src/lib"))) {
       const src = readFileSync(file, "utf8");
-      const hit = DOMAIN_PREFIXES.find(p => src.includes(`"${p}`) || src.includes(`'${p}`));
+      const hit = DOMAIN_PREFIXES.find((p) => src.includes(`"${p}`) || src.includes(`'${p}`));
       if (hit) offenders.push(`${relative(ROOT, file)} → ${hit}…`);
     }
-    expect(offenders, `src/lib não deve importar lógica de domínio:\n${offenders.join("\n")}`).toEqual([]);
+    expect(
+      offenders,
+      `src/lib não deve importar lógica de domínio:\n${offenders.join("\n")}`,
+    ).toEqual([]);
   });
 
   it("nenhum arquivo usa caminhos antigos @/services/* ou @/lib/calculadoras/*", () => {
@@ -72,7 +75,9 @@ describe("arquitetura de pastas", () => {
   it("módulos do registry de tools são independentes entre si", () => {
     const dir = join(ROOT, "src/engines/ai/tools");
     if (!existsSync(dir)) return; // suíte tolera ausência durante refactor.
-    const files = readdirSync(dir).filter(f => /\.ts$/.test(f) && f !== "index.ts" && f !== "shared.ts");
+    const files = readdirSync(dir).filter(
+      (f) => /\.ts$/.test(f) && f !== "index.ts" && f !== "shared.ts",
+    );
     const offenders: string[] = [];
     for (const f of files) {
       const src = readFileSync(join(dir, f), "utf8");

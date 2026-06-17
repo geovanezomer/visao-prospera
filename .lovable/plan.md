@@ -33,7 +33,9 @@ src/engines/finance/
 ## Fases
 
 ### Fase 1 — Extrações sem risco (helpers puros)
+
 Mover sem alterar lógica:
+
 - `costs.ts` ← `isCpvCost`, `fixedCostBase`, `monthValues`, `effectiveMonthValues`, `folhaAnual`
 - `regime.ts` ← `resolveSimplesAnexo`, `simplesExcedeLimite`, `resolveEffectiveRegime`
 - `tax/reforma.ts` ← `ReformaRates`, `getReformaRates`, `getIbsFractionForYear`, `getIcmsIssFractionForYear`, `getPisCofinsFractionForYear`, `getCbsPctForYear`, `getReformaRatesForYear`, `eraForYear`
@@ -41,6 +43,7 @@ Mover sem alterar lógica:
 `calculations.ts` passa a re-exportar. Rodar `bunx vitest run`.
 
 ### Fase 2 — Regimes tributários (1 arquivo por regime)
+
 - `tax/shared.ts` ← `MonthlyTax`
 - `tax/simples.ts` ← `simplesAliquotaEfetiva`, `calcSimples`
 - `tax/presumido.ts` ← `presumidoBases`, `calcPresumido`
@@ -50,6 +53,7 @@ Mover sem alterar lógica:
 Cada arquivo importa só o que precisa de `reforma.ts` e `types.ts`. Comentários `// [CBS/IBS]` nos pontos afetados pela LC 214/2025.
 
 ### Fase 3 — DRE e derivados
+
 - `dre.ts` ← `DRE`, `computeNetDebt`, `outrasDeducoesMensal`, `splitReceitasFinanceiras`, `buildDRE`
 - `indicators.ts` ← `Indicators`, `calcIndicators`, `cagr12m`
 - `diagnose.ts` ← `Diagnostic`, `diagnose`
@@ -57,6 +61,7 @@ Cada arquivo importa só o que precisa de `reforma.ts` e `types.ts`. Comentário
 `buildDRE` permanece como **uma** função (quebrá-la internamente é Fase 5, fora deste escopo) — o ganho aqui é isolá-la num arquivo de ~150 linhas em vez de viver junto com tudo.
 
 ### Fase 4 — Limpeza
+
 - `calculations.ts` vira fachada de ~30 linhas só com `export * from './tax/...'` etc., marcada `@deprecated — importe do submódulo específico`.
 - Atualizar `src/engines/finance/index.ts` para re-exportar dos novos módulos diretamente (barrel limpo).
 - Rodar lint + testes + build.

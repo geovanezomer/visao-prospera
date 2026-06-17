@@ -50,7 +50,11 @@ describe("Monte Carlo", () => {
   it("sigma=0 reproduz cenário determinístico (variância ≈ 0)", () => {
     const s = createState({ revenue: { bruta: m12(10_000) } });
     const r = runMonteCarlo(s, {
-      iterations: 50, precoSigmaPct: 0, volumeSigmaPct: 0, cpvSigmaPct: 0, folhaSigmaPct: 0,
+      iterations: 50,
+      precoSigmaPct: 0,
+      volumeSigmaPct: 0,
+      cpvSigmaPct: 0,
+      folhaSigmaPct: 0,
     });
     // todos os EBITDAs idênticos => p5 == p95
     expect(r.ebitda.p5).toBeCloseTo(r.ebitda.p95, 2);

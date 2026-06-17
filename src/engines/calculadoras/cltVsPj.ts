@@ -41,12 +41,12 @@ export const PARAMETROS_PJ = {
  * Alíquota efetiva = (RBT12 × Aliq − PD) ÷ RBT12.
  */
 const SIMPLES_ANEXO_III: readonly { ate: number; aliq: number; pd: number }[] = [
-  { ate: 180_000,    aliq: 0.0600, pd: 0 },
-  { ate: 360_000,    aliq: 0.1120, pd: 9_360 },
-  { ate: 720_000,    aliq: 0.1350, pd: 17_640 },
-  { ate: 1_800_000,  aliq: 0.1600, pd: 35_640 },
-  { ate: 3_600_000,  aliq: 0.2100, pd: 125_640 },
-  { ate: 4_800_000,  aliq: 0.3300, pd: 648_000 },
+  { ate: 180_000, aliq: 0.06, pd: 0 },
+  { ate: 360_000, aliq: 0.112, pd: 9_360 },
+  { ate: 720_000, aliq: 0.135, pd: 17_640 },
+  { ate: 1_800_000, aliq: 0.16, pd: 35_640 },
+  { ate: 3_600_000, aliq: 0.21, pd: 125_640 },
+  { ate: 4_800_000, aliq: 0.33, pd: 648_000 },
 ];
 
 /**
@@ -56,7 +56,9 @@ const SIMPLES_ANEXO_III: readonly { ate: number; aliq: number; pd: number }[] = 
 export function aliquotaSimplesAnexoIII(faturamentoMensal: number): number {
   const rbt12 = Math.max(0, faturamentoMensal * 12);
   if (rbt12 === 0) return 0;
-  const faixa = SIMPLES_ANEXO_III.find((f) => rbt12 <= f.ate) ?? SIMPLES_ANEXO_III[SIMPLES_ANEXO_III.length - 1];
+  const faixa =
+    SIMPLES_ANEXO_III.find((f) => rbt12 <= f.ate) ??
+    SIMPLES_ANEXO_III[SIMPLES_ANEXO_III.length - 1];
   const efetiva = (rbt12 * faixa.aliq - faixa.pd) / rbt12;
   return Math.max(0, efetiva);
 }
@@ -66,11 +68,11 @@ export function aliquotaSimplesAnexoIII(faturamentoMensal: number): number {
  * Vigente desde 2014, atualizada por leis posteriores.
  */
 const PLR_FAIXAS: readonly { ate: number; aliq: number; deducao: number }[] = [
-  { ate: 7_640.80,  aliq: 0.000, deducao: 0 },
-  { ate: 9_922.28,  aliq: 0.075, deducao: 573.06 },
-  { ate: 13_167.00, aliq: 0.150, deducao: 1_317.23 },
+  { ate: 7_640.8, aliq: 0.0, deducao: 0 },
+  { ate: 9_922.28, aliq: 0.075, deducao: 573.06 },
+  { ate: 13_167.0, aliq: 0.15, deducao: 1_317.23 },
   { ate: 16_380.38, aliq: 0.225, deducao: 2_304.76 },
-  { ate: Infinity,  aliq: 0.275, deducao: 3_123.78 },
+  { ate: Infinity, aliq: 0.275, deducao: 3_123.78 },
 ];
 
 /** Calcula IR exclusivo de PLR conforme tabela anual. */
@@ -82,7 +84,7 @@ export function irrfPlr(plrAnual: number): number {
 }
 
 export const TETO_INSS_2025 = 8157.41;
-export const SALARIO_MINIMO_2025 = 1518.00;
+export const SALARIO_MINIMO_2025 = 1518.0;
 export const PRO_LABORE_PCT_DEFAULT = 0.28;
 
 // ============================================================================
@@ -113,14 +115,14 @@ export interface ResultadoCLT {
   inssMensal: number;
   irrfMensal: number;
   liquidoMensal: number;
-  liquidoAnual: number;          // 12× líquido
-  decimoLiquido: number;         // 13º líquido (INSS+IRRF separado)
-  feriasLiquidas: number;        // 1 mês + 1/3 líquido
+  liquidoAnual: number; // 12× líquido
+  decimoLiquido: number; // 13º líquido (INSS+IRRF separado)
+  feriasLiquidas: number; // 1 mês + 1/3 líquido
   plrLiquido: number;
   beneficiosAnuais: number;
-  fgtsAnual: number;             // depositado pela empresa (não soma no total CLT por padrão)
-  multaFGTSPotencial: number;    // 40% do FGTS de 1 ano (referência)
-  totalAnualLiquido: number;     // líquido recebido na mão (sem FGTS)
+  fgtsAnual: number; // depositado pela empresa (não soma no total CLT por padrão)
+  multaFGTSPotencial: number; // 40% do FGTS de 1 ano (referência)
+  totalAnualLiquido: number; // líquido recebido na mão (sem FGTS)
 }
 
 function liquidoMensalCLT(salario: number, dependentes: number) {
@@ -148,9 +150,11 @@ export function calcularCLT(i: CltVsPjInput): ResultadoCLT {
 
   const beneficiosAnuais = i.beneficiosCLTMensal * 12;
   const fgtsAnual = Math.round(i.salarioBrutoCLT * 0.08 * 12 * 100) / 100;
-  const multaFGTSPotencial = Math.round(fgtsAnual * 0.40 * 100) / 100;
+  const multaFGTSPotencial = Math.round(fgtsAnual * 0.4 * 100) / 100;
 
-  const totalAnualLiquido = Math.round((liquidoAnual + decimo + feriasLiquidas + plrLiquido + beneficiosAnuais) * 100) / 100;
+  const totalAnualLiquido =
+    Math.round((liquidoAnual + decimo + feriasLiquidas + plrLiquido + beneficiosAnuais) * 100) /
+    100;
 
   return {
     salarioBruto: i.salarioBrutoCLT,
@@ -175,7 +179,7 @@ export function calcularCLT(i: CltVsPjInput): ResultadoCLT {
 export interface ResultadoPJ {
   regime: RegimePJ;
   faturamentoMensal: number;
-  aliquotaImpostos: number;       // efetiva sobre faturamento
+  aliquotaImpostos: number; // efetiva sobre faturamento
   impostosMensal: number;
   proLaboreMensal: number;
   inssProLaboreMensal: number;
@@ -214,9 +218,7 @@ export function calcularPJ(regime: RegimePJ, i: CltVsPjInput): ResultadoPJ {
   // ATENÇÃO: o MEI já recolhe a contribuição previdenciária (5% do salário mínimo)
   // embutida no DAS fixo, logo NÃO se aplica 11% adicional sobre o pró-labore.
   const baseInss = Math.min(proLabore, TETO_INSS_2025);
-  const inssProLabore = regime === "mei"
-    ? 0
-    : Math.round(baseInss * 0.11 * 100) / 100;
+  const inssProLabore = regime === "mei" ? 0 : Math.round(baseInss * 0.11 * 100) / 100;
   // IRRF sobre (pró-labore − INSS) — sem dependentes (apuração simplificada).
   // MEI: como não há pró-labore formal nem retenção de INSS de contribuinte
   // individual, também não há retenção de IRRF típica do pró-labore.
@@ -224,9 +226,8 @@ export function calcularPJ(regime: RegimePJ, i: CltVsPjInput): ResultadoPJ {
 
   const custosFixos = i.contabilidadeMensal + i.planoSaudeMensal;
 
-  const liquidoMensal = Math.round(
-    (fat - impostosMensal - inssProLabore - irrfProLabore - custosFixos) * 100,
-  ) / 100;
+  const liquidoMensal =
+    Math.round((fat - impostosMensal - inssProLabore - irrfProLabore - custosFixos) * 100) / 100;
 
   return {
     regime,
@@ -251,7 +252,7 @@ export interface ComparativoCltVsPj {
   clt: ResultadoCLT;
   pj: Record<RegimePJ, ResultadoPJ>;
   melhorRegimePJ: RegimePJ;
-  diferencaAnual: number;    // melhor PJ − CLT (positivo = PJ ganha)
+  diferencaAnual: number; // melhor PJ − CLT (positivo = PJ ganha)
   diferencaMensal: number;
   vencedor: "clt" | "pj";
   /** Faturamento PJ necessário para igualar líquido CLT, por regime. */
@@ -260,11 +261,13 @@ export interface ComparativoCltVsPj {
 
 function faturamentoParaIgualar(regime: RegimePJ, alvoMensal: number, i: CltVsPjInput): number {
   // Busca binária (faturamento ≥ alvo). Iterativa, rápida e simples.
-  let lo = 0, hi = Math.max(alvoMensal * 5, 100000);
+  let lo = 0,
+    hi = Math.max(alvoMensal * 5, 100000);
   for (let k = 0; k < 60; k++) {
     const mid = (lo + hi) / 2;
     const liq = calcularPJ(regime, { ...i, faturamentoPJMensal: mid }).liquidoMensal;
-    if (liq < alvoMensal) lo = mid; else hi = mid;
+    if (liq < alvoMensal) lo = mid;
+    else hi = mid;
   }
   return Math.round(hi * 100) / 100;
 }
@@ -278,8 +281,9 @@ export function compararCltVsPj(input: CltVsPjInput): ComparativoCltVsPj {
     presumido: calcularPJ("presumido", i),
   };
 
-  const ranking: RegimePJ[] = (["mei", "simples", "presumido"] as RegimePJ[])
-    .filter((r) => !pj[r].acimaDoTetoRegime || r === "presumido");
+  const ranking: RegimePJ[] = (["mei", "simples", "presumido"] as RegimePJ[]).filter(
+    (r) => !pj[r].acimaDoTetoRegime || r === "presumido",
+  );
   const melhor = ranking.sort((a, b) => pj[b].liquidoAnual - pj[a].liquidoAnual)[0] ?? "presumido";
 
   const cltLiquidoMensalEquivalente = clt.totalAnualLiquido / 12;
@@ -287,7 +291,8 @@ export function compararCltVsPj(input: CltVsPjInput): ComparativoCltVsPj {
   const diferencaMensal = Math.round((diferencaAnual / 12) * 100) / 100;
 
   return {
-    clt, pj,
+    clt,
+    pj,
     melhorRegimePJ: melhor,
     diferencaAnual,
     diferencaMensal,

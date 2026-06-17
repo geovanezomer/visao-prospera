@@ -6,7 +6,11 @@ export interface LLMMessage {
   role: "system" | "user" | "assistant" | "tool";
   content: string;
   tool_call_id?: string;
-  tool_calls?: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }>;
+  tool_calls?: Array<{
+    id: string;
+    type: "function";
+    function: { name: string; arguments: string };
+  }>;
   name?: string;
 }
 
@@ -29,7 +33,10 @@ const headers = (cfg: AIConfig): Record<string, string> => {
   };
 };
 
-function withTimeout(cfg: AIConfig, signal?: AbortSignal): { signal: AbortSignal; cancel: () => void } {
+function withTimeout(
+  cfg: AIConfig,
+  signal?: AbortSignal,
+): { signal: AbortSignal; cancel: () => void } {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(new Error("timeout")), cfg.timeoutMs);
   if (signal) signal.addEventListener("abort", () => ac.abort(signal.reason), { once: true });
@@ -42,13 +49,19 @@ async function fetchWithRetry(url: string, init: RequestInit, retries = 2): Prom
     try {
       const res = await fetch(url, init);
       if (res.status === 429 || res.status >= 500) {
-        if (i < retries) { await new Promise(r => setTimeout(r, 600 * (i + 1))); continue; }
+        if (i < retries) {
+          await new Promise((r) => setTimeout(r, 600 * (i + 1)));
+          continue;
+        }
       }
       return res;
     } catch (e: any) {
       lastErr = e;
       if (e?.name === "AbortError") throw e;
-      if (i < retries) { await new Promise(r => setTimeout(r, 500 * (i + 1))); continue; }
+      if (i < retries) {
+        await new Promise((r) => setTimeout(r, 500 * (i + 1)));
+        continue;
+      }
     }
   }
   throw lastErr ?? new Error("fetch failed");
@@ -65,8 +78,11 @@ export async function listModels(cfg: AIConfig): Promise<string[]> {
 // Helpers Anthropic — converte do nosso formato unificado.
 // ============================================================
 function splitSystemAndMessages(msgs: LLMMessage[]): { system: string; rest: LLMMessage[] } {
-  const systems = msgs.filter(m => m.role === "system").map(m => m.content).filter(Boolean);
-  const rest = msgs.filter(m => m.role !== "system");
+  const systems = msgs
+    .filter((m) => m.role === "system")
+    .map((m) => m.content)
+    .filter(Boolean);
+  const rest = msgs.filter((m) => m.role !== "system");
   return { system: systems.join("\n\n"), rest };
 }
 
@@ -80,7 +96,9 @@ function toAnthropicMessages(msgs: LLMMessage[]): any[] {
       if (m.tool_calls?.length) {
         for (const tc of m.tool_calls) {
           let input: any = {};
-          try { input = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {}; } catch {}
+          try {
+            input = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {};
+          } catch {}
           blocks.push({ type: "tool_use", id: tc.id, name: tc.function.name, input });
         }
       }
@@ -199,7 +217,11 @@ export async function chatWithTools(
   cfg: AIConfig,
   initialMessages: LLMMessage[],
   runTool: (name: string, args: any) => string | Promise<string>,
-  opts?: { maxRounds?: number; signal?: AbortSignal; onProgress?: (e: { type: "tool"; call: ToolCall } | { type: "text"; delta: string }) => void },
+  opts?: {
+    maxRounds?: number;
+    signal?: AbortSignal;
+    onProgress?: (e: { type: "tool"; call: ToolCall } | { type: "text"; delta: string }) => void;
+  },
 ): Promise<ToolRoundResult> {
   const maxRounds = opts?.maxRounds ?? 5;
   const calls: ToolCall[] = [];
@@ -240,7 +262,9 @@ export async function chatWithTools(
         headers: headers(cfg),
         body: JSON.stringify(body),
       });
-    } finally { cancel(); }
+    } finally {
+      cancel();
+    }
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
@@ -251,12 +275,15 @@ export async function chatWithTools(
     if (anth) {
       // Resposta Anthropic: { content: [{type:"text"|"tool_use", ...}], stop_reason }
       const blocks: any[] = Array.isArray(json?.content) ? json.content : [];
-      const toolUses = blocks.filter(b => b.type === "tool_use");
-      const textOut = blocks.filter(b => b.type === "text").map(b => b.text || "").join("");
+      const toolUses = blocks.filter((b) => b.type === "tool_use");
+      const textOut = blocks
+        .filter((b) => b.type === "text")
+        .map((b) => b.text || "")
+        .join("");
 
       if (toolUses.length > 0) {
         // Reconstroi como tool_calls no nosso formato unificado para o histórico.
-        const tcs = toolUses.map(tu => ({
+        const tcs = toolUses.map((tu) => ({
           id: tu.id,
           type: "function" as const,
           function: { name: tu.name, arguments: JSON.stringify(tu.input || {}) },
@@ -285,12 +312,19 @@ export async function chatWithTools(
       messages.push({ role: "assistant", content: msg.content || "", tool_calls: toolCalls });
       for (const tc of toolCalls) {
         let args: any = {};
-        try { args = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {}; } catch {}
+        try {
+          args = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {};
+        } catch {}
         const result = await runTool(tc.function.name, args);
         const call: ToolCall = { id: tc.id, name: tc.function.name, arguments: args, result };
         calls.push(call);
         opts?.onProgress?.({ type: "tool", call });
-        messages.push({ role: "tool", tool_call_id: tc.id, name: tc.function.name, content: result });
+        messages.push({
+          role: "tool",
+          tool_call_id: tc.id,
+          name: tc.function.name,
+          content: result,
+        });
       }
       continue;
     }
@@ -303,7 +337,10 @@ export async function chatWithTools(
   // M-6: telemetria — atingir maxRounds geralmente indica loop de tool calling.
   console.warn("[ai/client] maxRounds atingido sem resposta final", {
     rounds: maxRounds,
-    calls: calls.map(c => c.name),
+    calls: calls.map((c) => c.name),
   });
-  return { finalText: "_(Limite de rodadas de tool-calling atingido sem resposta final.)_", toolCalls: calls };
+  return {
+    finalText: "_(Limite de rodadas de tool-calling atingido sem resposta final.)_",
+    toolCalls: calls,
+  };
 }

@@ -55,23 +55,61 @@ export type SimplesFaixa = [number, number, number];
 
 /** Tabelas oficiais do Simples Nacional (2024) — Anexos I a V, 6 faixas cada. */
 export const SIMPLES_TABLES_DEFAULT: Record<SimplesAnexo, SimplesFaixa[]> = {
-  I:   [[180000,4.0,0],[360000,7.3,5940],[720000,9.5,13860],[1800000,10.7,22500],[3600000,14.3,87300],[4800000,19.0,378000]],
-  II:  [[180000,4.5,0],[360000,7.8,5940],[720000,10.0,13860],[1800000,11.2,22500],[3600000,14.7,85500],[4800000,30.0,720000]],
-  III: [[180000,6.0,0],[360000,11.2,9360],[720000,13.5,17640],[1800000,16.0,35640],[3600000,21.0,125640],[4800000,33.0,648000]],
-  IV:  [[180000,4.5,0],[360000,9.0,8100],[720000,10.2,12420],[1800000,14.0,39780],[3600000,22.0,183780],[4800000,33.0,828000]],
-  V:   [[180000,15.5,0],[360000,18.0,4500],[720000,19.5,9900],[1800000,20.5,17100],[3600000,23.0,62100],[4800000,30.5,540000]],
+  I: [
+    [180000, 4.0, 0],
+    [360000, 7.3, 5940],
+    [720000, 9.5, 13860],
+    [1800000, 10.7, 22500],
+    [3600000, 14.3, 87300],
+    [4800000, 19.0, 378000],
+  ],
+  II: [
+    [180000, 4.5, 0],
+    [360000, 7.8, 5940],
+    [720000, 10.0, 13860],
+    [1800000, 11.2, 22500],
+    [3600000, 14.7, 85500],
+    [4800000, 30.0, 720000],
+  ],
+  III: [
+    [180000, 6.0, 0],
+    [360000, 11.2, 9360],
+    [720000, 13.5, 17640],
+    [1800000, 16.0, 35640],
+    [3600000, 21.0, 125640],
+    [4800000, 33.0, 648000],
+  ],
+  IV: [
+    [180000, 4.5, 0],
+    [360000, 9.0, 8100],
+    [720000, 10.2, 12420],
+    [1800000, 14.0, 39780],
+    [3600000, 22.0, 183780],
+    [4800000, 33.0, 828000],
+  ],
+  V: [
+    [180000, 15.5, 0],
+    [360000, 18.0, 4500],
+    [720000, 19.5, 9900],
+    [1800000, 20.5, 17100],
+    [3600000, 23.0, 62100],
+    [4800000, 30.5, 540000],
+  ],
 };
 
 // =====================================================================
 // LUCRO PRESUMIDO — bases de presunção por tipo de negócio
 // =====================================================================
-export interface PresumidoBases { irpj: number; csll: number }
+export interface PresumidoBases {
+  irpj: number;
+  csll: number;
+}
 
 /** Bases de presunção oficiais (Lei 9.249/95 art. 15 e art. 20). */
 export const PRESUMIDO_BASES_DEFAULT: Record<BusinessType, PresumidoBases> = {
   industria: { irpj: 8, csll: 12 },
-  comercio:  { irpj: 8, csll: 12 },
-  servicos:  { irpj: 32, csll: 32 },
+  comercio: { irpj: 8, csll: 12 },
+  servicos: { irpj: 32, csll: 32 },
 };
 
 // =====================================================================
@@ -116,18 +154,26 @@ export interface TaxRatesOverride {
 const ov = (tax: TaxConfig) => tax.ratesOverride;
 const pick = <T>(v: T | undefined, fallback: T): T => (v === undefined ? fallback : v);
 
-export const getIrpjPct                  = (tax: TaxConfig): number => pick(ov(tax)?.irpj,                  IRPJ_PCT);
-export const getIrpjAdicionalPct         = (tax: TaxConfig): number => pick(ov(tax)?.irpjAdicional,         IRPJ_ADICIONAL_PCT);
-export const getIrpjAdicionalGatilhoTri  = (tax: TaxConfig): number => pick(ov(tax)?.irpjAdicionalGatilhoTri, IRPJ_ADICIONAL_GATILHO_TRI);
-export const getCsllPct                  = (tax: TaxConfig): number => pick(ov(tax)?.csll,                 CSLL_PCT);
-export const getPisCumPct                = (tax: TaxConfig): number => pick(ov(tax)?.pisCum,               PIS_CUM_PCT);
-export const getCofinsCumPct             = (tax: TaxConfig): number => pick(ov(tax)?.cofinsCum,            COFINS_CUM_PCT);
-export const getPisNaoCumPct             = (tax: TaxConfig): number => pick(ov(tax)?.pisNaoCum,            PIS_NAO_CUM_PCT);
-export const getCofinsNaoCumPct          = (tax: TaxConfig): number => pick(ov(tax)?.cofinsNaoCum,         COFINS_NAO_CUM_PCT);
-export const getSimplesLimite            = (tax: TaxConfig): number => pick(ov(tax)?.simplesLimite,        SIMPLES_LIMITE);
-export const getFatorRMinimoPct          = (tax: TaxConfig): number => pick(ov(tax)?.fatorRMinimo,         FATOR_R_MINIMO_PCT);
-export const getReformaTransicaoIbsMult     = (tax: TaxConfig): number => pick(ov(tax)?.reformaTransicaoIbsMult,    REFORMA_TRANSICAO_IBS_MULT);
-export const getReformaTransicaoIcmsIssMult = (tax: TaxConfig): number => pick(ov(tax)?.reformaTransicaoIcmsIssMult, REFORMA_TRANSICAO_ICMS_ISS_MULT);
+export const getIrpjPct = (tax: TaxConfig): number => pick(ov(tax)?.irpj, IRPJ_PCT);
+export const getIrpjAdicionalPct = (tax: TaxConfig): number =>
+  pick(ov(tax)?.irpjAdicional, IRPJ_ADICIONAL_PCT);
+export const getIrpjAdicionalGatilhoTri = (tax: TaxConfig): number =>
+  pick(ov(tax)?.irpjAdicionalGatilhoTri, IRPJ_ADICIONAL_GATILHO_TRI);
+export const getCsllPct = (tax: TaxConfig): number => pick(ov(tax)?.csll, CSLL_PCT);
+export const getPisCumPct = (tax: TaxConfig): number => pick(ov(tax)?.pisCum, PIS_CUM_PCT);
+export const getCofinsCumPct = (tax: TaxConfig): number => pick(ov(tax)?.cofinsCum, COFINS_CUM_PCT);
+export const getPisNaoCumPct = (tax: TaxConfig): number =>
+  pick(ov(tax)?.pisNaoCum, PIS_NAO_CUM_PCT);
+export const getCofinsNaoCumPct = (tax: TaxConfig): number =>
+  pick(ov(tax)?.cofinsNaoCum, COFINS_NAO_CUM_PCT);
+export const getSimplesLimite = (tax: TaxConfig): number =>
+  pick(ov(tax)?.simplesLimite, SIMPLES_LIMITE);
+export const getFatorRMinimoPct = (tax: TaxConfig): number =>
+  pick(ov(tax)?.fatorRMinimo, FATOR_R_MINIMO_PCT);
+export const getReformaTransicaoIbsMult = (tax: TaxConfig): number =>
+  pick(ov(tax)?.reformaTransicaoIbsMult, REFORMA_TRANSICAO_IBS_MULT);
+export const getReformaTransicaoIcmsIssMult = (tax: TaxConfig): number =>
+  pick(ov(tax)?.reformaTransicaoIcmsIssMult, REFORMA_TRANSICAO_ICMS_ISS_MULT);
 
 export function getSimplesTable(tax: TaxConfig, anexo: SimplesAnexo): SimplesFaixa[] {
   return ov(tax)?.simplesTables?.[anexo] ?? SIMPLES_TABLES_DEFAULT[anexo];

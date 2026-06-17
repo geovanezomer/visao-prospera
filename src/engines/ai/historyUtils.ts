@@ -10,8 +10,8 @@ import { estimateTokens } from "./snapshot";
 export const MAX_HISTORY_TOKENS = 6000;
 
 // Quantas mensagens preservar nas pontas (não comprimir).
-const KEEP_HEAD = 2;   // primeiras: âncora de contexto da sessão
-const KEEP_TAIL = 6;   // últimas: turno corrente + recência relevante
+const KEEP_HEAD = 2; // primeiras: âncora de contexto da sessão
+const KEEP_TAIL = 6; // últimas: turno corrente + recência relevante
 
 const OMITTED_PLACEHOLDER: LLMMessage = {
   role: "assistant",
@@ -51,8 +51,8 @@ export function mapHistoryToLlm(opts: {
   lastUserContent: string | unknown[]; // texto ou vision array
 }): LLMMessage[] {
   const { history, forTools, lastUserContent } = opts;
-  const filtered = history.filter(m =>
-    forTools ? (m.role === "user" || m.role === "assistant") : true
+  const filtered = history.filter((m) =>
+    forTools ? m.role === "user" || m.role === "assistant" : true,
   );
   const out: LLMMessage[] = [];
   filtered.forEach((m, idx) => {

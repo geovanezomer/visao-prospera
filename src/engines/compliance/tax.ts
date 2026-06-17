@@ -13,8 +13,10 @@ export function regimeComparisonToMarkdown(state: AppState): string {
 
   let md = `## Comparativo de Regimes Tributários (Anual)\n\n`;
   md += `_Análise referente à era: **${era}** ${era !== "atual" ? "(Reforma Tributária)" : ""}_\n`;
-  if (era === "transicao") md += `\n> ⚠️ Valores incluem **CBS/IBS parciais** e PIS/COFINS+ICMS/ISS em redução proporcional conforme cronograma LC 214/2025 (2027–2032).\n`;
-  if (era === "pleno") md += `\n> ℹ️ Valores refletem o regime **pleno CBS+IBS** (2033+), sem tributos legados.\n`;
+  if (era === "transicao")
+    md += `\n> ⚠️ Valores incluem **CBS/IBS parciais** e PIS/COFINS+ICMS/ISS em redução proporcional conforme cronograma LC 214/2025 (2027–2032).\n`;
+  if (era === "pleno")
+    md += `\n> ℹ️ Valores refletem o regime **pleno CBS+IBS** (2033+), sem tributos legados.\n`;
   md += `\n`;
   md += `| Regime | Tributos Totais | Lucro Líquido | Eficácia |\n`;
   md += `| --- | --- | --- | --- |\n`;
@@ -44,21 +46,24 @@ export function taxAuditToMarkdown(state: AppState): string {
 
   let md = `## Diagnóstico Tributário Detalhado\n\n`;
   md += `_Análise referente à era: **${era}** ${era !== "atual" ? "(Reforma Tributária)" : ""}_\n`;
-  if (era === "transicao") md += `\n> ⚠️ Carga híbrida: CBS/IBS parciais + PIS/COFINS+ICMS/ISS em redução proporcional (cronograma LC 214/2025, 2027–2032).\n`;
+  if (era === "transicao")
+    md += `\n> ⚠️ Carga híbrida: CBS/IBS parciais + PIS/COFINS+ICMS/ISS em redução proporcional (cronograma LC 214/2025, 2027–2032).\n`;
   if (era === "pleno") md += `\n> ℹ️ Regime pleno CBS+IBS (2033+) — tributos legados extintos.\n`;
   md += `\n`;
   md += `- **Regime Atual:** ${currentRegime.toUpperCase()}\n`;
   md += `- **Faturamento (RBT12):** ${fmtBRL(rbAnual)}\n`;
   md += `- **Lucro Líquido Real:** ${fmtBRL(llAnual)}\n\n`;
 
-  const savings = regimes[currentRegime].annual - Math.min(regimes.simples.annual, regimes.presumido.annual, regimes.real.annual);
+  const savings =
+    regimes[currentRegime].annual -
+    Math.min(regimes.simples.annual, regimes.presumido.annual, regimes.real.annual);
 
   md += `### 🔍 Análise de Oportunidades\n`;
-  
-  if (currentRegime === "presumido" && llAnual < (rbAnual * 0.10)) {
-    md += `1. **Alerta de Lucro Real:** Seu lucro líquido (${((llAnual/rbAnual)*100).toFixed(1)}%) está abaixo da margem presumida. A migração para o Lucro Real é altamente recomendada.\n`;
+
+  if (currentRegime === "presumido" && llAnual < rbAnual * 0.1) {
+    md += `1. **Alerta de Lucro Real:** Seu lucro líquido (${((llAnual / rbAnual) * 100).toFixed(1)}%) está abaixo da margem presumida. A migração para o Lucro Real é altamente recomendada.\n`;
   }
-  
+
   if (savings > 0) {
     md += `2. **Inha de Economia:** Existe um potencial de redução de carga tributária de **${fmtBRL(savings)}/ano**.\n`;
   } else {

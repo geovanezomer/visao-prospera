@@ -29,8 +29,21 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const fmtBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
@@ -63,8 +76,7 @@ export function JurosCompostosCalc() {
   const sim = useMemo(() => {
     const meses = periodoTipo === "anos" ? Math.round(periodo * 12) : Math.round(periodo);
     if (meses <= 0) return null;
-    const i =
-      taxaTipo === "anual" ? Math.pow(1 + taxa / 100, 1 / 12) - 1 : taxa / 100;
+    const i = taxaTipo === "anual" ? Math.pow(1 + taxa / 100, 1 / 12) - 1 : taxa / 100;
     let saldo = valorInicial;
     let jurosAcum = 0;
     const linhas: Linha[] = [];
@@ -88,11 +100,25 @@ export function JurosCompostosCalc() {
     const pctInvestido = totalFinal > 0 ? totalInvestido / totalFinal : 0;
     const pctJuros = totalFinal > 0 ? totalJuros / totalFinal : 0;
     const multiplicador = totalInvestido > 0 ? totalFinal / totalInvestido : 0;
-    return { i, meses, linhas, totalInvestido, totalJuros, totalFinal, pctInvestido, pctJuros, multiplicador };
+    return {
+      i,
+      meses,
+      linhas,
+      totalInvestido,
+      totalJuros,
+      totalFinal,
+      pctInvestido,
+      pctJuros,
+      multiplicador,
+    };
   }, [valorInicial, aporteMensal, taxa, taxaTipo, periodo, periodoTipo]);
 
   function limpar() {
-    setValorInicial(0); setAporteMensal(0); setTaxa(0); setPeriodo(0); setPagina(0);
+    setValorInicial(0);
+    setAporteMensal(0);
+    setTaxa(0);
+    setPeriodo(0);
+    setPagina(0);
   }
 
   const periodoLabel =
@@ -133,7 +159,9 @@ export function JurosCompostosCalc() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><Step n={1} /> Valores</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Step n={1} /> Valores
+            </CardTitle>
             <CardDescription>Capital inicial e aportes mensais</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -148,7 +176,9 @@ export function JurosCompostosCalc() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><Step n={2} /> Taxa e Período</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Step n={2} /> Taxa e Período
+            </CardTitle>
             <CardDescription>Juros e tempo de investimento</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -163,10 +193,17 @@ export function JurosCompostosCalc() {
                     value={taxa || ""}
                     onChange={(e) => setTaxa(Number(e.target.value) || 0)}
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">%</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+                    %
+                  </span>
                 </div>
-                <Select value={taxaTipo} onValueChange={(v) => setTaxaTipo(v as "anual" | "mensal")}>
-                  <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                <Select
+                  value={taxaTipo}
+                  onValueChange={(v) => setTaxaTipo(v as "anual" | "mensal")}
+                >
+                  <SelectTrigger className="w-28">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="anual">anual</SelectItem>
                     <SelectItem value="mensal">mensal</SelectItem>
@@ -183,8 +220,13 @@ export function JurosCompostosCalc() {
                   value={periodo || ""}
                   onChange={(e) => setPeriodo(Number(e.target.value) || 0)}
                 />
-                <Select value={periodoTipo} onValueChange={(v) => setPeriodoTipo(v as "anos" | "meses")}>
-                  <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                <Select
+                  value={periodoTipo}
+                  onValueChange={(v) => setPeriodoTipo(v as "anos" | "meses")}
+                >
+                  <SelectTrigger className="w-28">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="anos">ano(s)</SelectItem>
                     <SelectItem value="meses">mês(es)</SelectItem>
@@ -213,7 +255,9 @@ export function JurosCompostosCalc() {
                   <div className="bg-primary" style={{ width: `${sim.pctJuros * 100}%` }} />
                 </div>
                 <div className="mt-1 flex justify-between text-xs">
-                  <span className="text-emerald-700 dark:text-emerald-400">Investido {fmtPct(sim.pctInvestido)}</span>
+                  <span className="text-emerald-700 dark:text-emerald-400">
+                    Investido {fmtPct(sim.pctInvestido)}
+                  </span>
                   <span className="text-primary">Juros {fmtPct(sim.pctJuros)}</span>
                 </div>
               </div>
@@ -221,7 +265,8 @@ export function JurosCompostosCalc() {
           </Card>
 
           <p className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
-            Com mais tempo, os juros compostos ganham força. Considere aumentar o prazo para ver o efeito exponencial.
+            Com mais tempo, os juros compostos ganham força. Considere aumentar o prazo para ver o
+            efeito exponencial.
           </p>
 
           {/* Cards laterais */}
@@ -229,8 +274,13 @@ export function JurosCompostosCalc() {
             <Card>
               <CardContent className="space-y-2 py-4">
                 <p className="text-xs font-medium text-muted-foreground">Total investido</p>
-                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{fmtBRL(sim.totalInvestido)}</p>
-                <Badge variant="outline" className="border-emerald-500/30 text-emerald-700 dark:text-emerald-400">
+                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
+                  {fmtBRL(sim.totalInvestido)}
+                </p>
+                <Badge
+                  variant="outline"
+                  className="border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
+                >
                   {fmtPct(sim.pctInvestido)} do total
                 </Badge>
               </CardContent>
@@ -248,9 +298,19 @@ export function JurosCompostosCalc() {
               <CardContent className="flex flex-col items-center justify-center gap-2 py-4">
                 <div className="relative flex h-20 w-20 items-center justify-center">
                   <svg viewBox="0 0 36 36" className="h-20 w-20 -rotate-90">
-                    <circle cx="18" cy="18" r="15.9155" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
                     <circle
-                      cx="18" cy="18" r="15.9155" fill="none"
+                      cx="18"
+                      cy="18"
+                      r="15.9155"
+                      fill="none"
+                      stroke="hsl(var(--muted))"
+                      strokeWidth="3"
+                    />
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="15.9155"
+                      fill="none"
                       stroke="rgb(16 185 129)"
                       strokeWidth="3"
                       strokeDasharray={`${sim.pctInvestido * 100} ${100 - sim.pctInvestido * 100}`}
@@ -258,7 +318,9 @@ export function JurosCompostosCalc() {
                     />
                   </svg>
                 </div>
-                <p className="text-xs text-muted-foreground">{sim.multiplicador.toFixed(1)}x o investido</p>
+                <p className="text-xs text-muted-foreground">
+                  {sim.multiplicador.toFixed(1)}x o investido
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -271,7 +333,10 @@ export function JurosCompostosCalc() {
             <CardContent>
               <div className="h-72 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                  <ComposedChart
+                    data={chartData}
+                    margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+                  >
                     <defs>
                       <linearGradient id="gInv" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="rgb(16 185 129)" stopOpacity={0.6} />
@@ -283,16 +348,42 @@ export function JurosCompostosCalc() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="mes" tick={{ fontSize: 11 }} label={{ value: "Mês", position: "insideBottomRight", offset: -2, fontSize: 11 }} />
+                    <XAxis
+                      dataKey="mes"
+                      tick={{ fontSize: 11 }}
+                      label={{
+                        value: "Mês",
+                        position: "insideBottomRight",
+                        offset: -2,
+                        fontSize: 11,
+                      }}
+                    />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => fmtBRLShort(v)} />
                     <Tooltip
                       formatter={(value: number) => fmtBRL(value)}
                       labelFormatter={(label) => `Mês ${label}`}
-                      contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                      contentStyle={{
+                        background: "hsl(var(--popover))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 8,
+                        fontSize: 12,
+                      }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Area type="monotone" dataKey="Investido" stackId="1" stroke="rgb(16 185 129)" fill="url(#gInv)" />
-                    <Area type="monotone" dataKey="Juros" stackId="1" stroke="hsl(var(--primary))" fill="url(#gJur)" />
+                    <Area
+                      type="monotone"
+                      dataKey="Investido"
+                      stackId="1"
+                      stroke="rgb(16 185 129)"
+                      fill="url(#gInv)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="Juros"
+                      stackId="1"
+                      stroke="hsl(var(--primary))"
+                      fill="url(#gJur)"
+                    />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -309,20 +400,36 @@ export function JurosCompostosCalc() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs uppercase tracking-wider">Mês</TableHead>
-                    <TableHead className="text-right text-xs uppercase tracking-wider">Juros no mês</TableHead>
-                    <TableHead className="text-right text-xs uppercase tracking-wider">Juros totais</TableHead>
-                    <TableHead className="text-right text-xs uppercase tracking-wider">Total investido</TableHead>
-                    <TableHead className="text-right text-xs uppercase tracking-wider">Total acumulado</TableHead>
+                    <TableHead className="text-right text-xs uppercase tracking-wider">
+                      Juros no mês
+                    </TableHead>
+                    <TableHead className="text-right text-xs uppercase tracking-wider">
+                      Juros totais
+                    </TableHead>
+                    <TableHead className="text-right text-xs uppercase tracking-wider">
+                      Total investido
+                    </TableHead>
+                    <TableHead className="text-right text-xs uppercase tracking-wider">
+                      Total acumulado
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sim.linhas.slice(pagina * PAGE_SIZE, pagina * PAGE_SIZE + PAGE_SIZE).map((l) => (
                     <TableRow key={l.mes}>
                       <TableCell className="text-sm text-primary">{l.mes}</TableCell>
-                      <TableCell className="text-right text-sm text-primary">{fmtBRL(l.jurosMes)}</TableCell>
-                      <TableCell className="text-right text-sm text-primary">{fmtBRL(l.jurosTotais)}</TableCell>
-                      <TableCell className="text-right text-sm">{fmtBRL(l.totalInvestido)}</TableCell>
-                      <TableCell className="text-right text-sm font-semibold">{fmtBRL(l.totalAcumulado)}</TableCell>
+                      <TableCell className="text-right text-sm text-primary">
+                        {fmtBRL(l.jurosMes)}
+                      </TableCell>
+                      <TableCell className="text-right text-sm text-primary">
+                        {fmtBRL(l.jurosTotais)}
+                      </TableCell>
+                      <TableCell className="text-right text-sm">
+                        {fmtBRL(l.totalInvestido)}
+                      </TableCell>
+                      <TableCell className="text-right text-sm font-semibold">
+                        {fmtBRL(l.totalAcumulado)}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -336,9 +443,13 @@ export function JurosCompostosCalc() {
                   >
                     Anterior
                   </button>
-                  <span>{pagina + 1} / {Math.ceil(sim.linhas.length / PAGE_SIZE)}</span>
+                  <span>
+                    {pagina + 1} / {Math.ceil(sim.linhas.length / PAGE_SIZE)}
+                  </span>
                   <button
-                    onClick={() => setPagina(Math.min(Math.ceil(sim.linhas.length / PAGE_SIZE) - 1, pagina + 1))}
+                    onClick={() =>
+                      setPagina(Math.min(Math.ceil(sim.linhas.length / PAGE_SIZE) - 1, pagina + 1))
+                    }
                     disabled={pagina >= Math.ceil(sim.linhas.length / PAGE_SIZE) - 1}
                     className="rounded px-2 py-1 hover:bg-muted disabled:opacity-40"
                   >
@@ -356,24 +467,30 @@ export function JurosCompostosCalc() {
         <Card>
           <CollapsibleTrigger asChild>
             <button className="flex w-full items-center justify-between p-4 text-left text-sm font-medium hover:bg-muted/40">
-              <span className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> Entenda a calculadora</span>
+              <span className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-primary" /> Entenda a calculadora
+              </span>
               <span className="text-xs text-muted-foreground">expandir</span>
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-3 border-t pt-4 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">Como funcionam os juros compostos com aportes mensais?</p>
+              <p className="font-medium text-foreground">
+                Como funcionam os juros compostos com aportes mensais?
+              </p>
               <p>
-                Os juros compostos são o princípio fundamental da riqueza acumulada: o rendimento de cada período é somado ao
-                capital e também passa a render nos períodos seguintes. Diferentemente dos juros simples, onde a base de cálculo
-                é sempre o capital inicial, nos juros compostos o montante cresce de forma exponencial — o que Albert Einstein
+                Os juros compostos são o princípio fundamental da riqueza acumulada: o rendimento de
+                cada período é somado ao capital e também passa a render nos períodos seguintes.
+                Diferentemente dos juros simples, onde a base de cálculo é sempre o capital inicial,
+                nos juros compostos o montante cresce de forma exponencial — o que Albert Einstein
                 teria chamado de "a oitava maravilha do mundo".
               </p>
               <p>
-                Com aportes mensais regulares, o efeito se amplifica: cada aporte também começa a render compostos a partir do
-                momento em que é feito. A fórmula combina o crescimento do capital inicial (VP) com a soma geométrica dos
-                aportes mensais (PMT). O fator tempo é o mais importante — aportar R$ 500/mês por 30 anos gera um patrimônio
-                muito maior do que R$ 1.500/mês por 10 anos, mesmo com o mesmo total investido.
+                Com aportes mensais regulares, o efeito se amplifica: cada aporte também começa a
+                render compostos a partir do momento em que é feito. A fórmula combina o crescimento
+                do capital inicial (VP) com a soma geométrica dos aportes mensais (PMT). O fator
+                tempo é o mais importante — aportar R$ 500/mês por 30 anos gera um patrimônio muito
+                maior do que R$ 1.500/mês por 10 anos, mesmo com o mesmo total investido.
               </p>
 
               <p className="pt-2 font-medium text-foreground">Fórmula</p>
@@ -387,15 +504,33 @@ export function JurosCompostosCalc() {
                 <li>i = taxa de juros mensal</li>
                 <li>n = número de meses</li>
               </ul>
-              <p>Taxa mensal equivalente: <code>i_mensal = (1 + i_anual)^(1/12) − 1</code></p>
+              <p>
+                Taxa mensal equivalente: <code>i_mensal = (1 + i_anual)^(1/12) − 1</code>
+              </p>
 
               <div className="space-y-1 pt-2">
                 <p className="font-medium text-foreground">Dicas</p>
                 <ul className="ml-4 list-disc space-y-1">
-                  <li><strong>Comece cedo, mesmo com pouco:</strong> R$ 200/mês começando aos 25 anos gera mais patrimônio do que R$ 500/mês a partir dos 35, mesmo que o segundo invista mais dinheiro no total.</li>
-                  <li><strong>Reinvista sempre os rendimentos:</strong> se você recebe rendimentos e gasta, está quebrando o efeito dos juros compostos. Reinvestir automaticamente (como em ETFs ou CDBs de longo prazo) é a forma mais eficiente.</li>
-                  <li><strong>Inflação corrói o real:</strong> a taxa de 14,9% a.a. (CDI) parece alta, mas com IPCA em ~5%, o ganho real é ~9,4%. Use a taxa real para cálculos de longo prazo: <code>i_real = (1 + i_nominal) ÷ (1 + inflação) − 1</code>.</li>
-                  <li><strong>Aumente o aporte com a renda:</strong> ao receber um aumento de R$ 500/mês, direcione R$ 200–300 para investimentos antes de elevar seu padrão de vida. Pequenas mudanças no aporte têm impacto enorme em 20–30 anos.</li>
+                  <li>
+                    <strong>Comece cedo, mesmo com pouco:</strong> R$ 200/mês começando aos 25 anos
+                    gera mais patrimônio do que R$ 500/mês a partir dos 35, mesmo que o segundo
+                    invista mais dinheiro no total.
+                  </li>
+                  <li>
+                    <strong>Reinvista sempre os rendimentos:</strong> se você recebe rendimentos e
+                    gasta, está quebrando o efeito dos juros compostos. Reinvestir automaticamente
+                    (como em ETFs ou CDBs de longo prazo) é a forma mais eficiente.
+                  </li>
+                  <li>
+                    <strong>Inflação corrói o real:</strong> a taxa de 14,9% a.a. (CDI) parece alta,
+                    mas com IPCA em ~5%, o ganho real é ~9,4%. Use a taxa real para cálculos de
+                    longo prazo: <code>i_real = (1 + i_nominal) ÷ (1 + inflação) − 1</code>.
+                  </li>
+                  <li>
+                    <strong>Aumente o aporte com a renda:</strong> ao receber um aumento de R$
+                    500/mês, direcione R$ 200–300 para investimentos antes de elevar seu padrão de
+                    vida. Pequenas mudanças no aporte têm impacto enorme em 20–30 anos.
+                  </li>
                 </ul>
               </div>
             </CardContent>
@@ -411,7 +546,11 @@ export function JurosCompostosCalc() {
 // ============================================================================
 
 function Step({ n }: { n: number }) {
-  return <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{n}</span>;
+  return (
+    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+      {n}
+    </span>
+  );
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -426,7 +565,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function MoneyInput({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   return (
     <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">R$</span>
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+        R$
+      </span>
       <Input
         type="number"
         min={0}

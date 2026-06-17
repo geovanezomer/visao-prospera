@@ -1,17 +1,17 @@
-import { 
-  LayoutDashboard, 
-  Receipt, 
+import {
+  LayoutDashboard,
+  Receipt,
   ReceiptText,
-  Gavel, 
-  Wallet, 
-  ShieldCheck, 
-  FileSpreadsheet, 
-  Search, 
-  Wand2, 
+  Gavel,
+  Wallet,
+  ShieldCheck,
+  FileSpreadsheet,
+  Search,
+  Wand2,
   BarChart3,
   Bot,
   Activity,
-  Landmark
+  Landmark,
 } from "lucide-react";
 import { TabKey } from "@/engines/finance/types";
 

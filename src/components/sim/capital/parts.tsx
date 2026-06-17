@@ -29,7 +29,9 @@ export function StepCard({
           {step}
         </span>
         <div className="min-w-0">
-          <div className="text-sm font-semibold" style={{ color }}>{title}</div>
+          <div className="text-sm font-semibold" style={{ color }}>
+            {title}
+          </div>
           <div className="text-[11px] text-muted-foreground">{subtitle}</div>
         </div>
       </div>
@@ -56,21 +58,39 @@ export function SimpleField({
   emphasis?: boolean;
 }) {
   return (
-    <div className={`rounded-md border p-3 ${emphasis ? "border-primary/40 bg-primary/5" : "border-border/40 bg-background/40"}`}>
+    <div
+      className={`rounded-md border p-3 ${emphasis ? "border-primary/40 bg-primary/5" : "border-border/40 bg-background/40"}`}
+    >
       <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
         <span className="text-muted-foreground/80">{icon}</span>
         <span className="font-medium text-foreground/90">{label}</span>
         <HelpTip text={hint} />
       </label>
-      <MoneyInput value={value} onChange={onChange} className={`mt-1.5 ${emphasis ? "text-base font-semibold" : ""}`} />
-      {placeholder && <div className="mt-1 text-[9.5px] text-muted-foreground/70">{placeholder}</div>}
+      <MoneyInput
+        value={value}
+        onChange={onChange}
+        className={`mt-1.5 ${emphasis ? "text-base font-semibold" : ""}`}
+      />
+      {placeholder && (
+        <div className="mt-1 text-[9.5px] text-muted-foreground/70">{placeholder}</div>
+      )}
     </div>
   );
 }
 
-export function MiniStat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+export function MiniStat({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
   return (
-    <div className={`p-2 ${highlight ? "bg-primary/10" : "bg-background/40"} border-r border-border/30 last:border-r-0`}>
+    <div
+      className={`p-2 ${highlight ? "bg-primary/10" : "bg-background/40"} border-r border-border/30 last:border-r-0`}
+    >
       <div className="num text-[11px] font-semibold">{value}</div>
       <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</div>
     </div>
@@ -88,7 +108,9 @@ export function SummaryList({
 }) {
   return (
     <div className="rounded-md border border-border/40 bg-background/40 p-3">
-      <div className="mb-2 text-[10px] font-bold uppercase tracking-wider" style={{ color }}>{title}</div>
+      <div className="mb-2 text-[10px] font-bold uppercase tracking-wider" style={{ color }}>
+        {title}
+      </div>
       <div className="space-y-1">
         {rows.map(([label, value, bold], i) => (
           <div
@@ -115,9 +137,12 @@ export function KpiTile({
   tone: "pos" | "warn" | "neg";
   hint: string;
 }) {
-  const colorCls = tone === "pos" ? "text-pos border-pos/30 bg-pos/5"
-                 : tone === "warn" ? "text-warning border-warning/30 bg-warning/5"
-                 : "text-neg border-neg/30 bg-neg/5";
+  const colorCls =
+    tone === "pos"
+      ? "text-pos border-pos/30 bg-pos/5"
+      : tone === "warn"
+        ? "text-warning border-warning/30 bg-warning/5"
+        : "text-neg border-neg/30 bg-neg/5";
   return (
     <div className={`rounded-md border p-2 ${colorCls}`}>
       <div className="num text-sm font-bold">{value}</div>
@@ -149,7 +174,9 @@ export function Field({
         <HelpTip text={hint} />
       </label>
       <MoneyInput value={value} onChange={onChange} />
-      {placeholder && <div className="mt-0.5 text-[9.5px] text-muted-foreground/70">{placeholder}</div>}
+      {placeholder && (
+        <div className="mt-0.5 text-[9.5px] text-muted-foreground/70">{placeholder}</div>
+      )}
     </div>
   );
 }

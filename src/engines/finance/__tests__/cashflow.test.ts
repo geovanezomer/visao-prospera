@@ -45,8 +45,7 @@ describe("buildCashFlow — PMR e PMP", () => {
     const s = createState();
     const cf = buildCashFlow(s);
     for (let i = 0; i < 12; i++) {
-      const expected =
-        cf.fluxoOperacional[i] + cf.fluxoInvestimento[i] + cf.fluxoFinanciamento[i];
+      const expected = cf.fluxoOperacional[i] + cf.fluxoInvestimento[i] + cf.fluxoFinanciamento[i];
       expect(cf.variacaoCaixa[i]).toBeCloseTo(expected, 6);
     }
   });
