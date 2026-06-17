@@ -15,7 +15,7 @@ import {
   SwitchingCost,
   ExposicaoRegulatoria,
 } from "@/engines/finance/types";
-import { useFinance } from "@/engines/finance/AppStateContext";
+import { useFinanceSelector, useFinanceUpdate } from "@/engines/finance/AppStateContext";
 import { SectionTitle, HelpTip } from "./primitives";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -26,19 +26,22 @@ type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
 const EMPTY: StrategicAnswers = { concentration: {}, governance: {}, competitive: {}, regulatory: {} };
 
-function ensure(state: AppState): StrategicAnswers {
-  const s = state.strategic ?? EMPTY;
+function ensureStrategic(s: AppState["strategic"] | undefined): StrategicAnswers {
+  const v = s ?? EMPTY;
   return {
-    concentration: s.concentration ?? {},
-    governance: s.governance ?? {},
-    competitive: s.competitive ?? {},
-    regulatory: s.regulatory ?? {},
+    concentration: v.concentration ?? {},
+    governance: v.governance ?? {},
+    competitive: v.competitive ?? {},
+    regulatory: v.regulatory ?? {},
   };
 }
 
 export function StrategicTab() {
-  const { state, update } = useFinance();
-  const answers = ensure(state);
+  // Seletor granular: re-renderiza apenas quando `state.strategic` mudar
+  // (não re-renderiza ao editar receitas/custos/etc.).
+  const strategic = useFinanceSelector((s) => s.strategic);
+  const update = useFinanceUpdate();
+  const answers = ensureStrategic(strategic);
 
   const setSection = <K extends keyof StrategicAnswers>(key: K, patch: Partial<StrategicAnswers[K]>) => {
     update((s) => ({
