@@ -275,6 +275,32 @@ export function IndicatorsCard({ state }: { state: AppState }) {
           desc={`Quantas vezes o EBITDA cobre o serviço total da dívida (juros + amortização do principal). Bancos exigem ≥1,25× para renovar giro; ≥1,50× destrava melhores linhas.${!ind.dscrAmortizacoesInformadas && ind.dividaOnerosa > 0 ? " ⚠️ Amortizações de principal não informadas — DSCR equivale à Cobertura de Juros (pode estar superestimado)." : ""}`}
           formula="EBITDA ÷ (Juros + Amortizações de Principal)"
         />
+        <Ind
+          label="Impostos / Receita"
+          v={fmtPct(ind.impostosSobreReceita / 100)}
+          tone={
+            ind.impostosSobreReceita > 30
+              ? "neg"
+              : ind.impostosSobreReceita > 0
+                ? "pos"
+                : undefined
+          }
+          desc="Carga tributária TOTAL (impostos sobre vendas + IRPJ/CSLL) sobre a Receita Bruta. Mede o peso fiscal completo do negócio."
+          formula="(Impostos s/ Vendas + IRPJ/CSLL) ÷ Receita Bruta × 100"
+        />
+        <Ind
+          label="Impostos / Lucro Líquido"
+          v={ind.impostosSobreLucro !== 0 ? fmtPct(ind.impostosSobreLucro / 100) : "—"}
+          tone={
+            ind.impostosSobreLucro > 100
+              ? "neg"
+              : ind.impostosSobreLucro > 0
+                ? "warn"
+                : undefined
+          }
+          desc="Quanto a empresa paga de impostos para cada R$ 1,00 de lucro líquido gerado. Acima de 100% indica que o fisco leva mais do que sobra para os sócios."
+          formula="(Impostos s/ Vendas + IRPJ/CSLL) ÷ Lucro Líquido × 100"
+        />
       </div>
     </div>
   );
