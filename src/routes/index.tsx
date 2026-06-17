@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAppState, useScenarios } from "@/engines/finance/store";
-import { FinanceProvider } from "@/engines/finance/AppStateContext";
+import { FinanceProvider, FinanceErrorBoundary } from "@/engines/finance/AppStateContext";
+import { usePersistedSimParams } from "@/engines/finance/usePersistedSimParams";
 import { useFinnanceFile } from "@/engines/finance/useFinnanceFile";
 import { useConfirm } from "@/hooks/useConfirm";
 import { useAuth } from "@/lib/auth";
@@ -68,7 +69,8 @@ function SimulaPro() {
   const { state, update, reset, setState, hydrated: stateHydrated, autosaveStatus } = useAppState();
   const { scenarios, save, remove, replaceAll: replaceScenarios } = useScenarios();
   const [activeTab, setActiveTab] = useState<TabKey | "ai" | "calculadoras">("dre");
-  const [simParams, setSimParams] = useState<SimulatorParams>(DEFAULT_SIM);
+  // Parâmetros do Simulador persistidos por usuário (IndexedDB + fallback localStorage).
+  const [simParams, setSimParams] = usePersistedSimParams(user?.id ?? "guest");
   const [meetingMode, setMeetingMode] = useState(false);
   // Ticker que força re-render a cada 30s para atualizar o "salvo há X" do breadcrumb.
   const [, setTick] = useState(0);
@@ -229,32 +231,37 @@ function SimulaPro() {
 
           <main className="flex-1 overflow-x-hidden overflow-y-auto">
             <div className="mx-auto h-full max-w-[1600px] p-2 sm:p-4 md:p-6">
-              {activeTab === "ai" ? (
-                <AIView 
-                  state={state} 
-                  simulatedState={simulatedState} 
-                  simActive={simActive} 
-                  simParams={simParams} 
-                />
-              ) : activeTab === "calculadoras" ? (
-                <div className="animate-in fade-in duration-500">
-                  <CalculadorasTab />
-                </div>
-              ) : (
-                <div className="space-y-6 animate-in fade-in duration-500">
-                  {activeTab === "receitas" && <RevenueTab />}
-                  {activeTab === "custos" && <CostsTab />}
-                  {activeTab === "capital" && <CapitalTab />}
-                  {activeTab === "tributos" && <TaxTab />}
-                  {activeTab === "caixa" && <CashflowTab />}
-                  {activeTab === "governanca" && <StrategicTab />}
-                  {activeTab === "dre" && <DRETab />}
-                  {activeTab === "indicadores" && <IndicatorsTab />}
-                  {activeTab === "resultados" && <DiagnosisTab />}
-                  {activeTab === "simulador" && <SimulatorTab state={state} apply={update} saveScenario={save} params={simParams} setParams={setSimParams} />}
-                  {activeTab === "valuation" && <ValuationTab baseState={state} simulatedState={simulatedState} simActive={simActive} />}
-                </div>
-              )}
+              {/* Boundary garante que crash em uma aba não derruba o app inteiro
+                  e que componentes consumidos fora do FinanceProvider exibam
+                  fallback amigável em vez de tela branca. */}
+              <FinanceErrorBoundary>
+                {activeTab === "ai" ? (
+                  <AIView
+                    state={state}
+                    simulatedState={simulatedState}
+                    simActive={simActive}
+                    simParams={simParams}
+                  />
+                ) : activeTab === "calculadoras" ? (
+                  <div className="animate-in fade-in duration-500">
+                    <CalculadorasTab />
+                  </div>
+                ) : (
+                  <div className="space-y-6 animate-in fade-in duration-500">
+                    {activeTab === "receitas" && <RevenueTab />}
+                    {activeTab === "custos" && <CostsTab />}
+                    {activeTab === "capital" && <CapitalTab />}
+                    {activeTab === "tributos" && <TaxTab />}
+                    {activeTab === "caixa" && <CashflowTab />}
+                    {activeTab === "governanca" && <StrategicTab />}
+                    {activeTab === "dre" && <DRETab />}
+                    {activeTab === "indicadores" && <IndicatorsTab />}
+                    {activeTab === "resultados" && <DiagnosisTab />}
+                    {activeTab === "simulador" && <SimulatorTab state={state} apply={update} saveScenario={save} params={simParams} setParams={setSimParams} />}
+                    {activeTab === "valuation" && <ValuationTab baseState={state} simulatedState={simulatedState} simActive={simActive} />}
+                  </div>
+                )}
+              </FinanceErrorBoundary>
             </div>
           </main>
 
