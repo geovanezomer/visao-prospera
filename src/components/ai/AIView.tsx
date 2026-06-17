@@ -3,14 +3,14 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import remarkGfm from "remark-gfm";
 import { Bot, Settings, Trash2, Send, Loader2, User, Plus, MessageSquare, X, Paperclip } from "lucide-react";
 import { AIConfigDialog } from "./AIConfigDialog";
-import type { AppState } from "@/lib/finance/types";
-import type { SimulatorParams } from "@/lib/finance/simulator";
+import type { AppState } from "@/engines/finance/types";
+import type { SimulatorParams } from "@/engines/finance/simulator";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AuditReport, isAuditReport } from "./AuditReport";
 import { useAIChat } from "@/hooks/useAIChat";
-import { resetAIStorage } from "@/services/ai/providers";
+import { resetAIStorage } from "@/engines/ai/providers";
 
 const ReactMarkdown = lazy(() => import("react-markdown") as any);
 

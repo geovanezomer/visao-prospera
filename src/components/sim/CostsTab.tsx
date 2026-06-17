@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AppState, CostCategory, CostLine, TaxRegime } from "@/lib/finance/types";
-import { fill12, fmtBRL, fmtPct, MESES, sum } from "@/lib/finance/format";
-import { fixedCostBase, monthValues } from "@/lib/finance/calculations";
-import { COST_VENDAS_LABEL, COST_VENDAS_TABLE_CONFIG } from "@/lib/finance/types";
+import { AppState, CostCategory, CostLine, TaxRegime } from "@/engines/finance/types";
+import { fill12, fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
+import { fixedCostBase, monthValues } from "@/engines/finance/calculations";
+import { COST_VENDAS_LABEL, COST_VENDAS_TABLE_CONFIG } from "@/engines/finance/types";
 import { MoneyInput, SectionTitle, StatCard } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";

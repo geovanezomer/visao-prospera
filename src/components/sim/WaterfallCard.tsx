@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { AppState } from "@/lib/finance/types";
+import { AppState } from "@/engines/finance/types";
 import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { SectionTitle } from "./primitives";
 

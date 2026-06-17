@@ -1,4 +1,4 @@
-import { MESES, fill12 } from "@/lib/finance/format";
+import { MESES, fill12 } from "@/engines/finance/format";
 import { NumInput, SectionTitle } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 

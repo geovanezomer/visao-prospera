@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
-import type { AppState } from "@/lib/finance/types";
-import type { MCConfig } from "@/lib/finance/montecarlo";
-import { runMonteCarlo } from "@/lib/finance/montecarlo";
+import type { AppState } from "@/engines/finance/types";
+import type { MCConfig } from "@/engines/finance/montecarlo";
+import { runMonteCarlo } from "@/engines/finance/montecarlo";
 
 self.onmessage = (e: MessageEvent<{ state: AppState; cfg: MCConfig }>) => {
   try {

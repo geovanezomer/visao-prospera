@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { AppState, CapexAtivacao } from "@/lib/finance/types";
-import { fmtBRL, fmtNum, sum } from "@/lib/finance/format";
-import { buildDRE, calcIndicators } from "@/lib/finance/calculations";
+import { AppState, CapexAtivacao } from "@/engines/finance/types";
+import { fmtBRL, fmtNum, sum } from "@/engines/finance/format";
+import { buildDRE, calcIndicators } from "@/engines/finance/calculations";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Lightbulb, X, TrendingUp, TrendingDown, Wallet, Landmark, Coins, Settings2, ArrowRight, Banknote, Package, Users, AlertTriangle, CheckCircle2, Camera, ChevronDown, ChevronUp } from "lucide-react";

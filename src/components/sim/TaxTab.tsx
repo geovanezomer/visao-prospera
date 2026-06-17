@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
-import { AppState, BusinessType, SimplesAnexo, TaxEra, TaxRegime, TAX_ERA_SHORT } from "@/lib/finance/types";
-import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
+import { AppState, BusinessType, SimplesAnexo, TaxEra, TaxRegime, TAX_ERA_SHORT } from "@/engines/finance/types";
+import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
 import {
   compareErasForRegime,
   compareRegimes,
@@ -10,8 +10,8 @@ import {
   resolveSimplesAnexo,
   folhaAnual,
   buildDRE,
-} from "@/lib/finance/calculations";
-import { getPresumidoBases, SIMPLES_LIMITE, SIMPLES_SUBLIMITE_ESTADUAL } from "@/lib/finance/taxDefaults";
+} from "@/engines/finance/calculations";
+import { getPresumidoBases, SIMPLES_LIMITE, SIMPLES_SUBLIMITE_ESTADUAL } from "@/engines/finance/taxDefaults";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { HelpTip, PctInput, SectionTitle } from "./primitives";

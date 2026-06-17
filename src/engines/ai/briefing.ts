@@ -5,10 +5,10 @@
 // 100% local (sem chamar LLM): usa diagnose + calcIndicators + buildCashFlow +
 // computeHealth + benchmark do setor. Determinístico, instantâneo, sem custo.
 
-import type { AppState } from "@/lib/finance/types";
-import { buildDRE, calcIndicators, resolveEffectiveRegime, diagnose } from "@/lib/finance/calculations";
-import { buildCashFlow } from "@/lib/finance/cashflow";
-import { computeHealth } from "@/lib/finance/health";
+import type { AppState } from "@/engines/finance/types";
+import { buildDRE, calcIndicators, resolveEffectiveRegime, diagnose } from "@/engines/finance/calculations";
+import { buildCashFlow } from "@/engines/finance/cashflow";
+import { computeHealth } from "@/engines/finance/health";
 import { findSector } from "@/services/benchmark/sectors";
 import type { SnapshotSections } from "./snapshot";
 

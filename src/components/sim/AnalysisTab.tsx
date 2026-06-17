@@ -1,11 +1,11 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import { AppState, Scenario } from "@/lib/finance/types";
-import { computeHealth, HealthDimension, type HealthPrecomputed } from "@/lib/finance/health";
-import { runSensitivity, OUTPUT_OPTIONS, OutputKey } from "@/lib/finance/sensitivity";
-import { buildForecast, DEFAULT_FORECAST_CFG, ForecastConfig } from "@/lib/finance/forecast";
-import { DEFAULT_MC, MCConfig, MCResult, histogram } from "@/lib/finance/montecarlo";
-import { snapshot } from "@/lib/finance/prescriptive";
-import { fmtBRL } from "@/lib/finance/format";
+import { AppState, Scenario } from "@/engines/finance/types";
+import { computeHealth, HealthDimension, type HealthPrecomputed } from "@/engines/finance/health";
+import { runSensitivity, OUTPUT_OPTIONS, OutputKey } from "@/engines/finance/sensitivity";
+import { buildForecast, DEFAULT_FORECAST_CFG, ForecastConfig } from "@/engines/finance/forecast";
+import { DEFAULT_MC, MCConfig, MCResult, histogram } from "@/engines/finance/montecarlo";
+import { snapshot } from "@/engines/finance/prescriptive";
+import { fmtBRL } from "@/engines/finance/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Activity, GitCompare, LineChart as LineIcon, Play, Sliders, TrendingUp, Trash2 } from "lucide-react";
@@ -390,7 +390,7 @@ export function MonteCarloCard({ state }: { state: AppState }) {
     if (!workerRef.current) {
       // fallback síncrono se worker indisponível
       setRunning(true);
-      import("@/lib/finance/montecarlo").then(({ runMonteCarlo }) => {
+      import("@/engines/finance/montecarlo").then(({ runMonteCarlo }) => {
         setResult(runMonteCarlo(state, cfg));
         setRunning(false);
       });

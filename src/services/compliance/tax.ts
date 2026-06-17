@@ -1,7 +1,7 @@
-import type { AppState } from "@/lib/finance/types";
-import { buildDRE, compareRegimes } from "@/lib/finance/calculations";
-import { SIMPLES_SUBLIMITE_ESTADUAL } from "@/lib/finance/taxDefaults";
-import { sum, fmtBRL } from "@/lib/finance/format";
+import type { AppState } from "@/engines/finance/types";
+import { buildDRE, compareRegimes } from "@/engines/finance/calculations";
+import { SIMPLES_SUBLIMITE_ESTADUAL } from "@/engines/finance/taxDefaults";
+import { sum, fmtBRL } from "@/engines/finance/format";
 
 export function regimeComparisonToMarkdown(state: AppState): string {
   // SSOT-4: usa llBy/best já calculados pela engine — não recalcula localmente.

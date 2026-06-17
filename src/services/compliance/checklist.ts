@@ -1,6 +1,6 @@
 // Checklist de obrigações fiscais/trabalhistas por regime.
 
-import type { AppState } from "@/lib/finance/types";
+import type { AppState } from "@/engines/finance/types";
 
 interface Obligation {
   sigla: string;

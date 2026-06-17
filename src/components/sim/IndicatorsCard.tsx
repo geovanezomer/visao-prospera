@@ -1,6 +1,6 @@
-import { AppState } from "@/lib/finance/types";
-import { useFinanceModel } from "@/lib/finance/useFinanceModel";
-import { fmtBRL, fmtPct, sum } from "@/lib/finance/format";
+import { AppState } from "@/engines/finance/types";
+import { useFinanceModel } from "@/engines/finance/useFinanceModel";
+import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
 import { HelpTip, SectionTitle } from "./primitives";
 
 // Card de indicadores usado no Simulador.

@@ -2,9 +2,9 @@
 // Em vez de perguntas estáticas, surfa os 3-4 alertas mais relevantes
 // como perguntas prontas que a IA pode responder com dados reais.
 
-import type { AppState } from "@/lib/finance/types";
-import { buildDRE, calcIndicators, diagnose, resolveEffectiveRegime } from "@/lib/finance/calculations";
-import { buildCashFlow } from "@/lib/finance/cashflow";
+import type { AppState } from "@/engines/finance/types";
+import { buildDRE, calcIndicators, diagnose, resolveEffectiveRegime } from "@/engines/finance/calculations";
+import { buildCashFlow } from "@/engines/finance/cashflow";
 
 const STATIC_FALLBACK = [
   "Qual o VPL do meu negócio e o que ele significa na prática?",

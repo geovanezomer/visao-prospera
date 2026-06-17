@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { NumInput } from "./primitives";
-import type { AppState, SimplesAnexo, BusinessType } from "@/lib/finance/types";
+import type { AppState, SimplesAnexo, BusinessType } from "@/engines/finance/types";
 import {
   IRPJ_PCT, IRPJ_ADICIONAL_PCT, IRPJ_ADICIONAL_GATILHO_TRI, CSLL_PCT,
   PIS_CUM_PCT, COFINS_CUM_PCT, PIS_NAO_CUM_PCT, COFINS_NAO_CUM_PCT,
@@ -12,7 +12,7 @@ import {
   SIMPLES_TABLES_DEFAULT, PRESUMIDO_BASES_DEFAULT,
   REFORMA_TRANSICAO_IBS_MULT, REFORMA_TRANSICAO_ICMS_ISS_MULT,
   type TaxRatesOverride, type SimplesFaixa,
-} from "@/lib/finance/taxDefaults";
+} from "@/engines/finance/taxDefaults";
 
 type Props = { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void };
 

@@ -10,11 +10,11 @@ import {
   Paperclip, FileText, ImageIcon, X,
 } from "lucide-react";
 import { AIConfigDialog } from "./AIConfigDialog";
-import { renameThread, type ChatMessage } from "@/services/ai/providers";
-import { confidenceLabel, MAX_FILES_PER_MSG } from "@/services/ai/attachments";
+import { renameThread, type ChatMessage } from "@/engines/ai/providers";
+import { confidenceLabel, MAX_FILES_PER_MSG } from "@/engines/ai/attachments";
 import { AuditReport, isAuditReport } from "./AuditReport";
-import type { AppState } from "@/lib/finance/types";
-import type { SimulatorParams } from "@/lib/finance/simulator";
+import type { AppState } from "@/engines/finance/types";
+import type { SimulatorParams } from "@/engines/finance/simulator";
 import { toast } from "sonner";
 import { useAIChat } from "@/hooks/useAIChat";
 

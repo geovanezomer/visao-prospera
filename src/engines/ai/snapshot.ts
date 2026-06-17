@@ -1,11 +1,11 @@
 // Snapshot em camadas + estimativa de tokens + sanitização + cache por hash.
-import type { AppState } from "@/lib/finance/types";
-import { buildDRE, calcIndicators, diagnose, resolveEffectiveRegime, compareErasForRegime } from "@/lib/finance/calculations";
-import { buildCashFlow } from "@/lib/finance/cashflow";
-import { buildValuation, defaultValuationParams } from "@/lib/finance/valuation";
-import { computeHealth } from "@/lib/finance/health";
-import { buildPrescriptiveCards } from "@/lib/finance/prescriptive";
-import { MESES, sum, fmtNum } from "@/lib/finance/format";
+import type { AppState } from "@/engines/finance/types";
+import { buildDRE, calcIndicators, diagnose, resolveEffectiveRegime, compareErasForRegime } from "@/engines/finance/calculations";
+import { buildCashFlow } from "@/engines/finance/cashflow";
+import { buildValuation, defaultValuationParams } from "@/engines/finance/valuation";
+import { computeHealth } from "@/engines/finance/health";
+import { buildPrescriptiveCards } from "@/engines/finance/prescriptive";
+import { MESES, sum, fmtNum } from "@/engines/finance/format";
 
 // ===== Helpers =====
 const safe = (n: any) =>

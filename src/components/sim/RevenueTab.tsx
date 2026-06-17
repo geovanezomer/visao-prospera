@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { AppState, RevenueDeducao } from "@/lib/finance/types";
-import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/lib/finance/format";
-import { buildDRE } from "@/lib/finance/calculations";
+import { AppState, RevenueDeducao } from "@/engines/finance/types";
+import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/engines/finance/format";
+import { buildDRE } from "@/engines/finance/calculations";
 import { MoneyInput, PctInput, StatCard, SectionTitle, HelpTip } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { PrazoTable } from "./PrazoTable";

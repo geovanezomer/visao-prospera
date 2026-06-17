@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AppState } from "@/lib/finance/types";
-import { fmtBRL, fmtBRLCompact, MESES, sum } from "@/lib/finance/format";
-import { buildCashFlow } from "@/lib/finance/cashflow";
+import { AppState } from "@/engines/finance/types";
+import { fmtBRL, fmtBRLCompact, MESES, sum } from "@/engines/finance/format";
+import { buildCashFlow } from "@/engines/finance/cashflow";
 import { MoneyInput, SectionTitle, StatCard, HelpTip } from "./primitives";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";

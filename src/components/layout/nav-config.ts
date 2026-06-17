@@ -13,7 +13,7 @@ import {
   Activity,
   Landmark
 } from "lucide-react";
-import { TabKey } from "@/lib/finance/types";
+import { TabKey } from "@/engines/finance/types";
 
 export type NavItem = {
   title: string;
