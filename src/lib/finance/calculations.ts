@@ -828,11 +828,14 @@ export interface Indicators {
    */
   pontoEquilibrio: number;
   /**
-   * PE OPERACIONAL CLÁSSICO (acadêmico/bancos): Custos Fixos ÷ MC — sem juros, sem depreciação fora.
-   * Cobre apenas os custos fixos operacionais; juros e impostos ficam abaixo do EBIT.
+   * PE OPERACIONAL CLÁSSICO (Garrison/Horngren): Custos Fixos Operacionais (com depreciação,
+   * SEM juros) ÷ MC. Juros e impostos ficam abaixo do EBIT — não pertencem ao PE contábil.
    */
   pontoEquilibrioOperacional: number;
-  /** (Custos Fixos + Juros) ÷ Margem de Contribuição — exclui depreciação (não-caixa), mantém juros. */
+  /**
+   * PE FINANCEIRO clássico (caixa): Custos Fixos Operacionais SEM depreciação e SEM juros ÷ MC.
+   * Receita mínima para cobrir os desembolsos OPERACIONAIS.
+   */
   pontoEquilibrioFinanceiro: number;
   /** Lucro Líquido ÷ Patrimônio Líquido × 100 */
   roe: number;
@@ -933,12 +936,15 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const impostosAnual = sum(dre.impostos);
 
   // SSOT: safeMath previne NaN/Infinity em qualquer divisão de indicador.
-  // Auditoria #9: juros são custo fixo financeiro — devem entrar no Ponto de Equilíbrio.
-  // PE contábil cobre todos os custos fixos (operacionais + financeiros).
-  // PE financeiro exclui depreciação (não é desembolso) mas mantém os juros (são caixa).
-  // PE OPERACIONAL (clássico): apenas custos fixos operacionais — juros ficam abaixo do EBIT.
-  // PE TOTAL: inclui juros (custo fixo financeiro recorrente, perspectiva de cobertura total).
-  // PE FINANCEIRO (caixa): exclui depreciação (não-caixa) mas mantém juros (são desembolso).
+  // Três visões de Ponto de Equilíbrio (Garrison/Horngren + visão bancária):
+  //  • PE OPERACIONAL (clássico contábil): custos fixos operacionais (com depreciação,
+  //    SEM juros). Juros ficam abaixo do EBIT e não pertencem ao PE clássico.
+  //  • PE FINANCEIRO (caixa, clássico): custos fixos operacionais SEM depreciação e SEM
+  //    juros — receita mínima para cobrir desembolsos OPERACIONAIS.
+  //  • PE TOTAL: inclui juros como custo fixo financeiro recorrente — cobertura completa
+  //    (operação + serviço da dívida). Visão da PME para "não ter prejuízo".
+  const depreciacaoAnual = sum(dre.depreciacao);
+  const custosFixosOperacionaisSemDep = custosFixosAnual - depreciacaoAnual;
   const custosFixosComJuros = custosFixosAnual + jurosAnual;
   const margemContribuicao = safePct(receitaLiqAnual - custosVarAnual, receitaLiqAnual);
   const mcFrac = margemContribuicao / 100;
@@ -949,7 +955,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     ? safeDivide(custosFixosComJuros, mcFrac)
     : 0;
   const pontoEquilibrioFinanceiro = margemContribuicao > 0
-    ? safeDivide(custosFixosComJuros - sum(dre.depreciacao), mcFrac)
+    ? safeDivide(custosFixosOperacionaisSemDep, mcFrac)
     : 0;
 
   // ---- Estrutura de capital baseada em campos REAIS ----
