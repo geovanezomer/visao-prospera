@@ -1073,6 +1073,10 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
 
   // GAO = MC ($) ÷ EBIT. Mede elasticidade do EBIT a variações na receita.
   // (I4) Aceita EBIT negativo — GAO negativo é informação real ("alavancagem reversa").
+  // PRECISÃO ECONÔMICA: a MC aqui usa `custosVariaveis` (engine respeita o override
+  // `CostLine.comportamento`). Linhas de CPV que são fixas em essência (ex.: folha CLT
+  // direta de prestadora de serviços) devem ser marcadas como `comportamento: "fixo"` para
+  // não inflar a MC e distorcer o GAO — sem o override, o GAO superestima a alavancagem.
   const mcReais = receitaLiqAnual - custosVarAnual;
   const gao = Math.abs(ebitAnual) > 1 ? Math.max(-99, Math.min(99, mcReais / ebitAnual)) : 0;
   // Qualidade do Lucro = FCF ÷ LL. (I4) Mantém sinal quando LL≠0 (negativo expõe "lucro de papel").
