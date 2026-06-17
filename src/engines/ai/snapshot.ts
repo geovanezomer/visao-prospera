@@ -14,7 +14,7 @@ import { buildPrescriptiveCards } from "@/engines/finance/prescriptive";
 import { MESES, sum, fmtNum } from "@/engines/finance/format";
 
 // ===== Helpers =====
-const safe = (n: any) => (typeof n === "number" && Number.isFinite(n) ? n : 0);
+const safe = (n: unknown): number => (typeof n === "number" && Number.isFinite(n) ? n : 0);
 
 const brl = (n: number) =>
   `R$ ${safe(n).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
