@@ -975,19 +975,30 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const keSeguro = capital.ke > 0 ? capital.ke : 8;
   const wacc = wE * keSeguro + wD * capital.kd * (1 - irShield);
 
-  // ---- NOPAT e ROIC corretos (Auditoria) ----
-  // NOPAT = EBIT − impostos operacionais. Quando lair anual <= 0, usamos fallback EBIT × (1 − shield).
-  const tcEfetiva = lairAnual > 0 ? Math.min(0.5, impostosAnual / lairAnual) : irShield;
-  const nopat = lairAnual > 0
-    ? Math.max(0, ebitAnual - ebitAnual * tcEfetiva)
-    : Math.max(0, ebitAnual * (1 - irShield));
+  // ---- NOPAT e ROIC (Auditoria — metodologia consistente) ----
+  // NOPAT = EBIT × (1 − t_marginal). Usar alíquota MARGINAL do regime (irShield) em vez de
+  // efetiva (impostos/LAIR) evita contaminar o NOPAT com a estrutura de capital: a alíquota
+  // efetiva inclui o benefício fiscal dos juros, fazendo o ROIC variar com endividamento
+  // mesmo sem mudança operacional. Damodaran/Koller usam alíquota marginal.
+  const tcMarginal = Math.max(0, Math.min(0.5, irShield));
+  const nopat = Math.max(0, ebitAnual * (1 - tcMarginal));
 
-  // Capital Investido (Auditoria): (Ativo Total − Caixa Ocioso) − Passivos não-onerosos.
-  // Se Ativo Total omitido, reconstrói via PL + D + PNO.
+  // Capital Investido — duas vias da identidade contábil A = P + PL:
+  //   • Lado ativo:      CI = (Ativo Total − Caixa Ocioso) − Passivos Não-Onerosos
+  //   • Lado financiamento: CI = PL + Dívida Onerosa − Caixa Ocioso
+  // Em balanços reais de PME, Ativo Total ≠ PL + D + PNO (há outros passivos: salários,
+  // tributos a pagar, adiantamentos), então as duas vias divergem. Damos preferência ao
+  // LADO FINANCIAMENTO (PL + D) quando ambos PL e D estão preenchidos — é o capital
+  // efetivamente remunerado por sócios e credores, base correta do ROIC.
   const pno = Math.max(0, capital.passivosNaoOnerosos ?? capital.fornecedores ?? 0);
   const caixaOcioso = Math.max(0, capital.caixaOcioso ?? 0);
-  const ciBase = capital.ativoTotal > 0 ? capital.ativoTotal : (PL + D + pno);
-  const capitalInvestido = Math.max(1, ciBase - caixaOcioso - pno);
+  const ciFinanciamento = PL + D;
+  const ciAtivo = capital.ativoTotal > 0 ? capital.ativoTotal - pno : 0;
+  // Prioridade: financiamento (mais confiável p/ ROIC) → ativo (fallback) → identidade contábil
+  const ciBase = ciFinanciamento > 0
+    ? ciFinanciamento
+    : (ciAtivo > 0 ? ciAtivo : (PL + D + pno) - pno);
+  const capitalInvestido = Math.max(1, ciBase - caixaOcioso);
   const roic = safePct(nopat, capitalInvestido);
   const roe = PL > 0 ? safePct(llAnual, PL) : 0;
   const roa = capital.ativoTotal > 0 ? safePct(llAnual, capital.ativoTotal) : 0;
