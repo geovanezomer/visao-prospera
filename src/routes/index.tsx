@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAppState, useScenarios } from "@/engines/finance/store";
-import { FinanceProvider } from "@/engines/finance/AppStateContext";
+import { FinanceProvider, FinanceErrorBoundary } from "@/engines/finance/AppStateContext";
+import { usePersistedSimParams } from "@/engines/finance/usePersistedSimParams";
 import { useFinnanceFile } from "@/engines/finance/useFinnanceFile";
 import { useConfirm } from "@/hooks/useConfirm";
 import { useAuth } from "@/lib/auth";
