@@ -459,5 +459,6 @@ function CostTable({
         </tbody>
       </table>
     </div>
+    </>
   );
 }
