@@ -104,8 +104,15 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     const irpj = lair * irpjAliq;
     const adicional = adicionalMensal[i];
     const csll = lair * csllAliq;
-    const pisVenda = Math.max(0, r * pisAliq - pisCreditoMensal);
-    const cofinsVenda = Math.max(0, r * cofinsAliq - cofinsCreditoMensal);
+    // Auditoria #6: PIS/COFINS não-cumulativos com saldo credor acumulável (como ICMS).
+    const debitoPis = r * pisAliq;
+    const creditoPisMes = pisCreditoMensal + saldoCredorPIS;
+    const pisVenda = Math.max(0, debitoPis - creditoPisMes);
+    saldoCredorPIS = Math.max(0, creditoPisMes - debitoPis);
+    const debitoCofins = r * cofinsAliq;
+    const creditoCofinsMes = cofinsCreditoMensal + saldoCredorCOFINS;
+    const cofinsVenda = Math.max(0, debitoCofins - creditoCofinsMes);
+    saldoCredorCOFINS = Math.max(0, creditoCofinsMes - debitoCofins);
     const pisRF = (rendFin[i] || 0) * PIS_RF;
     const cofinsRF = (rendFin[i] || 0) * COFINS_RF;
     const pis = (pisVenda + pisRF) * reforma.pisCofinsMult;
