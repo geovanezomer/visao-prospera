@@ -1135,7 +1135,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     roe, roa, roic, wacc: safeNumber(wacc),
     cicloFinanceiro, ncg, gapCapitalGiro,
     liquidezCorrente, liquidezSeca, liquidezImediata,
-    endividamentoGeral, grauEndividamento, coberturaJuros, giroAtivo,
+    endividamentoGeral, endividamentoGeralDadosCompletos, grauEndividamento, coberturaJuros, giroAtivo,
     dividaLiqEbitda, dividaLiqEbit, dividaLiqPl, payback, fcf: safeNumber(fcf),
     conversaoEbitdaCaixa: ebitdaAnual > 0 ? safePct(fcf, ebitdaAnual) : 0,
     gao, qualidadeLucro,
