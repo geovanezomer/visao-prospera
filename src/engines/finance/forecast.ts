@@ -137,6 +137,8 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
 
   const g = cfg.crescimentoMensalPct / 100;
   // Auditoria: aplica fatores ANUAIS elevados à fração do ano para evitar erro composto mensal.
+  // Auditoria #15: convenção contínua proporcional ao tempo (não saltos anuais discretos).
+  // Para o usuário, "5% a.a." traduz-se em ~0,407% a.m. composto, não em salto anual.
   const inflacaoFator = (i: number) => Math.pow(1 + cfg.inflacaoFixosAA / 100, i / 12);
   const escalaCpvFator = (i: number) => Math.pow(1 - cfg.ganhoEscalaCpvAA / 100, i / 12);
   const horizon = cfg.horizonteMeses;
