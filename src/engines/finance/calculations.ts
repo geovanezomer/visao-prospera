@@ -64,6 +64,7 @@ export {
   eraForYear,
 } from "./tax/reforma";
 import {
+  getReformaRates,
   getReformaRatesForYear,
   eraForYear,
   type ReformaRates,
