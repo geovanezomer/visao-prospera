@@ -44,7 +44,7 @@ function withTimeout(
 }
 
 async function fetchWithRetry(url: string, init: RequestInit, retries = 2): Promise<Response> {
-  let lastErr: any;
+  let lastErr: unknown;
   for (let i = 0; i <= retries; i++) {
     try {
       const res = await fetch(url, init);
@@ -55,9 +55,10 @@ async function fetchWithRetry(url: string, init: RequestInit, retries = 2): Prom
         }
       }
       return res;
-    } catch (e: any) {
+    } catch (e: unknown) {
       lastErr = e;
-      if (e?.name === "AbortError") throw e;
+      // AbortError não deve ser retentado.
+      if (e instanceof Error && e.name === "AbortError") throw e;
       if (i < retries) {
         await new Promise((r) => setTimeout(r, 500 * (i + 1)));
         continue;
