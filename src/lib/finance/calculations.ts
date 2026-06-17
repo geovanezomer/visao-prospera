@@ -877,7 +877,18 @@ export interface Indicators {
   dividaLiqEbit: number;
   /** (Dívida Total − Caixa) ÷ Patrimônio Líquido */
   dividaLiqPl: number;
-  /** Patrimônio Líquido ÷ Lucro Líquido Anual */
+  /**
+   * Tempo (em anos) para o Lucro Líquido acumulado recuperar o Patrimônio Líquido.
+   * NÃO é o payback clássico (CAPEX ÷ FCF) — é o período de amortização do PL pelo lucro
+   * contábil. Mantido por compatibilidade. Para o payback clássico use `paybackCapex`.
+   */
+  amortizacaoPlPorLucro: number;
+  /**
+   * Payback clássico (anos): CAPEX inicial ÷ FCF anual. Mede tempo para o investimento
+   * inicial ser recuperado pela geração de caixa. `Infinity` quando FCF ≤ 0 ou CAPEX inicial = 0.
+   */
+  paybackCapex: number;
+  /** @deprecated Use `amortizacaoPlPorLucro` (mesma fórmula). Mantido para retrocompat. */
   payback: number;
   /** EBITDA − Impostos − Δ NCG */
   fcf: number;
