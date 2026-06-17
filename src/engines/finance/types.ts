@@ -235,6 +235,12 @@ export interface TaxConfig {
   cbsAliquota?: number;
   /** Alíquota plena de referência do IBS (estadual+municipal) em %. Default 17,7. */
   ibsAliquotaRef?: number;
+  /** [CBS/IBS] % do CPV oriundo de fornecedores Simples Nacional sem destaque
+   *  (0..100). Nessas compras o comprador (Lucro Real/Presumido) só tem direito
+   *  a crédito presumido — ~3% CBS e ~1,2% IBS, não a alíquota cheia.
+   *  Default 0 (assume todos fornecedores no regime regular).
+   *  Referência: LC 214/2025 + percentuais provisórios usados pelo mercado. */
+  fornecedorSimplesNacionalPct?: number;
   /** Overrides de alíquotas/tabelas oficiais (painel "Parâmetros tributários").
    *  Cada campo ausente = usa o padrão oficial em src/lib/finance/taxDefaults.ts. */
   ratesOverride?: import("./taxDefaults").TaxRatesOverride;
