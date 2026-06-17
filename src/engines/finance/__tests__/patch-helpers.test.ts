@@ -63,12 +63,11 @@ describe("applyPatch — Tax", () => {
 });
 
 describe("applyPatch — Capital", () => {
-  it("merge raso preserva listas de capex/dividas", () => {
-    const s = createState();
-    const capexBefore = s.capital.capex;
-    const next = applyPatch(s, "capital", { wacc: 0.15 });
-    expect(next.capital.wacc).toBe(0.15);
-    expect(next.capital.capex).toBe(capexBefore); // mesma referência
+  it("merge raso preserva campos não tocados", () => {
+    const s = createState({ capital: { ke: 0.18, kd: 0.12 } });
+    const next = applyPatch(s, "capital", { ke: 0.2 });
+    expect(next.capital.ke).toBe(0.2);
+    expect(next.capital.kd).toBe(0.12);
   });
 });
 
