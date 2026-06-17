@@ -1,5 +1,6 @@
-import { useState, Fragment, useEffect } from "react";
+import { useState, Fragment } from "react";
 import { useFinance } from "@/engines/finance/AppStateContext";
+import { usePeriodView } from "@/hooks/usePeriodView";
 import {
   AppState,
   TaxRegime,
@@ -54,20 +55,7 @@ const CHART_COLORS = [
 
 export function DRETab() {
   const { state, update } = useFinance();
-  const [view, setView] = useState<"mensal" | "trimestral" | "anual">("trimestral");
-
-  useEffect(() => {
-    // Mobile/tablet defaults: em telas pequenas, reduz colunas automaticamente
-    // para a tabela caber sem scroll horizontal severo.
-    const handleResize = () => {
-      const w = window.innerWidth;
-      if (w < 640 && view !== "anual") setView("anual"); // <sm: só Anual + %Rec
-      else if (w >= 640 && w < 1024 && view === "mensal") setView("trimestral");
-    };
-    window.addEventListener("resize", handleResize);
-    handleResize();
-    return () => window.removeEventListener("resize", handleResize);
-  }, [view]);
+  const [view, setView] = usePeriodView("trimestral");
 
   // Períodos exibidos na tabela conforme o modo de visualização.
   const QUARTERS = ["1º Tri", "2º Tri", "3º Tri", "4º Tri"];

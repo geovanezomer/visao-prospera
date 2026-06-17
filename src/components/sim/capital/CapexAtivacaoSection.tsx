@@ -1,5 +1,5 @@
 import { CapexAtivacao } from "@/engines/finance/types";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, genId } from "@/engines/finance/format";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Lightbulb } from "lucide-react";
 import { MoneyInput, NumInput, SectionTitle } from "../primitives";
@@ -13,11 +13,11 @@ export function CapexAtivacaoSection({
   onChange: (next: CapexAtivacao[]) => void;
 }) {
   const add = () => {
-    const id = `cx_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+    const id = genId("cx_");
     onChange([...items, { id, label: "Novo ativo", mes: 1, valor: 0, vidaUtilMeses: 60 }]);
   };
   const addExample = () => {
-    const id = `cx_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+    const id = genId("cx_");
     onChange([
       ...items,
       { id, label: "Notebook (exemplo)", mes: 1, valor: 5000, vidaUtilMeses: 36 },

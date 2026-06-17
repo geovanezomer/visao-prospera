@@ -150,6 +150,34 @@ export function useFinanceUpdate(): FinanceUpdater {
 }
 
 // ---------------------------------------------------------------------
+// Patch helpers — açúcar para `update((s) => ({ ...s, X: { ...s.X, ...p } }))`,
+// padrão que se repetia ~30× nas tabs (Revenue/Costs/Tax/Capital).
+// Cada helper faz merge raso (1 nível) — para edições aninhadas (ex.: dedução
+// específica numa lista) continue usando `update` diretamente.
+// ---------------------------------------------------------------------
+type StateSlice = "revenue" | "tax" | "capital" | "cashflow";
+
+function makePatch<K extends StateSlice>(slice: K) {
+  return function usePatchSlice() {
+    const update = useFinanceUpdate();
+    return useCallback(
+      (patch: Partial<AppState[K]>) =>
+        update((s) => ({ ...s, [slice]: { ...(s[slice] as object), ...patch } }) as AppState),
+      [update],
+    );
+  };
+}
+
+/** `patch(p)` → merge raso em `state.revenue`. */
+export const usePatchRevenue = makePatch("revenue");
+/** `patch(p)` → merge raso em `state.tax`. */
+export const usePatchTax = makePatch("tax");
+/** `patch(p)` → merge raso em `state.capital`. */
+export const usePatchCapital = makePatch("capital");
+/** `patch(p)` → merge raso em `state.cashflow`. */
+export const usePatchCashflow = makePatch("cashflow");
+
+// ---------------------------------------------------------------------
 // ErrorBoundary — captura crashes de consumidores (incluindo "fora do
 // Provider") e mostra fallback amigável em vez de quebrar a tela toda.
 // ---------------------------------------------------------------------

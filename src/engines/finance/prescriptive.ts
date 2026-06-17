@@ -5,7 +5,7 @@ import { compareRegimes } from "./tax/compare";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { monthValues } from "./costs";
 import { buildCashFlow } from "./cashflow";
-import { sum } from "./format";
+import { sum, genId } from "./format";
 
 export interface ActionImpact {
   label: string;
@@ -141,7 +141,7 @@ function addLoan(
   let jurosLine = costs.find((c) => /juros/i.test(c.label));
   if (!jurosLine) {
     jurosLine = {
-      id: `juros_${Date.now().toString(36)}`,
+      id: genId("juros_"),
       label: "Juros sobre empréstimos",
       category: "financeiro",
       values: Array(12).fill(0),

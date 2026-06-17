@@ -43,3 +43,16 @@ export const sum = (arr: number[]) => arr.reduce((a, b) => a + (Number(b) || 0),
 export const avg = (arr: number[]) => (arr.length ? sum(arr) / arr.length : 0);
 export const zeros12 = () => Array(12).fill(0);
 export const fill12 = (v: number) => Array(12).fill(v);
+
+/**
+ * Gera um identificador único curto. Usa `crypto.randomUUID()` quando
+ * disponível (todos os browsers modernos + workers); fallback determinístico
+ * baseado em timestamp + random para SSR/ambientes sem `crypto`.
+ */
+export function genId(prefix = ""): string {
+  const id =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+  return prefix ? `${prefix}${id}` : id;
+}

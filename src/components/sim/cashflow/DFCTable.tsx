@@ -1,24 +1,13 @@
-import { useState, useEffect } from "react";
 import { AppState } from "@/engines/finance/types";
 import { buildCashFlow } from "@/engines/finance/cashflow";
 import { fmtBRL, fmtBRLCompact, sum } from "@/engines/finance/format";
 import { SectionTitle } from "../primitives";
 import { aggregate, periodLabels, Period } from "./tableHelpers";
+import { usePeriodView } from "@/hooks/usePeriodView";
 
 // Tabela DFC pelo método direto, com agregação mensal/trimestral/anual.
 export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof buildCashFlow> }) {
-  const [period, setPeriod] = useState<Period>("trimestral");
-  // Mobile defaults: <sm vira "anual"; <lg vira "trimestral" se estava em "mensal".
-  useEffect(() => {
-    const handler = () => {
-      const w = window.innerWidth;
-      if (w < 640 && period !== "anual") setPeriod("anual");
-      else if (w >= 640 && w < 1024 && period === "mensal") setPeriod("trimestral");
-    };
-    window.addEventListener("resize", handler);
-    handler();
-    return () => window.removeEventListener("resize", handler);
-  }, [period]);
+  const [period, setPeriod] = usePeriodView("trimestral") as [Period, (p: Period) => void];
   const cols = periodLabels(period);
 
   return (
