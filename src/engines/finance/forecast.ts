@@ -86,7 +86,13 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   // Auditoria bug #6: usar média anual da depreciação (estava usando só janeiro,
   // o que distorce projeções quando há capex ativado no meio do ano).
   const depMensal = sum(dre.depreciacao) / 12;
-  const taxRatioBase = sum(tax.monthly) / receitaAnoBase; // alíquota efetiva sobre receita bruta
+  // Auditoria #4: separa impostos sobre venda (proporcionais à receita) dos
+  // impostos sobre lucro (proporcionais à margem). No Lucro Real, IRPJ/CSLL
+  // dependem do LAIR, não da receita — manter um ratio único distorce projeções
+  // quando a margem projetada muda em relação ao ano-base.
+  const taxVendasRatio = sum(tax.monthlyVendas ?? []) / receitaAnoBase;
+  const lucroAnoBase = sum(dre.lair) || 1;
+  const taxLucroRatio = sum(tax.monthlyLucro ?? []) / Math.max(1, lucroAnoBase); // % sobre LAIR
   // Resultado financeiro projetado como proporção da receita (aproximação razoável
   // enquanto a estrutura de dívida não é re-projetada). Inclui juros pagos − juros recebidos.
   const resultadoFinanceiroRatioBase = sum(dre.resultadoFinanceiro) / receitaAnoBase;
