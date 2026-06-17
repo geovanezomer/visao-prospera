@@ -49,26 +49,25 @@ export {
 } from "./types";
 
 // ============= Engine de cálculo (DRE + indicadores + tributos) =============
-export type { DRE, Indicators, MonthlyTax, ReformaRates, Diagnostic } from "./calculations";
+// Importa direto dos submódulos coesos (fachada `./calculations` foi removida).
+export type { DRE } from "./dre";
+export { buildDRE } from "./dre";
+export type { Indicators } from "./indicators";
+export { calcIndicators } from "./indicators";
+export type { Diagnostic } from "./diagnose";
+export { diagnose } from "./diagnose";
+export type { MonthlyTax } from "./tax/shared";
+export { calcSimples, simplesAliquotaEfetiva } from "./tax/simples";
+export { calcPresumido, presumidoBases } from "./tax/presumido";
+export { calcReal, irShieldForRegime } from "./tax/real";
 export {
-  // DRE
-  buildDRE,
-  splitReceitasFinanceiras,
-  // Indicadores
-  calcIndicators,
-  irShieldForRegime,
-  // Diagnóstico
-  diagnose,
-  // Tributos
-  calcSimples,
-  calcPresumido,
-  calcReal,
-  simplesAliquotaEfetiva,
-  presumidoBases,
+  folhaAnual,
   resolveEffectiveRegime,
   resolveSimplesAnexo,
   simplesExcedeLimite,
-  // Reforma CBS/IBS
+} from "./regime";
+export {
+  type ReformaRates,
   getReformaRates,
   getReformaRatesForYear,
   eraForYear,
@@ -76,19 +75,15 @@ export {
   getIcmsIssFractionForYear,
   getPisCofinsFractionForYear,
   getCbsPctForYear,
-  compareYearsForRegime,
-  compareRegimes,
-  compareErasForRegime,
-  // Helpers de custos
-  isCpvCost,
-  fixedCostBase,
-  effectiveMonthValues,
-  monthValues,
-  folhaAnual,
+} from "./tax/reforma";
+export { compareYearsForRegime, compareRegimes, compareErasForRegime } from "./tax/compare";
+export { isCpvCost, fixedCostBase, effectiveMonthValues, monthValues } from "./costs";
+export {
+  splitReceitasFinanceiras,
   outrasDeducoesMensal,
   computeNetDebt,
   cagr12m,
-} from "./calculations";
+} from "./shared";
 
 // ============= Estado e persistência =============
 export { useAppState, useScenarios } from "./store";
