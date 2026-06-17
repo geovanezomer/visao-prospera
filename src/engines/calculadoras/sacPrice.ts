@@ -39,8 +39,8 @@ export function taxaAnualParaMensal(taxaAnualPct: number): number {
   return Math.pow(1 + taxaAnualPct / 100, 1 / 12) - 1;
 }
 
-// Arredonda em centavos para evitar drift de ponto flutuante em prazos longos.
-const round2 = (n: number) => Math.round(n * 100) / 100;
+import { parcela } from "@/engines/finance/external";
+import { round2 } from "./utils";
 
 export function calcularSAC(pv: number, taxaMensal: number, n: number): ResultadoSistema {
   const amort = pv / n;

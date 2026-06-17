@@ -107,8 +107,7 @@ export interface CustoFuncionarioOutput {
 // Helpers
 // ============================================================================
 
-/** Arredonda em centavos para evitar drift de ponto flutuante. */
-const round2 = (n: number) => Math.round(n * 100) / 100;
+import { round2 } from "./utils";
 
 // ============================================================================
 // Cálculo principal

@@ -252,11 +252,9 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   };
 }
 
-// VPL: flows[0] no t=0
+// VPL clássico: flows[0] no t=0. Delegado para a biblioteca centralizada (external.ts).
 export function npv(flows: number[], rate: number): number {
-  let acc = 0;
-  for (let t = 0; t < flows.length; t++) acc += flows[t] / Math.pow(1 + rate, t);
-  return acc;
+  return vplClassico(rate, flows);
 }
 
 // TIR via Newton-Raphson com fallback bisseção. Protegido contra r→-1 e df≈0.
