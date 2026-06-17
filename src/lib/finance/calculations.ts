@@ -644,23 +644,37 @@ export interface DRE {
 
 /**
  * Classifica as linhas de `revenue.receitasFinanceiras` por natureza contábil:
- * - `financeiras`: rendimento de aplicações e ids customizados → entram no Resultado Financeiro
- *   e são tributadas (PIS/COFINS no Real, base de IRPJ/CSLL no Presumido).
- * - `operacionais`: aluguéis recebidos e venda de ativos → entram acima do EBITDA
- *   como "Outras Receitas Operacionais".
+ * - `financeiras`: rendimento de aplicações e ids customizados → entram no Resultado Financeiro.
+ * - `operacionais`: aluguéis recebidos e venda de ativos → entram acima do EBITDA.
+ * - `financeirasIrpjBase`: subconjunto de `financeiras` que entra na base de IRPJ/CSLL —
+ *   EXCLUI linhas marcadas com `tributacaoExclusivaFonte` (IRRF definitivo em aplicações
+ *   financeiras; gross-up não compõe o lucro tributável conforme RIR/1999).
  *
  * Critério por id (default p/ retrocompat: financeira).
  */
-export function splitReceitasFinanceiras(state: AppState): { financeiras: number[]; operacionais: number[] } {
+export function splitReceitasFinanceiras(state: AppState): {
+  financeiras: number[];
+  operacionais: number[];
+  financeirasIrpjBase: number[];
+} {
   const financeiras = zeros12();
   const operacionais = zeros12();
+  const financeirasIrpjBase = zeros12();
   const OPERACIONAIS_IDS = new Set(["alugueis", "venda_ativos"]);
   for (const rf of state.revenue.receitasFinanceiras ?? []) {
     const vals = rf.valores ?? [];
-    const bucket = OPERACIONAIS_IDS.has(rf.id) ? operacionais : financeiras;
-    for (let i = 0; i < 12; i++) bucket[i] += Number(vals[i]) || 0;
+    const isOperacional = OPERACIONAIS_IDS.has(rf.id);
+    const exclusivaFonte = !!rf.tributacaoExclusivaFonte;
+    for (let i = 0; i < 12; i++) {
+      const v = Number(vals[i]) || 0;
+      if (isOperacional) operacionais[i] += v;
+      else {
+        financeiras[i] += v;
+        if (!exclusivaFonte) financeirasIrpjBase[i] += v;
+      }
+    }
   }
-  return { financeiras, operacionais };
+  return { financeiras, operacionais, financeirasIrpjBase };
 }
 
 export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: MonthlyTax } {
