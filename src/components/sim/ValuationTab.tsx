@@ -6,23 +6,27 @@ import {
   VALUATION_PRESETS,
   ValuationParams,
   traceValuation,
-  runValuationSelfTests,
   logValuationTrace,
-  ValuationTestCase,
 } from "@/engines/finance/valuation";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { fmtBRLCompact, fmtPct, sum } from "@/engines/finance/format";
+import { fmtBRLCompact, sum } from "@/engines/finance/format";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { StatCard, SectionTitle, MoneyInput } from "./primitives";
+import { StatCard, SectionTitle } from "./primitives";
 import {
-  DollarSign, BarChart3, TrendingUp, ShieldAlert, AlertTriangle, CheckCircle2,
-  Info, TrendingDown, FlaskConical, Calculator, SlidersHorizontal,
+  DollarSign, BarChart3, TrendingUp, ShieldAlert,
+  Info, AlertTriangle, Calculator, SlidersHorizontal,
 } from "lucide-react";
+
+import { MultRow, SliderField, ConfidenceBadge } from "./valuation/parts";
+import { SensitivityMatrix } from "./valuation/SensitivityMatrix";
+import { RiskPanel } from "./valuation/RiskPanel";
+import { AuditPanel } from "./valuation/AuditPanel";
 
 const BUSINESS_LABEL = { servicos: "Serviços", comercio: "Comércio", industria: "Indústria" } as const;
 
+// Orquestrador da aba Valuation — múltiplos, DCF, risco e auditoria.
+// Cada painel pesado vive em src/components/sim/valuation/*.tsx.
 export function ValuationTab({
   baseState,
   simulatedState,
@@ -40,11 +44,10 @@ export function ValuationTab({
   const [useSimulated, setUseSimulated] = useState(true);
   const source: AppState = useSimulated ? effectiveSim : effectiveBase;
 
-  // V6: presets atualizam quando businessType muda.
+  // Presets atualizam quando businessType muda.
   const [params, setParams] = useState<ValuationParams>(() => defaultValuationParams(source.businessType));
   useEffect(() => {
     setParams((cur) => ({ ...defaultValuationParams(source.businessType), ...{
-      // preserva ajustes que o usuário fez explicitamente, exceto múltiplos e g (que dependem do setor)
       controlPremium: cur.controlPremium,
       liquidityDiscount: cur.liquidityDiscount,
       horizonYears: cur.horizonYears,
@@ -57,8 +60,8 @@ export function ValuationTab({
 
   const presets = VALUATION_PRESETS[source.businessType];
 
-  // V1+V2: modelo central injetado em buildValuation/traceValuation — evita
-  // ~8 chamadas redundantes a buildDRE/calcIndicators por render, e usa regime EFETIVO.
+  // Modelo central injetado em buildValuation/traceValuation — evita
+  // chamadas redundantes a buildDRE/calcIndicators e usa regime EFETIVO.
   const { regime, dre, ind } = useFinanceModel(source);
   const precomputed = useMemo(() => ({ regime, dre, ind }), [regime, dre, ind]);
   const valuation = useMemo(() => buildValuation(source, params, precomputed), [source, params, precomputed]);
@@ -67,16 +70,11 @@ export function ValuationTab({
   const receita = sum(dre.receitaBruta);
   const ll = sum(dre.lucroLiquido);
 
-  // V5: log opt-in via botão (não mais a cada slider).
+  // Log opt-in via botão (evita log a cada slider).
   const onLogTrace = () => logValuationTrace(source, params, useSimulated ? "simulado" : "base");
 
   const ev = valuation.enterpriseValue;
-  const eq = valuation.equityValue;
-  const strategic = valuation.strategicResult;
-
   const evTone = ev.base > 0 ? "pos" : "neg";
-
-
 
   return (
     <div className="space-y-6">
@@ -142,7 +140,6 @@ export function ValuationTab({
         </div>
       </section>
 
-      {/* Tabs internas */}
       <Tabs defaultValue="multiples" className="w-full">
         <TabsList className="bg-card/40">
           <TabsTrigger value="multiples"><BarChart3 className="mr-1.5 h-3.5 w-3.5" />1. Múltiplos</TabsTrigger>
@@ -151,7 +148,7 @@ export function ValuationTab({
           <TabsTrigger value="audit"><Calculator className="mr-1.5 h-3.5 w-3.5" />4. Auditoria</TabsTrigger>
         </TabsList>
 
-        {/* ============ MÚLTIPLOS ============ */}
+        {/* MÚLTIPLOS */}
         <TabsContent value="multiples" className="mt-4 space-y-4">
           <section className="rounded-lg border border-border/60 bg-card/40 p-5">
             <SectionTitle hint="Múltiplos de mercado típicos para o setor. Você pode customizar ou selecionar um cenário.">
@@ -236,7 +233,7 @@ export function ValuationTab({
               />
             </div>
 
-            {/* V4: Equity Value usa Dívida Líquida (Dívida − Caixa), não bruta. */}
+            {/* Equity Value usa Dívida Líquida (Dívida − Caixa), não bruta. */}
             <div className="mt-5 grid grid-cols-3 gap-3 rounded-md border border-primary/30 bg-primary/5 p-4 text-center">
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">EV (múltiplos)</div>
@@ -260,11 +257,10 @@ export function ValuationTab({
                 </div>
               </div>
             </div>
-
           </section>
         </TabsContent>
 
-        {/* ============ DCF ============ */}
+        {/* DCF */}
         <TabsContent value="dcf" className="mt-4 space-y-4">
           <section className="rounded-lg border border-border/60 bg-card/40 p-5">
             <div className="flex items-center gap-2">
@@ -302,7 +298,6 @@ export function ValuationTab({
               />
             </div>
 
-            {/* V7: alinhado com engine (spread < 0,5pp aciona fallback). */}
             {(params.terminalGrowthRate * 100) >= (ind.wacc - 0.5) && (
               <div className="mt-4 flex items-start gap-2 rounded-md border border-neg/40 bg-neg/5 p-3 text-xs">
                 <AlertTriangle className="mt-0.5 h-4 w-4 text-neg" />
@@ -313,7 +308,6 @@ export function ValuationTab({
               </div>
             )}
 
-            {/* V8/V10: warnings do DCF (FCL terminal negativo, WACC default, etc.) */}
             {valuation.dcfDetails?.warnings && valuation.dcfDetails.warnings.length > 0 && (
               <div className="mt-4 space-y-1.5">
                 {valuation.dcfDetails.warnings.map((w, i) => (
@@ -324,7 +318,6 @@ export function ValuationTab({
                 ))}
               </div>
             )}
-
 
             {valuation.dcfDetails && (
               <div className="mt-5">
@@ -371,436 +364,19 @@ export function ValuationTab({
             </p>
           </section>
 
-          {/* Matriz de sensibilidade WACC × g */}
           <SensitivityMatrix wacc={ind.wacc} g={params.terminalGrowthRate * 100} fcfBase={valuation.dcfDetails?.fcfProjected.slice(-12).reduce((a, b) => a + b, 0) || 0} />
         </TabsContent>
 
-        {/* ============ RISCO ============ */}
+        {/* RISCO */}
         <TabsContent value="risk" className="mt-4 space-y-4">
           <RiskPanel valuation={valuation} state={source} />
         </TabsContent>
 
-        {/* ============ AUDITORIA ============ */}
+        {/* AUDITORIA */}
         <TabsContent value="audit" className="mt-4 space-y-4">
           <AuditPanel trace={trace} onLogTrace={onLogTrace} />
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-// =====================================================================
-// SUB-COMPONENTES
-// =====================================================================
-
-function MultRow({
-  label, base, value, onChange, ev,
-}: { label: string; base: number; value: number; onChange: (n: number) => void; ev: number }) {
-  return (
-    <tr className="border-b border-border/40">
-      <td className="py-2.5 text-foreground">{label}</td>
-      <td className="py-2.5 text-right text-muted-foreground">{base.toFixed(2)}x</td>
-      <td className="py-2.5">
-        <div className="ml-auto w-24">
-          <MoneyInput value={value} onChange={onChange} />
-        </div>
-      </td>
-      <td className="py-2.5 text-right font-semibold text-foreground">{fmtBRLCompact(ev)}</td>
-    </tr>
-  );
-}
-
-function SliderField({
-  label, value, min, max, step, suffix, onChange, hint,
-}: {
-  label: string; value: number; min: number; max: number; step: number;
-  suffix?: string; onChange: (v: number) => void; hint?: string;
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="mono font-semibold text-foreground">{value.toFixed(step < 1 ? 2 : 0)}{suffix}</span>
-      </div>
-      <Slider
-        value={[value]}
-        min={min}
-        max={max}
-        step={step}
-        onValueChange={(v) => onChange(v[0])}
-        className="mt-2"
-      />
-      {hint && <p className="mt-1.5 text-[10px] text-muted-foreground">{hint}</p>}
-    </div>
-  );
-}
-
-function ConfidenceBadge({ grade }: { grade: string }) {
-  const tone =
-    grade === "A" ? "border-pos/40 bg-pos/10 text-pos" :
-    grade === "B" ? "border-primary/40 bg-primary/10 text-primary" :
-    grade === "C" ? "border-[var(--warning)]/40 bg-[var(--warning)]/10 text-[var(--warning)]" :
-    "border-neg/40 bg-neg/10 text-neg";
-  return (
-    <div className={`rounded-md border px-3 py-1 text-xs font-semibold ${tone}`}>
-      Confiança: {grade}
-    </div>
-  );
-}
-
-function SensitivityMatrix({ wacc, g, fcfBase }: { wacc: number; g: number; fcfBase: number }) {
-  const waccs = [-2, -1, 0, 1, 2].map((d) => Math.max(1, wacc + d));
-  const gs = [1.5, 2.0, 2.5, 3.0, 3.5];
-  const baseVal = wacc > g && fcfBase !== 0 ? fcfBase / (wacc / 100 - g / 100) : 1;
-
-  return (
-    <section className="rounded-lg border border-border/60 bg-card/40 p-5">
-      <SectionTitle hint="Mostra como o Enterprise Value relativo (base = 100) varia conforme WACC e crescimento terminal mudam.">
-        Matriz de Sensibilidade · WACC × g terminal
-      </SectionTitle>
-      <div className="mt-3 overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr>
-              <th className="bg-muted/50 px-2 py-1.5 text-left font-semibold text-muted-foreground">WACC ↓ \ g →</th>
-              {gs.map((gg) => (
-                <th key={gg} className="bg-muted/50 px-2 py-1.5 text-center font-semibold text-muted-foreground">{gg.toFixed(1)}%</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="mono">
-            {waccs.map((w) => (
-              <tr key={w} className="border-t border-border/30">
-                <td className="bg-muted/30 px-2 py-1.5 font-semibold text-foreground">{w.toFixed(1)}%</td>
-                {gs.map((gg) => {
-                  const v = w / 100 > gg / 100 ? fcfBase / (w / 100 - gg / 100) : 0;
-                  const rel = baseVal !== 0 ? v / baseVal : 0;
-                  const tone =
-                    rel === 0 ? "bg-neg/20 text-neg" :
-                    rel < 0.8 ? "bg-neg/10 text-neg" :
-                    rel < 1.0 ? "bg-[var(--warning)]/10 text-[var(--warning)]" :
-                    rel < 1.2 ? "bg-pos/10 text-pos" :
-                    "bg-primary/15 text-primary";
-                  return (
-                    <td key={gg} className={`px-2 py-1.5 text-center font-medium ${tone}`}>
-                      {v === 0 ? "—" : (rel * 100).toFixed(0)}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="mt-3 text-[11px] text-muted-foreground">
-        Valores normalizados: base WACC × g atuais = 100. Verde = valorização · vermelho = desvalorização · "—" quando g ≥ WACC (não converge).
-      </p>
-    </section>
-  );
-}
-
-function RiskPanel({ valuation, state }: { valuation: ReturnType<typeof buildValuation>; state: AppState }) {
-  const s = valuation.strategicResult;
-  const haircut = valuation.haircutApplied;
-  const ev = valuation.enterpriseValue;
-  const levelTone =
-    s.level === "robusto" ? "border-pos/40 bg-pos/5 text-pos" :
-    s.level === "adequado" ? "border-primary/40 bg-primary/5 text-primary" :
-    s.level === "frágil" ? "border-[var(--warning)]/40 bg-[var(--warning)]/5 text-[var(--warning)]" :
-    s.level === "crítico" ? "border-neg/40 bg-neg/5 text-neg" :
-    "border-border/60 bg-card/40 text-muted-foreground";
-
-  return (
-    <>
-      {/* Risco estratégico */}
-      <section className="rounded-lg border border-border/60 bg-card/40 p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4 text-[var(--warning)]" />
-            <SectionTitle hint="Vem da aba Governança. Quanto mais alto o índice, menor o haircut aplicado ao valuation.">
-              Risco Estratégico (Governança)
-            </SectionTitle>
-          </div>
-          <span className={`rounded-md border px-3 py-1 text-xs font-semibold capitalize ${levelTone}`}>{s.level}</span>
-        </div>
-
-        <div className="mt-4">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Índice de Risco Estratégico</span>
-            <span className="mono font-semibold text-foreground">{s.index.toFixed(0)} / 100</span>
-          </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted/40">
-            <div
-              className="h-full bg-gradient-to-r from-neg via-[var(--warning)] to-pos"
-              style={{ width: `${Math.max(2, s.index)}%` }}
-            />
-          </div>
-          <p className="mt-1.5 text-[11px] text-muted-foreground">{s.headline}</p>
-        </div>
-
-        {s.subscores.length > 0 && (
-          <div className="mt-4 space-y-3 border-t border-border/40 pt-4">
-            {s.subscores.map((sub) => (
-              <div key={sub.key}>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-foreground">{sub.label}</span>
-                  <span className={`mono font-semibold ${
-                    !sub.filled ? "text-muted-foreground" :
-                    sub.score >= 70 ? "text-pos" : sub.score >= 50 ? "text-[var(--warning)]" : "text-neg"
-                  }`}>
-                    {sub.filled ? sub.score.toFixed(0) : "—"}
-                  </span>
-                </div>
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted/40">
-                  <div
-                    className={`h-full ${
-                      !sub.filled ? "bg-muted-foreground/30" :
-                      sub.score >= 70 ? "bg-pos" : sub.score >= 50 ? "bg-[var(--warning)]" : "bg-neg"
-                    }`}
-                    style={{ width: `${sub.filled ? sub.score : 0}%` }}
-                  />
-                </div>
-                {sub.highlights.length > 0 && (
-                  <ul className="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
-                    {sub.highlights.map((h, i) => <li key={i}>· {h}</li>)}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {haircut > 0 && (
-        <section className="rounded-lg border border-[var(--warning)]/40 bg-[var(--warning)]/5 p-5">
-          <div className="flex items-center gap-2">
-            <TrendingDown className="h-4 w-4 text-[var(--warning)]" />
-            <SectionTitle>Haircut Estratégico Aplicado</SectionTitle>
-          </div>
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-sm text-foreground">Redução de valor por risco estratégico</span>
-            <span className="mono text-2xl font-bold text-[var(--warning)]">−{(haircut * 100).toFixed(1)}%</span>
-          </div>
-          <div className="mt-3 grid gap-3 border-t border-[var(--warning)]/30 pt-3 md:grid-cols-2">
-            <div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">EV sem haircut</div>
-              <div className="mono mt-1 text-lg font-semibold text-foreground">
-                {fmtBRLCompact(ev.base / (1 - haircut))}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">EV com haircut</div>
-              <div className="mono mt-1 text-lg font-semibold text-[var(--warning)]">{fmtBRLCompact(ev.base)}</div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Sensibilidade ao cenário */}
-      <section className="rounded-lg border border-border/60 bg-card/40 p-5">
-        <SectionTitle hint="Range de Enterprise Value combinando incerteza de premissas e haircut estratégico.">
-          Faixa de Valuation
-        </SectionTitle>
-        {/* V3: descrição reflete o cálculo real (multiplicador empírico) ao
-            invés de "WACC ±1pp · g ±0.5pp" que não é o que a engine faz. */}
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <RangeCard tone="neg" label="Pessimista" desc={valuation.dcfDetails ? "Incerteza paramétrica: −25% sobre EV base" : "Incerteza paramétrica: −10% sobre EV base"} value={ev.low} base={ev.base} />
-          <RangeCard tone="primary" label="Base (provável)" desc="Premissas atuais (WACC, g, múltiplos)" value={ev.base} base={ev.base} />
-          <RangeCard tone="pos" label="Otimista" desc={valuation.dcfDetails ? "Incerteza paramétrica: +35% sobre EV base" : "Incerteza paramétrica: +15% sobre EV base"} value={ev.high} base={ev.base} />
-        </div>
-
-        <div className="mt-3 flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-xs">
-          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 text-primary" />
-          <div className="text-foreground">
-            <span className="font-semibold">Faixa de confiança:</span>{" "}
-            <span className="mono">{fmtBRLCompact(ev.low)} → {fmtBRLCompact(ev.high)}</span>{" "}
-            <span className="text-muted-foreground">· base provável </span>
-            <span className="mono">{fmtBRLCompact(ev.base)}</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Recomendações */}
-      <section className="rounded-lg border border-border/60 bg-card/40 p-5">
-        <SectionTitle>Recomendações para Aumentar o Valor</SectionTitle>
-        <ul className="mt-3 space-y-2 text-sm">
-          {s.index < 50 && (
-            <Reco icon="🎯" title="Diversifique a base de clientes" text="Reduzir concentração eleva o múltiplo aceitável pelo comprador." />
-          )}
-          {(s.level === "crítico" || s.level === "frágil") && (
-            <Reco icon="🏛️" title="Profissionalize a governança" text="Plano de sucessão, processos documentados e equipe sênior reduzem o bus factor." />
-          )}
-          {haircut > 0.2 && (
-            <Reco
-              icon="💰"
-              title="Cada melhoria estratégica vira valor"
-              text={`No nível atual de haircut (${(haircut * 100).toFixed(0)}%), reduzir 10pp no risco libera ~${fmtBRLCompact(ev.base * (haircut / 4))} de valor.`}
-            />
-          )}
-          <Reco icon="🧪" title="Simule cenários operacionais" text="Use a aba Simulador para testar como mudanças de preço, custo ou volume impactam o EV." />
-          <Reco icon="📐" title="Triangule múltiplos vs DCF" text="Métodos próximos = valuation defensável. Métodos divergentes = revisar premissas antes de negociar." />
-        </ul>
-      </section>
-    </>
-  );
-}
-
-function RangeCard({
-  tone, label, desc, value, base,
-}: { tone: "neg" | "primary" | "pos"; label: string; desc: string; value: number; base: number }) {
-  const toneClasses =
-    tone === "neg" ? "border-neg/40 bg-neg/5" :
-    tone === "pos" ? "border-pos/40 bg-pos/5" :
-    "border-primary/40 bg-primary/5";
-  const textTone = tone === "neg" ? "text-neg" : tone === "pos" ? "text-pos" : "text-primary";
-  const delta = base !== 0 ? ((value - base) / Math.abs(base)) * 100 : 0;
-  return (
-    <div className={`rounded-md border p-3 ${toneClasses}`}>
-      <div className={`text-[10px] font-semibold uppercase tracking-wider ${textTone}`}>{label}</div>
-      <div className="mt-1 text-[10px] text-muted-foreground">{desc}</div>
-      <div className={`mono mt-2 text-xl font-bold ${textTone}`}>{fmtBRLCompact(value)}</div>
-      <div className="mt-1 text-[10px] text-muted-foreground">
-        {value === base ? "referência (100%)" : `${delta >= 0 ? "+" : ""}${delta.toFixed(0)}% vs base`}
-      </div>
-    </div>
-  );
-}
-
-function Reco({ icon, title, text }: { icon: string; title: string; text: string }) {
-  return (
-    <li className="flex items-start gap-3 rounded-md border border-border/40 bg-background/40 p-3">
-      <span className="text-base leading-none">{icon}</span>
-      <div className="text-xs">
-        <div className="font-semibold text-foreground">{title}</div>
-        <div className="text-muted-foreground">{text}</div>
-      </div>
-    </li>
-  );
-}
-
-// =====================================================================
-// Auditoria — memória de cálculo + self-tests
-// =====================================================================
-function AuditPanel({ trace, onLogTrace }: { trace: ReturnType<typeof traceValuation>; onLogTrace: () => void }) {
-  const [tests, setTests] = useState<{ results: ValuationTestCase[]; allPassed: boolean } | null>(null);
-  const runTests = () => setTests(runValuationSelfTests());
-
-  return (
-    <>
-      <section className="rounded-lg border border-border/60 bg-card/40 p-5">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Calculator className="h-4 w-4 text-primary" />
-            <SectionTitle hint="Cada linha mostra a fórmula aplicada, os inputs e o resultado. Use para auditar o valuation.">
-              Memória de Cálculo
-            </SectionTitle>
-          </div>
-          <Button size="sm" variant="outline" onClick={onLogTrace}>
-            <Calculator className="mr-1.5 h-3.5 w-3.5" /> Logar no console
-          </Button>
-        </div>
-
-
-        <div className="mt-4 grid gap-2 rounded-md border border-border/40 bg-background/30 p-3 text-xs md:grid-cols-3">
-          <KV k="EBITDA (12m)" v={trace.inputs.ebitda} />
-          <KV k="Receita Bruta (12m)" v={trace.inputs.receita} />
-          <KV k="Lucro Líquido (12m)" v={trace.inputs.ll} />
-          <KV k="Dívida onerosa" v={trace.inputs.dividaOnerosa} />
-          <KV k="WACC (%a.a.)" v={trace.inputs.wacc} fmt="pct" />
-          <KV k="Ke / Kd (%a.a.)" v={trace.inputs.ke} fmt="pct" extra={`${trace.inputs.kd.toFixed(2)}%`} />
-          <KV k="m EV/EBITDA" v={trace.inputs.multEbitda} fmt="raw" />
-          <KV k="m EV/Receita" v={trace.inputs.multReceita} fmt="raw" />
-          <KV k="m P/L" v={trace.inputs.multPL} fmt="raw" />
-          <KV k="Horizonte DCF" v={trace.inputs.horizonAnos} fmt="raw" extra="anos" />
-          <KV k="g terminal" v={trace.inputs.g * 100} fmt="pct" />
-          <KV k="Haircut" v={trace.inputs.haircut * 100} fmt="pct" />
-        </div>
-
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-border/40 text-[10px] uppercase tracking-wider text-muted-foreground">
-                <th className="py-2 text-left font-medium">Etapa</th>
-                <th className="py-2 text-left font-medium">Fórmula</th>
-                <th className="py-2 text-right font-medium">Valor</th>
-              </tr>
-            </thead>
-            <tbody className="mono">
-              {trace.steps.map((s, i) => (
-                <tr key={i} className="border-b border-border/20">
-                  <td className="py-1.5 text-foreground">{s.label}</td>
-                  <td className="py-1.5 text-muted-foreground">{s.formula}</td>
-                  <td className="py-1.5 text-right font-semibold text-foreground">{fmtBRLCompact(s.value)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-border/60 bg-card/40 p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <FlaskConical className="h-4 w-4 text-primary" />
-            <SectionTitle hint="Executa um conjunto de casos determinísticos (EV/EBITDA, EV/Receita, P/L, Gordon, DCF, haircut, equity). Resultados detalhados também aparecem no console do navegador (F12).">
-              Validação de Fórmulas — Self-tests
-            </SectionTitle>
-          </div>
-          <Button size="sm" onClick={runTests}>
-            <FlaskConical className="mr-1.5 h-3.5 w-3.5" /> Rodar testes
-          </Button>
-        </div>
-
-        {tests ? (
-          <>
-            <div className={`mt-4 rounded-md border p-3 text-xs ${tests.allPassed ? "border-pos/40 bg-pos/5 text-pos" : "border-neg/40 bg-neg/5 text-neg"}`}>
-              {tests.allPassed
-                ? `✅ Todos os ${tests.results.length} casos passaram dentro da tolerância de 0,5%.`
-                : `❌ ${tests.results.filter(r => !r.pass).length} de ${tests.results.length} casos falharam — abra o console (F12) para detalhes.`}
-            </div>
-            <div className="mt-3 overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-border/40 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <th className="py-2 text-left font-medium">Caso</th>
-                    <th className="py-2 text-left font-medium">Fórmula</th>
-                    <th className="py-2 text-right font-medium">Esperado</th>
-                    <th className="py-2 text-right font-medium">Obtido</th>
-                    <th className="py-2 text-right font-medium">Δ</th>
-                    <th className="py-2 text-center font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="mono">
-                  {tests.results.map((r, i) => (
-                    <tr key={i} className="border-b border-border/20">
-                      <td className="py-1.5 text-foreground">{r.name}</td>
-                      <td className="py-1.5 text-muted-foreground">{r.formula}</td>
-                      <td className="py-1.5 text-right">{r.expected.toLocaleString("pt-BR")}</td>
-                      <td className="py-1.5 text-right">{r.actual.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}</td>
-                      <td className="py-1.5 text-right text-muted-foreground">{r.delta.toFixed(4)}</td>
-                      <td className={`py-1.5 text-center font-semibold ${r.pass ? "text-pos" : "text-neg"}`}>{r.pass ? "OK" : "FAIL"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        ) : (
-          <p className="mt-3 text-xs text-muted-foreground">
-            Clique em "Rodar testes" para validar todas as fórmulas (EV/EBITDA, EV/Receita, P/L, blended ponderado, Gordon, DCF mensal, ajustes de controle/liquidez, haircut e Equity Value). A memória de cálculo da empresa atual também é registrada no console em tempo real a cada mudança de parâmetro.
-          </p>
-        )}
-      </section>
-    </>
-  );
-}
-
-function KV({ k, v, fmt = "money", extra }: { k: string; v: number; fmt?: "money" | "pct" | "raw"; extra?: string }) {
-  const txt = fmt === "money" ? fmtBRLCompact(v) : fmt === "pct" ? `${v.toFixed(2)}%` : v.toString();
-  return (
-    <div className="rounded border border-border/40 bg-background/40 px-2 py-1.5">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{k}</div>
-      <div className="mono mt-0.5 font-semibold text-foreground">{txt}{extra ? ` ${extra}` : ""}</div>
     </div>
   );
 }
