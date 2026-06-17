@@ -66,7 +66,7 @@ const handlers: Record<string, ToolHandler> = {
       (args?.regime as "simples" | "presumido" | "real") || resolveEffectiveRegime(state);
     const years: number[] =
       Array.isArray(args?.anos) && args.anos.length
-        ? args.anos.map((y: any) => Number(y)).filter((y: number) => Number.isFinite(y))
+        ? (args.anos as unknown[]).map((y) => Number(y)).filter((y) => Number.isFinite(y))
         : [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033];
     const rows = compareYearsForRegime(state, regime, years);
     const lines = [

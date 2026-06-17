@@ -487,7 +487,7 @@ export function CashflowTab() {
               stroke="var(--success)"
               strokeWidth={2}
               fill="url(#gSaldo)"
-              dot={(props: any) => {
+              dot={(props: { cx?: number; cy?: number; payload?: { critical?: "negativo" | "abaixoMinimo" | null }; index?: number }) => {
                 const { cx, cy, payload, index } = props;
                 const tipo = payload?.critical as "negativo" | "abaixoMinimo" | null;
                 if (!tipo) return <circle key={`dot-${index}`} cx={cx} cy={cy} r={0} />;

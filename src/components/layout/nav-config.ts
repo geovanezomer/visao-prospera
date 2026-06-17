@@ -15,9 +15,11 @@ import {
 } from "lucide-react";
 import { TabKey } from "@/engines/finance/types";
 
+import type { LucideIcon } from "lucide-react";
+
 export type NavItem = {
   title: string;
-  icon: any;
+  icon: LucideIcon;
   value: TabKey | "ai";
 };
 
