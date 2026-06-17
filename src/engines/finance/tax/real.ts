@@ -7,6 +7,7 @@
 // Submódulo coeso da engine financeira — funções puras, sem dependência de UI.
 // =====================================================================
 
+import { calcCbs, calcIbs } from "tributos-br";
 import { AppState, TaxRegime } from "../types";
 import { sum, zeros12 } from "../format";
 import { getIrpjPct, getCsllPct, getPisNaoCumPct, getCofinsNaoCumPct } from "../taxDefaults";
@@ -14,6 +15,14 @@ import { receitaTributavel, splitReceitasFinanceiras } from "../shared";
 import { isCpvCost, effectiveMonthValues } from "../costs";
 import { getReformaRates } from "./reforma";
 import { adicionalIrpjTrimestral, type MonthlyTax } from "./shared";
+
+// [CBS/IBS] Helpers: usam tributos-br (LC 214/2025) para garantir
+// arredondamento HALF_UP (padrão SEFAZ) sobre cada multiplicação
+// alíquota × base, evitando drift de centavos em apurações mensais.
+const cbsValor = (base: number, pct: number): number =>
+  pct > 0 && base > 0 ? Number(calcCbs({ base: base.toString(), aliquota: (pct / 100).toString() }).imposto) : 0;
+const ibsValor = (base: number, pct: number): number =>
+  pct > 0 && base > 0 ? Number(calcIbs({ base: base.toString(), aliquota: (pct / 100).toString() }).imposto) : 0;
 
 export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax {
   const { revenue, tax, businessType } = state;
