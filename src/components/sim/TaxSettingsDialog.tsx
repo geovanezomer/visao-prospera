@@ -181,10 +181,10 @@ export function TaxSettingsDialog() {
           {step.key === "federais" && <StepFederais ov={ov} patchOv={patchOv} />}
           {step.key === "simples" && <StepSimples ov={ov} patchOv={patchOv} />}
           {step.key === "presumido" && (
-            <StepPresumido ov={ov} patchOv={patchOv} state={state} update={update} />
+            <StepPresumido ov={ov} patchOv={patchOv} state={state} patchTax={patchTax} />
           )}
           {step.key === "reforma" && (
-            <StepReforma ov={ov} patchOv={patchOv} state={state} update={update} />
+            <StepReforma ov={ov} patchOv={patchOv} state={state} patchTax={patchTax} />
           )}
           {step.key === "revisao" && <StepRevisao customCount={customCount} resetAll={resetAll} />}
         </div>
