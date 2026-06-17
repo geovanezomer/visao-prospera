@@ -37,6 +37,7 @@ function snapshot(state: AppState, scenarios: Scenario[]): string {
 }
 
 // Chave do draft por empresa (auto-save de recuperação F5).
+// Prefixo `gzfp:` é legado e intencionalmente preservado — ver persistence.ts.
 const draftKey = (company: string) =>
   `gzfp:draft:${(company || "sem-empresa").trim().toLowerCase()}`;
 

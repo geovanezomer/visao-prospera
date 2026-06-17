@@ -5,7 +5,7 @@ import { z } from "zod";
 export const FINNANCE_FILE_TYPE = "gz-finnance" as const;
 /** Versão atual do envelope. Bump = adicionar migrator vN_to_vN+1. */
 export const FINNANCE_FILE_VERSION = 1 as const;
-/** Alias semântico — usado por novos call-sites (openGzfp/saveGzfp). */
+/** Alias semântico de `FINNANCE_FILE_VERSION`. */
 export const CURRENT_VERSION = FINNANCE_FILE_VERSION;
 export const FINNANCE_FILE_EXT = ".finnance";
 

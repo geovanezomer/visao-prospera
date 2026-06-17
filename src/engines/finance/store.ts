@@ -4,6 +4,7 @@ import { DEFAULT_STATE, migrateState, validateAndMigrate } from "./defaults";
 import { useAuth } from "@/lib/auth";
 import { loadKey, saveKey, broadcastChange, onRemoteChange } from "./persistence";
 
+// Prefixo `gzfp:` é legado e intencionalmente preservado — ver persistence.ts.
 const stateKey = (u: string) => `gzfp:state:${u}`;
 const scenKey = (u: string) => `gzfp:scenarios:${u}`;
 

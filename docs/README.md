@@ -10,9 +10,9 @@ documentos como referência pontual.
 
 | Arquivo                                      | O que é                                                                                                                                                                                                                                                 |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`ENGINE_OVERVIEW.md`](./ENGINE_OVERVIEW.md) | **Comece aqui.** Visão técnica completa da engine financeira: arquitetura, `AppState`, fluxo de cálculo (DRE → indicadores → forecast → valuation), camada tributária, formato `.gzfp`, store/persistência, calculadoras isoladas, testes e convenções. |
+| [`ENGINE_OVERVIEW.md`](./ENGINE_OVERVIEW.md) | **Comece aqui.** Visão técnica completa da engine financeira: arquitetura, `AppState`, fluxo de cálculo (DRE → indicadores → forecast → valuation), camada tributária, formato `.finnance`, store/persistência, calculadoras isoladas, testes e convenções. |
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md)       | Arquitetura geral do app (rotas, providers, fronteiras client/server, deploy).                                                                                                                                                                          |
-| [`CONTRIBUTING.md`](./CONTRIBUTING.md)       | Como contribuir, padrões de código, e o procedimento para **bump de versão** do `AppState` e do `.gzfp` (adicionar `vN_to_vN+1` quando o schema muda).                                                                                                  |
+| [`CONTRIBUTING.md`](./CONTRIBUTING.md)       | Como contribuir, padrões de código, e o procedimento para **bump de versão** do `AppState` e do `.finnance` (adicionar `vN_to_vN+1` quando o schema muda).                                                                                                  |
 
 ---
 
@@ -68,7 +68,7 @@ documentos como referência pontual.
 | `reforma.ts`   | CBS/IBS — LC 214/2025 + transição 2026–2033                 |
 | `compare.ts`   | Comparador entre regimes                                    |
 
-### Formato de arquivo `.gzfp` (`src/engines/finance/fileFormat/`)
+### Formato de arquivo `.finnance` (`src/engines/finance/fileFormat/`)
 
 | Arquivo               | Função                                           |
 | --------------------- | ------------------------------------------------ |
@@ -102,4 +102,4 @@ documentos como referência pontual.
 - **Vou adicionar um campo persistido** → `CONTRIBUTING.md` (seção bump)
 - **Vou mexer em um indicador** → `indicators.ts` + seus testes
 - **Vou mexer em tributo** → `tax/<regime>.ts` + `taxDefaults.ts`
-- **Vou adicionar uma migration do `.gzfp`** → `CONTRIBUTING.md` + `fileFormat/migrations/`
+- **Vou adicionar uma migration do `.finnance`** → `CONTRIBUTING.md` + `fileFormat/migrations/`

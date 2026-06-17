@@ -14,7 +14,7 @@ que vão evoluir a engine financeira, a camada tributária ou a UI.
 O FinancePRO é um SPA TanStack Start + React 19 que roda **toda a
 matemática financeira no cliente** (pure functions, sem backend de cálculo).
 O backend (Lovable Cloud / Supabase) cuida apenas de autenticação,
-persistência opcional e arquivos `.gzfp` (snapshots do estado).
+persistência opcional e arquivos `.finnance` (snapshots do estado).
 
 ```text
                 ┌────────────────────────┐
@@ -88,8 +88,8 @@ src/engines/
 │   ├── taxDefaults.ts        Alíquotas padrão por setor
 │   ├── regime.ts             Resolução de regime efetivo por era
 │   │
-│   ├── fileFormat/           Formato .gzfp (snapshots versionados)
-│   │   ├── index.ts          openGzfp / saveGzfp + pipeline de migrations
+│   ├── fileFormat/           Formato .finnance (snapshots versionados)
+│   │   ├── index.ts          parseFinnanceFile / serialize + pipeline de migrations
 │   │   ├── schema.ts         CurrentSchema (Zod) + CURRENT_VERSION
 │   │   └── migrations/       vN_to_vN+1 (lista MIGRATIONS)
 │   ├── fileIO.ts             Bridge UI ↔ fileFormat
@@ -138,7 +138,7 @@ Campos principais:
 
 `APP_STATE_SCHEMA_VERSION` é incrementado quando o shape muda.
 `migrateState()` (`defaults.ts`) faz a migração no boundary do
-localStorage. Para o formato `.gzfp` (arquivo), há um pipeline
+localStorage. Para o formato `.finnance` (arquivo), há um pipeline
 **separado e versionado** em `fileFormat/migrations/` — ver
 `docs/CONTRIBUTING.md` para a regra do bump.
 
@@ -261,7 +261,7 @@ Hook Zustand-like que:
 Abstração sobre IndexedDB (preferencial) + fallback localStorage.
 Expõe `loadKey`, `saveKey`, `broadcastChange`, `onRemoteChange`.
 
-### 5.3 Arquivo `.gzfp` (`fileFormat/`)
+### 5.3 Arquivo `.finnance` (`fileFormat/`)
 
 Formato de **snapshot exportável** (gzip + JSON). Versionado de forma
 **independente** do schema do localStorage:
@@ -313,7 +313,7 @@ A UI vive em `src/routes/` (TanStack Start, file-based). O padrão é:
 
 Cobertura em `src/engines/finance/__tests__/`:
 
-- Schemas e migrations do `.gzfp` (fixtures v1 + futuros).
+- Schemas e migrations do `.finnance` (fixtures v1 + futuros).
 - DRE / Indicators / Forecast — números esperados em cenários âncora.
 - Monte Carlo — convergência e estabilidade dos percentis.
 - Tax — equivalência de regimes e correção dos carryforwards.
@@ -332,7 +332,7 @@ Rodar: `bunx vitest run`. Hoje: **100/100 passando**.
    `AppState` válido.
 3. **Séries mensais** sempre via `fill12` / `coerceMonths`.
 4. **CBS/IBS** sempre marcado com `// [CBS/IBS]` quando a regra muda.
-5. **Schema bump**: ver `docs/CONTRIBUTING.md` (state vs `.gzfp`).
+5. **Schema bump**: ver `docs/CONTRIBUTING.md` (state vs `.finnance`).
 6. **Comentários em PT-BR** em código de domínio; nomes de símbolos em
    inglês quando técnicos (DRE/FCF/EBITDA são internacionais).
 7. **Antes de implementar**, diagnostique. Ex.: ROIC=0 + cobertura
@@ -350,6 +350,6 @@ Rodar: `bunx vitest run`. Hoje: **100/100 passando**.
 | Mudar indicador                 | `indicators.ts`                                                           |
 | Mudar regime tributário         | `tax/<regime>.ts` + `taxDefaults.ts`                                      |
 | Adicionar campo persistido      | `types.ts` → bump `APP_STATE_SCHEMA_VERSION` → `defaults.ts/migrateState` |
-| Adicionar campo ao `.gzfp`      | bump `CURRENT_VERSION` + nova migration (ver CONTRIBUTING)                |
+| Adicionar campo ao `.finnance`      | bump `CURRENT_VERSION` + nova migration (ver CONTRIBUTING)                |
 | Adicionar alavanca no simulador | `simulator.ts` + `prescriptive.ts`                                        |
 | Mudar valuation                 | `valuation.ts` (cuidado com EV vs Equity)                                 |
