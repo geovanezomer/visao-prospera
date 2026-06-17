@@ -503,7 +503,7 @@ export function IndicatorsTab() {
         <ChartCard title="Composição de despesas operacionais (anual)">
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
-              <Pie data={costPie} dataKey="value" nameKey="name" outerRadius={100} innerRadius={50}>
+              <Pie data={costPie} dataKey="value" nameKey="name" outerRadius="80%" innerRadius="45%">
                 {costPie.map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                 ))}
