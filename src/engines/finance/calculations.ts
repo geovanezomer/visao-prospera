@@ -10,7 +10,7 @@ import {
   getIrpjPct, getCsllPct,
   getPisCumPct, getCofinsCumPct, getPisNaoCumPct, getCofinsNaoCumPct,
 } from "./taxDefaults";
-import { sum, zeros12 } from "./format";
+import { sum, zeros12, fill12 } from "./format";
 import { safeDivide, safePct, safeNumber } from "./safeMath";
 
 // ---- Helpers compartilhados (./shared.ts) ----
@@ -20,7 +20,7 @@ export {
   splitReceitasFinanceiras,
   cagr12m,
 } from "./shared";
-import { receitaTributavel, splitReceitasFinanceiras } from "./shared";
+import { receitaTributavel, splitReceitasFinanceiras, outrasDeducoesMensal, computeNetDebt } from "./shared";
 
 
 // =====================================================================
@@ -94,7 +94,7 @@ export { calcReal, irShieldForRegime } from "./tax/real";
 export type { MonthlyTax } from "./tax/shared";
 import { calcSimples } from "./tax/simples";
 import { calcPresumido } from "./tax/presumido";
-import { calcReal } from "./tax/real";
+import { calcReal, irShieldForRegime } from "./tax/real";
 import type { MonthlyTax } from "./tax/shared";
 
 
