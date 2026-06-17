@@ -232,6 +232,7 @@ export interface ToolRoundResult {
 // Formato bruto das tool_calls retornadas pela API OpenAI-compatível.
 interface OpenAIToolCallRaw {
   id: string;
+  type: "function";
   function: { name: string; arguments: string };
 }
 
