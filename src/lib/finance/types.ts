@@ -128,7 +128,15 @@ export interface CapitalStructure {
   capitalGiroDisponivel: number;
   depreciacaoMensal: number;
   // (removido: jurosRecebidosMensal — rendimentos vêm de revenue.receitasFinanceiras.rend_aplic)
+  /** PL final do período (saldo atual). Usado como fallback do PL médio quando abertura não informada. */
   patrimonioLiquido: number;
+  /**
+   * PL de abertura do período (saldo inicial). Quando > 0, o ROE usa PL MÉDIO
+   * = (abertura + final) / 2 (CFA/Damodaran), corrigindo o viés em empresas em
+   * crescimento (subestima ROE) ou com prejuízo acumulado (superestima). Default 0
+   * = fallback para PL fim de período.
+   */
+  patrimonioLiquidoAbertura?: number;
   ativoTotal: number;
   estoques: number;
   disponibilidades: number;
