@@ -36,7 +36,8 @@ function ensure(state: AppState): StrategicAnswers {
   };
 }
 
-export function StrategicTab({ state, update }: { state: AppState; update: Updater }) {
+export function StrategicTab() {
+  const { state, update } = useFinance();
   const answers = ensure(state);
 
   const setSection = <K extends keyof StrategicAnswers>(key: K, patch: Partial<StrategicAnswers[K]>) => {

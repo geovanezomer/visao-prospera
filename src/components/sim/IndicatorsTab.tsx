@@ -27,7 +27,8 @@ function fmtTimes(v: number, base: number, decimals = 1): string {
   return `${v.toFixed(decimals)}×`;
 }
 
-export function IndicatorsTab({ state }: { state: AppState }) {
+export function IndicatorsTab() {
+  const state = useFinanceState();
   // (I1+I9) Modelo central: regime efetivo + DRE + indicadores + CAGR memoizados.
   const { dre, ind, cagrReceitas12m } = useFinanceModel(state);
 

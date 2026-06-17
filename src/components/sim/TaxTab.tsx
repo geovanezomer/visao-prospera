@@ -84,7 +84,8 @@ const ANEXO_BUSINESS_OK: Record<SimplesAnexo, BusinessType[]> = {
   V: ["servicos"],
 };
 
-export function TaxTab({ state, update }: { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void }) {
+export function TaxTab() {
+  const { state, update } = useFinance();
   const rbAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
   const set = useCallback(
     (patch: Partial<typeof state.tax>) =>

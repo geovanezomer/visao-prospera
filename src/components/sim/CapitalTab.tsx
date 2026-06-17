@@ -10,7 +10,8 @@ import { MoneyInput, NumInput, PctInput, SectionTitle, StatCard, HelpTip } from 
 
 const INTRO_KEY = "gzf_capital_intro_dismissed_v1";
 
-export function CapitalTab({ state, update }: { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void }) {
+export function CapitalTab() {
+  const { state, update } = useFinance();
   const c = state.capital;
   // Memoiza engine pesada — recomputa só quando o estado financeiro muda.
   const { dre } = useMemo(() => buildDRE(state, state.tax.regime), [state]);

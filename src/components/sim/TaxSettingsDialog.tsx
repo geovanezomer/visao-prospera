@@ -14,7 +14,7 @@ import {
   type TaxRatesOverride, type SimplesFaixa,
 } from "@/engines/finance/taxDefaults";
 
-type Props = { state: AppState; update: (p: Partial<AppState> | ((s: AppState) => AppState)) => void };
+type Props = Record<string, never>;
 
 const ANEXOS: SimplesAnexo[] = ["I", "II", "III", "IV", "V"];
 const BUSINESS: { key: BusinessType; label: string; hint: string }[] = [

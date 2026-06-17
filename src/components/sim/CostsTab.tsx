@@ -12,7 +12,8 @@ import { PrazoTable } from "./PrazoTable";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
-export function CostsTab({ state, update }: { state: AppState; update: Updater }) {
+export function CostsTab() {
+  const { state, update } = useFinance();
   const receitaBrutaAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
 
 

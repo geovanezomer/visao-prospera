@@ -16,7 +16,8 @@ import { ChevronRight } from "lucide-react";
 
 const CHART_COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15", "#F472B6", "#34D399", "#A78BFA", "#FB923C"];
 
-export function DRETab({ state, update }: { state: AppState; update: Updater }) {
+export function DRETab() {
+  const { state, update } = useFinance();
   const [view, setView] = useState<"mensal" | "trimestral" | "anual">("trimestral");
 
   useEffect(() => {
