@@ -76,17 +76,15 @@ const STEPS: { key: StepKey; label: string; icon: typeof Settings }[] = [
 
 export function TaxSettingsDialog() {
   const { state, update } = useFinance();
+  const patchTax = usePatchTax();
   const [open, setOpen] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
   const ov = state.tax.ratesOverride ?? {};
 
   const patchOv = (patch: Partial<TaxRatesOverride>) =>
-    update((s) => ({
-      ...s,
-      tax: { ...s.tax, ratesOverride: { ...(s.tax.ratesOverride ?? {}), ...patch } },
-    }));
+    patchTax((cur) => ({ ratesOverride: { ...(cur.ratesOverride ?? {}), ...patch } }));
 
-  const resetAll = () => update((s) => ({ ...s, tax: { ...s.tax, ratesOverride: undefined } }));
+  const resetAll = () => patchTax({ ratesOverride: undefined });
 
   // Conta quantos parâmetros foram customizados — usado no resumo final.
   const customCount = useMemo(() => {
