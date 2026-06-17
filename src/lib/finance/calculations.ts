@@ -881,6 +881,12 @@ export interface Indicators {
   margemSeguranca: number;
   /** EBITDA ÷ (Juros + Amortizações de Principal) — métrica bancária de cobertura do serviço da dívida. */
   dscr: number;
+  /**
+   * true quando `state.cashflow.amortizacoes` traz algum valor > 0 no ano.
+   * Se false, o DSCR colapsa para a Cobertura de Juros (EBITDA ÷ Juros) — o consultor
+   * precisa saber que o resultado pode estar superestimado por falta do cronograma.
+   */
+  dscrAmortizacoesInformadas: boolean;
   dividaOnerosa: number;
   passivoCirculante: number;
   ativoCirculante: number;
