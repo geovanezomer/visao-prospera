@@ -1,4 +1,4 @@
-# Fixtures de versões do .finnance/.gzfp
+# Fixtures de versões do .finnance
 
 Cada `vN.json` é um arquivo **congelado** representando exatamente a forma do
 envelope na versão N. Use estas fixtures como contrato vivo: o teste

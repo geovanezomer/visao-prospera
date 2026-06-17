@@ -35,7 +35,7 @@ Leitura obrigatória: [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 - Importar `client.server.ts` no topo de arquivo client-reachable.
 - Editar `fileFormat/schema.ts` sem bump de versão + migrator (ver abaixo).
 
-## Bump de versão do `.finnance`/`.gzfp`
+## Bump de versão do `.finnance`/`.finnance`
 
 O envelope do arquivo é versionado (`CURRENT_VERSION` em
 `src/engines/finance/fileFormat/schema.ts`). Sempre que o schema mudar de
@@ -73,7 +73,7 @@ Passo a passo:
    O teste `migrations.test.ts` abre **todas** as fixtures (`v1.json`,
    `v2.json`, ...) e garante que cada uma chega ao schema corrente sem erro.
 
-Regra de ouro: se um cliente com `.gzfp` antigo no disco não consegue abrir
+Regra de ouro: se um cliente com `.finnance` antigo no disco não consegue abrir
 no app novo, o bug é nosso — todo bump precisa do migrator + fixture
 correspondente.
 
