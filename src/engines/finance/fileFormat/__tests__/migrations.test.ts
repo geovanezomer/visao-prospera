@@ -49,6 +49,19 @@ describe("fileFormat — pipeline de migrators", () => {
     });
   }
 
+  for (const { name, raw } of fixtures) {
+    it(`runMigrations(${name}) é idempotente — rodar 2× não muda o resultado`, () => {
+      const once = runMigrations(raw, CURRENT_VERSION);
+      const twice = runMigrations(once, CURRENT_VERSION);
+      // Resultado estável: aplicar o pipeline sobre um arquivo já migrado
+      // deve ser no-op (mesma forma, mesma versão).
+      expect(twice).toEqual(once);
+      expect((twice as { version: number }).version).toBe(
+        (once as { version: number }).version,
+      );
+    });
+  }
+
   it("arquivo de versão futura é rejeitado com mensagem clara", () => {
     const future = { type: "gz-finnance", version: CURRENT_VERSION + 99, state: {} };
     expect(() => runMigrations(future, CURRENT_VERSION)).toThrow(/versão mais nova/i);
