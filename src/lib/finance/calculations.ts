@@ -623,6 +623,14 @@ export interface DRE {
   lair: number[];
   /** Impostos sobre lucro (IRPJ + Adicional + CSLL). Zero no Simples. */
   impostos: number[];
+  /**
+   * Base efetivamente usada para calcular `impostos` (IRPJ/CSLL).
+   * - "lair": Lucro Real — base é o LAIR (Lucro Antes do IR).
+   * - "receita_presumida": Presumido — base é receita × % de presunção (não o LAIR exibido).
+   * - "nao_aplica": Simples Nacional — IRPJ/CSLL já estão dentro do DAS (impostosVendas).
+   * Usado pela UI para sinalizar ao consultor a origem do valor deduzido do LAIR.
+   */
+  impostosLucroBase: "lair" | "receita_presumida" | "nao_aplica";
   /** Total = impostosVendas + impostos (sobre lucro). Para cards de carga total. */
   impostosTotal: number[];
   lucroLiquido: number[];
