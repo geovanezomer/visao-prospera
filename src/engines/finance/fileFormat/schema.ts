@@ -1,4 +1,5 @@
 // Schema CORRENTE do arquivo .finnance. Só valida a versão atual —
+
 // versões antigas viram a forma corrente via `migrations/` antes do parse.
 import { z } from "zod";
 
