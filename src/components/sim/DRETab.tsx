@@ -615,10 +615,10 @@ export function DRETab() {
                 return (
                   <tr
                     key={idx}
-                    className={`border-t border-border/30 ${row.highlight ? "bg-primary/10" : row.strong ? "bg-accent/20" : ""}`}
+                    className={`border-t border-border/30 ${row.highlight ? "bg-primary/10" : row.strong ? "bg-accent/20" : "bg-card"}`}
                   >
                     <td
-                      className={`px-3 py-2 ${row.strong ? "font-semibold" : "text-muted-foreground"} text-[10px] sm:text-xs truncate`}
+                      className={`sticky left-0 z-10 bg-inherit shadow-[1px_0_0_0_var(--border)] px-3 py-2 ${row.strong ? "font-semibold" : "text-muted-foreground"} text-[10px] sm:text-xs truncate`}
                     >
                       {row.k}
                     </td>
