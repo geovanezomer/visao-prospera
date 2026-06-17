@@ -8,7 +8,10 @@
  * com Indicadores/Diagnóstico/Simulador (verdade absoluta única).
  */
 import { AppState, BusinessType, TaxRegime } from "./types";
-import { buildDRE, calcIndicators, resolveEffectiveRegime, computeNetDebt } from "./calculations";
+import { buildDRE } from "./dre";
+import { calcIndicators } from "./indicators";
+import { resolveEffectiveRegime } from "./regime";
+import { computeNetDebt } from "./shared";
 import { buildForecast, ForecastConfig, DEFAULT_FORECAST_CFG } from "./forecast";
 import { computeStrategic, StrategicResult } from "./strategic";
 import { sum } from "./format";

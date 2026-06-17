@@ -4,7 +4,8 @@
  * cenários sem override.
  */
 import { describe, it, expect } from "vitest";
-import { buildDRE, simplesExcedeLimite } from "../calculations";
+import { buildDRE } from "../dre";
+import { simplesExcedeLimite } from "../regime";
 import { sum } from "../format";
 import { createState, m12 } from "./helpers";
 

@@ -7,14 +7,10 @@
  */
 
 import { AppState, CostLine, TaxRegime } from "./types";
-import {
-  buildDRE,
-  calcIndicators,
-  monthValues,
-  resolveEffectiveRegime,
-  type DRE,
-  type Indicators,
-} from "./calculations";
+import { buildDRE, type DRE } from "./dre";
+import { calcIndicators, type Indicators } from "./indicators";
+import { monthValues } from "./costs";
+import { resolveEffectiveRegime } from "./regime";
 import { buildValuation, defaultValuationParams } from "./valuation";
 import { buildCashFlow, type CashFlow } from "./cashflow";
 import { fill12, sum } from "./format";

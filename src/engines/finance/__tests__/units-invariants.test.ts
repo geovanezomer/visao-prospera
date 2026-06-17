@@ -9,7 +9,8 @@
  *  - Helpers de formatação (`pct`) recebem o número já em % e apenas anexam "%".
  */
 import { describe, it, expect } from "vitest";
-import { buildDRE, calcIndicators } from "../calculations";
+import { buildDRE } from "../dre";
+import { calcIndicators } from "../indicators";
 import { createState, m12 } from "./helpers";
 
 describe("Unidades — Ke/Kd/WACC nunca duplicam ×100", () => {

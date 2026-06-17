@@ -6,7 +6,9 @@
  * estruturais ausentes) para garantir que safeMath está aplicado.
  */
 import { describe, it, expect } from "vitest";
-import { buildDRE, calcIndicators, irShieldForRegime } from "../calculations";
+import { buildDRE } from "../dre";
+import { calcIndicators } from "../indicators";
+import { irShieldForRegime } from "../tax/real";
 import { createState, m12 } from "./helpers";
 
 const aproxPp = (a: number, b: number, tol = 0.5) => Math.abs(a - b) <= tol;
