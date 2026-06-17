@@ -240,6 +240,21 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
               onCheckedChange={(v) => setDraft({ ...draft, useTools: v })}
             />
           </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-sm">Meta-tools (tool deferral)</Label>
+              <p className="text-[11px] text-muted-foreground">
+                Expõe só <code>tool_search</code>/<code>tool_invoke</code> ao LLM em vez de 27+
+                tools. Reduz drasticamente tokens de prompt e devolve JSON estruturado. Desligue
+                para fallback ao registry completo.
+              </p>
+            </div>
+            <Switch
+              checked={draft.useMetaTools}
+              disabled={!draft.useTools}
+              onCheckedChange={(v) => setDraft({ ...draft, useMetaTools: v })}
+            />
+          </div>
         </div>
 
         {/* SOUL — identidade editável do agente */}
