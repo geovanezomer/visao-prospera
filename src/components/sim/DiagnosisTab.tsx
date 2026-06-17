@@ -23,6 +23,11 @@ export function DiagnosisTab() {
     () => diagnose(state, model.dre, model.ind),
     [state, model.dre, model.ind],
   );
+  // Briefing estruturado — input determinístico para o card de IA.
+  const briefing = useMemo(
+    () => buildBriefing(state, model.dre, model.ind),
+    [state, model.dre, model.ind],
+  );
 
   const diagIcon = (l: string) =>
     l === "ok" ? (
