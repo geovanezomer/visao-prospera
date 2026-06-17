@@ -141,4 +141,4 @@ const handlers: Record<string, ToolHandler> = {
   },
 };
 
-export const simulatorTools: ToolModule = { defs, handlers };
+export const simulatorTools: ToolModule = { category: "simulator", description: "Parâmetros e execução do simulador financeiro", defs, handlers };

@@ -87,4 +87,4 @@ const handlers: Record<string, ToolHandler> = {
   },
 };
 
-export const scenariosTools: ToolModule = { defs, handlers };
+export const scenariosTools: ToolModule = { category: "scenarios", description: "Gestão de cenários (listar/salvar/carregar)", defs, handlers };

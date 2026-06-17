@@ -161,4 +161,4 @@ const handlers: Record<string, ToolHandler> = {
   },
 };
 
-export const financeTools: ToolModule = { defs, handlers };
+export const financeTools: ToolModule = { category: "finance", description: "Indicadores e leitura da engine financeira (DRE, FCF, WACC...)", defs, handlers };

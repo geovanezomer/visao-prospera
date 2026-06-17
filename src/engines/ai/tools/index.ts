@@ -5,7 +5,7 @@
 import type { AppState } from "@/engines/finance/types";
 import type { SimulatorParams } from "@/engines/finance/simulator";
 import { getSectionsCached } from "../snapshot";
-import type { ToolArgs, ToolContext, ToolDef, ToolHandler, ToolModule } from "./shared";
+import type { ToolArgs, ToolCategory, ToolContext, ToolDef, ToolHandler, ToolModule } from "./shared";
 
 import { financeTools } from "./finance";
 import { simulatorTools } from "./simulator";
@@ -15,7 +15,7 @@ import { scenariosTools } from "./scenarios";
 import { actionsTools } from "./actions";
 import { complianceTools } from "./compliance";
 
-export type { ToolDef, ToolArgs, ToolHandler, ToolContext, ToolModule } from "./shared";
+export type { ToolDef, ToolArgs, ToolHandler, ToolContext, ToolModule, ToolCategory } from "./shared";
 
 // Ordem dos módulos define a ordem em que o LLM vê as tools.
 const MODULES: ToolModule[] = [
@@ -30,15 +30,38 @@ const MODULES: ToolModule[] = [
 
 export const TOOLS: ToolDef[] = MODULES.flatMap(m => m.defs);
 
-// Mapa nome → handler. Em dev, alerta se houver colisão de nomes entre módulos.
+// Mapa nome → handler + nome → categoria. Em dev, alerta se houver colisão.
 const HANDLERS: Record<string, ToolHandler> = {};
+const CATEGORY_BY_NAME: Record<string, ToolCategory> = {};
 for (const m of MODULES) {
+  for (const def of m.defs) CATEGORY_BY_NAME[def.name] = m.category;
   for (const [name, fn] of Object.entries(m.handlers)) {
     if (HANDLERS[name] && typeof console !== "undefined") {
       console.warn(`[ai/tools] handler duplicado para "${name}" — o último vence`);
     }
     HANDLERS[name] = fn;
   }
+}
+
+/** Categorias disponíveis, na ordem em que aparecem no registry. */
+export const TOOL_CATEGORIES: ToolCategory[] = MODULES.map(m => m.category);
+
+/** Metadados por categoria — útil para UI/devtools e documentação. */
+export const TOOL_CATEGORY_META: Record<ToolCategory, { description?: string; count: number }> =
+  MODULES.reduce((acc, m) => {
+    acc[m.category] = { description: m.description, count: m.defs.length };
+    return acc;
+  }, {} as Record<ToolCategory, { description?: string; count: number }>);
+
+/** Lista as tools de uma categoria — útil para filtrar o que o LLM enxerga. */
+export function getToolsByCategory(category: ToolCategory): ToolDef[] {
+  const mod = MODULES.find(m => m.category === category);
+  return mod ? mod.defs : [];
+}
+
+/** Resolve a categoria de uma tool pelo nome. */
+export function getToolCategory(name: string): ToolCategory | undefined {
+  return CATEGORY_BY_NAME[name];
 }
 
 export function asOpenAITools() {
