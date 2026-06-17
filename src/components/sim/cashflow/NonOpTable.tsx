@@ -35,8 +35,10 @@ export function NonOpTable({
     <div className="scrollbar-thin w-full overflow-x-auto overflow-y-hidden p-2">
       <table className="w-full min-w-[800px] text-[clamp(0.75rem,1vw+0.5rem,0.875rem)] md:min-w-[1000px]">
         <thead>
-          <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-            <th className="w-64 px-3 py-2">Descrição</th>
+          <tr className="bg-card text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+            <th className="sticky left-0 z-20 w-64 bg-card px-3 py-2 shadow-[1px_0_0_0_var(--border)]">
+              Descrição
+            </th>
             <th className="w-24 px-2 py-2 text-center">Modo</th>
             {MESES.map((m) => (
               <th key={m} className="px-1 py-2 text-right">
