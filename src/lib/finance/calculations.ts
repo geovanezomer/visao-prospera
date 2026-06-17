@@ -404,10 +404,11 @@ export function calcPresumido(state: AppState): MonthlyTax {
 
   // [Receitas Financeiras] No Presumido, rendimentos de aplicações entram INTEGRAIS
   // na base de IRPJ/CSLL (sem o redutor de 8/32%). Aluguéis/venda de ativos vão
-  // como "operacionais" (já tratados na DRE) e não somam aqui.
-  const { financeiras: rendFin } = splitReceitasFinanceiras(state);
-  const baseIRPJMensal = trib.map((r, i) => r * baseIRPJ + (rendFin[i] || 0));
-  const baseCSLLMensal = trib.map((r, i) => r * baseCSLL + (rendFin[i] || 0));
+  // como "operacionais" (já tratados na DRE) e não somam aqui. Rendimentos com
+  // tributação EXCLUSIVA na fonte (IRRF definitivo) são excluídos da base.
+  const { financeirasIrpjBase: rendFinTrib } = splitReceitasFinanceiras(state);
+  const baseIRPJMensal = trib.map((r, i) => r * baseIRPJ + (rendFinTrib[i] || 0));
+  const baseCSLLMensal = trib.map((r, i) => r * baseCSLL + (rendFinTrib[i] || 0));
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
 
   let irpjTotal = 0, csllTotal = 0, pisTotal = 0, cofinsTotal = 0, issTotal = 0, cbsTotal = 0, ibsTotal = 0;
