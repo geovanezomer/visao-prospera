@@ -30,10 +30,45 @@ export default tseslint.config(
                 "TanStack Start does not use the Next.js `server-only` package. Rename the module to `*.server.ts` or mark it with `@tanstack/react-start/server-only`.",
             },
           ],
+          patterns: [
+            {
+              group: ["@/services/*", "@/lib/calculadoras/*"],
+              message:
+                "Caminho descontinuado. Lógica de domínio mora em src/engines/* — use @/engines/{benchmark,compliance,macro,scenarios,actions,calculadoras}/...",
+            },
+          ],
         },
       ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+    },
+  },
+  // Boundary architectural: src/lib/ é só utilitários genéricos.
+  // Proibido importar lógica de domínio (engines/*) a partir de src/lib/.
+  {
+    files: ["src/lib/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "@/engines/finance/*",
+                "@/engines/ai/*",
+                "@/engines/benchmark/*",
+                "@/engines/compliance/*",
+                "@/engines/macro/*",
+                "@/engines/scenarios/*",
+                "@/engines/actions/*",
+                "@/engines/calculadoras/*",
+              ],
+              message:
+                "src/lib/ é restrito a utilitários genéricos. Lógica de domínio (finance, ai, benchmark, compliance, macro, scenarios, actions, calculadoras) deve viver em src/engines/.",
+            },
+          ],
+        },
+      ],
     },
   },
   eslintPluginPrettier,
