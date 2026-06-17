@@ -23,10 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { calcularINSS, calcularIRRF } from "@/engines/calculadoras/rescisao";
-
-const fmtBRL = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
-const fmtPct = (n: number) => `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+import { fmtBRL, fmtPct } from "@/engines/finance/format";
 
 const DEP_DEDUCAO = 189.59;
 // Salário-família 2025 — Portaria Interministerial MPS/MF nº 6, de 10/01/2025
