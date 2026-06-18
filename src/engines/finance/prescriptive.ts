@@ -15,6 +15,8 @@ import { compareRegimes } from "./tax/compare";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { buildCashFlow } from "./cashflow";
 import { sum } from "./format";
+import type { SimulatorParams } from "./simulator";
+
 import {
   adjustRevenue,
   addLoan,
@@ -48,8 +50,17 @@ export interface PrescriptiveAction {
   id: string;
   title: string;
   detail: string;
+  /** Mutação determinística (compat retro — usado pelos botões "Aplicar"). */
   apply: (s: AppState) => AppState;
+  /**
+   * PR4b (Fase 1.5) — Equivalente declarativo em termos de SimulatorParams.
+   * Permite que a UI abra o Simulador pré-configurado em vez de mutar direto.
+   * Opcional: ausente quando a ação não tem alavanca paramétrica equivalente
+   * (ex.: rescisão com one-shot de caixa, venda de ativos).
+   */
+  asSimulatorParams?: Partial<SimulatorParams>;
 }
+
 
 export interface PrescriptiveCard {
   id: string;
@@ -160,16 +171,19 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           title: "Cortar 5% da folha (revisão de cargos/salários)",
           detail: "Negociação coletiva ou ajustes pontuais sem desligamentos.",
           apply: (s) => scaleLaborLines(s, 0.95),
+          asSimulatorParams: { payrollDeltaPct: -5 },
         },
         {
           id: "increase_revenue_30",
           title: "Aumentar receita em 30%",
           detail: "Diluir folha mantendo quadro — exige plano comercial. Simula impacto isolado.",
           apply: (s) => adjustRevenue(s, 1.3),
+          asSimulatorParams: { priceDeltaPct: 30 },
         },
       ],
     });
   }
+
 
   // ===== 2. ROIC < WACC =====
   if (Number.isFinite(ind.roic) && ind.roic < ind.wacc) {
@@ -190,13 +204,16 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
             const ids = new Set(topNFixedLines(s, 3).map((l) => l.id));
             return scaleCostLines(s, ids, 0.85);
           },
+          asSimulatorParams: { fixedCutPct: 15, fixedCutTopN: 3 },
         },
         {
           id: "price_5",
           title: "Repasse de preço de +5%",
           detail: "Aumenta receita sem mexer em custos. Avalie elasticidade.",
           apply: (s) => adjustRevenue(s, 1.05),
+          asSimulatorParams: { priceDeltaPct: 5 },
         },
+
         {
           id: "reduce_assets",
           title: "Reduzir ativo total em 20% (venda de não-operacionais)",
@@ -229,21 +246,25 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           title: `Captar empréstimo de capital de giro (${principal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} @ 2%a.m. × 12m)`,
           detail: "Entra no mês 1. Cria parcela de juros + amortização mensal.",
           apply: (s) => addLoan(s, principal, 2, 12, 0),
+          asSimulatorParams: { loanPrincipal: principal, loanRatePctAm: 2, loanTermMonths: 12 },
         },
         {
           id: "reduce_pmr",
           title: `Reduzir PMR de ${state.revenue.pmr} para ${Math.max(0, state.revenue.pmr - 15)} dias`,
           detail: "Negociação com clientes ou antecipação seletiva. Acelera entrada de caixa.",
           apply: (s) => setPmr(s, s.revenue.pmr - 15),
+          asSimulatorParams: { pmrDeltaDays: -15 },
         },
         {
           id: "increase_pmp",
           title: `Negociar PMP de ${state.revenue.pmp} para ${state.revenue.pmp + 15} dias com fornecedores`,
           detail: "Posterga saídas sem alterar custo total.",
           apply: (s) => setPmp(s, s.revenue.pmp + 15),
+          asSimulatorParams: { pmpDeltaDays: 15 },
         },
       ],
     });
+
   }
 
   // ===== 4. Cobertura de juros baixa =====
@@ -270,7 +291,9 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           detail:
             "Reduz dívida onerosa e juros futuros proporcionalmente; consome caixa equivalente.",
           apply: (s) => payDownDebt(s, 0.3),
+          asSimulatorParams: { debtPaydownPct: 30 },
         },
+
       ],
     });
   }
@@ -293,13 +316,16 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           title: `Reduzir PMR em 15 dias (${state.revenue.pmr}→${Math.max(0, state.revenue.pmr - 15)})`,
           detail: "Política comercial mais rígida + uso seletivo de antecipação.",
           apply: (s) => setPmr(s, s.revenue.pmr - 15),
+          asSimulatorParams: { pmrDeltaDays: -15 },
         },
         {
           id: "pmp_plus_15",
           title: `Aumentar PMP em 15 dias (${state.revenue.pmp}→${state.revenue.pmp + 15})`,
           detail: "Renegociação com fornecedores estratégicos.",
           apply: (s) => setPmp(s, s.revenue.pmp + 15),
+          asSimulatorParams: { pmpDeltaDays: 15 },
         },
+
       ],
     });
   }
@@ -322,13 +348,16 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           title: "Repasse de preço de +8%",
           detail: "Avalie elasticidade-preço do seu mercado antes de aplicar.",
           apply: (s) => adjustRevenue(s, 1.08),
+          asSimulatorParams: { priceDeltaPct: 8 },
         },
         {
           id: "cv_minus_10",
           title: "Reduzir Custo de Vendas em 10% (negociação com fornecedores)",
           detail: "Renegociação, troca de fornecedor, compras em escala.",
           apply: (s) => scaleCategory(s, "custo_vendas", 0.9),
+          asSimulatorParams: { cpvDeltaPct: -10 },
         },
+
       ],
     });
   }
@@ -381,7 +410,9 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
             detail:
               "Aplica o novo regime ao plano usando os parâmetros já configurados (anexo do Simples, presunção, etc.).",
             apply: (s) => switchRegime(s, melhor[0] as AppState["tax"]["regime"]),
+            asSimulatorParams: { regimeOverride: melhor[0] as AppState["tax"]["regime"] },
           },
+
         ],
       });
     }
@@ -405,13 +436,16 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           title: "Cortar 10% das 3 maiores rubricas fixas",
           detail: "Sub-locação, downgrade de software, terceirização.",
           apply: (s) => scaleCostLines(s, new Set(top3.map((l) => l.id)), 0.9),
+          asSimulatorParams: { fixedCutPct: 10, fixedCutTopN: 3 },
         },
         {
           id: "cut_top_20",
           title: "Cenário agressivo: -20% nas 3 maiores",
           detail: "Requer mudança estrutural (mudança de sede, reestruturação).",
           apply: (s) => scaleCostLines(s, new Set(top3.map((l) => l.id)), 0.8),
+          asSimulatorParams: { fixedCutPct: 20, fixedCutTopN: 3 },
         },
+
       ],
     });
   }
@@ -464,7 +498,9 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
                 title: `Reduzir PMR (atual ${state.revenue.pmr}d → ${Math.max(0, state.revenue.pmr - 10)}d)`,
                 detail: "Acelera entrada de caixa — melhora direto a conversão FCF/EBITDA.",
                 apply: (s) => setPmr(s, s.revenue.pmr - 10),
+                asSimulatorParams: { pmrDeltaDays: -10 },
               },
+
               {
                 id: "ef_reduce_assets",
                 title: "Liberar ativos ociosos (-10% do ativo total)",
