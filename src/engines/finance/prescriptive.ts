@@ -1,11 +1,41 @@
-import { AppState, CostLine } from "./types";
+// =====================================================================
+// prescriptive.ts — DETECTORES + COMPOSIÇÃO de cards prescritivos.
+//
+// A partir da PR4 (Fase 1 — Modo Propositivo), toda mutação de estado
+// vive em `./levers/primitives.ts`. Este arquivo passa a conter apenas:
+//   - Tipos públicos (PrescriptiveCard, PrescriptiveAction, etc.)
+//   - `snapshot()` (comparação antes/depois)
+//   - `buildPrescriptiveCards()` que DETECTA condições e COMPÕE
+//     primitivas do registry (Regra de Ouro: comportamento idêntico).
+// =====================================================================
+import { AppState } from "./types";
 import { buildDRE } from "./dre";
 import { calcIndicators } from "./indicators";
 import { compareRegimes } from "./tax/compare";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
-import { monthValues } from "./costs";
 import { buildCashFlow } from "./cashflow";
-import { sum, genId } from "./format";
+import { sum } from "./format";
+import {
+  adjustRevenue,
+  addLoan,
+  cloneCosts,
+  dismissWithSeverance,
+  laborCltLinesTotal,
+  payDownDebt,
+  reduceLaborByPositions,
+  scaleAssetTotal,
+  scaleCategory,
+  scaleCostLines,
+  scaleLaborLines,
+  setPmp,
+  setPmr,
+  severanceCostPerPosition,
+  switchRegime,
+  topNFixedLines,
+} from "./levers/primitives";
+
+// Re-export para preservar API pública existente (`@/engines/finance/prescriptive`).
+export { severanceCostPerPosition } from "./levers/primitives";
 
 export interface ActionImpact {
   label: string;
@@ -74,189 +104,6 @@ export function snapshot(state: AppState): MetricSnapshot {
   };
 }
 
-// ============== Helpers para construir ações ==============
-
-const cloneCosts = (costs: CostLine[]) => costs.map((c) => ({ ...c, values: c.values.slice() }));
-
-function scaleLine(state: AppState, id: string, factor: number): AppState {
-  const costs = cloneCosts(state.costs).map((c) =>
-    c.id === id ? { ...c, values: c.values.map((v) => v * factor) } : c,
-  );
-  return { ...state, costs };
-}
-
-function scaleCategory(state: AppState, category: CostLine["category"], factor: number): AppState {
-  // Auditoria bug #1: "custo_vendas" e "direto_venda" são tratados como CPV no DRE
-  // (ver isCpvCost). Escalar apenas um deles cria inconsistência. Quando o alvo for
-  // "custo_vendas", escalamos as duas categorias em conjunto.
-  const isCpvTarget = category === "custo_vendas";
-  const costs = cloneCosts(state.costs).map((c) => {
-    const hit = isCpvTarget
-      ? c.category === "custo_vendas" || c.category === "direto_venda"
-      : c.category === category;
-    return hit ? { ...c, values: c.values.map((v) => v * factor) } : c;
-  });
-  return { ...state, costs };
-}
-
-function setPmr(state: AppState, newPmr: number): AppState {
-  return { ...state, revenue: { ...state.revenue, pmr: Math.max(0, newPmr) } };
-}
-
-function setPmp(state: AppState, newPmp: number): AppState {
-  return { ...state, revenue: { ...state.revenue, pmp: Math.max(0, newPmp) } };
-}
-
-function adjustRevenue(state: AppState, factor: number): AppState {
-  return {
-    ...state,
-    revenue: { ...state.revenue, bruta: state.revenue.bruta.map((v) => v * factor) },
-  };
-}
-
-/**
- * Adiciona empréstimo via tabela PRICE REAL:
- *  juros_t = saldo_{t-1} × i ; amort_t = PMT − juros_t ; saldo_t = saldo_{t-1} − amort_t.
- * Atualiza: capital.dividaOnerosa (+principal), cashflow (captação + amortização do principal mês a mês)
- *           e a linha "juros sobre empréstimos" do DRE com os juros do mês.
- */
-function addLoan(
-  state: AppState,
-  principal: number,
-  taxaMensal: number,
-  prazoMeses: number,
-  monthIdx = 0,
-): AppState {
-  const i = taxaMensal / 100;
-  const pmt =
-    i === 0 ? principal / prazoMeses : principal * (i / (1 - Math.pow(1 + i, -prazoMeses)));
-
-  const cashflow = { ...state.cashflow };
-  cashflow.emprestimosCaptados = state.cashflow.emprestimosCaptados.map((v, idx) =>
-    idx === monthIdx ? v + principal : v,
-  );
-  cashflow.amortizacoes = state.cashflow.amortizacoes.slice();
-
-  const costs = cloneCosts(state.costs);
-  let jurosLine = costs.find((c) => /juros/i.test(c.label));
-  if (!jurosLine) {
-    jurosLine = {
-      id: genId("juros_"),
-      label: "Juros sobre empréstimos",
-      category: "financeiro",
-      values: Array(12).fill(0),
-      fixed: false,
-      custom: true,
-    };
-    costs.push(jurosLine);
-  } else {
-    jurosLine.fixed = false;
-    jurosLine.values = jurosLine.values.slice();
-  }
-
-  let saldo = principal;
-  for (let k = 0; k < prazoMeses; k++) {
-    const idx = monthIdx + k;
-    if (idx >= 12) break;
-    const juros = saldo * i;
-    const amort = pmt - juros;
-    jurosLine.values[idx] = (jurosLine.values[idx] || 0) + juros;
-    cashflow.amortizacoes[idx] = (cashflow.amortizacoes[idx] || 0) + amort;
-    saldo -= amort;
-  }
-
-  const capital = { ...state.capital, dividaOnerosa: state.capital.dividaOnerosa + principal };
-  return { ...state, costs, cashflow, capital };
-}
-
-/** Quita parte do principal usando caixa: reduz dívida + juros futuros proporcionalmente. */
-function payDownDebt(state: AppState, pct: number): AppState {
-  const safePct = Math.min(Math.max(pct, 0), 1);
-  const originalDivida = state.capital.dividaOnerosa;
-  const capital = { ...state.capital, dividaOnerosa: originalDivida * (1 - safePct) };
-  // reduz proporcionalmente os juros pagos (não a outras linhas financeiras)
-  const costs = cloneCosts(state.costs).map((c) =>
-    c.category === "financeiro" && /juros/i.test(c.label)
-      ? { ...c, values: c.values.map((v) => v * (1 - safePct)) }
-      : c,
-  );
-  // consome caixa equivalente ao principal quitado (evita divisão por zero quando pct = 1)
-  const cashUsed = originalDivida * safePct;
-  const cashflow = { ...state.cashflow };
-  cashflow.amortizacoes = state.cashflow.amortizacoes.slice();
-  cashflow.amortizacoes[0] = (cashflow.amortizacoes[0] || 0) + cashUsed;
-  return { ...state, costs, cashflow, capital };
-}
-
-function switchRegime(state: AppState, regime: AppState["tax"]["regime"]): AppState {
-  return { ...state, tax: { ...state.tax, regime } };
-}
-
-function topNFixedLines(state: AppState, n: number): CostLine[] {
-  return state.costs
-    .filter((c) => c.category === "fixo")
-    .map((c) => ({ c, total: sum(monthValues(c)) }))
-    .sort((a, b) => b.total - a.total)
-    .slice(0, n)
-    .map((x) => x.c);
-}
-
-function laborCltLinesTotal(state: AppState): { lines: CostLine[]; totalMensal: number } {
-  const re = /sal[áa]rio|folha|clt|mod|mão de obra/i;
-  const lines = state.costs.filter((c) => c.category !== "financeiro" && re.test(c.label));
-  const totalMensal = lines.reduce(
-    (acc, c) => acc + (c.fixed ? c.values[0] : sum(c.values) / 12),
-    0,
-  );
-  return { lines, totalMensal };
-}
-
-function reduceLaborByPositions(
-  state: AppState,
-  positions: number,
-  custoMedioPosicao: number,
-): AppState {
-  const { lines, totalMensal } = laborCltLinesTotal(state);
-  if (lines.length === 0 || totalMensal <= 0) return state;
-  const corteMensal = Math.min(positions * custoMedioPosicao, totalMensal);
-  const factor = 1 - corteMensal / totalMensal;
-  const costs = cloneCosts(state.costs).map((c) =>
-    lines.some((l) => l.id === c.id) ? { ...c, values: c.values.map((v) => v * factor) } : c,
-  );
-  return { ...state, costs };
-}
-
-/**
- * Custo rescisório sem justa causa (CLT) — estimativa conservadora:
- *   Aviso indenizado (1 salário) + 13º proporcional + férias + 1/3 (~4/3 salário)
- *   + multa FGTS 40% sobre 8% × meses trabalhados.
- */
-export function severanceCostPerPosition(salarioBase: number, mesesTrabalhados = 24): number {
-  const aviso = salarioBase;
-  const decimoTerceiro = salarioBase;
-  const feriasMais1_3 = salarioBase * (4 / 3);
-  const multaFgts = salarioBase * 0.08 * mesesTrabalhados * 0.4;
-  return aviso + decimoTerceiro + feriasMais1_3 + multaFgts;
-}
-
-/** Demissão com custo rescisório como saída de caixa one-shot e redução estrutural da folha. */
-function dismissWithSeverance(
-  state: AppState,
-  positions: number,
-  salarioBase: number,
-  monthIdx = 0,
-): AppState {
-  const severance = severanceCostPerPosition(salarioBase) * positions;
-  const novo = reduceLaborByPositions(state, positions, salarioBase);
-  // Auditoria bug #5: rescisão é despesa OPERACIONAL one-shot, não capex.
-  // Lançamos em `amortizacoes` (saída de caixa não-operacional sem distorcer
-  // EBITDA nem o Fluxo de Investimento). A redução estrutural de folha já
-  // captura o ganho recorrente; aqui apenas registramos a saída pontual.
-  const cashflow = { ...novo.cashflow, amortizacoes: novo.cashflow.amortizacoes.slice() };
-  cashflow.amortizacoes[monthIdx] = (cashflow.amortizacoes[monthIdx] || 0) + severance;
-  return { ...novo, cashflow };
-}
-
 // ============== Engine principal ==============
 
 const BENCHMARK_MARGEM_BRUTA: Record<AppState["businessType"], [number, number]> = {
@@ -312,14 +159,7 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           id: "reduce_clt_5pct",
           title: "Cortar 5% da folha (revisão de cargos/salários)",
           detail: "Negociação coletiva ou ajustes pontuais sem desligamentos.",
-          apply: (s) => {
-            const { lines } = laborCltLinesTotal(s);
-            const ids = new Set(lines.map((l) => l.id));
-            const costs = cloneCosts(s.costs).map((c) =>
-              ids.has(c.id) ? { ...c, values: c.values.map((v) => v * 0.95) } : c,
-            );
-            return { ...s, costs };
-          },
+          apply: (s) => scaleLaborLines(s, 0.95),
         },
         {
           id: "increase_revenue_30",
@@ -347,12 +187,8 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           title: "Cortar 15% dos custos fixos",
           detail: "Reduz estrutura — foco nas 3 maiores rubricas fixas.",
           apply: (s) => {
-            const top = topNFixedLines(s, 3).map((l) => l.id);
-            const ids = new Set(top);
-            const costs = cloneCosts(s.costs).map((c) =>
-              ids.has(c.id) ? { ...c, values: c.values.map((v) => v * 0.85) } : c,
-            );
-            return { ...s, costs };
+            const ids = new Set(topNFixedLines(s, 3).map((l) => l.id));
+            return scaleCostLines(s, ids, 0.85);
           },
         },
         {
@@ -365,10 +201,7 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           id: "reduce_assets",
           title: "Reduzir ativo total em 20% (venda de não-operacionais)",
           detail: "Libera capital ocioso. Aumenta giro do ativo e ROIC.",
-          apply: (s) => ({
-            ...s,
-            capital: { ...s.capital, ativoTotal: s.capital.ativoTotal * 0.8 },
-          }),
+          apply: (s) => scaleAssetTotal(s, 0.8),
         },
       ],
     });
@@ -571,25 +404,13 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           id: "cut_top_10",
           title: "Cortar 10% das 3 maiores rubricas fixas",
           detail: "Sub-locação, downgrade de software, terceirização.",
-          apply: (s) => {
-            const ids = new Set(top3.map((l) => l.id));
-            const costs = cloneCosts(s.costs).map((c) =>
-              ids.has(c.id) ? { ...c, values: c.values.map((v) => v * 0.9) } : c,
-            );
-            return { ...s, costs };
-          },
+          apply: (s) => scaleCostLines(s, new Set(top3.map((l) => l.id)), 0.9),
         },
         {
           id: "cut_top_20",
           title: "Cenário agressivo: -20% nas 3 maiores",
           detail: "Requer mudança estrutural (mudança de sede, reestruturação).",
-          apply: (s) => {
-            const ids = new Set(top3.map((l) => l.id));
-            const costs = cloneCosts(s.costs).map((c) =>
-              ids.has(c.id) ? { ...c, values: c.values.map((v) => v * 0.8) } : c,
-            );
-            return { ...s, costs };
-          },
+          apply: (s) => scaleCostLines(s, new Set(top3.map((l) => l.id)), 0.8),
         },
       ],
     });
@@ -649,10 +470,7 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
                 title: "Liberar ativos ociosos (-10% do ativo total)",
                 detail:
                   "Venda de imóveis, equipamentos subutilizados, baixa de estoque parado. Aumenta giro e ROIC.",
-                apply: (s) => ({
-                  ...s,
-                  capital: { ...s.capital, ativoTotal: s.capital.ativoTotal * 0.9 },
-                }),
+                apply: (s) => scaleAssetTotal(s, 0.9),
               },
             ],
     });
@@ -682,3 +500,6 @@ function labelRegime(r: AppState["tax"]["regime"]) {
       ? "Lucro Presumido"
       : "Lucro Real";
 }
+
+// `cloneCosts` é re-exportado para compatibilidade caso testes externos importem.
+export { cloneCosts };
