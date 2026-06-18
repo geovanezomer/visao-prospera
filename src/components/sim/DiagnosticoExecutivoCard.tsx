@@ -6,7 +6,7 @@
 // Números reais (valor, %) vêm do briefing — NUNCA do texto da IA.
 // =====================================================================
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
+  Database,
   RefreshCw,
   Sparkles,
   TriangleAlert,
@@ -21,6 +22,7 @@ import {
 import type { Briefing } from "@/engines/finance/briefing";
 import type { IndicadorKey } from "@/data/thresholds";
 import { useDiagnosticoIA } from "@/hooks/useDiagnosticoIA";
+import { readTelemetry, clearTelemetry } from "@/engines/ai/diagnosticoTelemetry";
 
 // Labels humanos dos indicadores — usados nos chips.
 const INDICADOR_LABEL: Record<IndicadorKey, string> = {
@@ -61,7 +63,10 @@ interface Props {
 }
 
 export function DiagnosticoExecutivoCard({ briefing }: Props) {
-  const { enabled, data, loading, error, regenerate } = useDiagnosticoIA(briefing);
+  const { enabled, data, loading, error, cached, regenerate } = useDiagnosticoIA(briefing);
+  const [showLog, setShowLog] = useState(false);
+  // Releitura on-demand do log (não precisa de reatividade fina).
+  const log = useMemo(() => (showLog ? readTelemetry() : []), [showLog, data, loading]);
 
   // Mapa de classificações p/ enriquecer os chips dos indicadores referenciados.
   const classMap = useMemo(() => {
@@ -84,6 +89,16 @@ export function DiagnosticoExecutivoCard({ briefing }: Props) {
           <Badge variant="outline" className="text-[10px] uppercase">
             IA
           </Badge>
+          {cached && data && (
+            <Badge
+              variant="outline"
+              className="gap-1 border-[var(--success)]/40 bg-[var(--success)]/10 text-[10px] text-[var(--success)]"
+              title="Resultado carregado do cache local (até 7 dias)."
+            >
+              <Database className="h-3 w-3" />
+              cache
+            </Badge>
+          )}
         </div>
         <Button
           size="sm"
@@ -230,10 +245,72 @@ export function DiagnosticoExecutivoCard({ briefing }: Props) {
             </div>
           )}
 
-          {/* Rodapé de auditoria CVM */}
-          <footer className="border-t border-border/40 pt-3 text-[10px] text-muted-foreground">
-            Gerado por {data.provider} · {data.modelo} · prompt {data.promptVersion} ·{" "}
-            {new Date(data.geradoEm).toLocaleString("pt-BR")}
+          {/* Rodapé de auditoria CVM + telemetria local */}
+          <footer className="space-y-2 border-t border-border/40 pt-3 text-[10px] text-muted-foreground">
+            <div className="flex items-center justify-between gap-2">
+              <span>
+                Gerado por {data.provider} · {data.modelo} · prompt {data.promptVersion} ·{" "}
+                {new Date(data.geradoEm).toLocaleString("pt-BR")}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowLog((v) => !v)}
+                className="underline-offset-2 hover:underline"
+              >
+                {showLog ? "Ocultar log" : "Ver log"}
+              </button>
+            </div>
+
+            {showLog && (
+              <div className="rounded-md border border-border/40 bg-background/40 p-2">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="font-semibold text-foreground">
+                    Últimas gerações ({log.length})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearTelemetry();
+                      setShowLog(false);
+                    }}
+                    className="text-[10px] text-muted-foreground underline-offset-2 hover:underline"
+                  >
+                    Limpar
+                  </button>
+                </div>
+                {log.length === 0 ? (
+                  <div className="text-muted-foreground">Sem registros.</div>
+                ) : (
+                  <ul className="max-h-40 space-y-0.5 overflow-y-auto font-mono text-[10px]">
+                    {log.slice(0, 20).map((e, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <span className="text-muted-foreground">
+                          {new Date(e.ts).toLocaleTimeString("pt-BR")}
+                        </span>
+                        <span
+                          className={
+                            e.status === "ok"
+                              ? "text-[var(--success)]"
+                              : e.status === "cache"
+                                ? "text-primary"
+                                : "text-[var(--destructive)]"
+                          }
+                        >
+                          {e.status}
+                        </span>
+                        <span>{e.model}</span>
+                        <span className="text-muted-foreground">{e.durationMs}ms</span>
+                        {e.errorMsg && (
+                          <span className="truncate text-[var(--destructive)]" title={e.errorMsg}>
+                            {e.errorMsg}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </footer>
         </div>
       )}
