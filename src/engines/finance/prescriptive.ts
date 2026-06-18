@@ -410,7 +410,9 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
             detail:
               "Aplica o novo regime ao plano usando os parâmetros já configurados (anexo do Simples, presunção, etc.).",
             apply: (s) => switchRegime(s, melhor[0] as AppState["tax"]["regime"]),
+            asSimulatorParams: { regimeOverride: melhor[0] as AppState["tax"]["regime"] },
           },
+
         ],
       });
     }
