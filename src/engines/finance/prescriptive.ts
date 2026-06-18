@@ -436,13 +436,16 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           title: "Cortar 10% das 3 maiores rubricas fixas",
           detail: "Sub-locação, downgrade de software, terceirização.",
           apply: (s) => scaleCostLines(s, new Set(top3.map((l) => l.id)), 0.9),
+          asSimulatorParams: { fixedCutPct: 10, fixedCutTopN: 3 },
         },
         {
           id: "cut_top_20",
           title: "Cenário agressivo: -20% nas 3 maiores",
           detail: "Requer mudança estrutural (mudança de sede, reestruturação).",
           apply: (s) => scaleCostLines(s, new Set(top3.map((l) => l.id)), 0.8),
+          asSimulatorParams: { fixedCutPct: 20, fixedCutTopN: 3 },
         },
+
       ],
     });
   }
