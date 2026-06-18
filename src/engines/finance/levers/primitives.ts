@@ -210,7 +210,11 @@ export function reduceLaborByPositions(
   return { ...state, costs };
 }
 
-/** Demissão com custo rescisório one-shot + redução estrutural da folha. */
+/** Demissão com custo rescisório one-shot + redução estrutural da folha.
+ *  A rescisão é lançada como CUSTO FIXO one-shot no mês `monthIdx` (passa pelo
+ *  DRE, reduz EBITDA e a base de IR/CSLL no período, e impacta o FCO via
+ *  conciliação caixa-DRE). NÃO usar `cashflow.amortizacoes` — esse bucket é
+ *  pagamento de principal de dívida (FCFF) e distorceria endividamento. */
 export function dismissWithSeverance(
   state: AppState,
   positions: number,
@@ -218,12 +222,23 @@ export function dismissWithSeverance(
   monthIdx = 0,
 ): AppState {
   const severance = severanceCostPerPosition(salarioBase) * positions;
+  if (severance <= 0 || positions <= 0) return state;
   const novo = reduceLaborByPositions(state, positions, salarioBase);
-  // Rescisão é despesa OPERACIONAL one-shot, lançada em `amortizacoes`
-  // (saída de caixa não-operacional sem distorcer EBITDA nem Investimento).
-  const cashflow = { ...novo.cashflow, amortizacoes: novo.cashflow.amortizacoes.slice() };
-  cashflow.amortizacoes[monthIdx] = (cashflow.amortizacoes[monthIdx] || 0) + severance;
-  return { ...novo, cashflow };
+  const values = Array<number>(12).fill(0);
+  const idx = Math.max(0, Math.min(11, monthIdx));
+  values[idx] = severance;
+  const rescisaoLine: CostLine = {
+    id: genId("rescisao_oneshot"),
+    label: "Rescisões e indenizações (one-shot)",
+    category: "fixo",
+    subcategory: "pessoal",
+    values,
+    fixed: false, // one-shot: NÃO é mensalizado; apenas no mês indicado
+    comportamento: "fixo",
+    custom: true,
+  };
+  const costs = [...cloneCosts(novo.costs), rescisaoLine];
+  return { ...novo, costs };
 }
 
 /** Escala um conjunto arbitrário de linhas de custo (por IDs) por um fator. */
