@@ -246,21 +246,25 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           title: `Captar empréstimo de capital de giro (${principal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} @ 2%a.m. × 12m)`,
           detail: "Entra no mês 1. Cria parcela de juros + amortização mensal.",
           apply: (s) => addLoan(s, principal, 2, 12, 0),
+          asSimulatorParams: { loanPrincipal: principal, loanRatePctAm: 2, loanTermMonths: 12 },
         },
         {
           id: "reduce_pmr",
           title: `Reduzir PMR de ${state.revenue.pmr} para ${Math.max(0, state.revenue.pmr - 15)} dias`,
           detail: "Negociação com clientes ou antecipação seletiva. Acelera entrada de caixa.",
           apply: (s) => setPmr(s, s.revenue.pmr - 15),
+          asSimulatorParams: { pmrDeltaDays: -15 },
         },
         {
           id: "increase_pmp",
           title: `Negociar PMP de ${state.revenue.pmp} para ${state.revenue.pmp + 15} dias com fornecedores`,
           detail: "Posterga saídas sem alterar custo total.",
           apply: (s) => setPmp(s, s.revenue.pmp + 15),
+          asSimulatorParams: { pmpDeltaDays: 15 },
         },
       ],
     });
+
   }
 
   // ===== 4. Cobertura de juros baixa =====
