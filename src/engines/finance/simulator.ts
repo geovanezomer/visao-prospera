@@ -14,6 +14,20 @@ import { resolveEffectiveRegime } from "./regime";
 import { buildValuation, defaultValuationParams } from "./valuation";
 import { buildCashFlow, type CashFlow } from "./cashflow";
 import { fill12, sum } from "./format";
+// PR4a (Fase 1.5): unificação parcial com o catálogo de primitivas.
+// Alavancas 1:1 equivalentes passam a chamar `levers/primitives.ts`.
+// Alavancas com comportamento específico (volume, payroll/isLaborLine,
+// terceirização, antecipação, kd, addLoan com id fixo) ficam inline e
+// serão migradas depois que o registry ganhar variantes equivalentes.
+import {
+  adjustRevenue as p_adjustRevenue,
+  cloneCosts as p_cloneCosts,
+  scaleCostLines as p_scaleCostLines,
+  setPmp as p_setPmp,
+  setPmr as p_setPmr,
+  switchRegime as p_switchRegime,
+  topNFixedLines as p_topNFixedLines,
+} from "./levers/primitives";
 
 // Mesmo regex usado em sensitivity.ts/prescriptive.ts — verdade única para identificar folha.
 const LABOR_RE = /sal[áa]rio|folha|clt|prolabore|pr[óo]-labore|mod|m[ãa]o de obra/i;
@@ -68,17 +82,10 @@ export const DEFAULT_SIM: SimulatorParams = {
   regimeOverride: "base",
 };
 
-const cloneCosts = (c: CostLine[]) => c.map((x) => ({ ...x, values: x.values.slice() }));
+const cloneCosts = p_cloneCosts;
 
 function topNFixedIds(state: AppState, n: number): Set<string> {
-  return new Set(
-    state.costs
-      .filter((c) => c.category === "fixo")
-      .map((c) => ({ id: c.id, total: sum(monthValues(c)) }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, Math.max(1, Math.round(n)))
-      .map((x) => x.id),
-  );
+  return new Set(p_topNFixedLines(state, Math.max(1, Math.round(n))).map((l) => l.id));
 }
 
 export function applySimulator(base: AppState, p: SimulatorParams): AppState {
@@ -106,10 +113,9 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     tax: { ...base.tax },
   };
 
-  // 1) Preço
+  // 1) Preço — primitiva adjustRevenue (escala receita bruta).
   if (p.priceDeltaPct !== 0) {
-    const f = 1 + p.priceDeltaPct / 100;
-    s.revenue.bruta = s.revenue.bruta.map((v) => v * f);
+    s.revenue = p_adjustRevenue(s, 1 + p.priceDeltaPct / 100).revenue;
   }
 
   // 2) Volume: receita + custo_vendas + variavel + deduções absolutas (S2)
@@ -149,13 +155,12 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     );
   }
 
-  // 5) Ajuste de fixos (top-N) — positivo = corte; negativo = aumento.
+  // 5) Ajuste de fixos (top-N) — primitiva scaleCostLines.
+  // Positivo = corte; negativo = aumento.
   if (p.fixedCutPct !== 0) {
     const ids = topNFixedIds(s, p.fixedCutTopN);
     const f = 1 - p.fixedCutPct / 100; // ex: +20 → 0.80 (corte 20%); -20 → 1.20 (aumento 20%)
-    s.costs = s.costs.map((c) =>
-      ids.has(c.id) ? { ...c, values: c.values.map((v) => v * f) } : c,
-    );
+    s.costs = p_scaleCostLines(s, ids, f).costs;
   }
 
   // 6) Terceirização — reduz CPV proporcionalmente ao % terceirizado e adiciona
@@ -177,12 +182,12 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     }
   }
 
-  // 7) PMR / PMP
+  // 7) PMR / PMP — primitivas setPmr / setPmp.
   if (p.pmrDeltaDays !== 0) {
-    s.revenue.pmr = Math.max(0, s.revenue.pmr + p.pmrDeltaDays);
+    s.revenue = p_setPmr(s, s.revenue.pmr + p.pmrDeltaDays).revenue;
   }
   if (p.pmpDeltaDays !== 0) {
-    s.revenue.pmp = Math.max(0, s.revenue.pmp + p.pmpDeltaDays);
+    s.revenue = p_setPmp(s, s.revenue.pmp + p.pmpDeltaDays).revenue;
   }
 
   // 8) Antecipação de recebíveis (custo financeiro)
@@ -261,9 +266,9 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     });
   }
 
-  // 12) Regime
+  // 12) Regime — primitiva switchRegime.
   if (p.regimeOverride !== "base") {
-    s.tax = { ...s.tax, regime: p.regimeOverride };
+    s.tax = p_switchRegime(s, p.regimeOverride).tax;
   }
 
   return s;
