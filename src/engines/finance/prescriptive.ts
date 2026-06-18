@@ -291,7 +291,9 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           detail:
             "Reduz dívida onerosa e juros futuros proporcionalmente; consome caixa equivalente.",
           apply: (s) => payDownDebt(s, 0.3),
+          asSimulatorParams: { debtPaydownPct: 30 },
         },
+
       ],
     });
   }
