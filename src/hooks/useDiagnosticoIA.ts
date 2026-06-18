@@ -48,14 +48,18 @@ export function useDiagnosticoIA(briefing: Briefing | null): UseDiagnosticoIA {
   const [data, setData] = useState<DiagnosticoResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cached, setCached_] = useState(false);
+  const [cached, setIsFromCache] = useState(false);
   const [nonce, setNonce] = useState(0); // bump → força refetch
 
-  // Reage a mudanças de config feitas em outra aba/janela.
+  // Reage a mudanças de config: storage (outras abas) + custom event (mesma aba).
   useEffect(() => {
-    const onStorage = () => setCfg(loadConfig());
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    const onChange = () => setCfg(loadConfig());
+    window.addEventListener("storage", onChange);
+    window.addEventListener(AI_CONFIG_CHANGED_EVENT, onChange);
+    return () => {
+      window.removeEventListener("storage", onChange);
+      window.removeEventListener(AI_CONFIG_CHANGED_EVENT, onChange);
+    };
   }, []);
 
   const enabled = isAIConfigured(cfg);
