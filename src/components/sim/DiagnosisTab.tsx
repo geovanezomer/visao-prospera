@@ -5,7 +5,7 @@ import { buildPrescriptiveCards, PrescriptiveCard } from "@/engines/finance/pres
 import { diagnose } from "@/engines/finance";
 import { buildBriefing } from "@/engines/finance/briefing";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight, Info, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
 import { HealthScoreCard, SensitivityCard } from "./AnalysisTab";
@@ -193,17 +193,35 @@ function CardView({ card }: { card: PrescriptiveCard }) {
                   className="flex items-start gap-2 rounded-md border border-border/40 bg-background/40 p-2.5 text-xs"
                 >
                   <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <div className="font-medium text-foreground">{a.title}</div>
                     <div className="mt-0.5 text-[11px] text-muted-foreground">{a.detail}</div>
+                    {a.asSimulatorParams && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          window.dispatchEvent(
+                            new CustomEvent("gz-apply-simulator-params", {
+                              detail: a.asSimulatorParams,
+                            }),
+                          )
+                        }
+                        className="mt-2 inline-flex items-center gap-1.5 rounded border border-primary/40 bg-primary/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary transition hover:bg-primary/20"
+                      >
+                        <SlidersHorizontal className="h-3 w-3" />
+                        Abrir no Simulador
+                      </button>
+                    )}
                   </div>
                 </li>
               ))}
             </ul>
             <p className="mt-2 text-[10px] italic text-muted-foreground">
-              Para testar essas e outras alavancas com sliders e ver o DRE simulado, use a aba{" "}
-              <strong>Simulador</strong>.
+              Ações com botão <strong>Abrir no Simulador</strong> abrem a aba com os sliders já
+              pré-configurados — você pode então combinar com outras alavancas antes de aplicar ao
+              plano-base.
             </p>
+
           </div>
         )}
       </div>
