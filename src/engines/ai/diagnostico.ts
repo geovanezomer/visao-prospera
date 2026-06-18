@@ -13,7 +13,10 @@ import {
   buildUserPrompt,
   PROMPT_VERSION,
   type DiagnosticoExecutivo,
+  type PropostaSimulador,
 } from "./diagnosticoPrompt";
+import { compileAiMove } from "@/engines/finance/levers/aiMoves";
+
 
 /** Detecta se a config tem o mínimo para gerar — usada pra ocultar o card. */
 export function isAIConfigured(cfg: AIConfig): boolean {
