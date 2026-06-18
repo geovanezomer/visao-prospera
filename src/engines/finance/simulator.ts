@@ -82,17 +82,10 @@ export const DEFAULT_SIM: SimulatorParams = {
   regimeOverride: "base",
 };
 
-const cloneCosts = (c: CostLine[]) => c.map((x) => ({ ...x, values: x.values.slice() }));
+const cloneCosts = p_cloneCosts;
 
 function topNFixedIds(state: AppState, n: number): Set<string> {
-  return new Set(
-    state.costs
-      .filter((c) => c.category === "fixo")
-      .map((c) => ({ id: c.id, total: sum(monthValues(c)) }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, Math.max(1, Math.round(n)))
-      .map((x) => x.id),
-  );
+  return new Set(p_topNFixedLines(state, Math.max(1, Math.round(n))).map((l) => l.id));
 }
 
 export function applySimulator(base: AppState, p: SimulatorParams): AppState {
