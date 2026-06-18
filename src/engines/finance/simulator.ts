@@ -14,6 +14,20 @@ import { resolveEffectiveRegime } from "./regime";
 import { buildValuation, defaultValuationParams } from "./valuation";
 import { buildCashFlow, type CashFlow } from "./cashflow";
 import { fill12, sum } from "./format";
+// PR4a (Fase 1.5): unificação parcial com o catálogo de primitivas.
+// Alavancas 1:1 equivalentes passam a chamar `levers/primitives.ts`.
+// Alavancas com comportamento específico (volume, payroll/isLaborLine,
+// terceirização, antecipação, kd, addLoan com id fixo) ficam inline e
+// serão migradas depois que o registry ganhar variantes equivalentes.
+import {
+  adjustRevenue as p_adjustRevenue,
+  cloneCosts as p_cloneCosts,
+  scaleCostLines as p_scaleCostLines,
+  setPmp as p_setPmp,
+  setPmr as p_setPmr,
+  switchRegime as p_switchRegime,
+  topNFixedLines as p_topNFixedLines,
+} from "./levers/primitives";
 
 // Mesmo regex usado em sensitivity.ts/prescriptive.ts — verdade única para identificar folha.
 const LABOR_RE = /sal[áa]rio|folha|clt|prolabore|pr[óo]-labore|mod|m[ãa]o de obra/i;
