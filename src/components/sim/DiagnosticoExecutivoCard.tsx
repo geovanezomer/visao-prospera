@@ -89,6 +89,16 @@ export function DiagnosticoExecutivoCard({ briefing }: Props) {
           <Badge variant="outline" className="text-[10px] uppercase">
             IA
           </Badge>
+          {cached && data && (
+            <Badge
+              variant="outline"
+              className="gap-1 border-[var(--success)]/40 bg-[var(--success)]/10 text-[10px] text-[var(--success)]"
+              title="Resultado carregado do cache local (até 7 dias)."
+            >
+              <Database className="h-3 w-3" />
+              cache
+            </Badge>
+          )}
         </div>
         <Button
           size="sm"
