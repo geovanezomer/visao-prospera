@@ -171,16 +171,19 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           title: "Cortar 5% da folha (revisão de cargos/salários)",
           detail: "Negociação coletiva ou ajustes pontuais sem desligamentos.",
           apply: (s) => scaleLaborLines(s, 0.95),
+          asSimulatorParams: { payrollDeltaPct: -5 },
         },
         {
           id: "increase_revenue_30",
           title: "Aumentar receita em 30%",
           detail: "Diluir folha mantendo quadro — exige plano comercial. Simula impacto isolado.",
           apply: (s) => adjustRevenue(s, 1.3),
+          asSimulatorParams: { priceDeltaPct: 30 },
         },
       ],
     });
   }
+
 
   // ===== 2. ROIC < WACC =====
   if (Number.isFinite(ind.roic) && ind.roic < ind.wacc) {
