@@ -50,8 +50,17 @@ export interface PrescriptiveAction {
   id: string;
   title: string;
   detail: string;
+  /** Mutação determinística (compat retro — usado pelos botões "Aplicar"). */
   apply: (s: AppState) => AppState;
+  /**
+   * PR4b (Fase 1.5) — Equivalente declarativo em termos de SimulatorParams.
+   * Permite que a UI abra o Simulador pré-configurado em vez de mutar direto.
+   * Opcional: ausente quando a ação não tem alavanca paramétrica equivalente
+   * (ex.: rescisão com one-shot de caixa, venda de ativos).
+   */
+  asSimulatorParams?: Partial<SimulatorParams>;
 }
+
 
 export interface PrescriptiveCard {
   id: string;
