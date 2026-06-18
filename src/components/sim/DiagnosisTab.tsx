@@ -5,7 +5,7 @@ import { buildPrescriptiveCards, PrescriptiveCard } from "@/engines/finance/pres
 import { diagnose } from "@/engines/finance";
 import { buildBriefing } from "@/engines/finance/briefing";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { AlertTriangle, CheckCircle2, ChevronRight, Info, TriangleAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight, Info, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
 import { HealthScoreCard, SensitivityCard } from "./AnalysisTab";
