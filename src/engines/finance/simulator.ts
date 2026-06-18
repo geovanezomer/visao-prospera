@@ -266,9 +266,9 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     });
   }
 
-  // 12) Regime
+  // 12) Regime — primitiva switchRegime.
   if (p.regimeOverride !== "base") {
-    s.tax = { ...s.tax, regime: p.regimeOverride };
+    s.tax = p_switchRegime(s, p.regimeOverride).tax;
   }
 
   return s;
