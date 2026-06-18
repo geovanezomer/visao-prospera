@@ -316,13 +316,16 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           title: `Reduzir PMR em 15 dias (${state.revenue.pmr}→${Math.max(0, state.revenue.pmr - 15)})`,
           detail: "Política comercial mais rígida + uso seletivo de antecipação.",
           apply: (s) => setPmr(s, s.revenue.pmr - 15),
+          asSimulatorParams: { pmrDeltaDays: -15 },
         },
         {
           id: "pmp_plus_15",
           title: `Aumentar PMP em 15 dias (${state.revenue.pmp}→${state.revenue.pmp + 15})`,
           detail: "Renegociação com fornecedores estratégicos.",
           apply: (s) => setPmp(s, s.revenue.pmp + 15),
+          asSimulatorParams: { pmpDeltaDays: 15 },
         },
+
       ],
     });
   }
