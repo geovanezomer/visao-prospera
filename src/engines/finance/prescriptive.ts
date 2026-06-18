@@ -498,7 +498,9 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
                 title: `Reduzir PMR (atual ${state.revenue.pmr}d → ${Math.max(0, state.revenue.pmr - 10)}d)`,
                 detail: "Acelera entrada de caixa — melhora direto a conversão FCF/EBITDA.",
                 apply: (s) => setPmr(s, s.revenue.pmr - 10),
+                asSimulatorParams: { pmrDeltaDays: -10 },
               },
+
               {
                 id: "ef_reduce_assets",
                 title: "Liberar ativos ociosos (-10% do ativo total)",
