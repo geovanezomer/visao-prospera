@@ -130,9 +130,12 @@ export async function gerarDiagnostico(
     { role: "user", content: buildUserPrompt(briefing) },
   ];
 
-  // Acumula o stream — o output esperado é pequeno (<2KB), não há motivo pra UI streamar.
+  // Força JSON em provedores OpenAI-compatíveis (Anthropic ignora silenciosamente).
+  // Reduz drasticamente falhas de parsing — extractJson continua como rede de segurança.
   let raw = "";
-  for await (const chunk of streamChat(cfg, messages, signal)) {
+  for await (const chunk of streamChat(cfg, messages, signal, {
+    responseFormat: { type: "json_object" },
+  })) {
     raw += chunk;
   }
 
