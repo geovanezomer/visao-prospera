@@ -245,10 +245,72 @@ export function DiagnosticoExecutivoCard({ briefing }: Props) {
             </div>
           )}
 
-          {/* Rodapé de auditoria CVM */}
-          <footer className="border-t border-border/40 pt-3 text-[10px] text-muted-foreground">
-            Gerado por {data.provider} · {data.modelo} · prompt {data.promptVersion} ·{" "}
-            {new Date(data.geradoEm).toLocaleString("pt-BR")}
+          {/* Rodapé de auditoria CVM + telemetria local */}
+          <footer className="space-y-2 border-t border-border/40 pt-3 text-[10px] text-muted-foreground">
+            <div className="flex items-center justify-between gap-2">
+              <span>
+                Gerado por {data.provider} · {data.modelo} · prompt {data.promptVersion} ·{" "}
+                {new Date(data.geradoEm).toLocaleString("pt-BR")}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowLog((v) => !v)}
+                className="underline-offset-2 hover:underline"
+              >
+                {showLog ? "Ocultar log" : "Ver log"}
+              </button>
+            </div>
+
+            {showLog && (
+              <div className="rounded-md border border-border/40 bg-background/40 p-2">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="font-semibold text-foreground">
+                    Últimas gerações ({log.length})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearTelemetry();
+                      setShowLog(false);
+                    }}
+                    className="text-[10px] text-muted-foreground underline-offset-2 hover:underline"
+                  >
+                    Limpar
+                  </button>
+                </div>
+                {log.length === 0 ? (
+                  <div className="text-muted-foreground">Sem registros.</div>
+                ) : (
+                  <ul className="max-h-40 space-y-0.5 overflow-y-auto font-mono text-[10px]">
+                    {log.slice(0, 20).map((e, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <span className="text-muted-foreground">
+                          {new Date(e.ts).toLocaleTimeString("pt-BR")}
+                        </span>
+                        <span
+                          className={
+                            e.status === "ok"
+                              ? "text-[var(--success)]"
+                              : e.status === "cache"
+                                ? "text-primary"
+                                : "text-[var(--destructive)]"
+                          }
+                        >
+                          {e.status}
+                        </span>
+                        <span>{e.model}</span>
+                        <span className="text-muted-foreground">{e.durationMs}ms</span>
+                        {e.errorMsg && (
+                          <span className="truncate text-[var(--destructive)]" title={e.errorMsg}>
+                            {e.errorMsg}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </footer>
         </div>
       )}
