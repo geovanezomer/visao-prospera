@@ -16,6 +16,7 @@ import {
   Clock,
   Database,
   RefreshCw,
+  SlidersHorizontal,
   Sparkles,
   TriangleAlert,
 } from "lucide-react";
@@ -23,6 +24,8 @@ import type { Briefing } from "@/engines/finance/briefing";
 import type { IndicadorKey } from "@/data/thresholds";
 import { useDiagnosticoIA } from "@/hooks/useDiagnosticoIA";
 import { readTelemetry, clearTelemetry } from "@/engines/ai/diagnosticoTelemetry";
+import { compileAiMove, getAiMove } from "@/engines/finance/levers/aiMoves";
+
 
 // Labels humanos dos indicadores — usados nos chips.
 const INDICADOR_LABEL: Record<IndicadorKey, string> = {
@@ -245,9 +248,86 @@ export function DiagnosticoExecutivoCard({ briefing }: Props) {
             </div>
           )}
 
+          {/* Propostas propositivas — Fase 2: IA → Simulador (deep-link) */}
+          {data.data.propostasSimulador && data.data.propostasSimulador.length > 0 && (
+            <div>
+              <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Propostas para o Simulador
+              </h4>
+              <ul className="space-y-2">
+                {data.data.propostasSimulador.map((p, i) => {
+                  const move = getAiMove(p.moveId);
+                  const compiled = compileAiMove(p.moveId, p.magnitude);
+                  if (!move || !compiled) return null;
+                  const magFmt =
+                    move.unit === "BRL"
+                      ? compiled.magnitude.toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                          maximumFractionDigits: 0,
+                        })
+                      : move.unit === "pct"
+                        ? `${compiled.magnitude > 0 ? "+" : ""}${compiled.magnitude}%`
+                        : `${compiled.magnitude} dias`;
+                  return (
+                    <li
+                      key={i}
+                      className="flex flex-col gap-2 rounded-md border border-primary/30 bg-primary/5 p-3 sm:flex-row sm:items-start sm:justify-between"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-semibold text-foreground">
+                            {move.label}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className="border-primary/40 bg-primary/10 font-mono text-[10px] text-primary"
+                          >
+                            {magFmt}
+                          </Badge>
+                        </div>
+                        {p.justificativa && (
+                          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                            {p.justificativa}
+                          </p>
+                        )}
+                        {p.impactoQualitativo && (
+                          <p className="mt-1 text-[11px] italic text-muted-foreground">
+                            Impacto esperado: {p.impactoQualitativo}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          window.dispatchEvent(
+                            new CustomEvent("gz-apply-simulator-params", {
+                              detail: compiled.params,
+                            }),
+                          )
+                        }
+                        className="inline-flex shrink-0 items-center gap-1.5 self-start rounded border border-primary/50 bg-primary/15 px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary transition hover:bg-primary/25"
+                      >
+                        <SlidersHorizontal className="h-3 w-3" />
+                        Abrir no Simulador
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="mt-2 text-[10px] italic text-muted-foreground">
+                Propostas geradas pela IA com base no diagnóstico. Cada botão abre o Simulador com
+                o slider pré-configurado — você pode então combinar com outras alavancas antes de
+                aplicar ao plano-base.
+              </p>
+            </div>
+          )}
+
           {/* Rodapé de auditoria CVM + telemetria local */}
           <footer className="space-y-2 border-t border-border/40 pt-3 text-[10px] text-muted-foreground">
             {/* Disclaimer CVM: IA assistiva, responsabilidade do consultor */}
+
             <div className="flex items-start gap-2 rounded-md border border-border/40 bg-muted/30 p-2 text-[10px] leading-relaxed">
               <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-[var(--warning)]" />
               <span>

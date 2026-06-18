@@ -11,9 +11,22 @@
 
 import type { Briefing } from "@/engines/finance/briefing";
 import type { IndicadorKey } from "@/data/thresholds";
+import { describeMoveCatalogForPrompt } from "@/engines/finance/levers/aiMoves";
 
 /** Versão do prompt — incrementar quebra o cache e força nova geração. */
-export const PROMPT_VERSION = "v1" as const;
+export const PROMPT_VERSION = "v2" as const;
+
+/**
+ * Proposta propositiva: IA escolhe um move do catálogo + magnitude.
+ * O engine compila para Partial<SimulatorParams> e a UI mostra "Abrir no Simulador".
+ * Mantida OPCIONAL: respostas antigas (sem propostas) continuam válidas.
+ */
+export interface PropostaSimulador {
+  moveId: string;
+  magnitude: number;
+  justificativa: string;
+  impactoQualitativo: string;
+}
 
 /** Shape EXATO do JSON que esperamos do modelo. */
 export interface DiagnosticoExecutivo {
@@ -39,7 +52,10 @@ export interface DiagnosticoExecutivo {
     impactoEsperado: string;
     prazo: "imediato" | "30d" | "90d";
   }>;
+  /** 0-4 propostas propositivas — sliders pré-configurados do Simulador. */
+  propostasSimulador?: PropostaSimulador[];
 }
+
 
 /** System prompt — identidade + regras + schema do output. */
 export function buildSystemPrompt(): string {
@@ -66,12 +82,26 @@ FORMATO DE SAÍDA: retorne APENAS um JSON válido (sem markdown, sem texto antes
   ],
   "proximosPassos": [
     { "acao": "string", "impactoEsperado": "string qualitativo", "prazo": "imediato" | "30d" | "90d" }
+  ],
+  "propostasSimulador": [
+    { "moveId": "string (do catálogo abaixo)", "magnitude": number, "justificativa": "string ≤180 chars", "impactoQualitativo": "string ≤120 chars" }
   ]
 }
 
-Limites: pontosCriticos ≤3, pontosFortes ≤2, proximosPassos entre 3 e 5.
-\`indicadoresReferenciados\` DEVE usar exatamente as chaves presentes em briefing.classificacoes[].indicador.`;
+Limites: pontosCriticos ≤3, pontosFortes ≤2, proximosPassos entre 3 e 5, propostasSimulador entre 2 e 4.
+\`indicadoresReferenciados\` DEVE usar exatamente as chaves presentes em briefing.classificacoes[].indicador.
+
+CATÁLOGO DE MOVES PARA \`propostasSimulador\` (use APENAS estes \`moveId\`):
+${describeMoveCatalogForPrompt()}
+
+REGRAS DAS PROPOSTAS:
+- Cada proposta deve atacar um dos \`pontosCriticos\` identificados.
+- \`magnitude\` DEVE estar dentro da faixa indicada (será clipada se sair).
+- Para "pct" use número (ex: 10 = 10%); para "dias" use dias; para "BRL" use valor absoluto.
+- Não repita o mesmo \`moveId\` duas vezes.
+- Se o diagnóstico for saudável e nenhum ajuste se justificar, retorne \`propostasSimulador: []\`.`;
 }
+
 
 /** User prompt — entrega o briefing serializado. */
 export function buildUserPrompt(briefing: Briefing): string {
