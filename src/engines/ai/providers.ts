@@ -212,6 +212,9 @@ export function loadConfig(): AIConfig {
   }
 }
 
+/** Nome do evento custom emitido após saveConfig — ouvido por hooks reativos. */
+export const AI_CONFIG_CHANGED_EVENT = "ai-config-changed";
+
 export function saveConfig(cfg: AIConfig) {
   try {
     const safe = sanitizeConfig(cfg);
@@ -225,6 +228,12 @@ export function saveConfig(cfg: AIConfig) {
     }
   } catch {
     // storage indisponível (modo privado / quota) — config segue só em memória
+  }
+  // Notifica listeners NA MESMA ABA (storage event só dispara entre abas).
+  try {
+    window.dispatchEvent(new CustomEvent(AI_CONFIG_CHANGED_EVENT));
+  } catch {
+    // ambientes sem window (SSR) — ignora
   }
 }
 

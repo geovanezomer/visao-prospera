@@ -136,11 +136,22 @@ export async function testConnection(cfg: AIConfig): Promise<{ ok: boolean; mess
   }
 }
 
+/** Opções extras do streamChat. */
+export interface StreamChatOptions {
+  /**
+   * Quando definido, força o modelo a devolver JSON.
+   * - OpenAI / LM Studio: enviado como `response_format`.
+   * - Anthropic: ignorado (Anthropic não suporta esse parâmetro; usar prompt).
+   */
+  responseFormat?: { type: "json_object" } | { type: "text" };
+}
+
 /** Stream simples sem tools. */
 export async function* streamChat(
   cfg: AIConfig,
   messages: LLMMessage[],
   signal?: AbortSignal,
+  opts?: StreamChatOptions,
 ): AsyncGenerator<string, void, unknown> {
   const { signal: s, cancel } = withTimeout(cfg, signal);
   try {
@@ -159,7 +170,13 @@ export async function* streamChat(
         messages: toAnthropicMessages(rest),
       };
     } else {
-      body = { model: cfg.model, messages, temperature: cfg.temperature, stream: true };
+      body = {
+        model: cfg.model,
+        messages,
+        temperature: cfg.temperature,
+        stream: true,
+        ...(opts?.responseFormat ? { response_format: opts.responseFormat } : {}),
+      };
     }
 
     const res = await fetchWithRetry(url, {
