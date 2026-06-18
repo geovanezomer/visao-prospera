@@ -11,9 +11,22 @@
 
 import type { Briefing } from "@/engines/finance/briefing";
 import type { IndicadorKey } from "@/data/thresholds";
+import { describeMoveCatalogForPrompt } from "@/engines/finance/levers/aiMoves";
 
 /** Versão do prompt — incrementar quebra o cache e força nova geração. */
-export const PROMPT_VERSION = "v1" as const;
+export const PROMPT_VERSION = "v2" as const;
+
+/**
+ * Proposta propositiva: IA escolhe um move do catálogo + magnitude.
+ * O engine compila para Partial<SimulatorParams> e a UI mostra "Abrir no Simulador".
+ * Mantida OPCIONAL: respostas antigas (sem propostas) continuam válidas.
+ */
+export interface PropostaSimulador {
+  moveId: string;
+  magnitude: number;
+  justificativa: string;
+  impactoQualitativo: string;
+}
 
 /** Shape EXATO do JSON que esperamos do modelo. */
 export interface DiagnosticoExecutivo {
@@ -39,7 +52,10 @@ export interface DiagnosticoExecutivo {
     impactoEsperado: string;
     prazo: "imediato" | "30d" | "90d";
   }>;
+  /** 0-4 propostas propositivas — sliders pré-configurados do Simulador. */
+  propostasSimulador?: PropostaSimulador[];
 }
+
 
 /** System prompt — identidade + regras + schema do output. */
 export function buildSystemPrompt(): string {
