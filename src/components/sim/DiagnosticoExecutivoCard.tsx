@@ -247,6 +247,19 @@ export function DiagnosticoExecutivoCard({ briefing }: Props) {
 
           {/* Rodapé de auditoria CVM + telemetria local */}
           <footer className="space-y-2 border-t border-border/40 pt-3 text-[10px] text-muted-foreground">
+            {/* Disclaimer CVM: IA assistiva, responsabilidade do consultor */}
+            <div className="flex items-start gap-2 rounded-md border border-border/40 bg-muted/30 p-2 text-[10px] leading-relaxed">
+              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-[var(--warning)]" />
+              <span>
+                <strong className="text-foreground">Análise assistida por IA.</strong> Conteúdo
+                interpretativo gerado por{" "}
+                <span className="font-mono">
+                  {data.provider}/{data.modelo}
+                </span>{" "}
+                a partir de números calculados pela engine. A revisão, validação e
+                responsabilidade técnica são do consultor / analista.
+              </span>
+            </div>
             <div className="flex items-center justify-between gap-2">
               <span>
                 Gerado por {data.provider} · {data.modelo} · prompt {data.promptVersion} ·{" "}
