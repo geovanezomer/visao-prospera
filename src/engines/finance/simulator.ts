@@ -113,10 +113,9 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     tax: { ...base.tax },
   };
 
-  // 1) Preço
+  // 1) Preço — primitiva adjustRevenue (escala receita bruta).
   if (p.priceDeltaPct !== 0) {
-    const f = 1 + p.priceDeltaPct / 100;
-    s.revenue.bruta = s.revenue.bruta.map((v) => v * f);
+    s.revenue = p_adjustRevenue(s, 1 + p.priceDeltaPct / 100).revenue;
   }
 
   // 2) Volume: receita + custo_vendas + variavel + deduções absolutas (S2)
