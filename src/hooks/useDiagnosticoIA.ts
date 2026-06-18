@@ -69,7 +69,7 @@ export function useDiagnosticoIA(briefing: Briefing | null): UseDiagnosticoIA {
       setData(null);
       setError(null);
       setLoading(false);
-      setCached_(false);
+      setIsFromCache(false);
       return;
     }
 
@@ -83,7 +83,7 @@ export function useDiagnosticoIA(briefing: Briefing | null): UseDiagnosticoIA {
         setData(mem);
         setError(null);
         setLoading(false);
-        setCached_(true);
+        setIsFromCache(true);
         return;
       }
       // 2) Cache persistente (localStorage)
@@ -93,7 +93,7 @@ export function useDiagnosticoIA(briefing: Briefing | null): UseDiagnosticoIA {
         setData(persisted);
         setError(null);
         setLoading(false);
-        setCached_(true);
+        setIsFromCache(true);
         recordTelemetry({
           ts: new Date().toISOString(),
           provider: cfg.provider,
@@ -112,7 +112,7 @@ export function useDiagnosticoIA(briefing: Briefing | null): UseDiagnosticoIA {
     const t0 = performance.now();
     setLoading(true);
     setError(null);
-    setCached_(false);
+    setIsFromCache(false);
 
     gerarDiagnostico(briefing, cfg, ac.signal)
       .then((result) => {
