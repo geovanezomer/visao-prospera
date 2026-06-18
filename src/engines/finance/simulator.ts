@@ -182,12 +182,12 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     }
   }
 
-  // 7) PMR / PMP
+  // 7) PMR / PMP — primitivas setPmr / setPmp.
   if (p.pmrDeltaDays !== 0) {
-    s.revenue.pmr = Math.max(0, s.revenue.pmr + p.pmrDeltaDays);
+    s.revenue = p_setPmr(s, s.revenue.pmr + p.pmrDeltaDays).revenue;
   }
   if (p.pmpDeltaDays !== 0) {
-    s.revenue.pmp = Math.max(0, s.revenue.pmp + p.pmpDeltaDays);
+    s.revenue = p_setPmp(s, s.revenue.pmp + p.pmpDeltaDays).revenue;
   }
 
   // 8) Antecipação de recebíveis (custo financeiro)
