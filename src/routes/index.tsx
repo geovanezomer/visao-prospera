@@ -120,15 +120,22 @@ function SimulaPro() {
     return () => window.removeEventListener("keydown", onKey);
   }, [meetingMode]);
 
-  // Escuta evento da IA ("carregar_cenario") para aplicar/limpar params do simulador.
+  // Escuta evento ("carregar_cenario" da IA ou deep-link de DiagnosisTab → SimulatorTab).
+  // Aceita Partial<SimulatorParams>; faz merge com DEFAULT_SIM para nunca corromper o estado.
   useEffect(() => {
     const onApply = (e: Event) => {
-      const detail = (e as CustomEvent).detail as SimulatorParams | null | undefined;
-      setSimParams(detail ?? DEFAULT_SIM);
+      const detail = (e as CustomEvent).detail as Partial<SimulatorParams> | null | undefined;
+      if (detail && typeof detail === "object") {
+        setSimParams({ ...DEFAULT_SIM, ...detail });
+        setActiveTab("simulador");
+      } else {
+        setSimParams(DEFAULT_SIM);
+      }
     };
     window.addEventListener("gz-apply-simulator-params", onApply);
     return () => window.removeEventListener("gz-apply-simulator-params", onApply);
   }, []);
+
 
   if (!hydrated || !user) {
     return (
