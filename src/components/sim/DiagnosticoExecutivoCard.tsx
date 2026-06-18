@@ -16,6 +16,7 @@ import {
   Clock,
   Database,
   RefreshCw,
+  SlidersHorizontal,
   Sparkles,
   TriangleAlert,
 } from "lucide-react";
@@ -23,6 +24,8 @@ import type { Briefing } from "@/engines/finance/briefing";
 import type { IndicadorKey } from "@/data/thresholds";
 import { useDiagnosticoIA } from "@/hooks/useDiagnosticoIA";
 import { readTelemetry, clearTelemetry } from "@/engines/ai/diagnosticoTelemetry";
+import { compileAiMove, getAiMove } from "@/engines/finance/levers/aiMoves";
+
 
 // Labels humanos dos indicadores — usados nos chips.
 const INDICADOR_LABEL: Record<IndicadorKey, string> = {
