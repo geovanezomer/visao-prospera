@@ -348,13 +348,16 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
           title: "Repasse de preço de +8%",
           detail: "Avalie elasticidade-preço do seu mercado antes de aplicar.",
           apply: (s) => adjustRevenue(s, 1.08),
+          asSimulatorParams: { priceDeltaPct: 8 },
         },
         {
           id: "cv_minus_10",
           title: "Reduzir Custo de Vendas em 10% (negociação com fornecedores)",
           detail: "Renegociação, troca de fornecedor, compras em escala.",
           apply: (s) => scaleCategory(s, "custo_vendas", 0.9),
+          asSimulatorParams: { cpvDeltaPct: -10 },
         },
+
       ],
     });
   }
