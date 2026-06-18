@@ -324,8 +324,10 @@ export function DiagnosticoExecutivoCard({ briefing }: Props) {
             </div>
           )}
 
-
+          {/* Rodapé de auditoria CVM + telemetria local */}
+          <footer className="space-y-2 border-t border-border/40 pt-3 text-[10px] text-muted-foreground">
             {/* Disclaimer CVM: IA assistiva, responsabilidade do consultor */}
+
             <div className="flex items-start gap-2 rounded-md border border-border/40 bg-muted/30 p-2 text-[10px] leading-relaxed">
               <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-[var(--warning)]" />
               <span>
