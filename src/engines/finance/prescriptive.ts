@@ -204,13 +204,16 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
             const ids = new Set(topNFixedLines(s, 3).map((l) => l.id));
             return scaleCostLines(s, ids, 0.85);
           },
+          asSimulatorParams: { fixedCutPct: 15, fixedCutTopN: 3 },
         },
         {
           id: "price_5",
           title: "Repasse de preço de +5%",
           detail: "Aumenta receita sem mexer em custos. Avalie elasticidade.",
           apply: (s) => adjustRevenue(s, 1.05),
+          asSimulatorParams: { priceDeltaPct: 5 },
         },
+
         {
           id: "reduce_assets",
           title: "Reduzir ativo total em 20% (venda de não-operacionais)",
