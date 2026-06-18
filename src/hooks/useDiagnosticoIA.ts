@@ -12,7 +12,7 @@
 // =====================================================================
 
 import { useCallback, useEffect, useState } from "react";
-import { loadConfig, type AIConfig } from "@/engines/ai/providers";
+import { loadConfig, AI_CONFIG_CHANGED_EVENT, type AIConfig } from "@/engines/ai/providers";
 import {
   gerarDiagnostico,
   isAIConfigured,
