@@ -112,8 +112,37 @@ function validateDiagnostico(obj: unknown): DiagnosticoExecutivo {
         prazo: prazo as "imediato" | "30d" | "90d",
       };
     }),
+    propostasSimulador: validatePropostas(o.propostasSimulador),
   };
 }
+
+/**
+ * Valida propostas propositivas: dropa silenciosamente moves desconhecidos
+ * ou magnitudes inválidas (não-numéricas). Magnitudes fora do range são
+ * clipadas pelo `compileAiMove`. Dedup por moveId. Limite de 4.
+ */
+function validatePropostas(raw: unknown): PropostaSimulador[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: PropostaSimulador[] = [];
+  for (const p of raw) {
+    if (out.length >= 4) break;
+    const pp = (p ?? {}) as Record<string, unknown>;
+    const moveId = String(pp.moveId ?? "").trim();
+    if (!moveId || seen.has(moveId)) continue;
+    const compiled = compileAiMove(moveId, pp.magnitude);
+    if (!compiled) continue; // dropa silenciosamente moves inválidos
+    seen.add(moveId);
+    out.push({
+      moveId,
+      magnitude: compiled.magnitude, // já clipado ao range
+      justificativa: String(pp.justificativa ?? "").trim(),
+      impactoQualitativo: String(pp.impactoQualitativo ?? "").trim(),
+    });
+  }
+  return out;
+}
+
 
 /**
  * Gera o diagnóstico executivo a partir do briefing.
