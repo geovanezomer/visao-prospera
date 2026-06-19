@@ -342,8 +342,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const faturamentoPorColaborador = headcount > 0 ? receitaBrutaAnual / headcount : 0;
   const ebitdaPorColaborador = headcount > 0 ? ebitdaAnual / headcount : 0;
   const lucroPorColaborador = headcount > 0 ? llAnual / headcount : 0;
+  // Folha/Receita: divide pela Receita BRUTA (padrão de benchmarking PME) — não a líquida.
   const folha = folhaAnual(state);
-  const custoPessoalSobreReceita = receitaLiqAnual > 0 ? (folha / receitaLiqAnual) * 100 : 0;
+  const custoPessoalSobreReceita = receitaBrutaAnual > 0 ? (folha / receitaBrutaAnual) * 100 : 0;
 
   // Margem de Segurança OPERACIONAL: usa o PE operacional (sem juros) sobre a Receita Líquida.
   // Mesma base do PE (custosFixos ÷ MC%, onde MC% = (RL − custosVar) ÷ RL).
