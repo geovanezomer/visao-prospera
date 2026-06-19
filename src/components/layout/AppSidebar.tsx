@@ -15,13 +15,11 @@ import { useEffect, useState } from "react";
 
 import {
   LogOut,
-  Building2,
-  Factory,
-  Store,
-  Briefcase,
   Save,
   FolderOpen,
   Calculator,
+  Info,
+  X,
 } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 
