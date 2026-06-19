@@ -248,6 +248,23 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     return picked ? [{ ...picked, enabled: true }] : config.skills;
   }, [config.skills, activeSkillId]);
 
+  // Validação: se a skill ativa foi desabilitada/removida nas Configurações,
+  // avisa e cai de volta para "Todas" automaticamente.
+  useEffect(() => {
+    if (activeSkillId === "all") return;
+    const picked = config.skills.find((s) => s.id === activeSkillId);
+    if (!picked) {
+      toast.warning("Skill ativa foi removida — usando todas as habilitadas.");
+      setActiveSkillId("all");
+    } else if (!picked.enabled) {
+      toast.warning(
+        `Skill "${picked.name}" está desabilitada nas Configurações — voltando para "Todas".`,
+      );
+      setActiveSkillId("all");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSkillId, config.skills]);
+
   const buildSysPrompt = (overrideMode?: AIMode) =>
     buildSystemPrompt({
       snapshot,
