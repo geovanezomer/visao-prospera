@@ -338,6 +338,12 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     passivoCirculante > 1
       ? Math.min(CAP_LIQ, capital.disponibilidades / passivoCirculante)
       : CAP_LIQ;
+  // [Auditoria Bloco 4] Liquidez Geral = (AC + Realizável LP) / (PC + PNC). Sem RLP/PNC isolados
+  // no schema, aproximamos por AC / (AT − PL) — passivo total ≈ AT − PL pela equação patrimonial.
+  const passivoTotalAprox = capital.ativoTotal > PL ? capital.ativoTotal - PL : 0;
+  const liquidezGeral =
+    passivoTotalAprox > 1 ? Math.min(CAP_LIQ, ativoCirculante / passivoTotalAprox) : CAP_LIQ;
+
 
   // ---- Endividamento ----
   const endividamentoGeralDadosCompletos = capital.ativoTotal > 0;
