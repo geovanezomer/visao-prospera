@@ -60,6 +60,8 @@ const CHART_COLORS = [
 export function DRETab() {
   const { state, update } = useFinance();
   const [view, setView] = usePeriodView("trimestral");
+  const comparisonSnaps = useSelectedSnapshots();
+
 
   // Períodos exibidos na tabela conforme o modo de visualização.
   const QUARTERS = ["1º Tri", "2º Tri", "3º Tri", "4º Tri"];
