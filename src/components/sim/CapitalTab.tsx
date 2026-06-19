@@ -132,7 +132,6 @@ export function CapitalTab() {
 
   const kpis = [
     { label: "Capital Próprio", value: `${proprioDerivado.toFixed(1)}%`, hint: "PL / (PL + Dívida)" },
-    { label: "Dívida Onerosa", value: fmtBRL(c.dividaOnerosa), hint: "Empréstimos e financiamentos" },
     { label: "Serviço da Dívida / mês", value: fmtBRL(servicoDividaMes), hint: "Juros + amortização ÷ 12" },
     {
       label: "D / PL",
