@@ -102,7 +102,7 @@ export interface Indicators {
   conversaoEbitdaCaixa: number;
   /** Margem de Contribuição (R$) ÷ EBIT — elasticidade do lucro à receita. */
   gao: number;
-  /** FCF ÷ Lucro Líquido — quanto do lucro contábil vira caixa. */
+  /** FCO ÷ Lucro Líquido — quanto do lucro contábil virou caixa operacional (CPC 03/IAS 7). */
   qualidadeLucro: number;
   /** Receita Líquida Anual ÷ nº de colaboradores. */
   receitaPorColaborador: number;
