@@ -75,7 +75,7 @@ export function validateAndMigrate(input: unknown): AppState {
   if (!parsed.success) {
     if (typeof console !== "undefined") {
       console.warn(
-        "[FinancePRO] AppState inválido no boot — usando DEFAULT_STATE.",
+        "[FinnancePRO] AppState inválido no boot — usando DEFAULT_STATE.",
         parsed.error.issues,
       );
     }

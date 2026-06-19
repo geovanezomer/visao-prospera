@@ -37,7 +37,7 @@ export function serialize(
     version: CURRENT_VERSION,
     source: "FinnancePRO",
     savedAt: new Date().toISOString(),
-    app: { name: "FinancePRO", version: "1.x" },
+    app: { name: "FinnancePRO", version: "1.x" },
     state: state as unknown as Record<string, unknown>,
     scenarios: scenarios as unknown as FinnanceFile["scenarios"],
     extras: extras

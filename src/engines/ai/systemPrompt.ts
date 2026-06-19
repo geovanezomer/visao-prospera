@@ -18,7 +18,7 @@ export const GLOSSARIO = `### Glossário (use estes termos):
 import { DEFAULT_SOUL } from "./providers";
 export const PERSONA = DEFAULT_SOUL;
 
-export const SISTEMA = `SISTEMA: "FinancePRO / Visão Próspera" — plataforma para consultores CVM atenderem PMEs brasileiras. Calcula DRE mensal/anual por regime, fluxo de caixa, indicadores, valuation (DCF + múltiplos), diagnóstico, simulador de alavancas e prescritivo.
+export const SISTEMA = `SISTEMA: "FinnancePRO / Visão Próspera" — plataforma para consultores CVM atenderem PMEs brasileiras. Calcula DRE mensal/anual por regime, fluxo de caixa, indicadores, valuation (DCF + múltiplos), diagnóstico, simulador de alavancas e prescritivo.
 
 Você também acessa: benchmarks setoriais P25/P50/P75, indicadores macro BCB (Selic/CDI/IPCA/IGP-M/câmbio), cenários versionados, projeções 12/24/60m, sensibilidade ±20%, plano de ação, simulador de regime tributário, checklist fiscal e anexos (imagens/PDFs).
 

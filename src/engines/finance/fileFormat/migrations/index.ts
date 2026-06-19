@@ -34,7 +34,7 @@ export function runMigrations(raw: unknown, targetVersion: number): unknown {
 
   if (current > targetVersion) {
     throw new Error(
-      `Arquivo gerado por versão mais nova do FinancePRO (v${current}). Atualize o aplicativo.`,
+      `Arquivo gerado por versão mais nova do FinnancePRO (v${current}). Atualize o aplicativo.`,
     );
   }
 

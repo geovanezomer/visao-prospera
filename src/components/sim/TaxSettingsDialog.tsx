@@ -248,7 +248,7 @@ function StepIntro({ customCount }: { customCount: number }) {
   return (
     <div className="space-y-4 text-sm leading-relaxed">
       <p>
-        Bem-vindo às <b>Configurações</b> do FinancePRO. Aqui você define tanto os{" "}
+        Bem-vindo às <b>Configurações</b> do FinnancePRO. Aqui você define tanto os{" "}
         <b>dados da sua empresa</b> (nome, CNPJ, setor, ramo, número de colaboradores,
         regime tributário e período de análise) quanto as <b>alíquotas e tabelas
         tributárias brasileiras</b> usadas pelos cálculos. Você <b>não precisa</b> ser
@@ -665,7 +665,7 @@ function StepRevisao({ customCount, resetAll }: { customCount: number; resetAll:
       {customCount === 0 ? (
         <Callout tone="ok" title="Tudo nos padrões oficiais">
           <p className="text-[13px]">
-            Nenhum parâmetro foi customizado. Os cálculos do FinancePRO usarão integralmente as
+            Nenhum parâmetro foi customizado. Os cálculos do FinnancePRO usarão integralmente as
             alíquotas e tabelas oficiais brasileiras vigentes.
           </p>
         </Callout>
