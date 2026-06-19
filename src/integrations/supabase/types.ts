@@ -32,36 +32,6 @@ export type Database = {
         }
         Relationships: []
       }
-      shared_reports: {
-        Row: {
-          company_name: string
-          created_at: string
-          expires_at: string | null
-          owner_id: string
-          revoked_at: string | null
-          share_id: string
-          storage_path: string
-        }
-        Insert: {
-          company_name: string
-          created_at?: string
-          expires_at?: string | null
-          owner_id: string
-          revoked_at?: string | null
-          share_id: string
-          storage_path: string
-        }
-        Update: {
-          company_name?: string
-          created_at?: string
-          expires_at?: string | null
-          owner_id?: string
-          revoked_at?: string | null
-          share_id?: string
-          storage_path?: string
-        }
-        Relationships: []
-      }
       subscriptions: {
         Row: {
           created_at: string

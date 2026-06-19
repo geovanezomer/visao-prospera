@@ -41,8 +41,6 @@ import { buildDRE } from "@/engines/finance/dre";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { calcIndicators } from "@/engines/finance/indicators";
 
-
-
 // Lista de anos disponíveis no select (inclusivo).
 const YEARS: number[] = Array.from({ length: 2040 - 2010 + 1 }, (_, i) => 2010 + i);
 
@@ -117,9 +115,7 @@ export function ScenarioBar() {
   const alreadyExists = historicals.some((h) => h.fiscalYear === year);
 
   return (
-    <div data-meeting-hide="true" className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
-      <div className="flex gap-2">
-
+    <div data-meeting-hide="true" className="fixed bottom-6 right-6 z-40 flex gap-2">
       {/* Salvar ANO */}
       <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
         <DialogTrigger asChild>
@@ -254,8 +250,6 @@ export function ScenarioBar() {
           )}
         </DialogContent>
       </Dialog>
-      </div>
     </div>
-
   );
 }
