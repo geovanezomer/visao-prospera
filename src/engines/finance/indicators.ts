@@ -196,6 +196,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const PL = Math.max(0, capital.patrimonioLiquido);
   const D = Math.max(0, capital.dividaOnerosa);
   const V = PL + D;
+  // CONTRATO: `capital.proprio` é PERCENTUAL no intervalo [0, 100], NÃO fração.
+  // Validado em Zod no schema do capital. Se mudar para fração, ajustar aqui também.
   const wE = V > 0 ? PL / V : capital.proprio / 100;
   const wD = V > 0 ? D / V : 1 - capital.proprio / 100;
 
