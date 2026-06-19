@@ -543,6 +543,50 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     total: 3,
   });
 
+  // Restaura pipeline persistido ao trocar de empresa/thread.
+  useEffect(() => {
+    if (!activeId) return;
+    const persisted = loadPipeline360(state.companyName || "default", activeId);
+    if (persisted) {
+      setPipeline360({
+        active: false,
+        current: null,
+        completed: persisted.completed,
+        total: persisted.total,
+        aborted: persisted.aborted,
+        question: persisted.question,
+        outputs: persisted.outputs,
+      });
+    } else {
+      setPipeline360({ active: false, current: null, completed: [], total: 3 });
+    }
+  }, [activeId, state.companyName]);
+
+  // Persiste mudanças relevantes do pipeline (não persiste `active`/`current`).
+  useEffect(() => {
+    if (!activeId) return;
+    const company = state.companyName || "default";
+    if (pipeline360.completed.length === 0 && !pipeline360.question) {
+      clearPipeline360(company, activeId);
+      return;
+    }
+    savePipeline360(company, activeId, {
+      completed: pipeline360.completed,
+      total: pipeline360.total,
+      aborted: pipeline360.aborted,
+      question: pipeline360.question,
+      outputs: pipeline360.outputs,
+    });
+  }, [
+    activeId,
+    state.companyName,
+    pipeline360.completed,
+    pipeline360.total,
+    pipeline360.aborted,
+    pipeline360.question,
+    pipeline360.outputs,
+  ]);
+
   // Executa N estágios a partir de `startIdx`, reaproveitando outputs prévios.
   // Usado tanto pelo run inicial quanto pelo resume após cancelar.
   const _runPipelineStages = async (
