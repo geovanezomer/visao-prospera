@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { sum } from "@/engines/finance/format";
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { AppState } from "@/engines/finance/types";
 import { buildPrescriptiveCards, PrescriptiveCard } from "@/engines/finance/prescriptive";
