@@ -21,6 +21,7 @@ import { macroTools } from "./macro";
 import { scenariosTools } from "./scenarios";
 import { actionsTools } from "./actions";
 import { complianceTools } from "./compliance";
+import { memoryTools } from "./memory";
 
 export type {
   ToolDef,
@@ -40,6 +41,7 @@ const MODULES: ToolModule[] = [
   scenariosTools,
   actionsTools,
   complianceTools,
+  memoryTools,
 ];
 
 export const TOOLS: ToolDef[] = MODULES.flatMap((m) => m.defs);

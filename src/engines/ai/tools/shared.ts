@@ -39,7 +39,8 @@ export type ToolCategory =
   | "scenarios"
   | "actions"
   | "compliance"
-  | "reports";
+  | "reports"
+  | "memory";
 
 export interface ToolModule {
   /** Identificador da categoria — também usado em filtros. */
