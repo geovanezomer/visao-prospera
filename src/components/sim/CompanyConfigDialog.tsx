@@ -121,7 +121,9 @@ export function CompanyConfigDialog({ open, onOpenChange }: Props) {
       cnpj: d.cnpj || undefined,
       businessType: d.businessType,
       ramoAtuacao: d.ramoAtuacao || undefined,
-      headcountRange: d.headcountRange,
+      numColaboradores: d.numColaboradores,
+      // Faixa derivada automaticamente para benchmarks setoriais.
+      headcountRange: rangeFromNumber(d.numColaboradores),
       periodoAnaliseMeses: d.periodoAnaliseMeses,
       fiscalYearStartMonth: d.fiscalYearStartMonth,
       margemAlvoPct: d.margemAlvoPct,
