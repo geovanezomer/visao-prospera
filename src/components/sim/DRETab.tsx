@@ -340,7 +340,6 @@ export function DRETab() {
 
   return (
     <div className="space-y-6">
-      <HistoricalYearPills />
       {showComparison ? (
         <DREComparison snapshots={comparisonSnaps} />
       ) : (
