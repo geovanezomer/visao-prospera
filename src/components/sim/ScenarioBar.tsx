@@ -178,30 +178,37 @@ export function ScenarioBar() {
                 <thead>
                   <tr className="text-left text-[10px] uppercase text-muted-foreground">
                     <th className="p-2">Ano</th>
+                    <th className="p-2 text-right">Faturamento</th>
                     <th className="p-2 text-right">EBITDA</th>
+                    <th className="p-2 text-right">ROE</th>
+                    <th className="p-2 text-right">Margem Líq.</th>
                     <th className="p-2 text-right">Lucro Líq.</th>
-                    <th className="p-2 text-right">Saldo Caixa</th>
                     <th className="p-2"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {historicals.map((h) => (
+                  {historicals.map((h) => {
+                    const m = metrics.get(h.id);
+                    return (
                     <tr key={h.id} className="border-t border-border/40">
                       <td className="p-2 font-semibold">{h.name}</td>
                       <td className="num p-2 text-right">
-                        {h.summary?.ebitda != null ? fmtBRL(h.summary.ebitda) : "—"}
+                        {m ? fmtBRL(m.faturamento) : "—"}
                       </td>
                       <td className="num p-2 text-right">
-                        {h.summary?.lucroLiquido != null
-                          ? fmtBRL(h.summary.lucroLiquido)
-                          : "—"}
+                        {m ? fmtBRL(m.ebitda) : "—"}
                       </td>
                       <td className="num p-2 text-right">
-                        {h.summary?.saldoFinalCaixa != null
-                          ? fmtBRL(h.summary.saldoFinalCaixa)
-                          : "—"}
+                        {m ? fmtPct(m.roe) : "—"}
+                      </td>
+                      <td className="num p-2 text-right">
+                        {m ? fmtPct(m.margemLiquida) : "—"}
+                      </td>
+                      <td className="num p-2 text-right">
+                        {m ? fmtBRL(m.lucroLiquido) : "—"}
                       </td>
                       <td className="p-2">
+
                         <div className="flex justify-end gap-1">
                           <Button
                             size="sm"
