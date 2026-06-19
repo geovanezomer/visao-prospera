@@ -161,6 +161,18 @@ export function CostsTab() {
           <span className="text-foreground/90">{negWarn}</span>
         </div>
       )}
+      {duplicateLabels.length > 0 && (
+        <div className="flex items-start gap-2 rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-xs text-warning">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="space-y-1 text-foreground/90">
+            {duplicateLabels.map((d) => (
+              <div key={d.label}>
+                ⚠️ O item <strong>"{d.label}"</strong> aparece em mais de um grupo de custo. Verifique se não há lançamento duplicado.
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {/* Sumário */}
       <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <StatCard
