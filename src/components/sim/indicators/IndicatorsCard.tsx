@@ -189,15 +189,16 @@ export function IndicatorsCard({ state }: { state: AppState }) {
           );
         })()}
         <Ind
-          label="Amortização do PL"
+          label="Amortização do PL pelo Lucro"
           v={
             Number.isFinite(ind.amortizacaoPlPorLucro)
               ? `${ind.amortizacaoPlPorLucro.toFixed(1)} anos`
               : "—"
           }
-          desc="Tempo para o lucro contábil acumulado igualar o PL. Não é o Payback clássico."
-          formula="PL ÷ Lucro Líquido Anual"
+          desc="Tempo (anos) para o lucro contábil acumulado igualar o Patrimônio Líquido. NÃO confundir com o Payback clássico — este indicador mede a velocidade de remuneração do capital próprio pelo lucro contábil."
+          formula="Patrimônio Líquido ÷ Lucro Líquido Anual"
         />
+
         <Ind
           label="Payback (CAPEX)"
           v={
