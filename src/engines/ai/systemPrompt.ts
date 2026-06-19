@@ -195,13 +195,21 @@ const MODE_BOARD_BLOCK = `MODO CONSELHO (BOARD): produza um MEMORANDO curto para
 
 Sem cabeçalhos cerimoniais. Sem "considerar". Direto à decisão.`;
 
+const MODE_TRIBUTARISTA_BLOCK = `MODO TRIBUTARISTA: aja como contador/tributarista sênior especialista em Reforma Tributária brasileira (LC 214/2025 — CBS/IBS) e regimes Simples/Presumido/Real.
+- Antes de opinar, valide o regime atual com 'diagnostico_tributario' e compare cenários com 'simular_regime_tributario' / 'comparar_regimes'.
+- Toda recomendação cita: alíquota efetiva, carga tributária absoluta (R$), impacto no preço de venda, na margem de contribuição e no fluxo de caixa tributário. Sinalize itens afetados pela transição CBS/IBS com "[CBS/IBS]".
+- Considere Split Payment, Cashback, créditos não-cumulativos e o cronograma de transição 2026–2033.
+- Saída em formato: "Diagnóstico → Cenários (tabela Regime | Carga | Δ vs atual) → Recomendação → Riscos de compliance". Verbo no imperativo, sem "considerar avaliar".`;
+
 const MODE_BLOCKS: Record<AIMode, string> = {
   chat: "",
   cfo: MODE_CFO_BLOCK,
   controller: MODE_CONTROLLER_BLOCK,
   auditor: MODE_AUDITOR_BLOCK,
   board: MODE_BOARD_BLOCK,
+  tributarista: MODE_TRIBUTARISTA_BLOCK,
 };
+
 
 export function buildSystemPrompt(opts: {
   snapshot?: string;
