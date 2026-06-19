@@ -384,7 +384,6 @@ function StatusBar({
   sim,
   inconsistencies,
   onApply,
-  onSave,
   onReset,
 }: {
   active: number;
@@ -392,7 +391,6 @@ function StatusBar({
   sim: SimDREView;
   inconsistencies: string[];
   onApply: () => void;
-  onSave: () => void;
   onReset: () => void;
 }) {
   const dEbitda = pctDelta(base.ebitda, sim.ebitda);
