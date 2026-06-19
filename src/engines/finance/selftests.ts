@@ -23,8 +23,19 @@ export function runFinanceSelfTests(): { results: SelfTestCase[]; allPassed: boo
   const add = (name: string, expected: number | string, actual: number | string, pass: boolean) =>
     results.push({ name, expected, actual, pass });
 
-  // 1) irShieldForRegime
-  add("irShield Real = 0.34", 0.34, irShieldForRegime("real"), irShieldForRegime("real") === 0.34);
+  // 1) irShieldForRegime — Real tem 24% sem adicional e 34% acima de R$240k/ano.
+  add(
+    "irShield Real PME (LAIR≤240k) = 0.24",
+    0.24,
+    irShieldForRegime("real", 100_000),
+    irShieldForRegime("real", 100_000) === 0.24,
+  );
+  add(
+    "irShield Real com adicional = 0.34",
+    0.34,
+    irShieldForRegime("real", 500_000),
+    irShieldForRegime("real", 500_000) === 0.34,
+  );
   add(
     "irShield Presumido = 0 (Auditoria)",
     0,
@@ -73,14 +84,14 @@ export function runFinanceSelfTests(): { results: SelfTestCase[]; allPassed: boo
     add("ICMS mês 2 pago (consome saldo credor)", 0, m2pago, m2pago === 0);
   }
 
-  // 6) Gordon degenerado: WACC=g → fallback FCL×10
+  // 6) Gordon degenerado: WACC=g → fallback FCL×5 (mesmo contrato da produção)
   {
     const fcl = 600_000,
       g = 0.1,
       wacc = 0.1;
     const spread = wacc - g;
-    const vt = spread >= 0.005 ? (fcl * (1 + g)) / spread : fcl * 10;
-    add("Gordon fallback quando WACC≈g", 6_000_000, vt, approx(vt, 6_000_000));
+    const vt = spread >= 0.005 ? fcl / spread : fcl * 5;
+    add("Gordon fallback quando WACC≈g", 3_000_000, vt, approx(vt, 3_000_000));
   }
 
   // 7) TIR convergente
