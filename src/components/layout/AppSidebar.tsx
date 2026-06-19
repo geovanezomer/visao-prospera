@@ -59,14 +59,26 @@ export function AppSidebar({
     return () => document.removeEventListener("close-mobile-sidebar", handleClose);
   }, [setOpenMobile]);
 
-  const businessIcon =
-    state.businessType === "industria" ? (
-      <Factory className="h-4 w-4" />
-    ) : state.businessType === "comercio" ? (
-      <Store className="h-4 w-4" />
-    ) : (
-      <Briefcase className="h-4 w-4" />
-    );
+  // Alerta "one-time": dados ficam no navegador e podem ser baixados como arquivo.
+  const STORAGE_NOTICE_KEY = "finnancepro:storage-notice-dismissed";
+  const [showStorageNotice, setShowStorageNotice] = useState(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(STORAGE_NOTICE_KEY) !== "1") {
+        setShowStorageNotice(true);
+      }
+    } catch {
+      /* localStorage indisponível: não exibe. */
+    }
+  }, []);
+  const dismissStorageNotice = () => {
+    try {
+      localStorage.setItem(STORAGE_NOTICE_KEY, "1");
+    } catch {
+      /* noop */
+    }
+    setShowStorageNotice(false);
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
