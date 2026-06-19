@@ -129,15 +129,6 @@ export function AppSidebar({
         <SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
           <div className="space-y-3 px-2 py-2">
             <div className="mt-2 space-y-1.5 border-t border-sidebar-border/50 pt-3">
-              {currentFileName && (
-                <div
-                  className="px-1 pb-1 text-[10px] text-muted-foreground truncate"
-                  title={currentFileName}
-                >
-                  {dirty && <span className="text-amber-500">● </span>}
-                  {currentFileName}
-                </div>
-              )}
               <Button
                 size="sm"
                 variant="default"
