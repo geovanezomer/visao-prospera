@@ -5,7 +5,7 @@ import { buildDRE, calcIndicators } from "@/engines/finance";
 
 import { CapitalStructureCard } from "./capital/CapitalStructureCard";
 import { BalanceSheetCard } from "./capital/BalanceSheetCard";
-import { AdvancedRefinementCard } from "./capital/AdvancedRefinementCard";
+
 import { CapexAtivacaoSection } from "./capital/CapexAtivacaoSection";
 import { WaccRoicMeter } from "./capital/WaccRoicMeter";
 import { NCGExplanationCard } from "./capital/NCGExplanationCard";
@@ -170,7 +170,6 @@ export function CapitalTab() {
           contracts={contracts}
           onChange={(next) => set({ debtContracts: next })}
         />
-        <AdvancedRefinementCard capital={c} onChange={set} />
         <CapexAtivacaoSection
           items={c.capexAtivacao ?? []}
           onChange={(next) => set({ capexAtivacao: next })}
