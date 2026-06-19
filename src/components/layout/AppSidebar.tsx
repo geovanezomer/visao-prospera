@@ -139,12 +139,10 @@ export function AppSidebar({
 
         <SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
           <div className="space-y-3 px-2 py-2">
-            {/* Cartão resumo da empresa — clique abre o dialog de configuração. */}
-            <button
-              type="button"
-              onClick={() => setConfigOpen(true)}
-              className="group/card flex w-full items-start gap-2 rounded-md border border-sidebar-border bg-sidebar-accent/50 px-2 py-2 text-left transition-colors hover:bg-sidebar-accent"
-              title="Configurar empresa"
+            {/* Resumo somente-leitura da empresa. Edição vive em Configurações (header). */}
+            <div
+              className="flex w-full items-start gap-2 rounded-md border border-sidebar-border bg-sidebar-accent/50 px-2 py-2 text-left"
+              title="Edite em Configurações (no topo da tela)"
             >
               <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <div className="flex-1 overflow-hidden">
@@ -170,8 +168,7 @@ export function AppSidebar({
                       : "Real"}
                 </div>
               </div>
-              <Settings className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/card:opacity-100" />
-            </button>
+            </div>
 
             <div className="mt-2 space-y-1.5 border-t border-sidebar-border/50 pt-3">
               {currentFileName && (
@@ -210,8 +207,6 @@ export function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Dialog de configuração centralizada da empresa. */}
-      <CompanyConfigDialog open={configOpen} onOpenChange={setConfigOpen} />
 
       <SidebarFooter className="border-t border-sidebar-border/50 p-2">
         <SidebarMenu>
