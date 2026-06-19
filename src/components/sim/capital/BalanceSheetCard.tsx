@@ -118,13 +118,6 @@ export function BalanceSheetCard({
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <SimpleField
-            icon={<Landmark className="h-4 w-4" />}
-            label="Empréstimos e financiamentos"
-            hint="Dívida com bancos que cobram juros. NÃO inclua fornecedores ou impostos parcelados sem juros."
-            value={capital.dividaOnerosa}
-            onChange={(n) => onChange({ dividaOnerosa: n })}
-          />
-          <SimpleField
             icon={<Users className="h-4 w-4" />}
             label="Fornecedores a pagar"
             hint="Saldo médio que a empresa deve a fornecedores. Deixe 0 para calcular pelo prazo médio (PMP)."
@@ -132,7 +125,18 @@ export function BalanceSheetCard({
             onChange={(n) => onChange({ fornecedores: n })}
             placeholder="0 = calculado pelo prazo médio"
           />
+          <div className="rounded-md border border-dashed border-border/40 bg-background/30 p-3 text-[11px] text-muted-foreground">
+            <div className="font-semibold text-foreground">Empréstimos e financiamentos</div>
+            <div className="mt-1">
+              Detalhados em <strong className="text-primary">Empréstimos e financiamentos</strong> abaixo (contratos com credor, taxa, sistema e prazo).
+              O saldo total alimenta automaticamente a dívida onerosa.
+            </div>
+            <div className="num mt-2 text-base font-semibold text-foreground">
+              {fmtBRL(capital.dividaOnerosa)}
+            </div>
+          </div>
         </div>
+
 
         <div className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-4">
           <div className="flex items-center gap-2">
