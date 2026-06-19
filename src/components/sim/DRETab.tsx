@@ -39,6 +39,8 @@ import {
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
 import { Badge } from "@/components/ui/badge";
 import { HistoricalYearPills } from "./HistoricalYearPills";
+import { DREComparison } from "./ComparisonView";
+import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
 import { ChevronRight } from "lucide-react";
 
 const CHART_COLORS = [
