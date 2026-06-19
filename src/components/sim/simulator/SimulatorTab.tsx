@@ -117,10 +117,6 @@ export function SimulatorTab({
   const applyToBase = () => {
     apply(() => simState);
   };
-  const onSave = () => {
-    const name = window.prompt("Nome do cenário:", `Sim ${active} ajustes`);
-    if (name) saveScenario(name, simState);
-  };
 
   return (
     <div className="space-y-4">
@@ -131,7 +127,6 @@ export function SimulatorTab({
         sim={simView}
         inconsistencies={inconsistencies}
         onApply={applyToBase}
-        onSave={onSave}
         onReset={reset}
       />
 
