@@ -221,6 +221,33 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     saveAIMode(state.companyName || "default", m);
   };
 
+  // Skill ativa no chat (id ou "all" para usar todas as habilitadas).
+  // Persistida por empresa em sessionStorage (escolha runtime, não config global).
+  const SKILL_KEY = `gz-finance-active-skill-${state.companyName || "default"}`;
+  const [activeSkillId, setActiveSkillIdRaw] = useState<string>(() => {
+    if (typeof window === "undefined") return "all";
+    return sessionStorage.getItem(SKILL_KEY) || "all";
+  });
+  useEffect(() => {
+    setActiveSkillIdRaw(
+      (typeof window !== "undefined" && sessionStorage.getItem(SKILL_KEY)) || "all",
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.companyName]);
+  const setActiveSkillId = (id: string) => {
+    setActiveSkillIdRaw(id);
+    if (typeof window !== "undefined") sessionStorage.setItem(SKILL_KEY, id);
+  };
+
+  // Filtra skills habilitadas pelo seletor do chat.
+  // "all" mantém comportamento atual (todas as enabled);
+  // qualquer outro id força APENAS aquela skill (mesmo se desabilitada na config).
+  const effectiveSkills = useMemo(() => {
+    if (activeSkillId === "all") return config.skills;
+    const picked = config.skills.find((s) => s.id === activeSkillId);
+    return picked ? [{ ...picked, enabled: true }] : config.skills;
+  }, [config.skills, activeSkillId]);
+
   const buildSysPrompt = (overrideMode?: AIMode) =>
     buildSystemPrompt({
       snapshot,
@@ -229,7 +256,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       useMetaTools: config.useMetaTools,
       extra: config.extraSystemPrompt,
       soul: config.soul,
-      skills: config.skills,
+      skills: effectiveSkills,
       mode: overrideMode ?? mode,
       context: runtimeContext,
       memoriesBlock,
@@ -782,6 +809,8 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     simHasChanges,
     mode,
     setMode,
+    activeSkillId,
+    setActiveSkillId,
     // ações
     send,
     handleFiles,
