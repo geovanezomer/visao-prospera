@@ -50,13 +50,11 @@ type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 export function SimulatorTab({
   state,
   apply,
-  saveScenario,
   params,
   setParams,
 }: {
   state: AppState;
   apply: Updater;
-  saveScenario: (name: string, s: AppState) => void;
   params?: SimulatorParams;
   setParams?: (p: SimulatorParams) => void;
 }) {
