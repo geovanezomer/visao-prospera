@@ -21,10 +21,18 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AuditReport, isAuditReport } from "./AuditReport";
 import { useAIChat } from "@/hooks/useAIChat";
 import { resetAIStorage } from "@/engines/ai/providers";
 import { useMemories, deleteMemory } from "@/engines/memory/store";
+import { AI_MODE_LABELS, AI_MODE_DESCRIPTIONS, type AIMode } from "@/engines/ai/systemPrompt";
 
 // react-markdown não tem assinatura compatível direta com lazy() — usamos cast pontual.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
