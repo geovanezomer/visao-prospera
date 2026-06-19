@@ -661,6 +661,7 @@ export function DRETab() {
           </table>
         </div>
       </div>
+        </>
       )}
     </div>
   );
