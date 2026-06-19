@@ -132,11 +132,24 @@ export function CapitalTab() {
   }
 
   // KPIs do topo — visão rápida da estrutura de capital.
-  // SSOT: WACC e ROIC vêm de `calcIndicators` (indicators.ts) — já em PERCENTUAL
+  // SSOT: WACC e ROIC vêm de `useFinanceModel` (indicators.ts) — já em PERCENTUAL
   // (ex.: 15 = 15%). NÃO multiplicar por 100 aqui; isso causava "WACC absurdo".
-  const jurosAnual = sum(dre.custosFinanceirosTotal);
-  const amortAnual = sum(state.cashflow.amortizacoes ?? []);
+  // Serviço da dívida usa MESMA anualização (`anualizar`) da engine, evitando
+  // divergência quando o consultor preencheu menos de 12 meses.
+  const mesesP = mesesPreenchidos(
+    dre.receitaBruta,
+    dre.receitaLiquida,
+    dre.custosVariaveis,
+    dre.custosFixos,
+    dre.depreciacao,
+    dre.impostos,
+    dre.impostosVendas,
+  );
+  const an = (v: number) => anualizar(v, mesesP);
+  const jurosAnual = an(sum(dre.custosFinanceirosTotal));
+  const amortAnual = an(sum(state.cashflow.amortizacoes ?? []));
   const servicoDividaMes = (jurosAnual + amortAnual) / 12;
+
   // SSOT: Alavancagem Patrimonial vem de `calcIndicators` (dividaLiqPl) — mesma
   // métrica e mesma fórmula da aba Indicadores ("Dívida Líq. / PL").
   const alav = leverageDisplay("pl", ind.dividaLiqPl, ind.dividaLiquida, c.patrimonioLiquido);
@@ -165,8 +178,9 @@ export function CapitalTab() {
       label: "Serviço da Dívida / mês",
       value: fmtBRL(servicoDividaMes),
       hint: {
-        description: "Saída mensal média com juros e amortização dos contratos.",
-        formula: "(Juros anuais + Amortizações anuais) ÷ 12",
+        description:
+          "Saída mensal média com juros e amortização do principal. Anualização proporcional à janela preenchida (mesma da engine).",
+        formula: "(Juros Anuais + Amortizações Anuais) ÷ 12",
       },
       tone: "default",
     },
@@ -180,17 +194,18 @@ export function CapitalTab() {
       },
       tone: alav.tone,
     },
-
     {
       label: "WACC",
       value: `${wacc.toFixed(2)}%`,
       hint: {
-        description: "Custo médio ponderado do capital (próprio + terceiros, líquido de IR).",
-        formula: "wE × Ke + wD × Kd × (1 − t)",
+        description:
+          "Custo Médio Ponderado de Capital. É o retorno mínimo que a empresa precisa entregar para remunerar sócios e credores. Funciona como 'meta' do ROIC.",
+        formula: "(E/V × Ke) + (D/V × Kd × (1 − IR))",
       },
       tone: waccTone,
     },
   ];
+
 
   return (
     <div className="space-y-6">
