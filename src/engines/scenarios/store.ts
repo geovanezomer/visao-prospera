@@ -147,3 +147,37 @@ export function getScenario(company: string, idOrName: string): ScenarioRecord |
   const all = listScenarios(company);
   return all.find((s) => s.id === idOrName || s.name.toLowerCase() === idOrName.toLowerCase());
 }
+
+// ─── Snapshots históricos (Fase 3) ────────────────────────────────────
+// Reutiliza a store de cenários para guardar AppState de anos fechados.
+// Pills no cabeçalho só aparecem quando há 2+ historicals salvos.
+
+/** Lista apenas cenários históricos, ordenados por ano (asc). */
+export function listHistoricals(company: string): ScenarioRecord[] {
+  return listScenarios(company)
+    .filter((s) => s.kind === "historical" && s.state)
+    .sort((a, b) => (a.fiscalYear ?? 0) - (b.fiscalYear ?? 0));
+}
+
+/**
+ * Arquiva o AppState atual como snapshot histórico do ano informado.
+ * Idempotente por ano: se já existe historical para `fiscalYear`, sobrescreve.
+ */
+export function archiveYearAsHistorical(
+  company: string,
+  fiscalYear: number,
+  state: import("@/engines/finance/types").AppState,
+  summary?: ScenarioRecord["summary"],
+): ScenarioRecord {
+  const existing = listScenarios(company).find(
+    (s) => s.kind === "historical" && s.fiscalYear === fiscalYear,
+  );
+  return saveScenario(company, {
+    id: existing?.id,
+    name: `Ano ${fiscalYear}`,
+    kind: "historical",
+    fiscalYear,
+    state,
+    summary,
+  });
+}
