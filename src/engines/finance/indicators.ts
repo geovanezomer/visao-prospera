@@ -112,7 +112,12 @@ export interface Indicators {
   ebitdaPorColaborador: number;
   /** Lucro Líquido Anual ÷ nº de colaboradores. */
   lucroPorColaborador: number;
-  /** Folha total anual (com encargos) ÷ Receita Líquida × 100. */
+  /**
+   * Folha/Receita = Folha Total Anual ÷ Receita BRUTA Anual × 100.
+   * Folha Total inclui: pró-labore + salários CLT (c/ encargos) + benefícios + PLR +
+   * mão de obra terceirizada. NÃO inclui comissões (custo comercial). Ver `folhaAnual`
+   * em `regime.ts` para a regra exata de classificação.
+   */
   custoPessoalSobreReceita: number;
   /**
    * Margem de Segurança = (Receita Líquida − Ponto de Equilíbrio OPERACIONAL) ÷ Receita Líquida × 100.
