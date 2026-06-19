@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+// RadioGroup removido: headcount agora é input numérico exato.
 import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import type { AppState, BusinessType, TaxRegime } from "@/engines/finance/types";
 import { RAMOS_POR_SETOR } from "@/engines/finance/companyProfile";
