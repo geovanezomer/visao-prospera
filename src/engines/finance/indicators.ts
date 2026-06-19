@@ -12,6 +12,7 @@ import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { irShieldForRegime } from "./tax/real";
 import type { DRE } from "./dre";
 import { buildCashFlow } from "./cashflow";
+import { mesesPreenchidos, anualizar } from "./periodUtils";
 
 export interface Indicators {
   /** Lucro Bruto ÷ Receita Líquida × 100 */
