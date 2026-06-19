@@ -36,6 +36,8 @@ import { TaxSettingsDialog } from "@/components/sim/tax/TaxSettingsDialog";
 import { Badge } from "@/components/ui/badge";
 import { CalculadorasTab } from "@/components/calculadoras/CalculadorasTab";
 import type { BackupStatus } from "@/lib/api/cloudBackup";
+import { isBackupEnabled } from "@/lib/api/cloudBackup";
+import { RestoreBackupDialog } from "@/components/sim/shared/RestoreBackupDialog";
 import { cn } from "@/lib/utils";
 
 // Formata "há X" relativo para o breadcrumb do header.
@@ -99,6 +101,7 @@ function SimulaPro() {
   const { confirm, dialog: confirmDialog } = useConfirm();
   // Status do backup automático no Supabase Storage (header indicator).
   const [backupStatus, setBackupStatus] = useState<BackupStatus>("idle");
+  const [restoreOpen, setRestoreOpen] = useState(false);
   const fileApi = useFinnanceFile({
     state,
     scenarios,
@@ -167,6 +170,9 @@ function SimulaPro() {
             }}
             onSave={fileApi.save}
             onOpen={fileApi.open}
+            onRestoreFromCloud={
+              user && isBackupEnabled() ? () => setRestoreOpen(true) : undefined
+            }
             currentFileName={fileApi.currentFileName}
             dirty={fileApi.dirty}
           />
