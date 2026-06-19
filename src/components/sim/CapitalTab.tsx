@@ -165,10 +165,15 @@ export function CapitalTab() {
           derived={totalFinancAbs > 0}
           onChange={set}
         />
-        <BalanceSheetCard capital={c} onChange={set} />
-        <DebtContractsCard
-          contracts={contracts}
-          onChange={(next) => set({ debtContracts: next })}
+        <BalanceSheetCard
+          capital={c}
+          onChange={set}
+          debtContractsSlot={
+            <DebtContractsCard
+              contracts={contracts}
+              onChange={(next) => set({ debtContracts: next })}
+            />
+          }
         />
         <CapexAtivacaoSection
           items={c.capexAtivacao ?? []}
