@@ -15,6 +15,8 @@ import {
 } from "@/engines/finance/debtContracts";
 import type { CostLine, DebtContract } from "@/engines/finance/types";
 import { StatCard } from "@/components/sim/shared/primitives";
+import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
+
 
 
 const EMPTY_CONTRACTS: DebtContract[] = [];
