@@ -7,7 +7,7 @@
 import { AppState } from "./types";
 import { sum } from "./format";
 import { safeDivide, safePct, safeNumber } from "./safeMath";
-import { computeNetDebt } from "./shared";
+import { computeNetDebt, computeCapexMensal } from "./shared";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { irShieldForRegime } from "./tax/real";
 import type { DRE } from "./dre";
