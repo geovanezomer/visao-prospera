@@ -42,6 +42,7 @@ export function CashflowTab() {
   const patchCashflow = usePatchCashflow();
   // Regime efetivo é default em buildCashFlow; memoizar o resultado pesado.
   const cf = useMemo(() => buildCashFlow(state), [state]);
+  const comparisonSnaps = useSelectedSnapshots();
 
   const setCaixaMin = (v: number) => patchCashflow({ caixaMinimo: v });
 
