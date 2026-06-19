@@ -700,7 +700,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     );
   };
 
-  };
+
 
 
   // Recarrega threads do storage (usado por AIChatSheet ao renomear).
