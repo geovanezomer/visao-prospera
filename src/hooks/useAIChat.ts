@@ -809,6 +809,8 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     simHasChanges,
     mode,
     setMode,
+    activeSkillId,
+    setActiveSkillId,
     // ações
     send,
     handleFiles,
