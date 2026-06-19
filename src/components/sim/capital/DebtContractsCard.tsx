@@ -4,7 +4,7 @@
 // e alimenta dividaOnerosa, cashflow.amortizacoes e o custo financeiro
 // via a sincronização feita no parent (CapitalTab).
 import { useState } from "react";
-import { Plus, Trash2, ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, Landmark } from "lucide-react";
 import { fmtBRL } from "@/engines/finance/format";
 import { MoneyInput } from "../primitives";
 import type { DebtContract, DebtSystem } from "@/engines/finance/types";
