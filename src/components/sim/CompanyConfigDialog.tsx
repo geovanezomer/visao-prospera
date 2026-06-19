@@ -230,24 +230,26 @@ export function CompanyConfigDialog({ open, onOpenChange }: Props) {
               Porte
             </h3>
             <div className="space-y-1.5">
-              <Label>Número de colaboradores</Label>
-              <RadioGroup
-                value={form.headcountRange}
-                onValueChange={(v) =>
-                  setForm({ ...form, headcountRange: v as FormData["headcountRange"] })
+              <Label htmlFor="numColaboradores">Número de colaboradores *</Label>
+              <Input
+                id="numColaboradores"
+                type="number"
+                min={0}
+                max={100000}
+                step={1}
+                value={Number.isFinite(form.numColaboradores) ? form.numColaboradores : 0}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    numColaboradores: Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                  })
                 }
-                className="grid grid-cols-4 gap-2"
-              >
-                {(["1-9", "10-49", "50-99", "100+"] as const).map((range) => (
-                  <label
-                    key={range}
-                    className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/10"
-                  >
-                    <RadioGroupItem value={range} className="sr-only" />
-                    {range}
-                  </label>
-                ))}
-              </RadioGroup>
+                className="w-32"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Base para indicadores de produtividade (Receita/Colaborador, Lucro/Colaborador etc.).
+                A faixa para benchmarks é derivada automaticamente: {rangeFromNumber(form.numColaboradores)}.
+              </p>
             </div>
           </section>
 
