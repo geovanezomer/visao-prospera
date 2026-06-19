@@ -108,8 +108,14 @@ export function ShareDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="secondary" className="shadow-lg shadow-secondary/20">
-          <Share2 className="mr-2 h-4 w-4" /> Compartilhar
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 w-full justify-start"
+          title="Gerar link read-only para o cliente"
+        >
+          <Share2 className="h-3.5 w-3.5 mr-2" />
+          <span>Compartilhar</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg">
