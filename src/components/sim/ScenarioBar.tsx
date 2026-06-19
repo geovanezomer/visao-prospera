@@ -35,7 +35,10 @@ import {
   deleteScenario,
 } from "@/engines/scenarios/store";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
+import { buildDRE } from "@/engines/finance/dre";
+import { resolveEffectiveRegime } from "@/engines/finance/regime";
+import { calcIndicators } from "@/engines/finance/indicators";
 
 // Lista de anos disponíveis no select (inclusivo).
 const YEARS: number[] = Array.from({ length: 2040 - 2010 + 1 }, (_, i) => 2010 + i);
@@ -52,6 +55,35 @@ export function ScenarioBar() {
         .sort((a, b) => (b.fiscalYear ?? 0) - (a.fiscalYear ?? 0)),
     [all],
   );
+
+  // Recalcula indicadores anuais consistentes a partir do AppState arquivado.
+  const metrics = useMemo(() => {
+    const m = new Map<
+      string,
+      {
+        faturamento: number;
+        ebitda: number;
+        roe: number;
+        margemLiquida: number;
+        lucroLiquido: number;
+      }
+    >();
+    for (const h of historicals) {
+      if (!h.state) continue;
+      const regime = resolveEffectiveRegime(h.state);
+      const { dre } = buildDRE(h.state, regime);
+      const ind = calcIndicators(h.state, dre);
+      m.set(h.id, {
+        faturamento: sum(dre.receitaBruta),
+        ebitda: sum(dre.ebitda),
+        roe: ind.roe,
+        margemLiquida: ind.margemLiquida,
+        lucroLiquido: sum(dre.lucroLiquido),
+      });
+    }
+    return m;
+  }, [historicals]);
+
 
   const defaultYear = new Date().getFullYear();
   const [year, setYear] = useState<number>(
@@ -146,30 +178,37 @@ export function ScenarioBar() {
                 <thead>
                   <tr className="text-left text-[10px] uppercase text-muted-foreground">
                     <th className="p-2">Ano</th>
+                    <th className="p-2 text-right">Faturamento</th>
                     <th className="p-2 text-right">EBITDA</th>
+                    <th className="p-2 text-right">ROE</th>
+                    <th className="p-2 text-right">Margem Líq.</th>
                     <th className="p-2 text-right">Lucro Líq.</th>
-                    <th className="p-2 text-right">Saldo Caixa</th>
                     <th className="p-2"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {historicals.map((h) => (
+                  {historicals.map((h) => {
+                    const m = metrics.get(h.id);
+                    return (
                     <tr key={h.id} className="border-t border-border/40">
                       <td className="p-2 font-semibold">{h.name}</td>
                       <td className="num p-2 text-right">
-                        {h.summary?.ebitda != null ? fmtBRL(h.summary.ebitda) : "—"}
+                        {m ? fmtBRL(m.faturamento) : "—"}
                       </td>
                       <td className="num p-2 text-right">
-                        {h.summary?.lucroLiquido != null
-                          ? fmtBRL(h.summary.lucroLiquido)
-                          : "—"}
+                        {m ? fmtBRL(m.ebitda) : "—"}
                       </td>
                       <td className="num p-2 text-right">
-                        {h.summary?.saldoFinalCaixa != null
-                          ? fmtBRL(h.summary.saldoFinalCaixa)
-                          : "—"}
+                        {m ? fmtPct(m.roe) : "—"}
+                      </td>
+                      <td className="num p-2 text-right">
+                        {m ? fmtPct(m.margemLiquida) : "—"}
+                      </td>
+                      <td className="num p-2 text-right">
+                        {m ? fmtBRL(m.lucroLiquido) : "—"}
                       </td>
                       <td className="p-2">
+
                         <div className="flex justify-end gap-1">
                           <Button
                             size="sm"
@@ -197,7 +236,8 @@ export function ScenarioBar() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
