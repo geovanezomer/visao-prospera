@@ -140,7 +140,11 @@ export function useFinnanceFile({
   }, [hydrated, state, scenarios, setState, replaceScenarios]);
 
   const save = useCallback(() => {
-    const name = currentFileName ?? defaultFilename(state);
+    // Sempre regenera o nome a partir do companyName atual + data de hoje.
+    // Assim, ao trocar o nome da empresa nas configurações, o arquivo salvo
+    // (e o backup em nuvem) reflete imediatamente o novo nome — evitando
+    // sobrescrever backups de empresas diferentes.
+    const name = defaultFilename(state);
     try {
       // Coleta cenários do simulador + plano de ação da empresa atual.
       const extras = collectExtras(state.companyName);
