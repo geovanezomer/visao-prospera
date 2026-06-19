@@ -20,6 +20,7 @@ import { AppState, TaxRegime } from "./types";
 import { zeros12, fill12 } from "./format";
 import { outrasDeducoesMensal, splitReceitasFinanceiras } from "./shared";
 import { effectiveMonthValues } from "./costs";
+import { DEBT_CONTRACTS_COST_ID } from "./debtContracts";
 import { folhaAnual } from "./regime";
 import { calcSimples } from "./tax/simples";
 import { calcPresumido } from "./tax/presumido";
