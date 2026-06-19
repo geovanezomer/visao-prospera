@@ -45,6 +45,7 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
           <CashFlowComparison snapshots={annualSnaps} />
         </div>
       ) : (
+      <>
       <div className="scrollbar-thin relative isolate overflow-x-auto">
         <table className="w-full min-w-[900px] border-separate border-spacing-0 text-sm">
           <thead>
@@ -215,6 +216,7 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
         Modelo simplificado: ignora variações de estoque e ajustes de capital de giro contábil mais
         finos. Para diagnóstico operacional é suficiente.
       </div>
+      </>
       )}
     </div>
   );
