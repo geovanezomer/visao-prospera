@@ -204,16 +204,6 @@ export function CashflowTab() {
             formula: "Recebimentos − Pagamentos Operacionais − Impostos pagos",
           }}
         />
-        <StatCard
-          label="Variação total de caixa"
-          value={fmtBRL(cf.totais.variacao)}
-          tone={cf.totais.variacao >= 0 ? "pos" : "neg"}
-          hint={{
-            description:
-              "Quanto o caixa cresceu (ou caiu) no ano somando os 3 fluxos: operação, investimentos e financiamentos.",
-            formula: "Fluxo Operacional + Fluxo de Investimento + Fluxo de Financiamento",
-          }}
-        />
         <div className="relative">
           {mesesCriticos.length > 0 && (
             <Badge variant="destructive" className="absolute right-2 top-2 z-10 gap-1">
