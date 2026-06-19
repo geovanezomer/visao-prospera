@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { fmtBRL, sum } from "@/engines/finance/format";
 import { buildDRE, calcIndicators } from "@/engines/finance";
@@ -9,6 +9,14 @@ import { AdvancedRefinementCard } from "./capital/AdvancedRefinementCard";
 import { CapexAtivacaoSection } from "./capital/CapexAtivacaoSection";
 import { WaccRoicMeter } from "./capital/WaccRoicMeter";
 import { NCGExplanationCard } from "./capital/NCGExplanationCard";
+import { DebtContractsCard } from "./capital/DebtContractsCard";
+import {
+  aggregateContracts,
+  DEBT_CONTRACTS_COST_ID,
+} from "@/engines/finance/debtContracts";
+import type { CostLine, DebtContract } from "@/engines/finance/types";
+
+const EMPTY_CONTRACTS: DebtContract[] = [];
 
 // Orquestrador da aba Capital — apenas compõe os sub-cartões e cuida das
 // validações cruzadas (balanço, alavancagem). Toda a UI específica vive
@@ -22,6 +30,43 @@ export function CapitalTab() {
 
   const set = (patch: Partial<typeof c>) =>
     update((s) => ({ ...s, capital: { ...s.capital, ...patch } }));
+
+  // Sincroniza Contratos de Dívida → dividaOnerosa, cashflow.amortizacoes
+  // e linha sintética de custo financeiro (juros). Mantém os demais
+  // indicadores (DSCR, ROIC, WACC, cobertura) automaticamente coerentes.
+  const contracts = useMemo(() => c.debtContracts ?? EMPTY_CONTRACTS, [c.debtContracts]);
+  useEffect(() => {
+    if (contracts.length === 0) {
+      // Remove linha sintética de juros, se existir.
+      update((s) => {
+        const hasSynthetic = s.costs.some((x) => x.id === DEBT_CONTRACTS_COST_ID);
+        if (!hasSynthetic) return s;
+        return { ...s, costs: s.costs.filter((x) => x.id !== DEBT_CONTRACTS_COST_ID) };
+      });
+      return;
+    }
+    const agg = aggregateContracts(contracts);
+    update((s) => {
+      // upsert custo financeiro sintético
+      const synthetic: CostLine = {
+        id: DEBT_CONTRACTS_COST_ID,
+        label: "Juros sobre contratos de dívida",
+        category: "financeiro",
+        values: agg.juros,
+        fixed: false,
+        custom: true,
+      };
+      const otherCosts = s.costs.filter((x) => x.id !== DEBT_CONTRACTS_COST_ID);
+      return {
+        ...s,
+        capital: { ...s.capital, dividaOnerosa: Math.round(agg.saldoTotal) },
+        cashflow: { ...s.cashflow, amortizacoes: agg.amort },
+        costs: [...otherCosts, synthetic],
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contracts]);
+
 
   const wacc = ind.wacc;
   // Quando PL e Dívida estão preenchidos, a proporção real é PL/(PL+D) — o slider
@@ -121,6 +166,10 @@ export function CapitalTab() {
           onChange={set}
         />
         <BalanceSheetCard capital={c} onChange={set} />
+        <DebtContractsCard
+          contracts={contracts}
+          onChange={(next) => set({ debtContracts: next })}
+        />
         <AdvancedRefinementCard capital={c} onChange={set} />
         <CapexAtivacaoSection
           items={c.capexAtivacao ?? []}

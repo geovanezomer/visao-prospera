@@ -177,6 +177,26 @@ export interface CapitalStructure {
   /** Fração da dívida onerosa que vence em CP (0..1). Default 0.30.
    *  Usado apenas quando `passivoCirculante` não foi informado pelo consultor (auditoria #10). */
   dividaCurtoPrazoPct?: number;
+  /** Contratos de dívida onerosa (empréstimos, financiamentos, debêntures).
+   *  Quando preenchidos, agregam-se em `dividaOnerosa`, alimentam o serviço da dívida
+   *  (juros mensais como custo financeiro + amortizações em cashflow.amortizacoes)
+   *  e atualizam DSCR, ROIC, WACC e cobertura de juros automaticamente. */
+  debtContracts?: DebtContract[];
+}
+
+export type DebtSystem = "price" | "sac";
+
+export interface DebtContract {
+  id: string;
+  credor: string;
+  descricao?: string;
+  /** Saldo devedor atual (R$). */
+  saldoDevedor: number;
+  /** Taxa nominal anual (%). Converte para mensal por i/12. */
+  taxaAA: number;
+  sistema: DebtSystem;
+  /** Prazo remanescente em meses. */
+  prazoMeses: number;
 }
 
 export interface CapexAtivacao {
