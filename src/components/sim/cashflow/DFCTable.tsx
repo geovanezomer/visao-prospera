@@ -215,6 +215,7 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
         Modelo simplificado: ignora variações de estoque e ajustes de capital de giro contábil mais
         finos. Para diagnóstico operacional é suficiente.
       </div>
+      )}
     </div>
   );
 }
