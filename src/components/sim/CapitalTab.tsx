@@ -2,9 +2,7 @@ import { useMemo } from "react";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { fmtBRL, sum } from "@/engines/finance/format";
 import { buildDRE, calcIndicators } from "@/engines/finance";
-import { MoneyInput, HelpTip } from "./primitives";
 
-import { IntroCard } from "./capital/IntroCard";
 import { CapitalStructureCard } from "./capital/CapitalStructureCard";
 import { BalanceSheetCard } from "./capital/BalanceSheetCard";
 import { AdvancedRefinementCard } from "./capital/AdvancedRefinementCard";
