@@ -31,7 +31,7 @@ export function CapitalTab() {
   const c = state.capital;
   // SSOT: usa `useFinanceModel` (resolveEffectiveRegime + memo central) — mesma
   // fonte da aba Indicadores. Garante que WACC/ROIC/margens nunca divirjam.
-  const { dre, ind } = useFinanceModel(state);
+  const { ind } = useFinanceModel(state);
 
   const set = (patch: Partial<typeof c>) =>
 
