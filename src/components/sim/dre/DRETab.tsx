@@ -11,9 +11,10 @@ import {
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/engines/finance/format";
-import { buildDRE, calcIndicators, monthValues } from "@/engines/finance";
+import { monthValues } from "@/engines/finance";
 import { splitReceitasFinanceiras } from "@/engines/finance/shared";
-import { buildCashFlow } from "@/engines/finance/cashflow";
+import { useFinanceModel } from "@/engines/finance/useFinanceModel";
+
 import {
   Select,
   SelectContent,
@@ -77,10 +78,13 @@ export function DRETab() {
     return [];
   };
 
-  const regime = state.tax.regime;
-  const { dre, tax } = buildDRE(state, regime);
-  const ind = calcIndicators(state, dre);
-  const cf = buildCashFlow(state, regime);
+  // SSOT: useFinanceModel aplica `resolveEffectiveRegime` (Simples pode cair
+  // automaticamente para Presumido se exceder o teto). Garante que DRE/ind/cf
+  // sejam idênticos aos da aba Indicadores.
+  const { regime, dre, ind, cf, model } = useFinanceModel(state);
+  const tax = model.tax;
+
+
   const limiar = state.cashflow.limiarAlerta ?? -10000;
   const mesesCriticosIdx = new Set(
     cf.saldoFinal.map((s, i) => (s <= limiar ? i : -1)).filter((i) => i >= 0),
@@ -388,8 +392,13 @@ export function DRETab() {
           value={fmtBRL(sum(dre.ebitda))}
           sub={`${ind.margemEbitda.toFixed(1)}%`}
           tone={sum(dre.ebitda) >= 0 ? "pos" : "neg"}
-          hint={{ description: "Caixa operacional.", formula: "Lucro Bruto − Despesas" }}
+          hint={{
+            description:
+              "Geração operacional de caixa antes de juros, impostos e depreciação. Mede a operação 'pura', sem efeitos de estrutura de capital nem fiscalidade.",
+            formula: "Receita Líquida − CPV − Despesas Operacionais (excl. D&A)",
+          }}
         />
+
         <StatCard
           label="EBIT"
           value={fmtBRL(sum(dre.ebit))}

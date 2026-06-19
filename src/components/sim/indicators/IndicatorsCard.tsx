@@ -65,27 +65,28 @@ export function IndicatorsCard({ state }: { state: AppState }) {
         <Ind
           label="PE Operacional"
           v={fmtBRL(ind.pontoEquilibrioOperacional)}
-          desc="Conceito clássico (Garrison/Horngren): custos fixos operacionais com depreciação, sem juros."
+          desc="Conceito clássico (Garrison/Horngren): receita mínima para cobrir custos fixos OPERACIONAIS (com depreciação, sem juros). Juros e impostos ficam abaixo do EBIT."
           formula="(Custos Fixos Op. + Depreciação) ÷ Margem de Contribuição"
         />
         <Ind
           label="PE Financeiro (caixa)"
           v={fmtBRL(ind.pontoEquilibrioFinanceiro)}
-          desc="Receita mínima para cobrir desembolsos operacionais — sem depreciação e sem juros."
+          desc="Receita mínima para cobrir DESEMBOLSOS operacionais — exclui depreciação (não-caixa) e juros (financeiro). Conceito clássico de break-even em caixa."
           formula="Custos Fixos Operacionais ÷ Margem de Contribuição"
         />
         <Ind
           label="PE Total (c/ juros)"
           v={fmtBRL(ind.pontoEquilibrio)}
-          desc="Cobertura financeira completa — inclui juros como custo fixo recorrente."
+          desc="Cobertura financeira completa: inclui juros como custo fixo recorrente. Visão da PME para 'não ter prejuízo' considerando o serviço da dívida."
           formula="(Custos Fixos Op. + Depreciação + Juros) ÷ Margem de Contribuição"
         />
         <Ind
           label="ROE"
           v={fmtPct(ind.roe / 100)}
-          desc="Usa PL médio quando o PL de abertura é informado; caso contrário, PL fim de período."
+          desc="Retorno sobre o Patrimônio Líquido. Usa PL MÉDIO ((abertura + final)/2, CFA/Damodaran) quando o PL de abertura é informado em Capital; caso contrário, usa PL fim de período (pode subestimar ROE em empresas em crescimento e superestimar em empresas com prejuízo acumulado)."
           formula="Lucro Líquido ÷ PL Médio × 100"
         />
+
         <Ind
           label="ROA"
           v={fmtPct(ind.roa / 100)}
@@ -188,15 +189,16 @@ export function IndicatorsCard({ state }: { state: AppState }) {
           );
         })()}
         <Ind
-          label="Amortização do PL"
+          label="Amortização do PL pelo Lucro"
           v={
             Number.isFinite(ind.amortizacaoPlPorLucro)
               ? `${ind.amortizacaoPlPorLucro.toFixed(1)} anos`
               : "—"
           }
-          desc="Tempo para o lucro contábil acumulado igualar o PL. Não é o Payback clássico."
-          formula="PL ÷ Lucro Líquido Anual"
+          desc="Tempo (anos) para o lucro contábil acumulado igualar o Patrimônio Líquido. NÃO confundir com o Payback clássico — este indicador mede a velocidade de remuneração do capital próprio pelo lucro contábil."
+          formula="Patrimônio Líquido ÷ Lucro Líquido Anual"
         />
+
         <Ind
           label="Payback (CAPEX)"
           v={
@@ -274,7 +276,7 @@ export function IndicatorsCard({ state }: { state: AppState }) {
                 : undefined
           }
           desc="Peso da folha total (CLT + pró-labore + MOD, com encargos) sobre a receita. Acima de 35% acende alerta em serviços."
-          formula="Folha Total Anual ÷ Receita Líquida × 100"
+          formula="Folha Total Anual ÷ Receita Bruta × 100"
         />
         <Ind
           label="Margem de Segurança"
@@ -291,7 +293,7 @@ export function IndicatorsCard({ state }: { state: AppState }) {
               : "—"
           }
           tone={ind.dscr >= 1.5 ? "pos" : ind.dscr >= 1.25 ? "warn" : "neg"}
-          desc={`Quantas vezes o EBITDA cobre o serviço total da dívida (juros + amortização do principal). Bancos exigem ≥1,25× para renovar giro; ≥1,50× destrava melhores linhas.${!ind.dscrAmortizacoesInformadas && ind.dividaOnerosa > 0 ? " ⚠️ Amortizações de principal não informadas — DSCR equivale à Cobertura de Juros (pode estar superestimado)." : ""}`}
+          desc={`Quantas vezes o EBITDA cobre o serviço total da dívida (juros + amortização do principal). Bancos exigem ≥1,25× para renovar giro; ≥1,50× destrava melhores linhas.${!ind.dscrAmortizacoesInformadas && ind.dividaOnerosa > 0 ? " ⚠️ Amortizações de principal não informadas no Fluxo de Caixa — DSCR exibido equivale à Cobertura de Juros e pode estar SUPERESTIMADO." : ""}`}
           formula="EBITDA ÷ (Juros + Amortizações de Principal)"
         />
         <Ind
