@@ -8,7 +8,7 @@
 
 import { AppState, SimplesAnexo, TaxConfig } from "../types";
 import { sum, zeros12 } from "../format";
-import { getSimplesTable, getSimplesLimite } from "../taxDefaults";
+import { getSimplesTable, getSimplesLimite, SIMPLES_SUBLIMITE_ESTADUAL } from "../taxDefaults";
 import { receitaTributavel } from "../shared";
 import { resolveSimplesAnexo } from "../regime";
 import type { MonthlyTax } from "./shared";
@@ -29,17 +29,27 @@ export function calcSimples(state: AppState): MonthlyTax {
   const { revenue, tax } = state;
   const trib = receitaTributavel(state);
   const anexo = resolveSimplesAnexo(state);
-  const rbAnual = sum(trib);
-  const aliq = simplesAliquotaEfetiva(rbAnual, anexo, tax) / 100;
+  // [Auditoria Bloco 1] RBT12 = Receita Bruta dos Últimos 12 Meses (LC 123/06 art. 3º §1º).
+  // A FAIXA da tabela é determinada pela RECEITA BRUTA — não pela receita tributável
+  // (que já está líquida de devoluções/cancelamentos). Aplicar alíquota efetiva sobre
+  // a receita tributável é correto (devoluções não geram DAS), mas a faixa é da bruta.
+  const rbBrutaAnual = sum(revenue.bruta);
+  const aliq = simplesAliquotaEfetiva(rbBrutaAnual, anexo, tax) / 100;
   const monthly = trib.map((r) => r * aliq);
   const annual = sum(monthly);
-  const rbBrutaAnual = sum(revenue.bruta);
   const limite = getSimplesLimite(tax);
   const excedeu = rbBrutaAnual > limite;
+  const sublimEstadual = SIMPLES_SUBLIMITE_ESTADUAL;
+  const excedeuSublimite = rbBrutaAnual > sublimEstadual && rbBrutaAnual <= limite;
   const detail: Record<string, number> = { [`DAS Simples (Anexo ${anexo})`]: annual };
   if (excedeu) {
     const limMi = (limite / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
     detail[`⚠ Excedeu limite Simples (R$ ${limMi}M) — desenquadramento obrigatório`] = 0;
+  } else if (excedeuSublimite) {
+    // [Auditoria Bloco 1] Sublimite estadual (LC 123/06 art. 13-A): de R$ 3,6M até R$ 4,8M,
+    // empresa permanece no Simples para tributos federais, mas ICMS/ISS saem do DAS e são
+    // recolhidos pelo regime normal (RPA). Sinaliza para o consultor revisar o recolhimento.
+    detail[`⚠ Acima do sublimite estadual (R$ 3,6M) — ICMS/ISS devem ser recolhidos por fora do DAS`] = 0;
   }
   return {
     monthly,
@@ -52,3 +62,4 @@ export function calcSimples(state: AppState): MonthlyTax {
     detail,
   };
 }
+
