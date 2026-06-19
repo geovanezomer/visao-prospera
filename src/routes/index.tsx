@@ -214,9 +214,20 @@ function SimulaPro() {
                         </span>
                       </>
                     )}
-                  </div>
                 </div>
               </div>
+
+              {/* Pills centralizados: só aparecem em DRE / Fluxo de Caixa. */}
+              {(activeTab === "dre" || activeTab === "caixa") && (
+                <div
+                  className="hidden md:flex flex-1 justify-center px-4 min-w-0"
+                  data-meeting-hide="true"
+                >
+                  <HistoricalYearPills />
+                </div>
+              )}
+
+
 
               <div className="flex items-center gap-2">
                 {meetingMode && (
