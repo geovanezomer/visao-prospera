@@ -50,7 +50,7 @@ export function ScenarioBar() {
 
   const historicals = useMemo(
     () =>
-      allHistoricals
+      [...allHistoricals]
         .sort((a, b) => (b.fiscalYear ?? 0) - (a.fiscalYear ?? 0)),
     [allHistoricals],
   );
