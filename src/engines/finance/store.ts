@@ -70,11 +70,23 @@ export function useAppState() {
       try {
         await saveKey(stateKey(username), state);
         broadcastChange(stateKey(username));
+        // Auto-arquiva o AppState do ano corrente no store de cenários
+        // (localStorage por empresa). Garante que cada fiscalYear tenha
+        // sempre seu snapshot mais recente — pills de período carregam
+        // exatamente o que o usuário deixou ao trocar de ano ou reabrir.
+        try {
+          if (state.fiscalYear && state.companyName) {
+            archiveYearAsHistorical(state.companyName, state.fiscalYear, state);
+          }
+        } catch {
+          // Falha em arquivar não invalida o autosave principal.
+        }
         setAutosaveStatus("saved");
       } catch {
         setAutosaveStatus("error");
       }
     }, 300);
+
     return () => clearTimeout(t);
   }, [state, hydrated, username]);
 
