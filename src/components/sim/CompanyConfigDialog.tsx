@@ -86,7 +86,8 @@ interface Props {
 }
 
 export function CompanyConfigDialog({ open, onOpenChange }: Props) {
-  const { state, update, set } = useFinance();
+  const { state, update } = useFinance();
+  const setTax = usePatchTax();
 
   // Estado local — só persiste no AppState ao clicar "Salvar".
   const [form, setForm] = useState<FormData>(() => buildFormFromState(state));
