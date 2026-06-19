@@ -240,7 +240,13 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const fornecEstimado =
     capital.fornecedores > 0 ? capital.fornecedores : (sum(dre.cpv) / 360) * revenue.pmp;
   const ncg = crEstimado + estoqueMedio - fornecEstimado;
-  const gapCapitalGiro = ncg - capital.capitalGiroDisponivel;
+  // SSOT: caixa disponível imediato = `disponibilidades` (Caixa+Bancos do BP).
+  // O campo legado `capitalGiroDisponivel` foi descontinuado na UI; usamos
+  // como fallback apenas para estados antigos sem `disponibilidades`.
+  const caixaImediato = capital.disponibilidades > 0
+    ? capital.disponibilidades
+    : (capital.capitalGiroDisponivel ?? 0);
+  const gapCapitalGiro = ncg - caixaImediato;
 
   // ---- Liquidez ----
   const ativoCirculante =
@@ -318,10 +324,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const payback = amortizacaoPlPorLucro; // @deprecated alias
 
   // Auditoria #3: ΔNCG (variação anual) em vez do gap total.
-  // Usa `ncgAbertura` quando informada; senão `capitalGiroDisponivel` como
-  // proxy da NCG já financiada na abertura. Evita consumo de caixa inflado
-  // período após período em empresas em crescimento estável.
-  const ncgAbertura = Math.max(0, capital.ncgAbertura ?? capital.capitalGiroDisponivel ?? 0);
+  // Usa `ncgAbertura` quando informada; senão `disponibilidades` (caixa+bancos)
+  // como proxy da NCG já financiada na abertura — fonte única de caixa.
+  const ncgAbertura = Math.max(0, capital.ncgAbertura ?? capital.disponibilidades ?? 0);
   const deltaNcgAnual = Math.max(0, ncg - ncgAbertura);
   // FCFF (Free Cash Flow to the Firm) padrão Damodaran/Koller:
   //   FCFF = NOPAT + D&A − ΔNCG − CAPEX
