@@ -20,9 +20,11 @@ import { StepCard, SimpleField, MiniStat, SummaryList, KpiTile, Field } from "./
 export function BalanceSheetCard({
   capital,
   onChange,
+  debtContractsSlot,
 }: {
   capital: AppState["capital"];
   onChange: (patch: Partial<AppState["capital"]>) => void;
+  debtContractsSlot?: React.ReactNode;
 }) {
   const ativoCircCalc =
     (capital.disponibilidades || 0) + (capital.estoques || 0) + (capital.contasReceber || 0);
