@@ -170,9 +170,20 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const keSeguro = capital.ke > 0 ? capital.ke : 8;
   const wacc = wE * keSeguro + wD * capital.kd * (1 - irShield);
 
-  // ---- NOPAT e ROIC com alíquota MARGINAL (Damodaran/Koller) ----
-  const tcMarginal = Math.max(0, Math.min(0.5, irShield));
-  const nopat = Math.max(0, ebitAnual * (1 - tcMarginal));
+  // ---- NOPAT e ROIC com alíquota EFETIVA observada (impostos / receita bruta) ----
+  // Lucro Real/Presumido: IR + CSLL + adicional (dre.impostos).
+  // Simples Nacional: usar a alíquota efetiva do DAS (impostosVendas) como proxy,
+  // pois IRPJ/CSLL estão embutidos no DAS.
+  const receitaBrutaAnual = sum(dre.receitaBruta);
+  const impostosLucroAnual = sum(dre.impostos);
+  const dasAnual = sum(dre.impostosVendas);
+  const regimeEfetivo = resolveEffectiveRegime(state);
+  const impostosParaAliquota = regimeEfetivo === "simples" ? dasAnual : impostosLucroAnual;
+  const aliquotaEfetiva =
+    receitaBrutaAnual > 0
+      ? Math.max(0, Math.min(0.5, impostosParaAliquota / receitaBrutaAnual))
+      : 0;
+  const nopat = Math.max(0, ebitAnual * (1 - aliquotaEfetiva));
 
   // Capital Investido — preferimos lado financiamento (PL + D − caixa ocioso).
   const pno = Math.max(0, capital.passivosNaoOnerosos ?? capital.fornecedores ?? 0);
