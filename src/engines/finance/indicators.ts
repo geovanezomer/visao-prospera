@@ -256,8 +256,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const ei = Math.max(0, capital.estoqueInicial ?? 0);
   const ef = Math.max(0, capital.estoqueFinal ?? 0);
   const estoqueMedio = ei > 0 && ef > 0 ? (ei + ef) / 2 : ef > 0 ? ef : capital.estoques;
-  const cpvDiario = cpvAnual / 360;
-  const pme = estoqueMedio > 0 && cpvDiario > 0 ? estoqueMedio / cpvDiario : 0;
+  const cpvDiario = safeDivide(cpvAnual, 360);
+  const pme = estoqueMedio > 0 && cpvDiario > 0 ? safeDivide(estoqueMedio, cpvDiario) : 0;
   const cicloFinanceiro = revenue.pmr + pme - revenue.pmp;
   const crEstimado =
     capital.contasReceber > 0 ? capital.contasReceber : (receitaLiqAnual / 360) * revenue.pmr;
