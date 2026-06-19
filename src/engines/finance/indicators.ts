@@ -240,7 +240,13 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const fornecEstimado =
     capital.fornecedores > 0 ? capital.fornecedores : (sum(dre.cpv) / 360) * revenue.pmp;
   const ncg = crEstimado + estoqueMedio - fornecEstimado;
-  const gapCapitalGiro = ncg - capital.capitalGiroDisponivel;
+  // SSOT: caixa disponível imediato = `disponibilidades` (Caixa+Bancos do BP).
+  // O campo legado `capitalGiroDisponivel` foi descontinuado na UI; usamos
+  // como fallback apenas para estados antigos sem `disponibilidades`.
+  const caixaImediato = capital.disponibilidades > 0
+    ? capital.disponibilidades
+    : (capital.capitalGiroDisponivel ?? 0);
+  const gapCapitalGiro = ncg - caixaImediato;
 
   // ---- Liquidez ----
   const ativoCirculante =
