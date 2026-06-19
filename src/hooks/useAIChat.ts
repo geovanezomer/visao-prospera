@@ -28,6 +28,7 @@ import { estimateTokens } from "@/engines/ai/snapshot";
 const MAX_HISTORY_TOKENS = 6000;
 import { buildSystemPrompt, type AIMode } from "@/engines/ai/systemPrompt";
 import { loadAIMode, saveAIMode } from "@/engines/ai/modeStore";
+import { recordChatTrail } from "@/engines/ai/chatTrail";
 import { useMemories, memoriesToPromptBlock } from "@/engines/memory/store";
 import {
   processFile,
@@ -271,6 +272,23 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     const sysPrompt = buildSysPrompt(effectiveMode);
     const ac = new AbortController();
     abortRef.current = ac;
+
+    // Audit Trail — captura início do turno, finalizado em ambos os caminhos.
+    const trailStart = Date.now();
+    const recordTrail = (status: "ok" | "erro" | "abortado", responseChars: number, tools: string[], errorMsg?: string) => {
+      recordChatTrail(state.companyName || "default", {
+        threadId: activeId,
+        mode: effectiveMode,
+        provider: config.provider,
+        model: config.model,
+        userText: content,
+        responseChars,
+        tools,
+        durationMs: Date.now() - trailStart,
+        status,
+        errorMsg,
+      });
+    };
 
     const fullUserText = content + pdfCtx;
     const hasImages = atts.some((a) => a.type === "image" && a.dataUrl && !a.error);
