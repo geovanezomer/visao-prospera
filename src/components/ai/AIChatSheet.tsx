@@ -87,6 +87,7 @@ export function AIChatSheet({
     handleAudit,
     runPipeline360,
     resumePipeline360,
+    resetPipeline360,
     pipeline360,
     handleNewThread,
     handleDeleteThread,
@@ -335,15 +336,26 @@ export function AIChatSheet({
                     <Square className="mr-1 h-2.5 w-2.5" /> Cancelar
                   </Button>
                 ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 text-[10px] text-primary hover:text-primary"
-                    onClick={() => void resumePipeline360()}
-                    title="Retomar a partir da próxima etapa"
-                  >
-                    <RefreshCcw className="mr-1 h-2.5 w-2.5" /> Reiniciar
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[10px] text-primary hover:text-primary"
+                      onClick={() => void resumePipeline360()}
+                      title="Retomar a partir da próxima etapa"
+                    >
+                      <RefreshCcw className="mr-1 h-2.5 w-2.5" /> Continuar
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[10px] text-muted-foreground hover:text-destructive"
+                      onClick={resetPipeline360}
+                      title="Limpar estado e começar do zero"
+                    >
+                      <Trash2 className="mr-1 h-2.5 w-2.5" /> Limpar
+                    </Button>
+                  </div>
                 )}
               </div>
               <div className="mt-1.5 flex items-center gap-1.5">

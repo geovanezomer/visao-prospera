@@ -791,6 +791,15 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     handleAudit,
     runPipeline360,
     resumePipeline360,
+    resetPipeline360: () => {
+      if (streaming) {
+        toast.error("Cancele o pipeline em execução antes de limpar.");
+        return;
+      }
+      clearPipeline360(state.companyName || "default", activeId);
+      setPipeline360({ active: false, current: null, completed: [], total: 3 });
+      toast.success("Pipeline 360° reiniciado.");
+    },
     pipeline360,
     handleNewThread,
     handleDeleteThread,
