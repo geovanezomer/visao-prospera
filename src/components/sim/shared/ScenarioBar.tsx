@@ -112,7 +112,7 @@ export function ScenarioBar() {
   const alreadyExists = historicals.some((h) => h.fiscalYear === year);
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex gap-2">
+    <div data-meeting-hide="true" className="fixed bottom-6 right-6 z-40 flex gap-2">
       {/* Salvar ANO */}
       <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
         <DialogTrigger asChild>
