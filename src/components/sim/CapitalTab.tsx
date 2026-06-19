@@ -3,7 +3,6 @@ import { useFinance } from "@/engines/finance/AppStateContext";
 import { fmtBRL, sum } from "@/engines/finance/format";
 import { buildDRE, calcIndicators } from "@/engines/finance";
 
-import { CapitalStructureCard } from "./capital/CapitalStructureCard";
 import { BalanceSheetCard } from "./capital/BalanceSheetCard";
 
 import { CapexAtivacaoSection } from "./capital/CapexAtivacaoSection";
@@ -46,6 +45,13 @@ export function CapitalTab() {
       return;
     }
     const agg = aggregateContracts(contracts);
+    // kd derivado: média ponderada das taxas dos contratos (saldo como peso).
+    const totalSaldo = contracts.reduce((s, x) => s + Math.max(0, x.saldoDevedor || 0), 0);
+    const kdDerivado =
+      totalSaldo > 0
+        ? contracts.reduce((s, x) => s + Math.max(0, x.saldoDevedor || 0) * (x.taxaAA || 0), 0) /
+          totalSaldo
+        : 0;
     update((s) => {
       // upsert custo financeiro sintético
       const synthetic: CostLine = {
@@ -59,13 +65,32 @@ export function CapitalTab() {
       const otherCosts = s.costs.filter((x) => x.id !== DEBT_CONTRACTS_COST_ID);
       return {
         ...s,
-        capital: { ...s.capital, dividaOnerosa: Math.round(agg.saldoTotal) },
+        capital: {
+          ...s.capital,
+          dividaOnerosa: Math.round(agg.saldoTotal),
+          kd: kdDerivado > 0 ? Number(kdDerivado.toFixed(2)) : s.capital.kd,
+        },
         cashflow: { ...s.cashflow, amortizacoes: agg.amort },
         costs: [...otherCosts, synthetic],
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contracts]);
+
+  // ke padrão por setor (benchmark PME BR — Selic + prêmio de risco). O usuário
+  // pode sobrescrever via Análise/Valuation se quiser refinar.
+  const keDefaultPorSetor: Record<string, number> = {
+    servicos: 18,
+    comercio: 17,
+    industria: 16,
+  };
+  useEffect(() => {
+    const keAlvo = keDefaultPorSetor[state.businessType] ?? 18;
+    if (!c.ke || c.ke <= 0) {
+      update((s) => ({ ...s, capital: { ...s.capital, ke: keAlvo } }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.businessType]);
 
 
   const wacc = ind.wacc;
@@ -155,16 +180,6 @@ export function CapitalTab() {
       />
 
       <div className="space-y-4">
-        <CapitalStructureCard
-          proprio={proprioDerivado}
-          terceiros={terceiros}
-          ke={c.ke}
-          kd={c.kd}
-          patrimonioLiquido={c.patrimonioLiquido}
-          dividaOnerosa={c.dividaOnerosa}
-          derived={totalFinancAbs > 0}
-          onChange={set}
-        />
         <BalanceSheetCard
           capital={c}
           onChange={set}
