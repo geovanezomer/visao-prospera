@@ -496,5 +496,10 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
         : 0,
     impostosSobreLucro:
       llAnual > 1 ? ((impostosVendasAnual + impostosAnual) / llAnual) * 100 : 0,
+    ebitdaAnual,
+    ebitAnual,
+    servicoDividaMensal: (jurosAnual + amortizPrincipalAnual) / 12,
+    proprioPercent: V > 0 ? (PL / V) * 100 : Math.max(0, Math.min(100, capital.proprio)),
+    dividaPlBruto: PL > 0 ? D / PL : 0,
   };
 }
