@@ -85,6 +85,7 @@ export function AIChatSheet({
     handleRegenerate,
     handleEditLast,
     handleAudit,
+    runPipeline360,
     handleNewThread,
     handleDeleteThread,
     reloadThreads,
