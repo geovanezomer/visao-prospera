@@ -13,6 +13,8 @@ import {
   X,
   Paperclip,
   Brain,
+  Layers,
+  ShieldCheck,
 } from "lucide-react";
 import { AIConfigDialog } from "./AIConfigDialog";
 import type { AppState } from "@/engines/finance/types";
@@ -123,8 +125,12 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
     simHasChanges,
     mode,
     setMode,
-    activeSkillId,
-    setActiveSkillId,
+    handleAudit,
+    runPipeline360,
+    resumePipeline360,
+    resetPipeline360,
+    pipeline360,
+    handleStop,
     send,
     handleFiles,
     handleNewThread,
@@ -156,6 +162,11 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
             <span className="rounded border border-border/40 px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">
               {config.provider}
             </span>
+            {mode !== "chat" && (
+              <span className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
+                {AI_MODE_LABELS[mode]}
+              </span>
+            )}
             {simHasChanges && (
               <span className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-300">
                 simulação ativa
@@ -164,6 +175,15 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleAudit}
+            disabled={streaming || pipeline360.active}
+            title="Auditoria rápida (relatório estruturado)"
+          >
+            <ShieldCheck className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => setShowThreads((s) => !s)}>
             <MessageSquare className="h-4 w-4" />
           </Button>
@@ -287,6 +307,72 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
             )}
           </div>
 
+          {(pipeline360.active || pipeline360.completed.length > 0) && (
+            <div className="border-t border-border/40 bg-card/20 px-4 py-2">
+              <div className="max-w-4xl mx-auto flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-1 flex-wrap">
+                  {(["cfo", "controller", "auditor"] as const).map((stage, i) => {
+                    const done = pipeline360.completed.includes(stage);
+                    const current = pipeline360.current === stage;
+                    return (
+                      <div key={stage} className="flex items-center gap-1.5">
+                        <div
+                          className={`h-2 w-2 rounded-full ${
+                            done
+                              ? "bg-primary"
+                              : current
+                                ? "bg-primary animate-pulse"
+                                : "bg-muted"
+                          }`}
+                        />
+                        <span
+                          className={`text-xs ${
+                            done || current ? "text-foreground" : "text-muted-foreground"
+                          }`}
+                        >
+                          {AI_MODE_LABELS[stage]}
+                        </span>
+                        {i < 2 && <span className="text-muted-foreground text-xs">→</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {pipeline360.active && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={handleStop}
+                    >
+                      Parar
+                    </Button>
+                  )}
+                  {!pipeline360.active && pipeline360.aborted && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => void resumePipeline360()}
+                    >
+                      Retomar
+                    </Button>
+                  )}
+                  {!pipeline360.active && pipeline360.completed.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-muted-foreground"
+                      onClick={resetPipeline360}
+                    >
+                      Reiniciar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="border-t border-border/40 bg-card/30 p-4">
             <div className="max-w-4xl mx-auto space-y-3">
               {attachments.length > 0 && (
@@ -342,6 +428,22 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                   rows={1}
                 />
                 <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  onClick={() => void runPipeline360(input)}
+                  disabled={
+                    mode !== "board" || streaming || pipeline360.active
+                  }
+                  title={
+                    mode !== "board"
+                      ? "Disponível no Modo Conselho (Board)"
+                      : "Análise 360° (CFO → Controller → Auditor)"
+                  }
+                >
+                  <Layers className="h-4 w-4" />
+                </Button>
+                <Button
                   onClick={() => void send(input)}
                   disabled={streaming || (!input.trim() && !attachments.length)}
                   size="icon"
@@ -352,7 +454,7 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
               </div>
               <div className="flex items-center gap-1.5">
                 <Select value={mode} onValueChange={(v) => setMode(v as AIMode)}>
-                  <SelectTrigger className="h-7 flex-1 text-xs" title="Modo de atuação">
+                  <SelectTrigger className="h-7 w-full text-xs" title="Modo de atuação">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -362,34 +464,6 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                           <span className="font-medium">{AI_MODE_LABELS[m]}</span>
                           <span className="text-[10px] text-muted-foreground">
                             {AI_MODE_DESCRIPTIONS[m]}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={activeSkillId} onValueChange={setActiveSkillId}>
-                  <SelectTrigger className="h-7 flex-1 text-xs" title="Skill ativa neste chat">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all" className="text-xs">
-                      <div className="flex flex-col">
-                        <span className="font-medium">Todas as skills</span>
-                        <span className="text-[10px] text-muted-foreground">
-                          Usa as habilitadas em Configurações
-                        </span>
-                      </div>
-                    </SelectItem>
-                    {config.skills.map((s) => (
-                      <SelectItem key={s.id} value={s.id} className="text-xs">
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {s.name}
-                            {!s.enabled ? " (off)" : ""}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground line-clamp-1">
-                            {s.description}
                           </span>
                         </div>
                       </SelectItem>
