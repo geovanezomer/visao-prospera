@@ -1,7 +1,7 @@
 import { AppState, TaxRegime } from "./types";
 import { buildDRE, type DRE } from "./dre";
 import { resolveEffectiveRegime } from "./regime";
-import { splitReceitasFinanceiras } from "./shared";
+import { splitReceitasFinanceiras, computeCapexMensal } from "./shared";
 import type { MonthlyTax } from "./tax/shared";
 import { MESES, sum, zeros12 } from "./format";
 
