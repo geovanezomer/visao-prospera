@@ -324,10 +324,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const payback = amortizacaoPlPorLucro; // @deprecated alias
 
   // Auditoria #3: ΔNCG (variação anual) em vez do gap total.
-  // Usa `ncgAbertura` quando informada; senão `capitalGiroDisponivel` como
-  // proxy da NCG já financiada na abertura. Evita consumo de caixa inflado
-  // período após período em empresas em crescimento estável.
-  const ncgAbertura = Math.max(0, capital.ncgAbertura ?? capital.capitalGiroDisponivel ?? 0);
+  // Usa `ncgAbertura` quando informada; senão `disponibilidades` (caixa+bancos)
+  // como proxy da NCG já financiada na abertura — fonte única de caixa.
+  const ncgAbertura = Math.max(0, capital.ncgAbertura ?? capital.disponibilidades ?? 0);
   const deltaNcgAnual = Math.max(0, ncg - ncgAbertura);
   // FCFF (Free Cash Flow to the Firm) padrão Damodaran/Koller:
   //   FCFF = NOPAT + D&A − ΔNCG − CAPEX
