@@ -56,6 +56,7 @@ ESTRATÉGIAS DE USO DE TOOLS (princípio: menor payload possível):
 - "Decompõe meu WACC / por que está alto / contribuição equity vs dívida" → 'get_wacc' (drill-down dos componentes).
 - "Carga da Reforma por era (atual/transição/pleno)" → 'get_eras_reforma' · "Ano-a-ano 2026–2033" → 'simular_transicao_reforma'. Não chame as duas para a mesma pergunta.
 - Plano de ação: 'listar_acoes' (com filtro de status), 'atualizar_acao' (mudar status/prazo/responsável), 'excluir_acao' (remover).
+- **Memória persistente**: ao consolidar uma conclusão importante (diagnóstico crítico confirmado, decisão validada pelo consultor, premissa específica desta empresa, preferência do consultor), chame 'salvar_conclusao_importante' UMA vez. Use 'listar_memorias' para revisar e 'excluir_memoria' para remover. Não salve resumos triviais nem repita memórias existentes — o bloco MEMÓRIA já entra no system prompt.
 
 
 ANEXOS:
@@ -100,6 +101,7 @@ export function buildSystemPrompt(opts: {
   soul?: string;
   skills?: Skill[];
   context?: RuntimeContext;
+  memoriesBlock?: string;
 }): string {
   // SOUL substitui a PERSONA fixa quando fornecido (editável em Configurações).
   const soul = opts.soul && opts.soul.trim() ? opts.soul.trim() : PERSONA;
@@ -114,6 +116,11 @@ export function buildSystemPrompt(opts: {
     "",
     GLOSSARIO,
   ];
+
+  // MEMÓRIA persistente — conclusões salvas em conversas anteriores (mesma empresa).
+  if (opts.memoriesBlock && opts.memoriesBlock.trim()) {
+    parts.push("", opts.memoriesBlock.trim());
+  }
 
   // SKILLS ativas — anexadas como blocos modulares.
   const activeSkills = (opts.skills || []).filter((s) => s.enabled && s.body.trim());
