@@ -20,7 +20,7 @@ import {
 import { DFCTable } from "./cashflow/DFCTable";
 import { NonOpTable } from "./cashflow/NonOpTable";
 import { NonOpKey } from "./cashflow/tableHelpers";
-import { HistoricalYearPills } from "./HistoricalYearPills";
+
 import { CashFlowComparison } from "./ComparisonView";
 import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
 
