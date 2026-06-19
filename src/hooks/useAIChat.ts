@@ -376,8 +376,17 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
           })),
           { role: "assistant", content: out.finalText, ts: Date.now() },
         ]);
+        recordTrail("ok", out.finalText.length, collected.map((c) => c.name));
       } catch (e: unknown) {
-        setMessages([...history, { role: "assistant", content: errToMd(e), ts: Date.now() }]);
+        const msg = errToMd(e);
+        setMessages([...history, { role: "assistant", content: msg, ts: Date.now() }]);
+        const aborted = ac.signal.aborted;
+        recordTrail(
+          aborted ? "abortado" : "erro",
+          0,
+          collected.map((c) => c.name),
+          e instanceof Error ? e.message : String(e),
+        );
       } finally {
         setStreaming(false);
         abortRef.current = null;
@@ -398,6 +407,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
           return copy;
         });
       }
+      recordTrail("ok", acc.length, []);
     } catch (e: unknown) {
       setMessages((prev) => {
         const copy = prev.slice();
@@ -408,6 +418,13 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
         };
         return copy;
       });
+      const aborted = ac.signal.aborted;
+      recordTrail(
+        aborted ? "abortado" : "erro",
+        acc.length,
+        [],
+        e instanceof Error ? e.message : String(e),
+      );
     } finally {
       setStreaming(false);
       abortRef.current = null;
