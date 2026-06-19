@@ -27,6 +27,7 @@ import { estimateTokens } from "@/engines/ai/snapshot";
 // Se ultrapassado, comprime o miolo preservando contexto inicial + recente.
 const MAX_HISTORY_TOKENS = 6000;
 import { buildSystemPrompt } from "@/engines/ai/systemPrompt";
+import { useMemories, memoriesToPromptBlock } from "@/engines/memory/store";
 import {
   processFile,
   buildPdfContext,
@@ -195,6 +196,10 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     [state, config.maxSuggestions],
   );
 
+  // Memórias persistentes da empresa — injetadas no system prompt.
+  const memories = useMemories(state.companyName || "default");
+  const memoriesBlock = useMemo(() => memoriesToPromptBlock(memories), [memories]);
+
   const buildSysPrompt = (auditMode?: boolean) =>
     buildSystemPrompt({
       snapshot,
@@ -206,6 +211,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       skills: config.skills,
       auditMode,
       context: runtimeContext,
+      memoriesBlock,
     });
 
   const send = async (text: string, opts?: { auditMode?: boolean; replaceLast?: boolean }) => {
