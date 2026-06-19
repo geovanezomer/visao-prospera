@@ -77,3 +77,53 @@ describe("buildDRE — Lucro Presumido", () => {
     expect(sum(dre.impostosVendas)).toBeGreaterThan(0);
   });
 });
+
+// [Auditoria Bloco 2] Identidades fundamentais da DRE — travam contra regressão.
+describe("buildDRE — identidades estruturais (CPC/IFRS)", () => {
+  it("Receita Líquida ≡ Bruta − Inadimpl − OutrasDeduções − ImpostosVendas", () => {
+    const s = createState({
+      revenue: {
+        bruta: m12(10000),
+        inadimplencia: m12(5),
+        inadimplenciaComoPDD: false,
+        deducoes: [{ id: "dev", label: "Devoluções", valores: m12(200) }],
+      },
+      tax: { regime: "presumido" },
+    });
+    const { dre } = buildDRE(s, "presumido");
+    for (let i = 0; i < 12; i++) {
+      const esperado =
+        dre.receitaBruta[i] -
+        dre.deducoesInadimplencia[i] -
+        dre.outrasDeducoes[i] -
+        dre.impostosVendas[i];
+      expect(approx(dre.receitaLiquida[i], esperado)).toBe(true);
+    }
+  });
+
+  it("Lucro Bruto ≡ Receita Líquida − CPV (mensal)", () => {
+    const s = createState({ tax: { regime: "real" } });
+    const { dre } = buildDRE(s, "real");
+    for (let i = 0; i < 12; i++) {
+      expect(approx(dre.lucroBruto[i], dre.receitaLiquida[i] - dre.cpv[i])).toBe(true);
+    }
+  });
+
+  it("EBIT ≡ EBITDA − Depreciação; LAIR ≡ EBIT + Resultado Financeiro", () => {
+    const s = createState({ tax: { regime: "real" } });
+    const { dre } = buildDRE(s, "real");
+    for (let i = 0; i < 12; i++) {
+      expect(approx(dre.ebit[i], dre.ebitda[i] - dre.depreciacao[i])).toBe(true);
+      expect(approx(dre.lair[i], dre.ebit[i] + dre.resultadoFinanceiro[i])).toBe(true);
+    }
+  });
+
+  it("ImpostosTotal ≡ ImpostosVendas + Impostos sobre Lucro", () => {
+    const s = createState({ tax: { regime: "presumido" } });
+    const { dre } = buildDRE(s, "presumido");
+    for (let i = 0; i < 12; i++) {
+      expect(approx(dre.impostosTotal[i], dre.impostosVendas[i] + dre.impostos[i])).toBe(true);
+    }
+  });
+});
+
