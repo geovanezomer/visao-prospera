@@ -1,7 +1,7 @@
 // Pasta fileFormat — orquestra schema + migrators + serialize/parse.
 // API pública estável: importadores continuam usando `@/engines/finance/fileFormat`.
 import { AppState, Scenario } from "../types";
-import { DEFAULT_STATE, migrateState, validateAndMigrate } from "../defaults";
+import { DEFAULT_STATE, validateAndMigrate } from "../defaults";
 import {
   CURRENT_VERSION,
   FINNANCE_FILE_EXT,
