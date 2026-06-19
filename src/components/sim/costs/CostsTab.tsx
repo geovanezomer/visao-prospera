@@ -98,15 +98,17 @@ export function CostsTab() {
   const setLabel = (id: string, label: string) => updateLine(id, { label });
 
   // totais (memoizados — recalcular só quando custos ou regime mudam)
+  // Usa o regime EFETIVO (SSOT) — mesmo critério aplicado pelo motor para
+  // resolver encargos do Simples, evitando divergência com DRE/Indicadores.
+  const effectiveRegime = useMemo(() => resolveEffectiveRegime(state), [state]);
   const { totCV, totFix, totVar, totFin, totCPV, totGeral } = useMemo(() => {
-    const regime = state.tax.regime;
     let cv = 0,
       fix = 0,
       vr = 0,
       fn = 0,
       cpv = 0;
     for (const c of state.costs) {
-      const v = sum(monthValues(c, regime));
+      const v = sum(monthValues(c, effectiveRegime));
       if (c.category === "custo_vendas") {
         cv += v;
         cpv += v;
@@ -124,7 +126,7 @@ export function CostsTab() {
       totCPV: cpv,
       totGeral: cpv + fix + vr + fn,
     };
-  }, [state.costs, state.tax.regime]);
+  }, [state.costs, effectiveRegime]);
 
   const pctRec = useCallback(
     (v: number) => (receitaBrutaAnual > 0 ? v / receitaBrutaAnual : 0),
