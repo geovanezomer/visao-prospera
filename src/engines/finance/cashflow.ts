@@ -254,7 +254,13 @@ export function computeBurnRunway(args: {
   recebiveis: number;
 }): { burnMedio12: number; burnMedio3: number; runwayMeses: number; queimando: boolean } {
   const burnMensal = args.fluxoOperacional.map((v) => -v); // positivo = queima
-  const burnMedio12 = burnMensal.reduce((a, b) => a + b, 0) / 12;
+  // Anualiza pelos meses efetivamente operados (não pelos 12 do calendário).
+  // Evita subestimar burn quando consultor preencheu só parte do ano.
+  const mesesOp = mesesPreenchidos(args.fluxoOperacional);
+  const burnMedio12 = mediaMensal(
+    burnMensal.reduce((a, b) => a + b, 0),
+    mesesOp,
+  );
   const burnMedio3 = burnMensal.slice(-3).reduce((a, b) => a + b, 0) / 3;
   const colchao = args.caixaAtual + args.recebiveis;
   const queimando = burnMedio3 > 0;
