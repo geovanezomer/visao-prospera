@@ -56,6 +56,35 @@ export function ScenarioBar() {
     [all],
   );
 
+  // Recalcula indicadores anuais consistentes a partir do AppState arquivado.
+  const metrics = useMemo(() => {
+    const m = new Map<
+      string,
+      {
+        faturamento: number;
+        ebitda: number;
+        roe: number;
+        margemLiquida: number;
+        lucroLiquido: number;
+      }
+    >();
+    for (const h of historicals) {
+      if (!h.state) continue;
+      const regime = resolveEffectiveRegime(h.state);
+      const { dre } = buildDRE(h.state, regime);
+      const ind = calcIndicators(h.state, dre);
+      m.set(h.id, {
+        faturamento: sum(dre.receitaBruta),
+        ebitda: sum(dre.ebitda),
+        roe: ind.roe,
+        margemLiquida: ind.margemLiquida,
+        lucroLiquido: sum(dre.lucroLiquido),
+      });
+    }
+    return m;
+  }, [historicals]);
+
+
   const defaultYear = new Date().getFullYear();
   const [year, setYear] = useState<number>(
     YEARS.includes(defaultYear) ? defaultYear : 2025,
