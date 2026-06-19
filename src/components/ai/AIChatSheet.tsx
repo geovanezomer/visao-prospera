@@ -35,6 +35,14 @@ import type { AppState } from "@/engines/finance/types";
 import type { SimulatorParams } from "@/engines/finance/simulator";
 import { toast } from "sonner";
 import { useAIChat } from "@/hooks/useAIChat";
+import { AI_MODE_LABELS, AI_MODE_DESCRIPTIONS, type AIMode } from "@/engines/ai/systemPrompt";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const ReactMarkdown = lazy(() => import("react-markdown"));
 
@@ -80,6 +88,8 @@ export function AIChatSheet({
     handleNewThread,
     handleDeleteThread,
     reloadThreads,
+    mode,
+    setMode,
   } = useAIChat({ state, simulatedState, simActive, simParams });
 
   const [configOpen, setConfigOpen] = useState(false);
