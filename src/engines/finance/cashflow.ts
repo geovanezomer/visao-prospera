@@ -261,7 +261,14 @@ export function computeBurnRunway(args: {
     burnMensal.reduce((a, b) => a + b, 0),
     mesesOp,
   );
-  const burnMedio3 = burnMensal.slice(-3).reduce((a, b) => a + b, 0) / 3;
+  // burnMedio3: média APENAS dos meses efetivamente operados (até 3 últimos).
+  // Antes dividia por 3 cego — empresa com 1 mês preenchido tinha 2 zeros puxando
+  // a média para baixo, subestimando o burn e superestimando o runway.
+  const janelaCurta = Math.min(3, mesesOp);
+  const burnMedio3 =
+    janelaCurta > 0
+      ? burnMensal.slice(-janelaCurta).reduce((a, b) => a + b, 0) / janelaCurta
+      : 0;
   const colchao = args.caixaAtual + args.recebiveis;
   const queimando = burnMedio3 > 0;
   const runwayMeses = queimando ? colchao / burnMedio3 : Infinity;
