@@ -174,10 +174,12 @@ export function CapitalTab() {
               onChange={(next) => set({ debtContracts: next })}
             />
           }
-        />
-        <CapexAtivacaoSection
-          items={c.capexAtivacao ?? []}
-          onChange={(next) => set({ capexAtivacao: next })}
+          capexSlot={
+            <CapexAtivacaoSection
+              items={c.capexAtivacao ?? []}
+              onChange={(next) => set({ capexAtivacao: next })}
+            />
+          }
         />
         <WaccRoicMeter wacc={wacc} roic={ind.roic} />
       </div>
