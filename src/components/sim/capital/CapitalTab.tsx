@@ -15,6 +15,8 @@ import {
 } from "@/engines/finance/debtContracts";
 import type { CostLine, DebtContract } from "@/engines/finance/types";
 import { StatCard } from "@/components/sim/shared/primitives";
+import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
+
 
 
 const EMPTY_CONTRACTS: DebtContract[] = [];
@@ -132,12 +134,12 @@ export function CapitalTab() {
   const jurosAnual = sum(dre.custosFinanceirosTotal);
   const amortAnual = sum(state.cashflow.amortizacoes ?? []);
   const servicoDividaMes = (jurosAnual + amortAnual) / 12;
-  const dPL = c.patrimonioLiquido > 0 ? c.dividaOnerosa / c.patrimonioLiquido : 0;
+  // SSOT: Alavancagem Patrimonial vem de `calcIndicators` (dividaLiqPl) — mesma
+  // métrica e mesma fórmula da aba Indicadores ("Dívida Líq. / PL").
+  const alav = leverageDisplay("pl", ind.dividaLiqPl, ind.dividaLiquida, c.patrimonioLiquido);
 
   const waccTone: "pos" | "neg" | "default" =
     ind.roic >= wacc ? "pos" : ind.roic > 0 ? "default" : "neg";
-  const dplTone: "pos" | "neg" | "default" =
-    c.patrimonioLiquido <= 0 ? "neg" : dPL <= 2 ? "pos" : dPL <= 4 ? "default" : "neg";
   const propTone: "pos" | "neg" | "default" =
     proprioDerivado >= 50 ? "pos" : proprioDerivado >= 30 ? "default" : "neg";
 
@@ -145,7 +147,7 @@ export function CapitalTab() {
     label: string;
     value: string;
     hint: { description: string; formula: string };
-    tone: "pos" | "neg" | "default";
+    tone: "pos" | "neg" | "default" | "warn";
   }> = [
     {
       label: "Capital Próprio",
@@ -166,14 +168,16 @@ export function CapitalTab() {
       tone: "default",
     },
     {
-      label: "D / PL",
-      value: c.patrimonioLiquido > 0 ? `${dPL.toFixed(2)}×` : "—",
+      label: "Alavancagem Patrimonial",
+      value: alav.value,
       hint: {
-        description: "Alavancagem patrimonial. Saudável ≤ 2× para PMEs.",
-        formula: "Dívida Onerosa ÷ Patrimônio Líquido",
+        description:
+          "Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio.",
+        formula: "(Dívida Total − Caixa) ÷ Patrimônio Líquido",
       },
-      tone: dplTone,
+      tone: alav.tone,
     },
+
     {
       label: "WACC",
       value: `${wacc.toFixed(2)}%`,
