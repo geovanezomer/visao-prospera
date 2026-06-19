@@ -165,7 +165,7 @@ export function AppSidebar({
                   </span>
                 </div>
                 <div className="mt-0.5 text-[10px] text-muted-foreground">
-                  {state.headcountRange ?? `${state.numColaboradores ?? 0} colab.`} ·{" "}
+                  {state.numColaboradores ?? 0} colab. ·{" "}
                   {state.tax.regime === "simples"
                     ? "Simples"
                     : state.tax.regime === "presumido"
