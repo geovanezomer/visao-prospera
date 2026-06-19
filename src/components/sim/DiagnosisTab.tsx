@@ -10,7 +10,7 @@ import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
 import { HealthScoreCard, SensitivityCard } from "./AnalysisTab";
 import { CriticalAlertsBanner } from "./CriticalAlertsBanner";
-import { WaterfallCard } from "./WaterfallCard";
+import { NCGExplanationCard } from "./capital/NCGExplanationCard";
 import { DiagnosticoExecutivoCard } from "./DiagnosticoExecutivoCard";
 
 export function DiagnosisTab() {
