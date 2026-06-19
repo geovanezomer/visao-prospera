@@ -71,7 +71,7 @@ export function useFinnanceFile({
   const [currentFileName, setCurrentFileName] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [lastModified, setLastModified] = useState<number | null>(null);
-  const lastSavedSnapshot = useRef<string>("");
+  const lastSavedSnapshot = useRef<string | null>(null);
   const recoveryChecked = useRef(false);
   // Debounce do upload em nuvem: agrupa Ctrl+S repetidos em um único PUT.
   const backupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -81,7 +81,7 @@ export function useFinnanceFile({
   // Inicializa o snapshot na primeira hidratação para evitar dirty falso.
   useEffect(() => {
     if (!hydrated) return;
-    if (lastSavedSnapshot.current === "") {
+    if (lastSavedSnapshot.current === null) {
       lastSavedSnapshot.current = snapshot(state, scenarios);
     }
   }, [hydrated, state, scenarios]);
@@ -193,7 +193,19 @@ export function useFinnanceFile({
         description: err instanceof Error ? err.message : String(err),
       });
     }
-  }, [state, scenarios, currentFileName, userId, onBackupStatus]);
+  }, [state, scenarios, userId, onBackupStatus]);
+
+  // Limpa timer de backup pendente no unmount para evitar uploads órfãos
+  // após o hook desmontar (navegação, logout, hot reload).
+  useEffect(() => {
+    return () => {
+      if (backupTimer.current) {
+        clearTimeout(backupTimer.current);
+        backupTimer.current = null;
+      }
+      pendingBackup.current = null;
+    };
+  }, []);
 
   const open = useCallback(async () => {
     if (dirty) {
@@ -293,15 +305,20 @@ export function useFinnanceFile({
   }, [save, open, resetWithConfirm]);
 
   // Indicador "arquivo sujo" no título da aba do navegador.
+  // Sem cleanup por mudança de deps — evita flicker durante digitação.
+  // Reset do título só ocorre no unmount real do hook.
   useEffect(() => {
     const base = "FinnancePRO — Diagnóstico & Simulação Empresarial";
     const company = state.companyName?.trim();
     const prefix = dirty ? "● " : "";
     document.title = `${prefix}${company ? `${company} · ` : ""}${base}`;
-    return () => {
-      document.title = base;
-    };
   }, [dirty, state.companyName]);
+
+  useEffect(() => {
+    return () => {
+      document.title = "FinnancePRO — Diagnóstico & Simulação Empresarial";
+    };
+  }, []);
 
   return { currentFileName, dirty, lastModified, save, open, resetWithConfirm };
 }
