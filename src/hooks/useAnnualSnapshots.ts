@@ -2,25 +2,22 @@
 // useAnnualSnapshots — Lista snapshots para visualização ANUAL lado a lado.
 // Devolve os últimos N históricos (ordenados por fiscalYear) + "Atual".
 // Usado por DRETab e DFCTable quando o usuário seleciona o período Anual.
+//
+// Implementação fina sobre `useCompanySnapshots` (single source of truth).
 // ============================================================================
 import { useMemo } from "react";
 import { useFinance } from "@/engines/finance/AppStateContext";
-import { useScenarios } from "@/engines/scenarios/store";
+import { useCompanySnapshots } from "./useCompanySnapshots";
 import type { Snapshot } from "@/components/sim/comparison/ComparisonView";
 
 export function useAnnualSnapshots(max = 3): Snapshot[] {
   const { state } = useFinance();
-  const company = state.companyName || "default";
-  const all = useScenarios(company);
+  const hist = useCompanySnapshots({ kind: "historical", sortByYear: true });
 
   return useMemo(() => {
-    const hist = all
-      .filter((s) => s.kind === "historical" && s.state && typeof s.fiscalYear === "number")
-      .sort((a, b) => (a.fiscalYear ?? 0) - (b.fiscalYear ?? 0));
-    // Mantém os `max` mais recentes (últimos da lista asc).
     const recent = hist.slice(-max);
     const out: Snapshot[] = recent.map((r) => ({ label: r.name, state: r.state! }));
     out.push({ label: "Atual", state, isCurrent: true });
     return out;
-  }, [all, state, max]);
+  }, [hist, state, max]);
 }

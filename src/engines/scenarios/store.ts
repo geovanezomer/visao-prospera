@@ -5,29 +5,54 @@ import { useSyncExternalStore } from "react";
 import type { SimulatorParams } from "@/engines/finance/simulator";
 import type { AppState } from "@/engines/finance/types";
 
-// Event bus reativo (mesmo padrão de actions/store).
+// Event bus reativo + sincronização multi-aba via BroadcastChannel.
 type Listener = () => void;
 const listeners = new Set<Listener>();
+
+// Canal de broadcast cross-tab — avisa outras abas quando a store muda.
+// Fallback silencioso em browsers sem suporte (Safari < 15.4).
+let bc: BroadcastChannel | null = null;
+function getBC(): BroadcastChannel | null {
+  if (bc) return bc;
+  if (typeof BroadcastChannel === "undefined") return null;
+  try {
+    bc = new BroadcastChannel("gz-scenarios");
+  } catch {
+    bc = null;
+  }
+  return bc;
+}
+
 function emit() {
   for (const l of listeners) l();
   try {
     window.dispatchEvent(new CustomEvent("gz-scenarios-changed"));
   } catch {
-    // SSR / ambiente sem window — broadcast via CustomEvent é best-effort
+    // SSR / ambiente sem window — best-effort
+  }
+  try {
+    getBC()?.postMessage({ type: "changed", ts: Date.now() });
+  } catch {
+    /* ignora */
   }
 }
+
 export function subscribeScenarios(listener: Listener): () => void {
   listeners.add(listener);
   const onStorage = (e: StorageEvent) => {
     if (e.key?.startsWith("gz-finance-scenarios-")) listener();
   };
   const onCustom = () => listener();
+  const onBC = () => listener();
   window.addEventListener("storage", onStorage);
   window.addEventListener("gz-scenarios-changed", onCustom);
+  const ch = getBC();
+  ch?.addEventListener("message", onBC);
   return () => {
     listeners.delete(listener);
     window.removeEventListener("storage", onStorage);
     window.removeEventListener("gz-scenarios-changed", onCustom);
+    ch?.removeEventListener("message", onBC);
   };
 }
 export function useScenarios(
@@ -159,9 +184,15 @@ export function listHistoricals(company: string): ScenarioRecord[] {
     .sort((a, b) => (a.fiscalYear ?? 0) - (b.fiscalYear ?? 0));
 }
 
+/** Teto de snapshots históricos por empresa — protege o localStorage (~5MB)
+ *  e evita listas infinitas na UI. Mantém sempre os anos mais recentes. */
+export const MAX_HISTORICALS_PER_COMPANY = 20;
+
 /**
  * Arquiva o AppState atual como snapshot histórico do ano informado.
  * Idempotente por ano: se já existe historical para `fiscalYear`, sobrescreve.
+ * Faz auto-pruning: ao exceder MAX_HISTORICALS_PER_COMPANY, descarta os anos
+ * mais antigos (menor fiscalYear) primeiro.
  */
 export function archiveYearAsHistorical(
   company: string,
@@ -172,10 +203,8 @@ export function archiveYearAsHistorical(
   const existing = listScenarios(company).find(
     (s) => s.kind === "historical" && s.fiscalYear === fiscalYear,
   );
-  // Stamp do fiscalYear dentro do próprio AppState — garante que ao carregá-lo
-  // de volta o sistema saiba a qual ano ele pertence (auto-arquivamento futuro).
   const stamped = { ...state, fiscalYear };
-  return saveScenario(company, {
+  const rec = saveScenario(company, {
     id: existing?.id,
     name: `Ano ${fiscalYear}`,
     kind: "historical",
@@ -183,6 +212,22 @@ export function archiveYearAsHistorical(
     state: stamped,
     summary,
   });
+  // Auto-pruning: descarta historicals excedentes (mantém os mais recentes).
+  const allHist = readRaw(company)
+    .filter((s) => s.kind === "historical" && !s.isDeleted)
+    .sort((a, b) => (b.fiscalYear ?? 0) - (a.fiscalYear ?? 0));
+  if (allHist.length > MAX_HISTORICALS_PER_COMPANY) {
+    const toPrune = allHist.slice(MAX_HISTORICALS_PER_COMPANY);
+    const pruneIds = new Set(toPrune.map((s) => s.id));
+    const next = readRaw(company).filter((s) => !pruneIds.has(s.id));
+    try {
+      localStorage.setItem(KEY(company), JSON.stringify(next));
+      emit();
+    } catch {
+      /* quota — mantém como está */
+    }
+  }
+  return rec;
 }
 
 /**

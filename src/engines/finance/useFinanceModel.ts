@@ -6,20 +6,22 @@
  * (regime, dre, ind, cf, cagrReceitas12m) e expõe o modelo completo via
  * `model` para novos consumidores que queiram valuation e health também.
  */
-import { useMemo } from "react";
+import { useDeferredValue, useMemo } from "react";
 import { AppState } from "./types";
 import { buildFinancialModel } from "./financialModel";
 
 export function useFinanceModel(state: AppState) {
-  const model = useMemo(() => buildFinancialModel(state), [state]);
+  // useDeferredValue: durante digitação rápida o React reusa o último modelo
+  // enquanto recalcula em background — reduz lag em PCs lentos com muitos
+  // meses/cenários sem mudar a API do hook.
+  const deferred = useDeferredValue(state);
+  const model = useMemo(() => buildFinancialModel(deferred), [deferred]);
   return {
-    // Campos legados — não quebra chamadores existentes.
     regime: model.regime,
     dre: model.dre,
     ind: model.ind,
     cf: model.cf,
     cagrReceitas12m: model.cagrReceitas12m,
-    // Modelo completo (valuation, health, tax) para novos consumidores.
     model,
   };
 }
