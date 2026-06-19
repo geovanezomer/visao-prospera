@@ -254,6 +254,8 @@ export function ScenarioBar() {
           )}
         </DialogContent>
       </Dialog>
+      </div>
     </div>
+
   );
 }
