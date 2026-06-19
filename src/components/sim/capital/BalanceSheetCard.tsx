@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { AppState } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
 import { SectionTitle } from "../primitives";
