@@ -184,9 +184,15 @@ export function listHistoricals(company: string): ScenarioRecord[] {
     .sort((a, b) => (a.fiscalYear ?? 0) - (b.fiscalYear ?? 0));
 }
 
+/** Teto de snapshots históricos por empresa — protege o localStorage (~5MB)
+ *  e evita listas infinitas na UI. Mantém sempre os anos mais recentes. */
+export const MAX_HISTORICALS_PER_COMPANY = 20;
+
 /**
  * Arquiva o AppState atual como snapshot histórico do ano informado.
  * Idempotente por ano: se já existe historical para `fiscalYear`, sobrescreve.
+ * Faz auto-pruning: ao exceder MAX_HISTORICALS_PER_COMPANY, descarta os anos
+ * mais antigos (menor fiscalYear) primeiro.
  */
 export function archiveYearAsHistorical(
   company: string,
@@ -197,10 +203,8 @@ export function archiveYearAsHistorical(
   const existing = listScenarios(company).find(
     (s) => s.kind === "historical" && s.fiscalYear === fiscalYear,
   );
-  // Stamp do fiscalYear dentro do próprio AppState — garante que ao carregá-lo
-  // de volta o sistema saiba a qual ano ele pertence (auto-arquivamento futuro).
   const stamped = { ...state, fiscalYear };
-  return saveScenario(company, {
+  const rec = saveScenario(company, {
     id: existing?.id,
     name: `Ano ${fiscalYear}`,
     kind: "historical",
@@ -208,6 +212,22 @@ export function archiveYearAsHistorical(
     state: stamped,
     summary,
   });
+  // Auto-pruning: descarta historicals excedentes (mantém os mais recentes).
+  const allHist = readRaw(company)
+    .filter((s) => s.kind === "historical" && !s.isDeleted)
+    .sort((a, b) => (b.fiscalYear ?? 0) - (a.fiscalYear ?? 0));
+  if (allHist.length > MAX_HISTORICALS_PER_COMPANY) {
+    const toPrune = allHist.slice(MAX_HISTORICALS_PER_COMPANY);
+    const pruneIds = new Set(toPrune.map((s) => s.id));
+    const next = readRaw(company).filter((s) => !pruneIds.has(s.id));
+    try {
+      localStorage.setItem(KEY(company), JSON.stringify(next));
+      emit();
+    } catch {
+      /* quota — mantém como está */
+    }
+  }
+  return rec;
 }
 
 /**
