@@ -375,6 +375,20 @@ export function migrateState(s: AppState): AppState {
     if (c.category === "custo_vendas") return { ...c, category: "direto_venda" };
     return c;
   });
+  // SSOT — Terceirização/Subcontratação é contrato PJ: o valor faturado pelo
+  // prestador JÁ é o custo total (encargos ficam por conta dele). Garante que
+  // nenhum estado legado tenha `encargosAuto` ligado nessas linhas, evitando
+  // inflar o valor mensal em ~70% silenciosamente.
+  const TERCEIRIZACAO_IDS = new Set(["mod_terc", "subcon"]);
+  costs = costs.map((c) => {
+    const isTerc =
+      TERCEIRIZACAO_IDS.has(c.id) ||
+      c.subcategory === "terceirizacao" ||
+      /terceiriz|subcontrat/i.test(c.label);
+    if (!isTerc) return c;
+    if (!c.encargosAuto && c.encargosPct == null) return c;
+    return { ...c, encargosAuto: false, encargosPct: undefined };
+  });
   // Garante presença das rubricas novas
   const ensure = (
     id: string,
