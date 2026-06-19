@@ -465,7 +465,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
   };
 
   const handleAudit = () =>
-    void send("Faça uma análise completa estilo auditor.", { auditMode: true });
+    void send("Faça uma análise completa estilo auditor.", { mode: "auditor" });
 
   // Recarrega threads do storage (usado por AIChatSheet ao renomear).
   const reloadThreads = () => setThreads(loadThreads(state.companyName));
@@ -495,6 +495,8 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     snapshot,
     suggestions,
     simHasChanges,
+    mode,
+    setMode,
     // ações
     send,
     handleFiles,
