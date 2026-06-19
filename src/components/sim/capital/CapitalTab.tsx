@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from "react";
 import { useFinance } from "@/engines/finance/AppStateContext";
-import { fmtBRL, sum } from "@/engines/finance/format";
+import { fmtBRL } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { mesesPreenchidos, anualizar } from "@/engines/finance/periodUtils";
+import { KE_DEFAULT_BY_SECTOR } from "@/engines/finance/indicators";
 
 
 import { BalanceSheetCard } from "@/components/sim/capital/BalanceSheetCard";
