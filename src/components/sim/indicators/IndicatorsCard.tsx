@@ -214,6 +214,7 @@ export function IndicatorsCard({ state }: { state: AppState }) {
         />
         <Ind
           label="CAGR Receitas 12m"
+          // cagrReceitas12m já vem em fração (0,15 = 15%); não dividir por 100.
           v={Number.isFinite(cagrReceitas12m) ? fmtPct(cagrReceitas12m) : "—"}
           tone={
             Number.isFinite(cagrReceitas12m) ? (cagrReceitas12m >= 0 ? "pos" : "neg") : undefined

@@ -355,6 +355,7 @@ export function IndicatorsTab() {
           />
           <Ind
             label="CAGR Receitas 12m"
+            // cagrReceitas12m já vem em fração (0,15 = 15%); não dividir por 100.
             v={Number.isFinite(cagrReceitas12m) ? fmtPct(cagrReceitas12m) : "—"}
             tone={
               Number.isFinite(cagrReceitas12m) ? (cagrReceitas12m >= 0 ? "pos" : "neg") : undefined
@@ -628,7 +629,7 @@ function CashConversionSmall({ conversao }: { conversao: number }) {
       <div
         className={`mono mt-2 text-2xl font-bold ${tone === "pos" ? "text-pos" : tone === "neg" ? "text-neg" : "text-foreground"}`}
       >
-        {conversaoEbitda.toFixed(1)}%
+        {fmtPct(conversaoEbitda / 100)}
       </div>
       <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
         {conversaoEbitda >= 70 ? (
