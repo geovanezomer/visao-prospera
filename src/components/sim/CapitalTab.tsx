@@ -3,7 +3,6 @@ import { useFinance } from "@/engines/finance/AppStateContext";
 import { fmtBRL, sum } from "@/engines/finance/format";
 import { buildDRE, calcIndicators } from "@/engines/finance";
 
-import { CapitalStructureCard } from "./capital/CapitalStructureCard";
 import { BalanceSheetCard } from "./capital/BalanceSheetCard";
 
 import { CapexAtivacaoSection } from "./capital/CapexAtivacaoSection";
