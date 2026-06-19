@@ -12,6 +12,7 @@ import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { irShieldForRegime } from "./tax/real";
 import type { DRE } from "./dre";
 import { buildCashFlow } from "./cashflow";
+import { mesesPreenchidos, anualizar } from "./periodUtils";
 
 export interface Indicators {
   /** Lucro Bruto ÷ Receita Líquida × 100 */
@@ -148,20 +149,39 @@ export interface Indicators {
 
 export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const { capital, revenue } = state;
-  const receitaLiqAnual = sum(dre.receitaLiquida);
-  const receitaBrutaAnual = sum(dre.receitaBruta);
-  const lucroBrutoAnual = sum(dre.lucroBruto);
-  const ebitdaAnual = sum(dre.ebitda);
-  const ebitAnual = sum(dre.ebit);
-  const lairAnual = sum(dre.lair);
-  const llAnual = sum(dre.lucroLiquido);
-  const custosVarAnual = sum(dre.custosVariaveis);
-  const custosFixosAnual = sum(dre.custosFixos) + sum(dre.depreciacao);
-  const jurosAnual = sum(dre.custosFinanceirosTotal);
-  const impostosAnual = sum(dre.impostos);
+  // ─── Janela efetiva preenchida (Fase 1) ──────────────────────────────
+  // Indicadores que comparam fluxo (DRE) com estoque (BP) ou per-capita
+  // devem usar valores ANUALIZADOS — se o consultor só preencheu 3 meses,
+  // dividir por 12 subestima EBITDA/Colab, DL/EBITDA, ROIC etc.
+  // Margens (ratios fluxo/fluxo do mesmo período) cancelam — não precisam,
+  // mas anualizamos por consistência (resultado idêntico).
+  const meses = mesesPreenchidos(
+    dre.receitaBruta,
+    dre.receitaLiquida,
+    dre.custosVariaveis,
+    dre.custosFixos,
+    dre.depreciacao,
+    dre.impostos,
+    dre.impostosVendas,
+  );
+  const an = (v: number) => anualizar(v, meses);
+
+  const receitaLiqAnual = an(sum(dre.receitaLiquida));
+  const receitaBrutaAnual = an(sum(dre.receitaBruta));
+  const lucroBrutoAnual = an(sum(dre.lucroBruto));
+  const ebitdaAnual = an(sum(dre.ebitda));
+  const ebitAnual = an(sum(dre.ebit));
+  const lairAnual = an(sum(dre.lair));
+  const llAnual = an(sum(dre.lucroLiquido));
+  const custosVarAnual = an(sum(dre.custosVariaveis));
+  const custosFixosAnual = an(sum(dre.custosFixos) + sum(dre.depreciacao));
+  const jurosAnual = an(sum(dre.custosFinanceirosTotal));
+  const impostosAnual = an(sum(dre.impostos));
+  const impostosVendasAnual = an(sum(dre.impostosVendas));
+  const cpvAnual = an(sum(dre.cpv));
 
   // SSOT: safeMath previne NaN/Infinity em qualquer divisão de indicador.
-  const depreciacaoAnual = sum(dre.depreciacao);
+  const depreciacaoAnual = an(sum(dre.depreciacao));
   const custosFixosOperacionaisSemDep = custosFixosAnual - depreciacaoAnual;
   const custosFixosComJuros = custosFixosAnual + jurosAnual;
   const margemContribuicao = safePct(receitaLiqAnual - custosVarAnual, receitaLiqAnual);
@@ -192,8 +212,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // calculado por (1 − t_marginal_receita) fica artificialmente alto e o ROIC
   // dispara. Para refletir a realidade, nesses regimes usamos a alíquota
   // EFETIVA sobre o LAIR, limitada a 100% para zerar o NOPAT em vez de inverter o sinal.
-  const impostosLucroAnual = sum(dre.impostos);
-  const dasAnual = sum(dre.impostosVendas);
+  const impostosLucroAnual = impostosAnual;
+  const dasAnual = impostosVendasAnual;
   const regimeEfetivo = resolveEffectiveRegime(state);
   const impostosParaAliquota = regimeEfetivo === "simples" ? dasAnual : impostosLucroAnual;
 
@@ -232,13 +252,13 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const ei = Math.max(0, capital.estoqueInicial ?? 0);
   const ef = Math.max(0, capital.estoqueFinal ?? 0);
   const estoqueMedio = ei > 0 && ef > 0 ? (ei + ef) / 2 : ef > 0 ? ef : capital.estoques;
-  const cpvDiario = sum(dre.cpv) / 360;
+  const cpvDiario = cpvAnual / 360;
   const pme = estoqueMedio > 0 && cpvDiario > 0 ? estoqueMedio / cpvDiario : 0;
   const cicloFinanceiro = revenue.pmr + pme - revenue.pmp;
   const crEstimado =
     capital.contasReceber > 0 ? capital.contasReceber : (receitaLiqAnual / 360) * revenue.pmr;
   const fornecEstimado =
-    capital.fornecedores > 0 ? capital.fornecedores : (sum(dre.cpv) / 360) * revenue.pmp;
+    capital.fornecedores > 0 ? capital.fornecedores : (cpvAnual / 360) * revenue.pmp;
   const ncg = crEstimado + estoqueMedio - fornecEstimado;
   // SSOT: caixa disponível imediato = `disponibilidades` (Caixa+Bancos do BP).
   // O campo legado `capitalGiroDisponivel` foi descontinuado na UI; usamos
@@ -331,10 +351,11 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // FCFF (Free Cash Flow to the Firm) padrão Damodaran/Koller:
   //   FCFF = NOPAT + D&A − ΔNCG − CAPEX
   // `nopat` já calculado acima com a alíquota efetiva observada do regime.
-  const depAnual = sum(dre.depreciacao);
+  const depAnual = depreciacaoAnual;
   const fcf = nopat + depAnual - deltaNcgAnual;
   // SSOT: mesmo CAPEX usado no FCI do buildCashFlow (manual + ativações de imobilizado).
-  const capexAnual = sum(computeCapexMensal(state));
+  // Anualizado: se só 3 meses preenchidos, o CAPEX projetado para o ano também escala.
+  const capexAnual = an(sum(computeCapexMensal(state)));
   const fcfAposCapex = fcf - capexAnual;
   // Auditoria #2: payback do CAPEX usa o CAPEX ANUAL TOTAL, não apenas o do mês 1.
   // CAPEX distribuído ao longo do ano (obras, implantações) era subestimado em até 10×.
@@ -353,7 +374,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // Edge cases: LL ≈ 0 → 0 (UI deve renderizar "N/A").
   // SSOT: mesma chamada do FluxoCaixaTab — `buildCashFlow(state)` resolve o regime efetivo
   // internamente. `totais.fluxoOperacional` é exatamente `sum(fluxoOperacional)`.
-  const fcoAnual = buildCashFlow(state).totais.fluxoOperacional;
+  const fcoAnual = an(buildCashFlow(state).totais.fluxoOperacional);
   const qualidadeLucro =
     Math.abs(llAnual) > 1 ? Math.max(-9, Math.min(9, fcoAnual / llAnual)) : 0;
 
@@ -363,7 +384,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const ebitdaPorColaborador = headcount > 0 ? ebitdaAnual / headcount : 0;
   const lucroPorColaborador = headcount > 0 ? llAnual / headcount : 0;
   // Folha/Receita: divide pela Receita BRUTA (padrão de benchmarking PME) — não a líquida.
-  const folha = folhaAnual(state);
+  // folhaAnual já é total acumulado da janela preenchida → anualizar.
+  const folha = an(folhaAnual(state));
   const custoPessoalSobreReceita = receitaBrutaAnual > 0 ? (folha / receitaBrutaAnual) * 100 : 0;
 
   // Margem de Segurança OPERACIONAL: usa o PE operacional (sem juros) sobre a Receita Líquida.
@@ -376,7 +398,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
         )
       : 0;
 
-  const amortizPrincipalAnual = sum(state.cashflow.amortizacoes);
+  const amortizPrincipalAnual = an(sum(state.cashflow.amortizacoes));
   const dscrAmortizacoesInformadas = amortizPrincipalAnual > 0;
   const servicoDivida = jurosAnual + amortizPrincipalAnual;
   const CAP_DSCR = 99;
@@ -437,9 +459,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     ativoCirculante,
     impostosSobreReceita:
       receitaBrutaAnual > 0
-        ? ((sum(dre.impostosVendas) + impostosAnual) / receitaBrutaAnual) * 100
+        ? ((impostosVendasAnual + impostosAnual) / receitaBrutaAnual) * 100
         : 0,
     impostosSobreLucro:
-      llAnual > 1 ? ((sum(dre.impostosVendas) + impostosAnual) / llAnual) * 100 : 0,
+      llAnual > 1 ? ((impostosVendasAnual + impostosAnual) / llAnual) * 100 : 0,
   };
 }
