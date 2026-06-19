@@ -103,12 +103,111 @@ export function buildContextHeader(ctx: RuntimeContext = {}): string {
   return lines.join("\n");
 }
 
+// =====================================================================
+// MODOS DE ATUAÇÃO — extensão do antigo auditMode boolean.
+// "chat" é o padrão (sem bloco extra). Outros modos anexam um bloco
+// específico ao system prompt que muda postura/formato de resposta.
+// =====================================================================
+export type AIMode = "chat" | "cfo" | "controller" | "auditor" | "board";
+
+export const AI_MODE_LABELS: Record<AIMode, string> = {
+  chat: "Chat",
+  cfo: "CFO Estratégico",
+  controller: "Controller",
+  auditor: "Auditor (relatório)",
+  board: "Conselho (board)",
+};
+
+export const AI_MODE_DESCRIPTIONS: Record<AIMode, string> = {
+  chat: "Conversação livre, perguntas pontuais.",
+  cfo: "Visão estratégica de longo prazo, alavancas de valor e capital.",
+  controller: "Foco em variações, conciliações e qualidade do dado.",
+  auditor: "Relatório estruturado para o cliente (formato fixo).",
+  board: "Resposta tipo memorando de conselho — tese, evidência, decisão.",
+};
+
+const MODE_AUDITOR_BLOCK = `MODO AUDITOR: produza um RELATÓRIO ESTRUTURADO para apresentação ao cliente.
+
+**FORMATO OBRIGATÓRIO** (não altere títulos, ordem, número de itens, nem o marcador inicial — o frontend depende deles para renderizar):
+
+<!--AUDIT-REPORT-->
+# Relatório do Auditor
+
+## Resumo Executivo
+2-3 frases conectando DRE → Caixa → Indicadores → Valuation. Cite o EV atual em R$.
+
+## Conexão Estratégica
+| Ajuste / Decisão | Impacto em EBITDA | Impacto em Caixa | Impacto em Valuation |
+|---|---|---|---|
+(linhas com números reais, sempre 3 linhas)
+
+## Riscos (Top 3)
+### 1. <título do risco>
+- **Evidência:** <número + fonte>
+- **Severidade:** Alta / Média / Baixa
+- **Mitigação:** <ação concreta>
+### 2. ...
+### 3. ...
+
+## Oportunidades (Top 3)
+### 1. <título>
+- **Impacto no EV:** R$ X (de R$ A → R$ B)
+- **Esforço:** Baixo / Médio / Alto
+- **Como executar:** <passos>
+### 2. ...
+### 3. ...
+
+## Inconsistências e Pontos de Atenção
+Lista com bullets. Use 'comparar_com_setor' para validar fora-da-curva. Se nenhuma, escreva "Nenhuma inconsistência material detectada."
+
+## Próximos Passos (Priorizados)
+1. <ação> — _ofereça registrar via 'criar_acao'_
+2. ...
+3. ...
+<!--/AUDIT-REPORT-->
+
+Regras: brutalmente honesto, todo número com R$/% e fonte, nada de "considerar avaliar" — verbo no imperativo.`;
+
+const MODE_CFO_BLOCK = `MODO CFO ESTRATÉGICO: aja como CFO sênior reportando ao sócio-controlador.
+- Priorize criação/destruição de valor (ROIC vs WACC), alocação de capital, alavancas de EV e capital de giro estrutural.
+- Conecte sempre 3 horizontes: hoje (KPIs atuais) · 12m (projeção/sensibilidade) · 36–60m (valuation/terminal).
+- Toda recomendação cita: impacto em EBITDA, em FCF e em EV (R$, não só pp). Use 'simular_alavanca' e 'get_valuation' antes de afirmar impacto.
+- Encerre com 1 frase de tese ("O caminho é X porque Y").`;
+
+const MODE_CONTROLLER_BLOCK = `MODO CONTROLLER: aja como controller financeiro responsável pela qualidade do número.
+- Foco em variações (real vs orçado vs setor), conciliações e consistência interna entre módulos (DRE, Caixa, Balanço, Indicadores).
+- Antes de opinar, valide o dado: chame 'get_diagnostico'/'get_alertas_criticos' e cite inconsistências (ex.: "ROIC=0 com EBIT positivo é incoerente").
+- Use 'comparar_com_setor' para outliers (>1 quartil acima/abaixo do P50).
+- Saída em formato analítico: tabela "Indicador | Atual | Referência | Δ | Diagnóstico".
+- Não recomende ações estratégicas — sinalize o que o CFO precisa decidir.`;
+
+const MODE_BOARD_BLOCK = `MODO CONSELHO (BOARD): produza um MEMORANDO curto para reunião de conselho.
+
+**FORMATO** (máx. 250 palavras):
+**Tese:** 1 frase.
+**Evidência (3 bullets):** cada um com 1 número + fonte exata.
+**Decisão proposta:** 1 ação no imperativo, com impacto quantificado (Δ R$ ou Δ pp).
+**Risco se não agir:** 1 frase com número.
+
+Sem cabeçalhos cerimoniais. Sem "considerar". Direto à decisão.`;
+
+const MODE_BLOCKS: Record<AIMode, string> = {
+  chat: "",
+  cfo: MODE_CFO_BLOCK,
+  controller: MODE_CONTROLLER_BLOCK,
+  auditor: MODE_AUDITOR_BLOCK,
+  board: MODE_BOARD_BLOCK,
+};
+
 export function buildSystemPrompt(opts: {
   snapshot?: string;
   includeSnapshot: boolean;
   useTools: boolean;
   useMetaTools?: boolean;
   extra?: string;
+  /** Modo de atuação. Default "chat". */
+  mode?: AIMode;
+  /** @deprecated use `mode: "auditor"`. Mantido para compatibilidade. */
   auditMode?: boolean;
   soul?: string;
   skills?: Skill[];
@@ -117,6 +216,9 @@ export function buildSystemPrompt(opts: {
 }): string {
   // SOUL substitui a PERSONA fixa quando fornecido (editável em Configurações).
   const soul = opts.soul && opts.soul.trim() ? opts.soul.trim() : PERSONA;
+  // Resolve modo: `mode` ganha de `auditMode`; fallback para "chat".
+  const mode: AIMode = opts.mode ?? (opts.auditMode ? "auditor" : "chat");
+
   const parts: string[] = [
     soul,
     "",
@@ -167,52 +269,9 @@ export function buildSystemPrompt(opts: {
     );
   }
 
-  if (opts.auditMode) {
-    parts.push(
-      "",
-      `MODO AUDITOR: produza um RELATÓRIO ESTRUTURADO para apresentação ao cliente.
-
-**FORMATO OBRIGATÓRIO** (não altere títulos, ordem, número de itens, nem o marcador inicial — o frontend depende deles para renderizar):
-
-<!--AUDIT-REPORT-->
-# Relatório do Auditor
-
-## Resumo Executivo
-2-3 frases conectando DRE → Caixa → Indicadores → Valuation. Cite o EV atual em R$.
-
-## Conexão Estratégica
-| Ajuste / Decisão | Impacto em EBITDA | Impacto em Caixa | Impacto em Valuation |
-|---|---|---|---|
-(linhas com números reais, sempre 3 linhas)
-
-## Riscos (Top 3)
-### 1. <título do risco>
-- **Evidência:** <número + fonte>
-- **Severidade:** Alta / Média / Baixa
-- **Mitigação:** <ação concreta>
-### 2. ...
-### 3. ...
-
-## Oportunidades (Top 3)
-### 1. <título>
-- **Impacto no EV:** R$ X (de R$ A → R$ B)
-- **Esforço:** Baixo / Médio / Alto
-- **Como executar:** <passos>
-### 2. ...
-### 3. ...
-
-## Inconsistências e Pontos de Atenção
-Lista com bullets. Use 'comparar_com_setor' para validar fora-da-curva. Se nenhuma, escreva "Nenhuma inconsistência material detectada."
-
-## Próximos Passos (Priorizados)
-1. <ação> — _ofereça registrar via 'criar_acao'_
-2. ...
-3. ...
-<!--/AUDIT-REPORT-->
-
-Regras: brutalmente honesto, todo número com R$/% e fonte, nada de "considerar avaliar" — verbo no imperativo.`,
-    );
-  }
+  // Bloco específico do modo (vazio em "chat").
+  const modeBlock = MODE_BLOCKS[mode];
+  if (modeBlock) parts.push("", modeBlock);
 
   if (opts.extra && opts.extra.trim()) {
     parts.push("", `INSTRUÇÕES ADICIONAIS DO USUÁRIO:`, opts.extra.trim());
