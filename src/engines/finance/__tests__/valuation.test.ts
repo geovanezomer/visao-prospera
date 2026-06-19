@@ -3,6 +3,8 @@ import { buildValuation, defaultValuationParams } from "../valuation";
 import { buildDRE } from "../dre";
 import { sum } from "../format";
 import { createState, m12 } from "./helpers";
+import { computeNetDebt } from "../shared";
+
 
 // Cria um cenário lucrativo (EBITDA > 0) para testar valuation positiva.
 // O DEFAULT_STATE tem custos altos → EBITDA negativo, inadequado para esses testes.
