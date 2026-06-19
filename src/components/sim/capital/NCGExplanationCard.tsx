@@ -1,5 +1,5 @@
 import { fmtBRL } from "@/engines/finance/format";
-import { SectionTitle } from "../primitives";
+import { SectionTitle } from "@/components/sim/shared/primitives";
 
 // Quadro explicativo do Capital de Giro / NCG — só leitura.
 export function NCGExplanationCard({

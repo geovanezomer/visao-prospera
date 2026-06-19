@@ -28,9 +28,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { SectionTitle, HelpTip } from "./primitives";
-import { ForecastCard, MonteCarloCard } from "./AnalysisTab";
-import { IndicatorsCard } from "./IndicatorsCard";
+import { SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
+import { ForecastCard, MonteCarloCard } from "@/components/sim/analysis/AnalysisTab";
+import { IndicatorsCard } from "@/components/sim/indicators/IndicatorsCard";
 import {
   ArrowDownRight,
   ArrowUpRight,

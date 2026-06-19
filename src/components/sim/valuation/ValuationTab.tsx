@@ -12,7 +12,7 @@ import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { fmtBRLCompact, sum } from "@/engines/finance/format";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { StatCard, SectionTitle } from "./primitives";
+import { StatCard, SectionTitle } from "@/components/sim/shared/primitives";
 import {
   DollarSign,
   BarChart3,
@@ -24,10 +24,10 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 
-import { MultRow, SliderField, ConfidenceBadge } from "./valuation/parts";
-import { SensitivityMatrix } from "./valuation/SensitivityMatrix";
-import { RiskPanel } from "./valuation/RiskPanel";
-import { AuditPanel } from "./valuation/AuditPanel";
+import { MultRow, SliderField, ConfidenceBadge } from "@/components/sim/valuation/parts";
+import { SensitivityMatrix } from "@/components/sim/valuation/SensitivityMatrix";
+import { RiskPanel } from "@/components/sim/valuation/RiskPanel";
+import { AuditPanel } from "@/components/sim/valuation/AuditPanel";
 
 const BUSINESS_LABEL = {
   servicos: "Serviços",

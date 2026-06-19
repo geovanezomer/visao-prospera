@@ -1,11 +1,11 @@
 import { AppState } from "@/engines/finance/types";
 import { buildCashFlow } from "@/engines/finance/cashflow";
 import { fmtBRL, fmtBRLCompact, sum } from "@/engines/finance/format";
-import { SectionTitle } from "../primitives";
-import { aggregate, periodLabels, Period } from "./tableHelpers";
+import { SectionTitle } from "@/components/sim/shared/primitives";
+import { aggregate, periodLabels, Period } from "@/components/sim/cashflow/tableHelpers";
 import { usePeriodView } from "@/hooks/usePeriodView";
 import { useAnnualSnapshots } from "@/hooks/useAnnualSnapshots";
-import { CashFlowComparison } from "../ComparisonView";
+import { CashFlowComparison } from "@/components/sim/comparison/ComparisonView";
 
 // Tabela DFC pelo método direto, com agregação mensal/trimestral/anual.
 export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof buildCashFlow> }) {

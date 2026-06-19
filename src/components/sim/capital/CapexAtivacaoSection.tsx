@@ -2,7 +2,7 @@ import { CapexAtivacao } from "@/engines/finance/types";
 import { fmtBRL, genId } from "@/engines/finance/format";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Lightbulb } from "lucide-react";
-import { MoneyInput, NumInput, SectionTitle } from "../primitives";
+import { MoneyInput, NumInput, SectionTitle } from "@/components/sim/shared/primitives";
 
 // Capex ativações — gera depreciação linear adicional a partir do mês de ativação.
 export function CapexAtivacaoSection({

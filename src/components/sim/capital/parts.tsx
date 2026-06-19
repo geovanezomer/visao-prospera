@@ -1,6 +1,6 @@
 // Subcomponentes compartilhados do Balance Sheet / Refinamento Avançado.
 // Mantidos pequenos e puros — só recebem props.
-import { MoneyInput, HelpTip } from "../primitives";
+import { MoneyInput, HelpTip } from "@/components/sim/shared/primitives";
 import { fmtBRL } from "@/engines/finance/format";
 
 export function StepCard({

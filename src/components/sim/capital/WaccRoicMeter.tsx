@@ -1,5 +1,5 @@
 import { TrendingUp, TrendingDown } from "lucide-react";
-import { HelpTip } from "../primitives";
+import { HelpTip } from "@/components/sim/shared/primitives";
 
 // Termômetro WACC × ROIC — visualiza se a empresa cria ou destrói valor.
 export function WaccRoicMeter({ wacc, roic }: { wacc: number; roic: number }) {

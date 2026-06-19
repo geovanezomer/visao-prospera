@@ -1,4 +1,4 @@
-import { SectionTitle } from "../primitives";
+import { SectionTitle } from "@/components/sim/shared/primitives";
 
 // Matriz de sensibilidade WACC × g terminal — normalizada para base = 100.
 export function SensitivityMatrix({

@@ -2,8 +2,8 @@ import { AppState } from "@/engines/finance/types";
 import { buildValuation } from "@/engines/finance/valuation";
 import { fmtBRLCompact } from "@/engines/finance/format";
 import { ShieldAlert, TrendingDown, CheckCircle2 } from "lucide-react";
-import { SectionTitle } from "../primitives";
-import { RangeCard, Reco } from "./parts";
+import { SectionTitle } from "@/components/sim/shared/primitives";
+import { RangeCard, Reco } from "@/components/sim/valuation/parts";
 
 // Painel de risco estratégico — haircut, faixa de valuation e recomendações.
 export function RiskPanel({

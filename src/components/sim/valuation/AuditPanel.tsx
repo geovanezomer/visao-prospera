@@ -7,8 +7,8 @@ import {
 import { fmtBRLCompact } from "@/engines/finance/format";
 import { Button } from "@/components/ui/button";
 import { Calculator, FlaskConical } from "lucide-react";
-import { SectionTitle } from "../primitives";
-import { KV } from "./parts";
+import { SectionTitle } from "@/components/sim/shared/primitives";
+import { KV } from "@/components/sim/valuation/parts";
 
 // Painel de auditoria — memória de cálculo + self-tests opt-in.
 export function AuditPanel({

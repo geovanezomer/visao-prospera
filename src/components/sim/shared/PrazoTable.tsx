@@ -1,5 +1,5 @@
 import { MESES, fill12 } from "@/engines/finance/format";
-import { NumInput, SectionTitle } from "./primitives";
+import { NumInput, SectionTitle } from "@/components/sim/shared/primitives";
 import { Switch } from "@/components/ui/switch";
 
 function avg(values: number[]): number {

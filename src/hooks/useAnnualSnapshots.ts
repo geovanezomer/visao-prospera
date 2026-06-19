@@ -6,7 +6,7 @@
 import { useMemo } from "react";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { useScenarios } from "@/engines/scenarios/store";
-import type { Snapshot } from "@/components/sim/ComparisonView";
+import type { Snapshot } from "@/components/sim/comparison/ComparisonView";
 
 export function useAnnualSnapshots(max = 3): Snapshot[] {
   const { state } = useFinance();

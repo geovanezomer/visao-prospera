@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { MoneyInput, PctInput } from "./primitives";
+import { MoneyInput, PctInput } from "@/components/sim/shared/primitives";
 import { MESES, sum, fmtBRL, fmtPct } from "@/engines/finance/format";
 
 /**

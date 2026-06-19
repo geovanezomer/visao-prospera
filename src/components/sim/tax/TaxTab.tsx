@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { HelpTip, PctInput, SectionTitle } from "./primitives";
+import { HelpTip, PctInput, SectionTitle } from "@/components/sim/shared/primitives";
 
 // =================================================================
 // Componentes movidos para o topo do módulo (B9) — evitam recriação

@@ -34,7 +34,7 @@ import {
   archiveYearAsHistorical,
   deleteScenario,
 } from "@/engines/scenarios/store";
-import { ConfirmDialog } from "./ConfirmDialog";
+import { ConfirmDialog } from "@/components/sim/shared/ConfirmDialog";
 import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
 import { buildDRE } from "@/engines/finance/dre";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";

@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { Plus, Trash2, ChevronDown, ChevronUp, Landmark } from "lucide-react";
 import { fmtBRL } from "@/engines/finance/format";
-import { MoneyInput } from "../primitives";
+import { MoneyInput } from "@/components/sim/shared/primitives";
 import type { DebtContract, DebtSystem } from "@/engines/finance/types";
 import {
   aggregateContracts,

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { AppState } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
-import { SectionTitle } from "../primitives";
+import { SectionTitle } from "@/components/sim/shared/primitives";
 import {
   Banknote,
   Package,
@@ -14,7 +14,7 @@ import {
   Camera,
   Settings2,
 } from "lucide-react";
-import { StepCard, SimpleField, MiniStat, SummaryList, KpiTile, Field } from "./parts";
+import { StepCard, SimpleField, MiniStat, SummaryList, KpiTile, Field } from "@/components/sim/capital/parts";
 
 // Fotografia do balanço hoje — 3 passos (Ativos · Dívidas+PL · Resumo) +
 // lançamentos mensais. Cálculos auxiliares ficam no topo.
