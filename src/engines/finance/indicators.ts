@@ -93,7 +93,7 @@ export interface Indicators {
   paybackCapex: number;
   /** @deprecated Use `amortizacaoPlPorLucro` (mesma fórmula). Mantido para retrocompat. */
   payback: number;
-  /** FCF Operacional (CFO): EBITDA − Impostos − Δ NCG. ANTES do CAPEX. */
+  /** FCF Operacional antes do CAPEX: NOPAT + D&A − Δ NCG. */
   fcf: number;
   /** CAPEX anual total: plano mensal + ativações do ano. */
   capexAnual: number;
@@ -151,6 +151,18 @@ export interface Indicators {
   ebitdaAnual: number;
   /** EBIT anualizado (usado em ROIC/cobertura/per-capita). */
   ebitAnual: number;
+  /** Receita bruta anualizada — fonte única para cards/listas históricas. */
+  receitaBrutaAnual: number;
+  /** Receita líquida anualizada — base comum de margens e giro. */
+  receitaLiquidaAnual: number;
+  /** Lucro líquido anualizado — fonte única para ROE/ROA e históricos. */
+  lucroLiquidoAnual: number;
+  /** NOPAT anualizado preservando prejuízo operacional; não é travado em zero. */
+  nopat: number;
+  /** Capital investido usado no ROIC. Zero = base insuficiente para cálculo confiável. */
+  capitalInvestido: number;
+  /** Alíquota operacional usada no NOPAT, em %. */
+  aliquotaNopat: number;
   /** Serviço da dívida mensal médio = (Juros Anuais + Amortizações Anuais) ÷ 12. */
   servicoDividaMensal: number;
   /** Participação do PL no financiamento total: PL ÷ (PL + D) × 100. */
@@ -235,45 +247,35 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const keSeguro = capital.ke > 0 ? capital.ke : 8;
   const wacc = wE * keSeguro + wD * capital.kd * (1 - irShield);
 
-  // ---- NOPAT e ROIC com alíquota EFETIVA observada ----
-  // Lucro Real: IR + CSLL incidem sobre o LAIR — usar dre.impostos / receita bruta.
-  // Lucro Presumido / Simples: IR/CSLL/DAS incidem sobre RECEITA (base presumida),
-  // não sobre o LAIR. Se a carga tributária consumir mais que o LAIR (lucro
-  // contábil baixo ou negativo, mas tributos altos sobre receita), o NOPAT
-  // calculado por (1 − t_marginal_receita) fica artificialmente alto e o ROIC
-  // dispara. Para refletir a realidade, nesses regimes usamos a alíquota
-  // EFETIVA sobre o LAIR, limitada a 100% para zerar o NOPAT em vez de inverter o sinal.
+  // ---- NOPAT e ROIC (auditoria CFO) ----
+  // NOPAT deve partir do EBIT e preservar prejuízo operacional. O código anterior fazia
+  // `Math.max(0, EBIT × (1 − t))`, escondendo ROIC negativo quando a operação dava prejuízo.
+  // Também aplicava DAS do Simples novamente sobre o EBIT; no Simples o DAS já reduziu a
+  // Receita Líquida/EBIT, então a alíquota adicional de NOPAT é 0 para evitar dupla contagem.
   const impostosLucroAnual = impostosAnual;
-  const dasAnual = impostosVendasAnual;
   const regimeEfetivo = resolveEffectiveRegime(state);
-  const impostosParaAliquota = regimeEfetivo === "simples" ? dasAnual : impostosLucroAnual;
-
-  let aliquotaEfetiva: number;
-  if (regimeEfetivo === "presumido" || regimeEfetivo === "simples") {
-    // t efetivo sobre o LAIR; se LAIR ≤ 0 e há tributos, t = 1 (NOPAT = 0).
-    if (lairAnual > 1) {
-      aliquotaEfetiva = Math.min(1, impostosParaAliquota / lairAnual);
-    } else {
-      aliquotaEfetiva = impostosParaAliquota > 0 ? 1 : 0;
+  let aliquotaNopatFrac = 0;
+  if (ebitAnual > 1) {
+    if (regimeEfetivo === "real") {
+      aliquotaNopatFrac = irShieldForRegime(regimeEfetivo, lairAnual);
+    } else if (regimeEfetivo === "presumido") {
+      // Presumido calcula IRPJ/CSLL sobre receita presumida, mas para NOPAT a carga
+      // não pode exceder 100% do EBIT operacional; acima disso NOPAT zera, não inverte.
+      aliquotaNopatFrac = Math.max(0, Math.min(1, safeDivide(impostosLucroAnual, ebitAnual)));
     }
-  } else {
-    aliquotaEfetiva =
-      receitaBrutaAnual > 0
-        ? Math.max(0, Math.min(0.5, impostosParaAliquota / receitaBrutaAnual))
-        : 0;
   }
-  const nopat = Math.max(0, ebitAnual * (1 - aliquotaEfetiva));
+  const nopat = ebitAnual > 1 ? ebitAnual * (1 - aliquotaNopatFrac) : ebitAnual;
 
-  // Capital Investido — preferimos lado financiamento (PL + D − caixa ocioso).
+  // Capital Investido — se Ativo Total foi informado, usa lado operacional do balanço:
+  // Ativo Total − Passivos Não Onerosos − Caixa Ocioso. Caso contrário, usa financiamento:
+  // PL + Dívida Onerosa − Caixa Ocioso. Nunca usa denominador artificial = 1, pois isso
+  // produz ROIC absurdo quando o balanço está incompleto.
   const pno = Math.max(0, capital.passivosNaoOnerosos ?? capital.fornecedores ?? 0);
   const caixaOcioso = Math.max(0, capital.caixaOcioso ?? 0);
-  const ciFinanciamento = PL + D;
-  const ciAtivo = capital.ativoTotal > 0 ? capital.ativoTotal - pno : 0;
-  // Se nenhum dos dois lados está disponível, usa 0 — o `Math.max(1, …)` abaixo
-  // garante denominador mínimo para evitar divisão por zero no ROIC.
-  const ciBase = ciFinanciamento > 0 ? ciFinanciamento : ciAtivo > 0 ? ciAtivo : 0;
-  const capitalInvestido = Math.max(1, ciBase - caixaOcioso);
-  const roic = safePct(nopat, capitalInvestido);
+  const ciAtivo = capital.ativoTotal > 0 ? Math.max(0, capital.ativoTotal - pno - caixaOcioso) : 0;
+  const ciFinanciamento = Math.max(0, PL + D - caixaOcioso);
+  const capitalInvestido = ciAtivo > 0 ? ciAtivo : ciFinanciamento;
+  const roic = capitalInvestido > 0 ? safePct(nopat, capitalInvestido) : 0;
 
   // ROE com PL MÉDIO (CFA/Damodaran).
   const plAbertura = Math.max(0, capital.patrimonioLiquidoAbertura ?? 0);
@@ -379,8 +381,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // Auditoria #3: ΔNCG (variação anual) em vez do gap total.
   // Usa `ncgAbertura` quando informada; senão `disponibilidades` (caixa+bancos)
   // como proxy da NCG já financiada na abertura — fonte única de caixa.
+  // CFO: ΔNCG pode ser negativo; nesse caso libera caixa e AUMENTA o FCF.
   const ncgAbertura = Math.max(0, capital.ncgAbertura ?? capital.disponibilidades ?? 0);
-  const deltaNcgAnual = Math.max(0, ncg - ncgAbertura);
+  const deltaNcgAnual = ncg - ncgAbertura;
   // FCFF (Free Cash Flow to the Firm) padrão Damodaran/Koller:
   //   FCFF = NOPAT + D&A − ΔNCG − CAPEX
   // `nopat` já calculado acima com a alíquota efetiva observada do regime.
@@ -498,6 +501,12 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
       llAnual > 1 ? ((impostosVendasAnual + impostosAnual) / llAnual) * 100 : 0,
     ebitdaAnual,
     ebitAnual,
+    receitaBrutaAnual,
+    receitaLiquidaAnual: receitaLiqAnual,
+    lucroLiquidoAnual: llAnual,
+    nopat: safeNumber(nopat),
+    capitalInvestido: safeNumber(capitalInvestido),
+    aliquotaNopat: aliquotaNopatFrac * 100,
     servicoDividaMensal: (jurosAnual + amortizPrincipalAnual) / 12,
     proprioPercent: V > 0 ? (PL / V) * 100 : Math.max(0, Math.min(100, capital.proprio)),
     dividaPlBruto: PL > 0 ? D / PL : 0,

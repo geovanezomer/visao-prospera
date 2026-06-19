@@ -16,6 +16,8 @@ export function IndicatorsCard({ state }: { state: AppState }) {
   const ebitAnual = sum(dre.ebit);
   const ebitdaAnual = sum(dre.ebitda);
   const hasHeadcount = (state.numColaboradores ?? 0) > 0;
+  // cagrReceitas12m já vem em fração (0,15 = 15%); não dividir por 100.
+  const cagrReceitas12mFmt = Number.isFinite(cagrReceitas12m) ? fmtPct(cagrReceitas12m) : "—";
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5">
@@ -202,19 +204,19 @@ export function IndicatorsCard({ state }: { state: AppState }) {
               ? `${ind.paybackCapex.toFixed(1)} anos`
               : "—"
           }
-          desc="Payback clássico: tempo para o FCF recuperar o CAPEX inicial."
-          formula="CAPEX Inicial ÷ FCF Anual"
+          desc="Payback clássico: tempo para o FCF operacional recuperar o CAPEX total do ano."
+          formula="CAPEX Anual ÷ FCF Operacional"
         />
         <Ind
           label="FCF estimado"
           v={fmtBRL(ind.fcf)}
           tone={ind.fcf >= 0 ? "pos" : "neg"}
-          desc="Free Cash Flow — geração de caixa livre após impostos e investimento em capital de giro. É o que sobra para sócios e dívida."
-          formula="EBITDA − Impostos − Δ NCG"
+          desc="Free Cash Flow operacional antes do CAPEX — geração de caixa após imposto operacional e variação de capital de giro."
+          formula="NOPAT + D&A − Δ NCG"
         />
         <Ind
           label="CAGR Receitas 12m"
-          v={Number.isFinite(cagrReceitas12m) ? fmtPct(cagrReceitas12m) : "—"}
+          v={cagrReceitas12mFmt}
           tone={
             Number.isFinite(cagrReceitas12m) ? (cagrReceitas12m >= 0 ? "pos" : "neg") : undefined
           }

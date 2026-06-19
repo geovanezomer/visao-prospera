@@ -48,6 +48,54 @@ describe("Indicadores — WACC", () => {
 });
 
 describe("Indicadores — ROIC / ROE / ROA", () => {
+  it("ROIC preserva prejuízo operacional (não trava NOPAT negativo em zero)", () => {
+    const s = createState({
+      revenue: { bruta: m12(10_000), inadimplencia: m12(0) },
+      costs: [{ id: "cf", label: "Custo fixo", category: "fixo", values: m12(30_000), fixed: true }],
+      capital: { ativoTotal: 1_000_000, patrimonioLiquido: 700_000, dividaOnerosa: 0 },
+    });
+    const { dre } = buildDRE(s, "simples");
+    const ind = calcIndicators(s, dre);
+
+    expect(ind.ebitAnual).toBeLessThan(0);
+    expect(ind.nopat).toBeLessThan(0);
+    expect(ind.roic).toBeLessThan(0);
+  });
+
+  it("ROIC usa capital investido real e não denominador artificial 1", () => {
+    const s = createState({
+      revenue: { bruta: m12(100_000), inadimplencia: m12(0) },
+      costs: [],
+      capital: {
+        ativoTotal: 0,
+        patrimonioLiquido: 0,
+        dividaOnerosa: 0,
+        passivosNaoOnerosos: 0,
+        caixaOcioso: 0,
+      },
+    });
+    const { dre } = buildDRE(s, "simples");
+    const ind = calcIndicators(s, dre);
+
+    expect(ind.capitalInvestido).toBe(0);
+    expect(ind.roic).toBe(0);
+  });
+
+  it("NOPAT no Lucro Real aplica alíquota marginal operacional sem dupla contagem", () => {
+    const s = createState({
+      tax: { regime: "real" },
+      revenue: { bruta: m12(100_000), inadimplencia: m12(0) },
+      costs: [{ id: "cv", label: "CV", category: "variavel", values: m12(40_000), fixed: false }],
+      capital: { ativoTotal: 2_000_000, patrimonioLiquido: 1_500_000, dividaOnerosa: 0 },
+    });
+    const { dre } = buildDRE(s, "real");
+    const ind = calcIndicators(s, dre);
+
+    expect(ind.ebitAnual).toBeGreaterThan(240_000);
+    expect(ind.aliquotaNopat).toBeCloseTo(34, 1);
+    expect(ind.nopat).toBeCloseTo(ind.ebitAnual * 0.66, 0);
+  });
+
   it("ROE = LL/PL × 100 (positivo)", () => {
     const s = createState({
       revenue: { bruta: m12(100_000) },
@@ -137,6 +185,28 @@ describe("Indicadores — NCG e FCF", () => {
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
     expect(Number.isFinite(ind.fcf)).toBe(true);
+  });
+
+  it("FCF aumenta quando há redução de NCG (liberação de caixa)", () => {
+    const base = createState({
+      revenue: { bruta: m12(100_000), inadimplencia: m12(0), pmr: 0, pmp: 0 },
+      costs: [],
+      capital: {
+        ativoTotal: 1_000_000,
+        patrimonioLiquido: 800_000,
+        dividaOnerosa: 0,
+        contasReceber: 0,
+        estoques: 0,
+        fornecedores: 0,
+      },
+    });
+    const semLiberacao = createState({ ...base, capital: { ...base.capital, ncgAbertura: 0 } });
+    const comLiberacao = createState({ ...base, capital: { ...base.capital, ncgAbertura: 100_000 } });
+
+    const indSem = calcIndicators(semLiberacao, buildDRE(semLiberacao, "simples").dre);
+    const indCom = calcIndicators(comLiberacao, buildDRE(comLiberacao, "simples").dre);
+
+    expect(indCom.fcf).toBeCloseTo(indSem.fcf + 100_000, 0);
   });
 });
 

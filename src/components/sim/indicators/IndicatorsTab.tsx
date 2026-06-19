@@ -112,6 +112,8 @@ export function IndicatorsTab() {
   // (I3) Gate correto dos cards de produtividade: headcount > 0 (não valor calculado).
   const hasHeadcount = (state.numColaboradores ?? 0) > 0;
   const ebitdaAnual = sum(dre.ebitda);
+  // cagrReceitas12m já vem em fração (0,15 = 15%); não dividir por 100.
+  const cagrReceitas12mFmt = Number.isFinite(cagrReceitas12m) ? fmtPct(cagrReceitas12m) : "—";
 
   return (
     <div className="space-y-6">
@@ -343,19 +345,19 @@ export function IndicatorsTab() {
                 ? `${ind.paybackCapex.toFixed(1)} anos`
                 : "—"
             }
-            desc="Payback CLÁSSICO (conceito bancário): tempo para a geração de caixa recuperar o CAPEX inicial. '—' quando não há CAPEX inicial informado no Fluxo de Caixa ou quando FCF ≤ 0."
-            formula="CAPEX Inicial ÷ FCF Anual"
+            desc="Payback CLÁSSICO (conceito bancário): tempo para a geração de caixa recuperar o CAPEX total do ano. '—' quando não há CAPEX informado ou quando FCF ≤ 0."
+            formula="CAPEX Anual ÷ FCF Operacional"
           />
           <Ind
             label="FCF estimado"
             v={fmtBRL(ind.fcf)}
             tone={ind.fcf >= 0 ? "pos" : "neg"}
-            desc="Free Cash Flow — geração de caixa livre após impostos e investimento em capital de giro. É o que sobra para sócios e dívida."
-            formula="EBITDA − Impostos − Δ NCG"
+            desc="Free Cash Flow operacional antes do CAPEX — geração de caixa após imposto operacional e variação de capital de giro."
+            formula="NOPAT + D&A − Δ NCG"
           />
           <Ind
             label="CAGR Receitas 12m"
-            v={Number.isFinite(cagrReceitas12m) ? fmtPct(cagrReceitas12m) : "—"}
+            v={cagrReceitas12mFmt}
             tone={
               Number.isFinite(cagrReceitas12m) ? (cagrReceitas12m >= 0 ? "pos" : "neg") : undefined
             }
@@ -628,7 +630,7 @@ function CashConversionSmall({ conversao }: { conversao: number }) {
       <div
         className={`mono mt-2 text-2xl font-bold ${tone === "pos" ? "text-pos" : tone === "neg" ? "text-neg" : "text-foreground"}`}
       >
-        {conversaoEbitda.toFixed(1)}%
+        {fmtPct(conversaoEbitda / 100)}
       </div>
       <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
         {conversaoEbitda >= 70 ? (
