@@ -343,15 +343,15 @@ export function IndicatorsTab() {
                 ? `${ind.paybackCapex.toFixed(1)} anos`
                 : "—"
             }
-            desc="Payback CLÁSSICO (conceito bancário): tempo para a geração de caixa recuperar o CAPEX inicial. '—' quando não há CAPEX inicial informado no Fluxo de Caixa ou quando FCF ≤ 0."
-            formula="CAPEX Inicial ÷ FCF Anual"
+            desc="Payback CLÁSSICO (conceito bancário): tempo para a geração de caixa recuperar o CAPEX total do ano. '—' quando não há CAPEX informado ou quando FCF ≤ 0."
+            formula="CAPEX Anual ÷ FCF Operacional"
           />
           <Ind
             label="FCF estimado"
             v={fmtBRL(ind.fcf)}
             tone={ind.fcf >= 0 ? "pos" : "neg"}
-            desc="Free Cash Flow — geração de caixa livre após impostos e investimento em capital de giro. É o que sobra para sócios e dívida."
-            formula="EBITDA − Impostos − Δ NCG"
+            desc="Free Cash Flow operacional antes do CAPEX — geração de caixa após imposto operacional e variação de capital de giro."
+            formula="NOPAT + D&A − Δ NCG"
           />
           <Ind
             label="CAGR Receitas 12m"

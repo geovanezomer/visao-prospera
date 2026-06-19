@@ -202,15 +202,15 @@ export function IndicatorsCard({ state }: { state: AppState }) {
               ? `${ind.paybackCapex.toFixed(1)} anos`
               : "—"
           }
-          desc="Payback clássico: tempo para o FCF recuperar o CAPEX inicial."
-          formula="CAPEX Inicial ÷ FCF Anual"
+          desc="Payback clássico: tempo para o FCF operacional recuperar o CAPEX total do ano."
+          formula="CAPEX Anual ÷ FCF Operacional"
         />
         <Ind
           label="FCF estimado"
           v={fmtBRL(ind.fcf)}
           tone={ind.fcf >= 0 ? "pos" : "neg"}
-          desc="Free Cash Flow — geração de caixa livre após impostos e investimento em capital de giro. É o que sobra para sócios e dívida."
-          formula="EBITDA − Impostos − Δ NCG"
+          desc="Free Cash Flow operacional antes do CAPEX — geração de caixa após imposto operacional e variação de capital de giro."
+          formula="NOPAT + D&A − Δ NCG"
         />
         <Ind
           label="CAGR Receitas 12m"
