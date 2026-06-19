@@ -374,7 +374,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // Edge cases: LL ≈ 0 → 0 (UI deve renderizar "N/A").
   // SSOT: mesma chamada do FluxoCaixaTab — `buildCashFlow(state)` resolve o regime efetivo
   // internamente. `totais.fluxoOperacional` é exatamente `sum(fluxoOperacional)`.
-  const fcoAnual = buildCashFlow(state).totais.fluxoOperacional;
+  const fcoAnual = an(buildCashFlow(state).totais.fluxoOperacional);
   const qualidadeLucro =
     Math.abs(llAnual) > 1 ? Math.max(-9, Math.min(9, fcoAnual / llAnual)) : 0;
 
