@@ -152,9 +152,9 @@ function variaveisFor(business: BusinessType): CostLine[] {
       values: fill12(0),
     }),
   ];
-  if (business === "servicos") {
-    base.push(line("insumos_serv", "Insumos / Matéria Prima", "variavel", 500));
-  }
+  // OBS: "Insumos / Matéria Prima" NÃO entra como Despesa Comercial — esse item
+  // pertence ao CSP/CPV (Custos Diretos). Mantê-lo aqui causava duplicidade
+  // com a rubrica de mesmo nome já provisionada em "Custos Diretos de Venda".
   if (business === "industria") {
     base.push(
       line("mp_aco", "Matéria-prima principal", "variavel", 0, undefined, {
