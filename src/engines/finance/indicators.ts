@@ -174,7 +174,6 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // Lucro Real/Presumido: IR + CSLL + adicional (dre.impostos).
   // Simples Nacional: usar a alíquota efetiva do DAS (impostosVendas) como proxy,
   // pois IRPJ/CSLL estão embutidos no DAS.
-  const receitaBrutaAnual = sum(dre.receitaBruta);
   const impostosLucroAnual = sum(dre.impostos);
   const dasAnual = sum(dre.impostosVendas);
   const regimeEfetivo = resolveEffectiveRegime(state);
