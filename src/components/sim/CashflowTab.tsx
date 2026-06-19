@@ -156,8 +156,6 @@ export function CashflowTab() {
   const saldoDezTone: "pos" | "neg" | "warn" =
     saldoDez < 0 ? "neg" : saldoDez < state.cashflow.caixaMinimo ? "warn" : "pos";
 
-  return (
-    <div className="space-y-6">
   const showComparison = comparisonSnaps.length >= 2;
 
   return (
