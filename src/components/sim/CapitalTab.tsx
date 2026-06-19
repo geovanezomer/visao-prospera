@@ -155,16 +155,6 @@ export function CapitalTab() {
       />
 
       <div className="space-y-4">
-        <CapitalStructureCard
-          proprio={proprioDerivado}
-          terceiros={terceiros}
-          ke={c.ke}
-          kd={c.kd}
-          patrimonioLiquido={c.patrimonioLiquido}
-          dividaOnerosa={c.dividaOnerosa}
-          derived={totalFinancAbs > 0}
-          onChange={set}
-        />
         <BalanceSheetCard
           capital={c}
           onChange={set}
