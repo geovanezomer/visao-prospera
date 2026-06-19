@@ -12,6 +12,7 @@ import {
   MessageSquare,
   X,
   Paperclip,
+  Brain,
 } from "lucide-react";
 import { AIConfigDialog } from "./AIConfigDialog";
 import type { AppState } from "@/engines/finance/types";
@@ -19,9 +20,11 @@ import type { SimulatorParams } from "@/engines/finance/simulator";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AuditReport, isAuditReport } from "./AuditReport";
 import { useAIChat } from "@/hooks/useAIChat";
 import { resetAIStorage } from "@/engines/ai/providers";
+import { useMemories, deleteMemory } from "@/engines/memory/store";
 
 // react-markdown não tem assinatura compatível direta com lazy() — usamos cast pontual.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -152,6 +155,7 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
           <Button variant="ghost" size="icon" onClick={() => setShowThreads((s) => !s)}>
             <MessageSquare className="h-4 w-4" />
           </Button>
+          <MemoriesPopover company={state.companyName || "default"} />
           <Button variant="ghost" size="icon" onClick={() => setConfigOpen(true)}>
             <Settings className="h-4 w-4" />
           </Button>
