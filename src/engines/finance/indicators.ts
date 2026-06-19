@@ -184,18 +184,33 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const keSeguro = capital.ke > 0 ? capital.ke : 8;
   const wacc = wE * keSeguro + wD * capital.kd * (1 - irShield);
 
-  // ---- NOPAT e ROIC com alíquota EFETIVA observada (impostos / receita bruta) ----
-  // Lucro Real/Presumido: IR + CSLL + adicional (dre.impostos).
-  // Simples Nacional: usar a alíquota efetiva do DAS (impostosVendas) como proxy,
-  // pois IRPJ/CSLL estão embutidos no DAS.
+  // ---- NOPAT e ROIC com alíquota EFETIVA observada ----
+  // Lucro Real: IR + CSLL incidem sobre o LAIR — usar dre.impostos / receita bruta.
+  // Lucro Presumido / Simples: IR/CSLL/DAS incidem sobre RECEITA (base presumida),
+  // não sobre o LAIR. Se a carga tributária consumir mais que o LAIR (lucro
+  // contábil baixo ou negativo, mas tributos altos sobre receita), o NOPAT
+  // calculado por (1 − t_marginal_receita) fica artificialmente alto e o ROIC
+  // dispara. Para refletir a realidade, nesses regimes usamos a alíquota
+  // EFETIVA sobre o LAIR, limitada a 100% para zerar o NOPAT em vez de inverter o sinal.
   const impostosLucroAnual = sum(dre.impostos);
   const dasAnual = sum(dre.impostosVendas);
   const regimeEfetivo = resolveEffectiveRegime(state);
   const impostosParaAliquota = regimeEfetivo === "simples" ? dasAnual : impostosLucroAnual;
-  const aliquotaEfetiva =
-    receitaBrutaAnual > 0
-      ? Math.max(0, Math.min(0.5, impostosParaAliquota / receitaBrutaAnual))
-      : 0;
+
+  let aliquotaEfetiva: number;
+  if (regimeEfetivo === "presumido" || regimeEfetivo === "simples") {
+    // t efetivo sobre o LAIR; se LAIR ≤ 0 e há tributos, t = 1 (NOPAT = 0).
+    if (lairAnual > 1) {
+      aliquotaEfetiva = Math.min(1, impostosParaAliquota / lairAnual);
+    } else {
+      aliquotaEfetiva = impostosParaAliquota > 0 ? 1 : 0;
+    }
+  } else {
+    aliquotaEfetiva =
+      receitaBrutaAnual > 0
+        ? Math.max(0, Math.min(0.5, impostosParaAliquota / receitaBrutaAnual))
+        : 0;
+  }
   const nopat = Math.max(0, ebitAnual * (1 - aliquotaEfetiva));
 
   // Capital Investido — preferimos lado financiamento (PL + D − caixa ocioso).
