@@ -130,12 +130,47 @@ export function CostsTab() {
     [receitaBrutaAnual],
   );
 
+  // Detecta itens com o MESMO label em GRUPOS DIFERENTES de custo — sinal
+  // de lançamento duplicado (ex.: "Insumos / Matéria Prima" em CSP e em
+  // Despesas Comerciais ao mesmo tempo). Compara por label normalizado.
+  const duplicateLabels = useMemo(() => {
+    const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+    const map = new Map<string, Set<CostCategory>>();
+    for (const c of state.costs) {
+      const key = norm(c.label);
+      if (!key) continue;
+      if (!map.has(key)) map.set(key, new Set());
+      map.get(key)!.add(c.category);
+    }
+    const dups: { label: string; categories: CostCategory[] }[] = [];
+    for (const [key, cats] of map) {
+      if (cats.size > 1) {
+        const original =
+          state.costs.find((c) => norm(c.label) === key)?.label ?? key;
+        dups.push({ label: original, categories: Array.from(cats) });
+      }
+    }
+    return dups;
+  }, [state.costs]);
+
   return (
     <div className="space-y-6">
       {negWarn && (
         <div className="flex items-start gap-2 rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-xs text-warning">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <span className="text-foreground/90">{negWarn}</span>
+        </div>
+      )}
+      {duplicateLabels.length > 0 && (
+        <div className="flex items-start gap-2 rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-xs text-warning">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="space-y-1 text-foreground/90">
+            {duplicateLabels.map((d) => (
+              <div key={d.label}>
+                ⚠️ O item <strong>"{d.label}"</strong> aparece em mais de um grupo de custo. Verifique se não há lançamento duplicado.
+              </div>
+            ))}
+          </div>
         </div>
       )}
       {/* Sumário */}
