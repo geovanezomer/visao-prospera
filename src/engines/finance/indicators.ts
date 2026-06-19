@@ -11,6 +11,7 @@ import { computeNetDebt } from "./shared";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { irShieldForRegime } from "./tax/real";
 import type { DRE } from "./dre";
+import { buildCashFlow } from "./cashflow";
 
 export interface Indicators {
   /** Lucro Bruto ÷ Receita Líquida × 100 */
@@ -101,7 +102,7 @@ export interface Indicators {
   conversaoEbitdaCaixa: number;
   /** Margem de Contribuição (R$) ÷ EBIT — elasticidade do lucro à receita. */
   gao: number;
-  /** FCF ÷ Lucro Líquido — quanto do lucro contábil vira caixa. */
+  /** FCO ÷ Lucro Líquido — quanto do lucro contábil virou caixa operacional (CPC 03/IAS 7). */
   qualidadeLucro: number;
   /** Receita Líquida Anual ÷ nº de colaboradores. */
   receitaPorColaborador: number;
@@ -309,8 +310,13 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
 
   const mcReais = receitaLiqAnual - custosVarAnual;
   const gao = Math.abs(ebitAnual) > 1 ? Math.max(-99, Math.min(99, mcReais / ebitAnual)) : 0;
+  // Qualidade do Lucro = FCO / Lucro Líquido (CPC 03/IAS 7).
+  // Usa o MESMO FCO do FluxoCaixaTab (buildCashFlow.fluxoOperacional),
+  // não o FCFF estimado — caixa operacional realizado vs. lucro contábil.
+  // Edge cases: LL ≈ 0 → 0 (UI deve renderizar "N/A").
+  const fcoAnual = sum(buildCashFlow(state, resolveEffectiveRegime(state)).fluxoOperacional);
   const qualidadeLucro =
-    Math.abs(llAnual) > 1 ? Math.max(-9, Math.min(9, fcfAposCapex / llAnual)) : 0;
+    Math.abs(llAnual) > 1 ? Math.max(-9, Math.min(9, fcoAnual / llAnual)) : 0;
 
   const headcount = Math.max(0, state.numColaboradores ?? 0);
   const receitaPorColaborador = headcount > 0 ? receitaLiqAnual / headcount : 0;
