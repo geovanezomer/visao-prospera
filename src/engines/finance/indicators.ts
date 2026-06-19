@@ -286,7 +286,11 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // período após período em empresas em crescimento estável.
   const ncgAbertura = Math.max(0, capital.ncgAbertura ?? capital.capitalGiroDisponivel ?? 0);
   const deltaNcgAnual = Math.max(0, ncg - ncgAbertura);
-  const fcf = ebitdaAnual - impostosAnual - deltaNcgAnual;
+  // FCFF (Free Cash Flow to the Firm) padrão Damodaran/Koller:
+  //   FCFF = NOPAT + D&A − ΔNCG − CAPEX
+  // `nopat` já calculado acima com a alíquota efetiva observada do regime.
+  const depAnual = sum(dre.depreciacao);
+  const fcf = nopat + depAnual - deltaNcgAnual;
   const capexAnual =
     sum(state.cashflow.capex ?? []) +
     (capital.capexAtivacao ?? []).reduce(
