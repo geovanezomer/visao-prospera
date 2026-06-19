@@ -398,7 +398,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
         )
       : 0;
 
-  const amortizPrincipalAnual = sum(state.cashflow.amortizacoes);
+  const amortizPrincipalAnual = an(sum(state.cashflow.amortizacoes));
   const dscrAmortizacoesInformadas = amortizPrincipalAnual > 0;
   const servicoDivida = jurosAnual + amortizPrincipalAnual;
   const CAP_DSCR = 99;
