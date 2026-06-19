@@ -202,8 +202,9 @@ function ComparisonTable({ rows, snapshots }: { rows: Row[]; snapshots: Snapshot
 // ─── DRE ──────────────────────────────────────────────────────────────
 
 export function DREComparison({ snapshots }: { snapshots: Snapshot[] }) {
+  // SSOT: cada snapshot passa pelo MESMO pipeline (regime efetivo + DRE + ind + CF).
   const dres = useMemo(
-    () => new Map(snapshots.map((s) => [s.label, buildDRE(s.state, resolveEffectiveRegime(s.state)).dre])),
+    () => new Map(snapshots.map((s) => [s.label, buildFinancialModel(s.state).dre])),
     [snapshots],
   );
 
