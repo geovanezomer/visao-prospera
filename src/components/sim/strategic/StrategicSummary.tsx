@@ -6,7 +6,7 @@
 import { AppState } from "@/engines/finance/types";
 import { computeStrategic, quadrant, type SubScore } from "@/engines/finance/strategic";
 import { computeHealth } from "@/engines/finance/health";
-import { SectionTitle, StatCard } from "./primitives";
+import { SectionTitle, StatCard } from "@/components/sim/shared/primitives";
 import { AlertTriangle, CheckCircle2, ChevronRight, HelpCircle, TriangleAlert } from "lucide-react";
 
 export function StrategicSummary({ state }: { state: AppState }) {

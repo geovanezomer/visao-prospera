@@ -3,12 +3,12 @@ import { useFinance } from "@/engines/finance/AppStateContext";
 import { fmtBRL, sum } from "@/engines/finance/format";
 import { buildDRE, calcIndicators } from "@/engines/finance";
 
-import { BalanceSheetCard } from "./capital/BalanceSheetCard";
+import { BalanceSheetCard } from "@/components/sim/capital/BalanceSheetCard";
 
-import { CapexAtivacaoSection } from "./capital/CapexAtivacaoSection";
-import { WaccRoicMeter } from "./capital/WaccRoicMeter";
+import { CapexAtivacaoSection } from "@/components/sim/capital/CapexAtivacaoSection";
+import { WaccRoicMeter } from "@/components/sim/capital/WaccRoicMeter";
 
-import { DebtContractsCard } from "./capital/DebtContractsCard";
+import { DebtContractsCard } from "@/components/sim/capital/DebtContractsCard";
 import {
   aggregateContracts,
   DEBT_CONTRACTS_COST_ID,

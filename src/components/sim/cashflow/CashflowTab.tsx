@@ -3,7 +3,7 @@ import { useFinance, usePatchCashflow } from "@/engines/finance/AppStateContext"
 import { toast } from "sonner";
 import { fmtBRL, MESES } from "@/engines/finance/format";
 import { buildCashFlow } from "@/engines/finance/cashflow";
-import { MoneyInput, SectionTitle, StatCard } from "./primitives";
+import { MoneyInput, SectionTitle, StatCard } from "@/components/sim/shared/primitives";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle } from "lucide-react";
 import {
@@ -17,11 +17,11 @@ import {
   YAxis,
 } from "recharts";
 
-import { DFCTable } from "./cashflow/DFCTable";
-import { NonOpTable } from "./cashflow/NonOpTable";
-import { NonOpKey } from "./cashflow/tableHelpers";
+import { DFCTable } from "@/components/sim/cashflow/DFCTable";
+import { NonOpTable } from "@/components/sim/cashflow/NonOpTable";
+import { NonOpKey } from "@/components/sim/cashflow/tableHelpers";
 
-import { CashFlowComparison } from "./ComparisonView";
+import { CashFlowComparison } from "@/components/sim/comparison/ComparisonView";
 import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
 
 // Estilo padrão do tooltip dos gráficos (DRY)

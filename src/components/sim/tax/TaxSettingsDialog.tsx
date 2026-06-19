@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { NumInput } from "./primitives";
+import { NumInput } from "@/components/sim/shared/primitives";
 import type { AppState, SimplesAnexo, BusinessType } from "@/engines/finance/types";
 import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import {
@@ -55,7 +55,7 @@ import {
   ALIQ_PRESUMIDA_CBS_SN,
   ALIQ_PRESUMIDA_IBS_SN,
 } from "@/engines/finance/tax/reforma";
-import { CompanyConfigForm } from "./CompanyConfigDialog";
+import { CompanyConfigForm } from "@/components/sim/shared/CompanyConfigDialog";
 
 const ANEXOS: SimplesAnexo[] = ["I", "II", "III", "IV", "V"];
 const BUSINESS: { key: BusinessType; label: string; hint: string }[] = [

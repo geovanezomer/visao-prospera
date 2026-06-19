@@ -18,10 +18,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { HelpTip, SectionTitle, StatCard } from "./primitives";
-import { leverageDisplay } from "./leverageLabel";
+import { HelpTip, SectionTitle, StatCard } from "@/components/sim/shared/primitives";
+import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
 import { TrendingUp, TrendingDown } from "lucide-react";
-import { HistoricalYearPills } from "./HistoricalYearPills";
+import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
 
 const CHART_COLORS = [
   "#00E5A0",

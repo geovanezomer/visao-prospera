@@ -36,10 +36,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { HelpTip, SectionTitle, StatCard } from "./primitives";
+import { HelpTip, SectionTitle, StatCard } from "@/components/sim/shared/primitives";
 import { Badge } from "@/components/ui/badge";
 
-import { DREComparison } from "./ComparisonView";
+import { DREComparison } from "@/components/sim/comparison/ComparisonView";
 import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
 import { useAnnualSnapshots } from "@/hooks/useAnnualSnapshots";
 import { ChevronRight } from "lucide-react";

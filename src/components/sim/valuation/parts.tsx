@@ -1,6 +1,6 @@
 // Subcomponentes pequenos reutilizados pelo ValuationTab.
 import { Slider } from "@/components/ui/slider";
-import { MoneyInput } from "../primitives";
+import { MoneyInput } from "@/components/sim/shared/primitives";
 import { fmtBRLCompact } from "@/engines/finance/format";
 
 export function MultRow({

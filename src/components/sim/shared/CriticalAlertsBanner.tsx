@@ -24,7 +24,7 @@ import {
   Info,
   AlertOctagon,
 } from "lucide-react";
-import { HelpTip, SectionTitle } from "./primitives";
+import { HelpTip, SectionTitle } from "@/components/sim/shared/primitives";
 
 /**
  * Banner de alertas críticos — consolida no topo da aba Análises:

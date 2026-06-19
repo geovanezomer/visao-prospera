@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { fmtBRL, MESES, sum } from "@/engines/finance/format";
-import { MoneyInput, HelpTip } from "../primitives";
+import { MoneyInput, HelpTip } from "@/components/sim/shared/primitives";
 import { Switch } from "@/components/ui/switch";
-import { fixedBase, hasSazonalidade, NonOpKey } from "./tableHelpers";
+import { fixedBase, hasSazonalidade, NonOpKey } from "@/components/sim/cashflow/tableHelpers";
 
 type NonOpRow = {
   key: NonOpKey;

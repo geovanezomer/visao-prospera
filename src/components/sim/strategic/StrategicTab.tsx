@@ -16,7 +16,7 @@ import {
   ExposicaoRegulatoria,
 } from "@/engines/finance/types";
 import { useFinanceSelector, useFinanceUpdate } from "@/engines/finance/AppStateContext";
-import { SectionTitle, HelpTip } from "./primitives";
+import { SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
 import {
   Select,
   SelectContent,

@@ -4,12 +4,12 @@ import { AppState, CostCategory, CostLine, TaxRegime } from "@/engines/finance/t
 import { fill12, fmtBRL, fmtPct, MESES, sum, genId } from "@/engines/finance/format";
 import { fixedCostBase, monthValues } from "@/engines/finance";
 import { COST_VENDAS_LABEL, COST_VENDAS_TABLE_CONFIG } from "@/engines/finance/types";
-import { MoneyInput, SectionTitle, StatCard } from "./primitives";
+import { MoneyInput, SectionTitle, StatCard } from "@/components/sim/shared/primitives";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
-import { PrazoTable } from "./PrazoTable";
-import { MonthlyCardList } from "./MonthlyCardList";
+import { PrazoTable } from "@/components/sim/shared/PrazoTable";
+import { MonthlyCardList } from "@/components/sim/shared/MonthlyCardList";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 

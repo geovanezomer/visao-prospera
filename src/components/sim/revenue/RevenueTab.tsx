@@ -3,10 +3,10 @@ import { useFinance, usePatchRevenue } from "@/engines/finance/AppStateContext";
 import { AppState, RevenueDeducao } from "@/engines/finance/types";
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/engines/finance/format";
 import { buildDRE } from "@/engines/finance";
-import { MoneyInput, PctInput, StatCard, SectionTitle, HelpTip } from "./primitives";
+import { MoneyInput, PctInput, StatCard, SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
 import { Switch } from "@/components/ui/switch";
-import { PrazoTable } from "./PrazoTable";
-import { MonthlyCardList } from "./MonthlyCardList";
+import { PrazoTable } from "@/components/sim/shared/PrazoTable";
+import { MonthlyCardList } from "@/components/sim/shared/MonthlyCardList";
 
 function fixedBase(values: number[]): number {
   if (!values?.length) return 0;

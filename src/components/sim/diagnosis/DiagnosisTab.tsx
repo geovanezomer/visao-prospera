@@ -7,12 +7,12 @@ import { diagnose } from "@/engines/finance";
 import { buildBriefing } from "@/engines/finance/briefing";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { AlertTriangle, CheckCircle2, ChevronRight, Info, SlidersHorizontal, TriangleAlert } from "lucide-react";
-import { StrategicSummary } from "./StrategicSummary";
-import { SectionTitle } from "./primitives";
-import { HealthScoreCard, SensitivityCard } from "./AnalysisTab";
-import { CriticalAlertsBanner } from "./CriticalAlertsBanner";
-import { NCGExplanationCard } from "./capital/NCGExplanationCard";
-import { DiagnosticoExecutivoCard } from "./DiagnosticoExecutivoCard";
+import { StrategicSummary } from "@/components/sim/strategic/StrategicSummary";
+import { SectionTitle } from "@/components/sim/shared/primitives";
+import { HealthScoreCard, SensitivityCard } from "@/components/sim/analysis/AnalysisTab";
+import { CriticalAlertsBanner } from "@/components/sim/shared/CriticalAlertsBanner";
+import { NCGExplanationCard } from "@/components/sim/capital/NCGExplanationCard";
+import { DiagnosticoExecutivoCard } from "@/components/sim/strategic/DiagnosticoExecutivoCard";
 
 export function DiagnosisTab() {
   const state = useFinanceState();

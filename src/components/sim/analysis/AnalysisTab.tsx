@@ -41,8 +41,8 @@ import {
   chartTooltipStyle,
   chartTooltipItemStyle,
   chartTooltipLabelStyle,
-} from "./ConfirmDialog";
-import { NumInput } from "./primitives";
+} from "@/components/sim/shared/ConfirmDialog";
+import { NumInput } from "@/components/sim/shared/primitives";
 
 export function AnalysisTab({
   state,
