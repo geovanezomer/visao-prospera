@@ -466,7 +466,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     roic,
     wacc: safeNumber(wacc),
     cicloFinanceiro,
+    cicloOperacional,
     ncg,
+
     gapCapitalGiro,
     liquidezCorrente,
     liquidezSeca,
