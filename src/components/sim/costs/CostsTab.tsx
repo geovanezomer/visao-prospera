@@ -229,7 +229,7 @@ export function CostsTab() {
         <CostTable
           lines={[...byCat("custo_vendas"), ...byCat("direto_venda")]}
           receitaBrutaAnual={receitaBrutaAnual}
-          regime={state.tax.regime}
+          regime={effectiveRegime}
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
@@ -248,7 +248,7 @@ export function CostsTab() {
         <CostTable
           lines={byCat("fixo")}
           receitaBrutaAnual={receitaBrutaAnual}
-          regime={state.tax.regime}
+          regime={effectiveRegime}
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
@@ -267,7 +267,7 @@ export function CostsTab() {
         <CostTable
           lines={byCat("variavel")}
           receitaBrutaAnual={receitaBrutaAnual}
-          regime={state.tax.regime}
+          regime={effectiveRegime}
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
@@ -286,7 +286,7 @@ export function CostsTab() {
         <CostTable
           lines={byCat("financeiro")}
           receitaBrutaAnual={receitaBrutaAnual}
-          regime={state.tax.regime}
+          regime={effectiveRegime}
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
