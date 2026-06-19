@@ -20,6 +20,9 @@ import {
 import { DFCTable } from "./cashflow/DFCTable";
 import { NonOpTable } from "./cashflow/NonOpTable";
 import { NonOpKey } from "./cashflow/tableHelpers";
+import { HistoricalYearPills } from "./HistoricalYearPills";
+import { CashFlowComparison } from "./ComparisonView";
+import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
 
 // Estilo padrão do tooltip dos gráficos (DRY)
 const TOOLTIP_STYLE = {
@@ -39,6 +42,7 @@ export function CashflowTab() {
   const patchCashflow = usePatchCashflow();
   // Regime efetivo é default em buildCashFlow; memoizar o resultado pesado.
   const cf = useMemo(() => buildCashFlow(state), [state]);
+  const comparisonSnaps = useSelectedSnapshots();
 
   const setCaixaMin = (v: number) => patchCashflow({ caixaMinimo: v });
 
@@ -152,8 +156,15 @@ export function CashflowTab() {
   const saldoDezTone: "pos" | "neg" | "warn" =
     saldoDez < 0 ? "neg" : saldoDez < state.cashflow.caixaMinimo ? "warn" : "pos";
 
+  const showComparison = comparisonSnaps.length >= 2;
+
   return (
     <div className="space-y-6">
+      <HistoricalYearPills />
+      {showComparison ? (
+        <CashFlowComparison snapshots={comparisonSnaps} />
+      ) : (
+        <>
       {mesesCriticos.length > 0 && (
         <div className="flex items-center gap-2">
           <Badge variant="destructive" className="gap-1">
@@ -508,6 +519,8 @@ export function CashflowTab() {
           </span>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
