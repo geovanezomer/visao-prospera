@@ -125,36 +125,53 @@ export function CapitalTab() {
   }
 
   // KPIs do topo — visão rápida da estrutura de capital.
+  // SSOT: WACC e ROIC vêm de `calcIndicators` (indicators.ts) — já em PERCENTUAL
+  // (ex.: 15 = 15%). NÃO multiplicar por 100 aqui; isso causava "WACC absurdo".
   const jurosAnual = sum(dre.custosFinanceirosTotal);
   const amortAnual = sum(state.cashflow.amortizacoes ?? []);
   const servicoDividaMes = (jurosAnual + amortAnual) / 12;
   const dPL = c.patrimonioLiquido > 0 ? c.dividaOnerosa / c.patrimonioLiquido : 0;
 
-  const kpis = [
-    { label: "Capital Próprio", value: `${proprioDerivado.toFixed(1)}%`, hint: "PL / (PL + Dívida)" },
-    { label: "Serviço da Dívida / mês", value: fmtBRL(servicoDividaMes), hint: "Juros + amortização ÷ 12" },
+  const waccTone: "pos" | "neg" | "default" =
+    ind.roic >= wacc ? "pos" : ind.roic > 0 ? "default" : "neg";
+  const dplTone: "pos" | "neg" | "default" =
+    c.patrimonioLiquido <= 0 ? "neg" : dPL <= 2 ? "pos" : dPL <= 4 ? "default" : "neg";
+  const propTone: "pos" | "neg" | "default" =
+    proprioDerivado >= 50 ? "pos" : proprioDerivado >= 30 ? "default" : "neg";
+
+  const kpis: Array<{ label: string; value: string; hint: string; tone: "pos" | "neg" | "default" }> = [
+    { label: "Capital Próprio", value: `${proprioDerivado.toFixed(1)}%`, hint: "PL / (PL + Dívida)", tone: propTone },
+    { label: "Serviço da Dívida / mês", value: fmtBRL(servicoDividaMes), hint: "Juros + amortização ÷ 12", tone: "default" },
     {
       label: "D / PL",
       value: c.patrimonioLiquido > 0 ? `${dPL.toFixed(2)}×` : "—",
       hint: "Saudável ≤ 2×",
+      tone: dplTone,
     },
-    { label: "WACC", value: `${(wacc * 100).toFixed(2)}%`, hint: "Custo médio ponderado" },
+    { label: "WACC", value: `${wacc.toFixed(2)}%`, hint: "Custo médio ponderado", tone: waccTone },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-4">
         {kpis.map((k) => (
           <div
             key={k.label}
-            className="rounded-lg border bg-card p-3 shadow-sm"
+            className="rounded-lg border border-border/60 bg-card/60 p-4"
           >
-            <div className="text-xs text-muted-foreground">{k.label}</div>
-            <div className="mt-1 text-lg font-semibold tabular-nums">{k.value}</div>
-            <div className="mt-0.5 text-[10px] text-muted-foreground">{k.hint}</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.label}</div>
+            <div
+              className={`mono mt-2 text-2xl font-bold ${
+                k.tone === "pos" ? "text-pos" : k.tone === "neg" ? "text-neg" : "text-foreground"
+              }`}
+            >
+              {k.value}
+            </div>
+            <div className="mt-1 text-[10px] text-muted-foreground">{k.hint}</div>
           </div>
         ))}
       </div>
+
 
       {warnings.length > 0 && (
         <div className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-xs">
