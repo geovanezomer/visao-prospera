@@ -1,15 +1,14 @@
 import { useMemo } from "react";
 import { AppState } from "@/engines/finance/types";
 import {
-  buildDRE,
-  calcIndicators,
   diagnose,
   irShieldForRegime,
-  resolveEffectiveRegime,
   type DRE,
   type Indicators,
 } from "@/engines/finance";
-import { buildCashFlow, type CashFlow } from "@/engines/finance/cashflow";
+import { buildFinancialModel } from "@/engines/finance/financialModel";
+import { DSCR_THRESHOLDS } from "@/engines/finance/indicators";
+import { type CashFlow } from "@/engines/finance/cashflow";
 import {
   crossValidate,
   groupBySeverity,
@@ -35,6 +34,9 @@ import { HelpTip, SectionTitle } from "@/components/sim/shared/primitives";
  *
  * Aceita um `model` precomputado para evitar recalcular DRE/indicadores/CF
  * quando a DiagnosisTab já fez isso no pai (corrige duplicação de engine).
+ *
+ * SSOT: NÃO recalcula DSCR/serviço da dívida — lê de `ind.dscr` e
+ * `ind.servicoDividaMensal × 12`. Mesma fórmula da aba Indicadores.
  */
 export interface CriticalAlertsModel {
   dre: DRE;
@@ -51,19 +53,14 @@ export function CriticalAlertsBanner({
   model?: CriticalAlertsModel;
 }) {
   const data = useMemo(() => {
-    // Verdade absoluta: regime efetivo (Simples pode ter excedido limite).
-    const regime = model?.regime ?? resolveEffectiveRegime(state);
-    const dre = model?.dre ?? buildDRE(state, regime).dre;
-    const ind = model?.ind ?? calcIndicators(state, dre);
-    const cf = model?.cf ?? buildCashFlow(state);
+    // SSOT: um único pipeline (buildFinancialModel) resolve regime + DRE + ind + CF.
+    const fm = model ?? buildFinancialModel(state);
+    const { dre, ind, cf, regime } = fm;
     const diag = diagnose(state, dre, ind);
 
-    const ebitdaAnual = sum(dre.ebitda);
-    const jurosAnual = sum(dre.custosFinanceirosTotal);
-    const amortAnual = sum(state.cashflow.amortizacoes);
-    const servicoDivida = jurosAnual + amortAnual;
-    // DSCR só é definido quando há serviço de dívida. Sem dívida, exibimos "—".
-    const dscr = servicoDivida > 1 ? ebitdaAnual / servicoDivida : null;
+    // DSCR já vem capado e padronizado da engine. Sem serviço de dívida → "—".
+    const servicoDivida = ind.servicoDividaMensal * 12;
+    const dscr = servicoDivida > 1 ? ind.dscr : null;
 
     const pior = cf.totais.pioresMes;
     const caixaMin = state.cashflow.caixaMinimo || 0;
@@ -72,7 +69,7 @@ export function CriticalAlertsBanner({
     // Break-even cut: corte ANUAL em custo fixo para zerar o gap mensal recorrente.
     const custosFixosAnuais = sum(dre.custosFixos);
     const cutPctFixos = custosFixosAnuais > 0 ? (gap / custosFixosAnuais) * 100 : 0;
-    // Shield do regime EFETIVO (não o nominal — se Simples virou Presumido, shield muda).
+    // Shield do regime EFETIVO (já resolvido em `buildFinancialModel`).
     const shield = irShieldForRegime(regime);
     // Gap é déficit pontual do pior mês — não perpétuo. Tratamos como economia
     // ONE-SHOT: VPL ≈ Corte × (1 − IR). Multiplicar por 1/WACC inflaria 10–20×.
@@ -81,15 +78,12 @@ export function CriticalAlertsBanner({
     const dangers = diag.filter((d) => d.level === "danger");
 
     // Validação cruzada entre abas: incoerências estruturais/fiscais/operacionais.
-    // Reusa o `dre` e `ind` já calculados acima — não há custo extra de engine.
     const crossWarnings = crossValidate(state, { dre, ind });
     const crossGrouped = groupBySeverity(crossWarnings);
 
     return {
       ind,
-      ebitdaAnual,
-      jurosAnual,
-      amortAnual,
+      jurosAnual: sum(dre.custosFinanceirosTotal),
       servicoDivida,
       dscr,
       pior,
@@ -120,7 +114,14 @@ export function CriticalAlertsBanner({
     crossGrouped,
   } = data;
 
-  const dscrTone = dscr == null ? "neutral" : dscr < 1.2 ? "danger" : dscr < 1.5 ? "warn" : "ok";
+  const dscrTone =
+    dscr == null
+      ? "neutral"
+      : dscr < DSCR_THRESHOLDS.danger
+        ? "danger"
+        : dscr < DSCR_THRESHOLDS.covenant
+          ? "warn"
+          : "ok";
   const piorTone = !pior
     ? "neutral"
     : pior.saldo < 0
