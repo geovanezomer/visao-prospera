@@ -1,16 +1,12 @@
 import { AppState } from "@/engines/finance/types";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
+import { fmtBRL, fmtPct, fmtTimes, sum } from "@/engines/finance/format";
 import { HelpTip, SectionTitle } from "@/components/sim/shared/primitives";
 import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
 
 // Card de indicadores usado no Simulador.
 // IMPORTANTE: deve refletir EXATAMENTE os mesmos indicadores da página
 // INDICADORES (IndicatorsTab). Reflete o estado simulado recebido em props.
-function fmtTimes(v: number, base: number, decimals = 1): string {
-  if (base <= 0) return "—";
-  return `${v.toFixed(decimals)}×`;
-}
 
 export function IndicatorsCard({ state }: { state: AppState }) {
   // (I1) Regime efetivo + (I9) modelo central memoizado (DRE+ind+cagr).
