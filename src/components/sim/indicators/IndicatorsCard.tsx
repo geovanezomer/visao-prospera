@@ -16,6 +16,8 @@ export function IndicatorsCard({ state }: { state: AppState }) {
   const ebitAnual = sum(dre.ebit);
   const ebitdaAnual = sum(dre.ebitda);
   const hasHeadcount = (state.numColaboradores ?? 0) > 0;
+  // cagrReceitas12m já vem em fração (0,15 = 15%); não dividir por 100.
+  const cagrReceitas12mFmt = Number.isFinite(cagrReceitas12m) ? fmtPct(cagrReceitas12m) : "—";
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5">
@@ -214,8 +216,7 @@ export function IndicatorsCard({ state }: { state: AppState }) {
         />
         <Ind
           label="CAGR Receitas 12m"
-          // cagrReceitas12m já vem em fração (0,15 = 15%); não dividir por 100.
-          v={Number.isFinite(cagrReceitas12m) ? fmtPct(cagrReceitas12m) : "—"}
+          v={cagrReceitas12mFmt}
           tone={
             Number.isFinite(cagrReceitas12m) ? (cagrReceitas12m >= 0 ? "pos" : "neg") : undefined
           }

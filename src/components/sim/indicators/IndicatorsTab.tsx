@@ -112,6 +112,8 @@ export function IndicatorsTab() {
   // (I3) Gate correto dos cards de produtividade: headcount > 0 (não valor calculado).
   const hasHeadcount = (state.numColaboradores ?? 0) > 0;
   const ebitdaAnual = sum(dre.ebitda);
+  // cagrReceitas12m já vem em fração (0,15 = 15%); não dividir por 100.
+  const cagrReceitas12mFmt = Number.isFinite(cagrReceitas12m) ? fmtPct(cagrReceitas12m) : "—";
 
   return (
     <div className="space-y-6">
@@ -355,8 +357,7 @@ export function IndicatorsTab() {
           />
           <Ind
             label="CAGR Receitas 12m"
-            // cagrReceitas12m já vem em fração (0,15 = 15%); não dividir por 100.
-            v={Number.isFinite(cagrReceitas12m) ? fmtPct(cagrReceitas12m) : "—"}
+            v={cagrReceitas12mFmt}
             tone={
               Number.isFinite(cagrReceitas12m) ? (cagrReceitas12m >= 0 ? "pos" : "neg") : undefined
             }
