@@ -29,6 +29,43 @@ export function CapitalTab() {
   const set = (patch: Partial<typeof c>) =>
     update((s) => ({ ...s, capital: { ...s.capital, ...patch } }));
 
+  // Sincroniza Contratos de Dívida → dividaOnerosa, cashflow.amortizacoes
+  // e linha sintética de custo financeiro (juros). Mantém os demais
+  // indicadores (DSCR, ROIC, WACC, cobertura) automaticamente coerentes.
+  const contracts = c.debtContracts ?? [];
+  useEffect(() => {
+    if (contracts.length === 0) {
+      // Remove linha sintética de juros, se existir.
+      update((s) => {
+        const hasSynthetic = s.costs.some((x) => x.id === DEBT_CONTRACTS_COST_ID);
+        if (!hasSynthetic) return s;
+        return { ...s, costs: s.costs.filter((x) => x.id !== DEBT_CONTRACTS_COST_ID) };
+      });
+      return;
+    }
+    const agg = aggregateContracts(contracts);
+    update((s) => {
+      // upsert custo financeiro sintético
+      const synthetic: CostLine = {
+        id: DEBT_CONTRACTS_COST_ID,
+        label: "Juros sobre contratos de dívida",
+        category: "financeiro",
+        values: agg.juros,
+        fixed: false,
+        custom: true,
+      };
+      const otherCosts = s.costs.filter((x) => x.id !== DEBT_CONTRACTS_COST_ID);
+      return {
+        ...s,
+        capital: { ...s.capital, dividaOnerosa: Math.round(agg.saldoTotal) },
+        cashflow: { ...s.cashflow, amortizacoes: agg.amort },
+        costs: [...otherCosts, synthetic],
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contracts]);
+
+
   const wacc = ind.wacc;
   // Quando PL e Dívida estão preenchidos, a proporção real é PL/(PL+D) — o slider
   // vira leitura derivada para evitar contradição visual entre % e R$.
