@@ -11,6 +11,7 @@ import { computeNetDebt } from "./shared";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { irShieldForRegime } from "./tax/real";
 import type { DRE } from "./dre";
+import { buildCashFlow } from "./cashflow";
 
 export interface Indicators {
   /** Lucro Bruto ÷ Receita Líquida × 100 */
