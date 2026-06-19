@@ -73,6 +73,10 @@ export function useFinnanceFile({
   const [lastModified, setLastModified] = useState<number | null>(null);
   const lastSavedSnapshot = useRef<string>("");
   const recoveryChecked = useRef(false);
+  // Debounce do upload em nuvem: agrupa Ctrl+S repetidos em um único PUT.
+  const backupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingBackup = useRef<{ filename: string; blob: Blob } | null>(null);
+  const backupSeq = useRef(0);
 
   // Inicializa o snapshot na primeira hidratação para evitar dirty falso.
   useEffect(() => {
@@ -154,20 +158,31 @@ export function useFinnanceFile({
       }
       toast.success(`Arquivo salvo: ${name}`);
 
-      // Backup silencioso no Supabase Storage (não bloqueia o fluxo de save).
-      // Só executa se houver usuário autenticado e a flag VITE_SUPABASE_BACKUP estiver ON.
+      // Backup silencioso no Supabase Storage com debounce (1500ms).
+      // Ctrl+S repetidos agrupam num único upload — sempre o último estado vence.
       if (userId && isBackupEnabled()) {
         const filename = name.endsWith(".finnance") ? name : `${name}.finnance`;
         const json = JSON.stringify(payload, null, 2);
         const blob = new Blob([json], { type: "application/json" });
+        pendingBackup.current = { filename, blob };
         onBackupStatus?.("syncing");
-        uploadBackup(userId, filename, blob)
-          .then(() => onBackupStatus?.("synced"))
-          .catch((err) => {
-            // Falha no backup não interrompe o usuário — arquivo local já foi salvo.
-            console.warn("[FinnancePRO] Backup falhou:", err);
-            onBackupStatus?.("error");
-          });
+        if (backupTimer.current) clearTimeout(backupTimer.current);
+        backupTimer.current = setTimeout(() => {
+          const job = pendingBackup.current;
+          pendingBackup.current = null;
+          backupTimer.current = null;
+          if (!job) return;
+          const mySeq = ++backupSeq.current;
+          uploadBackup(userId, job.filename, job.blob)
+            .then(() => {
+              // Ignora resposta se outro upload foi disparado depois deste.
+              if (mySeq === backupSeq.current) onBackupStatus?.("synced");
+            })
+            .catch((err) => {
+              console.warn("[FinnancePRO] Backup falhou:", err);
+              if (mySeq === backupSeq.current) onBackupStatus?.("error");
+            });
+        }, 1500);
       }
     } catch (err) {
       toast.error("Falha ao salvar arquivo", {
