@@ -125,6 +125,8 @@ export interface Indicators {
    */
   dscrAmortizacoesInformadas: boolean;
   dividaOnerosa: number;
+  /** Dívida Líquida (D − caixa). Negativa = posição líquida de caixa (cash-rich). */
+  dividaLiquida: number;
   passivoCirculante: number;
   ativoCirculante: number;
   /** (Impostos sobre Vendas + IRPJ/CSLL) ÷ Receita Bruta × 100 — carga tributária total sobre a receita. */
