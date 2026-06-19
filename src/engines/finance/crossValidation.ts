@@ -16,6 +16,7 @@ import { calcIndicators, type Indicators } from "./indicators";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { getSimplesLimite } from "./taxDefaults";
 import { sum } from "./format";
+import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 
 export type Severity = "info" | "warn" | "error";
 export type Category = "estrutural" | "fiscal" | "operacional";
@@ -335,7 +336,10 @@ function checkTier3Operacional(state: AppState, dre: DRE, ind: Indicators): Vali
   }
 
   // 3.5 Caixa mínimo excessivo (> 3× receita média mensal)
-  const receitaMediaMensal = receitaLiqAnual / 12;
+  // Usa meses efetivamente preenchidos para não subestimar a média quando
+  // o ano corrente está parcial (ex: análise em Mar com só Jan-Mar de receita).
+  const mesesOp = mesesPreenchidos(state.revenue.bruta);
+  const receitaMediaMensal = mediaMensal(receitaLiqAnual, mesesOp);
   const caixaMin = state.cashflow.caixaMinimo ?? 0;
   if (receitaMediaMensal > 0 && caixaMin > receitaMediaMensal * LIMITS.CAIXA_MIN_MULTI_EXCESSO) {
     out.push({
