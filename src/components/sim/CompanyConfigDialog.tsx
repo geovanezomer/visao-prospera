@@ -389,3 +389,52 @@ function buildFormFromState(state: AppState): FormData {
     margemAlvoPct: state.margemAlvoPct,
   };
 }
+
+/** Botão para arquivar o ano corrente como snapshot histórico. */
+function ArchiveYearButton({ onClose }: { onClose: () => void }) {
+  const { state } = useFinance();
+  const company = state.companyName || "default";
+  // Default: ano corrente do calendário (poderia derivar do fiscalYearStartMonth
+  // em versão futura — por ora, simples e previsível).
+  const [year, setYear] = useState(() => new Date().getFullYear());
+  const existing = listHistoricals(company);
+  const jaArquivado = existing.some((h) => h.fiscalYear === year);
+
+  const handleArchive = () => {
+    archiveYearAsHistorical(company, year, state);
+    toast.success(
+      jaArquivado
+        ? `Snapshot ${year} atualizado`
+        : `Ano ${year} arquivado como snapshot histórico`,
+    );
+    onClose();
+  };
+
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <div className="space-y-1">
+        <Label htmlFor="archiveYear" className="text-[11px]">
+          Ano fiscal
+        </Label>
+        <Input
+          id="archiveYear"
+          type="number"
+          min={2000}
+          max={2100}
+          value={year}
+          onChange={(e) => setYear(Number(e.target.value) || new Date().getFullYear())}
+          className="h-8 w-24"
+        />
+      </div>
+      <Button size="sm" variant="secondary" onClick={handleArchive}>
+        {jaArquivado ? `Atualizar snapshot ${year}` : `Arquivar ano ${year}`}
+      </Button>
+      {existing.length > 0 && (
+        <span className="text-[10px] text-muted-foreground">
+          {existing.length} snapshot{existing.length > 1 ? "s" : ""} salvo
+          {existing.length > 1 ? "s" : ""}
+        </span>
+      )}
+    </div>
+  );
+}
