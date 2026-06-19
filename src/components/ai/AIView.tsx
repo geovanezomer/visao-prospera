@@ -162,6 +162,11 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
             <span className="rounded border border-border/40 px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">
               {config.provider}
             </span>
+            {mode !== "chat" && (
+              <span className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
+                {AI_MODE_LABELS[mode]}
+              </span>
+            )}
             {simHasChanges && (
               <span className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-300">
                 simulação ativa
