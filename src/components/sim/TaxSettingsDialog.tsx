@@ -54,7 +54,13 @@ import {
   getIbsCredCpvPct,
   ALIQ_PRESUMIDA_CBS_SN,
   ALIQ_PRESUMIDA_IBS_SN,
+import {
+  getCbsCredCpvPct,
+  getIbsCredCpvPct,
+  ALIQ_PRESUMIDA_CBS_SN,
+  ALIQ_PRESUMIDA_IBS_SN,
 } from "@/engines/finance/tax/reforma";
+import { CompanyConfigForm } from "./CompanyConfigDialog";
 
 const ANEXOS: SimplesAnexo[] = ["I", "II", "III", "IV", "V"];
 const BUSINESS: { key: BusinessType; label: string; hint: string }[] = [
