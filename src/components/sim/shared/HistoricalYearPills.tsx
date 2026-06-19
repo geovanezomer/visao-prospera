@@ -20,6 +20,7 @@ import {
   useScenarios,
   deleteScenario,
   saveScenario,
+  switchToYear,
   type ScenarioRecord,
 } from "@/engines/scenarios/store";
 import {
