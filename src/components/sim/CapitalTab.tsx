@@ -170,7 +170,6 @@ export function CapitalTab() {
           contracts={contracts}
           onChange={(next) => set({ debtContracts: next })}
         />
-        <AdvancedRefinementCard capital={c} onChange={set} />
         <CapexAtivacaoSection
           items={c.capexAtivacao ?? []}
           onChange={(next) => set({ capexAtivacao: next })}
