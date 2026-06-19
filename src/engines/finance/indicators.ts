@@ -489,6 +489,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     liquidezCorrente,
     liquidezSeca,
     liquidezImediata,
+    liquidezGeral,
+
     endividamentoGeral,
     endividamentoGeralDadosCompletos,
     grauEndividamento,
