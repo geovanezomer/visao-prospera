@@ -248,12 +248,22 @@ function StepIntro({ customCount }: { customCount: number }) {
   return (
     <div className="space-y-4 text-sm leading-relaxed">
       <p>
-        Este assistente reúne as <b>alíquotas e tabelas tributárias brasileiras</b> usadas pelos
-        cálculos do FinancePRO. Você <b>não precisa</b> entender de tributação para usar: os valores
-        já vêm preenchidos com os <b>padrões oficiais</b> da legislação vigente.
+        Bem-vindo às <b>Configurações</b> do FinancePRO. Aqui você define tanto os{" "}
+        <b>dados da sua empresa</b> (nome, CNPJ, setor, ramo, número de colaboradores,
+        regime tributário e período de análise) quanto as <b>alíquotas e tabelas
+        tributárias brasileiras</b> usadas pelos cálculos. Você <b>não precisa</b> ser
+        especialista: os valores já vêm preenchidos com os <b>padrões oficiais</b>.
       </p>
 
-      <Callout tone="info" title="Quando mudar algum valor?">
+      <Callout tone="info" title="Comece pela Empresa">
+        <p className="text-[13px]">
+          O próximo passo é <b>Empresa</b>: confira nome, CNPJ, setor/ramo, número de
+          colaboradores e regime tributário. Esses dados alimentam todos os indicadores
+          (por colaborador, por setor) e definem qual passo tributário se aplica a você.
+        </p>
+      </Callout>
+
+      <Callout tone="info" title="Quando mudar algum valor tributário?">
         <ul className="ml-4 list-disc space-y-1 text-[13px]">
           <li>
             Quando houver <b>mudança regulatória</b> (ex.: novo decreto, lei).
@@ -269,10 +279,10 @@ function StepIntro({ customCount }: { customCount: number }) {
 
       <Callout tone="ok" title="O que esperar a seguir">
         <p className="text-[13px]">
-          Você vai passar por 4 áreas tributárias (Federais, Simples, Presumido e Reforma). Em cada
-          uma, os campos vêm com a <b>fonte legal</b> e o botão{" "}
-          <RotateCcw className="inline h-3 w-3" /> para voltar ao padrão oficial. Ao final, uma tela
-          de <b>revisão</b> resume tudo.
+          Você passará pela <b>Empresa</b> e por 4 áreas tributárias (Federais, Simples,
+          Presumido e Reforma). Em cada uma, os campos vêm com a <b>fonte legal</b> e o
+          botão <RotateCcw className="inline h-3 w-3" /> para voltar ao padrão oficial.
+          Ao final, uma tela de <b>revisão</b> resume tudo.
         </p>
       </Callout>
 
@@ -287,6 +297,22 @@ function StepIntro({ customCount }: { customCount: number }) {
     </div>
   );
 }
+
+function StepEmpresa() {
+  return (
+    <div className="space-y-4">
+      <Callout tone="info" title="Dados da empresa">
+        <p className="text-[13px]">
+          Estas configurações são <b>compartilhadas por todos os módulos</b>: cálculos
+          tributários, indicadores por colaborador, benchmarks setoriais e comparações
+          históricas. As mudanças são salvas <b>automaticamente</b> a cada campo.
+        </p>
+      </Callout>
+      <CompanyConfigForm />
+    </div>
+  );
+}
+
 
 function StepFederais({
   ov,
