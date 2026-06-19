@@ -314,13 +314,7 @@ function SimulaPro() {
           </SidebarInset>
 
           <div data-meeting-hide="true" className="contents">
-            <ScenarioBar
-              state={state}
-              scenarios={scenarios}
-              save={save}
-              remove={remove}
-              load={setState}
-            />
+            <ScenarioBar />
           </div>
           {confirmDialog}
           {/* AI FAB REMOVIDO POR SOLICITAÇÃO DO USUÁRIO */}

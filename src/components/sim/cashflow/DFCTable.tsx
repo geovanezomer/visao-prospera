@@ -4,11 +4,15 @@ import { fmtBRL, fmtBRLCompact, sum } from "@/engines/finance/format";
 import { SectionTitle } from "../primitives";
 import { aggregate, periodLabels, Period } from "./tableHelpers";
 import { usePeriodView } from "@/hooks/usePeriodView";
+import { useAnnualSnapshots } from "@/hooks/useAnnualSnapshots";
+import { CashFlowComparison } from "../ComparisonView";
 
 // Tabela DFC pelo método direto, com agregação mensal/trimestral/anual.
 export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof buildCashFlow> }) {
   const [period, setPeriod] = usePeriodView("trimestral") as [Period, (p: Period) => void];
+  const annualSnaps = useAnnualSnapshots(3);
   const cols = periodLabels(period);
+  const showAnnualComparison = period === "anual" && annualSnaps.length >= 2;
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40">
@@ -33,6 +37,15 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
           ))}
         </div>
       </div>
+      {showAnnualComparison ? (
+        <div className="p-4">
+          <p className="mb-3 text-[10px] uppercase tracking-wider text-muted-foreground">
+            Comparativo anual — últimos {annualSnaps.length - 1} anos + atual
+          </p>
+          <CashFlowComparison snapshots={annualSnaps} />
+        </div>
+      ) : (
+      <>
       <div className="scrollbar-thin relative isolate overflow-x-auto">
         <table className="w-full min-w-[900px] border-separate border-spacing-0 text-sm">
           <thead>
@@ -203,6 +216,8 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
         Modelo simplificado: ignora variações de estoque e ajustes de capital de giro contábil mais
         finos. Para diagnóstico operacional é suficiente.
       </div>
+      </>
+      )}
     </div>
   );
 }

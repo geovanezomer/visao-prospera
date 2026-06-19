@@ -41,6 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { HistoricalYearPills } from "./HistoricalYearPills";
 import { DREComparison } from "./ComparisonView";
 import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
+import { useAnnualSnapshots } from "@/hooks/useAnnualSnapshots";
 import { ChevronRight } from "lucide-react";
 
 const CHART_COLORS = [
@@ -61,6 +62,7 @@ export function DRETab() {
   const { state, update } = useFinance();
   const [view, setView] = usePeriodView("trimestral");
   const comparisonSnaps = useSelectedSnapshots();
+  const annualSnaps = useAnnualSnapshots(3);
 
 
   // Períodos exibidos na tabela conforme o modo de visualização.
@@ -415,6 +417,23 @@ export function DRETab() {
         />
       </div>
 
+      {/* DRE Table — substituída por comparação anual quando view=anual e há histórico */}
+      {view === "anual" && annualSnaps.length >= 2 ? (
+        <div className="rounded-lg border border-border/60 bg-card/40 overflow-hidden shadow-sm">
+          <div className="border-b border-border/60 p-3 sm:p-4">
+            <h3 className="text-sm sm:text-base font-semibold">
+              D.R.E. — Comparativo anual (últimos {annualSnaps.length - 1} anos + atual)
+            </h3>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              Regime de Competência · valores anuais lado a lado
+            </p>
+          </div>
+          <div className="p-3 sm:p-4">
+            <DREComparison snapshots={annualSnaps} />
+          </div>
+        </div>
+      ) : (
+      <>
       {/* DRE Table */}
       <div className="rounded-lg border border-border/60 bg-card/40 overflow-hidden shadow-sm">
         <div className="border-b border-border/60 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -665,6 +684,8 @@ export function DRETab() {
           </table>
         </div>
       </div>
+      </>
+      )}
         </>
       )}
     </div>

@@ -1,174 +1,203 @@
-import { useState } from "react";
+// ============================================================================
+// ScenarioBar — Botões flutuantes "Salvar ANO" e "ANO".
+//
+// Salvar ANO  → arquiva o AppState corrente como snapshot histórico do ano
+//               escolhido (select 2010–2040). Nome do snapshot = "Ano YYYY".
+// ANO         → lista os snapshots históricos já salvos; permite carregar
+//               (substitui o AppState atual) ou excluir.
+//
+// Usa exclusivamente a store de scenarios (engines/scenarios/store), mesmo
+// canal das pills de período no cabeçalho dos cards.
+// ============================================================================
+import { useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Save, GitCompare, Trash2 } from "lucide-react";
-import { AppState, Scenario } from "@/engines/finance/types";
-import { buildDRE, calcIndicators } from "@/engines/finance";
-import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
+import { Save, CalendarDays, Trash2, Download } from "lucide-react";
+import { toast } from "sonner";
+import { useFinance } from "@/engines/finance/AppStateContext";
+import {
+  useScenarios,
+  archiveYearAsHistorical,
+  deleteScenario,
+} from "@/engines/scenarios/store";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { fmtBRL } from "@/engines/finance/format";
 
-export function ScenarioBar({
-  state,
-  scenarios,
-  save,
-  remove,
-  load,
-}: {
-  state: AppState;
-  scenarios: Scenario[];
-  save: (name: string, s: AppState) => void;
-  remove: (id: string) => void;
-  load: (s: AppState) => void;
-}) {
-  const [name, setName] = useState("");
+// Lista de anos disponíveis no select (inclusivo).
+const YEARS: number[] = Array.from({ length: 2040 - 2010 + 1 }, (_, i) => 2010 + i);
+
+export function ScenarioBar() {
+  const { state, update } = useFinance();
+  const company = state.companyName || "default";
+  const all = useScenarios(company);
+
+  const historicals = useMemo(
+    () =>
+      all
+        .filter((s) => s.kind === "historical" && s.state && s.fiscalYear)
+        .sort((a, b) => (b.fiscalYear ?? 0) - (a.fiscalYear ?? 0)),
+    [all],
+  );
+
+  const defaultYear = new Date().getFullYear();
+  const [year, setYear] = useState<number>(
+    YEARS.includes(defaultYear) ? defaultYear : 2025,
+  );
   const [saveOpen, setSaveOpen] = useState(false);
-  const [cmpOpen, setCmpOpen] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
 
-  const metric = (s: AppState) => {
-    const { dre } = buildDRE(s, s.tax.regime);
-    const ind = calcIndicators(s, dre);
-    return {
-      receita: sum(dre.receitaBruta),
-      lucro: sum(dre.lucroLiquido),
-      margem: ind.margemLiquida,
-      ebitda: sum(dre.ebitda),
-      wacc: ind.wacc,
-      roic: ind.roic,
-    };
+  const handleSave = () => {
+    archiveYearAsHistorical(company, year, state);
+    toast.success(`Ano ${year} arquivado`);
+    setSaveOpen(false);
   };
+
+  const handleLoad = (id: string) => {
+    const rec = historicals.find((h) => h.id === id);
+    if (!rec?.state) return;
+    update(() => rec.state!);
+    toast.success(`Visualizando ${rec.name}`);
+    setListOpen(false);
+  };
+
+  const alreadyExists = historicals.some((h) => h.fiscalYear === year);
 
   return (
     <div className="fixed bottom-6 right-6 z-40 flex gap-2">
+      {/* Salvar ANO */}
       <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
         <DialogTrigger asChild>
           <Button className="shadow-lg shadow-primary/30">
-            <Save className="mr-2 h-4 w-4" /> Salvar Cenário
+            <Save className="mr-2 h-4 w-4" /> Salvar ANO
           </Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Salvar cenário atual</DialogTitle>
+            <DialogTitle>Arquivar ano fechado</DialogTitle>
           </DialogHeader>
-          <input
-            placeholder="Ex.: Cenário base, Otimista, +20% receita..."
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-md border border-border bg-input/40 px-3 py-2 text-sm"
-          />
-          <div className="flex justify-end gap-2">
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Salva o AppState corrente como snapshot histórico. Esse ano poderá ser
+              comparado lado a lado nos cards de DRE e Fluxo de Caixa.
+            </p>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">Ano</label>
+              <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o ano" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {YEARS.map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {alreadyExists && (
+                <p className="text-[11px] text-[var(--warning)]">
+                  Já existe um snapshot para {year} — será sobrescrito.
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
             <Button variant="ghost" onClick={() => setSaveOpen(false)}>
               Cancelar
             </Button>
-            <Button
-              disabled={!name.trim()}
-              onClick={() => {
-                save(name.trim(), state);
-                setName("");
-                setSaveOpen(false);
-              }}
-            >
-              Salvar
-            </Button>
-          </div>
-          {scenarios.length >= 5 && (
-            <p className="text-xs text-[var(--warning)]">
-              Limite de 5 cenários — o mais antigo será descartado.
-            </p>
-          )}
+            <Button onClick={handleSave}>Salvar Ano {year}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={cmpOpen} onOpenChange={setCmpOpen}>
+      {/* Lista de anos */}
+      <Dialog open={listOpen} onOpenChange={setListOpen}>
         <DialogTrigger asChild>
           <Button variant="outline">
-            <GitCompare className="mr-2 h-4 w-4" /> Cenários ({scenarios.length})
+            <CalendarDays className="mr-2 h-4 w-4" /> ANO ({historicals.length})
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Comparar cenários</DialogTitle>
+            <DialogTitle>Anos arquivados</DialogTitle>
           </DialogHeader>
-          {scenarios.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum cenário salvo ainda.</p>
+          {historicals.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhum ano arquivado ainda. Use <strong>Salvar ANO</strong> para
+              arquivar o exercício atual.
+            </p>
           ) : (
-            <div className="scrollbar-thin overflow-x-auto">
+            <div className="scrollbar-thin max-h-[60vh] overflow-y-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[10px] uppercase text-muted-foreground">
-                    <th className="p-2">Cenário</th>
-                    <th className="p-2 text-right">Receita</th>
+                    <th className="p-2">Ano</th>
                     <th className="p-2 text-right">EBITDA</th>
                     <th className="p-2 text-right">Lucro Líq.</th>
-                    <th className="p-2 text-right">Margem</th>
-                    <th className="p-2 text-right">ROIC</th>
-                    <th className="p-2 text-right">WACC</th>
+                    <th className="p-2 text-right">Saldo Caixa</th>
                     <th className="p-2"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-t border-border/40 bg-primary/5">
-                    <td className="p-2 font-semibold">Atual</td>
-                    {(() => {
-                      const m = metric(state);
-                      return (
-                        <>
-                          <td className="num p-2 text-right">{fmtBRL(m.receita)}</td>
-                          <td className="num p-2 text-right">{fmtBRL(m.ebitda)}</td>
-                          <td className="num p-2 text-right">{fmtBRL(m.lucro)}</td>
-                          <td className="num p-2 text-right">{fmtPct(m.margem / 100)}</td>
-                          <td className="num p-2 text-right">{fmtPct(m.roic / 100)}</td>
-                          <td className="num p-2 text-right">{fmtPct(m.wacc / 100)}</td>
-                          <td></td>
-                        </>
-                      );
-                    })()}
-                  </tr>
-                  {scenarios.map((sc) => {
-                    const m = metric(sc.state);
-                    return (
-                      <tr key={sc.id} className="border-t border-border/40">
-                        <td className="p-2">{sc.name}</td>
-                        <td className="num p-2 text-right">{fmtBRL(m.receita)}</td>
-                        <td className="num p-2 text-right">{fmtBRL(m.ebitda)}</td>
-                        <td className="num p-2 text-right">{fmtBRL(m.lucro)}</td>
-                        <td className="num p-2 text-right">{fmtPct(m.margem / 100)}</td>
-                        <td className="num p-2 text-right">{fmtPct(m.roic / 100)}</td>
-                        <td className="num p-2 text-right">{fmtPct(m.wacc / 100)}</td>
-                        <td className="p-2">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                load(sc.state);
-                                setCmpOpen(false);
-                              }}
-                            >
-                              Carregar
-                            </Button>
-                            <ConfirmDialog
-                              title={`Remover cenário "${sc.name}"?`}
-                              description="O cenário salvo será apagado e não poderá ser recuperado."
-                              confirmLabel="Remover"
-                              destructive
-                              onConfirm={() => remove(sc.id)}
-                              trigger={
-                                <Button size="sm" variant="ghost" title="Remover cenário">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              }
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {historicals.map((h) => (
+                    <tr key={h.id} className="border-t border-border/40">
+                      <td className="p-2 font-semibold">{h.name}</td>
+                      <td className="num p-2 text-right">
+                        {h.summary?.ebitda != null ? fmtBRL(h.summary.ebitda) : "—"}
+                      </td>
+                      <td className="num p-2 text-right">
+                        {h.summary?.lucroLiquido != null
+                          ? fmtBRL(h.summary.lucroLiquido)
+                          : "—"}
+                      </td>
+                      <td className="num p-2 text-right">
+                        {h.summary?.saldoFinalCaixa != null
+                          ? fmtBRL(h.summary.saldoFinalCaixa)
+                          : "—"}
+                      </td>
+                      <td className="p-2">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleLoad(h.id)}
+                            title="Carregar este ano no AppState"
+                          >
+                            <Download className="mr-1 h-3.5 w-3.5" /> Carregar
+                          </Button>
+                          <ConfirmDialog
+                            title={`Excluir "${h.name}"?`}
+                            description="O snapshot será removido das pills e da comparação."
+                            confirmLabel="Excluir"
+                            destructive
+                            onConfirm={() => {
+                              deleteScenario(company, h.id);
+                              toast.success(`${h.name} removido`);
+                            }}
+                            trigger={
+                              <Button size="sm" variant="ghost" title="Excluir ano">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
