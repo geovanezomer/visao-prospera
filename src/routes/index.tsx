@@ -185,47 +185,15 @@ function SimulaPro() {
                   <h2 className="text-sm font-medium capitalize text-muted-foreground md:text-base shrink-0">
                     {activeTab === "ai" ? "Consultor IA" : activeTab}
                   </h2>
-                  {/* Breadcrumb: empresa · arquivo · última modificação. */}
+                  {/* Breadcrumb: empresa + status de backup na nuvem. */}
                   <div
                     className="hidden md:flex items-center gap-1.5 min-w-0 text-[11px] text-muted-foreground border-l border-border/40 pl-3"
-                    title={fileApi.currentFileName ?? "Arquivo não salvo"}
                     data-meeting-hide="true"
                   >
                     <FileText className="h-3 w-3 shrink-0" />
                     <span className="truncate font-medium text-foreground/80">
                       {state.companyName?.trim() || "Sem empresa"}
                     </span>
-                    {fileApi.currentFileName && (
-                      <>
-                        <span className="opacity-40">·</span>
-                        <span className="truncate">{fileApi.currentFileName}</span>
-                      </>
-                    )}
-                    <span className="opacity-40">·</span>
-                    <span className={fileApi.dirty ? "text-amber-500" : ""}>
-                      {fileApi.dirty ? "● não salvo" : `salvo ${timeAgo(fileApi.lastModified)}`}
-                    </span>
-                    {autosaveStatus !== "idle" && (
-                      <>
-                        <span className="opacity-40">·</span>
-                        <span
-                          className={
-                            autosaveStatus === "error"
-                              ? "text-destructive"
-                              : autosaveStatus === "saving"
-                                ? "text-muted-foreground"
-                                : "text-emerald-500"
-                          }
-                          title="Autosave local (IndexedDB)"
-                        >
-                          {autosaveStatus === "saving"
-                            ? "Salvando…"
-                            : autosaveStatus === "saved"
-                              ? "✓ Salvo"
-                              : "Erro ao salvar"}
-                        </span>
-                      </>
-                    )}
                     {/* Indicador de backup na nuvem — só aparece quando há userId e status ≠ idle. */}
                     {user && backupStatus !== "idle" && (
                       <>
