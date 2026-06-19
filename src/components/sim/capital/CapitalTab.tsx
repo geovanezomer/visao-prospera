@@ -29,11 +29,12 @@ const EMPTY_CONTRACTS: DebtContract[] = [];
 export function CapitalTab() {
   const { state, update } = useFinance();
   const c = state.capital;
-  // Memoiza engine pesada — recomputa só quando o estado financeiro muda.
-  const { dre } = useMemo(() => buildDRE(state, state.tax.regime), [state]);
-  const ind = useMemo(() => calcIndicators(state, dre), [state, dre]);
+  // SSOT: usa `useFinanceModel` (resolveEffectiveRegime + memo central) — mesma
+  // fonte da aba Indicadores. Garante que WACC/ROIC/margens nunca divirjam.
+  const { dre, ind } = useFinanceModel(state);
 
   const set = (patch: Partial<typeof c>) =>
+
     update((s) => ({ ...s, capital: { ...s.capital, ...patch } }));
 
   // Sincroniza Contratos de Dívida → dividaOnerosa, cashflow.amortizacoes
