@@ -533,12 +533,12 @@ export function AIChatSheet({
                 <SelectContent>
                   {(Object.keys(AI_MODE_LABELS) as AIMode[]).map((m) => (
                     <SelectItem key={m} value={m} className="text-xs">
-                      <div className="flex flex-col">
+                      <span className="flex items-baseline gap-1.5 whitespace-nowrap">
                         <span className="font-medium">{AI_MODE_LABELS[m]}</span>
                         <span className="text-[10px] text-muted-foreground">
-                          {AI_MODE_DESCRIPTIONS[m]}
+                          — {AI_MODE_DESCRIPTIONS[m]}
                         </span>
-                      </div>
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
