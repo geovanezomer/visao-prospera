@@ -56,6 +56,7 @@ ESTRATÉGIAS DE USO DE TOOLS (princípio: menor payload possível):
 - "Decompõe meu WACC / por que está alto / contribuição equity vs dívida" → 'get_wacc' (drill-down dos componentes).
 - "Carga da Reforma por era (atual/transição/pleno)" → 'get_eras_reforma' · "Ano-a-ano 2026–2033" → 'simular_transicao_reforma'. Não chame as duas para a mesma pergunta.
 - Plano de ação: 'listar_acoes' (com filtro de status), 'atualizar_acao' (mudar status/prazo/responsável), 'excluir_acao' (remover).
+- **Memória persistente**: ao consolidar uma conclusão importante (diagnóstico crítico confirmado, decisão validada pelo consultor, premissa específica desta empresa, preferência do consultor), chame 'salvar_conclusao_importante' UMA vez. Use 'listar_memorias' para revisar e 'excluir_memoria' para remover. Não salve resumos triviais nem repita memórias existentes — o bloco MEMÓRIA já entra no system prompt.
 
 
 ANEXOS:
@@ -100,6 +101,7 @@ export function buildSystemPrompt(opts: {
   soul?: string;
   skills?: Skill[];
   context?: RuntimeContext;
+  memoriesBlock?: string;
 }): string {
   // SOUL substitui a PERSONA fixa quando fornecido (editável em Configurações).
   const soul = opts.soul && opts.soul.trim() ? opts.soul.trim() : PERSONA;
@@ -115,6 +117,11 @@ export function buildSystemPrompt(opts: {
     GLOSSARIO,
   ];
 
+  // MEMÓRIA persistente — conclusões salvas em conversas anteriores (mesma empresa).
+  if (opts.memoriesBlock && opts.memoriesBlock.trim()) {
+    parts.push("", opts.memoriesBlock.trim());
+  }
+
   // SKILLS ativas — anexadas como blocos modulares.
   const activeSkills = (opts.skills || []).filter((s) => s.enabled && s.body.trim());
   if (activeSkills.length > 0) {
@@ -129,7 +136,7 @@ export function buildSystemPrompt(opts: {
       parts.push(
         "",
         `MODO TOOL-CALLING (META) ATIVO: você enxerga APENAS duas funções — \`tool_search\` e \`tool_invoke\`.
-- Use \`tool_search({ query, category? })\` para descobrir a tool certa (categorias: finance, simulator, benchmark, macro, scenarios, actions, compliance, reports). Os nomes citados nas REGRAS acima (get_resumo_executivo, get_indicadores, simular_alavanca, etc.) continuam válidos — busque por eles.
+- Use \`tool_search({ query, category? })\` para descobrir a tool certa (categorias: finance, simulator, benchmark, macro, scenarios, actions, compliance, reports, memory). Os nomes citados nas REGRAS acima (get_resumo_executivo, get_indicadores, simular_alavanca, etc.) continuam válidos — busque por eles.
 - Use \`tool_invoke({ name, arguments })\` para executar. A resposta vem em JSON \`{ name, category, content }\` — leia o campo \`content\` (markdown com os números) e cite a fonte exata.
 - Faça invokes em paralelo quando precisar de várias tools. Não invente — chame a função.`,
       );
