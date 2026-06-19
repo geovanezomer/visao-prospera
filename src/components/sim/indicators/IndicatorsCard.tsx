@@ -65,27 +65,28 @@ export function IndicatorsCard({ state }: { state: AppState }) {
         <Ind
           label="PE Operacional"
           v={fmtBRL(ind.pontoEquilibrioOperacional)}
-          desc="Conceito clássico (Garrison/Horngren): custos fixos operacionais com depreciação, sem juros."
+          desc="Conceito clássico (Garrison/Horngren): receita mínima para cobrir custos fixos OPERACIONAIS (com depreciação, sem juros). Juros e impostos ficam abaixo do EBIT."
           formula="(Custos Fixos Op. + Depreciação) ÷ Margem de Contribuição"
         />
         <Ind
           label="PE Financeiro (caixa)"
           v={fmtBRL(ind.pontoEquilibrioFinanceiro)}
-          desc="Receita mínima para cobrir desembolsos operacionais — sem depreciação e sem juros."
+          desc="Receita mínima para cobrir DESEMBOLSOS operacionais — exclui depreciação (não-caixa) e juros (financeiro). Conceito clássico de break-even em caixa."
           formula="Custos Fixos Operacionais ÷ Margem de Contribuição"
         />
         <Ind
           label="PE Total (c/ juros)"
           v={fmtBRL(ind.pontoEquilibrio)}
-          desc="Cobertura financeira completa — inclui juros como custo fixo recorrente."
+          desc="Cobertura financeira completa: inclui juros como custo fixo recorrente. Visão da PME para 'não ter prejuízo' considerando o serviço da dívida."
           formula="(Custos Fixos Op. + Depreciação + Juros) ÷ Margem de Contribuição"
         />
         <Ind
           label="ROE"
           v={fmtPct(ind.roe / 100)}
-          desc="Usa PL médio quando o PL de abertura é informado; caso contrário, PL fim de período."
+          desc="Retorno sobre o Patrimônio Líquido. Usa PL MÉDIO ((abertura + final)/2, CFA/Damodaran) quando o PL de abertura é informado em Capital; caso contrário, usa PL fim de período (pode subestimar ROE em empresas em crescimento e superestimar em empresas com prejuízo acumulado)."
           formula="Lucro Líquido ÷ PL Médio × 100"
         />
+
         <Ind
           label="ROA"
           v={fmtPct(ind.roa / 100)}
