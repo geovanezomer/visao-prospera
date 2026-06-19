@@ -405,4 +405,3 @@ function MemoriesPopover({ company }: { company: string }) {
     </Popover>
   );
 }
-}
