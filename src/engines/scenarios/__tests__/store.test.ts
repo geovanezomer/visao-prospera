@@ -33,7 +33,7 @@ class MemStorage {
   }
 }
 
-// @ts-expect-error — define no global do Node
+// @ts-ignore — define no global do Node
 globalThis.localStorage = new MemStorage();
 // @ts-expect-error — window mínimo para emit/dispatch.
 globalThis.window = {
