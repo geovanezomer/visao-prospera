@@ -50,8 +50,11 @@ export interface Indicators {
   wacc: number;
   /** PMR + PME − PMP */
   cicloFinanceiro: number;
+  /** PMR + PME (dias entre comprar insumo e receber do cliente). */
+  cicloOperacional: number;
   /** Contas a Receber + Estoques − Fornecedores */
   ncg: number;
+
   /** NCG − Capital de Giro Disponível */
   gapCapitalGiro: number;
   /** Ativo Circulante ÷ Passivo Circulante */
@@ -289,12 +292,16 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const estoqueMedio = ei > 0 && ef > 0 ? (ei + ef) / 2 : ef > 0 ? ef : capital.estoques;
   const cpvDiario = safeDivide(cpvAnual, 360);
   const pme = estoqueMedio > 0 && cpvDiario > 0 ? safeDivide(estoqueMedio, cpvDiario) : 0;
-  const cicloFinanceiro = revenue.pmr + pme - revenue.pmp;
+  const cicloOperacional = revenue.pmr + pme;
+  const cicloFinanceiro = cicloOperacional - revenue.pmp;
+  // [Auditoria Bloco 3] PMR aplica-se sobre vendas BRUTAS a prazo (faturamento total),
+  // não sobre receita líquida — corrigido para evitar subestimar Contas a Receber.
   const crEstimado =
-    capital.contasReceber > 0 ? capital.contasReceber : (receitaLiqAnual / 360) * revenue.pmr;
+    capital.contasReceber > 0 ? capital.contasReceber : (receitaBrutaAnual / 360) * revenue.pmr;
   const fornecEstimado =
     capital.fornecedores > 0 ? capital.fornecedores : (cpvAnual / 360) * revenue.pmp;
   const ncg = crEstimado + estoqueMedio - fornecEstimado;
+
   // SSOT: caixa disponível imediato = `disponibilidades` (Caixa+Bancos do BP).
   // O campo legado `capitalGiroDisponivel` foi descontinuado na UI; usamos
   // como fallback apenas para estados antigos sem `disponibilidades`.
@@ -459,7 +466,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     roic,
     wacc: safeNumber(wacc),
     cicloFinanceiro,
+    cicloOperacional,
     ncg,
+
     gapCapitalGiro,
     liquidezCorrente,
     liquidezSeca,
