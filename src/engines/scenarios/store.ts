@@ -3,6 +3,7 @@
 import { nanoid } from "nanoid";
 import { useSyncExternalStore } from "react";
 import type { SimulatorParams } from "@/engines/finance/simulator";
+import type { AppState } from "@/engines/finance/types";
 
 // Event bus reativo (mesmo padrão de actions/store).
 type Listener = () => void;
@@ -62,6 +63,15 @@ export interface ScenarioRecord {
     ev?: number;
     saldoFinalCaixa?: number;
   };
+  /** Tipo do cenário:
+   *  - "whatif" (default): simulação de alavanca, comparado contra base.
+   *  - "historical": snapshot de um ano fiscal fechado, usado pelas pills
+   *    de período no cabeçalho. Carrega AppState inteiro ao ser restaurado. */
+  kind?: "whatif" | "historical";
+  /** Apenas para `kind: "historical"`: ano fiscal do snapshot (ex: 2024). */
+  fiscalYear?: number;
+  /** Snapshot completo do AppState. Obrigatório quando `kind === "historical"`. */
+  state?: AppState;
   createdAt: number;
   updatedAt: number;
   /** Soft delete — filtrado em listScenarios por padrão. */
@@ -136,4 +146,38 @@ export function restoreScenario(company: string, id: string) {
 export function getScenario(company: string, idOrName: string): ScenarioRecord | undefined {
   const all = listScenarios(company);
   return all.find((s) => s.id === idOrName || s.name.toLowerCase() === idOrName.toLowerCase());
+}
+
+// ─── Snapshots históricos (Fase 3) ────────────────────────────────────
+// Reutiliza a store de cenários para guardar AppState de anos fechados.
+// Pills no cabeçalho só aparecem quando há 2+ historicals salvos.
+
+/** Lista apenas cenários históricos, ordenados por ano (asc). */
+export function listHistoricals(company: string): ScenarioRecord[] {
+  return listScenarios(company)
+    .filter((s) => s.kind === "historical" && s.state)
+    .sort((a, b) => (a.fiscalYear ?? 0) - (b.fiscalYear ?? 0));
+}
+
+/**
+ * Arquiva o AppState atual como snapshot histórico do ano informado.
+ * Idempotente por ano: se já existe historical para `fiscalYear`, sobrescreve.
+ */
+export function archiveYearAsHistorical(
+  company: string,
+  fiscalYear: number,
+  state: import("@/engines/finance/types").AppState,
+  summary?: ScenarioRecord["summary"],
+): ScenarioRecord {
+  const existing = listScenarios(company).find(
+    (s) => s.kind === "historical" && s.fiscalYear === fiscalYear,
+  );
+  return saveScenario(company, {
+    id: existing?.id,
+    name: `Ano ${fiscalYear}`,
+    kind: "historical",
+    fiscalYear,
+    state,
+    summary,
+  });
 }

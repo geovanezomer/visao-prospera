@@ -30,6 +30,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import type { AppState, BusinessType, TaxRegime } from "@/engines/finance/types";
 import { RAMOS_POR_SETOR } from "@/engines/finance/companyProfile";
+import { archiveYearAsHistorical, listHistoricals } from "@/engines/scenarios/store";
 import { toast } from "sonner";
 
 const MESES_FISCAIS = [
@@ -340,6 +341,18 @@ export function CompanyConfigDialog({ open, onOpenChange }: Props) {
               </p>
             </div>
           </section>
+
+          {/* Arquivamento de ano fiscal — alimenta as pills de período. */}
+          <section className="space-y-2 rounded-md border border-dashed border-border/60 p-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Fechamento de ano
+            </h3>
+            <p className="text-[11px] text-muted-foreground">
+              Arquiva o AppState atual como snapshot histórico. Após 2+ snapshots, o
+              cabeçalho de Indicadores/DRE mostra pills para comparar períodos.
+            </p>
+            <ArchiveYearButton onClose={() => onOpenChange(false)} />
+          </section>
         </div>
 
         <DialogFooter>
@@ -375,4 +388,53 @@ function buildFormFromState(state: AppState): FormData {
     fiscalYearStartMonth: state.fiscalYearStartMonth ?? 1,
     margemAlvoPct: state.margemAlvoPct,
   };
+}
+
+/** Botão para arquivar o ano corrente como snapshot histórico. */
+function ArchiveYearButton({ onClose }: { onClose: () => void }) {
+  const { state } = useFinance();
+  const company = state.companyName || "default";
+  // Default: ano corrente do calendário (poderia derivar do fiscalYearStartMonth
+  // em versão futura — por ora, simples e previsível).
+  const [year, setYear] = useState(() => new Date().getFullYear());
+  const existing = listHistoricals(company);
+  const jaArquivado = existing.some((h) => h.fiscalYear === year);
+
+  const handleArchive = () => {
+    archiveYearAsHistorical(company, year, state);
+    toast.success(
+      jaArquivado
+        ? `Snapshot ${year} atualizado`
+        : `Ano ${year} arquivado como snapshot histórico`,
+    );
+    onClose();
+  };
+
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <div className="space-y-1">
+        <Label htmlFor="archiveYear" className="text-[11px]">
+          Ano fiscal
+        </Label>
+        <Input
+          id="archiveYear"
+          type="number"
+          min={2000}
+          max={2100}
+          value={year}
+          onChange={(e) => setYear(Number(e.target.value) || new Date().getFullYear())}
+          className="h-8 w-24"
+        />
+      </div>
+      <Button size="sm" variant="secondary" onClick={handleArchive}>
+        {jaArquivado ? `Atualizar snapshot ${year}` : `Arquivar ano ${year}`}
+      </Button>
+      {existing.length > 0 && (
+        <span className="text-[10px] text-muted-foreground">
+          {existing.length} snapshot{existing.length > 1 ? "s" : ""} salvo
+          {existing.length > 1 ? "s" : ""}
+        </span>
+      )}
+    </div>
+  );
 }

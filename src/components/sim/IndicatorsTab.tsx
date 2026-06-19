@@ -21,6 +21,7 @@ import {
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
 import { leverageDisplay } from "./leverageLabel";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { HistoricalYearPills } from "./HistoricalYearPills";
 
 const CHART_COLORS = [
   "#00E5A0",
@@ -119,6 +120,7 @@ export function IndicatorsTab() {
 
   return (
     <div className="space-y-6">
+      <HistoricalYearPills />
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
           label="Ciclo Financeiro"
