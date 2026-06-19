@@ -112,9 +112,8 @@ export function TaxTab() {
   const rbAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
 
   // ----- Engine: memoizada (B1) — recomputa só quando state muda -----
-  // SSOT-4: compareRegimes já devolve llBy, best e desenquadradoSimples.
+  // SSOT-4: compareRegimes já devolve best e desenquadradoSimples.
   const regimes = useMemo(() => compareRegimes(state), [state]);
-  const llBy = regimes.llBy;
   const projAtiva = useMemo(() => compareErasForRegime(state, state.tax.regime), [state]);
 
   // B10: alíquota efetiva exibida usa o anexo *resolvido* (Fator R V→III).
