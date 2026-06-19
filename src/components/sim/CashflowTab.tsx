@@ -160,7 +160,6 @@ export function CashflowTab() {
 
   return (
     <div className="space-y-6">
-      <HistoricalYearPills />
       {showComparison ? (
         <CashFlowComparison snapshots={comparisonSnaps} />
       ) : (
