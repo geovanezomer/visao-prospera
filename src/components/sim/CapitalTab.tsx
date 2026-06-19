@@ -132,7 +132,6 @@ export function CapitalTab() {
 
   const kpis = [
     { label: "Capital Próprio", value: `${proprioDerivado.toFixed(1)}%`, hint: "PL / (PL + Dívida)" },
-    { label: "Dívida Onerosa", value: fmtBRL(c.dividaOnerosa), hint: "Empréstimos e financiamentos" },
     { label: "Serviço da Dívida / mês", value: fmtBRL(servicoDividaMes), hint: "Juros + amortização ÷ 12" },
     {
       label: "D / PL",
@@ -144,7 +143,7 @@ export function CapitalTab() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {kpis.map((k) => (
           <div
             key={k.label}
