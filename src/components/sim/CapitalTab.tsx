@@ -14,7 +14,9 @@ import {
   aggregateContracts,
   DEBT_CONTRACTS_COST_ID,
 } from "@/engines/finance/debtContracts";
-import type { CostLine } from "@/engines/finance/types";
+import type { CostLine, DebtContract } from "@/engines/finance/types";
+
+const EMPTY_CONTRACTS: DebtContract[] = [];
 
 // Orquestrador da aba Capital — apenas compõe os sub-cartões e cuida das
 // validações cruzadas (balanço, alavancagem). Toda a UI específica vive
