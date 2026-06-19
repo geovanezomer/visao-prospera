@@ -148,6 +148,40 @@ function checkTier1Estrutural(state: AppState, dre: DRE, ind: Indicators): Valid
     });
   }
 
+  // [Auditoria Bloco 3] 1.3.1 — Equação patrimonial: Ativo Total ≥ PL + Dívida Onerosa + Passivo Circulante.
+  // Não conseguimos validar Ativo = Passivo + PL com igualdade (faltam campos de PNC operacional no schema),
+  // mas o lado direito JAMAIS pode exceder o Ativo Total em >5% (tolerância p/ campos parciais).
+  const plCap = Math.max(0, state.capital.patrimonioLiquido || 0);
+  const divOn = Math.max(0, state.capital.dividaOnerosa || 0);
+  const pCirc = Math.max(0, state.capital.passivoCirculante || 0);
+  if (at > 0) {
+    const ladoDireito = plCap + divOn + pCirc;
+    if (ladoDireito > at * 1.05) {
+      out.push({
+        id: "estrutural.equacao_patrimonial_desbalanceada",
+        severity: "error",
+        category: "estrutural",
+        title: "Equação patrimonial desbalanceada",
+        detail: `PL + Dívida Onerosa + Passivo Circulante (R$ ${fmt(ladoDireito)}) excede o Ativo Total (R$ ${fmt(at)}) em mais de 5%. Pela Lei 6.404/76 art. 178, Ativo = Passivo + PL.`,
+        fixHint:
+          "Revise PL, Dívida Onerosa, Passivo Circulante e Ativo Total na aba Capital — algum valor está duplicado ou faltando.",
+        location: "capital",
+      });
+    }
+    if (plCap > at) {
+      out.push({
+        id: "estrutural.pl_maior_que_ativo",
+        severity: "error",
+        category: "estrutural",
+        title: "Patrimônio Líquido maior que o Ativo Total",
+        detail: `PL (R$ ${fmt(plCap)}) > Ativo Total (R$ ${fmt(at)}). Só possível se passivo for negativo (impossível contabilmente).`,
+        fixHint: "Confira PL e Ativo Total na aba Capital — provável digitação invertida.",
+        location: "capital",
+      });
+    }
+  }
+
+
   // 1.4 Dividendos > Lucro Líquido projetado (distribuição além do permitido)
   if (dividendos > 0 && dividendos > ll) {
     const detail =
