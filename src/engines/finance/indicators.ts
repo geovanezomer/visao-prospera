@@ -459,9 +459,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     ativoCirculante,
     impostosSobreReceita:
       receitaBrutaAnual > 0
-        ? ((sum(dre.impostosVendas) + impostosAnual) / receitaBrutaAnual) * 100
+        ? ((impostosVendasAnual + impostosAnual) / receitaBrutaAnual) * 100
         : 0,
     impostosSobreLucro:
-      llAnual > 1 ? ((sum(dre.impostosVendas) + impostosAnual) / llAnual) * 100 : 0,
+      llAnual > 1 ? ((impostosVendasAnual + impostosAnual) / llAnual) * 100 : 0,
   };
 }
