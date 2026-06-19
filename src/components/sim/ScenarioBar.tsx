@@ -35,7 +35,10 @@ import {
   deleteScenario,
 } from "@/engines/scenarios/store";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
+import { buildDRE } from "@/engines/finance/dre";
+import { resolveEffectiveRegime } from "@/engines/finance/regime";
+import { calcIndicators } from "@/engines/finance/indicators";
 
 // Lista de anos disponíveis no select (inclusivo).
 const YEARS: number[] = Array.from({ length: 2040 - 2010 + 1 }, (_, i) => 2010 + i);
