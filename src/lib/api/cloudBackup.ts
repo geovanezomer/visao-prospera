@@ -10,12 +10,15 @@ export type BackupStatus = "idle" | "syncing" | "synced" | "error" | "offline";
 
 const BUCKET = "backups";
 
-/** Checa se backup está habilitado via env (default: ON). */
+/**
+ * Checa se backup está habilitado via env `SUPABASE_BACKUP` (default: ON).
+ * A variável é injetada em build-time via `define` no vite.config.
+ */
 export function isBackupEnabled(): boolean {
-  const v = (import.meta.env.VITE_SUPABASE_BACKUP ?? "ON")
-    .toString()
-    .trim()
-    .toUpperCase();
+  const raw =
+    (import.meta.env as Record<string, string | undefined>).SUPABASE_BACKUP ??
+    "ON";
+  const v = String(raw).trim().toUpperCase();
   return v !== "OFF" && v !== "FALSE" && v !== "0";
 }
 

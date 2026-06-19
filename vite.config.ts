@@ -5,11 +5,35 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import fs from "node:fs";
+import path from "node:path";
+
+// Lê SUPABASE_BACKUP do .env (sem prefixo VITE_, conforme spec) e expõe ao bundle
+// via `define` — o wrapper @lovable.dev só injeta automaticamente vars com prefixo VITE_*.
+function readSupabaseBackupFlag(): string {
+  for (const file of [".env.local", ".env"]) {
+    try {
+      const txt = fs.readFileSync(path.resolve(process.cwd(), file), "utf8");
+      const m = txt.match(/^\s*SUPABASE_BACKUP\s*=\s*"?([^"\n\r]+)"?\s*$/m);
+      if (m) return m[1].trim();
+    } catch {
+      /* arquivo ausente — ignora */
+    }
+  }
+  return process.env.SUPABASE_BACKUP ?? "ON";
+}
+
+const SUPABASE_BACKUP = readSupabaseBackupFlag();
 
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+  },
+  vite: {
+    define: {
+      "import.meta.env.SUPABASE_BACKUP": JSON.stringify(SUPABASE_BACKUP),
+    },
   },
 });
