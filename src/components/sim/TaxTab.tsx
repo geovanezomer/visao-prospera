@@ -224,22 +224,24 @@ export function TaxTab() {
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 Regime ativo (DRE)
               </span>
-              <Select
-                value={state.tax.regime}
-                onValueChange={(v) => set({ regime: v as TaxRegime })}
-              >
-                <SelectTrigger className="h-8 w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {/* B7: opção Simples desabilitada quando desenquadrado */}
-                  <SelectItem value="simples" disabled={desenquadradoSimples}>
-                    Simples Nacional{desenquadradoSimples ? " (desenquadrado)" : ""}
-                  </SelectItem>
-                  <SelectItem value="presumido">Lucro Presumido</SelectItem>
-                  <SelectItem value="real">Lucro Real</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Regime agora é configurado no cadastro central da empresa
+                  (CompanyConfigDialog, acessível pela sidebar). Mantém apenas
+                  exibição read-only aqui para evitar duplicidade de fonte. */}
+              <div className="flex h-8 w-48 items-center justify-between rounded-md border border-input bg-muted/30 px-3 text-sm">
+                <span className="font-medium">
+                  {state.tax.regime === "simples"
+                    ? "Simples Nacional"
+                    : state.tax.regime === "presumido"
+                      ? "Lucro Presumido"
+                      : "Lucro Real"}
+                  {desenquadradoSimples && state.tax.regime === "simples"
+                    ? " (desenquadrado)"
+                    : ""}
+                </span>
+              </div>
+              <span className="text-[9px] text-muted-foreground">
+                Editar em ⚙️ Configurar Empresa
+              </span>
             </div>
           </div>
         </div>
