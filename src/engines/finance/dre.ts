@@ -110,9 +110,20 @@ function classifyCosts(
   const despesasPorCategoria: Record<string, number[]> = {};
   const pddFinal = pddBruta.slice();
 
+  // Anti-duplicação: quando há a linha sintética de juros dos Contratos de Dívida
+  // (gerada a partir do módulo Capital), ignoramos quaisquer outras linhas
+  // financeiras cujo rótulo indique "juros sobre empréstimos/contratos", para que
+  // o usuário não some manualmente um custo que já vem do Capital.
+  const hasSyntheticDebt = costs.some((c) => c.id === DEBT_CONTRACTS_COST_ID);
+  const isManualLoanInterest = (label: string) =>
+    /juros[^a-z]*(sobre)?[^a-z]*(empr[eé]stimo|contrato)/i.test(label);
+
   for (const c of costs) {
     const v = effectiveMonthValues(c, regime);
     if (c.category === "financeiro") {
+      if (hasSyntheticDebt && c.id !== DEBT_CONTRACTS_COST_ID && isManualLoanInterest(c.label)) {
+        continue; // já contabilizado pela linha sintética dos contratos
+      }
       for (let i = 0; i < 12; i++) custosFinanceirosTotal[i] += v[i];
       continue;
     }
