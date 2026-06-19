@@ -190,7 +190,7 @@ export function useFinnanceFile({
         // Avisa o usuário que o arquivo foi migrado para o schema corrente.
         // Salvar agora regrava no formato novo (e mantém o original intacto até lá).
         toast.info(`Arquivo migrado de v${originalVersion} → v${currentVersion}`, {
-          description: `"${filename}" foi atualizado para o formato atual do FinancePRO. Salve para regravar no novo formato.`,
+          description: `"${filename}" foi atualizado para o formato atual do FinnancePRO. Salve para regravar no novo formato.`,
           duration: 10000,
         });
       } else {

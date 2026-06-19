@@ -2,7 +2,7 @@
  * Invariantes de UNIDADES — garante que percentuais (Ke, Kd, WACC, ROIC,
  * margens) NUNCA sejam multiplicados ou divididos por 100 duas vezes.
  *
- * Convenção SSOT do FinancePRO:
+ * Convenção SSOT do FinnancePRO:
  *  - Inputs de capital (state.capital.ke / kd) estão em % a.a. (ex.: 15 = 15%).
  *  - Outputs de calcIndicators (wacc, roe, roa, roic, margem*) estão em %
  *    no MESMO domínio (15 = 15%), nunca em fração (0.15).

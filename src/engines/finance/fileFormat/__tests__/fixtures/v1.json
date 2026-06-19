@@ -3,7 +3,7 @@
   "version": 1,
   "source": "FinnancePRO",
   "savedAt": "2025-01-15T12:00:00.000Z",
-  "app": { "name": "FinancePRO", "version": "1.0.0" },
+  "app": { "name": "FinnancePRO", "version": "1.0.0" },
   "state": {
     "companyName": "Padaria do João",
     "businessType": "comercio",
