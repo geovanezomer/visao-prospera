@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { AppState } from "@/engines/finance/types";
-import { fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
+import { fmtBRL, fmtPct, fmtTimes, MESES, sum } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import {
   Bar,
