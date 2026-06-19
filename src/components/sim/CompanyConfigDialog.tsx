@@ -63,7 +63,11 @@ const formSchema = z.object({
     .or(z.literal("")),
   businessType: z.enum(["servicos", "comercio", "industria"]),
   ramoAtuacao: z.string().trim().max(60).optional().or(z.literal("")),
-  headcountRange: z.enum(["1-9", "10-49", "50-99", "100+"]),
+  numColaboradores: z
+    .number({ invalid_type_error: "Informe um número" })
+    .int("Use um número inteiro")
+    .min(0, "Não pode ser negativo")
+    .max(100000, "Valor irreal"),
   regime: z.enum(["simples", "presumido", "real"]),
   periodoAnaliseMeses: z.union([
     z.literal(6),
