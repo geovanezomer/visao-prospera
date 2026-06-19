@@ -35,6 +35,8 @@ import { RotateCcw, Presentation, X, FileText } from "lucide-react";
 import { TaxSettingsDialog } from "@/components/sim/tax/TaxSettingsDialog";
 import { Badge } from "@/components/ui/badge";
 import { CalculadorasTab } from "@/components/calculadoras/CalculadorasTab";
+import type { BackupStatus } from "@/lib/api/cloudBackup";
+import { cn } from "@/lib/utils";
 
 // Formata "há X" relativo para o breadcrumb do header.
 function timeAgo(ts: number | null): string {
@@ -95,6 +97,8 @@ function SimulaPro() {
   const simActive = countActiveLevers(simParams);
 
   const { confirm, dialog: confirmDialog } = useConfirm();
+  // Status do backup automático no Supabase Storage (header indicator).
+  const [backupStatus, setBackupStatus] = useState<BackupStatus>("idle");
   const fileApi = useFinnanceFile({
     state,
     scenarios,
@@ -103,6 +107,8 @@ function SimulaPro() {
     resetState: reset,
     hydrated: stateHydrated,
     confirm,
+    userId: user?.id,
+    onBackupStatus: setBackupStatus,
   });
 
   useEffect(() => {
