@@ -86,6 +86,7 @@ export function AIChatSheet({
     handleEditLast,
     handleAudit,
     runPipeline360,
+    pipeline360,
     handleNewThread,
     handleDeleteThread,
     reloadThreads,
@@ -307,7 +308,50 @@ export function AIChatSheet({
             </div>
           )}
 
+          {pipeline360.active && (
+            <div className="border-b border-primary/30 bg-primary/5 px-3 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-[11px] font-medium">
+                  <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                  <span>
+                    Pipeline 360° · {pipeline360.completed.length}/{pipeline360.total}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-[10px] text-destructive hover:text-destructive"
+                  onClick={handleStop}
+                  title="Cancelar pipeline"
+                >
+                  <Square className="mr-1 h-2.5 w-2.5" /> Cancelar
+                </Button>
+              </div>
+              <div className="mt-1.5 flex items-center gap-1.5">
+                {(["cfo", "controller", "auditor"] as const).map((s) => {
+                  const done = pipeline360.completed.includes(s);
+                  const current = pipeline360.current === s;
+                  const cls = done
+                    ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300"
+                    : current
+                      ? "border-primary/50 bg-primary/10 text-primary animate-pulse"
+                      : "border-border/40 bg-muted/20 text-muted-foreground";
+                  return (
+                    <div
+                      key={s}
+                      className={`flex-1 rounded border px-1.5 py-0.5 text-center text-[10px] uppercase ${cls}`}
+                    >
+                      {done ? "✓ " : current ? "▶ " : ""}
+                      {s}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
+
             {messages.length === 0 ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
