@@ -28,6 +28,7 @@ import { estimateTokens } from "@/engines/ai/snapshot";
 const MAX_HISTORY_TOKENS = 6000;
 import { buildSystemPrompt, type AIMode } from "@/engines/ai/systemPrompt";
 import { loadAIMode, saveAIMode } from "@/engines/ai/modeStore";
+import { recordChatTrail } from "@/engines/ai/chatTrail";
 import { useMemories, memoriesToPromptBlock } from "@/engines/memory/store";
 import {
   processFile,
@@ -272,6 +273,23 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     const ac = new AbortController();
     abortRef.current = ac;
 
+    // Audit Trail — captura início do turno, finalizado em ambos os caminhos.
+    const trailStart = Date.now();
+    const recordTrail = (status: "ok" | "erro" | "abortado", responseChars: number, tools: string[], errorMsg?: string) => {
+      recordChatTrail(state.companyName || "default", {
+        threadId: activeId,
+        mode: effectiveMode,
+        provider: config.provider,
+        model: config.model,
+        userText: content,
+        responseChars,
+        tools,
+        durationMs: Date.now() - trailStart,
+        status,
+        errorMsg,
+      });
+    };
+
     const fullUserText = content + pdfCtx;
     const hasImages = atts.some((a) => a.type === "image" && a.dataUrl && !a.error);
     const lastUserContent = hasImages
@@ -358,8 +376,17 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
           })),
           { role: "assistant", content: out.finalText, ts: Date.now() },
         ]);
+        recordTrail("ok", out.finalText.length, collected.map((c) => c.name));
       } catch (e: unknown) {
-        setMessages([...history, { role: "assistant", content: errToMd(e), ts: Date.now() }]);
+        const msg = errToMd(e);
+        setMessages([...history, { role: "assistant", content: msg, ts: Date.now() }]);
+        const aborted = ac.signal.aborted;
+        recordTrail(
+          aborted ? "abortado" : "erro",
+          0,
+          collected.map((c) => c.name),
+          e instanceof Error ? e.message : String(e),
+        );
       } finally {
         setStreaming(false);
         abortRef.current = null;
@@ -380,6 +407,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
           return copy;
         });
       }
+      recordTrail("ok", acc.length, []);
     } catch (e: unknown) {
       setMessages((prev) => {
         const copy = prev.slice();
@@ -390,6 +418,13 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
         };
         return copy;
       });
+      const aborted = ac.signal.aborted;
+      recordTrail(
+        aborted ? "abortado" : "erro",
+        acc.length,
+        [],
+        e instanceof Error ? e.message : String(e),
+      );
     } finally {
       setStreaming(false);
       abortRef.current = null;
