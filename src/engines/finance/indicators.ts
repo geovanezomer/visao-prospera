@@ -376,7 +376,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
         ? -CAP_COB
         : CAP_COB;
 
-  const giroAtivo = capital.ativoTotal > 0 ? safeDivide(receitaLiqAnual, capital.ativoTotal) : 0;
+  // [Auditoria Bloco 5] Giro do Ativo (DuPont) também usa ATIVO MÉDIO quando abertura disponível.
+  const giroAtivo = atMedio > 0 ? safeDivide(receitaLiqAnual, atMedio) : 0;
+
   const dividaLiq = computeNetDebt(state); // SSOT-1: helper único.
   // Cash-rich (dividaLiq < 0) com base ≤ 1: usa sentinela negativa para PRESERVAR o sinal
   // (antes retornava 0 e escondia a posição líquida de caixa).
