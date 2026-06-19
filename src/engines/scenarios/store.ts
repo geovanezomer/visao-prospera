@@ -5,29 +5,54 @@ import { useSyncExternalStore } from "react";
 import type { SimulatorParams } from "@/engines/finance/simulator";
 import type { AppState } from "@/engines/finance/types";
 
-// Event bus reativo (mesmo padrão de actions/store).
+// Event bus reativo + sincronização multi-aba via BroadcastChannel.
 type Listener = () => void;
 const listeners = new Set<Listener>();
+
+// Canal de broadcast cross-tab — avisa outras abas quando a store muda.
+// Fallback silencioso em browsers sem suporte (Safari < 15.4).
+let bc: BroadcastChannel | null = null;
+function getBC(): BroadcastChannel | null {
+  if (bc) return bc;
+  if (typeof BroadcastChannel === "undefined") return null;
+  try {
+    bc = new BroadcastChannel("gz-scenarios");
+  } catch {
+    bc = null;
+  }
+  return bc;
+}
+
 function emit() {
   for (const l of listeners) l();
   try {
     window.dispatchEvent(new CustomEvent("gz-scenarios-changed"));
   } catch {
-    // SSR / ambiente sem window — broadcast via CustomEvent é best-effort
+    // SSR / ambiente sem window — best-effort
+  }
+  try {
+    getBC()?.postMessage({ type: "changed", ts: Date.now() });
+  } catch {
+    /* ignora */
   }
 }
+
 export function subscribeScenarios(listener: Listener): () => void {
   listeners.add(listener);
   const onStorage = (e: StorageEvent) => {
     if (e.key?.startsWith("gz-finance-scenarios-")) listener();
   };
   const onCustom = () => listener();
+  const onBC = () => listener();
   window.addEventListener("storage", onStorage);
   window.addEventListener("gz-scenarios-changed", onCustom);
+  const ch = getBC();
+  ch?.addEventListener("message", onBC);
   return () => {
     listeners.delete(listener);
     window.removeEventListener("storage", onStorage);
     window.removeEventListener("gz-scenarios-changed", onCustom);
+    ch?.removeEventListener("message", onBC);
   };
 }
 export function useScenarios(
