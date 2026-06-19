@@ -501,7 +501,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     ebitdaAnual,
     ebitAnual,
     receitaBrutaAnual,
-    receitaLiquidaAnual,
+    receitaLiquidaAnual: receitaLiqAnual,
     lucroLiquidoAnual: llAnual,
     nopat: safeNumber(nopat),
     capitalInvestido: safeNumber(capitalInvestido),
