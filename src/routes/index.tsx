@@ -220,6 +220,31 @@ function SimulaPro() {
                         </span>
                       </>
                     )}
+                    {/* Indicador de backup na nuvem — só aparece quando há userId e status ≠ idle. */}
+                    {user && backupStatus !== "idle" && (
+                      <>
+                        <span className="opacity-40">·</span>
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1",
+                            backupStatus === "syncing" && "text-muted-foreground",
+                            backupStatus === "synced" && "text-emerald-500",
+                            backupStatus === "error" && "text-amber-500",
+                          )}
+                          title={
+                            backupStatus === "syncing"
+                              ? "Sincronizando com a nuvem…"
+                              : backupStatus === "synced"
+                                ? "Backup salvo na nuvem"
+                                : "Backup falhou — arquivo local salvo"
+                          }
+                        >
+                          {backupStatus === "syncing" && "↻ Sincronizando"}
+                          {backupStatus === "synced" && "☁ Backup salvo"}
+                          {backupStatus === "error" && "⚠ Sem backup"}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
