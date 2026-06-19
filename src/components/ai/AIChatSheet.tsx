@@ -94,6 +94,8 @@ export function AIChatSheet({
     reloadThreads,
     mode,
     setMode,
+    activeSkillId,
+    setActiveSkillId,
   } = useAIChat({ state, simulatedState, simActive, simParams });
 
   const [configOpen, setConfigOpen] = useState(false);
