@@ -212,8 +212,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // calculado por (1 − t_marginal_receita) fica artificialmente alto e o ROIC
   // dispara. Para refletir a realidade, nesses regimes usamos a alíquota
   // EFETIVA sobre o LAIR, limitada a 100% para zerar o NOPAT em vez de inverter o sinal.
-  const impostosLucroAnual = sum(dre.impostos);
-  const dasAnual = sum(dre.impostosVendas);
+  const impostosLucroAnual = impostosAnual;
+  const dasAnual = impostosVendasAnual;
   const regimeEfetivo = resolveEffectiveRegime(state);
   const impostosParaAliquota = regimeEfetivo === "simples" ? dasAnual : impostosLucroAnual;
 
