@@ -283,11 +283,18 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const capitalInvestido = ciAtivo > 0 ? ciAtivo : ciFinanciamento;
   const roic = capitalInvestido > 0 ? safePct(nopat, capitalInvestido) : 0;
 
-  // ROE com PL MÉDIO (CFA/Damodaran).
+  // [Auditoria Bloco 5] ROE e ROA com BASES MÉDIAS (CFA/Damodaran). Numerador é fluxo
+  // (LL anual); denominador deve ser estoque MÉDIO do período para consistência matemática.
+  // Fallback para ponto final quando abertura não informada.
   const plAbertura = Math.max(0, capital.patrimonioLiquidoAbertura ?? 0);
   const plMedio = plAbertura > 0 ? (plAbertura + PL) / 2 : PL;
   const roe = plMedio > 0 ? safePct(llAnual, plMedio) : 0;
-  const roa = capital.ativoTotal > 0 ? safePct(llAnual, capital.ativoTotal) : 0;
+  const atAbertura = Math.max(0, capital.ativoTotalAbertura ?? 0);
+  const atMedio = atAbertura > 0 && capital.ativoTotal > 0
+    ? (atAbertura + capital.ativoTotal) / 2
+    : capital.ativoTotal;
+  const roa = atMedio > 0 ? safePct(llAnual, atMedio) : 0;
+
 
   // ---- Ciclo / NCG / Gap ----
   const ei = Math.max(0, capital.estoqueInicial ?? 0);
