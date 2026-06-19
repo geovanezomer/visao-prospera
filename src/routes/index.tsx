@@ -214,8 +214,10 @@ function SimulaPro() {
                         </span>
                       </>
                     )}
+                  </div>
                 </div>
               </div>
+
 
               {/* Pills centralizados: só aparecem em DRE / Fluxo de Caixa. */}
               {(activeTab === "dre" || activeTab === "caixa") && (
