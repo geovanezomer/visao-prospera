@@ -40,7 +40,7 @@ import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
 import { buildDRE } from "@/engines/finance/dre";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { calcIndicators } from "@/engines/finance/indicators";
-import { ShareDialog } from "@/components/sharing/ShareDialog";
+
 
 
 // Lista de anos disponíveis no select (inclusivo).
@@ -118,8 +118,6 @@ export function ScenarioBar() {
 
   return (
     <div data-meeting-hide="true" className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
-      {/* Compartilhar (acima do Salvar) — gera link read-only para cliente */}
-      <ShareDialog />
       <div className="flex gap-2">
 
       {/* Salvar ANO */}

@@ -23,6 +23,7 @@ import {
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 
 import { NAV_ITEMS } from "./nav-config";
+import { ShareDialog } from "@/components/sharing/ShareDialog";
 import { TabKey } from "@/engines/finance/types";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -164,6 +165,7 @@ export function AppSidebar({
                   <span>Restaurar da nuvem</span>
                 </Button>
               )}
+              <ShareDialog />
             </div>
           </div>
         </SidebarGroup>
