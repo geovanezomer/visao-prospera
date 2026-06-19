@@ -298,10 +298,19 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleTest} disabled={testing}>
             {testing ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
             Testar conexão
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              onSave(draft);
+              onOpenChange(false);
+            }}
+          >
+            Salvar e fechar
           </Button>
           {testResult && (
             <span
