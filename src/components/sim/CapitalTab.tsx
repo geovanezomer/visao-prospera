@@ -170,13 +170,7 @@ export function CapitalTab() {
       )}
 
 
-      <NCGExplanationCard
-        ncg={ind.ncg}
-        pmr={state.revenue.pmr}
-        pmp={state.revenue.pmp}
-        receitaDia={sum(dre.receitaBruta) / 360}
-        cpvDia={sum(dre.cpv) / 360}
-      />
+
 
       <div className="space-y-4">
         <BalanceSheetCard
