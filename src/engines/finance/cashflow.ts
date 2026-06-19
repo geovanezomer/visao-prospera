@@ -4,6 +4,7 @@ import { resolveEffectiveRegime } from "./regime";
 import { splitReceitasFinanceiras, computeCapexMensal } from "./shared";
 import type { MonthlyTax } from "./tax/shared";
 import { MESES, sum, zeros12 } from "./format";
+import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 
 export interface CashFlow {
   saldoInicial: number[];
