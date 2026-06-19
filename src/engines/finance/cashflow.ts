@@ -282,7 +282,8 @@ export function buildCashFlow(
   const emprestimosCaptados = cashflow.emprestimosCaptados.slice();
   const amortizacoes = cashflow.amortizacoes.slice();
   const dividendos = cashflow.dividendos.slice();
-  const capex = cashflow.capex.slice();
+  // SSOT: CAPEX = manual (cashflow.capex) + ativações de imobilizado (capital.capexAtivacao).
+  const capex = computeCapexMensal(state);
 
   const fluxos = computeFluxos({
     recebimentos: rec.inAno,
