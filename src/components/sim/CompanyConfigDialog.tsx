@@ -374,23 +374,34 @@ export function CompanyConfigDialog({ open, onOpenChange }: Props) {
   );
 }
 
+/** Deriva a faixa de headcount a partir do número exato (para benchmarks). */
+export function rangeFromNumber(n: number): "1-9" | "10-49" | "50-99" | "100+" {
+  const v = Math.max(0, Math.floor(n || 0));
+  if (v < 10) return "1-9";
+  if (v < 50) return "10-49";
+  if (v < 100) return "50-99";
+  return "100+";
+}
+
 /** Converte AppState → estado inicial do formulário com defaults sensatos. */
 function buildFormFromState(state: AppState): FormData {
-  // Migração leve: se vier número de colaboradores antigo, mapeia para faixa.
-  const inferRange = (): FormData["headcountRange"] => {
-    if (state.headcountRange) return state.headcountRange;
-    const n = state.numColaboradores ?? 0;
-    if (n < 10) return "1-9";
-    if (n < 50) return "10-49";
-    if (n < 100) return "50-99";
-    return "100+";
+  // Migração leve: usa número exato; se ausente, infere a partir da faixa antiga.
+  const inferNum = (): number => {
+    if (typeof state.numColaboradores === "number") return state.numColaboradores;
+    switch (state.headcountRange) {
+      case "10-49": return 10;
+      case "50-99": return 50;
+      case "100+": return 100;
+      case "1-9":
+      default: return 1;
+    }
   };
   return {
     companyName: state.companyName ?? "",
     cnpj: state.cnpj ?? "",
     businessType: state.businessType,
     ramoAtuacao: state.ramoAtuacao ?? "",
-    headcountRange: inferRange(),
+    numColaboradores: inferNum(),
     regime: state.tax.regime,
     periodoAnaliseMeses: state.periodoAnaliseMeses ?? 12,
     fiscalYearStartMonth: state.fiscalYearStartMonth ?? 1,
