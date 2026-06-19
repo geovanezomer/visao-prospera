@@ -684,6 +684,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     handleEditLast,
     handleAudit,
     runPipeline360,
+    pipeline360,
     handleNewThread,
     handleDeleteThread,
     reloadThreads,
