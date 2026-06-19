@@ -141,38 +141,58 @@ export function CapitalTab() {
   const propTone: "pos" | "neg" | "default" =
     proprioDerivado >= 50 ? "pos" : proprioDerivado >= 30 ? "default" : "neg";
 
-  const kpis: Array<{ label: string; value: string; hint: string; tone: "pos" | "neg" | "default" }> = [
-    { label: "Capital Próprio", value: `${proprioDerivado.toFixed(1)}%`, hint: "PL / (PL + Dívida)", tone: propTone },
-    { label: "Serviço da Dívida / mês", value: fmtBRL(servicoDividaMes), hint: "Juros + amortização ÷ 12", tone: "default" },
+  const kpis: Array<{
+    label: string;
+    value: string;
+    hint: { description: string; formula: string };
+    tone: "pos" | "neg" | "default";
+  }> = [
+    {
+      label: "Capital Próprio",
+      value: `${proprioDerivado.toFixed(1)}%`,
+      hint: {
+        description: "Participação do PL no financiamento total da empresa.",
+        formula: "PL ÷ (PL + Dívida Onerosa) × 100",
+      },
+      tone: propTone,
+    },
+    {
+      label: "Serviço da Dívida / mês",
+      value: fmtBRL(servicoDividaMes),
+      hint: {
+        description: "Saída mensal média com juros e amortização dos contratos.",
+        formula: "(Juros anuais + Amortizações anuais) ÷ 12",
+      },
+      tone: "default",
+    },
     {
       label: "D / PL",
       value: c.patrimonioLiquido > 0 ? `${dPL.toFixed(2)}×` : "—",
-      hint: "Saudável ≤ 2×",
+      hint: {
+        description: "Alavancagem patrimonial. Saudável ≤ 2× para PMEs.",
+        formula: "Dívida Onerosa ÷ Patrimônio Líquido",
+      },
       tone: dplTone,
     },
-    { label: "WACC", value: `${wacc.toFixed(2)}%`, hint: "Custo médio ponderado", tone: waccTone },
+    {
+      label: "WACC",
+      value: `${wacc.toFixed(2)}%`,
+      hint: {
+        description: "Custo médio ponderado do capital (próprio + terceiros, líquido de IR).",
+        formula: "wE × Ke + wD × Kd × (1 − t)",
+      },
+      tone: waccTone,
+    },
   ];
 
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-4">
         {kpis.map((k) => (
-          <div
-            key={k.label}
-            className="rounded-lg border border-border/60 bg-card/60 p-4"
-          >
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.label}</div>
-            <div
-              className={`mono mt-2 text-2xl font-bold ${
-                k.tone === "pos" ? "text-pos" : k.tone === "neg" ? "text-neg" : "text-foreground"
-              }`}
-            >
-              {k.value}
-            </div>
-            <div className="mt-1 text-[10px] text-muted-foreground">{k.hint}</div>
-          </div>
+          <StatCard key={k.label} label={k.label} value={k.value} hint={k.hint} tone={k.tone} sub={k.hint.formula} />
         ))}
       </div>
+
 
 
       {warnings.length > 0 && (
