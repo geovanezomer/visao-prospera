@@ -77,10 +77,43 @@ function VariationBadge({ pct }: { pct: number }) {
 // ─── Tabela genérica ──────────────────────────────────────────────────
 
 function ComparisonTable({ rows, snapshots }: { rows: Row[]; snapshots: Snapshot[] }) {
+  // Identifica o snapshot "Atual" (referência para Δ%).
+  const atualIdx = snapshots.findIndex((s) => s.isCurrent);
+  const atual = atualIdx >= 0 ? snapshots[atualIdx] : null;
   const hasDelta = snapshots.length >= 2;
-  // Δ% sempre do PRIMEIRO snapshot (mais antigo) vs ÚLTIMO (mais recente).
-  const first = snapshots[0];
-  const last = snapshots[snapshots.length - 1];
+
+  // Monta colunas: para cada histórico (não-atual), injeta uma coluna Δ% logo após
+  // o valor, comparando aquele ano vs "Atual". Se não houver Atual, mostra um
+  // único Δ% no fim (primeiro vs último), comportamento legado.
+  type Col =
+    | { kind: "value"; snap: Snapshot; idx: number }
+    | { kind: "delta"; from: Snapshot; to: Snapshot; label: string };
+  const columns: Col[] = [];
+  snapshots.forEach((s, i) => {
+    columns.push({ kind: "value", snap: s, idx: i });
+    if (atual && !s.isCurrent) {
+      columns.push({
+        kind: "delta",
+        from: s,
+        to: atual,
+        label: `Δ% ${s.label}→Atual`,
+      });
+    }
+  });
+  if (!atual && hasDelta) {
+    columns.push({
+      kind: "delta",
+      from: snapshots[0],
+      to: snapshots[snapshots.length - 1],
+      label: `Δ% ${snapshots[0].label}→${snapshots[snapshots.length - 1].label}`,
+    });
+  }
+
+  const computeDelta = (row: Row, from: Snapshot, to: Snapshot) => {
+    const a = row.get(from);
+    const b = row.get(to);
+    return row.asPercent ? b - a : safePct(b - a, Math.abs(a), NaN);
+  };
 
   return (
     <div className="overflow-x-auto rounded-lg border border-border/60 bg-card/40">
@@ -88,53 +121,65 @@ function ComparisonTable({ rows, snapshots }: { rows: Row[]; snapshots: Snapshot
         <thead className="bg-muted/30 text-xs uppercase tracking-wider">
           <tr>
             <th className="px-3 py-2 text-left font-medium text-muted-foreground">Linha</th>
-            {snapshots.map((s) => (
-              <th key={s.label} className="px-3 py-2 text-right font-medium">
-                {s.label}
-                {s.isCurrent && (
-                  <span className="ml-1 text-[9px] font-normal text-muted-foreground">
-                    (anualizado)
-                  </span>
-                )}
-              </th>
-            ))}
-            {hasDelta && (
-              <th className="px-3 py-2 text-right font-medium" title={`${first.label} → ${last.label}`}>
-                Δ%
-              </th>
+            {columns.map((c, j) =>
+              c.kind === "value" ? (
+                <th key={j} className="px-3 py-2 text-right font-medium">
+                  {c.snap.label}
+                  {c.snap.isCurrent && (
+                    <span className="ml-1 text-[9px] font-normal text-muted-foreground">
+                      (anualizado)
+                    </span>
+                  )}
+                </th>
+              ) : (
+                <th
+                  key={j}
+                  className="px-3 py-2 text-right text-[10px] font-medium text-muted-foreground"
+                  title={c.label}
+                >
+                  Δ% vs Atual
+                </th>
+              ),
             )}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, i) => {
-            const values = snapshots.map(row.get);
-            const v0 = values[0];
-            const vN = values[values.length - 1];
-            const deltaPct = row.asPercent ? vN - v0 : safePct(vN - v0, Math.abs(v0), NaN);
+          {rows.map((row) => {
+            // Linha de destaque se QUALQUER Δ% (histórico→atual) ultrapassar o limiar.
+            const rowDeltas = columns
+              .filter((c): c is Extract<Col, { kind: "delta" }> => c.kind === "delta")
+              .map((c) => computeDelta(row, c.from, c.to));
             const isAlert =
-              hasDelta && Number.isFinite(deltaPct) && Math.abs(deltaPct) >= ALERT_THRESHOLD;
+              !row.bold &&
+              rowDeltas.some((d) => Number.isFinite(d) && Math.abs(d) >= ALERT_THRESHOLD);
             return (
               <tr
                 key={row.label}
                 className={cn(
                   "border-t border-border/40",
                   row.bold && "bg-muted/20 font-semibold",
-                  isAlert && !row.bold && "bg-amber-500/5",
+                  isAlert && "bg-amber-500/5",
                 )}
               >
                 <td className={cn("px-3 py-1.5", row.indent && "pl-7 text-muted-foreground")}>
                   {row.label}
                 </td>
-                {values.map((v, j) => (
-                  <td key={j} className="px-3 py-1.5 text-right tabular-nums">
-                    {row.asPercent ? fmtPct(v) : fmtBRL(v)}
-                  </td>
-                ))}
-                {hasDelta && (
-                  <td className="px-3 py-1.5 text-right">
-                    <VariationBadge pct={deltaPct} />
-                  </td>
-                )}
+                {columns.map((c, j) => {
+                  if (c.kind === "value") {
+                    const v = row.get(c.snap);
+                    return (
+                      <td key={j} className="px-3 py-1.5 text-right tabular-nums">
+                        {row.asPercent ? fmtPct(v) : fmtBRL(v)}
+                      </td>
+                    );
+                  }
+                  const d = computeDelta(row, c.from, c.to);
+                  return (
+                    <td key={j} className="px-3 py-1.5 text-right">
+                      <VariationBadge pct={d} />
+                    </td>
+                  );
+                })}
               </tr>
             );
           })}
@@ -142,14 +187,17 @@ function ComparisonTable({ rows, snapshots }: { rows: Row[]; snapshots: Snapshot
       </table>
       {hasDelta && (
         <p className="border-t border-border/40 px-3 py-2 text-[10px] text-muted-foreground">
-          Δ% compara o primeiro vs o último período selecionado. Linhas com variação ≥{" "}
-          {ALERT_THRESHOLD}% são destacadas. Ano corrente exibido com totais anualizados (extrapolados
-          pelos meses preenchidos).
+          {atual
+            ? `Δ% compara cada ano histórico vs Atual. `
+            : `Δ% compara o primeiro vs o último período selecionado. `}
+          Variações ≥ {ALERT_THRESHOLD}% destacam a linha (verde = aumento, vermelho = queda). Ano
+          corrente exibido com totais anualizados (extrapolados pelos meses preenchidos).
         </p>
       )}
     </div>
   );
 }
+
 
 // ─── DRE ──────────────────────────────────────────────────────────────
 
