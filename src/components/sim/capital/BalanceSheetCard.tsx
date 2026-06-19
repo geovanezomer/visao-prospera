@@ -22,10 +22,12 @@ export function BalanceSheetCard({
   capital,
   onChange,
   debtContractsSlot,
+  capexSlot,
 }: {
   capital: AppState["capital"];
   onChange: (patch: Partial<AppState["capital"]>) => void;
   debtContractsSlot?: React.ReactNode;
+  capexSlot?: React.ReactNode;
 }) {
   const ativoCircCalc =
     (capital.disponibilidades || 0) + (capital.estoques || 0) + (capital.contasReceber || 0);
@@ -178,6 +180,8 @@ export function BalanceSheetCard({
         )}
 
       </StepCard>
+
+      {capexSlot}
 
       {/* PASSO 3 — RESUMO + KPIs */}
       <StepCard
