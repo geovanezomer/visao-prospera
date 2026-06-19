@@ -21,6 +21,7 @@ import {
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
 import { leverageDisplay } from "./leverageLabel";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { HistoricalYearPills } from "./HistoricalYearPills";
 
 const CHART_COLORS = [
   "#00E5A0",
