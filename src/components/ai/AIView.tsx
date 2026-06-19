@@ -13,6 +13,8 @@ import {
   X,
   Paperclip,
   Brain,
+  Layers,
+  ShieldCheck,
 } from "lucide-react";
 import { AIConfigDialog } from "./AIConfigDialog";
 import type { AppState } from "@/engines/finance/types";
