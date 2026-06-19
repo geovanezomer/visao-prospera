@@ -355,8 +355,26 @@ export interface AppState {
   schemaVersion?: number;
   businessType: BusinessType;
   companyName: string;
-  /** Número de colaboradores (headcount). Base para indicadores de produtividade. */
+  /** Número de colaboradores (headcount). Base para indicadores de produtividade.
+   *  Mantido por compatibilidade — preferir `headcountRange` no novo cadastro. */
   numColaboradores?: number;
+
+  // ─── Cadastro estendido (Fase 2) ───────────────────────────────────────
+  /** CNPJ (apenas dígitos ou formatado). Opcional. */
+  cnpj?: string;
+  /** Ramo de atuação dentro do `businessType` (ex: "saude", "construcao"). */
+  ramoAtuacao?: string;
+  /** Faixa de headcount — substitui o número exato para benchmarks. */
+  headcountRange?: "1-9" | "10-49" | "50-99" | "100+";
+  /** Período de análise em meses (6 / 12 / 24 / 36). Default 12. */
+  periodoAnaliseMeses?: 6 | 12 | 24 | 36;
+  /** Mês de início do exercício fiscal (1-12). Default 1 (Janeiro). */
+  fiscalYearStartMonth?: number;
+  /** Margem-alvo interna do consultor (%). Benchmark adicional ao setorial. */
+  margemAlvoPct?: number;
+  /** Moeda base (default "BRL"). Preparação para i18n futura. */
+  moedaBase?: string;
+
   revenue: Revenue;
   costs: CostLine[];
   capital: CapitalStructure;
