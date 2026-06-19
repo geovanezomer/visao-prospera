@@ -232,7 +232,10 @@ export function DRETab() {
       titulo: "(±) Outras Despesas/Receitas Operacionais",
       v: outrasOperacionais,
       tone: "mix",
-      lines: [{ label: "Depreciação & Amortização", values: dre.depreciacao }],
+      lines: [
+        { label: "Depreciação & Amortização", values: dre.depreciacao.map((d) => -d) },
+        ...linhasOutrasReceitasOp,
+      ],
       emptyMsg: "Sem outras despesas/receitas operacionais.",
     },
     {
@@ -248,9 +251,7 @@ export function DRETab() {
       titulo: "(+) Receitas Financeiras",
       v: receitasFinMensal,
       tone: "pos",
-      lines: (state.revenue.receitasFinanceiras ?? [])
-        .map((rf) => ({ label: rf.label, values: rf.valores ?? zeros() }))
-        .filter((x) => sum(x.values) > 0),
+      lines: linhasReceitasFin,
       emptyMsg: "Sem receitas financeiras cadastradas.",
     },
     { kind: "linha", k: "(±) Ganho/Perda em alienação de ativos", v: ganhoAlienacao, tone: "pos" },
