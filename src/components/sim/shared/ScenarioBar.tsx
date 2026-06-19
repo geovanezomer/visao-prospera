@@ -205,10 +205,10 @@ export function ScenarioBar() {
                         {m ? fmtBRL(m.ebitda) : "—"}
                       </td>
                       <td className="num p-2 text-right">
-                        {m ? fmtPct(m.roe) : "—"}
+                        {m ? fmtPct(m.roe / 100) : "—"}
                       </td>
                       <td className="num p-2 text-right">
-                        {m ? fmtPct(m.margemLiquida) : "—"}
+                        {m ? fmtPct(m.margemLiquida / 100) : "—"}
                       </td>
                       <td className="num p-2 text-right">
                         {m ? fmtBRL(m.lucroLiquido) : "—"}
