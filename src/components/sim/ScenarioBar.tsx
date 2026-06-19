@@ -236,7 +236,8 @@ export function ScenarioBar() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
