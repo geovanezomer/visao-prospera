@@ -1,0 +1,81 @@
+// Cálculo de cronograma de contratos de dívida (Price e SAC).
+// Gera arrays mensais (12 meses) de juros e amortização para alimentar:
+// - state.cashflow.amortizacoes (saída de caixa de principal)
+// - custo financeiro (juros) via linha de custo sintética em "financeiro"
+// - capital.dividaOnerosa (soma dos saldos)
+import type { DebtContract } from "./types";
+
+export const DEBT_CONTRACTS_COST_ID = "__debt_contracts_juros";
+
+export interface ContractSchedule {
+  juros: number[]; // 12 meses
+  amort: number[]; // 12 meses
+  parcelaMes: number; // valor representativo da parcela
+  totalJurosAno: number;
+  totalAmortAno: number;
+}
+
+/** Gera cronograma 12 meses do contrato. Usa juros nominais i/12. */
+export function scheduleContract(c: DebtContract): ContractSchedule {
+  const juros: number[] = new Array(12).fill(0);
+  const amort: number[] = new Array(12).fill(0);
+  const saldoIni = Math.max(0, c.saldoDevedor || 0);
+  const n = Math.max(1, Math.floor(c.prazoMeses || 0));
+  const im = Math.max(0, (c.taxaAA || 0) / 100) / 12;
+  if (saldoIni <= 0 || n <= 0) {
+    return { juros, amort, parcelaMes: 0, totalJurosAno: 0, totalAmortAno: 0 };
+  }
+
+  let saldo = saldoIni;
+  const parcelaPrice =
+    im > 0 ? (saldo * im) / (1 - Math.pow(1 + im, -n)) : saldo / n;
+  const amortSAC = saldo / n;
+  const meses = Math.min(12, n);
+  for (let m = 0; m < meses; m++) {
+    const j = saldo * im;
+    let a = c.sistema === "price" ? parcelaPrice - j : amortSAC;
+    if (a > saldo) a = saldo;
+    if (a < 0) a = 0;
+    juros[m] = j;
+    amort[m] = a;
+    saldo -= a;
+  }
+
+  const parcelaMes =
+    c.sistema === "price" ? parcelaPrice : amortSAC + saldoIni * im;
+  const totalJurosAno = juros.reduce((s, v) => s + v, 0);
+  const totalAmortAno = amort.reduce((s, v) => s + v, 0);
+  return { juros, amort, parcelaMes, totalJurosAno, totalAmortAno };
+}
+
+/** Agrega os cronogramas de todos os contratos. */
+export function aggregateContracts(contracts: DebtContract[]) {
+  const juros = new Array(12).fill(0);
+  const amort = new Array(12).fill(0);
+  let saldoTotal = 0;
+  let parcelaMesTotal = 0;
+  for (const c of contracts) {
+    const s = scheduleContract(c);
+    for (let i = 0; i < 12; i++) {
+      juros[i] += s.juros[i];
+      amort[i] += s.amort[i];
+    }
+    saldoTotal += Math.max(0, c.saldoDevedor || 0);
+    parcelaMesTotal += s.parcelaMes;
+  }
+  return {
+    juros,
+    amort,
+    saldoTotal,
+    parcelaMesTotal,
+    totalJurosAno: juros.reduce((s, v) => s + v, 0),
+    totalAmortAno: amort.reduce((s, v) => s + v, 0),
+  };
+}
+
+/** Converte prazo em meses (a partir de hoje) para rótulo "Mmm/AAAA". */
+export function vencimentoLabel(prazoMeses: number, from = new Date()): string {
+  const d = new Date(from.getFullYear(), from.getMonth() + Math.max(0, prazoMeses), 1);
+  const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  return `${meses[d.getMonth()]}/${d.getFullYear()}`;
+}
