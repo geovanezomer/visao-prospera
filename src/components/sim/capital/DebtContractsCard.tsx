@@ -50,9 +50,9 @@ export function DebtContractsCard({
     <div className="rounded-lg border border-border/60 bg-card/40 p-4 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-primary" />
+          <Landmark className="h-4 w-4 text-primary" />
           <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Contratos de dívida
+            Empréstimos e financiamentos
           </div>
           <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">
             Novo
