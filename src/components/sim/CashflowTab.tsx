@@ -20,7 +20,7 @@ import {
 import { DFCTable } from "./cashflow/DFCTable";
 import { NonOpTable } from "./cashflow/NonOpTable";
 import { NonOpKey } from "./cashflow/tableHelpers";
-import { HistoricalYearPills } from "./HistoricalYearPills";
+
 import { CashFlowComparison } from "./ComparisonView";
 import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
 
@@ -160,7 +160,6 @@ export function CashflowTab() {
 
   return (
     <div className="space-y-6">
-      <HistoricalYearPills />
       {showComparison ? (
         <CashFlowComparison snapshots={comparisonSnaps} />
       ) : (
