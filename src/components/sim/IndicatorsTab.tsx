@@ -19,6 +19,7 @@ import {
   YAxis,
 } from "recharts";
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
+import { leverageDisplay } from "./leverageLabel";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 const CHART_COLORS = [
