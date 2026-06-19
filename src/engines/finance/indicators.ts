@@ -93,7 +93,7 @@ export interface Indicators {
   paybackCapex: number;
   /** @deprecated Use `amortizacaoPlPorLucro` (mesma fórmula). Mantido para retrocompat. */
   payback: number;
-  /** FCF Operacional (CFO): EBITDA − Impostos − Δ NCG. ANTES do CAPEX. */
+  /** FCF Operacional antes do CAPEX: NOPAT + D&A − Δ NCG. */
   fcf: number;
   /** CAPEX anual total: plano mensal + ativações do ano. */
   capexAnual: number;
@@ -381,8 +381,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // Auditoria #3: ΔNCG (variação anual) em vez do gap total.
   // Usa `ncgAbertura` quando informada; senão `disponibilidades` (caixa+bancos)
   // como proxy da NCG já financiada na abertura — fonte única de caixa.
+  // CFO: ΔNCG pode ser negativo; nesse caso libera caixa e AUMENTA o FCF.
   const ncgAbertura = Math.max(0, capital.ncgAbertura ?? capital.disponibilidades ?? 0);
-  const deltaNcgAnual = Math.max(0, ncg - ncgAbertura);
+  const deltaNcgAnual = ncg - ncgAbertura;
   // FCFF (Free Cash Flow to the Firm) padrão Damodaran/Koller:
   //   FCFF = NOPAT + D&A − ΔNCG − CAPEX
   // `nopat` já calculado acima com a alíquota efetiva observada do regime.
