@@ -42,8 +42,9 @@ export interface Indicators {
   pontoEquilibrioFinanceiro: number;
   /** Lucro Líquido ÷ Patrimônio Líquido × 100 */
   roe: number;
-  /** Lucro Líquido ÷ Ativo Total × 100 */
+  /** Lucro Líquido ÷ Ativo Total MÉDIO × 100 (médio quando `ativoTotalAbertura` informado; senão ponto final). */
   roa: number;
+
   /** NOPAT ÷ Capital Investido × 100 */
   roic: number;
   /** (Capital Próprio/V × Ke) + (Dívida/V × Kd × (1 − IR Shield)) */
