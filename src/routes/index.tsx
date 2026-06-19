@@ -304,7 +304,6 @@ function SimulaPro() {
                         <SimulatorTab
                           state={state}
                           apply={update}
-                          saveScenario={save}
                           params={simParams}
                           setParams={setSimParams}
                         />
