@@ -22,7 +22,6 @@ import {
   Save,
   FolderOpen,
   Calculator,
-  Settings,
 } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 
@@ -31,7 +30,6 @@ import { useFinance } from "@/engines/finance/AppStateContext";
 import { TabKey } from "@/engines/finance/types";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { CompanyConfigDialog } from "@/components/sim/CompanyConfigDialog";
 import { getRamoLabel } from "@/engines/finance/companyProfile";
 
 import { cn } from "@/lib/utils";
@@ -54,7 +52,6 @@ export function AppSidebar({
   dirty,
 }: AppSidebarProps) {
   const { state } = useFinance();
-  const [configOpen, setConfigOpen] = useState(false);
   const { user, logout } = useAuth();
   const { setOpenMobile } = useSidebar();
 
