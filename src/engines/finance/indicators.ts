@@ -351,8 +351,15 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const CAP_COB = 999;
   const CAP_DL_EBITDA = 99;
   const CAP_PAYBACK = 99;
+  // [Auditoria Bloco 4] Cobertura de Juros = EBIT/Juros.
+  // Quando juros ≈ 0, sentinela = +CAP_COB se EBIT≥0 (sem alavancagem), −CAP_COB se EBIT<0 (prejuízo operacional sem dívida).
   const coberturaJuros =
-    jurosAnual > 1 ? Math.min(CAP_COB, safeDivide(ebitAnual, jurosAnual, CAP_COB)) : CAP_COB;
+    jurosAnual > 1
+      ? Math.max(-CAP_COB, Math.min(CAP_COB, safeDivide(ebitAnual, jurosAnual, CAP_COB)))
+      : ebitAnual < 0
+        ? -CAP_COB
+        : CAP_COB;
+
   const giroAtivo = capital.ativoTotal > 0 ? safeDivide(receitaLiqAnual, capital.ativoTotal) : 0;
   const dividaLiq = computeNetDebt(state); // SSOT-1: helper único.
   // Cash-rich (dividaLiq < 0) com base ≤ 1: usa sentinela negativa para PRESERVAR o sinal
