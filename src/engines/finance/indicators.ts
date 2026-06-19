@@ -114,7 +114,13 @@ export interface Indicators {
   lucroPorColaborador: number;
   /** Folha total anual (com encargos) ÷ Receita Líquida × 100. */
   custoPessoalSobreReceita: number;
-  /** (Receita − Ponto de Equilíbrio) ÷ Receita × 100 — folga de receita antes do prejuízo. */
+  /**
+   * Margem de Segurança = (Receita Líquida − Ponto de Equilíbrio OPERACIONAL) ÷ Receita Líquida × 100.
+   * Base: Receita Líquida ANUAL (receita bruta − deduções − tributos sobre venda) — mesma
+   * base usada no cálculo da Margem de Contribuição e do PE (custosFixos ÷ MC%).
+   * Usa o PE OPERACIONAL (sem juros) — folga genuína de OPERAÇÃO antes do prejuízo;
+   * incluir juros mistura risco financeiro com risco operacional.
+   */
   margemSeguranca: number;
   /** EBITDA ÷ (Juros + Amortizações de Principal) — métrica bancária de cobertura do serviço da dívida. */
   dscr: number;
@@ -334,9 +340,14 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const folha = folhaAnual(state);
   const custoPessoalSobreReceita = receitaLiqAnual > 0 ? (folha / receitaLiqAnual) * 100 : 0;
 
+  // Margem de Segurança OPERACIONAL: usa o PE operacional (sem juros) sobre a Receita Líquida.
+  // Mesma base do PE (custosFixos ÷ MC%, onde MC% = (RL − custosVar) ÷ RL).
   const margemSeguranca =
-    receitaLiqAnual > 0 && pontoEquilibrio > 0
-      ? Math.max(-999, Math.min(999, ((receitaLiqAnual - pontoEquilibrio) / receitaLiqAnual) * 100))
+    receitaLiqAnual > 0 && pontoEquilibrioOperacional > 0
+      ? Math.max(
+          -999,
+          Math.min(999, ((receitaLiqAnual - pontoEquilibrioOperacional) / receitaLiqAnual) * 100),
+        )
       : 0;
 
   const amortizPrincipalAnual = sum(state.cashflow.amortizacoes);
