@@ -352,3 +352,57 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
     </div>
   );
 }
+
+// Popover compacto: lista memórias persistentes salvas pela IA com
+// botões de exclusão individual. Reativo via useMemories (localStorage).
+function MemoriesPopover({ company }: { company: string }) {
+  const items = useMemories(company);
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" title={`Memórias persistentes (${items.length})`}>
+          <Brain className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-96 max-h-96 overflow-y-auto">
+        <div className="mb-2 flex items-center justify-between">
+          <h4 className="text-sm font-semibold">Memória persistente</h4>
+          <span className="text-xs text-muted-foreground">{items.length}/50</span>
+        </div>
+        {items.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Nenhuma memória salva. A IA registra aqui conclusões importantes para reusar em
+            próximas conversas.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {items.map((m) => (
+              <li
+                key={m.id}
+                className="rounded border border-border/40 p-2 text-xs flex gap-2 items-start"
+              >
+                <div className="flex-1">
+                  <div className="text-[10px] uppercase text-muted-foreground">{m.categoria}</div>
+                  <div>{m.conteudo}</div>
+                  {m.fonte && (
+                    <div className="mt-1 text-[10px] text-muted-foreground">fonte: {m.fonte}</div>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => deleteMemory(company, m.id)}
+                  title="Remover memória"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+}
