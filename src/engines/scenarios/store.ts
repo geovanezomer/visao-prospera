@@ -63,6 +63,15 @@ export interface ScenarioRecord {
     ev?: number;
     saldoFinalCaixa?: number;
   };
+  /** Tipo do cenário:
+   *  - "whatif" (default): simulação de alavanca, comparado contra base.
+   *  - "historical": snapshot de um ano fiscal fechado, usado pelas pills
+   *    de período no cabeçalho. Carrega AppState inteiro ao ser restaurado. */
+  kind?: "whatif" | "historical";
+  /** Apenas para `kind: "historical"`: ano fiscal do snapshot (ex: 2024). */
+  fiscalYear?: number;
+  /** Snapshot completo do AppState. Obrigatório quando `kind === "historical"`. */
+  state?: AppState;
   createdAt: number;
   updatedAt: number;
   /** Soft delete — filtrado em listScenarios por padrão. */
