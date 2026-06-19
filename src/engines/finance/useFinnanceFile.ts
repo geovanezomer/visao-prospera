@@ -6,6 +6,7 @@ import type { AppState, Scenario } from "./types";
 import { defaultFilename, serialize } from "./fileFormat";
 import { downloadFinnanceFile, pickFinnanceFile } from "./fileIO";
 import { collectExtras, applyExtras } from "./fileExtras";
+import { uploadBackup, isBackupEnabled, type BackupStatus } from "@/lib/api/cloudBackup";
 
 interface ConfirmFn {
   (opts: {
@@ -25,6 +26,10 @@ interface Args {
   hydrated: boolean;
   /** Confirm programático (padronizado via AlertDialog). Fallback: window.confirm. */
   confirm?: ConfirmFn;
+  /** ID do usuário autenticado — habilita backup silencioso no Supabase Storage. */
+  userId?: string;
+  /** Callback opcional notificado a cada transição de status do backup em nuvem. */
+  onBackupStatus?: (status: BackupStatus) => void;
 }
 
 // Hash barato e estável para detectar "dirty" sem deep-equal pesado.
@@ -54,6 +59,8 @@ export function useFinnanceFile({
   resetState,
   hydrated,
   confirm,
+  userId,
+  onBackupStatus,
 }: Args) {
   // Fallback para window.confirm caso o consumidor não injete um confirm customizado.
   const askConfirm: ConfirmFn = useCallback(
@@ -146,12 +153,28 @@ export function useFinnanceFile({
         /* ignora */
       }
       toast.success(`Arquivo salvo: ${name}`);
+
+      // Backup silencioso no Supabase Storage (não bloqueia o fluxo de save).
+      // Só executa se houver usuário autenticado e a flag VITE_SUPABASE_BACKUP estiver ON.
+      if (userId && isBackupEnabled()) {
+        const filename = name.endsWith(".finnance") ? name : `${name}.finnance`;
+        const json = JSON.stringify(payload, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        onBackupStatus?.("syncing");
+        uploadBackup(userId, filename, blob)
+          .then(() => onBackupStatus?.("synced"))
+          .catch((err) => {
+            // Falha no backup não interrompe o usuário — arquivo local já foi salvo.
+            console.warn("[FinnancePRO] Backup falhou:", err);
+            onBackupStatus?.("error");
+          });
+      }
     } catch (err) {
       toast.error("Falha ao salvar arquivo", {
         description: err instanceof Error ? err.message : String(err),
       });
     }
-  }, [state, scenarios, currentFileName]);
+  }, [state, scenarios, currentFileName, userId, onBackupStatus]);
 
   const open = useCallback(async () => {
     if (dirty) {
