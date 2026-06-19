@@ -102,8 +102,10 @@ export function ScenarioBar() {
   const handleLoad = (id: string) => {
     const rec = historicals.find((h) => h.id === id);
     if (!rec?.state) return;
-    update(() => rec.state!);
-    toast.success(`Visualizando ${rec.name}`);
+    // Auto-arquiva o ano corrente antes de trocar — nada se perde.
+    const next = switchToYear(company, rec, state);
+    update(() => next);
+    toast.success(`Carregado: ${rec.name} (ano atual arquivado)`);
     setListOpen(false);
   };
 
