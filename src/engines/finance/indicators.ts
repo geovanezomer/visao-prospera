@@ -42,8 +42,9 @@ export interface Indicators {
   pontoEquilibrioFinanceiro: number;
   /** Lucro Líquido ÷ Patrimônio Líquido × 100 */
   roe: number;
-  /** Lucro Líquido ÷ Ativo Total × 100 */
+  /** Lucro Líquido ÷ Ativo Total MÉDIO × 100 (médio quando `ativoTotalAbertura` informado; senão ponto final). */
   roa: number;
+
   /** NOPAT ÷ Capital Investido × 100 */
   roic: number;
   /** (Capital Próprio/V × Ke) + (Dívida/V × Kd × (1 − IR Shield)) */
@@ -78,8 +79,9 @@ export interface Indicators {
   grauEndividamento: number;
   /** EBIT ÷ Despesas Financeiras */
   coberturaJuros: number;
-  /** Receita Líquida ÷ Ativo Total */
+  /** Receita Líquida ÷ Ativo Total MÉDIO (consistente com ROA). */
   giroAtivo: number;
+
   /** (Dívida Total − Caixa) ÷ EBITDA */
   dividaLiqEbitda: number;
   /** (Dívida Total − Caixa) ÷ EBIT */
@@ -283,11 +285,18 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const capitalInvestido = ciAtivo > 0 ? ciAtivo : ciFinanciamento;
   const roic = capitalInvestido > 0 ? safePct(nopat, capitalInvestido) : 0;
 
-  // ROE com PL MÉDIO (CFA/Damodaran).
+  // [Auditoria Bloco 5] ROE e ROA com BASES MÉDIAS (CFA/Damodaran). Numerador é fluxo
+  // (LL anual); denominador deve ser estoque MÉDIO do período para consistência matemática.
+  // Fallback para ponto final quando abertura não informada.
   const plAbertura = Math.max(0, capital.patrimonioLiquidoAbertura ?? 0);
   const plMedio = plAbertura > 0 ? (plAbertura + PL) / 2 : PL;
   const roe = plMedio > 0 ? safePct(llAnual, plMedio) : 0;
-  const roa = capital.ativoTotal > 0 ? safePct(llAnual, capital.ativoTotal) : 0;
+  const atAbertura = Math.max(0, capital.ativoTotalAbertura ?? 0);
+  const atMedio = atAbertura > 0 && capital.ativoTotal > 0
+    ? (atAbertura + capital.ativoTotal) / 2
+    : capital.ativoTotal;
+  const roa = atMedio > 0 ? safePct(llAnual, atMedio) : 0;
+
 
   // ---- Ciclo / NCG / Gap ----
   const ei = Math.max(0, capital.estoqueInicial ?? 0);
@@ -369,7 +378,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
         ? -CAP_COB
         : CAP_COB;
 
-  const giroAtivo = capital.ativoTotal > 0 ? safeDivide(receitaLiqAnual, capital.ativoTotal) : 0;
+  // [Auditoria Bloco 5] Giro do Ativo (DuPont) também usa ATIVO MÉDIO quando abertura disponível.
+  const giroAtivo = atMedio > 0 ? safeDivide(receitaLiqAnual, atMedio) : 0;
+
   const dividaLiq = computeNetDebt(state); // SSOT-1: helper único.
   // Cash-rich (dividaLiq < 0) com base ≤ 1: usa sentinela negativa para PRESERVAR o sinal
   // (antes retornava 0 e escondia a posição líquida de caixa).

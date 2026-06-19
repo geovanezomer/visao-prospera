@@ -145,7 +145,11 @@ export interface CapitalStructure {
    * = fallback para PL fim de período.
    */
   patrimonioLiquidoAbertura?: number;
+  /** Ativo Total de abertura (saldo inicial). Quando > 0, ROA e Giro do Ativo usam ATIVO MÉDIO
+   *  = (abertura + final) / 2 (consistente com PL médio do ROE). Default 0 = fallback ponto final. */
+  ativoTotalAbertura?: number;
   ativoTotal: number;
+
   estoques: number;
   disponibilidades: number;
   // ----- Fonte da verdade para ROIC, WACC e índices de liquidez -----

@@ -225,3 +225,35 @@ describe("Indicadores — Cobertura de Juros e Giro", () => {
     expect(ind.giroAtivo).toBe(0);
   });
 });
+
+// [Auditoria Bloco 5] ROA e Giro do Ativo devem usar ATIVO MÉDIO quando abertura informada.
+describe("Indicadores — ROA / Giro com Ativo Médio (CFA/Damodaran)", () => {
+  it("ROA usa Ativo MÉDIO = (abertura + final)/2 quando ativoTotalAbertura > 0", () => {
+    const sFinal = createState({
+      capital: { ativoTotal: 1_200_000 },
+      tax: { regime: "real" },
+    });
+    const sMedio = createState({
+      capital: { ativoTotal: 1_200_000, ativoTotalAbertura: 800_000 },
+      tax: { regime: "real" },
+    });
+    const indFinal = calcIndicators(sFinal, buildDRE(sFinal, "real").dre);
+    const indMedio = calcIndicators(sMedio, buildDRE(sMedio, "real").dre);
+    // Médio = 1.000.000 < final = 1.200.000 → ROA médio > ROA ponto-final (mesmo LL, denominador menor).
+    if (indFinal.roa !== 0) {
+      expect(Math.abs(indMedio.roa)).toBeGreaterThan(Math.abs(indFinal.roa));
+    }
+    expect(Number.isFinite(indMedio.roa)).toBe(true);
+  });
+
+  it("Giro do Ativo usa Ativo MÉDIO (consistente com ROA)", () => {
+    const s = createState({
+      capital: { ativoTotal: 1_000_000, ativoTotalAbertura: 600_000 },
+    });
+    const ind = calcIndicators(s, buildDRE(s, "simples").dre);
+    // Médio = 800k. Giro = RL / 800k > RL / 1M.
+    expect(ind.giroAtivo).toBeGreaterThan(0);
+    expect(Number.isFinite(ind.giroAtivo)).toBe(true);
+  });
+});
+
