@@ -164,14 +164,6 @@ export function CashflowTab() {
         <CashFlowComparison snapshots={comparisonSnaps} />
       ) : (
         <>
-      {mesesCriticos.length > 0 && (
-        <div className="flex items-center gap-2">
-          <Badge variant="destructive" className="gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            Saldo ≤ {fmtBRL(limiar)} em {mesesCriticos.map((m) => m.mes).join(", ")}
-          </Badge>
-        </div>
-      )}
       {/* Sumário */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
