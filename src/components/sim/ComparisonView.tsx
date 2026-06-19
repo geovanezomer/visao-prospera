@@ -13,6 +13,7 @@ import { useMemo } from "react";
 import type { AppState } from "@/engines/finance/types";
 import { buildDRE } from "@/engines/finance/dre";
 import { buildCashFlow } from "@/engines/finance/cashflow";
+import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
 import { mesesPreenchidos, anualizar } from "@/engines/finance/periodUtils";
 import { safePct } from "@/engines/finance/safeMath";
