@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useFinance } from "@/engines/finance/AppStateContext";
+import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import type { AppState, BusinessType, TaxRegime } from "@/engines/finance/types";
 import { RAMOS_POR_SETOR } from "@/engines/finance/companyProfile";
 import { toast } from "sonner";
