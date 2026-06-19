@@ -78,10 +78,11 @@ export function DRETab() {
     return [];
   };
 
-  const regime = state.tax.regime;
-  const { dre, tax } = buildDRE(state, regime);
-  const ind = calcIndicators(state, dre);
-  const cf = buildCashFlow(state, regime);
+  // SSOT: useFinanceModel aplica `resolveEffectiveRegime` (Simples pode cair
+  // automaticamente para Presumido se exceder o teto). Garante que DRE/ind/cf
+  // sejam idênticos aos da aba Indicadores.
+  const { regime, dre, tax, ind, cf } = useFinanceModel(state);
+
   const limiar = state.cashflow.limiarAlerta ?? -10000;
   const mesesCriticosIdx = new Set(
     cf.saldoFinal.map((s, i) => (s <= limiar ? i : -1)).filter((i) => i >= 0),
