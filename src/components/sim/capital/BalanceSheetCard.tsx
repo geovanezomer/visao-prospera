@@ -181,6 +181,8 @@ export function BalanceSheetCard({
 
       </StepCard>
 
+      {capexSlot}
+
       {/* PASSO 3 — RESUMO + KPIs */}
       <StepCard
         step={3}
