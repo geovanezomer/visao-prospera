@@ -116,7 +116,7 @@ export function BalanceSheetCard({
         title="O que a empresa deve"
         subtitle="Dívidas, contas e obrigações"
       >
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-1">
           <SimpleField
             icon={<Users className="h-4 w-4" />}
             label="Fornecedores a pagar"
@@ -125,17 +125,11 @@ export function BalanceSheetCard({
             onChange={(n) => onChange({ fornecedores: n })}
             placeholder="0 = calculado pelo prazo médio"
           />
-          <div className="rounded-md border border-dashed border-border/40 bg-background/30 p-3 text-[11px] text-muted-foreground">
-            <div className="font-semibold text-foreground">Empréstimos e financiamentos</div>
-            <div className="mt-1">
-              Detalhados em <strong className="text-primary">Empréstimos e financiamentos</strong> abaixo (contratos com credor, taxa, sistema e prazo).
-              O saldo total alimenta automaticamente a dívida onerosa.
-            </div>
-            <div className="num mt-2 text-base font-semibold text-foreground">
-              {fmtBRL(capital.dividaOnerosa)}
-            </div>
-          </div>
         </div>
+
+        {debtContractsSlot && <div className="mt-3">{debtContractsSlot}</div>}
+
+
 
 
         <div className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-4">
