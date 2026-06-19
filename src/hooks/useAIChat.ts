@@ -27,6 +27,7 @@ import { estimateTokens } from "@/engines/ai/snapshot";
 // Se ultrapassado, comprime o miolo preservando contexto inicial + recente.
 const MAX_HISTORY_TOKENS = 6000;
 import { buildSystemPrompt, type AIMode } from "@/engines/ai/systemPrompt";
+import { loadAIMode, saveAIMode } from "@/engines/ai/modeStore";
 import { useMemories, memoriesToPromptBlock } from "@/engines/memory/store";
 import {
   processFile,
@@ -201,8 +202,18 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
   const memoriesBlock = useMemo(() => memoriesToPromptBlock(memories), [memories]);
 
   // Modo de atuação ativo (chat / cfo / controller / auditor / board).
-  // Transient — não persiste; o consultor escolhe por sessão.
-  const [mode, setMode] = useState<AIMode>("chat");
+  // Persistido por empresa em localStorage — restaurado ao recarregar.
+  const [mode, setModeRaw] = useState<AIMode>(() => loadAIMode(state.companyName || "default"));
+
+  // Ao trocar de empresa, recarrega o modo persistido daquela empresa.
+  useEffect(() => {
+    setModeRaw(loadAIMode(state.companyName || "default"));
+  }, [state.companyName]);
+
+  const setMode = (m: AIMode) => {
+    setModeRaw(m);
+    saveAIMode(state.companyName || "default", m);
+  };
 
   const buildSysPrompt = (overrideMode?: AIMode) =>
     buildSystemPrompt({
