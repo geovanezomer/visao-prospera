@@ -243,7 +243,7 @@ export function DREComparison({ snapshots }: { snapshots: Snapshot[] }) {
 
 export function CashFlowComparison({ snapshots }: { snapshots: Snapshot[] }) {
   const cfs = useMemo(
-    () => new Map(snapshots.map((s) => [s.label, buildCashFlow(s.state)])),
+    () => new Map(snapshots.map((s) => [s.label, buildFinancialModel(s.state).cf])),
     [snapshots],
   );
 
