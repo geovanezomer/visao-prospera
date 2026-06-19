@@ -418,7 +418,7 @@ export function IndicatorsTab() {
                   : undefined
             }
             desc="Peso da folha total (CLT + pró-labore + MOD, com encargos) sobre a receita. Acima de 35% acende alerta em serviços."
-            formula="Folha Total Anual ÷ Receita Líquida × 100"
+            formula="Folha Total Anual ÷ Receita Bruta × 100"
           />
           <Ind
             label="Margem de Segurança"
