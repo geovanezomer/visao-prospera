@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
 import {
@@ -112,9 +112,8 @@ export function TaxTab() {
   const rbAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
 
   // ----- Engine: memoizada (B1) — recomputa só quando state muda -----
-  // SSOT-4: compareRegimes já devolve llBy, best e desenquadradoSimples.
+  // SSOT-4: compareRegimes já devolve best e desenquadradoSimples.
   const regimes = useMemo(() => compareRegimes(state), [state]);
-  const llBy = regimes.llBy;
   const projAtiva = useMemo(() => compareErasForRegime(state, state.tax.regime), [state]);
 
   // B10: alíquota efetiva exibida usa o anexo *resolvido* (Fator R V→III).
@@ -531,144 +530,6 @@ export function TaxTab() {
         </RegimeCard>
       </div>
 
-      <div className="rounded-lg border border-border/60 bg-card/40">
-        <div className="border-b border-border/60 p-4">
-          <SectionTitle>Comparativo anual entre regimes</SectionTitle>
-        </div>
-
-        {/* Barras proporcionais — Lucro Líquido por regime */}
-        <div className="border-b border-border/60 p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Lucro líquido anual por regime
-            </div>
-            <div className="text-[11px] text-muted-foreground">
-              Quanto maior a barra, mais sobra para a empresa
-            </div>
-          </div>
-          {(() => {
-            const regs: TaxRegime[] = (["simples", "presumido", "real"] as TaxRegime[]).filter(
-              (r) => !(desenquadradoSimples && r === "simples"),
-            );
-            const labels: Record<TaxRegime, string> = {
-              simples: "Simples Nacional",
-              presumido: "Lucro Presumido",
-              real: "Lucro Real",
-            };
-            const values = regs.map((r) => llBy[r]);
-            const maxAbs = Math.max(1, ...values.map((v) => Math.abs(v)));
-            const bestVal = llBy[best];
-            return (
-              <div className="space-y-3">
-                {regs.map((r) => {
-                  const v = llBy[r];
-                  const widthPct = (Math.abs(v) / maxAbs) * 100;
-                  const isBest = r === best;
-                  const isCurrent = r === state.tax.regime;
-                  const delta = v - bestVal;
-                  const deltaPct = bestVal !== 0 ? (delta / Math.abs(bestVal)) * 100 : 0;
-                  return (
-                    <div key={r}>
-                      <div className="mb-1 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`font-semibold ${isBest ? "text-pos" : "text-foreground"}`}
-                          >
-                            {labels[r]}
-                          </span>
-                          {isBest && (
-                            <Badge className="h-4 bg-pos/20 text-pos border border-pos/40 px-1.5 text-[9px]">
-                              MELHOR
-                            </Badge>
-                          )}
-                          {isCurrent && (
-                            <Badge variant="outline" className="h-4 px-1.5 text-[9px]">
-                              Ativo
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="num text-sm font-semibold tabular-nums">
-                            {fmtBRL(v)}
-                          </span>
-                          {!isBest && (
-                            <span className="num text-[11px] text-neg tabular-nums">
-                              {delta >= 0 ? "+" : ""}
-                              {fmtBRL(delta)} ({deltaPct.toFixed(1)}%)
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="h-3 w-full overflow-hidden rounded-full bg-border/40">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            v < 0 ? "bg-neg" : isBest ? "bg-pos" : "bg-primary/60"
-                          }`}
-                          style={{ width: `${widthPct}%` }}
-                        />
-                      </div>
-                      <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-                        <span>
-                          Tributos: <span className="num">{fmtBRL(regimes[r].annual)}</span>
-                        </span>
-                        <span>
-                          Carga: <span className="num">{fmtPct(regimes[r].effective / 100)}</span>
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-        </div>
-
-        {(() => {
-          const cols: TaxRegime[] = (["simples", "presumido", "real"] as TaxRegime[]).filter(
-            (r) => !(desenquadradoSimples && r === "simples"),
-          );
-          const labelOf = (r: TaxRegime) =>
-            r === "simples"
-              ? "Simples Nacional"
-              : r === "presumido"
-                ? "Lucro Presumido"
-                : "Lucro Real";
-          const gridCls = cols.length === 3 ? "grid-cols-4" : "grid-cols-3";
-          return (
-            <div className={`grid ${gridCls} gap-px bg-border/40`}>
-              <div className="bg-card p-4 text-xs uppercase tracking-wider text-muted-foreground">
-                Indicador
-              </div>
-              {cols.map((r) => (
-                <div
-                  key={r}
-                  className={`bg-card p-4 text-xs uppercase tracking-wider ${best === r ? "text-primary" : "text-muted-foreground"}`}
-                >
-                  {labelOf(r)}
-                  {best === r && <span className="ml-2">✓</span>}
-                </div>
-              ))}
-              {[
-                { k: "Tributos totais (ano)", v: (r: TaxRegime) => fmtBRL(regimes[r].annual) },
-                { k: "Alíquota efetiva", v: (r: TaxRegime) => fmtPct(regimes[r].effective / 100) },
-                { k: "Lucro Líquido (ano)", v: (r: TaxRegime) => fmtBRL(llBy[r]) },
-              ].map((row) => (
-                <Fragment key={row.k}>
-                  <div className="bg-card p-3 text-xs text-muted-foreground">{row.k}</div>
-                  {cols.map((r) => (
-                    <div
-                      key={r + row.k}
-                      className={`bg-card p-3 num text-sm ${best === r ? "text-pos font-semibold" : ""}`}
-                    >
-                      {row.v(r)}
-                    </div>
-                  ))}
-                </Fragment>
-              ))}
-            </div>
-          );
-        })()}
-      </div>
 
       {/* Comparativo Atual vs. Reforma — tabela + gráfico */}
       <div className="rounded-lg border border-border/60 bg-card/40">
