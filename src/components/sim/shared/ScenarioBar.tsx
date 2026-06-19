@@ -32,6 +32,7 @@ import { useFinance } from "@/engines/finance/AppStateContext";
 import {
   useScenarios,
   archiveYearAsHistorical,
+  switchToYear,
   deleteScenario,
 } from "@/engines/scenarios/store";
 import { ConfirmDialog } from "@/components/sim/shared/ConfirmDialog";
