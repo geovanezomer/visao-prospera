@@ -24,11 +24,9 @@ import {
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 
 import { NAV_ITEMS } from "./nav-config";
-import { useFinance } from "@/engines/finance/AppStateContext";
 import { TabKey } from "@/engines/finance/types";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { getRamoLabel } from "@/engines/finance/companyProfile";
 
 import { cn } from "@/lib/utils";
 
