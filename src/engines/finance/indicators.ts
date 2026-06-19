@@ -149,17 +149,36 @@ export interface Indicators {
 
 export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const { capital, revenue } = state;
-  const receitaLiqAnual = sum(dre.receitaLiquida);
-  const receitaBrutaAnual = sum(dre.receitaBruta);
-  const lucroBrutoAnual = sum(dre.lucroBruto);
-  const ebitdaAnual = sum(dre.ebitda);
-  const ebitAnual = sum(dre.ebit);
-  const lairAnual = sum(dre.lair);
-  const llAnual = sum(dre.lucroLiquido);
-  const custosVarAnual = sum(dre.custosVariaveis);
-  const custosFixosAnual = sum(dre.custosFixos) + sum(dre.depreciacao);
-  const jurosAnual = sum(dre.custosFinanceirosTotal);
-  const impostosAnual = sum(dre.impostos);
+  // ─── Janela efetiva preenchida (Fase 1) ──────────────────────────────
+  // Indicadores que comparam fluxo (DRE) com estoque (BP) ou per-capita
+  // devem usar valores ANUALIZADOS — se o consultor só preencheu 3 meses,
+  // dividir por 12 subestima EBITDA/Colab, DL/EBITDA, ROIC etc.
+  // Margens (ratios fluxo/fluxo do mesmo período) cancelam — não precisam,
+  // mas anualizamos por consistência (resultado idêntico).
+  const meses = mesesPreenchidos(
+    dre.receitaBruta,
+    dre.receitaLiquida,
+    dre.custosVariaveis,
+    dre.custosFixos,
+    dre.depreciacao,
+    dre.impostos,
+    dre.impostosVendas,
+  );
+  const an = (v: number) => anualizar(v, meses);
+
+  const receitaLiqAnual = an(sum(dre.receitaLiquida));
+  const receitaBrutaAnual = an(sum(dre.receitaBruta));
+  const lucroBrutoAnual = an(sum(dre.lucroBruto));
+  const ebitdaAnual = an(sum(dre.ebitda));
+  const ebitAnual = an(sum(dre.ebit));
+  const lairAnual = an(sum(dre.lair));
+  const llAnual = an(sum(dre.lucroLiquido));
+  const custosVarAnual = an(sum(dre.custosVariaveis));
+  const custosFixosAnual = an(sum(dre.custosFixos) + sum(dre.depreciacao));
+  const jurosAnual = an(sum(dre.custosFinanceirosTotal));
+  const impostosAnual = an(sum(dre.impostos));
+  const impostosVendasAnual = an(sum(dre.impostosVendas));
+  const cpvAnual = an(sum(dre.cpv));
 
   // SSOT: safeMath previne NaN/Infinity em qualquer divisão de indicador.
   const depreciacaoAnual = sum(dre.depreciacao);
