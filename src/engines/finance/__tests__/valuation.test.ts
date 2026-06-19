@@ -34,14 +34,16 @@ describe("buildValuation — cenário lucrativo", () => {
     expect(v.enterpriseValue.base).toBeLessThanOrEqual(v.enterpriseValue.high);
   });
 
-  it("Equity = max(0, EV − Dívida Onerosa)", () => {
+  it("Equity = max(0, EV − Dívida Líquida) [Damodaran]", () => {
     const s = createState({
       revenue: { bruta: m12(80000), inadimplencia: m12(1) },
       capital: { dividaOnerosa: 30000 },
     });
     const v = buildValuation(s, defaultValuationParams(s.businessType));
-    expect(v.equityValue.base).toBeCloseTo(Math.max(0, v.enterpriseValue.base - 30000), 2);
+    const nd = Math.max(0, computeNetDebt(s));
+    expect(v.equityValue.base).toBeCloseTo(Math.max(0, v.enterpriseValue.base - nd), 2);
   });
+
 
   it("Liquidity discount reduz o EV proporcionalmente", () => {
     const s = profitableState();
