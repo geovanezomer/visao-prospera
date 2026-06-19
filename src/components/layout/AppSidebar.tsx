@@ -47,7 +47,6 @@ export function AppSidebar({
   currentFileName,
   dirty,
 }: AppSidebarProps) {
-  const { state } = useFinance();
   const { user, logout } = useAuth();
   const { setOpenMobile } = useSidebar();
 
