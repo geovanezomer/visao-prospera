@@ -87,3 +87,34 @@ describe("buildCashFlow — PMR e PMP", () => {
     expect(diffFixos).toBeLessThan(1);
   });
 });
+
+// [Auditoria Bloco 6] Inadimplência real reduz recebimentos INDEPENDENTE do modo (dedução vs PDD).
+// A PDD é não-caixa, mas a inadimplência subjacente é perda de caixa efetiva.
+describe("buildCashFlow — Inadimplência reduz caixa em ambos os modos", () => {
+  it("Modo PDD: recebimentos abatem inadimplência real (não superestima caixa)", () => {
+    const sSemInadimp = createState({
+      revenue: { bruta: m12(10000), pmr: 0, inadimplencia: m12(0), inadimplenciaComoPDD: true },
+    });
+    const sComInadimp = createState({
+      revenue: { bruta: m12(10000), pmr: 0, inadimplencia: m12(10), inadimplenciaComoPDD: true },
+    });
+    const cfSem = buildCashFlow(sSemInadimp, "simples");
+    const cfCom = buildCashFlow(sComInadimp, "simples");
+    // Recebimentos do cenário com inadimplência devem ser ~10% menores.
+    expect(sum(cfCom.recebimentos)).toBeLessThan(sum(cfSem.recebimentos));
+    expect(sum(cfSem.recebimentos) - sum(cfCom.recebimentos)).toBeCloseTo(12000, 0);
+  });
+
+  it("Modo Dedução vs PDD: mesmos recebimentos (caixa idêntico, só DRE difere)", () => {
+    const sDed = createState({
+      revenue: { bruta: m12(10000), pmr: 0, inadimplencia: m12(8), inadimplenciaComoPDD: false },
+    });
+    const sPdd = createState({
+      revenue: { bruta: m12(10000), pmr: 0, inadimplencia: m12(8), inadimplenciaComoPDD: true },
+    });
+    const cfDed = buildCashFlow(sDed, "simples");
+    const cfPdd = buildCashFlow(sPdd, "simples");
+    expect(Math.abs(sum(cfDed.recebimentos) - sum(cfPdd.recebimentos))).toBeLessThan(1);
+  });
+});
+

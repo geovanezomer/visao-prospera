@@ -412,12 +412,17 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     llAnual > 1 ? Math.min(CAP_PAYBACK, PL / llAnual) : PL <= 0 ? 0 : CAP_PAYBACK;
   const payback = amortizacaoPlPorLucro; // @deprecated alias
 
-  // Auditoria #3: ΔNCG (variação anual) em vez do gap total.
-  // Usa `ncgAbertura` quando informada; senão `disponibilidades` (caixa+bancos)
-  // como proxy da NCG já financiada na abertura — fonte única de caixa.
-  // CFO: ΔNCG pode ser negativo; nesse caso libera caixa e AUMENTA o FCF.
-  const ncgAbertura = Math.max(0, capital.ncgAbertura ?? capital.disponibilidades ?? 0);
+  // [Auditoria Bloco 6] ΔNCG = NCG_atual − NCG_abertura.
+  // Quando `ncgAbertura` NÃO informada, assume ΔNCG=0 (operação em regime estacionário) —
+  // assunção conservadora e consistente. ANTES usava `disponibilidades` como fallback, o que
+  // é conceitualmente errado: NCG ≠ Caixa (são linhas DISJUNTAS do balanço — NCG é ACO−PCO,
+  // caixa é ACF). Esse fallback invertia o sinal de ΔNCG na maioria dos casos e produzia
+  // FCF irreal (NOPAT + D&A − NCG_atual + Caixa).
+  const ncgAbertura = capital.ncgAbertura != null && capital.ncgAbertura > 0
+    ? capital.ncgAbertura
+    : ncg; // sem dado de abertura → assume ΔNCG=0
   const deltaNcgAnual = ncg - ncgAbertura;
+
   // FCFF (Free Cash Flow to the Firm) padrão Damodaran/Koller:
   //   FCFF = NOPAT + D&A − ΔNCG − CAPEX
   // `nopat` já calculado acima com a alíquota efetiva observada do regime.

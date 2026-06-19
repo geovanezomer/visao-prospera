@@ -102,19 +102,26 @@ function hasMonthlyVariation(arr: number[] | undefined): boolean {
 }
 
 /**
- * Recebimentos = (Receita Bruta − Inadimplência) deslocados pelo PMR.
+ * Recebimentos = (Receita Bruta − Inadimplência real) deslocados pelo PMR.
+ * [Auditoria Bloco 6] Independente do modo (dedução ou PDD), a inadimplência REAL não vira
+ * caixa — então sempre é abatida dos recebimentos. No modo PDD, `dre.deducoesInadimplencia=0`,
+ * mas o cash flow precisa abater a perda subjacente (calculada de `revenue.bruta × inadimp%`).
  * Usa `pmrMensal` quando há sazonalidade real; caso contrário, escalar `pmr`.
  */
 export function computeRecebimentos(
   state: AppState,
   dre: DRE,
 ): { inAno: number[]; transbordo: number } {
-  const recebivelMensal = dre.receitaBruta.map((r, i) => r - (dre.deducoesInadimplencia[i] ?? 0));
+  const inadimpReal = state.revenue.bruta.map(
+    (b, i) => (b || 0) * ((state.revenue.inadimplencia[i] || 0) / 100),
+  );
+  const recebivelMensal = dre.receitaBruta.map((r, i) => r - inadimpReal[i]);
   if (hasMonthlyVariation(state.revenue.pmrMensal)) {
     return shiftByDaysSplitMonthly(recebivelMensal, state.revenue.pmrMensal!);
   }
   return shiftByDaysSplit(recebivelMensal, state.revenue.pmr);
 }
+
 
 /**
  * Pagamentos a fornecedores = CPV/CMV/CSP deslocados pelo PMP (mensal quando há sazonalidade).
