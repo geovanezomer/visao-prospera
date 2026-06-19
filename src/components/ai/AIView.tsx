@@ -307,6 +307,72 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
             )}
           </div>
 
+          {(pipeline360.active || pipeline360.completed.length > 0) && (
+            <div className="border-t border-border/40 bg-card/20 px-4 py-2">
+              <div className="max-w-4xl mx-auto flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-1 flex-wrap">
+                  {(["cfo", "controller", "auditor"] as const).map((stage, i) => {
+                    const done = pipeline360.completed.includes(stage);
+                    const current = pipeline360.current === stage;
+                    return (
+                      <div key={stage} className="flex items-center gap-1.5">
+                        <div
+                          className={`h-2 w-2 rounded-full ${
+                            done
+                              ? "bg-primary"
+                              : current
+                                ? "bg-primary animate-pulse"
+                                : "bg-muted"
+                          }`}
+                        />
+                        <span
+                          className={`text-xs ${
+                            done || current ? "text-foreground" : "text-muted-foreground"
+                          }`}
+                        >
+                          {AI_MODE_LABELS[stage]}
+                        </span>
+                        {i < 2 && <span className="text-muted-foreground text-xs">→</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {pipeline360.active && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={handleStop}
+                    >
+                      Parar
+                    </Button>
+                  )}
+                  {!pipeline360.active && pipeline360.aborted && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => void resumePipeline360()}
+                    >
+                      Retomar
+                    </Button>
+                  )}
+                  {!pipeline360.active && pipeline360.completed.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-muted-foreground"
+                      onClick={resetPipeline360}
+                    >
+                      Reiniciar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="border-t border-border/40 bg-card/30 p-4">
             <div className="max-w-4xl mx-auto space-y-3">
               {attachments.length > 0 && (
@@ -362,6 +428,22 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                   rows={1}
                 />
                 <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  onClick={() => void runPipeline360(input)}
+                  disabled={
+                    mode !== "board" || streaming || pipeline360.active
+                  }
+                  title={
+                    mode !== "board"
+                      ? "Disponível no Modo Conselho (Board)"
+                      : "Análise 360° (CFO → Controller → Auditor)"
+                  }
+                >
+                  <Layers className="h-4 w-4" />
+                </Button>
+                <Button
                   onClick={() => void send(input)}
                   disabled={streaming || (!input.trim() && !attachments.length)}
                   size="icon"
@@ -372,7 +454,7 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
               </div>
               <div className="flex items-center gap-1.5">
                 <Select value={mode} onValueChange={(v) => setMode(v as AIMode)}>
-                  <SelectTrigger className="h-7 flex-1 text-xs" title="Modo de atuação">
+                  <SelectTrigger className="h-7 w-full text-xs" title="Modo de atuação">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
