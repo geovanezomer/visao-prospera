@@ -91,49 +91,6 @@ interface Props {
 }
 
 export function CompanyConfigDialog({ open, onOpenChange }: Props) {
-  const { state, update } = useFinance();
-  const setTax = usePatchTax();
-
-  // Estado local — só persiste no AppState ao clicar "Salvar".
-  const [form, setForm] = useState<FormData>(() => buildFormFromState(state));
-
-  // Re-sincroniza ao reabrir o dialog (estado pode ter mudado por outra ação).
-  useEffect(() => {
-    if (open) setForm(buildFormFromState(state));
-  }, [open, state]);
-
-  const ramosDisponiveis = useMemo(
-    () => RAMOS_POR_SETOR[form.businessType] ?? [],
-    [form.businessType],
-  );
-
-  const handleSubmit = () => {
-    const parsed = formSchema.safeParse(form);
-    if (!parsed.success) {
-      const firstError = parsed.error.issues[0];
-      toast.error(firstError?.message ?? "Dados inválidos");
-      return;
-    }
-    const d = parsed.data;
-    // Patch parcial em AppState (campos top-level) + tax.regime via `set`.
-    update({
-      companyName: d.companyName,
-      cnpj: d.cnpj || undefined,
-      businessType: d.businessType,
-      ramoAtuacao: d.ramoAtuacao || undefined,
-      numColaboradores: d.numColaboradores,
-      // Faixa derivada automaticamente para benchmarks setoriais.
-      headcountRange: rangeFromNumber(d.numColaboradores),
-      periodoAnaliseMeses: d.periodoAnaliseMeses,
-      fiscalYearStartMonth: d.fiscalYearStartMonth,
-      margemAlvoPct: d.margemAlvoPct,
-      moedaBase: "BRL",
-    });
-    setTax({ regime: d.regime });
-    toast.success("Configurações da empresa atualizadas");
-    onOpenChange(false);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -144,233 +101,292 @@ export function CompanyConfigDialog({ open, onOpenChange }: Props) {
             Estas configurações afetam cálculos em todas as abas.
           </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-5 py-2">
-          {/* Identidade */}
-          <section className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Identidade
-            </h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="companyName">Nome da empresa *</Label>
-                <Input
-                  id="companyName"
-                  value={form.companyName}
-                  onChange={(e) => setForm({ ...form, companyName: e.target.value })}
-                  maxLength={120}
-                  placeholder="Minha Empresa LTDA"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="cnpj">CNPJ</Label>
-                <Input
-                  id="cnpj"
-                  value={form.cnpj ?? ""}
-                  onChange={(e) => setForm({ ...form, cnpj: e.target.value })}
-                  maxLength={20}
-                  placeholder="00.000.000/0000-00"
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Setor e Ramo */}
-          <section className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Setor de Atuação
-            </h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Setor *</Label>
-                <Select
-                  value={form.businessType}
-                  onValueChange={(v) =>
-                    // Ao trocar setor, limpa ramo (lista muda).
-                    setForm({ ...form, businessType: v as BusinessType, ramoAtuacao: "" })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="servicos">Serviços</SelectItem>
-                    <SelectItem value="comercio">Comércio</SelectItem>
-                    <SelectItem value="industria">Indústria</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Ramo de atuação</Label>
-                <Select
-                  value={form.ramoAtuacao || ""}
-                  onValueChange={(v) => setForm({ ...form, ramoAtuacao: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ramosDisponiveis.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>
-                        {r.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-[10px] text-muted-foreground">
-                  Usado para comparar com benchmarks setoriais.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Porte */}
-          <section className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Porte
-            </h3>
-            <div className="space-y-1.5">
-              <Label htmlFor="numColaboradores">Número de colaboradores *</Label>
-              <Input
-                id="numColaboradores"
-                type="number"
-                min={0}
-                max={100000}
-                step={1}
-                value={Number.isFinite(form.numColaboradores) ? form.numColaboradores : 0}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    numColaboradores: Math.max(0, Math.floor(Number(e.target.value) || 0)),
-                  })
-                }
-                className="w-32"
-              />
-              <p className="text-[10px] text-muted-foreground">
-                Base para indicadores de produtividade (Receita/Colaborador, Lucro/Colaborador etc.).
-                A faixa para benchmarks é derivada automaticamente: {rangeFromNumber(form.numColaboradores)}.
-              </p>
-            </div>
-          </section>
-
-          {/* Tributação */}
-          <section className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Tributação
-            </h3>
-            <div className="space-y-1.5">
-              <Label>Regime tributário atual *</Label>
-              <Select
-                value={form.regime}
-                onValueChange={(v) => setForm({ ...form, regime: v as TaxRegime })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="simples">Simples Nacional</SelectItem>
-                  <SelectItem value="presumido">Lucro Presumido</SelectItem>
-                  <SelectItem value="real">Lucro Real</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-[10px] text-muted-foreground">
-                Detalhes de alíquotas e comparativo continuam na aba Regime Tributário.
-              </p>
-            </div>
-          </section>
-
-          {/* Análise */}
-          <section className="space-y-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Período de Análise
-            </h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Janela de análise</Label>
-                <Select
-                  value={String(form.periodoAnaliseMeses)}
-                  onValueChange={(v) =>
-                    setForm({
-                      ...form,
-                      periodoAnaliseMeses: Number(v) as FormData["periodoAnaliseMeses"],
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="6">Últimos 6 meses</SelectItem>
-                    <SelectItem value="12">Últimos 12 meses</SelectItem>
-                    <SelectItem value="24">Últimos 24 meses</SelectItem>
-                    <SelectItem value="36">Últimos 36 meses</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Início do exercício fiscal</Label>
-                <Select
-                  value={String(form.fiscalYearStartMonth)}
-                  onValueChange={(v) =>
-                    setForm({ ...form, fiscalYearStartMonth: Number(v) })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MESES_FISCAIS.map((m, i) => (
-                      <SelectItem key={m} value={String(i + 1)}>
-                        {m}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="margemAlvo">Margem-alvo do consultor (%) — opcional</Label>
-              <Input
-                id="margemAlvo"
-                type="number"
-                step="0.5"
-                value={form.margemAlvoPct ?? ""}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    margemAlvoPct:
-                      e.target.value === "" ? undefined : Number(e.target.value),
-                  })
-                }
-                placeholder="Ex: 15"
-              />
-              <p className="text-[10px] text-muted-foreground">
-                Usada como benchmark interno adicional ao setorial.
-              </p>
-            </div>
-          </section>
-
-          {/* Arquivamento de ano fiscal — alimenta as pills de período. */}
-          <section className="space-y-2 rounded-md border border-dashed border-border/60 p-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Fechamento de ano
-            </h3>
-            <p className="text-[11px] text-muted-foreground">
-              Arquiva o AppState atual como snapshot histórico. Após 2+ snapshots, o
-              cabeçalho de Indicadores/DRE mostra pills para comparar períodos.
-            </p>
-            <ArchiveYearButton onClose={() => onOpenChange(false)} />
-          </section>
-        </div>
-
+        <CompanyConfigForm onCommitted={() => onOpenChange(false)} showArchiveSection />
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
+            Fechar
           </Button>
-          <Button onClick={handleSubmit}>Salvar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Formulário de configuração da empresa em formato embarcável (sem Dialog).
+ * Usado dentro de TaxSettingsDialog (passo "Empresa") e também pelo wrapper
+ * CompanyConfigDialog. Commita campos diretamente no AppState a cada mudança.
+ */
+export function CompanyConfigForm({
+  onCommitted,
+  showArchiveSection = false,
+}: {
+  onCommitted?: () => void;
+  showArchiveSection?: boolean;
+}) {
+  const { state, update } = useFinance();
+  const setTax = usePatchTax();
+  const [form, setForm] = useState<FormData>(() => buildFormFromState(state));
+
+  // Re-sincroniza quando o AppState muda externamente.
+  useEffect(() => {
+    setForm(buildFormFromState(state));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    state.companyName,
+    state.cnpj,
+    state.businessType,
+    state.ramoAtuacao,
+    state.numColaboradores,
+    state.headcountRange,
+    state.periodoAnaliseMeses,
+    state.fiscalYearStartMonth,
+    state.margemAlvoPct,
+    state.tax.regime,
+  ]);
+
+  const ramosDisponiveis = useMemo(
+    () => RAMOS_POR_SETOR[form.businessType] ?? [],
+    [form.businessType],
+  );
+
+  /** Commit imediato (após validação leve). Mostra toast apenas em erro. */
+  const commit = (next: FormData) => {
+    setForm(next);
+    const parsed = formSchema.safeParse(next);
+    if (!parsed.success) return; // mantém valor local sem persistir
+    const d = parsed.data;
+    update({
+      companyName: d.companyName,
+      cnpj: d.cnpj || undefined,
+      businessType: d.businessType,
+      ramoAtuacao: d.ramoAtuacao || undefined,
+      numColaboradores: d.numColaboradores,
+      headcountRange: rangeFromNumber(d.numColaboradores),
+      periodoAnaliseMeses: d.periodoAnaliseMeses,
+      fiscalYearStartMonth: d.fiscalYearStartMonth,
+      margemAlvoPct: d.margemAlvoPct,
+      moedaBase: "BRL",
+    });
+    setTax({ regime: d.regime });
+  };
+
+  return (
+    <div className="space-y-5 py-2">
+      {/* Identidade */}
+      <section className="space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Identidade
+        </h3>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="companyName">Nome da empresa *</Label>
+            <Input
+              id="companyName"
+              value={form.companyName}
+              onChange={(e) => commit({ ...form, companyName: e.target.value })}
+              maxLength={120}
+              placeholder="Minha Empresa LTDA"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cnpj">CNPJ</Label>
+            <Input
+              id="cnpj"
+              value={form.cnpj ?? ""}
+              onChange={(e) => commit({ ...form, cnpj: e.target.value })}
+              maxLength={20}
+              placeholder="00.000.000/0000-00"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Setor e Ramo */}
+      <section className="space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Setor de Atuação
+        </h3>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label>Setor *</Label>
+            <Select
+              value={form.businessType}
+              onValueChange={(v) =>
+                commit({ ...form, businessType: v as BusinessType, ramoAtuacao: "" })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="servicos">Serviços</SelectItem>
+                <SelectItem value="comercio">Comércio</SelectItem>
+                <SelectItem value="industria">Indústria</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Ramo de atuação</Label>
+            <Select
+              value={form.ramoAtuacao || ""}
+              onValueChange={(v) => commit({ ...form, ramoAtuacao: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione…" />
+              </SelectTrigger>
+              <SelectContent>
+                {ramosDisponiveis.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground">
+              Usado para comparar com benchmarks setoriais.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Porte */}
+      <section className="space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Porte
+        </h3>
+        <div className="space-y-1.5">
+          <Label htmlFor="numColaboradores">Número de colaboradores *</Label>
+          <Input
+            id="numColaboradores"
+            type="number"
+            min={0}
+            max={100000}
+            step={1}
+            value={Number.isFinite(form.numColaboradores) ? form.numColaboradores : 0}
+            onChange={(e) =>
+              commit({
+                ...form,
+                numColaboradores: Math.max(0, Math.floor(Number(e.target.value) || 0)),
+              })
+            }
+            className="w-32"
+          />
+          <p className="text-[10px] text-muted-foreground">
+            Base para indicadores de produtividade (Receita/Colaborador, Lucro/Colaborador etc.).
+            A faixa para benchmarks é derivada automaticamente: {rangeFromNumber(form.numColaboradores)}.
+          </p>
+        </div>
+      </section>
+
+      {/* Tributação */}
+      <section className="space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Tributação
+        </h3>
+        <div className="space-y-1.5">
+          <Label>Regime tributário atual *</Label>
+          <Select
+            value={form.regime}
+            onValueChange={(v) => commit({ ...form, regime: v as TaxRegime })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="simples">Simples Nacional</SelectItem>
+              <SelectItem value="presumido">Lucro Presumido</SelectItem>
+              <SelectItem value="real">Lucro Real</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-[10px] text-muted-foreground">
+            Os passos seguintes detalham alíquotas e parâmetros desse regime.
+          </p>
+        </div>
+      </section>
+
+      {/* Análise */}
+      <section className="space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Período de Análise
+        </h3>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label>Janela de análise</Label>
+            <Select
+              value={String(form.periodoAnaliseMeses)}
+              onValueChange={(v) =>
+                commit({
+                  ...form,
+                  periodoAnaliseMeses: Number(v) as FormData["periodoAnaliseMeses"],
+                })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="6">Últimos 6 meses</SelectItem>
+                <SelectItem value="12">Últimos 12 meses</SelectItem>
+                <SelectItem value="24">Últimos 24 meses</SelectItem>
+                <SelectItem value="36">Últimos 36 meses</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Início do exercício fiscal</Label>
+            <Select
+              value={String(form.fiscalYearStartMonth)}
+              onValueChange={(v) => commit({ ...form, fiscalYearStartMonth: Number(v) })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MESES_FISCAIS.map((m, i) => (
+                  <SelectItem key={m} value={String(i + 1)}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="margemAlvo">Margem-alvo do consultor (%) — opcional</Label>
+          <Input
+            id="margemAlvo"
+            type="number"
+            step="0.5"
+            value={form.margemAlvoPct ?? ""}
+            onChange={(e) =>
+              commit({
+                ...form,
+                margemAlvoPct:
+                  e.target.value === "" ? undefined : Number(e.target.value),
+              })
+            }
+            placeholder="Ex: 15"
+          />
+          <p className="text-[10px] text-muted-foreground">
+            Usada como benchmark interno adicional ao setorial.
+          </p>
+        </div>
+      </section>
+
+      {showArchiveSection && (
+        <section className="space-y-2 rounded-md border border-dashed border-border/60 p-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Fechamento de ano
+          </h3>
+          <p className="text-[11px] text-muted-foreground">
+            Arquiva o AppState atual como snapshot histórico. Após 2+ snapshots, o
+            cabeçalho de Indicadores/DRE mostra pills para comparar períodos.
+          </p>
+          <ArchiveYearButton onClose={() => onCommitted?.()} />
+        </section>
+      )}
+    </div>
   );
 }
 
