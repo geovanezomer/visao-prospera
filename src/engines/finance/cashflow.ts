@@ -1,7 +1,7 @@
 import { AppState, TaxRegime } from "./types";
 import { buildDRE, type DRE } from "./dre";
 import { resolveEffectiveRegime } from "./regime";
-import { splitReceitasFinanceiras } from "./shared";
+import { splitReceitasFinanceiras, computeCapexMensal } from "./shared";
 import type { MonthlyTax } from "./tax/shared";
 import { MESES, sum, zeros12 } from "./format";
 
@@ -282,7 +282,8 @@ export function buildCashFlow(
   const emprestimosCaptados = cashflow.emprestimosCaptados.slice();
   const amortizacoes = cashflow.amortizacoes.slice();
   const dividendos = cashflow.dividendos.slice();
-  const capex = cashflow.capex.slice();
+  // SSOT: CAPEX = manual (cashflow.capex) + ativações de imobilizado (capital.capexAtivacao).
+  const capex = computeCapexMensal(state);
 
   const fluxos = computeFluxos({
     recebimentos: rec.inAno,

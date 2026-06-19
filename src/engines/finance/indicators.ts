@@ -7,7 +7,7 @@
 import { AppState } from "./types";
 import { sum } from "./format";
 import { safeDivide, safePct, safeNumber } from "./safeMath";
-import { computeNetDebt } from "./shared";
+import { computeNetDebt, computeCapexMensal } from "./shared";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { irShieldForRegime } from "./tax/real";
 import type { DRE } from "./dre";
@@ -292,12 +292,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // `nopat` já calculado acima com a alíquota efetiva observada do regime.
   const depAnual = sum(dre.depreciacao);
   const fcf = nopat + depAnual - deltaNcgAnual;
-  const capexAnual =
-    sum(state.cashflow.capex ?? []) +
-    (capital.capexAtivacao ?? []).reduce(
-      (acc, ca) => acc + (ca && (ca.valor || 0) > 0 ? ca.valor || 0 : 0),
-      0,
-    );
+  // SSOT: mesmo CAPEX usado no FCI do buildCashFlow (manual + ativações de imobilizado).
+  const capexAnual = sum(computeCapexMensal(state));
   const fcfAposCapex = fcf - capexAnual;
   // Auditoria #2: payback do CAPEX usa o CAPEX ANUAL TOTAL, não apenas o do mês 1.
   // CAPEX distribuído ao longo do ano (obras, implantações) era subestimado em até 10×.
