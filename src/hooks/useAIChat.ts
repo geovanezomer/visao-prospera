@@ -26,7 +26,7 @@ import { estimateTokens } from "@/engines/ai/snapshot";
 // Limite de tokens do histórico enviado ao LLM (exclui system prompt).
 // Se ultrapassado, comprime o miolo preservando contexto inicial + recente.
 const MAX_HISTORY_TOKENS = 6000;
-import { buildSystemPrompt } from "@/engines/ai/systemPrompt";
+import { buildSystemPrompt, type AIMode } from "@/engines/ai/systemPrompt";
 import { useMemories, memoriesToPromptBlock } from "@/engines/memory/store";
 import {
   processFile,
@@ -200,7 +200,11 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
   const memories = useMemories(state.companyName || "default");
   const memoriesBlock = useMemo(() => memoriesToPromptBlock(memories), [memories]);
 
-  const buildSysPrompt = (auditMode?: boolean) =>
+  // Modo de atuação ativo (chat / cfo / controller / auditor / board).
+  // Transient — não persiste; o consultor escolhe por sessão.
+  const [mode, setMode] = useState<AIMode>("chat");
+
+  const buildSysPrompt = (overrideMode?: AIMode) =>
     buildSystemPrompt({
       snapshot,
       includeSnapshot: config.includeSnapshot,
@@ -209,14 +213,19 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       extra: config.extraSystemPrompt,
       soul: config.soul,
       skills: config.skills,
-      auditMode,
+      mode: overrideMode ?? mode,
       context: runtimeContext,
       memoriesBlock,
     });
 
-  const send = async (text: string, opts?: { auditMode?: boolean; replaceLast?: boolean }) => {
+  const send = async (
+    text: string,
+    opts?: { mode?: AIMode; auditMode?: boolean; replaceLast?: boolean },
+  ) => {
     const content = text.trim();
-    if ((!content && !opts?.auditMode && attachments.length === 0) || streaming) return;
+    const effectiveMode: AIMode = opts?.mode ?? (opts?.auditMode ? "auditor" : mode);
+    const isReport = effectiveMode === "auditor";
+    if ((!content && !isReport && attachments.length === 0) || streaming) return;
     if (!activeId) return;
 
     const atts = attachments.slice();
