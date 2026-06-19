@@ -240,7 +240,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const caixaOcioso = Math.max(0, capital.caixaOcioso ?? 0);
   const ciFinanciamento = PL + D;
   const ciAtivo = capital.ativoTotal > 0 ? capital.ativoTotal - pno : 0;
-  const ciBase = ciFinanciamento > 0 ? ciFinanciamento : ciAtivo > 0 ? ciAtivo : PL + D + pno - pno;
+  // Se nenhum dos dois lados está disponível, usa 0 — o `Math.max(1, …)` abaixo
+  // garante denominador mínimo para evitar divisão por zero no ROIC.
+  const ciBase = ciFinanciamento > 0 ? ciFinanciamento : ciAtivo > 0 ? ciAtivo : 0;
   const capitalInvestido = Math.max(1, ciBase - caixaOcioso);
   const roic = safePct(nopat, capitalInvestido);
 
