@@ -38,7 +38,7 @@ import {
 } from "recharts";
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
 import { Badge } from "@/components/ui/badge";
-import { HistoricalYearPills } from "./HistoricalYearPills";
+
 import { DREComparison } from "./ComparisonView";
 import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
 import { useAnnualSnapshots } from "@/hooks/useAnnualSnapshots";
