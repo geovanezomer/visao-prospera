@@ -126,10 +126,9 @@ function fixosFor(business: BusinessType): CostLine[] {
     base.splice(
       3,
       0,
-      line("mod_terc", "Mão de Obra Direta (Terceirização)", "fixo", 4500, undefined, {
-        encargosAuto: true,
-        encargosPct: 70,
-      }),
+      // Terceirização é contrato PJ — sem encargos trabalhistas embutidos.
+      // O valor mensal já é o custo total faturado pelo prestador.
+      line("mod_terc", "Mão de Obra Direta (Terceirização)", "fixo", 4500),
     );
   }
   return base;
