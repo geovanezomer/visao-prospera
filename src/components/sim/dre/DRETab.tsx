@@ -81,7 +81,9 @@ export function DRETab() {
   // SSOT: useFinanceModel aplica `resolveEffectiveRegime` (Simples pode cair
   // automaticamente para Presumido se exceder o teto). Garante que DRE/ind/cf
   // sejam idênticos aos da aba Indicadores.
-  const { regime, dre, tax, ind, cf } = useFinanceModel(state);
+  const { regime, dre, ind, cf, model } = useFinanceModel(state);
+  const tax = model.tax;
+
 
   const limiar = state.cashflow.limiarAlerta ?? -10000;
   const mesesCriticosIdx = new Set(
