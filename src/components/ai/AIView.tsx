@@ -350,7 +350,55 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
+              <div className="flex items-center gap-1.5">
+                <Select value={mode} onValueChange={(v) => setMode(v as AIMode)}>
+                  <SelectTrigger className="h-7 flex-1 text-xs" title="Modo de atuação">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(AI_MODE_LABELS) as AIMode[]).map((m) => (
+                      <SelectItem key={m} value={m} className="text-xs">
+                        <div className="flex flex-col">
+                          <span className="font-medium">{AI_MODE_LABELS[m]}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {AI_MODE_DESCRIPTIONS[m]}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={activeSkillId} onValueChange={setActiveSkillId}>
+                  <SelectTrigger className="h-7 flex-1 text-xs" title="Skill ativa neste chat">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="text-xs">
+                      <div className="flex flex-col">
+                        <span className="font-medium">Todas as skills</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          Usa as habilitadas em Configurações
+                        </span>
+                      </div>
+                    </SelectItem>
+                    {config.skills.map((s) => (
+                      <SelectItem key={s.id} value={s.id} className="text-xs">
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {s.name}
+                            {!s.enabled ? " (off)" : ""}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground line-clamp-1">
+                            {s.description}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
           </div>
         </div>
       </div>
