@@ -314,7 +314,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // Usa o MESMO FCO do FluxoCaixaTab (buildCashFlow.fluxoOperacional),
   // não o FCFF estimado — caixa operacional realizado vs. lucro contábil.
   // Edge cases: LL ≈ 0 → 0 (UI deve renderizar "N/A").
-  const fcoAnual = sum(buildCashFlow(state, resolveEffectiveRegime(state)).fluxoOperacional);
+  // SSOT: mesma chamada do FluxoCaixaTab — `buildCashFlow(state)` resolve o regime efetivo
+  // internamente. `totais.fluxoOperacional` é exatamente `sum(fluxoOperacional)`.
+  const fcoAnual = buildCashFlow(state).totais.fluxoOperacional;
   const qualidadeLucro =
     Math.abs(llAnual) > 1 ? Math.max(-9, Math.min(9, fcoAnual / llAnual)) : 0;
 
