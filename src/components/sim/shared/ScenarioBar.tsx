@@ -95,6 +95,9 @@ export function ScenarioBar() {
 
   const handleSave = () => {
     archiveYearAsHistorical(company, year, state);
+    // Estampa o ano no AppState ativo — a partir daqui, trocar de pill faz
+    // auto-arquivamento correto sob este `fiscalYear`.
+    update((s) => ({ ...s, fiscalYear: year }));
     toast.success(`Ano ${year} arquivado`);
     setSaveOpen(false);
   };
