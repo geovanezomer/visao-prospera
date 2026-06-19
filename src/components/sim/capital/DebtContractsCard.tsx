@@ -1,0 +1,253 @@
+// Card de Contratos de Dívida — substitui a entrada de "Empréstimos e
+// financiamentos" por um detalhamento contrato a contrato (credor, saldo,
+// taxa, sistema Price/SAC, prazo). Calcula serviço da dívida mensal
+// e alimenta dividaOnerosa, cashflow.amortizacoes e o custo financeiro
+// via a sincronização feita no parent (CapitalTab).
+import { useState } from "react";
+import { Plus, Trash2, ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { fmtBRL } from "@/engines/finance/format";
+import { MoneyInput } from "../primitives";
+import type { DebtContract, DebtSystem } from "@/engines/finance/types";
+import {
+  aggregateContracts,
+  scheduleContract,
+  vencimentoLabel,
+} from "@/engines/finance/debtContracts";
+
+function newContract(): DebtContract {
+  return {
+    id: `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+    credor: "",
+    descricao: "",
+    saldoDevedor: 0,
+    taxaAA: 18,
+    sistema: "price",
+    prazoMeses: 12,
+  };
+}
+
+export function DebtContractsCard({
+  contracts,
+  onChange,
+}: {
+  contracts: DebtContract[];
+  onChange: (next: DebtContract[]) => void;
+}) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const agg = aggregateContracts(contracts);
+
+  const update = (id: string, patch: Partial<DebtContract>) =>
+    onChange(contracts.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  const remove = (id: string) => onChange(contracts.filter((c) => c.id !== id));
+  const add = () => {
+    const c = newContract();
+    onChange([...contracts, c]);
+    setExpanded(c.id);
+  };
+
+  return (
+    <div className="rounded-lg border border-border/60 bg-card/40 p-4 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-primary" />
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Contratos de dívida
+          </div>
+          <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">
+            Novo
+          </span>
+        </div>
+        <button
+          onClick={add}
+          className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background/60 px-2 py-1 text-xs hover:border-primary/60 hover:text-primary transition"
+        >
+          <Plus className="h-3.5 w-3.5" /> Adicionar contrato
+        </button>
+      </div>
+
+      {contracts.length === 0 ? (
+        <button
+          onClick={add}
+          className="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-border/60 bg-background/30 px-3 py-3 text-xs text-muted-foreground hover:border-primary/50 hover:text-primary transition"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Adicionar contrato de dívida (empréstimo, financiamento, debênture…)
+        </button>
+      ) : (
+        <>
+          {/* cabeçalho */}
+          <div className="hidden md:grid grid-cols-[1.6fr_1fr_0.8fr_0.7fr_0.8fr_0.8fr_24px] gap-2 px-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div>Credor / descrição</div>
+            <div className="text-right">Saldo devedor</div>
+            <div className="text-right">Taxa a.a.</div>
+            <div className="text-center">Sistema</div>
+            <div className="text-center">Vencimento</div>
+            <div className="text-right">Parcela/mês</div>
+            <div />
+          </div>
+
+          <div className="space-y-1">
+            {contracts.map((c) => {
+              const sch = scheduleContract(c);
+              const isOpen = expanded === c.id;
+              return (
+                <div
+                  key={c.id}
+                  className="rounded-md border border-border/40 bg-background/30"
+                >
+                  <div className="grid grid-cols-2 md:grid-cols-[1.6fr_1fr_0.8fr_0.7fr_0.8fr_0.8fr_24px] gap-2 items-center px-2 py-2 text-xs">
+                    <div className="col-span-2 md:col-span-1">
+                      <div className="font-semibold text-foreground truncate">
+                        {c.credor || "Sem credor"}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground truncate">
+                        {c.descricao || "—"}
+                      </div>
+                    </div>
+                    <div className="text-right num font-semibold">
+                      {fmtBRL(c.saldoDevedor)}
+                    </div>
+                    <div className="text-right num">{c.taxaAA.toFixed(1)}% a.a.</div>
+                    <div className="text-center">
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${
+                          c.sistema === "price"
+                            ? "bg-primary/15 text-primary"
+                            : "bg-success/15 text-success"
+                        }`}
+                      >
+                        {c.sistema}
+                      </span>
+                    </div>
+                    <div className="text-center text-[11px]">
+                      {vencimentoLabel(c.prazoMeses)}
+                    </div>
+                    <div className="text-right num font-semibold text-warning">
+                      {fmtBRL(sch.parcelaMes)}
+                    </div>
+                    <button
+                      onClick={() => setExpanded(isOpen ? null : c.id)}
+                      className="ml-auto text-muted-foreground hover:text-primary"
+                      aria-label="Detalhes"
+                    >
+                      {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </button>
+                  </div>
+
+                  {isOpen && (
+                    <div className="border-t border-border/40 bg-background/40 p-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3 text-xs">
+                      <Field label="Credor">
+                        <input
+                          value={c.credor}
+                          onChange={(e) => update(c.id, { credor: e.target.value })}
+                          placeholder="Ex.: Banco Bradesco"
+                          className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm outline-none focus:border-primary"
+                        />
+                      </Field>
+                      <Field label="Descrição">
+                        <input
+                          value={c.descricao ?? ""}
+                          onChange={(e) => update(c.id, { descricao: e.target.value })}
+                          placeholder="Ex.: Capital de giro"
+                          className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm outline-none focus:border-primary"
+                        />
+                      </Field>
+                      <Field label="Saldo devedor (R$)">
+                        <MoneyInput
+                          value={c.saldoDevedor}
+                          onChange={(n) => update(c.id, { saldoDevedor: n })}
+                        />
+                      </Field>
+                      <Field label="Taxa a.a. (%)">
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={c.taxaAA}
+                          onChange={(e) => update(c.id, { taxaAA: Number(e.target.value) || 0 })}
+                          className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm outline-none focus:border-primary"
+                        />
+                      </Field>
+                      <Field label="Sistema de amortização">
+                        <select
+                          value={c.sistema}
+                          onChange={(e) => update(c.id, { sistema: e.target.value as DebtSystem })}
+                          className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm outline-none focus:border-primary"
+                        >
+                          <option value="price">Price (parcela fixa)</option>
+                          <option value="sac">SAC (amortização constante)</option>
+                        </select>
+                      </Field>
+                      <Field label="Prazo restante (meses)">
+                        <input
+                          type="number"
+                          step="1"
+                          min={1}
+                          value={c.prazoMeses}
+                          onChange={(e) => update(c.id, { prazoMeses: Math.max(1, Math.floor(Number(e.target.value) || 0)) })}
+                          className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm outline-none focus:border-primary"
+                        />
+                      </Field>
+                      <div className="sm:col-span-2 md:col-span-3 flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-2">
+                        <div className="flex gap-3 text-[11px] text-muted-foreground">
+                          <span>Juros 12m: <strong className="num text-warning">{fmtBRL(sch.totalJurosAno)}</strong></span>
+                          <span>Amort. 12m: <strong className="num text-foreground">{fmtBRL(sch.totalAmortAno)}</strong></span>
+                        </div>
+                        <button
+                          onClick={() => remove(c.id)}
+                          className="inline-flex items-center gap-1 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1 text-[11px] text-destructive hover:bg-destructive/20"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Remover contrato
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={add}
+            className="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-border/60 bg-background/20 px-3 py-2 text-xs text-muted-foreground hover:border-primary/50 hover:text-primary transition"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Adicionar contrato de dívida
+          </button>
+
+          {/* totais agregados */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2">
+            <Stat label="Saldo total (Dívida onerosa)" value={fmtBRL(agg.saldoTotal)} />
+            <Stat label="Parcela total/mês" value={fmtBRL(agg.parcelaMesTotal)} tone="warn" />
+            <Stat label="Total amortizações/ano" value={fmtBRL(agg.totalAmortAno)} />
+            <Stat label="Total juros/ano" value={fmtBRL(agg.totalJurosAno)} tone="warn" />
+          </div>
+          <div className="text-[10px] text-muted-foreground">
+            Os contratos alimentam automaticamente: Dívida Onerosa, Serviço da Dívida,
+            DSCR, Cobertura de Juros, ROIC, WACC e o Custo Financeiro na DRE.
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block space-y-1">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      {children}
+    </label>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
+  return (
+    <div className="rounded-md border border-border/40 bg-background/40 p-2">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`mt-0.5 text-sm font-semibold num ${tone === "warn" ? "text-warning" : "text-foreground"}`}>
+        {value}
+      </div>
+    </div>
+  );
+}
