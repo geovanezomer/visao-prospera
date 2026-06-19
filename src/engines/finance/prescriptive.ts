@@ -309,7 +309,7 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
         style: "currency",
         currency: "BRL",
       }),
-      cause: `Ciclo financeiro de ${ind.cicloFinanceiro} dias. Empresa financia o cliente por mais tempo do que o fornecedor financia a ela.`,
+      cause: `Ciclo financeiro de ${ind.cicloFinanceiro.toFixed(1)} dias. Empresa financia o cliente por mais tempo do que o fornecedor financia a ela.`,
       actions: [
         {
           id: "pmr_minus_15",
