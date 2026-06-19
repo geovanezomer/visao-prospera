@@ -13,15 +13,29 @@ import { effectiveMonthValues } from "./costs";
 // =====================================================================
 // Fator R automático: Anexo V vira III se folha/RBT12 ≥ 28%
 // =====================================================================
-const LABOR_KEYWORDS = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra|m\.o\.|clt/i;
+// FOLHA TOTAL DE PESSOAS — definição usada por Fator R e pelo indicador
+// Folha/Receita. Inclui:
+//   - Pró-labore
+//   - Salários CLT (com encargos embutidos via `encargosAuto`)
+//   - Benefícios (VR/VT/plano de saúde/etc.)
+//   - PLR (participação nos lucros)
+//   - Mão de obra terceirizada (mesmo sendo PJ — é dispêndio com pessoas)
+// EXCLUI:
+//   - Comissões (custo COMERCIAL atrelado à venda, não folha)
+//   - Despesas financeiras
+const LABOR_INCLUDE_RE =
+  /sal[áa]rio|folha|pr[óo]\s*-?\s*labore|prolabore|\bmod\b|m[ãa]o\s*de\s*obra|m\.o\.|\bclt\b|benef[íi]cio|\bplr\b|participa[çc][ãa]o.*lucro|terceiriz/i;
+const LABOR_EXCLUDE_RE = /comiss[ãa]o|comiss[õo]es/i;
 
 export function folhaAnual(state: AppState): number {
   // SSOT: regime EFETIVO. Encargos do Simples são reduzidos automaticamente
   // dentro de effectiveMonthValues quando aplicável.
   const regime = resolveEffectiveRegime(state);
-  const laborCosts = state.costs.filter(
-    (c) => c.category !== "financeiro" && (c.encargosAuto || LABOR_KEYWORDS.test(c.label)),
-  );
+  const laborCosts = state.costs.filter((c) => {
+    if (c.category === "financeiro") return false;
+    if (LABOR_EXCLUDE_RE.test(c.label)) return false; // comissões nunca entram, mesmo com encargosAuto.
+    return c.encargosAuto || LABOR_INCLUDE_RE.test(c.label);
+  });
   return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c, regime)), 0);
 }
 
