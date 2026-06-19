@@ -158,6 +158,15 @@ export function CashflowTab() {
 
   return (
     <div className="space-y-6">
+  const showComparison = comparisonSnaps.length >= 2;
+
+  return (
+    <div className="space-y-6">
+      <HistoricalYearPills />
+      {showComparison ? (
+        <CashFlowComparison snapshots={comparisonSnaps} />
+      ) : (
+        <>
       {mesesCriticos.length > 0 && (
         <div className="flex items-center gap-2">
           <Badge variant="destructive" className="gap-1">
