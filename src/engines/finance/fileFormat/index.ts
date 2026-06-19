@@ -1,7 +1,7 @@
 // Pasta fileFormat — orquestra schema + migrators + serialize/parse.
 // API pública estável: importadores continuam usando `@/engines/finance/fileFormat`.
 import { AppState, Scenario } from "../types";
-import { DEFAULT_STATE, migrateState } from "../defaults";
+import { DEFAULT_STATE, migrateState, validateAndMigrate } from "../defaults";
 import {
   CURRENT_VERSION,
   FINNANCE_FILE_EXT,
@@ -97,10 +97,13 @@ export function parseFinnanceFile(raw: unknown): OpenedFile {
   if (parsed.type !== FINNANCE_FILE_TYPE) {
     throw new Error("Arquivo não é um .finnance válido.");
   }
-  const state = migrateState({ ...DEFAULT_STATE, ...(parsed.state as Partial<AppState>) });
+  // validateAndMigrate: Zod no shape de topo + migrateState (sanitiza
+  // NaN/Infinity/strings em numéricos). Garante que arquivos editados
+  // à mão ou corrompidos caiam em DEFAULT_STATE sem quebrar o app.
+  const state = validateAndMigrate({ ...DEFAULT_STATE, ...(parsed.state as Partial<AppState>) });
   const scenarios = (parsed.scenarios ?? []).map((sc) => ({
     ...sc,
-    state: migrateState({ ...DEFAULT_STATE, ...(sc.state as Partial<AppState>) }),
+    state: validateAndMigrate({ ...DEFAULT_STATE, ...(sc.state as Partial<AppState>) }),
   })) as Scenario[];
   const extras = {
     actions: parsed.extras?.actions ?? [],
