@@ -64,9 +64,10 @@ const BUSINESS: { key: BusinessType; label: string; hint: string }[] = [
 ];
 
 // Passos do wizard. Cada um traz um título amigável e ícone próprio.
-type StepKey = "intro" | "federais" | "simples" | "presumido" | "reforma" | "revisao";
+type StepKey = "intro" | "empresa" | "federais" | "simples" | "presumido" | "reforma" | "revisao";
 const STEPS: { key: StepKey; label: string; icon: typeof Settings }[] = [
   { key: "intro", label: "Boas-vindas", icon: Sparkles },
+  { key: "empresa", label: "Empresa", icon: Building2 },
   { key: "federais", label: "Federais", icon: Landmark },
   { key: "simples", label: "Simples", icon: FileText },
   { key: "presumido", label: "Presumido", icon: Building2 },
@@ -131,8 +132,8 @@ export function TaxSettingsDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" title="Tributos (assistente de parâmetros tributários)">
-          <Settings className="mr-2 h-4 w-4" /> Tributos
+        <Button size="sm" variant="ghost" title="Configurações da empresa e parâmetros tributários">
+          <Settings className="mr-2 h-4 w-4" /> Configurações
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl w-screen h-[100dvh] max-h-[100dvh] rounded-none sm:rounded-lg sm:h-auto sm:max-h-[88vh] overflow-hidden p-0 flex flex-col">
@@ -140,7 +141,7 @@ export function TaxSettingsDialog() {
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <step.icon className="h-5 w-5 text-primary shrink-0" />
             <span className="truncate">
-              <span className="hidden sm:inline">Assistente de parâmetros tributários — </span>
+              <span className="hidden sm:inline">Configurações — </span>
               {step.label}
             </span>
           </DialogTitle>
@@ -178,6 +179,7 @@ export function TaxSettingsDialog() {
 
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 sm:max-h-[58vh]">
           {step.key === "intro" && <StepIntro customCount={customCount} />}
+          {step.key === "empresa" && <StepEmpresa />}
           {step.key === "federais" && <StepFederais ov={ov} patchOv={patchOv} />}
           {step.key === "simples" && <StepSimples ov={ov} patchOv={patchOv} />}
           {step.key === "presumido" && (
