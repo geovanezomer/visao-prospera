@@ -261,24 +261,32 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     jurosAnual > 1 ? Math.min(CAP_COB, safeDivide(ebitAnual, jurosAnual, CAP_COB)) : CAP_COB;
   const giroAtivo = capital.ativoTotal > 0 ? safeDivide(receitaLiqAnual, capital.ativoTotal) : 0;
   const dividaLiq = computeNetDebt(state); // SSOT-1: helper único.
+  // Cash-rich (dividaLiq < 0) com base ≤ 1: usa sentinela negativa para PRESERVAR o sinal
+  // (antes retornava 0 e escondia a posição líquida de caixa).
   const dividaLiqEbitda =
     ebitdaAnual > 1
       ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitdaAnual))
-      : dividaLiq <= 0
-        ? 0
-        : CAP_DL_EBITDA;
+      : dividaLiq < 0
+        ? -CAP_DL_EBITDA
+        : dividaLiq === 0
+          ? 0
+          : CAP_DL_EBITDA;
   const dividaLiqEbit =
     ebitAnual > 1
       ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / ebitAnual))
-      : dividaLiq <= 0
-        ? 0
-        : CAP_DL_EBITDA;
+      : dividaLiq < 0
+        ? -CAP_DL_EBITDA
+        : dividaLiq === 0
+          ? 0
+          : CAP_DL_EBITDA;
   const dividaLiqPl =
     PL > 1
       ? Math.max(-CAP_DL_EBITDA, Math.min(CAP_DL_EBITDA, dividaLiq / PL))
-      : dividaLiq <= 0
-        ? 0
-        : CAP_DL_EBITDA;
+      : dividaLiq < 0
+        ? -CAP_DL_EBITDA
+        : dividaLiq === 0
+          ? 0
+          : CAP_DL_EBITDA;
   const amortizacaoPlPorLucro =
     llAnual > 1 ? Math.min(CAP_PAYBACK, PL / llAnual) : PL <= 0 ? 0 : CAP_PAYBACK;
   const payback = amortizacaoPlPorLucro; // @deprecated alias
