@@ -340,9 +340,14 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const folha = folhaAnual(state);
   const custoPessoalSobreReceita = receitaLiqAnual > 0 ? (folha / receitaLiqAnual) * 100 : 0;
 
+  // Margem de Segurança OPERACIONAL: usa o PE operacional (sem juros) sobre a Receita Líquida.
+  // Mesma base do PE (custosFixos ÷ MC%, onde MC% = (RL − custosVar) ÷ RL).
   const margemSeguranca =
-    receitaLiqAnual > 0 && pontoEquilibrio > 0
-      ? Math.max(-999, Math.min(999, ((receitaLiqAnual - pontoEquilibrio) / receitaLiqAnual) * 100))
+    receitaLiqAnual > 0 && pontoEquilibrioOperacional > 0
+      ? Math.max(
+          -999,
+          Math.min(999, ((receitaLiqAnual - pontoEquilibrioOperacional) / receitaLiqAnual) * 100),
+        )
       : 0;
 
   const amortizPrincipalAnual = sum(state.cashflow.amortizacoes);
