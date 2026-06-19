@@ -175,6 +175,15 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleAudit}
+            disabled={streaming || pipeline360.active}
+            title="Auditoria rápida (relatório estruturado)"
+          >
+            <ShieldCheck className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => setShowThreads((s) => !s)}>
             <MessageSquare className="h-4 w-4" />
           </Button>
