@@ -20,6 +20,7 @@ import { SimulatorTab } from "@/components/sim/SimulatorTab";
 import { ValuationTab } from "@/components/sim/ValuationTab";
 import { IndicatorsTab } from "@/components/sim/IndicatorsTab";
 import { ScenarioBar } from "@/components/sim/ScenarioBar";
+import { HistoricalYearPills } from "@/components/sim/HistoricalYearPills";
 import { AIView } from "@/components/ai/AIView";
 import { TabKey } from "@/engines/finance/types";
 import {
