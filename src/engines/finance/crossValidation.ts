@@ -16,6 +16,7 @@ import { calcIndicators, type Indicators } from "./indicators";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { getSimplesLimite } from "./taxDefaults";
 import { sum } from "./format";
+import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 
 export type Severity = "info" | "warn" | "error";
 export type Category = "estrutural" | "fiscal" | "operacional";
