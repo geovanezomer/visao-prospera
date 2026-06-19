@@ -35,6 +35,14 @@ import type { AppState } from "@/engines/finance/types";
 import type { SimulatorParams } from "@/engines/finance/simulator";
 import { toast } from "sonner";
 import { useAIChat } from "@/hooks/useAIChat";
+import { AI_MODE_LABELS, AI_MODE_DESCRIPTIONS, type AIMode } from "@/engines/ai/systemPrompt";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const ReactMarkdown = lazy(() => import("react-markdown"));
 
@@ -80,6 +88,8 @@ export function AIChatSheet({
     handleNewThread,
     handleDeleteThread,
     reloadThreads,
+    mode,
+    setMode,
   } = useAIChat({ state, simulatedState, simActive, simParams });
 
   const [configOpen, setConfigOpen] = useState(false);
@@ -166,6 +176,26 @@ export function AIChatSheet({
               )}
             </div>
             <div className="flex items-center gap-0.5">
+              <Select value={mode} onValueChange={(v) => setMode(v as AIMode)}>
+                <SelectTrigger
+                  className="h-7 w-[130px] text-xs mr-1"
+                  title="Modo de atuação"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {(Object.keys(AI_MODE_LABELS) as AIMode[]).map((m) => (
+                    <SelectItem key={m} value={m} className="text-xs">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{AI_MODE_LABELS[m]}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {AI_MODE_DESCRIPTIONS[m]}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button
                 variant="ghost"
                 size="icon"
