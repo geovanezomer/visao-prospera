@@ -107,16 +107,27 @@ export function DRETab() {
     else if (c.category === "fixo") for (let i = 0; i < 12; i++) despAdmin[i] += v[i];
     else if (c.category === "financeiro") for (let i = 0; i < 12; i++) despFinanc[i] += v[i];
   }
-  // Receitas Financeiras (somatório das rubricas em revenue.receitasFinanceiras)
-  const receitasFinMensal = zeros();
-  for (const rf of state.revenue.receitasFinanceiras ?? []) {
-    const vals = rf.valores ?? [];
-    for (let i = 0; i < 12; i++) receitasFinMensal[i] += Number(vals[i]) || 0;
-  }
+  // Receitas Financeiras — separar genuínas (rendimentos de aplicações, juros recebidos)
+  // das operacionais (aluguéis, venda de ativos). As operacionais JÁ entram no EBITDA via
+  // `dre.outrasReceitasOperacionais`; exibi-las também pós-EBIT causaria DUPLA CONTAGEM
+  // no Lucro Antes do Financiamento. Aqui, somente as financeiras genuínas vão pós-EBIT.
+  const { financeiras: receitasFinMensal, operacionais: outrasReceitasOpMensal } =
+    splitReceitasFinanceiras(state);
+  // Linhas detalhadas (somente genuinamente financeiras) p/ o accordion pós-EBIT.
+  const linhasReceitasFin = (state.revenue.receitasFinanceiras ?? [])
+    .filter((rf) => rf.id !== "alugueis" && rf.id !== "venda_ativos")
+    .map((rf) => ({ label: rf.label, values: rf.valores ?? zeros() }))
+    .filter((x) => sum(x.values) > 0);
+  // Linhas detalhadas das receitas operacionais (aluguéis, venda de ativos) p/ o grupo "Outras Op.".
+  const linhasOutrasReceitasOp = (state.revenue.receitasFinanceiras ?? [])
+    .filter((rf) => rf.id === "alugueis" || rf.id === "venda_ativos")
+    .map((rf) => ({ label: rf.label, values: rf.valores ?? zeros() }))
+    .filter((x) => sum(x.values) > 0);
   // Ganho/Perda em alienação de ativos — sem input dedicado por enquanto
   const ganhoAlienacao = zeros();
-  // Outras Despesas/Receitas Operacionais — inclui Depreciação & Amortização (negativa)
-  const outrasOperacionais = dre.depreciacao.map((d) => -d);
+  // Outras Despesas/Receitas Operacionais — Depreciação (−) + Outras Receitas Op. (+).
+  // Soma confere com o EBIT da engine (que já inclui outrasReceitasOperacionais no EBITDA).
+  const outrasOperacionais = dre.depreciacao.map((d, i) => -d + outrasReceitasOpMensal[i]);
 
   // Lucro Operacional / EBIT = Lucro Bruto − Comerciais − Administrativas + Outras Op.
   // (matematicamente equivale a dre.ebit)
