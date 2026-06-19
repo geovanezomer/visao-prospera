@@ -293,7 +293,7 @@ export function IndicatorsCard({ state }: { state: AppState }) {
               : "—"
           }
           tone={ind.dscr >= 1.5 ? "pos" : ind.dscr >= 1.25 ? "warn" : "neg"}
-          desc={`Quantas vezes o EBITDA cobre o serviço total da dívida (juros + amortização do principal). Bancos exigem ≥1,25× para renovar giro; ≥1,50× destrava melhores linhas.${!ind.dscrAmortizacoesInformadas && ind.dividaOnerosa > 0 ? " ⚠️ Amortizações de principal não informadas — DSCR equivale à Cobertura de Juros (pode estar superestimado)." : ""}`}
+          desc={`Quantas vezes o EBITDA cobre o serviço total da dívida (juros + amortização do principal). Bancos exigem ≥1,25× para renovar giro; ≥1,50× destrava melhores linhas.${!ind.dscrAmortizacoesInformadas && ind.dividaOnerosa > 0 ? " ⚠️ Amortizações de principal não informadas no Fluxo de Caixa — DSCR exibido equivale à Cobertura de Juros e pode estar SUPERESTIMADO." : ""}`}
           formula="EBITDA ÷ (Juros + Amortizações de Principal)"
         />
         <Ind
