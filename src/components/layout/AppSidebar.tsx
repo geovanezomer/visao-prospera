@@ -149,36 +149,41 @@ export function AppSidebar({
 
         <SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
           <div className="space-y-3 px-2 py-2">
-            {/* Resumo somente-leitura da empresa. Edição vive em Configurações (header). */}
-            <div
-              className="flex w-full items-start gap-2 rounded-md border border-sidebar-border bg-sidebar-accent/50 px-2 py-2 text-left"
-              title="Edite em Configurações (no topo da tela)"
-            >
-              <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <div className="flex-1 overflow-hidden">
-                <div className="flex items-center gap-1.5">
-                  <span className="truncate text-xs font-medium">
-                    {state.companyName || "Empresa não configurada"}
-                  </span>
-                </div>
-                <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                  {businessIcon}
-                  <span className="truncate">
-                    {state.ramoAtuacao
-                      ? getRamoLabel(state.businessType, state.ramoAtuacao)
-                      : state.businessType}
-                  </span>
-                </div>
-                <div className="mt-0.5 text-[10px] text-muted-foreground">
-                  {state.numColaboradores ?? 0} colab. ·{" "}
-                  {state.tax.regime === "simples"
-                    ? "Simples"
-                    : state.tax.regime === "presumido"
-                      ? "Presumido"
-                      : "Real"}
+            {/* Aviso "one-time": dados são salvos apenas no navegador deste dispositivo. */}
+            {showStorageNotice && (
+              <div
+                role="alert"
+                className="relative rounded-md border border-primary/30 bg-primary/5 px-2.5 py-2 pr-7 text-[11px] leading-snug text-foreground/90"
+              >
+                <button
+                  type="button"
+                  onClick={dismissStorageNotice}
+                  aria-label="Dispensar aviso"
+                  className="absolute right-1 top-1 rounded p-0.5 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+                <div className="flex items-start gap-1.5">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                  <div>
+                    <p className="font-medium text-foreground">Dados salvos no navegador</p>
+                    <p className="mt-0.5 text-muted-foreground">
+                      Suas informações ficam apenas neste dispositivo. Use{" "}
+                      <span className="font-medium text-foreground">Salvar</span> abaixo para
+                      baixar um arquivo <code className="text-[10px]">.finnance</code> e
+                      compartilhar ou fazer backup.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={dismissStorageNotice}
+                      className="mt-1.5 text-[10px] font-medium text-primary hover:underline"
+                    >
+                      Entendi, não mostrar novamente
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="mt-2 space-y-1.5 border-t border-sidebar-border/50 pt-3">
               {currentFileName && (
