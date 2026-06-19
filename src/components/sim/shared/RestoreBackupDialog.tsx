@@ -178,7 +178,7 @@ export function RestoreBackupDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-3xl w-[95vw]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Cloud className="h-4 w-4" /> Restaurar da nuvem
