@@ -5,7 +5,7 @@ import { buildDRE, calcIndicators } from "@/engines/finance";
 
 import { CapitalStructureCard } from "./capital/CapitalStructureCard";
 import { BalanceSheetCard } from "./capital/BalanceSheetCard";
-import { AdvancedRefinementCard } from "./capital/AdvancedRefinementCard";
+
 import { CapexAtivacaoSection } from "./capital/CapexAtivacaoSection";
 import { WaccRoicMeter } from "./capital/WaccRoicMeter";
 import { NCGExplanationCard } from "./capital/NCGExplanationCard";
