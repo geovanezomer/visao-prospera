@@ -11,7 +11,7 @@ import { describe, it, expect } from "vitest";
 import { buildDRE } from "../dre";
 import { fixedCostBase, effectiveMonthValues } from "../costs";
 import { buildCashFlow } from "../cashflow";
-import { irr, irrDetailed, npv } from "../forecast";
+import { buildForecast, DEFAULT_FORECAST_CFG, irr, irrDetailed, npv } from "../forecast";
 import { sum } from "../format";
 import { createState, m12 } from "./helpers";
 
@@ -173,5 +173,41 @@ describe("Edge — TIR e VPL", () => {
     // taxa = 10000% a.p. → demais fluxos viram quase zero
     expect(npv([-100, 50, 60, 70], 100)).toBeGreaterThan(-100);
     expect(npv([-100, 50, 60, 70], 100)).toBeLessThan(-99);
+  });
+});
+
+// ============================================================
+// 6. Forecast — impostos e FCL/FCFF
+// ============================================================
+describe("Edge — Forecast financeiro", () => {
+  it("não explode impostos quando LAIR base é negativo no Presumido", () => {
+    const s = createState({
+      tax: { regime: "presumido" },
+      revenue: { bruta: m12(20_000), inadimplencia: m12(0) },
+      costs: [{ id: "cf", label: "Custo fixo alto", category: "fixo", values: m12(50_000), fixed: true }],
+    });
+    const forecast = buildForecast(s, { ...DEFAULT_FORECAST_CFG, horizonteMeses: 1, crescimentoMensalPct: 0 });
+    const fcl = forecast.meses[0].fcl;
+
+    expect(Number.isFinite(fcl)).toBe(true);
+    expect(Math.abs(fcl)).toBeLessThan(1_000_000);
+  });
+
+  it("FCL do forecast é FCFF: juros reduzem lucro líquido, mas não entram no FCL", () => {
+    const base = createState({
+      revenue: { bruta: m12(100_000), inadimplencia: m12(0), pmr: 0, pmp: 0 },
+      costs: [],
+      cashflow: { capex: m12(0) },
+    });
+    const alavancada = createState({
+      ...base,
+      costs: [{ id: "juros", label: "Juros sobre empréstimo", category: "financeiro", values: m12(10_000), fixed: true }],
+    });
+    const cfg = { ...DEFAULT_FORECAST_CFG, horizonteMeses: 1, crescimentoMensalPct: 0, capexInicial: 0 };
+    const semJuros = buildForecast(base, cfg).meses[0];
+    const comJuros = buildForecast(alavancada, cfg).meses[0];
+
+    expect(comJuros.lucroLiquido).toBeLessThan(semJuros.lucroLiquido);
+    expect(comJuros.fcl).toBeCloseTo(semJuros.fcl, 2);
   });
 });
