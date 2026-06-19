@@ -30,31 +30,29 @@ import { Save, CalendarDays, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import {
-  useScenarios,
   archiveYearAsHistorical,
   switchToYear,
   deleteScenario,
 } from "@/engines/scenarios/store";
 import { ConfirmDialog } from "@/components/sim/shared/ConfirmDialog";
 import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
-import { buildDRE } from "@/engines/finance/dre";
-import { resolveEffectiveRegime } from "@/engines/finance/regime";
-import { calcIndicators } from "@/engines/finance/indicators";
+import { buildFinancialModel } from "@/engines/finance/financialModel";
+import { useCompanySnapshots } from "@/hooks/useCompanySnapshots";
 
 // Lista de anos disponíveis no select (inclusivo).
 const YEARS: number[] = Array.from({ length: 2040 - 2010 + 1 }, (_, i) => 2010 + i);
+const HISTORICAL_SNAPSHOT_OPTS = { kind: "historical" as const, sortByYear: true };
 
 export function ScenarioBar() {
   const { state, update } = useFinance();
   const company = state.companyName || "default";
-  const all = useScenarios(company);
+  const allHistoricals = useCompanySnapshots(HISTORICAL_SNAPSHOT_OPTS);
 
   const historicals = useMemo(
     () =>
-      all
-        .filter((s) => s.kind === "historical" && s.state && s.fiscalYear)
+      allHistoricals
         .sort((a, b) => (b.fiscalYear ?? 0) - (a.fiscalYear ?? 0)),
-    [all],
+    [allHistoricals],
   );
 
   // Recalcula indicadores anuais consistentes a partir do AppState arquivado.
@@ -71,15 +69,13 @@ export function ScenarioBar() {
     >();
     for (const h of historicals) {
       if (!h.state) continue;
-      const regime = resolveEffectiveRegime(h.state);
-      const { dre } = buildDRE(h.state, regime);
-      const ind = calcIndicators(h.state, dre);
+      const { ind } = buildFinancialModel(h.state);
       m.set(h.id, {
-        faturamento: sum(dre.receitaBruta),
-        ebitda: sum(dre.ebitda),
+        faturamento: ind.receitaBrutaAnual,
+        ebitda: ind.ebitdaAnual,
         roe: ind.roe,
         margemLiquida: ind.margemLiquida,
-        lucroLiquido: sum(dre.lucroLiquido),
+        lucroLiquido: ind.lucroLiquidoAnual,
       });
     }
     return m;
