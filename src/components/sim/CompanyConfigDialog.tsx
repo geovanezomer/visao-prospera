@@ -340,6 +340,18 @@ export function CompanyConfigDialog({ open, onOpenChange }: Props) {
               </p>
             </div>
           </section>
+
+          {/* Arquivamento de ano fiscal — alimenta as pills de período. */}
+          <section className="space-y-2 rounded-md border border-dashed border-border/60 p-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Fechamento de ano
+            </h3>
+            <p className="text-[11px] text-muted-foreground">
+              Arquiva o AppState atual como snapshot histórico. Após 2+ snapshots, o
+              cabeçalho de Indicadores/DRE mostra pills para comparar períodos.
+            </p>
+            <ArchiveYearButton onClose={() => onOpenChange(false)} />
+          </section>
         </div>
 
         <DialogFooter>
