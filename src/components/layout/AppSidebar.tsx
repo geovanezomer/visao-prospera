@@ -165,6 +165,7 @@ export function AppSidebar({
                   <span>Restaurar da nuvem</span>
                 </Button>
               )}
+              <ShareDialog />
             </div>
           </div>
         </SidebarGroup>
