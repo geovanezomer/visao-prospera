@@ -148,27 +148,45 @@ export function IndicatorsCard({ state }: { state: AppState }) {
           desc="Quantas vezes o ativo total 'gira' em vendas no ano. Mede eficiência: quanto maior, mais a empresa produz com o que tem."
           formula="Receita Líquida ÷ Ativo Total"
         />
-        <Ind
-          label="Dívida Líq. / EBITDA"
-          v={fmtTimes(ind.dividaLiqEbitda, ebitdaAnual)}
-          tone={ind.dividaLiqEbitda <= 3 ? "pos" : "neg"}
-          desc="Em quantos anos de geração de caixa (EBITDA) a empresa quitaria sua dívida líquida. Acima de 3× preocupa bancos."
-          formula="(Dívida Total − Caixa) ÷ EBITDA"
-        />
-        <Ind
-          label="Dívida Líq. / EBIT"
-          v={fmtTimes(ind.dividaLiqEbit, ebitAnual)}
-          tone={ind.dividaLiqEbit <= 4 ? "pos" : "neg"}
-          desc="Quantos anos de lucro operacional (já líquido da depreciação) seriam necessários para quitar a dívida líquida. Mais conservador que Dívida/EBITDA."
-          formula="(Dívida Total − Caixa) ÷ EBIT"
-        />
-        <Ind
-          label="Dívida Líq. / PL"
-          v={Number.isFinite(ind.dividaLiqPl) ? `${ind.dividaLiqPl.toFixed(2)}×` : "—"}
-          tone={ind.dividaLiqPl <= 1 ? "pos" : "neg"}
-          desc="Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio."
-          formula="(Dívida Total − Caixa) ÷ Patrimônio Líquido"
-        />
+        {(() => {
+          const dl = leverageDisplay("ebitda", ind.dividaLiqEbitda, ind.dividaLiquida, ebitdaAnual);
+          return (
+            <Ind
+              label={dl.label}
+              v={dl.value}
+              tone={dl.tone}
+              chip={dl.chip}
+              desc="Em quantos anos de geração de caixa (EBITDA) a empresa quitaria sua dívida líquida. Acima de 3× preocupa bancos."
+              formula="(Dívida Total − Caixa) ÷ EBITDA"
+            />
+          );
+        })()}
+        {(() => {
+          const dl = leverageDisplay("ebit", ind.dividaLiqEbit, ind.dividaLiquida, ebitAnual);
+          return (
+            <Ind
+              label={dl.label}
+              v={dl.value}
+              tone={dl.tone}
+              chip={dl.chip}
+              desc="Quantos anos de lucro operacional (já líquido da depreciação) seriam necessários para quitar a dívida líquida. Mais conservador que Dívida/EBITDA."
+              formula="(Dívida Total − Caixa) ÷ EBIT"
+            />
+          );
+        })()}
+        {(() => {
+          const dl = leverageDisplay("pl", ind.dividaLiqPl, ind.dividaLiquida, state.capital.patrimonioLiquido);
+          return (
+            <Ind
+              label={dl.label}
+              v={dl.value}
+              tone={dl.tone}
+              chip={dl.chip}
+              desc="Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio."
+              formula="(Dívida Total − Caixa) ÷ Patrimônio Líquido"
+            />
+          );
+        })()}
         <Ind
           label="Amortização do PL"
           v={
