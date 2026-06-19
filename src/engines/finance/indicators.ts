@@ -50,8 +50,11 @@ export interface Indicators {
   wacc: number;
   /** PMR + PME − PMP */
   cicloFinanceiro: number;
+  /** PMR + PME (dias entre comprar insumo e receber do cliente). */
+  cicloOperacional: number;
   /** Contas a Receber + Estoques − Fornecedores */
   ncg: number;
+
   /** NCG − Capital de Giro Disponível */
   gapCapitalGiro: number;
   /** Ativo Circulante ÷ Passivo Circulante */
