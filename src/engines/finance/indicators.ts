@@ -63,6 +63,9 @@ export interface Indicators {
   liquidezSeca: number;
   /** Disponibilidades ÷ Passivo Circulante */
   liquidezImediata: number;
+  /** (Ativo Total − Permanente) ÷ Passivo Total. Aproximação: (AT − (AT−AC)) / (AT − PL) = AC / (AT − PL). */
+  liquidezGeral: number;
+
   /** Passivo Total ÷ Ativo Total × 100. Quando `endividamentoGeralDadosCompletos=false`, é estimativa de fallback. */
   endividamentoGeral: number;
   /**
