@@ -29,6 +29,11 @@ const MAX_HISTORY_TOKENS = 6000;
 import { buildSystemPrompt, type AIMode } from "@/engines/ai/systemPrompt";
 import { loadAIMode, saveAIMode } from "@/engines/ai/modeStore";
 import { recordChatTrail } from "@/engines/ai/chatTrail";
+import {
+  loadPipeline360,
+  savePipeline360,
+  clearPipeline360,
+} from "@/engines/ai/pipeline360Store";
 import { useMemories, memoriesToPromptBlock } from "@/engines/memory/store";
 import {
   processFile,
