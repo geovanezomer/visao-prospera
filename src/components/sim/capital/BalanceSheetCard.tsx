@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { AppState } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
 import { SectionTitle } from "../primitives";
@@ -46,6 +47,15 @@ export function BalanceSheetCard({
     ativoCircCalc - (capital.passivoCirculante || capital.fornecedores || 0);
   const dpl = plInformado > 0 ? (capital.dividaOnerosa || 0) / plInformado : 0;
   const solvencia = totalPassivos > 0 ? (capital.ativoTotal || 0) / totalPassivos : 0;
+
+  // Auto-preenche PL quando vazio (= cálculo Ativo − Dívidas). Se o usuário
+  // informar manualmente um valor diferente, mantemos e exibimos o alerta.
+  useEffect(() => {
+    if (plInformado === 0 && capital.ativoTotal > 0 && plCalculado !== 0) {
+      onChange({ patrimonioLiquido: plCalculado });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plCalculado, capital.ativoTotal]);
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
@@ -118,7 +128,9 @@ export function BalanceSheetCard({
         title="O que a empresa deve"
         subtitle="Dívidas, contas e obrigações"
       >
-        <div className="grid gap-3 sm:grid-cols-1">
+        {debtContractsSlot}
+
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <SimpleField
             icon={<Users className="h-4 w-4" />}
             label="Fornecedores a pagar"
@@ -127,79 +139,44 @@ export function BalanceSheetCard({
             onChange={(n) => onChange({ fornecedores: n })}
             placeholder="0 = calculado pelo prazo médio"
           />
+          <SimpleField
+            icon={<Wallet className="h-4 w-4" />}
+            label="Patrimônio líquido dos sócios"
+            hint="Calculado automaticamente: Ativo Total − Dívidas (empréstimos + fornecedores). Você pode sobrescrever se tiver o valor contábil exato."
+            value={capital.patrimonioLiquido}
+            onChange={(n) => onChange({ patrimonioLiquido: n })}
+            emphasis
+          />
         </div>
 
-        {debtContractsSlot && <div className="mt-3">{debtContractsSlot}</div>}
+        {capital.ativoTotal > 0 && plInformado === 0 && (
+          <button
+            onClick={() => onChange({ patrimonioLiquido: plCalculado })}
+            className="mt-2 inline-flex items-center gap-1 rounded bg-primary/15 px-2 py-1 text-[10px] font-bold uppercase text-primary hover:bg-primary/25 transition-colors"
+          >
+            Usar PL calculado: {fmtBRL(plCalculado)}
+          </button>
+        )}
 
-
-
-
-        <div className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-4">
-          <div className="flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-primary" />
-            <div className="text-xs font-semibold text-primary">O que sobra para os sócios</div>
-          </div>
-          <div className="mt-0.5 text-[10px] text-muted-foreground">
-            Patrimônio líquido = ativos − dívidas
-          </div>
-
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <SimpleField
-              icon={<Wallet className="h-4 w-4" />}
-              label="Patrimônio líquido dos sócios"
-              hint="Capital social + reservas + lucros acumulados. O que sobraria para os sócios se a empresa quitasse todas as dívidas hoje."
-              value={capital.patrimonioLiquido}
-              onChange={(n) => onChange({ patrimonioLiquido: n })}
-              emphasis
-            />
-
-            <div className="flex items-center justify-around rounded-md border border-border/40 bg-background/40 p-3 text-center">
-              <div>
-                <div className="num text-sm font-semibold">{fmtBRL(capital.ativoTotal)}</div>
-                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                  Ativos
-                </div>
-              </div>
-              <span className="text-muted-foreground">−</span>
-              <div>
-                <div className="num text-sm font-semibold text-neg">{fmtBRL(totalPassivos)}</div>
-                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                  Dívidas
-                </div>
-              </div>
-              <span className="text-muted-foreground">=</span>
-              <div>
-                <div
-                  className={`num text-sm font-semibold ${hasInconsistencia ? "text-warning" : "text-pos"}`}
-                >
-                  {fmtBRL(plCalculado)}
-                </div>
-                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                  PL calculado
-                </div>
-              </div>
+        {hasInconsistencia && plInformado !== 0 && (
+          <div className="mt-3 flex flex-col gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-[11px] text-warning">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                PL informado (<strong>{fmtBRL(plInformado)}</strong>) diverge do PL calculado
+                (Ativos − Dívidas = <strong>{fmtBRL(plCalculado)}</strong>). Diferença:{" "}
+                <strong>{fmtBRL(diff)}</strong>.
+              </span>
             </div>
+            <button
+              onClick={() => onChange({ patrimonioLiquido: plCalculado })}
+              className="self-start rounded bg-warning/20 px-2 py-1 text-[10px] font-bold uppercase hover:bg-warning/30 transition-colors"
+            >
+              Ajustar PL para {fmtBRL(plCalculado)}
+            </button>
           </div>
+        )}
 
-          {hasInconsistencia && (
-            <div className="mt-3 flex flex-col gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-[11px] text-warning">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span>
-                  O PL informado (<strong>{fmtBRL(plInformado)}</strong>) não bate com a diferença
-                  entre Ativos e Dívidas (<strong>{fmtBRL(plCalculado)}</strong>). Diferença:{" "}
-                  <strong>{fmtBRL(diff)}</strong>.
-                </span>
-              </div>
-              <button
-                onClick={() => onChange({ patrimonioLiquido: plCalculado })}
-                className="self-start rounded bg-warning/20 px-2 py-1 text-[10px] font-bold uppercase hover:bg-warning/30 transition-colors"
-              >
-                Ajustar PL para {fmtBRL(plCalculado)}
-              </button>
-            </div>
-          )}
-        </div>
       </StepCard>
 
       {/* PASSO 3 — RESUMO + KPIs */}
