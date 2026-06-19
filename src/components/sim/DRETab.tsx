@@ -330,8 +330,6 @@ export function DRETab() {
     { name: "Lucro Líq.", value: ll },
   ];
 
-  // Em modo comparação com ≥ 2 snapshots, troca a view normal pela tabela
-  // lado a lado de DRE; pills continuam acima para gerenciar a seleção.
   const showComparison = comparisonSnaps.length >= 2;
 
   return (
@@ -340,6 +338,7 @@ export function DRETab() {
       {showComparison ? (
         <DREComparison snapshots={comparisonSnaps} />
       ) : (
+        <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <div className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
