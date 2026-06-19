@@ -145,7 +145,36 @@ export interface Indicators {
   impostosSobreReceita: number;
   /** (Impostos sobre Vendas + IRPJ/CSLL) ÷ Lucro Líquido × 100 — quanto de imposto para cada R$ de lucro. */
   impostosSobreLucro: number;
+  // ─── Campos auxiliares EXPOSTOS (SSOT) ──────────────────────────────
+  // Já computados internamente, expostos para evitar recálculo em UIs.
+  /** EBITDA anualizado (usado em DSCR/DL-EBITDA/per-capita). */
+  ebitdaAnual: number;
+  /** EBIT anualizado (usado em ROIC/cobertura/per-capita). */
+  ebitAnual: number;
+  /** Serviço da dívida mensal médio = (Juros Anuais + Amortizações Anuais) ÷ 12. */
+  servicoDividaMensal: number;
+  /** Participação do PL no financiamento total: PL ÷ (PL + D) × 100. */
+  proprioPercent: number;
+  /** D/PL BRUTO (Dívida Onerosa ÷ PL) — múltiplo, não a métrica líquida `dividaLiqPl`. */
+  dividaPlBruto: number;
 }
+
+// ─── Thresholds publicados (SSOT) ───────────────────────────────────
+// Faixas usadas em banners/alertas/cards. Centralizadas aqui para que
+// UI nunca diverja: alterar a régua em UM lugar atualiza tudo.
+export const DSCR_THRESHOLDS = {
+  /** Abaixo deste valor o DSCR sinaliza risco real de inadimplência. */
+  danger: 1.2,
+  /** Covenant típico de bancos. Abaixo disso = alerta. */
+  covenant: 1.5,
+} as const;
+
+/** Ke padrão por setor (Selic + prêmio de risco PME-BR). Sobrescrevível. */
+export const KE_DEFAULT_BY_SECTOR: Record<string, number> = {
+  servicos: 18,
+  comercio: 17,
+  industria: 16,
+};
 
 export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const { capital, revenue } = state;
