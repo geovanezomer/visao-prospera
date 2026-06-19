@@ -37,8 +37,8 @@ const MODE_MARKERS: Record<Exclude<AIMode, "chat">, string> = {
   board: "MODO CONSELHO (BOARD)",
 };
 
-function build(opts: Parameters<typeof buildSystemPrompt>[0]) {
-  return buildSystemPrompt({ includeSnapshot: false, useTools: false, ...opts });
+function build(extra: Partial<Parameters<typeof buildSystemPrompt>[0]> = {}) {
+  return buildSystemPrompt({ includeSnapshot: false, useTools: false, ...extra });
 }
 
 describe("buildSystemPrompt — modos de atuação", () => {
