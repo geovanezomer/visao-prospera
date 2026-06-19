@@ -181,7 +181,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const cpvAnual = an(sum(dre.cpv));
 
   // SSOT: safeMath previne NaN/Infinity em qualquer divisão de indicador.
-  const depreciacaoAnual = sum(dre.depreciacao);
+  const depreciacaoAnual = an(sum(dre.depreciacao));
   const custosFixosOperacionaisSemDep = custosFixosAnual - depreciacaoAnual;
   const custosFixosComJuros = custosFixosAnual + jurosAnual;
   const margemContribuicao = safePct(receitaLiqAnual - custosVarAnual, receitaLiqAnual);
