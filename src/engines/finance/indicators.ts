@@ -395,6 +395,7 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     dscr,
     dscrAmortizacoesInformadas,
     dividaOnerosa: D,
+    dividaLiquida: dividaLiq,
     passivoCirculante,
     ativoCirculante,
     impostosSobreReceita:
