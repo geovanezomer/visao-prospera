@@ -50,8 +50,14 @@ export function DiagnosisTab() {
       <DiagnosticoExecutivoCard briefing={briefing} />
 
 
-      {/* Waterfall — âncora visual da conversa: mostra onde o resultado se perde */}
-      <WaterfallCard dre={model.dre} ind={model.ind} />
+      {/* Capital de Giro — explica NCG e ciclo financeiro */}
+      <NCGExplanationCard
+        ncg={model.ind.ncg}
+        pmr={state.revenue.pmr}
+        pmp={state.revenue.pmp}
+        receitaDia={sum(model.dre.receitaBruta) / 360}
+        cpvDia={sum(model.dre.cpv) / 360}
+      />
 
       {/* Análises avançadas (reusa o model central) */}
       <HealthScoreCard
