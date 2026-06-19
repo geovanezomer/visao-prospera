@@ -365,6 +365,18 @@ function SimulaPro() {
 
           <ScenarioBar />
           {confirmDialog}
+          {user && (
+            <RestoreBackupDialog
+              open={restoreOpen}
+              onOpenChange={setRestoreOpen}
+              userId={user.id}
+              hasUnsavedChanges={fileApi.dirty}
+              confirm={confirm}
+              setState={setState}
+              replaceScenarios={replaceScenarios}
+              onRestored={() => { /* file foi carregado pelo setState */ }}
+            />
+          )}
           {/* AI FAB REMOVIDO POR SOLICITAÇÃO DO USUÁRIO */}
         </div>
       </FinanceProvider>
