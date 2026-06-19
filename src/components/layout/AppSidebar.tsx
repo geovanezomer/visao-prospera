@@ -11,7 +11,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import {
   LogOut,
@@ -19,25 +19,20 @@ import {
   Factory,
   Store,
   Briefcase,
-  Users,
   Save,
   FolderOpen,
   Calculator,
+  Settings,
 } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 
 import { NAV_ITEMS } from "./nav-config";
 import { useFinance } from "@/engines/finance/AppStateContext";
-import { TabKey, BusinessType, AppState } from "@/engines/finance/types";
+import { TabKey } from "@/engines/finance/types";
 import { useAuth } from "@/lib/auth";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { CompanyConfigDialog } from "@/components/sim/CompanyConfigDialog";
+import { getRamoLabel } from "@/engines/finance/companyProfile";
 
 import { cn } from "@/lib/utils";
 
@@ -58,7 +53,8 @@ export function AppSidebar({
   currentFileName,
   dirty,
 }: AppSidebarProps) {
-  const { state, update } = useFinance();
+  const { state } = useFinance();
+  const [configOpen, setConfigOpen] = useState(false);
   const { user, logout } = useAuth();
   const { setOpenMobile } = useSidebar();
 
@@ -146,45 +142,39 @@ export function AppSidebar({
 
         <SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
           <div className="space-y-3 px-2 py-2">
-            <div className="flex items-center gap-2 rounded-md border border-sidebar-border bg-sidebar-accent/50 px-2 py-1.5">
-              <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <input
-                value={state.companyName}
-                onChange={(e) => update({ companyName: e.target.value })}
-                className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground"
-                placeholder="Empresa"
-              />
-            </div>
-            <div className="flex items-center gap-2 rounded-md border border-sidebar-border bg-sidebar-accent/50 px-2 py-0.5">
-              {businessIcon}
-              <Select
-                value={state.businessType}
-                onValueChange={(v) => update({ businessType: v as BusinessType })}
-              >
-                <SelectTrigger className="h-7 border-0 bg-transparent p-0 text-xs shadow-none focus:ring-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="servicos">Serviços</SelectItem>
-                  <SelectItem value="comercio">Comércio</SelectItem>
-                  <SelectItem value="industria">Indústria</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2 rounded-md border border-sidebar-border bg-sidebar-accent/50 px-2 py-1.5">
-              <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <input
-                type="number"
-                min={0}
-                value={state.numColaboradores ?? 0}
-                onChange={(e) =>
-                  update({ numColaboradores: Math.max(0, parseInt(e.target.value || "0", 10)) })
-                }
-                className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground"
-                placeholder="Nº de colaboradores"
-              />
-              <span className="text-[10px] text-muted-foreground shrink-0">colab.</span>
-            </div>
+            {/* Cartão resumo da empresa — clique abre o dialog de configuração. */}
+            <button
+              type="button"
+              onClick={() => setConfigOpen(true)}
+              className="group/card flex w-full items-start gap-2 rounded-md border border-sidebar-border bg-sidebar-accent/50 px-2 py-2 text-left transition-colors hover:bg-sidebar-accent"
+              title="Configurar empresa"
+            >
+              <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <div className="flex-1 overflow-hidden">
+                <div className="flex items-center gap-1.5">
+                  <span className="truncate text-xs font-medium">
+                    {state.companyName || "Empresa não configurada"}
+                  </span>
+                </div>
+                <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  {businessIcon}
+                  <span className="truncate">
+                    {state.ramoAtuacao
+                      ? getRamoLabel(state.businessType, state.ramoAtuacao)
+                      : state.businessType}
+                  </span>
+                </div>
+                <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  {state.headcountRange ?? `${state.numColaboradores ?? 0} colab.`} ·{" "}
+                  {state.tax.regime === "simples"
+                    ? "Simples"
+                    : state.tax.regime === "presumido"
+                      ? "Presumido"
+                      : "Real"}
+                </div>
+              </div>
+              <Settings className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/card:opacity-100" />
+            </button>
 
             <div className="mt-2 space-y-1.5 border-t border-sidebar-border/50 pt-3">
               {currentFileName && (
@@ -222,6 +212,9 @@ export function AppSidebar({
           </div>
         </SidebarGroup>
       </SidebarContent>
+
+      {/* Dialog de configuração centralizada da empresa. */}
+      <CompanyConfigDialog open={configOpen} onOpenChange={setConfigOpen} />
 
       <SidebarFooter className="border-t border-sidebar-border/50 p-2">
         <SidebarMenu>
