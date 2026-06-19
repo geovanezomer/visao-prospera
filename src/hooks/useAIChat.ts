@@ -257,7 +257,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     setStreaming(true);
     touchThread(state.companyName, activeId);
 
-    const sysPrompt = buildSysPrompt(opts?.auditMode);
+    const sysPrompt = buildSysPrompt(effectiveMode);
     const ac = new AbortController();
     abortRef.current = ac;
 
