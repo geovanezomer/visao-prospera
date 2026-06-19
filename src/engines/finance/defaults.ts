@@ -339,6 +339,13 @@ export function migrateState(s: AppState): AppState {
     ? s.costs.map(migrateCostLine).filter((c) => !REMOVED_IDS.has(c.id))
     : DEFAULT_STATE.costs;
   costs = costs.map((c) => (RELABEL[c.id] ? { ...c, label: RELABEL[c.id] } : c));
+  // Reclassifica "insumos_serv" para CSP — antes ficava em Despesas Comerciais,
+  // gerando duplicidade com a rubrica de mesmo nome nos Custos Diretos.
+  costs = costs.map((c) =>
+    c.id === "insumos_serv" && c.category !== "custo_vendas" && c.category !== "direto_venda"
+      ? { ...c, category: "custo_vendas", subcategory: "insumos_servico" }
+      : c,
+  );
   // Todas as categorias custo_vendas ou direto_venda são processadas
   costs = costs.map((c) => {
     if (c.category !== "custo_vendas" && c.category !== "direto_venda") return c;
