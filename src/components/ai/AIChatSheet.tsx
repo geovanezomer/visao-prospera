@@ -545,37 +545,6 @@ export function AIChatSheet({
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={activeSkillId} onValueChange={setActiveSkillId}>
-                <SelectTrigger
-                  className="h-7 flex-1 text-xs"
-                  title="Skill ativa neste chat"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all" className="text-xs">
-                    <div className="flex flex-col">
-                      <span className="font-medium">Todas as skills</span>
-                      <span className="text-[10px] text-muted-foreground">
-                        Usa as habilitadas em Configurações
-                      </span>
-                    </div>
-                  </SelectItem>
-                  {config.skills.map((s) => (
-                    <SelectItem key={s.id} value={s.id} className="text-xs">
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {s.name}
-                          {!s.enabled ? " (off)" : ""}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground line-clamp-1">
-                          {s.description}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
