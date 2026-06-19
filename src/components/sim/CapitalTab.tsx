@@ -32,7 +32,7 @@ export function CapitalTab() {
   // Sincroniza Contratos de Dívida → dividaOnerosa, cashflow.amortizacoes
   // e linha sintética de custo financeiro (juros). Mantém os demais
   // indicadores (DSCR, ROIC, WACC, cobertura) automaticamente coerentes.
-  const contracts = c.debtContracts ?? [];
+  const contracts = useMemo(() => c.debtContracts ?? EMPTY_CONTRACTS, [c.debtContracts]);
   useEffect(() => {
     if (contracts.length === 0) {
       // Remove linha sintética de juros, se existir.
