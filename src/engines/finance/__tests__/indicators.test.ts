@@ -186,6 +186,28 @@ describe("Indicadores — NCG e FCF", () => {
     const ind = calcIndicators(s, dre);
     expect(Number.isFinite(ind.fcf)).toBe(true);
   });
+
+  it("FCF aumenta quando há redução de NCG (liberação de caixa)", () => {
+    const base = createState({
+      revenue: { bruta: m12(100_000), inadimplencia: m12(0), pmr: 0, pmp: 0 },
+      costs: [],
+      capital: {
+        ativoTotal: 1_000_000,
+        patrimonioLiquido: 800_000,
+        dividaOnerosa: 0,
+        contasReceber: 0,
+        estoques: 0,
+        fornecedores: 0,
+      },
+    });
+    const semLiberacao = createState({ ...base, capital: { ...base.capital, ncgAbertura: 0 } });
+    const comLiberacao = createState({ ...base, capital: { ...base.capital, ncgAbertura: 100_000 } });
+
+    const indSem = calcIndicators(semLiberacao, buildDRE(semLiberacao, "simples").dre);
+    const indCom = calcIndicators(comLiberacao, buildDRE(comLiberacao, "simples").dre);
+
+    expect(indCom.fcf).toBeCloseTo(indSem.fcf + 100_000, 0);
+  });
 });
 
 describe("Indicadores — Cobertura de Juros e Giro", () => {
