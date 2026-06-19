@@ -39,6 +39,15 @@ export const fmtNum = (n: number, d = 2) =>
     ? n.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d })
     : "—";
 
+/**
+ * Formata múltiplos ("vezes") — ex.: cobertura de juros, DSCR, D/PL.
+ * Indicadores são capped na engine (sempre finitos). O ramo "—" cobre o
+ * caso degenerado de denominador ≤ 0 (sem base de comparação).
+ * SSOT — antes duplicado em IndicatorsTab/IndicatorsCard.
+ */
+export const fmtTimes = (v: number, base: number, decimals = 1): string =>
+  base <= 0 ? "—" : `${v.toFixed(decimals)}×`;
+
 export const sum = (arr: number[]) => arr.reduce((a, b) => a + (Number(b) || 0), 0);
 export const avg = (arr: number[]) => (arr.length ? sum(arr) / arr.length : 0);
 export const zeros12 = () => Array(12).fill(0);

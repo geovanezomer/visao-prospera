@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { AppState } from "@/engines/finance/types";
-import { fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
+import { fmtBRL, fmtPct, fmtTimes, MESES, sum } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import {
   Bar,
@@ -48,12 +48,7 @@ const TOOLTIP_STYLE = {
 const TOOLTIP_ITEM = { color: "var(--popover-foreground)" } as const;
 const TOOLTIP_LABEL = { color: "var(--popover-foreground)", fontWeight: 600 } as const;
 
-// Helper: formata "vezes". Indicadores são capped na engine — sempre finitos.
-// Mantém o ramo "—" apenas para o caso degenerado de denominador ≤ 0 (sem base de comparação).
-function fmtTimes(v: number, base: number, decimals = 1): string {
-  if (base <= 0) return "—";
-  return `${v.toFixed(decimals)}×`;
-}
+// `fmtTimes` é importado de `engines/finance/format` (SSOT).
 
 export function IndicatorsTab() {
   const state = useFinanceState();

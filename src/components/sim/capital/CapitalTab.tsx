@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from "react";
 import { useFinance } from "@/engines/finance/AppStateContext";
-import { fmtBRL, sum } from "@/engines/finance/format";
+import { fmtBRL } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { mesesPreenchidos, anualizar } from "@/engines/finance/periodUtils";
+import { KE_DEFAULT_BY_SECTOR } from "@/engines/finance/indicators";
 
 
 import { BalanceSheetCard } from "@/components/sim/capital/BalanceSheetCard";
@@ -31,7 +31,7 @@ export function CapitalTab() {
   const c = state.capital;
   // SSOT: usa `useFinanceModel` (resolveEffectiveRegime + memo central) — mesma
   // fonte da aba Indicadores. Garante que WACC/ROIC/margens nunca divirjam.
-  const { dre, ind } = useFinanceModel(state);
+  const { ind } = useFinanceModel(state);
 
   const set = (patch: Partial<typeof c>) =>
 
@@ -84,15 +84,10 @@ export function CapitalTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contracts]);
 
-  // ke padrão por setor (benchmark PME BR — Selic + prêmio de risco). O usuário
-  // pode sobrescrever via Análise/Valuation se quiser refinar.
-  const keDefaultPorSetor: Record<string, number> = {
-    servicos: 18,
-    comercio: 17,
-    industria: 16,
-  };
+  // ke padrão por setor (benchmark PME BR — Selic + prêmio de risco). SSOT em
+  // `engines/finance/indicators.ts`. O usuário pode sobrescrever via Análise/Valuation.
   useEffect(() => {
-    const keAlvo = keDefaultPorSetor[state.businessType] ?? 18;
+    const keAlvo = KE_DEFAULT_BY_SECTOR[state.businessType] ?? 18;
     if (!c.ke || c.ke <= 0) {
       update((s) => ({ ...s, capital: { ...s.capital, ke: keAlvo } }));
     }
@@ -101,11 +96,8 @@ export function CapitalTab() {
 
 
   const wacc = ind.wacc;
-  // Quando PL e Dívida estão preenchidos, a proporção real é PL/(PL+D) — o slider
-  // vira leitura derivada para evitar contradição visual entre % e R$.
-  const totalFinancAbs = Math.max(0, c.patrimonioLiquido) + Math.max(0, c.dividaOnerosa);
-  const proprioDerivado =
-    totalFinancAbs > 0 ? (Math.max(0, c.patrimonioLiquido) / totalFinancAbs) * 100 : c.proprio;
+  // Proporção real (PL ÷ PL+D) vem do motor — `ind.proprioPercent`.
+  const proprioDerivado = ind.proprioPercent;
   const terceiros = 100 - proprioDerivado;
 
   // Validações de inconsistência patrimonial.
@@ -120,9 +112,9 @@ export function CapitalTab() {
       `Patrimônio Líquido negativo (${fmtBRL(c.patrimonioLiquido)}) — passivo a descoberto. Reveja o balanço antes de interpretar ROE/ROIC.`,
     );
   }
-  if (c.patrimonioLiquido > 0 && c.dividaOnerosa / c.patrimonioLiquido > 5) {
+  if (ind.dividaPlBruto > 5) {
     warnings.push(
-      `Endividamento muito elevado: D/PL = ${(c.dividaOnerosa / c.patrimonioLiquido).toFixed(1)}× (saudável ≤ 2×). Risco financeiro relevante.`,
+      `Endividamento muito elevado: D/PL = ${ind.dividaPlBruto.toFixed(1)}× (saudável ≤ 2×). Risco financeiro relevante.`,
     );
   }
   if (c.ativoCirculante > 0 && c.ativoTotal > 0 && c.ativoCirculante > c.ativoTotal) {
@@ -131,24 +123,9 @@ export function CapitalTab() {
     );
   }
 
-  // KPIs do topo — visão rápida da estrutura de capital.
-  // SSOT: WACC e ROIC vêm de `useFinanceModel` (indicators.ts) — já em PERCENTUAL
-  // (ex.: 15 = 15%). NÃO multiplicar por 100 aqui; isso causava "WACC absurdo".
-  // Serviço da dívida usa MESMA anualização (`anualizar`) da engine, evitando
-  // divergência quando o consultor preencheu menos de 12 meses.
-  const mesesP = mesesPreenchidos(
-    dre.receitaBruta,
-    dre.receitaLiquida,
-    dre.custosVariaveis,
-    dre.custosFixos,
-    dre.depreciacao,
-    dre.impostos,
-    dre.impostosVendas,
-  );
-  const an = (v: number) => anualizar(v, mesesP);
-  const jurosAnual = an(sum(dre.custosFinanceirosTotal));
-  const amortAnual = an(sum(state.cashflow.amortizacoes ?? []));
-  const servicoDividaMes = (jurosAnual + amortAnual) / 12;
+  // KPIs do topo — visão rápida da estrutura de capital. SSOT: todos os
+  // valores vêm de `useFinanceModel` (indicators.ts). NÃO recalcular aqui.
+  const servicoDividaMes = ind.servicoDividaMensal;
 
   // SSOT: Alavancagem Patrimonial vem de `calcIndicators` (dividaLiqPl) — mesma
   // métrica e mesma fórmula da aba Indicadores ("Dívida Líq. / PL").

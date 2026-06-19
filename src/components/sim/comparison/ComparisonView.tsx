@@ -11,9 +11,9 @@
 
 import { useMemo } from "react";
 import type { AppState } from "@/engines/finance/types";
-import { buildDRE } from "@/engines/finance/dre";
-import { buildCashFlow } from "@/engines/finance/cashflow";
-import { resolveEffectiveRegime } from "@/engines/finance/regime";
+import { buildFinancialModel } from "@/engines/finance/financialModel";
+import type { buildDRE } from "@/engines/finance/dre";
+import type { buildCashFlow } from "@/engines/finance/cashflow";
 import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
 import { mesesPreenchidos, anualizar } from "@/engines/finance/periodUtils";
 import { safePct } from "@/engines/finance/safeMath";
@@ -202,8 +202,9 @@ function ComparisonTable({ rows, snapshots }: { rows: Row[]; snapshots: Snapshot
 // ─── DRE ──────────────────────────────────────────────────────────────
 
 export function DREComparison({ snapshots }: { snapshots: Snapshot[] }) {
+  // SSOT: cada snapshot passa pelo MESMO pipeline (regime efetivo + DRE + ind + CF).
   const dres = useMemo(
-    () => new Map(snapshots.map((s) => [s.label, buildDRE(s.state, resolveEffectiveRegime(s.state)).dre])),
+    () => new Map(snapshots.map((s) => [s.label, buildFinancialModel(s.state).dre])),
     [snapshots],
   );
 
@@ -242,7 +243,7 @@ export function DREComparison({ snapshots }: { snapshots: Snapshot[] }) {
 
 export function CashFlowComparison({ snapshots }: { snapshots: Snapshot[] }) {
   const cfs = useMemo(
-    () => new Map(snapshots.map((s) => [s.label, buildCashFlow(s.state)])),
+    () => new Map(snapshots.map((s) => [s.label, buildFinancialModel(s.state).cf])),
     [snapshots],
   );
 
