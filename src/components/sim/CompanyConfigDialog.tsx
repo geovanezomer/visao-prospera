@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+// RadioGroup removido: headcount agora é input numérico exato.
 import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import type { AppState, BusinessType, TaxRegime } from "@/engines/finance/types";
 import { RAMOS_POR_SETOR } from "@/engines/finance/companyProfile";
@@ -63,7 +63,11 @@ const formSchema = z.object({
     .or(z.literal("")),
   businessType: z.enum(["servicos", "comercio", "industria"]),
   ramoAtuacao: z.string().trim().max(60).optional().or(z.literal("")),
-  headcountRange: z.enum(["1-9", "10-49", "50-99", "100+"]),
+  numColaboradores: z
+    .number({ invalid_type_error: "Informe um número" })
+    .int("Use um número inteiro")
+    .min(0, "Não pode ser negativo")
+    .max(100000, "Valor irreal"),
   regime: z.enum(["simples", "presumido", "real"]),
   periodoAnaliseMeses: z.union([
     z.literal(6),
@@ -117,7 +121,9 @@ export function CompanyConfigDialog({ open, onOpenChange }: Props) {
       cnpj: d.cnpj || undefined,
       businessType: d.businessType,
       ramoAtuacao: d.ramoAtuacao || undefined,
-      headcountRange: d.headcountRange,
+      numColaboradores: d.numColaboradores,
+      // Faixa derivada automaticamente para benchmarks setoriais.
+      headcountRange: rangeFromNumber(d.numColaboradores),
       periodoAnaliseMeses: d.periodoAnaliseMeses,
       fiscalYearStartMonth: d.fiscalYearStartMonth,
       margemAlvoPct: d.margemAlvoPct,
@@ -224,24 +230,26 @@ export function CompanyConfigDialog({ open, onOpenChange }: Props) {
               Porte
             </h3>
             <div className="space-y-1.5">
-              <Label>Número de colaboradores</Label>
-              <RadioGroup
-                value={form.headcountRange}
-                onValueChange={(v) =>
-                  setForm({ ...form, headcountRange: v as FormData["headcountRange"] })
+              <Label htmlFor="numColaboradores">Número de colaboradores *</Label>
+              <Input
+                id="numColaboradores"
+                type="number"
+                min={0}
+                max={100000}
+                step={1}
+                value={Number.isFinite(form.numColaboradores) ? form.numColaboradores : 0}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    numColaboradores: Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                  })
                 }
-                className="grid grid-cols-4 gap-2"
-              >
-                {(["1-9", "10-49", "50-99", "100+"] as const).map((range) => (
-                  <label
-                    key={range}
-                    className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/10"
-                  >
-                    <RadioGroupItem value={range} className="sr-only" />
-                    {range}
-                  </label>
-                ))}
-              </RadioGroup>
+                className="w-32"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Base para indicadores de produtividade (Receita/Colaborador, Lucro/Colaborador etc.).
+                A faixa para benchmarks é derivada automaticamente: {rangeFromNumber(form.numColaboradores)}.
+              </p>
             </div>
           </section>
 
@@ -366,23 +374,34 @@ export function CompanyConfigDialog({ open, onOpenChange }: Props) {
   );
 }
 
+/** Deriva a faixa de headcount a partir do número exato (para benchmarks). */
+export function rangeFromNumber(n: number): "1-9" | "10-49" | "50-99" | "100+" {
+  const v = Math.max(0, Math.floor(n || 0));
+  if (v < 10) return "1-9";
+  if (v < 50) return "10-49";
+  if (v < 100) return "50-99";
+  return "100+";
+}
+
 /** Converte AppState → estado inicial do formulário com defaults sensatos. */
 function buildFormFromState(state: AppState): FormData {
-  // Migração leve: se vier número de colaboradores antigo, mapeia para faixa.
-  const inferRange = (): FormData["headcountRange"] => {
-    if (state.headcountRange) return state.headcountRange;
-    const n = state.numColaboradores ?? 0;
-    if (n < 10) return "1-9";
-    if (n < 50) return "10-49";
-    if (n < 100) return "50-99";
-    return "100+";
+  // Migração leve: usa número exato; se ausente, infere a partir da faixa antiga.
+  const inferNum = (): number => {
+    if (typeof state.numColaboradores === "number") return state.numColaboradores;
+    switch (state.headcountRange) {
+      case "10-49": return 10;
+      case "50-99": return 50;
+      case "100+": return 100;
+      case "1-9":
+      default: return 1;
+    }
   };
   return {
     companyName: state.companyName ?? "",
     cnpj: state.cnpj ?? "",
     businessType: state.businessType,
     ramoAtuacao: state.ramoAtuacao ?? "",
-    headcountRange: inferRange(),
+    numColaboradores: inferNum(),
     regime: state.tax.regime,
     periodoAnaliseMeses: state.periodoAnaliseMeses ?? 12,
     fiscalYearStartMonth: state.fiscalYearStartMonth ?? 1,
