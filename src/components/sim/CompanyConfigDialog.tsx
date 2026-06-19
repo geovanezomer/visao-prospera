@@ -122,7 +122,7 @@ export function CompanyConfigDialog({ open, onOpenChange }: Props) {
       margemAlvoPct: d.margemAlvoPct,
       moedaBase: "BRL",
     });
-    set({ regime: d.regime });
+    setTax({ regime: d.regime });
     toast.success("Configurações da empresa atualizadas");
     onOpenChange(false);
   };
