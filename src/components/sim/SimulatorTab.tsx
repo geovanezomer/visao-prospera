@@ -437,15 +437,6 @@ function StatusBar({
         </Button>
         <Button
           size="sm"
-          variant="outline"
-          onClick={onSave}
-          disabled={active === 0}
-          className="h-8 justify-start sm:justify-center"
-        >
-          <Save className="mr-1 h-3.5 w-3.5" /> Salvar cenário
-        </Button>
-        <Button
-          size="sm"
           onClick={onApply}
           disabled={active === 0}
           className="h-8 justify-start sm:justify-center"
