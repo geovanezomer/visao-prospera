@@ -35,6 +35,7 @@ const MODE_MARKERS: Record<Exclude<AIMode, "chat">, string> = {
   controller: "MODO CONTROLLER",
   auditor: "<!--AUDIT-REPORT-->",
   board: "MODO CONSELHO (BOARD)",
+  tributarista: "MODO TRIBUTARISTA",
 };
 
 function build(extra: Partial<Parameters<typeof buildSystemPrompt>[0]> = {}) {
@@ -80,7 +81,7 @@ describe("buildSystemPrompt — modos de atuação", () => {
 
   it("AI_MODE_LABELS cobre todos os modos válidos", () => {
     expect(Object.keys(AI_MODE_LABELS).sort()).toEqual(
-      ["auditor", "board", "cfo", "chat", "controller"].sort(),
+      ["auditor", "board", "cfo", "chat", "controller", "tributarista"].sort(),
     );
   });
 });

@@ -109,7 +109,7 @@ export function buildContextHeader(ctx: RuntimeContext = {}): string {
 // "chat" é o padrão (sem bloco extra). Outros modos anexam um bloco
 // específico ao system prompt que muda postura/formato de resposta.
 // =====================================================================
-export type AIMode = "chat" | "cfo" | "controller" | "auditor" | "board";
+export type AIMode = "chat" | "cfo" | "controller" | "auditor" | "board" | "tributarista";
 
 export const AI_MODE_LABELS: Record<AIMode, string> = {
   chat: "Chat",
@@ -117,6 +117,7 @@ export const AI_MODE_LABELS: Record<AIMode, string> = {
   controller: "Controller",
   auditor: "Auditor (relatório)",
   board: "Conselho (board)",
+  tributarista: "Tributarista",
 };
 
 export const AI_MODE_DESCRIPTIONS: Record<AIMode, string> = {
@@ -125,7 +126,9 @@ export const AI_MODE_DESCRIPTIONS: Record<AIMode, string> = {
   controller: "Foco em variações, conciliações e qualidade do dado.",
   auditor: "Relatório estruturado para o cliente (formato fixo).",
   board: "Resposta tipo memorando de conselho — tese, evidência, decisão.",
+  tributarista: "Especialista em regime tributário, CBS/IBS e Reforma (LC 214/2025).",
 };
+
 
 const MODE_AUDITOR_BLOCK = `MODO AUDITOR: produza um RELATÓRIO ESTRUTURADO para apresentação ao cliente.
 
@@ -192,13 +195,21 @@ const MODE_BOARD_BLOCK = `MODO CONSELHO (BOARD): produza um MEMORANDO curto para
 
 Sem cabeçalhos cerimoniais. Sem "considerar". Direto à decisão.`;
 
+const MODE_TRIBUTARISTA_BLOCK = `MODO TRIBUTARISTA: aja como contador/tributarista sênior especialista em Reforma Tributária brasileira (LC 214/2025 — CBS/IBS) e regimes Simples/Presumido/Real.
+- Antes de opinar, valide o regime atual com 'diagnostico_tributario' e compare cenários com 'simular_regime_tributario' / 'comparar_regimes'.
+- Toda recomendação cita: alíquota efetiva, carga tributária absoluta (R$), impacto no preço de venda, na margem de contribuição e no fluxo de caixa tributário. Sinalize itens afetados pela transição CBS/IBS com "[CBS/IBS]".
+- Considere Split Payment, Cashback, créditos não-cumulativos e o cronograma de transição 2026–2033.
+- Saída em formato: "Diagnóstico → Cenários (tabela Regime | Carga | Δ vs atual) → Recomendação → Riscos de compliance". Verbo no imperativo, sem "considerar avaliar".`;
+
 const MODE_BLOCKS: Record<AIMode, string> = {
   chat: "",
   cfo: MODE_CFO_BLOCK,
   controller: MODE_CONTROLLER_BLOCK,
   auditor: MODE_AUDITOR_BLOCK,
   board: MODE_BOARD_BLOCK,
+  tributarista: MODE_TRIBUTARISTA_BLOCK,
 };
+
 
 export function buildSystemPrompt(opts: {
   snapshot?: string;
