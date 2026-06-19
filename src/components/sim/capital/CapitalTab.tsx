@@ -14,6 +14,8 @@ import {
   DEBT_CONTRACTS_COST_ID,
 } from "@/engines/finance/debtContracts";
 import type { CostLine, DebtContract } from "@/engines/finance/types";
+import { StatCard } from "@/components/sim/shared/primitives";
+
 
 const EMPTY_CONTRACTS: DebtContract[] = [];
 
