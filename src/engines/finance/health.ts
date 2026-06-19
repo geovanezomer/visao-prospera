@@ -171,7 +171,7 @@ export function computeHealth(state: AppState, precomputed?: HealthPrecomputed):
       label: "Ciclo Financeiro",
       score: inverseBand(ind.cicloFinanceiro, -30, 90),
       weight: 0.08,
-      value: `${ind.cicloFinanceiro} dias`,
+      value: `${(ind.cicloFinanceiro ?? 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} dias`,
       comment:
         ind.cicloFinanceiro > 60
           ? "Ciclo longo demanda muito capital de giro."

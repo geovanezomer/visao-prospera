@@ -122,7 +122,7 @@ export function IndicatorsTab() {
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
           label="Ciclo Financeiro"
-          value={`${ind.cicloFinanceiro} dias`}
+          value={`${(ind.cicloFinanceiro ?? 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} dias`}
           hint={{
             description:
               "Dias entre pagar fornecedores e receber dos clientes. Quanto MAIOR, mais capital de giro a empresa precisa imobilizar.",
