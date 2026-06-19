@@ -370,6 +370,9 @@ function SimulaPro() {
               open={restoreOpen}
               onOpenChange={setRestoreOpen}
               userId={user.id}
+              currentCompanyName={state.companyName}
+              currentFileName={fileApi.currentFileName}
+              lastModified={fileApi.lastModified}
               hasUnsavedChanges={fileApi.dirty}
               confirm={confirm}
               setState={setState}
