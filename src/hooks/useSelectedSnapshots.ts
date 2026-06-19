@@ -8,7 +8,7 @@ import { useMemo } from "react";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { useScenarios } from "@/engines/scenarios/store";
 import { useComparisonMode } from "@/engines/scenarios/comparisonStore";
-import type { Snapshot } from "@/components/sim/ComparisonView";
+import type { Snapshot } from "@/components/sim/comparison/ComparisonView";
 
 export function useSelectedSnapshots(): Snapshot[] {
   const { state } = useFinance();
