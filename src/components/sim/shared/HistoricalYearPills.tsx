@@ -265,9 +265,9 @@ export function HistoricalYearPills() {
               Carregar snapshot de {confirmLoadTarget?.fiscalYear}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Isso substitui o AppState corrente pelos dados arquivados de{" "}
-              {confirmLoadTarget?.fiscalYear}. Salve o ano atual antes (
-              <strong>Configurar Empresa → Fechar ano</strong>) para não perdê-lo.
+              O ano corrente será <strong>arquivado automaticamente</strong> antes
+              da troca — você poderá voltar a ele a qualquer momento pelas pills.
+              Nenhum dado é perdido.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
