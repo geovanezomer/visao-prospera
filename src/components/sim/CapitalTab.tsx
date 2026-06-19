@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { fmtBRL, sum } from "@/engines/finance/format";
 import { buildDRE, calcIndicators } from "@/engines/finance";
@@ -9,6 +9,12 @@ import { AdvancedRefinementCard } from "./capital/AdvancedRefinementCard";
 import { CapexAtivacaoSection } from "./capital/CapexAtivacaoSection";
 import { WaccRoicMeter } from "./capital/WaccRoicMeter";
 import { NCGExplanationCard } from "./capital/NCGExplanationCard";
+import { DebtContractsCard } from "./capital/DebtContractsCard";
+import {
+  aggregateContracts,
+  DEBT_CONTRACTS_COST_ID,
+} from "@/engines/finance/debtContracts";
+import type { CostLine } from "@/engines/finance/types";
 
 // Orquestrador da aba Capital — apenas compõe os sub-cartões e cuida das
 // validações cruzadas (balanço, alavancagem). Toda a UI específica vive
