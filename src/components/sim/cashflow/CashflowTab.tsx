@@ -173,7 +173,7 @@ export function CashflowTab() {
         </div>
       )}
       {/* Sumário */}
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-4">
         <StatCard
           label="Recebimentos no ano"
           value={fmtBRL(cf.totais.recebimentos)}
