@@ -7,7 +7,7 @@ import { BalanceSheetCard } from "./capital/BalanceSheetCard";
 
 import { CapexAtivacaoSection } from "./capital/CapexAtivacaoSection";
 import { WaccRoicMeter } from "./capital/WaccRoicMeter";
-import { NCGExplanationCard } from "./capital/NCGExplanationCard";
+
 import { DebtContractsCard } from "./capital/DebtContractsCard";
 import {
   aggregateContracts,
