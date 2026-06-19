@@ -102,8 +102,11 @@ export function HistoricalYearPills() {
 
   const handleConfirmLoad = () => {
     if (!confirmLoadTarget?.state) return;
-    update(() => confirmLoadTarget.state!);
-    toast.success(`Visualizando ${confirmLoadTarget.name}`);
+    // Auto-arquiva o ano corrente antes de trocar — `switchToYear` preserva
+    // tudo que estava em edição no ano vigente.
+    const next = switchToYear(company, confirmLoadTarget, state);
+    update(() => next);
+    toast.success(`Ano ${confirmLoadTarget.fiscalYear} carregado · ano anterior arquivado`);
     setPendingLoadId(null);
   };
 
