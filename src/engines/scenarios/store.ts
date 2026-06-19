@@ -3,6 +3,7 @@
 import { nanoid } from "nanoid";
 import { useSyncExternalStore } from "react";
 import type { SimulatorParams } from "@/engines/finance/simulator";
+import type { AppState } from "@/engines/finance/types";
 
 // Event bus reativo (mesmo padrão de actions/store).
 type Listener = () => void;
