@@ -331,12 +331,14 @@ function Ind({
   desc,
   formula,
   tone,
+  chip,
 }: {
   label: string;
   v: string;
   desc?: string;
   formula?: string;
   tone?: "pos" | "neg" | "warn";
+  chip?: string | null;
 }) {
   const cls =
     tone === "pos"
@@ -350,6 +352,11 @@ function Ind({
     <div className="rounded-md border border-border/40 bg-background/40 p-3">
       <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
         <span>{label}</span> {desc && <HelpTip text={desc} formula={formula} />}
+        {chip && (
+          <span className="ml-auto rounded-full bg-pos/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-pos">
+            {chip}
+          </span>
+        )}
       </div>
       <div className={`mono mt-1 text-lg font-semibold ${cls}`}>{v}</div>
     </div>
