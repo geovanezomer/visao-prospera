@@ -35,7 +35,7 @@ import {
   deleteScenario,
 } from "@/engines/scenarios/store";
 import { ConfirmDialog } from "@/components/sim/shared/ConfirmDialog";
-import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
+import { fmtBRL, fmtPct } from "@/engines/finance/format";
 import { buildFinancialModel } from "@/engines/finance/financialModel";
 import { useCompanySnapshots } from "@/hooks/useCompanySnapshots";
 
