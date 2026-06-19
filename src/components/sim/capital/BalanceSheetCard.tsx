@@ -48,6 +48,15 @@ export function BalanceSheetCard({
   const dpl = plInformado > 0 ? (capital.dividaOnerosa || 0) / plInformado : 0;
   const solvencia = totalPassivos > 0 ? (capital.ativoTotal || 0) / totalPassivos : 0;
 
+  // Auto-preenche PL quando vazio (= cálculo Ativo − Dívidas). Se o usuário
+  // informar manualmente um valor diferente, mantemos e exibimos o alerta.
+  useEffect(() => {
+    if (plInformado === 0 && capital.ativoTotal > 0 && plCalculado !== 0) {
+      onChange({ patrimonioLiquido: plCalculado });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plCalculado, capital.ativoTotal]);
+
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
       <div className="flex items-start gap-3">
