@@ -309,7 +309,8 @@ export function AIChatSheet({
             </div>
           )}
 
-          {pipeline360.active && (
+          {(pipeline360.active ||
+            (pipeline360.aborted && pipeline360.completed.length < pipeline360.total)) && (
             <div className="border-b border-primary/30 bg-primary/5 px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-[11px] font-medium">
