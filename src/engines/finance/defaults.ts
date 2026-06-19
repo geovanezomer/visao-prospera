@@ -206,7 +206,7 @@ function variaveisFor(business: BusinessType): CostLine[] {
 }
 
 const financeiros = (): CostLine[] => [
-  line("juros", "Juros sobre empréstimos", "financeiro", 300),
+  
   line("cheque_especial", "Juros sobre cheque especial", "financeiro", 0),
   line("iof", "IOF", "financeiro", 120),
   line("tarifas_bancarias", "Tarifas bancárias", "financeiro", 0),
