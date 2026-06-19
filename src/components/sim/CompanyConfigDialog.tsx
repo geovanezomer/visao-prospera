@@ -30,6 +30,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import type { AppState, BusinessType, TaxRegime } from "@/engines/finance/types";
 import { RAMOS_POR_SETOR } from "@/engines/finance/companyProfile";
+import { archiveYearAsHistorical, listHistoricals } from "@/engines/scenarios/store";
 import { toast } from "sonner";
 
 const MESES_FISCAIS = [
