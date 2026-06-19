@@ -155,7 +155,7 @@ function ComparisonTable({ rows, snapshots }: { rows: Row[]; snapshots: Snapshot
 
 export function DREComparison({ snapshots }: { snapshots: Snapshot[] }) {
   const dres = useMemo(
-    () => new Map(snapshots.map((s) => [s.label, buildDRE(s.state).dre])),
+    () => new Map(snapshots.map((s) => [s.label, buildDRE(s.state, resolveEffectiveRegime(s.state)).dre])),
     [snapshots],
   );
 
