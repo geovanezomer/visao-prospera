@@ -513,6 +513,108 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
   const handleAudit = () =>
     void send("Faça uma análise completa estilo auditor.", { mode: "auditor" });
 
+  // === Pipeline 360°: cfo → controller → auditor ===
+  // Disponível a partir do Board Mode. Executa 3 estágios sequenciais,
+  // cada um com seu próprio system prompt (modo) e recebendo o output do anterior.
+  const runPipeline360 = async (userQuestion?: string) => {
+    if (streaming || !activeId) return;
+    if (mode !== "board") {
+      toast.error("Análise 360° disponível apenas no Modo Conselho (Board).");
+      return;
+    }
+    const { PIPELINE_360, buildStagePrompt, stageHeader } = await import(
+      "@/engines/ai/pipeline"
+    );
+    const q = (userQuestion ?? input).trim() || "Análise 360° para decisão de conselho.";
+
+    const userMsg: ChatMessage = {
+      role: "user",
+      content: `🎯 **Análise 360° (pipeline cfo → controller → auditor)**\n\n${q}`,
+      ts: Date.now(),
+    };
+    let convo: ChatMessage[] = [...messages, userMsg];
+    setMessages(convo);
+    setInput("");
+    setStreaming(true);
+    touchThread(state.companyName, activeId);
+
+    const ac = new AbortController();
+    abortRef.current = ac;
+    const outputs: Array<{ stage: (typeof PIPELINE_360)[number]; output: string }> = [];
+
+    try {
+      for (let i = 0; i < PIPELINE_360.length; i++) {
+        const stage = PIPELINE_360[i];
+        const stagePrompt = buildStagePrompt(stage, q, outputs);
+        const sysPrompt = buildSysPrompt(stage);
+        const header = stageHeader(stage, i);
+
+        const llm = buildLlmMessages({
+          systemPrompt: sysPrompt,
+          history: convo,
+          forTools: false,
+          lastUserContent: stagePrompt,
+        });
+
+        let acc = header;
+        convo = [...convo, { role: "assistant", content: acc, ts: Date.now() }];
+        setMessages(convo);
+        const stageStart = Date.now();
+        try {
+          for await (const delta of streamChat(config, llm, ac.signal)) {
+            acc += delta;
+            setMessages((prev) => {
+              const copy = prev.slice();
+              copy[copy.length - 1] = { role: "assistant", content: acc, ts: Date.now() };
+              return copy;
+            });
+          }
+          const body = acc.slice(header.length);
+          outputs.push({ stage, output: body });
+          convo = [
+            ...convo.slice(0, -1),
+            { role: "assistant", content: acc, ts: Date.now() },
+          ];
+          recordChatTrail(state.companyName || "default", {
+            threadId: activeId,
+            mode: stage,
+            provider: config.provider,
+            model: config.model,
+            userText: `[pipeline360 ${i + 1}/3] ${q}`,
+            responseChars: body.length,
+            tools: [],
+            durationMs: Date.now() - stageStart,
+            status: "ok",
+          });
+        } catch (e: unknown) {
+          const aborted = ac.signal.aborted;
+          acc += "\n\n" + errToMd(e);
+          setMessages((prev) => {
+            const copy = prev.slice();
+            copy[copy.length - 1] = { role: "assistant", content: acc, ts: Date.now() };
+            return copy;
+          });
+          recordChatTrail(state.companyName || "default", {
+            threadId: activeId,
+            mode: stage,
+            provider: config.provider,
+            model: config.model,
+            userText: `[pipeline360 ${i + 1}/3] ${q}`,
+            responseChars: acc.length - header.length,
+            tools: [],
+            durationMs: Date.now() - stageStart,
+            status: aborted ? "abortado" : "erro",
+            errorMsg: e instanceof Error ? e.message : String(e),
+          });
+          break;
+        }
+      }
+    } finally {
+      setStreaming(false);
+      abortRef.current = null;
+    }
+  };
+
   // Recarrega threads do storage (usado por AIChatSheet ao renomear).
   const reloadThreads = () => setThreads(loadThreads(state.companyName));
 
@@ -550,6 +652,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     handleRegenerate,
     handleEditLast,
     handleAudit,
+    runPipeline360,
     handleNewThread,
     handleDeleteThread,
     reloadThreads,

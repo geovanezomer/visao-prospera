@@ -85,6 +85,7 @@ export function AIChatSheet({
     handleRegenerate,
     handleEditLast,
     handleAudit,
+    runPipeline360,
     handleNewThread,
     handleDeleteThread,
     reloadThreads,
@@ -224,6 +225,18 @@ export function AIChatSheet({
               >
                 <Sparkles className="h-3.5 w-3.5" />
               </Button>
+              {mode === "board" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-[11px] font-semibold"
+                  onClick={() => void runPipeline360()}
+                  title="Análise 360° — encadeia CFO → Controller → Auditor"
+                  disabled={streaming}
+                >
+                  360°
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
