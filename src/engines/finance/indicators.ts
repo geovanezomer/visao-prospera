@@ -351,10 +351,11 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // FCFF (Free Cash Flow to the Firm) padrão Damodaran/Koller:
   //   FCFF = NOPAT + D&A − ΔNCG − CAPEX
   // `nopat` já calculado acima com a alíquota efetiva observada do regime.
-  const depAnual = sum(dre.depreciacao);
+  const depAnual = depreciacaoAnual;
   const fcf = nopat + depAnual - deltaNcgAnual;
   // SSOT: mesmo CAPEX usado no FCI do buildCashFlow (manual + ativações de imobilizado).
-  const capexAnual = sum(computeCapexMensal(state));
+  // Anualizado: se só 3 meses preenchidos, o CAPEX projetado para o ano também escala.
+  const capexAnual = an(sum(computeCapexMensal(state)));
   const fcfAposCapex = fcf - capexAnual;
   // Auditoria #2: payback do CAPEX usa o CAPEX ANUAL TOTAL, não apenas o do mês 1.
   // CAPEX distribuído ao longo do ano (obras, implantações) era subestimado em até 10×.
