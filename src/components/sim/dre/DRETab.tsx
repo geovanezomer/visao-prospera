@@ -392,8 +392,13 @@ export function DRETab() {
           value={fmtBRL(sum(dre.ebitda))}
           sub={`${ind.margemEbitda.toFixed(1)}%`}
           tone={sum(dre.ebitda) >= 0 ? "pos" : "neg"}
-          hint={{ description: "Caixa operacional.", formula: "Lucro Bruto − Despesas" }}
+          hint={{
+            description:
+              "Geração operacional de caixa antes de juros, impostos e depreciação. Mede a operação 'pura', sem efeitos de estrutura de capital nem fiscalidade.",
+            formula: "Receita Líquida − CPV − Despesas Operacionais (excl. D&A)",
+          }}
         />
+
         <StatCard
           label="EBIT"
           value={fmtBRL(sum(dre.ebit))}
