@@ -38,6 +38,7 @@ import {
 } from "recharts";
 import { HelpTip, SectionTitle, StatCard } from "./primitives";
 import { Badge } from "@/components/ui/badge";
+import { HistoricalYearPills } from "./HistoricalYearPills";
 import { ChevronRight } from "lucide-react";
 
 const CHART_COLORS = [
