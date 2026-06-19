@@ -169,7 +169,7 @@ export function ScenarioBar() {
             <CalendarDays className="mr-2 h-4 w-4" /> ANO ({historicals.length})
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-5xl w-[95vw]">
           <DialogHeader>
             <DialogTitle>Anos arquivados</DialogTitle>
           </DialogHeader>
