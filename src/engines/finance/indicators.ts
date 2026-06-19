@@ -79,8 +79,9 @@ export interface Indicators {
   grauEndividamento: number;
   /** EBIT ÷ Despesas Financeiras */
   coberturaJuros: number;
-  /** Receita Líquida ÷ Ativo Total */
+  /** Receita Líquida ÷ Ativo Total MÉDIO (consistente com ROA). */
   giroAtivo: number;
+
   /** (Dívida Total − Caixa) ÷ EBITDA */
   dividaLiqEbitda: number;
   /** (Dívida Total − Caixa) ÷ EBIT */
