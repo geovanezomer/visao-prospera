@@ -54,8 +54,39 @@ export function CapitalTab() {
     );
   }
 
+  // KPIs do topo — visão rápida da estrutura de capital.
+  const jurosAnual = sum(dre.custosFinanceirosTotal);
+  const amortAnual = sum(state.cashflow.amortizacoes ?? []);
+  const servicoDividaMes = (jurosAnual + amortAnual) / 12;
+  const dPL = c.patrimonioLiquido > 0 ? c.dividaOnerosa / c.patrimonioLiquido : 0;
+
+  const kpis = [
+    { label: "Capital Próprio", value: `${proprioDerivado.toFixed(1)}%`, hint: "PL / (PL + Dívida)" },
+    { label: "Dívida Onerosa", value: fmtBRL(c.dividaOnerosa), hint: "Empréstimos e financiamentos" },
+    { label: "Serviço da Dívida / mês", value: fmtBRL(servicoDividaMes), hint: "Juros + amortização ÷ 12" },
+    {
+      label: "D / PL",
+      value: c.patrimonioLiquido > 0 ? `${dPL.toFixed(2)}×` : "—",
+      hint: "Saudável ≤ 2×",
+    },
+    { label: "WACC", value: `${(wacc * 100).toFixed(2)}%`, hint: "Custo médio ponderado" },
+  ];
+
   return (
     <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        {kpis.map((k) => (
+          <div
+            key={k.label}
+            className="rounded-lg border bg-card p-3 shadow-sm"
+          >
+            <div className="text-xs text-muted-foreground">{k.label}</div>
+            <div className="mt-1 text-lg font-semibold tabular-nums">{k.value}</div>
+            <div className="mt-0.5 text-[10px] text-muted-foreground">{k.hint}</div>
+          </div>
+        ))}
+      </div>
+
       {warnings.length > 0 && (
         <div className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-xs">
           <div className="mb-1 font-semibold text-warning">
@@ -68,6 +99,7 @@ export function CapitalTab() {
           </ul>
         </div>
       )}
+
 
       <NCGExplanationCard
         ncg={ind.ncg}
