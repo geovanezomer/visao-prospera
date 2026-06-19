@@ -526,6 +526,10 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     completed: Pipeline360Stage[];
     total: number;
     aborted?: boolean;
+    /** Pergunta original — preservada para permitir Reiniciar após cancelar. */
+    question?: string;
+    /** Outputs já produzidos — passados ao próximo estágio no resume. */
+    outputs?: Array<{ stage: Pipeline360Stage; output: string }>;
   }
   const [pipeline360, setPipeline360] = useState<Pipeline360State>({
     active: false,
@@ -534,43 +538,33 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     total: 3,
   });
 
-  const runPipeline360 = async (userQuestion?: string) => {
-    if (streaming || !activeId) return;
-    if (mode !== "board") {
-      toast.error("Análise 360° disponível apenas no Modo Conselho (Board).");
-      return;
-    }
+  // Executa N estágios a partir de `startIdx`, reaproveitando outputs prévios.
+  // Usado tanto pelo run inicial quanto pelo resume após cancelar.
+  const _runPipelineStages = async (
+    q: string,
+    startIdx: number,
+    seedOutputs: Array<{ stage: Pipeline360Stage; output: string }>,
+  ) => {
+    if (!activeId) return;
     const { PIPELINE_360, buildStagePrompt, stageHeader } = await import(
       "@/engines/ai/pipeline"
     );
-    const q = (userQuestion ?? input).trim() || "Análise 360° para decisão de conselho.";
-
-    const userMsg: ChatMessage = {
-      role: "user",
-      content: `🎯 **Análise 360° (pipeline cfo → controller → auditor)**\n\n${q}`,
-      ts: Date.now(),
-    };
-    let convo: ChatMessage[] = [...messages, userMsg];
-    setMessages(convo);
-    setInput("");
     setStreaming(true);
     touchThread(state.companyName, activeId);
-    setPipeline360({ active: true, current: null, completed: [], total: PIPELINE_360.length });
-
     const ac = new AbortController();
     abortRef.current = ac;
-    const outputs: Array<{ stage: (typeof PIPELINE_360)[number]; output: string }> = [];
+    const outputs = [...seedOutputs];
+    let convo: ChatMessage[] = messages.slice();
     let aborted = false;
 
     try {
-      for (let i = 0; i < PIPELINE_360.length; i++) {
-        // Se o usuário clicou em Parar entre estágios, encerra o pipeline.
+      for (let i = startIdx; i < PIPELINE_360.length; i++) {
         if (ac.signal.aborted) {
           aborted = true;
           break;
         }
         const stage = PIPELINE_360[i];
-        setPipeline360((p) => ({ ...p, current: stage }));
+        setPipeline360((p) => ({ ...p, current: stage, active: true }));
         const stagePrompt = buildStagePrompt(stage, q, outputs);
         const sysPrompt = buildSysPrompt(stage);
         const header = stageHeader(stage, i);
@@ -601,7 +595,12 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
             ...convo.slice(0, -1),
             { role: "assistant", content: acc, ts: Date.now() },
           ];
-          setPipeline360((p) => ({ ...p, completed: [...p.completed, stage], current: null }));
+          setPipeline360((p) => ({
+            ...p,
+            completed: [...p.completed, stage],
+            current: null,
+            outputs: [...outputs],
+          }));
           recordChatTrail(state.companyName || "default", {
             threadId: activeId,
             mode: stage,
@@ -616,7 +615,6 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
         } catch (e: unknown) {
           const stageAborted = ac.signal.aborted;
           aborted = aborted || stageAborted;
-          // Marca a mensagem com o motivo (cancelado x erro) preservando o parcial.
           acc += stageAborted ? "\n\n_(⏸ cancelado pelo usuário)_" : "\n\n" + errToMd(e);
           setMessages((prev) => {
             const copy = prev.slice();
@@ -641,9 +639,68 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     } finally {
       setStreaming(false);
       abortRef.current = null;
-      setPipeline360((p) => ({ ...p, active: false, current: null, aborted }));
+      setPipeline360((p) => ({
+        ...p,
+        active: false,
+        current: null,
+        aborted,
+        question: q,
+        outputs: [...outputs],
+      }));
     }
   };
+
+  const runPipeline360 = async (userQuestion?: string) => {
+    if (streaming || !activeId) return;
+    if (mode !== "board") {
+      toast.error("Análise 360° disponível apenas no Modo Conselho (Board).");
+      return;
+    }
+    const q = (userQuestion ?? input).trim() || "Análise 360° para decisão de conselho.";
+    const userMsg: ChatMessage = {
+      role: "user",
+      content: `🎯 **Análise 360° (pipeline cfo → controller → auditor)**\n\n${q}`,
+      ts: Date.now(),
+    };
+    setMessages([...messages, userMsg]);
+    setInput("");
+    setPipeline360({
+      active: true,
+      current: null,
+      completed: [],
+      total: 3,
+      question: q,
+      outputs: [],
+    });
+    // Aguarda flush do setMessages? _runPipelineStages lê `messages` da closure
+    // atual, que já inclui userMsg porque chamamos setMessages acima. Mas para
+    // garantir, passamos o convo via push direto: usamos um microtask.
+    await Promise.resolve();
+    await _runPipelineStages(q, 0, []);
+  };
+
+  // Retoma o pipeline a partir do próximo estágio após um cancelar/erro.
+  // Reaproveita pergunta + outputs preservados em `pipeline360`.
+  const resumePipeline360 = async () => {
+    if (streaming || !activeId) return;
+    const startIdx = pipeline360.completed.length;
+    if (startIdx >= pipeline360.total) {
+      toast.info("Pipeline já concluído.");
+      return;
+    }
+    if (!pipeline360.question) {
+      toast.error("Sem pipeline anterior para retomar.");
+      return;
+    }
+    setPipeline360((p) => ({ ...p, active: true, aborted: false, current: null }));
+    await _runPipelineStages(
+      pipeline360.question,
+      startIdx,
+      pipeline360.outputs ?? [],
+    );
+  };
+
+
 
 
   // Recarrega threads do storage (usado por AIChatSheet ao renomear).
@@ -684,6 +741,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     handleEditLast,
     handleAudit,
     runPipeline360,
+    resumePipeline360,
     pipeline360,
     handleNewThread,
     handleDeleteThread,

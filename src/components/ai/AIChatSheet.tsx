@@ -86,6 +86,7 @@ export function AIChatSheet({
     handleEditLast,
     handleAudit,
     runPipeline360,
+    resumePipeline360,
     pipeline360,
     handleNewThread,
     handleDeleteThread,
@@ -308,24 +309,42 @@ export function AIChatSheet({
             </div>
           )}
 
-          {pipeline360.active && (
+          {(pipeline360.active ||
+            (pipeline360.aborted && pipeline360.completed.length < pipeline360.total)) && (
             <div className="border-b border-primary/30 bg-primary/5 px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-[11px] font-medium">
-                  <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                  {pipeline360.active ? (
+                    <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                  ) : (
+                    <Square className="h-3 w-3 text-amber-400" />
+                  )}
                   <span>
                     Pipeline 360° · {pipeline360.completed.length}/{pipeline360.total}
+                    {!pipeline360.active && pipeline360.aborted && " · cancelado"}
                   </span>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-[10px] text-destructive hover:text-destructive"
-                  onClick={handleStop}
-                  title="Cancelar pipeline"
-                >
-                  <Square className="mr-1 h-2.5 w-2.5" /> Cancelar
-                </Button>
+                {pipeline360.active ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-[10px] text-destructive hover:text-destructive"
+                    onClick={handleStop}
+                    title="Cancelar pipeline"
+                  >
+                    <Square className="mr-1 h-2.5 w-2.5" /> Cancelar
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-[10px] text-primary hover:text-primary"
+                    onClick={() => void resumePipeline360()}
+                    title="Retomar a partir da próxima etapa"
+                  >
+                    <RefreshCcw className="mr-1 h-2.5 w-2.5" /> Reiniciar
+                  </Button>
+                )}
               </div>
               <div className="mt-1.5 flex items-center gap-1.5">
                 {(["cfo", "controller", "auditor"] as const).map((s) => {
