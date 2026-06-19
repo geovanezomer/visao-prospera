@@ -2,6 +2,7 @@ import { AppState } from "@/engines/finance/types";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
 import { HelpTip, SectionTitle } from "./primitives";
+import { leverageDisplay } from "./leverageLabel";
 
 // Card de indicadores usado no Simulador.
 // IMPORTANTE: deve refletir EXATAMENTE os mesmos indicadores da página
