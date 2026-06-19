@@ -7,7 +7,7 @@ import { BalanceSheetCard } from "./capital/BalanceSheetCard";
 
 import { CapexAtivacaoSection } from "./capital/CapexAtivacaoSection";
 import { WaccRoicMeter } from "./capital/WaccRoicMeter";
-import { NCGExplanationCard } from "./capital/NCGExplanationCard";
+
 import { DebtContractsCard } from "./capital/DebtContractsCard";
 import {
   aggregateContracts,
@@ -170,13 +170,7 @@ export function CapitalTab() {
       )}
 
 
-      <NCGExplanationCard
-        ncg={ind.ncg}
-        pmr={state.revenue.pmr}
-        pmp={state.revenue.pmp}
-        receitaDia={sum(dre.receitaBruta) / 360}
-        cpvDia={sum(dre.cpv) / 360}
-      />
+
 
       <div className="space-y-4">
         <BalanceSheetCard

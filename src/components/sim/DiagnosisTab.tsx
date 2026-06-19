@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { sum } from "@/engines/finance/format";
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { AppState } from "@/engines/finance/types";
 import { buildPrescriptiveCards, PrescriptiveCard } from "@/engines/finance/prescriptive";
@@ -10,7 +11,7 @@ import { StrategicSummary } from "./StrategicSummary";
 import { SectionTitle } from "./primitives";
 import { HealthScoreCard, SensitivityCard } from "./AnalysisTab";
 import { CriticalAlertsBanner } from "./CriticalAlertsBanner";
-import { WaterfallCard } from "./WaterfallCard";
+import { NCGExplanationCard } from "./capital/NCGExplanationCard";
 import { DiagnosticoExecutivoCard } from "./DiagnosticoExecutivoCard";
 
 export function DiagnosisTab() {
@@ -50,8 +51,14 @@ export function DiagnosisTab() {
       <DiagnosticoExecutivoCard briefing={briefing} />
 
 
-      {/* Waterfall — âncora visual da conversa: mostra onde o resultado se perde */}
-      <WaterfallCard dre={model.dre} ind={model.ind} />
+      {/* Capital de Giro — explica NCG e ciclo financeiro */}
+      <NCGExplanationCard
+        ncg={model.ind.ncg}
+        pmr={state.revenue.pmr}
+        pmp={state.revenue.pmp}
+        receitaDia={sum(model.dre.receitaBruta) / 360}
+        cpvDia={sum(model.dre.cpv) / 360}
+      />
 
       {/* Análises avançadas (reusa o model central) */}
       <HealthScoreCard
