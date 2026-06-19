@@ -36,6 +36,8 @@ export function computeCapexMensal(state: AppState): number[] {
     out[idx] += ca.valor;
   }
   return out;
+}
+
 
 /**
  * Soma mensal das linhas livres de dedução da Receita
