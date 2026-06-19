@@ -15,9 +15,13 @@ import { zeros12 } from "./format";
  */
 export function computeNetDebt(state: AppState): number {
   const D = Math.max(0, state.capital.dividaOnerosa ?? 0);
-  const cash = Math.max(0, state.capital.caixaOcioso ?? state.capital.disponibilidades ?? 0);
+  // [Auditoria Bloco 4] Dívida Líquida (Damodaran/CVM/IFRS) = Dívida Onerosa − Caixa e Equivalentes TOTAL.
+  // O conceito de "caixa ocioso" pertence ao ROIC (subtrair do Capital Investido), NÃO à Dívida Líquida.
+  // Antes: usava `caixaOcioso ?? disponibilidades` — inconsistente e subestimava o caixa abatedor.
+  const cash = Math.max(0, state.capital.disponibilidades ?? 0);
   return D - cash;
 }
+
 
 /**
  * SSOT — CAPEX MENSAL UNIFICADO.

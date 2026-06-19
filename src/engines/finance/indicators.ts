@@ -63,6 +63,9 @@ export interface Indicators {
   liquidezSeca: number;
   /** Disponibilidades ÷ Passivo Circulante */
   liquidezImediata: number;
+  /** (Ativo Total − Permanente) ÷ Passivo Total. Aproximação: (AT − (AT−AC)) / (AT − PL) = AC / (AT − PL). */
+  liquidezGeral: number;
+
   /** Passivo Total ÷ Ativo Total × 100. Quando `endividamentoGeralDadosCompletos=false`, é estimativa de fallback. */
   endividamentoGeral: number;
   /**
@@ -335,6 +338,12 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     passivoCirculante > 1
       ? Math.min(CAP_LIQ, capital.disponibilidades / passivoCirculante)
       : CAP_LIQ;
+  // [Auditoria Bloco 4] Liquidez Geral = (AC + Realizável LP) / (PC + PNC). Sem RLP/PNC isolados
+  // no schema, aproximamos por AC / (AT − PL) — passivo total ≈ AT − PL pela equação patrimonial.
+  const passivoTotalAprox = capital.ativoTotal > PL ? capital.ativoTotal - PL : 0;
+  const liquidezGeral =
+    passivoTotalAprox > 1 ? Math.min(CAP_LIQ, ativoCirculante / passivoTotalAprox) : CAP_LIQ;
+
 
   // ---- Endividamento ----
   const endividamentoGeralDadosCompletos = capital.ativoTotal > 0;
@@ -351,8 +360,15 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const CAP_COB = 999;
   const CAP_DL_EBITDA = 99;
   const CAP_PAYBACK = 99;
+  // [Auditoria Bloco 4] Cobertura de Juros = EBIT/Juros.
+  // Quando juros ≈ 0, sentinela = +CAP_COB se EBIT≥0 (sem alavancagem), −CAP_COB se EBIT<0 (prejuízo operacional sem dívida).
   const coberturaJuros =
-    jurosAnual > 1 ? Math.min(CAP_COB, safeDivide(ebitAnual, jurosAnual, CAP_COB)) : CAP_COB;
+    jurosAnual > 1
+      ? Math.max(-CAP_COB, Math.min(CAP_COB, safeDivide(ebitAnual, jurosAnual, CAP_COB)))
+      : ebitAnual < 0
+        ? -CAP_COB
+        : CAP_COB;
+
   const giroAtivo = capital.ativoTotal > 0 ? safeDivide(receitaLiqAnual, capital.ativoTotal) : 0;
   const dividaLiq = computeNetDebt(state); // SSOT-1: helper único.
   // Cash-rich (dividaLiq < 0) com base ≤ 1: usa sentinela negativa para PRESERVAR o sinal
@@ -473,6 +489,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
     liquidezCorrente,
     liquidezSeca,
     liquidezImediata,
+    liquidezGeral,
+
     endividamentoGeral,
     endividamentoGeralDadosCompletos,
     grauEndividamento,
