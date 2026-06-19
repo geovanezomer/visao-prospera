@@ -196,6 +196,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const PL = Math.max(0, capital.patrimonioLiquido);
   const D = Math.max(0, capital.dividaOnerosa);
   const V = PL + D;
+  // CONTRATO: `capital.proprio` é PERCENTUAL no intervalo [0, 100], NÃO fração.
+  // Validado em Zod no schema do capital. Se mudar para fração, ajustar aqui também.
   const wE = V > 0 ? PL / V : capital.proprio / 100;
   const wD = V > 0 ? D / V : 1 - capital.proprio / 100;
 
@@ -238,7 +240,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const caixaOcioso = Math.max(0, capital.caixaOcioso ?? 0);
   const ciFinanciamento = PL + D;
   const ciAtivo = capital.ativoTotal > 0 ? capital.ativoTotal - pno : 0;
-  const ciBase = ciFinanciamento > 0 ? ciFinanciamento : ciAtivo > 0 ? ciAtivo : PL + D + pno - pno;
+  // Se nenhum dos dois lados está disponível, usa 0 — o `Math.max(1, …)` abaixo
+  // garante denominador mínimo para evitar divisão por zero no ROIC.
+  const ciBase = ciFinanciamento > 0 ? ciFinanciamento : ciAtivo > 0 ? ciAtivo : 0;
   const capitalInvestido = Math.max(1, ciBase - caixaOcioso);
   const roic = safePct(nopat, capitalInvestido);
 
@@ -252,8 +256,8 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const ei = Math.max(0, capital.estoqueInicial ?? 0);
   const ef = Math.max(0, capital.estoqueFinal ?? 0);
   const estoqueMedio = ei > 0 && ef > 0 ? (ei + ef) / 2 : ef > 0 ? ef : capital.estoques;
-  const cpvDiario = cpvAnual / 360;
-  const pme = estoqueMedio > 0 && cpvDiario > 0 ? estoqueMedio / cpvDiario : 0;
+  const cpvDiario = safeDivide(cpvAnual, 360);
+  const pme = estoqueMedio > 0 && cpvDiario > 0 ? safeDivide(estoqueMedio, cpvDiario) : 0;
   const cicloFinanceiro = revenue.pmr + pme - revenue.pmp;
   const crEstimado =
     capital.contasReceber > 0 ? capital.contasReceber : (receitaLiqAnual / 360) * revenue.pmr;

@@ -50,13 +50,11 @@ type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 export function SimulatorTab({
   state,
   apply,
-  saveScenario,
   params,
   setParams,
 }: {
   state: AppState;
   apply: Updater;
-  saveScenario: (name: string, s: AppState) => void;
   params?: SimulatorParams;
   setParams?: (p: SimulatorParams) => void;
 }) {
@@ -119,10 +117,6 @@ export function SimulatorTab({
   const applyToBase = () => {
     apply(() => simState);
   };
-  const onSave = () => {
-    const name = window.prompt("Nome do cenário:", `Sim ${active} ajustes`);
-    if (name) saveScenario(name, simState);
-  };
 
   return (
     <div className="space-y-4">
@@ -133,7 +127,6 @@ export function SimulatorTab({
         sim={simView}
         inconsistencies={inconsistencies}
         onApply={applyToBase}
-        onSave={onSave}
         onReset={reset}
       />
 
@@ -391,7 +384,6 @@ function StatusBar({
   sim,
   inconsistencies,
   onApply,
-  onSave,
   onReset,
 }: {
   active: number;
@@ -399,7 +391,6 @@ function StatusBar({
   sim: SimDREView;
   inconsistencies: string[];
   onApply: () => void;
-  onSave: () => void;
   onReset: () => void;
 }) {
   const dEbitda = pctDelta(base.ebitda, sim.ebitda);

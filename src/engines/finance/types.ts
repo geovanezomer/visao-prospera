@@ -370,6 +370,10 @@ export interface AppState {
   periodoAnaliseMeses?: 6 | 12 | 24 | 36;
   /** Mês de início do exercício fiscal (1-12). Default 1 (Janeiro). */
   fiscalYearStartMonth?: number;
+  /** Ano fiscal a que o AppState se refere (ex: 2025). Permite trocar de ano
+   *  preservando os dados de cada um — ao carregar outro snapshot, o ano
+   *  corrente é auto-arquivado sob este número. Default: ano corrente. */
+  fiscalYear?: number;
   /** Margem-alvo interna do consultor (%). Benchmark adicional ao setorial. */
   margemAlvoPct?: number;
   /** Moeda base (default "BRL"). Preparação para i18n futura. */

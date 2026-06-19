@@ -172,12 +172,42 @@ export function archiveYearAsHistorical(
   const existing = listScenarios(company).find(
     (s) => s.kind === "historical" && s.fiscalYear === fiscalYear,
   );
+  // Stamp do fiscalYear dentro do próprio AppState — garante que ao carregá-lo
+  // de volta o sistema saiba a qual ano ele pertence (auto-arquivamento futuro).
+  const stamped = { ...state, fiscalYear };
   return saveScenario(company, {
     id: existing?.id,
     name: `Ano ${fiscalYear}`,
     kind: "historical",
     fiscalYear,
-    state,
+    state: stamped,
     summary,
   });
 }
+
+/**
+ * Troca o ano ativo SEM perder dados: auto-arquiva o AppState corrente sob
+ * `currentState.fiscalYear` (ou o ano corrente como fallback) antes de
+ * devolver o snapshot-alvo.
+ *
+ * Retorna o AppState a ser aplicado pelo chamador (com `fiscalYear` estampado).
+ * Lança se o snapshot-alvo não tem `state`.
+ */
+export function switchToYear(
+  company: string,
+  target: ScenarioRecord,
+  currentState: import("@/engines/finance/types").AppState,
+): import("@/engines/finance/types").AppState {
+  if (!target.state || !target.fiscalYear) {
+    throw new Error("Snapshot-alvo inválido (sem state ou fiscalYear).");
+  }
+  const currentYear =
+    currentState.fiscalYear ?? new Date().getFullYear();
+  // Só auto-arquiva se o ano corrente é DIFERENTE do alvo — evita sobrescrever
+  // o próprio snapshot que estamos carregando.
+  if (currentYear !== target.fiscalYear) {
+    archiveYearAsHistorical(company, currentYear, currentState);
+  }
+  return { ...target.state, fiscalYear: target.fiscalYear };
+}
+

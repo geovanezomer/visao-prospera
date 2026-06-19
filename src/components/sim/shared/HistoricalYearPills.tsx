@@ -20,6 +20,7 @@ import {
   useScenarios,
   deleteScenario,
   saveScenario,
+  switchToYear,
   type ScenarioRecord,
 } from "@/engines/scenarios/store";
 import {
@@ -101,8 +102,11 @@ export function HistoricalYearPills() {
 
   const handleConfirmLoad = () => {
     if (!confirmLoadTarget?.state) return;
-    update(() => confirmLoadTarget.state!);
-    toast.success(`Visualizando ${confirmLoadTarget.name}`);
+    // Auto-arquiva o ano corrente antes de trocar — `switchToYear` preserva
+    // tudo que estava em edição no ano vigente.
+    const next = switchToYear(company, confirmLoadTarget, state);
+    update(() => next);
+    toast.success(`Ano ${confirmLoadTarget.fiscalYear} carregado · ano anterior arquivado`);
     setPendingLoadId(null);
   };
 
@@ -261,9 +265,9 @@ export function HistoricalYearPills() {
               Carregar snapshot de {confirmLoadTarget?.fiscalYear}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Isso substitui o AppState corrente pelos dados arquivados de{" "}
-              {confirmLoadTarget?.fiscalYear}. Salve o ano atual antes (
-              <strong>Configurar Empresa → Fechar ano</strong>) para não perdê-lo.
+              O ano corrente será <strong>arquivado automaticamente</strong> antes
+              da troca — você poderá voltar a ele a qualquer momento pelas pills.
+              Nenhum dado é perdido.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

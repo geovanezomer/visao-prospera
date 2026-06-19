@@ -226,8 +226,14 @@ export function runMonteCarlo(state: AppState, cfg: MCConfig = DEFAULT_MC): MCRe
 // Histograma simples para gráfico (n bins)
 export function histogram(values: number[], bins = 30): { x: number; count: number }[] {
   if (values.length === 0) return [];
-  const min = values[0],
-    max = values[values.length - 1];
+  // Min/Max explícitos — não assume input ordenado (era invariante implícita frágil).
+  let min = values[0];
+  let max = values[0];
+  for (let i = 1; i < values.length; i++) {
+    const v = values[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
   if (min === max) return [{ x: min, count: values.length }];
   const step = (max - min) / bins;
   const buckets = Array.from({ length: bins }, (_, i) => ({ x: min + step * (i + 0.5), count: 0 }));

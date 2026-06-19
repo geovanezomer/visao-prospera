@@ -32,6 +32,7 @@ import { useFinance } from "@/engines/finance/AppStateContext";
 import {
   useScenarios,
   archiveYearAsHistorical,
+  switchToYear,
   deleteScenario,
 } from "@/engines/scenarios/store";
 import { ConfirmDialog } from "@/components/sim/shared/ConfirmDialog";
@@ -94,6 +95,9 @@ export function ScenarioBar() {
 
   const handleSave = () => {
     archiveYearAsHistorical(company, year, state);
+    // Estampa o ano no AppState ativo — a partir daqui, trocar de pill faz
+    // auto-arquivamento correto sob este `fiscalYear`.
+    update((s) => ({ ...s, fiscalYear: year }));
     toast.success(`Ano ${year} arquivado`);
     setSaveOpen(false);
   };
@@ -101,15 +105,17 @@ export function ScenarioBar() {
   const handleLoad = (id: string) => {
     const rec = historicals.find((h) => h.id === id);
     if (!rec?.state) return;
-    update(() => rec.state!);
-    toast.success(`Visualizando ${rec.name}`);
+    // Auto-arquiva o ano corrente antes de trocar — nada se perde.
+    const next = switchToYear(company, rec, state);
+    update(() => next);
+    toast.success(`Carregado: ${rec.name} (ano atual arquivado)`);
     setListOpen(false);
   };
 
   const alreadyExists = historicals.some((h) => h.fiscalYear === year);
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex gap-2">
+    <div data-meeting-hide="true" className="fixed bottom-6 right-6 z-40 flex gap-2">
       {/* Salvar ANO */}
       <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
         <DialogTrigger asChild>
