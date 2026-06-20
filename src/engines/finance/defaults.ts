@@ -254,9 +254,9 @@ export const DEFAULT_STATE: AppState = {
       { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true },
     ],
     receitasFinanceiras: [
-      { id: "rend_aplic", label: "Rendimento de aplicações", valores: fill12(0), fixed: true },
-      { id: "alugueis", label: "Aluguéis Recebidos", valores: fill12(0), fixed: true },
-      { id: "venda_ativos", label: "Venda de Ativos", valores: fill12(0), fixed: true },
+      { id: "rend_aplic", label: "Rendimento de aplicações", valores: fill12(0), fixed: true, tipo: "financeira" },
+      { id: "alugueis", label: "Aluguéis Recebidos", valores: fill12(0), fixed: true, tipo: "operacional" },
+      { id: "venda_ativos", label: "Venda de Ativos", valores: fill12(0), fixed: true, tipo: "operacional" },
     ],
   },
   costs: defaultCostsFor("servicos"),
@@ -443,17 +443,22 @@ export function migrateState(s: AppState): AppState {
   }
   // Garante Receitas Financeiras padrão
   if (!Array.isArray(revenue.receitasFinanceiras)) revenue.receitasFinanceiras = [];
-  const ensureRF = (id: string, label: string) => {
+  const ensureRF = (id: string, label: string, tipo: "financeira" | "operacional") => {
     if (!revenue.receitasFinanceiras!.some((d) => d.id === id)) {
       revenue.receitasFinanceiras = [
         ...revenue.receitasFinanceiras!,
-        { id, label, valores: fill12(0), fixed: true },
+        { id, label, valores: fill12(0), fixed: true, tipo },
       ];
+    } else {
+      // Backfill: garante `tipo` em snapshots antigos.
+      revenue.receitasFinanceiras = revenue.receitasFinanceiras!.map((d) =>
+        d.id === id && d.tipo === undefined ? { ...d, tipo } : d,
+      );
     }
   };
-  ensureRF("rend_aplic", "Rendimento de aplicações");
-  ensureRF("alugueis", "Aluguéis Recebidos");
-  ensureRF("venda_ativos", "Venda de Ativos");
+  ensureRF("rend_aplic", "Rendimento de aplicações", "financeira");
+  ensureRF("alugueis", "Aluguéis Recebidos", "operacional");
+  ensureRF("venda_ativos", "Venda de Ativos", "operacional");
   if (!Array.isArray(revenue.pmrMensal) || revenue.pmrMensal.length !== 12) {
     revenue.pmrMensal = fill12(revenue.pmr || 0);
     revenue.pmrFixo = true;

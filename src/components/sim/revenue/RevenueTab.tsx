@@ -5,6 +5,8 @@ import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/engines/fin
 import { buildDRE } from "@/engines/finance";
 import { MoneyInput, PctInput, StatCard, SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Plus, Trash2 } from "lucide-react";
 import { PrazoTable } from "@/components/sim/shared/PrazoTable";
 import { MonthlyCardList } from "@/components/sim/shared/MonthlyCardList";
 
@@ -193,46 +195,56 @@ export function RevenueTab() {
     });
 
   const finList = r.receitasFinanceiras ?? [];
-  const findFin = (id: string, label: string): RevenueDeducao =>
-    finList.find((d) => d.id === id) ?? { id, label, valores: fill12(0), fixed: true };
-  const rendAplic = findFin("rend_aplic", "Rendimento de aplicações");
-  const alugueis = findFin("alugueis", "Aluguéis Recebidos");
-  const vendaAtivos = findFin("venda_ativos", "Venda de Ativos");
-  const finRows: Row[] = [
-    {
-      id: "row_rend",
-      kind: "financeira",
-      unit: "brl",
-      finId: "rend_aplic",
-      label: "Rendimento de aplicações",
-      values: rendAplic.valores,
-      brlValues: rendAplic.valores,
-      fixed: !!rendAplic.fixed,
-      tone: "pos",
-    },
-    {
-      id: "row_alug",
-      kind: "financeira",
-      unit: "brl",
-      finId: "alugueis",
-      label: "Aluguéis Recebidos (oper.)",
-      values: alugueis.valores,
-      brlValues: alugueis.valores,
-      fixed: !!alugueis.fixed,
-      tone: "pos",
-    },
-    {
-      id: "row_vatv",
-      kind: "financeira",
-      unit: "brl",
-      finId: "venda_ativos",
-      label: "Venda de Ativos (oper.)",
-      values: vendaAtivos.valores,
-      brlValues: vendaAtivos.valores,
-      fixed: !!vendaAtivos.fixed,
-      tone: "pos",
-    },
-  ];
+
+  // Classificação SSOT (alinhada com splitReceitasFinanceiras):
+  // `tipo` explícito quando presente; fallback p/ id em snapshots antigos.
+  const isOperacional = (d: RevenueDeducao): boolean =>
+    d.tipo === "operacional" ||
+    (d.tipo === undefined && (d.id === "alugueis" || d.id === "venda_ativos"));
+
+  const toRow = (d: RevenueDeducao): Row => ({
+    id: `row_${d.id}`,
+    kind: "financeira",
+    unit: "brl",
+    finId: d.id,
+    label: d.label,
+    values: d.valores,
+    brlValues: d.valores,
+    fixed: !!d.fixed,
+    tone: "pos",
+  });
+
+  // "Outras Receitas" (operacionais — entram no EBITDA)
+  const outrasRows: Row[] = finList.filter(isOperacional).map(toRow);
+  // "Receitas Financeiras" (entram no Resultado Financeiro pós-EBIT)
+  const finRows: Row[] = finList.filter((d) => !isOperacional(d)).map(toRow);
+
+  const addFinLine = (tipo: "financeira" | "operacional") => {
+    const id = `${tipo === "financeira" ? "fin" : "op"}_${Date.now().toString(36)}`;
+    const label = tipo === "financeira" ? "Nova receita financeira" : "Nova outra receita";
+    patchRevenue((rev) => ({
+      receitasFinanceiras: [
+        ...(rev.receitasFinanceiras ?? []),
+        { id, label, valores: fill12(0), fixed: true, tipo, custom: true },
+      ],
+    }));
+  };
+
+  const removeFinLine = (id: string) =>
+    patchRevenue((rev) => ({
+      receitasFinanceiras: (rev.receitasFinanceiras ?? []).filter((d) => d.id !== id),
+    }));
+
+  const renameFinLine = (id: string, label: string) =>
+    patchRevenue((rev) => ({
+      receitasFinanceiras: (rev.receitasFinanceiras ?? []).map((d) =>
+        d.id === id ? { ...d, label } : d,
+      ),
+    }));
+
+  const isCustomFin = (id: string): boolean =>
+    !!finList.find((d) => d.id === id)?.custom;
+
 
   const setMonth = (row: Row, i: number, v: number) => {
     if (row.kind === "bruta") {
@@ -428,14 +440,42 @@ export function RevenueTab() {
 
       <SectionBlock
         title="Outras Receitas — 12 meses"
-        hint="Rendimento de aplicações entra no Resultado Financeiro e é tributado (Real: PIS 0,65% + COFINS 4%; Presumido: 100% na base de IRPJ/CSLL). Aluguéis e Venda de Ativos são reclassificados como Outras Receitas Operacionais (entram no EBITDA), não no Resultado Financeiro."
+        hint="Receitas operacionais não recorrentes do negócio (aluguéis recebidos, venda de ativos etc.). Entram no EBITDA como Outras Receitas Operacionais — não no Resultado Financeiro."
+        accentClass="border-l-[color:var(--success)]"
+      >
+        <RevenueTable
+          rows={outrasRows}
+          brutaAnual={brutaAnual}
+          footer={{
+            label: "Total Outras Receitas",
+            values: MESES.map((_, i) => outrasRows.reduce((a, r) => a + (r.values[i] || 0), 0)),
+            total: outrasRows.reduce((a, r) => a + sum(r.values), 0),
+            tone: "pos",
+          }}
+          onMonth={setMonth}
+          onAllMonths={setAllMonths}
+          onFixed={setFixed}
+          isCustom={isCustomFin}
+          onRename={renameFinLine}
+          onRemove={removeFinLine}
+        />
+        <div className="px-3 pb-3 pt-1">
+          <Button size="sm" variant="outline" onClick={() => addFinLine("operacional")} className="h-7 text-xs">
+            <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar linha
+          </Button>
+        </div>
+      </SectionBlock>
+
+      <SectionBlock
+        title="Receitas Financeiras — 12 meses"
+        hint="Rendimentos de aplicações financeiras, juros recebidos e demais receitas não-operacionais. Entram no Resultado Financeiro (pós-EBIT) e são tributadas conforme o regime (Real: PIS 0,65% + COFINS 4%; Presumido: 100% na base de IRPJ/CSLL, exceto se marcadas como tributação exclusiva na fonte)."
         accentClass="border-l-[color:var(--success)]"
       >
         <RevenueTable
           rows={finRows}
           brutaAnual={brutaAnual}
           footer={{
-            label: "Total Outras Receitas",
+            label: "Total Receitas Financeiras",
             values: MESES.map((_, i) => finRows.reduce((a, r) => a + (r.values[i] || 0), 0)),
             total: finRows.reduce((a, r) => a + sum(r.values), 0),
             tone: "pos",
@@ -443,7 +483,15 @@ export function RevenueTab() {
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
+          isCustom={isCustomFin}
+          onRename={renameFinLine}
+          onRemove={removeFinLine}
         />
+        <div className="px-3 pb-3 pt-1">
+          <Button size="sm" variant="outline" onClick={() => addFinLine("financeira")} className="h-7 text-xs">
+            <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar linha
+          </Button>
+        </div>
       </SectionBlock>
 
       <PrazoTable
@@ -506,6 +554,9 @@ function RevenueTable({
   onMonth,
   onAllMonths,
   onFixed,
+  isCustom,
+  onRename,
+  onRemove,
 }: {
   rows: Row[];
   brutaAnual: number;
@@ -513,9 +564,16 @@ function RevenueTable({
   onMonth: (row: Row, i: number, v: number) => void;
   onAllMonths: (row: Row, v: number) => void;
   onFixed: (row: Row, fixed: boolean) => void;
+  /** Quando fornecido, identifica linhas custom (rótulo editável + remover). Usa o `finId`. */
+  isCustom?: (finId: string) => boolean;
+  onRename?: (finId: string, label: string) => void;
+  onRemove?: (finId: string) => void;
 }) {
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
   const footerToneClass = footer?.tone === "neg" ? "text-neg" : "text-pos";
+
+  const rowIsCustom = (row: Row): boolean =>
+    !!(isCustom && row.finId && isCustom(row.finId));
 
   const renderCellInput = (row: Row, v: number, onChange: (n: number) => void) =>
     row.unit === "pct" ? (
@@ -535,6 +593,8 @@ function RevenueTable({
           brlValues: r.brlValues,
           fixed: r.fixed,
           tone: r.tone,
+          editableLabel: rowIsCustom(r),
+          removable: rowIsCustom(r),
         }))}
         receitaAnual={brutaAnual}
         footer={
@@ -553,6 +613,14 @@ function RevenueTable({
         onFixed={(id, f) => {
           const row = rows.find((r) => r.id === id);
           if (row) onFixed(row, f);
+        }}
+        onLabel={(id, label) => {
+          const row = rows.find((r) => r.id === id);
+          if (row?.finId && onRename) onRename(row.finId, label);
+        }}
+        onRemove={(id) => {
+          const row = rows.find((r) => r.id === id);
+          if (row?.finId && onRemove) onRemove(row.finId);
         }}
       />
     <div className="scrollbar-thin hidden md:block w-full overflow-x-auto overflow-y-hidden">
@@ -583,7 +651,15 @@ function RevenueTable({
             return (
               <tr key={row.id} className="border-t border-border/40 align-middle">
                 <td className="px-3 py-2">
-                  <span className="text-xs">{row.label}</span>
+                  {rowIsCustom(row) && onRename ? (
+                    <input
+                      className="w-full bg-transparent text-xs outline-none focus:bg-accent/30 rounded px-1"
+                      value={row.label}
+                      onChange={(e) => row.finId && onRename(row.finId, e.target.value)}
+                    />
+                  ) : (
+                    <span className="text-xs">{row.label}</span>
+                  )}
                 </td>
                 <td className="px-2 py-2">
                   <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
@@ -616,7 +692,18 @@ function RevenueTable({
                 <td className="num px-2 py-2 text-right text-xs text-muted-foreground">
                   {fmtPct(pct)}
                 </td>
-                <td />
+                <td className="px-1 py-2 text-right">
+                  {rowIsCustom(row) && onRemove ? (
+                    <button
+                      type="button"
+                      onClick={() => row.finId && onRemove(row.finId)}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="Remover linha"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  ) : null}
+                </td>
               </tr>
             );
           })}

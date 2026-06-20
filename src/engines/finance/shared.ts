@@ -85,7 +85,10 @@ export function splitReceitasFinanceiras(state: AppState): {
   const OPERACIONAIS_IDS = new Set(["alugueis", "venda_ativos"]);
   for (const rf of state.revenue.receitasFinanceiras ?? []) {
     const vals = rf.valores ?? [];
-    const isOperacional = OPERACIONAIS_IDS.has(rf.id);
+    // Classificação: `tipo` explícito quando presente; fallback p/ id (compat).
+    const isOperacional =
+      rf.tipo === "operacional" ||
+      (rf.tipo === undefined && OPERACIONAIS_IDS.has(rf.id));
     const exclusivaFonte = !!rf.tributacaoExclusivaFonte;
     for (let i = 0; i < 12; i++) {
       const v = Number(vals[i]) || 0;
