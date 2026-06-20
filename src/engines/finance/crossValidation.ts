@@ -105,14 +105,17 @@ function checkTier1Estrutural(state: AppState, dre: DRE, ind: Indicators): Valid
   const dividendos = sum(state.cashflow.dividendos);
   const folha = folhaAnual(state);
 
-  // 1.1 Margem bruta estrutural negativa (CPV > Receita Bruta)
-  if (receitaBrutaAnual > 0 && cpvAnual > receitaBrutaAnual) {
+  // 1.1 Margem bruta estrutural negativa (CPV > Receita Líquida)
+  // [Auditoria Bloco 9] Antes comparava com Receita Bruta — condição
+  // excessivamente conservadora (RL = RB − impostos − devoluções ≤ RB).
+  // Margem Bruta = (RL − CPV) / RL, então o teste correto é CPV > RL.
+  if (receitaLiqAnual > 0 && cpvAnual > receitaLiqAnual) {
     out.push({
       id: "estrutural.margem_bruta_negativa",
       severity: "error",
       category: "estrutural",
       title: "Margem bruta estrutural negativa",
-      detail: `CPV anual (R$ ${fmt(cpvAnual)}) excede a Receita Bruta (R$ ${fmt(receitaBrutaAnual)}). Cada venda gera prejuízo bruto.`,
+      detail: `CPV anual (R$ ${fmt(cpvAnual)}) excede a Receita Líquida (R$ ${fmt(receitaLiqAnual)}). Cada venda gera prejuízo bruto.`,
       fixHint:
         "Revise os valores de CPV/CMV/CSP na aba Custos ou aumente o preço de venda na aba Receitas.",
       location: "custos",
@@ -303,9 +306,10 @@ function checkTier3Operacional(state: AppState, dre: DRE, ind: Indicators): Vali
   const ebitdaAnual = sum(dre.ebitda);
 
   // 3.1 PMR longo com estoque zerado e receita concentrada (vendas pontuais a prazo)
+  // [Auditoria Bloco 9] === 0 era frágil em floats; usa < R$ 1 como "praticamente zero".
   const pmrMedio = state.revenue.pmr ?? 0;
   const estoqueTotal = (state.capital.estoques ?? 0) + (state.capital.estoqueFinal ?? 0);
-  if (pmrMedio > LIMITS.PMR_LONGO_DIAS && estoqueTotal === 0 && receitaConcentrada(state)) {
+  if (pmrMedio > LIMITS.PMR_LONGO_DIAS && estoqueTotal < 1 && receitaConcentrada(state)) {
     out.push({
       id: "operacional.pmr_longo_estoque_zero",
       severity: "warn",
