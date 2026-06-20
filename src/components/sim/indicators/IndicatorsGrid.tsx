@@ -140,6 +140,13 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           formula="Passivo Total ÷ Ativo Total × 100"
         />
         <Ind
+          label="Capital Próprio"
+          v={`${ind.proprioPercent.toFixed(1)}%`}
+          tone={ind.proprioPercent >= 50 ? "pos" : ind.proprioPercent >= 30 ? "warn" : "neg"}
+          desc="Participação do PL no financiamento total da empresa."
+          formula="PL ÷ (PL + Dívida Onerosa) × 100"
+        />
+        <Ind
           label="Cobertura de Juros"
           v={fmtTimes(ind.coberturaJuros, ebitAnual)}
           tone={ind.coberturaJuros >= 2 ? "pos" : "neg"}
