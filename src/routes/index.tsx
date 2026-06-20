@@ -19,6 +19,7 @@ import { StrategicTab } from "@/components/sim/strategic/StrategicTab";
 import { SimulatorTab } from "@/components/sim/simulator/SimulatorTab";
 import { ValuationTab } from "@/components/sim/valuation/ValuationTab";
 import { IndicatorsTab } from "@/components/sim/indicators/IndicatorsTab";
+import { DashboardTab } from "@/components/sim/dashboard/DashboardTab";
 import { ScenarioBar } from "@/components/sim/shared/ScenarioBar";
 import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
 import { AIView } from "@/components/ai/AIView";
