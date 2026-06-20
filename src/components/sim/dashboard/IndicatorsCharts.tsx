@@ -115,18 +115,6 @@ export function IndicatorsCharts({ state }: { state: AppState }) {
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="Composição de despesas operacionais (anual)">
-        <ResponsiveContainer width="100%" height={280}>
-          <PieChart>
-            <Pie data={costPie} dataKey="value" nameKey="name" outerRadius="80%" innerRadius="45%">
-              {costPie.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-            </Pie>
-            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} formatter={(v: number) => fmtBRL(v)} />
-            <Legend wrapperStyle={{ fontSize: 10 }} />
-          </PieChart>
-        </ResponsiveContainer>
-      </ChartCard>
-
       <ChartCard title="Da receita ao lucro líquido (waterfall)">
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={waterfall}>
