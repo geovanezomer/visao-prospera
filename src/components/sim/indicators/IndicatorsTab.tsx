@@ -47,7 +47,7 @@ const TOOLTIP_STYLE = {
 const TOOLTIP_ITEM = { color: "var(--popover-foreground)" } as const;
 const TOOLTIP_LABEL = { color: "var(--popover-foreground)", fontWeight: 600 } as const;
 
-// `fmtTimes` é importado de `engines/finance/format` (SSOT).
+
 
 export function IndicatorsTab() {
   const state = useFinanceState();
