@@ -102,22 +102,6 @@ export function IndicatorsCharts({ state }: { state: AppState }) {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <ChartCard title="Receita × Custos × Lucro (mensal)">
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={monthlyChart}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-            <XAxis dataKey="mes" stroke="#9ca3af" fontSize={11} />
-            <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} formatter={(v: number) => fmtBRL(v)} />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar dataKey="Receita" fill="#00E5A0" />
-            <Bar dataKey="Operacionais" fill="#FF6B6B" />
-            <Bar dataKey="D&A" fill="#C77DFF" />
-            <Bar dataKey="Financeiros" fill="#F5B85B" />
-            <Bar dataKey="Lucro" fill="#5BA8F5" />
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartCard>
 
       <ChartCard title="Resultado acumulado (lucro líquido)">
         <ResponsiveContainer width="100%" height={280}>
@@ -128,18 +112,6 @@ export function IndicatorsCharts({ state }: { state: AppState }) {
             <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} formatter={(v: number) => fmtBRL(v)} />
             <Line type="monotone" dataKey="valor" stroke="#00E5A0" strokeWidth={2} dot={{ r: 3 }} />
           </LineChart>
-        </ResponsiveContainer>
-      </ChartCard>
-
-      <ChartCard title="Composição de despesas operacionais (anual)">
-        <ResponsiveContainer width="100%" height={280}>
-          <PieChart>
-            <Pie data={costPie} dataKey="value" nameKey="name" outerRadius="80%" innerRadius="45%">
-              {costPie.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-            </Pie>
-            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} formatter={(v: number) => fmtBRL(v)} />
-            <Legend wrapperStyle={{ fontSize: 10 }} />
-          </PieChart>
         </ResponsiveContainer>
       </ChartCard>
 
