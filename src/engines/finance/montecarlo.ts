@@ -141,10 +141,15 @@ const LABOR_RE = /sal[áa]rio|folha|clt|prolabore|pró-labore|mod|mão de obra/i
  */
 function shockState(s: AppState, cfg: MCConfig, shocks: number[]): AppState {
   const [zPreco, zVol, zCpv, zFolha] = shocks;
-  const fPreco = 1 + (zPreco * cfg.precoSigmaPct) / 100;
-  const fVol = 1 + (zVol * cfg.volumeSigmaPct) / 100;
-  const fCpv = 1 + (zCpv * cfg.cpvSigmaPct) / 100;
-  const fFolha = 1 + (zFolha * cfg.folhaSigmaPct) / 100;
+  // Bloco 8 (auditoria): clipping a [0.05, +∞). Sem clip, choques negativos
+  // grandes (z ≤ −1/σ) produzem fator NEGATIVO → receita/CPV/folha negativos
+  // contaminam a iteração com nonsense (EBITDA falsamente positivo via custo
+  // negativo). Piso 5% representa "operação quase parada", interpretável.
+  const clip = (f: number) => Math.max(0.05, f);
+  const fPreco = clip(1 + (zPreco * cfg.precoSigmaPct) / 100);
+  const fVol = clip(1 + (zVol * cfg.volumeSigmaPct) / 100);
+  const fCpv = clip(1 + (zCpv * cfg.cpvSigmaPct) / 100);
+  const fFolha = clip(1 + (zFolha * cfg.folhaSigmaPct) / 100);
 
   const fReceita = fPreco * fVol;
   const revenue = { ...s.revenue, bruta: s.revenue.bruta.map((v) => v * fReceita) };
