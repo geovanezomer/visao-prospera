@@ -305,7 +305,7 @@ export function IndicatorsTab() {
                 tone={dl.tone}
                 chip={dl.chip}
                 desc="Em quantos anos de geração de caixa (EBITDA) a empresa quitaria sua dívida líquida. Acima de 3× preocupa bancos."
-                formula="(Dívida Total − Caixa) ÷ EBITDA"
+                formula="(Dívida Onerosa − Disponibilidades) ÷ EBITDA"
               />
             );
           })()}
@@ -318,7 +318,7 @@ export function IndicatorsTab() {
                 tone={dl.tone}
                 chip={dl.chip}
                 desc="Quantos anos de lucro operacional (já líquido da depreciação) seriam necessários para quitar a dívida líquida. Mais conservador que Dívida/EBITDA."
-                formula="(Dívida Total − Caixa) ÷ EBIT"
+                formula="(Dívida Onerosa − Disponibilidades) ÷ EBIT"
               />
             );
           })()}
@@ -331,7 +331,7 @@ export function IndicatorsTab() {
                 tone={dl.tone}
                 chip={dl.chip}
                 desc="Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio."
-                formula="(Dívida Total − Caixa) ÷ Patrimônio Líquido"
+                formula="(Dívida Onerosa − Disponibilidades) ÷ Patrimônio Líquido"
               />
             );
           })()}
