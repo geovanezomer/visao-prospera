@@ -50,12 +50,14 @@ function Gauge({
   max,
   suffix = "%",
   good = "high",
+  hint,
 }: {
   label: string;
   value: number;
   max: number;
   suffix?: string;
   good?: "high" | "low";
+  hint?: { description: string; formula?: string };
 }) {
   const clamped = Math.max(0, Math.min(value, max));
   const ratio = max > 0 ? clamped / max : 0;
@@ -67,8 +69,9 @@ function Gauge({
   ];
   return (
     <div className="rounded-lg border border-border/40 bg-card p-4">
-      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         {label}
+        {hint && renderHint(hint)}
       </div>
       <div className="relative h-32">
         <ResponsiveContainer width="100%" height="100%">
