@@ -293,8 +293,8 @@ export function IndicatorsTab() {
           <Ind
             label="Giro do Ativo"
             v={`${ind.giroAtivo.toFixed(2)}×`}
-            desc="Quantas vezes o ativo total 'gira' em vendas no ano. Mede eficiência: quanto maior, mais a empresa produz com o que tem."
-            formula="Receita Líquida ÷ Ativo Total"
+            desc="Quantas vezes o ativo total 'gira' em vendas no ano. Usa Ativo Total MÉDIO (consistente com ROA) quando o valor de abertura é informado em Capital."
+            formula="Receita Líquida ÷ Ativo Total Médio"
           />
           {(() => {
             const dl = leverageDisplay("ebitda", ind.dividaLiqEbitda, ind.dividaLiquida, ebitdaAnual);
