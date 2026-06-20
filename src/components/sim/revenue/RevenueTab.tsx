@@ -5,6 +5,8 @@ import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/engines/fin
 import { buildDRE } from "@/engines/finance";
 import { MoneyInput, PctInput, StatCard, SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Plus, Trash2 } from "lucide-react";
 import { PrazoTable } from "@/components/sim/shared/PrazoTable";
 import { MonthlyCardList } from "@/components/sim/shared/MonthlyCardList";
 
