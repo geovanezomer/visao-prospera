@@ -306,6 +306,7 @@ function SimulaPro() {
                       {activeTab === "dre" && <DRETab />}
                       {activeTab === "indicadores" && <IndicatorsTab />}
                       {activeTab === "resultados" && <DiagnosisTab />}
+                      {activeTab === "dashboard" && <DashboardTab />}
                       {activeTab === "simulador" && (
                         <SimulatorTab
                           state={state}
