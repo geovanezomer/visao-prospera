@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useFinanceState } from "@/engines/finance/AppStateContext";
-import { AppState } from "@/engines/finance/types";
-import { fmtBRL, fmtPct, fmtTimes, MESES, sum } from "@/engines/finance/format";
+import { fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import {
   Bar,
@@ -18,10 +17,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { HelpTip, SectionTitle, StatCard } from "@/components/sim/shared/primitives";
-import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
+import { HelpTip, StatCard } from "@/components/sim/shared/primitives";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
+import { IndicatorsGrid } from "./IndicatorsGrid";
 
 const CHART_COLORS = [
   "#00E5A0",
