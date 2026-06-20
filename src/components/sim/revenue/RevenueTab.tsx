@@ -195,46 +195,56 @@ export function RevenueTab() {
     });
 
   const finList = r.receitasFinanceiras ?? [];
-  const findFin = (id: string, label: string): RevenueDeducao =>
-    finList.find((d) => d.id === id) ?? { id, label, valores: fill12(0), fixed: true };
-  const rendAplic = findFin("rend_aplic", "Rendimento de aplicações");
-  const alugueis = findFin("alugueis", "Aluguéis Recebidos");
-  const vendaAtivos = findFin("venda_ativos", "Venda de Ativos");
-  const finRows: Row[] = [
-    {
-      id: "row_rend",
-      kind: "financeira",
-      unit: "brl",
-      finId: "rend_aplic",
-      label: "Rendimento de aplicações",
-      values: rendAplic.valores,
-      brlValues: rendAplic.valores,
-      fixed: !!rendAplic.fixed,
-      tone: "pos",
-    },
-    {
-      id: "row_alug",
-      kind: "financeira",
-      unit: "brl",
-      finId: "alugueis",
-      label: "Aluguéis Recebidos (oper.)",
-      values: alugueis.valores,
-      brlValues: alugueis.valores,
-      fixed: !!alugueis.fixed,
-      tone: "pos",
-    },
-    {
-      id: "row_vatv",
-      kind: "financeira",
-      unit: "brl",
-      finId: "venda_ativos",
-      label: "Venda de Ativos (oper.)",
-      values: vendaAtivos.valores,
-      brlValues: vendaAtivos.valores,
-      fixed: !!vendaAtivos.fixed,
-      tone: "pos",
-    },
-  ];
+
+  // Classificação SSOT (alinhada com splitReceitasFinanceiras):
+  // `tipo` explícito quando presente; fallback p/ id em snapshots antigos.
+  const isOperacional = (d: RevenueDeducao): boolean =>
+    d.tipo === "operacional" ||
+    (d.tipo === undefined && (d.id === "alugueis" || d.id === "venda_ativos"));
+
+  const toRow = (d: RevenueDeducao): Row => ({
+    id: `row_${d.id}`,
+    kind: "financeira",
+    unit: "brl",
+    finId: d.id,
+    label: d.label,
+    values: d.valores,
+    brlValues: d.valores,
+    fixed: !!d.fixed,
+    tone: "pos",
+  });
+
+  // "Outras Receitas" (operacionais — entram no EBITDA)
+  const outrasRows: Row[] = finList.filter(isOperacional).map(toRow);
+  // "Receitas Financeiras" (entram no Resultado Financeiro pós-EBIT)
+  const finRows: Row[] = finList.filter((d) => !isOperacional(d)).map(toRow);
+
+  const addFinLine = (tipo: "financeira" | "operacional") => {
+    const id = `${tipo === "financeira" ? "fin" : "op"}_${Date.now().toString(36)}`;
+    const label = tipo === "financeira" ? "Nova receita financeira" : "Nova outra receita";
+    patchRevenue((rev) => ({
+      receitasFinanceiras: [
+        ...(rev.receitasFinanceiras ?? []),
+        { id, label, valores: fill12(0), fixed: true, tipo, custom: true },
+      ],
+    }));
+  };
+
+  const removeFinLine = (id: string) =>
+    patchRevenue((rev) => ({
+      receitasFinanceiras: (rev.receitasFinanceiras ?? []).filter((d) => d.id !== id),
+    }));
+
+  const renameFinLine = (id: string, label: string) =>
+    patchRevenue((rev) => ({
+      receitasFinanceiras: (rev.receitasFinanceiras ?? []).map((d) =>
+        d.id === id ? { ...d, label } : d,
+      ),
+    }));
+
+  const isCustomFin = (id: string): boolean =>
+    !!finList.find((d) => d.id === id)?.custom;
+
 
   const setMonth = (row: Row, i: number, v: number) => {
     if (row.kind === "bruta") {
