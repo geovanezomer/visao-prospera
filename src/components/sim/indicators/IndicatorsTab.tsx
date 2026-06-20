@@ -230,8 +230,8 @@ export function IndicatorsTab() {
           <Ind
             label="ROA"
             v={fmtPct(ind.roa / 100)}
-            desc="Retorno sobre o Ativo Total. Mostra a eficiência da empresa em gerar lucro com todos os seus recursos (próprios + terceiros)."
-            formula="Lucro Líquido ÷ Ativo Total × 100"
+            desc="Retorno sobre o Ativo Total. Usa Ativo Total MÉDIO ((abertura + final)/2, padrão CFA/Damodaran) quando o Ativo Total de abertura é informado em Capital; caso contrário, usa Ativo Total fim de período."
+            formula="Lucro Líquido ÷ Ativo Total Médio × 100"
           />
           <Ind
             label="ROIC"
@@ -266,6 +266,13 @@ export function IndicatorsTab() {
             formula="Disponibilidades ÷ Passivo Circulante"
           />
           <Ind
+            label="Liquidez Geral"
+            v={ind.liquidezGeral.toFixed(2)}
+            tone={ind.liquidezGeral >= 1 ? "pos" : "neg"}
+            desc="Capacidade total de honrar todas as dívidas (curto + longo prazo) com todos os ativos circulantes. Acima de 1,0 indica solvência estrutural; abaixo, dependência de refinanciamento."
+            formula="Ativo Circulante ÷ (Ativo Total − PL)"
+          />
+          <Ind
             label={
               ind.endividamentoGeralDadosCompletos
                 ? "Endividamento Geral"
@@ -286,8 +293,8 @@ export function IndicatorsTab() {
           <Ind
             label="Giro do Ativo"
             v={`${ind.giroAtivo.toFixed(2)}×`}
-            desc="Quantas vezes o ativo total 'gira' em vendas no ano. Mede eficiência: quanto maior, mais a empresa produz com o que tem."
-            formula="Receita Líquida ÷ Ativo Total"
+            desc="Quantas vezes o ativo total 'gira' em vendas no ano. Usa Ativo Total MÉDIO (consistente com ROA) quando o valor de abertura é informado em Capital."
+            formula="Receita Líquida ÷ Ativo Total Médio"
           />
           {(() => {
             const dl = leverageDisplay("ebitda", ind.dividaLiqEbitda, ind.dividaLiquida, ebitdaAnual);
@@ -298,7 +305,7 @@ export function IndicatorsTab() {
                 tone={dl.tone}
                 chip={dl.chip}
                 desc="Em quantos anos de geração de caixa (EBITDA) a empresa quitaria sua dívida líquida. Acima de 3× preocupa bancos."
-                formula="(Dívida Total − Caixa) ÷ EBITDA"
+                formula="(Dívida Onerosa − Disponibilidades) ÷ EBITDA"
               />
             );
           })()}
@@ -311,7 +318,7 @@ export function IndicatorsTab() {
                 tone={dl.tone}
                 chip={dl.chip}
                 desc="Quantos anos de lucro operacional (já líquido da depreciação) seriam necessários para quitar a dívida líquida. Mais conservador que Dívida/EBITDA."
-                formula="(Dívida Total − Caixa) ÷ EBIT"
+                formula="(Dívida Onerosa − Disponibilidades) ÷ EBIT"
               />
             );
           })()}
@@ -324,7 +331,7 @@ export function IndicatorsTab() {
                 tone={dl.tone}
                 chip={dl.chip}
                 desc="Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio."
-                formula="(Dívida Total − Caixa) ÷ Patrimônio Líquido"
+                formula="(Dívida Onerosa − Disponibilidades) ÷ Patrimônio Líquido"
               />
             );
           })()}
