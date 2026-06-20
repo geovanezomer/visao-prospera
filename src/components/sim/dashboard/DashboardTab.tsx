@@ -280,6 +280,10 @@ export function DashboardTab() {
           </ResponsiveContainer>
         </ChartCard>
       </div>
+
+      {/* Gráficos detalhados (movidos da aba Indicadores) */}
+      <IndicatorsCharts state={state} />
     </div>
   );
 }
+
