@@ -45,10 +45,12 @@ export function leverageDisplay(
   base: number,
 ): LeverageDisplay {
   // Cash-rich domina: sobreposição independe da base ser positiva ou não.
+  // Removemos o múltiplo entre parênteses porque ele representa |DL|/base
+  // (EBITDA/EBIT/PL), e não Caixa/Dívida — gerava confusão de leitura.
   if (dividaLiquida < 0) {
     return {
       label: "Posição Líquida de Caixa",
-      value: `Caixa > Dívida (${Math.abs(ratio).toFixed(1)}×)`,
+      value: "Caixa supera a dívida",
       tone: "pos",
       chip: "Cash-rich",
     };

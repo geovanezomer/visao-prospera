@@ -121,6 +121,41 @@ export function BalanceSheetCard({
           <MiniStat label="A receber" value={fmtBRL(capital.contasReceber)} />
           <MiniStat label="Ativo circulante" value={fmtBRL(ativoCircCalc)} highlight />
         </div>
+
+        {/* Reconciliação Total de Ativos vs. soma dos componentes circulantes.
+            Evita "Balanço consistente" silencioso quando o consultor digita um
+            Total que não bate com Caixa+Estoque+Clientes (gap = imobilizado/
+            outros ativos não detalhados, ou erro de digitação). */}
+        {capital.ativoTotal > 0 && (() => {
+          const gap = capital.ativoTotal - ativoCircCalc;
+          if (gap < -1) {
+            return (
+              <div className="mt-2 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>
+                  Total de ativos (<strong>{fmtBRL(capital.ativoTotal)}</strong>) é{" "}
+                  <strong>menor</strong> que a soma de Caixa + Estoque + Clientes
+                  (<strong>{fmtBRL(ativoCircCalc)}</strong>). Revise os valores —
+                  Total de Ativos deve incluir, no mínimo, todo o ativo circulante.
+                </span>
+              </div>
+            );
+          }
+          if (gap > 1) {
+            return (
+              <div className="mt-2 rounded-md border border-border/40 bg-muted/20 p-2 text-[11px] text-muted-foreground">
+                Imobilizado e outros ativos (implícito):{" "}
+                <strong className="text-foreground">{fmtBRL(gap)}</strong>{" "}
+                <span className="opacity-70">
+                  = Total de Ativos − (Caixa + Estoque + Clientes). Se este valor
+                  não corresponde a máquinas/imóveis/veículos da empresa, revise
+                  o Total de Ativos.
+                </span>
+              </div>
+            );
+          }
+          return null;
+        })()}
       </StepCard>
 
       {/* PASSO 2 — DÍVIDAS + PL */}
