@@ -13,7 +13,7 @@ import { resolve } from "node:path";
 // duplicada faz o teste falhar antes do build.
 
 const read = (rel: string) =>
-  readFileSync(resolve(__dirname, "../../../..", rel), "utf8");
+  readFileSync(resolve(process.cwd(), rel), "utf8");
 
 const CARD = "src/components/sim/indicators/IndicatorsCard.tsx";
 const TAB = "src/components/sim/indicators/IndicatorsTab.tsx";
