@@ -180,13 +180,48 @@ export function DashboardTab() {
         </p>
       </div>
 
-      {/* Elementos visuais para o empresário: runway, semáforos, score,
-          cronograma de dívidas e top 5 despesas */}
+      {/* Linha 1 — Cards numéricos resumo (com tooltips, base unificada `useFinanceModel`) */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Receita Líquida (12m)"
+          value={fmtBRL(ind.receitaLiquidaAnual)}
+          hint={{
+            description: "Receita bruta dos últimos 12 meses descontados impostos sobre vendas, devoluções e abatimentos.",
+            formula: "Receita Bruta − Impostos sobre Vendas − Devoluções",
+          }}
+        />
+        <StatCard
+          label="EBITDA (12m)"
+          value={fmtBRL(ind.ebitdaAnual)}
+          hint={{
+            description: "Lucro operacional antes de juros, impostos, depreciação e amortização. Mede a geração operacional de caixa.",
+            formula: "Lucro Operacional + Depreciação + Amortização",
+          }}
+        />
+        <StatCard
+          label="Lucro Líquido (12m)"
+          value={fmtBRL(ind.lucroLiquidoAnual)}
+          tone={ind.lucroLiquidoAnual >= 0 ? "pos" : "neg"}
+          hint={{
+            description: "Resultado final do exercício após todas as despesas, juros e impostos.",
+            formula: "Receita Líquida − Custos − Despesas − Juros − IRPJ/CSLL",
+          }}
+        />
+        <StatCard
+          label="FCF após Capex"
+          value={fmtBRL(ind.fcfAposCapex)}
+          tone={ind.fcfAposCapex >= 0 ? "pos" : "neg"}
+          hint={{
+            description: "Fluxo de caixa livre após investimentos em ativo fixo. É o caixa efetivamente disponível para sócios e credores.",
+            formula: "FCO − Capex",
+          }}
+        />
+      </div>
+
+      {/* Elementos visuais para o empresário: runway, semáforos, score e top despesas */}
       <DashboardExtras state={state} />
 
-
-
-      {/* Linha 1 — KPIs em gauges */}
+      {/* Linha — KPIs em gauges */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Gauge label="Margem Líquida" value={ind.margemLiquida} max={30} />
         <Gauge label="ROE" value={ind.roe} max={30} />
@@ -194,13 +229,6 @@ export function DashboardTab() {
         <Gauge label="Endividamento Geral" value={ind.endividamentoGeral} max={100} good="low" />
       </div>
 
-      {/* Linha 2 — Cards numéricos resumo */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Receita Líquida (12m)" value={fmtBRL(ind.receitaLiquidaAnual)} />
-        <StatCard label="EBITDA (12m)" value={fmtBRL(ind.ebitdaAnual)} />
-        <StatCard label="Lucro Líquido (12m)" value={fmtBRL(ind.lucroLiquidoAnual)} />
-        <StatCard label="FCF após Capex" value={fmtBRL(ind.fcfAposCapex)} />
-      </div>
 
       {/* Linha 3 — Combo Receita + Margem  |  Estrutura de Capital */}
       <div className="grid gap-4 lg:grid-cols-3">
