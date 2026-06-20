@@ -26,8 +26,9 @@ export type TabKey =
   | "dre" // 7. DRE consolidada
   | "indicadores" // 8. Indicadores financeiros e gráficos
   | "resultados" // 9. Diagnóstico + cenários
-  | "simulador" // 10. Simulador de alavancas
-  | "valuation"; // 11. Valuation (múltiplos + DCF)
+  | "dashboard" // 10. Dashboard executivo (visão consolidada)
+  | "simulador" // 11. Simulador de alavancas
+  | "valuation"; // 12. Valuation (múltiplos + DCF)
 
 /** Lista canônica das abas, em ordem. Use em vez de hardcodar strings. */
 export const TAB_KEYS: readonly TabKey[] = [
@@ -40,6 +41,7 @@ export const TAB_KEYS: readonly TabKey[] = [
   "dre",
   "indicadores",
   "resultados",
+  "dashboard",
   "simulador",
   "valuation",
 ] as const;
