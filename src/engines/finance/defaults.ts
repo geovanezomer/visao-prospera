@@ -254,9 +254,9 @@ export const DEFAULT_STATE: AppState = {
       { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true },
     ],
     receitasFinanceiras: [
-      { id: "rend_aplic", label: "Rendimento de aplicações", valores: fill12(0), fixed: true },
-      { id: "alugueis", label: "Aluguéis Recebidos", valores: fill12(0), fixed: true },
-      { id: "venda_ativos", label: "Venda de Ativos", valores: fill12(0), fixed: true },
+      { id: "rend_aplic", label: "Rendimento de aplicações", valores: fill12(0), fixed: true, tipo: "financeira" },
+      { id: "alugueis", label: "Aluguéis Recebidos", valores: fill12(0), fixed: true, tipo: "operacional" },
+      { id: "venda_ativos", label: "Venda de Ativos", valores: fill12(0), fixed: true, tipo: "operacional" },
     ],
   },
   costs: defaultCostsFor("servicos"),
