@@ -64,6 +64,16 @@ export interface RevenueDeducao {
    * (evita superestimar imposto em PMEs com caixa ocioso relevante). Default: false.
    */
   tributacaoExclusivaFonte?: boolean;
+  /**
+   * Classificação contábil (somente para `revenue.receitasFinanceiras`):
+   * - "financeira": entra no Resultado Financeiro (pós-EBIT).
+   * - "operacional": entra como Outras Receitas Operacionais (compõe o EBITDA).
+   * Quando ausente, o sistema usa o id como fallback (alugueis/venda_ativos = operacional;
+   * demais = financeira) — mantém compatibilidade com snapshots antigos.
+   */
+  tipo?: "financeira" | "operacional";
+  /** Linha criada pelo usuário (permite editar rótulo e remover). */
+  custom?: boolean;
 }
 
 export interface Revenue {
