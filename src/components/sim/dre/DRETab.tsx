@@ -199,7 +199,7 @@ export function DRETab() {
     },
     {
       kind: "linha",
-      k: "(−) Devoluções e Cancelamentos",
+      k: usaPDD ? "(−) Inadimplência (contabilizada como PDD)" : "(−) Inadimplência (perdas estimadas)",
       v: dre.deducoesInadimplencia.map((x) => -x),
       tone: "neg",
     },
