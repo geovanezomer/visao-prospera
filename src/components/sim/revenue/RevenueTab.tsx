@@ -440,14 +440,42 @@ export function RevenueTab() {
 
       <SectionBlock
         title="Outras Receitas — 12 meses"
-        hint="Rendimento de aplicações entra no Resultado Financeiro e é tributado (Real: PIS 0,65% + COFINS 4%; Presumido: 100% na base de IRPJ/CSLL). Aluguéis e Venda de Ativos são reclassificados como Outras Receitas Operacionais (entram no EBITDA), não no Resultado Financeiro."
+        hint="Receitas operacionais não recorrentes do negócio (aluguéis recebidos, venda de ativos etc.). Entram no EBITDA como Outras Receitas Operacionais — não no Resultado Financeiro."
+        accentClass="border-l-[color:var(--success)]"
+      >
+        <RevenueTable
+          rows={outrasRows}
+          brutaAnual={brutaAnual}
+          footer={{
+            label: "Total Outras Receitas",
+            values: MESES.map((_, i) => outrasRows.reduce((a, r) => a + (r.values[i] || 0), 0)),
+            total: outrasRows.reduce((a, r) => a + sum(r.values), 0),
+            tone: "pos",
+          }}
+          onMonth={setMonth}
+          onAllMonths={setAllMonths}
+          onFixed={setFixed}
+          isCustom={isCustomFin}
+          onRename={renameFinLine}
+          onRemove={removeFinLine}
+        />
+        <div className="px-3 pb-3 pt-1">
+          <Button size="sm" variant="outline" onClick={() => addFinLine("operacional")} className="h-7 text-xs">
+            <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar linha
+          </Button>
+        </div>
+      </SectionBlock>
+
+      <SectionBlock
+        title="Receitas Financeiras — 12 meses"
+        hint="Rendimentos de aplicações financeiras, juros recebidos e demais receitas não-operacionais. Entram no Resultado Financeiro (pós-EBIT) e são tributadas conforme o regime (Real: PIS 0,65% + COFINS 4%; Presumido: 100% na base de IRPJ/CSLL, exceto se marcadas como tributação exclusiva na fonte)."
         accentClass="border-l-[color:var(--success)]"
       >
         <RevenueTable
           rows={finRows}
           brutaAnual={brutaAnual}
           footer={{
-            label: "Total Outras Receitas",
+            label: "Total Receitas Financeiras",
             values: MESES.map((_, i) => finRows.reduce((a, r) => a + (r.values[i] || 0), 0)),
             total: finRows.reduce((a, r) => a + sum(r.values), 0),
             tone: "pos",
@@ -455,7 +483,15 @@ export function RevenueTab() {
           onMonth={setMonth}
           onAllMonths={setAllMonths}
           onFixed={setFixed}
+          isCustom={isCustomFin}
+          onRename={renameFinLine}
+          onRemove={removeFinLine}
         />
+        <div className="px-3 pb-3 pt-1">
+          <Button size="sm" variant="outline" onClick={() => addFinLine("financeira")} className="h-7 text-xs">
+            <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar linha
+          </Button>
+        </div>
       </SectionBlock>
 
       <PrazoTable
