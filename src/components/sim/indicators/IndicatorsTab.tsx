@@ -68,14 +68,6 @@ export function IndicatorsTab() {
   );
 }
 
-function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-border/60 bg-card/40 p-4">
-      <h4 className="mb-3 text-sm font-semibold">{title}</h4>
-      {children}
-    </div>
-  );
-}
 
 // `Ind` foi extraído para IndicatorsGrid.tsx (SSOT visual dos indicadores).
 
