@@ -249,6 +249,9 @@ export function DRETab() {
       tone: "mix",
       lines: [
         { label: "Depreciação & Amortização", values: dre.depreciacao.map((d) => -d) },
+        ...(usaPDD
+          ? [{ label: "PDD — Perdas estimadas (líq. recup.)", values: pddLine.map((p) => -p) }]
+          : []),
         ...linhasOutrasReceitasOp,
       ],
       emptyMsg: "Sem outras despesas/receitas operacionais.",
