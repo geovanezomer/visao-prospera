@@ -41,6 +41,7 @@ export const TAB_KEYS: readonly TabKey[] = [
   "dre",
   "indicadores",
   "resultados",
+  "dashboard",
   "simulador",
   "valuation",
 ] as const;
