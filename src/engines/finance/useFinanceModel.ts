@@ -6,16 +6,17 @@
  * (regime, dre, ind, cf, cagrReceitas12m) e expõe o modelo completo via
  * `model` para novos consumidores que queiram valuation e health também.
  */
-import { useDeferredValue, useMemo } from "react";
+import { useMemo } from "react";
 import { AppState } from "./types";
 import { buildFinancialModel } from "./financialModel";
 
 export function useFinanceModel(state: AppState) {
-  // useDeferredValue: durante digitação rápida o React reusa o último modelo
-  // enquanto recalcula em background — reduz lag em PCs lentos com muitos
-  // meses/cenários sem mudar a API do hook.
-  const deferred = useDeferredValue(state);
-  const model = useMemo(() => buildFinancialModel(deferred), [deferred]);
+  // Memoiza por referência de `state`. Removemos `useDeferredValue` porque,
+  // no Simulador, cada mexida em slider cria um novo `simState` (nova ref),
+  // e o deferral causava sensação de "indicadores não refletem o slider".
+  // O custo de recomputar é baixo (engine pure-function memoizada por hash
+  // em outros call sites) e a UX em tempo real é prioritária.
+  const model = useMemo(() => buildFinancialModel(state), [state]);
   return {
     regime: model.regime,
     dre: model.dre,
