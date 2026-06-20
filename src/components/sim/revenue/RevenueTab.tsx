@@ -692,7 +692,18 @@ function RevenueTable({
                 <td className="num px-2 py-2 text-right text-xs text-muted-foreground">
                   {fmtPct(pct)}
                 </td>
-                <td />
+                <td className="px-1 py-2 text-right">
+                  {rowIsCustom(row) && onRemove ? (
+                    <button
+                      type="button"
+                      onClick={() => row.finId && onRemove(row.finId)}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="Remover linha"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  ) : null}
+                </td>
               </tr>
             );
           })}
