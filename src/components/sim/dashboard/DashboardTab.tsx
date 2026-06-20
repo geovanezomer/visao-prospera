@@ -28,7 +28,7 @@ import {
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
-import { StatCard } from "@/components/sim/shared/primitives";
+import { StatCard, renderHint } from "@/components/sim/shared/primitives";
 import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
 import { IndicatorsCharts } from "./IndicatorsCharts";
 import { DashboardExtras } from "./DashboardExtras";
@@ -50,12 +50,14 @@ function Gauge({
   max,
   suffix = "%",
   good = "high",
+  hint,
 }: {
   label: string;
   value: number;
   max: number;
   suffix?: string;
   good?: "high" | "low";
+  hint?: { description: string; formula?: string };
 }) {
   const clamped = Math.max(0, Math.min(value, max));
   const ratio = max > 0 ? clamped / max : 0;
@@ -67,8 +69,9 @@ function Gauge({
   ];
   return (
     <div className="rounded-lg border border-border/40 bg-card p-4">
-      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         {label}
+        {hint && renderHint(hint)}
       </div>
       <div className="relative h-32">
         <ResponsiveContainer width="100%" height="100%">
@@ -218,16 +221,50 @@ export function DashboardTab() {
         />
       </div>
 
+      {/* Linha 2 — KPIs em gauges (logo após os cards principais) */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Gauge
+          label="Margem Líquida"
+          value={ind.margemLiquida}
+          max={30}
+          hint={{
+            description: "O lucro que efetivamente sobra para os sócios, após tudo pago (custos, despesas, juros e impostos).",
+            formula: "Lucro Líquido ÷ Receita Líquida × 100",
+          }}
+        />
+        <Gauge
+          label="ROE"
+          value={ind.roe}
+          max={30}
+          hint={{
+            description: "Retorno sobre o Patrimônio Líquido. Usa PL MÉDIO quando o PL de abertura é informado em Capital; caso contrário, usa PL fim de período.",
+            formula: "Lucro Líquido ÷ PL Médio × 100",
+          }}
+        />
+        <Gauge
+          label="Liquidez Corrente"
+          value={ind.liquidezCorrente}
+          max={3}
+          suffix="x"
+          hint={{
+            description: "Capacidade de pagar dívidas de curto prazo com recursos de curto prazo. Acima de 1,0 indica folga; abaixo, aperto.",
+            formula: "Ativo Circulante ÷ Passivo Circulante",
+          }}
+        />
+        <Gauge
+          label="Endividamento Geral"
+          value={ind.endividamentoGeral}
+          max={100}
+          good="low"
+          hint={{
+            description: "Percentual do ativo financiado por dívidas (terceiros). Acima de 60% costuma indicar alto risco financeiro.",
+            formula: "Passivo Total ÷ Ativo Total × 100",
+          }}
+        />
+      </div>
+
       {/* Elementos visuais para o empresário: runway, semáforos, score e top despesas */}
       <DashboardExtras state={state} />
-
-      {/* Linha — KPIs em gauges */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Gauge label="Margem Líquida" value={ind.margemLiquida} max={30} />
-        <Gauge label="ROE" value={ind.roe} max={30} />
-        <Gauge label="Liquidez Corrente" value={ind.liquidezCorrente} max={3} suffix="x" />
-        <Gauge label="Endividamento Geral" value={ind.endividamentoGeral} max={100} good="low" />
-      </div>
 
 
       {/* Linha 3 — Combo Receita + Margem  |  Estrutura de Capital */}
