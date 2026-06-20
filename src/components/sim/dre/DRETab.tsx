@@ -136,9 +136,13 @@ export function DRETab() {
     .filter((x) => sum(x.values) > 0);
   // Ganho/Perda em alienação de ativos — sem input dedicado por enquanto
   const ganhoAlienacao = zeros();
-  // Outras Despesas/Receitas Operacionais — Depreciação (−) + Outras Receitas Op. (+).
-  // Soma confere com o EBIT da engine (que já inclui outrasReceitasOperacionais no EBITDA).
-  const outrasOperacionais = dre.depreciacao.map((d, i) => -d + outrasReceitasOpMensal[i]);
+  // Outras Despesas/Receitas Operacionais — Depreciação (−) + PDD líq. (−) + Outras Receitas Op. (+).
+  // Inclui PDD para que a soma das linhas visíveis reconcilie com o EBIT da engine.
+  const usaPDD = !!state.revenue.inadimplenciaComoPDD;
+  const pddLine = usaPDD ? dre.pdd : zeros();
+  const outrasOperacionais = dre.depreciacao.map(
+    (d, i) => -d - pddLine[i] + outrasReceitasOpMensal[i],
+  );
 
   // Lucro Operacional / EBIT = Lucro Bruto − Comerciais − Administrativas + Outras Op.
   // (matematicamente equivale a dre.ebit)
