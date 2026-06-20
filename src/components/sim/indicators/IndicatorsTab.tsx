@@ -1,113 +1,18 @@
-import { useMemo } from "react";
 import { useFinanceState } from "@/engines/finance/AppStateContext";
-import { fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
+import { fmtBRL, fmtPct } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { HelpTip, StatCard } from "@/components/sim/shared/primitives";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
 import { IndicatorsGrid } from "./IndicatorsGrid";
 
-const CHART_COLORS = [
-  "#00E5A0",
-  "#5BA8F5",
-  "#F5B85B",
-  "#C77DFF",
-  "#FF6B6B",
-  "#7DD3FC",
-  "#FACC15",
-  "#F472B6",
-  "#34D399",
-  "#A78BFA",
-  "#FB923C",
-];
-
-// Estilo padrão de tooltip dos charts (DRY — antes repetido 4×)
-const TOOLTIP_STYLE = {
-  background: "var(--popover)",
-  border: "1px solid var(--border)",
-  borderRadius: 6,
-  fontSize: 12,
-  color: "var(--popover-foreground)",
-} as const;
-const TOOLTIP_ITEM = { color: "var(--popover-foreground)" } as const;
-const TOOLTIP_LABEL = { color: "var(--popover-foreground)", fontWeight: 600 } as const;
-
-
+// Tooltip style (mantido para CashConversionSmall e outros consumidores futuros)
 
 export function IndicatorsTab() {
   const state = useFinanceState();
-  // (I1+I9) Modelo central: regime efetivo + DRE + indicadores + CAGR memoizados.
-  const { dre, ind } = useFinanceModel(state);
+  const { ind } = useFinanceModel(state);
 
-  // (I7) D&A é linha própria nos dois charts — padroniza classificação com o waterfall.
-  const monthlyChart = useMemo(
-    () =>
-      MESES.map((m, i) => ({
-        mes: m,
-        Receita: dre.receitaLiquida[i],
-        Operacionais: dre.cpv[i] + dre.despesasOperacionais[i],
-        "D&A": dre.depreciacao[i],
-        Financeiros: dre.custosFinanceirosTotal[i],
-        Lucro: dre.lucroLiquido[i],
-      })),
-    [dre],
-  );
 
-  // B10: memoizar acumulado
-  const acumulado = useMemo(
-    () =>
-      dre.lucroLiquido.reduce<{ mes: string; valor: number }[]>((acc, v, i) => {
-        const last = i === 0 ? 0 : acc[i - 1].valor;
-        acc.push({ mes: MESES[i], valor: last + v });
-        return acc;
-      }, []),
-    [dre.lucroLiquido],
-  );
-
-  const costPie = useMemo(
-    () =>
-      Object.entries(dre.despesasPorCategoria)
-        .map(([k, v]) => ({ name: k, value: sum(v) }))
-        .filter((x) => x.value > 0)
-        .sort((a, b) => b.value - a.value),
-    [dre.despesasPorCategoria],
-  );
-
-  const cvLabel =
-    state.businessType === "industria" ? "CPV" : state.businessType === "comercio" ? "CMV" : "CSP";
-  const ll = sum(dre.lucroLiquido);
-
-  const waterfall = useMemo(
-    () => [
-      { name: "Receita Bruta", value: sum(dre.receitaBruta) },
-      { name: "− Imp. Vendas", value: -sum(dre.impostosVendas) },
-      { name: `− ${cvLabel}`, value: -sum(dre.cpv) },
-      { name: "− Desp. Op.", value: -sum(dre.despesasOperacionais) },
-      { name: "− D&A", value: -sum(dre.depreciacao) },
-      { name: "± Financ.", value: sum(dre.resultadoFinanceiro) },
-      { name: "− IRPJ/CSLL", value: -sum(dre.impostos) },
-      { name: "Lucro Líq.", value: ll },
-    ],
-    [dre, cvLabel, ll],
-  );
-
-  // EBIT/EBITDA anuais e demais indicadores agora ficam encapsulados em
-  // <IndicatorsGrid /> (SSOT visual). Aqui só sobra o que é usado nos charts.
 
   return (
     <div className="space-y-6">
