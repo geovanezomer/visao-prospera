@@ -28,7 +28,7 @@ import {
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
-import { StatCard } from "@/components/sim/shared/primitives";
+import { StatCard, renderHint } from "@/components/sim/shared/primitives";
 import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
 import { IndicatorsCharts } from "./IndicatorsCharts";
 import { DashboardExtras } from "./DashboardExtras";
