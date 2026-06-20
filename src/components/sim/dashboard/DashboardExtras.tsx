@@ -405,10 +405,8 @@ export function DashboardExtras({ state }: { state: AppState }) {
         <ScoreSaude state={state} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <CronogramaDividas state={state} />
-        <Top5Despesas state={state} />
-      </div>
+      <Top5Despesas state={state} />
+
     </div>
   );
 }
