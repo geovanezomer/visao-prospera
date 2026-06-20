@@ -66,4 +66,34 @@ describe("Monte Carlo", () => {
     const total = h.reduce((a, b) => a + b.count, 0);
     expect(total).toBe(sorted.length);
   });
+
+  // Bloco 8: choque extremo (σ=80%) sem clipping geraria fator < 0 em ~10% dos
+  // casos → receita/CPV negativos contaminam o EBITDA. Com clip a 0.05, todos
+  // os valores permanecem finitos e a probabilidade de prejuízo é alta mas válida.
+  it("choques extremos: clipping evita valores negativos sem sentido", () => {
+    const s = createState({ revenue: { bruta: m12(10_000) } });
+    const r = runMonteCarlo(s, {
+      iterations: 300,
+      precoSigmaPct: 80,
+      volumeSigmaPct: 80,
+      cpvSigmaPct: 80,
+      folhaSigmaPct: 80,
+    });
+    expect(r.ebitda.values.every(Number.isFinite)).toBe(true);
+    expect(r.probPrejuizo).toBeGreaterThanOrEqual(0);
+    expect(r.probPrejuizo).toBeLessThanOrEqual(1);
+  });
+
+  // Bloco 8: matriz de correlação inválida (não-PSD) deve cair para identidade.
+  it("matriz não-PSD aciona fallback para identidade", () => {
+    const s = createState({ revenue: { bruta: m12(10_000) } });
+    const naoPSD = [
+      [1, 0.99, 0.99, 0.99],
+      [0.99, 1, -0.99, -0.99],
+      [0.99, -0.99, 1, 0.99],
+      [0.99, -0.99, 0.99, 1],
+    ];
+    const r = runMonteCarlo(s, { ...DEFAULT_MC, iterations: 50, correlations: naoPSD });
+    expect(r.correlationFellBackToIdentity).toBe(true);
+  });
 });
