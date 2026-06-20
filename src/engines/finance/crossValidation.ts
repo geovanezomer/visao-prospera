@@ -306,9 +306,10 @@ function checkTier3Operacional(state: AppState, dre: DRE, ind: Indicators): Vali
   const ebitdaAnual = sum(dre.ebitda);
 
   // 3.1 PMR longo com estoque zerado e receita concentrada (vendas pontuais a prazo)
+  // [Auditoria Bloco 9] === 0 era frágil em floats; usa < R$ 1 como "praticamente zero".
   const pmrMedio = state.revenue.pmr ?? 0;
   const estoqueTotal = (state.capital.estoques ?? 0) + (state.capital.estoqueFinal ?? 0);
-  if (pmrMedio > LIMITS.PMR_LONGO_DIAS && estoqueTotal === 0 && receitaConcentrada(state)) {
+  if (pmrMedio > LIMITS.PMR_LONGO_DIAS && estoqueTotal < 1 && receitaConcentrada(state)) {
     out.push({
       id: "operacional.pmr_longo_estoque_zero",
       severity: "warn",
