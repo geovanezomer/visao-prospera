@@ -230,8 +230,8 @@ export function IndicatorsTab() {
           <Ind
             label="ROA"
             v={fmtPct(ind.roa / 100)}
-            desc="Retorno sobre o Ativo Total. Mostra a eficiência da empresa em gerar lucro com todos os seus recursos (próprios + terceiros)."
-            formula="Lucro Líquido ÷ Ativo Total × 100"
+            desc="Retorno sobre o Ativo Total. Usa Ativo Total MÉDIO ((abertura + final)/2, padrão CFA/Damodaran) quando o Ativo Total de abertura é informado em Capital; caso contrário, usa Ativo Total fim de período."
+            formula="Lucro Líquido ÷ Ativo Total Médio × 100"
           />
           <Ind
             label="ROIC"
