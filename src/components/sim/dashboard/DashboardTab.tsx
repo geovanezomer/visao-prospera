@@ -31,6 +31,7 @@ import { fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
 import { StatCard } from "@/components/sim/shared/primitives";
 import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
 import { IndicatorsCharts } from "./IndicatorsCharts";
+import { DashboardExtras } from "./DashboardExtras";
 
 const COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15"];
 
