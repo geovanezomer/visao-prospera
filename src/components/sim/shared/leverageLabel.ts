@@ -18,6 +18,10 @@ export interface LeverageDisplay {
   tone: "pos" | "neg";
   /** Chip opcional (e.g. "Cash-rich") — null quando não aplicável. */
   chip: string | null;
+  /** Override de descrição/fórmula no tooltip (cash-rich explica numerador). */
+  desc?: string;
+  /** Override da fórmula exibida no tooltip. */
+  formula?: string;
 }
 
 const THRESHOLDS: Record<LeverageMetric, number> = {
@@ -48,11 +52,20 @@ export function leverageDisplay(
   // Removemos o múltiplo entre parênteses porque ele representa |DL|/base
   // (EBITDA/EBIT/PL), e não Caixa/Dívida — gerava confusão de leitura.
   if (dividaLiquida < 0) {
+    const baseNome =
+      metric === "ebitda" ? "EBITDA" : metric === "ebit" ? "EBIT" : "Patrimônio Líquido";
     return {
       label: "Posição Líquida de Caixa",
       value: "Caixa supera a dívida",
       tone: "pos",
       chip: "Cash-rich",
+      desc:
+        `A empresa está cash-rich: as disponibilidades (caixa + aplicações) ` +
+        `superam a dívida onerosa, então a Dívida Líquida é NEGATIVA. ` +
+        `Por isso o múltiplo clássico (Dívida Líquida ÷ ${baseNome}) deixa de ` +
+        `fazer sentido como indicador de risco — o numerador (Dívida Líquida) ` +
+        `é o que está negativo, não o denominador.`,
+      formula: `Numerador: Dívida Onerosa − Disponibilidades < 0 · Denominador: ${baseNome}`,
     };
   }
   if (!(base > 0)) {
