@@ -124,6 +124,13 @@ export function IndicatorsCard({ state }: { state: AppState }) {
           formula="Disponibilidades ÷ Passivo Circulante"
         />
         <Ind
+          label="Liquidez Geral"
+          v={ind.liquidezGeral.toFixed(2)}
+          tone={ind.liquidezGeral >= 1 ? "pos" : "neg"}
+          desc="Capacidade total de honrar todas as dívidas (curto + longo prazo) com todos os ativos circulantes. Acima de 1,0 indica solvência estrutural; abaixo, dependência de refinanciamento."
+          formula="Ativo Circulante ÷ (Ativo Total − PL)"
+        />
+        <Ind
           label={
             ind.endividamentoGeralDadosCompletos
               ? "Endividamento Geral"
