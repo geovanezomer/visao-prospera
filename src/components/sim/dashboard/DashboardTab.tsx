@@ -179,6 +179,12 @@ export function DashboardTab() {
         </p>
       </div>
 
+      {/* Elementos visuais para o empresário: runway, semáforos, score,
+          cronograma de dívidas e top 5 despesas */}
+      <DashboardExtras state={state} />
+
+
+
       {/* Linha 1 — KPIs em gauges */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Gauge label="Margem Líquida" value={ind.margemLiquida} max={30} />
