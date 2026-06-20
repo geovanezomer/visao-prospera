@@ -554,6 +554,9 @@ function RevenueTable({
   onMonth,
   onAllMonths,
   onFixed,
+  isCustom,
+  onRename,
+  onRemove,
 }: {
   rows: Row[];
   brutaAnual: number;
@@ -561,9 +564,16 @@ function RevenueTable({
   onMonth: (row: Row, i: number, v: number) => void;
   onAllMonths: (row: Row, v: number) => void;
   onFixed: (row: Row, fixed: boolean) => void;
+  /** Quando fornecido, identifica linhas custom (rótulo editável + remover). Usa o `finId`. */
+  isCustom?: (finId: string) => boolean;
+  onRename?: (finId: string, label: string) => void;
+  onRemove?: (finId: string) => void;
 }) {
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
   const footerToneClass = footer?.tone === "neg" ? "text-neg" : "text-pos";
+
+  const rowIsCustom = (row: Row): boolean =>
+    !!(isCustom && row.finId && isCustom(row.finId));
 
   const renderCellInput = (row: Row, v: number, onChange: (n: number) => void) =>
     row.unit === "pct" ? (
@@ -583,6 +593,8 @@ function RevenueTable({
           brlValues: r.brlValues,
           fixed: r.fixed,
           tone: r.tone,
+          editableLabel: rowIsCustom(r),
+          removable: rowIsCustom(r),
         }))}
         receitaAnual={brutaAnual}
         footer={
@@ -601,6 +613,14 @@ function RevenueTable({
         onFixed={(id, f) => {
           const row = rows.find((r) => r.id === id);
           if (row) onFixed(row, f);
+        }}
+        onLabel={(id, label) => {
+          const row = rows.find((r) => r.id === id);
+          if (row?.finId && onRename) onRename(row.finId, label);
+        }}
+        onRemove={(id) => {
+          const row = rows.find((r) => r.id === id);
+          if (row?.finId && onRemove) onRemove(row.finId);
         }}
       />
     <div className="scrollbar-thin hidden md:block w-full overflow-x-auto overflow-y-hidden">
