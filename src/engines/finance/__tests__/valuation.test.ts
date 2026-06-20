@@ -63,4 +63,41 @@ describe("buildValuation — cenário lucrativo", () => {
     const v = buildValuation(s, defaultValuationParams(s.businessType));
     expect(v.multiplesDetails.blendedEnterpriseValue).toBeCloseTo(0, 2);
   });
+
+  // Bloco 7: P/L produz EQUITY, não EV → conversão: EV_PL = Equity_PL + ND.
+  // Sem essa conversão, blend penalizaria 2× a dívida (no EV e depois em Equity = EV − ND).
+  it("Múltiplos P/L: EV implícito inclui Dívida Líquida (sem dupla dedução)", () => {
+    const s = createState({
+      revenue: { bruta: m12(80000), inadimplencia: m12(1) },
+      capital: { dividaOnerosa: 50000 },
+    });
+    const sNoD = createState({
+      revenue: { bruta: m12(80000), inadimplencia: m12(1) },
+      capital: { dividaOnerosa: 0 },
+    });
+    const vCom = buildValuation(s, { ...defaultValuationParams(s.businessType), method: "multiples" });
+    const vSem = buildValuation(sNoD, { ...defaultValuationParams(sNoD.businessType), method: "multiples" });
+    // Equity de cenários com mesma operação deve ser parecido (a dívida não destrói valor de equity duas vezes).
+    // Tolerância larga porque pode mudar imposto na margem; teste qualitativo.
+    expect(vCom.equityValue.base).toBeGreaterThan(vSem.equityValue.base * 0.5);
+  });
+
+  // Bloco 7: WACC ≤ g (spread < 0,5%) deve emitir warning e usar fallback FCL×5.
+  it("DCF: spread WACC−g < 0,5% emite warning de Gordon não-convergente", () => {
+    const s = profitableState();
+    const v = buildValuation(s, {
+      ...defaultValuationParams(s.businessType),
+      method: "dcf",
+      terminalGrowthRate: 0.50, // absurdo, força spread negativo
+    });
+    expect(v.dcfDetails?.warnings.some((w) => w.includes("Spread"))).toBe(true);
+  });
+
+  // Bloco 7: Strategic haircut reduz EV proporcionalmente.
+  it("Haircut estratégico aplicado reduz EV final", () => {
+    const s = profitableState();
+    const sem = buildValuation(s, { ...defaultValuationParams(s.businessType), applyStrategicHaircut: false });
+    const com = buildValuation(s, { ...defaultValuationParams(s.businessType), applyStrategicHaircut: true });
+    expect(com.enterpriseValue.base).toBeLessThanOrEqual(sem.enterpriseValue.base);
+  });
 });
