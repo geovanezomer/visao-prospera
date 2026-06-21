@@ -9,7 +9,7 @@ import { BalanceSheetCard } from "@/components/sim/capital/BalanceSheetCard";
 import { AberturaCard } from "@/components/sim/capital/AberturaCard";
 
 import { CapexAtivacaoSection } from "@/components/sim/capital/CapexAtivacaoSection";
-import { WaccRoicMeter } from "@/components/sim/capital/WaccRoicMeter";
+
 
 import { DebtContractsCard } from "@/components/sim/capital/DebtContractsCard";
 import {
@@ -229,7 +229,6 @@ export function CapitalTab() {
           }
         />
         <AberturaCard capital={c} onChange={set} />
-        <WaccRoicMeter wacc={wacc} roic={ind.roic} />
       </div>
     </div>
   );

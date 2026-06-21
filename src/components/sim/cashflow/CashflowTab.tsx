@@ -224,13 +224,6 @@ export function CashflowTab() {
             Movimentações de caixa não operacionais — 12 meses
           </SectionTitle>
         </div>
-        <div className="border-b border-border/40 bg-primary/5 px-4 py-2 text-[11px] text-muted-foreground">
-          <strong className="text-primary">SSOT:</strong> CapEx → edite em{" "}
-          <em>Capital → Ativações de imobilizado</em>. Captação e amortização de
-          dívida → edite em <em>Capital → Contratos de Dívida</em> (a amortização
-          do principal entra aqui automaticamente, e os juros viram a linha
-          "Juros sobre contratos de dívida" em Despesas).
-        </div>
         <NonOpTable
           rows={[
             {

@@ -32,6 +32,7 @@ import { StatCard, renderHint } from "@/components/sim/shared/primitives";
 import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
 import { IndicatorsCharts } from "./IndicatorsCharts";
 import { DashboardExtras } from "./DashboardExtras";
+import { WaccRoicMeter } from "@/components/sim/capital/WaccRoicMeter";
 
 const COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15"];
 
@@ -269,6 +270,10 @@ export function DashboardTab() {
           }}
         />
       </div>
+
+      {/* Termômetro de Valor — último indicador da lista (WACC × ROIC) */}
+      <WaccRoicMeter wacc={ind.wacc} roic={ind.roic} />
+
 
       {/* Elementos visuais para o empresário: runway, semáforos, score e top despesas */}
       <DashboardExtras state={state} />
