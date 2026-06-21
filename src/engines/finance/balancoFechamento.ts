@@ -87,7 +87,13 @@ export function deriveBalancoFechamento({
   );
 
   // Depreciação do período: depMensal × 12 + depreciação das ativações até dez.
-  const depAtivacoes = sumArr(calcDeprecAtivacoes(cap.capexAtivacao));
+  // Cada ativação no mês `mes` deprecia (valor/vidaUtilMeses) × (13 − mes) meses.
+  const depAtivacoes = (cap.capexAtivacao ?? []).reduce((a, c) => {
+    if (!c || !(c.valor > 0)) return a;
+    const meses = Math.max(0, 13 - (c.mes || 1));
+    const vu = c.vidaUtilMeses > 0 ? c.vidaUtilMeses : 60;
+    return a + (c.valor / vu) * meses;
+  }, 0);
   const depPeriodo = (cap.depreciacaoMensal || 0) * 12 + depAtivacoes;
 
   // Dividendos pagos no período.
