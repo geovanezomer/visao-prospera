@@ -57,11 +57,11 @@ const ATIVO: Grupo[] = [
   {
     titulo: "Ativo Circulante",
     rubricas: [
-      { path: "ativoCirculante.caixaEquivalentes", label: "Caixa e equivalentes", modo: "simples" },
+      { path: "ativoCirculante.caixaEquivalentes", label: "Caixa e equivalentes", modo: "padrao" },
       { path: "ativoCirculante.aplicacoesFinanceirasCP", label: "Aplicações financeiras CP", modo: "padrao" },
-      { path: "ativoCirculante.contasReceberClientes", label: "Contas a receber de clientes", modo: "simples" },
+      { path: "ativoCirculante.contasReceberClientes", label: "Contas a receber de clientes", modo: "padrao" },
       { path: "ativoCirculante.pdd", label: "(−) PDD — Devedores duvidosos", modo: "padrao", redutora: true },
-      { path: "ativoCirculante.estoques", label: "Estoques", modo: "simples" },
+      { path: "ativoCirculante.estoques", label: "Estoques", modo: "padrao" },
       { path: "ativoCirculante.impostosRecuperar", label: "Impostos a recuperar", modo: "padrao" },
       { path: "ativoCirculante.adiantamentos", label: "Adiantamentos a fornecedores", modo: "padrao" },
       { path: "ativoCirculante.despesasAntecipadas", label: "Despesas antecipadas", modo: "completo" },
@@ -91,7 +91,7 @@ const ATIVO: Grupo[] = [
           { path: "ativoNaoCirculante.imobilizado.maquinasEquipamentos", label: "Máquinas e equipamentos", modo: "padrao" },
           { path: "ativoNaoCirculante.imobilizado.veiculos", label: "Veículos", modo: "padrao" },
           { path: "ativoNaoCirculante.imobilizado.moveisUtensilios", label: "Móveis e utensílios", modo: "padrao" },
-          { path: "ativoNaoCirculante.imobilizado.outrosImobilizados", label: "Outros imobilizados", modo: "simples" },
+          { path: "ativoNaoCirculante.imobilizado.outrosImobilizados", label: "Outros imobilizados", modo: "padrao" },
           { path: "ativoNaoCirculante.imobilizado.depreciacaoAcumulada", label: "(−) Depreciação acumulada", modo: "padrao", redutora: true },
         ],
       },
@@ -113,9 +113,9 @@ const PASSIVO_PL: Grupo[] = [
   {
     titulo: "Passivo Circulante",
     rubricas: [
-      { path: "passivoCirculante.fornecedores", label: "Fornecedores", modo: "simples" },
-      { path: "passivoCirculante.emprestimosFinanciamentosCP", label: "Empréstimos e financiamentos CP", modo: "simples" },
-      { path: "passivoCirculante.impostosPagar", label: "Impostos a pagar", modo: "simples" },
+      { path: "passivoCirculante.fornecedores", label: "Fornecedores", modo: "padrao" },
+      { path: "passivoCirculante.emprestimosFinanciamentosCP", label: "Empréstimos e financiamentos CP", modo: "padrao" },
+      { path: "passivoCirculante.impostosPagar", label: "Impostos a pagar", modo: "padrao" },
       { path: "passivoCirculante.salariosEncargos", label: "Salários e encargos", modo: "padrao" },
       { path: "passivoCirculante.adiantamentosClientes", label: "Adiantamentos de clientes", modo: "padrao" },
       { path: "passivoCirculante.dividendosPagar", label: "Dividendos a pagar", modo: "completo" },
@@ -126,7 +126,7 @@ const PASSIVO_PL: Grupo[] = [
   {
     titulo: "Passivo Não Circulante",
     rubricas: [
-      { path: "passivoNaoCirculante.emprestimosFinanciamentosLP", label: "Empréstimos e financiamentos LP", modo: "simples" },
+      { path: "passivoNaoCirculante.emprestimosFinanciamentosLP", label: "Empréstimos e financiamentos LP", modo: "padrao" },
       { path: "passivoNaoCirculante.impostosParcelados", label: "Impostos parcelados", modo: "padrao" },
       { path: "passivoNaoCirculante.debentures", label: "Debêntures", modo: "completo" },
       { path: "passivoNaoCirculante.provisoesLP", label: "Provisões LP", modo: "completo" },
@@ -137,11 +137,11 @@ const PASSIVO_PL: Grupo[] = [
   {
     titulo: "Patrimônio Líquido",
     rubricas: [
-      { path: "patrimonioLiquido.capitalSocial", label: "Capital social", modo: "simples" },
+      { path: "patrimonioLiquido.capitalSocial", label: "Capital social", modo: "padrao" },
       { path: "patrimonioLiquido.reservasCapital", label: "Reservas de capital", modo: "padrao" },
       { path: "patrimonioLiquido.reservasLucros", label: "Reservas de lucros", modo: "padrao" },
       { path: "patrimonioLiquido.lucrosPrejuizosAcumulados", label: "Lucros/prejuízos acumulados", modo: "padrao" },
-      { path: "patrimonioLiquido.resultadoExercicio", label: "Resultado do exercício", modo: "simples", hint: "Use 'Puxar do DRE' para preencher automaticamente." },
+      { path: "patrimonioLiquido.resultadoExercicio", label: "Resultado do exercício", modo: "padrao", hint: "Use 'Puxar do DRE' para preencher automaticamente." },
       { path: "patrimonioLiquido.ajustesAvaliacaoPatrimonial", label: "Ajustes de avaliação patrimonial", modo: "completo" },
       { path: "patrimonioLiquido.acoesEmTesouraria", label: "(−) Ações em tesouraria", modo: "completo", redutora: true },
     ],
