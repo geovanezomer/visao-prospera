@@ -166,7 +166,7 @@ export function BalancoTab() {
   }, [showAnterior]);
 
   // Balanço de fechamento DERIVADO (read-only).
-  const fechamento = model.balancoFechamento;
+  const fechamento = model.model.balancoFechamento;
   const balanco: BalancoDetalhado = fechamento.balanco;
   const anterior: BalancoDetalhado = state.capital.balanco?.anterior ?? {};
 
