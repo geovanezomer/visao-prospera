@@ -55,6 +55,12 @@ export interface SnapshotSections {
   receitas: string;
   despesas: string;
   capital: string;
+  /** Balanço Patrimonial de FECHAMENTO derivado por construção (Ativo = Passivo + PL). */
+  balanco: string;
+  /** Saldos de ABERTURA derivados (SSOT) — caixa, CR, estoques, fornecedores, empréstimos CP/LP, impostos, salários a pagar + plug Lucros Acumulados. */
+  balancoAbertura: string;
+  /** Contratos de dívida (saldo, taxa, sistema, prazo, split CP/LP) com agregados. */
+  dividas: string;
   regime: string;
   /** Comparativo de eras da Reforma (atual/transição/pleno) — separado de `regime` para evitar duplicação com simular_transicao_reforma. */
   eras: string;
