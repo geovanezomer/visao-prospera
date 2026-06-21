@@ -184,7 +184,8 @@ export function DashboardTab() {
       </div>
 
       {/* Linha 1 — Cards numéricos resumo (com tooltips, base unificada `useFinanceModel`) */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+
         <StatCard
           label="Receita Líquida (12m)"
           value={fmtBRL(ind.receitaLiquidaAnual)}
