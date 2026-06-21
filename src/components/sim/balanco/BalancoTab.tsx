@@ -21,15 +21,15 @@ import { calcAberturaTotals } from "@/components/sim/capital/AberturaCard";
 import { fmtBRL } from "@/engines/finance/format";
 import type { BalancoDetalhado } from "@/engines/finance/types";
 import {
-  Scale,
   GitCompare,
   CheckCircle2,
   AlertTriangle,
   Camera,
-  Lock,
   ArrowRight,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AuditoriaPanel } from "./AuditoriaPanel";
 
 type Modo = "padrao" | "completo";
 const MODO_KEY = "finnance:balanco:modo";
