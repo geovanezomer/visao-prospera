@@ -1,6 +1,6 @@
 import { AppState, BalancoDetalhado } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
-import { SectionTitle } from "@/components/sim/shared/primitives";
+
 import {
   Banknote,
   Package,
