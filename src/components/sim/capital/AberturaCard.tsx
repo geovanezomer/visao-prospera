@@ -10,7 +10,7 @@
 //     (default 0, ajustáveis para empresas em operação há vários anos).
 //
 // Toda derivação vive em engines/finance/aberturaDerivada.ts (SSOT).
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
