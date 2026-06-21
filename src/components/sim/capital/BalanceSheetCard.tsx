@@ -276,6 +276,7 @@ export function BalanceSheetCard({
         </div>
       </StepCard>
 
+      {capexSlot}
 
       {/* PASSO 2 — DÍVIDAS + PL */}
       <StepCard
