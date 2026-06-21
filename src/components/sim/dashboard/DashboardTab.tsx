@@ -184,11 +184,12 @@ export function DashboardTab() {
       </div>
 
       {/* Linha 1 — Cards numéricos resumo (com tooltips, base unificada `useFinanceModel`) */}
-      <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-
+      <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <StatCard
           label="Receita Líquida (12m)"
           value={fmtBRL(ind.receitaLiquidaAnual)}
+          tone="pos"
+          sub="Últimos 12 meses"
           hint={{
             description: "Receita bruta dos últimos 12 meses descontados impostos sobre vendas, devoluções e abatimentos.",
             formula: "Receita Bruta − Impostos sobre Vendas − Devoluções",
@@ -197,6 +198,8 @@ export function DashboardTab() {
         <StatCard
           label="EBITDA (12m)"
           value={fmtBRL(ind.ebitdaAnual)}
+          tone={ind.ebitdaAnual >= 0 ? "pos" : "neg"}
+          sub={ind.receitaLiquidaAnual > 0 ? fmtPct((ind.ebitdaAnual / ind.receitaLiquidaAnual) * 100) + " da receita" : "—"}
           hint={{
             description: "Lucro operacional antes de juros, impostos, depreciação e amortização. Mede a geração operacional de caixa.",
             formula: "Lucro Operacional + Depreciação + Amortização",
@@ -206,6 +209,7 @@ export function DashboardTab() {
           label="Lucro Líquido (12m)"
           value={fmtBRL(ind.lucroLiquidoAnual)}
           tone={ind.lucroLiquidoAnual >= 0 ? "pos" : "neg"}
+          sub={ind.receitaLiquidaAnual > 0 ? fmtPct((ind.lucroLiquidoAnual / ind.receitaLiquidaAnual) * 100) + " da receita" : "—"}
           hint={{
             description: "Resultado final do exercício após todas as despesas, juros e impostos.",
             formula: "Receita Líquida − Custos − Despesas − Juros − IRPJ/CSLL",
@@ -215,12 +219,14 @@ export function DashboardTab() {
           label="FCF após Capex"
           value={fmtBRL(ind.fcfAposCapex)}
           tone={ind.fcfAposCapex >= 0 ? "pos" : "neg"}
+          sub="Caixa livre p/ sócios e credores"
           hint={{
             description: "Fluxo de caixa livre após investimentos em ativo fixo. É o caixa efetivamente disponível para sócios e credores.",
             formula: "FCO − Capex",
           }}
         />
       </div>
+
 
       {/* Linha 2 — KPIs em gauges (logo após os cards principais) */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
