@@ -28,6 +28,7 @@ import { buildCashFlow } from "./cashflow";
 import { buildValuation, defaultValuationParams } from "./valuation";
 import { computeHealth } from "./health";
 import { normalizeStateFromBalanco } from "./balanco";
+import { deriveBalancoFechamento, type BalancoFechamentoResult } from "./balancoFechamento";
 
 // Tipos derivados das funções existentes (evita re-declarar shapes).
 type BuildDREReturn = ReturnType<typeof buildDRE>;
@@ -49,6 +50,8 @@ export interface FinancialModel {
   val: FinancialModelValuation;
   health: FinancialModelHealth;
   cagrReceitas12m: number;
+  /** Balanço de fechamento derivado por construção (abertura + DRE + DFC). */
+  balancoFechamento: BalancoFechamentoResult;
 }
 
 /** Constrói o modelo financeiro completo a partir do AppState. */
@@ -64,7 +67,8 @@ export function buildFinancialModel(rawState: AppState): FinancialModel {
   const val = buildValuation(state, defaultValuationParams(state.businessType));
   const health = computeHealth(state);
   const cagrReceitas12m = cagr12m(dre.receitaLiquida);
-  return { regime, dre, tax, ind, cf, val, health, cagrReceitas12m };
+  const balancoFechamento = deriveBalancoFechamento({ state, dre, cf });
+  return { regime, dre, tax, ind, cf, val, health, cagrReceitas12m, balancoFechamento };
 }
 
 // ============================================================
