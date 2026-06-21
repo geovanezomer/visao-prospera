@@ -1,27 +1,35 @@
 // Aba Balanço — Balanço Patrimonial detalhado (Fase 2 completa).
 //
-// 3 modos de profundidade:
-//   - Simples   → rubricas essenciais (empresário)
-//   - Padrão    → + decomposição de imobilizado, salários, parcelamentos
-//   - Completo  → todas as rubricas CPC/BR
+// 2 modos de profundidade:
+//   - Padrão    → rubricas essenciais (empresário / PME com contador)
+//   - Completo  → todas as rubricas CPC/BR (raio-X consultor/CVM)
+// + comparativo opcional N vs N-1 (AV% e AH%).
 //
 // Recursos:
-//   - Auto-puxar Resultado do Exercício do DRE
-//   - Comparativo opcional N vs N-1 (AV% e AH%)
-//   - Validação de fechamento (Ativo = Passivo + PL)
-//   - Sub-totais e totais SEMPRE derivados (nunca digitados)
+//   - "Pré-preencher do operacional": deriva caixa, CR, estoques, fornecedores,
+//     empréstimos CP/LP, imobilizado/depreciação e resultado do exercício a
+//     partir de Receitas/Custos/Capital/DRE — SEM sobrescrever campos digitados.
+//   - "Salvar como N-1": congela o N atual como ano-base para análise horizontal.
+//   - Validação de fechamento (Ativo = Passivo + PL) em tempo real.
+//   - Sub-totais e totais SEMPRE derivados (nunca digitados).
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { calcBalancoTotals } from "@/engines/finance/balanco";
+import {
+  calcBalancoTotals,
+  mergeBalancoPreservandoUsuario,
+  snapshotAnterior,
+  suggestBalancoFromState,
+} from "@/engines/finance/balanco";
 import { fmtBRL } from "@/engines/finance/format";
 import type { BalancoDetalhado } from "@/engines/finance/types";
-import { Scale, Download, GitCompare, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Scale, Download, GitCompare, CheckCircle2, AlertTriangle, Wand2, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type Modo = "simples" | "padrao" | "completo";
+type Modo = "padrao" | "completo";
 const MODO_KEY = "finnance:balanco:modo";
 const COMP_KEY = "finnance:balanco:comparativo";
 
@@ -49,11 +57,11 @@ const ATIVO: Grupo[] = [
   {
     titulo: "Ativo Circulante",
     rubricas: [
-      { path: "ativoCirculante.caixaEquivalentes", label: "Caixa e equivalentes", modo: "simples" },
+      { path: "ativoCirculante.caixaEquivalentes", label: "Caixa e equivalentes", modo: "padrao" },
       { path: "ativoCirculante.aplicacoesFinanceirasCP", label: "Aplicações financeiras CP", modo: "padrao" },
-      { path: "ativoCirculante.contasReceberClientes", label: "Contas a receber de clientes", modo: "simples" },
+      { path: "ativoCirculante.contasReceberClientes", label: "Contas a receber de clientes", modo: "padrao" },
       { path: "ativoCirculante.pdd", label: "(−) PDD — Devedores duvidosos", modo: "padrao", redutora: true },
-      { path: "ativoCirculante.estoques", label: "Estoques", modo: "simples" },
+      { path: "ativoCirculante.estoques", label: "Estoques", modo: "padrao" },
       { path: "ativoCirculante.impostosRecuperar", label: "Impostos a recuperar", modo: "padrao" },
       { path: "ativoCirculante.adiantamentos", label: "Adiantamentos a fornecedores", modo: "padrao" },
       { path: "ativoCirculante.despesasAntecipadas", label: "Despesas antecipadas", modo: "completo" },
@@ -83,7 +91,7 @@ const ATIVO: Grupo[] = [
           { path: "ativoNaoCirculante.imobilizado.maquinasEquipamentos", label: "Máquinas e equipamentos", modo: "padrao" },
           { path: "ativoNaoCirculante.imobilizado.veiculos", label: "Veículos", modo: "padrao" },
           { path: "ativoNaoCirculante.imobilizado.moveisUtensilios", label: "Móveis e utensílios", modo: "padrao" },
-          { path: "ativoNaoCirculante.imobilizado.outrosImobilizados", label: "Outros imobilizados", modo: "simples" },
+          { path: "ativoNaoCirculante.imobilizado.outrosImobilizados", label: "Outros imobilizados", modo: "padrao" },
           { path: "ativoNaoCirculante.imobilizado.depreciacaoAcumulada", label: "(−) Depreciação acumulada", modo: "padrao", redutora: true },
         ],
       },
@@ -105,9 +113,9 @@ const PASSIVO_PL: Grupo[] = [
   {
     titulo: "Passivo Circulante",
     rubricas: [
-      { path: "passivoCirculante.fornecedores", label: "Fornecedores", modo: "simples" },
-      { path: "passivoCirculante.emprestimosFinanciamentosCP", label: "Empréstimos e financiamentos CP", modo: "simples" },
-      { path: "passivoCirculante.impostosPagar", label: "Impostos a pagar", modo: "simples" },
+      { path: "passivoCirculante.fornecedores", label: "Fornecedores", modo: "padrao" },
+      { path: "passivoCirculante.emprestimosFinanciamentosCP", label: "Empréstimos e financiamentos CP", modo: "padrao" },
+      { path: "passivoCirculante.impostosPagar", label: "Impostos a pagar", modo: "padrao" },
       { path: "passivoCirculante.salariosEncargos", label: "Salários e encargos", modo: "padrao" },
       { path: "passivoCirculante.adiantamentosClientes", label: "Adiantamentos de clientes", modo: "padrao" },
       { path: "passivoCirculante.dividendosPagar", label: "Dividendos a pagar", modo: "completo" },
@@ -118,7 +126,7 @@ const PASSIVO_PL: Grupo[] = [
   {
     titulo: "Passivo Não Circulante",
     rubricas: [
-      { path: "passivoNaoCirculante.emprestimosFinanciamentosLP", label: "Empréstimos e financiamentos LP", modo: "simples" },
+      { path: "passivoNaoCirculante.emprestimosFinanciamentosLP", label: "Empréstimos e financiamentos LP", modo: "padrao" },
       { path: "passivoNaoCirculante.impostosParcelados", label: "Impostos parcelados", modo: "padrao" },
       { path: "passivoNaoCirculante.debentures", label: "Debêntures", modo: "completo" },
       { path: "passivoNaoCirculante.provisoesLP", label: "Provisões LP", modo: "completo" },
@@ -129,11 +137,11 @@ const PASSIVO_PL: Grupo[] = [
   {
     titulo: "Patrimônio Líquido",
     rubricas: [
-      { path: "patrimonioLiquido.capitalSocial", label: "Capital social", modo: "simples" },
+      { path: "patrimonioLiquido.capitalSocial", label: "Capital social", modo: "padrao" },
       { path: "patrimonioLiquido.reservasCapital", label: "Reservas de capital", modo: "padrao" },
       { path: "patrimonioLiquido.reservasLucros", label: "Reservas de lucros", modo: "padrao" },
       { path: "patrimonioLiquido.lucrosPrejuizosAcumulados", label: "Lucros/prejuízos acumulados", modo: "padrao" },
-      { path: "patrimonioLiquido.resultadoExercicio", label: "Resultado do exercício", modo: "simples", hint: "Use 'Puxar do DRE' para preencher automaticamente." },
+      { path: "patrimonioLiquido.resultadoExercicio", label: "Resultado do exercício", modo: "padrao", hint: "Use 'Puxar do DRE' para preencher automaticamente." },
       { path: "patrimonioLiquido.ajustesAvaliacaoPatrimonial", label: "Ajustes de avaliação patrimonial", modo: "completo" },
       { path: "patrimonioLiquido.acoesEmTesouraria", label: "(−) Ações em tesouraria", modo: "completo", redutora: true },
     ],
@@ -165,7 +173,7 @@ function setAt(obj: BalancoDetalhado, path: Path, value: number): BalancoDetalha
   return next as BalancoDetalhado;
 }
 
-const modoRank: Record<Modo, number> = { simples: 0, padrao: 1, completo: 2 };
+const modoRank: Record<Modo, number> = { padrao: 0, completo: 1 };
 const isVisible = (modoCampo: Modo, modoAtivo: Modo) => modoRank[modoCampo] <= modoRank[modoAtivo];
 
 const visibleRubricas = (rs: Rubrica[], modo: Modo) =>
@@ -177,8 +185,9 @@ export function BalancoTab() {
   const { dre } = useFinanceModel(state);
 
   const [modo, setModo] = useState<Modo>(() => {
-    if (typeof window === "undefined") return "simples";
-    return (localStorage.getItem(MODO_KEY) as Modo) ?? "simples";
+    if (typeof window === "undefined") return "padrao";
+    const v = localStorage.getItem(MODO_KEY);
+    return v === "completo" ? "completo" : "padrao"; // coerção legado "simples"→"padrao"
   });
   const [showAnterior, setShowAnterior] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -198,9 +207,13 @@ export function BalancoTab() {
   const totalsAtual = useMemo(() => calcBalancoTotals(balanco), [balanco]);
   const totalsAnterior = useMemo(() => calcBalancoTotals(anterior), [anterior]);
 
-  // Resultado do exercício a partir do DRE (soma 12m).
+  // Resultado e impostos do DRE (anuais).
   const resultadoDRE = useMemo(
     () => (dre.lucroLiquido ?? []).reduce((a: number, b: number) => a + (b || 0), 0),
+    [dre],
+  );
+  const impostosLucroAnualDRE = useMemo(
+    () => (dre.impostos ?? []).reduce((a: number, b: number) => a + (b || 0), 0),
     [dre],
   );
 
@@ -218,6 +231,29 @@ export function BalancoTab() {
   };
 
   const puxarResultadoDRE = () => setCampo("patrimonioLiquido.resultadoExercicio", resultadoDRE);
+
+  // Pré-preenchimento operacional: aplica sugestões SOMENTE em campos vazios.
+  const prePreencher = () => {
+    const sug = suggestBalancoFromState(state, {
+      dreLucroLiquido: resultadoDRE,
+      dreImpostosLucroAnual: impostosLucroAnualDRE,
+    });
+    const merged = mergeBalancoPreservandoUsuario(balanco, sug);
+    update((s) => ({ ...s, capital: { ...s.capital, balanco: merged } }));
+    toast.success("Balanço pré-preenchido", {
+      description:
+        "Campos vazios preenchidos a partir de Receitas, Custos e Capital. Seus valores digitados foram preservados.",
+    });
+  };
+
+  const salvarComoNm1 = () => {
+    const next = snapshotAnterior(balanco);
+    update((s) => ({ ...s, capital: { ...s.capital, balanco: next } }));
+    setShowAnterior(true);
+    toast.success("Snapshot N-1 salvo", {
+      description: "O balanço atual foi copiado como ano-base (N-1) para análise horizontal.",
+    });
+  };
 
   const fechado = Math.abs(totalsAtual.diferenca) < Math.max(100, totalsAtual.ativoTotal * 0.001);
 
@@ -253,12 +289,32 @@ export function BalancoTab() {
             <Button
               size="sm"
               variant="outline"
+              onClick={prePreencher}
+              className="h-8 gap-1.5 text-[11px]"
+              title="Deriva caixa, CR, estoques, fornecedores, empréstimos CP/LP, imobilizado e resultado a partir de Receitas/Custos/Capital. Não sobrescreve valores digitados."
+            >
+              <Wand2 className="h-3.5 w-3.5" />
+              Pré-preencher do operacional
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               onClick={puxarResultadoDRE}
               className="h-8 gap-1.5 text-[11px]"
               title="Soma do Lucro Líquido (12m) do DRE atual"
             >
               <Download className="h-3.5 w-3.5" />
-              Puxar Resultado do DRE ({fmtBRL(resultadoDRE)})
+              Puxar DRE ({fmtBRL(resultadoDRE)})
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={salvarComoNm1}
+              className="h-8 gap-1.5 text-[11px]"
+              title="Copia o balanço atual como ano-base (N-1) para análise horizontal."
+            >
+              <Camera className="h-3.5 w-3.5" />
+              Salvar como N-1
             </Button>
           </div>
         </div>
@@ -353,9 +409,8 @@ export function BalancoTab() {
 
 function ModoSelector({ modo, onChange }: { modo: Modo; onChange: (m: Modo) => void }) {
   const opts: { v: Modo; label: string; hint: string }[] = [
-    { v: "simples", label: "Simples", hint: "Empresário — rubricas essenciais" },
-    { v: "padrao", label: "Padrão", hint: "PME com contador" },
-    { v: "completo", label: "Completo", hint: "Raio-X CVM/consultor" },
+    { v: "padrao", label: "Padrão", hint: "Empresário / PME com contador — rubricas essenciais" },
+    { v: "completo", label: "Completo", hint: "Raio-X CVM/consultor — todas as rubricas CPC/BR" },
   ];
   return (
     <div className="inline-flex rounded-md border border-border/60 bg-background/40 p-0.5 text-[11px]">

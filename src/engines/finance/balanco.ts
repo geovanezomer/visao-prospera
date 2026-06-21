@@ -6,7 +6,7 @@
 //
 // IMPORTANTE: depreciação acumulada, amortização acumulada, PDD e ações em
 // tesouraria entram como POSITIVOS no input e são SUBTRAÍDAS aqui.
-import type { AppState, BalancoDetalhado } from "./types";
+import type { AppState, BalancoDetalhado, CostLine } from "./types";
 
 const n = (v: number | undefined): number => (typeof v === "number" && isFinite(v) ? v : 0);
 const sumObj = (o: Record<string, number | undefined> | undefined): number =>
@@ -178,4 +178,137 @@ export function normalizeStateFromBalanco(state: AppState): AppState {
       fornecedores,
     },
   };
+}
+
+// =========================================================================
+// PRÉ-PREENCHIMENTO E SNAPSHOT (Fase 2.3)
+// =========================================================================
+//
+// `suggestBalancoFromState` deriva rubricas do balanço a partir das páginas
+// Receitas, Custos e Capital. `mergeBalancoPreservandoUsuario` aplica as
+// sugestões SOMENTE em campos vazios (= 0) — nunca sobrescreve digitação.
+// `snapshotAnterior` congela o N atual em `anterior` (N-1) para comparativo.
+
+const sumCostByCat = (lines: CostLine[] | undefined, cats: string[]): number =>
+  (lines ?? [])
+    .filter((l) => cats.includes(l.category))
+    .reduce((a, l) => a + (l.values ?? []).reduce((x, y) => x + (y || 0), 0), 0);
+
+export interface SuggestOpts {
+  /** Soma do Lucro Líquido (12m) do DRE. */
+  dreLucroLiquido: number;
+  /** Soma dos impostos sobre lucro (12m) — proxy para "Impostos a pagar" (≈ 1 mês). */
+  dreImpostosLucroAnual?: number;
+}
+
+/** Constrói uma sugestão de Balanço a partir do state operacional. Pure. */
+export function suggestBalancoFromState(
+  state: AppState,
+  opts: SuggestOpts,
+): BalancoDetalhado {
+  const cap = state.capital;
+  const rev = state.revenue;
+  const receitaBrutaAnual = (rev?.bruta ?? []).reduce((a, b) => a + (b || 0), 0);
+  const cpvAnual = sumCostByCat(state.costs, ["custo_vendas", "direto_venda"]);
+  const folhaAnual = sumCostByCat(state.costs, ["fixo", "variavel"]);
+
+  // CR: usa capital, senão deriva do PMR (receitaBruta × pmr/360).
+  const ar =
+    cap.contasReceber > 0
+      ? cap.contasReceber
+      : (receitaBrutaAnual * (rev?.pmr || 0)) / 360;
+  // Fornecedores: usa capital, senão deriva do PMP (CPV × pmp/360).
+  const ap =
+    cap.fornecedores > 0
+      ? cap.fornecedores
+      : (cpvAnual * (rev?.pmp || 0)) / 360;
+
+  // CAPEX → imobilizado (proxy). Depreciação acumulada: (depMensal×12) +
+  // acumulado de cada ativação até dezembro.
+  const capexTotal = (cap.capexAtivacao ?? []).reduce(
+    (a, c) => a + (c.valor || 0),
+    0,
+  );
+  const depAcumCapex = (cap.capexAtivacao ?? []).reduce((a, c) => {
+    const meses = Math.max(0, 13 - (c.mes || 1));
+    const vu = c.vidaUtilMeses > 0 ? c.vidaUtilMeses : 60;
+    return a + (c.valor / vu) * meses;
+  }, 0);
+  const depAcum = (cap.depreciacaoMensal || 0) * 12 + depAcumCapex;
+
+  // Split dívida onerosa CP/LP (default 30/70).
+  const cpPct =
+    typeof cap.dividaCurtoPrazoPct === "number" ? cap.dividaCurtoPrazoPct : 0.3;
+  const dividaCP = (cap.dividaOnerosa || 0) * cpPct;
+  const dividaLP = (cap.dividaOnerosa || 0) * (1 - cpPct);
+
+  // Caixa: separa ocioso (≈ aplicações CP) do operacional.
+  const caixaOcioso = cap.caixaOcioso || 0;
+  const caixaOper = Math.max(0, (cap.disponibilidades || 0) - caixaOcioso);
+
+  // Provisões ~ 1 mês.
+  const salariosPagar = folhaAnual > 0 ? folhaAnual / 12 : 0;
+  const impostosPagar =
+    opts.dreImpostosLucroAnual && opts.dreImpostosLucroAnual > 0
+      ? opts.dreImpostosLucroAnual / 12
+      : 0;
+
+  return {
+    ativoCirculante: {
+      caixaEquivalentes: caixaOper,
+      aplicacoesFinanceirasCP: caixaOcioso,
+      contasReceberClientes: ar,
+      estoques: cap.estoques || 0,
+    },
+    ativoNaoCirculante: {
+      imobilizado: {
+        outrosImobilizados: capexTotal,
+        depreciacaoAcumulada: depAcum,
+      },
+    },
+    passivoCirculante: {
+      fornecedores: ap,
+      emprestimosFinanciamentosCP: dividaCP,
+      impostosPagar,
+      salariosEncargos: salariosPagar,
+    },
+    passivoNaoCirculante: {
+      emprestimosFinanciamentosLP: dividaLP,
+    },
+    patrimonioLiquido: {
+      resultadoExercicio: opts.dreLucroLiquido,
+    },
+  };
+}
+
+/** Mescla sugestões em `current` SOMENTE onde o valor atual é 0/ausente. Pure. */
+export function mergeBalancoPreservandoUsuario(
+  current: BalancoDetalhado | undefined,
+  suggested: BalancoDetalhado,
+): BalancoDetalhado {
+  const rec = (c: unknown, s: unknown): unknown => {
+    if (s === undefined || s === null) return c;
+    if (typeof s === "number") {
+      const cur = typeof c === "number" ? c : 0;
+      return cur === 0 ? s : cur;
+    }
+    if (typeof s === "object") {
+      const out: Record<string, unknown> = {
+        ...((c as Record<string, unknown>) ?? {}),
+      };
+      for (const k of Object.keys(s as Record<string, unknown>)) {
+        out[k] = rec(out[k], (s as Record<string, unknown>)[k]);
+      }
+      return out;
+    }
+    return c;
+  };
+  return rec(current ?? {}, suggested) as BalancoDetalhado;
+}
+
+/** Copia o N atual (sem `anterior`) para `balanco.anterior` (snapshot N-1). */
+export function snapshotAnterior(b: BalancoDetalhado): BalancoDetalhado {
+  const { anterior: _drop, ...rest } = b;
+  void _drop;
+  return { ...b, anterior: JSON.parse(JSON.stringify(rest)) };
 }
