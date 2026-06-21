@@ -16,14 +16,15 @@ import {
 } from "lucide-react";
 import { StepCard, SimpleField, MiniStat } from "@/components/sim/capital/parts";
 
-// Helper: setta valor em path aninhado dentro de capital.balanco (imutável).
+// Helper: seta valor em path aninhado dentro de capital.balanco (imutável).
+// Usa structuredClone (preserva tipos não-serializáveis, evita O(n²) de JSON).
 function setBalancoAt(
   bal: BalancoDetalhado | undefined,
   path: string,
   value: number,
 ): BalancoDetalhado {
   const parts = path.split(".");
-  const next = JSON.parse(JSON.stringify(bal ?? {})) as Record<string, unknown>;
+  const next = (bal ? structuredClone(bal) : {}) as Record<string, unknown>;
   let cur: Record<string, unknown> = next;
   for (let i = 0; i < parts.length - 1; i++) {
     const k = parts[i];
