@@ -52,7 +52,11 @@ export interface FinancialModel {
 }
 
 /** Constrói o modelo financeiro completo a partir do AppState. */
-export function buildFinancialModel(state: AppState): FinancialModel {
+export function buildFinancialModel(rawState: AppState): FinancialModel {
+  // SSOT: quando `capital.balanco` está preenchido, propaga os totais
+  // detalhados para os agregados (ativoTotal, dividaOnerosa, PC, PL, etc.)
+  // antes de calcular DRE/Indicadores/Cashflow.
+  const state = normalizeStateFromBalanco(rawState);
   const regime = resolveEffectiveRegime(state);
   const { dre, tax } = buildDRE(state, regime);
   const ind = calcIndicators(state, dre);
