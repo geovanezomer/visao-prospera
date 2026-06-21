@@ -157,6 +157,7 @@ export function BalancoTab() {
     if (typeof window === "undefined") return false;
     return localStorage.getItem(COMP_KEY) === "1";
   });
+  const [showAudit, setShowAudit] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(MODO_KEY, modo);
