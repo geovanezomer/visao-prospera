@@ -305,6 +305,7 @@ function SimulaPro() {
                       {activeTab === "caixa" && <CashflowTab />}
                       {activeTab === "governanca" && <StrategicTab />}
                       {activeTab === "dre" && <DRETab />}
+                      {activeTab === "balanco" && <BalancoTab />}
                       {activeTab === "indicadores" && <IndicatorsTab />}
                       {activeTab === "resultados" && <DiagnosisTab />}
                       {activeTab === "dashboard" && <DashboardTab />}
