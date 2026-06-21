@@ -215,7 +215,54 @@ export interface CapitalStructure {
    * v1→v2 pré-popula este objeto a partir dos campos legados.
    */
   balanco?: BalancoDetalhado;
+
+  /**
+   * Saldos de ABERTURA do exercício (Fase 1 — Balanço por construção).
+   *
+   * Conjunto mínimo de saldos iniciais necessário para que o Balanço de
+   * fechamento feche por construção (Ativo = Passivo + PL) sem precisar
+   * de ajustes manuais. Combinado com DRE + DFC + PMR/PMP/PME, deriva
+   * todos os saldos finais via:
+   *   saldoFim = saldoIni + movimentoPeríodo
+   *
+   * Itens patrimoniais constantes (Capital Social, Reservas, Imobilizado
+   * bruto, Terrenos, etc.) NÃO entram aqui — vivem em `balanco` porque
+   * não mudam dentro do exercício (são abertura E fechamento).
+   *
+   * `lucrosAcumulados` é o ÚNICO "plug" aceitável: representa o histórico
+   * de exercícios anteriores que o consultor pode não ter como reconstruir.
+   */
+  abertura?: BalancoAbertura;
 }
+
+/** Saldos de abertura do exercício — fluxo-sensíveis (mudam mês a mês). */
+export interface BalancoAbertura {
+  /** Caixa + bancos + aplicações de liquidez imediata na abertura. */
+  caixa?: number;
+  /** Contas a receber de clientes na abertura. */
+  contasReceber?: number;
+  /** Estoques na abertura. */
+  estoques?: number;
+  /** Impostos a recuperar na abertura (PIS/COFINS/ICMS a compensar). */
+  impostosRecuperar?: number;
+  /** Depreciação acumulada na abertura (POSITIVO; subtrai do imobilizado). */
+  depreciacaoAcumulada?: number;
+  /** Amortização acumulada de intangíveis na abertura (POSITIVO). */
+  amortizacaoAcumulada?: number;
+  /** Fornecedores a pagar na abertura. */
+  fornecedores?: number;
+  /** Empréstimos CP saldo na abertura (auto-derivado de debtContracts se 0). */
+  emprestimosCP?: number;
+  /** Empréstimos LP saldo na abertura (auto-derivado de debtContracts se 0). */
+  emprestimosLP?: number;
+  /** Impostos a pagar na abertura (ISS/ICMS/PIS/COFINS/IRPJ/CSLL devidos). */
+  impostosPagar?: number;
+  /** Salários e encargos a pagar na abertura (~1 mês de folha). */
+  salariosEncargos?: number;
+  /** Lucros/prejuízos acumulados na abertura — PLUG do histórico. */
+  lucrosAcumulados?: number;
+}
+
 
 /** Rubricas detalhadas do Balanço Patrimonial (modelo brasileiro CPC). */
 export interface BalancoDetalhado {
