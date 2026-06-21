@@ -271,6 +271,10 @@ export function DashboardTab() {
         />
       </div>
 
+      {/* Termômetro de Valor — último indicador da lista (WACC × ROIC) */}
+      <WaccRoicMeter wacc={ind.wacc} roic={ind.roic} />
+
+
       {/* Elementos visuais para o empresário: runway, semáforos, score e top despesas */}
       <DashboardExtras state={state} />
 
