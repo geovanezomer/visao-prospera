@@ -87,19 +87,7 @@ export function BalanceSheetCard({
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
-      <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-          <Camera className="h-4 w-4" />
-        </span>
-        <div className="min-w-0">
-          <SectionTitle hint="Saldos atuais do balanço — preencha com os últimos números do seu contador. Geram liquidez, ROE, ROA e alavancagem.">
-            Fotografia do balanço hoje
-          </SectionTitle>
-          <div className="mt-0.5 text-[11px] text-muted-foreground">
-            Em 3 passos rápidos você descreve a posição patrimonial da empresa.
-          </div>
-        </div>
-      </div>
+
 
       {/* PASSO 1 — ATIVOS + Detalhes patrimoniais (imobilizado e PL dos sócios) */}
       <StepCard
