@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { AppState, BalancoDetalhado } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
 import { SectionTitle } from "@/components/sim/shared/primitives";
@@ -9,7 +8,6 @@ import {
   Coins,
   Wallet,
   AlertTriangle,
-  Camera,
   Settings2,
   Building2,
   Landmark,
