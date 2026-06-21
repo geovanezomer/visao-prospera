@@ -182,16 +182,30 @@ export function CapitalTab() {
       },
       tone: waccTone,
     },
+    {
+      // CFO #3 — DSCR é a métrica que o banco olha primeiro em PME alavancada.
+      // ≥1.25 saudável · 1.0–1.25 apertado · <1.0 inadimplência potencial.
+      label: "DSCR",
+      value: ind.dscr >= 99 ? "∞" : `${ind.dscr.toFixed(2)}×`,
+      hint: {
+        description:
+          "Debt Service Coverage Ratio — capacidade do EBITDA cobrir o serviço da dívida (juros + amortização do principal). ≥1.25× é saudável; <1.0× sinaliza risco real de inadimplência.",
+        formula: "EBITDA Anual ÷ (Juros + Amortizações Anuais)",
+      },
+      tone:
+        ind.dscr >= 1.25 ? "pos" : ind.dscr >= 1.0 ? "default" : "neg",
+    },
   ];
 
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
         {kpis.map((k) => (
           <StatCard key={k.label} label={k.label} value={k.value} hint={k.hint} tone={k.tone} sub={k.hint.formula} />
         ))}
       </div>
+
 
 
 
