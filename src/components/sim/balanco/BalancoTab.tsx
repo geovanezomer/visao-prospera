@@ -1,97 +1,85 @@
-// Aba Balanço — Balanço Patrimonial detalhado (Fase 2 completa).
+// Aba Balanço — Fase 3: RAIO-X PATRIMONIAL READ-ONLY.
 //
-// 2 modos de profundidade:
-//   - Padrão    → rubricas essenciais (empresário / PME com contador)
-//   - Completo  → todas as rubricas CPC/BR (raio-X consultor/CVM)
-// + comparativo opcional N vs N-1 (AV% e AH%).
+// Não tem mais inputs. O Balanço é DERIVADO POR CONSTRUÇÃO em:
 //
-// Recursos:
-//   - "Pré-preencher do operacional": deriva caixa, CR, estoques, fornecedores,
-//     empréstimos CP/LP, imobilizado/depreciação e resultado do exercício a
-//     partir de Receitas/Custos/Capital/DRE — SEM sobrescrever campos digitados.
-//   - "Salvar como N-1": congela o N atual como ano-base para análise horizontal.
-//   - Validação de fechamento (Ativo = Passivo + PL) em tempo real.
-//   - Sub-totais e totais SEMPRE derivados (nunca digitados).
+//   model.balancoFechamento = deriveBalancoFechamento(abertura, DRE, DFC, PMR/PMP)
+//
+// Para editar uma rubrica, o usuário ajusta a CAUSA na aba apropriada:
+//   • Caixa, CR, Estoques, Fornecedores, Impostos a pagar → Capital (abertura)
+//                                                          + Receitas/Custos
+//   • Imobilizado bruto, Capital Social, Reservas        → Capital (detalhes)
+//   • Empréstimos                                        → Capital (contratos de dívida)
+//   • Resultado do exercício                             → Receitas + Custos (DRE)
+//
+// Isso garante que Ativo ≡ Passivo + PL SEMPRE — sem ajustes manuais.
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import {
-  calcBalancoTotals,
-  mergeBalancoPreservandoUsuario,
-  snapshotAnterior,
-  suggestBalancoFromState,
-} from "@/engines/finance/balanco";
+import { calcBalancoTotals, snapshotAnterior } from "@/engines/finance/balanco";
+import { calcAberturaTotals } from "@/components/sim/capital/AberturaCard";
 import { fmtBRL } from "@/engines/finance/format";
 import type { BalancoDetalhado } from "@/engines/finance/types";
-import { Scale, Download, GitCompare, CheckCircle2, AlertTriangle, Wand2, Camera } from "lucide-react";
+import {
+  Scale,
+  GitCompare,
+  CheckCircle2,
+  AlertTriangle,
+  Camera,
+  Lock,
+  ArrowRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 type Modo = "padrao" | "completo";
 const MODO_KEY = "finnance:balanco:modo";
 const COMP_KEY = "finnance:balanco:comparativo";
 
-// path: ex. "ativoCirculante.caixaEquivalentes" | "ativoNaoCirculante.imobilizado.terrenos"
 type Path = string;
 
 interface Rubrica {
   path: Path;
   label: string;
-  modo: Modo; // mostrar a partir deste modo
-  hint?: string;
-  /** true = valor entra como POSITIVO mas é REDUTOR no sub-total. */
+  modo: Modo;
   redutora?: boolean;
 }
 
 interface Grupo {
   titulo: string;
   rubricas: Rubrica[];
-  /** Sub-grupo aninhado (imobilizado, intangível, realizável LP). */
   subgrupos?: { titulo: string; rubricas: Rubrica[] }[];
 }
 
-// -------------------------------------------------------------------- Schema
+// ─────────────────────────────── Schema ───────────────────────────────
 const ATIVO: Grupo[] = [
   {
     titulo: "Ativo Circulante",
     rubricas: [
       { path: "ativoCirculante.caixaEquivalentes", label: "Caixa e equivalentes", modo: "padrao" },
-      { path: "ativoCirculante.aplicacoesFinanceirasCP", label: "Aplicações financeiras CP", modo: "padrao" },
+      { path: "ativoCirculante.aplicacoesFinanceirasCP", label: "Aplicações financeiras CP", modo: "completo" },
       { path: "ativoCirculante.contasReceberClientes", label: "Contas a receber de clientes", modo: "padrao" },
-      { path: "ativoCirculante.pdd", label: "(−) PDD — Devedores duvidosos", modo: "padrao", redutora: true },
+      { path: "ativoCirculante.pdd", label: "(−) PDD", modo: "completo", redutora: true },
       { path: "ativoCirculante.estoques", label: "Estoques", modo: "padrao" },
       { path: "ativoCirculante.impostosRecuperar", label: "Impostos a recuperar", modo: "padrao" },
-      { path: "ativoCirculante.adiantamentos", label: "Adiantamentos a fornecedores", modo: "padrao" },
-      { path: "ativoCirculante.despesasAntecipadas", label: "Despesas antecipadas", modo: "completo" },
+      { path: "ativoCirculante.adiantamentos", label: "Adiantamentos a fornecedores", modo: "completo" },
       { path: "ativoCirculante.outrosAtivosCirculantes", label: "Outros ativos circulantes", modo: "completo" },
     ],
   },
   {
     titulo: "Ativo Não Circulante",
     rubricas: [
-      { path: "ativoNaoCirculante.investimentos", label: "Investimentos", modo: "padrao" },
+      { path: "ativoNaoCirculante.investimentos", label: "Investimentos", modo: "completo" },
     ],
     subgrupos: [
-      {
-        titulo: "Realizável a Longo Prazo",
-        rubricas: [
-          { path: "ativoNaoCirculante.realizavelLP.creditosLP", label: "Créditos a LP", modo: "padrao" },
-          { path: "ativoNaoCirculante.realizavelLP.depositosJudiciais", label: "Depósitos judiciais", modo: "completo" },
-          { path: "ativoNaoCirculante.realizavelLP.impostosDiferidos", label: "Impostos diferidos", modo: "completo" },
-          { path: "ativoNaoCirculante.realizavelLP.outros", label: "Outros realizáveis LP", modo: "completo" },
-        ],
-      },
       {
         titulo: "Imobilizado",
         rubricas: [
           { path: "ativoNaoCirculante.imobilizado.terrenos", label: "Terrenos", modo: "padrao" },
-          { path: "ativoNaoCirculante.imobilizado.edificacoes", label: "Edificações e benfeitorias", modo: "padrao" },
+          { path: "ativoNaoCirculante.imobilizado.edificacoes", label: "Edificações", modo: "padrao" },
           { path: "ativoNaoCirculante.imobilizado.maquinasEquipamentos", label: "Máquinas e equipamentos", modo: "padrao" },
           { path: "ativoNaoCirculante.imobilizado.veiculos", label: "Veículos", modo: "padrao" },
           { path: "ativoNaoCirculante.imobilizado.moveisUtensilios", label: "Móveis e utensílios", modo: "padrao" },
-          { path: "ativoNaoCirculante.imobilizado.outrosImobilizados", label: "Outros imobilizados", modo: "padrao" },
+          { path: "ativoNaoCirculante.imobilizado.outrosImobilizados", label: "Outros (inclui CAPEX do período)", modo: "padrao" },
           { path: "ativoNaoCirculante.imobilizado.depreciacaoAcumulada", label: "(−) Depreciação acumulada", modo: "padrao", redutora: true },
         ],
       },
@@ -116,9 +104,6 @@ const PASSIVO_PL: Grupo[] = [
       { path: "passivoCirculante.emprestimosFinanciamentosCP", label: "Empréstimos e financiamentos CP", modo: "padrao" },
       { path: "passivoCirculante.impostosPagar", label: "Impostos a pagar", modo: "padrao" },
       { path: "passivoCirculante.salariosEncargos", label: "Salários e encargos", modo: "padrao" },
-      { path: "passivoCirculante.adiantamentosClientes", label: "Adiantamentos de clientes", modo: "padrao" },
-      { path: "passivoCirculante.dividendosPagar", label: "Dividendos a pagar", modo: "completo" },
-      { path: "passivoCirculante.provisoesCP", label: "Provisões CP", modo: "completo" },
       { path: "passivoCirculante.outrosPassivosCirculantes", label: "Outros passivos circulantes", modo: "completo" },
     ],
   },
@@ -126,11 +111,8 @@ const PASSIVO_PL: Grupo[] = [
     titulo: "Passivo Não Circulante",
     rubricas: [
       { path: "passivoNaoCirculante.emprestimosFinanciamentosLP", label: "Empréstimos e financiamentos LP", modo: "padrao" },
-      { path: "passivoNaoCirculante.impostosParcelados", label: "Impostos parcelados", modo: "padrao" },
       { path: "passivoNaoCirculante.debentures", label: "Debêntures", modo: "completo" },
       { path: "passivoNaoCirculante.provisoesLP", label: "Provisões LP", modo: "completo" },
-      { path: "passivoNaoCirculante.impostosDiferidos", label: "Impostos diferidos passivos", modo: "completo" },
-      { path: "passivoNaoCirculante.outrasObrigacoesLP", label: "Outras obrigações LP", modo: "completo" },
     ],
   },
   {
@@ -138,16 +120,14 @@ const PASSIVO_PL: Grupo[] = [
     rubricas: [
       { path: "patrimonioLiquido.capitalSocial", label: "Capital social", modo: "padrao" },
       { path: "patrimonioLiquido.reservasCapital", label: "Reservas de capital", modo: "padrao" },
-      { path: "patrimonioLiquido.reservasLucros", label: "Reservas de lucros", modo: "padrao" },
-      { path: "patrimonioLiquido.lucrosPrejuizosAcumulados", label: "Lucros/prejuízos acumulados", modo: "padrao" },
-      { path: "patrimonioLiquido.resultadoExercicio", label: "Resultado do exercício", modo: "padrao", hint: "Use 'Puxar do DRE' para preencher automaticamente." },
-      { path: "patrimonioLiquido.ajustesAvaliacaoPatrimonial", label: "Ajustes de avaliação patrimonial", modo: "completo" },
-      { path: "patrimonioLiquido.acoesEmTesouraria", label: "(−) Ações em tesouraria", modo: "completo", redutora: true },
+      { path: "patrimonioLiquido.reservasLucros", label: "Reservas de lucros", modo: "completo" },
+      { path: "patrimonioLiquido.lucrosPrejuizosAcumulados", label: "Lucros/prejuízos acumulados (abertura)", modo: "padrao" },
+      { path: "patrimonioLiquido.resultadoExercicio", label: "Resultado do exercício (DRE)", modo: "padrao" },
     ],
   },
 ];
 
-// ---------------------------------------------------------------- Utilities
+// ─────────────────────────────── Utils ───────────────────────────────
 function getAt(obj: unknown, path: Path): number {
   const parts = path.split(".");
   let cur: unknown = obj;
@@ -159,34 +139,19 @@ function getAt(obj: unknown, path: Path): number {
   return typeof cur === "number" && isFinite(cur) ? cur : 0;
 }
 
-function setAt(obj: BalancoDetalhado, path: Path, value: number): BalancoDetalhado {
-  const parts = path.split(".");
-  const next = JSON.parse(JSON.stringify(obj ?? {})) as Record<string, unknown>;
-  let cur: Record<string, unknown> = next;
-  for (let i = 0; i < parts.length - 1; i++) {
-    const k = parts[i];
-    if (!cur[k] || typeof cur[k] !== "object") cur[k] = {};
-    cur = cur[k] as Record<string, unknown>;
-  }
-  cur[parts[parts.length - 1]] = value;
-  return next as BalancoDetalhado;
-}
-
 const modoRank: Record<Modo, number> = { padrao: 0, completo: 1 };
-const isVisible = (modoCampo: Modo, modoAtivo: Modo) => modoRank[modoCampo] <= modoRank[modoAtivo];
+const isVisible = (rc: Modo, ma: Modo) => modoRank[rc] <= modoRank[ma];
+const visibleRubricas = (rs: Rubrica[], m: Modo) =>
+  rs.filter((r) => isVisible(r.modo, m));
 
-const visibleRubricas = (rs: Rubrica[], modo: Modo) =>
-  rs.filter((r) => isVisible(r.modo, modo));
-
-// ============================================================== Componente
+// ─────────────────────────── Componente ───────────────────────────
 export function BalancoTab() {
   const { state, update } = useFinance();
-  const { dre } = useFinanceModel(state);
+  const model = useFinanceModel(state);
 
   const [modo, setModo] = useState<Modo>(() => {
     if (typeof window === "undefined") return "padrao";
-    const v = localStorage.getItem(MODO_KEY);
-    return v === "completo" ? "completo" : "padrao"; // coerção legado "simples"→"padrao"
+    return localStorage.getItem(MODO_KEY) === "completo" ? "completo" : "padrao";
   });
   const [showAnterior, setShowAnterior] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -200,91 +165,27 @@ export function BalancoTab() {
     localStorage.setItem(COMP_KEY, showAnterior ? "1" : "0");
   }, [showAnterior]);
 
-  const balanco: BalancoDetalhado = state.capital.balanco ?? {};
-  const anterior: BalancoDetalhado = balanco.anterior ?? {};
+  // Balanço de fechamento DERIVADO (read-only).
+  const fechamento = model.model.balancoFechamento;
+  const balanco: BalancoDetalhado = fechamento.balanco;
+  const anterior: BalancoDetalhado = state.capital.balanco?.anterior ?? {};
 
   const totalsAtual = useMemo(() => calcBalancoTotals(balanco), [balanco]);
   const totalsAnterior = useMemo(() => calcBalancoTotals(anterior), [anterior]);
+  const totalsAbertura = useMemo(() => calcAberturaTotals(state.capital), [state.capital]);
 
-  // Resultado e impostos do DRE (anuais).
-  const resultadoDRE = useMemo(
-    () => (dre.lucroLiquido ?? []).reduce((a: number, b: number) => a + (b || 0), 0),
-    [dre],
-  );
-  const impostosLucroAnualDRE = useMemo(
-    () => (dre.impostos ?? []).reduce((a: number, b: number) => a + (b || 0), 0),
-    [dre],
-  );
-
-  const setCampo = (path: Path, value: number) => {
-    const next = setAt(balanco, path, value);
-    update((s) => ({ ...s, capital: { ...s.capital, balanco: next } }));
-  };
-
-  const setCampoAnterior = (path: Path, value: number) => {
-    const nextAnt = setAt(anterior, path, value);
-    update((s) => ({
-      ...s,
-      capital: { ...s.capital, balanco: { ...balanco, anterior: nextAnt } },
-    }));
-  };
-
-  const puxarResultadoDRE = () => setCampo("patrimonioLiquido.resultadoExercicio", resultadoDRE);
-
-  // Auto-preenchimento contínuo: sempre que os dados operacionais (Receitas,
-  // Custos, Capital, DRE) mudam, mescla as sugestões em campos vazios (= 0).
-  // Nunca sobrescreve valores digitados (mergeBalancoPreservandoUsuario).
-  useEffect(() => {
-    const sug = suggestBalancoFromState(state, {
-      dreLucroLiquido: resultadoDRE,
-      dreImpostosLucroAnual: impostosLucroAnualDRE,
-    });
-    const merged = mergeBalancoPreservandoUsuario(balanco, sug);
-    if (JSON.stringify(merged) !== JSON.stringify(balanco)) {
-      update((s) => ({ ...s, capital: { ...s.capital, balanco: merged } }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    state.capital.disponibilidades,
-    state.capital.caixaOcioso,
-    state.capital.estoques,
-    state.capital.contasReceber,
-    state.capital.fornecedores,
-    state.capital.dividaOnerosa,
-    state.capital.dividaCurtoPrazoPct,
-    state.capital.depreciacaoMensal,
-    state.capital.capexAtivacao,
-    state.revenue?.pmr,
-    state.revenue?.pmp,
-    resultadoDRE,
-    impostosLucroAnualDRE,
-  ]);
-
-
-  // Pré-preenchimento operacional: aplica sugestões SOMENTE em campos vazios.
-  const prePreencher = () => {
-    const sug = suggestBalancoFromState(state, {
-      dreLucroLiquido: resultadoDRE,
-      dreImpostosLucroAnual: impostosLucroAnualDRE,
-    });
-    const merged = mergeBalancoPreservandoUsuario(balanco, sug);
-    update((s) => ({ ...s, capital: { ...s.capital, balanco: merged } }));
-    toast.success("Balanço pré-preenchido", {
-      description:
-        "Campos vazios preenchidos a partir de Receitas, Custos e Capital. Seus valores digitados foram preservados.",
-    });
-  };
-
+  // Snapshot N-1: congela o fechamento atual em capital.balanco.anterior.
   const salvarComoNm1 = () => {
-    const next = snapshotAnterior(balanco);
+    const base = state.capital.balanco ?? {};
+    const next = snapshotAnterior({ ...base, ...balanco });
     update((s) => ({ ...s, capital: { ...s.capital, balanco: next } }));
     setShowAnterior(true);
     toast.success("Snapshot N-1 salvo", {
-      description: "O balanço atual foi copiado como ano-base (N-1) para análise horizontal.",
+      description: "Fechamento atual congelado como ano-base para análise horizontal.",
     });
   };
 
-  const fechado = Math.abs(totalsAtual.diferenca) < Math.max(100, totalsAtual.ativoTotal * 0.001);
+  const fechado = fechamento.totals.fechado;
 
   return (
     <div className="space-y-4">
@@ -296,10 +197,18 @@ export function BalancoTab() {
               <Scale className="h-4 w-4" />
             </span>
             <div className="min-w-0">
-              <h2 className="text-base font-semibold">Balanço Patrimonial</h2>
+              <h2 className="text-base font-semibold flex items-center gap-2">
+                Balanço Patrimonial
+                <span className="inline-flex items-center gap-1 rounded bg-muted/50 px-1.5 py-0.5 text-[9.5px] font-medium text-muted-foreground">
+                  <Lock className="h-3 w-3" />
+                  Read-only — derivado por construção
+                </span>
+              </h2>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                Raio-X patrimonial — Ativo · Passivo · PL. Totais derivados, fechamento
-                contábil validado em tempo real.
+                Fechamento = Abertura + DRE + DFC + PMR/PMP. Para ajustar uma rubrica,
+                edite a CAUSA na aba <strong className="text-foreground">Capital</strong>,{" "}
+                <strong className="text-foreground">Receitas</strong> ou{" "}
+                <strong className="text-foreground">Custos</strong>.
               </p>
             </div>
           </div>
@@ -318,29 +227,9 @@ export function BalancoTab() {
             <Button
               size="sm"
               variant="outline"
-              onClick={prePreencher}
-              className="h-8 gap-1.5 text-[11px]"
-              title="Deriva caixa, CR, estoques, fornecedores, empréstimos CP/LP, imobilizado e resultado a partir de Receitas/Custos/Capital. Não sobrescreve valores digitados."
-            >
-              <Wand2 className="h-3.5 w-3.5" />
-              Pré-preencher do operacional
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={puxarResultadoDRE}
-              className="h-8 gap-1.5 text-[11px]"
-              title="Soma do Lucro Líquido (12m) do DRE atual"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Puxar DRE ({fmtBRL(resultadoDRE)})
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
               onClick={salvarComoNm1}
               className="h-8 gap-1.5 text-[11px]"
-              title="Copia o balanço atual como ano-base (N-1) para análise horizontal."
+              title="Congela o fechamento atual como base de comparação (N-1)."
             >
               <Camera className="h-3.5 w-3.5" />
               Salvar como N-1
@@ -349,7 +238,7 @@ export function BalancoTab() {
         </div>
       </div>
 
-      {/* Fechamento */}
+      {/* Validação de fechamento */}
       <div
         className={`rounded-lg border p-3 text-[12px] flex items-center gap-2 ${
           fechado
@@ -360,18 +249,43 @@ export function BalancoTab() {
         {fechado ? (
           <>
             <CheckCircle2 className="h-4 w-4" />
-            Balanço fechado — Ativo ({fmtBRL(totalsAtual.ativoTotal)}) = Passivo + PL (
-            {fmtBRL(totalsAtual.passivoTotal + totalsAtual.patrimonioLiquido)}).
+            <span>
+              <strong>Balanço fechado por construção</strong> — Ativo (
+              {fmtBRL(fechamento.totals.ativo)}) = Passivo + PL (
+              {fmtBRL(fechamento.totals.passivo + fechamento.totals.pl)}). Diferença:{" "}
+              {fmtBRL(fechamento.totals.diferenca)}.
+            </span>
           </>
         ) : (
           <>
             <AlertTriangle className="h-4 w-4" />
-            Diferença de <strong>{fmtBRL(totalsAtual.diferenca)}</strong> entre Ativo (
-            {fmtBRL(totalsAtual.ativoTotal)}) e Passivo+PL (
-            {fmtBRL(totalsAtual.passivoTotal + totalsAtual.patrimonioLiquido)}). Ajuste as
-            rubricas ou use "Puxar Resultado do DRE".
+            <span>
+              Diferença residual de <strong>{fmtBRL(fechamento.totals.diferenca)}</strong> —
+              normalmente indica abertura incompleta. Revise a aba{" "}
+              <strong>Capital → Saldos de abertura</strong>.
+            </span>
           </>
         )}
+      </div>
+
+      {/* Abertura → Movimento → Fechamento */}
+      <div className="grid grid-cols-3 gap-3 text-[11px]">
+        <SnapshotCard
+          title="Abertura"
+          ativo={totalsAbertura.ativoIni}
+          passivo={totalsAbertura.passivoIni}
+          pl={totalsAbertura.plIni}
+        />
+        <div className="flex items-center justify-center">
+          <ArrowRight className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <SnapshotCard
+          title="Fechamento (derivado)"
+          ativo={fechamento.totals.ativo}
+          passivo={fechamento.totals.passivo}
+          pl={fechamento.totals.pl}
+          highlight
+        />
       </div>
 
       {/* Duas colunas */}
@@ -384,8 +298,6 @@ export function BalancoTab() {
           balanco={balanco}
           anterior={anterior}
           showAnterior={showAnterior}
-          onChange={setCampo}
-          onChangeAnterior={setCampoAnterior}
           totalAtual={totalsAtual.ativoTotal}
           totalAnterior={totalsAnterior.ativoTotal}
           subtotais={[
@@ -402,8 +314,6 @@ export function BalancoTab() {
           balanco={balanco}
           anterior={anterior}
           showAnterior={showAnterior}
-          onChange={setCampo}
-          onChangeAnterior={setCampoAnterior}
           totalAtual={totalsAtual.passivoTotal + totalsAtual.patrimonioLiquido}
           totalAnterior={totalsAnterior.passivoTotal + totalsAnterior.patrimonioLiquido}
           subtotais={[
@@ -434,12 +344,12 @@ export function BalancoTab() {
   );
 }
 
-// ====================================================== Sub-componentes
+// ─────────────────────── Sub-componentes ───────────────────────
 
 function ModoSelector({ modo, onChange }: { modo: Modo; onChange: (m: Modo) => void }) {
   const opts: { v: Modo; label: string; hint: string }[] = [
-    { v: "padrao", label: "Padrão", hint: "Empresário / PME com contador — rubricas essenciais" },
-    { v: "completo", label: "Completo", hint: "Raio-X CVM/consultor — todas as rubricas CPC/BR" },
+    { v: "padrao", label: "Padrão", hint: "Rubricas essenciais" },
+    { v: "completo", label: "Completo", hint: "Todas as rubricas CPC/BR" },
   ];
   return (
     <div className="inline-flex rounded-md border border-border/60 bg-background/40 p-0.5 text-[11px]">
@@ -462,6 +372,56 @@ function ModoSelector({ modo, onChange }: { modo: Modo; onChange: (m: Modo) => v
   );
 }
 
+function SnapshotCard({
+  title,
+  ativo,
+  passivo,
+  pl,
+  highlight,
+}: {
+  title: string;
+  ativo: number;
+  passivo: number;
+  pl: number;
+  highlight?: boolean;
+}) {
+  const diff = ativo - (passivo + pl);
+  const ok = Math.abs(diff) < Math.max(100, ativo * 0.005);
+  return (
+    <div
+      className={`rounded-lg border p-3 ${
+        highlight ? "border-primary/40 bg-primary/5" : "border-border/40 bg-card/30"
+      }`}
+    >
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {title}
+      </div>
+      <div className="mt-1.5 space-y-0.5 tabular-nums">
+        <div className="flex justify-between text-[11px]">
+          <span className="text-muted-foreground">Ativo</span>
+          <span className="font-semibold">{fmtBRL(ativo)}</span>
+        </div>
+        <div className="flex justify-between text-[11px]">
+          <span className="text-muted-foreground">Passivo</span>
+          <span>{fmtBRL(passivo)}</span>
+        </div>
+        <div className="flex justify-between text-[11px]">
+          <span className="text-muted-foreground">PL</span>
+          <span>{fmtBRL(pl)}</span>
+        </div>
+        <div
+          className={`mt-1 flex justify-between border-t border-border/30 pt-1 text-[10px] ${
+            ok ? "text-pos" : "text-warning"
+          }`}
+        >
+          <span>Diferença</span>
+          <span>{fmtBRL(diff)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface ColunaProps {
   titulo: string;
   accent: string;
@@ -470,8 +430,6 @@ interface ColunaProps {
   balanco: BalancoDetalhado;
   anterior: BalancoDetalhado;
   showAnterior: boolean;
-  onChange: (path: Path, v: number) => void;
-  onChangeAnterior: (path: Path, v: number) => void;
   totalAtual: number;
   totalAnterior: number;
   subtotais: { label: string; atual: number; ant: number; grupo: string }[];
@@ -486,8 +444,6 @@ function Coluna({
   balanco,
   anterior,
   showAnterior,
-  onChange,
-  onChangeAnterior,
   totalAtual,
   totalAnterior,
   subtotais,
@@ -525,8 +481,6 @@ function Coluna({
                   atual={getAt(balanco, r.path)}
                   anterior={getAt(anterior, r.path)}
                   showAnterior={showAnterior}
-                  onChange={(v) => onChange(r.path, v)}
-                  onChangeAnterior={(v) => onChangeAnterior(r.path, v)}
                 />
               ))}
 
@@ -542,8 +496,6 @@ function Coluna({
                       atual={getAt(balanco, r.path)}
                       anterior={getAt(anterior, r.path)}
                       showAnterior={showAnterior}
-                      onChange={(v) => onChange(r.path, v)}
-                      onChangeAnterior={(v) => onChangeAnterior(r.path, v)}
                     />
                   ))}
                 </div>
@@ -560,7 +512,6 @@ function Coluna({
         })}
       </div>
 
-      {/* Total geral */}
       <div
         className="mt-4 flex items-baseline justify-between border-t-2 pt-2 text-[13px] font-bold"
         style={{ borderColor: accent, color: accent }}
@@ -572,7 +523,6 @@ function Coluna({
           showAnterior={showAnterior}
           total={totalAtual}
           totalAnt={totalAnterior}
-          bold
         />
       </div>
     </div>
@@ -584,63 +534,24 @@ function RubricaRow({
   atual,
   anterior,
   showAnterior,
-  onChange,
-  onChangeAnterior,
 }: {
   r: Rubrica;
   atual: number;
   anterior: number;
   showAnterior: boolean;
-  onChange: (v: number) => void;
-  onChangeAnterior: (v: number) => void;
 }) {
-  const id = `bal-${r.path}`;
   return (
     <div className="grid grid-cols-[1fr_auto] items-center gap-2 py-1 text-[12px]">
-      <Label htmlFor={id} className="cursor-help text-foreground/90" title={r.hint}>
-        {r.label}
-      </Label>
-      <div className={`flex items-center gap-1 ${showAnterior ? "" : ""}`}>
+      <span className="text-foreground/90">{r.label}</span>
+      <div className="flex items-center gap-3 tabular-nums">
         {showAnterior && (
-          <CurrencyInput
-            id={`${id}-ant`}
-            value={anterior}
-            onChange={onChangeAnterior}
-            placeholder="N-1"
-            muted
-          />
+          <span className="w-24 text-right text-[11px] text-muted-foreground">
+            {fmtBRL(anterior)}
+          </span>
         )}
-        <CurrencyInput id={id} value={atual} onChange={onChange} />
+        <span className="w-28 text-right">{fmtBRL(atual)}</span>
       </div>
     </div>
-  );
-}
-
-function CurrencyInput({
-  id,
-  value,
-  onChange,
-  placeholder,
-  muted,
-}: {
-  id: string;
-  value: number;
-  onChange: (v: number) => void;
-  placeholder?: string;
-  muted?: boolean;
-}) {
-  return (
-    <Input
-      id={id}
-      type="number"
-      step="any"
-      value={value || ""}
-      onChange={(e) => onChange(Number(e.target.value) || 0)}
-      placeholder={placeholder ?? "0"}
-      className={`h-7 w-28 text-right text-[12px] tabular-nums ${
-        muted ? "border-dashed text-muted-foreground" : ""
-      }`}
-    />
   );
 }
 
@@ -650,20 +561,18 @@ function SubtotalCells({
   showAnterior,
   total,
   totalAnt,
-  bold,
 }: {
   atual: number;
   anterior: number;
   showAnterior: boolean;
   total: number;
   totalAnt: number;
-  bold?: boolean;
 }) {
   const av = total > 0 ? (atual / total) * 100 : 0;
   const ah = anterior !== 0 ? ((atual - anterior) / Math.abs(anterior)) * 100 : 0;
   const avAnt = totalAnt > 0 ? (anterior / totalAnt) * 100 : 0;
   return (
-    <div className={`flex items-baseline gap-3 tabular-nums ${bold ? "" : ""}`}>
+    <div className="flex items-baseline gap-3 tabular-nums">
       {showAnterior && (
         <>
           <span className="w-24 text-right text-muted-foreground">{fmtBRL(anterior)}</span>
