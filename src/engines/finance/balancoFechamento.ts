@@ -147,7 +147,6 @@ export function deriveBalancoFechamento({
   // Fallback: split por dividaCurtoPrazoPct quando não houver contratos.
   const emprestimosCPFim = aberturaSSOT.emprestimosCP.value;
   const emprestimosLPFim = aberturaSSOT.emprestimosLP.value;
-  const emprestimosTotal = emprestimosCPFim + emprestimosLPFim;
 
   // Impostos a pagar: ~ 1 mês de DARF (apuração + pagamento defasado).
   const impostosPagarFim = impostosAnual > 0 ? impostosAnual / 12 : 0;
