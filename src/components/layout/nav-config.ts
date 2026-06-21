@@ -26,9 +26,9 @@ export type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { title: "Dashboard", icon: LayoutDashboard, value: "dashboard" },
+  { title: "Capital", icon: Wallet, value: "capital" },
   { title: "Receitas", icon: Receipt, value: "receitas" },
   { title: "Despesas", icon: ReceiptText, value: "custos" },
-  { title: "Capital", icon: Wallet, value: "capital" },
   { title: "Fluxo de Caixa", icon: BarChart3, value: "caixa" },
   { title: "Regime Tributário", icon: Gavel, value: "tributos" },
   { title: "DRE", icon: FileSpreadsheet, value: "dre" },
