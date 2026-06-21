@@ -77,14 +77,11 @@ export function BalanceSheetCard({
     capital.ativoTotal > 0 && diff > Math.max(100, capital.ativoTotal * 0.02);
 
 
-  // Auto-preenche PL quando vazio (= cálculo Ativo − Dívidas). Se o usuário
-  // informar manualmente um valor diferente, mantemos e exibimos o alerta.
-  useEffect(() => {
-    if (plInformado === 0 && capital.ativoTotal > 0 && plCalculado !== 0) {
-      onChange({ patrimonioLiquido: plCalculado });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plCalculado, capital.ativoTotal]);
+  // Sugestão de PL: cálculo on-demand (não auto-aplica). O usuário escolhe
+  // explicitamente via botão "Usar PL calculado" ou "Ajustar PL para X".
+  // Removido useEffect que sobrescrevia silenciosamente (causa race conditions).
+
+
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
