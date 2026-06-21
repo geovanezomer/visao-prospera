@@ -159,9 +159,26 @@ export function BalanceSheetCard({
             hint="Soma de TUDO que a empresa possui: caixa, estoques, máquinas, imóveis, veículos, contas a receber etc."
             value={capital.ativoTotal}
             onChange={(n) => onChange({ ativoTotal: n })}
-            emphasis
           />
         </div>
+
+        {/* CFO #5 — sugestão de Ativo Total derivado do imobilizado detalhado. */}
+        {temImobilizadoDetalhado && Math.abs((capital.ativoTotal || 0) - ativoTotalDerivado) > Math.max(100, ativoTotalDerivado * 0.02) && (
+          <div className="mt-2 flex flex-col gap-2 rounded-md border border-primary/30 bg-primary/5 p-2 text-[11px]">
+            <span className="text-muted-foreground">
+              Ativo Total <strong className="text-foreground">derivado</strong> do imobilizado detalhado +
+              circulante = <strong className="text-primary">{fmtBRL(ativoTotalDerivado)}</strong>{" "}
+              <span className="opacity-70">(Circulante {fmtBRL(ativoCircCalc)} + Imobilizado líq. {fmtBRL(Math.max(0, imobLiquido))} + Intangível líq. {fmtBRL(Math.max(0, intangLiquido))}).</span>
+            </span>
+            <button
+              onClick={() => onChange({ ativoTotal: ativoTotalDerivado })}
+              className="self-start rounded bg-primary/20 px-2 py-1 text-[10px] font-bold uppercase text-primary hover:bg-primary/30 transition-colors"
+            >
+              Usar valor derivado: {fmtBRL(ativoTotalDerivado)}
+            </button>
+          </div>
+        )}
+
 
         <div className="mt-3 grid grid-cols-4 overflow-hidden rounded-md border border-border/40 text-center text-[10px]">
           <MiniStat label="Caixa/bancos" value={fmtBRL(capital.disponibilidades)} />
