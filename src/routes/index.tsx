@@ -13,6 +13,7 @@ import { CostsTab } from "@/components/sim/costs/CostsTab";
 import { CapitalTab } from "@/components/sim/capital/CapitalTab";
 import { TaxTab } from "@/components/sim/tax/TaxTab";
 import { DRETab } from "@/components/sim/dre/DRETab";
+import { BalancoTab } from "@/components/sim/balanco/BalancoTab";
 import { CashflowTab } from "@/components/sim/cashflow/CashflowTab";
 import { DiagnosisTab } from "@/components/sim/diagnosis/DiagnosisTab";
 import { StrategicTab } from "@/components/sim/strategic/StrategicTab";
