@@ -14,7 +14,7 @@ import {
   Building2,
   Landmark,
 } from "lucide-react";
-import { StepCard, SimpleField, MiniStat, Field } from "@/components/sim/capital/parts";
+import { StepCard, SimpleField, MiniStat } from "@/components/sim/capital/parts";
 
 // Helper: setta valor em path aninhado dentro de capital.balanco (imutável).
 function setBalancoAt(
