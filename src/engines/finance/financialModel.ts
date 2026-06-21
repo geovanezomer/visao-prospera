@@ -28,6 +28,7 @@ import { buildCashFlow } from "./cashflow";
 import { buildValuation, defaultValuationParams } from "./valuation";
 import { computeHealth } from "./health";
 import { normalizeStateFromBalanco } from "./balanco";
+import { deriveBalancoFechamento, type BalancoFechamentoResult } from "./balancoFechamento";
 
 // Tipos derivados das funções existentes (evita re-declarar shapes).
 type BuildDREReturn = ReturnType<typeof buildDRE>;
