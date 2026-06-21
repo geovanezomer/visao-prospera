@@ -29,6 +29,7 @@
 //   • Marcas, Patentes, Goodwill
 import type { AppState, BalancoDetalhado, CostLine } from "./types";
 import type { FinancialModelCashflow, FinancialModelDRE } from "./financialModel";
+import { deriveAbertura } from "./aberturaDerivada";
 
 const n = (v: number | undefined): number =>
   typeof v === "number" && isFinite(v) ? v : 0;
@@ -73,6 +74,9 @@ export function deriveBalancoFechamento({
   const intConst = balConst.ativoNaoCirculante?.intangivel ?? {};
   const plConst = balConst.patrimonioLiquido ?? {};
 
+  // SSOT — saldos de abertura derivados (sem duplicar inputs do usuário).
+  const aberturaSSOT = deriveAbertura({ state, impostosMensais: dre.impostos });
+
   // ─────────────────────────── Movimentos do período ───────────────────────────
   const receitaBrutaAnual = sumArr(state.revenue?.bruta);
   const cpvAnual = sumCostByCat(state.costs, ["custo_vendas", "direto_venda"]);
@@ -107,13 +111,14 @@ export function deriveBalancoFechamento({
   // CR_ini + Receita − Recebimentos (que exige modelar PMR mensalmente).
   const pmr = state.revenue?.pmr || 0;
   const crFim =
-    pmr > 0 ? (receitaBrutaAnual * pmr) / 360 : n(ab.contasReceber);
+    pmr > 0 ? (receitaBrutaAnual * pmr) / 360 : aberturaSSOT.contasReceber.value;
 
-  // Estoques: usa capital.estoques (saldo final declarado) ou abertura.
-  const estoquesFim = cap.estoques > 0 ? cap.estoques : n(ab.estoques);
+  // Estoques: usa capital.estoques (saldo final declarado) ou abertura derivada.
+  const estoquesFim =
+    cap.estoques > 0 ? cap.estoques : aberturaSSOT.estoques.value;
 
   // Impostos a recuperar: assume constante (sem modelo de geração de crédito).
-  const impostosRecuperarFim = n(ab.impostosRecuperar);
+  const impostosRecuperarFim = aberturaSSOT.impostosRecuperar.value;
 
   // Imobilizado bruto = bruto_ini (subkeys constantes) + CAPEX ativado período.
   const imobBrutoIni =
@@ -127,24 +132,21 @@ export function deriveBalancoFechamento({
   const outrosImobFim = n(imoConst.outrosImobilizados) + capexAtivado;
 
   // Depreciação acumulada = abertura + período.
-  const depAcumFim = n(ab.depreciacaoAcumulada) + depPeriodo;
+  const depAcumFim = aberturaSSOT.depreciacaoAcumulada.value + depPeriodo;
 
   // Amortização acumulada: sem fluxo modelado — mantém abertura.
-  const amortAcumFim = n(ab.amortizacaoAcumulada);
+  const amortAcumFim = aberturaSSOT.amortizacaoAcumulada.value;
 
   // ─────────────────────────────── Passivo ───────────────────────────────
   // Fornecedores final: regime permanente — CPV × PMP/360.
   const pmp = state.revenue?.pmp || 0;
   const fornecedoresFim =
-    pmp > 0 ? (cpvAnual * pmp) / 360 : n(ab.fornecedores);
+    pmp > 0 ? (cpvAnual * pmp) / 360 : aberturaSSOT.fornecedores.value;
 
-  // Empréstimos: saldo agregado dos contratos de dívida (já em dividaOnerosa).
-  // Split CP/LP por dividaCurtoPrazoPct (default 30%).
-  const cpPct =
-    typeof cap.dividaCurtoPrazoPct === "number" ? cap.dividaCurtoPrazoPct : 0.3;
-  const emprestimosTotal = cap.dividaOnerosa || 0;
-  const emprestimosCPFim = emprestimosTotal * cpPct;
-  const emprestimosLPFim = emprestimosTotal * (1 - cpPct);
+  // Empréstimos: derivados por maturidade dos contratos (≤12m = CP, >12m = LP).
+  // Fallback: split por dividaCurtoPrazoPct quando não houver contratos.
+  const emprestimosCPFim = aberturaSSOT.emprestimosCP.value;
+  const emprestimosLPFim = aberturaSSOT.emprestimosLP.value;
 
   // Impostos a pagar: ~ 1 mês de DARF (apuração + pagamento defasado).
   const impostosPagarFim = impostosAnual > 0 ? impostosAnual / 12 : 0;
