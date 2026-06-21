@@ -12,6 +12,7 @@ import {
   Bot,
   Activity,
   Landmark,
+  Scale,
 } from "lucide-react";
 import { TabKey } from "@/engines/finance/types";
 
@@ -31,6 +32,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Fluxo de Caixa", icon: BarChart3, value: "caixa" },
   { title: "Regime Tributário", icon: Gavel, value: "tributos" },
   { title: "DRE", icon: FileSpreadsheet, value: "dre" },
+  { title: "Balanço", icon: Scale, value: "balanco" },
   { title: "Indicadores", icon: Activity, value: "indicadores" },
   { title: "Governança", icon: ShieldCheck, value: "governanca" },
   { title: "Diagnóstico", icon: Search, value: "resultados" },
