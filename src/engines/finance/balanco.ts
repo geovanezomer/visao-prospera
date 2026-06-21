@@ -134,3 +134,48 @@ export function isBalancoPreenchido(b?: BalancoDetalhado): boolean {
   const t = calcBalancoTotals(b);
   return t.ativoTotal > 0 || t.passivoTotal > 0 || t.patrimonioLiquido !== 0;
 }
+
+// =========================================================================
+// PROPAGAÇÃO BALANÇO DETALHADO → AGREGADOS DE CAPITAL (SSOT)
+// =========================================================================
+//
+// Quando `state.capital.balanco` está preenchido, ele vira a fonte da verdade
+// e SOBRESCREVE os campos agregados legados antes do `buildFinancialModel`
+// rodar. Assim, ROE/ROA/ROIC/WACC/liquidez/NCG passam a refletir as rubricas
+// detalhadas sem precisar mexer em cada cálculo individualmente.
+//
+// Quando `balanco` está vazio, devolve o state inalterado (modo legado).
+
+const nn = (v: number | undefined): number => (typeof v === "number" && isFinite(v) ? v : 0);
+
+/** Aplica o balanço detalhado sobre os agregados de `capital`. Pure. */
+export function normalizeStateFromBalanco(state: AppState): AppState {
+  const b = state.capital.balanco;
+  if (!isBalancoPreenchido(b)) return state;
+
+  const t = calcBalancoTotals(b);
+  const ac = b!.ativoCirculante ?? {};
+  const pc = b!.passivoCirculante ?? {};
+
+  const disponibilidades = nn(ac.caixaEquivalentes) + nn(ac.aplicacoesFinanceirasCP);
+  const contasReceber = Math.max(0, nn(ac.contasReceberClientes) - nn(ac.pdd));
+  const estoques = nn(ac.estoques);
+  const fornecedores = nn(pc.fornecedores);
+
+  return {
+    ...state,
+    capital: {
+      ...state.capital,
+      ativoTotal: t.ativoTotal,
+      ativoCirculante: t.ativoCirculante,
+      passivoCirculante: t.passivoCirculante,
+      dividaOnerosa: t.dividaOnerosa,
+      patrimonioLiquido: t.patrimonioLiquido,
+      passivosNaoOnerosos: t.passivosNaoOnerosos,
+      disponibilidades,
+      contasReceber,
+      estoques,
+      fornecedores,
+    },
+  };
+}
