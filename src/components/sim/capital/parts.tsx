@@ -18,10 +18,10 @@ export function StepCard({
 }) {
   return (
     <div
-      className="rounded-lg border bg-background/40 p-4"
-      style={{ borderColor: `color-mix(in oklab, ${color} 30%, var(--border))` }}
+      className="rounded-lg border border-border/60 border-l-4 bg-card/40"
+      style={{ borderLeftColor: color }}
     >
-      <div className="mb-3 flex items-center gap-3">
+      <div className="flex items-center gap-3 border-b border-border/60 p-4">
         <span
           className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold text-background"
           style={{ background: color }}
@@ -35,7 +35,7 @@ export function StepCard({
           <div className="text-[11px] text-muted-foreground">{subtitle}</div>
         </div>
       </div>
-      {children}
+      <div className="p-4">{children}</div>
     </div>
   );
 }
