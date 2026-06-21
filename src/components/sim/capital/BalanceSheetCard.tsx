@@ -1,7 +1,6 @@
-import { useEffect } from "react";
 import { AppState, BalancoDetalhado } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
-import { SectionTitle } from "@/components/sim/shared/primitives";
+
 import {
   Banknote,
   Package,
@@ -9,21 +8,21 @@ import {
   Coins,
   Wallet,
   AlertTriangle,
-  Camera,
   Settings2,
   Building2,
   Landmark,
 } from "lucide-react";
 import { StepCard, SimpleField, MiniStat } from "@/components/sim/capital/parts";
 
-// Helper: setta valor em path aninhado dentro de capital.balanco (imutável).
+// Helper: seta valor em path aninhado dentro de capital.balanco (imutável).
+// Usa structuredClone (preserva tipos não-serializáveis, evita O(n²) de JSON).
 function setBalancoAt(
   bal: BalancoDetalhado | undefined,
   path: string,
   value: number,
 ): BalancoDetalhado {
   const parts = path.split(".");
-  const next = JSON.parse(JSON.stringify(bal ?? {})) as Record<string, unknown>;
+  const next = (bal ? structuredClone(bal) : {}) as Record<string, unknown>;
   let cur: Record<string, unknown> = next;
   for (let i = 0; i < parts.length - 1; i++) {
     const k = parts[i];
@@ -62,6 +61,43 @@ export function BalanceSheetCard({
   const ativoCircCalc =
     (capital.disponibilidades || 0) + (capital.estoques || 0) + (capital.contasReceber || 0);
 
+  // CFO #5 — soma do imobilizado detalhado (líquido de depreciação acumulada)
+  // + intangíveis. Permite derivar Ativo Total quando o detalhe está preenchido.
+  const imob = capital.balanco?.ativoNaoCirculante?.imobilizado;
+  const intang = capital.balanco?.ativoNaoCirculante?.intangivel;
+  const imobBruto =
+    (imob?.terrenos || 0) +
+    (imob?.edificacoes || 0) +
+    (imob?.maquinasEquipamentos || 0) +
+    (imob?.veiculos || 0) +
+    (imob?.moveisUtensilios || 0) +
+    (imob?.outrosImobilizados || 0);
+  const imobLiquido = imobBruto - (imob?.depreciacaoAcumulada || 0);
+  const intangLiquido =
+    (intang?.software || 0) +
+    (intang?.marcasPatentes || 0) +
+    (intang?.goodwill || 0) +
+    (intang?.outrosIntangiveis || 0) -
+    (intang?.amortizacaoAcumulada || 0);
+  const ativoNaoCircCalc = Math.max(0, imobLiquido) + Math.max(0, intangLiquido);
+  const ativoTotalDerivado = ativoCircCalc + ativoNaoCircCalc;
+  const temImobilizadoDetalhado = imobBruto > 0 || intangLiquido > 0;
+
+  // CFO #2 — soma do PL detalhado. Quando preenchido, vira a fonte derivada.
+  const plDet = capital.balanco?.patrimonioLiquido;
+  const plDetalhado =
+    (plDet?.capitalSocial || 0) +
+    (plDet?.reservasCapital || 0) +
+    (plDet?.reservasLucros || 0) +
+    (plDet?.lucrosPrejuizosAcumulados || 0) +
+    (plDet?.resultadoExercicio || 0) +
+    (plDet?.ajustesAvaliacaoPatrimonial || 0) -
+    (plDet?.acoesEmTesouraria || 0);
+  const temPlDetalhado =
+    (plDet?.capitalSocial || 0) > 0 ||
+    (plDet?.reservasCapital || 0) > 0 ||
+    (plDet?.lucrosPrejuizosAcumulados || 0) !== 0;
+
   // Total de Passivos: evita dupla contagem (passivoCirculante explícito já
   // inclui fornecedores e parcela CP da dívida).
   const totalPassivos =
@@ -76,30 +112,16 @@ export function BalanceSheetCard({
     capital.ativoTotal > 0 && diff > Math.max(100, capital.ativoTotal * 0.02);
 
 
-  // Auto-preenche PL quando vazio (= cálculo Ativo − Dívidas). Se o usuário
-  // informar manualmente um valor diferente, mantemos e exibimos o alerta.
-  useEffect(() => {
-    if (plInformado === 0 && capital.ativoTotal > 0 && plCalculado !== 0) {
-      onChange({ patrimonioLiquido: plCalculado });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plCalculado, capital.ativoTotal]);
+
+  // Sugestão de PL: cálculo on-demand (não auto-aplica). O usuário escolhe
+  // explicitamente via botão "Usar PL calculado" ou "Ajustar PL para X".
+  // Removido useEffect que sobrescrevia silenciosamente (causa race conditions).
+
+
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
-      <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-          <Camera className="h-4 w-4" />
-        </span>
-        <div className="min-w-0">
-          <SectionTitle hint="Saldos atuais do balanço — preencha com os últimos números do seu contador. Geram liquidez, ROE, ROA e alavancagem.">
-            Fotografia do balanço hoje
-          </SectionTitle>
-          <div className="mt-0.5 text-[11px] text-muted-foreground">
-            Em 3 passos rápidos você descreve a posição patrimonial da empresa.
-          </div>
-        </div>
-      </div>
+
 
       {/* PASSO 1 — ATIVOS + Detalhes patrimoniais (imobilizado e PL dos sócios) */}
       <StepCard
@@ -137,9 +159,26 @@ export function BalanceSheetCard({
             hint="Soma de TUDO que a empresa possui: caixa, estoques, máquinas, imóveis, veículos, contas a receber etc."
             value={capital.ativoTotal}
             onChange={(n) => onChange({ ativoTotal: n })}
-            emphasis
           />
         </div>
+
+        {/* CFO #5 — sugestão de Ativo Total derivado do imobilizado detalhado. */}
+        {temImobilizadoDetalhado && Math.abs((capital.ativoTotal || 0) - ativoTotalDerivado) > Math.max(100, ativoTotalDerivado * 0.02) && (
+          <div className="mt-2 flex flex-col gap-2 rounded-md border border-primary/30 bg-primary/5 p-2 text-[11px]">
+            <span className="text-muted-foreground">
+              Ativo Total <strong className="text-foreground">derivado</strong> do imobilizado detalhado +
+              circulante = <strong className="text-primary">{fmtBRL(ativoTotalDerivado)}</strong>{" "}
+              <span className="opacity-70">(Circulante {fmtBRL(ativoCircCalc)} + Imobilizado líq. {fmtBRL(Math.max(0, imobLiquido))} + Intangível líq. {fmtBRL(Math.max(0, intangLiquido))}).</span>
+            </span>
+            <button
+              onClick={() => onChange({ ativoTotal: ativoTotalDerivado })}
+              className="self-start rounded bg-primary/20 px-2 py-1 text-[10px] font-bold uppercase text-primary hover:bg-primary/30 transition-colors"
+            >
+              Usar valor derivado: {fmtBRL(ativoTotalDerivado)}
+            </button>
+          </div>
+        )}
+
 
         <div className="mt-3 grid grid-cols-4 overflow-hidden rounded-md border border-border/40 text-center text-[10px]">
           <MiniStat label="Caixa/bancos" value={fmtBRL(capital.disponibilidades)} />
@@ -269,10 +308,30 @@ export function BalanceSheetCard({
             />
           </div>
 
+          {/* CFO #2 — sugestão de PL agregado quando o detalhe está preenchido. */}
+          {temPlDetalhado && Math.abs(plInformado - plDetalhado) > Math.max(100, Math.abs(plDetalhado) * 0.02) && (
+            <div className="mt-3 flex flex-col gap-2 rounded-md border border-primary/30 bg-primary/5 p-2 text-[11px]">
+              <span className="text-muted-foreground">
+                PL <strong className="text-foreground">derivado</strong> do detalhe (Capital Social + Reservas + Lucros){" "}
+                = <strong className="text-primary">{fmtBRL(plDetalhado)}</strong>.
+                {plInformado !== 0 && (
+                  <> Divergência vs. PL agregado: <strong>{fmtBRL(Math.abs(plInformado - plDetalhado))}</strong>.</>
+                )}
+              </span>
+              <button
+                onClick={() => onChange({ patrimonioLiquido: plDetalhado })}
+                className="self-start rounded bg-primary/20 px-2 py-1 text-[10px] font-bold uppercase text-primary hover:bg-primary/30 transition-colors"
+              >
+                Usar PL derivado: {fmtBRL(plDetalhado)}
+              </button>
+            </div>
+          )}
+
           <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-2 text-[11px] text-muted-foreground">
             Esses valores aparecem <strong className="text-primary">automaticamente</strong> na aba{" "}
             <strong className="text-foreground">Balanço</strong>.
           </div>
+
         </div>
       </StepCard>
 

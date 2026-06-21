@@ -13,7 +13,6 @@
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
-  CalendarClock,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -23,7 +22,6 @@ import {
 } from "lucide-react";
 import type { AppState, BalancoAbertura } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
-import { SectionTitle } from "@/components/sim/shared/primitives";
 import { StepCard, SimpleField } from "@/components/sim/capital/parts";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { useFinance } from "@/engines/finance/AppStateContext";
@@ -111,22 +109,7 @@ export function AberturaCard({
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
-      <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-          <CalendarClock className="h-4 w-4" />
-        </span>
-        <div className="min-w-0">
-          <SectionTitle hint="Saldos no 1º dia do exercício. Todos derivados automaticamente do Balanço (Card 1), Contratos de Dívida e do 1º mês da DRE/Despesas. Só dois campos exigem digitação — os demais são puxados de onde já foram informados.">
-            Saldos de abertura do exercício
-          </SectionTitle>
-          <div className="mt-0.5 text-[11px] text-muted-foreground">
-            <strong>SSOT</strong> — Estes saldos são <em>derivados</em> das
-            outras seções (Balanço, Contratos, DRE). Você só preenche o que
-            não tem fonte: <em>Lucros Acumulados</em> (histórico) e{" "}
-            <em>Impostos a Recuperar</em>.
-          </div>
-        </div>
-      </div>
+
 
       {/* Outras informações de abertura — campos sem fonte derivável (vem ANTES dos derivados) */}
       <StepCard
@@ -135,6 +118,16 @@ export function AberturaCard({
         title="Outras informações de abertura"
         subtitle="Lucros acumulados, créditos tributários e depreciação mensal"
       >
+        <div className="mb-3 flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 p-2.5 text-[10.5px] text-muted-foreground">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+          <span>
+            <strong className="text-foreground">Lucros Acumulados é o único "plug" aceitável.</strong>{" "}
+            Se o balanço de abertura não fechar (Ativo ≠ Passivo + PL), esta linha absorve o
+            resíduo histórico — não é erro de cálculo, é a contrapartida de exercícios anteriores
+            que você não reconstruiu rubrica a rubrica. Use o botão <em>"Ajustar Lucros Acumulados"</em>{" "}
+            no painel derivado para zerar a diferença.
+          </span>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <SimpleField
             icon={<Wallet className="h-4 w-4" />}
