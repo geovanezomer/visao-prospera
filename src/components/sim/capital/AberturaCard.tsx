@@ -10,12 +10,10 @@
 //     (default 0, ajustáveis para empresas em operação há vários anos).
 //
 // Toda derivação vive em engines/finance/aberturaDerivada.ts (SSOT).
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
-  ChevronDown,
-  ChevronRight,
   Wallet,
   Receipt,
   Info,
@@ -91,7 +89,7 @@ export function AberturaCard({
   const ab: BalancoAbertura = capital.abertura ?? {};
   const { state } = useFinance();
   const { model } = useFinanceModel(state);
-  const [showOverrides, setShowOverrides] = useState(false);
+  
 
   const derived: AberturaDerivada = useMemo(
     () =>
@@ -151,6 +149,20 @@ export function AberturaCard({
             value={n(capital.depreciacaoMensal)}
             onChange={(v) => onChange({ depreciacaoMensal: v })}
           />
+          <SimpleField
+            icon={<Wallet className="h-4 w-4" />}
+            label="(−) Depreciação acumulada"
+            hint="Total já depreciado sobre o imobilizado existente, antes do exercício. Positivo — entra como redutor. Em greenfield, deixe em zero."
+            value={n(ab.depreciacaoAcumulada)}
+            onChange={(v) => set({ depreciacaoAcumulada: v })}
+          />
+          <SimpleField
+            icon={<Wallet className="h-4 w-4" />}
+            label="(−) Amortização acumulada"
+            hint="Total já amortizado sobre intangíveis, antes do exercício. Positivo — entra como redutor. Em greenfield, deixe em zero."
+            value={n(ab.amortizacaoAcumulada)}
+            onChange={(v) => set({ amortizacaoAcumulada: v })}
+          />
         </div>
       </StepCard>
 
@@ -183,52 +195,6 @@ export function AberturaCard({
       </StepCard>
 
 
-
-      {/* Overrides avançados (collapsable) */}
-      <div className="rounded-md border border-border/40 bg-background/30">
-        <button
-          type="button"
-          onClick={() => setShowOverrides((v) => !v)}
-          className="flex w-full items-center justify-between px-3 py-2 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <span className="flex items-center gap-1.5">
-            {showOverrides ? (
-              <ChevronDown className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronRight className="h-3.5 w-3.5" />
-            )}
-            Ajustes avançados (raros) — Depreciação / Amortização acumulada
-          </span>
-          <span className="text-[10px] opacity-60">
-            {showOverrides ? "ocultar" : "mostrar"}
-          </span>
-        </button>
-        {showOverrides && (
-          <div className="border-t border-border/40 p-3 space-y-2">
-            <p className="text-[10.5px] text-muted-foreground">
-              Use apenas se a empresa já opera há vários anos e você dispõe do
-              saldo de depreciação/amortização <em>já acumulada</em> até o
-              início do exercício. Em greenfield, deixe em zero.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <SimpleField
-                icon={<Wallet className="h-4 w-4" />}
-                label="(−) Depreciação acumulada"
-                hint="Total já depreciado sobre o imobilizado existente, antes do exercício. Positivo — entra como redutor."
-                value={n(ab.depreciacaoAcumulada)}
-                onChange={(v) => set({ depreciacaoAcumulada: v })}
-              />
-              <SimpleField
-                icon={<Wallet className="h-4 w-4" />}
-                label="(−) Amortização acumulada"
-                hint="Total já amortizado sobre intangíveis, antes do exercício. Positivo — entra como redutor."
-                value={n(ab.amortizacaoAcumulada)}
-                onChange={(v) => set({ amortizacaoAcumulada: v })}
-              />
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* Validação de fechamento */}
       <div
@@ -277,34 +243,6 @@ export function AberturaCard({
             </span>
           </div>
         )}
-      </div>
-
-      {/* Totais */}
-      <div className="grid grid-cols-3 gap-3 text-center text-[11px]">
-        <div className="rounded-md border border-border/40 bg-background/40 p-2">
-          <div className="text-muted-foreground uppercase tracking-wide text-[9.5px]">
-            Ativo abertura
-          </div>
-          <div className="mt-1 font-semibold tabular-nums">
-            {fmtBRL(derived.totals.ativo)}
-          </div>
-        </div>
-        <div className="rounded-md border border-border/40 bg-background/40 p-2">
-          <div className="text-muted-foreground uppercase tracking-wide text-[9.5px]">
-            Passivo abertura
-          </div>
-          <div className="mt-1 font-semibold tabular-nums">
-            {fmtBRL(derived.totals.passivo)}
-          </div>
-        </div>
-        <div className="rounded-md border border-border/40 bg-background/40 p-2">
-          <div className="text-muted-foreground uppercase tracking-wide text-[9.5px]">
-            PL abertura
-          </div>
-          <div className="mt-1 font-semibold tabular-nums">
-            {fmtBRL(derived.totals.pl)}
-          </div>
-        </div>
       </div>
     </div>
   );
