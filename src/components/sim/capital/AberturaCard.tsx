@@ -111,22 +111,7 @@ export function AberturaCard({
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
-      <div className="flex items-start gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-          <CalendarClock className="h-4 w-4" />
-        </span>
-        <div className="min-w-0">
-          <SectionTitle hint="Saldos no 1º dia do exercício. Todos derivados automaticamente do Balanço (Card 1), Contratos de Dívida e do 1º mês da DRE/Despesas. Só dois campos exigem digitação — os demais são puxados de onde já foram informados.">
-            Saldos de abertura do exercício
-          </SectionTitle>
-          <div className="mt-0.5 text-[11px] text-muted-foreground">
-            <strong>SSOT</strong> — Estes saldos são <em>derivados</em> das
-            outras seções (Balanço, Contratos, DRE). Você só preenche o que
-            não tem fonte: <em>Lucros Acumulados</em> (histórico) e{" "}
-            <em>Impostos a Recuperar</em>.
-          </div>
-        </div>
-      </div>
+
 
       {/* Outras informações de abertura — campos sem fonte derivável (vem ANTES dos derivados) */}
       <StepCard
