@@ -3,6 +3,7 @@ import { useFinance } from "@/engines/finance/AppStateContext";
 import { fmtBRL } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { KE_DEFAULT_BY_SECTOR } from "@/engines/finance/indicators";
+import { StatCard } from "@/components/sim/shared/primitives";
 
 
 import { BalanceSheetCard } from "@/components/sim/capital/BalanceSheetCard";
@@ -125,33 +126,40 @@ export function CapitalTab() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Totais de abertura — topo da página */}
-      <div className="grid grid-cols-3 gap-3 text-center text-[11px]">
-        <div className="rounded-md border border-border/40 bg-card/40 p-3">
-          <div className="text-muted-foreground uppercase tracking-wide text-[9.5px]">
-            Ativo abertura
-          </div>
-          <div className="mt-1 font-semibold tabular-nums text-sm">
-            {fmtBRL(aberturaTotals.ativo)}
-          </div>
-        </div>
-        <div className="rounded-md border border-border/40 bg-card/40 p-3">
-          <div className="text-muted-foreground uppercase tracking-wide text-[9.5px]">
-            Passivo abertura
-          </div>
-          <div className="mt-1 font-semibold tabular-nums text-sm">
-            {fmtBRL(aberturaTotals.passivo)}
-          </div>
-        </div>
-        <div className="rounded-md border border-border/40 bg-card/40 p-3">
-          <div className="text-muted-foreground uppercase tracking-wide text-[9.5px]">
-            PL abertura
-          </div>
-          <div className="mt-1 font-semibold tabular-nums text-sm">
-            {fmtBRL(aberturaTotals.pl)}
-          </div>
-        </div>
+      {/* Totais de abertura — topo da página, padrão visual igual ao Dashboard */}
+      <div className="grid gap-2 grid-cols-1 sm:grid-cols-3">
+        <StatCard
+          label="Ativo abertura"
+          value={fmtBRL(aberturaTotals.ativo)}
+          tone="pos"
+          hint={{
+            description:
+              "Soma de Caixa + Recebíveis + Estoques + Imobilizado Líquido + Intangível Líquido + Impostos a Recuperar na data de abertura.",
+            formula: "Σ Ativos (Circulante + Não-Circulante)",
+          }}
+        />
+        <StatCard
+          label="Passivo abertura"
+          value={fmtBRL(aberturaTotals.passivo)}
+          tone="neg"
+          hint={{
+            description:
+              "Soma de Fornecedores + Empréstimos CP/LP + Impostos a Pagar + Salários e Encargos na data de abertura.",
+            formula: "Σ Passivos (Circulante + Não-Circulante)",
+          }}
+        />
+        <StatCard
+          label="PL abertura"
+          value={fmtBRL(aberturaTotals.pl)}
+          tone={aberturaTotals.pl >= 0 ? "pos" : "neg"}
+          hint={{
+            description:
+              "Patrimônio Líquido de abertura — Capital Social + Reservas + Lucros/Prejuízos Acumulados. Negativo indica passivo a descoberto.",
+            formula: "Capital Social + Reservas + Lucros Acumulados",
+          }}
+        />
       </div>
+
 
       {warnings.length > 0 && (
         <div className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-xs">
