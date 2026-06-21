@@ -182,7 +182,100 @@ export function BalanceSheetCard({
           }
           return null;
         })()}
+
+        {/* Detalhes patrimoniais (antes era StepCard separado — agora unificado aqui) */}
+        <div className="mt-5 border-t border-border/40 pt-4">
+          <div className="mb-3 text-[11px] text-muted-foreground">
+            <strong className="text-foreground">Imobilizado (opcional)</strong> — bens duráveis da empresa. Vão direto para o Balanço.
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <SimpleField
+              icon={<Building2 className="h-4 w-4" />}
+              label="Terrenos"
+              hint="Valor contábil dos terrenos próprios."
+              value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.terrenos")}
+              onChange={(n) =>
+                onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.terrenos", n) })
+              }
+            />
+            <SimpleField
+              icon={<Building2 className="h-4 w-4" />}
+              label="Edificações e benfeitorias"
+              hint="Imóveis, galpões, salas, reformas capitalizadas."
+              value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.edificacoes")}
+              onChange={(n) =>
+                onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.edificacoes", n) })
+              }
+            />
+            <SimpleField
+              icon={<Settings2 className="h-4 w-4" />}
+              label="Máquinas e equipamentos"
+              hint="Valor contábil de máquinas, equipamentos produtivos e ferramentas."
+              value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.maquinasEquipamentos")}
+              onChange={(n) =>
+                onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.maquinasEquipamentos", n) })
+              }
+            />
+            <SimpleField
+              icon={<Package className="h-4 w-4" />}
+              label="Veículos"
+              hint="Frota da empresa (carros, caminhões, motos)."
+              value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.veiculos")}
+              onChange={(n) =>
+                onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.veiculos", n) })
+              }
+            />
+            <SimpleField
+              icon={<Package className="h-4 w-4" />}
+              label="Móveis e utensílios"
+              hint="Mobiliário, computadores, equipamentos de escritório."
+              value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.moveisUtensilios")}
+              onChange={(n) =>
+                onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.moveisUtensilios", n) })
+              }
+            />
+          </div>
+
+          <div className="mt-4 mb-3 text-[11px] text-muted-foreground">
+            <strong className="text-foreground">Patrimônio dos sócios (opcional)</strong> — origem do capital da empresa.
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <SimpleField
+              icon={<Landmark className="h-4 w-4" />}
+              label="Capital social"
+              hint="Valor integralizado pelos sócios no contrato social."
+              value={getBalancoAt(capital.balanco, "patrimonioLiquido.capitalSocial")}
+              onChange={(n) =>
+                onChange({ balanco: setBalancoAt(capital.balanco, "patrimonioLiquido.capitalSocial", n) })
+              }
+            />
+            <SimpleField
+              icon={<Landmark className="h-4 w-4" />}
+              label="Reservas de capital"
+              hint="Ágio na emissão de cotas/ações, subvenções, doações."
+              value={getBalancoAt(capital.balanco, "patrimonioLiquido.reservasCapital")}
+              onChange={(n) =>
+                onChange({ balanco: setBalancoAt(capital.balanco, "patrimonioLiquido.reservasCapital", n) })
+              }
+            />
+            <SimpleField
+              icon={<Wallet className="h-4 w-4" />}
+              label="Lucros / prejuízos acumulados"
+              hint="Resultados retidos de exercícios anteriores (não distribuídos). Pode ser negativo (prejuízo)."
+              value={getBalancoAt(capital.balanco, "patrimonioLiquido.lucrosPrejuizosAcumulados")}
+              onChange={(n) =>
+                onChange({ balanco: setBalancoAt(capital.balanco, "patrimonioLiquido.lucrosPrejuizosAcumulados", n) })
+              }
+            />
+          </div>
+
+          <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-2 text-[11px] text-muted-foreground">
+            Esses valores aparecem <strong className="text-primary">automaticamente</strong> na aba{" "}
+            <strong className="text-foreground">Balanço</strong>.
+          </div>
+        </div>
       </StepCard>
+
 
       {/* PASSO 2 — DÍVIDAS + PL */}
       <StepCard
