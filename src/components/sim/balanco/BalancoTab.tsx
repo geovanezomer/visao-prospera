@@ -1,27 +1,35 @@
 // Aba Balanço — Balanço Patrimonial detalhado (Fase 2 completa).
 //
-// 3 modos de profundidade:
-//   - Simples   → rubricas essenciais (empresário)
-//   - Padrão    → + decomposição de imobilizado, salários, parcelamentos
-//   - Completo  → todas as rubricas CPC/BR
+// 2 modos de profundidade:
+//   - Padrão    → rubricas essenciais (empresário / PME com contador)
+//   - Completo  → todas as rubricas CPC/BR (raio-X consultor/CVM)
+// + comparativo opcional N vs N-1 (AV% e AH%).
 //
 // Recursos:
-//   - Auto-puxar Resultado do Exercício do DRE
-//   - Comparativo opcional N vs N-1 (AV% e AH%)
-//   - Validação de fechamento (Ativo = Passivo + PL)
-//   - Sub-totais e totais SEMPRE derivados (nunca digitados)
+//   - "Pré-preencher do operacional": deriva caixa, CR, estoques, fornecedores,
+//     empréstimos CP/LP, imobilizado/depreciação e resultado do exercício a
+//     partir de Receitas/Custos/Capital/DRE — SEM sobrescrever campos digitados.
+//   - "Salvar como N-1": congela o N atual como ano-base para análise horizontal.
+//   - Validação de fechamento (Ativo = Passivo + PL) em tempo real.
+//   - Sub-totais e totais SEMPRE derivados (nunca digitados).
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { calcBalancoTotals } from "@/engines/finance/balanco";
+import {
+  calcBalancoTotals,
+  mergeBalancoPreservandoUsuario,
+  snapshotAnterior,
+  suggestBalancoFromState,
+} from "@/engines/finance/balanco";
 import { fmtBRL } from "@/engines/finance/format";
 import type { BalancoDetalhado } from "@/engines/finance/types";
-import { Scale, Download, GitCompare, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Scale, Download, GitCompare, CheckCircle2, AlertTriangle, Wand2, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type Modo = "simples" | "padrao" | "completo";
+type Modo = "padrao" | "completo";
 const MODO_KEY = "finnance:balanco:modo";
 const COMP_KEY = "finnance:balanco:comparativo";
 
