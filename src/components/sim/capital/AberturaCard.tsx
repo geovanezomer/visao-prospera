@@ -147,7 +147,7 @@ export function AberturaCard({
           <SimpleField
             icon={<Wallet className="h-4 w-4" />}
             label="Depreciação mensal"
-            hint="Perda contábil de valor de máquinas, equipamentos e imóveis no mês. Não sai do caixa, mas reduz o lucro tributável. Entra na DRE todo mês."
+            hint="Perda contábil de valor de máquinas, equipamentos e imóveis. Sempre aparece no DRE reduzindo EBIT e LAIR (visão contábil) e nunca sai do caixa. IMPACTO TRIBUTÁRIO: só reduz IR/CSLL no LUCRO REAL — em Simples Nacional e Lucro Presumido o imposto é calculado sobre a receita (presunção), então a depreciação não gera economia fiscal nesses regimes. Junta-se à depreciação automática do CapEx (Ativações de imobilizado)."
             value={n(capital.depreciacaoMensal)}
             onChange={(v) => onChange({ depreciacaoMensal: v })}
           />
