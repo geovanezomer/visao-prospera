@@ -101,12 +101,12 @@ export function BalanceSheetCard({
         </div>
       </div>
 
-      {/* PASSO 1 — ATIVOS */}
+      {/* PASSO 1 — ATIVOS + Detalhes patrimoniais (imobilizado e PL dos sócios) */}
       <StepCard
         step={1}
         color="var(--success)"
         title="Dinheiro e bens da empresa"
-        subtitle="Tudo que pode virar caixa em algum momento"
+        subtitle="Caixa, estoques, recebíveis + imobilizado e patrimônio dos sócios"
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <SimpleField
