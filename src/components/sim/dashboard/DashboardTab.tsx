@@ -215,12 +215,12 @@ export function DashboardTab() {
         />
         <StatCard
           label="Alavancagem Patrimonial"
-          value={alav.value}
-          tone={alav.tone}
-          sub="(Dívida Total − Caixa) ÷ PL"
+          value={ind.dividaLiquida < 0 ? "Caixa > Dívida" : "Caixa < Dívida"}
+          tone={ind.dividaLiquida < 0 ? "pos" : "neg"}
+          sub={alav.value}
           hint={{
             description:
-              "Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio. Caixa supera a dívida quando o resultado é negativo.",
+              "Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio. Quando o caixa supera a dívida onerosa, a Dívida Líquida é negativa (posição cash-rich).",
             formula: "(Dívida Total − Caixa) ÷ Patrimônio Líquido",
           }}
         />
