@@ -67,7 +67,8 @@ export function buildFinancialModel(rawState: AppState): FinancialModel {
   const val = buildValuation(state, defaultValuationParams(state.businessType));
   const health = computeHealth(state);
   const cagrReceitas12m = cagr12m(dre.receitaLiquida);
-  return { regime, dre, tax, ind, cf, val, health, cagrReceitas12m };
+  const balancoFechamento = deriveBalancoFechamento({ state, dre, cf });
+  return { regime, dre, tax, ind, cf, val, health, cagrReceitas12m, balancoFechamento };
 }
 
 // ============================================================
