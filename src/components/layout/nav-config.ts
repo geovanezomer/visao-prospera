@@ -24,6 +24,7 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
+  { title: "Dashboard", icon: LayoutDashboard, value: "dashboard" },
   { title: "Receitas", icon: Receipt, value: "receitas" },
   { title: "Despesas", icon: ReceiptText, value: "custos" },
   { title: "Capital", icon: Wallet, value: "capital" },
@@ -33,7 +34,6 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Indicadores", icon: Activity, value: "indicadores" },
   { title: "Governança", icon: ShieldCheck, value: "governanca" },
   { title: "Diagnóstico", icon: Search, value: "resultados" },
-  { title: "Dashboard", icon: LayoutDashboard, value: "dashboard" },
   { title: "Simulador", icon: Wand2, value: "simulador" },
   { title: "Valuation", icon: Landmark, value: "valuation" },
   { title: "Consultor IA", icon: Bot, value: "ai" },
