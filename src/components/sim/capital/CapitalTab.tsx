@@ -124,7 +124,7 @@ export function CapitalTab() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Totais de abertura — topo da página */}
       <div className="grid grid-cols-3 gap-3 text-center text-[11px]">
         <div className="rounded-md border border-border/40 bg-card/40 p-3">

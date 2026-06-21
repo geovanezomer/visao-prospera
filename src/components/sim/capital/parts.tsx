@@ -23,19 +23,19 @@ export function StepCard({
     >
       <div className="flex items-center gap-3 border-b border-border/60 p-4">
         <span
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold text-background"
+          className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[10px] font-bold text-background"
           style={{ background: color }}
         >
           {step}
         </span>
         <div className="min-w-0">
-          <div className="text-sm font-semibold" style={{ color }}>
+          <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {title}
-          </div>
-          <div className="text-[11px] text-muted-foreground">{subtitle}</div>
+          </h3>
+          <div className="text-[11px] text-muted-foreground/80">{subtitle}</div>
         </div>
       </div>
-      <div className="p-4">{children}</div>
+      <div className="space-y-4 p-2">{children}</div>
     </div>
   );
 }
