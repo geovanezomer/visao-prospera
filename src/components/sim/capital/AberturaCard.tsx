@@ -210,12 +210,14 @@ export function AberturaCard({
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <SimpleField
+                icon={<Wallet className="h-4 w-4" />}
                 label="(−) Depreciação acumulada"
                 hint="Total já depreciado sobre o imobilizado existente, antes do exercício. Positivo — entra como redutor."
                 value={n(ab.depreciacaoAcumulada)}
                 onChange={(v) => set({ depreciacaoAcumulada: v })}
               />
               <SimpleField
+                icon={<Wallet className="h-4 w-4" />}
                 label="(−) Amortização acumulada"
                 hint="Total já amortizado sobre intangíveis, antes do exercício. Positivo — entra como redutor."
                 value={n(ab.amortizacaoAcumulada)}
