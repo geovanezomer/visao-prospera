@@ -13,7 +13,6 @@
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
-  CalendarClock,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -23,7 +22,6 @@ import {
 } from "lucide-react";
 import type { AppState, BalancoAbertura } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
-import { SectionTitle } from "@/components/sim/shared/primitives";
 import { StepCard, SimpleField } from "@/components/sim/capital/parts";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { useFinance } from "@/engines/finance/AppStateContext";
