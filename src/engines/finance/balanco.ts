@@ -6,7 +6,7 @@
 //
 // IMPORTANTE: depreciação acumulada, amortização acumulada, PDD e ações em
 // tesouraria entram como POSITIVOS no input e são SUBTRAÍDAS aqui.
-import { BalancoDetalhado } from "./types";
+import type { AppState, BalancoDetalhado } from "./types";
 
 const n = (v: number | undefined): number => (typeof v === "number" && isFinite(v) ? v : 0);
 const sumObj = (o: Record<string, number | undefined> | undefined): number =>
