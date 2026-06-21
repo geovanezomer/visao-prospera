@@ -11,6 +11,8 @@ import { buildCashFlow } from "@/engines/finance/cashflow";
 import { buildValuation, defaultValuationParams } from "@/engines/finance/valuation";
 import { computeHealth } from "@/engines/finance/health";
 import { buildPrescriptiveCards } from "@/engines/finance/prescriptive";
+import { deriveBalancoFechamento } from "@/engines/finance/balancoFechamento";
+import { deriveAbertura } from "@/engines/finance/aberturaDerivada";
 import { MESES, sum, fmtNum } from "@/engines/finance/format";
 
 // ===== Helpers =====
