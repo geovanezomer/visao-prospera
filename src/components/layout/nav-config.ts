@@ -12,6 +12,7 @@ import {
   Bot,
   Activity,
   Landmark,
+  Scale,
 } from "lucide-react";
 import { TabKey } from "@/engines/finance/types";
 
