@@ -111,7 +111,7 @@ export function AberturaCard({
 
       {/* Outras informações de abertura — campos sem fonte derivável (vem ANTES dos derivados) */}
       <StepCard
-        step={1}
+        step={3}
         color="var(--primary)"
         title="Outras informações de abertura"
         subtitle="Lucros acumulados, créditos tributários e depreciação mensal"
@@ -168,7 +168,7 @@ export function AberturaCard({
 
       {/* Painel DERIVADO */}
       <StepCard
-        step={2}
+        step={4}
         color="var(--success)"
         title="Saldos derivados automaticamente"
         subtitle="Cada rubrica mostra a sua fonte única (SSOT)"
