@@ -336,7 +336,6 @@ export function BalanceSheetCard({
 
       </StepCard>
 
-      {capexSlot}
 
 
 
