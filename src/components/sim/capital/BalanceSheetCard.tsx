@@ -61,6 +61,43 @@ export function BalanceSheetCard({
   const ativoCircCalc =
     (capital.disponibilidades || 0) + (capital.estoques || 0) + (capital.contasReceber || 0);
 
+  // CFO #5 — soma do imobilizado detalhado (líquido de depreciação acumulada)
+  // + intangíveis. Permite derivar Ativo Total quando o detalhe está preenchido.
+  const imob = capital.balanco?.ativoNaoCirculante?.imobilizado;
+  const intang = capital.balanco?.ativoNaoCirculante?.intangivel;
+  const imobBruto =
+    (imob?.terrenos || 0) +
+    (imob?.edificacoes || 0) +
+    (imob?.maquinasEquipamentos || 0) +
+    (imob?.veiculos || 0) +
+    (imob?.moveisUtensilios || 0) +
+    (imob?.outrosImobilizados || 0);
+  const imobLiquido = imobBruto - (imob?.depreciacaoAcumulada || 0);
+  const intangLiquido =
+    (intang?.software || 0) +
+    (intang?.marcasPatentes || 0) +
+    (intang?.goodwill || 0) +
+    (intang?.outrosIntangiveis || 0) -
+    (intang?.amortizacaoAcumulada || 0);
+  const ativoNaoCircCalc = Math.max(0, imobLiquido) + Math.max(0, intangLiquido);
+  const ativoTotalDerivado = ativoCircCalc + ativoNaoCircCalc;
+  const temImobilizadoDetalhado = imobBruto > 0 || intangLiquido > 0;
+
+  // CFO #2 — soma do PL detalhado. Quando preenchido, vira a fonte derivada.
+  const plDet = capital.balanco?.patrimonioLiquido;
+  const plDetalhado =
+    (plDet?.capitalSocial || 0) +
+    (plDet?.reservasCapital || 0) +
+    (plDet?.reservasLucros || 0) +
+    (plDet?.lucrosPrejuizosAcumulados || 0) +
+    (plDet?.resultadoExercicio || 0) +
+    (plDet?.ajustesAvaliacaoPatrimonial || 0) -
+    (plDet?.acoesEmTesouraria || 0);
+  const temPlDetalhado =
+    (plDet?.capitalSocial || 0) > 0 ||
+    (plDet?.reservasCapital || 0) > 0 ||
+    (plDet?.lucrosPrejuizosAcumulados || 0) !== 0;
+
   // Total de Passivos: evita dupla contagem (passivoCirculante explícito já
   // inclui fornecedores e parcela CP da dívida).
   const totalPassivos =
@@ -73,6 +110,7 @@ export function BalanceSheetCard({
   const diff = Math.abs(plInformado - plCalculado);
   const hasInconsistencia =
     capital.ativoTotal > 0 && diff > Math.max(100, capital.ativoTotal * 0.02);
+
 
 
   // Sugestão de PL: cálculo on-demand (não auto-aplica). O usuário escolhe
