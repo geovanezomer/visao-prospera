@@ -7,14 +7,12 @@ import {
   Package,
   Users,
   Coins,
-  Landmark,
   Wallet,
   AlertTriangle,
-  CheckCircle2,
   Camera,
   Settings2,
 } from "lucide-react";
-import { StepCard, SimpleField, MiniStat, SummaryList, KpiTile, Field } from "@/components/sim/capital/parts";
+import { StepCard, SimpleField, MiniStat, Field } from "@/components/sim/capital/parts";
 
 // Fotografia do balanço hoje — 3 passos (Ativos · Dívidas+PL · Resumo) +
 // lançamentos mensais. Cálculos auxiliares ficam no topo.
