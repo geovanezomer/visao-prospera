@@ -7,14 +7,12 @@ import {
   Package,
   Users,
   Coins,
-  Landmark,
   Wallet,
   AlertTriangle,
-  CheckCircle2,
   Camera,
   Settings2,
 } from "lucide-react";
-import { StepCard, SimpleField, MiniStat, SummaryList, KpiTile, Field } from "@/components/sim/capital/parts";
+import { StepCard, SimpleField, MiniStat, Field } from "@/components/sim/capital/parts";
 
 // Fotografia do balanço hoje — 3 passos (Ativos · Dívidas+PL · Resumo) +
 // lançamentos mensais. Cálculos auxiliares ficam no topo.
@@ -45,10 +43,6 @@ export function BalanceSheetCard({
   const hasInconsistencia =
     capital.ativoTotal > 0 && diff > Math.max(100, capital.ativoTotal * 0.02);
 
-  const capitalCirculante =
-    ativoCircCalc - (capital.passivoCirculante || capital.fornecedores || 0);
-  const dpl = plInformado > 0 ? (capital.dividaOnerosa || 0) / plInformado : 0;
-  const solvencia = totalPassivos > 0 ? (capital.ativoTotal || 0) / totalPassivos : 0;
 
   // Auto-preenche PL quando vazio (= cálculo Ativo − Dívidas). Se o usuário
   // informar manualmente um valor diferente, mantemos e exibimos o alerta.
@@ -218,76 +212,14 @@ export function BalanceSheetCard({
 
       {capexSlot}
 
-      {/* PASSO 3 — RESUMO + KPIs */}
-      <StepCard
-        step={3}
-        color="var(--primary)"
-        title="Resumo do balanço"
-        subtitle="Confira antes de continuar"
-      >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <SummaryList
-            title="ATIVOS"
-            color="var(--success)"
-            rows={[
-              ["Caixa e bancos", capital.disponibilidades],
-              ["Estoque", capital.estoques],
-              ["Clientes a receber", capital.contasReceber],
-              ["Total de ativos", capital.ativoTotal, true],
-            ]}
-          />
-          <SummaryList
-            title="PASSIVOS"
-            color="var(--destructive)"
-            rows={[
-              ["Empréstimos e financiamentos", capital.dividaOnerosa],
-              ["Fornecedores a pagar", capital.fornecedores],
-              ["Patrimônio líquido", capital.patrimonioLiquido, true],
-            ]}
-          />
-        </div>
-
-        {hasInconsistencia ? (
-          <div className="mt-3 flex items-center justify-between gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              Há inconsistência no balanço (Ativos ≠ Dívidas + PL).
-            </div>
-            <button
-              onClick={() => onChange({ patrimonioLiquido: plCalculado })}
-              className="text-[10px] font-bold underline decoration-warning/30 underline-offset-2 hover:text-warning/80"
-            >
-              Corrigir agora
-            </button>
-          </div>
-        ) : capital.ativoTotal > 0 ? (
-          <div className="mt-3 flex items-center gap-2 rounded-md border border-pos/40 bg-pos/10 p-2 text-[11px] text-pos">
-            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-            Balanço consistente — Ativo = Passivo + PL.
-          </div>
-        ) : null}
-
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-          <KpiTile
-            label="Capital circulante"
-            value={fmtBRL(capitalCirculante)}
-            tone={capitalCirculante >= 0 ? "pos" : "neg"}
-            hint="Ativo circulante − Passivo circulante. Folga para honrar compromissos de curto prazo."
-          />
-          <KpiTile
-            label="Alavancagem D/PL"
-            value={`${dpl.toFixed(2)}×`}
-            tone={dpl <= 2 ? "pos" : dpl <= 3 ? "warn" : "neg"}
-            hint="Dívida onerosa ÷ Patrimônio líquido. Saudável ≤ 2×."
-          />
-          <KpiTile
-            label="Solvência geral"
-            value={`${solvencia.toFixed(2)}×`}
-            tone={solvencia >= 1.5 ? "pos" : solvencia >= 1 ? "warn" : "neg"}
-            hint="Ativo total ÷ Passivo total. Quanto a empresa tem para cada R$ 1 de dívida."
-          />
-        </div>
-      </StepCard>
+      {/* PASSO 3 (Resumo do Balanço) movido para a aba dedicada "Balanço"
+          — UI completa com 3 modos de profundidade, comparativo N vs N-1
+          e validação de fechamento vive em src/components/sim/balanco. */}
+      <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-[11px] text-muted-foreground">
+        <span className="font-semibold text-primary">Resumo e raio-X patrimonial</span>{" "}
+        agora moram na aba <strong className="text-foreground">Balanço</strong> (logo após
+        o DRE) — com 3 modos de profundidade, comparativo N vs N-1 e fechamento contábil.
+      </div>
 
       {/* Lançamentos mensais (mantidos para a DRE) */}
       <div className="rounded-md border border-border/40 bg-background/30 p-3">
