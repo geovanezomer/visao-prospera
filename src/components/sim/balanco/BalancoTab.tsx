@@ -289,12 +289,32 @@ export function BalancoTab() {
             <Button
               size="sm"
               variant="outline"
+              onClick={prePreencher}
+              className="h-8 gap-1.5 text-[11px]"
+              title="Deriva caixa, CR, estoques, fornecedores, empréstimos CP/LP, imobilizado e resultado a partir de Receitas/Custos/Capital. Não sobrescreve valores digitados."
+            >
+              <Wand2 className="h-3.5 w-3.5" />
+              Pré-preencher do operacional
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               onClick={puxarResultadoDRE}
               className="h-8 gap-1.5 text-[11px]"
               title="Soma do Lucro Líquido (12m) do DRE atual"
             >
               <Download className="h-3.5 w-3.5" />
-              Puxar Resultado do DRE ({fmtBRL(resultadoDRE)})
+              Puxar DRE ({fmtBRL(resultadoDRE)})
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={salvarComoNm1}
+              className="h-8 gap-1.5 text-[11px]"
+              title="Copia o balanço atual como ano-base (N-1) para análise horizontal."
+            >
+              <Camera className="h-3.5 w-3.5" />
+              Salvar como N-1
             </Button>
           </div>
         </div>
