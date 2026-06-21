@@ -3,6 +3,7 @@ import { useFinance } from "@/engines/finance/AppStateContext";
 import { fmtBRL } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { KE_DEFAULT_BY_SECTOR } from "@/engines/finance/indicators";
+import { StatCard } from "@/components/sim/shared/primitives";
 
 
 import { BalanceSheetCard } from "@/components/sim/capital/BalanceSheetCard";
