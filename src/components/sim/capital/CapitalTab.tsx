@@ -17,8 +17,6 @@ import {
   DEBT_CONTRACTS_COST_ID,
 } from "@/engines/finance/debtContracts";
 import type { CostLine, DebtContract } from "@/engines/finance/types";
-import { StatCard } from "@/components/sim/shared/primitives";
-import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
 
 
 
@@ -96,10 +94,6 @@ export function CapitalTab() {
   }, [state.businessType]);
 
 
-  const wacc = ind.wacc;
-  // Proporção real (PL ÷ PL+D) vem do motor — `ind.proprioPercent`.
-  const proprioDerivado = ind.proprioPercent;
-  const terceiros = 100 - proprioDerivado;
 
   // Validações de inconsistência patrimonial.
   const warnings: string[] = [];
