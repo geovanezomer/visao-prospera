@@ -40,6 +40,7 @@ import { CalculadorasTab } from "@/components/calculadoras/CalculadorasTab";
 import type { BackupStatus } from "@/lib/api/cloudBackup";
 import { isBackupEnabled } from "@/lib/api/cloudBackup";
 import { RestoreBackupDialog } from "@/components/sim/shared/RestoreBackupDialog";
+import { FeedbackDialog } from "@/components/sim/shared/FeedbackDialog";
 import { cn } from "@/lib/utils";
 
 // Formata "há X" relativo para o breadcrumb do header.
@@ -253,28 +254,27 @@ function SimulaPro() {
                     size="sm"
                     variant={meetingMode ? "default" : "ghost"}
                     onClick={() => setMeetingMode((v) => !v)}
-                    className="h-8"
-                    title="Modo Reunião: oculta menus, amplia fontes e destaca KPIs"
+                    className="h-8 w-8 p-0"
+                    title={meetingMode ? "Sair do Modo Reunião" : "Modo Reunião: oculta menus, amplia fontes e destaca KPIs"}
+                    aria-label={meetingMode ? "Sair do Modo Reunião" : "Modo Reunião"}
                   >
                     {meetingMode ? (
-                      <X className="h-3.5 w-3.5 sm:mr-2" />
+                      <X className="h-3.5 w-3.5" />
                     ) : (
-                      <Presentation className="h-3.5 w-3.5 sm:mr-2" />
+                      <Presentation className="h-3.5 w-3.5" />
                     )}
-                    <span className="hidden sm:inline">
-                      {meetingMode ? "Sair Reunião" : "Modo Reunião"}
-                    </span>
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-8"
+                    className="h-8 w-8 p-0"
                     onClick={() => void fileApi.resetWithConfirm()}
                     title="Restaurar dados (Ctrl+Shift+R)"
+                    aria-label="Reset"
                   >
-                    <RotateCcw className="h-3.5 w-3.5 sm:mr-2" />
-                    <span className="hidden sm:inline">Reset</span>
+                    <RotateCcw className="h-3.5 w-3.5" />
                   </Button>
+                  <FeedbackDialog />
                 </div>
               </div>
             </header>

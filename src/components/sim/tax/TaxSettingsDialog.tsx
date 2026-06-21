@@ -133,8 +133,8 @@ export function TaxSettingsDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" title="Configurações da empresa e parâmetros tributários">
-          <Settings className="mr-2 h-4 w-4" /> Configurações
+        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Configurações da empresa e parâmetros tributários" aria-label="Configurações">
+          <Settings className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl w-screen h-[100dvh] max-h-[100dvh] rounded-none sm:rounded-lg sm:h-auto sm:max-h-[88vh] overflow-hidden p-0 flex flex-col">
