@@ -29,6 +29,7 @@
 //   • Marcas, Patentes, Goodwill
 import type { AppState, BalancoDetalhado, CostLine } from "./types";
 import type { FinancialModelCashflow, FinancialModelDRE } from "./financialModel";
+import { deriveAbertura } from "./aberturaDerivada";
 
 const n = (v: number | undefined): number =>
   typeof v === "number" && isFinite(v) ? v : 0;
