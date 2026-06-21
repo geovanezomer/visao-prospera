@@ -52,6 +52,7 @@ const defs: ToolDef[] = [
     description:
       "Detalhe dos contratos de dívida onerosa: credor, descrição, saldo devedor, taxa nominal a.a., sistema de amortização (PRICE/SAC/BULLET), prazo remanescente, classificação CP (≤12m) ou LP (>12m). Agregados: saldo total, soma CP, soma LP, Kd médio ponderado, total de contratos. Linkado à linha 'Juros sobre contratos de dívida' em Despesas e à amortização em DFC.",
     parameters: { type: "object", properties: {}, required: [] },
+  },
   {
     name: "get_regime_tributario",
     description:
