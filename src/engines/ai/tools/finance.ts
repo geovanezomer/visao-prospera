@@ -36,6 +36,24 @@ const defs: ToolDef[] = [
     parameters: { type: "object", properties: {}, required: [] },
   },
   {
+    name: "get_balanco_abertura",
+    description:
+      "Saldos de ABERTURA do exercício (SSOT) com a FONTE de cada rubrica: caixa, contas a receber, estoques, fornecedores, empréstimos CP/LP (split automático ≤12m / >12m), impostos e salários a pagar, créditos tributários, depreciação acumulada e o plug de Lucros Acumulados. Mostra também os totais Ativo/Passivo/PL e se o balanço de abertura está fechado.",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "get_balanco_fechamento",
+    description:
+      "Balanço Patrimonial de FECHAMENTO derivado por construção (Ativo ≡ Passivo + PL). Inclui Ativo Circulante (caixa, CR, estoques, impostos a recuperar), Ativo Não Circulante (imobilizado por tipo, depreciação acumulada, intangíveis, amortização), Passivo Circulante (fornecedores, empréstimos CP, impostos/salários a pagar), Passivo Não Circulante (empréstimos LP) e PL completo (Capital Social, Reservas, Lucros Acumulados, Resultado do Exercício = DRE − Dividendos). Use quando o consultor perguntar sobre composição patrimonial, estrutura de ativos/passivos, comparativo N×N-1, ou auditoria do balanço.",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "get_contratos_divida",
+    description:
+      "Detalhe dos contratos de dívida onerosa: credor, descrição, saldo devedor, taxa nominal a.a., sistema de amortização (PRICE/SAC/BULLET), prazo remanescente, classificação CP (≤12m) ou LP (>12m). Agregados: saldo total, soma CP, soma LP, Kd médio ponderado, total de contratos. Linkado à linha 'Juros sobre contratos de dívida' em Despesas e à amortização em DFC.",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
+  {
     name: "get_regime_tributario",
     description:
       "Configuração tributária (regime nominal vs efetivo, anexo Simples, Fator R, alíquotas ISS/ICMS/PIS/COFINS/CBS/IBS, era ativa, carga apurada). NÃO inclui comparativo de eras — use 'get_eras_reforma' para o resumo 3-eras ou 'simular_transicao_reforma' para o detalhe ano-a-ano.",
@@ -130,6 +148,14 @@ const handlers: Record<string, ToolHandler> = {
   get_receitas: (_a, { sec }) => sec.receitas,
   get_despesas: (_a, { sec }) => sec.despesas,
   get_capital: (_a, { sec }) => sec.capital,
+  get_balanco_abertura: (_a, { sec }) =>
+    sec.balancoAbertura ||
+    "_Saldos de abertura indisponíveis (verifique os inputs em Capital · Outras informações de abertura)._",
+  get_balanco_fechamento: (_a, { sec }) =>
+    sec.balanco ||
+    "_Balanço de fechamento indisponível (DRE/DFC ainda não calculados — preencha Receitas e Despesas)._",
+  get_contratos_divida: (_a, { sec }) =>
+    sec.dividas || "_Nenhum contrato de dívida cadastrado e Dívida Onerosa agregada é zero._",
   get_regime_tributario: (_a, { sec }) => sec.regime,
   get_eras_reforma: (_a, { sec }) =>
     sec.eras || "_Comparativo de eras indisponível (verifique a configuração tributária)._",
@@ -228,6 +254,9 @@ const handlers: Record<string, ToolHandler> = {
       sec.receitas,
       sec.despesas,
       sec.capital,
+      sec.balancoAbertura,
+      sec.balanco,
+      sec.dividas,
       sec.regime,
       sec.dre,
       sec.indicadores,

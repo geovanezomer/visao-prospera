@@ -11,6 +11,8 @@ import { buildCashFlow } from "@/engines/finance/cashflow";
 import { buildValuation, defaultValuationParams } from "@/engines/finance/valuation";
 import { computeHealth } from "@/engines/finance/health";
 import { buildPrescriptiveCards } from "@/engines/finance/prescriptive";
+import { deriveBalancoFechamento } from "@/engines/finance/balancoFechamento";
+import { deriveAbertura } from "@/engines/finance/aberturaDerivada";
 import { MESES, sum, fmtNum } from "@/engines/finance/format";
 
 // ===== Helpers =====
@@ -53,6 +55,12 @@ export interface SnapshotSections {
   receitas: string;
   despesas: string;
   capital: string;
+  /** Balanço Patrimonial de FECHAMENTO derivado por construção (Ativo = Passivo + PL). */
+  balanco: string;
+  /** Saldos de ABERTURA derivados (SSOT) — caixa, CR, estoques, fornecedores, empréstimos CP/LP, impostos, salários a pagar + plug Lucros Acumulados. */
+  balancoAbertura: string;
+  /** Contratos de dívida (saldo, taxa, sistema, prazo, split CP/LP) com agregados. */
+  dividas: string;
   regime: string;
   /** Comparativo de eras da Reforma (atual/transição/pleno) — separado de `regime` para evitar duplicação com simular_transicao_reforma. */
   eras: string;
@@ -540,7 +548,221 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
         capLines.push(`- ${a.label}: ${brl(a.valor)} (mês ${a.mes}, ${a.vidaUtilMeses}m)`),
       );
     }
+    if (c.balanco?.ativoNaoCirculante?.imobilizado) {
+      const imo = c.balanco.ativoNaoCirculante.imobilizado;
+      const total =
+        safe(imo.terrenos) +
+        safe(imo.edificacoes) +
+        safe(imo.maquinasEquipamentos) +
+        safe(imo.veiculos) +
+        safe(imo.moveisUtensilios) +
+        safe(imo.outrosImobilizados);
+      if (total > 0) {
+        capLines.push(`\n### Imobilizado detalhado (bruto)`);
+        capLines.push(
+          table(
+            ["Item", "Valor"],
+            [
+              ["Terrenos", brl(safe(imo.terrenos))],
+              ["Edificações", brl(safe(imo.edificacoes))],
+              ["Máquinas e Equipamentos", brl(safe(imo.maquinasEquipamentos))],
+              ["Veículos", brl(safe(imo.veiculos))],
+              ["Móveis e Utensílios", brl(safe(imo.moveisUtensilios))],
+              ["Outros Imobilizados", brl(safe(imo.outrosImobilizados))],
+              ["(−) Depreciação acumulada", brl(safe(imo.depreciacaoAcumulada))],
+              ["**Total bruto**", `**${brl(total)}**`],
+            ],
+          ),
+        );
+      }
+    }
+    if (c.balanco?.patrimonioLiquido) {
+      const plD = c.balanco.patrimonioLiquido;
+      const plSum =
+        safe(plD.capitalSocial) +
+        safe(plD.reservasCapital) +
+        safe(plD.reservasLucros) +
+        safe(plD.lucrosPrejuizosAcumulados);
+      if (plSum > 0) {
+        capLines.push(`\n### PL detalhado (origens)`);
+        capLines.push(
+          table(
+            ["Origem", "Valor"],
+            [
+              ["Capital Social", brl(safe(plD.capitalSocial))],
+              ["Reservas de Capital", brl(safe(plD.reservasCapital))],
+              ["Reservas de Lucros", brl(safe(plD.reservasLucros))],
+              ["Lucros/Prejuízos Acumulados", brl(safe(plD.lucrosPrejuizosAcumulados))],
+            ],
+          ),
+        );
+      }
+    }
   }
+
+  // ----- Balanço de ABERTURA derivado (SSOT) -----
+  const aberturaLines: string[] = [];
+  const abertura = tryRun(
+    () => deriveAbertura({ state, impostosMensais: dre?.impostos }),
+    null as ReturnType<typeof deriveAbertura> | null,
+  );
+  if (abertura) {
+    aberturaLines.push(`## Balanço de Abertura (saldos derivados — SSOT)`);
+    aberturaLines.push(
+      `_Cada rubrica mostra a FONTE única. Para corrigir um valor, edite na fonte (Balanço, Contratos, Receitas, Despesas) — não no card de abertura._`,
+    );
+    const row = (s: { label: string; origem: string; value: number; editavel?: boolean }) => [
+      s.label,
+      brl(s.value),
+      `${s.origem}${s.editavel ? " · editável" : ""}`,
+    ];
+    aberturaLines.push(
+      table(
+        ["Rubrica", "Valor", "Fonte"],
+        [
+          row(abertura.caixa),
+          row(abertura.contasReceber),
+          row(abertura.estoques),
+          row(abertura.impostosRecuperar),
+          row(abertura.depreciacaoAcumulada),
+          row(abertura.amortizacaoAcumulada),
+          row(abertura.fornecedores),
+          row(abertura.emprestimosCP),
+          row(abertura.emprestimosLP),
+          row(abertura.impostosPagar),
+          row(abertura.salariosEncargos),
+          row(abertura.lucrosAcumulados),
+        ],
+      ),
+    );
+    const t = abertura.totals;
+    aberturaLines.push(
+      `\n**Totais abertura:** Ativo ${brl(t.ativo)} · Passivo ${brl(t.passivo)} · PL ${brl(t.pl)} · Diferença ${brl(t.diferenca)} ${t.fechado ? "✅ fechado" : "⚠️ diferença absorvida em Lucros Acumulados (plug histórico)"}`,
+    );
+    aberturaLines.push(
+      `\n_Regra automática de split de dívida:_ contratos com prazo **≤ 12 meses** entram em Empréstimos CP; **> 12 meses** em Empréstimos LP.`,
+    );
+  }
+
+  // ----- Balanço de FECHAMENTO derivado por construção -----
+  const balancoLines: string[] = [];
+  if (dre && cf) {
+    const fech = tryRun(
+      () => deriveBalancoFechamento({ state, dre, cf }),
+      null as ReturnType<typeof deriveBalancoFechamento> | null,
+    );
+    if (fech) {
+      balancoLines.push(`## Balanço Patrimonial de Fechamento (derivado por construção)`);
+      balancoLines.push(
+        `_Identidade contábil garantida: saldo_fim = saldo_abertura + movimento_período. Para alterar uma rubrica, ajuste a CAUSA na aba correspondente._`,
+      );
+      const b = fech.balanco;
+      const ac = b.ativoCirculante ?? {};
+      const imo = b.ativoNaoCirculante?.imobilizado ?? {};
+      const intg = b.ativoNaoCirculante?.intangivel ?? {};
+      const pc = b.passivoCirculante ?? {};
+      const pnc = b.passivoNaoCirculante ?? {};
+      const pl = b.patrimonioLiquido ?? {};
+      balancoLines.push(`\n### Ativo`);
+      balancoLines.push(
+        table(
+          ["Rubrica", "Valor"],
+          [
+            ["Caixa e equivalentes", brl(safe(ac.caixaEquivalentes))],
+            ["Contas a receber de clientes", brl(safe(ac.contasReceberClientes))],
+            ["Estoques", brl(safe(ac.estoques))],
+            ["Impostos a recuperar", brl(safe(ac.impostosRecuperar))],
+            ["Terrenos", brl(safe(imo.terrenos))],
+            ["Edificações", brl(safe(imo.edificacoes))],
+            ["Máquinas e equipamentos", brl(safe(imo.maquinasEquipamentos))],
+            ["Veículos", brl(safe(imo.veiculos))],
+            ["Móveis e utensílios", brl(safe(imo.moveisUtensilios))],
+            ["Outros imobilizados (inclui CAPEX)", brl(safe(imo.outrosImobilizados))],
+            ["(−) Depreciação acumulada", brl(safe(imo.depreciacaoAcumulada))],
+            ["Marcas e Patentes", brl(safe(intg.marcasPatentes))],
+            ["Goodwill", brl(safe(intg.goodwill))],
+            ["Outros intangíveis", brl(safe(intg.outrosIntangiveis))],
+            ["(−) Amortização acumulada", brl(safe(intg.amortizacaoAcumulada))],
+            ["**TOTAL ATIVO**", `**${brl(fech.totals.ativo)}**`],
+          ],
+        ),
+      );
+      balancoLines.push(`\n### Passivo + Patrimônio Líquido`);
+      balancoLines.push(
+        table(
+          ["Rubrica", "Valor"],
+          [
+            ["Fornecedores", brl(safe(pc.fornecedores))],
+            ["Empréstimos CP (≤12m)", brl(safe(pc.emprestimosFinanciamentosCP))],
+            ["Impostos a pagar", brl(safe(pc.impostosPagar))],
+            ["Salários e encargos", brl(safe(pc.salariosEncargos))],
+            ["Empréstimos LP (>12m)", brl(safe(pnc.emprestimosFinanciamentosLP))],
+            ["**TOTAL PASSIVO**", `**${brl(fech.totals.passivo)}**`],
+            ["Capital Social", brl(safe(pl.capitalSocial))],
+            ["Reservas de Capital", brl(safe(pl.reservasCapital))],
+            ["Reservas de Lucros", brl(safe(pl.reservasLucros))],
+            ["Lucros/Prejuízos acumulados", brl(safe(pl.lucrosPrejuizosAcumulados))],
+            ["Resultado do exercício (DRE − Dividendos)", brl(safe(pl.resultadoExercicio))],
+            ["**TOTAL PL**", `**${brl(fech.totals.pl)}**`],
+            ["**TOTAL PASSIVO + PL**", `**${brl(fech.totals.passivo + fech.totals.pl)}**`],
+          ],
+        ),
+      );
+      balancoLines.push(
+        `\n**Diferença Ativo − (Passivo + PL):** ${brl(fech.totals.diferenca)} ${fech.totals.fechado ? "✅ balanço fechado por construção" : "⚠️ revisar abertura (resíduo deveria estar em Lucros Acumulados)"}`,
+      );
+    }
+  }
+
+  // ----- Contratos de Dívida -----
+  const dividasLines: string[] = [];
+  {
+    const contracts = state.capital?.debtContracts ?? [];
+    if (contracts.length > 0) {
+      dividasLines.push(`## Contratos de Dívida`);
+      let saldoCP = 0;
+      let saldoLP = 0;
+      let totalJurosPond = 0;
+      let totalSaldo = 0;
+      const rows = contracts.map((c) => {
+        const saldo = safe(c.saldoDevedor);
+        const prazo = Math.max(0, Math.floor(c.prazoMeses || 0));
+        const tipo = prazo <= 12 ? "CP" : "LP";
+        if (tipo === "CP") saldoCP += saldo;
+        else saldoLP += saldo;
+        totalJurosPond += saldo * safe(c.taxaAA);
+        totalSaldo += saldo;
+        return [
+          c.credor || "(sem credor)",
+          c.descricao || "—",
+          brl(saldo),
+          `${safe(c.taxaAA).toFixed(2)}% a.a.`,
+          c.sistema,
+          `${prazo}m`,
+          tipo,
+        ];
+      });
+      dividasLines.push(
+        table(
+          ["Credor", "Descrição", "Saldo Devedor", "Taxa", "Sistema", "Prazo Rest.", "CP/LP"],
+          rows,
+        ),
+      );
+      const kdMedio = totalSaldo > 0 ? totalJurosPond / totalSaldo : 0;
+      dividasLines.push(
+        `\n**Agregados:** Saldo total ${brl(totalSaldo)} · CP (≤12m) ${brl(saldoCP)} · LP (>12m) ${brl(saldoLP)} · Kd médio ponderado ${kdMedio.toFixed(2)}% a.a. · ${contracts.length} contrato(s).`,
+      );
+      dividasLines.push(
+        `\n_A engine gera automaticamente: linha "Juros sobre contratos de dívida" em Despesas, parcela de amortização do principal em DFC, e split CP/LP no Balanço._`,
+      );
+    } else if ((state.capital?.dividaOnerosa ?? 0) > 0) {
+      dividasLines.push(`## Contratos de Dívida`);
+      dividasLines.push(
+        `_Sem contratos detalhados. Dívida Onerosa agregada: ${brl(state.capital.dividaOnerosa)} · Kd: ${pct(state.capital.kd ?? 0, 2)} · Split CP/LP estimado por % (default 30% CP)._`,
+      );
+    }
+  }
+
 
   // ----- Regime Tributário (config) -----
   const regLines: string[] = [`## Regime Tributário (config)`];
@@ -613,6 +835,9 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     receitas: recLines.join("\n"),
     despesas: despLines.join("\n"),
     capital: capLines.join("\n"),
+    balanco: balancoLines.join("\n"),
+    balancoAbertura: aberturaLines.join("\n"),
+    dividas: dividasLines.join("\n"),
     regime: regLines.join("\n"),
     eras: erasLines.join("\n"),
     dre: dreLines.join("\n"),
@@ -653,6 +878,9 @@ export function buildSnapshot(state: AppState, simulatedState?: AppState): strin
     s.receitas,
     s.despesas,
     s.capital,
+    s.balancoAbertura,
+    s.balanco,
+    s.dividas,
     s.caixa,
     s.diagnostico,
     s.saude,
