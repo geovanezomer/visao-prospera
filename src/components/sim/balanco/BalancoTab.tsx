@@ -98,8 +98,7 @@ const ATIVO: Grupo[] = [
       {
         titulo: "Intangível",
         rubricas: [
-          { path: "ativoNaoCirculante.intangivel.software", label: "Software", modo: "padrao" },
-          { path: "ativoNaoCirculante.intangivel.marcasPatentes", label: "Marcas e patentes", modo: "completo" },
+          { path: "ativoNaoCirculante.intangivel.marcasPatentes", label: "Marcas e patentes", modo: "padrao" },
           { path: "ativoNaoCirculante.intangivel.goodwill", label: "Goodwill", modo: "completo" },
           { path: "ativoNaoCirculante.intangivel.outrosIntangiveis", label: "Outros intangíveis", modo: "completo" },
           { path: "ativoNaoCirculante.intangivel.amortizacaoAcumulada", label: "(−) Amortização acumulada", modo: "padrao", redutora: true },
