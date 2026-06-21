@@ -173,7 +173,7 @@ function setAt(obj: BalancoDetalhado, path: Path, value: number): BalancoDetalha
   return next as BalancoDetalhado;
 }
 
-const modoRank: Record<Modo, number> = { simples: 0, padrao: 1, completo: 2 };
+const modoRank: Record<Modo, number> = { padrao: 0, completo: 1 };
 const isVisible = (modoCampo: Modo, modoAtivo: Modo) => modoRank[modoCampo] <= modoRank[modoAtivo];
 
 const visibleRubricas = (rs: Rubrica[], modo: Modo) =>
@@ -185,8 +185,9 @@ export function BalancoTab() {
   const { dre } = useFinanceModel(state);
 
   const [modo, setModo] = useState<Modo>(() => {
-    if (typeof window === "undefined") return "simples";
-    return (localStorage.getItem(MODO_KEY) as Modo) ?? "simples";
+    if (typeof window === "undefined") return "padrao";
+    const v = localStorage.getItem(MODO_KEY);
+    return v === "completo" ? "completo" : "padrao"; // coerção legado "simples"→"padrao"
   });
   const [showAnterior, setShowAnterior] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -206,9 +207,13 @@ export function BalancoTab() {
   const totalsAtual = useMemo(() => calcBalancoTotals(balanco), [balanco]);
   const totalsAnterior = useMemo(() => calcBalancoTotals(anterior), [anterior]);
 
-  // Resultado do exercício a partir do DRE (soma 12m).
+  // Resultado e impostos do DRE (anuais).
   const resultadoDRE = useMemo(
     () => (dre.lucroLiquido ?? []).reduce((a: number, b: number) => a + (b || 0), 0),
+    [dre],
+  );
+  const impostosLucroAnualDRE = useMemo(
+    () => (dre.impostos ?? []).reduce((a: number, b: number) => a + (b || 0), 0),
     [dre],
   );
 
@@ -226,6 +231,29 @@ export function BalancoTab() {
   };
 
   const puxarResultadoDRE = () => setCampo("patrimonioLiquido.resultadoExercicio", resultadoDRE);
+
+  // Pré-preenchimento operacional: aplica sugestões SOMENTE em campos vazios.
+  const prePreencher = () => {
+    const sug = suggestBalancoFromState(state, {
+      dreLucroLiquido: resultadoDRE,
+      dreImpostosLucroAnual: impostosLucroAnualDRE,
+    });
+    const merged = mergeBalancoPreservandoUsuario(balanco, sug);
+    update((s) => ({ ...s, capital: { ...s.capital, balanco: merged } }));
+    toast.success("Balanço pré-preenchido", {
+      description:
+        "Campos vazios preenchidos a partir de Receitas, Custos e Capital. Seus valores digitados foram preservados.",
+    });
+  };
+
+  const salvarComoNm1 = () => {
+    const next = snapshotAnterior(balanco);
+    update((s) => ({ ...s, capital: { ...s.capital, balanco: next } }));
+    setShowAnterior(true);
+    toast.success("Snapshot N-1 salvo", {
+      description: "O balanço atual foi copiado como ano-base (N-1) para análise horizontal.",
+    });
+  };
 
   const fechado = Math.abs(totalsAtual.diferenca) < Math.max(100, totalsAtual.ativoTotal * 0.001);
 
