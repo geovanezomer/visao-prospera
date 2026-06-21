@@ -342,12 +342,6 @@ export function BalanceSheetCard({
         </div>
       </StepCard>
 
-      {/* Aviso: análise consolidada vive na aba Balanço */}
-      <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-[11px] text-muted-foreground">
-        <span className="font-semibold text-primary">Resumo e raio-X patrimonial</span>{" "}
-        agora moram na aba <strong className="text-foreground">Balanço</strong> (logo após
-        o DRE) — com 2 modos de profundidade, comparativo N vs N-1 e fechamento contábil.
-      </div>
 
 
       {/* Lançamentos mensais (mantidos para a DRE) */}
