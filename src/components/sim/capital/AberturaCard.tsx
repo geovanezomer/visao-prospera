@@ -118,6 +118,16 @@ export function AberturaCard({
         title="Outras informações de abertura"
         subtitle="Lucros acumulados, créditos tributários e depreciação mensal"
       >
+        <div className="mb-3 flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 p-2.5 text-[10.5px] text-muted-foreground">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+          <span>
+            <strong className="text-foreground">Lucros Acumulados é o único "plug" aceitável.</strong>{" "}
+            Se o balanço de abertura não fechar (Ativo ≠ Passivo + PL), esta linha absorve o
+            resíduo histórico — não é erro de cálculo, é a contrapartida de exercícios anteriores
+            que você não reconstruiu rubrica a rubrica. Use o botão <em>"Ajustar Lucros Acumulados"</em>{" "}
+            no painel derivado para zerar a diferença.
+          </span>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <SimpleField
             icon={<Wallet className="h-4 w-4" />}
