@@ -409,9 +409,8 @@ export function BalancoTab() {
 
 function ModoSelector({ modo, onChange }: { modo: Modo; onChange: (m: Modo) => void }) {
   const opts: { v: Modo; label: string; hint: string }[] = [
-    { v: "simples", label: "Simples", hint: "Empresário — rubricas essenciais" },
-    { v: "padrao", label: "Padrão", hint: "PME com contador" },
-    { v: "completo", label: "Completo", hint: "Raio-X CVM/consultor" },
+    { v: "padrao", label: "Padrão", hint: "Empresário / PME com contador — rubricas essenciais" },
+    { v: "completo", label: "Completo", hint: "Raio-X CVM/consultor — todas as rubricas CPC/BR" },
   ];
   return (
     <div className="inline-flex rounded-md border border-border/60 bg-background/40 p-0.5 text-[11px]">
