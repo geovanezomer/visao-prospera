@@ -148,6 +148,14 @@ const handlers: Record<string, ToolHandler> = {
   get_receitas: (_a, { sec }) => sec.receitas,
   get_despesas: (_a, { sec }) => sec.despesas,
   get_capital: (_a, { sec }) => sec.capital,
+  get_balanco_abertura: (_a, { sec }) =>
+    sec.balancoAbertura ||
+    "_Saldos de abertura indisponíveis (verifique os inputs em Capital · Outras informações de abertura)._",
+  get_balanco_fechamento: (_a, { sec }) =>
+    sec.balanco ||
+    "_Balanço de fechamento indisponível (DRE/DFC ainda não calculados — preencha Receitas e Despesas)._",
+  get_contratos_divida: (_a, { sec }) =>
+    sec.dividas || "_Nenhum contrato de dívida cadastrado e Dívida Onerosa agregada é zero._",
   get_regime_tributario: (_a, { sec }) => sec.regime,
   get_eras_reforma: (_a, { sec }) =>
     sec.eras || "_Comparativo de eras indisponível (verifique a configuração tributária)._",
