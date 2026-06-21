@@ -340,24 +340,6 @@ export function BalanceSheetCard({
 
 
 
-      {/* Lançamentos mensais (mantidos para a DRE) */}
-      <div className="rounded-md border border-border/40 bg-background/30 p-3">
-        <div className="mb-2 flex items-center gap-2">
-          <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
-          <div className="text-xs font-semibold text-muted-foreground">
-            Outros lançamentos mensais
-          </div>
-          <span className="text-[10px] text-muted-foreground/70">Entram na DRE todo mês</span>
-        </div>
-        <div className="grid grid-cols-1 gap-3">
-          <Field
-            label="Depreciação mensal"
-            value={capital.depreciacaoMensal}
-            onChange={(n) => onChange({ depreciacaoMensal: n })}
-            hint="Perda contábil de valor de máquinas, equipamentos e imóveis no mês. Não sai do caixa, mas reduz o lucro tributável."
-          />
-        </div>
-      </div>
     </div>
   );
 }
