@@ -190,54 +190,44 @@ export function BalancoTab() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="rounded-lg border border-border/60 bg-card/40 p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/15 text-primary">
-              <Scale className="h-4 w-4" />
-            </span>
-            <div className="min-w-0">
-              <h2 className="text-base font-semibold flex items-center gap-2">
-                Balanço Patrimonial
-                <span className="inline-flex items-center gap-1 rounded bg-muted/50 px-1.5 py-0.5 text-[9.5px] font-medium text-muted-foreground">
-                  <Lock className="h-3 w-3" />
-                  Read-only — derivado por construção
-                </span>
-              </h2>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">
-                Fechamento = Abertura + DRE + DFC + PMR/PMP. Para ajustar uma rubrica,
-                edite a CAUSA na aba <strong className="text-foreground">Capital</strong>,{" "}
-                <strong className="text-foreground">Receitas</strong> ou{" "}
-                <strong className="text-foreground">Custos</strong>.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <ModoSelector modo={modo} onChange={setModo} />
-            <Button
-              size="sm"
-              variant={showAnterior ? "default" : "outline"}
-              onClick={() => setShowAnterior((v) => !v)}
-              className="h-8 gap-1.5 text-[11px]"
-            >
-              <GitCompare className="h-3.5 w-3.5" />
-              N vs N-1
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={salvarComoNm1}
-              className="h-8 gap-1.5 text-[11px]"
-              title="Congela o fechamento atual como base de comparação (N-1)."
-            >
-              <Camera className="h-3.5 w-3.5" />
-              Salvar como N-1
-            </Button>
-          </div>
+      {/* Header — toolbar apenas */}
+      <div className="rounded-lg border border-border/60 bg-card/40 p-3">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <ModoSelector modo={modo} onChange={setModo} />
+          <Button
+            size="sm"
+            variant={showAudit ? "default" : "outline"}
+            onClick={() => setShowAudit((v) => !v)}
+            className="h-8 gap-1.5 text-[11px]"
+            title="Mostra inputs e fórmulas de cada rubrica."
+          >
+            <Search className="h-3.5 w-3.5" />
+            Auditoria
+          </Button>
+          <Button
+            size="sm"
+            variant={showAnterior ? "default" : "outline"}
+            onClick={() => setShowAnterior((v) => !v)}
+            className="h-8 gap-1.5 text-[11px]"
+          >
+            <GitCompare className="h-3.5 w-3.5" />
+            N vs N-1
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={salvarComoNm1}
+            className="h-8 gap-1.5 text-[11px]"
+            title="Congela o fechamento atual como base de comparação (N-1)."
+          >
+            <Camera className="h-3.5 w-3.5" />
+            Salvar como N-1
+          </Button>
         </div>
       </div>
+
+      {showAudit && <AuditoriaPanel onClose={() => setShowAudit(false)} />}
+
 
       {/* Validação de fechamento */}
       <div
