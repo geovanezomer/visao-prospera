@@ -244,14 +244,111 @@ export function BalanceSheetCard({
 
       {capexSlot}
 
-      {/* PASSO 3 (Resumo do Balanço) movido para a aba dedicada "Balanço"
-          — UI completa com 3 modos de profundidade, comparativo N vs N-1
-          e validação de fechamento vive em src/components/sim/balanco. */}
+      {/* PASSO 3 — Detalhes patrimoniais (alimentam o Balanço automaticamente) */}
+      <StepCard
+        step={3}
+        color="var(--primary)"
+        title="Detalhes patrimoniais (opcional)"
+        subtitle="Informações que só você sabe — vão direto para o Balanço já preenchido"
+      >
+        <div className="mb-3 text-[11px] text-muted-foreground">
+          <strong className="text-foreground">Imobilizado</strong> — bens duráveis da empresa.
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <SimpleField
+            icon={<Building2 className="h-4 w-4" />}
+            label="Terrenos"
+            hint="Valor contábil dos terrenos próprios."
+            value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.terrenos")}
+            onChange={(n) =>
+              onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.terrenos", n) })
+            }
+          />
+          <SimpleField
+            icon={<Building2 className="h-4 w-4" />}
+            label="Edificações e benfeitorias"
+            hint="Imóveis, galpões, salas, reformas capitalizadas."
+            value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.edificacoes")}
+            onChange={(n) =>
+              onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.edificacoes", n) })
+            }
+          />
+          <SimpleField
+            icon={<Settings2 className="h-4 w-4" />}
+            label="Máquinas e equipamentos"
+            hint="Valor contábil de máquinas, equipamentos produtivos e ferramentas."
+            value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.maquinasEquipamentos")}
+            onChange={(n) =>
+              onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.maquinasEquipamentos", n) })
+            }
+          />
+          <SimpleField
+            icon={<Package className="h-4 w-4" />}
+            label="Veículos"
+            hint="Frota da empresa (carros, caminhões, motos)."
+            value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.veiculos")}
+            onChange={(n) =>
+              onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.veiculos", n) })
+            }
+          />
+          <SimpleField
+            icon={<Package className="h-4 w-4" />}
+            label="Móveis e utensílios"
+            hint="Mobiliário, computadores, equipamentos de escritório."
+            value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.moveisUtensilios")}
+            onChange={(n) =>
+              onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.moveisUtensilios", n) })
+            }
+          />
+        </div>
+
+        <div className="mt-4 mb-3 text-[11px] text-muted-foreground">
+          <strong className="text-foreground">Patrimônio dos sócios</strong> — origem do capital da empresa.
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <SimpleField
+            icon={<Landmark className="h-4 w-4" />}
+            label="Capital social"
+            hint="Valor integralizado pelos sócios no contrato social."
+            value={getBalancoAt(capital.balanco, "patrimonioLiquido.capitalSocial")}
+            onChange={(n) =>
+              onChange({ balanco: setBalancoAt(capital.balanco, "patrimonioLiquido.capitalSocial", n) })
+            }
+          />
+          <SimpleField
+            icon={<Landmark className="h-4 w-4" />}
+            label="Reservas de capital"
+            hint="Ágio na emissão de cotas/ações, subvenções, doações."
+            value={getBalancoAt(capital.balanco, "patrimonioLiquido.reservasCapital")}
+            onChange={(n) =>
+              onChange({ balanco: setBalancoAt(capital.balanco, "patrimonioLiquido.reservasCapital", n) })
+            }
+          />
+          <SimpleField
+            icon={<Wallet className="h-4 w-4" />}
+            label="Lucros / prejuízos acumulados"
+            hint="Resultados retidos de exercícios anteriores (não distribuídos). Pode ser negativo (prejuízo)."
+            value={getBalancoAt(capital.balanco, "patrimonioLiquido.lucrosPrejuizosAcumulados")}
+            onChange={(n) =>
+              onChange({ balanco: setBalancoAt(capital.balanco, "patrimonioLiquido.lucrosPrejuizosAcumulados", n) })
+            }
+          />
+        </div>
+
+        <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-2 text-[11px] text-muted-foreground">
+          Esses valores aparecem <strong className="text-primary">automaticamente</strong> na aba{" "}
+          <strong className="text-foreground">Balanço</strong>. Caixa, contas a receber, estoques,
+          fornecedores, empréstimos e impostos também são puxados das outras abas.
+        </div>
+      </StepCard>
+
+      {/* Aviso: análise consolidada vive na aba Balanço */}
       <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-[11px] text-muted-foreground">
         <span className="font-semibold text-primary">Resumo e raio-X patrimonial</span>{" "}
         agora moram na aba <strong className="text-foreground">Balanço</strong> (logo após
-        o DRE) — com 3 modos de profundidade, comparativo N vs N-1 e fechamento contábil.
+        o DRE) — com 2 modos de profundidade, comparativo N vs N-1 e fechamento contábil.
       </div>
+
 
       {/* Lançamentos mensais (mantidos para a DRE) */}
       <div className="rounded-md border border-border/40 bg-background/30 p-3">
