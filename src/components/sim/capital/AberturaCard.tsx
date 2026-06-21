@@ -128,37 +128,9 @@ export function AberturaCard({
         </div>
       </div>
 
-      {/* Painel DERIVADO */}
+      {/* Outras informações de abertura — campos sem fonte derivável (vem ANTES dos derivados) */}
       <StepCard
         step={1}
-        color="var(--success)"
-        title="Saldos derivados automaticamente"
-        subtitle="Cada rubrica mostra a sua fonte única (SSOT)"
-      >
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          <DerivedRow source={derived.caixa} highlight="asset" />
-          <DerivedRow source={derived.contasReceber} highlight="asset" />
-          <DerivedRow source={derived.estoques} highlight="asset" />
-          <DerivedRow source={derived.fornecedores} highlight="liability" />
-          <DerivedRow source={derived.emprestimosCP} highlight="liability" />
-          <DerivedRow source={derived.emprestimosLP} highlight="liability" />
-          <DerivedRow source={derived.impostosPagar} highlight="liability" />
-          <DerivedRow source={derived.salariosEncargos} highlight="liability" />
-        </div>
-        <div className="mt-3 flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 p-2.5 text-[10.5px] text-muted-foreground">
-          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-          <span>
-            Para corrigir um destes valores, edite na <strong>fonte</strong>{" "}
-            (Balanço, Contratos de Dívida, Receitas ou Despesas) — não aqui.
-            Os contratos com prazo <strong>≤ 12 meses</strong> entram em
-            Empréstimos CP; <strong>&gt; 12 meses</strong> em Empréstimos LP.
-          </span>
-        </div>
-      </StepCard>
-
-      {/* Outras informações de abertura — campos sem fonte derivável */}
-      <StepCard
-        step={2}
         color="var(--primary)"
         title="Outras informações de abertura"
         subtitle="Lucros acumulados, créditos tributários e depreciação mensal"
@@ -188,6 +160,35 @@ export function AberturaCard({
           />
         </div>
       </StepCard>
+
+      {/* Painel DERIVADO */}
+      <StepCard
+        step={2}
+        color="var(--success)"
+        title="Saldos derivados automaticamente"
+        subtitle="Cada rubrica mostra a sua fonte única (SSOT)"
+      >
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <DerivedRow source={derived.caixa} highlight="asset" />
+          <DerivedRow source={derived.contasReceber} highlight="asset" />
+          <DerivedRow source={derived.estoques} highlight="asset" />
+          <DerivedRow source={derived.fornecedores} highlight="liability" />
+          <DerivedRow source={derived.emprestimosCP} highlight="liability" />
+          <DerivedRow source={derived.emprestimosLP} highlight="liability" />
+          <DerivedRow source={derived.impostosPagar} highlight="liability" />
+          <DerivedRow source={derived.salariosEncargos} highlight="liability" />
+        </div>
+        <div className="mt-3 flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 p-2.5 text-[10.5px] text-muted-foreground">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+          <span>
+            Para corrigir um destes valores, edite na <strong>fonte</strong>{" "}
+            (Balanço, Contratos de Dívida, Receitas ou Despesas) — não aqui.
+            Os contratos com prazo <strong>≤ 12 meses</strong> entram em
+            Empréstimos CP; <strong>&gt; 12 meses</strong> em Empréstimos LP.
+          </span>
+        </div>
+      </StepCard>
+
 
 
       {/* Overrides avançados (collapsable) */}
