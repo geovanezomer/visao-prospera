@@ -74,6 +74,9 @@ export function deriveBalancoFechamento({
   const intConst = balConst.ativoNaoCirculante?.intangivel ?? {};
   const plConst = balConst.patrimonioLiquido ?? {};
 
+  // SSOT — saldos de abertura derivados (sem duplicar inputs do usuário).
+  const aberturaSSOT = deriveAbertura({ state, impostosMensais: dre.impostos });
+
   // ─────────────────────────── Movimentos do período ───────────────────────────
   const receitaBrutaAnual = sumArr(state.revenue?.bruta);
   const cpvAnual = sumCostByCat(state.costs, ["custo_vendas", "direto_venda"]);
