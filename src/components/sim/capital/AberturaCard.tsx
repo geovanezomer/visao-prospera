@@ -156,12 +156,12 @@ export function AberturaCard({
         </div>
       </StepCard>
 
-      {/* Campos editáveis — únicos sem fonte derivável */}
+      {/* Outras informações de abertura — campos sem fonte derivável */}
       <StepCard
         step={2}
         color="var(--primary)"
-        title="Campos sem fonte derivável (editáveis)"
-        subtitle="Lucros acumulados de exercícios anteriores e créditos tributários"
+        title="Outras informações de abertura"
+        subtitle="Lucros acumulados, créditos tributários e depreciação mensal"
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <SimpleField
@@ -179,8 +179,16 @@ export function AberturaCard({
             value={n(ab.impostosRecuperar)}
             onChange={(v) => set({ impostosRecuperar: v })}
           />
+          <SimpleField
+            icon={<Wallet className="h-4 w-4" />}
+            label="Depreciação mensal"
+            hint="Perda contábil de valor de máquinas, equipamentos e imóveis no mês. Não sai do caixa, mas reduz o lucro tributável. Entra na DRE todo mês."
+            value={n(capital.depreciacaoMensal)}
+            onChange={(v) => onChange({ depreciacaoMensal: v })}
+          />
         </div>
       </StepCard>
+
 
       {/* Overrides avançados (collapsable) */}
       <div className="rounded-md border border-border/40 bg-background/30">
