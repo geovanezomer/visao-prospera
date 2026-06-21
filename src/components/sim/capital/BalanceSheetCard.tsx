@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { AppState } from "@/engines/finance/types";
+import { AppState, BalancoDetalhado } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
 import { SectionTitle } from "@/components/sim/shared/primitives";
 import {
@@ -11,8 +11,40 @@ import {
   AlertTriangle,
   Camera,
   Settings2,
+  Building2,
+  Landmark,
 } from "lucide-react";
 import { StepCard, SimpleField, MiniStat, Field } from "@/components/sim/capital/parts";
+
+// Helper: setta valor em path aninhado dentro de capital.balanco (imutável).
+function setBalancoAt(
+  bal: BalancoDetalhado | undefined,
+  path: string,
+  value: number,
+): BalancoDetalhado {
+  const parts = path.split(".");
+  const next = JSON.parse(JSON.stringify(bal ?? {})) as Record<string, unknown>;
+  let cur: Record<string, unknown> = next;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const k = parts[i];
+    if (!cur[k] || typeof cur[k] !== "object") cur[k] = {};
+    cur = cur[k] as Record<string, unknown>;
+  }
+  cur[parts[parts.length - 1]] = value;
+  return next as BalancoDetalhado;
+}
+
+function getBalancoAt(bal: BalancoDetalhado | undefined, path: string): number {
+  const parts = path.split(".");
+  let cur: unknown = bal;
+  for (const p of parts) {
+    if (cur && typeof cur === "object" && p in (cur as Record<string, unknown>)) {
+      cur = (cur as Record<string, unknown>)[p];
+    } else return 0;
+  }
+  return typeof cur === "number" && isFinite(cur) ? cur : 0;
+}
+
 
 // Fotografia do balanço hoje — 3 passos (Ativos · Dívidas+PL · Resumo) +
 // lançamentos mensais. Cálculos auxiliares ficam no topo.
