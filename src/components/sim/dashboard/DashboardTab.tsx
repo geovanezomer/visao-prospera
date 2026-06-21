@@ -177,12 +177,6 @@ export function DashboardTab() {
     <div className="space-y-6">
       <HistoricalYearPills />
 
-      <div>
-        <h2 className="text-xl font-bold text-foreground">Dashboard Executivo</h2>
-        <p className="text-sm text-muted-foreground">
-          Visão consolidada dos principais indicadores financeiros da empresa.
-        </p>
-      </div>
 
       {/* Linha 1 — Cards numéricos resumo (com tooltips, base unificada `useFinanceModel`) */}
       <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
