@@ -50,6 +50,8 @@ export interface FinancialModel {
   val: FinancialModelValuation;
   health: FinancialModelHealth;
   cagrReceitas12m: number;
+  /** Balanço de fechamento derivado por construção (abertura + DRE + DFC). */
+  balancoFechamento: BalancoFechamentoResult;
 }
 
 /** Constrói o modelo financeiro completo a partir do AppState. */
