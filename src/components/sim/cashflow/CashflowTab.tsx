@@ -217,22 +217,22 @@ export function CashflowTab() {
         </div>
       </div>
 
-      {/* Movimentações de caixa não operacionais */}
+      {/* Movimentações de caixa não operacionais (SSOT — sem duplicidade) */}
       <div className="rounded-lg border border-border/60 border-l-4 border-l-[color:var(--primary)] bg-card/40">
         <div className="flex items-center justify-between border-b border-border/60 p-4">
-          <SectionTitle hint="Edite aqui CapEx, aportes, captações, amortizações e dividendos. Os valores alimentam automaticamente as linhas de investimento e financiamento na DFC abaixo.">
+          <SectionTitle hint="Apenas itens SEM fonte em outra aba. CapEx vem de Capital → Ativações (com vida útil e mês). Amortização do principal e juros vêm de Capital → Contratos de Dívida.">
             Movimentações de caixa não operacionais — 12 meses
           </SectionTitle>
         </div>
+        <div className="border-b border-border/40 bg-primary/5 px-4 py-2 text-[11px] text-muted-foreground">
+          <strong className="text-primary">SSOT:</strong> CapEx → edite em{" "}
+          <em>Capital → Ativações de imobilizado</em>. Captação e amortização de
+          dívida → edite em <em>Capital → Contratos de Dívida</em> (a amortização
+          do principal entra aqui automaticamente, e os juros viram a linha
+          "Juros sobre contratos de dívida" em Despesas).
+        </div>
         <NonOpTable
           rows={[
-            {
-              key: "capex",
-              label: "CapEx — aportes em ativo fixo",
-              hint: "Saída de caixa para compra de máquinas, equipamentos, obras, software.",
-              tone: "neg",
-              values: state.cashflow.capex,
-            },
             {
               key: "aportes",
               label: "Aportes de sócios",
@@ -242,17 +242,10 @@ export function CashflowTab() {
             },
             {
               key: "emprestimosCaptados",
-              label: "Captação de empréstimos",
-              hint: "Entrada de caixa por novas linhas de crédito tomadas no período.",
+              label: "Captação de empréstimos (avulso)",
+              hint: "Use apenas para captações pontuais que NÃO virarão contrato cadastrado. O ideal é cadastrar como Contrato de Dívida em Capital — isso integra amortização, juros, DSCR e cobertura automaticamente.",
               tone: "pos",
               values: state.cashflow.emprestimosCaptados,
-            },
-            {
-              key: "amortizacoes",
-              label: "Amortização de principal",
-              hint: "Pagamento da parcela de principal de dívidas (não confundir com juros, que já entram em Despesas financeiras).",
-              tone: "neg",
-              values: state.cashflow.amortizacoes,
             },
             {
               key: "dividendos",
