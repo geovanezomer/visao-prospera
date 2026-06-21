@@ -16,6 +16,7 @@ import {
   aggregateContracts,
   DEBT_CONTRACTS_COST_ID,
 } from "@/engines/finance/debtContracts";
+import { deriveAbertura } from "@/engines/finance/aberturaDerivada";
 import type { CostLine, DebtContract } from "@/engines/finance/types";
 
 
@@ -30,7 +31,11 @@ export function CapitalTab() {
   const c = state.capital;
   // SSOT: usa `useFinanceModel` (resolveEffectiveRegime + memo central) — mesma
   // fonte da aba Indicadores. Garante que WACC/ROIC/margens nunca divirjam.
-  const { ind } = useFinanceModel(state);
+  const { ind, model } = useFinanceModel(state);
+  const aberturaTotals = useMemo(
+    () => deriveAbertura({ state, impostosMensais: model.dre.impostos }).totals,
+    [state, model.dre.impostos],
+  );
 
   const set = (patch: Partial<typeof c>) =>
 
@@ -120,6 +125,34 @@ export function CapitalTab() {
 
   return (
     <div className="space-y-6">
+      {/* Totais de abertura — topo da página */}
+      <div className="grid grid-cols-3 gap-3 text-center text-[11px]">
+        <div className="rounded-md border border-border/40 bg-card/40 p-3">
+          <div className="text-muted-foreground uppercase tracking-wide text-[9.5px]">
+            Ativo abertura
+          </div>
+          <div className="mt-1 font-semibold tabular-nums text-sm">
+            {fmtBRL(aberturaTotals.ativo)}
+          </div>
+        </div>
+        <div className="rounded-md border border-border/40 bg-card/40 p-3">
+          <div className="text-muted-foreground uppercase tracking-wide text-[9.5px]">
+            Passivo abertura
+          </div>
+          <div className="mt-1 font-semibold tabular-nums text-sm">
+            {fmtBRL(aberturaTotals.passivo)}
+          </div>
+        </div>
+        <div className="rounded-md border border-border/40 bg-card/40 p-3">
+          <div className="text-muted-foreground uppercase tracking-wide text-[9.5px]">
+            PL abertura
+          </div>
+          <div className="mt-1 font-semibold tabular-nums text-sm">
+            {fmtBRL(aberturaTotals.pl)}
+          </div>
+        </div>
+      </div>
+
       {warnings.length > 0 && (
         <div className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-xs">
           <div className="mb-1 font-semibold text-warning">
