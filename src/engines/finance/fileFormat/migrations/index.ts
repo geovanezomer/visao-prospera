@@ -14,13 +14,10 @@
 //   - Migrator pode adicionar campo com default, renomear, restruturar.
 //     NÃO pode descartar dado do usuário silenciosamente.
 import type { Migration } from "./types";
+import { v1_to_v2 } from "./v1_to_v2";
 
-/** Lista ordenada de migrators. Hoje vazia — v1 é a versão corrente. */
-export const MIGRATIONS: Migration[] = [
-  // Exemplo (não ativo) — quando bumparmos para v2:
-  // import { v1_to_v2 } from "./v1_to_v2";
-  // export const MIGRATIONS: Migration[] = [v1_to_v2];
-];
+/** Lista ordenada de migrators (append-only). */
+export const MIGRATIONS: Migration[] = [v1_to_v2];
 
 /**
  * Aplica os migrators necessários para levar `raw` até `targetVersion`.

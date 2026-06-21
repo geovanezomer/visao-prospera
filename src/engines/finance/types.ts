@@ -198,6 +198,103 @@ export interface CapitalStructure {
    *  (juros mensais como custo financeiro + amortizações em cashflow.amortizacoes)
    *  e atualizam DSCR, ROIC, WACC e cobertura de juros automaticamente. */
   debtContracts?: DebtContract[];
+
+  /**
+   * Balanço detalhado (Fase 1 — schema hierárquico CPC/BR).
+   *
+   * Opcional e não-quebrante: quando preenchido, a UI passa a renderizar as
+   * rubricas detalhadas e RECALCULA os agregados de topo (`ativoTotal`,
+   * `dividaOnerosa`, `passivoCirculante`, `fornecedores`, `contasReceber`,
+   * `estoques`, `disponibilidades`, `patrimonioLiquido`). Quando ausente, o
+   * engine continua usando os campos agregados legados — toda a indicadoria
+   * (ROE/ROA/ROIC/liquidez/NCG) segue funcionando sem alteração.
+   *
+   * Sub-totais e totais são SEMPRE derivados (nunca digitados). A migração
+   * v1→v2 pré-popula este objeto a partir dos campos legados.
+   */
+  balanco?: BalancoDetalhado;
+}
+
+/** Rubricas detalhadas do Balanço Patrimonial (modelo brasileiro CPC). */
+export interface BalancoDetalhado {
+  /** Data-base do balanço (ISO YYYY-MM-DD). */
+  dataBase?: string;
+
+  ativoCirculante?: {
+    caixaEquivalentes?: number;
+    aplicacoesFinanceirasCP?: number;
+    contasReceberClientes?: number;
+    /** Provisão p/ devedores duvidosos — valor POSITIVO; engine subtrai. */
+    pdd?: number;
+    estoques?: number;
+    impostosRecuperar?: number;
+    adiantamentos?: number;
+    despesasAntecipadas?: number;
+    outrosAtivosCirculantes?: number;
+  };
+
+  ativoNaoCirculante?: {
+    realizavelLP?: {
+      creditosLP?: number;
+      depositosJudiciais?: number;
+      impostosDiferidos?: number;
+      outros?: number;
+    };
+    investimentos?: number;
+    imobilizado?: {
+      terrenos?: number;
+      edificacoes?: number;
+      maquinasEquipamentos?: number;
+      veiculos?: number;
+      moveisUtensilios?: number;
+      outrosImobilizados?: number;
+      /** Depreciação acumulada — valor POSITIVO; engine subtrai. */
+      depreciacaoAcumulada?: number;
+    };
+    intangivel?: {
+      software?: number;
+      marcasPatentes?: number;
+      goodwill?: number;
+      outrosIntangiveis?: number;
+      /** Amortização acumulada — valor POSITIVO; engine subtrai. */
+      amortizacaoAcumulada?: number;
+    };
+  };
+
+  passivoCirculante?: {
+    fornecedores?: number;
+    emprestimosFinanciamentosCP?: number;
+    impostosPagar?: number;
+    salariosEncargos?: number;
+    adiantamentosClientes?: number;
+    dividendosPagar?: number;
+    provisoesCP?: number;
+    outrosPassivosCirculantes?: number;
+  };
+
+  passivoNaoCirculante?: {
+    emprestimosFinanciamentosLP?: number;
+    impostosParcelados?: number;
+    debentures?: number;
+    provisoesLP?: number;
+    impostosDiferidos?: number;
+    outrasObrigacoesLP?: number;
+  };
+
+  patrimonioLiquido?: {
+    capitalSocial?: number;
+    reservasCapital?: number;
+    reservasLucros?: number;
+    lucrosPrejuizosAcumulados?: number;
+    /** Resultado do exercício — idealmente vem do DRE (auto-preenchido). */
+    resultadoExercicio?: number;
+    ajustesAvaliacaoPatrimonial?: number;
+    /** Ações em tesouraria — valor POSITIVO; engine subtrai. */
+    acoesEmTesouraria?: number;
+  };
+
+  /** Período anterior (N-1) p/ análise horizontal AH%. Mesma forma. */
+  anterior?: Omit<BalancoDetalhado, "anterior">;
 }
 
 export type DebtSystem = "price" | "sac";
