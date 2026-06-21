@@ -43,10 +43,6 @@ export function BalanceSheetCard({
   const hasInconsistencia =
     capital.ativoTotal > 0 && diff > Math.max(100, capital.ativoTotal * 0.02);
 
-  const capitalCirculante =
-    ativoCircCalc - (capital.passivoCirculante || capital.fornecedores || 0);
-  const dpl = plInformado > 0 ? (capital.dividaOnerosa || 0) / plInformado : 0;
-  const solvencia = totalPassivos > 0 ? (capital.ativoTotal || 0) / totalPassivos : 0;
 
   // Auto-preenche PL quando vazio (= cálculo Ativo − Dívidas). Se o usuário
   // informar manualmente um valor diferente, mantemos e exibimos o alerta.
