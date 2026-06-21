@@ -27,6 +27,7 @@ import { resolveEffectiveRegime } from "./regime";
 import { buildCashFlow } from "./cashflow";
 import { buildValuation, defaultValuationParams } from "./valuation";
 import { computeHealth } from "./health";
+import { normalizeStateFromBalanco } from "./balanco";
 
 // Tipos derivados das funções existentes (evita re-declarar shapes).
 type BuildDREReturn = ReturnType<typeof buildDRE>;
