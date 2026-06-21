@@ -33,6 +33,7 @@ import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills
 import { IndicatorsCharts } from "./IndicatorsCharts";
 import { DashboardExtras } from "./DashboardExtras";
 import { WaccRoicMeter } from "@/components/sim/capital/WaccRoicMeter";
+import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
 
 const COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15"];
 
@@ -115,6 +116,8 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 export function DashboardTab() {
   const state = useFinanceState();
   const { dre, ind } = useFinanceModel(state);
+  // SSOT — mesma fórmula da aba Capital/Indicadores.
+  const alav = leverageDisplay("pl", ind.dividaLiqPl, ind.dividaLiquida, state.capital.patrimonioLiquido);
 
   // Receita mensal + margem líquida acumulada
   const receitaMargem = useMemo(
@@ -211,13 +214,25 @@ export function DashboardTab() {
           }}
         />
         <StatCard
-          label="FCF após Capex"
-          value={fmtBRL(ind.fcfAposCapex)}
-          tone={ind.fcfAposCapex >= 0 ? "pos" : "neg"}
-          sub="Caixa livre p/ sócios e credores"
+          label="Alavancagem Patrimonial"
+          value={alav.value}
+          tone={alav.tone}
+          sub="(Dívida Total − Caixa) ÷ PL"
           hint={{
-            description: "Fluxo de caixa livre após investimentos em ativo fixo. É o caixa efetivamente disponível para sócios e credores.",
-            formula: "FCO − Capex",
+            description:
+              "Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio. Caixa supera a dívida quando o resultado é negativo.",
+            formula: "(Dívida Total − Caixa) ÷ Patrimônio Líquido",
+          }}
+        />
+        <StatCard
+          label="DSCR"
+          value={ind.dscr >= 99 ? "∞" : `${ind.dscr.toFixed(2)}×`}
+          tone={ind.dscr >= 1.25 ? "pos" : ind.dscr >= 1.0 ? "default" : "neg"}
+          sub="EBITDA ÷ Serviço da Dívida"
+          hint={{
+            description:
+              "Debt Service Coverage Ratio — capacidade do EBITDA cobrir o serviço da dívida (juros + amortização do principal). ≥1.25× é saudável; <1.0× sinaliza risco real de inadimplência.",
+            formula: "EBITDA Anual ÷ (Juros + Amortizações Anuais)",
           }}
         />
       </div>
