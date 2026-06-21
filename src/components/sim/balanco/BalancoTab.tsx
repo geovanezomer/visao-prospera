@@ -231,6 +231,36 @@ export function BalancoTab() {
 
   const puxarResultadoDRE = () => setCampo("patrimonioLiquido.resultadoExercicio", resultadoDRE);
 
+  // Auto-preenchimento contínuo: sempre que os dados operacionais (Receitas,
+  // Custos, Capital, DRE) mudam, mescla as sugestões em campos vazios (= 0).
+  // Nunca sobrescreve valores digitados (mergeBalancoPreservandoUsuario).
+  useEffect(() => {
+    const sug = suggestBalancoFromState(state, {
+      dreLucroLiquido: resultadoDRE,
+      dreImpostosLucroAnual: impostosLucroAnualDRE,
+    });
+    const merged = mergeBalancoPreservandoUsuario(balanco, sug);
+    if (JSON.stringify(merged) !== JSON.stringify(balanco)) {
+      update((s) => ({ ...s, capital: { ...s.capital, balanco: merged } }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    state.capital.disponibilidades,
+    state.capital.caixaOcioso,
+    state.capital.estoques,
+    state.capital.contasReceber,
+    state.capital.fornecedores,
+    state.capital.dividaOnerosa,
+    state.capital.dividaCurtoPrazoPct,
+    state.capital.depreciacaoMensal,
+    state.capital.capexAtivacao,
+    state.revenue?.pmr,
+    state.revenue?.pmp,
+    resultadoDRE,
+    impostosLucroAnualDRE,
+  ]);
+
+
   // Pré-preenchimento operacional: aplica sugestões SOMENTE em campos vazios.
   const prePreencher = () => {
     const sug = suggestBalancoFromState(state, {
