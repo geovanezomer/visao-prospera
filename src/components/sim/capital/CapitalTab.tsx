@@ -228,6 +228,7 @@ export function CapitalTab() {
             />
           }
         />
+        <AberturaCard capital={c} onChange={set} />
         <WaccRoicMeter wacc={wacc} roic={ind.roic} />
       </div>
     </div>
