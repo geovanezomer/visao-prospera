@@ -28,7 +28,6 @@
 //   • Terrenos, Edificações, Máquinas, Veículos, Móveis (valor histórico)
 //   • Marcas, Patentes, Goodwill
 import type { AppState, BalancoDetalhado, CostLine } from "./types";
-import { calcDeprecAtivacoes } from "./shared";
 import type { FinancialModelCashflow, FinancialModelDRE } from "./financialModel";
 
 const n = (v: number | undefined): number =>
