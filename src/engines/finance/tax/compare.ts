@@ -12,6 +12,11 @@ import { calcSimples } from "./simples";
 import { calcPresumido } from "./presumido";
 import { calcReal } from "./real";
 import { getReformaRatesForYear, eraForYear, type ReformaRates } from "./reforma";
+import {
+  getCbsAliquota,
+  getIbsAliquotaRef,
+  CBS_ALIQUOTA_2026_TESTE,
+} from "../taxDefaults";
 import type { MonthlyTax } from "./shared";
 
 /**
