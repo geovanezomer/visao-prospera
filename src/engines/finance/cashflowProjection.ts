@@ -95,8 +95,8 @@ function projectScenario(
   let saldo = saldoInicialProj;
   for (let i = 1; i <= meses; i++) {
     const b = (i - 1) % 12;
-    const rFator = 1 + cenario.receitaDelta;
-    const fFator = 1 + cenario.folhaDelta;
+    const rFator = 1 + deltaAt(cenario.receitaDelta, i);
+    const fFator = 1 + deltaAt(cenario.folhaDelta, i);
 
     const recebimentos = cf.recebimentos[b] * rFator + cf.receitasFinanceiras[b];
     const pagamentos =
