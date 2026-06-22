@@ -316,15 +316,29 @@ export function loadConfig(): AIConfig {
   try {
     const raw = localStorage.getItem(CFG_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
+    const savedVersion =
+      isRecord(parsed) && typeof parsed.soulVersion === "number" ? parsed.soulVersion : 0;
     const cfg = sanitizeConfig(parsed);
     if (!cfg.persistKey) {
       cfg.apiKey = sessionStorage.getItem(SESSION_KEY_BAG) || "";
+    }
+    // Persiste a migração para que o usuário enxergue o SOUL/Skills novos
+    // mesmo sem editar nada nas configurações.
+    if (raw && savedVersion < SOUL_DEFAULTS_VERSION) {
+      try {
+        const persisted = { ...cfg, soulVersion: SOUL_DEFAULTS_VERSION };
+        const toStore = cfg.persistKey ? persisted : { ...persisted, apiKey: "" };
+        localStorage.setItem(CFG_KEY, JSON.stringify(toStore));
+      } catch {
+        // ignora falha de storage
+      }
     }
     return cfg;
   } catch {
     return DEFAULT_CONFIG;
   }
 }
+
 
 /** Nome do evento custom emitido após saveConfig — ouvido por hooks reativos. */
 export const AI_CONFIG_CHANGED_EVENT = "ai-config-changed";
