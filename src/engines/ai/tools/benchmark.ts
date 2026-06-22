@@ -1,7 +1,7 @@
 // Benchmark setorial: lista de setores e comparação com indicadores da empresa.
 
 import type { AppState } from "@/engines/finance/types";
-import { findSector, listSectors, rank, type SectorBenchmark } from "@/engines/benchmark/sectors";
+import { findSector, listSectors, rank, resolveBenchmark, type SectorBenchmark } from "@/engines/benchmark/sectors";
 import { buildDRE, calcIndicators, resolveEffectiveRegime } from "@/engines/finance";
 import { type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
