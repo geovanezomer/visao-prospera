@@ -181,9 +181,10 @@ export function TaxTab() {
     if (state.tax.simplesAnexo === "V" && state.tax.fatorRAuto) {
       // B6: usa helper barato `folhaAnual` em vez de `buildDRE(...).folhaCltAnual`.
       const folha = folhaAnual(state);
-      if (rbAnual > 0 && folha / rbAnual >= 0.28) {
+      const fatorRMin = getFatorRMinimoPct(state.tax) / 100;
+      if (rbAnual > 0 && folha / rbAnual >= fatorRMin) {
         w.push(
-          `Fator R = ${((folha / rbAnual) * 100).toFixed(1)}% (≥ 28%) — Anexo V será automaticamente migrado para Anexo III (alíquotas menores).`,
+          `Fator R = ${((folha / rbAnual) * 100).toFixed(1)}% (≥ ${(fatorRMin * 100).toFixed(0)}%) — Anexo V será automaticamente migrado para Anexo III (alíquotas menores).`,
         );
       }
     }
