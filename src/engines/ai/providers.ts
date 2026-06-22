@@ -215,7 +215,7 @@ const boolOr = (v: unknown, fallback: boolean) => (typeof v === "boolean" ? v : 
 
 // Versão da identidade/skills padrão. Bump para forçar migração no localStorage
 // dos usuários que ainda têm o SOUL/SKILLS antigos persistidos.
-const SOUL_DEFAULTS_VERSION = 2;
+const SOUL_DEFAULTS_VERSION = 3;
 
 function sanitizeSkills(input: unknown): Skill[] {
   if (!Array.isArray(input)) return DEFAULT_SKILLS;
