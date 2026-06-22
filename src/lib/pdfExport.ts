@@ -724,8 +724,8 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
     "Resumo Executivo",
     "Os pontos a seguir sintetizam o diagnóstico financeiro do período. Detalhes e recomendações nas seções seguintes.");
 
-  // Insights compactos — limitamos a 4 para abrir espaço ao bloco de Runway.
-  const insights = buildExecutiveInsights(state, model, score, conceito).slice(0, 4);
+  // Insights — mínimo de 5 itens no resumo executivo.
+  const insights = buildExecutiveInsights(state, model, score, conceito).slice(0, 5);
   insights.forEach((it, i) => {
     doc.setFont(FONT, "bold");
     doc.setFontSize(22);
@@ -746,8 +746,11 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
     y += 10 + lines.length * 12 + 12;
   });
 
+  // ~3 linhas de respiro antes do bloco Runway.
+  y += 36;
   // Bloco Pista de Caixa & Saldo Projetado (mesmo card do Dashboard).
-  y = drawRunwayBlock(doc, y + 6, state, model);
+  y = drawRunwayBlock(doc, y, state, model);
+
 
   // ── PÁGINA 3 — PAINEL EXECUTIVO ────────────────────────────────────
   doc.addPage();
@@ -783,8 +786,9 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   ];
   y = drawKpiCards(doc, y, kpiCards, 3);
 
-  // Top 5 Despesas — mesma página, abaixo dos cards
-  drawTop5Despesas(doc, y + 4, model);
+  // ~3 linhas de respiro entre os cards e o bloco de Top 5 Despesas.
+  drawTop5Despesas(doc, y + 36, model);
+
 
   // ── PÁGINA 4 — SAÚDE FINANCEIRA ────────────────────────────────────
   doc.addPage();
@@ -823,6 +827,8 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
     y += 32 + lines.length * 11 + 10;
   });
 
+  // ~3 linhas de respiro entre as dimensões e o gráfico de Resultado Acumulado.
+  y += 36;
   // Gráfico — Resultado acumulado (lucro líquido) — mesma página
   let acc = 0;
   const cumul = model.dre.lucroLiquido.map((v) => (acc += v));
@@ -833,6 +839,7 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
       fill: [16, 185, 129] as [number, number, number],
       line: [5, 150, 105] as [number, number, number],
     });
+
 
   // ── PÁGINA 5 — RISCOS & RECOMENDAÇÕES ──────────────────────────────
   doc.addPage();
