@@ -15,6 +15,9 @@ import {
   Brain,
   Layers,
   ShieldCheck,
+  Wrench,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { AIConfigDialog } from "./AIConfigDialog";
 import type { AppState } from "@/engines/finance/types";
@@ -251,6 +254,10 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
             ) : (
               <div className="max-w-4xl mx-auto space-y-6">
                 {messages.map((m, i) => {
+                  // Tool call — card colapsado mostrando nome + payload em tempo real.
+                  if (m.role === "tool") {
+                    return <ToolCallCard key={i} name={m.toolName ?? "tool"} payload={m.content} />;
+                  }
                   // Modo Auditor: relatório estruturado renderizado em card próprio.
                   if (m.role === "assistant" && isAuditReport(m.content)) {
                     return (
@@ -607,5 +614,41 @@ function MemoriesPopover({ company }: { company: string }) {
         )}
       </PopoverContent>
     </Popover>
+  );
+}
+
+// Card de tool call em tempo real — mostra nome + payload colapsável.
+// Streamed via onProgress no useAIChat: cada tool aparece imediatamente
+// que o engine retorna o resultado, antes do assistant final consolidar.
+function ToolCallCard({ name, payload }: { name: string; payload: string }) {
+  const [open, setOpen] = useState(false);
+  const chars = payload?.length ?? 0;
+  return (
+    <div className="flex gap-4 animate-in fade-in duration-300">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-muted/40 border-border/40">
+        <Wrench className="h-4 w-4 text-primary" />
+      </div>
+      <div className="flex-1 min-w-0 rounded-lg border border-border/40 bg-card/40 text-xs">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="flex w-full items-center gap-2 px-3 py-2 hover:bg-accent/40 rounded-lg"
+        >
+          {open ? (
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
+          <code className="font-mono text-[11px] text-primary">{name}</code>
+          <span className="ml-auto text-[10px] text-muted-foreground">
+            {chars > 0 ? `${chars.toLocaleString("pt-BR")} chars` : "executando…"}
+          </span>
+        </button>
+        {open && (
+          <pre className="max-h-80 overflow-auto border-t border-border/40 bg-background/60 p-3 text-[11px] leading-relaxed whitespace-pre-wrap break-words font-mono">
+            {payload || "_(sem retorno)_"}
+          </pre>
+        )}
+      </div>
+    </div>
   );
 }
