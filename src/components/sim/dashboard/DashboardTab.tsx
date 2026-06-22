@@ -178,7 +178,8 @@ export function DashboardTab() {
 
   return (
     <div className="space-y-6">
-      <HistoricalYearPills />
+
+
 
 
       {/* Linha 1 — Cards numéricos resumo (com tooltips, base unificada `useFinanceModel`) */}
