@@ -297,7 +297,22 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                           <Suspense
                             fallback={<div className="h-20 animate-pulse bg-muted rounded" />}
                           >
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                // Intercepta ```finance-chart {json}``` e renderiza gráfico interativo.
+                                code({ className, children, ...props }: any) {
+                                  const lang = /language-(\w+)/.exec(className || "")?.[1];
+                                  if (lang === "finance-chart") {
+                                    const spec = parseChartSpec(String(children).trim());
+                                    if (spec) return <ChatChart spec={spec} />;
+                                  }
+                                  return <code className={className} {...props}>{children}</code>;
+                                },
+                              }}
+                            >
+                              {m.content}
+                            </ReactMarkdown>
                           </Suspense>
                         </div>
                       </div>
