@@ -59,7 +59,7 @@ import { Label } from "@/components/ui/label";
 import { MoreVertical, Pencil, Trash2, GitCompare, X } from "lucide-react";
 import { toast } from "sonner";
 
-export function HistoricalYearPills() {
+export function HistoricalYearPills({ hideCompare = false }: { hideCompare?: boolean } = {}) {
   const { state, update } = useFinance();
   const company = state.companyName || "default";
   const all = useScenarios(company);
