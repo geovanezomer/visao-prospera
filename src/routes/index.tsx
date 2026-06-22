@@ -271,6 +271,26 @@ function SimulaPro() {
                     size="sm"
                     variant="ghost"
                     className="h-8 w-8 p-0"
+                    onClick={async () => {
+                      try {
+                        toast.loading("Gerando PDF…", { id: "pdf-export" });
+                        const model = buildFinancialModel(state);
+                        await exportFinancePDF({ state, model });
+                        toast.success("PDF gerado com sucesso", { id: "pdf-export" });
+                      } catch (err) {
+                        console.error("[pdf-export] falhou:", err);
+                        toast.error("Falha ao gerar PDF", { id: "pdf-export" });
+                      }
+                    }}
+                    title="Exportar relatório em PDF"
+                    aria-label="Exportar PDF"
+                  >
+                    <Printer className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
                     onClick={() => void fileApi.resetWithConfirm()}
                     title="Restaurar dados (Ctrl+Shift+R)"
                     aria-label="Reset"
