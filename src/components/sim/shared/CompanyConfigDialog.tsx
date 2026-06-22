@@ -250,9 +250,17 @@ export function CompanyConfigForm({
             <Label>Setor *</Label>
             <Select
               value={form.businessType}
-              onValueChange={(v) =>
-                commit({ ...form, businessType: v as BusinessType, ramoAtuacao: "" })
-              }
+              onValueChange={(v) => {
+                const bt = v as BusinessType;
+                const firstSector = listSectors(bt)[0]?.id ?? "";
+                // Ao trocar setor, default para o 1º ramo e zera benchmark custom.
+                commit({
+                  ...form,
+                  businessType: bt,
+                  ramoAtuacao: firstSector,
+                  benchmarkCustom: undefined,
+                });
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -267,26 +275,96 @@ export function CompanyConfigForm({
           <div className="space-y-1.5">
             <Label>Ramo de atuação</Label>
             <Select
-              value={form.ramoAtuacao || ""}
-              onValueChange={(v) => commit({ ...form, ramoAtuacao: v })}
+              value={form.ramoAtuacao || setoresDisponiveis[0]?.id || ""}
+              onValueChange={(v) =>
+                // Ao trocar ramo, zera benchmark personalizado (defaults vêm do novo setor).
+                commit({ ...form, ramoAtuacao: v, benchmarkCustom: undefined })
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione…" />
               </SelectTrigger>
               <SelectContent>
-                {ramosDisponiveis.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.label}
+                {setoresDisponiveis.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="text-[10px] text-muted-foreground">
-              Usado para comparar com benchmarks setoriais.
+              Define os benchmarks comparativos. Valores pré-calibrados por setor.
             </p>
           </div>
         </div>
+
+        {/* Benchmark personalizado (avançado) */}
+        {setorSelecionado && (
+          <Collapsible open={benchOpen} onOpenChange={setBenchOpen}>
+            <div className="flex items-center justify-between gap-2 rounded-md border border-dashed border-border/60 px-3 py-2">
+              <CollapsibleTrigger className="flex flex-1 items-center gap-2 text-left text-xs font-medium">
+                {benchOpen ? (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5" />
+                )}
+                Benchmark do Setor Personalizado{" "}
+                <span className="text-[10px] font-normal text-muted-foreground">
+                  (opcional — já preenchido com valores do setor)
+                </span>
+              </CollapsibleTrigger>
+              {form.benchmarkCustom && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={resetBenchmark}
+                  className="h-7 px-2 text-[11px]"
+                >
+                  <RotateCcw className="mr-1 h-3 w-3" />
+                  Restaurar
+                </Button>
+              )}
+            </div>
+            <CollapsibleContent className="mt-2 space-y-2 rounded-md border border-border/40 p-3">
+              <p className="text-[11px] text-muted-foreground">
+                Ajuste a mediana (P50) de cada indicador para refletir a realidade do seu
+                cliente. Os quartis P25/P75 são derivados automaticamente como ±20%. Campos em
+                branco usam o valor padrão do setor <strong>{setorSelecionado.label}</strong>.
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {BENCHMARK_FIELDS.map((f) => {
+                  const defaultP50 = setorSelecionado[f.key].p50;
+                  const current = form.benchmarkCustom?.[f.key];
+                  return (
+                    <div key={f.key} className="space-y-1">
+                      <Label htmlFor={`bm-${f.key}`} className="text-[11px]">
+                        {f.label} ({f.unit})
+                      </Label>
+                      <Input
+                        id={`bm-${f.key}`}
+                        type="number"
+                        step={f.step}
+                        value={current ?? ""}
+                        placeholder={String(defaultP50)}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          updateBenchField(
+                            f.key,
+                            raw === "" ? undefined : Number(raw),
+                          );
+                        }}
+                        className="h-8"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
       </section>
+
 
       {/* Porte */}
       <section className="space-y-3">
