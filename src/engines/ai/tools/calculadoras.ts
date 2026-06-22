@@ -207,22 +207,22 @@ const handlers: Record<string, ToolHandler> = {
     const r = safeParse<CltVsPjInput>(cltVsPjInputSchema, args);
     if (!r.ok) return r.err;
     const c = compararCltVsPj(r.data);
-    const fmtPJ = (label: string, p: typeof c.mei) =>
-      `| ${label} | ${brl(p.liquidoMensal)} | ${brl(p.liquidoAnual)} | ${p.observacao ?? "—"} |`;
+    const fmtPJ = (label: string, key: "mei" | "simples" | "presumido") => {
+      const p = c.pj[key];
+      const obs = p.acimaDoTetoRegime ? "⚠️ acima do teto" : "—";
+      return `| ${label} | ${brl(p.liquidoMensal)} | ${brl(p.liquidoAnual)} | ${obs} | ${brl(c.faturamentoEmpate[key])} |`;
+    };
     return [
       `## Comparativo CLT × PJ`,
       ``,
-      `| Regime | Líquido mensal | Líquido anual | Obs. |`,
-      `|---|---:|---:|---|`,
-      `| CLT | ${brl(c.clt.liquidoMensal)} | ${brl(c.clt.liquidoAnual)} | — |`,
-      fmtPJ("PJ MEI", c.mei),
-      fmtPJ("PJ Simples III", c.simples),
-      fmtPJ("PJ Presumido", c.presumido),
+      `| Regime | Líquido mensal | Líquido anual | Obs. | Fat. p/ empatar CLT |`,
+      `|---|---:|---:|---|---:|`,
+      `| CLT | ${brl(c.clt.liquidoMensal)} | ${brl(c.clt.totalAnualLiquido)} | inclui 13º+férias+PLR+benefícios | — |`,
+      fmtPJ("PJ MEI", "mei"),
+      fmtPJ("PJ Simples III", "simples"),
+      fmtPJ("PJ Presumido", "presumido"),
       ``,
-      `**Vencedor:** ${c.vencedor.toUpperCase()} · **Δ anual vs CLT:** ${brl(c.deltaAnualVsCLT)}`,
-      c.breakevenFaturamentoMensal != null
-        ? `**Breakeven PJ (vs CLT):** faturamento mensal ${brl(c.breakevenFaturamentoMensal)}`
-        : `_Sem breakeven viável dentro do limite do regime._`,
+      `**Vencedor:** ${c.vencedor.toUpperCase()} (melhor PJ = ${c.melhorRegimePJ.toUpperCase()}) · **Δ anual vs CLT:** ${brl(c.diferencaAnual)}`,
     ].join("\n");
   },
 
