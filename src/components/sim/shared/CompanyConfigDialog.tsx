@@ -528,10 +528,15 @@ function buildFormFromState(state: AppState): FormData {
       default: return 1;
     }
   };
+  // Se ramoAtuacao salvo não bate com SECTORS (legado do RAMOS_POR_SETOR), cai
+  // para o 1º setor do businessType — assim os benchmarks sempre têm um valor válido.
+  const ramoSalvo = state.ramoAtuacao ?? "";
+  const ramoEfetivo = getSector(ramoSalvo)?.id ?? listSectors(state.businessType)[0]?.id ?? "";
   return {
     companyName: state.companyName ?? "",
     businessType: state.businessType,
-    ramoAtuacao: state.ramoAtuacao ?? "",
+    ramoAtuacao: ramoEfetivo,
+    benchmarkCustom: state.benchmarkCustom,
     numColaboradores: inferNum(),
     regime: state.tax.regime,
     periodoAnaliseMeses: state.periodoAnaliseMeses ?? 12,
