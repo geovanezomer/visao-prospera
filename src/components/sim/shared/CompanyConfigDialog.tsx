@@ -152,7 +152,7 @@ export function CompanyConfigForm({
     const d = parsed.data;
     update({
       companyName: d.companyName,
-      cnpj: d.cnpj || undefined,
+
       businessType: d.businessType,
       ramoAtuacao: d.ramoAtuacao || undefined,
       numColaboradores: d.numColaboradores,
