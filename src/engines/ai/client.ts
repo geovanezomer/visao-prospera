@@ -12,6 +12,13 @@ export interface LLMMessage {
     function: { name: string; arguments: string };
   }>;
   name?: string;
+  /**
+   * Marca a mensagem como ponto de corte de PROMPT CACHING (Anthropic).
+   * O cache cobre tudo até e incluindo esta mensagem. Use APENAS em
+   * mensagens `role: "system"` cujo conteúdo é estável entre turnos.
+   * Ignorado em provedores OpenAI-compatíveis.
+   */
+  cache?: boolean;
 }
 
 const isAnthropic = (cfg: AIConfig) => cfg.provider === "anthropic";
