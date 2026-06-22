@@ -176,7 +176,7 @@ function drawKpiGrid(doc: jsPDF, yStart: number, cards: Card[], cols = 3): numbe
 // Tabela genérica.
 function drawTable(
   doc: jsPDF, yStart: number, head: string[], body: (string | number)[][],
-  opts?: { colStyles?: Record<number, Parameters<typeof autoTable>[1]["columnStyles"][number]> },
+  opts?: { colStyles?: Record<number, Record<string, unknown>> },
 ): number {
   autoTable(doc, {
     startY: yStart,
