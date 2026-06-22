@@ -272,16 +272,11 @@ export function useFinnanceFile({
     resetState();
   }, [askConfirm, resetState]);
 
-  // Aviso nativo do navegador ao fechar a aba com alterações pendentes.
-  useEffect(() => {
-    if (!dirty) return;
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [dirty]);
+  // [removido] Antes mostrávamos o aviso nativo `beforeunload` quando `dirty=true`,
+  // mas o AppState já é persistido automaticamente em localStorage — o "dirty"
+  // aqui refere-se apenas à exportação do arquivo .finance.json (snapshot manual),
+  // o que tornava o popup "É possível que as alterações não sejam salvas" falso
+  // e intrusivo a cada F5. Removido em favor da UX (zero risco de perda real).
 
   // Atalhos: Ctrl/Cmd+S salvar, Ctrl/Cmd+O abrir, Ctrl/Cmd+Shift+R reset.
   useEffect(() => {
