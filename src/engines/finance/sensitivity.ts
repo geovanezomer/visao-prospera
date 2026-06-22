@@ -18,7 +18,7 @@ const DRIVER_LABEL: Record<DriverKey, string> = {
 
 const LABOR_RE = /sal[áa]rio|folha|clt|prolabore|pró-labore|mod|mão de obra/i;
 
-function applyDriver(state: AppState, driver: DriverKey, deltaPct: number): AppState {
+export function applyDriver(state: AppState, driver: DriverKey, deltaPct: number): AppState {
   const f = 1 + deltaPct / 100;
   if (driver === "preco") {
     // preço sobe receita e mantém custos
