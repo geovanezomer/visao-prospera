@@ -345,14 +345,9 @@ export function DRETab() {
     { name: "Lucro Líq.", value: ll },
   ];
 
-  const showComparison = comparisonSnaps.length >= 2;
-
   return (
     <div className="space-y-6">
-      {showComparison ? (
-        <DREComparison snapshots={comparisonSnaps} />
-      ) : (
-        <>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <div className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
