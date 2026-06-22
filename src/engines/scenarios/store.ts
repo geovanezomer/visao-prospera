@@ -87,6 +87,8 @@ export interface ScenarioRecord {
     lucroLiquido: number;
     ev?: number;
     saldoFinalCaixa?: number;
+    receita?: number;
+    dscr?: number;
   };
   /** Tipo do cenário:
    *  - "whatif" (default): simulação de alavanca, comparado contra base.
@@ -97,6 +99,15 @@ export interface ScenarioRecord {
   fiscalYear?: number;
   /** Snapshot completo do AppState. Obrigatório quando `kind === "historical"`. */
   state?: AppState;
+  /** ID do cenário-pai (ramificação/clonagem). Permite árvore de variantes. */
+  parentId?: string;
+  /** Metadados livres: autor, descrição, premissas estruturadas, tags. */
+  metadata?: {
+    createdBy?: string;
+    description?: string;
+    premissas?: Record<string, unknown>;
+    tags?: string[];
+  };
   createdAt: number;
   updatedAt: number;
   /** Soft delete — filtrado em listScenarios por padrão. */
