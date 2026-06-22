@@ -232,55 +232,49 @@ const MODE_BLOCKS: Record<AIMode, string> = {
 };
 
 
-export function buildSystemPrompt(opts: {
+/**
+ * Versão "em partes" do system prompt — separa o conteúdo ESTÁVEL
+ * (cacheável: persona, regras, glossário, skills, snapshot/tools)
+ * do conteúdo DINÂMICO (data atual, contexto da empresa, memórias,
+ * bloco de modo, instruções extras) que muda entre turnos.
+ *
+ * Ordem importa para prompt caching (Anthropic): o cache cobre o
+ * prefixo até o último bloco marcado com cache_control. Por isso
+ * tudo que pode mudar entre requisições fica APÓS o bloco estável.
+ */
+export function buildSystemPromptParts(opts: {
   snapshot?: string;
   includeSnapshot: boolean;
   useTools: boolean;
   useMetaTools?: boolean;
   extra?: string;
-  /** Modo de atuação. Default "chat". */
   mode?: AIMode;
-  /** @deprecated use `mode: "auditor"`. Mantido para compatibilidade. */
+  /** @deprecated use `mode: "auditor"`. */
   auditMode?: boolean;
   soul?: string;
   skills?: Skill[];
   context?: RuntimeContext;
   memoriesBlock?: string;
-}): string {
-  // SOUL substitui a PERSONA fixa quando fornecido (editável em Configurações).
+}): { stable: string; dynamic: string } {
   const soul = opts.soul && opts.soul.trim() ? opts.soul.trim() : PERSONA;
-  // Resolve modo: `mode` ganha de `auditMode`; fallback para "chat".
   const mode: AIMode = opts.mode ?? (opts.auditMode ? "auditor" : "chat");
 
-  const parts: string[] = [
-    soul,
-    "",
-    buildContextHeader(opts.context),
-    "",
-    SISTEMA,
-    "",
-    REGRAS,
-    "",
-    GLOSSARIO,
-  ];
+  // ===== BLOCO ESTÁVEL (cacheável) =====
+  // Persona, regras gerais, glossário, skills e snapshot/tool-instructions.
+  // Snapshot só muda quando os dados da empresa mudam — perfeito para cache.
+  const stableParts: string[] = [soul, "", SISTEMA, "", REGRAS, "", GLOSSARIO];
 
-  // MEMÓRIA persistente — conclusões salvas em conversas anteriores (mesma empresa).
-  if (opts.memoriesBlock && opts.memoriesBlock.trim()) {
-    parts.push("", opts.memoriesBlock.trim());
-  }
-
-  // SKILLS ativas — anexadas como blocos modulares.
   const activeSkills = (opts.skills || []).filter((s) => s.enabled && s.body.trim());
   if (activeSkills.length > 0) {
-    parts.push("", "### SKILLS ATIVAS");
+    stableParts.push("", "### SKILLS ATIVAS");
     for (const s of activeSkills) {
-      parts.push("", `#### ${s.name}`, s.body.trim());
+      stableParts.push("", `#### ${s.name}`, s.body.trim());
     }
   }
 
   if (opts.useTools) {
     if (opts.useMetaTools !== false) {
-      parts.push(
+      stableParts.push(
         "",
         `MODO TOOL-CALLING (META) ATIVO: você enxerga APENAS duas funções — \`tool_search\` e \`tool_invoke\`.
 - Use \`tool_search({ query, category? })\` para descobrir a tool certa (categorias: finance, simulator, benchmark, macro, scenarios, actions, compliance, reports, memory). Os nomes citados nas REGRAS acima (get_resumo_executivo, get_indicadores, simular_alavanca, etc.) continuam válidos — busque por eles.
@@ -288,27 +282,42 @@ export function buildSystemPrompt(opts: {
 - Faça invokes em paralelo quando precisar de várias tools. Não invente — chame a função.`,
       );
     } else {
-      parts.push(
+      stableParts.push(
         "",
         `MODO TOOL-CALLING ATIVO: use as funções disponíveis para buscar os dados exatos sob demanda. Não invente — chame a função.`,
       );
     }
   } else if (opts.includeSnapshot && opts.snapshot) {
-    parts.push("", "<SNAPSHOT>", opts.snapshot, "</SNAPSHOT>");
+    stableParts.push("", "<SNAPSHOT>", opts.snapshot, "</SNAPSHOT>");
   } else {
-    parts.push(
+    stableParts.push(
       "",
       "(SNAPSHOT desativado — avise o usuário que está sem acesso aos dados específicos.)",
     );
   }
 
-  // Bloco específico do modo (vazio em "chat").
-  const modeBlock = MODE_BLOCKS[mode];
-  if (modeBlock) parts.push("", modeBlock);
+  // ===== BLOCO DINÂMICO (NÃO cacheado) =====
+  // Data atual (muda diariamente), empresa/regime ativos (podem trocar
+  // na sessão), memórias persistentes (mudam quando consultor salva) e
+  // o bloco de modo (consultor pode trocar). Tudo fica DEPOIS do cache.
+  const dynamicParts: string[] = [buildContextHeader(opts.context)];
 
-  if (opts.extra && opts.extra.trim()) {
-    parts.push("", `INSTRUÇÕES ADICIONAIS DO USUÁRIO:`, opts.extra.trim());
+  if (opts.memoriesBlock && opts.memoriesBlock.trim()) {
+    dynamicParts.push("", opts.memoriesBlock.trim());
   }
 
-  return parts.join("\n");
+  const modeBlock = MODE_BLOCKS[mode];
+  if (modeBlock) dynamicParts.push("", modeBlock);
+
+  if (opts.extra && opts.extra.trim()) {
+    dynamicParts.push("", `INSTRUÇÕES ADICIONAIS DO USUÁRIO:`, opts.extra.trim());
+  }
+
+  return { stable: stableParts.join("\n"), dynamic: dynamicParts.join("\n") };
+}
+
+/** Compat: versão string única (concatena stable + dynamic). */
+export function buildSystemPrompt(opts: Parameters<typeof buildSystemPromptParts>[0]): string {
+  const { stable, dynamic } = buildSystemPromptParts(opts);
+  return dynamic ? `${stable}\n\n${dynamic}` : stable;
 }

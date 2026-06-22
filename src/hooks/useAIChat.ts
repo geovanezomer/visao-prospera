@@ -26,7 +26,7 @@ import { estimateTokens } from "@/engines/ai/snapshot";
 // Limite de tokens do histórico enviado ao LLM (exclui system prompt).
 // Se ultrapassado, comprime o miolo preservando contexto inicial + recente.
 const MAX_HISTORY_TOKENS = 6000;
-import { buildSystemPrompt, type AIMode } from "@/engines/ai/systemPrompt";
+import { buildSystemPromptParts, type AIMode } from "@/engines/ai/systemPrompt";
 import { loadAIMode, saveAIMode } from "@/engines/ai/modeStore";
 import { recordChatTrail } from "@/engines/ai/chatTrail";
 import {
@@ -227,8 +227,11 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
   // Skills habilitadas — a IA decide qual aplicar; sem seleção manual no chat.
   const effectiveSkills = config.skills;
 
+  // Retorna { stable, dynamic } para habilitar prompt caching (Anthropic).
+  // A parte estável (persona+regras+snapshot+skills) é cacheada; a dinâmica
+  // (data, contexto, memórias, modo) entra fresca a cada turno.
   const buildSysPrompt = (overrideMode?: AIMode) =>
-    buildSystemPrompt({
+    buildSystemPromptParts({
       snapshot,
       includeSnapshot: config.includeSnapshot,
       useTools: config.useTools,
@@ -314,9 +317,11 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
         forTools,
         lastUserContent,
       });
-      // Separa system prompt (sempre preservado) do restante do histórico.
-      const sys = full[0]?.role === "system" ? [full[0]] : [];
-      const rest = sys.length ? full.slice(1) : full;
+      // Separa system prompts (1 ou 2 — estável+dinâmico) do histórico.
+      let sysCount = 0;
+      while (sysCount < full.length && full[sysCount].role === "system") sysCount++;
+      const sys = full.slice(0, sysCount);
+      const rest = full.slice(sysCount);
 
       // Soma tokens só do conteúdo textual (strings); parts vision não contam aqui.
       const tokens = rest.reduce((acc, m) => {
