@@ -189,7 +189,7 @@ export const DEFAULT_CONFIG: AIConfig = {
   model: PROVIDER_DEFAULTS.anthropic.model,
   temperature: 0.3,
   includeSnapshot: true,
-  useTools: false,
+  useTools: true,
   useMetaTools: true,
   soul: DEFAULT_SOUL,
   skills: DEFAULT_SKILLS,
@@ -215,7 +215,7 @@ const boolOr = (v: unknown, fallback: boolean) => (typeof v === "boolean" ? v : 
 
 // Versão da identidade/skills padrão. Bump para forçar migração no localStorage
 // dos usuários que ainda têm o SOUL/SKILLS antigos persistidos.
-const SOUL_DEFAULTS_VERSION = 2;
+const SOUL_DEFAULTS_VERSION = 3;
 
 function sanitizeSkills(input: unknown): Skill[] {
   if (!Array.isArray(input)) return DEFAULT_SKILLS;
@@ -268,7 +268,7 @@ function sanitizeConfig(input: unknown): AIConfig {
     model: stringOr(raw.model, defaults.model),
     temperature: finiteOr(raw.temperature, DEFAULT_CONFIG.temperature),
     includeSnapshot: boolOr(raw.includeSnapshot, DEFAULT_CONFIG.includeSnapshot),
-    useTools: boolOr(raw.useTools, DEFAULT_CONFIG.useTools),
+    useTools: needsMigration ? true : boolOr(raw.useTools, DEFAULT_CONFIG.useTools),
     useMetaTools: boolOr(raw.useMetaTools, DEFAULT_CONFIG.useMetaTools),
     soul,
     skills,
