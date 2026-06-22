@@ -10,14 +10,14 @@ import { AlertTriangle, CheckCircle2, ChevronRight, Info, SlidersHorizontal, Tri
 import { StrategicSummary } from "@/components/sim/strategic/StrategicSummary";
 import { SectionTitle } from "@/components/sim/shared/primitives";
 import { HealthScoreCard, SensitivityCard } from "@/components/sim/analysis/AnalysisTab";
-import { CriticalAlertsBanner } from "@/components/sim/shared/CriticalAlertsBanner";
+
 import { NCGExplanationCard } from "@/components/sim/capital/NCGExplanationCard";
 import { DiagnosticoExecutivoCard } from "@/components/sim/strategic/DiagnosticoExecutivoCard";
 
 export function DiagnosisTab() {
   const state = useFinanceState();
   // Modelo central: 1 buildDRE + 1 calcIndicators + 1 buildCashFlow para a aba inteira,
-  // reusados pelos filhos (CriticalAlertsBanner, HealthScoreCard). Antes: 3–4× recálculos por render.
+  // reusados pelos filhos (HealthScoreCard). Antes: 3–4× recálculos por render.
   const model = useFinanceModel(state);
   const cards = useMemo(() => buildPrescriptiveCards(state), [state]);
   const diagnostics = useMemo(
@@ -41,14 +41,9 @@ export function DiagnosisTab() {
 
   return (
     <div className="space-y-6">
-      {/* Alertas críticos consolidados — leitura imediata (reusa o model central) */}
-      <CriticalAlertsBanner
-        state={state}
-        model={{ dre: model.dre, ind: model.ind, cf: model.cf, regime: model.regime }}
-      />
-
       {/* Diagnóstico Executivo gerado pela IA — só renderiza se IA configurada */}
       <DiagnosticoExecutivoCard briefing={briefing} />
+
 
 
       {/* Capital de Giro — explica NCG e ciclo financeiro */}
