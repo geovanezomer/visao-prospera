@@ -299,7 +299,7 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   y = 88;
   y = sectionTitle(doc, y, "Fluxo de Caixa — visão anual");
   const cfRows: (string | number)[][] = [
-    ["Saldo inicial", fmtBRL(cf.saldoInicial)],
+    ["Saldo inicial (Jan)", fmtBRL(cf.saldoInicial[0] ?? 0)],
     ["Recebimentos de vendas", fmtBRL(cf.totais.recebimentos)],
     ["Receitas financeiras", fmtBRL(cf.totais.receitasFinanceiras)],
     ["Pagamentos totais (operação)", fmtBRL(-cf.totais.pagamentosTotais)],
