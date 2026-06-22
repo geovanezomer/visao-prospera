@@ -317,9 +317,11 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
         forTools,
         lastUserContent,
       });
-      // Separa system prompt (sempre preservado) do restante do histórico.
-      const sys = full[0]?.role === "system" ? [full[0]] : [];
-      const rest = sys.length ? full.slice(1) : full;
+      // Separa system prompts (1 ou 2 — estável+dinâmico) do histórico.
+      let sysCount = 0;
+      while (sysCount < full.length && full[sysCount].role === "system") sysCount++;
+      const sys = full.slice(0, sysCount);
+      const rest = full.slice(sysCount);
 
       // Soma tokens só do conteúdo textual (strings); parts vision não contam aqui.
       const tokens = rest.reduce((acc, m) => {
