@@ -55,12 +55,6 @@ const formSchema = z.object({
     .trim()
     .min(1, "Nome obrigatório")
     .max(120, "Máximo 120 caracteres"),
-  cnpj: z
-    .string()
-    .trim()
-    .max(20, "CNPJ inválido")
-    .optional()
-    .or(z.literal("")),
   businessType: z.enum(["servicos", "comercio", "industria"]),
   ramoAtuacao: z.string().trim().max(60).optional().or(z.literal("")),
   numColaboradores: z
