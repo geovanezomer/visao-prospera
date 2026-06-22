@@ -94,11 +94,11 @@ export const PROVIDER_DEFAULTS: Record<Provider, Pick<AIConfig, "baseUrl" | "mod
 };
 
 export const DEFAULT_CONFIG: AIConfig = {
-  provider: "lmstudio",
-  baseUrl: PROVIDER_DEFAULTS.lmstudio.baseUrl,
+  provider: "anthropic",
+  baseUrl: PROVIDER_DEFAULTS.anthropic.baseUrl,
   apiKey: "",
   persistKey: true,
-  model: PROVIDER_DEFAULTS.lmstudio.model,
+  model: PROVIDER_DEFAULTS.anthropic.model,
   temperature: 0.3,
   includeSnapshot: true,
   useTools: false,

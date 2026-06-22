@@ -104,9 +104,9 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="lmstudio">LM Studio (local)</SelectItem>
-              <SelectItem value="openai">OpenAI (ChatGPT)</SelectItem>
               <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
+              <SelectItem value="openai">OpenAI (ChatGPT)</SelectItem>
+              <SelectItem value="lmstudio">LM Studio (local)</SelectItem>
             </SelectContent>
           </Select>
         </div>
