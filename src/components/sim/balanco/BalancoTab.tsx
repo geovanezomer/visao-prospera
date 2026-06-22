@@ -621,22 +621,3 @@ function SubtotalCells({
     </div>
   );
 }
-
-function KPI({
-  label,
-  value,
-  format,
-}: {
-  label: string;
-  value: number;
-  format?: (v: number) => string;
-}) {
-  return (
-    <div className="rounded-md border border-border/60 bg-card/40 p-3">
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="mt-1 text-sm font-semibold tabular-nums">
-        {format ? format(value) : fmtBRL(value)}
-      </div>
-    </div>
-  );
-}
