@@ -335,10 +335,10 @@ export function DashboardTab() {
         </ChartCard>
       </div>
 
-      {/* Linha 4 — Lucro acumulado | Despesas | Radar */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      {/* Linha 4 — Lucro Acumulado (12m) ao lado do Waterfall (2 colunas iguais) */}
+      <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard title="Lucro Líquido Acumulado (12m)">
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={acumulado}>
               <defs>
                 <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
@@ -355,6 +355,12 @@ export function DashboardTab() {
           </ResponsiveContainer>
         </ChartCard>
 
+        {/* Waterfall vem do IndicatorsCharts; ocupa a 2ª coluna */}
+        <IndicatorsCharts state={state} />
+      </div>
+
+      {/* Linha 5 — Despesas | Radar */}
+      <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard title="Composição de Despesas">
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
@@ -379,8 +385,6 @@ export function DashboardTab() {
         </ChartCard>
       </div>
 
-      {/* Gráficos detalhados (movidos da aba Indicadores) */}
-      <IndicatorsCharts state={state} />
     </div>
   );
 }
