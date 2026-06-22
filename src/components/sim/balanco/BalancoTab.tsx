@@ -364,21 +364,6 @@ export function BalancoTab() {
         />
       </div>
 
-      {/* KPIs derivados */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <KPI label="Capital de Giro (CG)" value={totalsAtual.ativoCirculante - totalsAtual.passivoCirculante} />
-        <KPI label="Dívida onerosa" value={totalsAtual.dividaOnerosa} />
-        <KPI label="Passivos não-onerosos" value={totalsAtual.passivosNaoOnerosos} />
-        <KPI
-          label="D/PL"
-          value={
-            totalsAtual.patrimonioLiquido > 0
-              ? totalsAtual.dividaOnerosa / totalsAtual.patrimonioLiquido
-              : 0
-          }
-          format={(v) => `${v.toFixed(2)}×`}
-        />
-      </div>
     </div>
   );
 }
