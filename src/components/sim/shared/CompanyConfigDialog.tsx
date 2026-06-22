@@ -398,7 +398,6 @@ function buildFormFromState(state: AppState): FormData {
   };
   return {
     companyName: state.companyName ?? "",
-    cnpj: state.cnpj ?? "",
     businessType: state.businessType,
     ramoAtuacao: state.ramoAtuacao ?? "",
     numColaboradores: inferNum(),
