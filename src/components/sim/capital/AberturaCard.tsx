@@ -231,7 +231,7 @@ export function AberturaCard({
             <button
               type="button"
               onClick={ajustarLucros}
-              className="self-start rounded bg-warning/20 px-2 py-1 text-[10px] font-bold uppercase hover:bg-warning/30 transition-colors"
+              className="self-start rounded bg-destructive px-2 py-1 text-[10px] font-bold uppercase text-destructive-foreground hover:bg-destructive/90 transition-colors"
             >
               Ajustar Lucros Acumulados (
               {derived.totals.diferenca > 0 ? "+" : ""}
