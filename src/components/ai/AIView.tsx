@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/select";
 import { AuditReport, isAuditReport } from "./AuditReport";
 import { ChatChart, parseChartSpec } from "./ChatChart";
+import { ScenarioBar } from "./ScenarioBar";
 import { useAIChat } from "@/hooks/useAIChat";
 import { resetAIStorage } from "@/engines/ai/providers";
 import { useMemories, deleteMemory, createMemory, type MemoryCategory } from "@/engines/memory/store";
@@ -403,6 +404,7 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
 
           <div className="border-t border-border/40 bg-card/30 p-4">
             <div className="max-w-4xl mx-auto space-y-3">
+              <ScenarioBar company={state.companyName || "default"} simParams={simParams} />
               {attachments.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {attachments.map((a) => (
