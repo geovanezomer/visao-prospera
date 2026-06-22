@@ -227,8 +227,11 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
   // Skills habilitadas — a IA decide qual aplicar; sem seleção manual no chat.
   const effectiveSkills = config.skills;
 
+  // Retorna { stable, dynamic } para habilitar prompt caching (Anthropic).
+  // A parte estável (persona+regras+snapshot+skills) é cacheada; a dinâmica
+  // (data, contexto, memórias, modo) entra fresca a cada turno.
   const buildSysPrompt = (overrideMode?: AIMode) =>
-    buildSystemPrompt({
+    buildSystemPromptParts({
       snapshot,
       includeSnapshot: config.includeSnapshot,
       useTools: config.useTools,
