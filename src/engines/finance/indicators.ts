@@ -196,7 +196,14 @@ export const KE_DEFAULT_BY_SECTOR: Record<string, number> = {
   industria: 16,
 };
 
-export function calcIndicators(state: AppState, dre: DRE): Indicators {
+export function calcIndicators(
+  state: AppState,
+  dre: DRE,
+  // Otimização: aceita o `cf` já computado por `buildFinancialModel` para evitar
+  // recomputar `buildCashFlow(state)` (chamado em ~todo render). Quando omitido,
+  // computa internamente para preservar a API antiga.
+  cfPre?: ReturnType<typeof buildCashFlow>,
+): Indicators {
   const { capital, revenue } = state;
   // ─── Janela efetiva preenchida (Fase 1) ──────────────────────────────
   // Indicadores que comparam fluxo (DRE) com estoque (BP) ou per-capita
@@ -251,7 +258,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   const wD = V > 0 ? D / V : 1 - capital.proprio / 100;
 
   // SSOT: WACC usa shield do regime EFETIVO. Ke piso 8% (Selic neutra).
-  const irShield = irShieldForRegime(resolveEffectiveRegime(state), lairAnual);
+  // Otimização: regime resolvido uma única vez e reusado abaixo (NOPAT).
+  const regimeEfetivo = resolveEffectiveRegime(state);
+  const irShield = irShieldForRegime(regimeEfetivo, lairAnual);
   const keSeguro = capital.ke > 0 ? capital.ke : 8;
   const wacc = wE * keSeguro + wD * capital.kd * (1 - irShield);
 
@@ -261,7 +270,6 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // Também aplicava DAS do Simples novamente sobre o EBIT; no Simples o DAS já reduziu a
   // Receita Líquida/EBIT, então a alíquota adicional de NOPAT é 0 para evitar dupla contagem.
   const impostosLucroAnual = impostosAnual;
-  const regimeEfetivo = resolveEffectiveRegime(state);
   let aliquotaNopatFrac = 0;
   if (ebitAnual > 1) {
     if (regimeEfetivo === "real") {
@@ -449,7 +457,9 @@ export function calcIndicators(state: AppState, dre: DRE): Indicators {
   // Edge cases: LL ≈ 0 → 0 (UI deve renderizar "N/A").
   // SSOT: mesma chamada do FluxoCaixaTab — `buildCashFlow(state)` resolve o regime efetivo
   // internamente. `totais.fluxoOperacional` é exatamente `sum(fluxoOperacional)`.
-  const fcoAnual = an(buildCashFlow(state).totais.fluxoOperacional);
+  // Otimização: reusa `cfPre` se passado por `buildFinancialModel` (evita 2ª chamada).
+  const cfForFco = cfPre ?? buildCashFlow(state);
+  const fcoAnual = an(cfForFco.totais.fluxoOperacional);
   const qualidadeLucro =
     Math.abs(llAnual) > 1 ? Math.max(-9, Math.min(9, fcoAnual / llAnual)) : 0;
 

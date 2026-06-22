@@ -763,11 +763,12 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const logoData = await loadImageAsDataURL(logoAsset.url);
   const companyName = state.companyName?.trim() || "Empresa Cliente";
-  const { dre, ind, cf, balancoFechamento, regime } = model;
+  const { dre, ind, cf, balancoFechamento, regime, tax } = model;
   const periodoMeses = state.periodoAnaliseMeses ?? 12;
   const { score, conceito, tone } = computeGuardianScore(ind);
   const diags = diagnose(state, dre, ind);
-  const prescriptive = buildPrescriptiveCards(state);
+  // Otimização: passa o modelo já computado para evitar 3 passagens da engine.
+  const prescriptive = buildPrescriptiveCards(state, { dre, tax, ind, cf });
 
   // Mensagem executiva de capa: 2-3 frases, derivadas dos diagnósticos.
   const topRiscos = diags.filter((d) => d.level === "danger").slice(0, 2);
