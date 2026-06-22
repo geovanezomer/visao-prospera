@@ -929,6 +929,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     handleAudit,
     runPipeline360,
     resumePipeline360,
+    runConcilio,
     resetPipeline360: () => {
       if (streaming) {
         toast.error("Cancele o pipeline em execução antes de limpar.");
