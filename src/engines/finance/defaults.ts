@@ -296,8 +296,8 @@ export const DEFAULT_STATE: AppState = {
     cofinsCreditos: 0,
     issDeducoes: 0,
     era: "atual",
-    cbsAliquota: 8.8,
-    ibsAliquotaRef: 17.7,
+    cbsAliquota: CBS_ALIQUOTA_PLENA,
+    ibsAliquotaRef: IBS_ALIQUOTA_PLENA,
     fornecedorSimplesNacionalPct: 0,
   },
   cashflow: {
