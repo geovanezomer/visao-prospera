@@ -819,6 +819,10 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   // Bloco Pista de Caixa & Saldo Projetado (mesmo card do Dashboard).
   y = drawRunwayBlock(doc, y, state, model);
 
+  // ~3 linhas de respiro antes do Termômetro de Valor.
+  y = drawTermometroValor(doc, y + 36, ind);
+
+
 
   // ── PÁGINA 3 — PAINEL EXECUTIVO ────────────────────────────────────
   doc.addPage();
