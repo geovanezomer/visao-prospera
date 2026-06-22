@@ -332,17 +332,20 @@ export const AI_CONFIG_CHANGED_EVENT = "ai-config-changed";
 export function saveConfig(cfg: AIConfig) {
   try {
     const safe = sanitizeConfig(cfg);
+    // Marca a versão dos defaults atualmente em uso para evitar migrar de novo.
+    const persisted = { ...safe, soulVersion: SOUL_DEFAULTS_VERSION };
     if (safe.persistKey) {
       sessionStorage.removeItem(SESSION_KEY_BAG);
-      localStorage.setItem(CFG_KEY, JSON.stringify(safe));
+      localStorage.setItem(CFG_KEY, JSON.stringify(persisted));
     } else {
       sessionStorage.setItem(SESSION_KEY_BAG, safe.apiKey || "");
       // grava sem a chave
-      localStorage.setItem(CFG_KEY, JSON.stringify({ ...safe, apiKey: "" }));
+      localStorage.setItem(CFG_KEY, JSON.stringify({ ...persisted, apiKey: "" }));
     }
   } catch {
     // storage indisponível (modo privado / quota) — config segue só em memória
   }
+
   // Notifica listeners NA MESMA ABA (storage event só dispara entre abas).
   try {
     window.dispatchEvent(new CustomEvent(AI_CONFIG_CHANGED_EVENT));
