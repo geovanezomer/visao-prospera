@@ -15,6 +15,9 @@ import {
   Brain,
   Layers,
   ShieldCheck,
+  Wrench,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { AIConfigDialog } from "./AIConfigDialog";
 import type { AppState } from "@/engines/finance/types";
