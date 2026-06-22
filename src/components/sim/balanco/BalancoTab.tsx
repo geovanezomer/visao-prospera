@@ -191,6 +191,52 @@ export function BalancoTab() {
 
   return (
     <div className="space-y-4">
+      {/* KPIs derivados do balanço — no topo da página (padrão visual da aba Indicadores) */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <StatCard
+          label="Capital de Giro (CG)"
+          value={fmtBRL(totalsAtual.ativoCirculante - totalsAtual.passivoCirculante)}
+          tone={totalsAtual.ativoCirculante - totalsAtual.passivoCirculante >= 0 ? "pos" : "neg"}
+          hint={{
+            description:
+              "Folga financeira de curto prazo: quanto sobra do ativo circulante após quitar todo o passivo circulante.",
+            formula: "Ativo Circulante − Passivo Circulante",
+          }}
+        />
+        <StatCard
+          label="Dívida onerosa"
+          value={fmtBRL(totalsAtual.dividaOnerosa)}
+          hint={{
+            description:
+              "Dívidas que geram juros (empréstimos, financiamentos e debêntures de CP + LP). Base do endividamento financeiro.",
+            formula: "Empréstimos CP + Empréstimos LP + Debêntures",
+          }}
+        />
+        <StatCard
+          label="Passivos não-onerosos"
+          value={fmtBRL(totalsAtual.passivosNaoOnerosos)}
+          hint={{
+            description:
+              "Obrigações operacionais sem juros (fornecedores, impostos, salários). Funcionam como funding gratuito do giro.",
+            formula: "Fornecedores + Impostos a pagar + Salários + Outros operacionais",
+          }}
+        />
+        <StatCard
+          label="D/PL"
+          value={`${(totalsAtual.patrimonioLiquido > 0 ? totalsAtual.dividaOnerosa / totalsAtual.patrimonioLiquido : 0).toFixed(2)}×`}
+          tone={
+            totalsAtual.patrimonioLiquido > 0 && totalsAtual.dividaOnerosa / totalsAtual.patrimonioLiquido > 1
+              ? "neg"
+              : "pos"
+          }
+          hint={{
+            description:
+              "Quanto a empresa deve (oneroso) para cada R$ 1 de capital próprio. Acima de 1× sinaliza alavancagem agressiva.",
+            formula: "Dívida Onerosa ÷ Patrimônio Líquido",
+          }}
+        />
+      </div>
+
       {/* Header — toolbar apenas */}
       <div className="rounded-lg border border-border/60 bg-card/40 p-3">
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -260,51 +306,7 @@ export function BalancoTab() {
         )}
       </div>
 
-      {/* KPIs derivados do balanço — movidos para o topo (padrão visual da aba Indicadores) */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard
-          label="Capital de Giro (CG)"
-          value={fmtBRL(totalsAtual.ativoCirculante - totalsAtual.passivoCirculante)}
-          tone={totalsAtual.ativoCirculante - totalsAtual.passivoCirculante >= 0 ? "pos" : "neg"}
-          hint={{
-            description:
-              "Folga financeira de curto prazo: quanto sobra do ativo circulante após quitar todo o passivo circulante.",
-            formula: "Ativo Circulante − Passivo Circulante",
-          }}
-        />
-        <StatCard
-          label="Dívida onerosa"
-          value={fmtBRL(totalsAtual.dividaOnerosa)}
-          hint={{
-            description:
-              "Dívidas que geram juros (empréstimos, financiamentos e debêntures de CP + LP). Base do endividamento financeiro.",
-            formula: "Empréstimos CP + Empréstimos LP + Debêntures",
-          }}
-        />
-        <StatCard
-          label="Passivos não-onerosos"
-          value={fmtBRL(totalsAtual.passivosNaoOnerosos)}
-          hint={{
-            description:
-              "Obrigações operacionais sem juros (fornecedores, impostos, salários). Funcionam como funding gratuito do giro.",
-            formula: "Fornecedores + Impostos a pagar + Salários + Outros operacionais",
-          }}
-        />
-        <StatCard
-          label="D/PL"
-          value={`${(totalsAtual.patrimonioLiquido > 0 ? totalsAtual.dividaOnerosa / totalsAtual.patrimonioLiquido : 0).toFixed(2)}×`}
-          tone={
-            totalsAtual.patrimonioLiquido > 0 && totalsAtual.dividaOnerosa / totalsAtual.patrimonioLiquido > 1
-              ? "neg"
-              : "pos"
-          }
-          hint={{
-            description:
-              "Quanto a empresa deve (oneroso) para cada R$ 1 de capital próprio. Acima de 1× sinaliza alavancagem agressiva.",
-            formula: "Dívida Onerosa ÷ Patrimônio Líquido",
-          }}
-        />
-      </div>
+
 
 
       {/* Abertura → Movimento → Fechamento */}
