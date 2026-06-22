@@ -88,7 +88,7 @@ function scoreBalanco(s: AppState): ModuleScore {
 }
 
 function scoreTributos(s: AppState): ModuleScore {
-  const t = s.tributos;
+  const t = s.tax;
   const missing: string[] = [];
   let pts = 0;
   const max = 2;
@@ -120,7 +120,7 @@ function scoreGovernanca(s: AppState): ModuleScore {
 }
 
 function scoreCaixa(s: AppState): ModuleScore {
-  const c = s.caixa;
+  const c = s.cashflow;
   const missing: string[] = [];
   let pts = 0;
   const max = 2;
