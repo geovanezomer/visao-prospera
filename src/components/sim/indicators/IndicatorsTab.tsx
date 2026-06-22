@@ -16,7 +16,7 @@ export function IndicatorsTab() {
 
   return (
     <div className="space-y-6">
-      <HistoricalYearPills />
+      <HistoricalYearPills hideCompare />
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
           label="Ciclo Financeiro"
