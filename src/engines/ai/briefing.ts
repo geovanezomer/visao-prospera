@@ -14,7 +14,7 @@ import {
 } from "@/engines/finance";
 import { buildCashFlow } from "@/engines/finance/cashflow";
 import { computeHealth } from "@/engines/finance/health";
-import { findSector } from "@/engines/benchmark/sectors";
+import { resolveBenchmark } from "@/engines/benchmark/sectors";
 import type { SnapshotSections } from "./snapshot";
 
 // M-1: alinhado com tools.ts (mesma assinatura, mesmo Intl).
@@ -57,7 +57,7 @@ export function buildOpeningBriefing(state: AppState, sections?: SnapshotSection
     }
 
     // 3) Margem EBITDA vs setor
-    const sector = findSector(state.businessType);
+    const sector = resolveBenchmark(state);
     if (sector && Number.isFinite(ind.margemEbitda)) {
       const delta = ind.margemEbitda - sector.margemEbitda.p50;
       if (delta < -2) {

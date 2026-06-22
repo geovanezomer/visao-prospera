@@ -51,6 +51,7 @@ const appStateShape = z
     numColaboradores: z.number().optional(),
     cnpj: z.string().optional(),
     ramoAtuacao: z.string().optional(),
+    benchmarkCustom: z.object({}).passthrough().optional(),
     headcountRange: z.enum(["1-9", "10-49", "50-99", "100+"]).optional(),
     periodoAnaliseMeses: z.union([z.literal(6), z.literal(12), z.literal(24), z.literal(36)]).optional(),
     fiscalYearStartMonth: z.number().int().min(1).max(12).optional(),

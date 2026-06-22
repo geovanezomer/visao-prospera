@@ -26,10 +26,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown, ChevronRight, RotateCcw } from "lucide-react";
 // RadioGroup removido: headcount agora é input numérico exato.
 import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import type { AppState, BusinessType, TaxRegime } from "@/engines/finance/types";
-import { RAMOS_POR_SETOR } from "@/engines/finance/companyProfile";
+import { listSectors, getSector } from "@/engines/benchmark/sectors";
 import { archiveYearAsHistorical, listHistoricals } from "@/engines/scenarios/store";
 import { toast } from "sonner";
 
@@ -49,6 +51,19 @@ const MESES_FISCAIS = [
 ];
 
 /** Validação Zod — bloqueia entradas absurdas antes de persistir no AppState. */
+const benchmarkCustomSchema = z
+  .object({
+    margemBruta: z.number().min(0).max(100).optional(),
+    margemEbitda: z.number().min(-50).max(100).optional(),
+    margemLiquida: z.number().min(-50).max(100).optional(),
+    giroAtivo: z.number().min(0).max(20).optional(),
+    endividamento: z.number().min(0).max(100).optional(),
+    pmr: z.number().min(0).max(365).optional(),
+    pmp: z.number().min(0).max(365).optional(),
+    evEbitda: z.number().min(0).max(30).optional(),
+  })
+  .optional();
+
 const formSchema = z.object({
   companyName: z
     .string()
@@ -57,6 +72,7 @@ const formSchema = z.object({
     .max(120, "Máximo 120 caracteres"),
   businessType: z.enum(["servicos", "comercio", "industria"]),
   ramoAtuacao: z.string().trim().max(60).optional().or(z.literal("")),
+  benchmarkCustom: benchmarkCustomSchema,
   numColaboradores: z
     .number({ invalid_type_error: "Informe um número" })
     .int("Use um número inteiro")
@@ -76,6 +92,19 @@ const formSchema = z.object({
     .max(100, "Margem inválida")
     .optional(),
 });
+
+/** Métricas do benchmark personalizável (P50). Mantém ordem de exibição. */
+const BENCHMARK_FIELDS = [
+  { key: "margemBruta", label: "Margem Bruta", unit: "%", step: 0.5 },
+  { key: "margemEbitda", label: "Margem EBITDA", unit: "%", step: 0.5 },
+  { key: "margemLiquida", label: "Margem Líquida", unit: "%", step: 0.5 },
+  { key: "giroAtivo", label: "Giro do Ativo", unit: "x", step: 0.1 },
+  { key: "endividamento", label: "Endividamento", unit: "%", step: 1 },
+  { key: "pmr", label: "PMR", unit: "dias", step: 1 },
+  { key: "pmp", label: "PMP", unit: "dias", step: 1 },
+  { key: "evEbitda", label: "EV/EBITDA", unit: "x", step: 0.5 },
+] as const;
+type BenchmarkKey = (typeof BENCHMARK_FIELDS)[number]["key"];
 
 type FormData = z.infer<typeof formSchema>;
 
@@ -128,9 +157,9 @@ export function CompanyConfigForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     state.companyName,
-    
     state.businessType,
     state.ramoAtuacao,
+    state.benchmarkCustom,
     state.numColaboradores,
     state.headcountRange,
     state.periodoAnaliseMeses,
@@ -139,10 +168,19 @@ export function CompanyConfigForm({
     state.tax.regime,
   ]);
 
-  const ramosDisponiveis = useMemo(
-    () => RAMOS_POR_SETOR[form.businessType] ?? [],
+  // Lista de setores (benchmarks) disponíveis para o businessType corrente.
+  const setoresDisponiveis = useMemo(
+    () => listSectors(form.businessType),
     [form.businessType],
   );
+
+  // Setor selecionado (referência para defaults do benchmark personalizado).
+  const setorSelecionado = useMemo(
+    () => (form.ramoAtuacao ? getSector(form.ramoAtuacao) : undefined) ?? setoresDisponiveis[0],
+    [form.ramoAtuacao, setoresDisponiveis],
+  );
+
+  const [benchOpen, setBenchOpen] = useState(false);
 
   /** Commit imediato (após validação leve). Mostra toast apenas em erro. */
   const commit = (next: FormData) => {
@@ -152,9 +190,12 @@ export function CompanyConfigForm({
     const d = parsed.data;
     update({
       companyName: d.companyName,
-
       businessType: d.businessType,
       ramoAtuacao: d.ramoAtuacao || undefined,
+      benchmarkCustom:
+        d.benchmarkCustom && Object.values(d.benchmarkCustom).some((v) => v != null)
+          ? d.benchmarkCustom
+          : undefined,
       numColaboradores: d.numColaboradores,
       headcountRange: rangeFromNumber(d.numColaboradores),
       periodoAnaliseMeses: d.periodoAnaliseMeses,
@@ -163,6 +204,19 @@ export function CompanyConfigForm({
       moedaBase: "BRL",
     });
     setTax({ regime: d.regime });
+  };
+
+  /** Atualiza um único campo do benchmark personalizado. */
+  const updateBenchField = (key: BenchmarkKey, value: number | undefined) => {
+    const nextCustom = { ...(form.benchmarkCustom ?? {}), [key]: value };
+    if (value === undefined) delete (nextCustom as Record<string, unknown>)[key];
+    commit({ ...form, benchmarkCustom: nextCustom });
+  };
+
+  /** Limpa todo o benchmark personalizado (volta para os defaults do setor). */
+  const resetBenchmark = () => {
+    commit({ ...form, benchmarkCustom: undefined });
+    toast.success("Benchmark restaurado para os valores do setor");
   };
 
   return (
@@ -196,9 +250,17 @@ export function CompanyConfigForm({
             <Label>Setor *</Label>
             <Select
               value={form.businessType}
-              onValueChange={(v) =>
-                commit({ ...form, businessType: v as BusinessType, ramoAtuacao: "" })
-              }
+              onValueChange={(v) => {
+                const bt = v as BusinessType;
+                const firstSector = listSectors(bt)[0]?.id ?? "";
+                // Ao trocar setor, default para o 1º ramo e zera benchmark custom.
+                commit({
+                  ...form,
+                  businessType: bt,
+                  ramoAtuacao: firstSector,
+                  benchmarkCustom: undefined,
+                });
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -213,26 +275,96 @@ export function CompanyConfigForm({
           <div className="space-y-1.5">
             <Label>Ramo de atuação</Label>
             <Select
-              value={form.ramoAtuacao || ""}
-              onValueChange={(v) => commit({ ...form, ramoAtuacao: v })}
+              value={form.ramoAtuacao || setoresDisponiveis[0]?.id || ""}
+              onValueChange={(v) =>
+                // Ao trocar ramo, zera benchmark personalizado (defaults vêm do novo setor).
+                commit({ ...form, ramoAtuacao: v, benchmarkCustom: undefined })
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione…" />
               </SelectTrigger>
               <SelectContent>
-                {ramosDisponiveis.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.label}
+                {setoresDisponiveis.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="text-[10px] text-muted-foreground">
-              Usado para comparar com benchmarks setoriais.
+              Define os benchmarks comparativos. Valores pré-calibrados por setor.
             </p>
           </div>
         </div>
+
+        {/* Benchmark personalizado (avançado) */}
+        {setorSelecionado && (
+          <Collapsible open={benchOpen} onOpenChange={setBenchOpen}>
+            <div className="flex items-center justify-between gap-2 rounded-md border border-dashed border-border/60 px-3 py-2">
+              <CollapsibleTrigger className="flex flex-1 items-center gap-2 text-left text-xs font-medium">
+                {benchOpen ? (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5" />
+                )}
+                Benchmark do Setor Personalizado{" "}
+                <span className="text-[10px] font-normal text-muted-foreground">
+                  (opcional — já preenchido com valores do setor)
+                </span>
+              </CollapsibleTrigger>
+              {form.benchmarkCustom && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={resetBenchmark}
+                  className="h-7 px-2 text-[11px]"
+                >
+                  <RotateCcw className="mr-1 h-3 w-3" />
+                  Restaurar
+                </Button>
+              )}
+            </div>
+            <CollapsibleContent className="mt-2 space-y-2 rounded-md border border-border/40 p-3">
+              <p className="text-[11px] text-muted-foreground">
+                Ajuste a mediana (P50) de cada indicador para refletir a realidade do seu
+                cliente. Os quartis P25/P75 são derivados automaticamente como ±20%. Campos em
+                branco usam o valor padrão do setor <strong>{setorSelecionado.label}</strong>.
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {BENCHMARK_FIELDS.map((f) => {
+                  const defaultP50 = setorSelecionado[f.key].p50;
+                  const current = form.benchmarkCustom?.[f.key];
+                  return (
+                    <div key={f.key} className="space-y-1">
+                      <Label htmlFor={`bm-${f.key}`} className="text-[11px]">
+                        {f.label} ({f.unit})
+                      </Label>
+                      <Input
+                        id={`bm-${f.key}`}
+                        type="number"
+                        step={f.step}
+                        value={current ?? ""}
+                        placeholder={String(defaultP50)}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          updateBenchField(
+                            f.key,
+                            raw === "" ? undefined : Number(raw),
+                          );
+                        }}
+                        className="h-8"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
       </section>
+
 
       {/* Porte */}
       <section className="space-y-3">
@@ -396,10 +528,15 @@ function buildFormFromState(state: AppState): FormData {
       default: return 1;
     }
   };
+  // Se ramoAtuacao salvo não bate com SECTORS (legado do RAMOS_POR_SETOR), cai
+  // para o 1º setor do businessType — assim os benchmarks sempre têm um valor válido.
+  const ramoSalvo = state.ramoAtuacao ?? "";
+  const ramoEfetivo = getSector(ramoSalvo)?.id ?? listSectors(state.businessType)[0]?.id ?? "";
   return {
     companyName: state.companyName ?? "",
     businessType: state.businessType,
-    ramoAtuacao: state.ramoAtuacao ?? "",
+    ramoAtuacao: ramoEfetivo,
+    benchmarkCustom: state.benchmarkCustom,
     numColaboradores: inferNum(),
     regime: state.tax.regime,
     periodoAnaliseMeses: state.periodoAnaliseMeses ?? 12,

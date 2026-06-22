@@ -525,7 +525,20 @@ export interface AppState {
   /** CNPJ (apenas dígitos ou formatado). Opcional. */
   cnpj?: string;
   /** Ramo de atuação dentro do `businessType` (ex: "saude", "construcao"). */
+  /** Ramo de atuação — deve ser um `id` de SECTORS (ex: "serv-ti-saas"). */
   ramoAtuacao?: string;
+  /** Benchmark personalizado (apenas P50). Quando definido, sobrescreve o setor.
+   *  P25/P75 são derivados como ±20% sobre o P50. */
+  benchmarkCustom?: {
+    margemBruta?: number;
+    margemEbitda?: number;
+    margemLiquida?: number;
+    giroAtivo?: number;
+    endividamento?: number;
+    pmr?: number;
+    pmp?: number;
+    evEbitda?: number;
+  };
   /** Faixa de headcount — substitui o número exato para benchmarks. */
   headcountRange?: "1-9" | "10-49" | "50-99" | "100+";
   /** Período de análise em meses (6 / 12 / 24 / 36). Default 12. */
