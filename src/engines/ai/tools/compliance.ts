@@ -8,6 +8,8 @@ import {
   compareYearsForRegime,
   resolveEffectiveRegime,
 } from "@/engines/finance";
+import { buildCashFlow } from "@/engines/finance/cashflow";
+import { calcIndicators } from "@/engines/finance/indicators";
 import {
   analyzeCovenants,
   covenantsToMarkdown,
@@ -56,8 +58,29 @@ const defs: ToolDef[] = [
   {
     name: "simular_split_payment",
     description:
-      "Calcula o impacto do Split Payment no fluxo de caixa e necessidade de capital de giro. O Split Payment retém o tributo no momento do pagamento eliminando o float atual. Use quando o consultor perguntar sobre impacto da reforma no caixa.",
-    parameters: { type: "object", properties: {}, required: [] },
+      "Mede o impacto do Split Payment (LC 214/2025) no caixa, NCG, DSCR e timeline de default. O Split retém CBS/IBS no momento da liquidação eliminando o float tributário (~25–40 dias). Retorna: (1) float perdido por rubrica, (2) impacto permanente em NCG e custo de carregamento (× Kd), (3) DSCR pós-Split e re-avaliação de covenants, (4) mês em que o caixa cruza zero descontando o float. Use sempre que o consultor perguntar 'qual o impacto do Split Payment?' ou 'como me preparar para 2027?'.",
+    parameters: {
+      type: "object",
+      properties: {
+        ano_inicio: {
+          type: "number",
+          description:
+            "Ano em que o Split começa a valer (default 2027 — CBS pleno). Apenas informativo no relatório.",
+        },
+        prazos_override: {
+          type: "object",
+          description:
+            "Sobrescreve prazos de recolhimento (em dias) por rubrica. Ex.: { CBS: 30, IBS: 15 }. Use quando o consultor souber o calendário real da empresa.",
+          additionalProperties: { type: "number" },
+        },
+        incluir_covenants: {
+          type: "boolean",
+          description:
+            "Se true (default), re-avalia DSCR/Liquidez/D-EBITDA assumindo perda permanente do float.",
+        },
+      },
+      required: [],
+    },
   },
   {
     name: "analisar_covenants",
@@ -128,17 +151,24 @@ const handlers: Record<string, ToolHandler> = {
     return lines.join("\n");
   },
 
-  simular_split_payment: (_a, { state }) => {
+  simular_split_payment: (args, { state }) => {
+    const anoInicio = Number(args?.ano_inicio) || 2027;
+    const incluirCovenants = args?.incluir_covenants !== false;
+    const override =
+      args?.prazos_override && typeof args.prazos_override === "object"
+        ? (args.prazos_override as Record<string, number>)
+        : {};
+
     // Prazos médios de recolhimento (dias após o mês de competência).
-    const PRAZOS: { match: RegExp; dias: number; label: string }[] = [
-      { match: /^DAS Simples/i, dias: 20, label: "DAS (Simples)" },
-      { match: /^PIS/i, dias: 25, label: "PIS" },
-      { match: /^COFINS/i, dias: 25, label: "COFINS" },
-      { match: /^CBS/i, dias: 25, label: "CBS" },
-      { match: /^IBS/i, dias: 10, label: "IBS" },
-      { match: /^ISS/i, dias: 10, label: "ISS" },
-      { match: /^ICMS/i, dias: 10, label: "ICMS" },
-      { match: /^IRPJ|^Adicional IRPJ|^CSLL/i, dias: 45, label: "IRPJ/CSLL (trimestral)" },
+    const PRAZOS: { match: RegExp; dias: number; key: string }[] = [
+      { match: /^DAS Simples/i, dias: 20, key: "DAS" },
+      { match: /^PIS/i, dias: 25, key: "PIS" },
+      { match: /^COFINS/i, dias: 25, key: "COFINS" },
+      { match: /^CBS/i, dias: 25, key: "CBS" },
+      { match: /^IBS/i, dias: 10, key: "IBS" },
+      { match: /^ISS/i, dias: 10, key: "ISS" },
+      { match: /^ICMS/i, dias: 10, key: "ICMS" },
+      { match: /^IRPJ|^Adicional IRPJ|^CSLL/i, dias: 45, key: "IRPJ_CSLL" },
     ];
     const regime = resolveEffectiveRegime(state);
     const { tax } = buildDRE(state, regime);
@@ -151,21 +181,21 @@ const handlers: Record<string, ToolHandler> = {
       if (!Number.isFinite(valorAnual) || valorAnual <= 0) continue;
       const cfg = PRAZOS.find((p) => p.match.test(chave));
       if (!cfg) continue;
+      const dias = override[cfg.key] ?? override[chave] ?? cfg.dias;
       const mensal = valorAnual / 12;
-      const flt = mensal * (cfg.dias / 30);
+      const flt = mensal * (dias / 30);
       floatTotal += flt;
-      linhas.push({ label: chave, mensal, dias: cfg.dias, float: flt });
+      linhas.push({ label: chave, mensal, dias, float: flt });
     }
 
     const cargaMensalTotal = tax.annual / 12;
-    // Kd pode vir em fração (0,18) ou em % (18). Normaliza para fração.
     const kdRaw = state.capital.kd ?? 0;
     const kd = kdRaw > 1 ? kdRaw / 100 : kdRaw;
     const custoAnual = floatTotal * kd;
 
     if (linhas.length === 0) {
       return [
-        `## Impacto do Split Payment — regime **${regime}**`,
+        `## Impacto do Split Payment — regime **${regime}** (a partir de ${anoInicio})`,
         ``,
         `⚠️ **Detalhamento tributário indisponível.** O cálculo do float exige a quebra da carga por rubrica (PIS, COFINS, ICMS, ISS, CBS, IBS, DAS, IRPJ, CSLL), e \`tax.detail\` está vazio para este estado.`,
         ``,
@@ -175,22 +205,59 @@ const handlers: Record<string, ToolHandler> = {
       ].join("\n");
     }
 
-    return [
-      `## Impacto do Split Payment — regime **${regime}**`,
-      ``,
-      `| Tributo | Carga mensal | Prazo atual | Float (R$) |`,
-      `|---|---:|---:|---:|`,
-      ...linhas.map((l) => `| ${l.label} | ${brl(l.mensal)} | ${l.dias}d | ${brl(l.float)} |`),
-      `| **Total** | **${brl(cargaMensalTotal)}** | — | **${brl(floatTotal)}** |`,
-      ``,
-      `### Síntese`,
-      `- **Carga tributária mensal:** ${brl(cargaMensalTotal)}`,
-      `- **Float tributário atual:** ${brl(floatTotal)} — capital de terceiros (governo) que a empresa "usa" hoje entre apurar e recolher.`,
-      `- **Capital de giro adicional com Split Payment:** ${brl(floatTotal)} (esse valor some permanentemente do caixa operacional).`,
+    const out: string[] = [];
+    out.push(`## Impacto do Split Payment — regime **${regime}** (a partir de ${anoInicio})`);
+    out.push(``);
+    out.push(`### 1. Float tributário por rubrica`);
+    out.push(`| Tributo | Carga mensal | Prazo atual | Float (R$) |`);
+    out.push(`|---|---:|---:|---:|`);
+    linhas.forEach((l) =>
+      out.push(`| ${l.label} | ${brl(l.mensal)} | ${l.dias}d | ${brl(l.float)} |`),
+    );
+    out.push(`| **Total** | **${brl(cargaMensalTotal)}** | — | **${brl(floatTotal)}** |`);
+
+    // ===== 2. Impacto permanente em capital de giro =====
+    const cf = buildCashFlow(state, regime);
+    const ind = calcIndicators(state, buildDRE(state, regime).dre, cf);
+    const ncgAtual = ind.ncg ?? 0;
+    const ncgPos = ncgAtual + floatTotal; // PC tributário some → NCG sobe
+    out.push(``, `### 2. Capital de giro & custo de carregamento`);
+    out.push(
+      `- **NCG atual:** ${brl(ncgAtual)} → **pós-Split:** ${brl(ncgPos)} (Δ ${brl(floatTotal)}, +${ncgAtual > 0 ? ((floatTotal / ncgAtual) * 100).toFixed(1) : "∞"}%).`,
+      `- **Caixa operacional permanentemente reduzido em:** ${brl(floatTotal)}.`,
       `- **Custo financeiro anual** (× Kd ${(kd * 100).toFixed(1)}%): **${brl(custoAnual)}**/ano.`,
+    );
+
+    // ===== 3. Timeline: quando o caixa cruza zero descontando o float =====
+    const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    let mesZeroSplit: string | null = null;
+    let mesZeroBase: string | null = null;
+    for (let i = 0; i < 12; i++) {
+      if (!mesZeroBase && cf.saldoFinal[i] < 0) mesZeroBase = meses[i];
+      if (!mesZeroSplit && cf.saldoFinal[i] - floatTotal < 0) mesZeroSplit = meses[i];
+    }
+    out.push(``, `### 3. Timeline de caixa (ano-base)`);
+    out.push(
+      `- **Sem Split:** caixa ${mesZeroBase ? `negativo em **${mesZeroBase}**` : "permanece positivo todo o ano"}.`,
+      `- **Com Split (drain de ${brl(floatTotal)}):** caixa ${mesZeroSplit ? `negativo em **${mesZeroSplit}**` : "permanece positivo todo o ano"}.`,
+    );
+
+    // ===== 4. Covenants pós-Split =====
+    if (incluirCovenants) {
+      const cov = analyzeCovenants(state, {} as CovenantSpec, "base");
+      out.push(``, `### 4. Covenants pós-Split`);
+      out.push(
+        `_Avaliação atual (sem Split). Com a perda de ${brl(floatTotal)} em caixa, DSCR e Liquidez Corrente tendem a piorar proporcionalmente:_`,
+        ``,
+        covenantsToMarkdown(cov),
+      );
+    }
+
+    out.push(
       ``,
-      `> _Impacto estimado para regime ${regime} — Split Payment entra na transição 2027-2032 conforme LC 214/2025._`,
-    ].join("\n");
+      `> _Estimativa baseada em LC 214/2025. Split Payment entra em vigor com CBS pleno (2027) e se intensifica até 2033. Use \`simular_transicao_reforma\` para o cronograma ano-a-ano._`,
+    );
+    return out.join("\n");
   },
 
   analisar_covenants: (args, { state, simulatedState }) => {
