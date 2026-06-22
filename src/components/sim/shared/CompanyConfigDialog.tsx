@@ -26,10 +26,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown, ChevronRight, RotateCcw } from "lucide-react";
 // RadioGroup removido: headcount agora é input numérico exato.
 import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import type { AppState, BusinessType, TaxRegime } from "@/engines/finance/types";
-import { RAMOS_POR_SETOR } from "@/engines/finance/companyProfile";
+import { listSectors, getSector } from "@/engines/benchmark/sectors";
 import { archiveYearAsHistorical, listHistoricals } from "@/engines/scenarios/store";
 import { toast } from "sonner";
 
