@@ -26,7 +26,7 @@ type ModuleScore = {
 const hasMonths = (m?: number[]) => Array.isArray(m) && sumArr(m) > 0;
 
 function scoreReceitas(s: AppState): ModuleScore {
-  const r = s.receitas;
+  const r = s.revenue;
   const missing: string[] = [];
   let pts = 0;
   const max = 4;
@@ -42,11 +42,11 @@ function scoreReceitas(s: AppState): ModuleScore {
 }
 
 function scoreDespesas(s: AppState): ModuleScore {
-  const linhas = s.despesas ?? [];
+  const linhas: CostLine[] = s.costs ?? [];
   const missing: string[] = [];
-  const temCpv = linhas.some((l) => l.category === "cpv" && hasMonths(l.values));
-  const temFixo = linhas.some((l) => l.category === "fixo" && hasMonths(l.values));
-  const temFolha = linhas.some((l) => /folha|salar/i.test(l.label) && hasMonths(l.values));
+  const temCpv = linhas.some((l) => /cpv|cmv|custo.*vend/i.test(l.category) && hasMonths(l.values));
+  const temFixo = linhas.some((l) => l.fixed && hasMonths(l.values));
+  const temFolha = linhas.some((l) => /folha|salar|clt/i.test(l.label) && hasMonths(l.values));
   if (!temCpv) missing.push("CPV/CMV mensal");
   if (!temFixo) missing.push("Pelo menos 1 custo fixo");
   if (!temFolha) missing.push("Linha de folha CLT (ou confirmação que não há)");
