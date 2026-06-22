@@ -110,15 +110,15 @@ export function getPisCofinsFractionForYear(year: number): number {
 /** CBS absoluta (%) no ano: 2026=0,9% (teste); 2027+ = alíquota plena configurada. */
 export function getCbsPctForYear(year: number, cbsFull: number): number {
   if (year < 2026) return 0;
-  if (year === 2026) return 0.9;
+  if (year === 2026) return CBS_ALIQUOTA_2026_TESTE;
   return cbsFull;
 }
 
 /** Versão ano-a-ano de `getReformaRates`, honrando o cronograma da LC 214/2025.
  *  Use para simulações longitudinais 2026–2033 em vez do agrupamento triplo. */
 export function getReformaRatesForYear(year: number, cfg: TaxConfig): ReformaRates {
-  const cbsFull = cfg.cbsAliquota ?? 8.8;
-  const ibsFull = cfg.ibsAliquotaRef ?? 17.7;
+  const cbsFull = getCbsAliquota(cfg);
+  const ibsFull = getIbsAliquotaRef(cfg);
   if (year < 2026)
     return {
       cbsPct: 0,
