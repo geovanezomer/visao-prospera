@@ -5,15 +5,18 @@
 // Submódulo coeso da engine financeira — funções puras, sem dependência de UI.
 
 import { TaxEra, TaxConfig } from "../types";
-import { getReformaTransicaoIbsMult, getReformaTransicaoIcmsIssMult } from "../taxDefaults";
+import {
+  getReformaTransicaoIbsMult,
+  getReformaTransicaoIcmsIssMult,
+  getCbsAliquota,
+  getIbsAliquotaRef,
+  ALIQ_PRESUMIDA_CBS_SN,
+  ALIQ_PRESUMIDA_IBS_SN,
+  CBS_ALIQUOTA_2026_TESTE,
+} from "../taxDefaults";
 
-// [CBS/IBS] Créditos presumidos quando o fornecedor é Simples Nacional
-// (sem destaque na nota). O comprador no Lucro Real/Presumido não pode
-// tomar crédito da alíquota cheia — apenas dos percentuais abaixo.
-// Valores provisórios usados pelo mercado até regulamentação definitiva
-// (referência: conciliaai-ibs-cbs / LC 214/2025).
-export const ALIQ_PRESUMIDA_CBS_SN = 3.0;
-export const ALIQ_PRESUMIDA_IBS_SN = 1.2;
+// [CBS/IBS] Re-export para retro-compat dos consumidores diretos.
+export { ALIQ_PRESUMIDA_CBS_SN, ALIQ_PRESUMIDA_IBS_SN };
 
 /** [CBS/IBS] Retorna a alíquota EFETIVA de crédito CBS sobre o CPV (em %),
  *  ponderando a parcela de fornecedores SN (crédito presumido) e a parcela
@@ -53,8 +56,8 @@ export interface ReformaRates {
 }
 
 export function getReformaRates(era: TaxEra | undefined, cfg: TaxConfig): ReformaRates {
-  const cbsFull = cfg.cbsAliquota ?? 8.8;
-  const ibsFull = cfg.ibsAliquotaRef ?? 17.7;
+  const cbsFull = getCbsAliquota(cfg);
+  const ibsFull = getIbsAliquotaRef(cfg);
   const ibsMult = getReformaTransicaoIbsMult(cfg);
   const icmsIssMult = getReformaTransicaoIcmsIssMult(cfg);
   switch (era ?? "atual") {
@@ -107,15 +110,15 @@ export function getPisCofinsFractionForYear(year: number): number {
 /** CBS absoluta (%) no ano: 2026=0,9% (teste); 2027+ = alíquota plena configurada. */
 export function getCbsPctForYear(year: number, cbsFull: number): number {
   if (year < 2026) return 0;
-  if (year === 2026) return 0.9;
+  if (year === 2026) return CBS_ALIQUOTA_2026_TESTE;
   return cbsFull;
 }
 
 /** Versão ano-a-ano de `getReformaRates`, honrando o cronograma da LC 214/2025.
  *  Use para simulações longitudinais 2026–2033 em vez do agrupamento triplo. */
 export function getReformaRatesForYear(year: number, cfg: TaxConfig): ReformaRates {
-  const cbsFull = cfg.cbsAliquota ?? 8.8;
-  const ibsFull = cfg.ibsAliquotaRef ?? 17.7;
+  const cbsFull = getCbsAliquota(cfg);
+  const ibsFull = getIbsAliquotaRef(cfg);
   if (year < 2026)
     return {
       cbsPct: 0,

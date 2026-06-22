@@ -127,6 +127,27 @@ export const REFORMA_TRANSICAO_IBS_MULT = 0.5;
 export const REFORMA_TRANSICAO_ICMS_ISS_MULT = 0.5;
 
 // =====================================================================
+// REFORMA TRIBUTÁRIA — alíquotas plenas de referência (CBS/IBS)
+// LC 214/2025 — valores indicativos divulgados pelo Ministério da Fazenda.
+// O usuário pode sobrepor pelos campos `tax.cbsAliquota` e `tax.ibsAliquotaRef`.
+// =====================================================================
+/** [CBS/IBS] CBS plena de referência (%). */
+export const CBS_ALIQUOTA_PLENA = 8.8;
+/** [CBS/IBS] IBS pleno de referência (%). */
+export const IBS_ALIQUOTA_PLENA = 17.7;
+/** [CBS/IBS] CBS na fase de TESTE 2026 (compensável com PIS/COFINS). */
+export const CBS_ALIQUOTA_2026_TESTE = 0.9;
+
+// =====================================================================
+// REFORMA TRIBUTÁRIA — créditos presumidos (fornecedor Simples Nacional)
+// Valores provisórios até regulamentação definitiva da LC 214/2025.
+// =====================================================================
+/** [CBS/IBS] Crédito presumido CBS sobre compras de fornecedor SN (%). */
+export const ALIQ_PRESUMIDA_CBS_SN = 3.0;
+/** [CBS/IBS] Crédito presumido IBS sobre compras de fornecedor SN (%). */
+export const ALIQ_PRESUMIDA_IBS_SN = 1.2;
+
+// =====================================================================
 // Tipo dos overrides — espelha exatamente as constantes acima
 // =====================================================================
 export interface TaxRatesOverride {
@@ -182,3 +203,11 @@ export function getSimplesTable(tax: TaxConfig, anexo: SimplesAnexo): SimplesFai
 export function getPresumidoBases(tax: TaxConfig, business: BusinessType): PresumidoBases {
   return ov(tax)?.presumidoBases?.[business] ?? PRESUMIDO_BASES_DEFAULT[business];
 }
+
+/** [CBS/IBS] Alíquota CBS plena (%) — lê `tax.cbsAliquota` ou cai no default oficial. */
+export const getCbsAliquota = (tax: TaxConfig): number =>
+  pick(tax.cbsAliquota, CBS_ALIQUOTA_PLENA);
+
+/** [CBS/IBS] Alíquota IBS plena de referência (%) — lê `tax.ibsAliquotaRef` ou cai no default oficial. */
+export const getIbsAliquotaRef = (tax: TaxConfig): number =>
+  pick(tax.ibsAliquotaRef, IBS_ALIQUOTA_PLENA);

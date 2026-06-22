@@ -46,6 +46,8 @@ import {
   PRESUMIDO_BASES_DEFAULT,
   REFORMA_TRANSICAO_IBS_MULT,
   REFORMA_TRANSICAO_ICMS_ISS_MULT,
+  CBS_ALIQUOTA_PLENA,
+  IBS_ALIQUOTA_PLENA,
   type TaxRatesOverride,
   type SimplesFaixa,
 } from "@/engines/finance/taxDefaults";
@@ -596,18 +598,18 @@ function StepReforma({
         <FriendlyRow
           label="CBS — alíquota plena"
           suffix="%"
-          defaultVal={8.8}
+          defaultVal={CBS_ALIQUOTA_PLENA}
           help="Contribuição sobre Bens e Serviços (federal). Estimativa oficial: 8,8%. Substitui PIS+COFINS."
-          value={state.tax.cbsAliquota ?? 8.8}
+          value={state.tax.cbsAliquota ?? CBS_ALIQUOTA_PLENA}
           onChange={(v) => patchTax({ cbsAliquota: v })}
           onReset={() => patchTax({ cbsAliquota: undefined })}
         />
         <FriendlyRow
           label="IBS — alíquota de referência"
           suffix="%"
-          defaultVal={17.7}
+          defaultVal={IBS_ALIQUOTA_PLENA}
           help="Imposto sobre Bens e Serviços (estadual+municipal). Estimativa de referência: 17,7%. Substitui ICMS+ISS."
-          value={state.tax.ibsAliquotaRef ?? 17.7}
+          value={state.tax.ibsAliquotaRef ?? IBS_ALIQUOTA_PLENA}
           onChange={(v) => patchTax({ ibsAliquotaRef: v })}
           onReset={() => patchTax({ ibsAliquotaRef: undefined })}
         />
@@ -622,8 +624,8 @@ function StepReforma({
         />
         <SnPresumidoExplainer
           snPct={state.tax.fornecedorSimplesNacionalPct ?? 0}
-          cbsPct={state.tax.cbsAliquota ?? 8.8}
-          ibsPct={state.tax.ibsAliquotaRef ?? 17.7}
+          cbsPct={state.tax.cbsAliquota ?? CBS_ALIQUOTA_PLENA}
+          ibsPct={state.tax.ibsAliquotaRef ?? IBS_ALIQUOTA_PLENA}
         />
       </Section>
 

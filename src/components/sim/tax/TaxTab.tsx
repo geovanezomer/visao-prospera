@@ -21,6 +21,9 @@ import {
 } from "@/engines/finance";
 import {
   getPresumidoBases,
+  getCbsAliquota,
+  getIbsAliquotaRef,
+  getFatorRMinimoPct,
   SIMPLES_LIMITE,
   SIMPLES_SUBLIMITE_ESTADUAL,
 } from "@/engines/finance/taxDefaults";
@@ -178,9 +181,10 @@ export function TaxTab() {
     if (state.tax.simplesAnexo === "V" && state.tax.fatorRAuto) {
       // B6: usa helper barato `folhaAnual` em vez de `buildDRE(...).folhaCltAnual`.
       const folha = folhaAnual(state);
-      if (rbAnual > 0 && folha / rbAnual >= 0.28) {
+      const fatorRMin = getFatorRMinimoPct(state.tax) / 100;
+      if (rbAnual > 0 && folha / rbAnual >= fatorRMin) {
         w.push(
-          `Fator R = ${((folha / rbAnual) * 100).toFixed(1)}% (≥ 28%) — Anexo V será automaticamente migrado para Anexo III (alíquotas menores).`,
+          `Fator R = ${((folha / rbAnual) * 100).toFixed(1)}% (≥ ${(fatorRMin * 100).toFixed(0)}%) — Anexo V será automaticamente migrado para Anexo III (alíquotas menores).`,
         );
       }
     }
@@ -325,8 +329,8 @@ export function TaxTab() {
 
         {/* Alíquotas editáveis — Transição e Regime Pleno */}
         {(() => {
-          const cbsPleno = state.tax.cbsAliquota ?? 8.8;
-          const ibsPleno = state.tax.ibsAliquotaRef ?? 17.7;
+          const cbsPleno = getCbsAliquota(state.tax);
+          const ibsPleno = getIbsAliquotaRef(state.tax);
           const ibsMult = state.tax.ratesOverride?.reformaTransicaoIbsMult ?? 0.5;
           const icmsIssMult = state.tax.ratesOverride?.reformaTransicaoIcmsIssMult ?? 0.5;
           const ibsTrans = ibsPleno * ibsMult;

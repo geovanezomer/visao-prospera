@@ -14,6 +14,7 @@ import { buildPrescriptiveCards } from "@/engines/finance/prescriptive";
 import { deriveBalancoFechamento } from "@/engines/finance/balancoFechamento";
 import { deriveAbertura } from "@/engines/finance/aberturaDerivada";
 import { MESES, sum, fmtNum } from "@/engines/finance/format";
+import { getCbsAliquota, getIbsAliquotaRef } from "@/engines/finance/taxDefaults";
 
 // ===== Helpers =====
 const safe = (n: unknown): number => (typeof n === "number" && Number.isFinite(n) ? n : 0);
@@ -784,7 +785,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
       `- **Bases Presumido:** IRPJ ${pct(t.presumidoBaseIRPJ)} · CSLL ${pct(t.presumidoBaseCSLL)}`,
     );
     regLines.push(
-      `- **CBS:** ${pct(t.cbsAliquota ?? 8.8)} · **IBS ref:** ${pct(t.ibsAliquotaRef ?? 17.7)}`,
+      `- **CBS:** ${pct(getCbsAliquota(t))} · **IBS ref:** ${pct(getIbsAliquotaRef(t))}`,
     );
     if (t.issDeducoes)
       regLines.push(`- **Deduções ISS (materiais/subempreitada):** ${brl(t.issDeducoes)}`);

@@ -14,7 +14,7 @@ import type { AppState } from "./types";
 import { buildDRE, type DRE } from "./dre";
 import { calcIndicators, type Indicators } from "./indicators";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
-import { getSimplesLimite } from "./taxDefaults";
+import { getSimplesLimite, getFatorRMinimoPct } from "./taxDefaults";
 import { sum } from "./format";
 import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 
@@ -59,8 +59,6 @@ export interface CrossValidateModel {
 const LIMITS = {
   /** Receita anual mínima para obrigatoriedade do Lucro Real (LC 14/2024). */
   LUCRO_REAL_OBRIG: 78_000_000,
-  /** Fator R mínimo para migração Anexo V → III. */
-  FATOR_R_MIN: 0.28,
   /** Dívida Líquida / EBITDA — limite de alavancagem perigosa. */
   DIV_EBITDA_MAX: 5,
   /** Ciclo financeiro máximo "saudável" (dias). */
@@ -267,7 +265,7 @@ function checkTier2Fiscal(state: AppState, dre: DRE): ValidationWarning[] {
     tax.simplesAnexo === "V" &&
     !tax.fatorRAuto &&
     rbt12 > 0 &&
-    folha / rbt12 >= LIMITS.FATOR_R_MIN
+    folha / rbt12 >= getFatorRMinimoPct(tax) / 100
   ) {
     out.push({
       id: "fiscal.fator_r_desativado",

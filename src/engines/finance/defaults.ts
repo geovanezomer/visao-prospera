@@ -8,6 +8,7 @@ import {
 } from "./types";
 import { fill12 } from "./format";
 import { coerceMonths } from "./safeMath";
+import { CBS_ALIQUOTA_PLENA, IBS_ALIQUOTA_PLENA } from "./taxDefaults";
 
 // ─── Migrações de schema versionadas ──────────────────────────────────
 // A cada breaking change no formato persistido do AppState:
@@ -295,8 +296,8 @@ export const DEFAULT_STATE: AppState = {
     cofinsCreditos: 0,
     issDeducoes: 0,
     era: "atual",
-    cbsAliquota: 8.8,
-    ibsAliquotaRef: 17.7,
+    cbsAliquota: CBS_ALIQUOTA_PLENA,
+    ibsAliquotaRef: IBS_ALIQUOTA_PLENA,
     fornecedorSimplesNacionalPct: 0,
   },
   cashflow: {
