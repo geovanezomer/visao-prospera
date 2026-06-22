@@ -157,9 +157,9 @@ export function CompanyConfigForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     state.companyName,
-    
     state.businessType,
     state.ramoAtuacao,
+    state.benchmarkCustom,
     state.numColaboradores,
     state.headcountRange,
     state.periodoAnaliseMeses,
@@ -168,10 +168,19 @@ export function CompanyConfigForm({
     state.tax.regime,
   ]);
 
-  const ramosDisponiveis = useMemo(
-    () => RAMOS_POR_SETOR[form.businessType] ?? [],
+  // Lista de setores (benchmarks) disponíveis para o businessType corrente.
+  const setoresDisponiveis = useMemo(
+    () => listSectors(form.businessType),
     [form.businessType],
   );
+
+  // Setor selecionado (referência para defaults do benchmark personalizado).
+  const setorSelecionado = useMemo(
+    () => (form.ramoAtuacao ? getSector(form.ramoAtuacao) : undefined) ?? setoresDisponiveis[0],
+    [form.ramoAtuacao, setoresDisponiveis],
+  );
+
+  const [benchOpen, setBenchOpen] = useState(false);
 
   /** Commit imediato (após validação leve). Mostra toast apenas em erro. */
   const commit = (next: FormData) => {
@@ -181,9 +190,12 @@ export function CompanyConfigForm({
     const d = parsed.data;
     update({
       companyName: d.companyName,
-
       businessType: d.businessType,
       ramoAtuacao: d.ramoAtuacao || undefined,
+      benchmarkCustom:
+        d.benchmarkCustom && Object.values(d.benchmarkCustom).some((v) => v != null)
+          ? d.benchmarkCustom
+          : undefined,
       numColaboradores: d.numColaboradores,
       headcountRange: rangeFromNumber(d.numColaboradores),
       periodoAnaliseMeses: d.periodoAnaliseMeses,
@@ -192,6 +204,19 @@ export function CompanyConfigForm({
       moedaBase: "BRL",
     });
     setTax({ regime: d.regime });
+  };
+
+  /** Atualiza um único campo do benchmark personalizado. */
+  const updateBenchField = (key: BenchmarkKey, value: number | undefined) => {
+    const nextCustom = { ...(form.benchmarkCustom ?? {}), [key]: value };
+    if (value === undefined) delete (nextCustom as Record<string, unknown>)[key];
+    commit({ ...form, benchmarkCustom: nextCustom });
+  };
+
+  /** Limpa todo o benchmark personalizado (volta para os defaults do setor). */
+  const resetBenchmark = () => {
+    commit({ ...form, benchmarkCustom: undefined });
+    toast.success("Benchmark restaurado para os valores do setor");
   };
 
   return (
