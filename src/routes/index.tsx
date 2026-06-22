@@ -308,7 +308,13 @@ function SimulaPro() {
             </header>
 
             <main className="flex-1 overflow-x-hidden overflow-y-auto">
-              <div className="mx-auto h-full max-w-[1600px] p-2 sm:p-4 md:p-6">
+              <div
+                className={
+                  activeTab === "ai"
+                    ? "h-[calc(100dvh-3.5rem)] w-full max-w-[1600px] mx-auto"
+                    : "mx-auto h-full max-w-[1600px] p-2 sm:p-4 md:p-6"
+                }
+              >
                 {/* Boundary garante que crash em uma aba não derruba o app inteiro
                   e que componentes consumidos fora do FinanceProvider exibam
                   fallback amigável em vez de tela branca. */}
