@@ -71,7 +71,7 @@ const OUTPUT_LABEL: Record<OutputKey, string> = {
   roic: "ROIC (%)",
 };
 
-function readOutput(state: AppState, output: OutputKey): number {
+export function readOutput(state: AppState, output: OutputKey): number {
   const { dre } = buildDRE(state, resolveEffectiveRegime(state));
   if (output === "ebitda") return sum(dre.ebitda);
   if (output === "lucroLiquido") return sum(dre.lucroLiquido);
