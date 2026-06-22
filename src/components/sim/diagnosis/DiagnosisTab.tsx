@@ -19,7 +19,16 @@ export function DiagnosisTab() {
   // Modelo central: 1 buildDRE + 1 calcIndicators + 1 buildCashFlow para a aba inteira,
   // reusados pelos filhos (HealthScoreCard). Antes: 3–4× recálculos por render.
   const model = useFinanceModel(state);
-  const cards = useMemo(() => buildPrescriptiveCards(state), [state]);
+  // Passa o modelo precomputado para evitar 3 passagens redundantes pela engine.
+  const cards = useMemo(
+    () => buildPrescriptiveCards(state, {
+      dre: model.dre,
+      tax: model.model.tax,
+      ind: model.ind,
+      cf: model.cf,
+    }),
+    [state, model.dre, model.ind, model.cf, model.model.tax],
+  );
   const diagnostics = useMemo(
     () => diagnose(state, model.dre, model.ind),
     [state, model.dre, model.ind],

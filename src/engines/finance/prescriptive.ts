@@ -93,11 +93,24 @@ export interface MetricSnapshot {
   fcf: number;
 }
 
-export function snapshot(state: AppState): MetricSnapshot {
+// Permite reaproveitar o modelo já computado por `useFinanceModel`/`buildFinancialModel`
+// em vez de rodar buildDRE+calcIndicators+buildCashFlow do zero (3 passagens).
+export interface PrescriptivePrecomputed {
+  dre: ReturnType<typeof buildDRE>["dre"];
+  tax: ReturnType<typeof buildDRE>["tax"];
+  ind: ReturnType<typeof calcIndicators>;
+  cf: ReturnType<typeof buildCashFlow>;
+}
+
+export function snapshot(state: AppState, pre?: PrescriptivePrecomputed): MetricSnapshot {
   // Usa regime efetivo (Simples pode ter excedido limite).
-  const { dre, tax } = buildDRE(state, resolveEffectiveRegime(state));
-  const ind = calcIndicators(state, dre);
-  const cf = buildCashFlow(state);
+  const built = pre ?? (() => {
+    const { dre, tax } = buildDRE(state, resolveEffectiveRegime(state));
+    const ind = calcIndicators(state, dre);
+    const cf = buildCashFlow(state);
+    return { dre, tax, ind, cf };
+  })();
+  const { dre, tax, ind, cf } = built;
   return {
     receitaBruta: sum(dre.receitaBruta),
     lucroLiquido: sum(dre.lucroLiquido),
@@ -135,12 +148,21 @@ const BENCHMARK_FOLHA_RECEITA: Record<AppState["businessType"], [number, number]
   industria: [15, 25],
 };
 
-export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
+export function buildPrescriptiveCards(
+  state: AppState,
+  pre?: PrescriptivePrecomputed,
+): PrescriptiveCard[] {
   const cards: PrescriptiveCard[] = [];
   // Regime efetivo (verdade absoluta — alinhado com IndicatorsTab/CashflowTab).
-  const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-  const ind = calcIndicators(state, dre);
-  const cf = buildCashFlow(state);
+  // Otimização: reusa o modelo já computado (DiagnosisTab/PDF) — evita 3
+  // passagens completas pela engine por render.
+  const built = pre ?? (() => {
+    const { dre } = buildDRE(state, resolveEffectiveRegime(state));
+    const ind = calcIndicators(state, dre);
+    const cf = buildCashFlow(state);
+    return { dre, tax: null as never, ind, cf };
+  })();
+  const { dre, ind, cf } = built;
   const receitaLiqAnual = sum(dre.receitaLiquida);
   const { totalMensal: folhaMensal } = laborCltLinesTotal(state);
   // Reusa fonte canônica do engine — evita divergência com IndicatorsCard ("Folha/Receita").

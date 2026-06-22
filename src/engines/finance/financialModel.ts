@@ -62,8 +62,10 @@ export function buildFinancialModel(rawState: AppState): FinancialModel {
   const state = normalizeStateFromBalanco(rawState);
   const regime = resolveEffectiveRegime(state);
   const { dre, tax } = buildDRE(state, regime);
-  const ind = calcIndicators(state, dre);
+  // Otimização: `cf` computado UMA vez e passado a `calcIndicators` para evitar
+  // a 2ª chamada interna de `buildCashFlow(state)` que existia em indicators.ts.
   const cf = buildCashFlow(state);
+  const ind = calcIndicators(state, dre, cf);
   const val = buildValuation(state, defaultValuationParams(state.businessType));
   const health = computeHealth(state);
   const cagrReceitas12m = cagr12m(dre.receitaLiquida);
@@ -72,43 +74,29 @@ export function buildFinancialModel(rawState: AppState): FinancialModel {
 }
 
 // ============================================================
-// Memoização cross-módulo (hash do estado)
+// Memoização cross-módulo por IDENTIDADE de referência (WeakMap)
 // ============================================================
 //
-// Mantém UMA única entrada (o caso mais comum: 1 estado base ativo na UI).
-// Se chamadores diferentes pedirem o mesmo `state`, devolve a mesma instância.
+// Como o `AppState` é tratado imutavelmente (reducers retornam nova ref a
+// cada mudança), comparar por referência é suficiente — e elimina o custo
+// de `JSON.stringify(state)` que o `fastHash` anterior fazia a cada chamada
+// (relevante em IA tools e PDF, que chamam várias vezes em sequência).
 //
-// NÃO armazena LRU porque o estado da aplicação só muda quando o usuário
-// edita um campo, e nesse momento o hash inteiro muda — invalida tudo.
+// WeakMap permite GC automático: estados antigos não mantidos por nenhum
+// consumidor são descartados sem necessidade de invalidação explícita.
 
-let cacheKey = "";
-let cacheVal: FinancialModel | null = null;
+const modelCache = new WeakMap<AppState, FinancialModel>();
 
-function fastHash(o: unknown): string {
-  try {
-    const s = JSON.stringify(o);
-    let h = 0;
-    for (let i = 0; i < s.length; i++) {
-      h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-    }
-    return `${s.length}:${h}`;
-  } catch {
-    return Math.random().toString();
-  }
-}
-
-/** Versão memoizada — devolve a mesma instância enquanto o estado não mudar. */
+/** Versão memoizada — devolve a mesma instância enquanto o `state` for a mesma ref. */
 export function getFinancialModelCached(state: AppState): FinancialModel {
-  const k = fastHash(state);
-  if (k === cacheKey && cacheVal) return cacheVal;
+  const cached = modelCache.get(state);
+  if (cached) return cached;
   const v = buildFinancialModel(state);
-  cacheKey = k;
-  cacheVal = v;
+  modelCache.set(state, v);
   return v;
 }
 
-/** Invalidação manual (use em testes ou após mudanças globais não-rastreadas). */
+/** Invalidação manual (mantida para compatibilidade — WeakMap libera sozinho). */
 export function invalidateFinancialModelCache(): void {
-  cacheKey = "";
-  cacheVal = null;
+  // No-op: WeakMap libera referências automaticamente quando o state sai de escopo.
 }

@@ -27,6 +27,11 @@ import { calcPresumido } from "./tax/presumido";
 import { calcReal } from "./tax/real";
 import type { MonthlyTax } from "./tax/shared";
 
+// Regex compilada uma única vez (era recriada a cada chamada de classifyCosts).
+const LOAN_INTEREST_RE = /juros[^a-z]*(sobre)?[^a-z]*(empr[eé]stimo|contrato)/i;
+
+
+
 export interface DRE {
   receitaBruta: number[];
   deducoesInadimplencia: number[]; // 0 se inadimplenciaComoPDD
@@ -116,8 +121,7 @@ function classifyCosts(
   // financeiras cujo rótulo indique "juros sobre empréstimos/contratos", para que
   // o usuário não some manualmente um custo que já vem do Capital.
   const hasSyntheticDebt = costs.some((c) => c.id === DEBT_CONTRACTS_COST_ID);
-  const isManualLoanInterest = (label: string) =>
-    /juros[^a-z]*(sobre)?[^a-z]*(empr[eé]stimo|contrato)/i.test(label);
+  const isManualLoanInterest = (label: string) => LOAN_INTEREST_RE.test(label);
 
   for (const c of costs) {
     const v = effectiveMonthValues(c, regime);

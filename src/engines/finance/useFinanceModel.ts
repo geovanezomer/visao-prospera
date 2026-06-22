@@ -8,15 +8,16 @@
  */
 import { useMemo } from "react";
 import { AppState } from "./types";
-import { buildFinancialModel } from "./financialModel";
+import { getFinancialModelCached } from "./financialModel";
 
 export function useFinanceModel(state: AppState) {
-  // Memoiza por referência de `state`. Removemos `useDeferredValue` porque,
-  // no Simulador, cada mexida em slider cria um novo `simState` (nova ref),
-  // e o deferral causava sensação de "indicadores não refletem o slider".
-  // O custo de recomputar é baixo (engine pure-function memoizada por hash
-  // em outros call sites) e a UX em tempo real é prioritária.
-  const model = useMemo(() => buildFinancialModel(state), [state]);
+  // Usa `getFinancialModelCached` (WeakMap por ref do state) para que múltiplos
+  // componentes que recebam o mesmo `state` compartilhem a MESMA instância do
+  // modelo — sem recomputar a engine N vezes (ex.: DashboardExtras com 4 cards
+  // chamando este hook independentemente).
+  // A reatividade entre abas é preservada: quando o store emite novo state,
+  // useSyncExternalStore propaga a nova ref → WeakMap miss → recompute.
+  const model = useMemo(() => getFinancialModelCached(state), [state]);
   return {
     regime: model.regime,
     dre: model.dre,
