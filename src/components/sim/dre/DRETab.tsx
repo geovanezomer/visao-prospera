@@ -61,7 +61,6 @@ const CHART_COLORS = [
 export function DRETab() {
   const { state, update } = useFinance();
   const [view, setView] = usePeriodView("trimestral");
-  const comparisonSnaps = useSelectedSnapshots();
   const annualSnaps = useAnnualSnapshots(3);
 
 
