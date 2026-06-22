@@ -46,6 +46,8 @@ import {
   PRESUMIDO_BASES_DEFAULT,
   REFORMA_TRANSICAO_IBS_MULT,
   REFORMA_TRANSICAO_ICMS_ISS_MULT,
+  CBS_ALIQUOTA_PLENA,
+  IBS_ALIQUOTA_PLENA,
   type TaxRatesOverride,
   type SimplesFaixa,
 } from "@/engines/finance/taxDefaults";
