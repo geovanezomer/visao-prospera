@@ -41,7 +41,6 @@ import { HelpTip, SectionTitle, StatCard } from "@/components/sim/shared/primiti
 import { Badge } from "@/components/ui/badge";
 
 import { DREComparison } from "@/components/sim/comparison/ComparisonView";
-import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
 import { useAnnualSnapshots } from "@/hooks/useAnnualSnapshots";
 import { ChevronRight } from "lucide-react";
 
@@ -62,7 +61,6 @@ const CHART_COLORS = [
 export function DRETab() {
   const { state, update } = useFinance();
   const [view, setView] = usePeriodView("trimestral");
-  const comparisonSnaps = useSelectedSnapshots();
   const annualSnaps = useAnnualSnapshots(3);
 
 
@@ -347,14 +345,9 @@ export function DRETab() {
     { name: "Lucro Líq.", value: ll },
   ];
 
-  const showComparison = comparisonSnaps.length >= 2;
-
   return (
     <div className="space-y-6">
-      {showComparison ? (
-        <DREComparison snapshots={comparisonSnaps} />
-      ) : (
-        <>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <div className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
@@ -701,8 +694,7 @@ export function DRETab() {
       </div>
       </>
       )}
-        </>
-      )}
+
     </div>
   );
 }

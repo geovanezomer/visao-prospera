@@ -21,8 +21,6 @@ import { DFCTable } from "@/components/sim/cashflow/DFCTable";
 import { NonOpTable } from "@/components/sim/cashflow/NonOpTable";
 import { NonOpKey } from "@/components/sim/cashflow/tableHelpers";
 
-import { CashFlowComparison } from "@/components/sim/comparison/ComparisonView";
-import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
 
 // Estilo padrão do tooltip dos gráficos (DRY)
 const TOOLTIP_STYLE = {
@@ -42,7 +40,7 @@ export function CashflowTab() {
   const patchCashflow = usePatchCashflow();
   // Regime efetivo é default em buildCashFlow; memoizar o resultado pesado.
   const cf = useMemo(() => buildCashFlow(state), [state]);
-  const comparisonSnaps = useSelectedSnapshots();
+  
 
   const setCaixaMin = (v: number) => patchCashflow({ caixaMinimo: v });
 
@@ -156,14 +154,9 @@ export function CashflowTab() {
   const saldoDezTone: "pos" | "neg" | "warn" =
     saldoDez < 0 ? "neg" : saldoDez < state.cashflow.caixaMinimo ? "warn" : "pos";
 
-  const showComparison = comparisonSnaps.length >= 2;
-
   return (
     <div className="space-y-6">
-      {showComparison ? (
-        <CashFlowComparison snapshots={comparisonSnaps} />
-      ) : (
-        <>
+
       {/* Sumário */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
@@ -486,8 +479,6 @@ export function CashflowTab() {
           </span>
         </div>
       </div>
-        </>
-      )}
     </div>
   );
 }

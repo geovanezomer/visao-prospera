@@ -1,12 +1,8 @@
 // ============================================================================
 // HistoricalYearPills — Seletor de período no cabeçalho das abas com histórico.
 //
-// Modos:
-//  1) Navegação (default): clicar em uma pill recarrega aquele snapshot no
-//     AppState corrente (com confirmação).
-//  2) Comparação: ativada via botão "Comparar". Pills viram checkboxes
-//     multi-select; o tab pai consome `useComparisonMode()` e renderiza
-//     a view de comparação (DRE/Fluxo lado a lado).
+// Clicar em uma pill recarrega aquele snapshot no AppState corrente
+// (com confirmação). O ano vigente é arquivado automaticamente antes da troca.
 //
 // Gerenciamento: cada pill histórica tem menu kebab para renomear/excluir.
 //
@@ -23,11 +19,6 @@ import {
   switchToYear,
   type ScenarioRecord,
 } from "@/engines/scenarios/store";
-import {
-  useComparisonMode,
-  setComparisonActive,
-  toggleComparisonKey,
-} from "@/engines/scenarios/comparisonStore";
 import { mesesPreenchidos } from "@/engines/finance/periodUtils";
 import { cn } from "@/lib/utils";
 import {
@@ -56,14 +47,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MoreVertical, Pencil, Trash2, GitCompare, X } from "lucide-react";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function HistoricalYearPills() {
   const { state, update } = useFinance();
   const company = state.companyName || "default";
   const all = useScenarios(company);
-  const compare = useComparisonMode();
 
   const historicals = useMemo(
     () =>
@@ -87,18 +77,6 @@ export function HistoricalYearPills() {
   if (historicals.length < 2) return null;
 
   const confirmLoadTarget = historicals.find((h) => h.id === pendingLoadId);
-
-  const handlePillClick = (h: ScenarioRecord) => {
-    if (compare.active) {
-      toggleComparisonKey(h.fiscalYear!);
-    } else {
-      setPendingLoadId(h.id);
-    }
-  };
-
-  const handleAtualClick = () => {
-    if (compare.active) toggleComparisonKey("atual");
-  };
 
   const handleConfirmLoad = () => {
     if (!confirmLoadTarget?.state) return;
@@ -134,9 +112,6 @@ export function HistoricalYearPills() {
     setDeleteTarget(null);
   };
 
-  const isSelected = (key: number | "atual") =>
-    compare.selected.some((k) => k === key);
-
   return (
     <>
       <div
@@ -148,72 +123,53 @@ export function HistoricalYearPills() {
           Período:
         </span>
 
-        {historicals.map((h) => {
-          const selected = isSelected(h.fiscalYear!);
-          return (
-            <div key={h.id} className="group/pill inline-flex items-center">
-              <button
-                type="button"
-                role={compare.active ? "checkbox" : "tab"}
-                aria-checked={compare.active ? selected : undefined}
-                onClick={() => handlePillClick(h)}
-                className={cn(
-                  "rounded-l-full border border-r-0 border-input bg-background px-2.5 py-0.5 text-[11px] font-medium",
-                  "transition-colors hover:bg-accent hover:text-accent-foreground",
-                  compare.active && selected && "border-primary bg-primary/15 text-primary",
-                )}
-                title={
-                  compare.active
-                    ? `${selected ? "Remover da" : "Adicionar à"} comparação`
-                    : `Carregar snapshot de ${h.fiscalYear}`
-                }
-              >
-                {h.name}
-              </button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className={cn(
-                      "h-[22px] rounded-r-full border border-input bg-background px-1",
-                      "text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
-                      compare.active && selected && "border-primary bg-primary/15 text-primary",
-                    )}
-                    aria-label={`Gerenciar ${h.name}`}
-                  >
-                    <MoreVertical className="h-3 w-3" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => openRename(h)}>
-                    <Pencil className="mr-2 h-3.5 w-3.5" /> Renomear
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setDeleteTarget(h)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Excluir
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          );
-        })}
+        {historicals.map((h) => (
+          <div key={h.id} className="group/pill inline-flex items-center">
+            <button
+              type="button"
+              role="tab"
+              onClick={() => setPendingLoadId(h.id)}
+              className={cn(
+                "rounded-l-full border border-r-0 border-input bg-background px-2.5 py-0.5 text-[11px] font-medium",
+                "transition-colors hover:bg-accent hover:text-accent-foreground",
+              )}
+              title={`Carregar snapshot de ${h.fiscalYear}`}
+            >
+              {h.name}
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    "h-[22px] rounded-r-full border border-input bg-background px-1",
+                    "text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+                  )}
+                  aria-label={`Gerenciar ${h.name}`}
+                >
+                  <MoreVertical className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => openRename(h)}>
+                  <Pencil className="mr-2 h-3.5 w-3.5" /> Renomear
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setDeleteTarget(h)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-3.5 w-3.5" /> Excluir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ))}
 
-        {/* Pill "Atual" — sempre presente, selecionável em modo comparação. */}
-        <button
-          type="button"
-          role={compare.active ? "checkbox" : "tab"}
-          aria-checked={compare.active ? isSelected("atual") : true}
-          onClick={handleAtualClick}
-          disabled={!compare.active}
-          className={cn(
-            "rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition-colors",
-            !compare.active && "border-primary bg-primary/10 text-primary",
-            compare.active && isSelected("atual")
-              ? "border-primary bg-primary/15 text-primary"
-              : compare.active && "border-input bg-background text-foreground hover:bg-accent",
-          )}
+        {/* Pill "Atual" — indicador do período em edição. */}
+        <span
+          role="tab"
+          aria-selected
+          className="rounded-full border border-primary bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary"
         >
           Atual
           {mesesAtual < 12 && (
@@ -221,40 +177,10 @@ export function HistoricalYearPills() {
               · parcial {mesesAtual}/12
             </span>
           )}
-        </button>
-
-        {/* Ações do modo comparação. */}
-        <div className="ml-2 inline-flex items-center gap-1">
-          {compare.active ? (
-            <>
-              <span className="text-[10px] text-muted-foreground">
-                {compare.selected.length} selecionado
-                {compare.selected.length === 1 ? "" : "s"}
-              </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 px-2 text-[11px]"
-                onClick={() => setComparisonActive(false)}
-              >
-                <X className="mr-1 h-3 w-3" /> Sair
-              </Button>
-            </>
-          ) : (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 px-2 text-[11px]"
-              onClick={() => setComparisonActive(true)}
-              title="Comparar períodos lado a lado"
-            >
-              <GitCompare className="mr-1 h-3 w-3" /> Comparar
-            </Button>
-          )}
-        </div>
+        </span>
       </div>
 
-      {/* Confirmação de troca de período (modo navegação). */}
+      {/* Confirmação de troca de período. */}
       <AlertDialog
         open={pendingLoadId !== null}
         onOpenChange={(open) => !open && setPendingLoadId(null)}
