@@ -9,16 +9,12 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+
 import { AppState } from "@/engines/finance/types";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { fmtBRL, MESES, sum } from "@/engines/finance/format";
