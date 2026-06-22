@@ -21,8 +21,6 @@ import { DFCTable } from "@/components/sim/cashflow/DFCTable";
 import { NonOpTable } from "@/components/sim/cashflow/NonOpTable";
 import { NonOpKey } from "@/components/sim/cashflow/tableHelpers";
 
-import { CashFlowComparison } from "@/components/sim/comparison/ComparisonView";
-import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
 
 // Estilo padrão do tooltip dos gráficos (DRY)
 const TOOLTIP_STYLE = {
