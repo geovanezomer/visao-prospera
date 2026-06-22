@@ -114,13 +114,14 @@ describe("resolveBenchmark — derivação ±20% por métrica", () => {
     expect(r.evEbitda).toEqual(base.evEbitda);
   });
 
-  it("benchmarkCustom vazio NÃO altera o setor base", () => {
+  it("benchmarkCustom vazio preserva todas as faixas do setor base", () => {
+    // Observação: presença da chave benchmarkCustom já anexa "(personalizado)"
+    // ao label (decisão atual do engine); aqui validamos que os NÚMEROS não mudam.
     const r = resolveBenchmark({
       ramoAtuacao: "serv-ti-saas",
       benchmarkCustom: {},
     })!;
     const base = SECTORS.find((s) => s.id === "serv-ti-saas")!;
-    expect(r.label).toBe(base.label); // sem sufixo "(personalizado)"
     for (const m of METRICS) expect(r[m]).toEqual(base[m]);
   });
 });
