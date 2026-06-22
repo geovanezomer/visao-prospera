@@ -76,7 +76,7 @@ export function ChatChart({ spec }: { spec: ChartSpec }) {
     let running = 0;
     return spec.data.map((d, idx) => {
       const v = Number(d.value ?? 0);
-      const isTotal = d.total === true || idx === spec.data.length - 1;
+      const isTotal = d.total === true || d.total === "true" || idx === spec.data.length - 1;
       const start = isTotal ? 0 : running;
       const end = isTotal ? v : running + v;
       if (!isTotal) running = end;
