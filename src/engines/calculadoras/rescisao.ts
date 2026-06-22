@@ -329,16 +329,10 @@ export function calcularRescisao(inputBruto: RescisaoInput): RescisaoOutput {
   }
 
   // --- Multa FGTS (isenta de INSS/IRRF) ---
+  // Paga pelo empregador DIRETAMENTE na conta vinculada do FGTS via Caixa
+  // — não compõe a folha de rescisão. Por isso é retornada apart no campo
+  // `multaFGTS` (e exibida em mini-card), simétrica ao `saqueFGTS`.
   const multaFGTS = round2(i.saldoFGTS * regras.multaFGTSPct);
-  if (multaFGTS > 0) {
-    verbas.push({
-      rotulo: `Multa FGTS (${(regras.multaFGTSPct * 100).toFixed(0)}%)`,
-      valor: multaFGTS,
-      base: `${(regras.multaFGTSPct * 100).toFixed(0)}% × saldo FGTS`,
-      incideINSS: false,
-      incideIRRF: false,
-    });
-  }
 
   // --- Indenização do contrato de experiência rompido antes do prazo (CLT arts. 479/480) ---
   // Empregador rompe antes: paga ao empregado 50% do que faltaria (art. 479).
