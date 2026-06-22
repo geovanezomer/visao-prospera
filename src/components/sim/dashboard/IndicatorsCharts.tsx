@@ -101,20 +101,7 @@ export function IndicatorsCharts({ state }: { state: AppState }) {
   );
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-
-      <ChartCard title="Resultado acumulado (lucro líquido)">
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={acumulado}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-            <XAxis dataKey="mes" stroke="#9ca3af" fontSize={11} />
-            <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} formatter={(v: number) => fmtBRL(v)} />
-            <Line type="monotone" dataKey="valor" stroke="#00E5A0" strokeWidth={2} dot={{ r: 3 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </ChartCard>
-
+    <div className="grid gap-4">
       <ChartCard title="Da receita ao lucro líquido (waterfall)">
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={waterfall}>
@@ -131,3 +118,4 @@ export function IndicatorsCharts({ state }: { state: AppState }) {
     </div>
   );
 }
+
