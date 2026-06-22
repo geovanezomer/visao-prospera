@@ -44,6 +44,8 @@ const MODULES: ToolModule[] = [
   actionsTools,
   complianceTools,
   memoryTools,
+  calculadorasTools,
+  auditoriaTools,
 ];
 
 export const TOOLS: ToolDef[] = MODULES.flatMap((m) => m.defs);
