@@ -14,6 +14,7 @@ import { buildPrescriptiveCards } from "@/engines/finance/prescriptive";
 import { deriveBalancoFechamento } from "@/engines/finance/balancoFechamento";
 import { deriveAbertura } from "@/engines/finance/aberturaDerivada";
 import { MESES, sum, fmtNum } from "@/engines/finance/format";
+import { getCbsAliquota, getIbsAliquotaRef } from "@/engines/finance/taxDefaults";
 
 // ===== Helpers =====
 const safe = (n: unknown): number => (typeof n === "number" && Number.isFinite(n) ? n : 0);
