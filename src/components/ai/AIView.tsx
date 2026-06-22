@@ -149,11 +149,39 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
   const [showThreads, setShowThreads] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showJumpToBottom, setShowJumpToBottom] = useState(false);
+  // Auto-scroll "inteligente": só puxa pra baixo se o usuário já está perto do fim.
+  // Se rolou pra cima durante o streaming, mostra botão "voltar ao fim" e respeita a posição.
+  const stickToBottomRef = useRef(true);
 
-  // === Auto-scroll ===
+  const scrollToBottom = (smooth = true) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+    stickToBottomRef.current = true;
+    setShowJumpToBottom(false);
+  };
+
+  // Detecta scroll do usuário: se afastar > 80px do fim, "desgruda".
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const atBottom = distance < 80;
+    stickToBottomRef.current = atBottom;
+    setShowJumpToBottom(!atBottom && (streaming || messages.length > 0));
+  };
+
+  // Quando chegam novos tokens / mensagens, só auto-scroll se o usuário está colado no fim.
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (!scrollRef.current) return;
+    if (stickToBottomRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    } else if (streaming) {
+      setShowJumpToBottom(true);
+    }
   }, [messages, streaming]);
+
 
   const onFilesChange = async (files: FileList | null) => {
     await handleFiles(files);
@@ -231,8 +259,9 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
           </div>
         )}
 
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="relative flex flex-1 flex-col overflow-hidden">
+          <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-6 space-y-6">
+
             {messages.length === 0 ? (
               <div className="max-w-3xl mx-auto space-y-6">
                 <div className="bg-card/30 rounded-xl p-6 border border-border/40">
@@ -337,6 +366,20 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
               </div>
             )}
           </div>
+
+          {showJumpToBottom && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => scrollToBottom(true)}
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 shadow-lg rounded-full gap-1.5 border border-border/60"
+            >
+              <ChevronDown className="h-4 w-4" />
+              {streaming ? "IA digitando — voltar ao fim" : "Voltar ao fim"}
+            </Button>
+          )}
+
+
 
           {(pipeline360.active || pipeline360.completed.length > 0) && (
             <div className="border-t border-border/40 bg-card/20 px-4 py-2">
