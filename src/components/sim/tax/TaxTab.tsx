@@ -329,8 +329,8 @@ export function TaxTab() {
 
         {/* Alíquotas editáveis — Transição e Regime Pleno */}
         {(() => {
-          const cbsPleno = state.tax.cbsAliquota ?? 8.8;
-          const ibsPleno = state.tax.ibsAliquotaRef ?? 17.7;
+          const cbsPleno = getCbsAliquota(state.tax);
+          const ibsPleno = getIbsAliquotaRef(state.tax);
           const ibsMult = state.tax.ratesOverride?.reformaTransicaoIbsMult ?? 0.5;
           const icmsIssMult = state.tax.ratesOverride?.reformaTransicaoIcmsIssMult ?? 0.5;
           const ibsTrans = ibsPleno * ibsMult;
