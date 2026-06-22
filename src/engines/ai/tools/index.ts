@@ -22,6 +22,8 @@ import { scenariosTools } from "./scenarios";
 import { actionsTools } from "./actions";
 import { complianceTools } from "./compliance";
 import { memoryTools } from "./memory";
+import { calculadorasTools } from "./calculadoras";
+import { auditoriaTools } from "./auditoria";
 
 export type {
   ToolDef,
