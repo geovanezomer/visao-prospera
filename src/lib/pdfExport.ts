@@ -722,32 +722,32 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   pageMeta[doc.getNumberOfPages()] = { eyebrow: "01", title: "Resumo Executivo" };
   let y = pageTitle(doc, CONTENT_TOP, "01  ·  Sumário",
     "Resumo Executivo",
-    "Os cinco pontos a seguir sintetizam o diagnóstico financeiro. Detalhes, indicadores e recomendações nas seções seguintes.");
+    "Os pontos a seguir sintetizam o diagnóstico financeiro do período. Detalhes e recomendações nas seções seguintes.");
 
-  const insights = buildExecutiveInsights(state, model, score, conceito);
+  // Insights compactos — limitamos a 4 para abrir espaço ao bloco de Runway.
+  const insights = buildExecutiveInsights(state, model, score, conceito).slice(0, 4);
   insights.forEach((it, i) => {
-    // número
     doc.setFont(FONT, "bold");
-    doc.setFontSize(28);
+    doc.setFontSize(22);
     setColor(doc, "text", LIGHT);
-    doc.text(String(i + 1).padStart(2, "0"), PAGE_MARGIN, y + 8);
-    // título
+    doc.text(String(i + 1).padStart(2, "0"), PAGE_MARGIN, y + 4);
     doc.setFont(FONT, "bold");
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     setColor(doc, "text", INK);
-    doc.text(it.title, PAGE_MARGIN + 44, y);
-    // descrição
+    doc.text(it.title, PAGE_MARGIN + 40, y - 2);
     doc.setFont(FONT, "normal");
-    doc.setFontSize(10);
+    doc.setFontSize(9.5);
     setColor(doc, "text", CHARCOAL);
-    const lines = doc.splitTextToSize(it.detail, doc.internal.pageSize.getWidth() - PAGE_MARGIN * 2 - 44);
-    doc.text(lines, PAGE_MARGIN + 44, y + 14);
-    // marcador de tom (ponto)
+    const lines = doc.splitTextToSize(it.detail, doc.internal.pageSize.getWidth() - PAGE_MARGIN * 2 - 40);
+    doc.text(lines, PAGE_MARGIN + 40, y + 10);
     const tColor = it.tone === "ok" ? OK : it.tone === "warn" ? WARN : it.tone === "bad" ? BAD : GRAY;
     setColor(doc, "fill", tColor);
-    doc.circle(PAGE_MARGIN + 38, y - 4, 2.5, "F");
-    y += 14 + lines.length * 13 + 18;
+    doc.circle(PAGE_MARGIN + 34, y - 6, 2, "F");
+    y += 10 + lines.length * 12 + 12;
   });
+
+  // Bloco Pista de Caixa & Saldo Projetado (mesmo card do Dashboard).
+  y = drawRunwayBlock(doc, y + 6, state, model);
 
   // ── PÁGINA 3 — PAINEL EXECUTIVO ────────────────────────────────────
   doc.addPage();
@@ -781,7 +781,10 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
       sub: "Lucro / Receita Bruta",
       tone: ind.margemLiquida >= 8 ? "ok" : ind.margemLiquida >= 3 ? "warn" : "bad" },
   ];
-  drawKpiCards(doc, y, kpiCards, 3);
+  y = drawKpiCards(doc, y, kpiCards, 3);
+
+  // Top 5 Despesas — mesma página, abaixo dos cards
+  drawTop5Despesas(doc, y + 4, model);
 
   // ── PÁGINA 4 — SAÚDE FINANCEIRA ────────────────────────────────────
   doc.addPage();
@@ -793,88 +796,128 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   const dimensions = buildHealthDimensions(ind, state);
   const w = doc.internal.pageSize.getWidth();
   dimensions.forEach((d) => {
-    // linha base
     setColor(doc, "draw", LIGHT);
     doc.setLineWidth(0.4);
     doc.line(PAGE_MARGIN, y - 4, w - PAGE_MARGIN, y - 4);
 
     doc.setFont(FONT, "bold");
-    doc.setFontSize(10.5);
+    doc.setFontSize(10);
     setColor(doc, "text", INK);
-    doc.text(d.label, PAGE_MARGIN, y + 12);
+    doc.text(d.label, PAGE_MARGIN, y + 10);
 
-    // score numérico
     doc.setFont(FONT, "bold");
-    doc.setFontSize(10.5);
+    doc.setFontSize(9.5);
     const tCol = d.tone === "ok" ? OK : d.tone === "warn" ? WARN : BAD;
     setColor(doc, "text", tCol);
     const statusLabel = d.tone === "ok" ? "SAUDÁVEL" : d.tone === "warn" ? "ATENÇÃO" : "CRÍTICO";
-    doc.text(statusLabel, w - PAGE_MARGIN, y + 12, { align: "right" });
+    doc.text(statusLabel, w - PAGE_MARGIN, y + 10, { align: "right" });
 
-    // barra
-    drawBar(doc, PAGE_MARGIN, y + 22, w - PAGE_MARGIN * 2, 4, d.score / 100, d.tone);
+    drawBar(doc, PAGE_MARGIN, y + 18, w - PAGE_MARGIN * 2, 3.5, d.score / 100, d.tone);
 
-    // comentário
     doc.setFont(FONT, "normal");
-    doc.setFontSize(9.5);
+    doc.setFontSize(9);
     setColor(doc, "text", GRAY);
     const lines = doc.splitTextToSize(d.comment, w - PAGE_MARGIN * 2);
-    doc.text(lines, PAGE_MARGIN, y + 40);
+    doc.text(lines, PAGE_MARGIN, y + 32);
 
-    y += 40 + lines.length * 12 + 14;
+    y += 32 + lines.length * 11 + 10;
   });
 
-  // ── PÁGINA 5 — PRINCIPAIS RISCOS ───────────────────────────────────
-  doc.addPage();
-  pageMeta[doc.getNumberOfPages()] = { eyebrow: "04", title: "Principais Riscos" };
-  y = pageTitle(doc, CONTENT_TOP, "04  ·  Riscos",
-    "Principais Riscos",
-    "Top 5 riscos identificados — ordenados por severidade e probabilidade.");
+  // Gráfico — Resultado acumulado (lucro líquido) — mesma página
+  let acc = 0;
+  const cumul = model.dre.lucroLiquido.map((v) => (acc += v));
+  blockHeader(doc, y + 4, "Resultado acumulado (lucro líquido)",
+    "Trajetória do lucro líquido somado ao longo de 12 meses.");
+  drawMonthlyChart(doc, PAGE_MARGIN, y + 28,
+    w - PAGE_MARGIN * 2, 150, cumul, {
+      fill: [16, 185, 129] as [number, number, number],
+      line: [5, 150, 105] as [number, number, number],
+    });
 
-  const risks = buildTopRisks(diags, ind, prescriptive).slice(0, 5);
-  if (risks.length === 0) {
+  // ── PÁGINA 5 — RISCOS & RECOMENDAÇÕES ──────────────────────────────
+  doc.addPage();
+  pageMeta[doc.getNumberOfPages()] = { eyebrow: "04", title: "Riscos & Recomendações" };
+  y = pageTitle(doc, CONTENT_TOP, "04  ·  Riscos & Recomendações",
+    "Riscos & Recomendações",
+    "Cada risco identificado é apresentado junto com diagnóstico, ações recomendadas e prazo de execução.");
+
+  const riskRecs = buildRiscosERecomendacoes(diags, prescriptive).slice(0, 6);
+  if (riskRecs.length === 0) {
     paragraph(doc, y, "Nenhum risco crítico identificado no horizonte analisado.", { color: GRAY });
   } else {
-    risks.forEach((r, i) => {
-      const blockH = 78;
-      // Caixa
-      setColor(doc, "draw", HAIRLINE);
-      doc.setLineWidth(0.5);
-      doc.rect(PAGE_MARGIN, y, w - PAGE_MARGIN * 2, blockH, "S");
-      // tag severidade
-      const sCol = r.severity === "bad" ? BAD : r.severity === "warn" ? WARN : GRAY;
-      setColor(doc, "fill", sCol);
-      doc.rect(PAGE_MARGIN, y, 3, blockH, "F");
-      // número
+    riskRecs.forEach((r, i) => {
+      // Page-break dinâmico: se faltar espaço, nova página.
+      if (y > doc.internal.pageSize.getHeight() - 200) {
+        doc.addPage();
+        pageMeta[doc.getNumberOfPages()] = { eyebrow: "04", title: "Riscos & Recomendações" };
+        y = pageTitle(doc, CONTENT_TOP, "04  ·  Riscos & Recomendações",
+          "Riscos & Recomendações (cont.)");
+      }
+      const sCol = r.severity === "danger" ? BAD : r.severity === "warn" ? WARN : CHARCOAL;
+      const sLabel = r.severity === "danger" ? "CRÍTICO" : r.severity === "warn" ? "ATENÇÃO" : "OPORTUNIDADE";
+      // tag superior
       doc.setFont(FONT, "bold");
-      doc.setFontSize(9);
+      doc.setFontSize(7);
       setColor(doc, "text", GRAY);
-      doc.text(`RISCO ${String(i + 1).padStart(2, "0")}`, PAGE_MARGIN + 14, y + 14);
+      doc.text(`RISCO ${String(i + 1).padStart(2, "0")}`, PAGE_MARGIN, y);
+      doc.setFont(FONT, "bold");
+      setColor(doc, "text", sCol);
+      doc.text(sLabel, PAGE_MARGIN + 60, y);
       // título
       doc.setFont(FONT, "bold");
-      doc.setFontSize(11.5);
+      doc.setFontSize(12);
       setColor(doc, "text", INK);
-      doc.text(r.title, PAGE_MARGIN + 14, y + 30);
-      // grid: impacto / probabilidade
-      const colW = (w - PAGE_MARGIN * 2 - 28) / 3;
-      const labels = [
-        { l: "IMPACTO", v: r.impact },
-        { l: "PROBABILIDADE", v: r.probability },
-        { l: "RECOMENDAÇÃO", v: r.recommendation },
-      ];
-      labels.forEach((it, j) => {
-        const x = PAGE_MARGIN + 14 + j * colW;
+      const tLines = doc.splitTextToSize(r.title, w - PAGE_MARGIN * 2);
+      doc.text(tLines, PAGE_MARGIN, y + 14);
+      y += 14 + tLines.length * 14 + 2;
+
+      // métrica + impacto/probabilidade compactos
+      doc.setFont(FONT, "normal");
+      doc.setFontSize(8.5);
+      setColor(doc, "text", GRAY);
+      const metaParts: string[] = [];
+      if (r.metric) metaParts.push(r.metric);
+      metaParts.push(`Impacto: ${r.impact}`, `Probabilidade: ${r.probability}`);
+      doc.text(metaParts.join("   ·   "), PAGE_MARGIN, y);
+      y += 12;
+
+      // diagnóstico
+      doc.setFont(FONT, "bold");
+      doc.setFontSize(7.5);
+      setColor(doc, "text", GRAY);
+      doc.text("DIAGNÓSTICO", PAGE_MARGIN, y + 4);
+      y = paragraph(doc, y + 16, r.diagnosis, { size: 9.5, color: CHARCOAL });
+
+      // ações recomendadas
+      if (r.actions.length > 0) {
         doc.setFont(FONT, "bold");
-        doc.setFontSize(7);
+        doc.setFontSize(7.5);
         setColor(doc, "text", GRAY);
-        doc.text(it.l, x, y + 46);
-        doc.setFont(FONT, "normal");
-        doc.setFontSize(8.5);
-        setColor(doc, "text", CHARCOAL);
-        const ls = doc.splitTextToSize(it.v, colW - 8);
-        doc.text(ls.slice(0, 2), x, y + 58);
-      });
-      y += blockH + 10;
+        doc.text("AÇÕES RECOMENDADAS", PAGE_MARGIN, y + 4);
+        y += 16;
+        r.actions.forEach((a) => {
+          doc.setFont(FONT, "bold");
+          doc.setFontSize(9.5);
+          setColor(doc, "text", INK);
+          const aT = doc.splitTextToSize(`•  ${a.title}`, w - PAGE_MARGIN * 2 - 10);
+          doc.text(aT, PAGE_MARGIN + 4, y);
+          y += aT.length * 12;
+          if (a.detail) {
+            doc.setFont(FONT, "normal");
+            doc.setFontSize(8.8);
+            setColor(doc, "text", CHARCOAL);
+            const aD = doc.splitTextToSize(a.detail, w - PAGE_MARGIN * 2 - 20);
+            doc.text(aD, PAGE_MARGIN + 14, y);
+            y += aD.length * 11 + 2;
+          }
+        });
+      }
+
+      // divisor
+      setColor(doc, "draw", LIGHT);
+      doc.setLineWidth(0.4);
+      doc.line(PAGE_MARGIN, y + 6, w - PAGE_MARGIN, y + 6);
+      y += 20;
     });
   }
 
@@ -891,14 +934,12 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   } else {
     priorities.forEach((p, i) => {
       const blockH = 110;
-      // Número grande à esquerda
       doc.setFont(FONT, "bold");
       doc.setFontSize(48);
       setColor(doc, "text", LIGHT);
       doc.text(`#${i + 1}`, PAGE_MARGIN, y + 50);
 
       const xText = PAGE_MARGIN + 70;
-      // título
       doc.setFont(FONT, "bold");
       doc.setFontSize(7);
       setColor(doc, "text", GRAY);
@@ -908,7 +949,6 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
       setColor(doc, "text", INK);
       const tLines = doc.splitTextToSize(p.title, w - xText - PAGE_MARGIN);
       doc.text(tLines.slice(0, 2), xText, y + 30);
-      // detalhes grid
       const metaY = y + 60;
       const metaCols = [
         { l: "BENEFÍCIO ESTIMADO", v: p.benefit },
@@ -927,14 +967,12 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
         setColor(doc, "text", INK);
         doc.text(m.v, x, metaY + 14);
       });
-      // descrição
       doc.setFont(FONT, "normal");
       doc.setFontSize(9.5);
       setColor(doc, "text", CHARCOAL);
       const dLines = doc.splitTextToSize(p.description, w - xText - PAGE_MARGIN);
       doc.text(dLines.slice(0, 2), xText, y + 90);
 
-      // divisor
       setColor(doc, "draw", LIGHT);
       doc.setLineWidth(0.4);
       doc.line(PAGE_MARGIN, y + blockH + 6, w - PAGE_MARGIN, y + blockH + 6);
@@ -943,70 +981,27 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
     });
   }
 
-  // ── PÁGINA 7 — RECOMENDAÇÕES (formato consultoria) ─────────────────
-  if (prescriptive.length > 0) {
-    doc.addPage();
-    pageMeta[doc.getNumberOfPages()] = { eyebrow: "06", title: "Recomendações" };
-    y = pageTitle(doc, CONTENT_TOP, "06  ·  Recomendações",
-      "Recomendações Estratégicas",
-      "Análise problema-diagnóstico-impacto-ação, ordenada por severidade.");
-
-    const sevOrder: Record<string, number> = { danger: 0, warn: 1, info: 2, ok: 3 };
-    const sorted = [...prescriptive].sort((a, b) =>
-      (sevOrder[a.severity] ?? 9) - (sevOrder[b.severity] ?? 9)).slice(0, 6);
-
-    sorted.forEach((c) => {
-      if (y > doc.internal.pageSize.getHeight() - 180) {
-        doc.addPage();
-        pageMeta[doc.getNumberOfPages()] = { eyebrow: "06", title: "Recomendações" };
-        y = pageTitle(doc, CONTENT_TOP, "06  ·  Recomendações", "Recomendações Estratégicas (cont.)");
+  // ── PÁGINA 7 — DIAGNÓSTICO EXECUTIVO IA (opcional) ─────────────────
+  // Renderizada apenas se IA estiver configurada. Reaproveita cache do
+  // hook `useDiagnosticoIA` quando existe; senão tenta gerar uma vez.
+  const aiCfg = loadConfig();
+  if (isAIConfigured(aiCfg)) {
+    try {
+      const briefing = buildBriefing(state, dre, ind);
+      const cacheKey = `${PROMPT_VERSION}::${aiCfg.provider}::${aiCfg.model}::${briefingCacheKey(briefing)}`;
+      let diag: DiagnosticoResult | null = getCached(cacheKey);
+      if (!diag) {
+        diag = await gerarDiagnostico(briefing, aiCfg);
+        setCached(cacheKey, diag);
       }
-      const sLabel = c.severity === "danger" ? "CRÍTICO" : c.severity === "warn" ? "ATENÇÃO"
-        : c.severity === "info" ? "OPORTUNIDADE" : "OK";
-      const sCol = c.severity === "danger" ? BAD : c.severity === "warn" ? WARN
-        : c.severity === "info" ? CHARCOAL : OK;
-      // tag
-      doc.setFont(FONT, "bold");
-      doc.setFontSize(7);
-      setColor(doc, "text", sCol);
-      doc.text(sLabel, PAGE_MARGIN, y);
-      // problema
-      doc.setFont(FONT, "bold");
-      doc.setFontSize(12);
-      setColor(doc, "text", INK);
-      const pLines = doc.splitTextToSize(c.problem, w - PAGE_MARGIN * 2);
-      doc.text(pLines, PAGE_MARGIN, y + 14);
-      y += 14 + pLines.length * 14 + 4;
-      // diagnóstico
-      doc.setFont(FONT, "bold");
-      doc.setFontSize(8);
-      setColor(doc, "text", GRAY);
-      doc.text("DIAGNÓSTICO", PAGE_MARGIN, y);
-      y = paragraph(doc, y + 12, c.cause, { size: 9.5, color: CHARCOAL });
-      y += 4;
-      // ações
-      if (c.actions.length > 0) {
-        doc.setFont(FONT, "bold");
-        doc.setFontSize(8);
-        setColor(doc, "text", GRAY);
-        doc.text("AÇÕES RECOMENDADAS", PAGE_MARGIN, y);
-        y += 12;
-        c.actions.forEach((a) => {
-          doc.setFont(FONT, "normal");
-          doc.setFontSize(9.5);
-          setColor(doc, "text", CHARCOAL);
-          const aLines = doc.splitTextToSize(`•  ${a.title}`, w - PAGE_MARGIN * 2 - 10);
-          doc.text(aLines, PAGE_MARGIN + 4, y);
-          y += aLines.length * 13;
-        });
-      }
-      // divisor
-      setColor(doc, "draw", LIGHT);
-      doc.setLineWidth(0.4);
-      doc.line(PAGE_MARGIN, y + 8, w - PAGE_MARGIN, y + 8);
-      y += 22;
-    });
+      renderDiagnosticoIA(doc, diag);
+    } catch (err) {
+      console.warn("[pdfExport] Diagnóstico IA falhou:", err);
+      // segue sem a página — não bloqueia o PDF
+    }
   }
+
+
 
   // ════════════════════════════════════════════════════════════════════
   // APÊNDICE
