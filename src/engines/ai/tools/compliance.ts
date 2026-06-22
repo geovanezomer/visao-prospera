@@ -8,6 +8,11 @@ import {
   compareYearsForRegime,
   resolveEffectiveRegime,
 } from "@/engines/finance";
+import {
+  analyzeCovenants,
+  covenantsToMarkdown,
+  type CovenantSpec,
+} from "@/engines/finance/covenants";
 import { brl, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
 const defs: ToolDef[] = [
@@ -53,6 +58,33 @@ const defs: ToolDef[] = [
     description:
       "Calcula o impacto do Split Payment no fluxo de caixa e necessidade de capital de giro. O Split Payment retém o tributo no momento do pagamento eliminando o float atual. Use quando o consultor perguntar sobre impacto da reforma no caixa.",
     parameters: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "analisar_covenants",
+    description:
+      "Avalia covenants contratuais (DSCR, Dívida/EBITDA, Liquidez Corrente, D/PL) com semáforo verde/amarelo/vermelho, score de risco 0–10 (BAIXO→CRÍTICO) e timeline estimada de default (mês em que o caixa cruza zero). Use quando o consultor perguntar sobre risco de quebra de covenant, urgência de ação ou avaliação de risco de crédito. Aceita covenants customizados via 'contratos' ou usa padrões bancários PME se omitido. Cenário 'simulado' considera as alavancas ativas.",
+    parameters: {
+      type: "object",
+      properties: {
+        contratos: {
+          type: "object",
+          description:
+            "Limites contratuais. Omita campos para usar defaults (dscrMin=1.25, dEbitdaMax=3.0, liqCorrMin=1.5, dPlMax=2.0).",
+          properties: {
+            dscrMin: { type: "number" },
+            dEbitdaMax: { type: "number" },
+            liqCorrMin: { type: "number" },
+            dPlMax: { type: "number" },
+          },
+        },
+        cenario: {
+          type: "string",
+          enum: ["base", "simulado"],
+          description: "Default 'base'. 'simulado' aplica as alavancas ativas.",
+        },
+      },
+      required: [],
+    },
   },
 ];
 
@@ -159,6 +191,14 @@ const handlers: Record<string, ToolHandler> = {
       ``,
       `> _Impacto estimado para regime ${regime} — Split Payment entra na transição 2027-2032 conforme LC 214/2025._`,
     ].join("\n");
+  },
+
+  analisar_covenants: (args, { state, simulatedState }) => {
+    const cenario = (args?.cenario as "base" | "simulado") || "base";
+    const target = cenario === "simulado" ? (simulatedState ?? state) : state;
+    const spec = (args?.contratos as CovenantSpec | undefined) ?? {};
+    const res = analyzeCovenants(target, spec, cenario);
+    return covenantsToMarkdown(res);
   },
 };
 
