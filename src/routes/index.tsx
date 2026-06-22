@@ -33,7 +33,10 @@ import {
 } from "@/engines/finance/simulator";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Presentation, X, FileText } from "lucide-react";
+import { RotateCcw, Presentation, X, FileText, Printer } from "lucide-react";
+import { exportFinancePDF } from "@/lib/pdfExport";
+import { buildFinancialModel } from "@/engines/finance/financialModel";
+import { toast } from "sonner";
 import { TaxSettingsDialog } from "@/components/sim/tax/TaxSettingsDialog";
 import { Badge } from "@/components/ui/badge";
 import { CalculadorasTab } from "@/components/calculadoras/CalculadorasTab";
@@ -263,6 +266,26 @@ function SimulaPro() {
                     ) : (
                       <Presentation className="h-3.5 w-3.5" />
                     )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={async () => {
+                      try {
+                        toast.loading("Gerando PDF…", { id: "pdf-export" });
+                        const model = buildFinancialModel(state);
+                        await exportFinancePDF({ state, model });
+                        toast.success("PDF gerado com sucesso", { id: "pdf-export" });
+                      } catch (err) {
+                        console.error("[pdf-export] falhou:", err);
+                        toast.error("Falha ao gerar PDF", { id: "pdf-export" });
+                      }
+                    }}
+                    title="Exportar relatório em PDF"
+                    aria-label="Exportar PDF"
+                  >
+                    <Printer className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     size="sm"
