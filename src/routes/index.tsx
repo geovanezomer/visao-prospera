@@ -335,47 +335,49 @@ function SimulaPro() {
                   e que componentes consumidos fora do FinanceProvider exibam
                   fallback amigável em vez de tela branca. */}
                 <FinanceErrorBoundary>
-                  {activeTab === "ai" ? (
-                    <AIView
-                      state={state}
-                      simulatedState={simulatedState}
-                      simActive={simActive}
-                      simParams={simParams}
-                    />
-                  ) : activeTab === "calculadoras" ? (
-                    <div className="animate-in fade-in duration-500">
-                      <CalculadorasTab />
-                    </div>
-                  ) : (
-                    <div className="space-y-6 animate-in fade-in duration-500">
-                      {activeTab === "receitas" && <RevenueTab />}
-                      {activeTab === "custos" && <CostsTab />}
-                      {activeTab === "capital" && <CapitalTab />}
-                      {activeTab === "tributos" && <TaxTab />}
-                      {activeTab === "caixa" && <CashflowTab />}
-                      {activeTab === "governanca" && <StrategicTab />}
-                      {activeTab === "dre" && <DRETab />}
-                      {activeTab === "balanco" && <BalancoTab />}
-                      {activeTab === "indicadores" && <IndicatorsTab />}
-                      {activeTab === "resultados" && <DiagnosisTab />}
-                      {activeTab === "dashboard" && <DashboardTab />}
-                      {activeTab === "simulador" && (
-                        <SimulatorTab
-                          state={state}
-                          apply={update}
-                          params={simParams}
-                          setParams={setSimParams}
-                        />
-                      )}
-                      {activeTab === "valuation" && (
-                        <ValuationTab
-                          baseState={state}
-                          simulatedState={simulatedState}
-                          simActive={simActive}
-                        />
-                      )}
-                    </div>
-                  )}
+                  <Suspense fallback={<TabLoading />}>
+                    {activeTab === "ai" ? (
+                      <AIView
+                        state={state}
+                        simulatedState={simulatedState}
+                        simActive={simActive}
+                        simParams={simParams}
+                      />
+                    ) : activeTab === "calculadoras" ? (
+                      <div className="animate-in fade-in duration-500">
+                        <CalculadorasTab />
+                      </div>
+                    ) : (
+                      <div className="space-y-6 animate-in fade-in duration-500">
+                        {activeTab === "receitas" && <RevenueTab />}
+                        {activeTab === "custos" && <CostsTab />}
+                        {activeTab === "capital" && <CapitalTab />}
+                        {activeTab === "tributos" && <TaxTab />}
+                        {activeTab === "caixa" && <CashflowTab />}
+                        {activeTab === "governanca" && <StrategicTab />}
+                        {activeTab === "dre" && <DRETab />}
+                        {activeTab === "balanco" && <BalancoTab />}
+                        {activeTab === "indicadores" && <IndicatorsTab />}
+                        {activeTab === "resultados" && <DiagnosisTab />}
+                        {activeTab === "dashboard" && <DashboardTab />}
+                        {activeTab === "simulador" && (
+                          <SimulatorTab
+                            state={state}
+                            apply={update}
+                            params={simParams}
+                            setParams={setSimParams}
+                          />
+                        )}
+                        {activeTab === "valuation" && (
+                          <ValuationTab
+                            baseState={state}
+                            simulatedState={simulatedState}
+                            simActive={simActive}
+                          />
+                        )}
+                      </div>
+                    )}
+                  </Suspense>
                 </FinanceErrorBoundary>
               </div>
             </main>
