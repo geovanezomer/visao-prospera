@@ -600,20 +600,22 @@ function renderBalancoPadrao(
   type Grp = { titulo: string; linhas: Linha[] };
 
   const ac = b.ativoCirculante ?? {};
+  const inv = b.ativoNaoCirculante?.investimentos ?? 0;
   const im = b.ativoNaoCirculante?.imobilizado ?? {};
   const it = b.ativoNaoCirculante?.intangivel ?? {};
   const pc = b.passivoCirculante ?? {};
   const pnc = b.passivoNaoCirculante ?? {};
   const pl = b.patrimonioLiquido ?? {};
 
+  // Estrutura "Padrão" da tela do sistema (BalancoTab.tsx) — rubricas essenciais.
   const ativoGrupos: Grp[] = [
-    { titulo: "Ativo Circulante", linhas: [
+    { titulo: "ATIVO CIRCULANTE", linhas: [
       { label: "Caixa e equivalentes", v: ac.caixaEquivalentes ?? 0 },
       { label: "Contas a receber de clientes", v: ac.contasReceberClientes ?? 0 },
       { label: "Estoques", v: ac.estoques ?? 0 },
       { label: "Impostos a recuperar", v: ac.impostosRecuperar ?? 0 },
     ]},
-    { titulo: "Ativo Não Circulante — Imobilizado", linhas: [
+    { titulo: "ATIVO NÃO CIRCULANTE — IMOBILIZADO", linhas: [
       { label: "Terrenos", v: im.terrenos ?? 0 },
       { label: "Edificações", v: im.edificacoes ?? 0 },
       { label: "Máquinas e equipamentos", v: im.maquinasEquipamentos ?? 0 },
@@ -622,23 +624,28 @@ function renderBalancoPadrao(
       { label: "Outros (inclui CAPEX do período)", v: im.outrosImobilizados ?? 0 },
       { label: "(−) Depreciação acumulada", v: im.depreciacaoAcumulada ?? 0, redutora: true },
     ]},
-    { titulo: "Ativo Não Circulante — Intangível", linhas: [
+    { titulo: "ATIVO NÃO CIRCULANTE — INTANGÍVEL", linhas: [
       { label: "Marcas e patentes", v: it.marcasPatentes ?? 0 },
       { label: "(−) Amortização acumulada", v: it.amortizacaoAcumulada ?? 0, redutora: true },
     ]},
   ];
+  // Investimentos como linha avulsa só se houver valor
+  if (inv > 0) {
+    ativoGrupos.splice(1, 0, { titulo: "ATIVO NÃO CIRCULANTE — INVESTIMENTOS",
+      linhas: [{ label: "Investimentos", v: inv }] });
+  }
 
   const passivoGrupos: Grp[] = [
-    { titulo: "Passivo Circulante", linhas: [
+    { titulo: "PASSIVO CIRCULANTE", linhas: [
       { label: "Fornecedores", v: pc.fornecedores ?? 0 },
       { label: "Empréstimos e financiamentos CP", v: pc.emprestimosFinanciamentosCP ?? 0 },
       { label: "Impostos a pagar", v: pc.impostosPagar ?? 0 },
       { label: "Salários e encargos", v: pc.salariosEncargos ?? 0 },
     ]},
-    { titulo: "Passivo Não Circulante", linhas: [
+    { titulo: "PASSIVO NÃO CIRCULANTE", linhas: [
       { label: "Empréstimos e financiamentos LP", v: pnc.emprestimosFinanciamentosLP ?? 0 },
     ]},
-    { titulo: "Patrimônio Líquido", linhas: [
+    { titulo: "PATRIMÔNIO LÍQUIDO", linhas: [
       { label: "Capital social", v: pl.capitalSocial ?? 0 },
       { label: "Reservas de capital", v: pl.reservasCapital ?? 0 },
       { label: "Lucros/prejuízos acumulados (abertura)", v: pl.lucrosPrejuizosAcumulados ?? 0 },
@@ -646,7 +653,6 @@ function renderBalancoPadrao(
     ]},
   ];
 
-  // Monta corpo achatado: cabeçalho de grupo (linha cinza) + linhas + subtotal.
   type Row = { type: "grp" | "lin" | "sub" | "tot"; label: string; v?: number };
   const buildRows = (grupos: Grp[], totalLabel: string, totalVal: number): Row[] => {
     const out: Row[] = [];
@@ -667,36 +673,36 @@ function renderBalancoPadrao(
   const ativoRows = buildRows(ativoGrupos, "TOTAL DO ATIVO", totals.ativo);
   const passivoRows = buildRows(passivoGrupos, "TOTAL DO PASSIVO + PL", totals.passivo + totals.pl);
 
-  // Duas colunas lado a lado: ATIVO | PASSIVO + PL
   const pageW = doc.internal.pageSize.getWidth();
-  const colW = (pageW - MARGIN_X * 2 - 8) / 2;
 
-  const renderCol = (rows: Row[], x: number, title: string, accent: [number, number, number]) => {
+  // Renderiza UMA tabela full-width com cabeçalho de seção (ATIVO / PASSIVO+PL).
+  // Mais legível que duas colunas estreitas — labels não quebram.
+  const renderFullTable = (rows: Row[], y0: number, sectionTitleText: string): number => {
     autoTable(doc, {
-      startY: yStart,
-      head: [[title]],
+      startY: y0,
+      head: [[sectionTitleText, "Valor"]],
       body: rows.map((r) => [
-        r.type === "grp" ? r.label : `  ${r.label}`,
+        r.type === "lin" ? `    ${r.label}` : r.label,
         r.v !== undefined ? fmtBRL(r.v) : "",
       ]),
-      margin: { left: x, right: pageW - x - colW, top: CONTENT_TOP, bottom: 50 },
-      tableWidth: colW,
-      styles: { font: "helvetica", fontSize: 8.5, cellPadding: 3,
-        textColor: COLOR.textDark, lineColor: COLOR.rule, lineWidth: 0.3 },
-      headStyles: { fillColor: accent, textColor: [255, 255, 255],
+      margin: { left: MARGIN_X, right: MARGIN_X, top: CONTENT_TOP, bottom: 50 },
+      styles: { font: "helvetica", fontSize: 9, cellPadding: 4,
+        textColor: COLOR.textDark, lineColor: COLOR.rule, lineWidth: 0.3, valign: "middle" },
+      headStyles: { fillColor: COLOR.headerBg, textColor: COLOR.headerFg,
         fontStyle: "bold", fontSize: 10, halign: "left" },
-      columnStyles: { 0: { halign: "left" }, 1: { halign: "right", cellWidth: 80 } },
+      columnStyles: { 0: { halign: "left" }, 1: { halign: "right", cellWidth: 120, fontStyle: "bold" } },
       didParseCell: (data) => {
         if (data.section !== "body") return;
         const r = rows[data.row.index];
         if (!r) return;
         if (r.type === "grp") {
           data.cell.styles.fontStyle = "bold";
-          data.cell.styles.fillColor = COLOR.totalBg;
+          data.cell.styles.fillColor = [226, 232, 240]; // slate-200
           data.cell.styles.textColor = COLOR.textDark;
+          data.cell.styles.fontSize = 9;
         } else if (r.type === "sub") {
           data.cell.styles.fontStyle = "bold";
-          data.cell.styles.fillColor = [248, 250, 252];
+          data.cell.styles.fillColor = COLOR.totalBg;
         } else if (r.type === "tot") {
           data.cell.styles.fontStyle = "bold";
           data.cell.styles.fillColor = COLOR.headerBg;
@@ -706,14 +712,13 @@ function renderBalancoPadrao(
       },
     });
     // @ts-expect-error — runtime
-    return doc.lastAutoTable?.finalY ?? yStart;
+    return (doc.lastAutoTable?.finalY ?? y0) + 10;
   };
 
-  const yAtivo = renderCol(ativoRows, MARGIN_X, "ATIVO", COLOR.ok);
-  const yPassivo = renderCol(passivoRows, MARGIN_X + colW + 8, "PASSIVO + PATRIMÔNIO LÍQUIDO", COLOR.danger);
-  let y = Math.max(yAtivo, yPassivo) + 12;
+  let y = renderFullTable(ativoRows, yStart, "ATIVO");
+  y = renderFullTable(passivoRows, y, "PASSIVO + PATRIMÔNIO LÍQUIDO");
 
-  // Validação de fechamento
+  // Validação de fechamento (faixa discreta)
   const okStr = totals.fechado ? "BALANÇO FECHADO POR CONSTRUÇÃO" : "DIFERENÇA RESIDUAL";
   const color = totals.fechado ? COLOR.ok : COLOR.warn;
   doc.setFillColor(...color);
