@@ -29,6 +29,7 @@ import {
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StatCard } from "@/components/sim/shared/primitives";
 import { AuditoriaPanel } from "./AuditoriaPanel";
 
 type Modo = "padrao" | "completo";
