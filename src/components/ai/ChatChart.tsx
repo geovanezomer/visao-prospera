@@ -33,7 +33,7 @@ type FormatKind = "currency" | "percent" | "number";
 interface ChartSpec {
   type: ChartType;
   title?: string;
-  data: Array<Record<string, number | string>>;
+  data: Array<Record<string, number | string | boolean>>;
   keys?: string[];
   labelKey?: string;
   format?: FormatKind;
