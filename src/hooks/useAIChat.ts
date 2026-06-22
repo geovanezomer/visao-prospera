@@ -769,19 +769,31 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       key: "cfo",
       label: "🧭 CFO Estratégico",
       instr:
-        "Recomendação direta: 1 tese, 2-3 alavancas com impacto em R$ (EBITDA/FCF/EV). Máx 120 palavras.",
+        "Recomendação direta: 1 tese, 2-3 alavancas com impacto em R$ (EBITDA/FCF/EV). Máx 120 palavras. " +
+        "**Obrigatório** encerrar com bloco `**📎 Fontes:**` em bullets curtos: " +
+        "(a) tools usadas com o número citado — ex. `get_indicadores → EBITDA R$ 120k`; " +
+        "(b) benchmark interno (P25/P50/P75 via `comparar_com_setor`) quando comparar margens/giro; " +
+        "(c) fórmulas aplicadas — ex. `Alavanca = ΔEBITDA × múltiplo EV/EBITDA`, `FCF = EBITDA − Capex − ΔNCG − IR`.",
     },
     {
       key: "tributarista",
       label: "📋 Contador Tributarista",
       instr:
-        "Avalie a pergunta sob a ótica fiscal: impacto em Fator R, Simples/Presumido/Real, CBS/IBS e riscos de compliance. 2-3 pontos com número. Máx 120 palavras.",
+        "Avalie a pergunta sob a ótica fiscal: impacto em Fator R, Simples/Presumido/Real, CBS/IBS e riscos de compliance. 2-3 pontos com número. Máx 120 palavras. " +
+        "**Obrigatório** encerrar com bloco `**📎 Fontes:**` em bullets: " +
+        "(a) tools — ex. `get_regime_tributario`, `get_eras_reforma`, `simular_transicao_reforma`; " +
+        "(b) base legal — ex. `LC 123/2006 art. 18` (Fator R), `LC 214/2025` (CBS/IBS), `RFB IN 2.121/22`; " +
+        "(c) fórmulas — ex. `Fator R = Folha 12m / RBT12`, `CBS+IBS pleno ≈ 26,5% s/ base ampla`.",
     },
     {
       key: "controller",
       label: "📈 Economista / Valuation",
       instr:
-        "Avalie a pergunta sob a ótica de valor: impacto em ROIC vs WACC, EV (R$ e múltiplo) e risco do retorno. Use get_valuation. 2-3 pontos. Máx 120 palavras.",
+        "Avalie a pergunta sob a ótica de valor: impacto em ROIC vs WACC, EV (R$ e múltiplo) e risco do retorno. Use get_valuation. 2-3 pontos. Máx 120 palavras. " +
+        "**Obrigatório** encerrar com bloco `**📎 Fontes:**` em bullets: " +
+        "(a) tools — ex. `get_valuation`, `get_wacc`, `get_indicadores`; " +
+        "(b) múltiplos de benchmark setorial (P25/P50/P75 EV/EBITDA via `comparar_com_setor`); " +
+        "(c) fórmulas — ex. `WACC = wE·Ke + wD·Kd·(1−t)`, `EV = EBITDA × múltiplo`, `Spread = ROIC − WACC`.",
     },
   ];
 
@@ -862,7 +874,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       setMessages((prev) => [...prev, synthPlaceholder]);
       const synthPrompt = `Você é o secretário do conselho. As 3 vozes responderam à pergunta: "${q}".\n\n${outputs
         .map((o) => `## ${o.label}\n${o.text}`)
-        .join("\n\n")}\n\nProduza em **máx. 150 palavras**:\n1. **Consenso** — onde os 3 concordam (1-2 bullets).\n2. **Divergência** — onde discordam (1-2 bullets, dizendo qual voz defende cada lado).\n3. **Recomendação final** — placar (ex.: "2 de 3 recomendam X") + a decisão executiva sugerida com 1 número de impacto.`;
+        .join("\n\n")}\n\nProduza em **máx. 180 palavras**:\n1. **Consenso** — onde os 3 concordam (1-2 bullets).\n2. **Divergência** — onde discordam (1-2 bullets, dizendo qual voz defende cada lado).\n3. **Recomendação final** — placar (ex.: "2 de 3 recomendam X") + decisão executiva sugerida com 1 número de impacto.\n4. **📎 Trilha de auditoria** — consolide as fontes citadas pelas 3 vozes em um bloco único, agrupado por tipo: **Tools** (lista deduplicada com o número/output principal), **Benchmark** (P25/P50/P75 citados), **Base legal** (artigos/LCs), **Fórmulas** (expressões usadas). Cite a voz responsável entre parênteses quando houver divergência de número.`;
       let acc = "### 🧩 Síntese do Conselho\n\n";
       updateByTs(synthTs, acc);
       try {
