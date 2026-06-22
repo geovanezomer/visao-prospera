@@ -315,7 +315,16 @@ export async function chatWithTools(
       const { asOpenAITools, asAnthropicTools, asOpenAIMetaTools, asAnthropicMetaTools } =
         await import("./tools");
       const openAiTools = useMeta ? asOpenAIMetaTools() : asOpenAITools();
-      const anthropicTools = useMeta ? asAnthropicMetaTools() : asAnthropicTools();
+      const anthropicToolsRaw = useMeta ? asAnthropicMetaTools() : asAnthropicTools();
+      // Cache de tools: marca a ÚLTIMA tool com cache_control para que
+      // todo o catálogo de tools entre no prefixo cacheado da requisição.
+      const anthropicTools = anth
+        ? anthropicToolsRaw.map((t, idx) =>
+            idx === anthropicToolsRaw.length - 1
+              ? { ...t, cache_control: { type: "ephemeral" as const } }
+              : t,
+          )
+        : anthropicToolsRaw;
 
       const url = anth ? `${cfg.baseUrl}/messages` : `${cfg.baseUrl}/chat/completions`;
       let body: Record<string, unknown>;
