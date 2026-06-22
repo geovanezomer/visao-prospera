@@ -203,3 +203,11 @@ export function getSimplesTable(tax: TaxConfig, anexo: SimplesAnexo): SimplesFai
 export function getPresumidoBases(tax: TaxConfig, business: BusinessType): PresumidoBases {
   return ov(tax)?.presumidoBases?.[business] ?? PRESUMIDO_BASES_DEFAULT[business];
 }
+
+/** [CBS/IBS] Alíquota CBS plena (%) — lê `tax.cbsAliquota` ou cai no default oficial. */
+export const getCbsAliquota = (tax: TaxConfig): number =>
+  pick(tax.cbsAliquota, CBS_ALIQUOTA_PLENA);
+
+/** [CBS/IBS] Alíquota IBS plena de referência (%) — lê `tax.ibsAliquotaRef` ou cai no default oficial. */
+export const getIbsAliquotaRef = (tax: TaxConfig): number =>
+  pick(tax.ibsAliquotaRef, IBS_ALIQUOTA_PLENA);
