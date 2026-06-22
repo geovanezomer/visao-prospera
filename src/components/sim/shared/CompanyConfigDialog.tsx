@@ -167,6 +167,7 @@ export function CompanyConfigForm({
     state.ramoAtuacao,
     state.benchmarkCustom,
     state.numColaboradores,
+    state.numSocios,
     state.headcountRange,
     state.periodoAnaliseMeses,
     state.fiscalYearStartMonth,
