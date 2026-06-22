@@ -57,7 +57,7 @@ export function buildOpeningBriefing(state: AppState, sections?: SnapshotSection
     }
 
     // 3) Margem EBITDA vs setor
-    const sector = findSector(state.businessType);
+    const sector = resolveBenchmark(state);
     if (sector && Number.isFinite(ind.margemEbitda)) {
       const delta = ind.margemEbitda - sector.margemEbitda.p50;
       if (delta < -2) {
