@@ -85,6 +85,59 @@ export async function listModels(cfg: AIConfig): Promise<string[]> {
 }
 
 // ============================================================
+// Telemetria de PROMPT CACHING (Anthropic)
+// ------------------------------------------------------------
+// A resposta Anthropic devolve em `usage`:
+//   - input_tokens: tokens novos processados (NÃO vieram do cache)
+//   - cache_creation_input_tokens: tokens escritos no cache (custo 1,25×)
+//   - cache_read_input_tokens: tokens lidos do cache (custo 0,10×)  ← economia
+//   - output_tokens
+// Loga no console e dispara evento "ai:cache-usage" para a UI consumir.
+// ============================================================
+export interface CacheUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_input_tokens: number;
+  cache_read_input_tokens: number;
+  /** % do input que veio do cache (0-100). */
+  hitRatio: number;
+  /** Contexto: "stream" | "tools" | etc. */
+  source: string;
+}
+
+function reportCacheUsage(raw: unknown, source: string): void {
+  if (!raw || typeof raw !== "object") return;
+  const u = raw as Record<string, unknown>;
+  const input = Number(u.input_tokens) || 0;
+  const output = Number(u.output_tokens) || 0;
+  const create = Number(u.cache_creation_input_tokens) || 0;
+  const read = Number(u.cache_read_input_tokens) || 0;
+  const totalIn = input + create + read;
+  const hit = totalIn > 0 ? (read / totalIn) * 100 : 0;
+  const usage: CacheUsage = {
+    input_tokens: input,
+    output_tokens: output,
+    cache_creation_input_tokens: create,
+    cache_read_input_tokens: read,
+    hitRatio: Number(hit.toFixed(1)),
+    source,
+  };
+  // Log conciso só quando há sinal de cache (escrita ou leitura).
+  if (create > 0 || read > 0) {
+    console.info(
+      `[ai/cache] ${source} | in=${input} create=${create} read=${read} out=${output} hit=${usage.hitRatio}%`,
+    );
+  }
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(new CustomEvent("ai:cache-usage", { detail: usage }));
+    } catch {
+      // ignora ambientes sem CustomEvent
+    }
+  }
+}
+
+// ============================================================
 // Helpers Anthropic — converte do nosso formato unificado.
 // ============================================================
 /**
