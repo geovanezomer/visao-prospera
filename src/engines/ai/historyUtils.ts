@@ -92,10 +92,15 @@ export function compressHistory(
 }
 
 /**
- * Monta o array final para o LLM: [system, ...históricoComprimido].
+ * Monta o array final para o LLM: [system(s), ...históricoComprimido].
+ * `systemPrompt` pode ser:
+ * - string: emite uma única mensagem system (sem cache).
+ * - { stable, dynamic }: emite DUAS mensagens system na ordem
+ *   estável→dinâmica, marcando a estável com `cache: true` para
+ *   habilitar prompt caching no Anthropic.
  */
 export function buildLlmMessages(opts: {
-  systemPrompt: string;
+  systemPrompt: string | { stable: string; dynamic: string };
   history: ChatMessage[];
   forTools: boolean;
   lastUserContent: string | unknown[];
@@ -107,5 +112,14 @@ export function buildLlmMessages(opts: {
     lastUserContent: opts.lastUserContent,
   });
   const compressed = compressHistory(llmHistory, opts.maxHistoryTokens);
-  return [{ role: "system", content: opts.systemPrompt }, ...compressed];
+  const sys: LLMMessage[] =
+    typeof opts.systemPrompt === "string"
+      ? [{ role: "system", content: opts.systemPrompt }]
+      : [
+          { role: "system", content: opts.systemPrompt.stable, cache: true },
+          ...(opts.systemPrompt.dynamic
+            ? [{ role: "system" as const, content: opts.systemPrompt.dynamic }]
+            : []),
+        ];
+  return [...sys, ...compressed];
 }
