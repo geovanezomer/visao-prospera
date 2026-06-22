@@ -5,7 +5,7 @@
 import type { AppState } from "@/engines/finance/types";
 import { findSector, listSectors, rank, resolveBenchmark, type SectorBenchmark } from "@/engines/benchmark/sectors";
 import { buildDRE, calcIndicators, resolveEffectiveRegime } from "@/engines/finance";
-import { type ToolDef, type ToolHandler, type ToolModule } from "./shared";
+import { type ToolArgs, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
 // Recomendação acionável por indicador quando abaixo do P50.
 function recommend(label: string, gap: number, unit: string): string {
