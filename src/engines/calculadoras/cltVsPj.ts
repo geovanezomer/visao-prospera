@@ -227,7 +227,13 @@ export function calcularPJ(regime: RegimePJ, i: CltVsPjInputParsed): ResultadoPJ
   // Impostos:
   //  - MEI: DAS fixo mensal
   //  - Simples Nacional: alíquota efetiva calculada pela tabela progressiva do Anexo III
-  //  - Lucro Presumido: alíquota efetiva consolidada (~16,33%)
+  //  - Lucro Presumido: alíquota efetiva consolidada (~16,33%) MAIS o
+  //    Adicional IRPJ de 10% sobre a parcela do lucro presumido (32% do
+  //    faturamento, para serviços) que exceder o gatilho mensal (R$ 20.000
+  //    por padrão). Tanto a alíquota quanto o gatilho são configuráveis no
+  //    input (espelhando as "Federais" das configurações do sistema) e
+  //    podem ser zerados para refletir decisões judiciais que afastem o
+  //    adicional para o segmento.
   let aliquotaEfetiva: number;
   let impostosMensal: number;
   if (regime === "mei") {
@@ -237,8 +243,11 @@ export function calcularPJ(regime: RegimePJ, i: CltVsPjInputParsed): ResultadoPJ
     aliquotaEfetiva = aliquotaSimplesAnexoIII(fat);
     impostosMensal = Math.round(fat * aliquotaEfetiva * 100) / 100;
   } else {
-    aliquotaEfetiva = params.aliquotaImpostos;
-    impostosMensal = Math.round(fat * aliquotaEfetiva * 100) / 100;
+    const consolidado = fat * params.aliquotaImpostos;
+    const baseIRPJ = fat * PRESUMIDO_BASE_IRPJ_SERVICOS;
+    const adicional = Math.max(0, baseIRPJ - i.irpjAdicionalGatilhoMensal) * i.irpjAdicionalPct;
+    impostosMensal = Math.round((consolidado + adicional) * 100) / 100;
+    aliquotaEfetiva = fat > 0 ? impostosMensal / fat : 0;
   }
 
   // Pró-labore: 28% do faturamento, mínimo 1 salário-mínimo (no MEI o pró-labore é opcional —
