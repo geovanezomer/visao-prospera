@@ -520,6 +520,9 @@ export interface AppState {
   /** Número de colaboradores (headcount). Base para indicadores de produtividade.
    *  Mantido por compatibilidade — preferir `headcountRange` no novo cadastro. */
   numColaboradores?: number;
+  /** Número de sócios/acionistas. Usado em diagnóstico de governança
+   *  (concentração societária, risco-chave, plano de sucessão). */
+  numSocios?: number;
 
   // ─── Cadastro estendido (Fase 2) ───────────────────────────────────────
   /** CNPJ (apenas dígitos ou formatado). Opcional. */
