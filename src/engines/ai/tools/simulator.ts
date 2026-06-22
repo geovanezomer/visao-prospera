@@ -190,6 +190,56 @@ const defs: ToolDef[] = [
       required: ["restricao"],
     },
   },
+  {
+    name: "sensibilidade_multivariada",
+    description:
+      "Análise de sensibilidade avançada em 3 modos:\n• 'tornado' — testa ±delta em CADA driver e ranqueia por IMPACTO ABSOLUTO em R$ (não só elasticidade); útil para priorizar alavancas (ex: 'qual move mais o EBITDA?').\n• 'joint' — aplica MÚLTIPLOS drivers SIMULTANEAMENTE para responder cenários compostos (ex: 'se receita cair 10% E folha subir 5%, o que acontece com caixa e EV?').\n• 'monte_carlo' — distribuição probabilística (P5/P25/Mediana/P75/P95) de EBITDA, lucro e caixa com correlações economicamente fundamentadas.\nSuporta múltiplos KPIs de saída simultaneamente (ebitda + caixa + ROIC).",
+    parameters: {
+      type: "object",
+      properties: {
+        metodo: {
+          type: "string",
+          enum: ["tornado", "joint", "monte_carlo"],
+          description: "Modo de análise. Default: 'tornado'.",
+        },
+        drivers: {
+          type: "array",
+          items: { type: "string", enum: ["preco", "volume", "cpv", "folha", "fixos", "juros"] },
+          description: "Drivers a testar (tornado/joint). Default: todos.",
+        },
+        delta_pct: {
+          type: "number",
+          description: "Δ% aplicado em cada driver no modo 'tornado'. Default: 10.",
+        },
+        cenario: {
+          type: "array",
+          description:
+            "Modo 'joint': lista de movimentos compostos. Ex: [{driver:'volume',deltaPct:-10},{driver:'folha',deltaPct:5}].",
+          items: {
+            type: "object",
+            properties: {
+              driver: {
+                type: "string",
+                enum: ["preco", "volume", "cpv", "folha", "fixos", "juros"],
+              },
+              deltaPct: { type: "number" },
+            },
+            required: ["driver", "deltaPct"],
+          },
+        },
+        outputs: {
+          type: "array",
+          items: { type: "string", enum: ["ebitda", "lucroLiquido", "saldoCaixa", "roic"] },
+          description: "KPIs a observar (tornado/joint). Default: ['ebitda','saldoCaixa'].",
+        },
+        iteracoes: {
+          type: "number",
+          description: "Modo 'monte_carlo': nº de iterações (default 1000, máx 5000).",
+        },
+      },
+      required: [],
+    },
+  },
 ];
 
 const handlers: Record<string, ToolHandler> = {
