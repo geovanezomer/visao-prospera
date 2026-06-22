@@ -266,7 +266,11 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                           <Bot className="h-4 w-4" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <AuditReport content={m.content} onCopy={handleCopy} />
+                          <AuditReport
+                            content={m.content}
+                            onCopy={handleCopy}
+                            onAction={(p) => void send(p)}
+                          />
                         </div>
                       </div>
                     );
