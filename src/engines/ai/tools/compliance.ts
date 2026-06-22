@@ -152,8 +152,9 @@ const handlers: Record<string, ToolHandler> = {
   },
 
   simular_split_payment: (args, { state }) => {
-    const anoInicio = Number(args?.ano_inicio) || 2027;
+    const anoInicio = Number(args?.ano_inicio) || state.tax.splitPaymentAnoInicio || 2027;
     const incluirCovenants = args?.incluir_covenants !== false;
+    const splitJaAtivo = state.tax.splitPaymentAtivo !== false; // default true
     const override =
       args?.prazos_override && typeof args.prazos_override === "object"
         ? (args.prazos_override as Record<string, number>)
@@ -207,6 +208,11 @@ const handlers: Record<string, ToolHandler> = {
 
     const out: string[] = [];
     out.push(`## Impacto do Split Payment — regime **${regime}** (a partir de ${anoInicio})`);
+    out.push(
+      splitJaAtivo
+        ? `> ✅ **Split Payment já está ATIVO neste cenário** (TaxConfig.splitPaymentAtivo=true). Os números de caixa/DSCR/NCG abaixo já refletem o lag 0 de CBS+IBS — o "float perdido" é a diferença vs. o mundo antigo, útil para comparação.`
+        : `> ⚠️ **Split Payment está DESLIGADO neste cenário** (TaxConfig.splitPaymentAtivo=false). O relatório abaixo dimensiona quanto caixa será permanentemente drenado quando o toggle for ativado.`,
+    );
     out.push(``);
     out.push(`### 1. Float tributário por rubrica`);
     out.push(`| Tributo | Carga mensal | Prazo atual | Float (R$) |`);

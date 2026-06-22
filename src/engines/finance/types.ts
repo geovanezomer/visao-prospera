@@ -426,6 +426,12 @@ export interface TaxConfig {
   // ----- Reforma Tributária (CBS/IBS) — EC 132/2023 + LC 214/2025 -----
   /** Era do sistema tributário aplicado ao cálculo. Default "atual". */
   era?: TaxEra;
+  /** Split Payment (LC 214/2025): retém CBS/IBS na liquidação financeira,
+   *  eliminando o float tributário. Default `true` — Lovable assume vigência
+   *  a partir de 2027. Desligar simula o "mundo antigo" com lag de 25–30 dias. */
+  splitPaymentAtivo?: boolean;
+  /** Ano em que o Split passa a valer. Apenas informativo (default 2027). */
+  splitPaymentAnoInicio?: number;
   /** Alíquota plena de CBS (federal) em %. Default 8,8 (referência MF/Senado). */
   cbsAliquota?: number;
   /** Alíquota plena de referência do IBS (estadual+municipal) em %. Default 17,7. */

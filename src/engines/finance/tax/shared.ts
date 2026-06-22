@@ -14,6 +14,9 @@ export interface MonthlyTax {
   monthlyVendas: number[];
   /** Impostos sobre lucro — IRPJ + Adicional + CSLL. Deduzidos do LAIR. */
   monthlyLucro: number[];
+  /** [Split Payment] Parcela mensal de CBS+IBS dentro de `monthlyVendas`.
+   *  Usada por `computeImpostos` para aplicar lag 0 quando o Split está ativo. */
+  monthlyCbsIbs: number[];
   annual: number;
   annualVendas: number;
   annualLucro: number;

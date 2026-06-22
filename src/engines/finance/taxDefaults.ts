@@ -211,3 +211,11 @@ export const getCbsAliquota = (tax: TaxConfig): number =>
 /** [CBS/IBS] Alíquota IBS plena de referência (%) — lê `tax.ibsAliquotaRef` ou cai no default oficial. */
 export const getIbsAliquotaRef = (tax: TaxConfig): number =>
   pick(tax.ibsAliquotaRef, IBS_ALIQUOTA_PLENA);
+
+/** [Split Payment LC 214/2025] Default `true` — projeto Lovable trabalha com Split ativo. */
+export const SPLIT_PAYMENT_DEFAULT = true;
+export const SPLIT_PAYMENT_ANO_INICIO_DEFAULT = 2027;
+export const getSplitPaymentAtivo = (tax: TaxConfig): boolean =>
+  pick(tax.splitPaymentAtivo, SPLIT_PAYMENT_DEFAULT);
+export const getSplitPaymentAnoInicio = (tax: TaxConfig): number =>
+  pick(tax.splitPaymentAnoInicio, SPLIT_PAYMENT_ANO_INICIO_DEFAULT);
