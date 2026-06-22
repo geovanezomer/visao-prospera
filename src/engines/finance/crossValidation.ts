@@ -265,7 +265,7 @@ function checkTier2Fiscal(state: AppState, dre: DRE): ValidationWarning[] {
     tax.simplesAnexo === "V" &&
     !tax.fatorRAuto &&
     rbt12 > 0 &&
-    folha / rbt12 >= LIMITS.FATOR_R_MIN
+    folha / rbt12 >= getFatorRMinimoPct(tax) / 100
   ) {
     out.push({
       id: "fiscal.fator_r_desativado",
