@@ -13,6 +13,8 @@ import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { compararCltVsPj, regimePJLabel, type RegimePJ } from "@/engines/calculadoras/cltVsPj";
+import { useAppState } from "@/engines/finance/store";
+import { getIrpjAdicionalPct, getIrpjAdicionalGatilhoTri } from "@/engines/finance/taxDefaults";
 
 const fmtBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
