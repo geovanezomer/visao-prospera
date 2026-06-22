@@ -34,8 +34,8 @@ import {
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Presentation, X, FileText, Printer } from "lucide-react";
-import { exportFinancePDF } from "@/lib/pdfExport";
-import { buildFinancialModel } from "@/engines/finance/financialModel";
+// pdfExport e buildFinancialModel são carregados via dynamic import dentro
+// do handler de export — economiza ~850 KB no bundle inicial (jsPDF + autotable).
 import { toast } from "sonner";
 import { TaxSettingsDialog } from "@/components/sim/tax/TaxSettingsDialog";
 import { Badge } from "@/components/ui/badge";
@@ -274,6 +274,11 @@ function SimulaPro() {
                     onClick={async () => {
                       try {
                         toast.loading("Gerando PDF…", { id: "pdf-export" });
+                        // Dynamic imports — jsPDF + autotable (~850 KB) só carregam ao clicar.
+                        const [{ exportFinancePDF }, { buildFinancialModel }] = await Promise.all([
+                          import("@/lib/pdfExport"),
+                          import("@/engines/finance/financialModel"),
+                        ]);
                         const model = buildFinancialModel(state);
                         await exportFinancePDF({ state, model });
                         toast.success("PDF gerado com sucesso", { id: "pdf-export" });
