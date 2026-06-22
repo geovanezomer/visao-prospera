@@ -55,12 +55,6 @@ const formSchema = z.object({
     .trim()
     .min(1, "Nome obrigatório")
     .max(120, "Máximo 120 caracteres"),
-  cnpj: z
-    .string()
-    .trim()
-    .max(20, "CNPJ inválido")
-    .optional()
-    .or(z.literal("")),
   businessType: z.enum(["servicos", "comercio", "industria"]),
   ramoAtuacao: z.string().trim().max(60).optional().or(z.literal("")),
   numColaboradores: z
@@ -134,7 +128,7 @@ export function CompanyConfigForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     state.companyName,
-    state.cnpj,
+    
     state.businessType,
     state.ramoAtuacao,
     state.numColaboradores,
@@ -158,7 +152,7 @@ export function CompanyConfigForm({
     const d = parsed.data;
     update({
       companyName: d.companyName,
-      cnpj: d.cnpj || undefined,
+
       businessType: d.businessType,
       ramoAtuacao: d.ramoAtuacao || undefined,
       numColaboradores: d.numColaboradores,
@@ -178,25 +172,15 @@ export function CompanyConfigForm({
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Identidade
         </h3>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3">
           <div className="space-y-1.5">
-            <Label htmlFor="companyName">Nome da empresa *</Label>
+            <Label htmlFor="companyName">Nome da Empresa / Arquivo *</Label>
             <Input
               id="companyName"
               value={form.companyName}
               onChange={(e) => commit({ ...form, companyName: e.target.value })}
               maxLength={120}
               placeholder="Minha Empresa LTDA"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="cnpj">CNPJ</Label>
-            <Input
-              id="cnpj"
-              value={form.cnpj ?? ""}
-              onChange={(e) => commit({ ...form, cnpj: e.target.value })}
-              maxLength={20}
-              placeholder="00.000.000/0000-00"
             />
           </div>
         </div>
@@ -414,7 +398,6 @@ function buildFormFromState(state: AppState): FormData {
   };
   return {
     companyName: state.companyName ?? "",
-    cnpj: state.cnpj ?? "",
     businessType: state.businessType,
     ramoAtuacao: state.ramoAtuacao ?? "",
     numColaboradores: inferNum(),
