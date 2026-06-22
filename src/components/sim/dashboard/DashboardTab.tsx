@@ -313,7 +313,7 @@ export function DashboardTab() {
                   fontSize={10}
                   tickFormatter={(v) => `${v.toFixed(0)}%`}
                 />
-                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number, n) => n === "Margem %" ? `${v.toFixed(1)}%` : fmtBRL(v)} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number, n) => n === "Margem %" ? `${v.toFixed(1)}%` : fmtBRL(v)} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar yAxisId="left" dataKey="Receita" fill="#5BA8F5" radius={[4, 4, 0, 0]} />
                 <Line yAxisId="right" type="monotone" dataKey="Margem %" stroke="#00E5A0" strokeWidth={2} dot={false} />
@@ -328,7 +328,7 @@ export function DashboardTab() {
               <Pie data={capitalPie} dataKey="value" nameKey="name" innerRadius="55%" outerRadius="85%" paddingAngle={2}>
                 {capitalPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => fmtBRL(v)} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => fmtBRL(v)} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
             </PieChart>
           </ResponsiveContainer>
@@ -349,7 +349,7 @@ export function DashboardTab() {
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
               <XAxis dataKey="mes" stroke="#9ca3af" fontSize={11} />
               <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => fmtBRL(v)} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => fmtBRL(v)} />
               <Area type="monotone" dataKey="Acumulado" stroke="#00E5A0" fill="url(#grad)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
@@ -361,7 +361,7 @@ export function DashboardTab() {
               <Pie data={despesasPie} dataKey="value" nameKey="name" outerRadius="85%">
                 {despesasPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => fmtBRL(v)} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => fmtBRL(v)} />
               <Legend wrapperStyle={{ fontSize: 10 }} />
             </PieChart>
           </ResponsiveContainer>
@@ -373,7 +373,7 @@ export function DashboardTab() {
               <PolarGrid stroke="#ffffff20" />
               <PolarAngleAxis dataKey="eixo" tick={{ fill: "#9ca3af", fontSize: 10 }} />
               <Radar dataKey="valor" stroke="#5BA8F5" fill="#5BA8F5" fillOpacity={0.4} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => `${v.toFixed(0)}/100`} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => `${v.toFixed(0)}/100`} />
             </RadarChart>
           </ResponsiveContainer>
         </ChartCard>
