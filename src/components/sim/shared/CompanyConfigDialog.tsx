@@ -418,7 +418,6 @@ export function CompanyConfigForm({
           />
           <p className="text-[10px] text-muted-foreground">
             Base para indicadores de produtividade (Receita/Colaborador, Lucro/Colaborador etc.).
-            A faixa para benchmarks é derivada automaticamente: {rangeFromNumber(form.numColaboradores)}.
           </p>
         </div>
       </section>
