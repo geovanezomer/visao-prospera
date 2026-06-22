@@ -240,6 +240,44 @@ const defs: ToolDef[] = [
       required: [],
     },
   },
+  {
+    name: "projetar_fluxo_caixa",
+    description:
+      "Projeta o fluxo de caixa para N meses à frente (12/24/36) sob múltiplos cenários (base/otimista/pessimista) com deltas de receita e folha + eventos de captação de dívida com amortização linear. Retorna tabela resumo, line-chart dos cenários, alertas (mês em que caixa fica negativo / recupera) e detalhe mensal do cenário base. Use quando o cliente perguntar 'quando o caixa melhora?', 'preciso captar quanto?', 'e se eu pegar R$ X em Jul?'.",
+    parameters: {
+      type: "object",
+      properties: {
+        meses: { type: "number", description: "Horizonte em meses (default 24, máx 60)." },
+        cenarios: {
+          type: "array",
+          description:
+            "Cenários customizados. Omita para usar Base/Otimista/Pessimista padrão (±10%).",
+          items: {
+            type: "object",
+            properties: {
+              nome: { type: "string" },
+              receita_delta: { type: "number", description: "Ex.: -0.10 = receita -10%." },
+              folha_delta: { type: "number", description: "Ex.: +0.05 = folha +5%." },
+              capturas_divida: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    mes: { type: "number", description: "Mês 1-indexado no horizonte." },
+                    valor: { type: "number" },
+                    prazo_devolucao: { type: "number", description: "Meses de amortização linear." },
+                  },
+                  required: ["mes", "valor", "prazo_devolucao"],
+                },
+              },
+            },
+            required: ["nome"],
+          },
+        },
+      },
+      required: [],
+    },
+  },
 ];
 
 const handlers: Record<string, ToolHandler> = {
