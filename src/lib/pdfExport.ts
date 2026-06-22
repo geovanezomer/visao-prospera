@@ -417,7 +417,253 @@ function drawBar(doc: jsPDF, x: number, y: number, w: number, h: number, pct: nu
   doc.rect(x, y, Math.max(0, Math.min(1, pct)) * w, h, "F");
 }
 
+// ── Mini chart: área/linha 12 meses (nativo jsPDF) ────────────────────
+function drawMonthlyChart(
+  doc: jsPDF, x: number, y: number, w: number, h: number,
+  values: number[], opts?: {
+    label?: string;
+    fill?: readonly [number, number, number];
+    line?: readonly [number, number, number];
+    refY?: { value: number; color: readonly [number, number, number]; label?: string };
+  },
+) {
+  const lineCol = opts?.line ?? CHARCOAL;
+  const fillCol = opts?.fill ?? LIGHT;
+  const padL = 38, padR = 8, padT = 6, padB = 18;
+  const innerW = w - padL - padR;
+  const innerH = h - padT - padB;
+  const allVals = [...values, 0, ...(opts?.refY ? [opts.refY.value] : [])];
+  const min = Math.min(...allVals);
+  const max = Math.max(...allVals);
+  const span = max - min || 1;
+  const xAt = (i: number) => x + padL + (innerW * i) / Math.max(1, values.length - 1);
+  const yAt = (v: number) => y + padT + innerH - ((v - min) / span) * innerH;
+
+  // Moldura sutil
+  setColor(doc, "draw", HAIRLINE);
+  doc.setLineWidth(0.4);
+  doc.rect(x, y, w, h, "S");
+
+  // Grid horizontal: 3 linhas (min, mid, max)
+  setColor(doc, "draw", LIGHT);
+  doc.setLineWidth(0.3);
+  [0, 0.5, 1].forEach((p) => {
+    const yy = y + padT + innerH * (1 - p);
+    doc.line(x + padL, yy, x + padL + innerW, yy);
+    doc.setFont(FONT, "normal");
+    doc.setFontSize(6.5);
+    setColor(doc, "text", GRAY);
+    const v = min + span * p;
+    const lbl = Math.abs(v) >= 1000
+      ? `R$${(v / 1000).toFixed(0)}k`
+      : `R$${v.toFixed(0)}`;
+    doc.text(lbl, x + padL - 3, yy + 2, { align: "right" });
+  });
+
+  // Linha zero (se entre min/max)
+  if (min < 0 && max > 0) {
+    setColor(doc, "draw", GRAY);
+    doc.setLineWidth(0.4);
+    const zy = yAt(0);
+    doc.line(x + padL, zy, x + padL + innerW, zy);
+  }
+
+  // Linha de referência (caixa mínimo etc.)
+  if (opts?.refY) {
+    setColor(doc, "draw", opts.refY.color);
+    doc.setLineWidth(0.5);
+    doc.setLineDashPattern([2, 2], 0);
+    const ry = yAt(opts.refY.value);
+    doc.line(x + padL, ry, x + padL + innerW, ry);
+    doc.setLineDashPattern([], 0);
+    if (opts.refY.label) {
+      doc.setFont(FONT, "bold");
+      doc.setFontSize(6.5);
+      setColor(doc, "text", opts.refY.color);
+      doc.text(opts.refY.label, x + padL + innerW - 2, ry - 2, { align: "right" });
+    }
+  }
+
+  // Área preenchida
+  setColor(doc, "fill", fillCol);
+  const pts: [number, number][] = values.map((v, i) => [xAt(i), yAt(v)]);
+  if (pts.length > 1) {
+    const path = [
+      ...pts,
+      [pts[pts.length - 1][0], yAt(Math.max(0, min))] as [number, number],
+      [pts[0][0], yAt(Math.max(0, min))] as [number, number],
+    ];
+    // jsPDF não tem path; usa triangle fan via lines() — fallback: polígono via lines
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0);
+    const start = path[0];
+    const rels: [number, number][] = [];
+    for (let i = 1; i < path.length; i++) {
+      rels.push([path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]]);
+    }
+    doc.lines(rels, start[0], start[1], [1, 1], "F", true);
+  }
+
+  // Linha
+  setColor(doc, "draw", lineCol);
+  doc.setLineWidth(1.2);
+  for (let i = 1; i < pts.length; i++) {
+    doc.line(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]);
+  }
+
+  // Pontos
+  setColor(doc, "fill", lineCol);
+  pts.forEach((p) => doc.circle(p[0], p[1], 1.4, "F"));
+
+  // Eixo X: meses
+  doc.setFont(FONT, "normal");
+  doc.setFontSize(6.5);
+  setColor(doc, "text", GRAY);
+  MESES.forEach((m, i) => {
+    if (i % 2 === 0 || values.length <= 12) {
+      doc.text(m, xAt(i), y + h - 5, { align: "center" });
+    }
+  });
+
+  // Label (opcional)
+  if (opts?.label) {
+    doc.setFont(FONT, "bold");
+    doc.setFontSize(7);
+    setColor(doc, "text", GRAY);
+    doc.text(opts.label.toUpperCase(), x + 4, y - 4);
+  }
+}
+
+// ── Bloco Runway (caixa + barra + chart) ──────────────────────────────
+function drawRunwayBlock(
+  doc: jsPDF, yStart: number, state: AppState, model: FinancialModel,
+): number {
+  const w = doc.internal.pageSize.getWidth();
+  const x0 = PAGE_MARGIN;
+  const totalW = w - PAGE_MARGIN * 2;
+  const leftW = 170;
+  const gap = 16;
+  const chartW = totalW - leftW - gap;
+  const blockH = 130;
+
+  const caixaAtual = state.capital.disponibilidades ?? 0;
+  const caixaMinimo = state.cashflow.caixaMinimo ?? 0;
+  const ult3 = model.cf.fluxoOperacional.slice(-3);
+  const burnMedio = -(ult3.reduce((a, b) => a + b, 0) / Math.max(1, ult3.length));
+  const queimando = burnMedio > 0;
+  const runway = queimando ? caixaAtual / burnMedio : Infinity;
+  const runwayLabel = !Number.isFinite(runway)
+    ? "∞ (gerando caixa)" : `${runway.toFixed(1)} meses`;
+  const runwayTone: "ok" | "warn" | "bad" = !Number.isFinite(runway) || runway > 12
+    ? "ok" : runway > 6 ? "warn" : "bad";
+
+  // Cabeçalho do bloco
+  blockHeader(doc, yStart, "Pista de Caixa (Runway) & Saldo Projetado",
+    "Caixa disponível, queima mensal e projeção de 12 meses.");
+
+  const yB = yStart + 18;
+  // Coluna esquerda — números
+  doc.setFont(FONT, "bold");
+  doc.setFontSize(7);
+  setColor(doc, "text", GRAY);
+  doc.text("CAIXA ATUAL", x0, yB + 12);
+  doc.setFont(FONT, "bold");
+  doc.setFontSize(15);
+  setColor(doc, "text", INK);
+  doc.text(fmtBRL(caixaAtual), x0, yB + 30);
+
+  doc.setFont(FONT, "bold");
+  doc.setFontSize(7);
+  setColor(doc, "text", GRAY);
+  doc.text("VOCÊ TEM CAIXA PARA", x0, yB + 48);
+  const tCol = runwayTone === "ok" ? OK : runwayTone === "warn" ? WARN : BAD;
+  doc.setFont(FONT, "bold");
+  doc.setFontSize(18);
+  setColor(doc, "text", tCol);
+  doc.text(runwayLabel, x0, yB + 68);
+  // barra runway escala 18m
+  const pct = Math.min(1, (Number.isFinite(runway) ? runway : 18) / 18);
+  drawBar(doc, x0, yB + 76, leftW - 8, 4, pct, runwayTone);
+  doc.setFont(FONT, "normal");
+  doc.setFontSize(6.5);
+  setColor(doc, "text", GRAY);
+  ["0m", "6m", "12m", "18m+"].forEach((s, i) =>
+    doc.text(s, x0 + ((leftW - 8) * i) / 3, yB + 90, { align: i === 0 ? "left" : i === 3 ? "right" : "center" }));
+
+  doc.setFont(FONT, "bold");
+  doc.setFontSize(7);
+  setColor(doc, "text", GRAY);
+  doc.text(queimando ? "QUEIMA MENSAL (ÚLT. 3M)" : "GERAÇÃO MENSAL (ÚLT. 3M)", x0, yB + 104);
+  doc.setFont(FONT, "bold");
+  doc.setFontSize(11);
+  setColor(doc, "text", queimando ? BAD : OK);
+  doc.text(fmtBRL(Math.abs(burnMedio)), x0, yB + 120);
+
+  // Coluna direita — chart
+  const chartX = x0 + leftW + gap;
+  doc.setFont(FONT, "bold");
+  doc.setFontSize(7);
+  setColor(doc, "text", GRAY);
+  doc.text("SALDO DE CAIXA PROJETADO (12 MESES)", chartX, yB + 4);
+  drawMonthlyChart(doc, chartX, yB + 10, chartW, blockH - 10, model.cf.saldoFinal, {
+    fill: [91, 168, 245] as [number, number, number],
+    line: [37, 99, 235] as [number, number, number],
+    refY: caixaMinimo > 0 ? { value: caixaMinimo, color: BAD, label: "Caixa mínimo" } : undefined,
+  });
+
+  return yStart + 18 + blockH + 14;
+}
+
+// ── Top 5 Despesas (barras horizontais) ───────────────────────────────
+function drawTop5Despesas(doc: jsPDF, yStart: number, model: FinancialModel): number {
+  const top = Object.entries(model.dre.despesasPorCategoria)
+    .map(([k, v]) => ({ name: k, value: sum(v) }))
+    .filter((d) => d.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
+  const totalTop = top.reduce((a, b) => a + b.value, 0);
+  const w = doc.internal.pageSize.getWidth();
+  const x0 = PAGE_MARGIN;
+  const totalW = w - PAGE_MARGIN * 2;
+
+  blockHeader(doc, yStart, "Top 5 Despesas — Onde o dinheiro vai",
+    "Categorias com maior impacto no resultado do período.");
+  let y = yStart + 22;
+  if (top.length === 0) {
+    paragraph(doc, y, "Sem despesas cadastradas no período.", { color: GRAY, size: 9.5 });
+    return y + 20;
+  }
+  const palette: Array<[number, number, number]> = [
+    [220, 38, 38], [217, 119, 6], [124, 58, 237], [37, 99, 235], [14, 165, 233],
+  ];
+  top.forEach((d, i) => {
+    const pct = totalTop > 0 ? d.value / totalTop : 0;
+    doc.setFont(FONT, "bold");
+    doc.setFontSize(9);
+    setColor(doc, "text", INK);
+    const label = `${i + 1}. ${d.name}`;
+    const labelLines = doc.splitTextToSize(label, totalW - 180);
+    doc.text(labelLines[0], x0, y);
+    doc.setFont(FONT, "normal");
+    doc.setFontSize(9);
+    setColor(doc, "text", CHARCOAL);
+    doc.text(`${fmtBRL(d.value)}  (${(pct * 100).toFixed(0)}%)`, x0 + totalW, y, { align: "right" });
+    // barra
+    setColor(doc, "fill", LIGHT);
+    doc.rect(x0, y + 4, totalW, 5, "F");
+    setColor(doc, "fill", palette[i]);
+    doc.rect(x0, y + 4, totalW * pct, 5, "F");
+    y += 22;
+  });
+  doc.setFont(FONT, "normal");
+  doc.setFontSize(8);
+  setColor(doc, "text", GRAY);
+  doc.text(`Total das 5 maiores: ${fmtBRL(totalTop)}`, x0, y + 4);
+  return y + 16;
+}
+
 // ── Score de saúde (mesma fórmula do DashboardExtras) ─────────────────
+
 function computeGuardianScore(ind: FinancialModel["ind"]): {
   score: number; conceito: string; tone: "ok" | "warn" | "bad";
 } {
