@@ -314,28 +314,11 @@ export function CompanyConfigForm({
                   (opcional — já preenchido com valores do setor)
                 </span>
               </CollapsibleTrigger>
-              <TooltipProvider delayDuration={150}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-muted-foreground hover:text-foreground"
-                      aria-label="Como os quartis são calculados"
-                    >
-                      <Info className="h-3.5 w-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs text-[11px] leading-snug">
-                    Você define apenas a <strong>mediana (P50)</strong> de cada indicador.
-                    O sistema deriva os quartis automaticamente:
-                    <br />• <strong>P25</strong> = P50 × 0,80 (pior 25%)
-                    <br />• <strong>P75</strong> = P50 × 1,20 (melhor 25%)
-                    <br />Assim a comparação por quartil continua coerente sem você precisar
-                    digitar 24 valores.
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <HelpTip
+                text="Você define apenas a mediana (P50) de cada indicador. O sistema deriva os quartis P25 e P75 automaticamente, mantendo a comparação consistente sem precisar digitar 24 valores."
+                formula="P25 = P50 × 0,80   ·   P75 = P50 × 1,20"
+                example="Se a Margem EBITDA P50 = 15%, então P25 = 12% e P75 = 18%."
+              />
               <Button
                 type="button"
                 size="sm"
