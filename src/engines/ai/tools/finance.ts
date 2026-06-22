@@ -50,7 +50,13 @@ const defs: ToolDef[] = [
   {
     name: "get_contratos_divida",
     description:
-      "Detalhe dos contratos de dívida onerosa: credor, descrição, saldo devedor, taxa nominal a.a., sistema de amortização (PRICE/SAC/BULLET), prazo remanescente, classificação CP (≤12m) ou LP (>12m). Agregados: saldo total, soma CP, soma LP, Kd médio ponderado, total de contratos. Linkado à linha 'Juros sobre contratos de dívida' em Despesas e à amortização em DFC.",
+      "Detalhe COMPLETO dos contratos de empréstimos/financiamentos: credor, tipo (banco/fomento/fornecedor/sócio/outro), descrição, saldo devedor, taxa nominal a.a., sistema (PRICE/SAC), frequência de amortização (mensal/trimestral/semestral/anual/bullet), prazo remanescente, classificação CP/LP, garantia, covenants (ex.: 'DSCR ≥ 1.25x') e observações. Agregados: saldo total, CP, LP, Kd médio ponderado. Use SEMPRE que o consultor perguntar sobre estrutura de dívida, renegociação, refinanciamento, impacto de covenant, ou comparação entre credores.",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "get_pagina_capital",
+    description:
+      "Retorna TODO o conteúdo da página Capital: estrutura de capital (PL, dívida onerosa, Ke/Kd, ativo/passivo, capex ativado), saldos de ABERTURA do exercício com a fonte de cada rubrica, E os contratos de dívida detalhados (credor, taxa, sistema, prazo, covenants, garantia). Use quando o consultor perguntar de forma ampla sobre 'estrutura de capital', 'dívida', 'alavancagem', 'capacidade de endividamento', 'renegociação', ou quiser uma visão consolidada antes de aprofundar.",
     parameters: { type: "object", properties: {}, required: [] },
   },
   {
@@ -156,6 +162,15 @@ const handlers: Record<string, ToolHandler> = {
     "_Balanço de fechamento indisponível (DRE/DFC ainda não calculados — preencha Receitas e Despesas)._",
   get_contratos_divida: (_a, { sec }) =>
     sec.dividas || "_Nenhum contrato de dívida cadastrado e Dívida Onerosa agregada é zero._",
+  get_pagina_capital: (_a, { sec }) =>
+    [
+      sec.capital,
+      sec.balancoAbertura,
+      sec.dividas ||
+        "_Sem contratos de dívida detalhados — verifique Capital · Contratos de Empréstimos e Financiamentos._",
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
   get_regime_tributario: (_a, { sec }) => sec.regime,
   get_eras_reforma: (_a, { sec }) =>
     sec.eras || "_Comparativo de eras indisponível (verifique a configuração tributária)._",

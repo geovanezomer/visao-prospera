@@ -188,6 +188,56 @@ export function DebtContractsCard({
                           className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm outline-none focus:border-primary"
                         />
                       </Field>
+                      <Field label="Tipo de credor">
+                        <select
+                          value={c.tipoCredor ?? "banco"}
+                          onChange={(e) => update(c.id, { tipoCredor: e.target.value as DebtContract["tipoCredor"] })}
+                          className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm outline-none focus:border-primary"
+                        >
+                          <option value="banco">Banco</option>
+                          <option value="fomento">Fomento (BNDES, FINEP…)</option>
+                          <option value="fornecedor">Fornecedor</option>
+                          <option value="socio">Sócio</option>
+                          <option value="outro">Outro</option>
+                        </select>
+                      </Field>
+                      <Field label="Frequência de amortização">
+                        <select
+                          value={c.frequenciaAmortizacao ?? "mensal"}
+                          onChange={(e) => update(c.id, { frequenciaAmortizacao: e.target.value as DebtContract["frequenciaAmortizacao"] })}
+                          className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm outline-none focus:border-primary"
+                        >
+                          <option value="mensal">Mensal</option>
+                          <option value="trimestral">Trimestral</option>
+                          <option value="semestral">Semestral</option>
+                          <option value="anual">Anual</option>
+                          <option value="bullet">Bullet (só no final)</option>
+                        </select>
+                      </Field>
+                      <Field label="Garantia">
+                        <input
+                          value={c.garantia ?? ""}
+                          onChange={(e) => update(c.id, { garantia: e.target.value })}
+                          placeholder="Ex.: Aval do sócio, imóvel mat. 1234"
+                          className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm outline-none focus:border-primary"
+                        />
+                      </Field>
+                      <Field label="Covenants">
+                        <input
+                          value={c.covenants ?? ""}
+                          onChange={(e) => update(c.id, { covenants: e.target.value })}
+                          placeholder="Ex.: DSCR ≥ 1.25x; D.Líq/EBITDA ≤ 3x"
+                          className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm outline-none focus:border-primary"
+                        />
+                      </Field>
+                      <Field label="Observações">
+                        <input
+                          value={c.observacoes ?? ""}
+                          onChange={(e) => update(c.id, { observacoes: e.target.value })}
+                          placeholder="Notas livres do consultor"
+                          className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm outline-none focus:border-primary"
+                        />
+                      </Field>
                       <div className="sm:col-span-2 md:col-span-3 flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-2">
                         <div className="flex gap-3 text-[11px] text-muted-foreground">
                           <span>Juros 12m: <strong className="num text-warning">{fmtBRL(sch.totalJurosAno)}</strong></span>

@@ -735,17 +735,22 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
         totalSaldo += saldo;
         return [
           c.credor || "(sem credor)",
+          c.tipoCredor ?? "—",
           c.descricao || "—",
           brl(saldo),
           `${safe(c.taxaAA).toFixed(2)}% a.a.`,
           c.sistema,
+          c.frequenciaAmortizacao ?? "mensal",
           `${prazo}m`,
           tipo,
+          c.garantia || "—",
+          c.covenants || "—",
+          c.observacoes || "—",
         ];
       });
       dividasLines.push(
         table(
-          ["Credor", "Descrição", "Saldo Devedor", "Taxa", "Sistema", "Prazo Rest.", "CP/LP"],
+          ["Credor", "Tipo", "Descrição", "Saldo", "Taxa", "Sistema", "Freq. Amort.", "Prazo", "CP/LP", "Garantia", "Covenants", "Obs."],
           rows,
         ),
       );
