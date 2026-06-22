@@ -51,6 +51,19 @@ const MESES_FISCAIS = [
 ];
 
 /** Validação Zod — bloqueia entradas absurdas antes de persistir no AppState. */
+const benchmarkCustomSchema = z
+  .object({
+    margemBruta: z.number().min(0).max(100).optional(),
+    margemEbitda: z.number().min(-50).max(100).optional(),
+    margemLiquida: z.number().min(-50).max(100).optional(),
+    giroAtivo: z.number().min(0).max(20).optional(),
+    endividamento: z.number().min(0).max(100).optional(),
+    pmr: z.number().min(0).max(365).optional(),
+    pmp: z.number().min(0).max(365).optional(),
+    evEbitda: z.number().min(0).max(30).optional(),
+  })
+  .optional();
+
 const formSchema = z.object({
   companyName: z
     .string()
@@ -59,6 +72,7 @@ const formSchema = z.object({
     .max(120, "Máximo 120 caracteres"),
   businessType: z.enum(["servicos", "comercio", "industria"]),
   ramoAtuacao: z.string().trim().max(60).optional().or(z.literal("")),
+  benchmarkCustom: benchmarkCustomSchema,
   numColaboradores: z
     .number({ invalid_type_error: "Informe um número" })
     .int("Use um número inteiro")
@@ -78,6 +92,19 @@ const formSchema = z.object({
     .max(100, "Margem inválida")
     .optional(),
 });
+
+/** Métricas do benchmark personalizável (P50). Mantém ordem de exibição. */
+const BENCHMARK_FIELDS = [
+  { key: "margemBruta", label: "Margem Bruta", unit: "%", step: 0.5 },
+  { key: "margemEbitda", label: "Margem EBITDA", unit: "%", step: 0.5 },
+  { key: "margemLiquida", label: "Margem Líquida", unit: "%", step: 0.5 },
+  { key: "giroAtivo", label: "Giro do Ativo", unit: "x", step: 0.1 },
+  { key: "endividamento", label: "Endividamento", unit: "%", step: 1 },
+  { key: "pmr", label: "PMR", unit: "dias", step: 1 },
+  { key: "pmp", label: "PMP", unit: "dias", step: 1 },
+  { key: "evEbitda", label: "EV/EBITDA", unit: "x", step: 0.5 },
+] as const;
+type BenchmarkKey = (typeof BENCHMARK_FIELDS)[number]["key"];
 
 type FormData = z.infer<typeof formSchema>;
 
