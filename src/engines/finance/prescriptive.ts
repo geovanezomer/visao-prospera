@@ -118,12 +118,17 @@ export function snapshot(state: AppState): MetricSnapshot {
 
 // ============== Engine principal ==============
 
-const BENCHMARK_MARGEM_BRUTA: Record<AppState["businessType"], [number, number]> = {
-  servicos: [50, 70],
-  comercio: [25, 40],
-  industria: [30, 45],
+// Fallback de Margem Bruta caso `resolveBenchmark` retorne undefined
+// (ex.: businessType vazio). Em uso normal, prevalece o benchmark do setor
+// escolhido OU o `benchmarkCustom` salvo pelo consultor.
+const FALLBACK_MARGEM_BRUTA: Record<AppState["businessType"], number> = {
+  servicos: 50,
+  comercio: 25,
+  industria: 30,
 };
 
+// Folha/Receita não está no catálogo SECTORS — mantido hardcoded.
+// TODO: migrar para SECTORS quando a métrica for adicionada lá.
 const BENCHMARK_FOLHA_RECEITA: Record<AppState["businessType"], [number, number]> = {
   servicos: [18, 28],
   comercio: [10, 18],
