@@ -213,6 +213,10 @@ const stringOr = (v: unknown, fallback: string) => (typeof v === "string" ? v : 
 
 const boolOr = (v: unknown, fallback: boolean) => (typeof v === "boolean" ? v : fallback);
 
+// Versão da identidade/skills padrão. Bump para forçar migração no localStorage
+// dos usuários que ainda têm o SOUL/SKILLS antigos persistidos.
+const SOUL_DEFAULTS_VERSION = 2;
+
 function sanitizeSkills(input: unknown): Skill[] {
   if (!Array.isArray(input)) return DEFAULT_SKILLS;
   const parsed = input
@@ -229,12 +233,33 @@ function sanitizeSkills(input: unknown): Skill[] {
   return parsed.length ? parsed : DEFAULT_SKILLS;
 }
 
+// Garante que todas as skills builtin padrão estejam presentes (merge por id).
+// Skills builtin desatualizadas são substituídas pelo corpo atual; custom são mantidas.
+function mergeBuiltinSkills(existing: Skill[]): Skill[] {
+  const byId = new Map(existing.map((s) => [s.id, s]));
+  for (const def of DEFAULT_SKILLS) {
+    const prev = byId.get(def.id);
+    byId.set(def.id, {
+      ...def,
+      enabled: prev?.enabled ?? def.enabled,
+    });
+  }
+  return Array.from(byId.values());
+}
+
 function sanitizeConfig(input: unknown): AIConfig {
   const raw = isRecord(input) ? input : {};
   const provider = PROVIDERS.includes(raw.provider as Provider)
     ? (raw.provider as Provider)
     : DEFAULT_CONFIG.provider;
   const defaults = PROVIDER_DEFAULTS[provider];
+  const savedVersion = typeof raw.soulVersion === "number" ? raw.soulVersion : 0;
+  const needsMigration = savedVersion < SOUL_DEFAULTS_VERSION;
+  // Migração: força SOUL atual e mescla skills builtin novas/atualizadas.
+  const soul = needsMigration ? DEFAULT_SOUL : stringOr(raw.soul, DEFAULT_CONFIG.soul);
+  const skills = needsMigration
+    ? mergeBuiltinSkills(sanitizeSkills(raw.skills))
+    : sanitizeSkills(raw.skills);
   return {
     provider,
     baseUrl: stringOr(raw.baseUrl, defaults.baseUrl),
@@ -245,8 +270,8 @@ function sanitizeConfig(input: unknown): AIConfig {
     includeSnapshot: boolOr(raw.includeSnapshot, DEFAULT_CONFIG.includeSnapshot),
     useTools: boolOr(raw.useTools, DEFAULT_CONFIG.useTools),
     useMetaTools: boolOr(raw.useMetaTools, DEFAULT_CONFIG.useMetaTools),
-    soul: stringOr(raw.soul, DEFAULT_CONFIG.soul),
-    skills: sanitizeSkills(raw.skills),
+    soul,
+    skills,
     extraSystemPrompt: stringOr(raw.extraSystemPrompt, DEFAULT_CONFIG.extraSystemPrompt),
     timeoutMs: Math.max(10_000, finiteOr(raw.timeoutMs, DEFAULT_CONFIG.timeoutMs)),
     maxSuggestions: Math.max(
@@ -255,6 +280,7 @@ function sanitizeConfig(input: unknown): AIConfig {
     ),
   };
 }
+
 
 function sanitizeThreads(input: unknown): ChatThread[] {
   if (!Array.isArray(input)) return [];
@@ -290,9 +316,22 @@ export function loadConfig(): AIConfig {
   try {
     const raw = localStorage.getItem(CFG_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
+    const savedVersion =
+      isRecord(parsed) && typeof parsed.soulVersion === "number" ? parsed.soulVersion : 0;
     const cfg = sanitizeConfig(parsed);
     if (!cfg.persistKey) {
       cfg.apiKey = sessionStorage.getItem(SESSION_KEY_BAG) || "";
+    }
+    // Persiste a migração para que o usuário enxergue o SOUL/Skills novos
+    // mesmo sem editar nada nas configurações.
+    if (raw && savedVersion < SOUL_DEFAULTS_VERSION) {
+      try {
+        const persisted = { ...cfg, soulVersion: SOUL_DEFAULTS_VERSION };
+        const toStore = cfg.persistKey ? persisted : { ...persisted, apiKey: "" };
+        localStorage.setItem(CFG_KEY, JSON.stringify(toStore));
+      } catch {
+        // ignora falha de storage
+      }
     }
     return cfg;
   } catch {
@@ -300,23 +339,27 @@ export function loadConfig(): AIConfig {
   }
 }
 
+
 /** Nome do evento custom emitido após saveConfig — ouvido por hooks reativos. */
 export const AI_CONFIG_CHANGED_EVENT = "ai-config-changed";
 
 export function saveConfig(cfg: AIConfig) {
   try {
     const safe = sanitizeConfig(cfg);
+    // Marca a versão dos defaults atualmente em uso para evitar migrar de novo.
+    const persisted = { ...safe, soulVersion: SOUL_DEFAULTS_VERSION };
     if (safe.persistKey) {
       sessionStorage.removeItem(SESSION_KEY_BAG);
-      localStorage.setItem(CFG_KEY, JSON.stringify(safe));
+      localStorage.setItem(CFG_KEY, JSON.stringify(persisted));
     } else {
       sessionStorage.setItem(SESSION_KEY_BAG, safe.apiKey || "");
       // grava sem a chave
-      localStorage.setItem(CFG_KEY, JSON.stringify({ ...safe, apiKey: "" }));
+      localStorage.setItem(CFG_KEY, JSON.stringify({ ...persisted, apiKey: "" }));
     }
   } catch {
     // storage indisponível (modo privado / quota) — config segue só em memória
   }
+
   // Notifica listeners NA MESMA ABA (storage event só dispara entre abas).
   try {
     window.dispatchEvent(new CustomEvent(AI_CONFIG_CHANGED_EVENT));
