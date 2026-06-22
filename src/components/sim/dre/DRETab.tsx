@@ -41,7 +41,6 @@ import { HelpTip, SectionTitle, StatCard } from "@/components/sim/shared/primiti
 import { Badge } from "@/components/ui/badge";
 
 import { DREComparison } from "@/components/sim/comparison/ComparisonView";
-import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
 import { useAnnualSnapshots } from "@/hooks/useAnnualSnapshots";
 import { ChevronRight } from "lucide-react";
 
