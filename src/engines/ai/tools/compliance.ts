@@ -8,6 +8,8 @@ import {
   compareYearsForRegime,
   resolveEffectiveRegime,
 } from "@/engines/finance";
+import { buildCashFlow } from "@/engines/finance/cashflow";
+import { calcIndicators } from "@/engines/finance/indicators";
 import {
   analyzeCovenants,
   covenantsToMarkdown,
@@ -56,8 +58,29 @@ const defs: ToolDef[] = [
   {
     name: "simular_split_payment",
     description:
-      "Calcula o impacto do Split Payment no fluxo de caixa e necessidade de capital de giro. O Split Payment retém o tributo no momento do pagamento eliminando o float atual. Use quando o consultor perguntar sobre impacto da reforma no caixa.",
-    parameters: { type: "object", properties: {}, required: [] },
+      "Mede o impacto do Split Payment (LC 214/2025) no caixa, NCG, DSCR e timeline de default. O Split retém CBS/IBS no momento da liquidação eliminando o float tributário (~25–40 dias). Retorna: (1) float perdido por rubrica, (2) impacto permanente em NCG e custo de carregamento (× Kd), (3) DSCR pós-Split e re-avaliação de covenants, (4) mês em que o caixa cruza zero descontando o float. Use sempre que o consultor perguntar 'qual o impacto do Split Payment?' ou 'como me preparar para 2027?'.",
+    parameters: {
+      type: "object",
+      properties: {
+        ano_inicio: {
+          type: "number",
+          description:
+            "Ano em que o Split começa a valer (default 2027 — CBS pleno). Apenas informativo no relatório.",
+        },
+        prazos_override: {
+          type: "object",
+          description:
+            "Sobrescreve prazos de recolhimento (em dias) por rubrica. Ex.: { CBS: 30, IBS: 15 }. Use quando o consultor souber o calendário real da empresa.",
+          additionalProperties: { type: "number" },
+        },
+        incluir_covenants: {
+          type: "boolean",
+          description:
+            "Se true (default), re-avalia DSCR/Liquidez/D-EBITDA assumindo perda permanente do float.",
+        },
+      },
+      required: [],
+    },
   },
   {
     name: "analisar_covenants",
