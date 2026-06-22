@@ -154,14 +154,9 @@ export function CashflowTab() {
   const saldoDezTone: "pos" | "neg" | "warn" =
     saldoDez < 0 ? "neg" : saldoDez < state.cashflow.caixaMinimo ? "warn" : "pos";
 
-  const showComparison = comparisonSnaps.length >= 2;
-
   return (
     <div className="space-y-6">
-      {showComparison ? (
-        <CashFlowComparison snapshots={comparisonSnaps} />
-      ) : (
-        <>
+
       {/* Sumário */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
