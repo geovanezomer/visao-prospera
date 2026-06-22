@@ -8,6 +8,7 @@ import {
 } from "./types";
 import { fill12 } from "./format";
 import { coerceMonths } from "./safeMath";
+import { CBS_ALIQUOTA_PLENA, IBS_ALIQUOTA_PLENA } from "./taxDefaults";
 
 // ─── Migrações de schema versionadas ──────────────────────────────────
 // A cada breaking change no formato persistido do AppState:
