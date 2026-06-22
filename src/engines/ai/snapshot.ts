@@ -822,9 +822,11 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
 
   // ----- Governança (qualitativo) -----
   const govLines: string[] = [];
+  govLines.push(`## Governança & Sucessão`);
+  govLines.push(`- **Nº de sócios/acionistas:** ${state.numSocios ?? "—"}`);
+  govLines.push(`- **Nº de colaboradores:** ${state.numColaboradores ?? "—"}`);
   if (state.strategic?.governance) {
     const g = state.strategic.governance;
-    govLines.push(`## Governança & Sucessão`);
     govLines.push(`- **Sócio afastado 60d:** ${g.socioAfastado60d ?? "—"}`);
     govLines.push(`- **Quem fecha contrato:** ${g.quemFechaContrato ?? "—"}`);
     govLines.push(`- **Processos documentados:** ${g.processosDocumentados ?? "—"}`);
