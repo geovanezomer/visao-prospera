@@ -694,8 +694,7 @@ export function DRETab() {
       </div>
       </>
       )}
-        </>
-      )}
+
     </div>
   );
 }
