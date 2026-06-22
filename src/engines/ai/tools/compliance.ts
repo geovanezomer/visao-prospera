@@ -217,7 +217,8 @@ const handlers: Record<string, ToolHandler> = {
     out.push(`| **Total** | **${brl(cargaMensalTotal)}** | — | **${brl(floatTotal)}** |`);
 
     // ===== 2. Impacto permanente em capital de giro =====
-    const ind = calcIndicators(state);
+    const cf = buildCashFlow(state, regime);
+    const ind = calcIndicators(state, buildDRE(state, regime), cf);
     const ncgAtual = ind.ncg ?? 0;
     const ncgPos = ncgAtual + floatTotal; // PC tributário some → NCG sobe
     out.push(``, `### 2. Capital de giro & custo de carregamento`);
@@ -228,7 +229,6 @@ const handlers: Record<string, ToolHandler> = {
     );
 
     // ===== 3. Timeline: quando o caixa cruza zero descontando o float =====
-    const cf = buildCashFlow(state, regime);
     const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
     let mesZeroSplit: string | null = null;
     let mesZeroBase: string | null = null;
