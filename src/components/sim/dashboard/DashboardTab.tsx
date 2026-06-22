@@ -44,6 +44,9 @@ const TOOLTIP_STYLE = {
   fontSize: 12,
   color: "var(--popover-foreground)",
 } as const;
+// Recharts aplica cor inline preta nos labels/itens do tooltip; sobrescrevemos para seguir o tema.
+const TOOLTIP_LABEL_STYLE = { color: "var(--popover-foreground)" } as const;
+const TOOLTIP_ITEM_STYLE = { color: "var(--popover-foreground)" } as const;
 
 // Gauge semi-circular simples baseado em PieChart (sem libs extras).
 function Gauge({
