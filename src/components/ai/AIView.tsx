@@ -33,7 +33,8 @@ import {
 import { AuditReport, isAuditReport } from "./AuditReport";
 import { useAIChat } from "@/hooks/useAIChat";
 import { resetAIStorage } from "@/engines/ai/providers";
-import { useMemories, deleteMemory } from "@/engines/memory/store";
+import { useMemories, deleteMemory, createMemory, type MemoryCategory } from "@/engines/memory/store";
+import { Input } from "@/components/ui/input";
 import { AI_MODE_LABELS, AI_MODE_DESCRIPTIONS, type AIMode } from "@/engines/ai/systemPrompt";
 
 // react-markdown não tem assinatura compatível direta com lazy() — usamos cast pontual.
@@ -491,6 +492,22 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
 // botões de exclusão individual. Reativo via useMemories (localStorage).
 function MemoriesPopover({ company }: { company: string }) {
   const items = useMemories(company);
+  const [filter, setFilter] = useState<MemoryCategory | "todas">("todas");
+  const [novoConteudo, setNovoConteudo] = useState("");
+  const [novaCategoria, setNovaCategoria] = useState<MemoryCategory>("decisao");
+
+  const filtradas = filter === "todas" ? items : items.filter((m) => m.categoria === filter);
+
+  const adicionar = () => {
+    const conteudo = novoConteudo.trim();
+    if (!conteudo) return;
+    createMemory(company, { conteudo, categoria: novaCategoria, fonte: "manual (consultor)" });
+    setNovoConteudo("");
+  };
+
+  // Contadores por categoria para mostrar no filtro.
+  const contar = (c: MemoryCategory) => items.filter((m) => m.categoria === c).length;
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -498,19 +515,72 @@ function MemoriesPopover({ company }: { company: string }) {
           <Brain className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-96 max-h-96 overflow-y-auto">
+      <PopoverContent align="end" className="w-[420px] max-h-[520px] overflow-y-auto">
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-sm font-semibold">Memória persistente</h4>
           <span className="text-xs text-muted-foreground">{items.length}/50</span>
         </div>
-        {items.length === 0 ? (
+
+        {/* Quick-add: consultor registra decisões/hipóteses manualmente */}
+        <div className="mb-3 space-y-2 rounded border border-border/40 p-2">
+          <div className="text-[10px] uppercase text-muted-foreground">Registrar nova</div>
+          <Input
+            placeholder="Ex.: Cortar folha em 20% a partir de jan/2027"
+            value={novoConteudo}
+            onChange={(e) => setNovoConteudo(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                adicionar();
+              }
+            }}
+            className="h-8 text-xs"
+          />
+          <div className="flex gap-1">
+            <Select value={novaCategoria} onValueChange={(v) => setNovaCategoria(v as MemoryCategory)}>
+              <SelectTrigger className="h-8 flex-1 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="decisao">Decisão tomada</SelectItem>
+                <SelectItem value="hipotese">Hipótese validada</SelectItem>
+                <SelectItem value="premissa">Premissa</SelectItem>
+                <SelectItem value="diagnostico">Diagnóstico</SelectItem>
+                <SelectItem value="preferencia">Preferência</SelectItem>
+                <SelectItem value="outro">Outro</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={adicionar} disabled={!novoConteudo.trim()} className="h-8">
+              Salvar
+            </Button>
+          </div>
+        </div>
+
+        {/* Filtros por categoria */}
+        <div className="mb-2 flex flex-wrap gap-1">
+          {(["todas", "decisao", "hipotese", "premissa", "diagnostico", "preferencia", "outro"] as const).map(
+            (c) => (
+              <button
+                key={c}
+                onClick={() => setFilter(c)}
+                className={`rounded px-2 py-0.5 text-[10px] uppercase ${
+                  filter === c ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {c} {c !== "todas" && `(${contar(c as MemoryCategory)})`}
+              </button>
+            ),
+          )}
+        </div>
+
+        {filtradas.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            Nenhuma memória salva. A IA registra aqui conclusões importantes para reusar em
-            próximas conversas.
+            Nenhuma memória nesta categoria. Registre decisões já tomadas, hipóteses validadas ou
+            premissas — a IA usará isso como ponto de partida nas próximas conversas.
           </p>
         ) : (
           <ul className="space-y-2">
-            {items.map((m) => (
+            {filtradas.map((m) => (
               <li
                 key={m.id}
                 className="rounded border border-border/40 p-2 text-xs flex gap-2 items-start"
