@@ -190,7 +190,7 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
-      <div className="flex flex-row items-center justify-between border-b border-border/40 px-4 py-3 bg-card/20">
+      <div className="sticky top-0 z-20 flex flex-row items-center justify-between border-b border-border/40 px-4 py-3 bg-background/95 backdrop-blur">
         <div className="flex items-center gap-3">
           <Bot className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">Consultor Financeiro IA</h2>
