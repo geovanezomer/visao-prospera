@@ -406,26 +406,47 @@ export function CompanyConfigForm({
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Porte
         </h3>
-        <div className="space-y-1.5">
-          <Label htmlFor="numColaboradores">Número de colaboradores *</Label>
-          <Input
-            id="numColaboradores"
-            type="number"
-            min={0}
-            max={100000}
-            step={1}
-            value={Number.isFinite(form.numColaboradores) ? form.numColaboradores : 0}
-            onChange={(e) =>
-              commit({
-                ...form,
-                numColaboradores: Math.max(0, Math.floor(Number(e.target.value) || 0)),
-              })
-            }
-            className="w-32"
-          />
-          <p className="text-[10px] text-muted-foreground">
-            Base para indicadores de produtividade (Receita/Colaborador, Lucro/Colaborador etc.).
-          </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="numColaboradores">Número de colaboradores *</Label>
+            <Input
+              id="numColaboradores"
+              type="number"
+              min={0}
+              max={100000}
+              step={1}
+              value={Number.isFinite(form.numColaboradores) ? form.numColaboradores : 0}
+              onChange={(e) =>
+                commit({
+                  ...form,
+                  numColaboradores: Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                })
+              }
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Base para indicadores de produtividade (Receita/Colaborador, Lucro/Colaborador etc.).
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="numSocios">Número de sócios / acionistas *</Label>
+            <Input
+              id="numSocios"
+              type="number"
+              min={0}
+              max={1000}
+              step={1}
+              value={Number.isFinite(form.numSocios) ? form.numSocios : 0}
+              onChange={(e) =>
+                commit({
+                  ...form,
+                  numSocios: Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                })
+              }
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Usado em análise de governança (concentração societária, risco-chave, sucessão).
+            </p>
+          </div>
         </div>
       </section>
 
