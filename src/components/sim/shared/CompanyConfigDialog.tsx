@@ -357,39 +357,17 @@ export function CompanyConfigForm({
                         <Label htmlFor={`bm-${f.key}`} className="text-[11px]">
                           {f.label} ({f.unit})
                         </Label>
-                        <TooltipProvider delayDuration={150}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                className="text-muted-foreground hover:text-foreground"
-                                aria-label={`Detalhes de ${f.label}`}
-                              >
-                                <Info className="h-3 w-3" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs text-[11px] leading-snug">
-                              <div className="font-medium">{f.label}</div>
-                              <div className="mt-1">
-                                Origem:{" "}
-                                {isCustom ? (
-                                  <strong>valor personalizado</strong>
-                                ) : (
-                                  <>setor <strong>{setorSelecionado.label}</strong></>
-                                )}
-                              </div>
-                              <div className="mt-1">Quartis efetivos:</div>
-                              <div>• P25 = P50 × 0,80 = <strong>{fmt(p25)}</strong></div>
-                              <div>• P50 = <strong>{fmt(effectiveP50)}</strong></div>
-                              <div>• P75 = P50 × 1,20 = <strong>{fmt(p75)}</strong></div>
-                              {isCustom && (
-                                <div className="mt-1 text-muted-foreground">
-                                  Padrão do setor: {fmt(defaultP50)}
-                                </div>
-                              )}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <HelpTip
+                          text={`Origem: ${
+                            isCustom
+                              ? "valor personalizado"
+                              : `setor ${setorSelecionado.label}`
+                          }. Quartis efetivos: P25 ${fmt(p25)} · P50 ${fmt(effectiveP50)} · P75 ${fmt(p75)}.${
+                            isCustom ? ` Padrão do setor: ${fmt(defaultP50)}.` : ""
+                          }`}
+                          formula="P25 = P50 × 0,80   ·   P75 = P50 × 1,20"
+                          example={`P50 = ${fmt(effectiveP50)} → P25 = ${fmt(p25)}, P75 = ${fmt(p75)}`}
+                        />
                       </div>
                       <Input
                         id={`bm-${f.key}`}
