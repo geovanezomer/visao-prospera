@@ -392,8 +392,12 @@ const handlers: Record<string, ToolHandler> = {
           });
           return {
             nome: String(o.nome || "Cenário"),
-            receitaDelta: Number(o.receita_delta) || 0,
-            folhaDelta: Number(o.folha_delta) || 0,
+            receitaDelta: Array.isArray(o.receita_delta)
+              ? (o.receita_delta as unknown[]).map((x) => Number(x) || 0)
+              : Number(o.receita_delta) || 0,
+            folhaDelta: Array.isArray(o.folha_delta)
+              ? (o.folha_delta as unknown[]).map((x) => Number(x) || 0)
+              : Number(o.folha_delta) || 0,
             capturasDivida: caps,
           };
         })
