@@ -418,6 +418,7 @@ export async function chatWithTools(
       throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
     }
     const json = (await res.json()) as Record<string, unknown>;
+    if (anth) reportCacheUsage(json.usage, "tools");
 
     if (anth) {
       // Resposta Anthropic: { content: [{type:"text"|"tool_use", ...}], stop_reason }
