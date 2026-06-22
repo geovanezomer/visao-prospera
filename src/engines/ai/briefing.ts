@@ -102,6 +102,10 @@ export function buildOpeningBriefing(state: AppState, sections?: SnapshotSection
         riscos.push(`dependência crítica de **um único canal** de aquisição`);
       }
       const g = s.governance;
+      // Sócio único → concentração societária máxima (risco-chave automático).
+      if (state.numSocios === 1) {
+        riscos.push(`**sócio único** (concentração societária total — risco-chave estrutural)`);
+      }
       if (g?.socioAfastado60d === "para") {
         riscos.push(`negócio **para** se sócio se afasta 60 dias (risco-chave)`);
       } else if (g?.socioAfastado60d === "perde_eficiencia" && pontos.length + riscos.length < 5) {

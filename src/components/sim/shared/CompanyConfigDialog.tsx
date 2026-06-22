@@ -79,6 +79,11 @@ const formSchema = z.object({
     .int("Use um número inteiro")
     .min(0, "Não pode ser negativo")
     .max(100000, "Valor irreal"),
+  numSocios: z
+    .number({ invalid_type_error: "Informe um número" })
+    .int("Use um número inteiro")
+    .min(0, "Não pode ser negativo")
+    .max(1000, "Valor irreal"),
   regime: z.enum(["simples", "presumido", "real"]),
   periodoAnaliseMeses: z.union([
     z.literal(6),
@@ -162,6 +167,7 @@ export function CompanyConfigForm({
     state.ramoAtuacao,
     state.benchmarkCustom,
     state.numColaboradores,
+    state.numSocios,
     state.headcountRange,
     state.periodoAnaliseMeses,
     state.fiscalYearStartMonth,
@@ -198,6 +204,7 @@ export function CompanyConfigForm({
           ? d.benchmarkCustom
           : undefined,
       numColaboradores: d.numColaboradores,
+      numSocios: d.numSocios,
       headcountRange: rangeFromNumber(d.numColaboradores),
       periodoAnaliseMeses: d.periodoAnaliseMeses,
       fiscalYearStartMonth: d.fiscalYearStartMonth,
@@ -399,26 +406,47 @@ export function CompanyConfigForm({
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Porte
         </h3>
-        <div className="space-y-1.5">
-          <Label htmlFor="numColaboradores">Número de colaboradores *</Label>
-          <Input
-            id="numColaboradores"
-            type="number"
-            min={0}
-            max={100000}
-            step={1}
-            value={Number.isFinite(form.numColaboradores) ? form.numColaboradores : 0}
-            onChange={(e) =>
-              commit({
-                ...form,
-                numColaboradores: Math.max(0, Math.floor(Number(e.target.value) || 0)),
-              })
-            }
-            className="w-32"
-          />
-          <p className="text-[10px] text-muted-foreground">
-            Base para indicadores de produtividade (Receita/Colaborador, Lucro/Colaborador etc.).
-          </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="numColaboradores">Número de colaboradores *</Label>
+            <Input
+              id="numColaboradores"
+              type="number"
+              min={0}
+              max={100000}
+              step={1}
+              value={Number.isFinite(form.numColaboradores) ? form.numColaboradores : 0}
+              onChange={(e) =>
+                commit({
+                  ...form,
+                  numColaboradores: Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                })
+              }
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Base para indicadores de produtividade (Receita/Colaborador, Lucro/Colaborador etc.).
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="numSocios">Número de sócios / acionistas *</Label>
+            <Input
+              id="numSocios"
+              type="number"
+              min={0}
+              max={1000}
+              step={1}
+              value={Number.isFinite(form.numSocios) ? form.numSocios : 0}
+              onChange={(e) =>
+                commit({
+                  ...form,
+                  numSocios: Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                })
+              }
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Usado em análise de governança (concentração societária, risco-chave, sucessão).
+            </p>
+          </div>
         </div>
       </section>
 
@@ -545,6 +573,7 @@ function buildFormFromState(state: AppState): FormData {
     ramoAtuacao: ramoEfetivo,
     benchmarkCustom: state.benchmarkCustom,
     numColaboradores: inferNum(),
+    numSocios: typeof state.numSocios === "number" ? state.numSocios : 1,
     regime: state.tax.regime,
     periodoAnaliseMeses: state.periodoAnaliseMeses ?? 12,
     fiscalYearStartMonth: state.fiscalYearStartMonth ?? 1,

@@ -104,7 +104,7 @@ const defs: ToolDef[] = [
   {
     name: "get_governanca",
     description:
-      "Respostas qualitativas de governança e sucessão (sócio afastado, processos documentados, plano de sucessão, quem fecha contrato).",
+      "Governança e estrutura societária: número de sócios/acionistas, número de colaboradores, respostas qualitativas (sócio afastado 60d, quem fecha contrato, processos documentados, plano de sucessão). Use para diagnosticar concentração societária, risco-chave, sucessão e profissionalização.",
     parameters: { type: "object", properties: {}, required: [] },
   },
   {
