@@ -21,6 +21,12 @@ const fmtBRL = (n: number) =>
 const fmtPct = (n: number) => `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 
 export function CltVsPjCalc() {
+  const { state } = useAppState();
+  // Adicional IRPJ — vem das "Federais" (TaxConfig.ratesOverride). Permite que
+  // decisões judiciais que zeram o adicional para um segmento se propaguem aqui.
+  const irpjAdicionalPct = getIrpjAdicionalPct(state.tax) / 100;
+  const irpjAdicionalGatilhoMensal = getIrpjAdicionalGatilhoTri(state.tax) / 3;
+
   const [salarioBrutoCLT, setSalarioBrutoCLT] = useState(3000);
   const [dependentesIR, setDependentesIR] = useState(0);
   const [plrAnual, setPlrAnual] = useState(0);
@@ -41,6 +47,8 @@ export function CltVsPjCalc() {
         contabilidadeMensal,
         planoSaudeMensal,
         proLaborePct: 0.28,
+        irpjAdicionalPct,
+        irpjAdicionalGatilhoMensal,
       });
     } catch {
       return null;
@@ -53,6 +61,8 @@ export function CltVsPjCalc() {
     faturamentoPJMensal,
     contabilidadeMensal,
     planoSaudeMensal,
+    irpjAdicionalPct,
+    irpjAdicionalGatilhoMensal,
   ]);
 
   function limpar() {
