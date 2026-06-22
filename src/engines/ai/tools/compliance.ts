@@ -192,6 +192,14 @@ const handlers: Record<string, ToolHandler> = {
       `> _Impacto estimado para regime ${regime} — Split Payment entra na transição 2027-2032 conforme LC 214/2025._`,
     ].join("\n");
   },
+
+  analisar_covenants: (args, { state, simulatedState }) => {
+    const cenario = (args?.cenario as "base" | "simulado") || "base";
+    const target = cenario === "simulado" ? (simulatedState ?? state) : state;
+    const spec = (args?.contratos as CovenantSpec | undefined) ?? {};
+    const res = analyzeCovenants(target, spec, cenario);
+    return covenantsToMarkdown(res);
+  },
 };
 
 export const complianceTools: ToolModule = {
