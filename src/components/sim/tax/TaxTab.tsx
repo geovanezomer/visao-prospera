@@ -21,6 +21,9 @@ import {
 } from "@/engines/finance";
 import {
   getPresumidoBases,
+  getCbsAliquota,
+  getIbsAliquotaRef,
+  getFatorRMinimoPct,
   SIMPLES_LIMITE,
   SIMPLES_SUBLIMITE_ESTADUAL,
 } from "@/engines/finance/taxDefaults";
