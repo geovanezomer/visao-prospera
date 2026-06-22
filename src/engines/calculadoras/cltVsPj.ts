@@ -26,7 +26,16 @@ export const regimePJLabel: Record<RegimePJ, string> = {
   presumido: "Lucro Presumido",
 };
 
-/** Parâmetros tributários por regime (ajustáveis). */
+/**
+ * Parâmetros tributários por regime (ajustáveis).
+ *
+ * NOTA — Lucro Presumido: a `aliquotaImpostos` aqui é a parcela CONSOLIDADA
+ * de IRPJ base (15% × 32%) + CSLL (9% × 32%) + PIS/COFINS cumulativos + ISS
+ * (~16,33%). O ADICIONAL de 10% sobre o lucro presumido que exceder o
+ * gatilho (R$ 20k/mês por padrão) é calculado à parte em `calcularPJ` e
+ * pode ser zerado/ajustado via input (`irpjAdicionalPct`) para refletir
+ * decisões judiciais que afastem o adicional para determinados segmentos.
+ */
 export const PARAMETROS_PJ = {
   mei: { aliquotaImpostos: 0, dasFixoMensal: 80, tetoFaturamentoAnual: 81000 },
   // Simples: alíquota efetiva é CALCULADA por faixa (Anexo III) — ver aliquotaSimplesAnexoIII().
@@ -34,6 +43,13 @@ export const PARAMETROS_PJ = {
   simples: { aliquotaImpostos: 0.093, dasFixoMensal: 0, tetoFaturamentoAnual: 4_800_000 },
   presumido: { aliquotaImpostos: 0.1633, dasFixoMensal: 0, tetoFaturamentoAnual: 78_000_000 },
 } as const;
+
+/** Base de presunção para IRPJ no Lucro Presumido — serviços = 32%. */
+export const PRESUMIDO_BASE_IRPJ_SERVICOS = 0.32;
+/** Adicional IRPJ — alíquota padrão (LC 9.249/95 art. 3º §1º). */
+export const IRPJ_ADICIONAL_PCT_DEFAULT = 0.1;
+/** Gatilho MENSAL do adicional IRPJ (R$ 20.000 — 1/3 do gatilho trimestral de R$ 60k). */
+export const IRPJ_ADICIONAL_GATILHO_MENSAL_DEFAULT = 20_000;
 
 /**
  * Tabela do Simples Nacional — Anexo III (serviços em geral).
@@ -102,9 +118,23 @@ export const cltVsPjInputSchema = z.object({
   contabilidadeMensal: z.number().min(0).default(0),
   planoSaudeMensal: z.number().min(0).default(0),
   proLaborePct: z.number().min(0).max(1).default(PRO_LABORE_PCT_DEFAULT),
+  /**
+   * Adicional IRPJ (% sobre o excedente do gatilho). Padrão 10% — pode ser
+   * 0 para refletir decisões judiciais que afastem o adicional para o
+   * segmento, ou outro valor configurado nas "Federais".
+   */
+  irpjAdicionalPct: z.number().min(0).max(1).default(IRPJ_ADICIONAL_PCT_DEFAULT),
+  /** Gatilho MENSAL do adicional IRPJ (R$). Padrão R$ 20.000. */
+  irpjAdicionalGatilhoMensal: z
+    .number()
+    .min(0)
+    .default(IRPJ_ADICIONAL_GATILHO_MENSAL_DEFAULT),
 });
 
-export type CltVsPjInput = z.infer<typeof cltVsPjInputSchema>;
+/** Input do usuário (campos com default são opcionais). */
+export type CltVsPjInput = z.input<typeof cltVsPjInputSchema>;
+/** Input já validado e com defaults aplicados (uso interno na engine). */
+type CltVsPjInputParsed = z.output<typeof cltVsPjInputSchema>;
 
 // ============================================================================
 // CLT
@@ -131,7 +161,7 @@ function liquidoMensalCLT(salario: number, dependentes: number) {
   return { inss, irrf, liquido: Math.round((salario - inss - irrf) * 100) / 100 };
 }
 
-export function calcularCLT(i: CltVsPjInput): ResultadoCLT {
+export function calcularCLT(i: CltVsPjInputParsed): ResultadoCLT {
   const { inss, irrf, liquido } = liquidoMensalCLT(i.salarioBrutoCLT, i.dependentesIR);
   const liquidoAnual = liquido * 12;
 
@@ -190,14 +220,20 @@ export interface ResultadoPJ {
   acimaDoTetoRegime: boolean;
 }
 
-export function calcularPJ(regime: RegimePJ, i: CltVsPjInput): ResultadoPJ {
+export function calcularPJ(regime: RegimePJ, i: CltVsPjInputParsed): ResultadoPJ {
   const params = PARAMETROS_PJ[regime];
   const fat = i.faturamentoPJMensal;
 
   // Impostos:
   //  - MEI: DAS fixo mensal
   //  - Simples Nacional: alíquota efetiva calculada pela tabela progressiva do Anexo III
-  //  - Lucro Presumido: alíquota efetiva consolidada (~16,33%)
+  //  - Lucro Presumido: alíquota efetiva consolidada (~16,33%) MAIS o
+  //    Adicional IRPJ de 10% sobre a parcela do lucro presumido (32% do
+  //    faturamento, para serviços) que exceder o gatilho mensal (R$ 20.000
+  //    por padrão). Tanto a alíquota quanto o gatilho são configuráveis no
+  //    input (espelhando as "Federais" das configurações do sistema) e
+  //    podem ser zerados para refletir decisões judiciais que afastem o
+  //    adicional para o segmento.
   let aliquotaEfetiva: number;
   let impostosMensal: number;
   if (regime === "mei") {
@@ -207,8 +243,11 @@ export function calcularPJ(regime: RegimePJ, i: CltVsPjInput): ResultadoPJ {
     aliquotaEfetiva = aliquotaSimplesAnexoIII(fat);
     impostosMensal = Math.round(fat * aliquotaEfetiva * 100) / 100;
   } else {
-    aliquotaEfetiva = params.aliquotaImpostos;
-    impostosMensal = Math.round(fat * aliquotaEfetiva * 100) / 100;
+    const consolidado = fat * params.aliquotaImpostos;
+    const baseIRPJ = fat * PRESUMIDO_BASE_IRPJ_SERVICOS;
+    const adicional = Math.max(0, baseIRPJ - i.irpjAdicionalGatilhoMensal) * i.irpjAdicionalPct;
+    impostosMensal = Math.round((consolidado + adicional) * 100) / 100;
+    aliquotaEfetiva = fat > 0 ? impostosMensal / fat : 0;
   }
 
   // Pró-labore: 28% do faturamento, mínimo 1 salário-mínimo (no MEI o pró-labore é opcional —
@@ -259,7 +298,7 @@ export interface ComparativoCltVsPj {
   faturamentoEmpate: Record<RegimePJ, number>;
 }
 
-function faturamentoParaIgualar(regime: RegimePJ, alvoMensal: number, i: CltVsPjInput): number {
+function faturamentoParaIgualar(regime: RegimePJ, alvoMensal: number, i: CltVsPjInputParsed): number {
   // Busca binária (faturamento ≥ alvo). Iterativa, rápida e simples.
   let lo = 0,
     hi = Math.max(alvoMensal * 5, 100000);
