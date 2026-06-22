@@ -85,6 +85,59 @@ export async function listModels(cfg: AIConfig): Promise<string[]> {
 }
 
 // ============================================================
+// Telemetria de PROMPT CACHING (Anthropic)
+// ------------------------------------------------------------
+// A resposta Anthropic devolve em `usage`:
+//   - input_tokens: tokens novos processados (NÃO vieram do cache)
+//   - cache_creation_input_tokens: tokens escritos no cache (custo 1,25×)
+//   - cache_read_input_tokens: tokens lidos do cache (custo 0,10×)  ← economia
+//   - output_tokens
+// Loga no console e dispara evento "ai:cache-usage" para a UI consumir.
+// ============================================================
+export interface CacheUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_input_tokens: number;
+  cache_read_input_tokens: number;
+  /** % do input que veio do cache (0-100). */
+  hitRatio: number;
+  /** Contexto: "stream" | "tools" | etc. */
+  source: string;
+}
+
+function reportCacheUsage(raw: unknown, source: string): void {
+  if (!raw || typeof raw !== "object") return;
+  const u = raw as Record<string, unknown>;
+  const input = Number(u.input_tokens) || 0;
+  const output = Number(u.output_tokens) || 0;
+  const create = Number(u.cache_creation_input_tokens) || 0;
+  const read = Number(u.cache_read_input_tokens) || 0;
+  const totalIn = input + create + read;
+  const hit = totalIn > 0 ? (read / totalIn) * 100 : 0;
+  const usage: CacheUsage = {
+    input_tokens: input,
+    output_tokens: output,
+    cache_creation_input_tokens: create,
+    cache_read_input_tokens: read,
+    hitRatio: Number(hit.toFixed(1)),
+    source,
+  };
+  // Log conciso só quando há sinal de cache (escrita ou leitura).
+  if (create > 0 || read > 0) {
+    console.info(
+      `[ai/cache] ${source} | in=${input} create=${create} read=${read} out=${output} hit=${usage.hitRatio}%`,
+    );
+  }
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(new CustomEvent("ai:cache-usage", { detail: usage }));
+    } catch {
+      // ignora ambientes sem CustomEvent
+    }
+  }
+}
+
+// ============================================================
 // Helpers Anthropic — converte do nosso formato unificado.
 // ============================================================
 /**
@@ -247,7 +300,11 @@ export async function* streamChat(
           if (anth) {
             // Anthropic SSE: content_block_delta com delta.text.
             const delta = (obj as { delta?: { type?: string; text?: unknown } }).delta;
-            if (obj?.type === "content_block_delta" && delta?.type === "text_delta") {
+            if (obj?.type === "message_start") {
+              // usage chega no message_start (cache_creation/cache_read).
+              const msg = (obj as { message?: { usage?: unknown } }).message;
+              reportCacheUsage(msg?.usage, "stream");
+            } else if (obj?.type === "content_block_delta" && delta?.type === "text_delta") {
               const txt = delta.text;
               if (typeof txt === "string" && txt) yield txt;
             } else if (obj?.type === "message_stop") {
@@ -315,7 +372,16 @@ export async function chatWithTools(
       const { asOpenAITools, asAnthropicTools, asOpenAIMetaTools, asAnthropicMetaTools } =
         await import("./tools");
       const openAiTools = useMeta ? asOpenAIMetaTools() : asOpenAITools();
-      const anthropicTools = useMeta ? asAnthropicMetaTools() : asAnthropicTools();
+      const anthropicToolsRaw = useMeta ? asAnthropicMetaTools() : asAnthropicTools();
+      // Cache de tools: marca a ÚLTIMA tool com cache_control para que
+      // todo o catálogo de tools entre no prefixo cacheado da requisição.
+      const anthropicTools = anth
+        ? anthropicToolsRaw.map((t, idx) =>
+            idx === anthropicToolsRaw.length - 1
+              ? { ...t, cache_control: { type: "ephemeral" as const } }
+              : t,
+          )
+        : anthropicToolsRaw;
 
       const url = anth ? `${cfg.baseUrl}/messages` : `${cfg.baseUrl}/chat/completions`;
       let body: Record<string, unknown>;
@@ -356,6 +422,7 @@ export async function chatWithTools(
       throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
     }
     const json = (await res.json()) as Record<string, unknown>;
+    if (anth) reportCacheUsage(json.usage, "tools");
 
     if (anth) {
       // Resposta Anthropic: { content: [{type:"text"|"tool_use", ...}], stop_reason }
