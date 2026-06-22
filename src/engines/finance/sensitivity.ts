@@ -18,7 +18,7 @@ const DRIVER_LABEL: Record<DriverKey, string> = {
 
 const LABOR_RE = /sal[áa]rio|folha|clt|prolabore|pró-labore|mod|mão de obra/i;
 
-function applyDriver(state: AppState, driver: DriverKey, deltaPct: number): AppState {
+export function applyDriver(state: AppState, driver: DriverKey, deltaPct: number): AppState {
   const f = 1 + deltaPct / 100;
   if (driver === "preco") {
     // preço sobe receita e mantém custos
@@ -71,7 +71,7 @@ const OUTPUT_LABEL: Record<OutputKey, string> = {
   roic: "ROIC (%)",
 };
 
-function readOutput(state: AppState, output: OutputKey): number {
+export function readOutput(state: AppState, output: OutputKey): number {
   const { dre } = buildDRE(state, resolveEffectiveRegime(state));
   if (output === "ebitda") return sum(dre.ebitda);
   if (output === "lucroLiquido") return sum(dre.lucroLiquido);

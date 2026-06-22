@@ -18,6 +18,16 @@ import {
   breakEvenDinamicoToMarkdown,
   type RestricaoBreakEven,
 } from "@/engines/finance/breakEvenDinamico";
+import {
+  runTornado,
+  runJointScenario,
+  runMonteCarlo,
+  DEFAULT_MC,
+  tornadoToMarkdown,
+  jointToMarkdown,
+  monteCarloToMarkdown,
+  type JointMove,
+} from "@/engines/finance/sensibilidadeMulti";
 import { getSectionsCached } from "../snapshot";
 import { brl, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
@@ -180,6 +190,56 @@ const defs: ToolDef[] = [
       required: ["restricao"],
     },
   },
+  {
+    name: "sensibilidade_multivariada",
+    description:
+      "Análise de sensibilidade avançada em 3 modos:\n• 'tornado' — testa ±delta em CADA driver e ranqueia por IMPACTO ABSOLUTO em R$ (não só elasticidade); útil para priorizar alavancas (ex: 'qual move mais o EBITDA?').\n• 'joint' — aplica MÚLTIPLOS drivers SIMULTANEAMENTE para responder cenários compostos (ex: 'se receita cair 10% E folha subir 5%, o que acontece com caixa e EV?').\n• 'monte_carlo' — distribuição probabilística (P5/P25/Mediana/P75/P95) de EBITDA, lucro e caixa com correlações economicamente fundamentadas.\nSuporta múltiplos KPIs de saída simultaneamente (ebitda + caixa + ROIC).",
+    parameters: {
+      type: "object",
+      properties: {
+        metodo: {
+          type: "string",
+          enum: ["tornado", "joint", "monte_carlo"],
+          description: "Modo de análise. Default: 'tornado'.",
+        },
+        drivers: {
+          type: "array",
+          items: { type: "string", enum: ["preco", "volume", "cpv", "folha", "fixos", "juros"] },
+          description: "Drivers a testar (tornado/joint). Default: todos.",
+        },
+        delta_pct: {
+          type: "number",
+          description: "Δ% aplicado em cada driver no modo 'tornado'. Default: 10.",
+        },
+        cenario: {
+          type: "array",
+          description:
+            "Modo 'joint': lista de movimentos compostos. Ex: [{driver:'volume',deltaPct:-10},{driver:'folha',deltaPct:5}].",
+          items: {
+            type: "object",
+            properties: {
+              driver: {
+                type: "string",
+                enum: ["preco", "volume", "cpv", "folha", "fixos", "juros"],
+              },
+              deltaPct: { type: "number" },
+            },
+            required: ["driver", "deltaPct"],
+          },
+        },
+        outputs: {
+          type: "array",
+          items: { type: "string", enum: ["ebitda", "lucroLiquido", "saldoCaixa", "roic"] },
+          description: "KPIs a observar (tornado/joint). Default: ['ebitda','saldoCaixa'].",
+        },
+        iteracoes: {
+          type: "number",
+          description: "Modo 'monte_carlo': nº de iterações (default 1000, máx 5000).",
+        },
+      },
+      required: [],
+    },
+  },
 ];
 
 const handlers: Record<string, ToolHandler> = {
@@ -233,6 +293,35 @@ const handlers: Record<string, ToolHandler> = {
     const sazonalidade = args?.sazonalidade !== false;
     const res = solveBreakEvenDinamico(state, { restricao, metaValor, sazonalidade });
     return breakEvenDinamicoToMarkdown(res);
+  },
+
+  sensibilidade_multivariada: (args, { state }) => {
+    const metodo = (args?.metodo as string) || "tornado";
+    const driversIn =
+      Array.isArray(args?.drivers) && args.drivers.length
+        ? (args.drivers as DriverKey[])
+        : (["preco", "volume", "cpv", "folha", "fixos", "juros"] as DriverKey[]);
+    const outputsIn =
+      Array.isArray(args?.outputs) && args.outputs.length
+        ? (args.outputs as OutputKey[])
+        : (["ebitda", "saldoCaixa"] as OutputKey[]);
+
+    if (metodo === "monte_carlo") {
+      const it = Math.max(100, Math.min(5000, Number(args?.iteracoes) || DEFAULT_MC.iterations));
+      const res = runMonteCarlo(state, { ...DEFAULT_MC, iterations: it });
+      return monteCarloToMarkdown(res);
+    }
+    if (metodo === "joint") {
+      const cenario = Array.isArray(args?.cenario) ? (args.cenario as JointMove[]) : [];
+      if (!cenario.length) {
+        return "Modo 'joint' requer `cenario: [{driver, deltaPct}, ...]`.";
+      }
+      const res = runJointScenario(state, cenario, outputsIn);
+      return jointToMarkdown(res);
+    }
+    const delta = Number(args?.delta_pct) || 10;
+    const res = runTornado(state, driversIn, delta, outputsIn);
+    return tornadoToMarkdown(res);
   },
 };
 
