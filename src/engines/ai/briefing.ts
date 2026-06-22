@@ -14,7 +14,7 @@ import {
 } from "@/engines/finance";
 import { buildCashFlow } from "@/engines/finance/cashflow";
 import { computeHealth } from "@/engines/finance/health";
-import { findSector } from "@/engines/benchmark/sectors";
+import { findSector, resolveBenchmark } from "@/engines/benchmark/sectors";
 import type { SnapshotSections } from "./snapshot";
 
 // M-1: alinhado com tools.ts (mesma assinatura, mesmo Intl).
