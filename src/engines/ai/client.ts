@@ -300,7 +300,11 @@ export async function* streamChat(
           if (anth) {
             // Anthropic SSE: content_block_delta com delta.text.
             const delta = (obj as { delta?: { type?: string; text?: unknown } }).delta;
-            if (obj?.type === "content_block_delta" && delta?.type === "text_delta") {
+            if (obj?.type === "message_start") {
+              // usage chega no message_start (cache_creation/cache_read).
+              const msg = (obj as { message?: { usage?: unknown } }).message;
+              reportCacheUsage(msg?.usage, "stream");
+            } else if (obj?.type === "content_block_delta" && delta?.type === "text_delta") {
               const txt = delta.text;
               if (typeof txt === "string" && txt) yield txt;
             } else if (obj?.type === "message_stop") {
