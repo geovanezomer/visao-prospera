@@ -18,12 +18,19 @@ export interface CaptacaoDivida {
 
 export interface CenarioProjecao {
   nome: string;
-  /** Variação multiplicativa aplicada sobre recebimentos/custos variáveis (-0.10 = -10%). */
-  receitaDelta: number;
-  /** Variação sobre pagamentos fixos (proxy de folha). */
-  folhaDelta: number;
+  /** Variação multiplicativa sobre recebimentos/custos variáveis. Escalar (-0.10) ou array mês-a-mês. */
+  receitaDelta: number | number[];
+  /** Variação sobre pagamentos fixos (proxy de folha). Escalar ou array mês-a-mês. */
+  folhaDelta: number | number[];
   /** Eventos de captação opcionais. */
   capturasDivida?: CaptacaoDivida[];
+}
+
+/** Resolve delta para o mês i (1-indexado). Aceita escalar ou array (último valor repetido). */
+function deltaAt(d: number | number[], i: number): number {
+  if (typeof d === "number") return d;
+  if (d.length === 0) return 0;
+  return d[Math.min(i - 1, d.length - 1)] ?? 0;
 }
 
 export interface ProjecaoMes {
