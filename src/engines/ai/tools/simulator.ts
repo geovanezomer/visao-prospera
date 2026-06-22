@@ -18,6 +18,16 @@ import {
   breakEvenDinamicoToMarkdown,
   type RestricaoBreakEven,
 } from "@/engines/finance/breakEvenDinamico";
+import {
+  runTornado,
+  runJointScenario,
+  runMonteCarlo,
+  DEFAULT_MC,
+  tornadoToMarkdown,
+  jointToMarkdown,
+  monteCarloToMarkdown,
+  type JointMove,
+} from "@/engines/finance/sensibilidadeMulti";
 import { getSectionsCached } from "../snapshot";
 import { brl, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
