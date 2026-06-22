@@ -35,7 +35,8 @@ const TOPICS = [
 
 /**
  * Diálogo de Sugestões e Melhorias.
- * Mockup — futura integração com Resend para envio real.
+ * Envia via POST /api/feedback (server route) → Resend API.
+ * Credenciais ficam em .env do servidor (RESEND_API_KEY, FEEDBACK_FROM, FEEDBACK_TO).
  */
 export function FeedbackDialog() {
   const [open, setOpen] = useState(false);
@@ -62,13 +63,39 @@ export function FeedbackDialog() {
       return;
     }
     setSending(true);
-    // MOCKUP — em breve integrado com Resend
-    await new Promise((r) => setTimeout(r, 600));
-    setSending(false);
-    toast.success("Sugestão registrada! (mockup — integração com Resend em breve)");
-    reset();
-    setOpen(false);
+    try {
+      const finalTopic = topic === "Outro" ? otherTopic.trim() : topic;
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: finalTopic,
+          subject: subject.trim(),
+          message: message.trim(),
+          appVersion: import.meta.env.VITE_APP_VERSION ?? undefined,
+          userAgent:
+            typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) {
+        toast.error(data.error ?? `Falha ao enviar (HTTP ${res.status}).`);
+        return;
+      }
+      toast.success("Sugestão enviada — obrigado!");
+      reset();
+      setOpen(false);
+    } catch (err) {
+      console.error("[feedback] send error:", err);
+      toast.error("Erro de rede ao enviar sugestão.");
+    } finally {
+      setSending(false);
+    }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
