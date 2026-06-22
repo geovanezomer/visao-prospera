@@ -149,11 +149,39 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
   const [showThreads, setShowThreads] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showJumpToBottom, setShowJumpToBottom] = useState(false);
+  // Auto-scroll "inteligente": só puxa pra baixo se o usuário já está perto do fim.
+  // Se rolou pra cima durante o streaming, mostra botão "voltar ao fim" e respeita a posição.
+  const stickToBottomRef = useRef(true);
 
-  // === Auto-scroll ===
+  const scrollToBottom = (smooth = true) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+    stickToBottomRef.current = true;
+    setShowJumpToBottom(false);
+  };
+
+  // Detecta scroll do usuário: se afastar > 80px do fim, "desgruda".
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const atBottom = distance < 80;
+    stickToBottomRef.current = atBottom;
+    setShowJumpToBottom(!atBottom && (streaming || messages.length > 0));
+  };
+
+  // Quando chegam novos tokens / mensagens, só auto-scroll se o usuário está colado no fim.
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (!scrollRef.current) return;
+    if (stickToBottomRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    } else if (streaming) {
+      setShowJumpToBottom(true);
+    }
   }, [messages, streaming]);
+
 
   const onFilesChange = async (files: FileList | null) => {
     await handleFiles(files);
