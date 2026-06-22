@@ -1236,9 +1236,196 @@ function buildPriorities(
   return out;
 }
 
-// =====================================================================
-// APÊNDICE — DRE
-// =====================================================================
+// ── Risco + Recomendação completa (merge diagnose + prescriptive) ─────
+type RiskRec = {
+  title: string;
+  severity: "danger" | "warn" | "info";
+  metric?: string;
+  impact: string;
+  probability: string;
+  diagnosis: string;
+  actions: { title: string; detail: string }[];
+};
+function buildRiscosERecomendacoes(
+  diags: ReturnType<typeof diagnose>,
+  prescriptive: ReturnType<typeof buildPrescriptiveCards>,
+): RiskRec[] {
+  const sevOrder: Record<string, number> = { danger: 0, warn: 1, info: 2, ok: 3 };
+  // Base: cards prescriptivos (já trazem ações completas).
+  const cards = [...prescriptive].sort(
+    (a, b) => (sevOrder[a.severity] ?? 9) - (sevOrder[b.severity] ?? 9),
+  );
+  const out: RiskRec[] = cards
+    .filter((c) => c.severity !== "ok")
+    .map((c) => {
+      const sev: RiskRec["severity"] =
+        c.severity === "danger" ? "danger" : c.severity === "warn" ? "warn" : "info";
+      return {
+        title: c.problem,
+        severity: sev,
+        metric: c.metricLabel ? `${c.metricLabel}: ${c.metricValue}` : undefined,
+        impact:
+          sev === "danger"
+            ? "Alto · risco material ao caixa ou ao resultado"
+            : sev === "warn"
+              ? "Médio · pode comprometer indicadores no horizonte próximo"
+              : "Baixo · oportunidade de eficiência",
+        probability: sev === "danger" ? "Alta" : sev === "warn" ? "Média" : "Baixa",
+        diagnosis: c.cause,
+        actions: c.actions.map((a) => ({ title: a.title, detail: a.detail })),
+      };
+    });
+
+  // Enriquece com diagnósticos sem card correspondente.
+  diags
+    .filter((d) => d.level !== "ok")
+    .forEach((d) => {
+      const already = out.some((r) =>
+        r.title.toLowerCase().includes(d.title.toLowerCase().slice(0, 8)),
+      );
+      if (already) return;
+      out.push({
+        title: d.title,
+        severity: d.level === "danger" ? "danger" : "warn",
+        impact:
+          d.level === "danger"
+            ? "Alto · risco material ao caixa ou ao resultado"
+            : "Médio · pode comprometer indicadores no horizonte próximo",
+        probability: d.level === "danger" ? "Alta" : "Média",
+        diagnosis: d.message,
+        actions: [],
+      });
+    });
+
+  return out.sort(
+    (a, b) =>
+      ({ danger: 0, warn: 1, info: 2 }[a.severity] -
+        { danger: 0, warn: 1, info: 2 }[b.severity]),
+  );
+}
+
+// ── Renderização da página de Diagnóstico Executivo IA ────────────────
+function renderDiagnosticoIA(doc: jsPDF, result: DiagnosticoResult): void {
+  doc.addPage();
+  pageMeta[doc.getNumberOfPages()] = { eyebrow: "06", title: "Diagnóstico Executivo IA" };
+  let y = pageTitle(doc, CONTENT_TOP, "06  ·  Análise Assistida por IA",
+    "Diagnóstico Executivo IA",
+    "Leitura interpretativa gerada por inteligência artificial a partir dos números calculados pela engine. Revisão e validação são do consultor.");
+  const w = doc.internal.pageSize.getWidth();
+  const d = result.data;
+
+  // Veredito (frase única, destaque)
+  doc.setFont(FONT, "bold");
+  doc.setFontSize(13);
+  setColor(doc, "text", INK);
+  const vLines = doc.splitTextToSize(d.veredito, w - PAGE_MARGIN * 2);
+  doc.text(vLines, PAGE_MARGIN, y);
+  y += vLines.length * 16 + 6;
+
+  // Contexto
+  if (d.contexto) {
+    y = paragraph(doc, y, d.contexto, { size: 10, color: CHARCOAL });
+    y += 6;
+  }
+
+  const ensureSpace = (need: number) => {
+    if (y + need > doc.internal.pageSize.getHeight() - 80) {
+      doc.addPage();
+      pageMeta[doc.getNumberOfPages()] = { eyebrow: "06", title: "Diagnóstico Executivo IA" };
+      y = pageTitle(doc, CONTENT_TOP, "06  ·  Análise Assistida por IA",
+        "Diagnóstico Executivo IA (cont.)");
+    }
+  };
+
+  // Pontos críticos
+  if (d.pontosCriticos.length > 0) {
+    ensureSpace(60);
+    doc.setFont(FONT, "bold");
+    doc.setFontSize(9);
+    setColor(doc, "text", BAD);
+    doc.text("PONTOS CRÍTICOS", PAGE_MARGIN, y);
+    y += 14;
+    d.pontosCriticos.forEach((p) => {
+      ensureSpace(50);
+      doc.setFont(FONT, "bold");
+      doc.setFontSize(10.5);
+      setColor(doc, "text", INK);
+      const tL = doc.splitTextToSize(p.titulo, w - PAGE_MARGIN * 2);
+      doc.text(tL, PAGE_MARGIN, y);
+      y += tL.length * 13;
+      y = paragraph(doc, y, p.explicacao, { size: 9.5, color: CHARCOAL });
+      y += 8;
+    });
+  }
+
+  // Pontos fortes
+  if (d.pontosFortes.length > 0) {
+    ensureSpace(60);
+    doc.setFont(FONT, "bold");
+    doc.setFontSize(9);
+    setColor(doc, "text", OK);
+    doc.text("PONTOS FORTES", PAGE_MARGIN, y);
+    y += 14;
+    d.pontosFortes.forEach((p) => {
+      ensureSpace(40);
+      doc.setFont(FONT, "bold");
+      doc.setFontSize(10.5);
+      setColor(doc, "text", INK);
+      doc.text(p.titulo, PAGE_MARGIN, y);
+      y += 13;
+      y = paragraph(doc, y, p.explicacao, { size: 9.5, color: CHARCOAL });
+      y += 8;
+    });
+  }
+
+  // Próximos passos
+  if (d.proximosPassos.length > 0) {
+    ensureSpace(60);
+    doc.setFont(FONT, "bold");
+    doc.setFontSize(9);
+    setColor(doc, "text", GRAY);
+    doc.text("PRÓXIMOS PASSOS", PAGE_MARGIN, y);
+    y += 14;
+    d.proximosPassos.forEach((p, i) => {
+      ensureSpace(34);
+      doc.setFont(FONT, "bold");
+      doc.setFontSize(10);
+      setColor(doc, "text", INK);
+      const num = String(i + 1).padStart(2, "0");
+      doc.text(num, PAGE_MARGIN, y);
+      const txt = doc.splitTextToSize(p.acao, w - PAGE_MARGIN * 2 - 26);
+      doc.text(txt, PAGE_MARGIN + 22, y);
+      y += txt.length * 12;
+      doc.setFont(FONT, "normal");
+      doc.setFontSize(8.5);
+      setColor(doc, "text", GRAY);
+      const prazoLbl = p.prazo === "imediato" ? "Imediato" : p.prazo === "30d" ? "30 dias" : "90 dias";
+      const meta = p.impactoEsperado
+        ? `Prazo: ${prazoLbl}  ·  Impacto: ${p.impactoEsperado}`
+        : `Prazo: ${prazoLbl}`;
+      const mL = doc.splitTextToSize(meta, w - PAGE_MARGIN * 2 - 26);
+      doc.text(mL, PAGE_MARGIN + 22, y);
+      y += mL.length * 11 + 6;
+    });
+  }
+
+  // Rodapé de auditoria
+  ensureSpace(40);
+  setColor(doc, "draw", LIGHT);
+  doc.setLineWidth(0.4);
+  doc.line(PAGE_MARGIN, y + 4, w - PAGE_MARGIN, y + 4);
+  doc.setFont(FONT, "normal");
+  doc.setFontSize(7.5);
+  setColor(doc, "text", GRAY);
+  const stamp = `Gerado por ${result.provider} · ${result.modelo} · prompt ${result.promptVersion} · ${new Date(result.geradoEm).toLocaleString("pt-BR")}`;
+  doc.text(stamp, PAGE_MARGIN, y + 16);
+  doc.text(
+    "Análise assistida por IA — revisão e responsabilidade técnica são do consultor.",
+    PAGE_MARGIN, y + 28,
+  );
+}
+
+
 function renderDRE(doc: jsPDF, yStart: number, state: AppState, model: FinancialModel) {
   const { dre, regime } = model;
   const QUARTERS = ["1º Tri", "2º Tri", "3º Tri", "4º Tri", "Total"];
