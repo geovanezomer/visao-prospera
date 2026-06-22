@@ -488,6 +488,7 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                   }
                 >
                   <Users className="h-4 w-4" />
+                </Button>
                 <Button
                   onClick={() => void send(input)}
                   disabled={streaming || (!input.trim() && !attachments.length)}
