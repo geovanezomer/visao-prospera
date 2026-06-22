@@ -26,7 +26,16 @@ export const regimePJLabel: Record<RegimePJ, string> = {
   presumido: "Lucro Presumido",
 };
 
-/** Parâmetros tributários por regime (ajustáveis). */
+/**
+ * Parâmetros tributários por regime (ajustáveis).
+ *
+ * NOTA — Lucro Presumido: a `aliquotaImpostos` aqui é a parcela CONSOLIDADA
+ * de IRPJ base (15% × 32%) + CSLL (9% × 32%) + PIS/COFINS cumulativos + ISS
+ * (~16,33%). O ADICIONAL de 10% sobre o lucro presumido que exceder o
+ * gatilho (R$ 20k/mês por padrão) é calculado à parte em `calcularPJ` e
+ * pode ser zerado/ajustado via input (`irpjAdicionalPct`) para refletir
+ * decisões judiciais que afastem o adicional para determinados segmentos.
+ */
 export const PARAMETROS_PJ = {
   mei: { aliquotaImpostos: 0, dasFixoMensal: 80, tetoFaturamentoAnual: 81000 },
   // Simples: alíquota efetiva é CALCULADA por faixa (Anexo III) — ver aliquotaSimplesAnexoIII().
@@ -34,6 +43,13 @@ export const PARAMETROS_PJ = {
   simples: { aliquotaImpostos: 0.093, dasFixoMensal: 0, tetoFaturamentoAnual: 4_800_000 },
   presumido: { aliquotaImpostos: 0.1633, dasFixoMensal: 0, tetoFaturamentoAnual: 78_000_000 },
 } as const;
+
+/** Base de presunção para IRPJ no Lucro Presumido — serviços = 32%. */
+export const PRESUMIDO_BASE_IRPJ_SERVICOS = 0.32;
+/** Adicional IRPJ — alíquota padrão (LC 9.249/95 art. 3º §1º). */
+export const IRPJ_ADICIONAL_PCT_DEFAULT = 0.1;
+/** Gatilho MENSAL do adicional IRPJ (R$ 20.000 — 1/3 do gatilho trimestral de R$ 60k). */
+export const IRPJ_ADICIONAL_GATILHO_MENSAL_DEFAULT = 20_000;
 
 /**
  * Tabela do Simples Nacional — Anexo III (serviços em geral).
