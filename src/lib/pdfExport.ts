@@ -14,13 +14,22 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
-import { sum, fmtBRL, fmtPct } from "@/engines/finance/format";
+import { sum, fmtBRL, fmtPct, MESES } from "@/engines/finance/format";
 import type { AppState, BalancoDetalhado } from "@/engines/finance/types";
 import type { FinancialModel } from "@/engines/finance/financialModel";
 import { diagnose } from "@/engines/finance/diagnose";
 import { buildPrescriptiveCards } from "@/engines/finance/prescriptive";
 import { monthValues } from "@/engines/finance/costs";
 import { splitReceitasFinanceiras } from "@/engines/finance/shared";
+import { loadConfig } from "@/engines/ai/providers";
+import {
+  isAIConfigured,
+  gerarDiagnostico,
+  type DiagnosticoResult,
+} from "@/engines/ai/diagnostico";
+import { buildBriefing, briefingCacheKey } from "@/engines/finance/briefing";
+import { PROMPT_VERSION } from "@/engines/ai/diagnosticoPrompt";
+import { getCached, setCached } from "@/engines/ai/diagnosticoCache";
 
 // ── Paleta (mínima, executiva) ────────────────────────────────────────
 const INK = [10, 10, 10] as [number, number, number];           // preto
