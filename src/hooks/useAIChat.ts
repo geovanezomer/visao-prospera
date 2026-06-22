@@ -26,7 +26,7 @@ import { estimateTokens } from "@/engines/ai/snapshot";
 // Limite de tokens do histórico enviado ao LLM (exclui system prompt).
 // Se ultrapassado, comprime o miolo preservando contexto inicial + recente.
 const MAX_HISTORY_TOKENS = 6000;
-import { buildSystemPrompt, type AIMode } from "@/engines/ai/systemPrompt";
+import { buildSystemPromptParts, type AIMode } from "@/engines/ai/systemPrompt";
 import { loadAIMode, saveAIMode } from "@/engines/ai/modeStore";
 import { recordChatTrail } from "@/engines/ai/chatTrail";
 import {
