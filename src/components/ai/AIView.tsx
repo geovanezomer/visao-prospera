@@ -476,6 +476,19 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                   <Layers className="h-4 w-4" />
                 </Button>
                 <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  onClick={() => void runConcilio(input)}
+                  disabled={mode !== "board" || streaming || pipeline360.active}
+                  title={
+                    mode !== "board"
+                      ? "Disponível no Modo Conselho (Board)"
+                      : "Conselho Virtual — 3 especialistas em paralelo (CFO · Tributarista · Valuation)"
+                  }
+                >
+                  <Users className="h-4 w-4" />
+                <Button
                   onClick={() => void send(input)}
                   disabled={streaming || (!input.trim() && !attachments.length)}
                   size="icon"
