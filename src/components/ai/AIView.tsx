@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AuditReport, isAuditReport } from "./AuditReport";
+import { ChatChart, parseChartSpec } from "./ChatChart";
 import { useAIChat } from "@/hooks/useAIChat";
 import { resetAIStorage } from "@/engines/ai/providers";
 import { useMemories, deleteMemory, createMemory, type MemoryCategory } from "@/engines/memory/store";
