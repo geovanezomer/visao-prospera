@@ -29,7 +29,7 @@ export function compareYearsForRegime(
   regime: TaxRegime,
   years: number[],
 ): { year: number; era: TaxEra; effective: number; annual: number; rates: ReformaRates }[] {
-  const ibsFull = state.tax.ibsAliquotaRef ?? 17.7;
+  const ibsFull = getIbsAliquotaRef(state.tax);
   return years.map((year) => {
     const rates = getReformaRatesForYear(year, state.tax);
     const ibsFrac = ibsFull > 0 ? rates.ibsPct / ibsFull : 0;
@@ -39,7 +39,10 @@ export function compareYearsForRegime(
       tax: {
         ...state.tax,
         era,
-        cbsAliquota: era === "transicao" && year === 2026 ? 0.9 : (state.tax.cbsAliquota ?? 8.8),
+        cbsAliquota:
+          era === "transicao" && year === 2026
+            ? CBS_ALIQUOTA_2026_TESTE
+            : getCbsAliquota(state.tax),
         ratesOverride: {
           ...(state.tax.ratesOverride ?? {}),
           reformaTransicaoIbsMult: ibsFrac,
