@@ -15,6 +15,7 @@ import { compareRegimes } from "./tax/compare";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { buildCashFlow } from "./cashflow";
 import { sum } from "./format";
+import { resolveBenchmark } from "@/engines/benchmark/sectors";
 import type { SimulatorParams } from "./simulator";
 
 import {
@@ -117,12 +118,17 @@ export function snapshot(state: AppState): MetricSnapshot {
 
 // ============== Engine principal ==============
 
-const BENCHMARK_MARGEM_BRUTA: Record<AppState["businessType"], [number, number]> = {
-  servicos: [50, 70],
-  comercio: [25, 40],
-  industria: [30, 45],
+// Fallback de Margem Bruta caso `resolveBenchmark` retorne undefined
+// (ex.: businessType vazio). Em uso normal, prevalece o benchmark do setor
+// escolhido OU o `benchmarkCustom` salvo pelo consultor.
+const FALLBACK_MARGEM_BRUTA: Record<AppState["businessType"], number> = {
+  servicos: 50,
+  comercio: 25,
+  industria: 30,
 };
 
+// Folha/Receita não está no catálogo SECTORS — mantido hardcoded.
+// TODO: migrar para SECTORS quando a métrica for adicionada lá.
 const BENCHMARK_FOLHA_RECEITA: Record<AppState["businessType"], [number, number]> = {
   servicos: [18, 28],
   comercio: [10, 18],
@@ -141,6 +147,9 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
   const folhaAnoCanon = folhaAnual(state);
   const folhaPct = receitaLiqAnual > 0 ? (folhaAnoCanon / receitaLiqAnual) * 100 : 0;
   const [folhaMin, folhaMax] = BENCHMARK_FOLHA_RECEITA[state.businessType];
+  // Benchmark setorial resolvido (respeita ramoAtuacao + benchmarkCustom).
+  const sectorBench = resolveBenchmark(state);
+  const sectorLabel = sectorBench?.label ?? state.businessType;
 
   // ===== 1. Folha alta =====
   if (folhaPct > folhaMax) {
@@ -151,7 +160,7 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
       problem: "Folha CLT acima do benchmark do setor",
       metricLabel: "Folha / Receita Líquida",
       metricValue: `${folhaPct.toFixed(1)}%`,
-      benchmark: `Setor ${state.businessType}: ${folhaMin}–${folhaMax}%`,
+      benchmark: `${sectorLabel}: ${folhaMin}–${folhaMax}% (faixa saudável)`,
       cause: `Folha mensal de ${folhaMensal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}. Quadro pode estar dimensionado para um faturamento maior que o atual.`,
       actions: [
         {
@@ -331,7 +340,9 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
   }
 
   // ===== 6. Margem bruta abaixo do benchmark =====
-  const [mbMin] = BENCHMARK_MARGEM_BRUTA[state.businessType];
+  // Limite saudável = P25 do setor resolvido (respeita ramoAtuacao + benchmarkCustom).
+  const mbMin = sectorBench?.margemBruta.p25 ?? FALLBACK_MARGEM_BRUTA[state.businessType];
+  const mbP50 = sectorBench?.margemBruta.p50 ?? mbMin;
   if (ind.margemBruta < mbMin) {
     cards.push({
       id: "margem_bruta",
@@ -339,7 +350,7 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
       problem: "Margem bruta abaixo do benchmark do setor",
       metricLabel: "Margem Bruta",
       metricValue: `${ind.margemBruta.toFixed(1)}%`,
-      benchmark: `Setor ${state.businessType}: ${mbMin}%+`,
+      benchmark: `${sectorLabel}: P25 ${mbMin.toFixed(1)}% · mediana ${mbP50.toFixed(1)}%`,
       cause:
         "Custo de Vendas (CMV/CPV/CSP) está alto em relação à receita — preço baixo ou custo direto elevado.",
       actions: [
