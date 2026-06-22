@@ -87,13 +87,42 @@ export async function listModels(cfg: AIConfig): Promise<string[]> {
 // ============================================================
 // Helpers Anthropic — converte do nosso formato unificado.
 // ============================================================
-function splitSystemAndMessages(msgs: LLMMessage[]): { system: string; rest: LLMMessage[] } {
-  const systems = msgs
-    .filter((m) => m.role === "system")
-    .map((m) => m.content)
-    .filter(Boolean);
+/**
+ * Separa system messages do restante. Retorna `system` como array de
+ * blocos para preservar a marcação de cache (cache_control). Em provedor
+ * OpenAI-compatível, o caller pode concatenar (sem suporte a cache).
+ */
+function splitSystemAndMessages(msgs: LLMMessage[]): {
+  systemBlocks: Array<{ text: string; cache?: boolean }>;
+  rest: LLMMessage[];
+} {
+  const systemBlocks = msgs
+    .filter((m) => m.role === "system" && m.content)
+    .map((m) => ({ text: m.content, cache: m.cache }));
   const rest = msgs.filter((m) => m.role !== "system");
-  return { system: systems.join("\n\n"), rest };
+  return { systemBlocks, rest };
+}
+
+// Concatena blocos de system em string única (uso OpenAI-compatível).
+function systemBlocksToString(blocks: Array<{ text: string }>): string {
+  return blocks.map((b) => b.text).join("\n\n");
+}
+
+// Monta o campo `system` para a API Anthropic. Se algum bloco tem
+// `cache: true`, vira array de blocos de texto com cache_control no
+// último bloco marcado. Caso contrário devolve string simples.
+type AnthSystemBlock = { type: "text"; text: string; cache_control?: { type: "ephemeral" } };
+function buildAnthropicSystem(
+  blocks: Array<{ text: string; cache?: boolean }>,
+): string | AnthSystemBlock[] | undefined {
+  if (blocks.length === 0) return undefined;
+  const anyCache = blocks.some((b) => b.cache);
+  if (!anyCache) return systemBlocksToString(blocks);
+  return blocks.map<AnthSystemBlock>((b) =>
+    b.cache
+      ? { type: "text", text: b.text, cache_control: { type: "ephemeral" } }
+      : { type: "text", text: b.text },
+  );
 }
 
 // Blocos do formato Anthropic — só o subconjunto que produzimos/consumimos.
