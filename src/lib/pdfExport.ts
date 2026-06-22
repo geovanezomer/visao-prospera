@@ -614,6 +614,74 @@ function drawRunwayBlock(
   return yStart + 18 + blockH + 14;
 }
 
+// ── Termômetro de Valor (WACC × ROIC) ─────────────────────────────────
+function drawTermometroValor(doc: jsPDF, yStart: number, ind: FinancialModel["ind"]): number {
+  const w = doc.internal.pageSize.getWidth();
+  const x0 = PAGE_MARGIN;
+  const totalW = w - PAGE_MARGIN * 2;
+  const wacc = ind.wacc;
+  const roic = ind.roic;
+  const creating = roic >= wacc;
+  const delta = roic - wacc;
+  const tCol = creating ? OK : BAD;
+
+  blockHeader(doc, yStart, "Termômetro de Valor",
+    "Compara o custo do capital (WACC) com o retorno entregue (ROIC). Spread positivo = criação de valor.");
+
+  const yB = yStart + 22;
+
+  // Status + spread (linha única)
+  doc.setFont(FONT, "bold");
+  doc.setFontSize(12);
+  setColor(doc, "text", tCol);
+  doc.text(creating ? "Criando valor" : "Destruindo valor", x0, yB);
+
+  doc.setFont(FONT, "bold");
+  doc.setFontSize(14);
+  doc.text(
+    `${delta >= 0 ? "+" : ""}${delta.toFixed(2)} p.p.`,
+    x0 + totalW, yB, { align: "right" },
+  );
+  doc.setFont(FONT, "normal");
+  doc.setFontSize(7);
+  setColor(doc, "text", GRAY);
+  doc.text("SPREAD (ROIC − WACC)", x0 + totalW, yB - 12, { align: "right" });
+
+  // Barras WACC e ROIC
+  const max = Math.max(wacc, roic, 1) * 1.3;
+  const waccPct = Math.min(1, wacc / max);
+  const roicPct = Math.min(1, Math.max(0, roic) / max);
+
+  const barY1 = yB + 16;
+  doc.setFont(FONT, "bold"); doc.setFontSize(8); setColor(doc, "text", INK);
+  doc.text("WACC", x0, barY1);
+  doc.setFont(FONT, "normal"); setColor(doc, "text", GRAY);
+  doc.text("custo do capital", x0 + 36, barY1);
+  doc.setFont(FONT, "bold"); setColor(doc, "text", WARN);
+  doc.text(`${wacc.toFixed(2)}%`, x0 + totalW, barY1, { align: "right" });
+  drawBar(doc, x0, barY1 + 4, totalW, 4, waccPct, "warn");
+
+  const barY2 = barY1 + 22;
+  doc.setFont(FONT, "bold"); doc.setFontSize(8); setColor(doc, "text", INK);
+  doc.text("ROIC", x0, barY2);
+  doc.setFont(FONT, "normal"); setColor(doc, "text", GRAY);
+  doc.text("retorno entregue", x0 + 36, barY2);
+  doc.setFont(FONT, "bold"); setColor(doc, "text", tCol);
+  doc.text(`${roic.toFixed(2)}%`, x0 + totalW, barY2, { align: "right" });
+  drawBar(doc, x0, barY2 + 4, totalW, 4, roicPct, creating ? "ok" : "bad");
+
+  // Comentário
+  const comentario = creating
+    ? `Cada R$ investido rende +${delta.toFixed(2)} p.p. acima do custo do capital. Mantenha o ritmo e reinvista nas alavancas que sustentam esse spread.`
+    : `Cada R$ investido rende ${delta.toFixed(2)} p.p. abaixo do custo do capital. Melhore margem, gire mais o capital ou reduza o custo da dívida.`;
+  doc.setFont(FONT, "normal"); doc.setFontSize(9); setColor(doc, "text", CHARCOAL);
+  const cLines = doc.splitTextToSize(comentario, totalW);
+  doc.text(cLines, x0, barY2 + 22);
+
+  return barY2 + 22 + cLines.length * 11 + 6;
+}
+
+
 // ── Top 5 Despesas (barras horizontais) ───────────────────────────────
 function drawTop5Despesas(doc: jsPDF, yStart: number, model: FinancialModel): number {
   const top = Object.entries(model.dre.despesasPorCategoria)
@@ -750,6 +818,10 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   y += 36;
   // Bloco Pista de Caixa & Saldo Projetado (mesmo card do Dashboard).
   y = drawRunwayBlock(doc, y, state, model);
+
+  // ~3 linhas de respiro antes do Termômetro de Valor.
+  y = drawTermometroValor(doc, y + 36, ind);
+
 
 
   // ── PÁGINA 3 — PAINEL EXECUTIVO ────────────────────────────────────
