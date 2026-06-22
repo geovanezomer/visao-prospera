@@ -494,26 +494,6 @@ export function CompanyConfigForm({
             </Select>
           </div>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="margemAlvo">Margem-alvo do consultor (%) — opcional</Label>
-          <Input
-            id="margemAlvo"
-            type="number"
-            step="0.5"
-            value={form.margemAlvoPct ?? ""}
-            onChange={(e) =>
-              commit({
-                ...form,
-                margemAlvoPct:
-                  e.target.value === "" ? undefined : Number(e.target.value),
-              })
-            }
-            placeholder="Ex: 15"
-          />
-          <p className="text-[10px] text-muted-foreground">
-            Usada como benchmark interno adicional ao setorial.
-          </p>
-        </div>
       </section>
 
       {showArchiveSection && (
