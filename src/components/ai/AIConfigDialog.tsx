@@ -131,7 +131,30 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
               />
               {draft.provider === "anthropic" && (
                 <p className="text-[10px] text-muted-foreground">
-                  Crie uma chave em console.anthropic.com → Settings → API Keys.
+                  Crie uma chave em{" "}
+                  <a
+                    href="https://console.anthropic.com/settings/keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-foreground"
+                  >
+                    console.anthropic.com → Settings → API Keys
+                  </a>
+                  .
+                </p>
+              )}
+              {draft.provider === "openai" && (
+                <p className="text-[10px] text-muted-foreground">
+                  Não tem uma chave? Crie em{" "}
+                  <a
+                    href="https://platform.openai.com/api-keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-foreground"
+                  >
+                    platform.openai.com/api-keys
+                  </a>
+                  . Faça login, clique em <em>Create new secret key</em>, copie o valor (começa com <code>sk-</code>) e cole aqui. Requer crédito ativo na conta OpenAI.
                 </p>
               )}
             </div>
