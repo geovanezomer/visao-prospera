@@ -161,7 +161,7 @@ function liquidoMensalCLT(salario: number, dependentes: number) {
   return { inss, irrf, liquido: Math.round((salario - inss - irrf) * 100) / 100 };
 }
 
-export function calcularCLT(i: CltVsPjInput): ResultadoCLT {
+export function calcularCLT(i: CltVsPjInputParsed): ResultadoCLT {
   const { inss, irrf, liquido } = liquidoMensalCLT(i.salarioBrutoCLT, i.dependentesIR);
   const liquidoAnual = liquido * 12;
 
@@ -220,7 +220,7 @@ export interface ResultadoPJ {
   acimaDoTetoRegime: boolean;
 }
 
-export function calcularPJ(regime: RegimePJ, i: CltVsPjInput): ResultadoPJ {
+export function calcularPJ(regime: RegimePJ, i: CltVsPjInputParsed): ResultadoPJ {
   const params = PARAMETROS_PJ[regime];
   const fat = i.faturamentoPJMensal;
 
@@ -289,7 +289,7 @@ export interface ComparativoCltVsPj {
   faturamentoEmpate: Record<RegimePJ, number>;
 }
 
-function faturamentoParaIgualar(regime: RegimePJ, alvoMensal: number, i: CltVsPjInput): number {
+function faturamentoParaIgualar(regime: RegimePJ, alvoMensal: number, i: CltVsPjInputParsed): number {
   // Busca binária (faturamento ≥ alvo). Iterativa, rápida e simples.
   let lo = 0,
     hi = Math.max(alvoMensal * 5, 100000);
