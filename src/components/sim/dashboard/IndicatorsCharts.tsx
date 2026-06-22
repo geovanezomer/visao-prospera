@@ -17,7 +17,7 @@ import {
 
 import { AppState } from "@/engines/finance/types";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { fmtBRL, MESES, sum } from "@/engines/finance/format";
+import { fmtBRL, sum } from "@/engines/finance/format";
 
 
 const TOOLTIP_STYLE = {
