@@ -33,7 +33,8 @@ import {
 import { AuditReport, isAuditReport } from "./AuditReport";
 import { useAIChat } from "@/hooks/useAIChat";
 import { resetAIStorage } from "@/engines/ai/providers";
-import { useMemories, deleteMemory } from "@/engines/memory/store";
+import { useMemories, deleteMemory, createMemory, type MemoryCategory } from "@/engines/memory/store";
+import { Input } from "@/components/ui/input";
 import { AI_MODE_LABELS, AI_MODE_DESCRIPTIONS, type AIMode } from "@/engines/ai/systemPrompt";
 
 // react-markdown não tem assinatura compatível direta com lazy() — usamos cast pontual.
