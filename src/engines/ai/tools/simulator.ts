@@ -2,6 +2,13 @@
 
 import { applySimulator, DEFAULT_SIM, type SimulatorParams } from "@/engines/finance/simulator";
 import {
+  projectCashflow,
+  projectionToMarkdown,
+  defaultCenarios,
+  type CenarioProjecao,
+  type CaptacaoDivida,
+} from "@/engines/finance/cashflowProjection";
+import {
   buildForecast,
   DEFAULT_FORECAST_CFG,
   type ForecastConfig,
@@ -240,6 +247,44 @@ const defs: ToolDef[] = [
       required: [],
     },
   },
+  {
+    name: "projetar_fluxo_caixa",
+    description:
+      "Projeta o fluxo de caixa para N meses à frente (12/24/36) sob múltiplos cenários (base/otimista/pessimista) com deltas de receita e folha + eventos de captação de dívida com amortização linear. Retorna tabela resumo, line-chart dos cenários, alertas (mês em que caixa fica negativo / recupera) e detalhe mensal do cenário base. Use quando o cliente perguntar 'quando o caixa melhora?', 'preciso captar quanto?', 'e se eu pegar R$ X em Jul?'.",
+    parameters: {
+      type: "object",
+      properties: {
+        meses: { type: "number", description: "Horizonte em meses (default 24, máx 60)." },
+        cenarios: {
+          type: "array",
+          description:
+            "Cenários customizados. Omita para usar Base/Otimista/Pessimista padrão (±10%).",
+          items: {
+            type: "object",
+            properties: {
+              nome: { type: "string" },
+              receita_delta: { type: "number", description: "Ex.: -0.10 = receita -10%." },
+              folha_delta: { type: "number", description: "Ex.: +0.05 = folha +5%." },
+              capturas_divida: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    mes: { type: "number", description: "Mês 1-indexado no horizonte." },
+                    valor: { type: "number" },
+                    prazo_devolucao: { type: "number", description: "Meses de amortização linear." },
+                  },
+                  required: ["mes", "valor", "prazo_devolucao"],
+                },
+              },
+            },
+            required: ["nome"],
+          },
+        },
+      },
+      required: [],
+    },
+  },
 ];
 
 const handlers: Record<string, ToolHandler> = {
@@ -322,6 +367,33 @@ const handlers: Record<string, ToolHandler> = {
     const delta = Number(args?.delta_pct) || 10;
     const res = runTornado(state, driversIn, delta, outputsIn);
     return tornadoToMarkdown(res);
+  },
+
+  projetar_fluxo_caixa: (args, { state }) => {
+    const meses = Math.max(1, Math.min(60, Number(args?.meses) || 24));
+    const cenariosRaw = Array.isArray(args?.cenarios) ? (args!.cenarios as unknown[]) : [];
+    const cenarios: CenarioProjecao[] = cenariosRaw.length
+      ? cenariosRaw.map((c) => {
+          const o = c as Record<string, unknown>;
+          const capsRaw = Array.isArray(o.capturas_divida) ? (o.capturas_divida as unknown[]) : [];
+          const caps: CaptacaoDivida[] = capsRaw.map((x) => {
+            const k = x as Record<string, unknown>;
+            return {
+              mes: Number(k.mes) || 0,
+              valor: Number(k.valor) || 0,
+              prazoDevolucao: Number(k.prazo_devolucao) || 0,
+            };
+          });
+          return {
+            nome: String(o.nome || "Cenário"),
+            receitaDelta: Number(o.receita_delta) || 0,
+            folhaDelta: Number(o.folha_delta) || 0,
+            capturasDivida: caps,
+          };
+        })
+      : defaultCenarios();
+    const res = projectCashflow(state, meses, cenarios);
+    return projectionToMarkdown(res);
   },
 };
 
