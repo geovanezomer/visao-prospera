@@ -128,7 +128,7 @@ export function CompanyConfigForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     state.companyName,
-    state.cnpj,
+    
     state.businessType,
     state.ramoAtuacao,
     state.numColaboradores,
