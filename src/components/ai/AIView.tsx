@@ -254,6 +254,10 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
             ) : (
               <div className="max-w-4xl mx-auto space-y-6">
                 {messages.map((m, i) => {
+                  // Tool call — card colapsado mostrando nome + payload em tempo real.
+                  if (m.role === "tool") {
+                    return <ToolCallCard key={i} name={m.toolName ?? "tool"} payload={m.content} />;
+                  }
                   // Modo Auditor: relatório estruturado renderizado em card próprio.
                   if (m.role === "assistant" && isAuditReport(m.content)) {
                     return (
