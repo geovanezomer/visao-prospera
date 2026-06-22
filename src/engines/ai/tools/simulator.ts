@@ -225,6 +225,15 @@ const handlers: Record<string, ToolHandler> = {
     const res = runSensitivity(state, out, drivers);
     return sensitivityToMarkdown(res);
   },
+
+  break_even_dinamico: (args, { state }) => {
+    const restricao = (args?.restricao as RestricaoBreakEven) || "ebitda_positivo";
+    const metaValor =
+      typeof args?.meta_valor === "number" ? (args.meta_valor as number) : undefined;
+    const sazonalidade = args?.sazonalidade !== false;
+    const res = solveBreakEvenDinamico(state, { restricao, metaValor, sazonalidade });
+    return breakEvenDinamicoToMarkdown(res);
+  },
 };
 
 export const simulatorTools: ToolModule = {
