@@ -263,8 +263,14 @@ const defs: ToolDef[] = [
             type: "object",
             properties: {
               nome: { type: "string" },
-              receita_delta: { type: "number", description: "Ex.: -0.10 = receita -10%." },
-              folha_delta: { type: "number", description: "Ex.: +0.05 = folha +5%." },
+              receita_delta: {
+                description: "Escalar (-0.10 = -10%) ou array mês-a-mês de mesma length que `meses`.",
+                oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
+              },
+              folha_delta: {
+                description: "Escalar (+0.05) ou array mês-a-mês.",
+                oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
+              },
               capturas_divida: {
                 type: "array",
                 items: {
@@ -386,8 +392,12 @@ const handlers: Record<string, ToolHandler> = {
           });
           return {
             nome: String(o.nome || "Cenário"),
-            receitaDelta: Number(o.receita_delta) || 0,
-            folhaDelta: Number(o.folha_delta) || 0,
+            receitaDelta: Array.isArray(o.receita_delta)
+              ? (o.receita_delta as unknown[]).map((x) => Number(x) || 0)
+              : Number(o.receita_delta) || 0,
+            folhaDelta: Array.isArray(o.folha_delta)
+              ? (o.folha_delta as unknown[]).map((x) => Number(x) || 0)
+              : Number(o.folha_delta) || 0,
             capturasDivida: caps,
           };
         })
