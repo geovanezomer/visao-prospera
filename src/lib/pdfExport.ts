@@ -724,8 +724,8 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
     "Resumo Executivo",
     "Os pontos a seguir sintetizam o diagnóstico financeiro do período. Detalhes e recomendações nas seções seguintes.");
 
-  // Insights compactos — limitamos a 4 para abrir espaço ao bloco de Runway.
-  const insights = buildExecutiveInsights(state, model, score, conceito).slice(0, 4);
+  // Insights — mínimo de 5 itens no resumo executivo.
+  const insights = buildExecutiveInsights(state, model, score, conceito).slice(0, 5);
   insights.forEach((it, i) => {
     doc.setFont(FONT, "bold");
     doc.setFontSize(22);
@@ -746,8 +746,11 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
     y += 10 + lines.length * 12 + 12;
   });
 
+  // ~3 linhas de respiro antes do bloco Runway.
+  y += 36;
   // Bloco Pista de Caixa & Saldo Projetado (mesmo card do Dashboard).
-  y = drawRunwayBlock(doc, y + 6, state, model);
+  y = drawRunwayBlock(doc, y, state, model);
+
 
   // ── PÁGINA 3 — PAINEL EXECUTIVO ────────────────────────────────────
   doc.addPage();
