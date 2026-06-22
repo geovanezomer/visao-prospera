@@ -386,7 +386,7 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   }
 
   // ── 3. FLUXO DE CAIXA ──────────────────────────────────────────────
-  y = newTopic(doc, "Fluxo de Caixa", "Visão trimestral — DFC completa + Burn Rate & Runway");
+  y = newTopic(doc, "Fluxo de Caixa", "Visão trimestral — DFC método direto, completa, fiel à tela do sistema");
 
   // 3.1 Burn Rate & Runway (cards)
   const burnMedio12 = -(cf.fluxoOperacional.reduce((a, b) => a + b, 0) / 12);
@@ -402,45 +402,62 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
       sub: `Caixa ${fmtBRL(caixaAtual)} + CR ${fmtBRL(recebiveis)}` },
   ], 3);
 
-  // 3.2 DFC trimestral — todas as linhas
-  const cfRows: { label: string; vals: number[]; bold?: boolean; sign?: 1 | -1 }[] = [
-    { label: "Saldo Inicial", vals: [cf.saldoInicial[0] ?? 0, cf.saldoInicial[3] ?? 0,
+  // 3.2 DFC trimestral — mesma estrutura/labels do DFCTable.tsx
+  type CFRow = { label: string; vals?: number[]; bold?: boolean; section?: boolean; highlight?: boolean };
+  const cfRows: CFRow[] = [
+    { label: "Saldo inicial", vals: [cf.saldoInicial[0] ?? 0, cf.saldoInicial[3] ?? 0,
       cf.saldoInicial[6] ?? 0, cf.saldoInicial[9] ?? 0, cf.saldoInicial[0] ?? 0] },
-    { label: "(+) Recebimentos de vendas", vals: quartersOf(cf.recebimentos) },
-    { label: "(+) Receitas financeiras", vals: quartersOf(cf.receitasFinanceiras) },
-    { label: "(−) Pagamentos a fornecedores", vals: quartersOf(cf.pagamentosFornecedores).map((v) => -v) },
-    { label: "(−) Pagamentos fixos", vals: quartersOf(cf.pagamentosFixos).map((v) => -v) },
-    { label: "(−) Pagamentos variáveis", vals: quartersOf(cf.pagamentosVariaveis).map((v) => -v) },
-    { label: "(−) Pagamentos financeiros (juros)", vals: quartersOf(cf.pagamentosFinanceiros).map((v) => -v) },
-    { label: "(−) Pagamentos de impostos", vals: quartersOf(cf.pagamentosImpostos).map((v) => -v) },
-    { label: "(=) Fluxo Operacional", vals: quartersOf(cf.fluxoOperacional), bold: true },
-    { label: "(−) CAPEX", vals: quartersOf(cf.capex).map((v) => -v) },
+    { label: "ATIVIDADES OPERACIONAIS", section: true },
+    { label: "(+) Recebimentos de clientes", vals: quartersOf(cf.recebimentos) },
+    { label: "(+) Receitas financeiras (aplicações)", vals: quartersOf(cf.receitasFinanceiras) },
+    { label: "(−) Pagamentos a fornecedores (CPV)", vals: quartersOf(cf.pagamentosFornecedores).map((v) => -v) },
+    { label: "(−) Pagamentos de custos fixos", vals: quartersOf(cf.pagamentosFixos).map((v) => -v) },
+    { label: "(−) Pagamentos de custos variáveis", vals: quartersOf(cf.pagamentosVariaveis).map((v) => -v) },
+    { label: "(−) Despesas financeiras", vals: quartersOf(cf.pagamentosFinanceiros).map((v) => -v) },
+    { label: "(−) Impostos pagos", vals: quartersOf(cf.pagamentosImpostos).map((v) => -v) },
+    { label: "(=) Fluxo das Operações", vals: quartersOf(cf.fluxoOperacional), bold: true },
+    { label: "ATIVIDADES DE INVESTIMENTO", section: true },
+    { label: "(−) CapEx — aportes em ativo fixo", vals: quartersOf(state.cashflow.capex).map((v) => -v) },
     { label: "(=) Fluxo de Investimento", vals: quartersOf(cf.fluxoInvestimento), bold: true },
-    { label: "(+) Aportes de sócios", vals: quartersOf(cf.aportes) },
-    { label: "(+) Captação de empréstimos", vals: quartersOf(cf.emprestimosCaptados) },
-    { label: "(−) Amortizações", vals: quartersOf(cf.amortizacoes).map((v) => -v) },
-    { label: "(−) Dividendos", vals: quartersOf(cf.dividendos).map((v) => -v) },
+    { label: "ATIVIDADES DE FINANCIAMENTO", section: true },
+    { label: "(+) Aportes de sócios", vals: quartersOf(state.cashflow.aportes) },
+    { label: "(+) Captação de empréstimos", vals: quartersOf(state.cashflow.emprestimosCaptados) },
+    { label: "(−) Amortização de principal", vals: quartersOf(state.cashflow.amortizacoes).map((v) => -v) },
+    { label: "(−) Distribuição de dividendos", vals: quartersOf(state.cashflow.dividendos).map((v) => -v) },
     { label: "(=) Fluxo de Financiamento", vals: quartersOf(cf.fluxoFinanciamento), bold: true },
-    { label: "(=) Variação de Caixa", vals: quartersOf(cf.variacaoCaixa), bold: true },
-    { label: "Saldo Final", vals: [cf.saldoFinal[2] ?? 0, cf.saldoFinal[5] ?? 0,
-      cf.saldoFinal[8] ?? 0, cf.saldoFinal[11] ?? 0, cf.saldoFinal[11] ?? 0], bold: true },
+    { label: "(=) VARIAÇÃO DE CAIXA", vals: quartersOf(cf.variacaoCaixa), bold: true, highlight: true },
+    { label: "(=) SALDO FINAL", vals: [cf.saldoFinal[2] ?? 0, cf.saldoFinal[5] ?? 0,
+      cf.saldoFinal[8] ?? 0, cf.saldoFinal[11] ?? 0, cf.saldoFinal[11] ?? 0], bold: true, highlight: true },
   ];
 
   autoTable(doc, {
     startY: y,
     head: [["Linha", ...QUARTERS]],
-    body: cfRows.map((r) => [r.label, ...r.vals.map(fmtBRL)]),
+    body: cfRows.map((r) => r.section
+      ? [r.label, "", "", "", "", ""]
+      : [r.label, ...(r.vals ?? []).map(fmtBRL)]),
     margin: { left: MARGIN_X, right: MARGIN_X, top: CONTENT_TOP, bottom: 50 },
-    styles: { font: "helvetica", fontSize: 8.5, cellPadding: 3.5,
-      textColor: COLOR.textDark, lineColor: COLOR.rule, lineWidth: 0.3 },
+    styles: { font: "helvetica", fontSize: 8.5, cellPadding: 4,
+      textColor: COLOR.textDark, lineColor: COLOR.rule, lineWidth: 0.3, valign: "middle" },
     headStyles: { fillColor: COLOR.headerBg, textColor: COLOR.headerFg,
       fontStyle: "bold", fontSize: 9, halign: "center" },
     alternateRowStyles: { fillColor: COLOR.zebra },
-    columnStyles: { 0: { halign: "left", cellWidth: 200 },
+    columnStyles: { 0: { halign: "left", cellWidth: 230 },
       1: { halign: "right" }, 2: { halign: "right" },
       3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right", fontStyle: "bold" } },
     didParseCell: (data) => {
-      if (data.section === "body" && cfRows[data.row.index]?.bold) {
+      if (data.section !== "body") return;
+      const r = cfRows[data.row.index];
+      if (!r) return;
+      if (r.section) {
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.fontSize = 8;
+        data.cell.styles.fillColor = [226, 232, 240];
+        data.cell.styles.textColor = COLOR.textDark;
+      } else if (r.highlight) {
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.fillColor = [219, 234, 254]; // blue-100
+      } else if (r.bold) {
         data.cell.styles.fontStyle = "bold";
         data.cell.styles.fillColor = COLOR.totalBg;
       }
@@ -448,7 +465,7 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   });
 
   // ── 4. DRE ─────────────────────────────────────────────────────────
-  y = newTopic(doc, "DRE — Demonstração do Resultado do Exercício", "Visão trimestral · Regime de Competência");
+  y = newTopic(doc, "DRE — Demonstração do Resultado do Exercício", "Visão trimestral · estrutura idêntica à tela do sistema");
 
   // 4.1 Cards do topo (5)
   y = drawKpiGrid(doc, y, [
@@ -466,40 +483,82 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
       tone: "warn", sub: `${ind.impostosSobreReceita.toFixed(1)}% / receita` },
   ], 5);
 
-  // 4.2 DRE trimestral — todas as linhas
-  const dreRows: { label: string; vals: number[]; bold?: boolean }[] = [
-    { label: "(+) Receita Bruta", vals: quartersOf(dre.receitaBruta), bold: true },
-    { label: "(−) Inadimplência", vals: quartersOf(dre.deducoesInadimplencia).map((v) => -v) },
-    { label: "(−) Outras Deduções", vals: quartersOf(dre.outrasDeducoes).map((v) => -v) },
-    { label: "(−) Impostos sobre Vendas", vals: quartersOf(dre.impostosVendas).map((v) => -v) },
-    { label: "(=) Receita Líquida", vals: quartersOf(dre.receitaLiquida), bold: true },
+  // 4.2 DRE trimestral — replica DRETab.tsx
+  const zeros12 = () => Array(12).fill(0);
+  const dedById = (id: string) => state.revenue.deducoes?.find((d) => d.id === id);
+  const descIncond = dedById("desc_incond")?.valores ?? zeros12();
+  const abatimentos = dedById("abatimentos")?.valores ?? zeros12();
+  const outrasDedResto = dre.outrasDeducoes.map((v, i) => v - (descIncond[i] ?? 0) - (abatimentos[i] ?? 0));
+
+  // Quebra das despesas por categoria (igual ao DRETab)
+  const despComerciais = zeros12();
+  const despAdmin = zeros12();
+  const despFinanc = zeros12();
+  for (const c of state.costs) {
+    const v = monthValues(c, state.tax.regime);
+    if (c.category === "variavel") for (let i = 0; i < 12; i++) despComerciais[i] += v[i];
+    else if (c.category === "fixo") for (let i = 0; i < 12; i++) despAdmin[i] += v[i];
+    else if (c.category === "financeiro") for (let i = 0; i < 12; i++) despFinanc[i] += v[i];
+  }
+  const { financeiras: receitasFinMensal, operacionais: outrasReceitasOpMensal } =
+    splitReceitasFinanceiras(state);
+  const usaPDD = !!state.revenue.inadimplenciaComoPDD;
+  const pddLine = usaPDD ? dre.pdd : zeros12();
+  const outrasOperacionais = dre.depreciacao.map(
+    (d, i) => -d - pddLine[i] + outrasReceitasOpMensal[i],
+  );
+  const laft = dre.ebit.map((e, i) => e + receitasFinMensal[i]);
+
+  type DRERow = { label: string; vals: number[]; bold?: boolean; highlight?: boolean };
+  const dreRows: DRERow[] = [
+    { label: "(+) Receita Operacional Bruta", vals: quartersOf(dre.receitaBruta), bold: true },
+    { label: usaPDD ? "(−) Inadimplência (PDD)" : "(−) Inadimplência (perdas estimadas)",
+      vals: quartersOf(dre.deducoesInadimplencia).map((v) => -v) },
+    { label: "(−) Descontos Incondicionais", vals: quartersOf(descIncond).map((v) => -v) },
+    { label: "(−) Abatimentos", vals: quartersOf(abatimentos).map((v) => -v) },
+    { label: "(−) Outras Deduções", vals: quartersOf(outrasDedResto).map((v) => -v) },
+    { label: regime === "simples"
+      ? "(−) DAS Simples Nacional"
+      : "(−) Tributos sobre Receita (PIS/COFINS/ICMS/ISS/CBS/IBS)",
+      vals: quartersOf(dre.impostosVendas).map((v) => -v) },
+    { label: "(=) Receita Operacional Líquida", vals: quartersOf(dre.receitaLiquida), bold: true },
     { label: "(−) CPV / CMV / CSP", vals: quartersOf(dre.cpv).map((v) => -v) },
-    { label: "(=) Lucro Bruto", vals: quartersOf(dre.lucroBruto), bold: true },
-    { label: "(−) Despesas Operacionais", vals: quartersOf(dre.despesasOperacionais).map((v) => -v) },
-    { label: "(+) Outras Receitas Operacionais", vals: quartersOf(dre.outrasReceitasOperacionais) },
-    { label: "(=) EBITDA", vals: quartersOf(dre.ebitda), bold: true },
-    { label: "(−) Depreciação / Amortização", vals: quartersOf(dre.depreciacao).map((v) => -v) },
-    { label: "(=) EBIT", vals: quartersOf(dre.ebit), bold: true },
-    { label: "(±) Resultado Financeiro", vals: quartersOf(dre.resultadoFinanceiro) },
-    { label: "(=) LAIR — Lucro Antes do IR/CSLL", vals: quartersOf(dre.lair), bold: true },
-    { label: "(−) IR / CSLL", vals: quartersOf(dre.impostos).map((v) => -v) },
-    { label: "(=) Lucro Líquido", vals: quartersOf(dre.lucroLiquido), bold: true },
+    { label: "(=) LUCRO BRUTO", vals: quartersOf(dre.lucroBruto), bold: true },
+    { label: "(−) Despesas Comerciais", vals: quartersOf(despComerciais).map((v) => -v) },
+    { label: "(−) Despesas Administrativas", vals: quartersOf(despAdmin).map((v) => -v) },
+    { label: "(±) Outras Despesas/Receitas Operacionais", vals: quartersOf(outrasOperacionais) },
+    { label: "(=) LUCRO OPERACIONAL / EBIT", vals: quartersOf(dre.ebit), bold: true },
+    { label: "(+) Receitas Financeiras", vals: quartersOf(receitasFinMensal) },
+    { label: "(=) LUCRO ANTES DO FINANCIAMENTO E TRIBUTOS", vals: quartersOf(laft), bold: true },
+    { label: "(−) Despesas Financeiras", vals: quartersOf(despFinanc).map((v) => -v) },
+    { label: "(=) LUCRO ANTES DO IR/CSLL (EBT)", vals: quartersOf(dre.lair), bold: true },
+    { label: dre.impostosLucroBase === "receita_presumida"
+      ? "(−) IR / CSLL (base presumida sobre receita)"
+      : "(−) IR / CSLL",
+      vals: quartersOf(dre.impostos).map((v) => -v) },
+    { label: "(=) LUCRO LÍQUIDO DO EXERCÍCIO", vals: quartersOf(dre.lucroLiquido), bold: true, highlight: true },
   ];
   autoTable(doc, {
     startY: y,
     head: [["Conta", ...QUARTERS]],
     body: dreRows.map((r) => [r.label, ...r.vals.map(fmtBRL)]),
     margin: { left: MARGIN_X, right: MARGIN_X, top: CONTENT_TOP, bottom: 50 },
-    styles: { font: "helvetica", fontSize: 8.5, cellPadding: 3.5,
-      textColor: COLOR.textDark, lineColor: COLOR.rule, lineWidth: 0.3 },
+    styles: { font: "helvetica", fontSize: 8.5, cellPadding: 4,
+      textColor: COLOR.textDark, lineColor: COLOR.rule, lineWidth: 0.3, valign: "middle" },
     headStyles: { fillColor: COLOR.headerBg, textColor: COLOR.headerFg,
       fontStyle: "bold", fontSize: 9, halign: "center" },
     alternateRowStyles: { fillColor: COLOR.zebra },
-    columnStyles: { 0: { halign: "left", cellWidth: 220 },
+    columnStyles: { 0: { halign: "left", cellWidth: 240 },
       1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" },
       4: { halign: "right" }, 5: { halign: "right", fontStyle: "bold" } },
     didParseCell: (data) => {
-      if (data.section === "body" && dreRows[data.row.index]?.bold) {
+      if (data.section !== "body") return;
+      const r = dreRows[data.row.index];
+      if (!r) return;
+      if (r.highlight) {
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.fillColor = [219, 234, 254];
+      } else if (r.bold) {
         data.cell.styles.fontStyle = "bold";
         data.cell.styles.fillColor = COLOR.totalBg;
       }
