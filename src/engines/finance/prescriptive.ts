@@ -15,6 +15,7 @@ import { compareRegimes } from "./tax/compare";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { buildCashFlow } from "./cashflow";
 import { sum } from "./format";
+import { resolveBenchmark } from "@/engines/benchmark/sectors";
 import type { SimulatorParams } from "./simulator";
 
 import {
