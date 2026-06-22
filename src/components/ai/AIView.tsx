@@ -14,6 +14,7 @@ import {
   Paperclip,
   Brain,
   Layers,
+  Users,
   ShieldCheck,
   Wrench,
   ChevronDown,
