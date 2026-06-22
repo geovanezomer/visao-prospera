@@ -129,8 +129,11 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
   }, [activeId, state.companyName]);
 
   // === Persiste msgs ===
+  // Não salva array vazio: no primeiro render o efeito dispara antes do bootstrap
+  // carregar as mensagens do storage, e gravar [] apagaria o histórico salvo.
+  // Threads novas usam id distinto, então não há risco de "ficar preso" com msgs antigas.
   useEffect(() => {
-    if (activeId) saveMessages(state.companyName, activeId, messages);
+    if (activeId && messages.length > 0) saveMessages(state.companyName, activeId, messages);
   }, [messages, state.companyName, activeId]);
 
   // === Snapshot (cache por hash) ===
