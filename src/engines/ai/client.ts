@@ -128,13 +128,6 @@ function reportCacheUsage(raw: unknown, source: string): void {
       `[ai/cache] ${source} | in=${input} create=${create} read=${read} out=${output} hit=${usage.hitRatio}%`,
     );
   }
-  if (typeof window !== "undefined") {
-    try {
-      window.dispatchEvent(new CustomEvent("ai:cache-usage", { detail: usage }));
-    } catch {
-      // ignora ambientes sem CustomEvent
-    }
-  }
 }
 
 // ============================================================
