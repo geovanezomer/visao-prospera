@@ -308,6 +308,50 @@ export function findSector(query: string): SectorBenchmark | undefined {
   return SECTORS.find((s) => s.id.toLowerCase().includes(q) || s.label.toLowerCase().includes(q));
 }
 
+/**
+ * Resolve o benchmark efetivo da empresa, com precedência:
+ *   1) `state.benchmarkCustom` (P50 personalizado, P25/P75 = ±20%)
+ *   2) `state.ramoAtuacao` (id direto de SECTORS)
+ *   3) primeiro setor que case com `state.businessType`
+ */
+export function resolveBenchmark(state: {
+  businessType?: BusinessType;
+  ramoAtuacao?: string;
+  benchmarkCustom?: Partial<Record<
+    "margemBruta" | "margemEbitda" | "margemLiquida" | "giroAtivo" |
+    "endividamento" | "pmr" | "pmp" | "evEbitda",
+    number
+  >>;
+}): SectorBenchmark | undefined {
+  // Base: setor escolhido ou primeiro do businessType.
+  const base: SectorBenchmark | undefined =
+    (state.ramoAtuacao ? getSector(state.ramoAtuacao) : undefined) ??
+    (state.businessType ? listSectors(state.businessType)[0] : undefined);
+  if (!base) return undefined;
+
+  const cb = state.benchmarkCustom;
+  if (!cb) return base;
+
+  // Override por métrica: usa P50 customizado e deriva P25/P75 = ±20%.
+  const band = (p50: number) => ({
+    p25: +(p50 * 0.8).toFixed(2),
+    p50,
+    p75: +(p50 * 1.2).toFixed(2),
+  });
+  return {
+    ...base,
+    label: base.label + " (personalizado)",
+    margemBruta: cb.margemBruta != null ? band(cb.margemBruta) : base.margemBruta,
+    margemEbitda: cb.margemEbitda != null ? band(cb.margemEbitda) : base.margemEbitda,
+    margemLiquida: cb.margemLiquida != null ? band(cb.margemLiquida) : base.margemLiquida,
+    giroAtivo: cb.giroAtivo != null ? band(cb.giroAtivo) : base.giroAtivo,
+    endividamento: cb.endividamento != null ? band(cb.endividamento) : base.endividamento,
+    pmr: cb.pmr != null ? band(cb.pmr) : base.pmr,
+    pmp: cb.pmp != null ? band(cb.pmp) : base.pmp,
+    evEbitda: cb.evEbitda != null ? band(cb.evEbitda) : base.evEbitda,
+  };
+}
+
 /** Classifica valor da empresa frente ao setor: posição em quartil. */
 export function rank(
   value: number,
