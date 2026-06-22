@@ -348,6 +348,9 @@ export interface BalancoDetalhado {
 
 export type DebtSystem = "price" | "sac";
 
+export type FrequenciaAmortizacao = "mensal" | "trimestral" | "semestral" | "anual" | "bullet";
+export type TipoCredor = "banco" | "fomento" | "fornecedor" | "socio" | "outro";
+
 export interface DebtContract {
   id: string;
   credor: string;
@@ -359,6 +362,16 @@ export interface DebtContract {
   sistema: DebtSystem;
   /** Prazo remanescente em meses. */
   prazoMeses: number;
+  /** Tipo de credor — usado em análise de risco (ex.: dívida com sócio é subordinada). */
+  tipoCredor?: TipoCredor;
+  /** Frequência de amortização do principal (default: mensal). */
+  frequenciaAmortizacao?: FrequenciaAmortizacao;
+  /** Covenants do contrato (ex.: "DSCR ≥ 1.25x", "Dívida Líq./EBITDA ≤ 3x"). Texto livre. */
+  covenants?: string;
+  /** Garantia oferecida (ex.: "Imóvel matrícula 1234", "Aval do sócio"). */
+  garantia?: string;
+  /** Observações livres do consultor. */
+  observacoes?: string;
 }
 
 export interface CapexAtivacao {
