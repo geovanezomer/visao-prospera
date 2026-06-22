@@ -172,25 +172,15 @@ export function CompanyConfigForm({
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Identidade
         </h3>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3">
           <div className="space-y-1.5">
-            <Label htmlFor="companyName">Nome da empresa *</Label>
+            <Label htmlFor="companyName">Nome da Empresa / Arquivo *</Label>
             <Input
               id="companyName"
               value={form.companyName}
               onChange={(e) => commit({ ...form, companyName: e.target.value })}
               maxLength={120}
               placeholder="Minha Empresa LTDA"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="cnpj">CNPJ</Label>
-            <Input
-              id="cnpj"
-              value={form.cnpj ?? ""}
-              onChange={(e) => commit({ ...form, cnpj: e.target.value })}
-              maxLength={20}
-              placeholder="00.000.000/0000-00"
             />
           </div>
         </div>
