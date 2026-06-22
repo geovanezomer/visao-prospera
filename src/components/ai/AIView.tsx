@@ -259,8 +259,9 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
           </div>
         )}
 
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="relative flex flex-1 flex-col overflow-hidden">
+          <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-6 space-y-6">
+
             {messages.length === 0 ? (
               <div className="max-w-3xl mx-auto space-y-6">
                 <div className="bg-card/30 rounded-xl p-6 border border-border/40">
