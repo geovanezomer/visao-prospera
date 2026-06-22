@@ -755,6 +755,138 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     );
   };
 
+  // ───────────────────────────────────────────────────────────────────
+  // CONSELHO VIRTUAL — 3 especialistas em PARALELO + síntese de consenso.
+  // Diferente do pipeline360 (sequencial), aqui as 3 vozes respondem
+  // simultaneamente para o consultor comparar perspectivas antes de decidir.
+  // ───────────────────────────────────────────────────────────────────
+  const CONCILIO_SPECIALISTS: Array<{
+    key: AIMode;
+    label: string;
+    instr: string;
+  }> = [
+    {
+      key: "cfo",
+      label: "🧭 CFO Estratégico",
+      instr:
+        "Recomendação direta: 1 tese, 2-3 alavancas com impacto em R$ (EBITDA/FCF/EV). Máx 120 palavras.",
+    },
+    {
+      key: "tributarista",
+      label: "📋 Contador Tributarista",
+      instr:
+        "Avalie a pergunta sob a ótica fiscal: impacto em Fator R, Simples/Presumido/Real, CBS/IBS e riscos de compliance. 2-3 pontos com número. Máx 120 palavras.",
+    },
+    {
+      key: "controller",
+      label: "📈 Economista / Valuation",
+      instr:
+        "Avalie a pergunta sob a ótica de valor: impacto em ROIC vs WACC, EV (R$ e múltiplo) e risco do retorno. Use get_valuation. 2-3 pontos. Máx 120 palavras.",
+    },
+  ];
+
+  const runConcilio = async (userQuestion?: string) => {
+    if (streaming || !activeId) return;
+    if (mode !== "board") {
+      toast.error("Conselho Virtual disponível apenas no Modo Conselho (Board).");
+      return;
+    }
+    const q = (userQuestion ?? input).trim();
+    if (!q) {
+      toast.error("Digite a pergunta que o conselho deve debater.");
+      return;
+    }
+
+    const userMsg: ChatMessage = {
+      role: "user",
+      content: `🏛️ **Conselho Virtual (3 especialistas em paralelo)**\n\n${q}`,
+      ts: Date.now(),
+    };
+    // Insere user + 3 placeholders dos especialistas com ts único.
+    const placeholders: ChatMessage[] = CONCILIO_SPECIALISTS.map((s, i) => ({
+      role: "assistant" as const,
+      content: `### ${s.label}\n\n_aguardando…_`,
+      ts: Date.now() + i + 1,
+    }));
+    const baseHistory = [...messages, userMsg];
+    setMessages([...baseHistory, ...placeholders]);
+    setInput("");
+    setStreaming(true);
+    touchThread(state.companyName, activeId);
+    const ac = new AbortController();
+    abortRef.current = ac;
+
+    // Helper: atualiza msg por ts.
+    const updateByTs = (ts: number, content: string) =>
+      setMessages((prev) =>
+        prev.map((m) => (m.ts === ts ? { ...m, content } : m)),
+      );
+
+    // Roda os 3 em paralelo.
+    const outputs: Array<{ label: string; text: string }> = [];
+    await Promise.all(
+      CONCILIO_SPECIALISTS.map(async (spec, i) => {
+        const ts = placeholders[i].ts;
+        const sysPrompt = buildSysPrompt(spec.key);
+        const userPrompt = `[Conselho Virtual · voz ${i + 1}/3 — ${spec.label}]\nPergunta do conselho: ${q}\n\nResponda no seu papel. ${spec.instr}`;
+        const llm = buildLlmMessages({
+          systemPrompt: sysPrompt,
+          history: baseHistory,
+          forTools: false,
+          lastUserContent: userPrompt,
+        });
+        let acc = `### ${spec.label}\n\n`;
+        updateByTs(ts, acc);
+        try {
+          for await (const delta of streamChat(config, llm, ac.signal)) {
+            acc += delta;
+            updateByTs(ts, acc);
+          }
+          outputs.push({ label: spec.label, text: acc.slice(`### ${spec.label}\n\n`.length) });
+        } catch (e) {
+          const aborted = ac.signal.aborted;
+          acc += aborted ? "\n\n_(⏸ cancelado)_" : "\n\n" + errToMd(e);
+          updateByTs(ts, acc);
+        }
+      }),
+    );
+
+    // Síntese de consenso/divergência.
+    if (!ac.signal.aborted && outputs.length === CONCILIO_SPECIALISTS.length) {
+      const synthTs = Date.now() + 999;
+      const synthPlaceholder: ChatMessage = {
+        role: "assistant",
+        content: "### 🧩 Síntese do Conselho\n\n_consolidando…_",
+        ts: synthTs,
+      };
+      setMessages((prev) => [...prev, synthPlaceholder]);
+      const synthPrompt = `Você é o secretário do conselho. As 3 vozes responderam à pergunta: "${q}".\n\n${outputs
+        .map((o) => `## ${o.label}\n${o.text}`)
+        .join("\n\n")}\n\nProduza em **máx. 150 palavras**:\n1. **Consenso** — onde os 3 concordam (1-2 bullets).\n2. **Divergência** — onde discordam (1-2 bullets, dizendo qual voz defende cada lado).\n3. **Recomendação final** — placar (ex.: "2 de 3 recomendam X") + a decisão executiva sugerida com 1 número de impacto.`;
+      let acc = "### 🧩 Síntese do Conselho\n\n";
+      updateByTs(synthTs, acc);
+      try {
+        const llm = buildLlmMessages({
+          systemPrompt: buildSysPrompt("chat"),
+          history: baseHistory,
+          forTools: false,
+          lastUserContent: synthPrompt,
+        });
+        for await (const delta of streamChat(config, llm, ac.signal)) {
+          acc += delta;
+          updateByTs(synthTs, acc);
+        }
+      } catch (e) {
+        acc += "\n\n" + errToMd(e);
+        updateByTs(synthTs, acc);
+      }
+    }
+
+    setStreaming(false);
+    abortRef.current = null;
+  };
+
+
 
 
 
