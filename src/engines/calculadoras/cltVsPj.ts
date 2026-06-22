@@ -131,7 +131,10 @@ export const cltVsPjInputSchema = z.object({
     .default(IRPJ_ADICIONAL_GATILHO_MENSAL_DEFAULT),
 });
 
-export type CltVsPjInput = z.infer<typeof cltVsPjInputSchema>;
+/** Input do usuário (campos com default são opcionais). */
+export type CltVsPjInput = z.input<typeof cltVsPjInputSchema>;
+/** Input já validado e com defaults aplicados (uso interno na engine). */
+type CltVsPjInputParsed = z.output<typeof cltVsPjInputSchema>;
 
 // ============================================================================
 // CLT
