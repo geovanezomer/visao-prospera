@@ -139,8 +139,21 @@ export function computeFornecedores(
 /**
  * Pagamentos de impostos = total mensal de tributos deslocado 30 dias (apuração + DARF).
  */
-export function computeImpostos(tax: MonthlyTax): { inAno: number[]; transbordo: number } {
-  return shiftByDaysSplit(tax.monthly, 30);
+export function computeImpostos(
+  tax: MonthlyTax,
+  splitPaymentAtivo = false,
+): { inAno: number[]; transbordo: number } {
+  // Sem Split: tudo recolhido com lag de ~30 dias (mês seguinte).
+  if (!splitPaymentAtivo) return shiftByDaysSplit(tax.monthly, 30);
+  // Com Split (LC 214/2025): CBS+IBS retidos no ato (lag 0); demais tributos mantêm lag 30.
+  const cbsIbs = tax.monthlyCbsIbs ?? new Array(12).fill(0);
+  const restante = tax.monthly.map((m, i) => Math.max(0, m - (cbsIbs[i] ?? 0)));
+  const a = shiftByDaysSplit(restante, 30);
+  const b = shiftByDaysSplit(cbsIbs, 0);
+  return {
+    inAno: a.inAno.map((v, i) => v + (b.inAno[i] ?? 0)),
+    transbordo: a.transbordo + b.transbordo,
+  };
 }
 
 /**
@@ -294,7 +307,7 @@ export function buildCashFlow(
 
   const rec = computeRecebimentos(state, dre);
   const fornec = computeFornecedores(state, dre);
-  const imp = computeImpostos(tax);
+  const imp = computeImpostos(tax, getSplitPaymentAtivo(state.tax));
   const op = computePagamentosOperacionais(dre);
   // B2: rendimentos de aplicações financeiras realizam-se em caixa no mês de competência
   const { financeiras: receitasFinanceiras } = splitReceitasFinanceiras(state);

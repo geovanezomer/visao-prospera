@@ -55,6 +55,7 @@ export function calcSimples(state: AppState): MonthlyTax {
     monthly,
     monthlyVendas: monthly.slice(),
     monthlyLucro: zeros12(),
+    monthlyCbsIbs: zeros12(),
     annual,
     annualVendas: annual,
     annualLucro: 0,

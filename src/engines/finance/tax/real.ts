@@ -125,6 +125,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     saldoCredorCOFINS = 0;
   const monthlyVendas = zeros12();
   const monthlyLucro = zeros12();
+  const monthlyCbsIbs = zeros12();
   const monthly = trib.map((r, i) => {
     const lair = baseIRPJMensal[i];
     const irpj = lair * irpjAliq;
@@ -174,6 +175,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     const lucro = irpj + adicional + csll;
     monthlyVendas[i] = vendas;
     monthlyLucro[i] = lucro;
+    monthlyCbsIbs[i] = cbs + ibs;
     return vendas + lucro;
   });
   const annual = sum(monthly);
@@ -198,6 +200,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     monthly,
     monthlyVendas,
     monthlyLucro,
+    monthlyCbsIbs,
     annual,
     annualVendas,
     annualLucro,
