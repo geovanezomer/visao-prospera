@@ -1,5 +1,5 @@
 // ============================================================================
-// HistoricalYearPills — Seletor de período no cabeçalho de DRE/CashFlow/Indicadores.
+// HistoricalYearPills — Seletor de período no cabeçalho das abas com histórico.
 //
 // Modos:
 //  1) Navegação (default): clicar em uma pill recarrega aquele snapshot no
@@ -59,7 +59,7 @@ import { Label } from "@/components/ui/label";
 import { MoreVertical, Pencil, Trash2, GitCompare, X } from "lucide-react";
 import { toast } from "sonner";
 
-export function HistoricalYearPills({ hideCompare = false }: { hideCompare?: boolean } = {}) {
+export function HistoricalYearPills() {
   const { state, update } = useFinance();
   const company = state.companyName || "default";
   const all = useScenarios(company);
@@ -224,36 +224,34 @@ export function HistoricalYearPills({ hideCompare = false }: { hideCompare?: boo
         </button>
 
         {/* Ações do modo comparação. */}
-        {!hideCompare && (
-          <div className="ml-2 inline-flex items-center gap-1">
-            {compare.active ? (
-              <>
-                <span className="text-[10px] text-muted-foreground">
-                  {compare.selected.length} selecionado
-                  {compare.selected.length === 1 ? "" : "s"}
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 px-2 text-[11px]"
-                  onClick={() => setComparisonActive(false)}
-                >
-                  <X className="mr-1 h-3 w-3" /> Sair
-                </Button>
-              </>
-            ) : (
+        <div className="ml-2 inline-flex items-center gap-1">
+          {compare.active ? (
+            <>
+              <span className="text-[10px] text-muted-foreground">
+                {compare.selected.length} selecionado
+                {compare.selected.length === 1 ? "" : "s"}
+              </span>
               <Button
                 size="sm"
                 variant="ghost"
                 className="h-6 px-2 text-[11px]"
-                onClick={() => setComparisonActive(true)}
-                title="Comparar períodos lado a lado"
+                onClick={() => setComparisonActive(false)}
               >
-                <GitCompare className="mr-1 h-3 w-3" /> Comparar
+                <X className="mr-1 h-3 w-3" /> Sair
               </Button>
-            )}
-          </div>
-        )}
+            </>
+          ) : (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 px-2 text-[11px]"
+              onClick={() => setComparisonActive(true)}
+              title="Comparar períodos lado a lado"
+            >
+              <GitCompare className="mr-1 h-3 w-3" /> Comparar
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Confirmação de troca de período (modo navegação). */}

@@ -381,7 +381,7 @@ export function CompanyConfigForm({
           </h3>
           <p className="text-[11px] text-muted-foreground">
             Arquiva o AppState atual como snapshot histórico. Após 2+ snapshots, o
-            cabeçalho de Indicadores/DRE mostra pills para comparar períodos.
+            cabeçalho das abas com histórico mostra pills para navegar e comparar períodos.
           </p>
           <ArchiveYearButton onClose={() => onCommitted?.()} />
         </section>

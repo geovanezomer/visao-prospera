@@ -3,7 +3,6 @@ import { fmtBRL, fmtPct } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { HelpTip, StatCard } from "@/components/sim/shared/primitives";
 import { TrendingUp, TrendingDown } from "lucide-react";
-import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
 import { IndicatorsGrid } from "./IndicatorsGrid";
 
 // Tooltip style (mantido para CashConversionSmall e outros consumidores futuros)
@@ -16,7 +15,6 @@ export function IndicatorsTab() {
 
   return (
     <div className="space-y-6">
-      <HistoricalYearPills hideCompare />
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
           label="Ciclo Financeiro"
