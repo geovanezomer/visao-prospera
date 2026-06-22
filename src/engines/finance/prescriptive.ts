@@ -340,7 +340,9 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
   }
 
   // ===== 6. Margem bruta abaixo do benchmark =====
-  const [mbMin] = BENCHMARK_MARGEM_BRUTA[state.businessType];
+  // Limite saudável = P25 do setor resolvido (respeita ramoAtuacao + benchmarkCustom).
+  const mbMin = sectorBench?.margemBruta.p25 ?? FALLBACK_MARGEM_BRUTA[state.businessType];
+  const mbP50 = sectorBench?.margemBruta.p50 ?? mbMin;
   if (ind.margemBruta < mbMin) {
     cards.push({
       id: "margem_bruta",
@@ -348,7 +350,7 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
       problem: "Margem bruta abaixo do benchmark do setor",
       metricLabel: "Margem Bruta",
       metricValue: `${ind.margemBruta.toFixed(1)}%`,
-      benchmark: `Setor ${state.businessType}: ${mbMin}%+`,
+      benchmark: `${sectorLabel}: P25 ${mbMin.toFixed(1)}% · mediana ${mbP50.toFixed(1)}%`,
       cause:
         "Custo de Vendas (CMV/CPV/CSP) está alto em relação à receita — preço baixo ou custo direto elevado.",
       actions: [
