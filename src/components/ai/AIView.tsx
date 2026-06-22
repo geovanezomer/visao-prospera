@@ -136,6 +136,7 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
     resumePipeline360,
     resetPipeline360,
     pipeline360,
+    runConcilio,
     handleStop,
     send,
     handleFiles,
