@@ -147,6 +147,9 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
   const folhaAnoCanon = folhaAnual(state);
   const folhaPct = receitaLiqAnual > 0 ? (folhaAnoCanon / receitaLiqAnual) * 100 : 0;
   const [folhaMin, folhaMax] = BENCHMARK_FOLHA_RECEITA[state.businessType];
+  // Benchmark setorial resolvido (respeita ramoAtuacao + benchmarkCustom).
+  const sectorBench = resolveBenchmark(state);
+  const sectorLabel = sectorBench?.label ?? state.businessType;
 
   // ===== 1. Folha alta =====
   if (folhaPct > folhaMax) {
