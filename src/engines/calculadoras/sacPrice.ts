@@ -83,13 +83,18 @@ export function calcularPRICE(pv: number, taxaMensal: number, n: number): Result
   let totalJuros = 0;
   for (let m = 1; m <= n; m++) {
     const juros = round2(saldo * i);
-    const amort = round2(parcelaFixa - juros);
-    saldo = Math.max(0, saldo - amort);
-    totalPago = round2(totalPago + parcelaFixa);
+    // Última parcela: ajusta amortização para liquidar o saldo residual
+    // (drift inerente ao arredondamento de centavos do PMT — bancos quitam
+    // a dívida ajustando a última prestação).
+    const ehUltima = m === n;
+    const amort = ehUltima ? round2(saldo) : round2(parcelaFixa - juros);
+    const parcelaMes = ehUltima ? round2(amort + juros) : parcelaFixa;
+    saldo = Math.max(0, round2(saldo - amort));
+    totalPago = round2(totalPago + parcelaMes);
     totalJuros = round2(totalJuros + juros);
     parcelas.push({
       mes: m,
-      parcela: parcelaFixa,
+      parcela: parcelaMes,
       amortizacao: amort,
       juros,
       saldoDevedor: round2(saldo),
@@ -97,8 +102,8 @@ export function calcularPRICE(pv: number, taxaMensal: number, n: number): Result
   }
   return {
     parcelas,
-    primeiraParcela: parcelaFixa,
-    ultimaParcela: parcelaFixa,
+    primeiraParcela: parcelas[0]?.parcela ?? 0,
+    ultimaParcela: parcelas[parcelas.length - 1]?.parcela ?? 0,
     totalPago,
     totalJuros,
   };
