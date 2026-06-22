@@ -118,6 +118,17 @@ export const cltVsPjInputSchema = z.object({
   contabilidadeMensal: z.number().min(0).default(0),
   planoSaudeMensal: z.number().min(0).default(0),
   proLaborePct: z.number().min(0).max(1).default(PRO_LABORE_PCT_DEFAULT),
+  /**
+   * Adicional IRPJ (% sobre o excedente do gatilho). Padrão 10% — pode ser
+   * 0 para refletir decisões judiciais que afastem o adicional para o
+   * segmento, ou outro valor configurado nas "Federais".
+   */
+  irpjAdicionalPct: z.number().min(0).max(1).default(IRPJ_ADICIONAL_PCT_DEFAULT),
+  /** Gatilho MENSAL do adicional IRPJ (R$). Padrão R$ 20.000. */
+  irpjAdicionalGatilhoMensal: z
+    .number()
+    .min(0)
+    .default(IRPJ_ADICIONAL_GATILHO_MENSAL_DEFAULT),
 });
 
 export type CltVsPjInput = z.infer<typeof cltVsPjInputSchema>;
