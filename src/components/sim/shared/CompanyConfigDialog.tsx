@@ -79,6 +79,11 @@ const formSchema = z.object({
     .int("Use um número inteiro")
     .min(0, "Não pode ser negativo")
     .max(100000, "Valor irreal"),
+  numSocios: z
+    .number({ invalid_type_error: "Informe um número" })
+    .int("Use um número inteiro")
+    .min(0, "Não pode ser negativo")
+    .max(1000, "Valor irreal"),
   regime: z.enum(["simples", "presumido", "real"]),
   periodoAnaliseMeses: z.union([
     z.literal(6),
