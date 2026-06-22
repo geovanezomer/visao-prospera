@@ -827,6 +827,8 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
     y += 32 + lines.length * 11 + 10;
   });
 
+  // ~3 linhas de respiro entre as dimensões e o gráfico de Resultado Acumulado.
+  y += 36;
   // Gráfico — Resultado acumulado (lucro líquido) — mesma página
   let acc = 0;
   const cumul = model.dre.lucroLiquido.map((v) => (acc += v));
@@ -837,6 +839,7 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
       fill: [16, 185, 129] as [number, number, number],
       line: [5, 150, 105] as [number, number, number],
     });
+
 
   // ── PÁGINA 5 — RISCOS & RECOMENDAÇÕES ──────────────────────────────
   doc.addPage();
