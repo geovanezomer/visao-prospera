@@ -27,6 +27,11 @@ import { calcPresumido } from "./tax/presumido";
 import { calcReal } from "./tax/real";
 import type { MonthlyTax } from "./tax/shared";
 
+// Regex compilada uma única vez (era recriada a cada chamada de classifyCosts).
+const LOAN_INTEREST_RE = /juros[^a-z]*(sobre)?[^a-z]*(empr[eé]stimo|contrato)/i;
+
+
+
 export interface DRE {
   receitaBruta: number[];
   deducoesInadimplencia: number[]; // 0 se inadimplenciaComoPDD
