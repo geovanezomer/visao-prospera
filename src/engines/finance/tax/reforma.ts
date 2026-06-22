@@ -56,8 +56,8 @@ export interface ReformaRates {
 }
 
 export function getReformaRates(era: TaxEra | undefined, cfg: TaxConfig): ReformaRates {
-  const cbsFull = cfg.cbsAliquota ?? 8.8;
-  const ibsFull = cfg.ibsAliquotaRef ?? 17.7;
+  const cbsFull = getCbsAliquota(cfg);
+  const ibsFull = getIbsAliquotaRef(cfg);
   const ibsMult = getReformaTransicaoIbsMult(cfg);
   const icmsIssMult = getReformaTransicaoIcmsIssMult(cfg);
   switch (era ?? "atual") {
