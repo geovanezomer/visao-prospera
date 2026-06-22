@@ -59,8 +59,6 @@ export interface CrossValidateModel {
 const LIMITS = {
   /** Receita anual mínima para obrigatoriedade do Lucro Real (LC 14/2024). */
   LUCRO_REAL_OBRIG: 78_000_000,
-  /** Fator R mínimo para migração Anexo V → III. */
-  FATOR_R_MIN: 0.28,
   /** Dívida Líquida / EBITDA — limite de alavancagem perigosa. */
   DIV_EBITDA_MAX: 5,
   /** Ciclo financeiro máximo "saudável" (dias). */
