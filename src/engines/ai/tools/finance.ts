@@ -162,6 +162,15 @@ const handlers: Record<string, ToolHandler> = {
     "_Balanço de fechamento indisponível (DRE/DFC ainda não calculados — preencha Receitas e Despesas)._",
   get_contratos_divida: (_a, { sec }) =>
     sec.dividas || "_Nenhum contrato de dívida cadastrado e Dívida Onerosa agregada é zero._",
+  get_pagina_capital: (_a, { sec }) =>
+    [
+      sec.capital,
+      sec.balancoAbertura,
+      sec.dividas ||
+        "_Sem contratos de dívida detalhados — verifique Capital · Contratos de Empréstimos e Financiamentos._",
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
   get_regime_tributario: (_a, { sec }) => sec.regime,
   get_eras_reforma: (_a, { sec }) =>
     sec.eras || "_Comparativo de eras indisponível (verifique a configuração tributária)._",
