@@ -5,6 +5,7 @@ import { splitReceitasFinanceiras, computeCapexMensal } from "./shared";
 import type { MonthlyTax } from "./tax/shared";
 import { MESES, sum, zeros12 } from "./format";
 import { mediaMensal, mesesPreenchidos } from "./periodUtils";
+import { getSplitPaymentAtivo } from "./taxDefaults";
 
 export interface CashFlow {
   saldoInicial: number[];
