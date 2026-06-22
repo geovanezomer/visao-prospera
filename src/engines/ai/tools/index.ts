@@ -117,7 +117,7 @@ const META_TOOLS: ToolDef[] = [
   {
     name: "tool_search",
     description:
-      "Lista tools disponíveis no FinnancePRO. Filtre por palavra-chave (`query`) e/ou `category` (finance, simulator, benchmark, macro, scenarios, actions, compliance, reports, memory). Chame SEMPRE antes de `tool_invoke` se não tiver certeza do nome exato. Retorna JSON com name, category, description e parameters.",
+      "Lista tools disponíveis no FinnancePRO. Filtre por palavra-chave (`query`) e/ou `category` (finance, simulator, benchmark, macro, scenarios, actions, compliance, reports, memory, calculadoras, auditoria). Chame SEMPRE antes de `tool_invoke` se não tiver certeza do nome exato. Retorna JSON com name, category, description e parameters.",
     parameters: {
       type: "object",
       properties: {
