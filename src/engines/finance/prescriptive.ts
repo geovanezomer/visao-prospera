@@ -160,7 +160,7 @@ export function buildPrescriptiveCards(state: AppState): PrescriptiveCard[] {
       problem: "Folha CLT acima do benchmark do setor",
       metricLabel: "Folha / Receita Líquida",
       metricValue: `${folhaPct.toFixed(1)}%`,
-      benchmark: `Setor ${state.businessType}: ${folhaMin}–${folhaMax}%`,
+      benchmark: `${sectorLabel}: ${folhaMin}–${folhaMax}% (faixa saudável)`,
       cause: `Folha mensal de ${folhaMensal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}. Quadro pode estar dimensionado para um faturamento maior que o atual.`,
       actions: [
         {
