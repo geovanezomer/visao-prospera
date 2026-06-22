@@ -218,7 +218,7 @@ const handlers: Record<string, ToolHandler> = {
 
     // ===== 2. Impacto permanente em capital de giro =====
     const cf = buildCashFlow(state, regime);
-    const ind = calcIndicators(state, buildDRE(state, regime), cf);
+    const ind = calcIndicators(state, buildDRE(state, regime).dre, cf);
     const ncgAtual = ind.ncg ?? 0;
     const ncgPos = ncgAtual + floatTotal; // PC tributário some → NCG sobe
     out.push(``, `### 2. Capital de giro & custo de carregamento`);
