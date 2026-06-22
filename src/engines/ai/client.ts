@@ -320,7 +320,8 @@ export async function chatWithTools(
       const url = anth ? `${cfg.baseUrl}/messages` : `${cfg.baseUrl}/chat/completions`;
       let body: Record<string, unknown>;
       if (anth) {
-        const { system, rest } = splitSystemAndMessages(messages);
+        const { systemBlocks, rest } = splitSystemAndMessages(messages);
+        const system = buildAnthropicSystem(systemBlocks);
         body = {
           model: cfg.model,
           max_tokens: 4096,
