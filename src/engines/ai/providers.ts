@@ -268,7 +268,7 @@ function sanitizeConfig(input: unknown): AIConfig {
     model: stringOr(raw.model, defaults.model),
     temperature: finiteOr(raw.temperature, DEFAULT_CONFIG.temperature),
     includeSnapshot: boolOr(raw.includeSnapshot, DEFAULT_CONFIG.includeSnapshot),
-    useTools: boolOr(raw.useTools, DEFAULT_CONFIG.useTools),
+    useTools: needsMigration ? true : boolOr(raw.useTools, DEFAULT_CONFIG.useTools),
     useMetaTools: boolOr(raw.useMetaTools, DEFAULT_CONFIG.useMetaTools),
     soul,
     skills,
