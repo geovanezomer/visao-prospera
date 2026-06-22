@@ -192,10 +192,10 @@ function drawTable(
       fontStyle: "bold", fontSize: 9, halign: "center",
     },
     alternateRowStyles: { fillColor: COLOR.zebra },
-    columnStyles: opts?.colStyles ?? head.reduce<Record<number, { halign: "right" | "left" }>>((acc, _h, i) => {
+    columnStyles: (opts?.colStyles ?? head.reduce<Record<number, { halign: "right" | "left" }>>((acc, _h, i) => {
       if (i > 0) acc[i] = { halign: "right" };
       return acc;
-    }, {}),
+    }, {})) as Record<number, Partial<Record<string, unknown>>>,
   });
   // @ts-expect-error — autoTable atribui lastAutoTable em runtime.
   return (doc.lastAutoTable?.finalY ?? yStart) + 14;
