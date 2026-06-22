@@ -27,8 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronDown, ChevronRight, RotateCcw, Info } from "lucide-react";
+import { ChevronDown, ChevronRight, RotateCcw } from "lucide-react";
+import { HelpTip } from "@/components/sim/shared/primitives";
 // RadioGroup removido: headcount agora é input numérico exato.
 import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import type { AppState, BusinessType, TaxRegime } from "@/engines/finance/types";
@@ -314,28 +314,11 @@ export function CompanyConfigForm({
                   (opcional — já preenchido com valores do setor)
                 </span>
               </CollapsibleTrigger>
-              <TooltipProvider delayDuration={150}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-muted-foreground hover:text-foreground"
-                      aria-label="Como os quartis são calculados"
-                    >
-                      <Info className="h-3.5 w-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs text-[11px] leading-snug">
-                    Você define apenas a <strong>mediana (P50)</strong> de cada indicador.
-                    O sistema deriva os quartis automaticamente:
-                    <br />• <strong>P25</strong> = P50 × 0,80 (pior 25%)
-                    <br />• <strong>P75</strong> = P50 × 1,20 (melhor 25%)
-                    <br />Assim a comparação por quartil continua coerente sem você precisar
-                    digitar 24 valores.
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <HelpTip
+                text="Você define apenas a mediana (P50) de cada indicador. O sistema deriva os quartis P25 e P75 automaticamente, mantendo a comparação consistente sem precisar digitar 24 valores."
+                formula="P25 = P50 × 0,80   ·   P75 = P50 × 1,20"
+                example="Se a Margem EBITDA P50 = 15%, então P25 = 12% e P75 = 18%."
+              />
               <Button
                 type="button"
                 size="sm"
@@ -374,39 +357,17 @@ export function CompanyConfigForm({
                         <Label htmlFor={`bm-${f.key}`} className="text-[11px]">
                           {f.label} ({f.unit})
                         </Label>
-                        <TooltipProvider delayDuration={150}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                className="text-muted-foreground hover:text-foreground"
-                                aria-label={`Detalhes de ${f.label}`}
-                              >
-                                <Info className="h-3 w-3" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs text-[11px] leading-snug">
-                              <div className="font-medium">{f.label}</div>
-                              <div className="mt-1">
-                                Origem:{" "}
-                                {isCustom ? (
-                                  <strong>valor personalizado</strong>
-                                ) : (
-                                  <>setor <strong>{setorSelecionado.label}</strong></>
-                                )}
-                              </div>
-                              <div className="mt-1">Quartis efetivos:</div>
-                              <div>• P25 = P50 × 0,80 = <strong>{fmt(p25)}</strong></div>
-                              <div>• P50 = <strong>{fmt(effectiveP50)}</strong></div>
-                              <div>• P75 = P50 × 1,20 = <strong>{fmt(p75)}</strong></div>
-                              {isCustom && (
-                                <div className="mt-1 text-muted-foreground">
-                                  Padrão do setor: {fmt(defaultP50)}
-                                </div>
-                              )}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <HelpTip
+                          text={`Origem: ${
+                            isCustom
+                              ? "valor personalizado"
+                              : `setor ${setorSelecionado.label}`
+                          }. Quartis efetivos: P25 ${fmt(p25)} · P50 ${fmt(effectiveP50)} · P75 ${fmt(p75)}.${
+                            isCustom ? ` Padrão do setor: ${fmt(defaultP50)}.` : ""
+                          }`}
+                          formula="P25 = P50 × 0,80   ·   P75 = P50 × 1,20"
+                          example={`P50 = ${fmt(effectiveP50)} → P25 = ${fmt(p25)}, P75 = ${fmt(p75)}`}
+                        />
                       </div>
                       <Input
                         id={`bm-${f.key}`}
