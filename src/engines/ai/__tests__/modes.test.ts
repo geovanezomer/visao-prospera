@@ -36,6 +36,7 @@ const MODE_MARKERS: Record<Exclude<AIMode, "chat">, string> = {
   auditor: "<!--AUDIT-REPORT-->",
   board: "MODO CONSELHO (BOARD)",
   tributarista: "MODO TRIBUTARISTA",
+  contador: "MODO CONTADOR",
 };
 
 function build(extra: Partial<Parameters<typeof buildSystemPrompt>[0]> = {}) {

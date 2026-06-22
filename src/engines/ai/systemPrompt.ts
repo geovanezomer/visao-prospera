@@ -109,7 +109,7 @@ export function buildContextHeader(ctx: RuntimeContext = {}): string {
 // "chat" é o padrão (sem bloco extra). Outros modos anexam um bloco
 // específico ao system prompt que muda postura/formato de resposta.
 // =====================================================================
-export type AIMode = "chat" | "cfo" | "controller" | "auditor" | "board" | "tributarista";
+export type AIMode = "chat" | "cfo" | "controller" | "auditor" | "board" | "tributarista" | "contador";
 
 export const AI_MODE_LABELS: Record<AIMode, string> = {
   chat: "Chat",
@@ -118,6 +118,7 @@ export const AI_MODE_LABELS: Record<AIMode, string> = {
   auditor: "Auditor (relatório)",
   board: "Conselho (board)",
   tributarista: "Tributarista",
+  contador: "Contador",
 };
 
 export const AI_MODE_DESCRIPTIONS: Record<AIMode, string> = {
@@ -127,6 +128,7 @@ export const AI_MODE_DESCRIPTIONS: Record<AIMode, string> = {
   auditor: "Relatório estruturado para o cliente (formato fixo).",
   board: "Resposta tipo memorando de conselho — tese, evidência, decisão.",
   tributarista: "Especialista em regime tributário, CBS/IBS e Reforma (LC 214/2025).",
+  contador: "Rotinas contábeis: folha, rescisão, férias, pró-labore, encargos.",
 };
 
 
@@ -201,6 +203,13 @@ const MODE_TRIBUTARISTA_BLOCK = `MODO TRIBUTARISTA: aja como contador/tributaris
 - Considere Split Payment, Cashback, créditos não-cumulativos e o cronograma de transição 2026–2033.
 - Saída em formato: "Diagnóstico → Cenários (tabela Regime | Carga | Δ vs atual) → Recomendação → Riscos de compliance". Verbo no imperativo, sem "considerar avaliar".`;
 
+const MODE_CONTADOR_BLOCK = `MODO CONTADOR: aja como contador sênior responsável pela rotina trabalhista e contábil da empresa.
+- Domínio: folha de pagamento, rescisão (sem justa causa, com justa causa, pedido de demissão, acordo art. 484-A), férias (proporcionais, integrais, abono pecuniário 1/3, dobra), 13º salário (1ª e 2ª parcela), aviso prévio (trabalhado/indenizado, proporcional Lei 12.506/2011), FGTS (8% + multa 40%/20%), INSS patronal e empregado (tabela progressiva vigente), IRRF (tabela progressiva), pró-labore, contribuição previdenciária do sócio (11% ou 20%), salário-família, salário-maternidade, horas extras (50%/100%), adicional noturno (20%), insalubridade/periculosidade, vale-transporte (6%), descontos legais e convencionais.
+- Para CLT vs PJ, considere custo total do empregador (encargos ≈ 70-100% sobre salário bruto, dependendo do regime).
+- Antes de calcular, peça os parâmetros faltantes (data de admissão, data de demissão, salário, tipo de rescisão, dependentes IR, etc.). Apresente o cálculo em tabela "Verba | Base | Alíquota/Fator | Valor (R$)" e totalize Bruto, Descontos e Líquido.
+- Sinalize itens afetados pela Reforma Trabalhista (Lei 13.467/2017) quando relevante. Cite a base legal (CLT art. X, Lei Y) quando apropriado.
+- Verbo no imperativo, sem "considerar avaliar". Se houver calculadoras no app (rescisão, férias, custo de funcionário, CLT vs PJ), recomende-as ao final.`;
+
 const MODE_BLOCKS: Record<AIMode, string> = {
   chat: "",
   cfo: MODE_CFO_BLOCK,
@@ -208,6 +217,7 @@ const MODE_BLOCKS: Record<AIMode, string> = {
   auditor: MODE_AUDITOR_BLOCK,
   board: MODE_BOARD_BLOCK,
   tributarista: MODE_TRIBUTARISTA_BLOCK,
+  contador: MODE_CONTADOR_BLOCK,
 };
 
 

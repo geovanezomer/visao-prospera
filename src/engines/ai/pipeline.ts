@@ -7,7 +7,7 @@
 
 import type { AIMode } from "./systemPrompt";
 
-export const PIPELINE_360: ReadonlyArray<Exclude<AIMode, "chat" | "board" | "tributarista">> = [
+export const PIPELINE_360: ReadonlyArray<Exclude<AIMode, "chat" | "board" | "tributarista" | "contador">> = [
   "cfo",
   "controller",
   "auditor",
