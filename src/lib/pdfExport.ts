@@ -15,6 +15,8 @@ import type { FinancialModel } from "@/engines/finance/financialModel";
 import { diagnose } from "@/engines/finance/diagnose";
 import { buildPrescriptiveCards } from "@/engines/finance/prescriptive";
 import { aggregateContracts } from "@/engines/finance/debtContracts";
+import { monthValues } from "@/engines/finance/costs";
+import { splitReceitasFinanceiras } from "@/engines/finance/shared";
 
 // ── Paleta — cabeçalho/rodapé escuros; conteúdo branco. ───────────────
 const COLOR = {
