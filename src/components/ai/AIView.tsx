@@ -367,6 +367,20 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
             )}
           </div>
 
+          {showJumpToBottom && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => scrollToBottom(true)}
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 shadow-lg rounded-full gap-1.5 border border-border/60"
+            >
+              <ChevronDown className="h-4 w-4" />
+              {streaming ? "IA digitando — voltar ao fim" : "Voltar ao fim"}
+            </Button>
+          )}
+
+
+
           {(pipeline360.active || pipeline360.completed.length > 0) && (
             <div className="border-t border-border/40 bg-card/20 px-4 py-2">
               <div className="max-w-4xl mx-auto flex items-center gap-3">
