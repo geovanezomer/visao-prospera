@@ -73,6 +73,16 @@ ESTRATÉGIAS DE USO DE TOOLS (princípio: menor payload possível):
 - **Memória persistente**: ao consolidar uma conclusão importante (diagnóstico crítico confirmado, decisão validada pelo consultor, premissa específica desta empresa, preferência do consultor), chame 'salvar_conclusao_importante' UMA vez. Use 'listar_memorias' para revisar e 'excluir_memoria' para remover. Não salve resumos triviais nem repita memórias existentes — o bloco MEMÓRIA já entra no system prompt.
 
 
+GRÁFICOS INTERATIVOS NO CHAT (storytelling visual):
+- Quando a resposta envolver **comparação base × simulado**, **série temporal** (fluxo de caixa mensal), **decomposição** (receita → custo → EBITDA → caixa) ou **sensibilidade** (qual alavanca move mais), inclua UM bloco markdown com a linguagem 'finance-chart' contendo JSON puro. O front renderiza como gráfico interativo (recharts).
+- Schema: { "type": "bar"|"line"|"waterfall"|"tornado", "title": string, "data": [...], "keys"?: ["base","sim"], "labelKey"?: "label", "format"?: "currency"|"percent"|"number" }.
+  - **bar** (DRE antes/depois): data = [{ "label":"Receita", "base":100, "sim":110 }, ...]; keys = ["base","sim"].
+  - **line** (fluxo de caixa mensal): data = [{ "label":"Jan", "caixa": 12000 }, ...]; keys = ["caixa"] ou ["base","sim"].
+  - **waterfall** (impacto receita→custo→EBITDA→caixa): data = [{ "label":"Receita", "value":1000 }, { "label":"Custos","value":-400 }, ..., { "label":"Caixa Final","value":250,"total":true }]. Marque o total final com "total": true.
+  - **tornado** (sensibilidade): data = [{ "label":"Folha −10%","impact":120 }, { "label":"PMR −5d","impact":80 }, ...]. Ordene por |impact| desc (o front também ordena).
+- Use no MÁXIMO 1-2 gráficos por resposta. Sempre acompanhe de 2-3 frases de leitura. Não emita gráfico se a pergunta for trivial.
+- O JSON DEVE ser válido (sem comentários, sem trailing commas). Não envolva em markdown table.
+
 ANEXOS:
 - Se o consultor enviar **imagens** (prints de relatórios, gráficos, NF) — descreva os números visíveis e relacione com os dados do sistema.
 - Se enviar **PDFs** — o texto extraído virá ao final da mensagem do usuário entre delimitadores '--- Página N ---'. Use esses números para complementar a análise (ex: balancete, contrato, demonstrativo bancário).`;
