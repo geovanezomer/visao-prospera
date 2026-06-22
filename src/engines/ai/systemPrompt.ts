@@ -109,7 +109,7 @@ export function buildContextHeader(ctx: RuntimeContext = {}): string {
 // "chat" é o padrão (sem bloco extra). Outros modos anexam um bloco
 // específico ao system prompt que muda postura/formato de resposta.
 // =====================================================================
-export type AIMode = "chat" | "cfo" | "controller" | "auditor" | "board" | "tributarista";
+export type AIMode = "chat" | "cfo" | "controller" | "auditor" | "board" | "tributarista" | "contador";
 
 export const AI_MODE_LABELS: Record<AIMode, string> = {
   chat: "Chat",
@@ -118,6 +118,7 @@ export const AI_MODE_LABELS: Record<AIMode, string> = {
   auditor: "Auditor (relatório)",
   board: "Conselho (board)",
   tributarista: "Tributarista",
+  contador: "Contador",
 };
 
 export const AI_MODE_DESCRIPTIONS: Record<AIMode, string> = {
@@ -127,6 +128,7 @@ export const AI_MODE_DESCRIPTIONS: Record<AIMode, string> = {
   auditor: "Relatório estruturado para o cliente (formato fixo).",
   board: "Resposta tipo memorando de conselho — tese, evidência, decisão.",
   tributarista: "Especialista em regime tributário, CBS/IBS e Reforma (LC 214/2025).",
+  contador: "Rotinas contábeis: folha, rescisão, férias, pró-labore, encargos.",
 };
 
 
