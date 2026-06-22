@@ -33,7 +33,10 @@ import {
 } from "@/engines/finance/simulator";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Presentation, X, FileText } from "lucide-react";
+import { RotateCcw, Presentation, X, FileText, Printer } from "lucide-react";
+import { exportFinancePDF } from "@/lib/pdfExport";
+import { buildFinancialModel } from "@/engines/finance/financialModel";
+import { toast } from "sonner";
 import { TaxSettingsDialog } from "@/components/sim/tax/TaxSettingsDialog";
 import { Badge } from "@/components/ui/badge";
 import { CalculadorasTab } from "@/components/calculadoras/CalculadorasTab";
