@@ -27,7 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, RotateCcw } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ChevronDown, ChevronRight, RotateCcw, Info } from "lucide-react";
 // RadioGroup removido: headcount agora é input numérico exato.
 import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import type { AppState, BusinessType, TaxRegime } from "@/engines/finance/types";
@@ -313,18 +314,43 @@ export function CompanyConfigForm({
                   (opcional — já preenchido com valores do setor)
                 </span>
               </CollapsibleTrigger>
-              {form.benchmarkCustom && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={resetBenchmark}
-                  className="h-7 px-2 text-[11px]"
-                >
-                  <RotateCcw className="mr-1 h-3 w-3" />
-                  Restaurar
-                </Button>
-              )}
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label="Como os quartis são calculados"
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs text-[11px] leading-snug">
+                    Você define apenas a <strong>mediana (P50)</strong> de cada indicador.
+                    O sistema deriva os quartis automaticamente:
+                    <br />• <strong>P25</strong> = P50 × 0,80 (pior 25%)
+                    <br />• <strong>P75</strong> = P50 × 1,20 (melhor 25%)
+                    <br />Assim a comparação por quartil continua coerente sem você precisar
+                    digitar 24 valores.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  resetBenchmark();
+                }}
+                disabled={!form.benchmarkCustom}
+                className="h-7 px-2 text-[11px]"
+                title="Voltar aos valores padrão do setor selecionado"
+              >
+                <RotateCcw className="mr-1 h-3 w-3" />
+                Restaurar
+              </Button>
             </div>
             <CollapsibleContent className="mt-2 space-y-2 rounded-md border border-border/40 p-3">
               <p className="text-[11px] text-muted-foreground">
