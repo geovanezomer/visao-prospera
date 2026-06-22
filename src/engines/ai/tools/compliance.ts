@@ -8,6 +8,11 @@ import {
   compareYearsForRegime,
   resolveEffectiveRegime,
 } from "@/engines/finance";
+import {
+  analyzeCovenants,
+  covenantsToMarkdown,
+  type CovenantSpec,
+} from "@/engines/finance/covenants";
 import { brl, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
 const defs: ToolDef[] = [
