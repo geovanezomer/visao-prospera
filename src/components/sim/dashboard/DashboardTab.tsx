@@ -29,7 +29,7 @@ import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
 import { StatCard, renderHint } from "@/components/sim/shared/primitives";
-import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
+
 import { IndicatorsCharts } from "./IndicatorsCharts";
 import { DashboardExtras } from "./DashboardExtras";
 import { WaccRoicMeter } from "@/components/sim/capital/WaccRoicMeter";
@@ -178,7 +178,8 @@ export function DashboardTab() {
 
   return (
     <div className="space-y-6">
-      <HistoricalYearPills />
+
+
 
 
       {/* Linha 1 — Cards numéricos resumo (com tooltips, base unificada `useFinanceModel`) */}
