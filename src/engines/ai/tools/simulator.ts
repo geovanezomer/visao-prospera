@@ -2,6 +2,13 @@
 
 import { applySimulator, DEFAULT_SIM, type SimulatorParams } from "@/engines/finance/simulator";
 import {
+  projectCashflow,
+  projectionToMarkdown,
+  defaultCenarios,
+  type CenarioProjecao,
+  type CaptacaoDivida,
+} from "@/engines/finance/cashflowProjection";
+import {
   buildForecast,
   DEFAULT_FORECAST_CFG,
   type ForecastConfig,
