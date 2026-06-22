@@ -10,7 +10,7 @@ import { AlertTriangle, CheckCircle2, ChevronRight, Info, SlidersHorizontal, Tri
 import { StrategicSummary } from "@/components/sim/strategic/StrategicSummary";
 import { SectionTitle } from "@/components/sim/shared/primitives";
 import { HealthScoreCard, SensitivityCard } from "@/components/sim/analysis/AnalysisTab";
-import { CriticalAlertsBanner } from "@/components/sim/shared/CriticalAlertsBanner";
+
 import { NCGExplanationCard } from "@/components/sim/capital/NCGExplanationCard";
 import { DiagnosticoExecutivoCard } from "@/components/sim/strategic/DiagnosticoExecutivoCard";
 
