@@ -294,6 +294,35 @@ const handlers: Record<string, ToolHandler> = {
     const res = solveBreakEvenDinamico(state, { restricao, metaValor, sazonalidade });
     return breakEvenDinamicoToMarkdown(res);
   },
+
+  sensibilidade_multivariada: (args, { state }) => {
+    const metodo = (args?.metodo as string) || "tornado";
+    const driversIn =
+      Array.isArray(args?.drivers) && args.drivers.length
+        ? (args.drivers as DriverKey[])
+        : (["preco", "volume", "cpv", "folha", "fixos", "juros"] as DriverKey[]);
+    const outputsIn =
+      Array.isArray(args?.outputs) && args.outputs.length
+        ? (args.outputs as OutputKey[])
+        : (["ebitda", "saldoCaixa"] as OutputKey[]);
+
+    if (metodo === "monte_carlo") {
+      const it = Math.max(100, Math.min(5000, Number(args?.iteracoes) || DEFAULT_MC.iterations));
+      const res = runMonteCarlo(state, { ...DEFAULT_MC, iterations: it });
+      return monteCarloToMarkdown(res);
+    }
+    if (metodo === "joint") {
+      const cenario = Array.isArray(args?.cenario) ? (args.cenario as JointMove[]) : [];
+      if (!cenario.length) {
+        return "Modo 'joint' requer `cenario: [{driver, deltaPct}, ...]`.";
+      }
+      const res = runJointScenario(state, cenario, outputsIn);
+      return jointToMarkdown(res);
+    }
+    const delta = Number(args?.delta_pct) || 10;
+    const res = runTornado(state, driversIn, delta, outputsIn);
+    return tornadoToMarkdown(res);
+  },
 };
 
 export const simulatorTools: ToolModule = {
