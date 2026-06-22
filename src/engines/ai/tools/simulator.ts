@@ -263,8 +263,14 @@ const defs: ToolDef[] = [
             type: "object",
             properties: {
               nome: { type: "string" },
-              receita_delta: { type: "number", description: "Ex.: -0.10 = receita -10%." },
-              folha_delta: { type: "number", description: "Ex.: +0.05 = folha +5%." },
+              receita_delta: {
+                description: "Escalar (-0.10 = -10%) ou array mês-a-mês de mesma length que `meses`.",
+                oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
+              },
+              folha_delta: {
+                description: "Escalar (+0.05) ou array mês-a-mês.",
+                oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
+              },
               capturas_divida: {
                 type: "array",
                 items: {
