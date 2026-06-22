@@ -368,6 +368,33 @@ const handlers: Record<string, ToolHandler> = {
     const res = runTornado(state, driversIn, delta, outputsIn);
     return tornadoToMarkdown(res);
   },
+
+  projetar_fluxo_caixa: (args, { state }) => {
+    const meses = Math.max(1, Math.min(60, Number(args?.meses) || 24));
+    const cenariosRaw = Array.isArray(args?.cenarios) ? (args!.cenarios as unknown[]) : [];
+    const cenarios: CenarioProjecao[] = cenariosRaw.length
+      ? cenariosRaw.map((c) => {
+          const o = c as Record<string, unknown>;
+          const capsRaw = Array.isArray(o.capturas_divida) ? (o.capturas_divida as unknown[]) : [];
+          const caps: CaptacaoDivida[] = capsRaw.map((x) => {
+            const k = x as Record<string, unknown>;
+            return {
+              mes: Number(k.mes) || 0,
+              valor: Number(k.valor) || 0,
+              prazoDevolucao: Number(k.prazo_devolucao) || 0,
+            };
+          });
+          return {
+            nome: String(o.nome || "Cenário"),
+            receitaDelta: Number(o.receita_delta) || 0,
+            folhaDelta: Number(o.folha_delta) || 0,
+            capturasDivida: caps,
+          };
+        })
+      : defaultCenarios();
+    const res = projectCashflow(state, meses, cenarios);
+    return projectionToMarkdown(res);
+  },
 };
 
 export const simulatorTools: ToolModule = {
