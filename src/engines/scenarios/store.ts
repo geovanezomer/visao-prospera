@@ -87,6 +87,8 @@ export interface ScenarioRecord {
     lucroLiquido: number;
     ev?: number;
     saldoFinalCaixa?: number;
+    receita?: number;
+    dscr?: number;
   };
   /** Tipo do cenário:
    *  - "whatif" (default): simulação de alavanca, comparado contra base.
@@ -97,6 +99,15 @@ export interface ScenarioRecord {
   fiscalYear?: number;
   /** Snapshot completo do AppState. Obrigatório quando `kind === "historical"`. */
   state?: AppState;
+  /** ID do cenário-pai (ramificação/clonagem). Permite árvore de variantes. */
+  parentId?: string;
+  /** Metadados livres: autor, descrição, premissas estruturadas, tags. */
+  metadata?: {
+    createdBy?: string;
+    description?: string;
+    premissas?: Record<string, unknown>;
+    tags?: string[];
+  };
   createdAt: number;
   updatedAt: number;
   /** Soft delete — filtrado em listScenarios por padrão. */
@@ -256,3 +267,47 @@ export function switchToYear(
   return { ...target.state, fiscalYear: target.fiscalYear };
 }
 
+
+// ─── Ramificação e comparação (Fase 4) ───────────────────────────────
+// Clonagem com `parentId` permite árvore de variantes (ex: "Otimista_v2"
+// derivado de "Otimista_v1"). Comparação multi-cenário consolida métricas.
+
+/**
+ * Clona um cenário existente, preservando params e marcando `parentId`.
+ * Permite overrides parciais nos params/metadata/name.
+ */
+export function cloneScenario(
+  company: string,
+  parentIdOrName: string,
+  overrides?: {
+    name?: string;
+    paramsOverride?: Partial<SimulatorParams>;
+    metadata?: ScenarioRecord["metadata"];
+    notes?: string;
+  },
+): ScenarioRecord | undefined {
+  const parent = getScenario(company, parentIdOrName);
+  if (!parent) return undefined;
+  const params: SimulatorParams | undefined = parent.params
+    ? ({ ...parent.params, ...(overrides?.paramsOverride ?? {}) } as SimulatorParams)
+    : (overrides?.paramsOverride as SimulatorParams | undefined);
+  return saveScenario(company, {
+    name: overrides?.name ?? `${parent.name} (clone)`,
+    notes: overrides?.notes ?? parent.notes,
+    params,
+    summary: parent.summary,
+    kind: parent.kind ?? "whatif",
+    parentId: parent.id,
+    metadata: {
+      ...(parent.metadata ?? {}),
+      ...(overrides?.metadata ?? {}),
+    },
+  });
+}
+
+/** Resolve uma lista de ids/nomes para registros (descarta inexistentes). */
+export function resolveScenarios(company: string, idsOrNames: string[]): ScenarioRecord[] {
+  return idsOrNames
+    .map((s) => getScenario(company, s))
+    .filter((s): s is ScenarioRecord => s != null);
+}
