@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAppState, useScenarios } from "@/engines/finance/store";
 import { FinanceProvider, FinanceErrorBoundary } from "@/engines/finance/AppStateContext";
@@ -6,24 +6,31 @@ import { usePersistedSimParams } from "@/engines/finance/usePersistedSimParams";
 import { useFinnanceFile } from "@/engines/finance/useFinnanceFile";
 import { useConfirm } from "@/hooks/useConfirm";
 import { useAuth } from "@/lib/auth";
-import { TabsContent } from "@/components/ui/tabs";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { RevenueTab } from "@/components/sim/revenue/RevenueTab";
-import { CostsTab } from "@/components/sim/costs/CostsTab";
-import { CapitalTab } from "@/components/sim/capital/CapitalTab";
-import { TaxTab } from "@/components/sim/tax/TaxTab";
-import { DRETab } from "@/components/sim/dre/DRETab";
-import { BalancoTab } from "@/components/sim/balanco/BalancoTab";
-import { CashflowTab } from "@/components/sim/cashflow/CashflowTab";
-import { DiagnosisTab } from "@/components/sim/diagnosis/DiagnosisTab";
-import { StrategicTab } from "@/components/sim/strategic/StrategicTab";
-import { SimulatorTab } from "@/components/sim/simulator/SimulatorTab";
-import { ValuationTab } from "@/components/sim/valuation/ValuationTab";
-import { IndicatorsTab } from "@/components/sim/indicators/IndicatorsTab";
-import { DashboardTab } from "@/components/sim/dashboard/DashboardTab";
+
+// ─────────────────────────────────────────────────────────────────────────
+// Lazy-load das abas — cada uma vira um chunk separado.
+// Antes: TODAS as abas (Recharts, jsPDF, IA, etc.) entravam no bundle
+// inicial → first paint de 15–20s no VPS. Agora só a aba ativa é baixada.
+// ─────────────────────────────────────────────────────────────────────────
+const RevenueTab = lazy(() => import("@/components/sim/revenue/RevenueTab").then(m => ({ default: m.RevenueTab })));
+const CostsTab = lazy(() => import("@/components/sim/costs/CostsTab").then(m => ({ default: m.CostsTab })));
+const CapitalTab = lazy(() => import("@/components/sim/capital/CapitalTab").then(m => ({ default: m.CapitalTab })));
+const TaxTab = lazy(() => import("@/components/sim/tax/TaxTab").then(m => ({ default: m.TaxTab })));
+const DRETab = lazy(() => import("@/components/sim/dre/DRETab").then(m => ({ default: m.DRETab })));
+const BalancoTab = lazy(() => import("@/components/sim/balanco/BalancoTab").then(m => ({ default: m.BalancoTab })));
+const CashflowTab = lazy(() => import("@/components/sim/cashflow/CashflowTab").then(m => ({ default: m.CashflowTab })));
+const DiagnosisTab = lazy(() => import("@/components/sim/diagnosis/DiagnosisTab").then(m => ({ default: m.DiagnosisTab })));
+const StrategicTab = lazy(() => import("@/components/sim/strategic/StrategicTab").then(m => ({ default: m.StrategicTab })));
+const SimulatorTab = lazy(() => import("@/components/sim/simulator/SimulatorTab").then(m => ({ default: m.SimulatorTab })));
+const ValuationTab = lazy(() => import("@/components/sim/valuation/ValuationTab").then(m => ({ default: m.ValuationTab })));
+const IndicatorsTab = lazy(() => import("@/components/sim/indicators/IndicatorsTab").then(m => ({ default: m.IndicatorsTab })));
+const DashboardTab = lazy(() => import("@/components/sim/dashboard/DashboardTab").then(m => ({ default: m.DashboardTab })));
+const AIView = lazy(() => import("@/components/ai/AIView").then(m => ({ default: m.AIView })));
+const CalculadorasTab = lazy(() => import("@/components/calculadoras/CalculadorasTab").then(m => ({ default: m.CalculadorasTab })));
+
 import { ScenarioBar } from "@/components/sim/shared/ScenarioBar";
 import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
-import { AIView } from "@/components/ai/AIView";
 import { TabKey } from "@/engines/finance/types";
 import {
   applySimulator,
@@ -39,12 +46,21 @@ import { RotateCcw, Presentation, X, FileText, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { TaxSettingsDialog } from "@/components/sim/tax/TaxSettingsDialog";
 import { Badge } from "@/components/ui/badge";
-import { CalculadorasTab } from "@/components/calculadoras/CalculadorasTab";
 import type { BackupStatus } from "@/lib/api/cloudBackup";
 import { isBackupEnabled } from "@/lib/api/cloudBackup";
 import { RestoreBackupDialog } from "@/components/sim/shared/RestoreBackupDialog";
 import { FeedbackDialog } from "@/components/sim/shared/FeedbackDialog";
 import { cn } from "@/lib/utils";
+
+// Fallback enquanto o chunk da aba carrega.
+function TabLoading() {
+  return (
+    <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">
+      Carregando…
+    </div>
+  );
+}
+
 
 // Formata "há X" relativo para o breadcrumb do header.
 function timeAgo(ts: number | null): string {
@@ -319,47 +335,49 @@ function SimulaPro() {
                   e que componentes consumidos fora do FinanceProvider exibam
                   fallback amigável em vez de tela branca. */}
                 <FinanceErrorBoundary>
-                  {activeTab === "ai" ? (
-                    <AIView
-                      state={state}
-                      simulatedState={simulatedState}
-                      simActive={simActive}
-                      simParams={simParams}
-                    />
-                  ) : activeTab === "calculadoras" ? (
-                    <div className="animate-in fade-in duration-500">
-                      <CalculadorasTab />
-                    </div>
-                  ) : (
-                    <div className="space-y-6 animate-in fade-in duration-500">
-                      {activeTab === "receitas" && <RevenueTab />}
-                      {activeTab === "custos" && <CostsTab />}
-                      {activeTab === "capital" && <CapitalTab />}
-                      {activeTab === "tributos" && <TaxTab />}
-                      {activeTab === "caixa" && <CashflowTab />}
-                      {activeTab === "governanca" && <StrategicTab />}
-                      {activeTab === "dre" && <DRETab />}
-                      {activeTab === "balanco" && <BalancoTab />}
-                      {activeTab === "indicadores" && <IndicatorsTab />}
-                      {activeTab === "resultados" && <DiagnosisTab />}
-                      {activeTab === "dashboard" && <DashboardTab />}
-                      {activeTab === "simulador" && (
-                        <SimulatorTab
-                          state={state}
-                          apply={update}
-                          params={simParams}
-                          setParams={setSimParams}
-                        />
-                      )}
-                      {activeTab === "valuation" && (
-                        <ValuationTab
-                          baseState={state}
-                          simulatedState={simulatedState}
-                          simActive={simActive}
-                        />
-                      )}
-                    </div>
-                  )}
+                  <Suspense fallback={<TabLoading />}>
+                    {activeTab === "ai" ? (
+                      <AIView
+                        state={state}
+                        simulatedState={simulatedState}
+                        simActive={simActive}
+                        simParams={simParams}
+                      />
+                    ) : activeTab === "calculadoras" ? (
+                      <div className="animate-in fade-in duration-500">
+                        <CalculadorasTab />
+                      </div>
+                    ) : (
+                      <div className="space-y-6 animate-in fade-in duration-500">
+                        {activeTab === "receitas" && <RevenueTab />}
+                        {activeTab === "custos" && <CostsTab />}
+                        {activeTab === "capital" && <CapitalTab />}
+                        {activeTab === "tributos" && <TaxTab />}
+                        {activeTab === "caixa" && <CashflowTab />}
+                        {activeTab === "governanca" && <StrategicTab />}
+                        {activeTab === "dre" && <DRETab />}
+                        {activeTab === "balanco" && <BalancoTab />}
+                        {activeTab === "indicadores" && <IndicatorsTab />}
+                        {activeTab === "resultados" && <DiagnosisTab />}
+                        {activeTab === "dashboard" && <DashboardTab />}
+                        {activeTab === "simulador" && (
+                          <SimulatorTab
+                            state={state}
+                            apply={update}
+                            params={simParams}
+                            setParams={setSimParams}
+                          />
+                        )}
+                        {activeTab === "valuation" && (
+                          <ValuationTab
+                            baseState={state}
+                            simulatedState={simulatedState}
+                            simActive={simActive}
+                          />
+                        )}
+                      </div>
+                    )}
+                  </Suspense>
                 </FinanceErrorBoundary>
               </div>
             </main>
