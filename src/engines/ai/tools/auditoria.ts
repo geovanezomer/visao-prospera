@@ -8,7 +8,7 @@
 //
 // Engine pura sobre AppState — não muta nada e não depende de UI.
 
-import type { AppState } from "@/engines/finance/types";
+import type { AppState, CostLine } from "@/engines/finance/types";
 import { crossValidate, groupBySeverity } from "@/engines/finance/crossValidation";
 import { sum as sumArr } from "@/engines/finance/format";
 import { type ToolDef, type ToolHandler, type ToolModule } from "./shared";
