@@ -40,7 +40,9 @@ export type ToolCategory =
   | "actions"
   | "compliance"
   | "reports"
-  | "memory";
+  | "memory"
+  | "calculadoras"
+  | "auditoria";
 
 export interface ToolModule {
   /** Identificador da categoria — também usado em filtros. */
