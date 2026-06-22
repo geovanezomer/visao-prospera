@@ -189,7 +189,7 @@ export const DEFAULT_CONFIG: AIConfig = {
   model: PROVIDER_DEFAULTS.anthropic.model,
   temperature: 0.3,
   includeSnapshot: true,
-  useTools: false,
+  useTools: true,
   useMetaTools: true,
   soul: DEFAULT_SOUL,
   skills: DEFAULT_SKILLS,
