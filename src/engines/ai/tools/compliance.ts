@@ -152,8 +152,9 @@ const handlers: Record<string, ToolHandler> = {
   },
 
   simular_split_payment: (args, { state }) => {
-    const anoInicio = Number(args?.ano_inicio) || 2027;
+    const anoInicio = Number(args?.ano_inicio) || state.tax.splitPaymentAnoInicio || 2027;
     const incluirCovenants = args?.incluir_covenants !== false;
+    const splitJaAtivo = state.tax.splitPaymentAtivo !== false; // default true
     const override =
       args?.prazos_override && typeof args.prazos_override === "object"
         ? (args.prazos_override as Record<string, number>)

@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { NumInput } from "@/components/sim/shared/primitives";
 import type { AppState, SimplesAnexo, BusinessType } from "@/engines/finance/types";
@@ -48,6 +49,8 @@ import {
   REFORMA_TRANSICAO_ICMS_ISS_MULT,
   CBS_ALIQUOTA_PLENA,
   IBS_ALIQUOTA_PLENA,
+  SPLIT_PAYMENT_DEFAULT,
+  SPLIT_PAYMENT_ANO_INICIO_DEFAULT,
   type TaxRatesOverride,
   type SimplesFaixa,
 } from "@/engines/finance/taxDefaults";
@@ -656,6 +659,29 @@ function StepReforma({
           onChange={(v) => patchOv({ reformaTransicaoIcmsIssMult: v })}
           onReset={() => patchOv({ reformaTransicaoIcmsIssMult: undefined })}
         />
+      </Section>
+
+      <Section title="Split Payment (LC 214/2025)">
+        <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+          <div className="flex-1">
+            <div className="text-sm font-medium">
+              Aplicar Split Payment no fluxo de caixa
+            </div>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+              Com Split ATIVO, CBS e IBS são retidos no momento da liquidação financeira (lag 0)
+              em vez de recolhidos no mês seguinte. Isso elimina o <i>float</i> tributário e reduz
+              permanentemente o caixa operacional — todos os indicadores (DSCR, NCG, Liquidez,
+              Runway) recalculam automaticamente. Padrão ligado a partir de{" "}
+              <b>{state.tax.splitPaymentAnoInicio ?? SPLIT_PAYMENT_ANO_INICIO_DEFAULT}</b>.
+              Desligue apenas para comparar com o "mundo antigo".
+            </p>
+          </div>
+          <Switch
+            checked={state.tax.splitPaymentAtivo ?? SPLIT_PAYMENT_DEFAULT}
+            onCheckedChange={(v) => patchTax({ splitPaymentAtivo: v })}
+            aria-label="Ativar Split Payment"
+          />
+        </div>
       </Section>
     </div>
   );
