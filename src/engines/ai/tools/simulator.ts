@@ -13,6 +13,11 @@ import {
   type OutputKey,
   type SensitivityResult,
 } from "@/engines/finance/sensitivity";
+import {
+  solveBreakEvenDinamico,
+  breakEvenDinamicoToMarkdown,
+  type RestricaoBreakEven,
+} from "@/engines/finance/breakEvenDinamico";
 import { getSectionsCached } from "../snapshot";
 import { brl, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
