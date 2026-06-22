@@ -786,8 +786,9 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   ];
   y = drawKpiCards(doc, y, kpiCards, 3);
 
-  // Top 5 Despesas — mesma página, abaixo dos cards
-  drawTop5Despesas(doc, y + 4, model);
+  // ~3 linhas de respiro entre os cards e o bloco de Top 5 Despesas.
+  drawTop5Despesas(doc, y + 36, model);
+
 
   // ── PÁGINA 4 — SAÚDE FINANCEIRA ────────────────────────────────────
   doc.addPage();
