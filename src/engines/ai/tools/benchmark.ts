@@ -74,13 +74,15 @@ const handlers: Record<string, ToolHandler> = {
   },
 
   comparar_com_setor: (args, { state }) => {
-    // Resolução automática do setor:
-    // 1) parâmetro explícito · 2) businessType · 3) primeiro setor disponível.
+    // Resolução do setor:
+    // 1) parâmetro explícito (busca textual)
+    // 2) resolveBenchmark — usa benchmarkCustom, ramoAtuacao ou businessType
+    // 3) fallback: primeiro setor disponível
     let sector: SectorBenchmark | undefined;
     let auto = false;
     if (args?.setor) sector = findSector(String(args.setor));
-    if (!sector && state.businessType) {
-      sector = findSector(String(state.businessType));
+    if (!sector) {
+      sector = resolveBenchmark(state);
       if (sector) auto = true;
     }
     if (!sector) {
@@ -89,7 +91,7 @@ const handlers: Record<string, ToolHandler> = {
     }
     if (!sector) return "Nenhum setor disponível para comparação.";
     const header = auto
-      ? `_(setor inferido automaticamente do cadastro: **${sector.label}** — businessType "${state.businessType ?? "n/d"}". Para outro setor, peça explicitamente.)_\n\n`
+      ? `_(setor inferido automaticamente do cadastro: **${sector.label}**. Para outro setor, peça explicitamente.)_\n\n`
       : "";
     return header + compareSectorMd(state, sector);
   },
