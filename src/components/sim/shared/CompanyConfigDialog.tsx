@@ -360,13 +360,54 @@ export function CompanyConfigForm({
               </p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {BENCHMARK_FIELDS.map((f) => {
-                  const defaultP50 = setorSelecionado[f.key].p50;
+                  const sectorBand = setorSelecionado[f.key];
+                  const defaultP50 = sectorBand.p50;
                   const current = form.benchmarkCustom?.[f.key];
+                  const isCustom = current != null;
+                  const effectiveP50 = isCustom ? current : defaultP50;
+                  const p25 = +(effectiveP50 * 0.8).toFixed(2);
+                  const p75 = +(effectiveP50 * 1.2).toFixed(2);
+                  const fmt = (n: number) => `${n}${f.unit === "%" ? "%" : f.unit === "x" ? "x" : " " + f.unit}`;
                   return (
                     <div key={f.key} className="space-y-1">
-                      <Label htmlFor={`bm-${f.key}`} className="text-[11px]">
-                        {f.label} ({f.unit})
-                      </Label>
+                      <div className="flex items-center gap-1">
+                        <Label htmlFor={`bm-${f.key}`} className="text-[11px]">
+                          {f.label} ({f.unit})
+                        </Label>
+                        <TooltipProvider delayDuration={150}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                className="text-muted-foreground hover:text-foreground"
+                                aria-label={`Detalhes de ${f.label}`}
+                              >
+                                <Info className="h-3 w-3" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs text-[11px] leading-snug">
+                              <div className="font-medium">{f.label}</div>
+                              <div className="mt-1">
+                                Origem:{" "}
+                                {isCustom ? (
+                                  <strong>valor personalizado</strong>
+                                ) : (
+                                  <>setor <strong>{setorSelecionado.label}</strong></>
+                                )}
+                              </div>
+                              <div className="mt-1">Quartis efetivos:</div>
+                              <div>• P25 = P50 × 0,80 = <strong>{fmt(p25)}</strong></div>
+                              <div>• P50 = <strong>{fmt(effectiveP50)}</strong></div>
+                              <div>• P75 = P50 × 1,20 = <strong>{fmt(p75)}</strong></div>
+                              {isCustom && (
+                                <div className="mt-1 text-muted-foreground">
+                                  Padrão do setor: {fmt(defaultP50)}
+                                </div>
+                              )}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                       <Input
                         id={`bm-${f.key}`}
                         type="number"
