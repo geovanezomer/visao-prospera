@@ -63,15 +63,6 @@ export function IndicatorsCharts({ state }: { state: AppState }) {
     [dre],
   );
 
-  const acumulado = useMemo(
-    () =>
-      dre.lucroLiquido.reduce<{ mes: string; valor: number }[]>((acc, v, i) => {
-        const last = i === 0 ? 0 : acc[i - 1].valor;
-        acc.push({ mes: MESES[i], valor: last + v });
-        return acc;
-      }, []),
-    [dre.lucroLiquido],
-  );
 
   const costPie = useMemo(
     () =>
