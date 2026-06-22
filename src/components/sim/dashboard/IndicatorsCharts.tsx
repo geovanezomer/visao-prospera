@@ -42,28 +42,7 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 export function IndicatorsCharts({ state }: { state: AppState }) {
   const { dre } = useFinanceModel(state);
 
-  const monthlyChart = useMemo(
-    () =>
-      MESES.map((m, i) => ({
-        mes: m,
-        Receita: dre.receitaLiquida[i],
-        Operacionais: dre.cpv[i] + dre.despesasOperacionais[i],
-        "D&A": dre.depreciacao[i],
-        Financeiros: dre.custosFinanceirosTotal[i],
-        Lucro: dre.lucroLiquido[i],
-      })),
-    [dre],
-  );
 
-
-  const costPie = useMemo(
-    () =>
-      Object.entries(dre.despesasPorCategoria)
-        .map(([k, v]) => ({ name: k, value: sum(v) }))
-        .filter((x) => x.value > 0)
-        .sort((a, b) => b.value - a.value),
-    [dre.despesasPorCategoria],
-  );
 
   const cvLabel =
     state.businessType === "industria" ? "CPV" : state.businessType === "comercio" ? "CMV" : "CSP";
