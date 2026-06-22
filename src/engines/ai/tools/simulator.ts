@@ -13,6 +13,11 @@ import {
   type OutputKey,
   type SensitivityResult,
 } from "@/engines/finance/sensitivity";
+import {
+  solveBreakEvenDinamico,
+  breakEvenDinamicoToMarkdown,
+  type RestricaoBreakEven,
+} from "@/engines/finance/breakEvenDinamico";
 import { getSectionsCached } from "../snapshot";
 import { brl, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
@@ -148,6 +153,33 @@ const defs: ToolDef[] = [
       required: [],
     },
   },
+  {
+    name: "break_even_dinamico",
+    description:
+      "Encontra a RECEITA MÍNIMA (anual + distribuição mensal) necessária para satisfazer uma restrição financeira real. Diferente do ponto de equilíbrio estático, considera sazonalidade do baseline, CPV variável e fluxo de caixa. Use quando o consultor perguntar 'quanto preciso vender para...': sair do prejuízo (ebitda_positivo), zerar o caixa em todos os meses (caixa_min) ou cumprir covenant de dívida (dscr). Retorna receita total anual + tabela mês a mês.",
+    parameters: {
+      type: "object",
+      properties: {
+        restricao: {
+          type: "string",
+          enum: ["dscr", "caixa_min", "ebitda_positivo"],
+          description:
+            "Restrição alvo: 'dscr' (cobertura do serviço da dívida), 'caixa_min' (saldo mínimo de caixa em todos os meses) ou 'ebitda_positivo' (EBITDA anual).",
+        },
+        meta_valor: {
+          type: "number",
+          description:
+            "Valor-alvo. Defaults: dscr=1.25, caixa_min=0, ebitda_positivo=0. Exemplo: para covenant de DSCR ≥ 1.50x, passe 1.5.",
+        },
+        sazonalidade: {
+          type: "boolean",
+          description:
+            "Se true (default), a distribuição mensal preserva o padrão sazonal do baseline. Se false, divide a receita anual igualmente nos 12 meses.",
+        },
+      },
+      required: ["restricao"],
+    },
+  },
 ];
 
 const handlers: Record<string, ToolHandler> = {
@@ -192,6 +224,15 @@ const handlers: Record<string, ToolHandler> = {
         : undefined;
     const res = runSensitivity(state, out, drivers);
     return sensitivityToMarkdown(res);
+  },
+
+  break_even_dinamico: (args, { state }) => {
+    const restricao = (args?.restricao as RestricaoBreakEven) || "ebitda_positivo";
+    const metaValor =
+      typeof args?.meta_valor === "number" ? (args.meta_valor as number) : undefined;
+    const sazonalidade = args?.sazonalidade !== false;
+    const res = solveBreakEvenDinamico(state, { restricao, metaValor, sazonalidade });
+    return breakEvenDinamicoToMarkdown(res);
   },
 };
 
