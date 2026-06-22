@@ -19,10 +19,6 @@ import { AppState } from "@/engines/finance/types";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { fmtBRL, MESES, sum } from "@/engines/finance/format";
 
-const CHART_COLORS = [
-  "#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B",
-  "#7DD3FC", "#FACC15", "#F472B6", "#34D399", "#A78BFA", "#FB923C",
-];
 
 const TOOLTIP_STYLE = {
   background: "var(--popover)",
