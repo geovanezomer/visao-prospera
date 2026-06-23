@@ -12,7 +12,7 @@ import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { getSharedReport } from "@/lib/api/sharedReports.functions";
 import { parseFinnanceFile } from "@/engines/finance/fileFormat";
 import { FinanceProvider, FinanceErrorBoundary } from "@/engines/finance/AppStateContext";
-import { Eye, ArrowLeft } from "lucide-react";
+import { Eye, ArrowLeft, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { TabKey } from "@/engines/finance/types";
 
