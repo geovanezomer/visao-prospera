@@ -22,7 +22,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Info, RotateCcw, TrendingUp } from "lucide-react";
+import { Download, Info, RotateCcw, TrendingUp } from "lucide-react";
+import { exportCalculadoraPDF } from "@/lib/pdfCalculadora";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
