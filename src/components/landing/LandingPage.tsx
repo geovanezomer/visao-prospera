@@ -39,7 +39,7 @@ function Hero() {
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(45% 35% at 50% 0%, color-mix(in oklab, var(--primary) 8%, transparent), transparent 75%), radial-gradient(35% 28% at 80% 15%, color-mix(in oklab, var(--info) 5%, transparent), transparent 75%)",
+            "radial-gradient(70% 55% at 50% 0%, color-mix(in oklab, var(--primary) 38%, transparent) 0%, color-mix(in oklab, var(--primary) 18%, transparent) 35%, transparent 75%), radial-gradient(55% 45% at 85% 15%, color-mix(in oklab, var(--primary) 25%, transparent) 0%, transparent 70%), radial-gradient(50% 40% at 15% 20%, color-mix(in oklab, var(--primary) 20%, transparent) 0%, transparent 70%)",
         }}
       />
       <div className="mx-auto max-w-4xl px-6 pt-20 pb-20 text-center lg:pt-28 lg:pb-24">
