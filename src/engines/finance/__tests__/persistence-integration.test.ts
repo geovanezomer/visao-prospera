@@ -119,8 +119,6 @@ describe("Integração — simulação completa espelha LS + IDB", () => {
     ).not.toThrow();
 
     expect(quotaHits).toBeGreaterThan(0);
-    // LS não tem (foi rejeitado por quota)
-    expect(original.call(localStorage, SCEN_KEY)).toBeUndefined; // sanity
     // @ts-ignore restaura
     localStorage.setItem = original;
 
