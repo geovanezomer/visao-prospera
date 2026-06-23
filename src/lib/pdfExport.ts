@@ -769,7 +769,7 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   // chegar em qualquer chamada de text() / splitTextToSize() do jsPDF.
   const sanitizeText = (s: string): string =>
     s
-      .replace(/\u2192/g, "→".normalize ? ">" : ">") // → seta direita
+      .replace(/\u2192/g, ">") // → seta direita
       .replace(/→/g, ">")
       .replace(/←/g, "<")
       .replace(/↦/g, ">")
