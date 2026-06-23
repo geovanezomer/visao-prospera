@@ -8,7 +8,8 @@
  *   Hora extra 100% (feriado/domingo) = Hora normal × 2,00
  */
 import { useMemo, useState } from "react";
-import { Clock, Info, RotateCcw } from "lucide-react";
+import { Clock, Download, Info, RotateCcw } from "lucide-react";
+import { exportCalculadoraPDF } from "@/lib/pdfCalculadora";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -92,6 +93,40 @@ export function HorasExtrasCalc() {
     setQtd100(0);
   }
 
+  async function exportar() {
+    await exportCalculadoraPDF({
+      title: "Horas Extras",
+      subtitle:
+        "Cálculo de horas extras com adicional + reflexo de DSR (CLT art. 59 e Lei 605/49).",
+      inputs: [
+        { label: "Salário bruto", value: fmtBRL(salarioBruto) },
+        { label: "Jornada semanal", value: `${jornada}h (${r.horasMes}h/mês)` },
+        { label: "Horas extras 50%", value: String(qtd50) },
+        { label: "Horas extras noturnas (80%)", value: String(qtdNoturna) },
+        { label: "Horas extras 100%", value: String(qtd100) },
+      ],
+      kpis: [
+        { label: "Total a receber", value: fmtBRL(r.totalExtras), sub: `+${(r.pctAcrescimo * 100).toFixed(1)}% sobre o salário`, tone: "ok" },
+        { label: "Hora normal", value: fmtBRL(r.horaNormal), sub: "Base de cálculo", tone: "neutral" },
+        { label: "Reflexo de DSR", value: fmtBRL(r.totalDSR), sub: "Súmula 172 TST", tone: "neutral" },
+      ],
+      sections: [
+        {
+          kind: "table",
+          title: "Composição",
+          head: ["Tipo", "Qtd", "Valor unitário", "Total"],
+          body: [
+            ["HE 50%", qtd50, fmtBRL(r.valor50), fmtBRL(r.total50)],
+            ["HE Noturna 80%", qtdNoturna, fmtBRL(r.valorNoturna), fmtBRL(r.totalNoturna)],
+            ["HE 100%", qtd100, fmtBRL(r.valor100), fmtBRL(r.total100)],
+            ["Reflexo DSR", "—", "—", fmtBRL(r.totalDSR)],
+            ["Total geral", "—", "—", fmtBRL(r.totalExtras)],
+          ],
+        },
+      ],
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -104,9 +139,14 @@ export function HorasExtrasCalc() {
             receber.
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={limpar}>
-          <RotateCcw className="mr-2 h-4 w-4" /> Limpar
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={exportar} title="Exportar PDF">
+            <Download className="mr-2 h-4 w-4" /> Exportar PDF
+          </Button>
+          <Button variant="ghost" size="sm" onClick={limpar}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Limpar
+          </Button>
+        </div>
       </div>
 
       {/* Salário + jornada */}

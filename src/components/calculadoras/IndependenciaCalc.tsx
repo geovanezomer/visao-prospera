@@ -22,7 +22,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Flag, Info, RotateCcw } from "lucide-react";
+import { Download, Flag, Info, RotateCcw } from "lucide-react";
+import { exportCalculadoraPDF } from "@/lib/pdfCalculadora";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -191,6 +192,47 @@ export function IndependenciaCalc() {
     setPagina(0);
   }
 
+  async function exportar() {
+    const fmtBRL = (n: number) =>
+      n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
+    const idadeFireStr =
+      sim.idadeFire !== null ? `${sim.idadeFire.toFixed(1)} anos` : "Não atinge em 80 anos";
+    const linhasAnuais = sim.linhas.filter((_, i) => i % 5 === 0 || i === sim.linhas.length - 1);
+    await exportCalculadoraPDF({
+      title: "Independência Financeira (FIRE)",
+      subtitle:
+        "Simulação em termos reais — descontada a inflação (equação de Fisher).",
+      inputs: [
+        { label: "Idade atual / alvo", value: `${idadeAtual} → ${idadeAlvo} anos` },
+        { label: "Gastos mensais", value: fmtBRL(gastosMensais) },
+        { label: "Patrimônio inicial", value: fmtBRL(patrimonio) },
+        { label: "Aporte mensal", value: fmtBRL(aporteMensal) },
+        { label: "Retorno anual nominal", value: `${retornoAnual}%` },
+        { label: "Inflação anual (IPCA)", value: `${inflacaoAnual}%` },
+        { label: "Taxa de retirada", value: `${taxaRetirada}%` },
+      ],
+      kpis: [
+        { label: "Número FIRE", value: fmtBRL(sim.numeroFire), sub: "Patrimônio necessário", tone: "neutral" },
+        { label: "Idade FIRE", value: idadeFireStr, sub: sim.atingeNoTempo ? "Atinge no tempo" : "Após a idade-alvo", tone: sim.atingeNoTempo ? "ok" : "warn" },
+        { label: "Renda na idade-alvo", value: `${fmtBRL(sim.rendaMensalAlvo)}/mês`, sub: `${(sim.pctFire * 100).toFixed(0)}% do FIRE`, tone: sim.pctFire >= 1 ? "ok" : "warn" },
+      ],
+      sections: [
+        {
+          kind: "table",
+          title: "Evolução do patrimônio (amostra de 5 em 5 anos)",
+          head: ["Ano", "Idade", "Aporte ano", "Total investido", "Patrimônio"],
+          body: linhasAnuais.map((l) => [
+            l.ano,
+            l.idade,
+            fmtBRL(l.aporteAno),
+            fmtBRL(l.totalInvestido),
+            fmtBRL(l.patrimonio),
+          ]),
+        },
+      ],
+    });
+  }
+
   const chartData = sim.linhas.map((l) => ({
     idade: l.idade,
     Investido: Math.round(l.totalInvestido),
@@ -208,9 +250,14 @@ export function IndependenciaCalc() {
             Descubra quanto patrimônio você precisa para viver de renda e quando vai chegar lá.
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={limpar}>
-          <RotateCcw className="mr-2 h-4 w-4" /> Limpar
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={exportar} title="Exportar PDF">
+            <Download className="mr-2 h-4 w-4" /> Exportar PDF
+          </Button>
+          <Button variant="ghost" size="sm" onClick={limpar}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Limpar
+          </Button>
+        </div>
       </div>
 
       {/* Inputs */}

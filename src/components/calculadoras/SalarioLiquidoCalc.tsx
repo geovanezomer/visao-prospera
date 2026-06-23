@@ -6,7 +6,8 @@
  * Bases: Lei 8.212/91, Lei 9.250/95 (IRRF), tabelas INSS/IRRF 2025.
  */
 import { useMemo, useState } from "react";
-import { Info, RotateCcw, Wallet } from "lucide-react";
+import { Download, Info, RotateCcw, Wallet } from "lucide-react";
+import { exportCalculadoraPDF } from "@/lib/pdfCalculadora";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,6 +73,43 @@ export function SalarioLiquidoCalc() {
     setOutrosDescontos(0);
   }
 
+  async function exportar() {
+    await exportCalculadoraPDF({
+      title: "Salário Líquido CLT",
+      subtitle:
+        "Cálculo do líquido após INSS, IRRF e demais descontos (Lei 8.212/91 e Lei 9.250/95).",
+      inputs: [
+        { label: "Salário bruto", value: fmtBRL(salarioBruto) },
+        { label: "Dependentes IRRF", value: String(dependentes) },
+        { label: "Filhos (salário-família)", value: String(filhosSalarioFamilia) },
+        { label: "Pensão alimentícia", value: fmtBRL(pensao) },
+        { label: "Outros descontos", value: fmtBRL(outrosDescontos) },
+      ],
+      kpis: [
+        { label: "Salário líquido", value: fmtBRL(r.liquido), sub: `${fmtPct(r.pctLiquido)} do bruto`, tone: "ok" },
+        { label: "INSS", value: fmtBRL(r.inss), sub: `Alíquota efetiva ${fmtPct(r.inssAliquota)}`, tone: "warn" },
+        { label: "IRRF", value: r.irrf > 0 ? fmtBRL(r.irrf) : "Isento", sub: `Alíquota ${fmtPct(r.irrfAliquota)}`, tone: r.irrf > 0 ? "warn" : "ok" },
+      ],
+      sections: [
+        {
+          kind: "table",
+          title: "Resumo detalhado",
+          head: ["Descrição", "Valor"],
+          body: [
+            ["Salário bruto", fmtBRL(salarioBruto)],
+            ["(−) INSS", fmtBRL(r.inss)],
+            ["(−) IRRF", r.irrf > 0 ? fmtBRL(r.irrf) : "Isento"],
+            ...(pensao > 0 ? [["(−) Pensão alimentícia", fmtBRL(pensao)]] : []),
+            ...(outrosDescontos > 0 ? [["(−) Outros descontos", fmtBRL(outrosDescontos)]] : []),
+            ["Total de descontos", fmtBRL(r.totalDescontos)],
+            ...(r.salarioFamilia > 0 ? [["(+) Salário-família", fmtBRL(r.salarioFamilia)]] : []),
+            ["Salário líquido", fmtBRL(r.liquido)],
+          ],
+        },
+      ],
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -83,9 +121,14 @@ export function SalarioLiquidoCalc() {
             Calcule quanto cai na sua conta após INSS, IRRF e demais descontos da folha.
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={limpar}>
-          <RotateCcw className="mr-2 h-4 w-4" /> Limpar
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={exportar} title="Exportar PDF">
+            <Download className="mr-2 h-4 w-4" /> Exportar PDF
+          </Button>
+          <Button variant="ghost" size="sm" onClick={limpar}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Limpar
+          </Button>
+        </div>
       </div>
 
       {/* Inputs em 3 colunas */}

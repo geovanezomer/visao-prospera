@@ -3,7 +3,8 @@
  * Cálculo reativo via useMemo conforme inputs.
  */
 import { useMemo, useState } from "react";
-import { FileText, Info, RotateCcw } from "lucide-react";
+import { Download, FileText, Info, RotateCcw } from "lucide-react";
+import { exportCalculadoraPDF } from "@/lib/pdfCalculadora";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,6 +107,41 @@ export function RescisaoCltCalc() {
     setRupturaExperienciaPor("empregador");
   }
 
+  async function exportar() {
+    if (!resultado) return;
+    const fmtBRL = (n: number) =>
+      n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
+    await exportCalculadoraPDF({
+      title: "Rescisão Trabalhista CLT",
+      subtitle:
+        "Verbas rescisórias, incidência de INSS/IRRF e saque do FGTS por motivo de desligamento.",
+      inputs: [
+        { label: "Motivo da rescisão", value: motivo.replace(/_/g, " ") },
+        { label: "Salário bruto", value: fmtBRL(salarioBruto) },
+        { label: "Aviso prévio", value: avisoPrevio },
+        { label: "Anos na empresa", value: String(anosNaEmpresa) },
+        { label: "Dias trabalhados no mês", value: String(diasTrabalhadosMes) },
+        { label: "Meses p/ férias proporcionais", value: String(mesesFeriasProporcionais) },
+        { label: "Meses p/ 13º proporcional", value: String(mesesDecimoProporcional) },
+        { label: "Saldo FGTS", value: fmtBRL(saldoFGTS) },
+        { label: "Dependentes IR", value: String(dependentesIR) },
+      ],
+      kpis: [
+        { label: "Total líquido", value: fmtBRL(resultado.totalLiquido), sub: "Após INSS e IRRF", tone: "ok" },
+        { label: "Total bruto", value: fmtBRL(resultado.totalBruto), sub: "Soma de verbas", tone: "neutral" },
+        { label: "Saque FGTS + Multa", value: fmtBRL(resultado.saqueFGTS + resultado.multaFGTS), sub: `Multa: ${fmtBRL(resultado.multaFGTS)}`, tone: "ok" },
+      ],
+      sections: [
+        {
+          kind: "table",
+          title: "Verbas rescisórias",
+          head: ["Verba", "Valor"],
+          body: resultado.verbas.map((v) => [v.rotulo, fmtBRL(v.valor)]),
+        },
+      ],
+    });
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -118,9 +154,14 @@ export function RescisaoCltCalc() {
             Verbas rescisórias, incidência de INSS/IRRF e saque do FGTS por motivo de desligamento.
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={limpar}>
-          <RotateCcw className="mr-2 h-4 w-4" /> Limpar
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={exportar} title="Exportar PDF" disabled={!resultado}>
+            <Download className="mr-2 h-4 w-4" /> Exportar PDF
+          </Button>
+          <Button variant="ghost" size="sm" onClick={limpar}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Limpar
+          </Button>
+        </div>
       </div>
 
       {/* Tipo de rescisão */}

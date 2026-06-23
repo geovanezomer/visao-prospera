@@ -5,7 +5,8 @@
  * card de resultado destacado + mini-cards + tabela detalhada + entenda).
  */
 import { useMemo, useState } from "react";
-import { Info, Palmtree, RotateCcw } from "lucide-react";
+import { Download, Info, Palmtree, RotateCcw } from "lucide-react";
+import { exportCalculadoraPDF } from "@/lib/pdfCalculadora";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +48,39 @@ export function FeriasCltCalc() {
     setAbono(false);
   }
 
+  async function exportar() {
+    if (!r) return;
+    await exportCalculadoraPDF({
+      title: "Férias CLT",
+      subtitle: "Valor líquido das férias com INSS, IRRF e abono pecuniário (CLT art. 143).",
+      inputs: [
+        { label: "Salário bruto", value: fmtBRL(salarioBruto) },
+        { label: "Dependentes IRRF", value: String(dependentes) },
+        { label: "Abono pecuniário", value: abono ? "Sim (1/3 vendido)" : "Não" },
+      ],
+      kpis: [
+        { label: "Líquido a receber", value: fmtBRL(r.liquido), sub: `${r.diasGozados} dias gozados`, tone: "ok" },
+        { label: "Bruto total", value: fmtBRL(r.brutoTotal), sub: "Férias + 1/3 + abono", tone: "neutral" },
+        { label: "Descontos", value: fmtBRL(r.inss + r.irrf), sub: "INSS + IRRF", tone: "warn" },
+      ],
+      sections: [
+        {
+          kind: "table",
+          title: "Composição",
+          head: ["Item", "Valor"],
+          body: [
+            [`Férias (${r.diasGozados} dias)`, fmtBRL(r.feriasBase)],
+            ["1/3 constitucional", fmtBRL(r.tercoFerias)],
+            ...(abono ? [[`Abono pecuniário (${r.diasAbono} dias)`, fmtBRL(r.abonoValor)], ["1/3 sobre abono", fmtBRL(r.tercoAbono)]] : []),
+            ["(−) INSS", fmtBRL(r.inss)],
+            ["(−) IRRF", fmtBRL(r.irrf)],
+            ["Líquido", fmtBRL(r.liquido)],
+          ],
+        },
+      ],
+    });
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -59,9 +93,14 @@ export function FeriasCltCalc() {
             Calcule o valor líquido das férias com INSS, IRRF e abono pecuniário.
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={limpar}>
-          <RotateCcw className="mr-2 h-4 w-4" /> Limpar
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={exportar} title="Exportar PDF" disabled={!r}>
+            <Download className="mr-2 h-4 w-4" /> Exportar PDF
+          </Button>
+          <Button variant="ghost" size="sm" onClick={limpar}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Limpar
+          </Button>
+        </div>
       </div>
 
       {/* Inputs */}

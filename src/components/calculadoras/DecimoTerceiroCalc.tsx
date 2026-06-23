@@ -6,7 +6,8 @@
  * de parcelas + composição/barra + bloco "Entenda a calculadora").
  */
 import { useMemo, useState } from "react";
-import { BookOpen, Gift, Info, RotateCcw } from "lucide-react";
+import { BookOpen, Download, Gift, Info, RotateCcw } from "lucide-react";
+import { exportCalculadoraPDF } from "@/lib/pdfCalculadora";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,6 +55,24 @@ export function DecimoTerceiroCalc() {
     setDependentes(0);
   }
 
+  async function exportar() {
+    if (!r) return;
+    await exportCalculadoraPDF({
+      title: "13º Salário",
+      subtitle: "Cálculo do 13º proporcional com INSS e IRRF separados (Lei 4.090/62).",
+      inputs: [
+        { label: "Salário bruto mensal", value: fmtBRL(salarioBruto) },
+        { label: "Meses trabalhados", value: `${meses} ${meses === 1 ? "mês" : "meses"}` },
+        { label: "Dependentes IRRF", value: String(dependentes) },
+      ],
+      kpis: [
+        { label: "13º líquido", value: fmtBRL(r.liquido), sub: fmtPct(r.bruto > 0 ? r.liquido / r.bruto : 0), tone: "ok" },
+        { label: "13º bruto", value: fmtBRL(r.bruto), sub: "Proporcional aos meses", tone: "neutral" },
+        { label: "Descontos", value: fmtBRL(r.inss + r.irrf), sub: "INSS + IRRF", tone: "warn" },
+      ],
+    });
+  }
+
   // % por componente, para a barra de composição.
   const pctLiquido = r && r.bruto > 0 ? r.liquido / r.bruto : 0;
   const pctInss = r && r.bruto > 0 ? r.inss / r.bruto : 0;
@@ -72,9 +91,14 @@ export function DecimoTerceiroCalc() {
             descontos detalhados.
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={limpar}>
-          <RotateCcw className="mr-2 h-4 w-4" /> Limpar
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={exportar} title="Exportar PDF" disabled={!r}>
+            <Download className="mr-2 h-4 w-4" /> Exportar PDF
+          </Button>
+          <Button variant="ghost" size="sm" onClick={limpar}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Limpar
+          </Button>
+        </div>
       </div>
 
       {/* Inputs */}
