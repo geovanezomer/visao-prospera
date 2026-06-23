@@ -90,7 +90,7 @@ describe("Reforma Tributária — comparação Real entre eras (atual vs pleno)"
         {
           id: "cpv",
           label: "CPV",
-          category: "variavel",
+          category: "custo_vendas",
           values: m12(25_000),
           fixed: false,
         },
