@@ -1,4 +1,4 @@
-// Snapshot em camadas + estimativa de tokens + sanitização + cache por hash.
+// Snapshot em camadas + estimativa de tokens + sanitização + cache por referência.
 import type { AppState } from "@/engines/finance/types";
 import {
   buildDRE,
@@ -15,6 +15,7 @@ import { deriveBalancoFechamento } from "@/engines/finance/balancoFechamento";
 import { deriveAbertura } from "@/engines/finance/aberturaDerivada";
 import { MESES, sum, fmtNum } from "@/engines/finance/format";
 import { getCbsAliquota, getIbsAliquotaRef } from "@/engines/finance/taxDefaults";
+import { getFinancialModelCached } from "@/engines/finance/financialModel";
 
 // ===== Helpers =====
 const safe = (n: unknown): number => (typeof n === "number" && Number.isFinite(n) ? n : 0);
@@ -46,6 +47,7 @@ export const estimateTokens = (s: string) => Math.ceil(s.length / 4);
 export interface SnapshotNumeric {
   dre: ReturnType<typeof buildDRE>["dre"] | null;
   ind: ReturnType<typeof calcIndicators> | null;
+  cf: ReturnType<typeof buildCashFlow> | null;
   val: ReturnType<typeof buildValuation> | null;
   health: ReturnType<typeof computeHealth> | null;
   alerts: ReturnType<typeof diagnose>;
@@ -88,18 +90,24 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
   type Health = ReturnType<typeof computeHealth>;
   type Cards = ReturnType<typeof buildPrescriptiveCards>;
 
-  // SSOT: usa regime efetivo (downgrade automático Simples→Presumido se excedeu limite),
-  // alinhado com TaxTab, IndicatorsTab, ValuationTab e demais consumidores.
-  const effectiveRegime = tryRun(() => resolveEffectiveRegime(state), state.tax.regime);
-  const built = tryRun<BuiltDRE | null>(() => buildDRE(state, effectiveRegime), null);
-  const dre = built?.dre ?? null;
-  const ind = dre ? tryRun<Ind | null>(() => calcIndicators(state, dre), null) : null;
-  const cf = tryRun<CF | null>(() => buildCashFlow(state), null);
-  const val = tryRun<Val | null>(
-    () => buildValuation(state, defaultValuationParams(state.businessType)),
-    null,
-  );
-  const health = tryRun<Health | null>(() => computeHealth(state), null);
+  // SSOT: reaproveita o modelo financeiro memoizado por referência (WeakMap).
+  // Evita refazer buildDRE/calcIndicators/buildCashFlow/buildValuation/computeHealth
+  // quando qualquer aba (Dashboard, Indicadores, etc.) já aqueceu o cache.
+  const model = tryRun(() => getFinancialModelCached(state), null);
+
+  const effectiveRegime =
+    model?.regime ?? tryRun(() => resolveEffectiveRegime(state), state.tax.regime);
+  const dre = model?.dre ?? tryRun<BuiltDRE | null>(() => buildDRE(state, effectiveRegime), null)?.dre ?? null;
+  const ind =
+    model?.ind ?? (dre ? tryRun<Ind | null>(() => calcIndicators(state, dre), null) : null);
+  const cf = model?.cf ?? tryRun<CF | null>(() => buildCashFlow(state), null);
+  const val =
+    model?.val ??
+    tryRun<Val | null>(
+      () => buildValuation(state, defaultValuationParams(state.businessType)),
+      null,
+    );
+  const health = model?.health ?? tryRun<Health | null>(() => computeHealth(state), null);
   const cards = tryRun<Cards>(() => buildPrescriptiveCards(state), [] as Cards);
 
   // ----- premissas -----
@@ -419,12 +427,55 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
   }
 
   // ----- Estratégico -----
+  // Renderiza StrategicAnswers como markdown legível em vez de JSON bruto:
+  // economiza tokens, melhora a compreensão do LLM e omite campos não preenchidos.
   const estrLines: string[] = [];
   if (state.strategic) {
     estrLines.push(`## Análise Estratégica (qualitativa)`);
-    estrLines.push("```json");
-    estrLines.push(JSON.stringify(state.strategic, null, 2));
-    estrLines.push("```");
+    const s = state.strategic;
+    const kv = (label: string, v: unknown): string | null =>
+      v === undefined || v === null || v === "" ? null : `- **${label}:** ${String(v)}`;
+
+    const conc = [
+      kv("% maior cliente", s.concentration?.pctMaiorCliente),
+      kv("Clientes p/ 80%", s.concentration?.clientesPara80Pct),
+      kv("Tempo do maior cliente", s.concentration?.tempoMaiorCliente),
+      kv("% maior fornecedor", s.concentration?.pctMaiorFornecedor),
+      kv("Dependência de canal", s.concentration?.dependeCanal),
+    ].filter(Boolean);
+    if (conc.length) {
+      estrLines.push(`### Concentração`);
+      estrLines.push(...(conc as string[]));
+    }
+
+    const gov = [
+      kv("Sócio afastado 60d", s.governance?.socioAfastado60d),
+      kv("Quem fecha contrato", s.governance?.quemFechaContrato),
+      kv("Processos documentados", s.governance?.processosDocumentados),
+      kv("Plano de sucessão", s.governance?.planoSucessao),
+    ].filter(Boolean);
+    if (gov.length) {
+      estrLines.push(`### Governança`);
+      estrLines.push(...(gov as string[]));
+    }
+
+    const comp = [
+      kv("Reajuste de preços", s.competitive?.reajustePrecos),
+      kv("Elasticidade a +10%", s.competitive?.elasticidade10pct),
+      kv("Razão de contratação", s.competitive?.razaoContratacao),
+      kv("Concorrentes", s.competitive?.concorrentes),
+      kv("Switching cost", s.competitive?.switchingCost),
+    ].filter(Boolean);
+    if (comp.length) {
+      estrLines.push(`### Posicionamento competitivo`);
+      estrLines.push(...(comp as string[]));
+    }
+
+    const reg = [kv("Exposição regulatória", s.regulatory?.exposicaoRegulatoria)].filter(Boolean);
+    if (reg.length) {
+      estrLines.push(`### Regulatório`);
+      estrLines.push(...(reg as string[]));
+    }
   }
 
   // ----- Comparativo simulado vs base -----
@@ -794,8 +845,8 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     );
     if (t.issDeducoes)
       regLines.push(`- **Deduções ISS (materiais/subempreitada):** ${brl(t.issDeducoes)}`);
-    if (built?.tax?.annual !== undefined)
-      regLines.push(`- **Carga tributária total apurada (ano):** ${brl(built.tax.annual)}`);
+    if (model?.tax?.annual !== undefined)
+      regLines.push(`- **Carga tributária total apurada (ano):** ${brl(model.tax.annual)}`);
   }
 
   // ----- Comparativo de eras da Reforma Tributária (seção separada para dedup com simular_transicao_reforma) -----
@@ -863,6 +914,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     data: {
       dre,
       ind,
+      cf,
       val,
       health,
       alerts: dre && ind ? tryRun(() => diagnose(state, dre, ind), []) : [],
@@ -900,40 +952,33 @@ export function buildSnapshot(state: AppState, simulatedState?: AppState): strin
 }
 
 // ============================================================
-// Cache por hash do estado (evita reconstruir sem mudanças)
+// Cache por IDENTIDADE de referência (WeakMap) — O(1) sem JSON.stringify
 // ------------------------------------------------------------
-// Pressuposto (K-3): o cache é singleton de módulo. Trocas de empresa são
-// protegidas pelo prefixo `companyName::` no key. Mutações fora do AppState
-// (ex: actions/scenarios em localStorage) NÃO invalidam o cache — tools que
-// dependem desses stores (listar_acoes, listar_cenarios, criar_acao, etc.)
-// não usam `sec`, leem o store direto. Manter esse invariante ao adicionar tools.
-// Para forçar invalidação em testes, incremente CACHE_VERSION.
-const CACHE_VERSION = "v2";
-let cacheKey = "";
-let cacheVal: SnapshotSections | null = null;
-let cacheSimKey = "";
+// Como o AppState é imutável (reducers retornam nova referência a cada mudança),
+// comparar por referência é suficiente — e elimina o custo do `fastHash`/JSON.stringify
+// anterior, que rodava O(n) sobre o state inteiro a cada chamada.
+//
+// Estrutura: WeakMap<state, Map<simulatedState | SENTINEL, SnapshotSections>>
+//   - chave externa: state base (descartado pelo GC quando sai de escopo)
+//   - chave interna: state simulado OU sentinela para "sem simulação"
+//
+// Trocas de empresa naturalmente trocam a referência do state → cache miss correto.
 
-function fastHash(o: unknown): string {
-  try {
-    const s = JSON.stringify(o);
-    let h = 0;
-    for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-    return `${s.length}:${h}`;
-  } catch {
-    return Math.random().toString();
-  }
-}
+const NO_SIM = Symbol("no-sim");
+type SimKey = AppState | typeof NO_SIM;
+const sectionsCache = new WeakMap<AppState, Map<SimKey, SnapshotSections>>();
 
 export function getSectionsCached(state: AppState, simulatedState?: AppState): SnapshotSections {
-  // Inclui companyName explicitamente no key para evitar vazamento cross-empresa
-  // mesmo que dois estados produzam hashes JSON idênticos por coincidência.
-  const company = state.companyName || "(sem-empresa)";
-  const k = `${CACHE_VERSION}::${company}::${fastHash(state)}`;
-  const sk = simulatedState ? `${CACHE_VERSION}::${company}::${fastHash(simulatedState)}` : "";
-  if (k === cacheKey && sk === cacheSimKey && cacheVal) return cacheVal;
+  const simKey: SimKey = simulatedState ?? NO_SIM;
+  let inner = sectionsCache.get(state);
+  if (inner) {
+    const cached = inner.get(simKey);
+    if (cached) return cached;
+  } else {
+    inner = new Map();
+    sectionsCache.set(state, inner);
+  }
   const v = buildSections(state, simulatedState);
-  cacheKey = k;
-  cacheSimKey = sk;
-  cacheVal = v;
+  inner.set(simKey, v);
   return v;
 }

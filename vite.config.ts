@@ -35,5 +35,18 @@ export default defineConfig({
     define: {
       "import.meta.env.SUPABASE_BACKUP": JSON.stringify(SUPABASE_BACKUP),
     },
+    build: {
+      rollupOptions: {
+        output: {
+          // Chunks dedicados para libs pesadas — melhora cache HTTP entre abas
+          // (cada aba lazy só puxa o chunk do componente; recharts/jspdf ficam
+          // em vendors cacheáveis independentemente).
+          manualChunks: {
+            "vendor-charts": ["recharts"],
+            "vendor-pdf": ["jspdf", "jspdf-autotable"],
+          },
+        },
+      },
+    },
   },
 });
