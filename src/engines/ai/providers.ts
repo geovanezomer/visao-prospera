@@ -332,7 +332,7 @@ export function loadConfig(): AIConfig {
       try {
         const persisted = { ...cfg, soulVersion: SOUL_DEFAULTS_VERSION };
         const toStore = cfg.persistKey ? persisted : { ...persisted, apiKey: "" };
-        localStorage.setItem(CFG_KEY, JSON.stringify(toStore));
+        saveKeySync(CFG_KEY, toStore);
       } catch {
         // ignora falha de storage
       }
