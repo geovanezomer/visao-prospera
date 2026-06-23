@@ -48,8 +48,10 @@ export async function loadKey<T = unknown>(key: string): Promise<T | null> {
   if (idbAvailable) {
     try {
       const db = await getDB();
-      const val = await db.get(STORE, key);
-      if (val !== undefined) return val as T;
+      if (db) {
+        const val = await db.get(STORE, key);
+        if (val !== undefined) return val as T;
+      }
     } catch {
       idbAvailable = false;
     }
@@ -90,8 +92,10 @@ export async function saveKey(key: string, value: unknown): Promise<void> {
   if (idbAvailable) {
     try {
       const db = await getDB();
-      await db.put(STORE, value, key);
-      return;
+      if (db) {
+        await db.put(STORE, value, key);
+        return;
+      }
     } catch {
       idbAvailable = false;
     }
@@ -113,8 +117,9 @@ export function saveKeySync(key: string, value: unknown): void {
   } catch {
     // quota — IDB ainda tentará
   }
-  if (idbAvailable) {
-    void getDB()
+  const dbp = getDB();
+  if (dbp) {
+    void dbp
       .then((db) => db.put(STORE, value, key))
       .catch(() => {
         idbAvailable = false;
@@ -129,8 +134,9 @@ export function removeKey(key: string): void {
   } catch {
     /* ignora */
   }
-  if (idbAvailable) {
-    void getDB()
+  const dbp = getDB();
+  if (dbp) {
+    void dbp
       .then((db) => db.delete(STORE, key))
       .catch(() => {
         idbAvailable = false;
