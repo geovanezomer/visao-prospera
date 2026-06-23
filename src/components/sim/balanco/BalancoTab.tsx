@@ -14,7 +14,7 @@
 // Isso garante que Ativo ≡ Passivo + PL SEMPRE — sem ajustes manuais.
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useFinance } from "@/engines/finance/AppStateContext";
+import { useFinance, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { calcBalancoTotals, snapshotAnterior } from "@/engines/finance/balanco";
 import { calcAberturaTotals } from "@/components/sim/capital/AberturaCard";
