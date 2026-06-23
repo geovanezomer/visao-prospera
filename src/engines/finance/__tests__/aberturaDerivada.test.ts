@@ -190,6 +190,7 @@ describe("deriveAbertura — overrides manuais editáveis", () => {
 describe("deriveAbertura — totais Ativo = Passivo + PL", () => {
   it("fecha balanço de abertura com tolerância", () => {
     const s = createState({
+      costs: [], // zera folha p/ isolar Ativo = Passivo + PL
       capital: {
         balanco: {
           ativoCirculante: {
