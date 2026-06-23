@@ -196,9 +196,50 @@ export function SharedLinksDialog() {
                       <p className="font-mono text-[11px] text-muted-foreground">
                         /shared/{it.shareId}
                       </p>
-                      <p className={`text-[11px] font-medium ${toneClass}`}>
-                        expira em {r.label}
-                      </p>
+                      <div className={`flex items-center gap-1 text-[11px] font-medium ${toneClass}`}>
+                        <span>expira em {r.label}</span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                              title="Estender prazo de expiração"
+                              aria-label="Editar prazo"
+                              disabled={busyId === it.shareId}
+                            >
+                              {busyId === it.shareId ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Pencil className="h-3 w-3" />
+                              )}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent align="start" className="w-56 p-2">
+                            <p className="px-1 pb-1 text-[11px] font-medium text-muted-foreground">
+                              Novo prazo a partir de agora
+                            </p>
+                            <div className="grid grid-cols-2 gap-1">
+                              {[
+                                { label: "+1 hora", h: 1 },
+                                { label: "+24 horas", h: 24 },
+                                { label: "+48 horas", h: 48 },
+                                { label: "+7 dias", h: 24 * 7 },
+                              ].map((opt) => (
+                                <Button
+                                  key={opt.h}
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 text-[11px]"
+                                  onClick={() => void handleExtend(it.shareId, opt.h)}
+                                  disabled={busyId === it.shareId}
+                                >
+                                  {opt.label}
+                                </Button>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
                       <Button
