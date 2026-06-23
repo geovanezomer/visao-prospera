@@ -4,6 +4,7 @@
 // para suportar futuras features (undo, sync multi-aba, auditoria).
 import { nanoid } from "nanoid";
 import { useSyncExternalStore } from "react";
+import { saveKeySync } from "@/engines/finance/persistence";
 
 // =====================================================================
 // Event bus — notifica painéis React quando o store muda (criar/editar/
