@@ -31,23 +31,6 @@ import { useState } from "react";
    HERO
    ============================================================ */
 function Hero() {
-  const pilares = [
-    {
-      icon: BarChart3,
-      title: "Raio-X Financeiro",
-      desc: "DRE, Balanço, DFC e +40 indicadores conectados — uma única fonte de verdade.",
-    },
-    {
-      icon: ShieldCheck,
-      title: "Reforma CBS / IBS",
-      desc: "Impactos da LC 214/2025 sobre margem, preço e caixa — atualizados a cada fase.",
-    },
-    {
-      icon: Brain,
-      title: "IA Estratégica",
-      desc: "Diagnóstico executivo treinado em CFO PME brasileira. Sugere alavancas reais.",
-    },
-  ];
   return (
     <section className="relative overflow-hidden border-b border-border/50">
       {/* glow decorativo */}
@@ -107,29 +90,6 @@ function Hero() {
           </span>
         </div>
 
-        {/* Pilares integrados à Hero */}
-        <div className="mt-16 grid gap-4 text-left sm:grid-cols-3">
-          {pilares.map((p) => (
-            <div
-              key={p.title}
-              className="group relative overflow-hidden rounded-xl border border-border bg-card/60 p-5 backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card"
-            >
-              <div
-                aria-hidden
-                className="absolute inset-x-0 top-0 h-px"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent, color-mix(in oklab, var(--primary) 60%, transparent), transparent)",
-                }}
-              />
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary">
-                <p.icon className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 text-sm font-semibold text-foreground">{p.title}</h3>
-              <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{p.desc}</p>
-            </div>
-          ))}
-        </div>
       </div>
     </section>
   );
