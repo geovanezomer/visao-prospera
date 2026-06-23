@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LandingRouteImport } from './routes/landing'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedShareIdRouteImport } from './routes/shared.$shareId'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiFeedbackRouteImport } from './routes/api/feedback'
@@ -49,6 +50,11 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SharedShareIdRoute = SharedShareIdRouteImport.update({
   id: '/shared/$shareId',
   path: '/shared/$shareId',
@@ -66,6 +72,7 @@ const ApiFeedbackRoute = ApiFeedbackRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/landing': typeof LandingRoute
@@ -77,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/shared/$shareId': typeof SharedShareIdRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/landing': typeof LandingRoute
@@ -89,6 +97,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/app': typeof AppRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/landing': typeof LandingRoute
@@ -102,6 +111,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/app'
     | '/forgot-password'
     | '/landing'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
     | '/shared/$shareId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/app'
     | '/forgot-password'
     | '/landing'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/shared/$shareId'
   id:
     | '__root__'
+    | '/'
     | '/app'
     | '/forgot-password'
     | '/landing'
@@ -136,6 +148,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LandingRoute: typeof LandingRoute
@@ -191,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/shared/$shareId': {
       id: '/shared/$shareId'
       path: '/shared/$shareId'
@@ -216,6 +236,7 @@ declare module '@tanstack/react-router' {
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AppRoute: AppRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LandingRoute: LandingRoute,
