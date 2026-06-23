@@ -56,7 +56,8 @@ function Hero() {
         <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
           DRE, Balanço, Fluxo de Caixa, impactos da Reforma Tributária e{" "}
           <strong className="text-foreground">+40 indicadores</strong> em um único painel inteligente — com{" "}
-          <strong className="text-foreground">IA</strong> que entrega diagnósticos e relatórios em tempo real.
+          <strong className="text-foreground">Inteligência Artificial</strong> que entrega diagnósticos e relatórios em
+          tempo real.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -89,7 +90,6 @@ function Hero() {
             Sem cartão de crédito
           </span>
         </div>
-
       </div>
 
       {/* faixa de métricas dentro da Hero */}
@@ -504,11 +504,11 @@ function HowItWorks() {
 function ComparisonTable() {
   const linhas = [
     ["Tempo para gerar análise completa", "8 a 20 horas", "Minutos"],
-    ["Erro de fórmula", "Comum", "Zero — engine auditada"],
+    ["Erro de fórmula", "Comum", "Zero — engine atualizada"],
     ["Reforma Tributária CBS/IBS", "Cálculo manual", "Automático"],
     ["Diagnóstico executivo", "Você escreve", "IA gera, você revisa"],
     ["Relatório PDF com sua marca", "Edição manual", "Um clique"],
-    ["Compartilhamento", "Anexo por e-mail", "Link público auditável"],
+    ["Compartilhamento", "Anexo por e-mail", "Link público rastreável"],
     ["Atualização tributária", "Você acompanha", "Engine atualiza por você"],
   ];
   return (
@@ -751,10 +751,10 @@ function AuthorityBlock() {
               </p>
               <ul className="mt-6 space-y-2 text-sm text-foreground/90">
                 {[
-                  "Engine financeira auditada e versionada",
+                  "Engine financeira versionada e com updates constantes",
                   "Cálculos compatíveis com LC 214/2025 (CBS / IBS)",
-                  "IA com prompt versionado para rastreabilidade CVM",
-                  "Pensado para quem decide — não só para quem audita",
+                  "IA com prompts e skills pré-configuradas",
+                  "Pensado para quem decide — não só para quem analisa",
                 ].map((i) => (
                   <li key={i} className="flex items-start gap-2">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -841,23 +841,23 @@ function FaqAccordion() {
     },
     {
       q: "Preciso instalar alguma coisa?",
-      a: "Não. O FinancePRO roda 100% no navegador. Login, importa os dados e começa a analisar.",
+      a: "Não. O FinancePRO roda 100% no navegador. Login, insere os dados e começa a analisar sozinho ou com ajuda da I.A.",
     },
     {
       q: "Meus dados ficam seguros?",
-      a: "Sim. Os dados são criptografados e armazenados em infraestrutura na nuvem com backup opcional. Você controla o que sai do seu computador.",
+      a: "Sim. O Sitema usa IndexeDB, os dados ficam no seu Navegador. Podendo ser, opcionalmente, armazenados na nuvem com backup através de arquivo baixável. Você controla o que sai do seu computador.",
     },
     {
       q: "A Reforma Tributária está realmente atualizada?",
-      a: "Sim. O motor tributário acompanha a LC 214/2025 e as fases de transição CBS/IBS (2026-2033), incluindo Split Payment e Cashback.",
+      a: "Sim. O motor tributário acompanha a LC 214/2025 e as fases de transição CBS/IBS (2026-2033), incluindo Split Payment.",
     },
     {
       q: "Posso usar com vários clientes (ou várias empresas)?",
-      a: "Sim. Você cria quantos cenários e empresas quiser, cada um com seu próprio conjunto de dados, relatórios e link de compartilhamento.",
+      a: "Sim. Você cria quantos cenários e empresas quiser, cada um com seu próprio conjunto de dados, relatórios e link de compartilhamento. Basta salvar um arquivo por cliente.",
     },
     {
       q: "Como funciona a IA?",
-      a: "A IA gera o diagnóstico executivo a partir dos números reais da empresa simulada. Você revisa, ajusta e entrega — com prompt versionado para auditoria.",
+      a: "Traga sua chave da OpenAI ou Claude para gerar um diagnóstico executivo a partir dos números reais da empresa simulada. Você revisa, ajusta e entrega — com prompt versionado para auditoria.",
     },
     {
       q: "Posso cancelar quando quiser?",
@@ -920,7 +920,8 @@ function FinalCta() {
       />
       <div className="mx-auto max-w-3xl px-6 text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
-          <Clock className="h-3.5 w-3.5" />5 minutos até sua primeira análise
+          <Clock className="h-3.5 w-3.5" />
+          15 minutos até sua primeira análise
         </span>
         <h2 className="mt-6 text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl">
           Pare de analisar planilhas.
@@ -928,7 +929,7 @@ function FinalCta() {
           <span className="text-primary">Comece a tomar decisões.</span>
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-          Em menos de 5 minutos você roda sua primeira análise financeira e gera relatórios.
+          Em menos de 15 minutos você tem um dashboard e +40 indicadores para análise.
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <Link
