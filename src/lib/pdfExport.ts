@@ -1051,18 +1051,26 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
     "Prioridades do CFO",
     "Top 3 prioridades — ordenadas por impacto financeiro e prazo de execução.");
 
-  const priorities = buildPriorities(prescriptive, diags).slice(0, 3);
+  const priorities = buildPriorities(prescriptive, diags).slice(0, 6);
   if (priorities.length === 0) {
     paragraph(doc, y, "Nenhuma ação prioritária identificada — manter o monitoramento regular dos indicadores.", { color: GRAY });
   } else {
     priorities.forEach((p, i) => {
-      const blockH = 110;
+      const blockH = 116;
+      // page-break se faltar espaço
+      if (y + blockH + 24 > doc.internal.pageSize.getHeight() - 80) {
+        doc.addPage();
+        pageMeta[doc.getNumberOfPages()] = { eyebrow: "05", title: "Prioridades do CFO" };
+        y = pageTitle(doc, CONTENT_TOP, "05  ·  Plano de Ação",
+          "Prioridades do CFO (cont.)");
+      }
       doc.setFont(FONT, "bold");
       doc.setFontSize(48);
       setColor(doc, "text", LIGHT);
       doc.text(`#${i + 1}`, PAGE_MARGIN, y + 50);
 
       const xText = PAGE_MARGIN + 70;
+      const titleMaxW = w - xText - PAGE_MARGIN;
       doc.setFont(FONT, "bold");
       doc.setFontSize(7);
       setColor(doc, "text", GRAY);
@@ -1070,9 +1078,9 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
       doc.setFont(FONT, "bold");
       doc.setFontSize(13);
       setColor(doc, "text", INK);
-      const tLines = doc.splitTextToSize(p.title, w - xText - PAGE_MARGIN);
+      const tLines = doc.splitTextToSize(p.title, titleMaxW);
       doc.text(tLines.slice(0, 2), xText, y + 30);
-      const metaY = y + 60;
+      const metaY = y + 62;
       const metaCols = [
         { l: "BENEFÍCIO ESTIMADO", v: p.benefit },
         { l: "PRAZO", v: p.deadline },
@@ -1088,13 +1096,15 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
         doc.setFont(FONT, "bold");
         doc.setFontSize(10);
         setColor(doc, "text", INK);
-        doc.text(m.v, x, metaY + 14);
+        // trunca/quebra dentro do colW para evitar overflow na coluna vizinha
+        const vLines = doc.splitTextToSize(m.v, colW - 10);
+        doc.text(vLines.slice(0, 2), x, metaY + 14);
       });
       doc.setFont(FONT, "normal");
       doc.setFontSize(9.5);
       setColor(doc, "text", CHARCOAL);
       const dLines = doc.splitTextToSize(p.description, w - xText - PAGE_MARGIN);
-      doc.text(dLines.slice(0, 2), xText, y + 90);
+      doc.text(dLines.slice(0, 2), xText, y + 98);
 
       setColor(doc, "draw", LIGHT);
       doc.setLineWidth(0.4);
