@@ -3,7 +3,8 @@
  * Engine: src/lib/calculadoras/sacPrice.ts
  */
 import { useMemo, useState } from "react";
-import { Building2, Info, RotateCcw } from "lucide-react";
+import { Building2, Download, Info, RotateCcw } from "lucide-react";
+import { exportCalculadoraPDF } from "@/lib/pdfCalculadora";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
