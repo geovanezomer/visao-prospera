@@ -974,7 +974,7 @@ function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
-        <Link to="/landing" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
             F
           </div>
@@ -986,6 +986,9 @@ function Header() {
           </a>
           <a href="#como-funciona" className="transition hover:text-foreground">
             Como funciona
+          </a>
+          <a href="#planos" className="transition hover:text-foreground">
+            Planos
           </a>
           <a href="#faq" className="transition hover:text-foreground">
             FAQ
@@ -999,7 +1002,7 @@ function Header() {
             Entrar
           </Link>
           <Link
-            to="/signup"
+            to="/login"
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           >
             Começar
