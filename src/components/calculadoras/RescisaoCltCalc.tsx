@@ -3,7 +3,8 @@
  * Cálculo reativo via useMemo conforme inputs.
  */
 import { useMemo, useState } from "react";
-import { FileText, Info, RotateCcw } from "lucide-react";
+import { Download, FileText, Info, RotateCcw } from "lucide-react";
+import { exportCalculadoraPDF } from "@/lib/pdfCalculadora";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
