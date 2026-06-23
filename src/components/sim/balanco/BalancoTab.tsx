@@ -238,41 +238,43 @@ export function BalancoTab() {
         />
       </div>
 
-      {/* Header — toolbar apenas */}
-      <div className="rounded-lg border border-border/60 bg-card/40 p-3">
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <ModoSelector modo={modo} onChange={setModo} />
-          <Button
-            size="sm"
-            variant={showAudit ? "default" : "outline"}
-            onClick={() => setShowAudit((v) => !v)}
-            className="h-8 gap-1.5 text-[11px]"
-            title="Mostra inputs e fórmulas de cada rubrica."
-          >
-            <Search className="h-3.5 w-3.5" />
-            Auditoria
-          </Button>
-          <Button
-            size="sm"
-            variant={showAnterior ? "default" : "outline"}
-            onClick={() => setShowAnterior((v) => !v)}
-            className="h-8 gap-1.5 text-[11px]"
-          >
-            <GitCompare className="h-3.5 w-3.5" />
-            N vs N-1
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={salvarComoNm1}
-            className="h-8 gap-1.5 text-[11px]"
-            title="Congela o fechamento atual como base de comparação (N-1)."
-          >
-            <Camera className="h-3.5 w-3.5" />
-            Salvar como N-1
-          </Button>
+      {/* Header — toolbar apenas (escondida em modo somente leitura) */}
+      {!readOnly && (
+        <div className="rounded-lg border border-border/60 bg-card/40 p-3">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <ModoSelector modo={modo} onChange={setModo} />
+            <Button
+              size="sm"
+              variant={showAudit ? "default" : "outline"}
+              onClick={() => setShowAudit((v) => !v)}
+              className="h-8 gap-1.5 text-[11px]"
+              title="Mostra inputs e fórmulas de cada rubrica."
+            >
+              <Search className="h-3.5 w-3.5" />
+              Auditoria
+            </Button>
+            <Button
+              size="sm"
+              variant={showAnterior ? "default" : "outline"}
+              onClick={() => setShowAnterior((v) => !v)}
+              className="h-8 gap-1.5 text-[11px]"
+            >
+              <GitCompare className="h-3.5 w-3.5" />
+              N vs N-1
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={salvarComoNm1}
+              className="h-8 gap-1.5 text-[11px]"
+              title="Congela o fechamento atual como base de comparação (N-1)."
+            >
+              <Camera className="h-3.5 w-3.5" />
+              Salvar como N-1
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {showAudit && <AuditoriaPanel onClose={() => setShowAudit(false)} />}
 
