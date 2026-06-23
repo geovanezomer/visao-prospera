@@ -76,6 +76,53 @@ export function CltVsPjCalc() {
     setPlanoSaudeMensal(0);
   }
 
+  async function exportar() {
+    if (!r) return;
+    const venceLabel = r.vencedor === "pj" ? `PJ (${regimePJLabel[r.melhorRegimePJ]})` : "CLT";
+    await exportCalculadoraPDF({
+      title: "CLT vs PJ",
+      subtitle:
+        "Comparativo de líquido anual entre carteira assinada e os três regimes mais comuns de PJ.",
+      inputs: [
+        { label: "Salário bruto CLT", value: fmtBRL(salarioBrutoCLT) },
+        { label: "Dependentes IR", value: String(dependentesIR) },
+        { label: "PLR anual", value: fmtBRL(plrAnual) },
+        { label: "Benefícios CLT/mês", value: fmtBRL(beneficiosCLTMensal) },
+        { label: "Faturamento PJ/mês", value: fmtBRL(faturamentoPJMensal) },
+        { label: "Contabilidade/mês", value: fmtBRL(contabilidadeMensal) },
+        { label: "Plano de saúde/mês", value: fmtBRL(planoSaudeMensal) },
+      ],
+      kpis: [
+        { label: "Vencedor", value: venceLabel, sub: `+${fmtBRL(Math.abs(r.diferencaAnual))}/ano`, tone: "ok" },
+        { label: "Líquido CLT/ano", value: fmtBRL(r.clt.totalAnualLiquido), sub: `${fmtBRL(r.clt.totalAnualLiquido / 12)}/mês`, tone: "neutral" },
+        { label: "Líquido melhor PJ/ano", value: fmtBRL(r.pj[r.melhorRegimePJ].liquidoAnual), sub: `${fmtBRL(r.pj[r.melhorRegimePJ].liquidoMensal)}/mês`, tone: "neutral" },
+      ],
+      sections: [
+        {
+          kind: "table",
+          title: "Comparativo por regime PJ",
+          head: ["Regime", "Alíquota efetiva", "Líquido mensal", "Líquido anual"],
+          body: (["mei", "simples", "presumido"] as const).map((reg) => [
+            regimePJLabel[reg],
+            fmtPct(r.pj[reg].aliquotaImpostos),
+            fmtBRL(r.pj[reg].liquidoMensal),
+            fmtBRL(r.pj[reg].liquidoAnual),
+          ]),
+        },
+        {
+          kind: "kv",
+          title: "Direitos CLT (referência)",
+          rows: [
+            { label: "FGTS depositado/ano", value: fmtBRL(r.clt.fgtsAnual) },
+            { label: "Multa potencial FGTS (40%)", value: fmtBRL(r.clt.multaFGTSPotencial) },
+            { label: "13º salário líquido", value: fmtBRL(r.clt.decimoLiquido) },
+            { label: "Férias + 1/3 líquidas", value: fmtBRL(r.clt.feriasLiquidas) },
+          ],
+        },
+      ],
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -88,9 +135,14 @@ export function CltVsPjCalc() {
             Pessoa Jurídica.
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={limpar}>
-          <RotateCcw className="mr-2 h-4 w-4" /> Limpar
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={exportar} title="Exportar PDF" disabled={!r}>
+            <Download className="mr-2 h-4 w-4" /> Exportar PDF
+          </Button>
+          <Button variant="ghost" size="sm" onClick={limpar}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Limpar
+          </Button>
+        </div>
       </div>
 
       {/* Inputs */}
