@@ -65,44 +65,70 @@ export async function loadKey<T = unknown>(key: string): Promise<T | null> {
   }
 }
 
-/** Salva um valor em IndexedDB; espelha em localStorage como backup (best-effort). */
+/**
+ * Salva um valor.
+ *
+ * Ordem: localStorage SÍNCRONO primeiro (preserva semântica setItem→getItem
+ * imediato que muitos stores assumem), IndexedDB em background como camada
+ * durável que tolera quota maior. Se localStorage estourar quota, IDB ainda
+ * recebe o dado — a Promise só falha quando ambas as camadas falham.
+ */
 export async function saveKey(key: string, value: unknown): Promise<void> {
-  let idbOk = false;
+  let lsOk = false;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    lsOk = true;
+  } catch {
+    // quota / modo privado — segue para IDB
+  }
   if (idbAvailable) {
     try {
       const db = await getDB();
       await db.put(STORE, value, key);
-      idbOk = true;
+      return;
     } catch {
       idbAvailable = false;
     }
   }
-  // Espelho em localStorage: garante leitura mesmo se IDB falhar depois.
-  // Em quota exceeded, ignora silenciosamente — IDB já tem o dado.
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    if (!idbOk) {
-      // Sem IDB e sem localStorage — nada a fazer; notifica via broadcast de erro?
-      // Mantém silencioso por ora (consistente com comportamento anterior).
-    }
+  if (!lsOk) {
+    // Ambas as camadas falharam — sinaliza para o caller decidir.
+    throw new Error(`saveKey: falha ao persistir "${key}" (localStorage e IDB)`);
   }
 }
 
-/** Remove uma chave de ambas as camadas. */
-export async function removeKey(key: string): Promise<void> {
-  if (idbAvailable) {
-    try {
-      const db = await getDB();
-      await db.delete(STORE, key);
-    } catch {
-      idbAvailable = false;
-    }
+/**
+ * Variante síncrona "fire-and-forget" para call sites que hoje usam
+ * `localStorage.setItem` direto e não podem virar async sem cascata.
+ * Grava localStorage sync e dispara IDB em background.
+ */
+export function saveKeySync(key: string, value: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // quota — IDB ainda tentará
   }
+  if (idbAvailable) {
+    void getDB()
+      .then((db) => db.put(STORE, value, key))
+      .catch(() => {
+        idbAvailable = false;
+      });
+  }
+}
+
+/** Remove uma chave de ambas as camadas (sync na parte de localStorage). */
+export function removeKey(key: string): void {
   try {
     localStorage.removeItem(key);
   } catch {
     /* ignora */
+  }
+  if (idbAvailable) {
+    void getDB()
+      .then((db) => db.delete(STORE, key))
+      .catch(() => {
+        idbAvailable = false;
+      });
   }
 }
 
