@@ -620,7 +620,7 @@ function PricingSection() {
   ];
 
   return (
-    <section className="border-b border-border/50 py-24">
+    <section id="planos" className="scroll-mt-20 border-b border-border/50 py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center">
           <SectionEyebrow>Planos</SectionEyebrow>
@@ -986,6 +986,9 @@ function Header() {
           </a>
           <a href="#como-funciona" className="transition hover:text-foreground">
             Como funciona
+          </a>
+          <a href="#planos" className="transition hover:text-foreground">
+            Planos
           </a>
           <a href="#faq" className="transition hover:text-foreground">
             FAQ
