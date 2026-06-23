@@ -4,6 +4,7 @@
 // localStorage + event bus + useSyncExternalStore para reatividade.
 import { nanoid } from "nanoid";
 import { useSyncExternalStore } from "react";
+import { saveKeySync, removeKey } from "@/engines/finance/persistence";
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
