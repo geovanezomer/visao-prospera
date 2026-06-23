@@ -24,6 +24,11 @@ import {
   type FeriasInput,
 } from "@/engines/calculadoras/ferias";
 import {
+  calcularDecimoTerceiro,
+  decimoTerceiroInputSchema,
+  type DecimoTerceiroInput,
+} from "@/engines/calculadoras/decimoTerceiro";
+import {
   calcularRescisao,
   rescisaoInputSchema,
   motivosLabel,
@@ -124,6 +129,23 @@ const defs: ToolDef[] = [
         salarioBruto: { type: "number" },
         abonoPecuniario: { type: "boolean", description: "Vender 10 dias (goza 20)." },
         dependentesIR: { type: "number" },
+      },
+      required: ["salarioBruto"],
+    },
+  },
+  {
+    name: "calc_decimo_terceiro",
+    description:
+      "Calcula o 13º SALÁRIO (gratificação natalina) proporcional aos meses trabalhados, com 1ª parcela (50%, sem descontos) e 2ª parcela (líquida após INSS e IRRF calculados em separado). Use para 'calcular 13º', 'décimo terceiro', 'quanto vou receber de 13º', 'gratificação natalina proporcional'.",
+    parameters: {
+      type: "object",
+      properties: {
+        salarioBruto: { type: "number", description: "Salário bruto mensal (R$)." },
+        mesesTrabalhados: {
+          type: "number",
+          description: "Meses trabalhados no ano (1–12). Mês com >15 dias conta como inteiro.",
+        },
+        dependentesIR: { type: "number", description: "Dependentes para dedução do IRRF." },
       },
       required: ["salarioBruto"],
     },
@@ -243,6 +265,22 @@ const handlers: Record<string, ToolHandler> = {
     ]
       .filter(Boolean)
       .join("\n");
+  },
+
+  calc_decimo_terceiro: (args) => {
+    const r = safeParse<DecimoTerceiroInput>(decimoTerceiroInputSchema, args);
+    if (!r.ok) return r.err;
+    const d = calcularDecimoTerceiro(r.data);
+    return [
+      `## 13º Salário — Salário ${brl((args.salarioBruto as number) || 0)}`,
+      `- Meses trabalhados: ${r.data.mesesTrabalhados ?? 12}/12`,
+      `- 13º bruto: ${brl(d.bruto)}`,
+      `- 1ª parcela (até 30/nov): ${brl(d.primeiraParcela)} — sem descontos`,
+      `- INSS (sobre o total): ${brl(d.inss)} · IRRF (em separado): ${brl(d.irrf)}`,
+      `- 2ª parcela (até 20/dez): ${brl(d.segundaParcela)}`,
+      ``,
+      `**Líquido total:** ${brl(d.liquido)}`,
+    ].join("\n");
   },
 
   calc_rescisao: (args) => {
