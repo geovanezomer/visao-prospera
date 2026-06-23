@@ -42,7 +42,8 @@ export type ToolCategory =
   | "reports"
   | "memory"
   | "calculadoras"
-  | "auditoria";
+  | "auditoria"
+  | "arquivo";
 
 export interface ToolModule {
   /** Identificador da categoria — também usado em filtros. */
