@@ -1006,6 +1006,7 @@ export function LandingPage() {
         <MetricsBand />
         <HowItWorks />
         <ComparisonTable />
+        <PricingSection />
         <AuthorityBlock />
         <SocialProof />
         <div id="faq">
