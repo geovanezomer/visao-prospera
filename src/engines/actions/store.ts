@@ -124,7 +124,7 @@ export function createAction(
   };
   const all = readRaw(company);
   all.unshift(item);
-  localStorage.setItem(KEY(company), JSON.stringify(all));
+  saveKeySync(KEY(company), all);
   emit();
   return item;
 }
@@ -140,7 +140,7 @@ export function updateAction(
   const now = Date.now();
   all[idx] = { ...all[idx], ...patch, updatedAt: now };
   if (patch.status === "concluida" && !all[idx].resolvedAt) all[idx].resolvedAt = now;
-  localStorage.setItem(KEY(company), JSON.stringify(all));
+  saveKeySync(KEY(company), all);
   emit();
   return all[idx];
 }
@@ -151,7 +151,7 @@ export function deleteAction(company: string, id: string) {
   const idx = all.findIndex((a) => a.id === id);
   if (idx < 0) return;
   all[idx] = { ...all[idx], isDeleted: true, updatedAt: Date.now() };
-  localStorage.setItem(KEY(company), JSON.stringify(all));
+  saveKeySync(KEY(company), all);
   emit();
 }
 
@@ -161,7 +161,7 @@ export function restoreAction(company: string, id: string) {
   const idx = all.findIndex((a) => a.id === id);
   if (idx < 0) return;
   all[idx] = { ...all[idx], isDeleted: false, updatedAt: Date.now() };
-  localStorage.setItem(KEY(company), JSON.stringify(all));
+  saveKeySync(KEY(company), all);
   emit();
 }
 
