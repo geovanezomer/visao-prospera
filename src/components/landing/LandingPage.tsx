@@ -1,180 +1,239 @@
-// Landing page institucional do FinancePRO.
-// Tudo isolado em src/components/landing/ — não importa nada do app.
-// Ativada/desativada via VITE_LANDING_PAGE no .env.
+// Landing page institucional do FinnancePRO — v4 (final).
+// Funde: estratégia de audiência explícita (Empresário / Consultor / BPO)
+// + identidade visual própria (paleta "papel/tinta contábil", tipografia
+// Fraunces + Inter + IBM Plex Mono, DRE Ticker como elemento de assinatura,
+// estrutura em progressão de DRE) + seção de preço (ausente nas v1-v3).
+// Isolado em src/components/landing/ — não importa nada do app.
+// Ativada via VITE_LANDING_PAGE no .env.
+//
+// Fontes novas (Google Fonts): Fraunces (display) + IBM Plex Mono (dados).
+// Inter já está no projeto — mantido para corpo de texto.
 
 import { Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  BarChart3,
-  Brain,
-  Briefcase,
-  Building2,
-  Calculator,
-  CheckCircle2,
-  Clock,
-  FileSpreadsheet,
-  Gauge,
-  LineChart,
-  Lock,
-  Quote,
-  ShieldCheck,
-  Sparkles,
-  Target,
-  TrendingUp,
-  Users,
-  Zap,
-} from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Briefcase, Building2, CheckCircle2, Quote, ShieldCheck, Target } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 /* ============================================================
-   HERO
+   TOKENS — paleta "papel / tinta contábil", escopados ao wrapper
+   da landing para não colidir com o tema shadcn do app principal.
    ============================================================ */
-function Hero() {
+const LANDING_VARS = `
+  --lp-bg: #0F1611;
+  --lp-bg-raised: #161F19;
+  --lp-paper: #F2F0E8;
+  --lp-paper-dim: #C8C6BC;
+  --lp-green: #2F9D63;
+  --lp-green-dim: #1F6B45;
+  --lp-red: #C75450;
+  --lp-amber: #C99A4A;
+  --lp-graphite: #9C9D95;
+  --lp-line: rgba(242, 240, 232, 0.10);
+  --lp-line-strong: rgba(242, 240, 232, 0.18);
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+`;
+
+/* ============================================================
+   DRE TICKER — elemento de assinatura. Anima uma vez ao entrar
+   na viewport: 13 linhas reais de DRE colapsam em 3 resultados.
+   ============================================================ */
+const DRE_LINES = [
+  { label: "Receita Operacional Bruta", value: "907.000", sign: "+" },
+  { label: "Deduções e Tributos s/ Receita", value: "82.976", sign: "−" },
+  { label: "Custo do Serviço Prestado", value: "174.000", sign: "−" },
+  { label: "Despesas Comerciais", value: "73.800", sign: "−" },
+  { label: "Despesas Administrativas", value: "388.200", sign: "−" },
+  { label: "Resultado Financeiro", value: "5.292", sign: "+" },
+  { label: "IR / CSLL (Presumido)", value: "97.448", sign: "−" },
+] as const;
+
+const DRE_RESULT = [
+  { label: "Margem Bruta", value: "78,4%" },
+  { label: "Lucro Líquido", value: "97.323" },
+  { label: "Caixa Projetado", value: "108.216" },
+] as const;
+
+function DreTicker() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [stage, setStage] = useState<"idle" | "lines" | "collapsed">("idle");
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && stage === "idle") {
+          setStage("lines");
+          window.setTimeout(() => setStage("collapsed"), DRE_LINES.length * 220 + 500);
+        }
+      },
+      { threshold: 0.4 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
-    <section className="relative overflow-hidden border-b border-border/50">
-      {/* glow decorativo */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(60% 50% at 20% 0%, color-mix(in oklab, var(--primary) 18%, transparent), transparent 70%), radial-gradient(50% 40% at 90% 10%, color-mix(in oklab, var(--info) 14%, transparent), transparent 70%)",
-        }}
-      />
-      <div className="mx-auto max-w-6xl px-6 pt-20 pb-24 lg:pt-28 lg:pb-32">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
-              <Sparkles className="h-3.5 w-3.5" />
-              Finanças empresariais para não-financeiros
-            </span>
-
-            <h1 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              O <span className="text-primary">Raio-X financeiro</span> que transforma você em um{" "}
-              <span className="text-primary">CFO de alto nível</span>.
-            </h1>
-
-            <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              DRE, Balanço, Fluxo de Caixa, impactos da Reforma Tributária e{" "}
-              <strong className="text-foreground">+40 indicadores</strong> em um único painel inteligente — com{" "}
-              <strong className="text-foreground">IA</strong> que entrega diagnósticos e relatórios em tempo real.
-            </p>
-
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                to="/signup"
-                className="group inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:shadow-primary/40"
-              >
-                Começar gratuitamente
-                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-              </Link>
-              <a
-                href="#como-funciona"
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-5 py-3 text-sm font-medium text-foreground transition hover:bg-card"
-              >
-                Ver como funciona
-              </a>
-            </div>
-
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                Engine auditada
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Lock className="h-4 w-4 text-primary" />
-                Dados criptografados
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Zap className="h-4 w-4 text-primary" />
-                Sem cartão de crédito
-              </span>
-            </div>
-          </div>
-
-          {/* mockup decorativo */}
-          <HeroMockup />
-        </div>
+    <div
+      ref={ref}
+      className="relative overflow-hidden rounded-md border"
+      style={{ borderColor: "var(--lp-line-strong)", background: "var(--lp-bg-raised)" }}
+    >
+      <div className="flex items-center gap-2 border-b px-4 py-2.5" style={{ borderColor: "var(--lp-line)" }}>
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--lp-green)" }} />
+        <span
+          className="text-[11px] uppercase tracking-[0.14em]"
+          style={{ fontFamily: "var(--font-mono)", color: "var(--lp-graphite)" }}
+        >
+          D.R.E. — Minha Empresa LTDA · Regime Presumido
+        </span>
       </div>
-    </section>
-  );
-}
 
-function HeroMockup() {
-  return (
-    <div className="relative">
+      <div className="min-h-[260px] p-4">
+        {stage !== "collapsed" ? (
+          <div className="space-y-1.5">
+            {DRE_LINES.map((l, i) => (
+              <div
+                key={l.label}
+                className="flex items-center justify-between rounded-sm px-2 py-1.5 transition-all duration-300"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "12.5px",
+                  opacity: stage === "lines" ? 1 : 0,
+                  transform: stage === "lines" ? "translateY(0)" : "translateY(4px)",
+                  transitionDelay: `${i * 220}ms`,
+                  borderBottom: "1px solid var(--lp-line)",
+                }}
+              >
+                <span style={{ color: "var(--lp-paper-dim)" }}>
+                  ({l.sign}) {l.label}
+                </span>
+                <span style={{ color: l.sign === "−" ? "var(--lp-red)" : "var(--lp-green)" }}>R$ {l.value}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid animate-in fade-in grid-cols-3 gap-3 duration-500">
+            {DRE_RESULT.map((r) => (
+              <div
+                key={r.label}
+                className="rounded-md border p-3.5"
+                style={{ borderColor: "var(--lp-green-dim)", background: "rgba(47,157,99,0.08)" }}
+              >
+                <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--lp-graphite)" }}>
+                  {r.label}
+                </div>
+                <div className="mt-1.5 text-lg" style={{ fontFamily: "var(--font-mono)", color: "var(--lp-green)" }}>
+                  {r.label === "Margem Bruta" ? r.value : `R$ ${r.value}`}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div
-        aria-hidden
-        className="absolute -inset-4 -z-10 rounded-3xl opacity-50 blur-2xl"
-        style={{
-          background:
-            "linear-gradient(135deg, color-mix(in oklab, var(--primary) 30%, transparent), color-mix(in oklab, var(--info) 20%, transparent))",
-        }}
-      />
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
-        <div className="flex items-center gap-1.5 border-b border-border bg-background/40 px-4 py-2.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
-          <span className="h-2.5 w-2.5 rounded-full bg-warning/60" />
-          <span className="h-2.5 w-2.5 rounded-full bg-success/60" />
-          <span className="ml-3 text-[11px] text-muted-foreground">financepro.app / dashboard</span>
-        </div>
-        <div className="space-y-4 p-5">
-          {/* KPIs */}
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { l: "Receita", v: "R$ 4,2M", t: "+18%" },
-              { l: "EBITDA", v: "28%", t: "+3,2pp" },
-              { l: "FCF", v: "R$ 612k", t: "+24%" },
-            ].map((k) => (
-              <div key={k.l} className="rounded-lg border border-border bg-background/40 p-3">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.l}</div>
-                <div className="mt-1 text-lg font-semibold text-foreground">{k.v}</div>
-                <div className="text-[11px] font-medium text-primary">{k.t}</div>
-              </div>
-            ))}
-          </div>
-          {/* chart fake */}
-          <div className="rounded-lg border border-border bg-background/40 p-4">
-            <div className="mb-3 flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>Fluxo de Caixa Projetado</span>
-              <span className="text-primary">12M</span>
-            </div>
-            <svg viewBox="0 0 320 110" className="h-28 w-full">
-              <defs>
-                <linearGradient id="grad" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.5" />
-                  <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M0,80 L30,70 L60,75 L90,55 L120,60 L150,40 L180,45 L210,30 L240,35 L270,20 L300,25 L320,15 L320,110 L0,110 Z"
-                fill="url(#grad)"
-              />
-              <path
-                d="M0,80 L30,70 L60,75 L90,55 L120,60 L150,40 L180,45 L210,30 L240,35 L270,20 L300,25 L320,15"
-                fill="none"
-                stroke="var(--primary)"
-                strokeWidth="2"
-              />
-            </svg>
-          </div>
-          {/* bars */}
-          <div className="grid grid-cols-6 gap-2">
-            {[40, 65, 50, 80, 70, 95].map((h, i) => (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <div className="w-full rounded-sm bg-primary/70" style={{ height: `${h * 0.5}px` }} />
-                <div className="text-[9px] text-muted-foreground">M{i + 1}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+        className="border-t px-4 py-2.5 text-[11px]"
+        style={{ borderColor: "var(--lp-line)", color: "var(--lp-graphite)", fontFamily: "var(--font-mono)" }}
+      >
+        13 linhas de demonstração → 3 números que importam. Em tempo real.
       </div>
     </div>
   );
 }
 
 /* ============================================================
-   AUDIÊNCIA — Para quem é
+   PRIMITIVOS
+   ============================================================ */
+function Eyebrow({ sign, children }: { sign: "+" | "−" | "="; children: React.ReactNode }) {
+  const color = sign === "−" ? "var(--lp-red)" : sign === "+" ? "var(--lp-green)" : "var(--lp-amber)";
+  return (
+    <span
+      className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.16em]"
+      style={{ fontFamily: "var(--font-mono)", color }}
+    >
+      <span className="text-sm">({sign})</span>
+      {children}
+    </span>
+  );
+}
+
+function Display({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <h2
+      className={`tracking-tight ${className}`}
+      style={{ fontFamily: "var(--font-display)", color: "var(--lp-paper)", fontWeight: 480 }}
+    >
+      {children}
+    </h2>
+  );
+}
+
+/* ============================================================
+   HERO — (+) primeira linha
+   ============================================================ */
+function Hero() {
+  return (
+    <section className="relative border-b px-6 pb-20 pt-20 lg:pb-28 lg:pt-28" style={{ borderColor: "var(--lp-line)" }}>
+      <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
+        <div>
+          <Eyebrow sign="+">Receita bruta da sua operação financeira</Eyebrow>
+
+          <Display className="mt-6 text-4xl leading-[1.08] sm:text-5xl lg:text-[3.4rem]">
+            Toda empresa tem uma história nos números.
+            <br />
+            <span style={{ color: "var(--lp-green)" }}>A maioria nunca chega a ler.</span>
+          </Display>
+
+          <p
+            className="mt-6 max-w-xl text-base leading-relaxed sm:text-lg"
+            style={{ color: "var(--lp-paper-dim)", fontFamily: "var(--font-body)" }}
+          >
+            DRE, Balanço, Fluxo de Caixa e o impacto real da Reforma Tributária — processados em um motor auditado, não
+            estimados em uma planilha que quebra a cada alteração.
+          </p>
+
+          <div className="mt-9 flex flex-wrap items-center gap-3">
+            <Link
+              to="/signup"
+              className="group inline-flex items-center gap-2 px-5 py-3 text-sm font-medium transition"
+              style={{ background: "var(--lp-green)", color: "#0F1611", borderRadius: "6px" }}
+            >
+              Começar gratuitamente
+              <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+            </Link>
+            <a
+              href="#prova"
+              className="inline-flex items-center gap-2 border px-5 py-3 text-sm"
+              style={{ borderColor: "var(--lp-line-strong)", color: "var(--lp-paper)", borderRadius: "6px" }}
+            >
+              Ver um relatório real
+            </a>
+          </div>
+
+          <div
+            className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs"
+            style={{ color: "var(--lp-graphite)", fontFamily: "var(--font-mono)" }}
+          >
+            <span>Engine auditada</span>
+            <span>·</span>
+            <span>Dados criptografados</span>
+            <span>·</span>
+            <span>Sem cartão de crédito</span>
+          </div>
+        </div>
+
+        <DreTicker />
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   AUDIÊNCIA — (=) para quem é, nomeado explicitamente (herdado
+   e mantido da versão anterior — acerto estratégico real)
    ============================================================ */
 function AudienceStrip() {
   const personas = [
@@ -186,7 +245,7 @@ function AudienceStrip() {
     {
       icon: Briefcase,
       title: "Consultor",
-      desc: "Entregue análise de alto valor ao seu cliente em horas, não dias. Reforma Tributária com SplitPayment já embutida.",
+      desc: "Entregue análise de alto valor ao seu cliente em horas, não dias. Reforma Tributária com Split Payment já embutida.",
     },
     {
       icon: Target,
@@ -195,38 +254,28 @@ function AudienceStrip() {
     },
   ];
   return (
-    <section className="border-b border-border/50 py-20">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="mx-auto max-w-2xl text-center">
-          <SectionEyebrow>Para quem é</SectionEyebrow>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Feito para <span className="text-primary">empresários, consultores e BPOs</span>
-          </h2>
-          <p className="mt-4 text-base text-muted-foreground">
-            Não importa se você comanda a empresa, consulta para ela ou cuida dos números dela — o FinancePRO traduz
-            complexidade financeira em decisões simplificadas.
-          </p>
-        </div>
+    <section className="border-b px-6 py-20" style={{ borderColor: "var(--lp-line)" }}>
+      <div className="mx-auto max-w-6xl">
+        <Eyebrow sign="=">Para quem é</Eyebrow>
+        <Display className="mt-4 max-w-2xl text-3xl sm:text-4xl">
+          Feito para quem decide, e para quem ajuda a decidir.
+        </Display>
 
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
-          {personas.map((p) => (
-            <div
-              key={p.title}
-              className="group relative overflow-hidden rounded-2xl border border-border bg-card p-7 transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5"
-            >
+        <div className="mt-12 grid gap-0 border md:grid-cols-3" style={{ borderColor: "var(--lp-line)" }}>
+          {personas.map((p, i) => (
+            <div key={p.title} className="p-7" style={{ borderLeft: i > 0 ? "1px solid var(--lp-line)" : undefined }}>
               <div
-                aria-hidden
-                className="absolute inset-x-0 top-0 h-px"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent, color-mix(in oklab, var(--primary) 60%, transparent), transparent)",
-                }}
-              />
-              <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
-                <p.icon className="h-5 w-5" />
+                className="inline-flex h-10 w-10 items-center justify-center border"
+                style={{ borderColor: "var(--lp-green-dim)", color: "var(--lp-green)" }}
+              >
+                <p.icon className="h-4.5 w-4.5" />
               </div>
-              <h3 className="mt-5 text-lg font-semibold text-foreground">{p.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.desc}</p>
+              <h3 className="mt-5 text-base font-medium" style={{ color: "var(--lp-paper)" }}>
+                {p.title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--lp-paper-dim)" }}>
+                {p.desc}
+              </p>
             </div>
           ))}
         </div>
@@ -236,125 +285,102 @@ function AudienceStrip() {
 }
 
 /* ============================================================
-   PROBLEMA / DOR
+   DEDUÇÕES — (−) o que está custando caro hoje
    ============================================================ */
-function ProblemAgitation() {
-  const dores = [
-    {
-      dor: "Planilhas frágeis que quebram",
-      consequencia: "Decisão tomada sobre número errado.",
-    },
-    {
-      dor: "Reforma Tributária mudando o jogo",
-      consequencia: "Preço e margem desatualizados a cada trimestre.",
-    },
-    {
-      dor: "Indicadores espalhados em 10 abas",
-      consequencia: "Ninguém vê o todo. Ninguém age a tempo.",
-    },
-    {
-      dor: "Horas formatando relatório",
-      consequencia: "Pouco tempo sobra para de fato analisar.",
-    },
-    {
-      dor: "Diagnóstico no 'achismo'",
-      consequencia: "Reunião sem clareza vira reunião improdutiva.",
-    },
-    {
-      dor: "Cenários impossíveis de simular",
-      consequencia: "Cada hipótese custa um dia de retrabalho.",
-    },
+function Deductions() {
+  const itens = [
+    { t: "Horas em planilha", d: "8 a 20 horas para montar uma análise que deveria levar minutos." },
+    { t: "Fórmula que quebra", d: "Uma célula errada e a margem que você apresentou ontem já não existe mais." },
+    { t: "Reforma Tributária às escuras", d: "CBS, IBS, transição até 2033 — calculado manualmente, sem certeza." },
+    { t: "Número sem tradução", d: "Indicador isolado não diz se a empresa está bem. Só o contexto diz." },
   ];
   return (
-    <section className="relative border-b border-border/50 bg-card/30 py-24">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 opacity-60"
-        style={{
-          background:
-            "radial-gradient(50% 40% at 50% 0%, color-mix(in oklab, var(--destructive) 8%, transparent), transparent 70%)",
-        }}
-      />
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="mx-auto max-w-2xl text-center">
-          <SectionEyebrow>O problema</SectionEyebrow>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Você não precisa de mais uma planilha.
-            <br />
-            <span className="text-muted-foreground">Precisa de clareza em tempo real.</span>
-          </h2>
-          <p className="mt-4 text-base text-muted-foreground">
-            Toda decisão financeira mal calculada custa caro. E quase nunca aparece no extrato — aparece no resultado do
-            próximo trimestre.
-          </p>
-        </div>
+    <section
+      className="border-b px-6 py-24"
+      style={{ borderColor: "var(--lp-line)", background: "var(--lp-bg-raised)" }}
+    >
+      <div className="mx-auto max-w-5xl">
+        <Eyebrow sign="−">O que está saindo do seu resultado hoje</Eyebrow>
+        <Display className="mt-4 max-w-2xl text-3xl sm:text-4xl">
+          Não é falta de esforço. É a ferramenta errada.
+        </Display>
 
-        <div className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {dores.map((d) => (
+        <div className="mt-12 grid gap-px overflow-hidden border" style={{ borderColor: "var(--lp-line)" }}>
+          {itens.map((it, i) => (
             <div
-              key={d.dor}
-              className="group flex items-start gap-4 rounded-xl border border-border bg-background/60 p-5 transition hover:border-destructive/40"
+              key={it.t}
+              className="grid grid-cols-[auto_1fr] gap-4 p-6 sm:grid-cols-[140px_1fr]"
+              style={{ background: "var(--lp-bg)", borderTop: i > 0 ? "1px solid var(--lp-line)" : undefined }}
             >
-              <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/10 text-destructive">
-                ✕
+              <span style={{ fontFamily: "var(--font-mono)", color: "var(--lp-red)", fontSize: "13px" }}>
+                −R$ {(i + 1) * 1250}/mês¹
               </span>
               <div>
-                <div className="text-sm font-semibold text-foreground">{d.dor}</div>
-                <div className="mt-1 text-xs leading-relaxed text-muted-foreground">{d.consequencia}</div>
+                <h3 className="text-sm font-medium" style={{ color: "var(--lp-paper)" }}>
+                  {it.t}
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--lp-paper-dim)" }}>
+                  {it.d}
+                </p>
               </div>
             </div>
           ))}
         </div>
+        <p className="mt-3 text-[11px]" style={{ color: "var(--lp-graphite)", fontFamily: "var(--font-mono)" }}>
+          ¹ Estimativa de custo de oportunidade com base em hora técnica média de mercado — varia por operação.
+        </p>
       </div>
     </section>
   );
 }
 
 /* ============================================================
-   PILARES
+   PILARES — (=) resultado parcial
    ============================================================ */
-function SolutionPillars() {
+function Pillars() {
   const pilares = [
     {
-      icon: BarChart3,
-      title: "Raio-X Financeiro",
-      desc: "DRE, Balanço, DFC e +40 indicadores conectados — uma única fonte de verdade para todo o ciclo da empresa.",
+      n: "01",
+      t: "Raio-X Financeiro",
+      d: "DRE, Balanço, DFC e +40 indicadores conectados — uma única fonte de verdade, recalculada a cada alteração.",
     },
     {
-      icon: ShieldCheck,
-      title: "Reforma CBS / IBS",
-      desc: "Cálculo automático dos impactos da LC 214/2025 sobre margem, preço e fluxo de caixa. Atualizado a cada fase de transição.",
+      n: "02",
+      t: "Reforma CBS / IBS",
+      d: "Cronograma completo da LC 214/2025 simulado fase a fase, do regime atual ao pleno em 2033, com Split Payment.",
     },
     {
-      icon: Brain,
-      title: "IA Estratégica",
-      desc: "Diagnóstico executivo gerado por IA treinada em CFO PME brasileira. Sugere alavancas. Justifica decisões.",
+      n: "03",
+      t: "Diagnóstico por IA",
+      d: "A IA lê os números já calculados pelo motor e devolve a leitura executiva — nunca inventa, nunca recalcula.",
     },
   ];
   return (
-    <section className="border-b border-border/50 py-24">
-      <div className="mx-auto max-w-6xl px-6">
-        <SectionEyebrow>O sistema que faltava</SectionEyebrow>
-        <h2 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          Três pilares que substituem dez planilhas e meia consultoria.
-        </h2>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {pilares.map((p) => (
+    <section className="border-b px-6 py-24" style={{ borderColor: "var(--lp-line)" }}>
+      <div className="mx-auto max-w-6xl">
+        <Eyebrow sign="=">O que sobra depois de cortar o retrabalho</Eyebrow>
+        <Display className="mt-4 max-w-3xl text-3xl sm:text-4xl">Três frentes. Um motor só.</Display>
+
+        <div className="mt-12 grid gap-0 border md:grid-cols-3" style={{ borderColor: "var(--lp-line)" }}>
+          {pilares.map((p, i) => (
             <div
-              key={p.title}
-              className="group relative overflow-hidden rounded-xl border border-border bg-card p-7 transition hover:border-primary/40"
+              key={p.t}
+              className="group relative p-8"
+              style={{ borderLeft: i > 0 ? "1px solid var(--lp-line)" : undefined }}
             >
-              <div
-                aria-hidden
-                className="absolute -right-12 -top-12 h-32 w-32 rounded-full opacity-0 transition group-hover:opacity-100"
-                style={{
-                  background:
-                    "radial-gradient(circle, color-mix(in oklab, var(--primary) 25%, transparent), transparent 70%)",
-                }}
+              <span style={{ fontFamily: "var(--font-mono)", color: "var(--lp-graphite)", fontSize: "12px" }}>
+                {p.n}
+              </span>
+              <h3 className="mt-4 text-lg" style={{ fontFamily: "var(--font-display)", color: "var(--lp-paper)" }}>
+                {p.t}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--lp-paper-dim)" }}>
+                {p.d}
+              </p>
+              <span
+                className="mt-5 block h-px w-0 transition-all duration-300 group-hover:w-12"
+                style={{ background: "var(--lp-green)" }}
               />
-              <p.icon className="h-7 w-7 text-primary" />
-              <h3 className="mt-5 text-lg font-semibold text-foreground">{p.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.desc}</p>
             </div>
           ))}
         </div>
@@ -364,75 +390,7 @@ function SolutionPillars() {
 }
 
 /* ============================================================
-   GRID DE FEATURES
-   ============================================================ */
-function FeatureGrid() {
-  const features = [
-    {
-      icon: LineChart,
-      t: "DRE e Fluxo Caixa",
-      d: "Mensal, Trimestral e anual por regime tributário, com simulação de cenários.",
-    },
-    {
-      icon: TrendingUp,
-      t: "+40 Indicadores",
-      d: "EBITDA, ROIC, WACC, liquidez, endividamento, cobertura — automáticos.",
-    },
-    {
-      icon: BarChart3,
-      t: "Valuation DCF",
-      d: "Fluxo de caixa descontado + múltiplos. Sensibilidade integrada.",
-    },
-    {
-      icon: Gauge,
-      t: "Simulador de Cenários",
-      d: "Mexa nas alavancas e veja o impacto recalculado em tempo real.",
-    },
-    {
-      icon: ShieldCheck,
-      t: "Split Payment",
-      d: "Impacto do novo modelo de recolhimento CBS/IBS no caixa diário.",
-    },
-    {
-      icon: LineChart,
-      t: "Fluxo de Caixa",
-      d: "DFC projetada, gaps, cobertura e capacidade de pagamento.",
-    },
-    {
-      icon: FileSpreadsheet,
-      t: "Análise de Balanço",
-      d: "Liquidez, endividamento, ciclo e estrutura de capital — auditados.",
-    },
-    {
-      icon: Calculator,
-      t: "Dashboard Gráfico",
-      d: "KPIs visuais, comparativos e séries históricas em uma única tela.",
-    },
-  ];
-  return (
-    <section id="recursos" className="border-b border-border/50 bg-card/30 py-24">
-      <div className="mx-auto max-w-6xl px-6">
-        <SectionEyebrow>Recursos</SectionEyebrow>
-        <h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          Tudo que um empresário precisa pra tomar boas decisões — em um clique.
-        </h2>
-
-        <div className="mt-12 grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((f) => (
-            <div key={f.t} className="group flex flex-col gap-3 bg-card p-6 transition hover:bg-accent/30">
-              <f.icon className="h-6 w-6 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">{f.t}</h3>
-              <p className="text-xs leading-relaxed text-muted-foreground">{f.d}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ============================================================
-   MÉTRICAS — Faixa de números
+   MÉTRICAS — faixa de números (herdada, mantida — boa adição)
    ============================================================ */
 function MetricsBand() {
   const metrics = [
@@ -442,21 +400,23 @@ function MetricsBand() {
     { n: "0", l: "Erros de fórmula", s: "engine versionada e auditada" },
   ];
   return (
-    <section className="relative border-b border-border/50 py-20">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background: "linear-gradient(180deg, color-mix(in oklab, var(--primary) 6%, transparent), transparent)",
-        }}
-      />
-      <div className="mx-auto max-w-6xl px-6">
+    <section
+      className="border-b px-6 py-16"
+      style={{ borderColor: "var(--lp-line)", background: "var(--lp-bg-raised)" }}
+    >
+      <div className="mx-auto max-w-6xl">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {metrics.map((m) => (
-            <div key={m.l} className="text-center sm:text-left">
-              <div className="text-5xl font-semibold tracking-tight text-primary">{m.n}</div>
-              <div className="mt-2 text-sm font-semibold text-foreground">{m.l}</div>
-              <div className="text-xs text-muted-foreground">{m.s}</div>
+            <div key={m.l}>
+              <div style={{ fontFamily: "var(--font-mono)", color: "var(--lp-green)" }} className="text-4xl">
+                {m.n}
+              </div>
+              <div className="mt-2 text-sm font-medium" style={{ color: "var(--lp-paper)" }}>
+                {m.l}
+              </div>
+              <div className="text-xs" style={{ color: "var(--lp-graphite)" }}>
+                {m.s}
+              </div>
             </div>
           ))}
         </div>
@@ -466,139 +426,52 @@ function MetricsBand() {
 }
 
 /* ============================================================
-   COMO FUNCIONA
+   COMO FUNCIONA — 4 passos (herdado da v3, mantido)
    ============================================================ */
 function HowItWorks() {
   const passos = [
     {
       n: "01",
-      icon: FileSpreadsheet,
       t: "Cadastre seus dados",
       d: "Receita, custos, regime, ativos. Importa de Excel ou preenche guiado — em minutos.",
     },
     {
       n: "02",
-      icon: Gauge,
       t: "Simule cenários",
       d: "Mexa nas alavancas: preço, custo, capital de giro, dívida. Tudo recalcula em tempo real.",
     },
     {
       n: "03",
-      icon: Brain,
       t: "Receba o diagnóstico",
       d: "A IA explica o que está acontecendo, o porquê e quais alavancas mexer para melhorar.",
     },
     {
       n: "04",
-      icon: Sparkles,
       t: "Decida ou entregue",
-      d: "Aja na sua empresa, ou exporte PDF / link público para o seu cliente acompanhar.",
+      d: "Aja na sua empresa, ou exporte PDF / link público para acompanhamento — somente leitura.",
     },
   ];
   return (
-    <section id="como-funciona" className="border-b border-border/50 bg-card/30 py-24">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="max-w-2xl">
-          <SectionEyebrow>Como funciona</SectionEyebrow>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Do dado bruto à decisão em <span className="text-primary">quatro passos</span>.
-          </h2>
-          <p className="mt-4 text-base text-muted-foreground">
-            Sem curva de aprendizado. Sem manual de 200 páginas. O sistema te guia do zero ao relatório executivo.
-          </p>
-        </div>
+    <section className="border-b px-6 py-24" style={{ borderColor: "var(--lp-line)" }}>
+      <div className="mx-auto max-w-6xl">
+        <Eyebrow sign="=">Do dado bruto à decisão</Eyebrow>
+        <Display className="mt-4 max-w-2xl text-3xl sm:text-4xl">Quatro passos. Sem planilha no meio.</Display>
 
-        <div className="relative mt-14">
-          {/* linha conectora desktop */}
-          <div
-            aria-hidden
-            className="absolute left-0 right-0 top-[2.75rem] hidden h-px md:block"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent, color-mix(in oklab, var(--primary) 35%, transparent), transparent)",
-            }}
-          />
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {passos.map((p) => (
+        <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {passos.map((p) => (
+            <div key={p.n}>
               <div
-                key={p.n}
-                className="group relative rounded-2xl border border-border bg-background/60 p-6 transition hover:-translate-y-1 hover:border-primary/40"
+                className="flex h-11 w-11 items-center justify-center border text-sm"
+                style={{ borderColor: "var(--lp-green-dim)", color: "var(--lp-green)", fontFamily: "var(--font-mono)" }}
               >
-                <div className="flex items-center gap-3">
-                  <div className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-card text-primary">
-                    <p.icon className="h-5 w-5" />
-                  </div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary/70">Passo {p.n}</div>
-                </div>
-                <h3 className="mt-5 text-base font-semibold text-foreground">{p.t}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.d}</p>
+                {p.n}
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ============================================================
-   COMPARATIVO
-   ============================================================ */
-function ComparisonTable() {
-  const linhas = [
-    ["Tempo para gerar análise completa", "8 a 20 horas", "Minutos"],
-    ["Erro de fórmula", "Comum", "Zero — engine auditada"],
-    ["Reforma Tributária CBS/IBS", "Cálculo manual", "Automático"],
-    ["Diagnóstico executivo", "Você escreve", "IA gera, você revisa"],
-    ["Relatório PDF com sua marca", "Edição manual", "Um clique"],
-    ["Compartilhamento", "Anexo por e-mail", "Link público auditável"],
-    ["Atualização tributária", "Você acompanha", "Engine atualiza por você"],
-  ];
-  return (
-    <section className="border-b border-border/50 py-24">
-      <div className="mx-auto max-w-5xl px-6">
-        <div className="text-center">
-          <SectionEyebrow>Comparativo</SectionEyebrow>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Planilha Excel <span className="text-muted-foreground">vs.</span>{" "}
-            <span className="text-primary">FinancePRO</span>.
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-            A diferença entre montar relatório e tomar decisão.
-          </p>
-        </div>
-
-        <div className="relative mt-12 overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-primary/5">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute right-0 top-0 h-full w-1/2"
-            style={{
-              background:
-                "radial-gradient(60% 50% at 70% 50%, color-mix(in oklab, var(--primary) 8%, transparent), transparent)",
-            }}
-          />
-          <div className="grid grid-cols-[1.6fr_1fr_1fr] bg-background/60 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            <div className="border-b border-border p-5">Critério</div>
-            <div className="border-b border-l border-border p-5 text-center">Planilha</div>
-            <div className="border-b border-l border-border bg-primary/10 p-5 text-center text-primary">FinancePRO</div>
-          </div>
-          {linhas.map((l, i) => (
-            <div key={i} className="grid grid-cols-[1.6fr_1fr_1fr] text-sm last:border-b-0">
-              <div className="border-b border-border p-5 text-foreground/90">{l[0]}</div>
-              <div className="flex items-center justify-center border-b border-l border-border p-5 text-center text-muted-foreground">
-                <span className="inline-flex items-center gap-2">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-[10px] text-destructive">
-                    ✕
-                  </span>
-                  {l[1]}
-                </span>
-              </div>
-              <div className="flex items-center justify-center border-b border-l border-border bg-primary/5 p-5 text-center font-medium text-primary">
-                <span className="inline-flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4" />
-                  {l[2]}
-                </span>
-              </div>
+              <h3 className="mt-4 text-base font-medium" style={{ color: "var(--lp-paper)" }}>
+                {p.t}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--lp-paper-dim)" }}>
+                {p.d}
+              </p>
             </div>
           ))}
         </div>
@@ -608,69 +481,9 @@ function ComparisonTable() {
 }
 
 /* ============================================================
-   AUTORIDADE
+   PROVA — (+) readição de confiança, 3 personas (herdado da v3)
    ============================================================ */
-function AuthorityBlock() {
-  return (
-    <section className="border-b border-border/50 bg-card/30 py-24">
-      <div className="mx-auto max-w-5xl px-6">
-        <div className="overflow-hidden rounded-2xl border border-border bg-card">
-          <div className="grid gap-0 md:grid-cols-[1fr_1.4fr]">
-            <div
-              className="relative flex items-center justify-center p-10"
-              style={{
-                background:
-                  "linear-gradient(135deg, color-mix(in oklab, var(--primary) 18%, var(--card)), var(--card))",
-              }}
-            >
-              <div className="text-center">
-                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-2 border-primary/40 bg-background text-2xl font-semibold text-primary">
-                  GZ
-                </div>
-                <div className="mt-4 text-sm font-semibold text-foreground">Geovane Zomer</div>
-                <div className="text-xs text-muted-foreground">Consultor Financeiro & Investimentos</div>
-                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-primary">
-                  <ShieldCheck className="h-3 w-3" />
-                  CVM 3354-5
-                </div>
-              </div>
-            </div>
-            <div className="p-10">
-              <SectionEyebrow>Construído por quem vive isso</SectionEyebrow>
-              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                Engenharia financeira de banca — feita para a realidade da PME brasileira.
-              </h2>
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                O FinancePRO nasceu dentro da{" "}
-                <strong className="text-foreground">GZ Consultoria Financeira & Investimentos</strong> para resolver o
-                que toda planilha falha: dar a empresários, consultores e gestores a mesma profundidade de análise que
-                grandes corporações têm — sem o custo de um time de CFO.
-              </p>
-              <ul className="mt-6 space-y-2 text-sm text-foreground/90">
-                {[
-                  "Engine financeira auditada e versionada",
-                  "Cálculos compatíveis com LC 214/2025 (CBS / IBS)",
-                  "IA com prompt versionado para rastreabilidade CVM",
-                  "Pensado para quem decide — não só para quem audita",
-                ].map((i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    {i}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ============================================================
-   PROVA SOCIAL
-   ============================================================ */
-function SocialProof() {
+function Proof() {
   const cases = [
     {
       q: "Eu sou o dono, não sou financeiro. Pela primeira vez entendi o que cada número significa — e o que mudar.",
@@ -685,39 +498,36 @@ function SocialProof() {
     {
       q: "O módulo da Reforma Tributária sozinho já paga o sistema. Cheguei na reunião com cálculo, não com achismo.",
       a: "Contador Sênior — RS",
-      icon: Users,
+      icon: Target,
     },
   ];
   return (
-    <section className="border-b border-border/50 py-24">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="max-w-2xl">
-          <SectionEyebrow>Prova social</SectionEyebrow>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Quem usa, <span className="text-primary">não volta</span> para a planilha.
-          </h2>
-        </div>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+    <section
+      id="prova"
+      className="border-b px-6 py-24"
+      style={{ borderColor: "var(--lp-line)", background: "var(--lp-bg-raised)" }}
+    >
+      <div className="mx-auto max-w-6xl">
+        <Eyebrow sign="+">Quem já fechou as contas com isso</Eyebrow>
+        <Display className="mt-4 max-w-2xl text-3xl sm:text-4xl">Não é teoria. É reconciliação real.</Display>
+
+        <div className="mt-12 grid gap-px border md:grid-cols-3" style={{ borderColor: "var(--lp-line)" }}>
           {cases.map((c, i) => (
             <figure
               key={i}
-              className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card p-7 transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10"
+              className="flex flex-col p-7"
+              style={{ background: "var(--lp-bg)", borderLeft: i > 0 ? "1px solid var(--lp-line)" : undefined }}
             >
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-0 transition group-hover:opacity-100"
-                style={{
-                  background:
-                    "radial-gradient(circle, color-mix(in oklab, var(--primary) 22%, transparent), transparent 70%)",
-                }}
-              />
-              <Quote className="h-7 w-7 text-primary/60" />
-              <blockquote className="mt-4 flex-1 text-sm leading-relaxed text-foreground/90">"{c.q}"</blockquote>
-              <figcaption className="mt-6 flex items-center gap-3 border-t border-border pt-5">
-                <div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary">
-                  <c.icon className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-medium text-muted-foreground">{c.a}</span>
+              <Quote className="h-5 w-5" style={{ color: "var(--lp-green-dim)" }} />
+              <blockquote className="mt-4 flex-1 text-sm leading-relaxed" style={{ color: "var(--lp-paper)" }}>
+                "{c.q}"
+              </blockquote>
+              <figcaption
+                className="mt-5 flex items-center gap-2.5 border-t pt-4 text-xs"
+                style={{ borderColor: "var(--lp-line)", color: "var(--lp-graphite)" }}
+              >
+                <c.icon className="h-3.5 w-3.5" style={{ color: "var(--lp-green)" }} />
+                {c.a}
               </figcaption>
             </figure>
           ))}
@@ -728,62 +538,239 @@ function SocialProof() {
 }
 
 /* ============================================================
+   PREÇO — (=) resultado final antes da decisão (ausente nas
+   versões anteriores — adição que fecha a lacuna de conversão)
+   ============================================================ */
+function Pricing() {
+  const planos = [
+    {
+      nome: "Essencial",
+      preco: "97",
+      desc: "Para quem analisa a própria operação.",
+      itens: ["1 empresa ativa", "DRE, Balanço e Fluxo de Caixa", "Relatório PDF com sua marca", "Suporte por e-mail"],
+    },
+    {
+      nome: "Profissional",
+      preco: "247",
+      desc: "Para quem analisa para terceiros.",
+      destaque: true,
+      itens: [
+        "Empresas ilimitadas",
+        "Reforma Tributária completa (CBS/IBS)",
+        "Diagnóstico executivo por IA",
+        "Link de compartilhamento somente leitura",
+        "Suporte prioritário",
+      ],
+    },
+    {
+      nome: "Escritório",
+      preco: "597",
+      desc: "Para equipes, consultorias e BPOs.",
+      itens: [
+        "Tudo do Profissional",
+        "Múltiplos usuários",
+        "Marca própria no relatório e no link",
+        "Onboarding assistido",
+      ],
+    },
+  ];
+  return (
+    <section className="border-b px-6 py-24" style={{ borderColor: "var(--lp-line)" }}>
+      <div className="mx-auto max-w-6xl">
+        <Eyebrow sign="=">Resultado do exercício</Eyebrow>
+        <Display className="mt-4 max-w-2xl text-3xl sm:text-4xl">Um plano para cada estágio da operação.</Display>
+
+        <div className="mt-12 grid gap-5 md:grid-cols-3">
+          {planos.map((p) => (
+            <div
+              key={p.nome}
+              className="flex flex-col border p-7"
+              style={{
+                borderColor: p.destaque ? "var(--lp-green)" : "var(--lp-line)",
+                background: p.destaque ? "rgba(47,157,99,0.06)" : "var(--lp-bg-raised)",
+                borderRadius: p.destaque ? "10px" : "6px",
+              }}
+            >
+              {p.destaque && (
+                <span
+                  className="mb-3 inline-block text-[10px] uppercase tracking-wider"
+                  style={{ color: "var(--lp-green)", fontFamily: "var(--font-mono)" }}
+                >
+                  Mais escolhido
+                </span>
+              )}
+              <h3 className="text-base font-medium" style={{ color: "var(--lp-paper)" }}>
+                {p.nome}
+              </h3>
+              <p className="mt-1 text-xs" style={{ color: "var(--lp-graphite)" }}>
+                {p.desc}
+              </p>
+              <div className="mt-5 flex items-baseline gap-1">
+                <span style={{ color: "var(--lp-paper)", fontFamily: "var(--font-mono)" }} className="text-3xl">
+                  R$ {p.preco}
+                </span>
+                <span className="text-xs" style={{ color: "var(--lp-graphite)" }}>
+                  /mês
+                </span>
+              </div>
+              <ul className="mt-6 flex-1 space-y-2.5">
+                {p.itens.map((it) => (
+                  <li key={it} className="flex items-start gap-2 text-sm" style={{ color: "var(--lp-paper-dim)" }}>
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "var(--lp-green)" }} />
+                    {it}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to="/signup"
+                className="mt-7 inline-flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition"
+                style={{
+                  background: p.destaque ? "var(--lp-green)" : "transparent",
+                  color: p.destaque ? "#0F1611" : "var(--lp-paper)",
+                  border: p.destaque ? "none" : "1px solid var(--lp-line-strong)",
+                  borderRadius: "6px",
+                }}
+              >
+                Começar
+              </Link>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 text-xs" style={{ color: "var(--lp-graphite)" }}>
+          7 dias de teste em qualquer plano. Sem multa de cancelamento, sem fidelidade.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   AUTORIDADE
+   ============================================================ */
+function Authority() {
+  return (
+    <section
+      className="border-b px-6 py-24"
+      style={{ borderColor: "var(--lp-line)", background: "var(--lp-bg-raised)" }}
+    >
+      <div className="mx-auto max-w-5xl border" style={{ borderColor: "var(--lp-line)" }}>
+        <div className="grid md:grid-cols-[1fr_1.4fr]">
+          <div
+            className="flex flex-col items-center justify-center gap-3 p-10 text-center"
+            style={{ borderRight: "1px solid var(--lp-line)" }}
+          >
+            <div
+              className="flex h-16 w-16 items-center justify-center border text-lg"
+              style={{
+                borderColor: "var(--lp-green-dim)",
+                color: "var(--lp-green)",
+                fontFamily: "var(--font-display)",
+              }}
+            >
+              GZ
+            </div>
+            <div className="text-sm font-medium" style={{ color: "var(--lp-paper)" }}>
+              Geovane Zomer
+            </div>
+            <div className="text-xs" style={{ color: "var(--lp-graphite)" }}>
+              Consultor Financeiro & Investimentos
+            </div>
+            <div
+              className="inline-flex items-center gap-1.5 border px-2.5 py-1 text-[10px] uppercase tracking-wider"
+              style={{ borderColor: "var(--lp-amber)", color: "var(--lp-amber)" }}
+            >
+              <ShieldCheck className="h-3 w-3" />
+              CVM 3354-5
+            </div>
+          </div>
+          <div className="p-10">
+            <Eyebrow sign="=">Quem construiu</Eyebrow>
+            <Display className="mt-3 text-2xl sm:text-3xl">
+              Engenharia financeira de banca — para a realidade da PME brasileira.
+            </Display>
+            <p className="mt-4 text-sm leading-relaxed" style={{ color: "var(--lp-paper-dim)" }}>
+              O FinnancePRO nasceu dentro de uma operação de consultoria real, para resolver o que toda planilha falha:
+              dar a empresários, consultores e BPOs a mesma profundidade de análise que grandes corporações têm — com a
+              Reforma Tributária já dentro do motor, não como anexo manual.
+            </p>
+            <ul className="mt-6 space-y-2 text-sm" style={{ color: "var(--lp-paper)" }}>
+              {[
+                "Engine financeira auditada de forma independente, linha a linha",
+                "Cálculos compatíveis com a LC 214/2025 (CBS / IBS, incluindo Split Payment)",
+                "IA com prompt versionado — sem cálculo às escuras",
+                "Pensado para quem decide, não só para quem audita",
+              ].map((i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "var(--lp-green)" }} />
+                  {i}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
    FAQ
    ============================================================ */
-function FaqAccordion() {
+function Faq() {
   const faqs = [
     {
       q: "Preciso ser da área financeira para usar?",
-      a: "Não. O FinancePRO foi desenhado para traduzir números em decisão — qualquer empresário, consultor ou gestor consegue operar com fluxo guiado e diagnóstico em linguagem clara.",
+      a: "Não. O fluxo é guiado e o diagnóstico vem em linguagem clara — qualquer empresário, consultor ou gestor consegue operar.",
     },
     {
       q: "Preciso instalar alguma coisa?",
-      a: "Não. O FinancePRO roda 100% no navegador. Login, importa os dados e começa a analisar.",
+      a: "Não. Roda 100% no navegador — entra, descreve a operação e já vê o resultado.",
     },
     {
       q: "Meus dados ficam seguros?",
-      a: "Sim. Os dados são criptografados e armazenados em infraestrutura na nuvem com backup opcional. Você controla o que sai do seu computador.",
+      a: "Sim. Dados criptografados, com backup na nuvem. Você decide o que compartilha e com quem.",
     },
     {
-      q: "A Reforma Tributária está realmente atualizada?",
-      a: "Sim. O motor tributário acompanha a LC 214/2025 e as fases de transição CBS/IBS (2026-2033), incluindo Split Payment e Cashback.",
+      q: "A Reforma Tributária está atualizada?",
+      a: "Sim. O motor segue a LC 214/2025 e as fases de transição CBS/IBS (2026–2033), incluindo Split Payment.",
     },
     {
-      q: "Posso usar com vários clientes (ou várias empresas)?",
-      a: "Sim. Você cria quantos cenários e empresas quiser, cada um com seu próprio conjunto de dados, relatórios e link de compartilhamento.",
+      q: "Funciona pra mais de uma empresa?",
+      a: "Sim, nos planos Profissional e Escritório. Cada empresa com seus próprios dados e relatórios.",
     },
     {
       q: "Como funciona a IA?",
-      a: "A IA gera o diagnóstico executivo a partir dos números reais da empresa simulada. Você revisa, ajusta e entrega — com prompt versionado para auditoria.",
+      a: "Ela lê os números já calculados pelo motor e devolve a leitura executiva. Nunca recalcula nem inventa valor.",
     },
-    {
-      q: "Posso cancelar quando quiser?",
-      a: "Sim. Sem fidelidade, sem multa. Você cancela direto da sua conta.",
-    },
+    { q: "Posso cancelar quando quiser?", a: "Sim, sem multa e sem fidelidade — direto da sua conta." },
   ];
   const [open, setOpen] = useState<number | null>(0);
   return (
-    <section className="border-b border-border/50 bg-card/30 py-24">
-      <div className="mx-auto max-w-3xl px-6">
-        <SectionEyebrow>Perguntas frequentes</SectionEyebrow>
-        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          O que você precisa saber.
-        </h2>
-        <div className="mt-10 divide-y divide-border rounded-xl border border-border bg-card">
+    <section className="border-b px-6 py-24" style={{ borderColor: "var(--lp-line)" }}>
+      <div className="mx-auto max-w-3xl">
+        <Eyebrow sign="=">Antes de decidir</Eyebrow>
+        <Display className="mt-4 text-3xl sm:text-4xl">Perguntas que sempre aparecem.</Display>
+
+        <div className="mt-10 divide-y border" style={{ borderColor: "var(--lp-line)" }}>
           {faqs.map((f, i) => {
             const isOpen = open === i;
             return (
-              <div key={i}>
+              <div key={i} style={{ borderColor: "var(--lp-line)" }}>
                 <button
                   type="button"
                   onClick={() => setOpen(isOpen ? null : i)}
-                  className="flex w-full items-center justify-between gap-4 p-5 text-left text-sm font-medium text-foreground transition hover:bg-accent/30"
+                  className="flex w-full items-center justify-between gap-4 p-5 text-left text-sm font-medium"
+                  style={{ color: "var(--lp-paper)" }}
                   aria-expanded={isOpen}
                 >
                   <span>{f.q}</span>
-                  <span className={`text-primary transition-transform ${isOpen ? "rotate-45" : ""}`}>+</span>
+                  <span style={{ color: "var(--lp-green)" }}>{isOpen ? "−" : "+"}</span>
                 </button>
-                {isOpen && <div className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">{f.a}</div>}
+                {isOpen && (
+                  <div className="px-5 pb-5 text-sm leading-relaxed" style={{ color: "var(--lp-paper-dim)" }}>
+                    {f.a}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -794,67 +781,37 @@ function FaqAccordion() {
 }
 
 /* ============================================================
-   CTA FINAL
+   CTA FINAL — (=) última linha, o resultado do exercício
    ============================================================ */
 function FinalCta() {
   return (
-    <section className="relative overflow-hidden py-28">
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(80% 60% at 50% 50%, color-mix(in oklab, var(--primary) 22%, transparent), transparent 70%)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-px"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent, color-mix(in oklab, var(--primary) 50%, transparent), transparent)",
-        }}
-      />
-      <div className="mx-auto max-w-3xl px-6 text-center">
-        <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
-          <Clock className="h-3.5 w-3.5" />5 minutos até sua primeira análise
-        </span>
-        <h2 className="mt-6 text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl">
-          Pare de analisar planilhas.
+    <section className="px-6 py-28 text-center" style={{ background: "var(--lp-bg-raised)" }}>
+      <div className="mx-auto max-w-2xl">
+        <Eyebrow sign="=">Resultado do exercício</Eyebrow>
+        <Display className="mt-5 text-4xl leading-tight sm:text-5xl">
+          O número certo,
           <br />
-          <span className="text-primary">Comece a tomar decisões.</span>
-        </h2>
-        <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-          Em menos de 5 minutos você roda sua primeira análise e gera um relatório baseado em dados.
+          <span style={{ color: "var(--lp-green)" }}>na hora certa.</span>
+        </Display>
+        <p className="mx-auto mt-5 max-w-md text-base" style={{ color: "var(--lp-paper-dim)" }}>
+          Em menos de 5 minutos sua primeira análise está pronta — sem cartão, sem planilha, sem retrabalho.
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <Link
             to="/signup"
-            className="group inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-xl shadow-primary/30 transition hover:shadow-primary/50"
+            className="group inline-flex items-center gap-2 px-6 py-3.5 text-sm font-medium transition"
+            style={{ background: "var(--lp-green)", color: "#0F1611", borderRadius: "6px" }}
           >
             Criar minha conta gratuita
             <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
           </Link>
           <Link
             to="/login"
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-6 py-3.5 text-sm font-medium text-foreground transition hover:bg-card"
+            className="inline-flex items-center gap-2 border px-6 py-3.5 text-sm"
+            style={{ borderColor: "var(--lp-line-strong)", color: "var(--lp-paper)", borderRadius: "6px" }}
           >
             Já tenho conta
           </Link>
-        </div>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <ShieldCheck className="h-4 w-4 text-primary" />
-            Engine auditada
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Lock className="h-4 w-4 text-primary" />
-            Dados criptografados
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Zap className="h-4 w-4 text-primary" />
-            Sem cartão de crédito
-          </span>
         </div>
       </div>
     </section>
@@ -862,43 +819,46 @@ function FinalCta() {
 }
 
 /* ============================================================
-   HEADER + FOOTER + helpers
+   HEADER + FOOTER
    ============================================================ */
-function SectionEyebrow({ children }: { children: React.ReactNode }) {
-  return <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{children}</span>;
-}
-
 function Header() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
+    <header
+      className="sticky top-0 z-40 border-b backdrop-blur-md"
+      style={{ borderColor: "var(--lp-line)", background: "rgba(15,22,17,0.85)" }}
+    >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
         <Link to="/landing" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
+          <div
+            className="flex h-7 w-7 items-center justify-center text-xs font-medium"
+            style={{ background: "var(--lp-green)", color: "#0F1611", borderRadius: "4px" }}
+          >
             F
           </div>
-          <span className="text-sm font-semibold tracking-tight text-foreground">FinancePRO</span>
+          <span style={{ fontFamily: "var(--font-display)", color: "var(--lp-paper)" }} className="text-sm">
+            FinnancePRO
+          </span>
         </Link>
-        <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
-          <a href="#recursos" className="transition hover:text-foreground">
-            Recursos
+        <nav className="hidden items-center gap-7 text-sm md:flex" style={{ color: "var(--lp-paper-dim)" }}>
+          <a href="#prova" style={{ opacity: 0.85 }}>
+            Prova
           </a>
-          <a href="#como-funciona" className="transition hover:text-foreground">
-            Como funciona
-          </a>
-          <a href="#faq" className="transition hover:text-foreground">
-            FAQ
+          <a href="#faq" style={{ opacity: 0.85 }}>
+            Perguntas
           </a>
         </nav>
         <div className="flex items-center gap-2">
           <Link
             to="/login"
-            className="hidden rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground sm:inline-flex"
+            className="hidden px-3 py-2 text-sm sm:inline-flex"
+            style={{ color: "var(--lp-paper-dim)" }}
           >
             Entrar
           </Link>
           <Link
             to="/signup"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium"
+            style={{ background: "var(--lp-green)", color: "#0F1611", borderRadius: "6px" }}
           >
             Começar
             <ArrowRight className="h-3.5 w-3.5" />
@@ -911,17 +871,17 @@ function Header() {
 
 function Footer() {
   return (
-    <footer className="border-t border-border/60 bg-background py-10">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-xs text-muted-foreground sm:flex-row">
-        <span>
-          © {new Date().getFullYear()} FinancePRO · Desenvolvido por{" "}
-          <strong className="text-foreground">GZ Consultoria Financeira & Investimentos</strong>
-        </span>
+    <footer className="px-6 py-10">
+      <div
+        className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-xs sm:flex-row"
+        style={{ color: "var(--lp-graphite)" }}
+      >
+        <span>© {new Date().getFullYear()} FinnancePRO · GZ Consultoria Financeira & Investimentos</span>
         <div className="flex items-center gap-5">
-          <Link to="/login" className="transition hover:text-foreground">
+          <Link to="/login" style={{ color: "var(--lp-paper-dim)" }}>
             Entrar
           </Link>
-          <Link to="/signup" className="transition hover:text-foreground">
+          <Link to="/signup" style={{ color: "var(--lp-paper-dim)" }}>
             Criar conta
           </Link>
         </div>
@@ -935,25 +895,27 @@ function Footer() {
    ============================================================ */
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Header />
-      <main>
-        <Hero />
-        <AudienceStrip />
-        <ProblemAgitation />
-        <SolutionPillars />
-        <FeatureGrid />
-        <MetricsBand />
-        <HowItWorks />
-        <ComparisonTable />
-        <AuthorityBlock />
-        <SocialProof />
-        <div id="faq">
-          <FaqAccordion />
-        </div>
-        <FinalCta />
-      </main>
-      <Footer />
-    </div>
+    <>
+      <style>{`.lp-root { ${LANDING_VARS} }`}</style>
+      <div className="lp-root min-h-screen" style={{ background: "var(--lp-bg)", fontFamily: "var(--font-body)" }}>
+        <Header />
+        <main>
+          <Hero />
+          <AudienceStrip />
+          <Deductions />
+          <Pillars />
+          <MetricsBand />
+          <HowItWorks />
+          <Proof />
+          <Pricing />
+          <Authority />
+          <div id="faq">
+            <Faq />
+          </div>
+          <FinalCta />
+        </main>
+        <Footer />
+      </div>
+    </>
   );
 }
