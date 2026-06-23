@@ -214,6 +214,23 @@ function drawKpiCards(doc: jsPDF, yStart: number, cards: CalcKpi[]): number {
   return y + cardH + 18;
 }
 
+/**
+ * Trunca um texto com reticências para caber em `maxWidth` na fonte/tamanho atuais.
+ */
+function ellipsize(doc: jsPDF, text: string, maxWidth: number): string {
+  if (doc.getTextWidth(text) <= maxWidth) return text;
+  const ell = "…";
+  let lo = 0;
+  let hi = text.length;
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    const candidate = text.slice(0, mid) + ell;
+    if (doc.getTextWidth(candidate) <= maxWidth) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo > 0 ? text.slice(0, lo) + ell : ell;
+}
+
 function drawKv(
   doc: jsPDF,
   yStart: number,
@@ -223,24 +240,51 @@ function drawKv(
   const w = doc.internal.pageSize.getWidth();
   const innerW = w - PAGE_MARGIN * 2;
   const colW = innerW / 2;
-  let y = yStart;
+  const cellW = colW - 8; // respiro entre colunas
+  const gap = 10;          // espaço mínimo entre label e value
   const rowH = 18;
+
+  // Pré-calcula a largura necessária para cada valor (na fonte do value: 10pt).
+  // Decide para cada linha se cabe lado-a-lado ou precisa quebrar.
+  const layouts = rows.map((r) => {
+    doc.setFont(FONT, r.strong ? "bold" : "normal");
+    doc.setFontSize(10);
+    const valueW = Math.min(doc.getTextWidth(r.value), cellW);
+    doc.setFont(FONT, "normal");
+    doc.setFontSize(8);
+    const labelW = doc.getTextWidth(r.label);
+    const fits = labelW + gap + valueW <= cellW;
+    return { valueW, labelW, fits };
+  });
+
+  let y = yStart;
   rows.forEach((r, i) => {
     const col = i % 2;
     if (col === 0 && i > 0) y += rowH;
     const x = PAGE_MARGIN + col * colW;
+    const { valueW, fits } = layouts[i];
+
+    // Linha-base inferior
     setColor(doc, "draw", LIGHT);
     doc.setLineWidth(0.3);
-    doc.line(x, y + rowH - 4, x + colW - 8, y + rowH - 4);
+    doc.line(x, y + rowH - 4, x + cellW, y + rowH - 4);
+
+    // Label (cinza, 8pt) — truncado se o value couber ao lado;
+    // se não couber, o value cai numa segunda linha e o label pode ocupar tudo.
     doc.setFont(FONT, "normal");
     doc.setFontSize(8);
     setColor(doc, "text", GRAY);
-    doc.text(r.label, x, y + 4);
+    const labelMax = fits ? cellW - valueW - gap : cellW;
+    doc.text(ellipsize(doc, r.label, labelMax), x, y + 4);
+
+    // Value (10pt) — alinhado à direita. Se coube, na mesma linha;
+    // caso contrário, logo abaixo do label, encurtado se necessário.
     doc.setFont(FONT, r.strong ? "bold" : "normal");
     doc.setFontSize(10);
     setColor(doc, "text", r.strong ? INK : CHARCOAL);
-    const v = doc.splitTextToSize(r.value, colW - 16);
-    doc.text(v.slice(0, 1), x + colW - 12, y + 4, { align: "right" });
+    const valueText = ellipsize(doc, r.value, cellW);
+    const valueY = fits ? y + 4 : y + 14;
+    doc.text(valueText, x + cellW, valueY, { align: "right" });
   });
   return y + rowH + 12;
 }
