@@ -200,7 +200,7 @@ function AudienceStrip() {
         <div className="mx-auto max-w-2xl text-center">
           <SectionEyebrow>Para quem é</SectionEyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Feito para <span className="text-primary">empresários, consultores e BPOs</span>
+            Feito para <span className="text-primary">empresários, consultores e BPOs Financeiros</span>
           </h2>
           <p className="mt-4 text-base text-muted-foreground">
             Não importa se você comanda a empresa, consulta para ela ou cuida dos números dela — o FinancePRO traduz
@@ -439,7 +439,7 @@ function MetricsBand() {
     { n: "+40", l: "Indicadores", s: "calculados automaticamente" },
     { n: "5 min", l: "Primeira análise", s: "do cadastro ao diagnóstico" },
     { n: "100%", l: "Reforma Tributária", s: "CBS/IBS sob LC 214/2025" },
-    { n: "0", l: "Erros de fórmula", s: "engine versionada e auditada" },
+    { n: "I.A.", l: "Embarcada", s: "análises explicadas" },
   ];
   return (
     <section className="relative border-b border-border/50 py-20">
@@ -501,10 +501,10 @@ function HowItWorks() {
         <div className="max-w-2xl">
           <SectionEyebrow>Como funciona</SectionEyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Do dado bruto à decisão em <span className="text-primary">quatro passos</span>.
+            Dos dados à decisão em <span className="text-primary">quatro passos</span>.
           </h2>
           <p className="mt-4 text-base text-muted-foreground">
-            Sem curva de aprendizado. Sem manual de 200 páginas. O sistema te guia do zero ao relatório executivo.
+            Sem curva complexa de aprendizado. Sem manual de 200 páginas.
           </p>
         </div>
 
@@ -692,7 +692,7 @@ function SocialProof() {
     <section className="border-b border-border/50 py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="max-w-2xl">
-          <SectionEyebrow>Prova social</SectionEyebrow>
+          <SectionEyebrow>FINNANCEPRO</SectionEyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             Quem usa, <span className="text-primary">não volta</span> para a planilha.
           </h2>
@@ -825,7 +825,7 @@ function FinalCta() {
           <span className="text-primary">Comece a tomar decisões.</span>
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-          Em menos de 5 minutos você roda sua primeira análise e gera um relatório baseado em dados.
+          Em menos de 5 minutos você roda sua primeira análise financeira e gera relatórios.
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <Link
