@@ -1046,7 +1046,6 @@ export function LandingPage() {
         <ProblemAgitation />
 
         <FeatureGrid />
-        <MetricsBand />
         <HowItWorks />
         <ComparisonTable />
         <PricingSection />
