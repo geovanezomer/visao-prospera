@@ -5,7 +5,8 @@
 // FinanceProvider com readOnly=true. O `update` global vira no-op,
 // bloqueando qualquer mutação sem precisar tocar nos componentes.
 
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { getSharedReport } from "@/lib/api/sharedReports.functions";
@@ -90,6 +91,24 @@ function SharedReport() {
   const noopUpdate = () => {};
   const [activeTab, setActiveTab] = useState<TabKey>("dre");
 
+  // Bloqueia atalhos de edição/salvamento globalmente nesta rota.
+  // Ctrl/Cmd+S, Ctrl/Cmd+O, Ctrl/Cmd+Shift+R viram no-op + toast informativo.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      const k = e.key.toLowerCase();
+      if (k === "s" || k === "o" || (k === "r" && e.shiftKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        toast.info("Modo somente leitura — ações de edição estão desabilitadas");
+      }
+    };
+    // Capture phase para interceptar antes de qualquer outro listener (ex.: hooks de edição).
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, []);
+
   const tabs: { key: TabKey; label: string }[] = [
     { key: "dre", label: "DRE" },
     { key: "balanco", label: "Balanço" },
@@ -145,6 +164,17 @@ function SharedReport() {
         <main className="flex-1 overflow-auto">
           <div className="mx-auto max-w-[1600px] p-2 sm:p-4 md:p-6">
             <FinanceErrorBoundary>
+              {/*
+                fieldset[disabled] desabilita nativamente TODOS os <input>, <select>,
+                <textarea> e <button> descendentes — bloqueia edição sem precisar
+                refatorar cada tab. `min-w-0` + `contents`-like reset evita
+                interferência de layout (fieldset default tem border/padding).
+              */}
+              <fieldset
+                disabled
+                className="m-0 min-w-0 border-0 p-0 [&_*]:cursor-default"
+                aria-label="Conteúdo somente leitura"
+              >
               <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Carregando…</div>}>
                 {activeTab === "receitas" && <RevenueTab />}
                 {activeTab === "custos" && <CostsTab />}
@@ -165,6 +195,7 @@ function SharedReport() {
                   />
                 )}
               </Suspense>
+              </fieldset>
             </FinanceErrorBoundary>
           </div>
         </main>
