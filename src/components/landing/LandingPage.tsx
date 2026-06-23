@@ -987,6 +987,9 @@ function Header() {
           <a href="#como-funciona" className="transition hover:text-foreground">
             Como funciona
           </a>
+          <a href="#planos" className="transition hover:text-foreground">
+            Planos
+          </a>
           <a href="#faq" className="transition hover:text-foreground">
             FAQ
           </a>
