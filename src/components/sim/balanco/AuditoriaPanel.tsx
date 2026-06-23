@@ -35,6 +35,9 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
   const pl = balConst.patrimonioLiquido ?? {};
 
   const linhas: LinhaAuditoria[] = useMemo(() => {
+    // SSOT — todos os saldos de abertura vêm daqui, com `origem` declarando a fonte real.
+    const ssot = deriveAbertura({ state, impostosMensais: dre.impostos });
+
     const receitaBruta = sum(state.revenue?.bruta);
     const cpv = (state.costs ?? [])
       .filter((l) => ["custo_vendas", "direto_venda"].includes(l.category))
@@ -58,11 +61,6 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
       return a + (c.valor / vu) * meses;
     }, 0);
     const depPeriodo = (cap.depreciacaoMensal || 0) * 12 + depAtiv;
-    const cpPct =
-      typeof cap.dividaCurtoPrazoPct === "number"
-        ? cap.dividaCurtoPrazoPct
-        : 0.3;
-    const dividaTotal = cap.dividaOnerosa || 0;
 
     return [
       // ATIVO CIRCULANTE
