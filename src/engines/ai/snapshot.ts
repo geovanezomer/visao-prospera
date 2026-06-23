@@ -871,6 +871,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     data: {
       dre,
       ind,
+      cf,
       val,
       health,
       alerts: dre && ind ? tryRun(() => diagnose(state, dre, ind), []) : [],
