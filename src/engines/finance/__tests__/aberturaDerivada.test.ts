@@ -149,9 +149,9 @@ describe("deriveAbertura — passivos derivados de DRE/Despesas (1º mês)", () 
   it("usa folha[0] (fixo + variavel) do mês 1 para salariosEncargos", () => {
     const s = createState({
       costs: [
-        { id: "f1", name: "Salários", category: "fixo", values: [25_000, ...m12(0).slice(1)] },
-        { id: "v1", name: "Comissão", category: "variavel", values: [5_000, ...m12(0).slice(1)] },
-        { id: "c1", name: "CPV", category: "custo_vendas", values: m12(10_000) },
+        { id: "f1", label: "Salários", category: "fixo", fixed: true, values: [25_000, ...m12(0).slice(1)] },
+        { id: "v1", label: "Comissão", category: "variavel", fixed: false, values: [5_000, ...m12(0).slice(1)] },
+        { id: "c1", label: "CPV", category: "custo_vendas", fixed: false, values: m12(10_000) },
       ],
     });
     const r = deriveAbertura({ state: s });
