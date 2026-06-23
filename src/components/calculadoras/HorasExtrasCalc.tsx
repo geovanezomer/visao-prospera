@@ -8,7 +8,8 @@
  *   Hora extra 100% (feriado/domingo) = Hora normal × 2,00
  */
 import { useMemo, useState } from "react";
-import { Clock, Info, RotateCcw } from "lucide-react";
+import { Clock, Download, Info, RotateCcw } from "lucide-react";
+import { exportCalculadoraPDF } from "@/lib/pdfCalculadora";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
