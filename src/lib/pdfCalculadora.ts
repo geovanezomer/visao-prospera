@@ -330,7 +330,7 @@ function ensureSpace(
 // ── API pública ───────────────────────────────────────────────────────
 export async function exportCalculadoraPDF(payload: CalcReportPayload): Promise<void> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
-  const logo = await loadImageAsDataURL((logoAsset as { src: string }).src);
+  const logo = await loadImageAsDataURL((logoAsset as { url: string }).url);
 
   // ── Capa simples (mesma estética: linha fina + título grande) ──────
   drawHeader(doc, payload.title);
