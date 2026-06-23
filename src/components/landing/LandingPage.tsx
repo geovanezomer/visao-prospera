@@ -1,4 +1,4 @@
-// Landing page institucional do FinancePRO.
+// Landing page institucional do FinnancePRO.
 // Tudo isolado em src/components/landing/ — não importa nada do app.
 // Ativada/desativada via VITE_LANDING_PAGE no .env.
 
@@ -160,7 +160,7 @@ function AudienceStrip() {
             Feito para <span className="text-primary">empresários, consultores e BPOs Financeiros</span>
           </h2>
           <p className="mt-4 text-base text-muted-foreground">
-            Não importa se você comanda a empresa, consulta para ela ou cuida dos números dela — o FinancePRO traduz
+            Não importa se você comanda a empresa, consulta para ela ou cuida dos números dela — o FinnancePRO traduz
             complexidade financeira em decisões simplificadas.
           </p>
         </div>
@@ -518,7 +518,7 @@ function ComparisonTable() {
           <SectionEyebrow>Comparativo</SectionEyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             Planilha Excel <span className="text-muted-foreground">vs.</span>{" "}
-            <span className="text-primary">FinancePRO</span>.
+            <span className="text-primary">FinnancePRO</span>.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
             A diferença entre montar relatório e tomar decisão.
@@ -537,7 +537,9 @@ function ComparisonTable() {
           <div className="grid grid-cols-[1.6fr_1fr_1fr] bg-background/60 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             <div className="border-b border-border p-5">Critério</div>
             <div className="border-b border-l border-border p-5 text-center">Planilha</div>
-            <div className="border-b border-l border-border bg-primary/10 p-5 text-center text-primary">FinancePRO</div>
+            <div className="border-b border-l border-border bg-primary/10 p-5 text-center text-primary">
+              FinnancePRO
+            </div>
           </div>
           {linhas.map((l, i) => (
             <div key={i} className="grid grid-cols-[1.6fr_1fr_1fr] text-sm last:border-b-0">
@@ -742,7 +744,7 @@ function AuthorityBlock() {
                 Engenharia financeira de banca — feita para a realidade da PME brasileira.
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                O FinancePRO nasceu dentro da{" "}
+                O FinnancePRO nasceu dentro da{" "}
                 <strong className="text-foreground">GZ Consultoria Financeira & Investimentos</strong> para resolver o
                 que toda planilha falha: dar a empresários, consultores e gestores a mesma profundidade de análise que
                 grandes corporações têm — sem o custo de um time de CFO.
@@ -835,11 +837,11 @@ function FaqAccordion() {
   const faqs = [
     {
       q: "Preciso ser da área financeira para usar?",
-      a: "Não. O FinancePRO foi desenhado para traduzir números em decisão — qualquer empresário, consultor ou gestor consegue operar com fluxo guiado e diagnóstico em linguagem clara.",
+      a: "Não. O FinnancePRO foi desenhado para traduzir números em decisão — qualquer empresário, consultor ou gestor consegue operar com fluxo guiado e diagnóstico em linguagem clara.",
     },
     {
       q: "Preciso instalar alguma coisa?",
-      a: "Não. O FinancePRO roda 100% no navegador. Login, insere os dados e começa a analisar sozinho ou com ajuda da I.A.",
+      a: "Não. O FinnancePRO roda 100% no navegador. Login, insere os dados e começa a analisar sozinho ou com ajuda da I.A.",
     },
     {
       q: "Meus dados ficam seguros?",
@@ -978,7 +980,7 @@ function Header() {
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
             F
           </div>
-          <span className="text-sm font-semibold tracking-tight text-foreground">FinancePRO</span>
+          <span className="text-sm font-semibold tracking-tight text-foreground">FinnancePRO</span>
         </Link>
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
           <a href="#recursos" className="transition hover:text-foreground">
@@ -1019,7 +1021,7 @@ function Footer() {
     <footer className="border-t border-border/60 bg-background py-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-xs text-muted-foreground sm:flex-row">
         <span>
-          © {new Date().getFullYear()} FinancePRO · Desenvolvido por{" "}
+          © {new Date().getFullYear()} FinnancePRO · Desenvolvido por{" "}
           <strong className="text-foreground">GZ Consultoria Financeira & Investimentos</strong>
         </span>
         <div className="flex items-center gap-5">
