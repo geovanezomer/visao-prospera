@@ -122,6 +122,44 @@ export function JurosCompostosCalc() {
     setPagina(0);
   }
 
+  async function exportar() {
+    if (!sim) return;
+    const taxaLabel = `${taxa}% ${taxaTipo}`;
+    const periodoLabel =
+      periodoTipo === "anos" ? `${periodo} ano(s)` : `${periodo} mês(es)`;
+    // Amostra anual para a tabela.
+    const linhasAnuais = sim.linhas.filter((l) => l.mes % 12 === 0 || l.mes === sim.linhas.length);
+    await exportCalculadoraPDF({
+      title: "Juros Compostos",
+      subtitle: "Simulação de evolução de patrimônio com aportes mensais.",
+      inputs: [
+        { label: "Capital inicial", value: fmtBRL(valorInicial) },
+        { label: "Aporte mensal", value: fmtBRL(aporteMensal) },
+        { label: "Taxa de juros", value: taxaLabel },
+        { label: "Período", value: periodoLabel },
+      ],
+      kpis: [
+        { label: "Valor final", value: fmtBRL(sim.totalFinal), sub: `${sim.multiplicador.toFixed(1)}× o investido`, tone: "ok" },
+        { label: "Total investido", value: fmtBRL(sim.totalInvestido), sub: fmtPct(sim.pctInvestido), tone: "neutral" },
+        { label: "Total em juros", value: fmtBRL(sim.totalJuros), sub: fmtPct(sim.pctJuros), tone: "ok" },
+      ],
+      sections: [
+        {
+          kind: "table",
+          title: "Evolução anual",
+          head: ["Mês", "Juros no mês", "Juros totais", "Total investido", "Total acumulado"],
+          body: linhasAnuais.map((l) => [
+            l.mes,
+            fmtBRL(l.jurosMes),
+            fmtBRL(l.jurosTotais),
+            fmtBRL(l.totalInvestido),
+            fmtBRL(l.totalAcumulado),
+          ]),
+        },
+      ],
+    });
+  }
+
   const periodoLabel =
     periodoTipo === "anos"
       ? `${periodo} ano${periodo === 1 ? "" : "s"}`
@@ -151,9 +189,14 @@ export function JurosCompostosCalc() {
             Simule a evolução do seu patrimônio com aportes mensais e juros compostos.
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={limpar}>
-          <RotateCcw className="mr-2 h-4 w-4" /> Limpar
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={exportar} title="Exportar PDF" disabled={!sim}>
+            <Download className="mr-2 h-4 w-4" /> Exportar PDF
+          </Button>
+          <Button variant="ghost" size="sm" onClick={limpar}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Limpar
+          </Button>
+        </div>
       </div>
 
       {/* Inputs */}
