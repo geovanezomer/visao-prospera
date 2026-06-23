@@ -13,7 +13,7 @@
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
+
 
 // ── Paleta (idêntica ao pdfExport.ts) ─────────────────────────────────
 const INK = [10, 10, 10] as [number, number, number];
@@ -64,21 +64,7 @@ export interface CalcReportPayload {
 }
 
 // ── Utilitários ───────────────────────────────────────────────────────
-async function loadImageAsDataURL(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    return await new Promise<string>((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result as string);
-      r.onerror = reject;
-      r.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-}
+
 
 function nowBR(): string {
   return new Date().toLocaleString("pt-BR", {
@@ -330,19 +316,11 @@ function ensureSpace(
 // ── API pública ───────────────────────────────────────────────────────
 export async function exportCalculadoraPDF(payload: CalcReportPayload): Promise<void> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
-  const logo = await loadImageAsDataURL((logoAsset as { url: string }).url);
 
   // ── Capa simples (mesma estética: linha fina + título grande) ──────
   drawHeader(doc, payload.title);
   let y = CONTENT_TOP;
-  // Logo discreto (canto superior esquerdo do conteúdo)
-  if (logo) {
-    try {
-      doc.addImage(logo, "PNG", PAGE_MARGIN, HEADER_Y - 16, 20, 20);
-    } catch {
-      /* noop */
-    }
-  }
+
   y = pageTitle(
     doc,
     y,
