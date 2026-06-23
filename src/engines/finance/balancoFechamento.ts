@@ -68,7 +68,7 @@ export function deriveBalancoFechamento({
   cf,
 }: DeriveOpts): BalancoFechamentoResult {
   const cap = state.capital;
-  const ab = cap.abertura ?? {};
+  // Saldos de abertura — fonte única em `aberturaSSOT` (abaixo).
   const balConst = cap.balanco ?? {}; // itens patrimoniais constantes
   const imoConst = balConst.ativoNaoCirculante?.imobilizado ?? {};
   const intConst = balConst.ativoNaoCirculante?.intangivel ?? {};
