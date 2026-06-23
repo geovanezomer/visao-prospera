@@ -1,5 +1,6 @@
 // API SGS do Banco Central — séries macro públicas, sem chave.
 // Doc: https://dadosabertos.bcb.gov.br/dataset/
+import { saveKeySync } from "@/engines/finance/persistence";
 
 const SERIES = {
   selic: 432, // Meta Selic % a.a.
