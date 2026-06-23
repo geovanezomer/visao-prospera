@@ -109,6 +109,42 @@ export function CustoFuncionarioCalc() {
     setOutros(0);
   }
 
+  async function exportar() {
+    if (!resultado) return;
+    await exportCalculadoraPDF({
+      title: "Custo Real do Funcionário CLT",
+      subtitle:
+        "Custo de contratação considerando salário, encargos, provisões e benefícios.",
+      inputs: [
+        { label: "Salário bruto", value: fmtBRL(salarioBruto) },
+        { label: "Regime", value: regime.toUpperCase() },
+        { label: "Grau RAT", value: String(grauRAT) },
+        { label: "Alíquota Terceiros", value: `${aliquotaTerceiros.toFixed(2)}%` },
+        { label: "VT (custo empresa)", value: vtAtivo ? fmtBRL(vtCusto) : "—" },
+        { label: "VR / Plano Saúde / Outros", value: `${fmtBRL(vr)} / ${fmtBRL(planoSaude)} / ${fmtBRL(outros)}` },
+      ],
+      kpis: [
+        { label: "Custo mensal total", value: fmtBRL(resultado.custoMensalTotal), sub: `${resultado.fatorMultiplicador.toFixed(2).replace(".", ",")}× o salário bruto`, tone: "warn" },
+        { label: "Custo anual total", value: fmtBRL(resultado.custoAnualTotal), sub: "12 meses + provisões", tone: "warn" },
+        { label: "Encargos + Provisões", value: fmtBRL(resultado.encargos.total + resultado.provisoes.total), sub: fmtPct((resultado.encargos.total + resultado.provisoes.total) / Math.max(1, resultado.salarioBruto)), tone: "neutral" },
+      ],
+      sections: [
+        {
+          kind: "table",
+          title: "Encargos mensais",
+          head: ["Item", "Valor"],
+          body: resultado.encargos.itens.map((it) => [it.rotulo, fmtBRL(it.valor)]),
+        },
+        {
+          kind: "table",
+          title: "Provisões mensais",
+          head: ["Item", "Valor"],
+          body: resultado.provisoes.itens.map((it) => [it.rotulo, fmtBRL(it.valor)]),
+        },
+      ],
+    });
+  }
+
   return (
     <div className="space-y-6">
       {/* Header da calculadora */}
@@ -121,9 +157,14 @@ export function CustoFuncionarioCalc() {
             Calcule o custo efetivo de contratação considerando encargos, provisões e benefícios.
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={limpar}>
-          <RotateCcw className="mr-2 h-4 w-4" /> Limpar
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={exportar} title="Exportar PDF" disabled={!resultado}>
+            <Download className="mr-2 h-4 w-4" /> Exportar PDF
+          </Button>
+          <Button variant="ghost" size="sm" onClick={limpar}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Limpar
+          </Button>
+        </div>
       </div>
 
       {/* Inputs em 2 colunas */}
