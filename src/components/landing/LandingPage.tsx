@@ -7,8 +7,11 @@ import {
   ArrowRight,
   BarChart3,
   Brain,
+  Briefcase,
+  Building2,
   Calculator,
   CheckCircle2,
+  Clock,
   FileSpreadsheet,
   Gauge,
   LineChart,
@@ -16,7 +19,9 @@ import {
   Quote,
   ShieldCheck,
   Sparkles,
+  Target,
   TrendingUp,
+  Users,
   Zap,
 } from "lucide-react";
 import { useState } from "react";
@@ -41,18 +46,18 @@ function Hero() {
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
               <Sparkles className="h-3.5 w-3.5" />
-              Plataforma para Consultores Financeiros
+              Finanças empresariais para não-financeiros
             </span>
 
             <h1 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              O <span className="text-primary">Raio-X financeiro</span> que transforma consultor em{" "}
-              <span className="text-primary">CFO</span> da PME.
+              O <span className="text-primary">Raio-X financeiro</span> que transforma você em um{" "}
+              <span className="text-primary">CFO de alto nível</span>.
             </h1>
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               DRE, Balanço, Fluxo de Caixa, impactos da Reforma Tributária e{" "}
               <strong className="text-foreground">+40 indicadores</strong> em um único painel inteligente — com{" "}
-              <strong className="text-foreground">IA</strong> que entrega o diagnóstico que seu cliente espera ouvir.
+              <strong className="text-foreground">IA</strong> que entrega diagnósticos e relatórios em tempo real.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -74,7 +79,7 @@ function Hero() {
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
                 <ShieldCheck className="h-4 w-4 text-primary" />
-                Consultoria registrada CVM
+                Engine auditada
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Lock className="h-4 w-4 text-primary" />
@@ -169,39 +174,134 @@ function HeroMockup() {
 }
 
 /* ============================================================
+   AUDIÊNCIA — Para quem é
+   ============================================================ */
+function AudienceStrip() {
+  const personas = [
+    {
+      icon: Building2,
+      title: "Empresário & Sócio",
+      desc: "Entenda seu negócio sem depender de jargão. Saiba se está ganhando, perdendo e por quê — em linguagem clara.",
+    },
+    {
+      icon: Briefcase,
+      title: "Consultor & Contador",
+      desc: "Entregue análise institucional ao seu cliente em horas, não dias. Reforma Tributária já embutida.",
+    },
+    {
+      icon: Target,
+      title: "Gestor & CFO interino",
+      desc: "Centralize indicadores, projete cenários e leve à diretoria decisões com lastro estatístico.",
+    },
+  ];
+  return (
+    <section className="border-b border-border/50 py-20">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <SectionEyebrow>Para quem é</SectionEyebrow>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            Feito para quem <span className="text-primary">decide com dinheiro</span> na mesa.
+          </h2>
+          <p className="mt-4 text-base text-muted-foreground">
+            Não importa se você comanda a empresa, consulta para ela ou cuida dos números dela — o FinancePRO traduz
+            complexidade financeira em decisão simples.
+          </p>
+        </div>
+
+        <div className="mt-14 grid gap-6 md:grid-cols-3">
+          {personas.map((p) => (
+            <div
+              key={p.title}
+              className="group relative overflow-hidden rounded-2xl border border-border bg-card p-7 transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5"
+            >
+              <div
+                aria-hidden
+                className="absolute inset-x-0 top-0 h-px"
+                style={{
+                  background:
+                    "linear-gradient(90deg, transparent, color-mix(in oklab, var(--primary) 60%, transparent), transparent)",
+                }}
+              />
+              <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
+                <p.icon className="h-5 w-5" />
+              </div>
+              <h3 className="mt-5 text-lg font-semibold text-foreground">{p.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
    PROBLEMA / DOR
    ============================================================ */
 function ProblemAgitation() {
   const dores = [
-    "Planilhas frágeis que quebram a cada alteração do cliente",
-    "Reforma Tributária (CBS/IBS) mudando o jogo a cada trimestre",
-    "Empresários precisam de clareza, não uma tabela obsoleta",
-    "Horas perdidas formatando relatório em vez de analisar",
-    "Indicadores espalhados, sem visão única do negócio",
-    "Risco de erro em cálculos que norteiam decisões",
+    {
+      dor: "Planilhas frágeis que quebram",
+      consequencia: "Decisão tomada sobre número errado.",
+    },
+    {
+      dor: "Reforma Tributária mudando o jogo",
+      consequencia: "Preço e margem desatualizados a cada trimestre.",
+    },
+    {
+      dor: "Indicadores espalhados em 10 abas",
+      consequencia: "Ninguém vê o todo. Ninguém age a tempo.",
+    },
+    {
+      dor: "Horas formatando relatório",
+      consequencia: "Pouco tempo sobra para de fato analisar.",
+    },
+    {
+      dor: "Diagnóstico no 'achismo'",
+      consequencia: "Reunião sem clareza vira reunião improdutiva.",
+    },
+    {
+      dor: "Cenários impossíveis de simular",
+      consequencia: "Cada hipótese custa um dia de retrabalho.",
+    },
   ];
   return (
-    <section className="border-b border-border/50 bg-card/30 py-20">
-      <div className="mx-auto max-w-5xl px-6">
+    <section className="relative border-b border-border/50 bg-card/30 py-24">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 opacity-60"
+        style={{
+          background:
+            "radial-gradient(50% 40% at 50% 0%, color-mix(in oklab, var(--destructive) 8%, transparent), transparent 70%)",
+        }}
+      />
+      <div className="mx-auto max-w-6xl px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Você não precisa de mais uma Planilha.
+          <SectionEyebrow>O problema</SectionEyebrow>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            Você não precisa de mais uma planilha.
             <br />
-            <span className="text-muted-foreground">Precisa de clareza de dados em tempo real.</span>
+            <span className="text-muted-foreground">Precisa de clareza em tempo real.</span>
           </h2>
           <p className="mt-4 text-base text-muted-foreground">
-            Mas o seu dia ainda é refém de fórmulas quebradas, abas infinitas e uma Reforma Tributária que muda o chão
-            debaixo dos pés.
+            Toda decisão financeira mal calculada custa caro. E quase nunca aparece no extrato — aparece no resultado do
+            próximo trimestre.
           </p>
         </div>
 
-        <div className="mt-12 grid gap-3 sm:grid-cols-2">
+        <div className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {dores.map((d) => (
-            <div key={d} className="flex items-start gap-3 rounded-lg border border-border bg-background/40 p-4">
-              <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-destructive/40 text-destructive">
+            <div
+              key={d.dor}
+              className="group flex items-start gap-4 rounded-xl border border-border bg-background/60 p-5 transition hover:border-destructive/40"
+            >
+              <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/10 text-destructive">
                 ✕
               </span>
-              <span className="text-sm text-foreground/90">{d}</span>
+              <div>
+                <div className="text-sm font-semibold text-foreground">{d.dor}</div>
+                <div className="mt-1 text-xs leading-relaxed text-muted-foreground">{d.consequencia}</div>
+              </div>
             </div>
           ))}
         </div>
@@ -218,7 +318,7 @@ function SolutionPillars() {
     {
       icon: BarChart3,
       title: "Raio-X Financeiro",
-      desc: "DRE, Balanço, DFC e +40 indicadores conectados — uma única fonte de verdade para todo o ciclo da PME.",
+      desc: "DRE, Balanço, DFC e +40 indicadores conectados — uma única fonte de verdade para todo o ciclo da empresa.",
     },
     {
       icon: ShieldCheck,
@@ -285,28 +385,28 @@ function FeatureGrid() {
     },
     {
       icon: Gauge,
-      t: "Monte Carlo",
-      d: "Probabilidade de cada cenário. Decisão com lastro estatístico.",
+      t: "Simulador de Cenários",
+      d: "Mexa nas alavancas e veja o impacto recalculado em tempo real.",
     },
     {
       icon: ShieldCheck,
-      t: "CBS / IBS",
-      d: "Impacto da Reforma Tributária no preço, na margem e no caixa.",
+      t: "Split Payment",
+      d: "Impacto do novo modelo de recolhimento CBS/IBS no caixa diário.",
     },
     {
-      icon: Calculator,
-      t: "Calculadoras Trabalhistas",
-      d: "CLT vs PJ, rescisão, 13º, férias, horas extras. Exporta PDF.",
-    },
-    {
-      icon: Brain,
-      t: "Diagnóstico IA",
-      d: "Relatório executivo gerado por IA — pronto para entregar ao cliente.",
+      icon: LineChart,
+      t: "Fluxo de Caixa",
+      d: "DFC projetada, gaps, cobertura e capacidade de pagamento.",
     },
     {
       icon: FileSpreadsheet,
-      t: "Compartilhamento",
-      d: "Link público auditável para o cliente PME acompanhar em tempo real.",
+      t: "Análise de Balanço",
+      d: "Liquidez, endividamento, ciclo e estrutura de capital — auditados.",
+    },
+    {
+      icon: Calculator,
+      t: "Dashboard Gráfico",
+      d: "KPIs visuais, comparativos e séries históricas em uma única tela.",
     },
   ];
   return (
@@ -332,45 +432,110 @@ function FeatureGrid() {
 }
 
 /* ============================================================
+   MÉTRICAS — Faixa de números
+   ============================================================ */
+function MetricsBand() {
+  const metrics = [
+    { n: "+40", l: "Indicadores", s: "calculados automaticamente" },
+    { n: "5 min", l: "Primeira análise", s: "do cadastro ao diagnóstico" },
+    { n: "100%", l: "Reforma Tributária", s: "CBS/IBS sob LC 214/2025" },
+    { n: "0", l: "Erros de fórmula", s: "engine versionada e auditada" },
+  ];
+  return (
+    <section className="relative border-b border-border/50 py-20">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background:
+            "linear-gradient(180deg, color-mix(in oklab, var(--primary) 6%, transparent), transparent)",
+        }}
+      />
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {metrics.map((m) => (
+            <div key={m.l} className="text-center sm:text-left">
+              <div className="text-5xl font-semibold tracking-tight text-primary">{m.n}</div>
+              <div className="mt-2 text-sm font-semibold text-foreground">{m.l}</div>
+              <div className="text-xs text-muted-foreground">{m.s}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
    COMO FUNCIONA
    ============================================================ */
 function HowItWorks() {
   const passos = [
     {
       n: "01",
-      t: "Importe ou crie",
-      d: "Cadastre os dados da PME — receita, custos, regime, ativos. Em minutos, não dias.",
+      icon: FileSpreadsheet,
+      t: "Cadastre seus dados",
+      d: "Receita, custos, regime, ativos. Importa de Excel ou preenche guiado — em minutos.",
     },
     {
       n: "02",
+      icon: Gauge,
       t: "Simule cenários",
-      d: "Mexa nas alavancas: preço, custo, capital de giro, dívida. O sistema recalcula tudo em tempo real.",
+      d: "Mexa nas alavancas: preço, custo, capital de giro, dívida. Tudo recalcula em tempo real.",
     },
     {
       n: "03",
-      t: "Entregue a decisão",
-      d: "Exporte relatório PDF com identidade visual, ou envie link público auditável ao cliente.",
+      icon: Brain,
+      t: "Receba o diagnóstico",
+      d: "A IA explica o que está acontecendo, o porquê e quais alavancas mexer para melhorar.",
+    },
+    {
+      n: "04",
+      icon: Sparkles,
+      t: "Decida ou entregue",
+      d: "Aja na sua empresa, ou exporte PDF / link público para o seu cliente acompanhar.",
     },
   ];
   return (
-    <section id="como-funciona" className="border-b border-border/50 py-24">
+    <section id="como-funciona" className="border-b border-border/50 bg-card/30 py-24">
       <div className="mx-auto max-w-6xl px-6">
-        <SectionEyebrow>Como funciona</SectionEyebrow>
-        <h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          Do dado bruto ao diagnóstico em três passos.
-        </h2>
+        <div className="max-w-2xl">
+          <SectionEyebrow>Como funciona</SectionEyebrow>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            Do dado bruto à decisão em <span className="text-primary">quatro passos</span>.
+          </h2>
+          <p className="mt-4 text-base text-muted-foreground">
+            Sem curva de aprendizado. Sem manual de 200 páginas. O sistema te guia do zero ao relatório executivo.
+          </p>
+        </div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {passos.map((p, i) => (
-            <div key={p.n} className="relative rounded-xl border border-border bg-card p-7">
-              <div className="text-5xl font-semibold tracking-tighter text-primary/40">{p.n}</div>
-              <h3 className="mt-3 text-lg font-semibold text-foreground">{p.t}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.d}</p>
-              {i < passos.length - 1 && (
-                <ArrowRight className="absolute -right-3 top-1/2 hidden h-5 w-5 -translate-y-1/2 text-border md:block" />
-              )}
-            </div>
-          ))}
+        <div className="relative mt-14">
+          {/* linha conectora desktop */}
+          <div
+            aria-hidden
+            className="absolute left-0 right-0 top-[2.75rem] hidden h-px md:block"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent, color-mix(in oklab, var(--primary) 35%, transparent), transparent)",
+            }}
+          />
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {passos.map((p) => (
+              <div
+                key={p.n}
+                className="group relative rounded-2xl border border-border bg-background/60 p-6 transition hover:-translate-y-1 hover:border-primary/40"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-card text-primary">
+                    <p.icon className="h-5 w-5" />
+                  </div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary/70">Passo {p.n}</div>
+                </div>
+                <h3 className="mt-5 text-base font-semibold text-foreground">{p.t}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.d}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -387,28 +552,55 @@ function ComparisonTable() {
     ["Reforma Tributária CBS/IBS", "Cálculo manual", "Automático"],
     ["Diagnóstico executivo", "Você escreve", "IA gera, você revisa"],
     ["Relatório PDF com sua marca", "Edição manual", "Um clique"],
-    ["Compartilhamento ao cliente", "Anexo por e-mail", "Link público auditável"],
+    ["Compartilhamento", "Anexo por e-mail", "Link público auditável"],
+    ["Atualização tributária", "Você acompanha", "Engine atualiza por você"],
   ];
   return (
-    <section className="border-b border-border/50 bg-card/30 py-24">
+    <section className="border-b border-border/50 py-24">
       <div className="mx-auto max-w-5xl px-6">
-        <SectionEyebrow>Comparativo</SectionEyebrow>
-        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          Planilha Excel vs. Consultor com FinancePRO.
-        </h2>
+        <div className="text-center">
+          <SectionEyebrow>Comparativo</SectionEyebrow>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            Planilha Excel <span className="text-muted-foreground">vs.</span>{" "}
+            <span className="text-primary">FinancePRO</span>.
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
+            A diferença entre montar relatório e tomar decisão.
+          </p>
+        </div>
 
-        <div className="mt-10 overflow-hidden rounded-xl border border-border">
-          <div className="grid grid-cols-[1.6fr_1fr_1fr] bg-background/40 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            <div className="border-b border-border p-4">Critério</div>
-            <div className="border-b border-l border-border p-4 text-center">Planilha</div>
-            <div className="border-b border-l border-border bg-primary/10 p-4 text-center text-primary">FinancePRO</div>
+        <div className="relative mt-12 overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-primary/5">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute right-0 top-0 h-full w-1/2"
+            style={{
+              background:
+                "radial-gradient(60% 50% at 70% 50%, color-mix(in oklab, var(--primary) 8%, transparent), transparent)",
+            }}
+          />
+          <div className="grid grid-cols-[1.6fr_1fr_1fr] bg-background/60 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <div className="border-b border-border p-5">Critério</div>
+            <div className="border-b border-l border-border p-5 text-center">Planilha</div>
+            <div className="border-b border-l border-border bg-primary/10 p-5 text-center text-primary">
+              FinancePRO
+            </div>
           </div>
           {linhas.map((l, i) => (
             <div key={i} className="grid grid-cols-[1.6fr_1fr_1fr] text-sm last:border-b-0">
-              <div className="border-b border-border p-4 text-foreground/90">{l[0]}</div>
-              <div className="border-b border-l border-border p-4 text-center text-muted-foreground">{l[1]}</div>
-              <div className="border-b border-l border-border bg-primary/5 p-4 text-center font-medium text-primary">
-                {l[2]}
+              <div className="border-b border-border p-5 text-foreground/90">{l[0]}</div>
+              <div className="flex items-center justify-center border-b border-l border-border p-5 text-center text-muted-foreground">
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-[10px] text-destructive">
+                    ✕
+                  </span>
+                  {l[1]}
+                </span>
+              </div>
+              <div className="flex items-center justify-center border-b border-l border-border bg-primary/5 p-5 text-center font-medium text-primary">
+                <span className="inline-flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {l[2]}
+                </span>
               </div>
             </div>
           ))}
@@ -423,7 +615,7 @@ function ComparisonTable() {
    ============================================================ */
 function AuthorityBlock() {
   return (
-    <section className="border-b border-border/50 py-24">
+    <section className="border-b border-border/50 bg-card/30 py-24">
       <div className="mx-auto max-w-5xl px-6">
         <div className="overflow-hidden rounded-2xl border border-border bg-card">
           <div className="grid gap-0 md:grid-cols-[1fr_1.4fr]">
@@ -449,19 +641,20 @@ function AuthorityBlock() {
             <div className="p-10">
               <SectionEyebrow>Construído por quem vive isso</SectionEyebrow>
               <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                Um sistema desenhado por um consultor CVM — para consultores CVM.
+                Engenharia financeira de banca — feita para a realidade da PME brasileira.
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
                 O FinancePRO nasceu dentro da{" "}
-                <strong className="text-foreground">GZ Consultoria Financeira & Investimentos</strong> para resolver, na
-                prática, o que toda planilha falha: dar ao consultor a velocidade, o rigor e a profundidade que a PME
-                brasileira merece — agora com a Reforma Tributária no jogo.
+                <strong className="text-foreground">GZ Consultoria Financeira & Investimentos</strong> para resolver o
+                que toda planilha falha: dar a empresários, consultores e gestores a mesma profundidade de análise que
+                grandes corporações têm — sem o custo de um time de CFO.
               </p>
               <ul className="mt-6 space-y-2 text-sm text-foreground/90">
                 {[
                   "Engine financeira auditada e versionada",
                   "Cálculos compatíveis com LC 214/2025 (CBS / IBS)",
                   "IA com prompt versionado para rastreabilidade CVM",
+                  "Pensado para quem decide — não só para quem audita",
                 ].map((i) => (
                   <li key={i} className="flex items-start gap-2">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -483,32 +676,51 @@ function AuthorityBlock() {
 function SocialProof() {
   const cases = [
     {
+      q: "Eu sou o dono, não sou financeiro. Pela primeira vez entendi o que cada número significa — e o que mudar.",
+      a: "Sócio-fundador — Indústria, PR",
+      icon: Building2,
+    },
+    {
       q: "Reduzi o tempo de fechamento mensal de três dias para uma manhã. O cliente passou a entender o que vê.",
       a: "Consultor Financeiro — SP",
+      icon: Briefcase,
     },
     {
       q: "O módulo da Reforma Tributária sozinho já paga o sistema. Cheguei na reunião com cálculo, não com achismo.",
       a: "Contador Sênior — RS",
-    },
-    {
-      q: "O diagnóstico de IA virou meu rascunho executivo. Edito, assino e entrego. Game changer.",
-      a: "Family Office — MG",
+      icon: Users,
     },
   ];
   return (
-    <section className="border-b border-border/50 bg-card/30 py-24">
+    <section className="border-b border-border/50 py-24">
       <div className="mx-auto max-w-6xl px-6">
-        <SectionEyebrow>Prova social</SectionEyebrow>
-        <h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          Quem usa, não volta para a planilha.
-        </h2>
+        <div className="max-w-2xl">
+          <SectionEyebrow>Prova social</SectionEyebrow>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            Quem usa, <span className="text-primary">não volta</span> para a planilha.
+          </h2>
+        </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           {cases.map((c, i) => (
-            <figure key={i} className="flex h-full flex-col rounded-xl border border-border bg-card p-7">
+            <figure
+              key={i}
+              className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card p-7 transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10"
+            >
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-0 transition group-hover:opacity-100"
+                style={{
+                  background:
+                    "radial-gradient(circle, color-mix(in oklab, var(--primary) 22%, transparent), transparent 70%)",
+                }}
+              />
               <Quote className="h-7 w-7 text-primary/60" />
               <blockquote className="mt-4 flex-1 text-sm leading-relaxed text-foreground/90">"{c.q}"</blockquote>
-              <figcaption className="mt-5 border-t border-border pt-4 text-xs font-medium text-muted-foreground">
-                {c.a}
+              <figcaption className="mt-6 flex items-center gap-3 border-t border-border pt-5">
+                <div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary">
+                  <c.icon className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">{c.a}</span>
               </figcaption>
             </figure>
           ))}
@@ -524,6 +736,10 @@ function SocialProof() {
 function FaqAccordion() {
   const faqs = [
     {
+      q: "Preciso ser da área financeira para usar?",
+      a: "Não. O FinancePRO foi desenhado para traduzir números em decisão — qualquer empresário, consultor ou gestor consegue operar com fluxo guiado e diagnóstico em linguagem clara.",
+    },
+    {
       q: "Preciso instalar alguma coisa?",
       a: "Não. O FinancePRO roda 100% no navegador. Login, importa os dados e começa a analisar.",
     },
@@ -536,7 +752,7 @@ function FaqAccordion() {
       a: "Sim. O motor tributário acompanha a LC 214/2025 e as fases de transição CBS/IBS (2026-2033), incluindo Split Payment e Cashback.",
     },
     {
-      q: "Posso usar com vários clientes?",
+      q: "Posso usar com vários clientes (ou várias empresas)?",
       a: "Sim. Você cria quantos cenários e empresas quiser, cada um com seu próprio conjunto de dados, relatórios e link de compartilhamento.",
     },
     {
@@ -550,7 +766,7 @@ function FaqAccordion() {
   ];
   const [open, setOpen] = useState<number | null>(0);
   return (
-    <section className="border-b border-border/50 py-24">
+    <section className="border-b border-border/50 bg-card/30 py-24">
       <div className="mx-auto max-w-3xl px-6">
         <SectionEyebrow>Perguntas frequentes</SectionEyebrow>
         <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
@@ -585,7 +801,7 @@ function FaqAccordion() {
    ============================================================ */
 function FinalCta() {
   return (
-    <section className="relative overflow-hidden py-24">
+    <section className="relative overflow-hidden py-28">
       <div
         aria-hidden
         className="absolute inset-0 -z-10"
@@ -594,14 +810,26 @@ function FinalCta() {
             "radial-gradient(80% 60% at 50% 50%, color-mix(in oklab, var(--primary) 22%, transparent), transparent 70%)",
         }}
       />
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-px"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent, color-mix(in oklab, var(--primary) 50%, transparent), transparent)",
+        }}
+      />
       <div className="mx-auto max-w-3xl px-6 text-center">
-        <h2 className="text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl">
-          Pare de entregar planilha.
+        <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
+          <Clock className="h-3.5 w-3.5" />
+          5 minutos até sua primeira análise
+        </span>
+        <h2 className="mt-6 text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl">
+          Pare de analisar planilhas.
           <br />
-          <span className="text-primary">Comece a entregar decisão.</span>
+          <span className="text-primary">Comece a tomar decisões.</span>
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-          Em menos de 5 minutos você roda sua primeira análise — sem cartão de crédito, sem fricção.
+          Em menos de 5 minutos você roda sua primeira análise e gera um relatório baseado em dados.
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <Link
@@ -617,6 +845,20 @@ function FinalCta() {
           >
             Já tenho conta
           </Link>
+        </div>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            Engine auditada
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Lock className="h-4 w-4 text-primary" />
+            Dados criptografados
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Zap className="h-4 w-4 text-primary" />
+            Sem cartão de crédito
+          </span>
         </div>
       </div>
     </section>
@@ -701,9 +943,11 @@ export function LandingPage() {
       <Header />
       <main>
         <Hero />
+        <AudienceStrip />
         <ProblemAgitation />
         <SolutionPillars />
         <FeatureGrid />
+        <MetricsBand />
         <HowItWorks />
         <ComparisonTable />
         <AuthorityBlock />
