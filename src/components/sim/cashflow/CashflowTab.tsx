@@ -487,6 +487,5 @@ export function CashflowTab() {
       </div>
       )}
     </div>
-    </div>
   );
 }
