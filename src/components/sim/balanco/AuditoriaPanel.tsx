@@ -139,12 +139,12 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         grupo: "Imobilizado",
         rubrica: "(−) Depreciação acumulada",
         inputs: [
-          { label: "Depreciação acum. abertura", origem: "Capital → Abertura", valor: n(ab.depreciacaoAcumulada) },
+          { label: "Depreciação acum. abertura", origem: ssot.depreciacaoAcumulada.origem, valor: ssot.depreciacaoAcumulada.value },
           { label: "Depreciação mensal × 12", origem: "Capital", valor: (cap.depreciacaoMensal || 0) * 12 },
           { label: "Depreciação das ativações", origem: "Capital → Ativações", valor: depAtiv },
         ],
         formula: "DepAcum_fim = abertura + depMensal×12 + Σ(CAPEX/vu × meses)",
-        resultado: n(ab.depreciacaoAcumulada) + depPeriodo,
+        resultado: ssot.depreciacaoAcumulada.value + depPeriodo,
       },
       // INTANGÍVEL
       {
