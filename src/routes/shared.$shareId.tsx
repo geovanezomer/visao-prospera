@@ -129,6 +129,30 @@ function SharedReport() {
     return () => window.removeEventListener("keydown", onKey, true);
   }, []);
 
+  // Bloqueia menu de contexto e ações de copiar/recortar nesta rota,
+  // reforçando a percepção de conteúdo somente leitura.
+  useEffect(() => {
+    const onContext = (e: MouseEvent) => {
+      e.preventDefault();
+      toast.info("Menu de contexto desabilitado nesta visualização");
+    };
+    const onClipboard = (e: ClipboardEvent) => {
+      // Permite copiar texto selecionado naturalmente; bloqueia recorte/colagem.
+      if (e.type === "cut" || e.type === "paste") {
+        e.preventDefault();
+        toast.info("Ação desabilitada em modo somente leitura");
+      }
+    };
+    document.addEventListener("contextmenu", onContext);
+    document.addEventListener("cut", onClipboard);
+    document.addEventListener("paste", onClipboard);
+    return () => {
+      document.removeEventListener("contextmenu", onContext);
+      document.removeEventListener("cut", onClipboard);
+      document.removeEventListener("paste", onClipboard);
+    };
+  }, []);
+
   const tabs: { key: TabKey; label: string }[] = [
     { key: "dre", label: "DRE" },
     { key: "balanco", label: "Balanço" },
@@ -156,11 +180,11 @@ function SharedReport() {
               · {data.companyName} · somente leitura
             </span>
           </div>
-          <Link to="/">
-            <Button size="sm" variant="ghost" className="h-7 text-xs">
-              Abrir FinnancePRO
-            </Button>
-          </Link>
+          {/*
+            Link para a tela interna do FinnancePRO foi removido nesta rota:
+            o destinatário do compartilhamento não deve ser direcionado para
+            o app de edição. Mantemos apenas o rótulo de contexto.
+          */}
         </div>
 
         {/* Tabs horizontais simples (sem sidebar, sem ações de edição). */}
