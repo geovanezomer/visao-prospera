@@ -22,21 +22,24 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
         <SectionTitle hint="Caixa pelo método direto. Receitas e CPV usam PMR/PMP da aba Receitas. Impostos pagos no mês seguinte ao da competência.">
           Demonstração do Fluxo de Caixa — método direto
         </SectionTitle>
-        {/* Toggle de período — em modo somente leitura permitimos apenas Mensal e Trimestral */}
+        {/* Toggle de período — em readOnly o <fieldset disabled> da rota /shared
+            desabilita <button>; usamos <div role="button"> para manter clicável. */}
         <div className="inline-flex rounded-md border border-border/60 bg-card p-0.5 text-xs">
           {((readOnly ? ["mensal", "trimestral"] : ["mensal", "trimestral", "anual"]) as Period[]).map((p) => (
-            <button
+            <div
               key={p}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => setPeriod(p)}
-              className={`rounded px-3 py-1 capitalize transition-colors ${
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPeriod(p); } }}
+              className={`cursor-pointer select-none rounded px-3 py-1 capitalize transition-colors ${
                 period === p
                   ? "bg-primary text-primary-foreground font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {p}
-            </button>
+            </div>
           ))}
         </div>
       </div>
