@@ -54,7 +54,7 @@ function Hero() {
         </h1>
 
         <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-          Impactos da Reforma Tributária e SplitPaymente, DRE, Balanço, Fluxo de Caixa,{" "}
+          Impactos da Reforma Tributária e Split Payment, DRE, Balanço, Fluxo de Caixa,{" "}
           <strong className="text-foreground">+40 indicadores</strong> em um único painel inteligente — com{" "}
           <strong className="text-foreground">Inteligência Artificial</strong> que entrega diagnósticos e relatórios em
           tempo real.
@@ -79,7 +79,7 @@ function Hero() {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <ShieldCheck className="h-4 w-4 text-primary" />
-            Engine auditada
+            Engine Atualizada Mensalmente
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Lock className="h-4 w-4 text-primary" />
