@@ -39,7 +39,7 @@ function Hero() {
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(70% 55% at 50% 0%, color-mix(in oklab, var(--primary) 38%, transparent) 0%, color-mix(in oklab, var(--primary) 18%, transparent) 35%, transparent 75%), radial-gradient(55% 45% at 85% 15%, color-mix(in oklab, var(--primary) 25%, transparent) 0%, transparent 70%), radial-gradient(50% 40% at 15% 20%, color-mix(in oklab, var(--primary) 20%, transparent) 0%, transparent 70%)",
+            "radial-gradient(60% 50% at 50% 0%, color-mix(in oklab, var(--primary) 18%, transparent), transparent 70%), radial-gradient(50% 40% at 80% 20%, color-mix(in oklab, var(--info) 12%, transparent), transparent 70%)",
         }}
       />
       <div className="mx-auto max-w-4xl px-6 pt-20 pb-20 text-center lg:pt-28 lg:pb-24">
@@ -54,7 +54,7 @@ function Hero() {
         </h1>
 
         <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-          DRE, Balanço, Fluxo de Caixa, impactos da Reforma Tributária e{" "}
+          Impactos da Reforma Tributária e SplitPaymente, DRE, Balanço, Fluxo de Caixa,{" "}
           <strong className="text-foreground">+40 indicadores</strong> em um único painel inteligente — com{" "}
           <strong className="text-foreground">Inteligência Artificial</strong> que entrega diagnósticos e relatórios em
           tempo real.
@@ -620,7 +620,7 @@ function PricingSection() {
   ];
 
   return (
-    <section id="planos" className="scroll-mt-20 border-b border-border/50 py-24">
+    <section className="border-b border-border/50 py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center">
           <SectionEyebrow>Planos</SectionEyebrow>
@@ -974,7 +974,7 @@ function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/landing" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
             F
           </div>
@@ -986,9 +986,6 @@ function Header() {
           </a>
           <a href="#como-funciona" className="transition hover:text-foreground">
             Como funciona
-          </a>
-          <a href="#planos" className="transition hover:text-foreground">
-            Planos
           </a>
           <a href="#faq" className="transition hover:text-foreground">
             FAQ
@@ -1002,7 +999,7 @@ function Header() {
             Entrar
           </Link>
           <Link
-            to="/login"
+            to="/signup"
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           >
             Começar
