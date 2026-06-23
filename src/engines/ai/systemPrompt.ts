@@ -277,7 +277,7 @@ export function buildSystemPromptParts(opts: {
       stableParts.push(
         "",
         `MODO TOOL-CALLING (META) ATIVO: você enxerga APENAS duas funções — \`tool_search\` e \`tool_invoke\`.
-- Use \`tool_search({ query, category? })\` para descobrir a tool certa (categorias: finance, simulator, benchmark, macro, scenarios, actions, compliance, reports, memory). Os nomes citados nas REGRAS acima (get_resumo_executivo, get_indicadores, simular_alavanca, etc.) continuam válidos — busque por eles.
+- Use \`tool_search({ query, category? })\` para descobrir a tool certa (categorias: finance, simulator, benchmark, macro, scenarios, actions, compliance, reports, memory, calculadoras, auditoria, arquivo). Os nomes citados nas REGRAS acima (get_resumo_executivo, get_indicadores, simular_alavanca, etc.) continuam válidos — busque por eles. Para análises holísticas cruzando seções, use a categoria \`arquivo\` (get_arquivo_resumo → get_arquivo_secao → get_arquivo_completo) que expõe o dossiê .finnance inteiro.
 - Use \`tool_invoke({ name, arguments })\` para executar. A resposta vem em JSON \`{ name, category, content }\` — leia o campo \`content\` (markdown com os números) e cite a fonte exata.
 - Faça invokes em paralelo quando precisar de várias tools. Não invente — chame a função.`,
       );

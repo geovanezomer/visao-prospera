@@ -24,6 +24,7 @@ import { complianceTools } from "./compliance";
 import { memoryTools } from "./memory";
 import { calculadorasTools } from "./calculadoras";
 import { auditoriaTools } from "./auditoria";
+import { arquivoTools } from "./arquivo";
 
 export type {
   ToolDef,
@@ -46,6 +47,7 @@ const MODULES: ToolModule[] = [
   memoryTools,
   calculadorasTools,
   auditoriaTools,
+  arquivoTools,
 ];
 
 export const TOOLS: ToolDef[] = MODULES.flatMap((m) => m.defs);
