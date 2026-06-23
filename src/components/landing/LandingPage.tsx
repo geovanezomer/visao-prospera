@@ -57,7 +57,7 @@ function Hero() {
           Impactos da Reforma Tributária e Split Payment, DRE, Balanço, Fluxo de Caixa,{" "}
           <strong className="text-foreground">+40 indicadores</strong> em um único painel inteligente — com{" "}
           <strong className="text-foreground">Inteligência Artificial</strong> que entrega diagnósticos e relatórios em
-          tempo real.
+          PDF em tempo real.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
