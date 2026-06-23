@@ -144,7 +144,7 @@ export function saveScenario(
     const idx = all.findIndex((s) => s.id === rec.id);
     if (idx >= 0) {
       all[idx] = { ...all[idx], ...rec, updatedAt: now } as ScenarioRecord;
-      localStorage.setItem(KEY(company), JSON.stringify(all));
+      saveKeySync(KEY(company), all);
       emit();
       return all[idx];
     }
@@ -156,7 +156,7 @@ export function saveScenario(
     updatedAt: now,
   };
   all.unshift(newRec);
-  localStorage.setItem(KEY(company), JSON.stringify(all));
+  saveKeySync(KEY(company), all);
   emit();
   return newRec;
 }
@@ -167,7 +167,7 @@ export function deleteScenario(company: string, id: string) {
   const idx = all.findIndex((s) => s.id === id);
   if (idx < 0) return;
   all[idx] = { ...all[idx], isDeleted: true, updatedAt: Date.now() };
-  localStorage.setItem(KEY(company), JSON.stringify(all));
+  saveKeySync(KEY(company), all);
   emit();
 }
 
@@ -176,7 +176,7 @@ export function restoreScenario(company: string, id: string) {
   const idx = all.findIndex((s) => s.id === id);
   if (idx < 0) return;
   all[idx] = { ...all[idx], isDeleted: false, updatedAt: Date.now() };
-  localStorage.setItem(KEY(company), JSON.stringify(all));
+  saveKeySync(KEY(company), all);
   emit();
 }
 
@@ -233,7 +233,7 @@ export function archiveYearAsHistorical(
     const pruneIds = new Set(toPrune.map((s) => s.id));
     const next = readRaw(company).filter((s) => !pruneIds.has(s.id));
     try {
-      localStorage.setItem(KEY(company), JSON.stringify(next));
+      saveKeySync(KEY(company), next);
       emit();
     } catch {
       /* quota — mantém como está */
