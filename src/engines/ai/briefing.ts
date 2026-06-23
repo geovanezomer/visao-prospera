@@ -34,7 +34,7 @@ export function buildOpeningBriefing(state: AppState, sections?: SnapshotSection
     const company = state.companyName || "a empresa";
     const dre = sections?.data?.dre ?? buildDRE(state, resolveEffectiveRegime(state)).dre;
     const ind = sections?.data?.ind ?? calcIndicators(state, dre);
-    const cf = buildCashFlow(state);
+    const cf = sections?.data?.cf ?? buildCashFlow(state);
     const health = sections?.data?.health ?? computeHealth(state);
     const alerts = sections?.data?.alerts ?? diagnose(state, dre, ind);
     const criticos = alerts.filter((a) => a.level === "danger");
