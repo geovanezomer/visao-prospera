@@ -46,13 +46,13 @@ function Hero() {
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
               <Sparkles className="h-3.5 w-3.5" />
-              Plataforma para Consultores Financeiros
+              Finanças Empresariais para Não-Financeiros
             </span>
 
             <h1 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
               O <span className="text-primary">Raio-X financeiro</span> que
-              transforma consultor em <span className="text-primary">CFO</span>{" "}
-              da PME.
+              transforma você em um <span className="text-primary">CFO</span>{" "}
+              de alto nível.
             </h1>
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
