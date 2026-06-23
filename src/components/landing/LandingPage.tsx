@@ -83,7 +83,7 @@ function Hero() {
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Lock className="h-4 w-4 text-primary" />
-            Dados criptografados
+            IndexedDB - Dados ficam no seu navegador
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Zap className="h-4 w-4 text-primary" />
