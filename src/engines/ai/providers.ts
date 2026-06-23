@@ -354,11 +354,11 @@ export function saveConfig(cfg: AIConfig) {
     const persisted = { ...safe, soulVersion: SOUL_DEFAULTS_VERSION };
     if (safe.persistKey) {
       sessionStorage.removeItem(SESSION_KEY_BAG);
-      localStorage.setItem(CFG_KEY, JSON.stringify(persisted));
+      saveKeySync(CFG_KEY, persisted);
     } else {
       sessionStorage.setItem(SESSION_KEY_BAG, safe.apiKey || "");
       // grava sem a chave
-      localStorage.setItem(CFG_KEY, JSON.stringify({ ...persisted, apiKey: "" }));
+      saveKeySync(CFG_KEY, { ...persisted, apiKey: "" });
     }
   } catch {
     // storage indisponível (modo privado / quota) — config segue só em memória
@@ -376,10 +376,11 @@ export function resetAIStorage() {
   try {
     sessionStorage.removeItem(SESSION_KEY_BAG);
     const prefixes = [CFG_KEY, "gz-finance-ai-threads-", "gz-finance-ai-chat-"];
+    // Itera localStorage (espelho sync) e remove em ambas as camadas via removeKey.
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
       if (key && prefixes.some((prefix) => key === prefix || key.startsWith(prefix))) {
-        localStorage.removeItem(key);
+        removeKey(key);
       }
     }
   } catch {
