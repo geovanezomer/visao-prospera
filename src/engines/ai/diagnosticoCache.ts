@@ -61,5 +61,5 @@ export function setCached(key: string, result: DiagnosticoResult): void {
 
 export function clearCache(): void {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(STORAGE_KEY);
+  removeKey(STORAGE_KEY);
 }
