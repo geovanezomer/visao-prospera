@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { useFinance, usePatchCashflow } from "@/engines/finance/AppStateContext";
+import { useFinance, usePatchCashflow, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
 import { fmtBRL, MESES } from "@/engines/finance/format";
 import { buildCashFlow } from "@/engines/finance/cashflow";
