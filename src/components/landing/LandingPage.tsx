@@ -30,6 +30,23 @@ import { useState } from "react";
    HERO
    ============================================================ */
 function Hero() {
+  const pilares = [
+    {
+      icon: BarChart3,
+      title: "Raio-X Financeiro",
+      desc: "DRE, Balanço, DFC e +40 indicadores conectados — uma única fonte de verdade.",
+    },
+    {
+      icon: ShieldCheck,
+      title: "Reforma CBS / IBS",
+      desc: "Impactos da LC 214/2025 sobre margem, preço e caixa — atualizados a cada fase.",
+    },
+    {
+      icon: Brain,
+      title: "IA Estratégica",
+      desc: "Diagnóstico executivo treinado em CFO PME brasileira. Sugere alavancas reais.",
+    },
+  ];
   return (
     <section className="relative overflow-hidden border-b border-border/50">
       {/* glow decorativo */}
@@ -38,140 +55,85 @@ function Hero() {
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(60% 50% at 20% 0%, color-mix(in oklab, var(--primary) 18%, transparent), transparent 70%), radial-gradient(50% 40% at 90% 10%, color-mix(in oklab, var(--info) 14%, transparent), transparent 70%)",
+            "radial-gradient(60% 50% at 50% 0%, color-mix(in oklab, var(--primary) 18%, transparent), transparent 70%), radial-gradient(50% 40% at 80% 20%, color-mix(in oklab, var(--info) 12%, transparent), transparent 70%)",
         }}
       />
-      <div className="mx-auto max-w-6xl px-6 pt-20 pb-24 lg:pt-28 lg:pb-32">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
-              <Sparkles className="h-3.5 w-3.5" />
-              Finanças empresariais para não-financeiros
-            </span>
+      <div className="mx-auto max-w-4xl px-6 pt-20 pb-20 text-center lg:pt-28 lg:pb-24">
+        <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
+          <Sparkles className="h-3.5 w-3.5" />
+          Finanças empresariais para não-financeiros
+        </span>
 
-            <h1 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              O <span className="text-primary">Raio-X financeiro</span> que transforma você em um{" "}
-              <span className="text-primary">CFO de alto nível</span>.
-            </h1>
+        <h1 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+          O <span className="text-primary">Raio-X financeiro</span> que transforma você em um{" "}
+          <span className="text-primary">CFO de alto nível</span>.
+        </h1>
 
-            <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              DRE, Balanço, Fluxo de Caixa, impactos da Reforma Tributária e{" "}
-              <strong className="text-foreground">+40 indicadores</strong> em um único painel inteligente — com{" "}
-              <strong className="text-foreground">IA</strong> que entrega diagnósticos e relatórios em tempo real.
-            </p>
+        <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+          DRE, Balanço, Fluxo de Caixa, impactos da Reforma Tributária e{" "}
+          <strong className="text-foreground">+40 indicadores</strong> em um único painel inteligente — com{" "}
+          <strong className="text-foreground">IA</strong> que entrega diagnósticos e relatórios em tempo real.
+        </p>
 
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                to="/signup"
-                className="group inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:shadow-primary/40"
-              >
-                Começar gratuitamente
-                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-              </Link>
-              <a
-                href="#como-funciona"
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-5 py-3 text-sm font-medium text-foreground transition hover:bg-card"
-              >
-                Ver como funciona
-              </a>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            to="/signup"
+            className="group inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:shadow-primary/40"
+          >
+            Começar gratuitamente
+            <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+          </Link>
+          <a
+            href="#como-funciona"
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-5 py-3 text-sm font-medium text-foreground transition hover:bg-card"
+          >
+            Ver como funciona
+          </a>
+        </div>
+
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            Engine auditada
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Lock className="h-4 w-4 text-primary" />
+            Dados criptografados
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Zap className="h-4 w-4 text-primary" />
+            Sem cartão de crédito
+          </span>
+        </div>
+
+        {/* Pilares integrados à Hero */}
+        <div className="mt-16 grid gap-4 text-left sm:grid-cols-3">
+          {pilares.map((p) => (
+            <div
+              key={p.title}
+              className="group relative overflow-hidden rounded-xl border border-border bg-card/60 p-5 backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card"
+            >
+              <div
+                aria-hidden
+                className="absolute inset-x-0 top-0 h-px"
+                style={{
+                  background:
+                    "linear-gradient(90deg, transparent, color-mix(in oklab, var(--primary) 60%, transparent), transparent)",
+                }}
+              />
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary">
+                <p.icon className="h-5 w-5" />
+              </div>
+              <h3 className="mt-4 text-sm font-semibold text-foreground">{p.title}</h3>
+              <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{p.desc}</p>
             </div>
-
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                Engine auditada
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Lock className="h-4 w-4 text-primary" />
-                Dados criptografados
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Zap className="h-4 w-4 text-primary" />
-                Sem cartão de crédito
-              </span>
-            </div>
-          </div>
-
-          {/* mockup decorativo */}
-          <HeroMockup />
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-function HeroMockup() {
-  return (
-    <div className="relative">
-      <div
-        aria-hidden
-        className="absolute -inset-4 -z-10 rounded-3xl opacity-50 blur-2xl"
-        style={{
-          background:
-            "linear-gradient(135deg, color-mix(in oklab, var(--primary) 30%, transparent), color-mix(in oklab, var(--info) 20%, transparent))",
-        }}
-      />
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
-        <div className="flex items-center gap-1.5 border-b border-border bg-background/40 px-4 py-2.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
-          <span className="h-2.5 w-2.5 rounded-full bg-warning/60" />
-          <span className="h-2.5 w-2.5 rounded-full bg-success/60" />
-          <span className="ml-3 text-[11px] text-muted-foreground">financepro.app / dashboard</span>
-        </div>
-        <div className="space-y-4 p-5">
-          {/* KPIs */}
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { l: "Receita", v: "R$ 4,2M", t: "+18%" },
-              { l: "EBITDA", v: "28%", t: "+3,2pp" },
-              { l: "FCF", v: "R$ 612k", t: "+24%" },
-            ].map((k) => (
-              <div key={k.l} className="rounded-lg border border-border bg-background/40 p-3">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.l}</div>
-                <div className="mt-1 text-lg font-semibold text-foreground">{k.v}</div>
-                <div className="text-[11px] font-medium text-primary">{k.t}</div>
-              </div>
-            ))}
-          </div>
-          {/* chart fake */}
-          <div className="rounded-lg border border-border bg-background/40 p-4">
-            <div className="mb-3 flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>Fluxo de Caixa Projetado</span>
-              <span className="text-primary">12M</span>
-            </div>
-            <svg viewBox="0 0 320 110" className="h-28 w-full">
-              <defs>
-                <linearGradient id="grad" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.5" />
-                  <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M0,80 L30,70 L60,75 L90,55 L120,60 L150,40 L180,45 L210,30 L240,35 L270,20 L300,25 L320,15 L320,110 L0,110 Z"
-                fill="url(#grad)"
-              />
-              <path
-                d="M0,80 L30,70 L60,75 L90,55 L120,60 L150,40 L180,45 L210,30 L240,35 L270,20 L300,25 L320,15"
-                fill="none"
-                stroke="var(--primary)"
-                strokeWidth="2"
-              />
-            </svg>
-          </div>
-          {/* bars */}
-          <div className="grid grid-cols-6 gap-2">
-            {[40, 65, 50, 80, 70, 95].map((h, i) => (
-              <div key={i} className="flex flex-col items-center gap-1">
-                <div className="w-full rounded-sm bg-primary/70" style={{ height: `${h * 0.5}px` }} />
-                <div className="text-[9px] text-muted-foreground">M{i + 1}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ============================================================
    AUDIÊNCIA — Para quem é
