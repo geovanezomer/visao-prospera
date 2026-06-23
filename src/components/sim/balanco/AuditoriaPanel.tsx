@@ -28,7 +28,7 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
   const dre = model.dre;
   const cf = model.cf;
   const cap = state.capital;
-  const ab = cap.abertura ?? {};
+  // `capital.abertura` é consumido via `deriveAbertura` (SSOT) abaixo.
   const balConst = cap.balanco ?? {};
   const imo = balConst.ativoNaoCirculante?.imobilizado ?? {};
   const intg = balConst.ativoNaoCirculante?.intangivel ?? {};
