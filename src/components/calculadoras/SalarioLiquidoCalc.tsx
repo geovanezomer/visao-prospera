@@ -6,7 +6,8 @@
  * Bases: Lei 8.212/91, Lei 9.250/95 (IRRF), tabelas INSS/IRRF 2025.
  */
 import { useMemo, useState } from "react";
-import { Info, RotateCcw, Wallet } from "lucide-react";
+import { Download, Info, RotateCcw, Wallet } from "lucide-react";
+import { exportCalculadoraPDF } from "@/lib/pdfCalculadora";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
