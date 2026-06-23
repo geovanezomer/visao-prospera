@@ -55,7 +55,7 @@ function Hero() {
 
         <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
           Impactos da Reforma Tributária e Split Payment, DRE, Balanço, Fluxo de Caixa,{" "}
-          <strong className="text-foreground">+40 indicadores</strong> em um único painel inteligente — com{" "}
+          <strong className="text-foreground">+40 indicadores</strong> em um único painel — com{" "}
           <strong className="text-foreground">Inteligência Artificial</strong> que entrega diagnósticos e relatórios em
           PDF em tempo real.
         </p>
