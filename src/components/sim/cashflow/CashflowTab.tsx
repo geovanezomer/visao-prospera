@@ -38,6 +38,9 @@ const TOOLTIP_LABEL = { color: "var(--popover-foreground)", fontWeight: 600 } as
 export function CashflowTab() {
   const { state } = useFinance();
   const patchCashflow = usePatchCashflow();
+  // Em modo somente leitura (link compartilhado), escondemos seções
+  // de edição e o gráfico de projeção para focar no resumo.
+  const readOnly = useFinanceReadOnly();
   // Regime efetivo é default em buildCashFlow; memoizar o resultado pesado.
   const cf = useMemo(() => buildCashFlow(state), [state]);
   
