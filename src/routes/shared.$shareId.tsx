@@ -91,20 +91,40 @@ function SharedReport() {
   const noopUpdate = () => {};
   const [activeTab, setActiveTab] = useState<TabKey>("dre");
 
-  // Bloqueia atalhos de edição/salvamento globalmente nesta rota.
-  // Ctrl/Cmd+S, Ctrl/Cmd+O, Ctrl/Cmd+Shift+R viram no-op + toast informativo.
+  // Bloqueia atalhos de edição/salvamento/impressão nesta rota.
+  // Ctrl/Cmd + S/O/P/U/I/J + Ctrl+Shift+R/I/J + F2/F3 viram no-op com toast.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey;
-      if (!mod) return;
       const k = e.key.toLowerCase();
-      if (k === "s" || k === "o" || (k === "r" && e.shiftKey)) {
+
+      // Teclas de edição inline (rename/find): sempre bloqueadas.
+      if (k === "f2") {
+        e.preventDefault();
+        e.stopPropagation();
+        toast.info("Modo somente leitura — edição desabilitada");
+        return;
+      }
+
+      if (!mod) return;
+
+      // Combinações com Ctrl/Cmd que disparam ações de aplicativo:
+      // s=salvar, o=abrir, p=imprimir, u=ver código-fonte, i/j=devtools (shift),
+      // r=reload (shift+r = reset no app principal).
+      const blocked =
+        k === "s" ||
+        k === "o" ||
+        k === "p" ||
+        k === "u" ||
+        (e.shiftKey && (k === "r" || k === "i" || k === "j"));
+
+      if (blocked) {
         e.preventDefault();
         e.stopPropagation();
         toast.info("Modo somente leitura — ações de edição estão desabilitadas");
       }
     };
-    // Capture phase para interceptar antes de qualquer outro listener (ex.: hooks de edição).
+    // Capture phase para interceptar antes de qualquer outro listener.
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
   }, []);
