@@ -79,7 +79,7 @@ function Hero() {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <ShieldCheck className="h-4 w-4 text-primary" />
-            Engine Atualizada Mensalmente
+            Engine com Updates Periódicos
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Lock className="h-4 w-4 text-primary" />
