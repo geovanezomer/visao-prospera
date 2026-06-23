@@ -90,18 +90,24 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
   type Health = ReturnType<typeof computeHealth>;
   type Cards = ReturnType<typeof buildPrescriptiveCards>;
 
-  // SSOT: usa regime efetivo (downgrade automático Simples→Presumido se excedeu limite),
-  // alinhado com TaxTab, IndicatorsTab, ValuationTab e demais consumidores.
-  const effectiveRegime = tryRun(() => resolveEffectiveRegime(state), state.tax.regime);
-  const built = tryRun<BuiltDRE | null>(() => buildDRE(state, effectiveRegime), null);
-  const dre = built?.dre ?? null;
-  const ind = dre ? tryRun<Ind | null>(() => calcIndicators(state, dre), null) : null;
-  const cf = tryRun<CF | null>(() => buildCashFlow(state), null);
-  const val = tryRun<Val | null>(
-    () => buildValuation(state, defaultValuationParams(state.businessType)),
-    null,
-  );
-  const health = tryRun<Health | null>(() => computeHealth(state), null);
+  // SSOT: reaproveita o modelo financeiro memoizado por referência (WeakMap).
+  // Evita refazer buildDRE/calcIndicators/buildCashFlow/buildValuation/computeHealth
+  // quando qualquer aba (Dashboard, Indicadores, etc.) já aqueceu o cache.
+  const model = tryRun(() => getFinancialModelCached(state), null);
+
+  const effectiveRegime =
+    model?.regime ?? tryRun(() => resolveEffectiveRegime(state), state.tax.regime);
+  const dre = model?.dre ?? tryRun<BuiltDRE | null>(() => buildDRE(state, effectiveRegime), null)?.dre ?? null;
+  const ind =
+    model?.ind ?? (dre ? tryRun<Ind | null>(() => calcIndicators(state, dre), null) : null);
+  const cf = model?.cf ?? tryRun<CF | null>(() => buildCashFlow(state), null);
+  const val =
+    model?.val ??
+    tryRun<Val | null>(
+      () => buildValuation(state, defaultValuationParams(state.businessType)),
+      null,
+    );
+  const health = model?.health ?? tryRun<Health | null>(() => computeHealth(state), null);
   const cards = tryRun<Cards>(() => buildPrescriptiveCards(state), [] as Cards);
 
   // ----- premissas -----
