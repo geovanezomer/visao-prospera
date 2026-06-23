@@ -1790,10 +1790,12 @@ function renderDFC(doc: jsPDF, yStart: number, state: AppState, model: Financial
       : [r.label, ...(r.vals ?? []).map(fmtBRL)]),
     rows.map((r) => r.meta),
     {
-      0: { halign: "left", cellWidth: 230 },
-      1: { halign: "right" }, 2: { halign: "right" },
-      3: { halign: "right" }, 4: { halign: "right" },
-      5: { halign: "right", fontStyle: "bold" },
+      0: { halign: "left", cellWidth: 188 },
+      1: { halign: "right", cellWidth: 58 },
+      2: { halign: "right", cellWidth: 58 },
+      3: { halign: "right", cellWidth: 58 },
+      4: { halign: "right", cellWidth: 58 },
+      5: { halign: "right", cellWidth: 63, fontStyle: "bold" },
     },
   );
 }
