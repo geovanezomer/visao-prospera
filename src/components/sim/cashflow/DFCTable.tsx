@@ -11,6 +11,7 @@ import { useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 // Tabela DFC pelo método direto, com agregação mensal/trimestral/anual.
 export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof buildCashFlow> }) {
   const [period, setPeriod] = usePeriodView("trimestral") as [Period, (p: Period) => void];
+  const readOnly = useFinanceReadOnly();
   const annualSnaps = useAnnualSnapshots(3);
   const cols = periodLabels(period);
   const showAnnualComparison = period === "anual" && annualSnaps.length >= 2;
