@@ -148,6 +148,7 @@ const visibleRubricas = (rs: Rubrica[], m: Modo) =>
 // ─────────────────────────── Componente ───────────────────────────
 export function BalancoTab() {
   const { state, update } = useFinance();
+  const readOnly = useFinanceReadOnly();
   const model = useFinanceModel(state);
 
   const [modo, setModo] = useState<Modo>(() => {
