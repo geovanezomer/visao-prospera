@@ -77,9 +77,8 @@ function LoginPage() {
             Sua operação financeira, com clareza em tempo real.
           </h1>
           <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Acesse a plataforma para acompanhar Fluxo de Caixa, DRE, Balanço, Impactos da Reforma
-            Tributária, +40 Indicadores e gráficos além de simular cenários da sua empresa e fazer
-            cálculos trabalhistas.
+            Acesse a plataforma para fazer um Raio-x do Fluxo de Caixa, DRE, Balanço, Impactos da
+            Reforma Tributária e +40 Indicadores, além fazer cálculos trabalhistas.
           </p>
         </div>
 
