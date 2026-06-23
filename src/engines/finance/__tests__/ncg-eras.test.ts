@@ -16,7 +16,7 @@ import type { CostLine } from "../types";
 const cpvLine: CostLine = {
   id: "cpv",
   label: "CPV",
-  category: "variavel",
+  category: "custo_vendas",
   values: m12(5_000),
   fixed: false,
 };
