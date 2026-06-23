@@ -1,12 +1,15 @@
 // =====================================================================
 // Telemetria local do Diagnóstico Executivo (PR3 - Observabilidade).
 //
-// Log append-only em localStorage com as últimas N gerações. Útil para:
+// Log append-only com as últimas N gerações em localStorage (leitura sync)
+// + IndexedDB (durabilidade) via persistence.ts. Útil para:
 // - Auditoria CVM (quando rodou, qual modelo, quanto tempo levou)
 // - Debug do consultor (por que falhou? veio do cache?)
 //
 // Nada é enviado para fora — 100% local.
 // =====================================================================
+
+import { removeKey, saveKeySync } from "@/engines/finance/persistence";
 
 const STORAGE_KEY = "financepro.diag.telemetry.v1";
 const MAX_ENTRIES = 50;
@@ -40,7 +43,7 @@ export function recordTelemetry(entry: TelemetryEntry): void {
   if (typeof window === "undefined") return;
   try {
     const list = [entry, ...readTelemetry()].slice(0, MAX_ENTRIES);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    saveKeySync(STORAGE_KEY, list);
   } catch {
     // best-effort
   }
@@ -48,5 +51,5 @@ export function recordTelemetry(entry: TelemetryEntry): void {
 
 export function clearTelemetry(): void {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(STORAGE_KEY);
+  removeKey(STORAGE_KEY);
 }
