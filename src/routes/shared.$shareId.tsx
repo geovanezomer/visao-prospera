@@ -187,9 +187,25 @@ function SharedReport() {
       <div className="flex min-h-screen flex-col bg-background text-foreground">
         {/* Banner fixo de modo somente leitura */}
         <div className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-primary/30 bg-primary/10 px-4 py-2 text-xs">
-          <div className="flex items-center gap-2 text-primary">
+          <div className="flex flex-wrap items-center gap-2 text-primary">
             <Eye className="h-4 w-4" />
             <span className="font-medium">Visualização compartilhada</span>
+            {remainingLabel && (
+              <span
+                className={
+                  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold " +
+                  (remainingLabel.tone === "crit"
+                    ? "border-destructive/40 bg-destructive/10 text-destructive"
+                    : remainingLabel.tone === "warn"
+                      ? "border-amber-500/40 bg-amber-500/10 text-amber-500"
+                      : "border-emerald-500/40 bg-emerald-500/10 text-emerald-500")
+                }
+                title="Tempo até a expiração do link"
+              >
+                <Clock className="h-3 w-3" />
+                expira em {remainingLabel.text}
+              </span>
+            )}
             <span className="text-muted-foreground">
               · {data.companyName} · somente leitura
             </span>
