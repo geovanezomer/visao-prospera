@@ -11,17 +11,12 @@ import {
   CheckCircle2,
   FileSpreadsheet,
   Gauge,
-  GitBranch,
   LineChart,
   Lock,
-  PieChart,
   Quote,
-  Scale,
   ShieldCheck,
   Sparkles,
-  Split,
   TrendingUp,
-  Wallet,
   Zap,
 } from "lucide-react";
 import { useState } from "react";
@@ -46,21 +41,18 @@ function Hero() {
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
               <Sparkles className="h-3.5 w-3.5" />
-              Finanças Empresariais para Não-Financeiros
+              Plataforma para Consultores Financeiros
             </span>
 
             <h1 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              O <span className="text-primary">Raio-X financeiro</span> que
-              transforma você em um <span className="text-primary">CFO</span>{" "}
-              de alto nível.
+              O <span className="text-primary">Raio-X financeiro</span> que transforma consultor em{" "}
+              <span className="text-primary">CFO</span> da PME.
             </h1>
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               DRE, Balanço, Fluxo de Caixa, impactos da Reforma Tributária e{" "}
-              <strong className="text-foreground">+40 indicadores</strong> em um
-              único painel inteligente — com{" "}
-              <strong className="text-foreground">IA</strong> que entrega
-              diagnósticos e faz relatórios em tempo real.
+              <strong className="text-foreground">+40 indicadores</strong> em um único painel inteligente — com{" "}
+              <strong className="text-foreground">IA</strong> que entrega o diagnóstico que seu cliente espera ouvir.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -119,9 +111,7 @@ function HeroMockup() {
           <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
           <span className="h-2.5 w-2.5 rounded-full bg-warning/60" />
           <span className="h-2.5 w-2.5 rounded-full bg-success/60" />
-          <span className="ml-3 text-[11px] text-muted-foreground">
-            financepro.app / dashboard
-          </span>
+          <span className="ml-3 text-[11px] text-muted-foreground">financepro.app / dashboard</span>
         </div>
         <div className="space-y-4 p-5">
           {/* KPIs */}
@@ -131,19 +121,10 @@ function HeroMockup() {
               { l: "EBITDA", v: "28%", t: "+3,2pp" },
               { l: "FCF", v: "R$ 612k", t: "+24%" },
             ].map((k) => (
-              <div
-                key={k.l}
-                className="rounded-lg border border-border bg-background/40 p-3"
-              >
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {k.l}
-                </div>
-                <div className="mt-1 text-lg font-semibold text-foreground">
-                  {k.v}
-                </div>
-                <div className="text-[11px] font-medium text-primary">
-                  {k.t}
-                </div>
+              <div key={k.l} className="rounded-lg border border-border bg-background/40 p-3">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.l}</div>
+                <div className="mt-1 text-lg font-semibold text-foreground">{k.v}</div>
+                <div className="text-[11px] font-medium text-primary">{k.t}</div>
               </div>
             ))}
           </div>
@@ -156,16 +137,8 @@ function HeroMockup() {
             <svg viewBox="0 0 320 110" className="h-28 w-full">
               <defs>
                 <linearGradient id="grad" x1="0" x2="0" y1="0" y2="1">
-                  <stop
-                    offset="0%"
-                    stopColor="var(--primary)"
-                    stopOpacity="0.5"
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor="var(--primary)"
-                    stopOpacity="0"
-                  />
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.5" />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
                 </linearGradient>
               </defs>
               <path
@@ -184,13 +157,8 @@ function HeroMockup() {
           <div className="grid grid-cols-6 gap-2">
             {[40, 65, 50, 80, 70, 95].map((h, i) => (
               <div key={i} className="flex flex-col items-center gap-1">
-                <div
-                  className="w-full rounded-sm bg-primary/70"
-                  style={{ height: `${h * 0.5}px` }}
-                />
-                <div className="text-[9px] text-muted-foreground">
-                  M{i + 1}
-                </div>
+                <div className="w-full rounded-sm bg-primary/70" style={{ height: `${h * 0.5}px` }} />
+                <div className="text-[9px] text-muted-foreground">M{i + 1}</div>
               </div>
             ))}
           </div>
@@ -207,31 +175,29 @@ function ProblemAgitation() {
   const dores = [
     "Planilhas frágeis que quebram a cada alteração do cliente",
     "Reforma Tributária (CBS/IBS) mudando o jogo a cada trimestre",
-    "Cliente PME exigindo decisão, não tabela",
+    "Empresários precisam de clareza, não uma tabela obsoleta",
     "Horas perdidas formatando relatório em vez de analisar",
     "Indicadores espalhados, sem visão única do negócio",
-    "Risco de erro em cálculo que custa a reputação CVM",
+    "Risco de erro em cálculos que norteiam decisões",
   ];
   return (
     <section className="border-b border-border/50 bg-card/30 py-20">
       <div className="mx-auto max-w-5xl px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Você não vende planilha.<br />
-            <span className="text-muted-foreground">Vende decisão.</span>
+            Você não precisa de mais uma Planilha.
+            <br />
+            <span className="text-muted-foreground">Precisa de clareza de dados em tempo real.</span>
           </h2>
           <p className="mt-4 text-base text-muted-foreground">
-            Mas o seu dia ainda é refém de fórmulas quebradas, abas infinitas e
-            uma Reforma Tributária que muda o chão debaixo dos pés.
+            Mas o seu dia ainda é refém de fórmulas quebradas, abas infinitas e uma Reforma Tributária que muda o chão
+            debaixo dos pés.
           </p>
         </div>
 
         <div className="mt-12 grid gap-3 sm:grid-cols-2">
           {dores.map((d) => (
-            <div
-              key={d}
-              className="flex items-start gap-3 rounded-lg border border-border bg-background/40 p-4"
-            >
+            <div key={d} className="flex items-start gap-3 rounded-lg border border-border bg-background/40 p-4">
               <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-destructive/40 text-destructive">
                 ✕
               </span>
@@ -287,12 +253,8 @@ function SolutionPillars() {
                 }}
               />
               <p.icon className="h-7 w-7 text-primary" />
-              <h3 className="mt-5 text-lg font-semibold text-foreground">
-                {p.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {p.desc}
-              </p>
+              <h3 className="mt-5 text-lg font-semibold text-foreground">{p.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.desc}</p>
             </div>
           ))}
         </div>
@@ -322,29 +284,9 @@ function FeatureGrid() {
       d: "Fluxo de caixa descontado + múltiplos. Sensibilidade integrada.",
     },
     {
-      icon: GitBranch,
-      t: "Simulador de Cenários",
-      d: "Compare otimista, base e pessimista lado a lado em segundos.",
-    },
-    {
-      icon: Split,
-      t: "Split Payment",
-      d: "Simule a retenção automática de CBS/IBS no recebimento e o efeito no caixa.",
-    },
-    {
-      icon: Wallet,
-      t: "Fluxo de Caixa",
-      d: "DFC direto e indireto, projeção mensal e alertas de ruptura.",
-    },
-    {
-      icon: Scale,
-      t: "Análise de Balanço",
-      d: "Balanço Patrimonial estruturado com auditoria automática de consistência.",
-    },
-    {
-      icon: PieChart,
-      t: "Dashboard Gráfico",
-      d: "Visão executiva com gráficos de receita, margem, indicadores e tendências.",
+      icon: Gauge,
+      t: "Monte Carlo",
+      d: "Probabilidade de cada cenário. Decisão com lastro estatístico.",
     },
     {
       icon: ShieldCheck,
@@ -368,10 +310,7 @@ function FeatureGrid() {
     },
   ];
   return (
-    <section
-      id="recursos"
-      className="border-b border-border/50 bg-card/30 py-24"
-    >
+    <section id="recursos" className="border-b border-border/50 bg-card/30 py-24">
       <div className="mx-auto max-w-6xl px-6">
         <SectionEyebrow>Recursos</SectionEyebrow>
         <h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
@@ -380,15 +319,10 @@ function FeatureGrid() {
 
         <div className="mt-12 grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
           {features.map((f) => (
-            <div
-              key={f.t}
-              className="group flex flex-col gap-3 bg-card p-6 transition hover:bg-accent/30"
-            >
+            <div key={f.t} className="group flex flex-col gap-3 bg-card p-6 transition hover:bg-accent/30">
               <f.icon className="h-6 w-6 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">{f.t}</h3>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                {f.d}
-              </p>
+              <p className="text-xs leading-relaxed text-muted-foreground">{f.d}</p>
             </div>
           ))}
         </div>
@@ -419,10 +353,7 @@ function HowItWorks() {
     },
   ];
   return (
-    <section
-      id="como-funciona"
-      className="border-b border-border/50 py-24"
-    >
+    <section id="como-funciona" className="border-b border-border/50 py-24">
       <div className="mx-auto max-w-6xl px-6">
         <SectionEyebrow>Como funciona</SectionEyebrow>
         <h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
@@ -431,19 +362,10 @@ function HowItWorks() {
 
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           {passos.map((p, i) => (
-            <div
-              key={p.n}
-              className="relative rounded-xl border border-border bg-card p-7"
-            >
-              <div className="text-5xl font-semibold tracking-tighter text-primary/40">
-                {p.n}
-              </div>
-              <h3 className="mt-3 text-lg font-semibold text-foreground">
-                {p.t}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {p.d}
-              </p>
+            <div key={p.n} className="relative rounded-xl border border-border bg-card p-7">
+              <div className="text-5xl font-semibold tracking-tighter text-primary/40">{p.n}</div>
+              <h3 className="mt-3 text-lg font-semibold text-foreground">{p.t}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.d}</p>
               {i < passos.length - 1 && (
                 <ArrowRight className="absolute -right-3 top-1/2 hidden h-5 w-5 -translate-y-1/2 text-border md:block" />
               )}
@@ -478,24 +400,13 @@ function ComparisonTable() {
         <div className="mt-10 overflow-hidden rounded-xl border border-border">
           <div className="grid grid-cols-[1.6fr_1fr_1fr] bg-background/40 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             <div className="border-b border-border p-4">Critério</div>
-            <div className="border-b border-l border-border p-4 text-center">
-              Planilha
-            </div>
-            <div className="border-b border-l border-border bg-primary/10 p-4 text-center text-primary">
-              FinancePRO
-            </div>
+            <div className="border-b border-l border-border p-4 text-center">Planilha</div>
+            <div className="border-b border-l border-border bg-primary/10 p-4 text-center text-primary">FinancePRO</div>
           </div>
           {linhas.map((l, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-[1.6fr_1fr_1fr] text-sm last:border-b-0"
-            >
-              <div className="border-b border-border p-4 text-foreground/90">
-                {l[0]}
-              </div>
-              <div className="border-b border-l border-border p-4 text-center text-muted-foreground">
-                {l[1]}
-              </div>
+            <div key={i} className="grid grid-cols-[1.6fr_1fr_1fr] text-sm last:border-b-0">
+              <div className="border-b border-border p-4 text-foreground/90">{l[0]}</div>
+              <div className="border-b border-l border-border p-4 text-center text-muted-foreground">{l[1]}</div>
               <div className="border-b border-l border-border bg-primary/5 p-4 text-center font-medium text-primary">
                 {l[2]}
               </div>
@@ -527,12 +438,8 @@ function AuthorityBlock() {
                 <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-2 border-primary/40 bg-background text-2xl font-semibold text-primary">
                   GZ
                 </div>
-                <div className="mt-4 text-sm font-semibold text-foreground">
-                  Geovane Zomer
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Consultor Financeiro & Investimentos
-                </div>
+                <div className="mt-4 text-sm font-semibold text-foreground">Geovane Zomer</div>
+                <div className="text-xs text-muted-foreground">Consultor Financeiro & Investimentos</div>
                 <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-primary">
                   <ShieldCheck className="h-3 w-3" />
                   CVM 3354-5
@@ -542,16 +449,12 @@ function AuthorityBlock() {
             <div className="p-10">
               <SectionEyebrow>Construído por quem vive isso</SectionEyebrow>
               <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                Um sistema desenhado por um consultor CVM — para consultores
-                CVM.
+                Um sistema desenhado por um consultor CVM — para consultores CVM.
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
                 O FinancePRO nasceu dentro da{" "}
-                <strong className="text-foreground">
-                  GZ Consultoria Financeira & Investimentos
-                </strong>{" "}
-                para resolver, na prática, o que toda planilha falha: dar ao
-                consultor a velocidade, o rigor e a profundidade que a PME
+                <strong className="text-foreground">GZ Consultoria Financeira & Investimentos</strong> para resolver, na
+                prática, o que toda planilha falha: dar ao consultor a velocidade, o rigor e a profundidade que a PME
                 brasileira merece — agora com a Reforma Tributária no jogo.
               </p>
               <ul className="mt-6 space-y-2 text-sm text-foreground/90">
@@ -601,14 +504,9 @@ function SocialProof() {
         </h2>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           {cases.map((c, i) => (
-            <figure
-              key={i}
-              className="flex h-full flex-col rounded-xl border border-border bg-card p-7"
-            >
+            <figure key={i} className="flex h-full flex-col rounded-xl border border-border bg-card p-7">
               <Quote className="h-7 w-7 text-primary/60" />
-              <blockquote className="mt-4 flex-1 text-sm leading-relaxed text-foreground/90">
-                "{c.q}"
-              </blockquote>
+              <blockquote className="mt-4 flex-1 text-sm leading-relaxed text-foreground/90">"{c.q}"</blockquote>
               <figcaption className="mt-5 border-t border-border pt-4 text-xs font-medium text-muted-foreground">
                 {c.a}
               </figcaption>
@@ -670,19 +568,9 @@ function FaqAccordion() {
                   aria-expanded={isOpen}
                 >
                   <span>{f.q}</span>
-                  <span
-                    className={`text-primary transition-transform ${
-                      isOpen ? "rotate-45" : ""
-                    }`}
-                  >
-                    +
-                  </span>
+                  <span className={`text-primary transition-transform ${isOpen ? "rotate-45" : ""}`}>+</span>
                 </button>
-                {isOpen && (
-                  <div className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">
-                    {f.a}
-                  </div>
-                )}
+                {isOpen && <div className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">{f.a}</div>}
               </div>
             );
           })}
@@ -708,12 +596,12 @@ function FinalCta() {
       />
       <div className="mx-auto max-w-3xl px-6 text-center">
         <h2 className="text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl">
-          Pare de analisar planilhas.<br />
-          <span className="text-primary">Comece a tomar decisões.</span>
+          Pare de entregar planilha.
+          <br />
+          <span className="text-primary">Comece a entregar decisão.</span>
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-          Em menos de 5 minutos você roda sua primeira análise e gera um
-          relatório baseado em dados.
+          Em menos de 5 minutos você roda sua primeira análise — sem cartão de crédito, sem fricção.
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <Link
@@ -739,11 +627,7 @@ function FinalCta() {
    HEADER + FOOTER + helpers
    ============================================================ */
 function SectionEyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-      {children}
-    </span>
-  );
+  return <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{children}</span>;
 }
 
 function Header() {
@@ -754,9 +638,7 @@ function Header() {
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
             F
           </div>
-          <span className="text-sm font-semibold tracking-tight text-foreground">
-            FinancePRO
-          </span>
+          <span className="text-sm font-semibold tracking-tight text-foreground">FinancePRO</span>
         </Link>
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
           <a href="#recursos" className="transition hover:text-foreground">
@@ -795,9 +677,7 @@ function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-xs text-muted-foreground sm:flex-row">
         <span>
           © {new Date().getFullYear()} FinancePRO · Desenvolvido por{" "}
-          <strong className="text-foreground">
-            GZ Consultoria Financeira & Investimentos
-          </strong>
+          <strong className="text-foreground">GZ Consultoria Financeira & Investimentos</strong>
         </span>
         <div className="flex items-center gap-5">
           <Link to="/login" className="transition hover:text-foreground">
