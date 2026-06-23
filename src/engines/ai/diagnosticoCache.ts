@@ -7,6 +7,7 @@
 // - Limite de N entradas (LRU por timestamp).
 // =====================================================================
 
+import { removeKey, saveKeySync } from "@/engines/finance/persistence";
 import type { DiagnosticoResult } from "./diagnostico";
 
 const STORAGE_KEY = "financepro.diag.cache.v1";
@@ -33,11 +34,7 @@ function readAll(): Entry[] {
 
 function writeAll(entries: Entry[]): void {
   if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  } catch {
-    // quota cheia / modo privado — silencioso (cache é best-effort).
-  }
+  saveKeySync(STORAGE_KEY, entries);
 }
 
 export function getCached(key: string): DiagnosticoResult | null {
