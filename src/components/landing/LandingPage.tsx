@@ -519,7 +519,156 @@ function ComparisonTable() {
 }
 
 /* ============================================================
-   AUTORIDADE
+    PLANOS — Mock de precificação
+    ============================================================ */
+function PricingSection() {
+  const planos = [
+    {
+      nome: "Mensal",
+      descricao: "Para testar o poder da plataforma",
+      preco: "197",
+      periodo: "/mês",
+      badge: null,
+      destaque: false,
+      recursos: [
+        "Acesso completo a todos os módulos",
+        "Diagnóstico, DRE, Fluxo de Caixa e Valuation",
+        "Reforma Tributária CBS/IBS",
+        "Suporte por e-mail",
+        "Cancelamento a qualquer momento",
+      ],
+      cta: "Assinar Mensal",
+    },
+    {
+      nome: "Anual",
+      descricao: "O escolhido por 8 em cada 10 consultores",
+      preco: "1.497",
+      periodo: "/ano",
+      badge: { texto: "Mais Popular · 37% OFF", icone: Zap },
+      destaque: true,
+      recursos: [
+        "Tudo do plano Mensal",
+        "Economia equivalente a 4 meses grátis",
+        "Consultor IA com contexto da sua empresa",
+        "Cenários ilimitados e Monte Carlo",
+        "Suporte prioritário em até 24h",
+      ],
+      cta: "Assinar Anual",
+    },
+    {
+      nome: "Vitalício",
+      descricao: "Pague uma vez. Use para sempre.",
+      preco: "4.997",
+      periodo: "pagamento único",
+      badge: { texto: "Edição Fundadores", icone: Crown },
+      destaque: false,
+      recursos: [
+        "Acesso vitalício a todas as atualizações",
+        "Sem mensalidades. Sem renovação.",
+        "Selo de Membro Fundador",
+        "Acesso antecipado a novos módulos",
+        "Suporte VIP com Geovane Zomer",
+      ],
+      cta: "Garantir Vitalício",
+    },
+  ];
+
+  return (
+    <section className="border-b border-border/50 py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="text-center">
+          <SectionEyebrow>Planos</SectionEyebrow>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            Escolha como quer dominar suas<br className="hidden sm:block" /> finanças.
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
+            Três caminhos. O mesmo destino:{" "}
+            <strong className="text-foreground">controle absoluto</strong> sobre seu dinheiro.
+          </p>
+        </div>
+
+        <div className="mt-14 grid gap-6 md:grid-cols-3">
+          {planos.map((plano) => (
+            <div
+              key={plano.nome}
+              className={`relative flex flex-col rounded-2xl border p-7 transition ${
+                plano.destaque
+                  ? "border-primary/40 bg-card shadow-2xl shadow-primary/10"
+                  : "border-border bg-card/60"
+              }`}
+            >
+              {/* Badge */}
+              {plano.badge && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
+                      plano.destaque
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border bg-background text-foreground"
+                    }`}
+                  >
+                    <plano.badge.icone className="h-3.5 w-3.5" />
+                    {plano.badge.texto}
+                  </span>
+                </div>
+              )}
+
+              {/* Topo */}
+              <div className="mt-2">
+                <h3 className="text-lg font-semibold text-foreground">{plano.nome}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{plano.descricao}</p>
+              </div>
+
+              {/* Preço */}
+              <div className="mt-5 flex items-baseline gap-1">
+                <span className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                  R$ {plano.preco}
+                </span>
+                <span className="text-sm text-muted-foreground">{plano.periodo}</span>
+              </div>
+
+              {/* Recursos */}
+              <ul className="mt-6 flex-1 space-y-3">
+                {plano.recursos.map((r) => (
+                  <li key={r} className="flex items-start gap-2.5 text-sm text-foreground/90">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <span>{r}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* CTA */}
+              <div className="mt-8">
+                <button
+                  type="button"
+                  className={`group flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition ${
+                    plano.destaque
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40"
+                      : "border border-border bg-background/60 text-foreground hover:bg-card"
+                  }`}
+                >
+                  {plano.cta}
+                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Rodapé de segurança */}
+        <div className="mt-10 text-center text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <Lock className="h-3.5 w-3.5" />
+            Pagamento 100% seguro · 7 dias de garantia incondicional · Nota fiscal automática
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+    AUTORIDADE
    ============================================================ */
 function AuthorityBlock() {
   return (
