@@ -31,23 +31,6 @@ import { useState } from "react";
    HERO
    ============================================================ */
 function Hero() {
-  const pilares = [
-    {
-      icon: BarChart3,
-      title: "Raio-X Financeiro",
-      desc: "DRE, Balanço, DFC e +40 indicadores conectados — uma única fonte de verdade.",
-    },
-    {
-      icon: ShieldCheck,
-      title: "Reforma CBS / IBS",
-      desc: "Impactos da LC 214/2025 sobre margem, preço e caixa — atualizados a cada fase.",
-    },
-    {
-      icon: Brain,
-      title: "IA Estratégica",
-      desc: "Diagnóstico executivo treinado em CFO PME brasileira. Sugere alavancas reais.",
-    },
-  ];
   return (
     <section className="relative overflow-hidden border-b border-border/50">
       {/* glow decorativo */}
