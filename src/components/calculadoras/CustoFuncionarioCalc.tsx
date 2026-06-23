@@ -4,7 +4,8 @@
  * Cálculo 100% reativo via useMemo — sem botão "Calcular".
  */
 import { useMemo, useState } from "react";
-import { Calculator, Info, RotateCcw, Sparkles } from "lucide-react";
+import { Calculator, Download, Info, RotateCcw, Sparkles } from "lucide-react";
+import { exportCalculadoraPDF } from "@/lib/pdfCalculadora";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
