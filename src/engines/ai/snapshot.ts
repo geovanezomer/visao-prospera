@@ -909,40 +909,33 @@ export function buildSnapshot(state: AppState, simulatedState?: AppState): strin
 }
 
 // ============================================================
-// Cache por hash do estado (evita reconstruir sem mudanças)
+// Cache por IDENTIDADE de referência (WeakMap) — O(1) sem JSON.stringify
 // ------------------------------------------------------------
-// Pressuposto (K-3): o cache é singleton de módulo. Trocas de empresa são
-// protegidas pelo prefixo `companyName::` no key. Mutações fora do AppState
-// (ex: actions/scenarios em localStorage) NÃO invalidam o cache — tools que
-// dependem desses stores (listar_acoes, listar_cenarios, criar_acao, etc.)
-// não usam `sec`, leem o store direto. Manter esse invariante ao adicionar tools.
-// Para forçar invalidação em testes, incremente CACHE_VERSION.
-const CACHE_VERSION = "v2";
-let cacheKey = "";
-let cacheVal: SnapshotSections | null = null;
-let cacheSimKey = "";
+// Como o AppState é imutável (reducers retornam nova referência a cada mudança),
+// comparar por referência é suficiente — e elimina o custo do `fastHash`/JSON.stringify
+// anterior, que rodava O(n) sobre o state inteiro a cada chamada.
+//
+// Estrutura: WeakMap<state, Map<simulatedState | SENTINEL, SnapshotSections>>
+//   - chave externa: state base (descartado pelo GC quando sai de escopo)
+//   - chave interna: state simulado OU sentinela para "sem simulação"
+//
+// Trocas de empresa naturalmente trocam a referência do state → cache miss correto.
 
-function fastHash(o: unknown): string {
-  try {
-    const s = JSON.stringify(o);
-    let h = 0;
-    for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-    return `${s.length}:${h}`;
-  } catch {
-    return Math.random().toString();
-  }
-}
+const NO_SIM = Symbol("no-sim");
+type SimKey = AppState | typeof NO_SIM;
+const sectionsCache = new WeakMap<AppState, Map<SimKey, SnapshotSections>>();
 
 export function getSectionsCached(state: AppState, simulatedState?: AppState): SnapshotSections {
-  // Inclui companyName explicitamente no key para evitar vazamento cross-empresa
-  // mesmo que dois estados produzam hashes JSON idênticos por coincidência.
-  const company = state.companyName || "(sem-empresa)";
-  const k = `${CACHE_VERSION}::${company}::${fastHash(state)}`;
-  const sk = simulatedState ? `${CACHE_VERSION}::${company}::${fastHash(simulatedState)}` : "";
-  if (k === cacheKey && sk === cacheSimKey && cacheVal) return cacheVal;
+  const simKey: SimKey = simulatedState ?? NO_SIM;
+  let inner = sectionsCache.get(state);
+  if (inner) {
+    const cached = inner.get(simKey);
+    if (cached) return cached;
+  } else {
+    inner = new Map();
+    sectionsCache.set(state, inner);
+  }
   const v = buildSections(state, simulatedState);
-  cacheKey = k;
-  cacheSimKey = sk;
-  cacheVal = v;
+  inner.set(simKey, v);
   return v;
 }
