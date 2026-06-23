@@ -155,7 +155,7 @@ export function useFinnanceFile({
     setDirty(false);
     setLastModified(Date.now());
     try {
-      localStorage.removeItem(draftKey(state.companyName));
+      removeKey(draftKey(state.companyName));
     } catch {
       /* ignora */
     }
