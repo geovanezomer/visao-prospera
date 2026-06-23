@@ -18,20 +18,26 @@ interface KVSchema {
 let dbPromise: Promise<IDBPDatabase<KVSchema>> | null = null;
 let idbAvailable = true;
 
-function getDB(): Promise<IDBPDatabase<KVSchema>> {
+function getDB(): Promise<IDBPDatabase<KVSchema>> | null {
+  if (!idbAvailable) return null;
   if (!dbPromise) {
-    dbPromise = openDB<KVSchema>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        if (!db.objectStoreNames.contains(STORE)) {
-          db.createObjectStore(STORE);
-        }
-      },
-    }).catch((err) => {
+    try {
+      dbPromise = openDB<KVSchema>(DB_NAME, DB_VERSION, {
+        upgrade(db) {
+          if (!db.objectStoreNames.contains(STORE)) {
+            db.createObjectStore(STORE);
+          }
+        },
+      }).catch((err) => {
+        idbAvailable = false;
+        dbPromise = null;
+        throw err;
+      });
+    } catch {
+      // openDB lançou sincronamente (jsdom / IndexedDB ausente).
       idbAvailable = false;
-      // Reseta para permitir nova tentativa em sessão futura
-      dbPromise = null;
-      throw err;
-    });
+      return null;
+    }
   }
   return dbPromise;
 }
