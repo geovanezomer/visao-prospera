@@ -80,19 +80,19 @@ export function createMemory(
   all.unshift(item);
   // Mantém apenas as MAX_ITEMS mais recentes — evita system prompt gigante.
   const trimmed = all.slice(0, MAX_ITEMS);
-  localStorage.setItem(KEY(company), JSON.stringify(trimmed));
+  saveKeySync(KEY(company), trimmed);
   emit();
   return item;
 }
 
 export function deleteMemory(company: string, id: string) {
   const all = readRaw(company).filter((m) => m.id !== id);
-  localStorage.setItem(KEY(company), JSON.stringify(all));
+  saveKeySync(KEY(company), all);
   emit();
 }
 
 export function clearMemories(company: string) {
-  localStorage.removeItem(KEY(company));
+  removeKey(KEY(company));
   emit();
 }
 
