@@ -26,7 +26,7 @@ class MemStorage {
     return this.map.size;
   }
 }
-// @ts-expect-error injetando polyfill global
+// @ts-ignore injetando polyfill global
 globalThis.localStorage = new MemStorage();
 
 // Import APÓS polyfills.
@@ -99,14 +99,14 @@ describe("persistence — espelhamento localStorage ⇄ IndexedDB", () => {
 
   it("saveKeySync com quota cheia ainda persiste no IDB (degradação graciosa)", async () => {
     const original = localStorage.setItem.bind(localStorage);
-    // @ts-expect-error simula QuotaExceededError
+    // @ts-ignore simula QuotaExceededError
     localStorage.setItem = () => {
       throw new DOMException("Quota", "QuotaExceededError");
     };
     try {
       saveKeySync("test:big", { payload: "x" });
     } finally {
-      // @ts-expect-error restaura
+      // @ts-ignore restaura
       localStorage.setItem = original;
     }
     await new Promise((r) => setTimeout(r, 20));
