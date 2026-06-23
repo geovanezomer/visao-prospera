@@ -387,7 +387,7 @@ function SimulaPro() {
             </main>
 
             <footer className="border-t border-border/20 py-4 text-center text-[10px] text-muted-foreground">
-              <p>© 2026 FinnancePRO | Geovane Zomer - Consultor Financeiro CVM 3354-5</p>
+              <p>© 2026 FinnancePRO | Desenvolvido por GZ Consultoria Financeira &amp; Investimentos</p>
             </footer>
           </SidebarInset>
 
