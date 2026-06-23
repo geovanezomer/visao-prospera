@@ -77,13 +77,14 @@ function LoginPage() {
             Sua operação financeira, com clareza executiva em tempo real.
           </h1>
           <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Acesse a plataforma para acompanhar DRE simulado, regime tributário, fluxo de caixa,
-            WACC e cenários da sua empresa.
+            Acesse a plataforma para acompanhar Fluxo de Caixa, DRE, Balanço, Impactos da Reforma
+            Tributária, +40 Indicadores e gráficos além de simular cenários da sua empresa e fazer
+            cálculos trabalhistas.
           </p>
         </div>
 
         <div className="text-[11px] text-muted-foreground">
-          Desenvolvido por Geovane Zomer | Consultor Financeiro &amp; Investimentos CVM 3354-5
+          Desenvolvido por GZ Consultoria Financeira &amp; Investimentos
         </div>
       </section>
 
