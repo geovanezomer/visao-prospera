@@ -6,7 +6,8 @@
  * de parcelas + composição/barra + bloco "Entenda a calculadora").
  */
 import { useMemo, useState } from "react";
-import { BookOpen, Gift, Info, RotateCcw } from "lucide-react";
+import { BookOpen, Download, Gift, Info, RotateCcw } from "lucide-react";
+import { exportCalculadoraPDF } from "@/lib/pdfCalculadora";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
