@@ -1,5 +1,9 @@
 // Configuração de provedores de IA + threads + system prompt extra.
-// 100% client-side, localStorage.
+// 100% client-side: localStorage (sync) + IndexedDB (durável) via persistence.ts.
+
+import { removeKey, saveKeySync } from "@/engines/finance/persistence";
+
+
 
 export type Provider = "lmstudio" | "openai" | "anthropic";
 
@@ -328,7 +332,7 @@ export function loadConfig(): AIConfig {
       try {
         const persisted = { ...cfg, soulVersion: SOUL_DEFAULTS_VERSION };
         const toStore = cfg.persistKey ? persisted : { ...persisted, apiKey: "" };
-        localStorage.setItem(CFG_KEY, JSON.stringify(toStore));
+        saveKeySync(CFG_KEY, toStore);
       } catch {
         // ignora falha de storage
       }
@@ -350,11 +354,11 @@ export function saveConfig(cfg: AIConfig) {
     const persisted = { ...safe, soulVersion: SOUL_DEFAULTS_VERSION };
     if (safe.persistKey) {
       sessionStorage.removeItem(SESSION_KEY_BAG);
-      localStorage.setItem(CFG_KEY, JSON.stringify(persisted));
+      saveKeySync(CFG_KEY, persisted);
     } else {
       sessionStorage.setItem(SESSION_KEY_BAG, safe.apiKey || "");
       // grava sem a chave
-      localStorage.setItem(CFG_KEY, JSON.stringify({ ...persisted, apiKey: "" }));
+      saveKeySync(CFG_KEY, { ...persisted, apiKey: "" });
     }
   } catch {
     // storage indisponível (modo privado / quota) — config segue só em memória
@@ -372,10 +376,11 @@ export function resetAIStorage() {
   try {
     sessionStorage.removeItem(SESSION_KEY_BAG);
     const prefixes = [CFG_KEY, "gz-finance-ai-threads-", "gz-finance-ai-chat-"];
+    // Itera localStorage (espelho sync) e remove em ambas as camadas via removeKey.
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
       if (key && prefixes.some((prefix) => key === prefix || key.startsWith(prefix))) {
-        localStorage.removeItem(key);
+        removeKey(key);
       }
     }
   } catch {
@@ -424,9 +429,14 @@ export function loadThreads(company: string): ChatThread[] {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-      localStorage.setItem(THREADS_KEY(company), JSON.stringify([t]));
-      localStorage.setItem(MSGS_KEY(company, "default"), legacy);
-      localStorage.removeItem(LEGACY_KEY(company));
+      saveKeySync(THREADS_KEY(company), [t]);
+      // legacy é string crua, não JSON; preserva como veio para não corromper.
+      try {
+        saveKeySync(MSGS_KEY(company, "default"), JSON.parse(legacy));
+      } catch {
+        // legacy malformado — descarta
+      }
+      removeKey(LEGACY_KEY(company));
       return [t];
     }
     return [];
@@ -437,7 +447,7 @@ export function loadThreads(company: string): ChatThread[] {
 
 export function saveThreads(company: string, threads: ChatThread[]) {
   try {
-    localStorage.setItem(THREADS_KEY(company), JSON.stringify(sanitizeThreads(threads)));
+    saveKeySync(THREADS_KEY(company), sanitizeThreads(threads));
   } catch {
     // storage indisponível — threads não persistem nesta sessão
   }
@@ -454,10 +464,7 @@ export function loadMessages(company: string, tid: string): ChatMessage[] {
 
 export function saveMessages(company: string, tid: string, msgs: ChatMessage[]) {
   try {
-    localStorage.setItem(
-      MSGS_KEY(company, tid),
-      JSON.stringify(sanitizeMessages(msgs).slice(-100)),
-    );
+    saveKeySync(MSGS_KEY(company, tid), sanitizeMessages(msgs).slice(-100));
   } catch {
     // storage indisponível — mensagens não persistem nesta sessão
   }
@@ -465,7 +472,7 @@ export function saveMessages(company: string, tid: string, msgs: ChatMessage[]) 
 
 export function deleteThread(company: string, tid: string) {
   try {
-    localStorage.removeItem(MSGS_KEY(company, tid));
+    removeKey(MSGS_KEY(company, tid));
     const ts = loadThreads(company).filter((t) => t.id !== tid);
     saveThreads(company, ts);
   } catch {

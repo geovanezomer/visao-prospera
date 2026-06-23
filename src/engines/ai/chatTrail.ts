@@ -1,10 +1,13 @@
 // Audit Trail genérico do chat — log append-only de TODAS as interações.
 // Generaliza o padrão de diagnosticoTelemetry.ts para qualquer turno de chat.
-// 100% local (localStorage), particionado por companyName para isolar dados.
+// 100% local: localStorage (leitura sync) + IndexedDB (durabilidade)
+// via persistence.ts. Particionado por companyName para isolar dados.
 // Suporta auditoria CVM: "o que a IA respondeu sobre X em DD/MM?".
 
+import { removeKey, saveKeySync } from "@/engines/finance/persistence";
+
 const KEY = (company: string) => `gz-finance-chat-trail-${company || "default"}`;
-const MAX_ENTRIES = 200; // teto para não inflar localStorage
+const MAX_ENTRIES = 200; // teto para não inflar storage
 
 export interface ChatTrailEntry {
   ts: string; // ISO
@@ -53,7 +56,7 @@ export function recordChatTrail(
       userText: (entry.userText || "").slice(0, 500),
     };
     const list = [full, ...read(company)].slice(0, MAX_ENTRIES);
-    window.localStorage.setItem(KEY(company), JSON.stringify(list));
+    saveKeySync(KEY(company), list);
   } catch {
     // best-effort
   }
@@ -61,7 +64,7 @@ export function recordChatTrail(
 
 export function clearChatTrail(company: string): void {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(KEY(company));
+  removeKey(KEY(company));
 }
 
 /** Exporta o trail em Markdown para auditoria. */
