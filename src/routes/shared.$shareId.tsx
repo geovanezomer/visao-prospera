@@ -89,7 +89,7 @@ function SharedReport() {
   const parsed = parseFinnanceFile(data.payload);
   // No-op updater — o FinanceProvider já bloqueia, mas mantemos por segurança.
   const noopUpdate = () => {};
-  const [activeTab, setActiveTab] = useState<TabKey>("dre");
+  const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
 
   // Bloqueia atalhos de edição/salvamento/impressão nesta rota.
   // Ctrl/Cmd + S/O/P/U/I/J + Ctrl+Shift+R/I/J + F2/F3 viram no-op com toast.
