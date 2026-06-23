@@ -708,12 +708,12 @@ function FinalCta() {
       />
       <div className="mx-auto max-w-3xl px-6 text-center">
         <h2 className="text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl">
-          Pare de entregar planilha.<br />
-          <span className="text-primary">Comece a entregar decisão.</span>
+          Pare de analisar planilhas.<br />
+          <span className="text-primary">Comece a tomar decisões.</span>
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-          Em menos de 5 minutos você roda sua primeira análise — sem cartão de
-          crédito, sem fricção.
+          Em menos de 5 minutos você roda sua primeira análise e gera um
+          relatório baseado em dados.
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <Link
