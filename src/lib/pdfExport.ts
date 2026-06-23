@@ -1344,12 +1344,12 @@ function buildPriorities(
   const sevOrder: Record<string, number> = { danger: 0, warn: 1, info: 2, ok: 3 };
   const ranked = [...prescriptive].sort((a, b) =>
     (sevOrder[a.severity] ?? 9) - (sevOrder[b.severity] ?? 9));
-  const out: Priority[] = ranked.slice(0, 3).map((c) => ({
+  const out: Priority[] = ranked.slice(0, 6).map((c) => ({
     title: c.problem,
     description: c.actions[0]?.title ?? c.cause,
-    benefit: c.severity === "danger" ? "Alto · estabiliza caixa e resultado"
-      : c.severity === "warn" ? "Médio · melhora indicadores-chave"
-      : "Incremental · ganho marginal de eficiência",
+    benefit: c.severity === "danger" ? "Alto"
+      : c.severity === "warn" ? "Médio"
+      : "Incremental",
     deadline: c.severity === "danger" ? "30 a 60 dias"
       : c.severity === "warn" ? "60 a 120 dias" : "Até 180 dias",
     complexity: c.actions.length > 2 ? "Alta" : c.actions.length > 0 ? "Média" : "Baixa",
