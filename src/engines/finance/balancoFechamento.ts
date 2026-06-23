@@ -159,7 +159,7 @@ export function deriveBalancoFechamento({
   const capitalSocial = n(plConst.capitalSocial);
   const reservasCapital = n(plConst.reservasCapital);
   const reservasLucros = n(plConst.reservasLucros);
-  const lucrosAcumIni = n(ab.lucrosAcumulados);
+  const lucrosAcumIni = aberturaSSOT.lucrosAcumulados.value;
   // Resultado do exercício = Lucro Líquido − Dividendos distribuídos.
   const resultadoExercicio = lucroLiquidoAnual - dividendosPagos;
 
