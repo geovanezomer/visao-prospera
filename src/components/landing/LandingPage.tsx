@@ -185,13 +185,13 @@ function AudienceStrip() {
     },
     {
       icon: Briefcase,
-      title: "Consultor & Contador",
-      desc: "Entregue análise institucional ao seu cliente em horas, não dias. Reforma Tributária já embutida.",
+      title: "Consultor",
+      desc: "Entregue análise de alto valor ao seu cliente em horas, não dias. Reforma Tributária com SplitPayment já embutida.",
     },
     {
       icon: Target,
-      title: "Gestor & CFO interino",
-      desc: "Centralize indicadores, projete cenários e leve à diretoria decisões com lastro estatístico.",
+      title: "BPO Financeiro",
+      desc: "Centralize indicadores, projete cenários e leve aos seus clientes dados financeiros com lastro estatístico.",
     },
   ];
   return (
@@ -370,13 +370,13 @@ function FeatureGrid() {
   const features = [
     {
       icon: LineChart,
-      t: "DRE Inteligente",
-      d: "Mensal e anual por regime tributário, com simulação de cenários.",
+      t: "DRE e Fluxo Caixa",
+      d: "Mensal, Trimestral e anual por regime tributário, com simulação de cenários.",
     },
     {
       icon: TrendingUp,
       t: "+40 Indicadores",
-      d: "EBITDA, ROIC, WACC, NCG, liquidez, endividamento, cobertura — tudo automático.",
+      d: "EBITDA, ROIC, WACC, liquidez, endividamento, cobertura — automáticos.",
     },
     {
       icon: BarChart3,
@@ -414,7 +414,7 @@ function FeatureGrid() {
       <div className="mx-auto max-w-6xl px-6">
         <SectionEyebrow>Recursos</SectionEyebrow>
         <h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          Tudo que um CFO de banca de investimento usaria — em um clique.
+          Tudo que um empresário precisa pra tomar boas decisões — em um clique.
         </h2>
 
         <div className="mt-12 grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
