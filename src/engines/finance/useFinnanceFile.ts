@@ -6,6 +6,7 @@ import type { AppState, Scenario } from "./types";
 import { defaultFilename, serialize } from "./fileFormat";
 import { downloadFinnanceFile, pickFinnanceFile } from "./fileIO";
 import { collectExtras, applyExtras } from "./fileExtras";
+import { saveKeySync, removeKey } from "./persistence";
 import { uploadBackup, isBackupEnabled, type BackupStatus } from "@/lib/api/cloudBackup";
 
 interface ConfirmFn {
