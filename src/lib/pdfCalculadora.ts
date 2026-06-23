@@ -64,21 +64,7 @@ export interface CalcReportPayload {
 }
 
 // ── Utilitários ───────────────────────────────────────────────────────
-async function loadImageAsDataURL(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    return await new Promise<string>((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result as string);
-      r.onerror = reject;
-      r.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-}
+
 
 function nowBR(): string {
   return new Date().toLocaleString("pt-BR", {
