@@ -761,6 +761,49 @@ const pageMeta: Record<number, PageMeta> = {}; // mapeia índice → seção (pa
 
 export async function exportFinancePDF({ state, model }: ExportPDFInput): Promise<void> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
+
+  // ── Sanitização global de texto ────────────────────────────────────
+  // jsPDF Helvetica usa WinAnsi e não renderiza vários símbolos Unicode
+  // (→, −, ≥, ≤, Δ, …). Quando aparecem, o texto sai com espaçamento
+  // bizarro/quebrado. Substituímos por equivalentes WinAnsi antes de
+  // chegar em qualquer chamada de text() / splitTextToSize() do jsPDF.
+  const sanitizeText = (s: string): string =>
+    s
+      .replace(/\u2192/g, "→".normalize ? ">" : ">") // → seta direita
+      .replace(/→/g, ">")
+      .replace(/←/g, "<")
+      .replace(/↦/g, ">")
+      .replace(/⇒/g, "=>")
+      .replace(/\u2212/g, "-")  // − minus
+      .replace(/\u2010/g, "-")
+      .replace(/\u2011/g, "-")
+      .replace(/≥/g, ">=")
+      .replace(/≤/g, "<=")
+      .replace(/Δ/g, "Dif")
+      .replace(/…/g, "...")
+      .replace(/\u00A0/g, " ");
+
+  // monkey-patch doc.text e splitTextToSize
+  const _origText = doc.text.bind(doc);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (doc as any).text = function (text: unknown, ...args: unknown[]) {
+    if (Array.isArray(text)) {
+      text = (text as unknown[]).map((t) => (typeof t === "string" ? sanitizeText(t) : t));
+    } else if (typeof text === "string") {
+      text = sanitizeText(text);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (_origText as any)(text, ...args);
+  };
+  const _origSplit = doc.splitTextToSize.bind(doc);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (doc as any).splitTextToSize = function (s: unknown, w: unknown, opts?: unknown) {
+    if (typeof s === "string") s = sanitizeText(s);
+    else if (Array.isArray(s)) s = (s as unknown[]).map((x) => (typeof x === "string" ? sanitizeText(x) : x));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (_origSplit as any)(s, w, opts);
+  };
+
   const logoData = await loadImageAsDataURL(logoAsset.url);
   const companyName = state.companyName?.trim() || "Empresa Cliente";
   const { dre, ind, cf, balancoFechamento, regime, tax } = model;
