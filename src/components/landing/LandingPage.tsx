@@ -11,12 +11,17 @@ import {
   CheckCircle2,
   FileSpreadsheet,
   Gauge,
+  GitBranch,
   LineChart,
   Lock,
+  PieChart,
   Quote,
+  Scale,
   ShieldCheck,
   Sparkles,
+  Split,
   TrendingUp,
+  Wallet,
   Zap,
 } from "lucide-react";
 import { useState } from "react";
@@ -317,9 +322,29 @@ function FeatureGrid() {
       d: "Fluxo de caixa descontado + múltiplos. Sensibilidade integrada.",
     },
     {
-      icon: Gauge,
-      t: "Monte Carlo",
-      d: "Probabilidade de cada cenário. Decisão com lastro estatístico.",
+      icon: GitBranch,
+      t: "Simulador de Cenários",
+      d: "Compare otimista, base e pessimista lado a lado em segundos.",
+    },
+    {
+      icon: Split,
+      t: "Split Payment",
+      d: "Simule a retenção automática de CBS/IBS no recebimento e o efeito no caixa.",
+    },
+    {
+      icon: Wallet,
+      t: "Fluxo de Caixa",
+      d: "DFC direto e indireto, projeção mensal e alertas de ruptura.",
+    },
+    {
+      icon: Scale,
+      t: "Análise de Balanço",
+      d: "Balanço Patrimonial estruturado com auditoria automática de consistência.",
+    },
+    {
+      icon: PieChart,
+      t: "Dashboard Gráfico",
+      d: "Visão executiva com gráficos de receita, margem, indicadores e tendências.",
     },
     {
       icon: ShieldCheck,
