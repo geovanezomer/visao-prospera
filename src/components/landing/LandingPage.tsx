@@ -200,11 +200,11 @@ function AudienceStrip() {
         <div className="mx-auto max-w-2xl text-center">
           <SectionEyebrow>Para quem é</SectionEyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Feito para quem <span className="text-primary">decide com dinheiro</span> na mesa.
+            Feito para <span className="text-primary">empresários, consultores e BPOs</span>
           </h2>
           <p className="mt-4 text-base text-muted-foreground">
             Não importa se você comanda a empresa, consulta para ela ou cuida dos números dela — o FinancePRO traduz
-            complexidade financeira em decisão simples.
+            complexidade financeira em decisões simplificadas.
           </p>
         </div>
 
@@ -447,8 +447,7 @@ function MetricsBand() {
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
-          background:
-            "linear-gradient(180deg, color-mix(in oklab, var(--primary) 6%, transparent), transparent)",
+          background: "linear-gradient(180deg, color-mix(in oklab, var(--primary) 6%, transparent), transparent)",
         }}
       />
       <div className="mx-auto max-w-6xl px-6">
@@ -581,9 +580,7 @@ function ComparisonTable() {
           <div className="grid grid-cols-[1.6fr_1fr_1fr] bg-background/60 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             <div className="border-b border-border p-5">Critério</div>
             <div className="border-b border-l border-border p-5 text-center">Planilha</div>
-            <div className="border-b border-l border-border bg-primary/10 p-5 text-center text-primary">
-              FinancePRO
-            </div>
+            <div className="border-b border-l border-border bg-primary/10 p-5 text-center text-primary">FinancePRO</div>
           </div>
           {linhas.map((l, i) => (
             <div key={i} className="grid grid-cols-[1.6fr_1fr_1fr] text-sm last:border-b-0">
@@ -820,8 +817,7 @@ function FinalCta() {
       />
       <div className="mx-auto max-w-3xl px-6 text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
-          <Clock className="h-3.5 w-3.5" />
-          5 minutos até sua primeira análise
+          <Clock className="h-3.5 w-3.5" />5 minutos até sua primeira análise
         </span>
         <h2 className="mt-6 text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl">
           Pare de analisar planilhas.
