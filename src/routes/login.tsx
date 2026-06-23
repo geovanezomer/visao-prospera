@@ -74,7 +74,7 @@ function LoginPage() {
 
         <div className="max-w-xl">
           <h1 className="text-4xl font-semibold leading-tight tracking-tight text-foreground xl:text-5xl">
-            Sua operação financeira, com clareza executiva em tempo real.
+            Sua operação financeira, com clareza em tempo real.
           </h1>
           <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
             Acesse a plataforma para acompanhar Fluxo de Caixa, DRE, Balanço, Impactos da Reforma
