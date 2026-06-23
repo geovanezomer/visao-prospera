@@ -110,19 +110,24 @@ export async function saveKey(key: string, value: unknown): Promise<void> {
  * Variante síncrona "fire-and-forget" para call sites que hoje usam
  * `localStorage.setItem` direto e não podem virar async sem cascata.
  * Grava localStorage sync e dispara IDB em background.
+ *
+ * Logs (warn) ao falhar — ajuda a diagnosticar quedas por quota
+ * (QuotaExceededError) ou modo privado (Safari).
  */
 export function saveKeySync(key: string, value: unknown): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // quota — IDB ainda tentará
+  } catch (err) {
+    // quota / modo privado — IDB ainda tentará persistir
+    console.warn(`[persistence] saveKeySync: localStorage falhou para "${key}"`, err);
   }
   const dbp = getDB();
   if (dbp) {
     void dbp
       .then((db) => db.put(STORE, value, key))
-      .catch(() => {
+      .catch((err) => {
         idbAvailable = false;
+        console.warn(`[persistence] saveKeySync: IndexedDB falhou para "${key}"`, err);
       });
   }
 }
@@ -131,15 +136,16 @@ export function saveKeySync(key: string, value: unknown): void {
 export function removeKey(key: string): void {
   try {
     localStorage.removeItem(key);
-  } catch {
-    /* ignora */
+  } catch (err) {
+    console.warn(`[persistence] removeKey: localStorage falhou para "${key}"`, err);
   }
   const dbp = getDB();
   if (dbp) {
     void dbp
       .then((db) => db.delete(STORE, key))
-      .catch(() => {
+      .catch((err) => {
         idbAvailable = false;
+        console.warn(`[persistence] removeKey: IndexedDB falhou para "${key}"`, err);
       });
   }
 }
