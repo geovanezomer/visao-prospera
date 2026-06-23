@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { Share2, Trash2, Loader2, Copy, ExternalLink } from "lucide-react";
+import { Share2, Trash2, Loader2, Copy, ExternalLink, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   listShareLinks,
   revokeShareLink,
