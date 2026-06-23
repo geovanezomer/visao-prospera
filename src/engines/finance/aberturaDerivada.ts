@@ -124,7 +124,10 @@ export function deriveAbertura({
 
   // Salários a pagar: folha do mês 1 (fixo + variável).
   const folhaMes1 = (state.costs ?? [])
-    .filter((l: CostLine) => l.category === "fixo" || l.category === "variavel")
+    .filter((l: CostLine) =>
+      l.category === "fixo" || l.category === "variavel" ||
+      l.category === "despesa_administrativa" || l.category === "despesa_comercial",
+    )
     .reduce((s, l) => s + firstMonth(l.values), 0);
 
   // Overrides manuais (raros).

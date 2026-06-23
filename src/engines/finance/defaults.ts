@@ -324,12 +324,19 @@ const LEGACY_CPV_IDS = new Set(["insumos", "fretes"]);
 export function migrateCostLine(c: CostLine): CostLine {
   // Auto-marca ICMS-ST como sem crédito (Auditoria Jun/2026)
   const semCredito = c.semCredito ?? c.subcategory === "icms_st";
-  if (c.category) return { ...c, semCredito };
+  // Normaliza aliases legados → categorias por FUNÇÃO contábil (CPC 26).
+  // `fixo`/`variavel` eram proxies para Admin/Comercial — promove para os nomes canônicos.
+  const normalizeLegacy = (cat: CostLine["category"] | undefined): CostLine["category"] | undefined => {
+    if (cat === "fixo") return "despesa_administrativa";
+    if (cat === "variavel") return "despesa_comercial";
+    return cat;
+  };
+  if (c.category) return { ...c, category: normalizeLegacy(c.category)!, semCredito };
   let category: CostLine["category"];
   if (c.group === "financeiro") category = "financeiro";
   else if (LEGACY_CPV_IDS.has(c.id)) category = "custo_vendas";
-  else if (c.variavel) category = "variavel";
-  else category = "fixo";
+  else if (c.variavel) category = "despesa_comercial";
+  else category = "despesa_administrativa";
   return { ...c, category, semCredito };
 }
 

@@ -159,7 +159,8 @@ function shockState(s: AppState, cfg: MCConfig, shocks: number[]): AppState {
       // CPV total = volume × CPV unitário (ambos shocados).
       return { ...c, values: c.values.map((v) => v * fVol * fCpv) };
     }
-    if (c.category === "variavel") return { ...c, values: c.values.map((v) => v * fVol) };
+    if (c.category === "variavel" || c.category === "despesa_comercial")
+      return { ...c, values: c.values.map((v) => v * fVol) };
     if (isLabor) return { ...c, values: c.values.map((v) => v * fFolha) };
     return c;
   });

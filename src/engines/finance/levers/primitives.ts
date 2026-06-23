@@ -26,7 +26,7 @@ export const cloneCosts = (costs: CostLine[]) =>
 /** Top-N linhas FIXAS por total anual (desc). */
 export function topNFixedLines(state: AppState, n: number): CostLine[] {
   return state.costs
-    .filter((c) => c.category === "fixo")
+    .filter((c) => c.category === "fixo" || c.category === "despesa_administrativa")
     .map((c) => ({ c, total: sum(monthValues(c)) }))
     .sort((a, b) => b.total - a.total)
     .slice(0, n)
@@ -87,10 +87,17 @@ export function scaleCategory(
   factor: number,
 ): AppState {
   const isCpvTarget = category === "custo_vendas";
+  // Aliases legados ↔ canônicos (fixo↔despesa_administrativa, variavel↔despesa_comercial).
+  const ALIAS: Partial<Record<CostLine["category"], CostLine["category"]>> = {
+    fixo: "despesa_administrativa",
+    despesa_administrativa: "fixo",
+    variavel: "despesa_comercial",
+    despesa_comercial: "variavel",
+  };
   const costs = cloneCosts(state.costs).map((c) => {
     const hit = isCpvTarget
       ? c.category === "custo_vendas" || c.category === "direto_venda"
-      : c.category === category;
+      : c.category === category || c.category === ALIAS[category];
     return hit ? { ...c, values: c.values.map((v) => v * factor) } : c;
   });
   return { ...state, costs };
@@ -230,7 +237,7 @@ export function dismissWithSeverance(
   const rescisaoLine: CostLine = {
     id: genId("rescisao_oneshot"),
     label: "Rescisões e indenizações (one-shot)",
-    category: "fixo",
+    category: "despesa_administrativa",
     subcategory: "pessoal",
     values,
     fixed: false, // one-shot: NÃO é mensalizado; apenas no mês indicado
@@ -280,14 +287,16 @@ export const LEVER_REGISTRY = {
   },
   scale_cost_category: {
     description:
-      "Escala todas as linhas de uma categoria (custo_vendas, fixo, variavel, financeiro, direto_venda).",
+      "Escala todas as linhas de uma categoria (custo_vendas, direto_venda, despesa_administrativa, despesa_comercial, financeiro). Aceita aliases legados fixo/variavel.",
     schema: z.object({
       category: z.enum([
         "custo_vendas",
         "direto_venda",
+        "despesa_administrativa",
+        "despesa_comercial",
+        "financeiro",
         "fixo",
         "variavel",
-        "financeiro",
       ]),
       factor: z.number().nonnegative(),
     }),

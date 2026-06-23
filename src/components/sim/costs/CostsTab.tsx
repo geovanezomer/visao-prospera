@@ -26,7 +26,15 @@ export function CostsTab() {
     return () => clearTimeout(t);
   }, [negWarn]);
 
-  const byCat = (cat: CostCategory) => state.costs.filter((c) => c.category === cat);
+  // Aceita aliases legados (fixo↔despesa_administrativa, variavel↔despesa_comercial).
+  const ALIAS: Partial<Record<CostCategory, CostCategory>> = {
+    despesa_administrativa: "fixo",
+    fixo: "despesa_administrativa",
+    despesa_comercial: "variavel",
+    variavel: "despesa_comercial",
+  };
+  const byCat = (cat: CostCategory) =>
+    state.costs.filter((c) => c.category === cat || c.category === ALIAS[cat]);
 
   const updateLine = (id: string, patch: Partial<CostLine>) =>
     update((s) => ({ ...s, costs: s.costs.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
@@ -114,8 +122,8 @@ export function CostsTab() {
         cpv += v;
       } else if (c.category === "direto_venda") {
         cpv += v;
-      } else if (c.category === "fixo") fix += v;
-      else if (c.category === "variavel") vr += v;
+      } else if (c.category === "despesa_administrativa" || c.category === "fixo") fix += v;
+      else if (c.category === "despesa_comercial" || c.category === "variavel") vr += v;
       else if (c.category === "financeiro") fn += v;
     }
     return {
@@ -243,7 +251,7 @@ export function CostsTab() {
         title="Despesas Administrativas"
         hint="Não variam com o volume vendido. Compõem a estrutura mínima de operação."
         accentClass="border-l-[color:var(--warning)]"
-        onAdd={() => addLine("fixo")}
+        onAdd={() => addLine("despesa_administrativa")}
       >
         <CostTable
           lines={byCat("fixo")}
@@ -262,7 +270,7 @@ export function CostsTab() {
         title="Despesas Comerciais"
         hint="Variam proporcionalmente às vendas — comissões, marketing, frete sobre vendas etc."
         accentClass="border-l-[#5BA8F5]"
-        onAdd={() => addLine("variavel")}
+        onAdd={() => addLine("despesa_comercial")}
       >
         <CostTable
           lines={byCat("variavel")}
