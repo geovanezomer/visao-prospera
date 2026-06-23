@@ -383,7 +383,8 @@ export function CashflowTab() {
         )}
       </div>
 
-      {/* Gráfico de saldo */}
+      {/* Gráfico de saldo — escondido em modo somente leitura */}
+      {!readOnly && (
       <div className="rounded-lg border border-border/60 bg-card/40 p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h4 className="text-sm font-semibold">Saldo de caixa projetado (12 meses)</h4>
