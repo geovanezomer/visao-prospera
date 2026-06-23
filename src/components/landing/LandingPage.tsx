@@ -929,7 +929,7 @@ function FinalCta() {
           <span className="text-primary">Comece a tomar decisões.</span>
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-          Em menos de 15 minutos você tem um dashboard e +40 de indicadores.
+          Em menos de 15 minutos você tem um dashboard gráfico e +40 indicadores.
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <Link
