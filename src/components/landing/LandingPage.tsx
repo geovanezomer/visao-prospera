@@ -135,7 +135,6 @@ function Hero() {
   );
 }
 
-
 /* ============================================================
    AUDIÊNCIA — Para quem é
    ============================================================ */
@@ -273,6 +272,58 @@ function ProblemAgitation() {
   );
 }
 
+/* ============================================================
+   PILARES
+   ============================================================ */
+function SolutionPillars() {
+  const pilares = [
+    {
+      icon: BarChart3,
+      title: "Raio-X Financeiro",
+      desc: "DRE, Balanço, DFC e +40 indicadores conectados — uma única fonte de verdade para todo o ciclo da empresa.",
+    },
+    {
+      icon: ShieldCheck,
+      title: "Reforma CBS / IBS",
+      desc: "Cálculo automático dos impactos da LC 214/2025 sobre margem, preço e fluxo de caixa. Atualizado a cada fase de transição.",
+    },
+    {
+      icon: Brain,
+      title: "IA Estratégica",
+      desc: "Diagnóstico executivo gerado por IA treinada em CFO PME brasileira. Sugere alavancas. Justifica decisões.",
+    },
+  ];
+  return (
+    <section className="border-b border-border/50 py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        <SectionEyebrow>O sistema que faltava</SectionEyebrow>
+        <h2 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          Três pilares que substituem dez planilhas e meia consultoria.
+        </h2>
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
+          {pilares.map((p) => (
+            <div
+              key={p.title}
+              className="group relative overflow-hidden rounded-xl border border-border bg-card p-7 transition hover:border-primary/40"
+            >
+              <div
+                aria-hidden
+                className="absolute -right-12 -top-12 h-32 w-32 rounded-full opacity-0 transition group-hover:opacity-100"
+                style={{
+                  background:
+                    "radial-gradient(circle, color-mix(in oklab, var(--primary) 25%, transparent), transparent 70%)",
+                }}
+              />
+              <p.icon className="h-7 w-7 text-primary" />
+              <h3 className="mt-5 text-lg font-semibold text-foreground">{p.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 /* ============================================================
    GRID DE FEATURES
@@ -579,11 +630,12 @@ function PricingSection() {
         <div className="text-center">
           <SectionEyebrow>Planos</SectionEyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Escolha como quer dominar suas<br className="hidden sm:block" /> finanças.
+            Escolha como quer dominar suas
+            <br className="hidden sm:block" /> finanças.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-            Três caminhos. O mesmo destino:{" "}
-            <strong className="text-foreground">controle absoluto</strong> sobre seu dinheiro.
+            Três caminhos. O mesmo destino: <strong className="text-foreground">controle absoluto</strong> sobre seu
+            dinheiro.
           </p>
         </div>
 
@@ -592,9 +644,7 @@ function PricingSection() {
             <div
               key={plano.nome}
               className={`relative flex flex-col rounded-2xl border p-7 transition ${
-                plano.destaque
-                  ? "border-primary/40 bg-card shadow-2xl shadow-primary/10"
-                  : "border-border bg-card/60"
+                plano.destaque ? "border-primary/40 bg-card shadow-2xl shadow-primary/10" : "border-border bg-card/60"
               }`}
             >
               {/* Badge */}
@@ -621,9 +671,7 @@ function PricingSection() {
 
               {/* Preço */}
               <div className="mt-5 flex items-baseline gap-1">
-                <span className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                  R$ {plano.preco}
-                </span>
+                <span className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">R$ {plano.preco}</span>
                 <span className="text-sm text-muted-foreground">{plano.periodo}</span>
               </div>
 
@@ -1001,7 +1049,7 @@ export function LandingPage() {
         <Hero />
         <AudienceStrip />
         <ProblemAgitation />
-        
+
         <FeatureGrid />
         <MetricsBand />
         <HowItWorks />
