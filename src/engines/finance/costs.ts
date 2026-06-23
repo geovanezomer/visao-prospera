@@ -15,6 +15,21 @@ export function isCpvCost(c: CostLine): boolean {
   return c.category === "custo_vendas" || c.category === "direto_venda";
 }
 
+/** Despesa Administrativa (função CPC 26). Aceita o alias legado `fixo`. */
+export function isAdminCost(c: CostLine): boolean {
+  return c.category === "despesa_administrativa" || c.category === "fixo";
+}
+
+/** Despesa Comercial / Vendas (função CPC 26). Aceita o alias legado `variavel`. */
+export function isComercialCost(c: CostLine): boolean {
+  return c.category === "despesa_comercial" || c.category === "variavel";
+}
+
+/** Despesa Financeira (Resultado Financeiro pós-EBIT). */
+export function isFinanceiroCost(c: CostLine): boolean {
+  return c.category === "financeiro";
+}
+
 export function fixedCostBase(values: number[]): number {
   const normalized = values.length === 12 ? values : fill12(values[0] || 0);
 

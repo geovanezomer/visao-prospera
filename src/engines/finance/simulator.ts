@@ -131,7 +131,8 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       }));
     }
     s.costs = s.costs.map((c) =>
-      c.category === "custo_vendas" || c.category === "direto_venda" || c.category === "variavel"
+      c.category === "custo_vendas" || c.category === "direto_venda" ||
+      c.category === "variavel" || c.category === "despesa_comercial"
         ? { ...c, values: c.values.map((v) => v * f) }
         : c,
     );
@@ -174,7 +175,7 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       s.costs.push({
         id: `sim_outsource`,
         label: `Terceirização (${p.outsourcePctCpv.toFixed(0)}% da operação)`,
-        category: "fixo",
+        category: "despesa_administrativa",
         values: fill12(p.outsourceFixedMonthly),
         fixed: true,
         custom: true,
@@ -349,8 +350,8 @@ export function computeSimView(state: AppState, precomputed?: SimViewPrecomputed
     despFinanc = 0;
   for (const c of state.costs) {
     const v = sum(monthValues(c, regime));
-    if (c.category === "variavel") despComerciais += v;
-    else if (c.category === "fixo") despAdmin += v;
+    if (c.category === "despesa_comercial" || c.category === "variavel") despComerciais += v;
+    else if (c.category === "despesa_administrativa" || c.category === "fixo") despAdmin += v;
     else if (c.category === "financeiro") despFinanc += v;
   }
   const outrasOp = -sum(dre.depreciacao);

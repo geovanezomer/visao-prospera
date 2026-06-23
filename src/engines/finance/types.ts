@@ -52,7 +52,30 @@ export type BusinessType = "servicos" | "comercio" | "industria";
 export type TaxRegime = "simples" | "presumido" | "real";
 export type SimplesAnexo = "I" | "II" | "III" | "IV" | "V";
 
-export type CostCategory = "custo_vendas" | "fixo" | "variavel" | "financeiro" | "direto_venda";
+/**
+ * Categorias de custo — desdobradas em FUNÇÃO contábil (CPC 26 / Lei 6.404):
+ *  - custo_vendas / direto_venda → CPV/CMV/CSP
+ *  - despesa_administrativa      → Despesas Administrativas (estrutura mínima)
+ *  - despesa_comercial           → Despesas Comerciais / Vendas (marketing, comissões, frete s/ vendas)
+ *  - financeiro                  → Despesas Financeiras (Resultado Financeiro)
+ *
+ * Os valores `fixo` e `variavel` permanecem como ALIASES LEGADOS de
+ * `despesa_administrativa` e `despesa_comercial`, respectivamente — preservam
+ * estados antigos persistidos. A migração `migrateCostLine` normaliza ao carregar.
+ *
+ * COMPORTAMENTO (fixo × variável para MC/PE/Monte Carlo) é tratado em
+ * `CostLine.comportamento` — desacoplado da função contábil acima.
+ */
+export type CostCategory =
+  | "custo_vendas"
+  | "direto_venda"
+  | "despesa_administrativa"
+  | "despesa_comercial"
+  | "financeiro"
+  /** @deprecated alias de `despesa_administrativa` — mantido p/ compat de snapshots antigos. */
+  | "fixo"
+  /** @deprecated alias de `despesa_comercial` — mantido p/ compat de snapshots antigos. */
+  | "variavel";
 export type CostSubcategory = string;
 
 export interface RevenueDeducao {

@@ -106,16 +106,19 @@ export function DRETab() {
   const descIncond = dedById("desc_incond")?.valores ?? Array(12).fill(0);
   const abatimentos = dedById("abatimentos")?.valores ?? Array(12).fill(0);
 
-  // ===== Quebra de despesas por categoria (mensal) =====
+  // ===== Quebra de despesas por FUNÇÃO contábil (CPC 26 / Lei 6.404) =====
   const zeros = () => Array(12).fill(0);
-  const despComerciais = zeros(); // category = "variavel"
-  const despAdmin = zeros(); // category = "fixo"
-  const despFinanc = zeros(); // category = "financeiro"
+  const despComerciais = zeros(); // despesa_comercial (+ alias legado: variavel)
+  const despAdmin = zeros(); // despesa_administrativa (+ alias legado: fixo)
+  const despFinanc = zeros(); // financeiro
   for (const c of state.costs) {
     const v = monthValues(c, state.tax.regime);
-    if (c.category === "variavel") for (let i = 0; i < 12; i++) despComerciais[i] += v[i];
-    else if (c.category === "fixo") for (let i = 0; i < 12; i++) despAdmin[i] += v[i];
-    else if (c.category === "financeiro") for (let i = 0; i < 12; i++) despFinanc[i] += v[i];
+    if (c.category === "despesa_comercial" || c.category === "variavel")
+      for (let i = 0; i < 12; i++) despComerciais[i] += v[i];
+    else if (c.category === "despesa_administrativa" || c.category === "fixo")
+      for (let i = 0; i < 12; i++) despAdmin[i] += v[i];
+    else if (c.category === "financeiro")
+      for (let i = 0; i < 12; i++) despFinanc[i] += v[i];
   }
   // Receitas Financeiras — separar genuínas (rendimentos de aplicações, juros recebidos)
   // das operacionais (aluguéis, venda de ativos). As operacionais JÁ entram no EBITDA via
@@ -151,10 +154,10 @@ export function DRETab() {
   // EBT = LAFT − Despesas Financeiras (≡ dre.lair)
   const ebt = dre.lair;
 
-  // Linhas para accordions
-  const linhaPorCat = (cat: CostCategory) =>
+  // Linhas para accordions. Aceita listas de categorias (suporta alias legado).
+  const linhaPorCat = (cats: CostCategory[]) =>
     state.costs
-      .filter((c) => c.category === cat)
+      .filter((c) => cats.includes(c.category))
       .map((c) => ({ label: c.label, values: monthValues(c, state.tax.regime) }))
       .filter((x) => sum(x.values) > 0);
   // Linhas detalhadas do CPV/CMV/CSP
@@ -228,7 +231,7 @@ export function DRETab() {
       titulo: "(−) Despesas Comerciais",
       v: despComerciais.map((x) => -x),
       tone: "neg",
-      lines: linhaPorCat("variavel"),
+      lines: linhaPorCat(["despesa_comercial", "variavel"]),
       emptyMsg: "Nenhuma despesa comercial cadastrada.",
     },
     {
@@ -237,7 +240,7 @@ export function DRETab() {
       titulo: "(−) Despesas Administrativas",
       v: despAdmin.map((x) => -x),
       tone: "neg",
-      lines: linhaPorCat("fixo"),
+      lines: linhaPorCat(["despesa_administrativa", "fixo"]),
       emptyMsg: "Nenhuma despesa administrativa cadastrada.",
     },
     {
@@ -285,7 +288,7 @@ export function DRETab() {
       titulo: "(−) Despesas Financeiras",
       v: despFinanc.map((x) => -x),
       tone: "neg",
-      lines: linhaPorCat("financeiro"),
+      lines: linhaPorCat(["financeiro"]),
       emptyMsg: "Nenhuma despesa financeira cadastrada.",
     },
     {

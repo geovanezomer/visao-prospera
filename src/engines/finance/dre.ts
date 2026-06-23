@@ -134,7 +134,9 @@ function classifyCosts(
     }
     despesasPorCategoria[c.label] = v;
     const isCpv = c.category === "custo_vendas" || c.category === "direto_venda";
-    const isOpVar = c.category === "variavel";
+    // Default de COMPORTAMENTO (variável vs fixo) por categoria. Despesa Comercial
+    // escala com vendas (comissões, marketing, frete s/ vendas) → default variável.
+    const isOpVar = c.category === "variavel" || c.category === "despesa_comercial";
     // Comportamento (fixo/variável) para MC/PE. Default deriva da category;
     // override manual via `comportamento` cobre casos como folha CLT no CPV
     // (variável contábil, mas fixo no curto prazo — distorce MC/PE se não for sinalizado).
