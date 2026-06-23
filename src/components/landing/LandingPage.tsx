@@ -949,11 +949,11 @@ function FinalCta() {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <ShieldCheck className="h-4 w-4 text-primary" />
-            Engine auditada
+            Engine atualizada periodicamente
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Lock className="h-4 w-4 text-primary" />
-            Dados criptografados
+            IndexedDB - Dados ficam no seu navegador
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Zap className="h-4 w-4 text-primary" />
