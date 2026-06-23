@@ -6,6 +6,7 @@ import { aggregate, periodLabels, Period } from "@/components/sim/cashflow/table
 import { usePeriodView } from "@/hooks/usePeriodView";
 import { useAnnualSnapshots } from "@/hooks/useAnnualSnapshots";
 import { CashFlowComparison } from "@/components/sim/comparison/ComparisonView";
+import { useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 
 // Tabela DFC pelo método direto, com agregação mensal/trimestral/anual.
 export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof buildCashFlow> }) {
