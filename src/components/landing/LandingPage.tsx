@@ -903,7 +903,7 @@ export function LandingPage() {
         <Hero />
         <AudienceStrip />
         <ProblemAgitation />
-        <SolutionPillars />
+        
         <FeatureGrid />
         <MetricsBand />
         <HowItWorks />
