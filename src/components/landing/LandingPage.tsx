@@ -620,7 +620,7 @@ function PricingSection() {
   ];
 
   return (
-    <section className="border-b border-border/50 py-24">
+    <section id="planos" className="scroll-mt-20 border-b border-border/50 py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center">
           <SectionEyebrow>Planos</SectionEyebrow>
