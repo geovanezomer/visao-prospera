@@ -103,7 +103,7 @@ export function useFinnanceFile({
     const t = setTimeout(() => {
       try {
         const env: DraftEnvelope = { ts: Date.now(), state, scenarios };
-        localStorage.setItem(draftKey(state.companyName), JSON.stringify(env));
+        saveKeySync(draftKey(state.companyName), env);
       } catch {
         /* quota / privacy mode — ignora */
       }
