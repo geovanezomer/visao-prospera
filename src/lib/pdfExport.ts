@@ -781,7 +781,16 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
       .replace(/≤/g, "<=")
       .replace(/Δ/g, "Dif")
       .replace(/…/g, "...")
-      .replace(/\u00A0/g, " ");
+      .replace(/[\u2248\u2243\u2245]/g, "~") // ≈ ≃ ≅ aproximadamente
+      .replace(/[\u00D7\u2715]/g, "x")        // × multiplicação
+      .replace(/[\u00F7]/g, "/")              // ÷ divisão
+      .replace(/[\u2022\u25CF\u25E6]/g, "-") // • bullets
+      .replace(/[\u2013\u2014]/g, "-")        // – — en/em dash
+      .replace(/[\u2018\u2019\u201A\u201B]/g, "'") // aspas curvas simples
+      .replace(/[\u201C\u201D\u201E\u201F]/g, '"') // aspas curvas duplas
+      .replace(/\u00A0/g, " ")
+      // fallback: remove qualquer caractere fora do WinAnsi (evita medição quebrada)
+      .replace(/[^\x00-\xFF]/g, "");
 
   // monkey-patch doc.text e splitTextToSize
   const _origText = doc.text.bind(doc);
