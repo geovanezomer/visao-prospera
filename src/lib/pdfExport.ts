@@ -1049,7 +1049,7 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   pageMeta[doc.getNumberOfPages()] = { eyebrow: "05", title: "Prioridades do CFO" };
   y = pageTitle(doc, CONTENT_TOP, "05  ·  Plano de Ação",
     "Prioridades do CFO",
-    "Top 3 prioridades — ordenadas por impacto financeiro e prazo de execução.");
+    "Principais prioridades ordenadas por impacto financeiro e prazo de execução.");
 
   const priorities = buildPriorities(prescriptive, diags).slice(0, 6);
   if (priorities.length === 0) {
