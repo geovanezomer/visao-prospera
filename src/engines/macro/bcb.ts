@@ -1,5 +1,6 @@
 // API SGS do Banco Central — séries macro públicas, sem chave.
 // Doc: https://dadosabertos.bcb.gov.br/dataset/
+import { saveKeySync } from "@/engines/finance/persistence";
 
 const SERIES = {
   selic: 432, // Meta Selic % a.a.
@@ -51,7 +52,7 @@ function loadCache(): Record<string, MacroSerie> {
 }
 function saveCache(c: Record<string, MacroSerie>) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(c));
+    saveKeySync(CACHE_KEY, c);
   } catch {
     // localStorage cheio ou indisponível (modo privado) — cache fica só em memória nesta sessão
   }
