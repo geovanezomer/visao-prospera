@@ -212,24 +212,12 @@ function SharedReport() {
                 aria-label="Conteúdo somente leitura"
               >
               <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Carregando…</div>}>
-                {activeTab === "receitas" && <RevenueTab />}
-                {activeTab === "custos" && <CostsTab />}
-                {activeTab === "capital" && <CapitalTab />}
-                {activeTab === "tributos" && <TaxTab />}
+                {activeTab === "dashboard" && <DashboardTab />}
                 {activeTab === "caixa" && <CashflowTab />}
-                {activeTab === "governanca" && <StrategicTab />}
                 {activeTab === "dre" && <DRETab />}
                 {activeTab === "balanco" && <BalancoTab />}
                 {activeTab === "indicadores" && <IndicatorsTab />}
                 {activeTab === "resultados" && <DiagnosisTab />}
-                {activeTab === "dashboard" && <DashboardTab />}
-                {activeTab === "valuation" && (
-                  <ValuationTab
-                    baseState={parsed.state}
-                    simulatedState={parsed.state}
-                    simActive={0}
-                  />
-                )}
               </Suspense>
               </fieldset>
             </FinanceErrorBoundary>
