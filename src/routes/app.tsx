@@ -1,0 +1,425 @@
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useAppState, useScenarios } from "@/engines/finance/store";
+import { FinanceProvider, FinanceErrorBoundary } from "@/engines/finance/AppStateContext";
+import { usePersistedSimParams } from "@/engines/finance/usePersistedSimParams";
+import { useFinnanceFile } from "@/engines/finance/useFinnanceFile";
+import { useConfirm } from "@/hooks/useConfirm";
+import { useAuth } from "@/lib/auth";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+
+// ─────────────────────────────────────────────────────────────────────────
+// Lazy-load das abas — cada uma vira um chunk separado.
+// Antes: TODAS as abas (Recharts, jsPDF, IA, etc.) entravam no bundle
+// inicial → first paint de 15–20s no VPS. Agora só a aba ativa é baixada.
+// ─────────────────────────────────────────────────────────────────────────
+const RevenueTab = lazy(() => import("@/components/sim/revenue/RevenueTab").then(m => ({ default: m.RevenueTab })));
+const CostsTab = lazy(() => import("@/components/sim/costs/CostsTab").then(m => ({ default: m.CostsTab })));
+const CapitalTab = lazy(() => import("@/components/sim/capital/CapitalTab").then(m => ({ default: m.CapitalTab })));
+const TaxTab = lazy(() => import("@/components/sim/tax/TaxTab").then(m => ({ default: m.TaxTab })));
+const DRETab = lazy(() => import("@/components/sim/dre/DRETab").then(m => ({ default: m.DRETab })));
+const BalancoTab = lazy(() => import("@/components/sim/balanco/BalancoTab").then(m => ({ default: m.BalancoTab })));
+const CashflowTab = lazy(() => import("@/components/sim/cashflow/CashflowTab").then(m => ({ default: m.CashflowTab })));
+const DiagnosisTab = lazy(() => import("@/components/sim/diagnosis/DiagnosisTab").then(m => ({ default: m.DiagnosisTab })));
+const StrategicTab = lazy(() => import("@/components/sim/strategic/StrategicTab").then(m => ({ default: m.StrategicTab })));
+const SimulatorTab = lazy(() => import("@/components/sim/simulator/SimulatorTab").then(m => ({ default: m.SimulatorTab })));
+const ValuationTab = lazy(() => import("@/components/sim/valuation/ValuationTab").then(m => ({ default: m.ValuationTab })));
+const IndicatorsTab = lazy(() => import("@/components/sim/indicators/IndicatorsTab").then(m => ({ default: m.IndicatorsTab })));
+const DashboardTab = lazy(() => import("@/components/sim/dashboard/DashboardTab").then(m => ({ default: m.DashboardTab })));
+const AIView = lazy(() => import("@/components/ai/AIView").then(m => ({ default: m.AIView })));
+const CalculadorasTab = lazy(() => import("@/components/calculadoras/CalculadorasTab").then(m => ({ default: m.CalculadorasTab })));
+
+import { ScenarioBar } from "@/components/sim/shared/ScenarioBar";
+import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
+import { TabKey } from "@/engines/finance/types";
+import {
+  applySimulator,
+  countActiveLevers,
+  DEFAULT_SIM,
+  SimulatorParams,
+} from "@/engines/finance/simulator";
+import { AppSidebar } from "@/components/layout/AppSidebar";
+import { Button } from "@/components/ui/button";
+import { RotateCcw, Presentation, X, FileText, Printer } from "lucide-react";
+// pdfExport e buildFinancialModel são carregados via dynamic import dentro
+// do handler de export — economiza ~850 KB no bundle inicial (jsPDF + autotable).
+import { toast } from "sonner";
+import { TaxSettingsDialog } from "@/components/sim/tax/TaxSettingsDialog";
+import { Badge } from "@/components/ui/badge";
+import type { BackupStatus } from "@/lib/api/cloudBackup";
+import { isBackupEnabled } from "@/lib/api/cloudBackup";
+import { RestoreBackupDialog } from "@/components/sim/shared/RestoreBackupDialog";
+import { SaveShareDialog } from "@/components/sim/shared/SaveShareDialog";
+import { FeedbackDialog } from "@/components/sim/shared/FeedbackDialog";
+import { SharedLinksDialog } from "@/components/sim/shared/SharedLinksDialog";
+import { cn } from "@/lib/utils";
+
+// Fallback enquanto o chunk da aba carrega.
+function TabLoading() {
+  return (
+    <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">
+      Carregando…
+    </div>
+  );
+}
+
+
+// Formata "há X" relativo para o breadcrumb do header.
+function timeAgo(ts: number | null): string {
+  if (!ts) return "—";
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 5) return "agora";
+  if (s < 60) return `há ${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `há ${m}min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `há ${h}h`;
+  return new Date(ts).toLocaleDateString("pt-BR");
+}
+
+export const Route = createFileRoute("/app")({
+  head: () => ({
+    meta: [
+      { title: "FinnancePRO — Diagnóstico & Simulação Empresarial" },
+      {
+        name: "description",
+        content:
+          "FinnancePRO: diagnóstico financeiro, DRE simulado, regime tributário, WACC e análise de cenários para empresas brasileiras.",
+      },
+    ],
+    links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap",
+      },
+    ],
+  }),
+  component: SimulaPro,
+});
+
+function SimulaPro() {
+  const { user, hydrated } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (hydrated && !user) navigate({ to: "/login" });
+  }, [hydrated, user, navigate]);
+
+  const { state, update, reset, setState, hydrated: stateHydrated, autosaveStatus } = useAppState();
+  const { scenarios, save, remove, replaceAll: replaceScenarios } = useScenarios();
+  const [activeTab, setActiveTab] = useState<TabKey | "ai" | "calculadoras">("dre");
+  // Parâmetros do Simulador persistidos por usuário (IndexedDB + fallback localStorage).
+  const [simParams, setSimParams] = usePersistedSimParams(user?.id ?? "guest");
+  const [meetingMode, setMeetingMode] = useState(false);
+  // Ticker que força re-render a cada 30s para atualizar o "salvo há X" do breadcrumb.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  const simulatedState = useMemo(() => applySimulator(state, simParams), [state, simParams]);
+  const simActive = countActiveLevers(simParams);
+
+  const { confirm, dialog: confirmDialog } = useConfirm();
+  // Status do backup automático no Supabase Storage (header indicator).
+  const [backupStatus, setBackupStatus] = useState<BackupStatus>("idle");
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [saveShareOpen, setSaveShareOpen] = useState(false);
+  const fileApi = useFinnanceFile({
+    state,
+    scenarios,
+    setState,
+    replaceScenarios,
+    resetState: reset,
+    hydrated: stateHydrated,
+    confirm,
+    userId: user?.id,
+    onBackupStatus: setBackupStatus,
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (meetingMode) root.classList.add("meeting-mode");
+    else root.classList.remove("meeting-mode");
+    return () => root.classList.remove("meeting-mode");
+  }, [meetingMode]);
+
+  useEffect(() => {
+    if (!meetingMode) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMeetingMode(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [meetingMode]);
+
+  // Escuta evento ("carregar_cenario" da IA ou deep-link de DiagnosisTab → SimulatorTab).
+  // Aceita Partial<SimulatorParams>; faz merge com DEFAULT_SIM para nunca corromper o estado.
+  useEffect(() => {
+    const onApply = (e: Event) => {
+      const detail = (e as CustomEvent).detail as Partial<SimulatorParams> | null | undefined;
+      if (detail && typeof detail === "object") {
+        setSimParams({ ...DEFAULT_SIM, ...detail });
+        setActiveTab("simulador");
+      } else {
+        setSimParams(DEFAULT_SIM);
+      }
+    };
+    window.addEventListener("gz-apply-simulator-params", onApply);
+    return () => window.removeEventListener("gz-apply-simulator-params", onApply);
+  }, []);
+
+
+  if (!hydrated || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+        Carregando…
+      </div>
+    );
+  }
+
+  return (
+    <SidebarProvider>
+      <FinanceProvider state={state} update={update}>
+        <div className="flex min-h-screen w-full bg-background text-foreground">
+          <AppSidebar
+            activeTab={activeTab}
+            setActiveTab={(tab) => {
+              setActiveTab(tab);
+              // No mobile, fecha a sidebar após selecionar
+              if (window.innerWidth < 768) {
+                document.dispatchEvent(new CustomEvent("close-mobile-sidebar"));
+              }
+            }}
+            onSave={() => setSaveShareOpen(true)}
+            onOpen={fileApi.open}
+            onRestoreFromCloud={
+              user && isBackupEnabled() ? () => setRestoreOpen(true) : undefined
+            }
+            currentFileName={fileApi.currentFileName}
+            dirty={fileApi.dirty}
+          />
+
+          <SidebarInset className="flex flex-col">
+            <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/80 px-4 backdrop-blur sm:px-6">
+              <div className="flex items-center gap-2 min-w-0">
+                <SidebarTrigger className="h-9 w-9" data-meeting-hide="true" />
+                <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                  <h2 className="text-sm font-medium capitalize text-muted-foreground md:text-base shrink-0">
+                    {activeTab === "ai" ? "Consultor IA" : activeTab}
+                  </h2>
+                  {/* Breadcrumb: empresa + status de backup na nuvem. */}
+                  <div
+                    className="hidden md:flex items-center gap-1.5 min-w-0 text-[11px] text-muted-foreground border-l border-border/40 pl-3"
+                    data-meeting-hide="true"
+                  >
+                    <FileText className="h-3 w-3 shrink-0" />
+                    <span className="truncate font-medium text-foreground/80">
+                      {state.companyName?.trim() || "Sem empresa"}
+                    </span>
+                    {/* Indicador de backup na nuvem — só aparece quando há userId e status ≠ idle. */}
+                    {user && backupStatus !== "idle" && (
+                      <>
+                        <span className="opacity-40">·</span>
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1",
+                            backupStatus === "syncing" && "text-muted-foreground",
+                            backupStatus === "synced" && "text-emerald-500",
+                            backupStatus === "error" && "text-amber-500",
+                          )}
+                          title={
+                            backupStatus === "syncing"
+                              ? "Sincronizando com a nuvem…"
+                              : backupStatus === "synced"
+                                ? "Backup salvo na nuvem"
+                                : "Backup falhou — arquivo local salvo"
+                          }
+                        >
+                          {backupStatus === "syncing" && "↻ Sincronizando"}
+                          {backupStatus === "synced" && "☁ Backup salvo"}
+                          {backupStatus === "error" && "⚠ Sem backup"}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+
+              {/* Pills centralizados: só aparecem em DRE / Fluxo de Caixa. */}
+              {(activeTab === "dre" || activeTab === "caixa") && (
+                <div
+                  className="hidden md:flex flex-1 justify-center px-4 min-w-0"
+                  data-meeting-hide="true"
+                >
+                  <HistoricalYearPills />
+                </div>
+              )}
+
+
+
+              <div className="flex items-center gap-2">
+                {meetingMode && (
+                  <Badge
+                    variant="outline"
+                    className="hidden sm:inline-flex border-primary/40 bg-primary/10 text-primary text-[10px] uppercase tracking-wider"
+                  >
+                    Modo Reunião · ESC para sair
+                  </Badge>
+                )}
+                <div data-meeting-hide="true" className="contents">
+                  <TaxSettingsDialog />
+                  <Button
+                    size="sm"
+                    variant={meetingMode ? "default" : "ghost"}
+                    onClick={() => setMeetingMode((v) => !v)}
+                    className="h-8 w-8 p-0"
+                    title={meetingMode ? "Sair do Modo Reunião" : "Modo Reunião: oculta menus, amplia fontes e destaca KPIs"}
+                    aria-label={meetingMode ? "Sair do Modo Reunião" : "Modo Reunião"}
+                  >
+                    {meetingMode ? (
+                      <X className="h-3.5 w-3.5" />
+                    ) : (
+                      <Presentation className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={async () => {
+                      try {
+                        toast.loading("Gerando PDF…", { id: "pdf-export" });
+                        // Dynamic imports — jsPDF + autotable (~850 KB) só carregam ao clicar.
+                        const [{ exportFinancePDF }, { buildFinancialModel }] = await Promise.all([
+                          import("@/lib/pdfExport"),
+                          import("@/engines/finance/financialModel"),
+                        ]);
+                        const model = buildFinancialModel(state);
+                        await exportFinancePDF({ state, model });
+                        toast.success("PDF gerado com sucesso", { id: "pdf-export" });
+                      } catch (err) {
+                        console.error("[pdf-export] falhou:", err);
+                        toast.error("Falha ao gerar PDF", { id: "pdf-export" });
+                      }
+                    }}
+                    title="Exportar relatório em PDF"
+                    aria-label="Exportar PDF"
+                  >
+                    <Printer className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={() => void fileApi.resetWithConfirm()}
+                    title="Restaurar dados (Ctrl+Shift+R)"
+                    aria-label="Reset"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </Button>
+                  <SharedLinksDialog />
+                  <FeedbackDialog />
+                </div>
+              </div>
+            </header>
+
+            <main className="flex-1 overflow-x-hidden overflow-y-auto">
+              <div
+                className={
+                  activeTab === "ai"
+                    ? "h-[calc(100dvh-3.5rem)] w-full max-w-[1600px] mx-auto"
+                    : "mx-auto h-full max-w-[1600px] p-2 sm:p-4 md:p-6"
+                }
+              >
+                {/* Boundary garante que crash em uma aba não derruba o app inteiro
+                  e que componentes consumidos fora do FinanceProvider exibam
+                  fallback amigável em vez de tela branca. */}
+                <FinanceErrorBoundary>
+                  <Suspense fallback={<TabLoading />}>
+                    {activeTab === "ai" ? (
+                      <AIView
+                        state={state}
+                        simulatedState={simulatedState}
+                        simActive={simActive}
+                        simParams={simParams}
+                      />
+                    ) : activeTab === "calculadoras" ? (
+                      <div className="animate-in fade-in duration-500">
+                        <CalculadorasTab />
+                      </div>
+                    ) : (
+                      <div className="space-y-6 animate-in fade-in duration-500">
+                        {activeTab === "receitas" && <RevenueTab />}
+                        {activeTab === "custos" && <CostsTab />}
+                        {activeTab === "capital" && <CapitalTab />}
+                        {activeTab === "tributos" && <TaxTab />}
+                        {activeTab === "caixa" && <CashflowTab />}
+                        {activeTab === "governanca" && <StrategicTab />}
+                        {activeTab === "dre" && <DRETab />}
+                        {activeTab === "balanco" && <BalancoTab />}
+                        {activeTab === "indicadores" && <IndicatorsTab />}
+                        {activeTab === "resultados" && <DiagnosisTab />}
+                        {activeTab === "dashboard" && <DashboardTab />}
+                        {activeTab === "simulador" && (
+                          <SimulatorTab
+                            state={state}
+                            apply={update}
+                            params={simParams}
+                            setParams={setSimParams}
+                          />
+                        )}
+                        {activeTab === "valuation" && (
+                          <ValuationTab
+                            baseState={state}
+                            simulatedState={simulatedState}
+                            simActive={simActive}
+                          />
+                        )}
+                      </div>
+                    )}
+                  </Suspense>
+                </FinanceErrorBoundary>
+              </div>
+            </main>
+
+            <footer className="border-t border-border/20 py-4 text-center text-[10px] text-muted-foreground">
+              <p>© 2026 FinnancePRO | Desenvolvido por GZ Consultoria Financeira &amp; Investimentos</p>
+            </footer>
+          </SidebarInset>
+
+          <ScenarioBar />
+          {confirmDialog}
+          {user && (
+            <RestoreBackupDialog
+              open={restoreOpen}
+              onOpenChange={setRestoreOpen}
+              userId={user.id}
+              currentCompanyName={state.companyName}
+              currentFileName={fileApi.currentFileName}
+              lastModified={fileApi.lastModified}
+              hasUnsavedChanges={fileApi.dirty}
+              confirm={confirm}
+              setState={setState}
+              replaceScenarios={replaceScenarios}
+              onRestored={() => { /* file foi carregado pelo setState */ }}
+            />
+          )}
+          <SaveShareDialog
+            open={saveShareOpen}
+            onOpenChange={setSaveShareOpen}
+            onSaveDisk={fileApi.saveToDisk}
+            onSaveCloud={user && isBackupEnabled() ? fileApi.saveToCloud : undefined}
+            state={state}
+            scenarios={scenarios}
+            canUseCloud={!!user && isBackupEnabled()}
+          />
+          {/* AI FAB REMOVIDO POR SOLICITAÇÃO DO USUÁRIO */}
+        </div>
+      </FinanceProvider>
+    </SidebarProvider>
+  );
+}
