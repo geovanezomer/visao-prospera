@@ -120,3 +120,5 @@ function MeterBar({
     </div>
   );
 }
+
+export const WaccRoicMeter = memo(WaccRoicMeterImpl);
