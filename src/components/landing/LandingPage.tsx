@@ -12,6 +12,7 @@ import {
   Calculator,
   CheckCircle2,
   Clock,
+  Crown,
   FileSpreadsheet,
   Gauge,
   LineChart,
