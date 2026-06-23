@@ -15,7 +15,7 @@ import { useEffect } from "react";
 
 import {
   LogOut,
-  Save,
+  Share2,
   FolderOpen,
   Calculator,
   Cloud,
@@ -135,10 +135,10 @@ export function AppSidebar({
                 onClick={onSave}
                 className="h-8 w-full justify-start"
                 data-meeting-hide="true"
-                title="Salvar arquivo .finnance (Ctrl+S)"
+                title="Salvar arquivo, backup na nuvem ou gerar link de compartilhamento"
               >
-                <Save className="h-3.5 w-3.5 mr-2" />
-                <span>Salvar{dirty ? " ●" : ""}</span>
+                <Share2 className="h-3.5 w-3.5 mr-2" />
+                <span>Salvar / Compartilhar{dirty ? " ●" : ""}</span>
               </Button>
               <Button
                 size="sm"
