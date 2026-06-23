@@ -85,6 +85,28 @@ function SharedReport() {
   const noopUpdate = () => {};
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
 
+  // Timer regressivo até a expiração do link. Atualiza a cada 1s.
+  const expiresAt = data.expiresAt ?? null;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!expiresAt) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [expiresAt]);
+  const remainingLabel = (() => {
+    if (!expiresAt) return null;
+    const ms = new Date(expiresAt).getTime() - now;
+    if (ms <= 0) return { text: "expirado", tone: "crit" as const };
+    const h = Math.floor(ms / 3_600_000);
+    const m = Math.floor((ms % 3_600_000) / 60_000);
+    const s = Math.floor((ms % 60_000) / 1000);
+    const d = Math.floor(h / 24);
+    const text =
+      d >= 1 ? `${d}d ${h % 24}h` : h >= 1 ? `${h}h ${m}m` : m >= 1 ? `${m}m ${s}s` : `${s}s`;
+    const tone: "ok" | "warn" | "crit" = h < 1 ? "crit" : h < 6 ? "warn" : "ok";
+    return { text, tone };
+  })();
+
   // Bloqueia atalhos de edição/salvamento/impressão nesta rota.
   // Ctrl/Cmd + S/O/P/U/I/J + Ctrl+Shift+R/I/J + F2/F3 viram no-op com toast.
   useEffect(() => {
