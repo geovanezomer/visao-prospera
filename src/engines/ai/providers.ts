@@ -429,9 +429,14 @@ export function loadThreads(company: string): ChatThread[] {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-      localStorage.setItem(THREADS_KEY(company), JSON.stringify([t]));
-      localStorage.setItem(MSGS_KEY(company, "default"), legacy);
-      localStorage.removeItem(LEGACY_KEY(company));
+      saveKeySync(THREADS_KEY(company), [t]);
+      // legacy é string crua, não JSON; preserva como veio para não corromper.
+      try {
+        saveKeySync(MSGS_KEY(company, "default"), JSON.parse(legacy));
+      } catch {
+        // legacy malformado — descarta
+      }
+      removeKey(LEGACY_KEY(company));
       return [t];
     }
     return [];
@@ -442,7 +447,7 @@ export function loadThreads(company: string): ChatThread[] {
 
 export function saveThreads(company: string, threads: ChatThread[]) {
   try {
-    localStorage.setItem(THREADS_KEY(company), JSON.stringify(sanitizeThreads(threads)));
+    saveKeySync(THREADS_KEY(company), sanitizeThreads(threads));
   } catch {
     // storage indisponível — threads não persistem nesta sessão
   }
@@ -459,10 +464,7 @@ export function loadMessages(company: string, tid: string): ChatMessage[] {
 
 export function saveMessages(company: string, tid: string, msgs: ChatMessage[]) {
   try {
-    localStorage.setItem(
-      MSGS_KEY(company, tid),
-      JSON.stringify(sanitizeMessages(msgs).slice(-100)),
-    );
+    saveKeySync(MSGS_KEY(company, tid), sanitizeMessages(msgs).slice(-100));
   } catch {
     // storage indisponível — mensagens não persistem nesta sessão
   }
@@ -470,7 +472,7 @@ export function saveMessages(company: string, tid: string, msgs: ChatMessage[]) 
 
 export function deleteThread(company: string, tid: string) {
   try {
-    localStorage.removeItem(MSGS_KEY(company, tid));
+    removeKey(MSGS_KEY(company, tid));
     const ts = loadThreads(company).filter((t) => t.id !== tid);
     saveThreads(company, ts);
   } catch {
