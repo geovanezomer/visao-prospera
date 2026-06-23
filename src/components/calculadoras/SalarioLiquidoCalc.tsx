@@ -125,7 +125,7 @@ export function SalarioLiquidoCalc() {
             </Field>
             <Field
               label="Filhos menores de 14 anos"
-              hint="Usado para salário-família (renda ≤ R$ 1.906,56)."
+              hint="Usado para salário-família (renda ≤ R$ 1.906,04)."
             >
               <Input
                 type="number"
@@ -369,8 +369,8 @@ export function SalarioLiquidoCalc() {
                 O cálculo segue uma ordem específica: primeiro desconta-se o INSS, pois a base do
                 IRRF já considera o INSS como dedução. Em seguida aplica-se a tabela do IR sobre a
                 base resultante. Cada dependente reduz a base do IR em <strong>R$ 189,59</strong>.
-                Beneficiários do Salário-Família (renda bruta até R$ 1.906,56) recebem acréscimo de
-                R$ 62,04 por filho menor de 14 anos.
+                Beneficiários do Salário-Família (renda bruta até R$ 1.906,04) recebem acréscimo de
+                R$ 65,00 por filho menor de 14 anos.
               </p>
               <div className="rounded-md bg-muted/40 p-3 font-mono text-xs">
                 Base IRRF = Salário Bruto − INSS − (Dependentes × R$ 189,59) − Pensão
@@ -423,8 +423,8 @@ export function SalarioLiquidoCalc() {
                     12% da renda bruta anual na declaração completa.
                   </li>
                   <li>
-                    <strong>Cheque o Salário-Família:</strong> se seu bruto for até R$ 1.906,56,
-                    você tem direito a R$ 62,04 por filho menor de 14 anos — basta apresentar
+                    <strong>Cheque o Salário-Família:</strong> se seu bruto for até R$ 1.906,04,
+                    você tem direito a R$ 65,00 por filho menor de 14 anos — basta apresentar
                     certidão de nascimento ao RH.
                   </li>
                   <li>
