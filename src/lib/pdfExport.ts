@@ -1628,6 +1628,9 @@ function renderDRE(doc: jsPDF, yStart: number, state: AppState, model: Financial
       5: { halign: "right", cellWidth: 63, fontStyle: "bold" },
     },
   );
+}
+
+
 
 // =====================================================================
 // APÊNDICE — Balanço
