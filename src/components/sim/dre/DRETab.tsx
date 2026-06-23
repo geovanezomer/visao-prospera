@@ -1,5 +1,5 @@
 import { useState, Fragment } from "react";
-import { useFinance } from "@/engines/finance/AppStateContext";
+import { useFinance, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { usePeriodView } from "@/hooks/usePeriodView";
 import {
   AppState,
@@ -60,6 +60,7 @@ const CHART_COLORS = [
 
 export function DRETab() {
   const { state, update } = useFinance();
+  const readOnly = useFinanceReadOnly();
   const [view, setView] = usePeriodView("trimestral");
   const annualSnaps = useAnnualSnapshots(3);
 
@@ -351,14 +352,17 @@ export function DRETab() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <div className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
-            {(["anual", "trimestral", "mensal"] as const).map((v) => (
-              <button
+            {(readOnly ? (["trimestral", "mensal"] as const) : (["anual", "trimestral", "mensal"] as const)).map((v) => (
+              <div
                 key={v}
+                role="button"
+                tabIndex={0}
                 onClick={() => setView(v)}
-                className={`rounded px-3 py-1 text-xs transition-all ${view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"} ${v === "mensal" ? "hidden lg:block" : ""}`}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setView(v); } }}
+                className={`cursor-pointer select-none rounded px-3 py-1 text-xs transition-all ${view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"} ${v === "mensal" ? "hidden lg:block" : ""}`}
               >
                 {v === "anual" ? "Anual" : v === "trimestral" ? "Trimestral" : "Mensal"}
-              </button>
+              </div>
             ))}
           </div>
 
