@@ -116,28 +116,32 @@ export function useFinnanceFile({
   useEffect(() => {
     if (!hydrated || recoveryChecked.current) return;
     recoveryChecked.current = true;
-    try {
-      const raw = localStorage.getItem(draftKey(state.companyName));
-      if (!raw) return;
-      const env: DraftEnvelope = JSON.parse(raw);
-      const currentSnap = snapshot(state, scenarios);
-      const draftSnap = snapshot(env.state, env.scenarios ?? []);
-      if (draftSnap === currentSnap) return;
-      toast.info("Rascunho não salvo encontrado", {
-        description: `Alterações de ${new Date(env.ts).toLocaleString("pt-BR")} na empresa "${env.state.companyName}".`,
-        duration: 15000,
-        action: {
-          label: "Recuperar",
-          onClick: () => {
-            setState(env.state);
-            replaceScenarios(env.scenarios ?? []);
-            toast.success("Rascunho recuperado");
+    // Usa loadKey (IDB → LS) em vez de localStorage.getItem direto: se o
+    // autosave anterior estourou a quota do LS, o draft fica SÓ no IDB.
+    // Ler apenas LS perderia silenciosamente esses rascunhos.
+    (async () => {
+      try {
+        const env = await loadKey<DraftEnvelope>(draftKey(state.companyName));
+        if (!env) return;
+        const currentSnap = snapshot(state, scenarios);
+        const draftSnap = snapshot(env.state, env.scenarios ?? []);
+        if (draftSnap === currentSnap) return;
+        toast.info("Rascunho não salvo encontrado", {
+          description: `Alterações de ${new Date(env.ts).toLocaleString("pt-BR")} na empresa "${env.state.companyName}".`,
+          duration: 15000,
+          action: {
+            label: "Recuperar",
+            onClick: () => {
+              setState(env.state);
+              replaceScenarios(env.scenarios ?? []);
+              toast.success("Rascunho recuperado");
+            },
           },
-        },
-      });
-    } catch {
-      /* draft corrompido — ignora */
-    }
+        });
+      } catch {
+        /* draft corrompido — ignora */
+      }
+    })();
   }, [hydrated, state, scenarios, setState, replaceScenarios]);
 
   // Constrói o payload + nome canônico do arquivo atual.
