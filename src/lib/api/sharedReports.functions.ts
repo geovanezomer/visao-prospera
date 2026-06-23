@@ -140,3 +140,29 @@ export const listShareLinks = createServerFn({ method: "GET" })
       expiresAt: (r.expires_at as string | null) ?? null,
     }));
   });
+
+/**
+ * Atualiza o prazo de expiração de um link compartilhado.
+ * `expiresAt` deve ser um ISO 8601 futuro; `null` remove a expiração.
+ */
+const updateExpirationSchema = z.object({
+  shareId: z.string().min(4).max(64),
+  expiresAt: z.string().datetime().nullable(),
+});
+
+export const updateShareExpiration = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => updateExpirationSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    if (data.expiresAt && new Date(data.expiresAt).getTime() <= Date.now()) {
+      throw new Error("A nova expiração deve estar no futuro");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("shared_reports")
+      .update({ expires_at: data.expiresAt })
+      .eq("share_id", data.shareId)
+      .eq("owner_id", context.userId);
+    if (error) throw new Error(`Falha ao atualizar expiração: ${error.message}`);
+    return { ok: true, expiresAt: data.expiresAt };
+  });
