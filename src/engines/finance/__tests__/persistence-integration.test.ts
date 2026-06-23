@@ -144,7 +144,7 @@ describe("Integração — simulação completa espelha LS + IDB", () => {
       JSON.stringify({ ok: true }),
     );
     // loadKey retorna do LS sem explodir
-    const v = await fresh.loadKey<{ ok: boolean }>("kv:fallback");
+    const v = await fresh.loadKey("kv:fallback");
     expect(v).toEqual({ ok: true });
 
     // restaura
