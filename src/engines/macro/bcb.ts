@@ -51,7 +51,7 @@ function loadCache(): Record<string, MacroSerie> {
 }
 function saveCache(c: Record<string, MacroSerie>) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(c));
+    saveKeySync(CACHE_KEY, c);
   } catch {
     // localStorage cheio ou indisponível (modo privado) — cache fica só em memória nesta sessão
   }
