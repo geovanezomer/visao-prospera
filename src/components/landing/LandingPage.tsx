@@ -272,58 +272,6 @@ function ProblemAgitation() {
   );
 }
 
-/* ============================================================
-   PILARES
-   ============================================================ */
-function SolutionPillars() {
-  const pilares = [
-    {
-      icon: BarChart3,
-      title: "Raio-X Financeiro",
-      desc: "DRE, Balanço, DFC e +40 indicadores conectados — uma única fonte de verdade para todo o ciclo da empresa.",
-    },
-    {
-      icon: ShieldCheck,
-      title: "Reforma CBS / IBS",
-      desc: "Cálculo automático dos impactos da LC 214/2025 sobre margem, preço e fluxo de caixa. Atualizado a cada fase de transição.",
-    },
-    {
-      icon: Brain,
-      title: "IA Estratégica",
-      desc: "Diagnóstico executivo gerado por IA treinada em CFO PME brasileira. Sugere alavancas. Justifica decisões.",
-    },
-  ];
-  return (
-    <section className="border-b border-border/50 py-24">
-      <div className="mx-auto max-w-6xl px-6">
-        <SectionEyebrow>O sistema que faltava</SectionEyebrow>
-        <h2 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          Três pilares que substituem dez planilhas e meia consultoria.
-        </h2>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {pilares.map((p) => (
-            <div
-              key={p.title}
-              className="group relative overflow-hidden rounded-xl border border-border bg-card p-7 transition hover:border-primary/40"
-            >
-              <div
-                aria-hidden
-                className="absolute -right-12 -top-12 h-32 w-32 rounded-full opacity-0 transition group-hover:opacity-100"
-                style={{
-                  background:
-                    "radial-gradient(circle, color-mix(in oklab, var(--primary) 25%, transparent), transparent 70%)",
-                }}
-              />
-              <p.icon className="h-7 w-7 text-primary" />
-              <h3 className="mt-5 text-lg font-semibold text-foreground">{p.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* ============================================================
    GRID DE FEATURES
