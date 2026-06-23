@@ -45,9 +45,7 @@ export interface UseChatPipelinesParams {
   input: string;
   setInput: React.Dispatch<React.SetStateAction<string>>;
   abortRef: React.MutableRefObject<AbortController | null>;
-  buildSysPrompt: (overrideMode?: AIMode) => ReturnType<typeof buildLlmMessages> extends never
-    ? never
-    : Parameters<typeof buildLlmMessages>[0]["systemPrompt"];
+  buildSysPrompt: (overrideMode?: AIMode) => { stable: string; dynamic: string };
   errToMd: (e: unknown) => string;
 }
 
