@@ -1,5 +1,9 @@
 // Configuração de provedores de IA + threads + system prompt extra.
-// 100% client-side, localStorage.
+// 100% client-side: localStorage (sync) + IndexedDB (durável) via persistence.ts.
+
+import { removeKey, saveKeySync } from "@/engines/finance/persistence";
+
+
 
 export type Provider = "lmstudio" | "openai" | "anthropic";
 
