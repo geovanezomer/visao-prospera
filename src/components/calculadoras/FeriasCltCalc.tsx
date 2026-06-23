@@ -5,7 +5,8 @@
  * card de resultado destacado + mini-cards + tabela detalhada + entenda).
  */
 import { useMemo, useState } from "react";
-import { Info, Palmtree, RotateCcw } from "lucide-react";
+import { Download, Info, Palmtree, RotateCcw } from "lucide-react";
+import { exportCalculadoraPDF } from "@/lib/pdfCalculadora";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
