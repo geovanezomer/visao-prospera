@@ -86,8 +86,8 @@ export async function saveKey(key: string, value: unknown): Promise<void> {
   try {
     localStorage.setItem(key, JSON.stringify(value));
     lsOk = true;
-  } catch {
-    // quota / modo privado — segue para IDB
+  } catch (err) {
+    console.warn(`[persistence] saveKey: localStorage falhou para "${key}"`, err);
   }
   if (idbAvailable) {
     try {
@@ -96,12 +96,12 @@ export async function saveKey(key: string, value: unknown): Promise<void> {
         await db.put(STORE, value, key);
         return;
       }
-    } catch {
+    } catch (err) {
       idbAvailable = false;
+      console.warn(`[persistence] saveKey: IndexedDB falhou para "${key}"`, err);
     }
   }
   if (!lsOk) {
-    // Ambas as camadas falharam — sinaliza para o caller decidir.
     throw new Error(`saveKey: falha ao persistir "${key}" (localStorage e IDB)`);
   }
 }
