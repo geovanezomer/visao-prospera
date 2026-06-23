@@ -1874,9 +1874,9 @@ function renderIndicadoresGrouped(
       rows.map((r) => [r.nome, r.mede, r.valor]),
       rows.map(() => "normal"),
       {
-        0: { halign: "left", fontStyle: "bold", cellWidth: 150 },
-        1: { halign: "left", cellWidth: 270, textColor: GRAY, fontSize: 8 },
-        2: { halign: "right", fontStyle: "bold", cellWidth: 75 },
+        0: { halign: "left", fontStyle: "bold", cellWidth: 130 },
+        1: { halign: "left", cellWidth: 285, textColor: GRAY, fontSize: 8 },
+        2: { halign: "right", fontStyle: "bold", cellWidth: 68 },
       },
     );
   };
