@@ -427,12 +427,55 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
   }
 
   // ----- Estratégico -----
+  // Renderiza StrategicAnswers como markdown legível em vez de JSON bruto:
+  // economiza tokens, melhora a compreensão do LLM e omite campos não preenchidos.
   const estrLines: string[] = [];
   if (state.strategic) {
     estrLines.push(`## Análise Estratégica (qualitativa)`);
-    estrLines.push("```json");
-    estrLines.push(JSON.stringify(state.strategic, null, 2));
-    estrLines.push("```");
+    const s = state.strategic;
+    const kv = (label: string, v: unknown): string | null =>
+      v === undefined || v === null || v === "" ? null : `- **${label}:** ${String(v)}`;
+
+    const conc = [
+      kv("% maior cliente", s.concentration?.pctMaiorCliente),
+      kv("Clientes p/ 80%", s.concentration?.clientesPara80Pct),
+      kv("Tempo do maior cliente", s.concentration?.tempoMaiorCliente),
+      kv("% maior fornecedor", s.concentration?.pctMaiorFornecedor),
+      kv("Dependência de canal", s.concentration?.dependeCanal),
+    ].filter(Boolean);
+    if (conc.length) {
+      estrLines.push(`### Concentração`);
+      estrLines.push(...(conc as string[]));
+    }
+
+    const gov = [
+      kv("Sócio afastado 60d", s.governance?.socioAfastado60d),
+      kv("Quem fecha contrato", s.governance?.quemFechaContrato),
+      kv("Processos documentados", s.governance?.processosDocumentados),
+      kv("Plano de sucessão", s.governance?.planoSucessao),
+    ].filter(Boolean);
+    if (gov.length) {
+      estrLines.push(`### Governança`);
+      estrLines.push(...(gov as string[]));
+    }
+
+    const comp = [
+      kv("Reajuste de preços", s.competitive?.reajustePrecos),
+      kv("Elasticidade a +10%", s.competitive?.elasticidade10pct),
+      kv("Razão de contratação", s.competitive?.razaoContratacao),
+      kv("Concorrentes", s.competitive?.concorrentes),
+      kv("Switching cost", s.competitive?.switchingCost),
+    ].filter(Boolean);
+    if (comp.length) {
+      estrLines.push(`### Posicionamento competitivo`);
+      estrLines.push(...(comp as string[]));
+    }
+
+    const reg = [kv("Exposição regulatória", s.regulatory?.exposicaoRegulatoria)].filter(Boolean);
+    if (reg.length) {
+      estrLines.push(`### Regulatório`);
+      estrLines.push(...(reg as string[]));
+    }
   }
 
   // ----- Comparativo simulado vs base -----
