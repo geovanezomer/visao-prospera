@@ -1,8 +1,11 @@
+import { memo } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { HelpTip } from "@/components/sim/shared/primitives";
 
 // Termômetro WACC × ROIC — visualiza se a empresa cria ou destrói valor.
-export function WaccRoicMeter({ wacc, roic }: { wacc: number; roic: number }) {
+// `memo`: props são números primitivos → comparação shallow é eficaz e evita
+// re-render quando o estado pai muda sem afetar wacc/roic.
+function WaccRoicMeterImpl({ wacc, roic }: { wacc: number; roic: number }) {
   const creating = roic >= wacc;
   const delta = roic - wacc;
   const max = Math.max(wacc, roic, 1) * 1.3;
