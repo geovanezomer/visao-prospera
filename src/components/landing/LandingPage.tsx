@@ -59,8 +59,8 @@ function Hero() {
               DRE, Balanço, Fluxo de Caixa, impactos da Reforma Tributária e{" "}
               <strong className="text-foreground">+40 indicadores</strong> em um
               único painel inteligente — com{" "}
-              <strong className="text-foreground">IA</strong> que entrega o
-              diagnóstico que seu cliente espera ouvir.
+              <strong className="text-foreground">IA</strong> que entrega
+              diagnósticos e faz relatórios em tempo real.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
