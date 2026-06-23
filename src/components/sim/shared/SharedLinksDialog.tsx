@@ -55,6 +55,26 @@ export function SharedLinksDialog() {
   const [tick, setTick] = useState(0); // força re-render por segundo p/ contagem regressiva
   const list = useServerFn(listShareLinks);
   const revoke = useServerFn(revokeShareLink);
+  const updateExpiration = useServerFn(updateShareExpiration);
+
+  // Estende o prazo de expiração somando `hours` ao tempo atual.
+  const handleExtend = async (shareId: string, hours: number) => {
+    setBusyId(shareId);
+    try {
+      const newExpiresAt = new Date(Date.now() + hours * 3_600_000).toISOString();
+      await updateExpiration({ data: { shareId, expiresAt: newExpiresAt } });
+      setItems((prev) =>
+        prev.map((i) => (i.shareId === shareId ? { ...i, expiresAt: newExpiresAt } : i)),
+      );
+      toast.success("Prazo de expiração atualizado");
+    } catch (err) {
+      toast.error("Falha ao atualizar prazo", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const refresh = useCallback(async () => {
     if (!user) {
