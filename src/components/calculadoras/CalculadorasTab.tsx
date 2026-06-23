@@ -8,6 +8,7 @@ import { RescisaoCltCalc } from "@/components/calculadoras/RescisaoCltCalc";
 import { CltVsPjCalc } from "@/components/calculadoras/CltVsPjCalc";
 import { SalarioLiquidoCalc } from "@/components/calculadoras/SalarioLiquidoCalc";
 import { FeriasCltCalc } from "@/components/calculadoras/FeriasCltCalc";
+import { DecimoTerceiroCalc } from "@/components/calculadoras/DecimoTerceiroCalc";
 import { HorasExtrasCalc } from "@/components/calculadoras/HorasExtrasCalc";
 import { SacVsPriceCalc } from "@/components/calculadoras/SacVsPriceCalc";
 import { JurosCompostosCalc } from "@/components/calculadoras/JurosCompostosCalc";
@@ -30,6 +31,7 @@ export function CalculadorasTab() {
           <TabsTrigger value="clt-vs-pj">CLT vs PJ</TabsTrigger>
           <TabsTrigger value="salario-liquido">Salário</TabsTrigger>
           <TabsTrigger value="ferias">Férias CLT</TabsTrigger>
+          <TabsTrigger value="decimo-terceiro">13º Salário</TabsTrigger>
           <TabsTrigger value="horas-extras">Horas Extras</TabsTrigger>
           <TabsTrigger value="sac-vs-price">SAC vs PRICE</TabsTrigger>
           <TabsTrigger value="juros-compostos">Juros Compostos</TabsTrigger>
@@ -50,6 +52,9 @@ export function CalculadorasTab() {
         </TabsContent>
         <TabsContent value="ferias">
           <FeriasCltCalc />
+        </TabsContent>
+        <TabsContent value="decimo-terceiro">
+          <DecimoTerceiroCalc />
         </TabsContent>
         <TabsContent value="horas-extras">
           <HorasExtrasCalc />
