@@ -2,6 +2,7 @@
 // IDs via nanoid. Soft delete habilita futuras features (undo, sync).
 import { nanoid } from "nanoid";
 import { useSyncExternalStore } from "react";
+import { saveKeySync } from "@/engines/finance/persistence";
 import type { SimulatorParams } from "@/engines/finance/simulator";
 import type { AppState } from "@/engines/finance/types";
 
