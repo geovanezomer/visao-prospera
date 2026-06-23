@@ -250,7 +250,7 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         resultado: lucroLiq - dividendos,
       },
     ];
-  }, [state, dre, cf, cap, ab, balConst, imo, intg, pl]);
+  }, [state, dre, cf, cap, balConst, imo, intg, pl]);
 
   // Agrupa por grupo
   const grupos = useMemo(() => {
