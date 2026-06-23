@@ -38,7 +38,7 @@ const GRAY = [107, 114, 128] as [number, number, number];       // gray-500
 const LIGHT = [229, 231, 235] as [number, number, number];      // gray-200
 const HAIRLINE = [209, 213, 219] as [number, number, number];   // gray-300
 const SUBTLE = [249, 250, 251] as [number, number, number];     // gray-50
-const COVER_BG = [17, 24, 39] as [number, number, number];      // gray-900
+const COVER_BG = [0, 0, 0] as [number, number, number];          // preto puro (capa)
 const COVER_FG = [243, 244, 246] as [number, number, number];   // gray-100
 const COVER_MUTED = [156, 163, 175] as [number, number, number];// gray-400
 const OK = [5, 150, 105] as [number, number, number];           // emerald-600
@@ -761,6 +761,49 @@ const pageMeta: Record<number, PageMeta> = {}; // mapeia índice → seção (pa
 
 export async function exportFinancePDF({ state, model }: ExportPDFInput): Promise<void> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
+
+  // ── Sanitização global de texto ────────────────────────────────────
+  // jsPDF Helvetica usa WinAnsi e não renderiza vários símbolos Unicode
+  // (→, −, ≥, ≤, Δ, …). Quando aparecem, o texto sai com espaçamento
+  // bizarro/quebrado. Substituímos por equivalentes WinAnsi antes de
+  // chegar em qualquer chamada de text() / splitTextToSize() do jsPDF.
+  const sanitizeText = (s: string): string =>
+    s
+      .replace(/\u2192/g, ">") // → seta direita
+      .replace(/→/g, ">")
+      .replace(/←/g, "<")
+      .replace(/↦/g, ">")
+      .replace(/⇒/g, "=>")
+      .replace(/\u2212/g, "-")  // − minus
+      .replace(/\u2010/g, "-")
+      .replace(/\u2011/g, "-")
+      .replace(/≥/g, ">=")
+      .replace(/≤/g, "<=")
+      .replace(/Δ/g, "Dif")
+      .replace(/…/g, "...")
+      .replace(/\u00A0/g, " ");
+
+  // monkey-patch doc.text e splitTextToSize
+  const _origText = doc.text.bind(doc);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (doc as any).text = function (text: unknown, ...args: unknown[]) {
+    if (Array.isArray(text)) {
+      text = (text as unknown[]).map((t) => (typeof t === "string" ? sanitizeText(t) : t));
+    } else if (typeof text === "string") {
+      text = sanitizeText(text);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (_origText as any)(text, ...args);
+  };
+  const _origSplit = doc.splitTextToSize.bind(doc);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (doc as any).splitTextToSize = function (s: unknown, w: unknown, opts?: unknown) {
+    if (typeof s === "string") s = sanitizeText(s);
+    else if (Array.isArray(s)) s = (s as unknown[]).map((x) => (typeof x === "string" ? sanitizeText(x) : x));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (_origSplit as any)(s, w, opts);
+  };
+
   const logoData = await loadImageAsDataURL(logoAsset.url);
   const companyName = state.companyName?.trim() || "Empresa Cliente";
   const { dre, ind, cf, balancoFechamento, regime, tax } = model;
@@ -1006,20 +1049,28 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   pageMeta[doc.getNumberOfPages()] = { eyebrow: "05", title: "Prioridades do CFO" };
   y = pageTitle(doc, CONTENT_TOP, "05  ·  Plano de Ação",
     "Prioridades do CFO",
-    "Top 3 prioridades — ordenadas por impacto financeiro e prazo de execução.");
+    "Principais prioridades ordenadas por impacto financeiro e prazo de execução.");
 
-  const priorities = buildPriorities(prescriptive, diags).slice(0, 3);
+  const priorities = buildPriorities(prescriptive, diags).slice(0, 6);
   if (priorities.length === 0) {
     paragraph(doc, y, "Nenhuma ação prioritária identificada — manter o monitoramento regular dos indicadores.", { color: GRAY });
   } else {
     priorities.forEach((p, i) => {
-      const blockH = 110;
+      const blockH = 116;
+      // page-break se faltar espaço
+      if (y + blockH + 24 > doc.internal.pageSize.getHeight() - 80) {
+        doc.addPage();
+        pageMeta[doc.getNumberOfPages()] = { eyebrow: "05", title: "Prioridades do CFO" };
+        y = pageTitle(doc, CONTENT_TOP, "05  ·  Plano de Ação",
+          "Prioridades do CFO (cont.)");
+      }
       doc.setFont(FONT, "bold");
       doc.setFontSize(48);
       setColor(doc, "text", LIGHT);
       doc.text(`#${i + 1}`, PAGE_MARGIN, y + 50);
 
       const xText = PAGE_MARGIN + 70;
+      const titleMaxW = w - xText - PAGE_MARGIN;
       doc.setFont(FONT, "bold");
       doc.setFontSize(7);
       setColor(doc, "text", GRAY);
@@ -1027,9 +1078,9 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
       doc.setFont(FONT, "bold");
       doc.setFontSize(13);
       setColor(doc, "text", INK);
-      const tLines = doc.splitTextToSize(p.title, w - xText - PAGE_MARGIN);
+      const tLines = doc.splitTextToSize(p.title, titleMaxW);
       doc.text(tLines.slice(0, 2), xText, y + 30);
-      const metaY = y + 60;
+      const metaY = y + 62;
       const metaCols = [
         { l: "BENEFÍCIO ESTIMADO", v: p.benefit },
         { l: "PRAZO", v: p.deadline },
@@ -1045,13 +1096,15 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
         doc.setFont(FONT, "bold");
         doc.setFontSize(10);
         setColor(doc, "text", INK);
-        doc.text(m.v, x, metaY + 14);
+        // trunca/quebra dentro do colW para evitar overflow na coluna vizinha
+        const vLines = doc.splitTextToSize(m.v, colW - 10);
+        doc.text(vLines.slice(0, 2), x, metaY + 14);
       });
       doc.setFont(FONT, "normal");
       doc.setFontSize(9.5);
       setColor(doc, "text", CHARCOAL);
       const dLines = doc.splitTextToSize(p.description, w - xText - PAGE_MARGIN);
-      doc.text(dLines.slice(0, 2), xText, y + 90);
+      doc.text(dLines.slice(0, 2), xText, y + 98);
 
       setColor(doc, "draw", LIGHT);
       doc.setLineWidth(0.4);
@@ -1291,19 +1344,19 @@ function buildPriorities(
   const sevOrder: Record<string, number> = { danger: 0, warn: 1, info: 2, ok: 3 };
   const ranked = [...prescriptive].sort((a, b) =>
     (sevOrder[a.severity] ?? 9) - (sevOrder[b.severity] ?? 9));
-  const out: Priority[] = ranked.slice(0, 3).map((c) => ({
+  const out: Priority[] = ranked.slice(0, 6).map((c) => ({
     title: c.problem,
     description: c.actions[0]?.title ?? c.cause,
-    benefit: c.severity === "danger" ? "Alto · estabiliza caixa e resultado"
-      : c.severity === "warn" ? "Médio · melhora indicadores-chave"
-      : "Incremental · ganho marginal de eficiência",
+    benefit: c.severity === "danger" ? "Alto"
+      : c.severity === "warn" ? "Médio"
+      : "Incremental",
     deadline: c.severity === "danger" ? "30 a 60 dias"
       : c.severity === "warn" ? "60 a 120 dias" : "Até 180 dias",
     complexity: c.actions.length > 2 ? "Alta" : c.actions.length > 0 ? "Média" : "Baixa",
   }));
   // fallback baseado em diagnose se prescriptive estiver vazio
   if (out.length === 0) {
-    diags.filter((d) => d.level !== "ok").slice(0, 3).forEach((d) => {
+    diags.filter((d) => d.level !== "ok").slice(0, 6).forEach((d) => {
       out.push({
         title: d.title,
         description: d.message,
@@ -1567,13 +1620,17 @@ function renderDRE(doc: jsPDF, yStart: number, state: AppState, model: Financial
     rows.map((r) => [r.label, ...r.vals.map(fmtBRL)]),
     rows.map((r) => r.meta),
     {
-      0: { halign: "left", cellWidth: 230 },
-      1: { halign: "right" }, 2: { halign: "right" },
-      3: { halign: "right" }, 4: { halign: "right" },
-      5: { halign: "right", fontStyle: "bold" },
+      0: { halign: "left", cellWidth: 188 },
+      1: { halign: "right", cellWidth: 58 },
+      2: { halign: "right", cellWidth: 58 },
+      3: { halign: "right", cellWidth: 58 },
+      4: { halign: "right", cellWidth: 58 },
+      5: { halign: "right", cellWidth: 63, fontStyle: "bold" },
     },
   );
 }
+
+
 
 // =====================================================================
 // APÊNDICE — Balanço
@@ -1733,10 +1790,12 @@ function renderDFC(doc: jsPDF, yStart: number, state: AppState, model: Financial
       : [r.label, ...(r.vals ?? []).map(fmtBRL)]),
     rows.map((r) => r.meta),
     {
-      0: { halign: "left", cellWidth: 230 },
-      1: { halign: "right" }, 2: { halign: "right" },
-      3: { halign: "right" }, 4: { halign: "right" },
-      5: { halign: "right", fontStyle: "bold" },
+      0: { halign: "left", cellWidth: 188 },
+      1: { halign: "right", cellWidth: 58 },
+      2: { halign: "right", cellWidth: 58 },
+      3: { halign: "right", cellWidth: 58 },
+      4: { halign: "right", cellWidth: 58 },
+      5: { halign: "right", cellWidth: 63, fontStyle: "bold" },
     },
   );
 }
@@ -1815,9 +1874,9 @@ function renderIndicadoresGrouped(
       rows.map((r) => [r.nome, r.mede, r.valor]),
       rows.map(() => "normal"),
       {
-        0: { halign: "left", fontStyle: "bold", cellWidth: 150 },
-        1: { halign: "left", cellWidth: 270, textColor: GRAY, fontSize: 8 },
-        2: { halign: "right", fontStyle: "bold", cellWidth: 75 },
+        0: { halign: "left", fontStyle: "bold", cellWidth: 130 },
+        1: { halign: "left", cellWidth: 285, textColor: GRAY, fontSize: 8 },
+        2: { halign: "right", fontStyle: "bold", cellWidth: 68 },
       },
     );
   };
