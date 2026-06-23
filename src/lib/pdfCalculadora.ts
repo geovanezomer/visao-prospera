@@ -13,7 +13,7 @@
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
+
 
 // ── Paleta (idêntica ao pdfExport.ts) ─────────────────────────────────
 const INK = [10, 10, 10] as [number, number, number];
