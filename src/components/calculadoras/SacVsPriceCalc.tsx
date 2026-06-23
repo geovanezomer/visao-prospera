@@ -55,6 +55,43 @@ export function SacVsPriceCalc() {
     setPaginaPrice(0);
   }
 
+  async function exportar() {
+    if (!sim) return;
+    const fmtBRL = (n: number) =>
+      n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
+    const fmtPct = (n: number) =>
+      `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 4 })}%`;
+    await exportCalculadoraPDF({
+      title: "Simulador SAC vs PRICE",
+      subtitle:
+        "Comparação entre os dois sistemas de amortização mais usados em financiamentos no Brasil.",
+      inputs: [
+        { label: "Valor financiado", value: fmtBRL(valor) },
+        { label: "Taxa de juros anual", value: `${taxaAnual}% a.a. (${fmtPct(sim.taxaMensal)} a.m.)` },
+        { label: "Prazo", value: `${meses} meses` },
+        { label: "Sistema preferido", value: tabela.toUpperCase() },
+      ],
+      kpis: [
+        { label: "Economia de juros (SAC vs PRICE)", value: fmtBRL(sim.economiaJurosSac), sub: "SAC paga menos juros no total", tone: "ok" },
+        { label: "Total pago — SAC", value: fmtBRL(sim.sac.totalPago), sub: `Juros: ${fmtBRL(sim.sac.totalJuros)}`, tone: "neutral" },
+        { label: "Total pago — PRICE", value: fmtBRL(sim.price.totalPago), sub: `Juros: ${fmtBRL(sim.price.totalJuros)}`, tone: "neutral" },
+      ],
+      sections: [
+        {
+          kind: "table",
+          title: "Resumo dos sistemas",
+          head: ["Indicador", "SAC", "PRICE"],
+          body: [
+            ["1ª parcela", fmtBRL(sim.sac.primeiraParcela), fmtBRL(sim.price.primeiraParcela)],
+            ["Última parcela", fmtBRL(sim.sac.ultimaParcela), fmtBRL(sim.price.ultimaParcela)],
+            ["Total de juros", fmtBRL(sim.sac.totalJuros), fmtBRL(sim.price.totalJuros)],
+            ["Total pago", fmtBRL(sim.sac.totalPago), fmtBRL(sim.price.totalPago)],
+          ],
+        },
+      ],
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -66,9 +103,14 @@ export function SacVsPriceCalc() {
             Compare os dois sistemas de amortização mais usados no Brasil.
           </p>
         </div>
-        <Button variant="ghost" size="sm" onClick={limpar}>
-          <RotateCcw className="mr-2 h-4 w-4" /> Limpar
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={exportar} title="Exportar PDF" disabled={!sim}>
+            <Download className="mr-2 h-4 w-4" /> Exportar PDF
+          </Button>
+          <Button variant="ghost" size="sm" onClick={limpar}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Limpar
+          </Button>
+        </div>
       </div>
 
       {/* Inputs */}
