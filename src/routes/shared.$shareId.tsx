@@ -153,19 +153,17 @@ function SharedReport() {
     };
   }, []);
 
+  // Abas disponíveis na visualização compartilhada (somente leitura).
+  // Receitas, Custos, Capital, Tributos, Estratégico e Valuation foram
+  // removidos por decisão de produto — o destinatário do link enxerga
+  // apenas o resultado consolidado, não as alavancas de edição.
   const tabs: { key: TabKey; label: string }[] = [
+    { key: "dashboard", label: "Dashboard" },
+    { key: "caixa", label: "Fluxo de Caixa" },
     { key: "dre", label: "DRE" },
     { key: "balanco", label: "Balanço" },
-    { key: "caixa", label: "Fluxo de Caixa" },
-    { key: "receitas", label: "Receitas" },
-    { key: "custos", label: "Custos" },
-    { key: "capital", label: "Capital" },
-    { key: "tributos", label: "Tributos" },
     { key: "indicadores", label: "Indicadores" },
     { key: "resultados", label: "Diagnóstico" },
-    { key: "governanca", label: "Estratégico" },
-    { key: "dashboard", label: "Dashboard" },
-    { key: "valuation", label: "Valuation" },
   ];
 
   return (
