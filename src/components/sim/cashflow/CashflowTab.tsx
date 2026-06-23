@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { useFinance, usePatchCashflow } from "@/engines/finance/AppStateContext";
+import { useFinance, usePatchCashflow, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
 import { fmtBRL, MESES } from "@/engines/finance/format";
 import { buildCashFlow } from "@/engines/finance/cashflow";
@@ -38,6 +38,9 @@ const TOOLTIP_LABEL = { color: "var(--popover-foreground)", fontWeight: 600 } as
 export function CashflowTab() {
   const { state } = useFinance();
   const patchCashflow = usePatchCashflow();
+  // Em modo somente leitura (link compartilhado), escondemos seções
+  // de edição e o gráfico de projeção para focar no resumo.
+  const readOnly = useFinanceReadOnly();
   // Regime efetivo é default em buildCashFlow; memoizar o resultado pesado.
   const cf = useMemo(() => buildCashFlow(state), [state]);
   
@@ -210,41 +213,43 @@ export function CashflowTab() {
         </div>
       </div>
 
-      {/* Movimentações de caixa não operacionais (SSOT — sem duplicidade) */}
-      <div className="rounded-lg border border-border/60 border-l-4 border-l-[color:var(--primary)] bg-card/40">
-        <div className="flex items-center justify-between border-b border-border/60 p-4">
-          <SectionTitle hint="Apenas itens SEM fonte em outra aba. CapEx vem de Capital → Ativações (com vida útil e mês). Amortização do principal e juros vêm de Capital → Contratos de Dívida.">
-            Movimentações de caixa não operacionais — 12 meses
-          </SectionTitle>
+      {/* Movimentações de caixa não operacionais — escondido em modo somente leitura */}
+      {!readOnly && (
+        <div className="rounded-lg border border-border/60 border-l-4 border-l-[color:var(--primary)] bg-card/40">
+          <div className="flex items-center justify-between border-b border-border/60 p-4">
+            <SectionTitle hint="Apenas itens SEM fonte em outra aba. CapEx vem de Capital → Ativações (com vida útil e mês). Amortização do principal e juros vêm de Capital → Contratos de Dívida.">
+              Movimentações de caixa não operacionais — 12 meses
+            </SectionTitle>
+          </div>
+          <NonOpTable
+            rows={[
+              {
+                key: "aportes",
+                label: "Aportes de sócios",
+                hint: "Entrada de capital próprio dos sócios na empresa.",
+                tone: "pos",
+                values: state.cashflow.aportes,
+              },
+              {
+                key: "emprestimosCaptados",
+                label: "Captação de empréstimos (avulso)",
+                hint: "Use apenas para captações pontuais que NÃO virarão contrato cadastrado. O ideal é cadastrar como Contrato de Dívida em Capital — isso integra amortização, juros, DSCR e cobertura automaticamente.",
+                tone: "pos",
+                values: state.cashflow.emprestimosCaptados,
+              },
+              {
+                key: "dividendos",
+                label: "Distribuição de dividendos",
+                hint: "Saída de caixa para distribuir lucros aos sócios.",
+                tone: "neg",
+                values: state.cashflow.dividendos,
+              },
+            ]}
+            onMonth={setNonOp}
+            onAllMonths={setNonOpAll}
+          />
         </div>
-        <NonOpTable
-          rows={[
-            {
-              key: "aportes",
-              label: "Aportes de sócios",
-              hint: "Entrada de capital próprio dos sócios na empresa.",
-              tone: "pos",
-              values: state.cashflow.aportes,
-            },
-            {
-              key: "emprestimosCaptados",
-              label: "Captação de empréstimos (avulso)",
-              hint: "Use apenas para captações pontuais que NÃO virarão contrato cadastrado. O ideal é cadastrar como Contrato de Dívida em Capital — isso integra amortização, juros, DSCR e cobertura automaticamente.",
-              tone: "pos",
-              values: state.cashflow.emprestimosCaptados,
-            },
-            {
-              key: "dividendos",
-              label: "Distribuição de dividendos",
-              hint: "Saída de caixa para distribuir lucros aos sócios.",
-              tone: "neg",
-              values: state.cashflow.dividendos,
-            },
-          ]}
-          onMonth={setNonOp}
-          onAllMonths={setNonOpAll}
-        />
-      </div>
+      )}
 
       {/* Tabela detalhada */}
       <DFCTable state={state} cf={cf} />
@@ -378,7 +383,8 @@ export function CashflowTab() {
         )}
       </div>
 
-      {/* Gráfico de saldo */}
+      {/* Gráfico de saldo — escondido em modo somente leitura */}
+      {!readOnly && (
       <div className="rounded-lg border border-border/60 bg-card/40 p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h4 className="text-sm font-semibold">Saldo de caixa projetado (12 meses)</h4>
@@ -479,6 +485,7 @@ export function CashflowTab() {
           </span>
         </div>
       </div>
+      )}
     </div>
   );
 }

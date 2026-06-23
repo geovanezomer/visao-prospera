@@ -16,16 +16,10 @@ import { Eye, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { TabKey } from "@/engines/finance/types";
 
-const RevenueTab = lazy(() => import("@/components/sim/revenue/RevenueTab").then(m => ({ default: m.RevenueTab })));
-const CostsTab = lazy(() => import("@/components/sim/costs/CostsTab").then(m => ({ default: m.CostsTab })));
-const CapitalTab = lazy(() => import("@/components/sim/capital/CapitalTab").then(m => ({ default: m.CapitalTab })));
-const TaxTab = lazy(() => import("@/components/sim/tax/TaxTab").then(m => ({ default: m.TaxTab })));
 const DRETab = lazy(() => import("@/components/sim/dre/DRETab").then(m => ({ default: m.DRETab })));
 const BalancoTab = lazy(() => import("@/components/sim/balanco/BalancoTab").then(m => ({ default: m.BalancoTab })));
 const CashflowTab = lazy(() => import("@/components/sim/cashflow/CashflowTab").then(m => ({ default: m.CashflowTab })));
 const DiagnosisTab = lazy(() => import("@/components/sim/diagnosis/DiagnosisTab").then(m => ({ default: m.DiagnosisTab })));
-const StrategicTab = lazy(() => import("@/components/sim/strategic/StrategicTab").then(m => ({ default: m.StrategicTab })));
-const ValuationTab = lazy(() => import("@/components/sim/valuation/ValuationTab").then(m => ({ default: m.ValuationTab })));
 const IndicatorsTab = lazy(() => import("@/components/sim/indicators/IndicatorsTab").then(m => ({ default: m.IndicatorsTab })));
 const DashboardTab = lazy(() => import("@/components/sim/dashboard/DashboardTab").then(m => ({ default: m.DashboardTab })));
 
@@ -89,7 +83,7 @@ function SharedReport() {
   const parsed = parseFinnanceFile(data.payload);
   // No-op updater — o FinanceProvider já bloqueia, mas mantemos por segurança.
   const noopUpdate = () => {};
-  const [activeTab, setActiveTab] = useState<TabKey>("dre");
+  const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
 
   // Bloqueia atalhos de edição/salvamento/impressão nesta rota.
   // Ctrl/Cmd + S/O/P/U/I/J + Ctrl+Shift+R/I/J + F2/F3 viram no-op com toast.
@@ -153,19 +147,17 @@ function SharedReport() {
     };
   }, []);
 
+  // Abas disponíveis na visualização compartilhada (somente leitura).
+  // Receitas, Custos, Capital, Tributos, Estratégico e Valuation foram
+  // removidos por decisão de produto — o destinatário do link enxerga
+  // apenas o resultado consolidado, não as alavancas de edição.
   const tabs: { key: TabKey; label: string }[] = [
+    { key: "dashboard", label: "Dashboard" },
+    { key: "caixa", label: "Fluxo de Caixa" },
     { key: "dre", label: "DRE" },
     { key: "balanco", label: "Balanço" },
-    { key: "caixa", label: "Fluxo de Caixa" },
-    { key: "receitas", label: "Receitas" },
-    { key: "custos", label: "Custos" },
-    { key: "capital", label: "Capital" },
-    { key: "tributos", label: "Tributos" },
     { key: "indicadores", label: "Indicadores" },
     { key: "resultados", label: "Diagnóstico" },
-    { key: "governanca", label: "Estratégico" },
-    { key: "dashboard", label: "Dashboard" },
-    { key: "valuation", label: "Valuation" },
   ];
 
   return (
@@ -220,24 +212,12 @@ function SharedReport() {
                 aria-label="Conteúdo somente leitura"
               >
               <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Carregando…</div>}>
-                {activeTab === "receitas" && <RevenueTab />}
-                {activeTab === "custos" && <CostsTab />}
-                {activeTab === "capital" && <CapitalTab />}
-                {activeTab === "tributos" && <TaxTab />}
+                {activeTab === "dashboard" && <DashboardTab />}
                 {activeTab === "caixa" && <CashflowTab />}
-                {activeTab === "governanca" && <StrategicTab />}
                 {activeTab === "dre" && <DRETab />}
                 {activeTab === "balanco" && <BalancoTab />}
                 {activeTab === "indicadores" && <IndicatorsTab />}
                 {activeTab === "resultados" && <DiagnosisTab />}
-                {activeTab === "dashboard" && <DashboardTab />}
-                {activeTab === "valuation" && (
-                  <ValuationTab
-                    baseState={parsed.state}
-                    simulatedState={parsed.state}
-                    simActive={0}
-                  />
-                )}
               </Suspense>
               </fieldset>
             </FinanceErrorBoundary>

@@ -6,10 +6,12 @@ import { aggregate, periodLabels, Period } from "@/components/sim/cashflow/table
 import { usePeriodView } from "@/hooks/usePeriodView";
 import { useAnnualSnapshots } from "@/hooks/useAnnualSnapshots";
 import { CashFlowComparison } from "@/components/sim/comparison/ComparisonView";
+import { useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 
 // Tabela DFC pelo método direto, com agregação mensal/trimestral/anual.
 export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof buildCashFlow> }) {
   const [period, setPeriod] = usePeriodView("trimestral") as [Period, (p: Period) => void];
+  const readOnly = useFinanceReadOnly();
   const annualSnaps = useAnnualSnapshots(3);
   const cols = periodLabels(period);
   const showAnnualComparison = period === "anual" && annualSnaps.length >= 2;
@@ -20,22 +22,25 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
         <SectionTitle hint="Caixa pelo método direto. Receitas e CPV usam PMR/PMP da aba Receitas. Impostos pagos no mês seguinte ao da competência.">
           Demonstração do Fluxo de Caixa — método direto
         </SectionTitle>
-        <div className="inline-flex rounded-md border border-border/60 bg-card p-0.5 text-xs">
-          {(["mensal", "trimestral", "anual"] as Period[]).map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setPeriod(p)}
-              className={`rounded px-3 py-1 capitalize transition-colors ${
-                period === p
-                  ? "bg-primary text-primary-foreground font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
+        {/* Toggle de período — escondido em modo somente leitura */}
+        {!readOnly && (
+          <div className="inline-flex rounded-md border border-border/60 bg-card p-0.5 text-xs">
+            {(["mensal", "trimestral", "anual"] as Period[]).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPeriod(p)}
+                className={`rounded px-3 py-1 capitalize transition-colors ${
+                  period === p
+                    ? "bg-primary text-primary-foreground font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       {showAnnualComparison ? (
         <div className="p-4">
