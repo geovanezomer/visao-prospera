@@ -91,6 +91,41 @@ function Hero() {
         </div>
 
       </div>
+
+      {/* faixa de métricas dentro da Hero */}
+      <div className="relative border-t border-border/50">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10"
+          style={{
+            background: "linear-gradient(180deg, color-mix(in oklab, var(--primary) 6%, transparent), transparent)",
+          }}
+        />
+        <div className="mx-auto max-w-6xl px-6 py-14">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="text-center sm:text-left">
+              <div className="text-5xl font-semibold tracking-tight text-primary">+40</div>
+              <div className="mt-2 text-sm font-semibold text-foreground">Indicadores</div>
+              <div className="text-xs text-muted-foreground">calculados automaticamente</div>
+            </div>
+            <div className="text-center sm:text-left">
+              <div className="text-5xl font-semibold tracking-tight text-primary">5 min</div>
+              <div className="mt-2 text-sm font-semibold text-foreground">Primeira análise</div>
+              <div className="text-xs text-muted-foreground">do cadastro ao diagnóstico</div>
+            </div>
+            <div className="text-center sm:text-left">
+              <div className="text-5xl font-semibold tracking-tight text-primary">100%</div>
+              <div className="mt-2 text-sm font-semibold text-foreground">Reforma Tributária</div>
+              <div className="text-xs text-muted-foreground">CBS/IBS sob LC 214/2025</div>
+            </div>
+            <div className="text-center sm:text-left">
+              <div className="text-5xl font-semibold tracking-tight text-primary">I.A.</div>
+              <div className="mt-2 text-sm font-semibold text-foreground">Embarcada</div>
+              <div className="text-xs text-muted-foreground">análises explicadas</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -1011,7 +1046,6 @@ export function LandingPage() {
         <ProblemAgitation />
 
         <FeatureGrid />
-        <MetricsBand />
         <HowItWorks />
         <ComparisonTable />
         <PricingSection />
