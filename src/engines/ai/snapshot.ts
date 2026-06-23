@@ -47,6 +47,7 @@ export const estimateTokens = (s: string) => Math.ceil(s.length / 4);
 export interface SnapshotNumeric {
   dre: ReturnType<typeof buildDRE>["dre"] | null;
   ind: ReturnType<typeof calcIndicators> | null;
+  cf: ReturnType<typeof buildCashFlow> | null;
   val: ReturnType<typeof buildValuation> | null;
   health: ReturnType<typeof computeHealth> | null;
   alerts: ReturnType<typeof diagnose>;
