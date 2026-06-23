@@ -1,53 +1,40 @@
 // Hook compartilhado entre AIChatSheet e AIView.
-// Centraliza toda a lógica de chat (threads, streaming, tool-calling, anexos)
-// para eliminar duplicação. Os componentes ficam apenas com JSX.
+// Orquestra threads, anexos, pipelines e o `send` principal (streaming + tools).
+// Hooks especializados ficam em `src/hooks/ai/*`.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   AIConfig,
   ChatMessage,
-  ChatThread,
-  createThread,
-  deleteThread,
   loadConfig,
-  loadMessages,
-  loadThreads,
   saveConfig,
-  saveMessages,
-  saveThreads,
   touchThread,
 } from "@/engines/ai/providers";
 import { chatWithTools, streamChat, type LLMMessage, type ToolCall } from "@/engines/ai/client";
-import { buildSnapshot, getSectionsCached } from "@/engines/ai/snapshot";
+import { buildSnapshot, getSectionsCached, estimateTokens } from "@/engines/ai/snapshot";
 import { buildLlmMessages } from "@/engines/ai/historyUtils";
-import { estimateTokens } from "@/engines/ai/snapshot";
-
-// Limite de tokens do histórico enviado ao LLM (exclui system prompt).
-// Se ultrapassado, comprime o miolo preservando contexto inicial + recente.
-const MAX_HISTORY_TOKENS = 6000;
 import { buildSystemPromptParts, type AIMode } from "@/engines/ai/systemPrompt";
 import { loadAIMode, saveAIMode } from "@/engines/ai/modeStore";
 import { recordChatTrail } from "@/engines/ai/chatTrail";
-import {
-  loadPipeline360,
-  savePipeline360,
-  clearPipeline360,
-} from "@/engines/ai/pipeline360Store";
 import { useMemories, memoriesToPromptBlock } from "@/engines/memory/store";
 import {
-  processFile,
   buildPdfContext,
   buildVisionMessageContent,
-  confidenceLabel,
-  MAX_FILES_PER_MSG,
-  type ChatAttachment,
 } from "@/engines/ai/attachments";
 import { buildDynamicSuggestions } from "@/engines/ai/suggestions";
 import { buildOpeningBriefing } from "@/engines/ai/briefing";
 import type { AppState } from "@/engines/finance/types";
 import { resolveEffectiveRegime } from "@/engines/finance";
 import type { SimulatorParams } from "@/engines/finance/simulator";
+
+import { useChatAttachments } from "./ai/useChatAttachments";
+import { useChatThreads } from "./ai/useChatThreads";
+import { useChatPipelines } from "./ai/useChatPipelines";
+
+// Limite de tokens do histórico enviado ao LLM (exclui system prompt).
+// Se ultrapassado, comprime o miolo preservando contexto inicial + recente.
+const MAX_HISTORY_TOKENS = 6000;
 
 export interface UseAIChatParams {
   state: AppState;
@@ -72,69 +59,36 @@ export function errToMd(e: unknown): string {
 
 export function useAIChat({ state, simulatedState, simActive, simParams }: UseAIChatParams) {
   const [config, setConfig] = useState<AIConfig>(() => loadConfig());
-  const [threads, setThreads] = useState<ChatThread[]>(() => loadThreads(state.companyName));
-  const [activeId, setActiveId] = useState<string>(() => {
-    const ts = loadThreads(state.companyName);
-    return ts[0]?.id ?? "";
-  });
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
-  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
-  const [processingFile, setProcessingFile] = useState(false);
-  const [processingMsg, setProcessingMsg] = useState<string>("");
   const abortRef = useRef<AbortController | null>(null);
 
-  // Injeta briefing inicial estilo CFO em conversa nova/vazia.
-  const injectBriefingIfEmpty = (
-    companyName: string,
-    threadId: string,
-    currentMsgs: ChatMessage[],
-  ) => {
-    if (currentMsgs.length > 0) return currentMsgs;
-    // M-3: passa as seções já cacheadas para evitar recalcular DRE/indicadores/health/diagnose.
-    const md = buildOpeningBriefing(state, getSectionsCached(state));
-    if (!md) return currentMsgs;
-    const briefingMsg: ChatMessage = { role: "assistant", content: md, ts: Date.now() };
-    const next = [briefingMsg];
-    saveMessages(companyName, threadId, next);
-    return next;
-  };
+  // === Threads + mensagens (com briefing inicial) ===
+  const threadsApi = useChatThreads({
+    companyName: state.companyName,
+    getBriefingMd: () => buildOpeningBriefing(state, getSectionsCached(state)) || null,
+  });
+  const {
+    threads,
+    activeId,
+    setActiveId,
+    messages,
+    setMessages,
+    handleNewThread,
+    handleDeleteThread,
+    reloadThreads,
+  } = threadsApi;
 
-  // === Bootstrap por empresa ===
-  useEffect(() => {
-    const ts = loadThreads(state.companyName);
-    if (ts.length === 0) {
-      const t = createThread(state.companyName, "Conversa principal");
-      setThreads([t]);
-      setActiveId(t.id);
-      setMessages(injectBriefingIfEmpty(state.companyName, t.id, []));
-    } else {
-      setThreads(ts);
-      const cur = ts.find((t) => t.id === activeId) ?? ts[0];
-      setActiveId(cur.id);
-      const loaded = loadMessages(state.companyName, cur.id);
-      setMessages(injectBriefingIfEmpty(state.companyName, cur.id, loaded));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.companyName]);
-
-  // === Carrega msgs ao trocar thread ===
-  useEffect(() => {
-    if (activeId) {
-      const loaded = loadMessages(state.companyName, activeId);
-      setMessages(injectBriefingIfEmpty(state.companyName, activeId, loaded));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeId, state.companyName]);
-
-  // === Persiste msgs ===
-  // Não salva array vazio: no primeiro render o efeito dispara antes do bootstrap
-  // carregar as mensagens do storage, e gravar [] apagaria o histórico salvo.
-  // Threads novas usam id distinto, então não há risco de "ficar preso" com msgs antigas.
-  useEffect(() => {
-    if (activeId && messages.length > 0) saveMessages(state.companyName, activeId, messages);
-  }, [messages, state.companyName, activeId]);
+  // === Anexos ===
+  const attachmentsApi = useChatAttachments();
+  const {
+    attachments,
+    setAttachments,
+    removeAttachment,
+    processingFile,
+    processingMsg,
+    handleFiles,
+  } = attachmentsApi;
 
   // === Snapshot (cache por hash) ===
   const simHasChanges = !!simActive && simActive > 0;
@@ -148,9 +102,9 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     }
   }, [state, simulatedState, simHasChanges, config.includeSnapshot, config.useTools]);
 
-  // Contexto runtime: empresa + regime efetivo (com downgrade Simples→Presumido) + cenário simulado ativo.
+  // Contexto runtime: empresa + regime efetivo + cenário simulado ativo.
   const runtimeContext = useMemo(() => {
-    // Descreve as alavancas simuladas ativas em linguagem natural (ex: "fixos -20%, PMR -5d").
+    // Descreve alavancas simuladas ativas em linguagem natural.
     const describeSim = (): string | undefined => {
       if (!simHasChanges || !simParams) return undefined;
       const p = simParams;
@@ -206,30 +160,23 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     [state, config.maxSuggestions],
   );
 
-  // Memórias persistentes da empresa — injetadas no system prompt.
+  // Memórias persistentes da empresa.
   const memories = useMemories(state.companyName || "default");
   const memoriesBlock = useMemo(() => memoriesToPromptBlock(memories), [memories]);
 
-  // Modo de atuação ativo (chat / cfo / controller / auditor / board).
-  // Persistido por empresa em localStorage — restaurado ao recarregar.
+  // Modo de atuação ativo (chat / cfo / controller / auditor / board / tributarista).
   const [mode, setModeRaw] = useState<AIMode>(() => loadAIMode(state.companyName || "default"));
-
-  // Ao trocar de empresa, recarrega o modo persistido daquela empresa.
   useEffect(() => {
     setModeRaw(loadAIMode(state.companyName || "default"));
   }, [state.companyName]);
-
   const setMode = (m: AIMode) => {
     setModeRaw(m);
     saveAIMode(state.companyName || "default", m);
   };
 
-  // Skills habilitadas — a IA decide qual aplicar; sem seleção manual no chat.
   const effectiveSkills = config.skills;
 
   // Retorna { stable, dynamic } para habilitar prompt caching (Anthropic).
-  // A parte estável (persona+regras+snapshot+skills) é cacheada; a dinâmica
-  // (data, contexto, memórias, modo) entra fresca a cada turno.
   const buildSysPrompt = (overrideMode?: AIMode) =>
     buildSystemPromptParts({
       snapshot,
@@ -244,6 +191,24 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
       memoriesBlock,
     });
 
+  // === Pipelines (360° + Conselho) ===
+  const pipelinesApi = useChatPipelines({
+    companyName: state.companyName,
+    activeId,
+    mode,
+    config,
+    streaming,
+    setStreaming,
+    messages,
+    setMessages,
+    input,
+    setInput,
+    abortRef,
+    buildSysPrompt,
+    errToMd,
+  });
+
+  // === send: caminho principal (streaming simples ou tool-calling) ===
   const send = async (
     text: string,
     opts?: { mode?: AIMode; auditMode?: boolean; replaceLast?: boolean },
@@ -287,9 +252,14 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     const ac = new AbortController();
     abortRef.current = ac;
 
-    // Audit Trail — captura início do turno, finalizado em ambos os caminhos.
+    // Audit Trail — captura início do turno.
     const trailStart = Date.now();
-    const recordTrail = (status: "ok" | "erro" | "abortado", responseChars: number, tools: string[], errorMsg?: string) => {
+    const recordTrail = (
+      status: "ok" | "erro" | "abortado",
+      responseChars: number,
+      tools: string[],
+      errorMsg?: string,
+    ) => {
       recordChatTrail(state.companyName || "default", {
         threadId: activeId,
         mode: effectiveMode,
@@ -317,7 +287,6 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
         forTools,
         lastUserContent,
       });
-      // Separa system prompts (1 ou 2 — estável+dinâmico) do histórico.
       let sysCount = 0;
       while (sysCount < full.length && full[sysCount].role === "system") sysCount++;
       const sys = full.slice(0, sysCount);
@@ -447,70 +416,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     }
   };
 
-  const handleFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const remaining = MAX_FILES_PER_MSG - attachments.length;
-    if (remaining <= 0) {
-      toast.error(`Máx ${MAX_FILES_PER_MSG} anexos por mensagem.`);
-      return;
-    }
-    const toProcess = Array.from(files).slice(0, remaining);
-    setProcessingFile(true);
-    try {
-      const results: ChatAttachment[] = [];
-      for (const f of toProcess) {
-        setProcessingMsg(`Lendo ${f.name}…`);
-        const att = await processFile(f, (m) => setProcessingMsg(m));
-        if (att.error) toast.error(`${att.name}: ${att.error}`);
-        else if (att.ocrUsed) {
-          const lbl = confidenceLabel(att.ocrConfidence);
-          if (lbl.tone === "bad")
-            toast.warning(`${att.name}: OCR com confiança ${lbl.label}. Revise antes de usar.`);
-          else toast.success(`${att.name}: OCR concluído — confiança ${lbl.label}.`);
-        }
-        results.push(att);
-      }
-      setAttachments((prev) => [...prev, ...results]);
-    } finally {
-      setProcessingFile(false);
-      setProcessingMsg("");
-    }
-  };
-
-  const removeAttachment = (id: string) =>
-    setAttachments((prev) => prev.filter((a) => a.id !== id));
-
   const handleStop = () => abortRef.current?.abort();
-
-  const handleNewThread = () => {
-    const t = createThread(state.companyName, `Conversa ${threads.length + 1}`);
-    const next = [t, ...threads];
-    setThreads(next);
-    saveThreads(state.companyName, next);
-    setActiveId(t.id);
-    setMessages(injectBriefingIfEmpty(state.companyName, t.id, []));
-  };
-
-  const handleDeleteThread = (id: string) => {
-    deleteThread(state.companyName, id);
-    const next = threads.filter((t) => t.id !== id);
-    setThreads(next);
-    if (id === activeId) {
-      const fallback = next[0] ?? createThread(state.companyName, "Conversa principal");
-      if (!next.length) {
-        setThreads([fallback]);
-        saveThreads(state.companyName, [fallback]);
-      }
-      setActiveId(fallback.id);
-      setMessages(
-        injectBriefingIfEmpty(
-          state.companyName,
-          fallback.id,
-          loadMessages(state.companyName, fallback.id),
-        ),
-      );
-    }
-  };
 
   const handleRegenerate = () => {
     const lastUser = [...messages].reverse().find((m) => m.role === "user");
@@ -528,387 +434,6 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
 
   const handleAudit = () =>
     void send("Faça uma análise completa estilo auditor.", { mode: "auditor" });
-
-  // === Pipeline 360°: cfo → controller → auditor ===
-  // Disponível a partir do Board Mode. Executa 3 estágios sequenciais,
-  // cada um com seu próprio system prompt (modo) e recebendo o output do anterior.
-  // O estado `pipeline360` expõe progresso ao vivo para a UI (estágio atual +
-  // concluídos). O botão Parar reusa `handleStop` (aborta o stream em curso
-  // e a checagem `ac.signal.aborted` entre estágios encerra o pipeline limpo).
-  type Pipeline360Stage = "cfo" | "controller" | "auditor";
-  interface Pipeline360State {
-    active: boolean;
-    current: Pipeline360Stage | null;
-    completed: Pipeline360Stage[];
-    total: number;
-    aborted?: boolean;
-    /** Pergunta original — preservada para permitir Reiniciar após cancelar. */
-    question?: string;
-    /** Outputs já produzidos — passados ao próximo estágio no resume. */
-    outputs?: Array<{ stage: Pipeline360Stage; output: string }>;
-  }
-  const [pipeline360, setPipeline360] = useState<Pipeline360State>({
-    active: false,
-    current: null,
-    completed: [],
-    total: 3,
-  });
-
-  // Restaura pipeline persistido ao trocar de empresa/thread.
-  useEffect(() => {
-    if (!activeId) return;
-    const persisted = loadPipeline360(state.companyName || "default", activeId);
-    if (persisted) {
-      setPipeline360({
-        active: false,
-        current: null,
-        completed: persisted.completed,
-        total: persisted.total,
-        aborted: persisted.aborted,
-        question: persisted.question,
-        outputs: persisted.outputs,
-      });
-    } else {
-      setPipeline360({ active: false, current: null, completed: [], total: 3 });
-    }
-  }, [activeId, state.companyName]);
-
-  // Persiste mudanças relevantes do pipeline (não persiste `active`/`current`).
-  useEffect(() => {
-    if (!activeId) return;
-    const company = state.companyName || "default";
-    if (pipeline360.completed.length === 0 && !pipeline360.question) {
-      clearPipeline360(company, activeId);
-      return;
-    }
-    savePipeline360(company, activeId, {
-      completed: pipeline360.completed,
-      total: pipeline360.total,
-      aborted: pipeline360.aborted,
-      question: pipeline360.question,
-      outputs: pipeline360.outputs,
-    });
-  }, [
-    activeId,
-    state.companyName,
-    pipeline360.completed,
-    pipeline360.total,
-    pipeline360.aborted,
-    pipeline360.question,
-    pipeline360.outputs,
-  ]);
-
-  // Executa N estágios a partir de `startIdx`, reaproveitando outputs prévios.
-  // Usado tanto pelo run inicial quanto pelo resume após cancelar.
-  const _runPipelineStages = async (
-    q: string,
-    startIdx: number,
-    seedOutputs: Array<{ stage: Pipeline360Stage; output: string }>,
-  ) => {
-    if (!activeId) return;
-    const { PIPELINE_360, buildStagePrompt, stageHeader } = await import(
-      "@/engines/ai/pipeline"
-    );
-    setStreaming(true);
-    touchThread(state.companyName, activeId);
-    const ac = new AbortController();
-    abortRef.current = ac;
-    const outputs = [...seedOutputs];
-    let convo: ChatMessage[] = messages.slice();
-    let aborted = false;
-
-    try {
-      for (let i = startIdx; i < PIPELINE_360.length; i++) {
-        if (ac.signal.aborted) {
-          aborted = true;
-          break;
-        }
-        const stage = PIPELINE_360[i];
-        setPipeline360((p) => ({ ...p, current: stage, active: true }));
-        const stagePrompt = buildStagePrompt(stage, q, outputs);
-        const sysPrompt = buildSysPrompt(stage);
-        const header = stageHeader(stage, i);
-
-        const llm = buildLlmMessages({
-          systemPrompt: sysPrompt,
-          history: convo,
-          forTools: false,
-          lastUserContent: stagePrompt,
-        });
-
-        let acc = header;
-        convo = [...convo, { role: "assistant", content: acc, ts: Date.now() }];
-        setMessages(convo);
-        const stageStart = Date.now();
-        try {
-          for await (const delta of streamChat(config, llm, ac.signal)) {
-            acc += delta;
-            setMessages((prev) => {
-              const copy = prev.slice();
-              copy[copy.length - 1] = { role: "assistant", content: acc, ts: Date.now() };
-              return copy;
-            });
-          }
-          const body = acc.slice(header.length);
-          outputs.push({ stage, output: body });
-          convo = [
-            ...convo.slice(0, -1),
-            { role: "assistant", content: acc, ts: Date.now() },
-          ];
-          setPipeline360((p) => ({
-            ...p,
-            completed: [...p.completed, stage],
-            current: null,
-            outputs: [...outputs],
-          }));
-          recordChatTrail(state.companyName || "default", {
-            threadId: activeId,
-            mode: stage,
-            provider: config.provider,
-            model: config.model,
-            userText: `[pipeline360 ${i + 1}/3] ${q}`,
-            responseChars: body.length,
-            tools: [],
-            durationMs: Date.now() - stageStart,
-            status: "ok",
-          });
-        } catch (e: unknown) {
-          const stageAborted = ac.signal.aborted;
-          aborted = aborted || stageAborted;
-          acc += stageAborted ? "\n\n_(⏸ cancelado pelo usuário)_" : "\n\n" + errToMd(e);
-          setMessages((prev) => {
-            const copy = prev.slice();
-            copy[copy.length - 1] = { role: "assistant", content: acc, ts: Date.now() };
-            return copy;
-          });
-          recordChatTrail(state.companyName || "default", {
-            threadId: activeId,
-            mode: stage,
-            provider: config.provider,
-            model: config.model,
-            userText: `[pipeline360 ${i + 1}/3] ${q}`,
-            responseChars: acc.length - header.length,
-            tools: [],
-            durationMs: Date.now() - stageStart,
-            status: stageAborted ? "abortado" : "erro",
-            errorMsg: e instanceof Error ? e.message : String(e),
-          });
-          break;
-        }
-      }
-    } finally {
-      setStreaming(false);
-      abortRef.current = null;
-      setPipeline360((p) => ({
-        ...p,
-        active: false,
-        current: null,
-        aborted,
-        question: q,
-        outputs: [...outputs],
-      }));
-    }
-  };
-
-  const runPipeline360 = async (userQuestion?: string) => {
-    if (streaming || !activeId) return;
-    if (mode !== "board") {
-      toast.error("Análise 360° disponível apenas no Modo Conselho (Board).");
-      return;
-    }
-    const q = (userQuestion ?? input).trim() || "Análise 360° para decisão de conselho.";
-    const userMsg: ChatMessage = {
-      role: "user",
-      content: `🎯 **Análise 360° (pipeline cfo → controller → auditor)**\n\n${q}`,
-      ts: Date.now(),
-    };
-    setMessages([...messages, userMsg]);
-    setInput("");
-    setPipeline360({
-      active: true,
-      current: null,
-      completed: [],
-      total: 3,
-      question: q,
-      outputs: [],
-    });
-    // Aguarda flush do setMessages? _runPipelineStages lê `messages` da closure
-    // atual, que já inclui userMsg porque chamamos setMessages acima. Mas para
-    // garantir, passamos o convo via push direto: usamos um microtask.
-    await Promise.resolve();
-    await _runPipelineStages(q, 0, []);
-  };
-
-  // Retoma o pipeline a partir do próximo estágio após um cancelar/erro.
-  // Reaproveita pergunta + outputs preservados em `pipeline360`.
-  const resumePipeline360 = async () => {
-    if (streaming || !activeId) return;
-    const startIdx = pipeline360.completed.length;
-    if (startIdx >= pipeline360.total) {
-      toast.info("Pipeline já concluído.");
-      return;
-    }
-    if (!pipeline360.question) {
-      toast.error("Sem pipeline anterior para retomar.");
-      return;
-    }
-    setPipeline360((p) => ({ ...p, active: true, aborted: false, current: null }));
-    await _runPipelineStages(
-      pipeline360.question,
-      startIdx,
-      pipeline360.outputs ?? [],
-    );
-  };
-
-  // ───────────────────────────────────────────────────────────────────
-  // CONSELHO VIRTUAL — 3 especialistas em PARALELO + síntese de consenso.
-  // Diferente do pipeline360 (sequencial), aqui as 3 vozes respondem
-  // simultaneamente para o consultor comparar perspectivas antes de decidir.
-  // ───────────────────────────────────────────────────────────────────
-  const CONCILIO_SPECIALISTS: Array<{
-    key: AIMode;
-    label: string;
-    instr: string;
-  }> = [
-    {
-      key: "cfo",
-      label: "🧭 CFO Estratégico",
-      instr:
-        "Recomendação direta: 1 tese, 2-3 alavancas com impacto em R$ (EBITDA/FCF/EV). Máx 120 palavras. " +
-        "**Obrigatório** encerrar com bloco `**📎 Fontes:**` em bullets curtos: " +
-        "(a) tools usadas com o número citado — ex. `get_indicadores → EBITDA R$ 120k`; " +
-        "(b) benchmark interno (P25/P50/P75 via `comparar_com_setor`) quando comparar margens/giro; " +
-        "(c) fórmulas aplicadas — ex. `Alavanca = ΔEBITDA × múltiplo EV/EBITDA`, `FCF = EBITDA − Capex − ΔNCG − IR`.",
-    },
-    {
-      key: "tributarista",
-      label: "📋 Contador Tributarista",
-      instr:
-        "Avalie a pergunta sob a ótica fiscal: impacto em Fator R, Simples/Presumido/Real, CBS/IBS e riscos de compliance. 2-3 pontos com número. Máx 120 palavras. " +
-        "**Obrigatório** encerrar com bloco `**📎 Fontes:**` em bullets: " +
-        "(a) tools — ex. `get_regime_tributario`, `get_eras_reforma`, `simular_transicao_reforma`; " +
-        "(b) base legal — ex. `LC 123/2006 art. 18` (Fator R), `LC 214/2025` (CBS/IBS), `RFB IN 2.121/22`; " +
-        "(c) fórmulas — ex. `Fator R = Folha 12m / RBT12`, `CBS+IBS pleno ≈ 26,5% s/ base ampla`.",
-    },
-    {
-      key: "controller",
-      label: "📈 Economista / Valuation",
-      instr:
-        "Avalie a pergunta sob a ótica de valor: impacto em ROIC vs WACC, EV (R$ e múltiplo) e risco do retorno. Use get_valuation. 2-3 pontos. Máx 120 palavras. " +
-        "**Obrigatório** encerrar com bloco `**📎 Fontes:**` em bullets: " +
-        "(a) tools — ex. `get_valuation`, `get_wacc`, `get_indicadores`; " +
-        "(b) múltiplos de benchmark setorial (P25/P50/P75 EV/EBITDA via `comparar_com_setor`); " +
-        "(c) fórmulas — ex. `WACC = wE·Ke + wD·Kd·(1−t)`, `EV = EBITDA × múltiplo`, `Spread = ROIC − WACC`.",
-    },
-  ];
-
-  const runConcilio = async (userQuestion?: string) => {
-    if (streaming || !activeId) return;
-    if (mode !== "board") {
-      toast.error("Conselho Virtual disponível apenas no Modo Conselho (Board).");
-      return;
-    }
-    const q = (userQuestion ?? input).trim();
-    if (!q) {
-      toast.error("Digite a pergunta que o conselho deve debater.");
-      return;
-    }
-
-    const userMsg: ChatMessage = {
-      role: "user",
-      content: `🏛️ **Conselho Virtual (3 especialistas em paralelo)**\n\n${q}`,
-      ts: Date.now(),
-    };
-    // Insere user + 3 placeholders dos especialistas com ts único.
-    const placeholders: ChatMessage[] = CONCILIO_SPECIALISTS.map((s, i) => ({
-      role: "assistant" as const,
-      content: `### ${s.label}\n\n_aguardando…_`,
-      ts: Date.now() + i + 1,
-    }));
-    const baseHistory = [...messages, userMsg];
-    setMessages([...baseHistory, ...placeholders]);
-    setInput("");
-    setStreaming(true);
-    touchThread(state.companyName, activeId);
-    const ac = new AbortController();
-    abortRef.current = ac;
-
-    // Helper: atualiza msg por ts.
-    const updateByTs = (ts: number, content: string) =>
-      setMessages((prev) =>
-        prev.map((m) => (m.ts === ts ? { ...m, content } : m)),
-      );
-
-    // Roda os 3 em paralelo.
-    const outputs: Array<{ label: string; text: string }> = [];
-    await Promise.all(
-      CONCILIO_SPECIALISTS.map(async (spec, i) => {
-        const ts = placeholders[i].ts;
-        const sysPrompt = buildSysPrompt(spec.key);
-        const userPrompt = `[Conselho Virtual · voz ${i + 1}/3 — ${spec.label}]\nPergunta do conselho: ${q}\n\nResponda no seu papel. ${spec.instr}`;
-        const llm = buildLlmMessages({
-          systemPrompt: sysPrompt,
-          history: baseHistory,
-          forTools: false,
-          lastUserContent: userPrompt,
-        });
-        let acc = `### ${spec.label}\n\n`;
-        updateByTs(ts, acc);
-        try {
-          for await (const delta of streamChat(config, llm, ac.signal)) {
-            acc += delta;
-            updateByTs(ts, acc);
-          }
-          outputs.push({ label: spec.label, text: acc.slice(`### ${spec.label}\n\n`.length) });
-        } catch (e) {
-          const aborted = ac.signal.aborted;
-          acc += aborted ? "\n\n_(⏸ cancelado)_" : "\n\n" + errToMd(e);
-          updateByTs(ts, acc);
-        }
-      }),
-    );
-
-    // Síntese de consenso/divergência.
-    if (!ac.signal.aborted && outputs.length === CONCILIO_SPECIALISTS.length) {
-      const synthTs = Date.now() + 999;
-      const synthPlaceholder: ChatMessage = {
-        role: "assistant",
-        content: "### 🧩 Síntese do Conselho\n\n_consolidando…_",
-        ts: synthTs,
-      };
-      setMessages((prev) => [...prev, synthPlaceholder]);
-      const synthPrompt = `Você é o secretário do conselho. As 3 vozes responderam à pergunta: "${q}".\n\n${outputs
-        .map((o) => `## ${o.label}\n${o.text}`)
-        .join("\n\n")}\n\nProduza em **máx. 180 palavras**:\n1. **Consenso** — onde os 3 concordam (1-2 bullets).\n2. **Divergência** — onde discordam (1-2 bullets, dizendo qual voz defende cada lado).\n3. **Recomendação final** — placar (ex.: "2 de 3 recomendam X") + decisão executiva sugerida com 1 número de impacto.\n4. **📎 Trilha de auditoria** — consolide as fontes citadas pelas 3 vozes em um bloco único, agrupado por tipo: **Tools** (lista deduplicada com o número/output principal), **Benchmark** (P25/P50/P75 citados), **Base legal** (artigos/LCs), **Fórmulas** (expressões usadas). Cite a voz responsável entre parênteses quando houver divergência de número.`;
-      let acc = "### 🧩 Síntese do Conselho\n\n";
-      updateByTs(synthTs, acc);
-      try {
-        const llm = buildLlmMessages({
-          systemPrompt: buildSysPrompt("chat"),
-          history: baseHistory,
-          forTools: false,
-          lastUserContent: synthPrompt,
-        });
-        for await (const delta of streamChat(config, llm, ac.signal)) {
-          acc += delta;
-          updateByTs(synthTs, acc);
-        }
-      } catch (e) {
-        acc += "\n\n" + errToMd(e);
-        updateByTs(synthTs, acc);
-      }
-    }
-
-    setStreaming(false);
-    abortRef.current = null;
-  };
-
-
-
-
-
-  // Recarrega threads do storage (usado por AIChatSheet ao renomear).
-  const reloadThreads = () => setThreads(loadThreads(state.companyName));
 
   // Atualiza config + persiste.
   const updateConfig = (c: AIConfig) => {
@@ -944,19 +469,11 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
     handleRegenerate,
     handleEditLast,
     handleAudit,
-    runPipeline360,
-    resumePipeline360,
-    runConcilio,
-    resetPipeline360: () => {
-      if (streaming) {
-        toast.error("Cancele o pipeline em execução antes de limpar.");
-        return;
-      }
-      clearPipeline360(state.companyName || "default", activeId);
-      setPipeline360({ active: false, current: null, completed: [], total: 3 });
-      toast.success("Pipeline 360° reiniciado.");
-    },
-    pipeline360,
+    runPipeline360: pipelinesApi.runPipeline360,
+    resumePipeline360: pipelinesApi.resumePipeline360,
+    runConcilio: pipelinesApi.runConcilio,
+    resetPipeline360: pipelinesApi.resetPipeline360,
+    pipeline360: pipelinesApi.pipeline360,
     handleNewThread,
     handleDeleteThread,
     reloadThreads,
