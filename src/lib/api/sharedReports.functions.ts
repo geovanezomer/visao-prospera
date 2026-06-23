@@ -33,6 +33,9 @@ const createSchema = z.object({
   companyName: z.string().min(1).max(200),
 });
 
+/** Padrão: 48h de validade do link público (em ms). */
+const DEFAULT_TTL_MS = 48 * 60 * 60 * 1000;
+
 export const createShareLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => createSchema.parse(d))
@@ -48,11 +51,14 @@ export const createShareLink = createServerFn({ method: "POST" })
       .upload(storagePath, blob, { upsert: false, contentType: "application/json" });
     if (upErr) throw new Error(`Falha ao subir arquivo: ${upErr.message}`);
 
+    const expiresAt = new Date(Date.now() + DEFAULT_TTL_MS).toISOString();
+
     const { error: dbErr } = await supabaseAdmin.from("shared_reports").insert({
       share_id: shareId,
       owner_id: context.userId,
       storage_path: storagePath,
       company_name: data.companyName,
+      expires_at: expiresAt,
     });
     if (dbErr) {
       // rollback do upload se a linha falhar
@@ -60,7 +66,7 @@ export const createShareLink = createServerFn({ method: "POST" })
       throw new Error(`Falha ao registrar link: ${dbErr.message}`);
     }
 
-    return { shareId };
+    return { shareId, expiresAt };
   });
 
 const getSchema = z.object({ shareId: z.string().min(4).max(64) });
@@ -88,7 +94,11 @@ export const getSharedReport = createServerFn({ method: "GET" })
     const text = await file.text();
     const payload = JSON.parse(text);
 
-    return { payload, companyName: row.company_name as string };
+    return {
+      payload,
+      companyName: row.company_name as string,
+      expiresAt: (row.expires_at as string | null) ?? null,
+    };
   });
 
 export const revokeShareLink = createServerFn({ method: "POST" })
@@ -103,4 +113,30 @@ export const revokeShareLink = createServerFn({ method: "POST" })
       .eq("owner_id", context.userId);
     if (error) throw new Error(`Falha ao revogar: ${error.message}`);
     return { ok: true };
+  });
+
+/**
+ * Lista os links de compartilhamento ATIVOS do usuário logado
+ * (não revogados e não expirados). Usado pelo ícone na header
+ * para abrir o gerenciador de links compartilhados.
+ */
+export const listShareLinks = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const nowIso = new Date().toISOString();
+    const { data, error } = await supabaseAdmin
+      .from("shared_reports")
+      .select("share_id, company_name, created_at, expires_at")
+      .eq("owner_id", context.userId)
+      .is("revoked_at", null)
+      .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(`Falha ao listar links: ${error.message}`);
+    return (data ?? []).map((r) => ({
+      shareId: r.share_id as string,
+      companyName: r.company_name as string,
+      createdAt: r.created_at as string,
+      expiresAt: (r.expires_at as string | null) ?? null,
+    }));
   });

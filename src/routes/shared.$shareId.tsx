@@ -12,7 +12,7 @@ import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { getSharedReport } from "@/lib/api/sharedReports.functions";
 import { parseFinnanceFile } from "@/engines/finance/fileFormat";
 import { FinanceProvider, FinanceErrorBoundary } from "@/engines/finance/AppStateContext";
-import { Eye, ArrowLeft } from "lucide-react";
+import { Eye, ArrowLeft, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { TabKey } from "@/engines/finance/types";
 
@@ -84,6 +84,28 @@ function SharedReport() {
   // No-op updater — o FinanceProvider já bloqueia, mas mantemos por segurança.
   const noopUpdate = () => {};
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
+
+  // Timer regressivo até a expiração do link. Atualiza a cada 1s.
+  const expiresAt = data.expiresAt ?? null;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!expiresAt) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [expiresAt]);
+  const remainingLabel = (() => {
+    if (!expiresAt) return null;
+    const ms = new Date(expiresAt).getTime() - now;
+    if (ms <= 0) return { text: "expirado", tone: "crit" as const };
+    const h = Math.floor(ms / 3_600_000);
+    const m = Math.floor((ms % 3_600_000) / 60_000);
+    const s = Math.floor((ms % 60_000) / 1000);
+    const d = Math.floor(h / 24);
+    const text =
+      d >= 1 ? `${d}d ${h % 24}h` : h >= 1 ? `${h}h ${m}m` : m >= 1 ? `${m}m ${s}s` : `${s}s`;
+    const tone: "ok" | "warn" | "crit" = h < 1 ? "crit" : h < 6 ? "warn" : "ok";
+    return { text, tone };
+  })();
 
   // Bloqueia atalhos de edição/salvamento/impressão nesta rota.
   // Ctrl/Cmd + S/O/P/U/I/J + Ctrl+Shift+R/I/J + F2/F3 viram no-op com toast.
@@ -165,9 +187,25 @@ function SharedReport() {
       <div className="flex min-h-screen flex-col bg-background text-foreground">
         {/* Banner fixo de modo somente leitura */}
         <div className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-primary/30 bg-primary/10 px-4 py-2 text-xs">
-          <div className="flex items-center gap-2 text-primary">
+          <div className="flex flex-wrap items-center gap-2 text-primary">
             <Eye className="h-4 w-4" />
             <span className="font-medium">Visualização compartilhada</span>
+            {remainingLabel && (
+              <span
+                className={
+                  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold " +
+                  (remainingLabel.tone === "crit"
+                    ? "border-destructive/40 bg-destructive/10 text-destructive"
+                    : remainingLabel.tone === "warn"
+                      ? "border-amber-500/40 bg-amber-500/10 text-amber-500"
+                      : "border-emerald-500/40 bg-emerald-500/10 text-emerald-500")
+                }
+                title="Tempo até a expiração do link"
+              >
+                <Clock className="h-3 w-3" />
+                expira em {remainingLabel.text}
+              </span>
+            )}
             <span className="text-muted-foreground">
               · {data.companyName} · somente leitura
             </span>

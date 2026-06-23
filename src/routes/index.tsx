@@ -51,6 +51,7 @@ import { isBackupEnabled } from "@/lib/api/cloudBackup";
 import { RestoreBackupDialog } from "@/components/sim/shared/RestoreBackupDialog";
 import { SaveShareDialog } from "@/components/sim/shared/SaveShareDialog";
 import { FeedbackDialog } from "@/components/sim/shared/FeedbackDialog";
+import { SharedLinksDialog } from "@/components/sim/shared/SharedLinksDialog";
 import { cn } from "@/lib/utils";
 
 // Fallback enquanto o chunk da aba carrega.
@@ -320,6 +321,7 @@ function SimulaPro() {
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
                   </Button>
+                  <SharedLinksDialog />
                   <FeedbackDialog />
                 </div>
               </div>
