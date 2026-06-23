@@ -56,7 +56,7 @@ export function recordChatTrail(
       userText: (entry.userText || "").slice(0, 500),
     };
     const list = [full, ...read(company)].slice(0, MAX_ENTRIES);
-    window.localStorage.setItem(KEY(company), JSON.stringify(list));
+    saveKeySync(KEY(company), list);
   } catch {
     // best-effort
   }
@@ -64,7 +64,7 @@ export function recordChatTrail(
 
 export function clearChatTrail(company: string): void {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(KEY(company));
+  removeKey(KEY(company));
 }
 
 /** Exporta o trail em Markdown para auditoria. */
