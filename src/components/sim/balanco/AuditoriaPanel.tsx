@@ -162,10 +162,10 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         grupo: "Intangível",
         rubrica: "(−) Amortização acumulada",
         inputs: [
-          { label: "Abertura", origem: "Capital → Abertura", valor: n(ab.amortizacaoAcumulada) },
+          { label: "Abertura (override)", origem: ssot.amortizacaoAcumulada.origem, valor: ssot.amortizacaoAcumulada.value },
         ],
         formula: "AmortAcum_fim = abertura (sem fluxo modelado)",
-        resultado: n(ab.amortizacaoAcumulada),
+        resultado: ssot.amortizacaoAcumulada.value,
       },
       // PASSIVO CIRCULANTE
       {
