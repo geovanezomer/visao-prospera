@@ -174,26 +174,26 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         inputs: [
           { label: "CPV anual", origem: "Despesas (custo_vendas + direto_venda)", valor: cpv },
           { label: "PMP (dias)", origem: "Receitas", valor: pmp },
-          { label: "Fornecedores abertura (fallback)", origem: "Capital → Abertura", valor: n(ab.fornecedores) },
+          { label: "Fornecedores abertura (SSOT)", origem: ssot.fornecedores.origem, valor: ssot.fornecedores.value },
         ],
         formula: pmp > 0 ? "Fornecedores_fim = CPV × PMP / 360" : "Fornecedores_fim = abertura (PMP=0)",
-        resultado: pmp > 0 ? (cpv * pmp) / 360 : n(ab.fornecedores),
+        resultado: pmp > 0 ? (cpv * pmp) / 360 : ssot.fornecedores.value,
       },
       {
         grupo: "Passivo Circulante",
         rubrica: "Empréstimos CP",
         inputs: [
-          { label: "Dívida onerosa total", origem: "Capital → Contratos", valor: dividaTotal },
-          { label: "% Curto Prazo", origem: "Capital", valor: cpPct },
+          { label: "Empréstimos CP (SSOT)", origem: ssot.emprestimosCP.origem, valor: ssot.emprestimosCP.value },
         ],
-        formula: "EmprCP = dividaOnerosa × cpPct",
-        resultado: dividaTotal * cpPct,
+        formula: "EmprCP = Σ contratos com prazo ≤ 12m (fallback: dividaOnerosa × cpPct)",
+        resultado: ssot.emprestimosCP.value,
       },
       {
         grupo: "Passivo Circulante",
         rubrica: "Impostos a pagar",
         inputs: [
           { label: "Impostos anuais (DRE)", origem: "DRE", valor: impostos },
+          { label: "Impostos abertura (SSOT)", origem: ssot.impostosPagar.origem, valor: ssot.impostosPagar.value },
         ],
         formula: "ImpostosPagar = impostos_anuais / 12 (≈ 1 mês DARF)",
         resultado: impostos > 0 ? impostos / 12 : 0,
@@ -203,6 +203,7 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         rubrica: "Salários e encargos",
         inputs: [
           { label: "Folha anual", origem: "Despesas (fixo + variável)", valor: folha },
+          { label: "Salários abertura (SSOT)", origem: ssot.salariosEncargos.origem, valor: ssot.salariosEncargos.value },
         ],
         formula: "Salários_pagar = folha_anual / 12",
         resultado: folha > 0 ? folha / 12 : 0,
@@ -212,11 +213,10 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         grupo: "Passivo Não Circulante",
         rubrica: "Empréstimos LP",
         inputs: [
-          { label: "Dívida onerosa total", origem: "Capital → Contratos", valor: dividaTotal },
-          { label: "% Longo Prazo (1 − cpPct)", origem: "Capital", valor: 1 - cpPct },
+          { label: "Empréstimos LP (SSOT)", origem: ssot.emprestimosLP.origem, valor: ssot.emprestimosLP.value },
         ],
-        formula: "EmprLP = dividaOnerosa × (1 − cpPct)",
-        resultado: dividaTotal * (1 - cpPct),
+        formula: "EmprLP = Σ contratos com prazo > 12m (fallback: dividaOnerosa × (1 − cpPct))",
+        resultado: ssot.emprestimosLP.value,
       },
       // PL
       {
@@ -234,10 +234,10 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         grupo: "Patrimônio Líquido",
         rubrica: "Lucros acumulados (abertura)",
         inputs: [
-          { label: "Lucros acumulados abertura", origem: "Capital → Abertura", valor: n(ab.lucrosAcumulados) },
+          { label: "Lucros acumulados (SSOT)", origem: ssot.lucrosAcumulados.origem, valor: ssot.lucrosAcumulados.value },
         ],
         formula: "Lucros_acum_fim = abertura (resultado do exercício vai em rubrica separada)",
-        resultado: n(ab.lucrosAcumulados),
+        resultado: ssot.lucrosAcumulados.value,
       },
       {
         grupo: "Patrimônio Líquido",
