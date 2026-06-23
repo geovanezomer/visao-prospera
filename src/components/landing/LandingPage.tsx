@@ -625,12 +625,10 @@ function PricingSection() {
         <div className="text-center">
           <SectionEyebrow>Planos</SectionEyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Escolha como quer dominar suas
-            <br className="hidden sm:block" /> finanças.
+            Três caminhos. O mesmo destino:
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-            Três caminhos. O mesmo destino: <strong className="text-foreground">controle absoluto</strong> sobre seu
-            dinheiro.
+            <strong className="text-foreground">controle absoluto</strong> sobre seu dinheiro.
           </p>
         </div>
 
