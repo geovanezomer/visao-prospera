@@ -36,6 +36,7 @@ interface FinanceStore {
   getSnapshot: () => AppState;
   subscribe: (listener: () => void) => () => void;
   update: FinanceUpdater;
+  readOnly: boolean;
 }
 
 const FinanceStoreContext = createContext<FinanceStore | null>(null);
@@ -43,29 +44,32 @@ const FinanceStoreContext = createContext<FinanceStore | null>(null);
 export function FinanceProvider({
   state,
   update,
+  readOnly = false,
   children,
 }: {
   state: AppState;
   update: FinanceUpdater;
+  /** Quando true, todas as chamadas a `update` viram no-op (modo somente leitura). */
+  readOnly?: boolean;
   children: ReactNode;
 }) {
   const stateRef = useRef(state);
   const updateRef = useRef(update);
+  const readOnlyRef = useRef(readOnly);
   const listenersRef = useRef<Set<() => void>>(new Set());
 
-  // Mantém o snapshot atualizado e notifica subscribers quando state muda.
-  // Usamos useEffect (não useMemo) para garantir que listeners executem
-  // SOMENTE após o React commitar a mudança — evita tearing.
   useEffect(() => {
     stateRef.current = state;
     listenersRef.current.forEach((l) => l());
   }, [state]);
 
-  // updater pode trocar de identidade entre renders do pai; refletimos
-  // a versão mais recente sem invalidar a identidade do store.
   useEffect(() => {
     updateRef.current = update;
   }, [update]);
+
+  useEffect(() => {
+    readOnlyRef.current = readOnly;
+  }, [readOnly]);
 
   const store = useMemo<FinanceStore>(
     () => ({
@@ -74,13 +78,23 @@ export function FinanceProvider({
         listenersRef.current.add(l);
         return () => listenersRef.current.delete(l);
       },
-      // Wrapper estável que sempre delega ao update mais recente.
-      update: (p) => updateRef.current(p),
+      // Em modo read-only, `update` vira no-op — bloqueia mutações vindas
+      // de qualquer componente sem precisar refatorá-los individualmente.
+      update: (p) => {
+        if (readOnlyRef.current) return;
+        updateRef.current(p);
+      },
+      readOnly,
     }),
-    [],
+    [readOnly],
   );
 
   return <FinanceStoreContext.Provider value={store}>{children}</FinanceStoreContext.Provider>;
+}
+
+/** Hook utilitário: true se a árvore está em modo somente leitura. */
+export function useFinanceReadOnly(): boolean {
+  return useContext(FinanceStoreContext)?.readOnly ?? false;
 }
 
 function useStore(): FinanceStore {
