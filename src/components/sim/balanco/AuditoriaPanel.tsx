@@ -79,32 +79,32 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         inputs: [
           { label: "Receita Bruta anual", origem: "Receitas", valor: receitaBruta },
           { label: "PMR (dias)", origem: "Receitas", valor: pmr },
-          { label: "CR abertura (fallback)", origem: "Capital → Abertura", valor: n(ab.contasReceber) },
+          { label: `CR abertura (fallback)`, origem: ssot.contasReceber.origem, valor: ssot.contasReceber.value },
         ],
         formula:
           pmr > 0
             ? "CR_fim = Receita Bruta × PMR / 360"
             : "CR_fim = CR_abertura (PMR=0)",
-        resultado: pmr > 0 ? (receitaBruta * pmr) / 360 : n(ab.contasReceber),
+        resultado: pmr > 0 ? (receitaBruta * pmr) / 360 : ssot.contasReceber.value,
       },
       {
         grupo: "Ativo Circulante",
         rubrica: "Estoques",
         inputs: [
           { label: "Estoque declarado (Capital)", origem: "Capital", valor: n(cap.estoques) },
-          { label: "Estoque abertura (fallback)", origem: "Capital → Abertura", valor: n(ab.estoques) },
+          { label: "Estoque abertura (SSOT)", origem: ssot.estoques.origem, valor: ssot.estoques.value },
         ],
-        formula: "Estoques_fim = capital.estoques OU abertura.estoques",
-        resultado: cap.estoques > 0 ? cap.estoques : n(ab.estoques),
+        formula: "Estoques_fim = capital.estoques OU abertura SSOT",
+        resultado: cap.estoques > 0 ? cap.estoques : ssot.estoques.value,
       },
       {
         grupo: "Ativo Circulante",
         rubrica: "Impostos a recuperar",
         inputs: [
-          { label: "Abertura", origem: "Capital → Abertura", valor: n(ab.impostosRecuperar) },
+          { label: "Abertura (editável)", origem: ssot.impostosRecuperar.origem, valor: ssot.impostosRecuperar.value },
         ],
         formula: "Constante = abertura (sem modelo de crédito tributário)",
-        resultado: n(ab.impostosRecuperar),
+        resultado: ssot.impostosRecuperar.value,
       },
       // IMOBILIZADO
       {
