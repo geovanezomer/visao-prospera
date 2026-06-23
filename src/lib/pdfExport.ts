@@ -1356,7 +1356,7 @@ function buildPriorities(
   }));
   // fallback baseado em diagnose se prescriptive estiver vazio
   if (out.length === 0) {
-    diags.filter((d) => d.level !== "ok").slice(0, 3).forEach((d) => {
+    diags.filter((d) => d.level !== "ok").slice(0, 6).forEach((d) => {
       out.push({
         title: d.title,
         description: d.message,
