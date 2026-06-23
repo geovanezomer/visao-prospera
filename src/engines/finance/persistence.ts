@@ -61,11 +61,19 @@ export async function loadKey<T = unknown>(key: string): Promise<T | null> {
     const raw = localStorage.getItem(key);
     if (raw == null) return null;
     const parsed = JSON.parse(raw) as T;
-    // Migração silenciosa para IndexedDB se disponível
+    // Migração silenciosa para IndexedDB — grava SOMENTE no IDB. Gravar
+    // no LS aqui é redundante (o valor veio do LS) e abre corrida se um
+    // saveKeySync concorrente estiver em voo para a mesma chave.
     if (idbAvailable) {
-      saveKey(key, parsed).catch(() => {
-        /* ignora */
-      });
+      const dbp = getDB();
+      if (dbp) {
+        void dbp
+          .then((db) => db.put(STORE, parsed, key))
+          .catch((err) => {
+            idbAvailable = false;
+            console.warn(`[persistence] loadKey: migração IDB falhou para "${key}"`, err);
+          });
+      }
     }
     return parsed;
   } catch {
