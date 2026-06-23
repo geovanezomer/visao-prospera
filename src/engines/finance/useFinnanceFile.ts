@@ -139,31 +139,78 @@ export function useFinnanceFile({
     }
   }, [hydrated, state, scenarios, setState, replaceScenarios]);
 
-  const save = useCallback(() => {
-    // Sempre regenera o nome a partir do companyName atual + data de hoje.
-    // Assim, ao trocar o nome da empresa nas configurações, o arquivo salvo
-    // (e o backup em nuvem) reflete imediatamente o novo nome — evitando
-    // sobrescrever backups de empresas diferentes.
+  // Constrói o payload + nome canônico do arquivo atual.
+  const buildPayload = useCallback(() => {
     const name = defaultFilename(state);
+    const extras = collectExtras(state.companyName);
+    const payload = serialize(state, scenarios, extras);
+    return { name, payload };
+  }, [state, scenarios]);
+
+  // Marca o estado atual como "salvo" e limpa o draft de recuperação.
+  const markSaved = useCallback((name: string) => {
+    lastSavedSnapshot.current = snapshot(state, scenarios);
+    setCurrentFileName(name);
+    setDirty(false);
+    setLastModified(Date.now());
     try {
-      // Coleta cenários do simulador + plano de ação da empresa atual.
-      const extras = collectExtras(state.companyName);
-      const payload = serialize(state, scenarios, extras);
+      localStorage.removeItem(draftKey(state.companyName));
+    } catch {
+      /* ignora */
+    }
+  }, [state, scenarios]);
+
+  // Salva APENAS no computador (download local).
+  const saveToDisk = useCallback(() => {
+    try {
+      const { name, payload } = buildPayload();
       downloadFinnanceFile(payload, name);
-      lastSavedSnapshot.current = snapshot(state, scenarios);
-      setCurrentFileName(name);
-      setDirty(false);
-      setLastModified(Date.now());
-      // Limpa o draft — não há mais alterações pendentes.
-      try {
-        localStorage.removeItem(draftKey(state.companyName));
-      } catch {
-        /* ignora */
-      }
+      markSaved(name);
+      toast.success(`Arquivo salvo: ${name}`);
+    } catch (err) {
+      toast.error("Falha ao salvar arquivo", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }, [buildPayload, markSaved]);
+
+  // Faz upload imediato (sem debounce) no Supabase Storage.
+  // Retorna Promise para o caller poder aguardar feedback.
+  const saveToCloud = useCallback(async (): Promise<void> => {
+    if (!userId) {
+      toast.error("Faça login para salvar na nuvem");
+      return;
+    }
+    if (!isBackupEnabled()) {
+      toast.error("Backup em nuvem está desativado");
+      return;
+    }
+    try {
+      const { name, payload } = buildPayload();
+      const filename = name.endsWith(".finnance") ? name : `${name}.finnance`;
+      const json = JSON.stringify(payload, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      onBackupStatus?.("syncing");
+      await uploadBackup(userId, filename, blob);
+      onBackupStatus?.("synced");
+      toast.success("Backup salvo na nuvem");
+    } catch (err) {
+      onBackupStatus?.("error");
+      toast.error("Falha ao salvar na nuvem", {
+        description: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }, [userId, buildPayload, onBackupStatus]);
+
+  // Save "tudo" (compat retro do Ctrl+S): grava no disco + dispara backup
+  // silencioso debounced na nuvem — preserva UX original.
+  const save = useCallback(() => {
+    try {
+      const { name, payload } = buildPayload();
+      downloadFinnanceFile(payload, name);
+      markSaved(name);
       toast.success(`Arquivo salvo: ${name}`);
 
-      // Backup silencioso no Supabase Storage com debounce (1500ms).
-      // Ctrl+S repetidos agrupam num único upload — sempre o último estado vence.
       if (userId && isBackupEnabled()) {
         const filename = name.endsWith(".finnance") ? name : `${name}.finnance`;
         const json = JSON.stringify(payload, null, 2);
@@ -179,7 +226,6 @@ export function useFinnanceFile({
           const mySeq = ++backupSeq.current;
           uploadBackup(userId, job.filename, job.blob)
             .then(() => {
-              // Ignora resposta se outro upload foi disparado depois deste.
               if (mySeq === backupSeq.current) onBackupStatus?.("synced");
             })
             .catch((err) => {
@@ -193,7 +239,7 @@ export function useFinnanceFile({
         description: err instanceof Error ? err.message : String(err),
       });
     }
-  }, [state, scenarios, userId, onBackupStatus]);
+  }, [buildPayload, markSaved, userId, onBackupStatus]);
 
   // Limpa timer de backup pendente no unmount para evitar uploads órfãos
   // após o hook desmontar (navegação, logout, hot reload).
@@ -315,5 +361,5 @@ export function useFinnanceFile({
     };
   }, []);
 
-  return { currentFileName, dirty, lastModified, save, open, resetWithConfirm };
+  return { currentFileName, dirty, lastModified, save, saveToDisk, saveToCloud, open, resetWithConfirm };
 }
