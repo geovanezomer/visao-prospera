@@ -1,4 +1,4 @@
-// Snapshot em camadas + estimativa de tokens + sanitização + cache por hash.
+// Snapshot em camadas + estimativa de tokens + sanitização + cache por referência.
 import type { AppState } from "@/engines/finance/types";
 import {
   buildDRE,
@@ -15,6 +15,7 @@ import { deriveBalancoFechamento } from "@/engines/finance/balancoFechamento";
 import { deriveAbertura } from "@/engines/finance/aberturaDerivada";
 import { MESES, sum, fmtNum } from "@/engines/finance/format";
 import { getCbsAliquota, getIbsAliquotaRef } from "@/engines/finance/taxDefaults";
+import { getFinancialModelCached } from "@/engines/finance/financialModel";
 
 // ===== Helpers =====
 const safe = (n: unknown): number => (typeof n === "number" && Number.isFinite(n) ? n : 0);
