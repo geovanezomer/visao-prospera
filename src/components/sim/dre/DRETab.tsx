@@ -352,7 +352,7 @@ export function DRETab() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <div className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
-            {((readOnly ? ["trimestral", "mensal"] : ["anual", "trimestral", "mensal"]) as const).map((v) => (
+            {(readOnly ? (["trimestral", "mensal"] as const) : (["anual", "trimestral", "mensal"] as const)).map((v) => (
               <div
                 key={v}
                 role="button"
