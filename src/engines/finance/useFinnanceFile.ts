@@ -6,6 +6,7 @@ import type { AppState, Scenario } from "./types";
 import { defaultFilename, serialize } from "./fileFormat";
 import { downloadFinnanceFile, pickFinnanceFile } from "./fileIO";
 import { collectExtras, applyExtras } from "./fileExtras";
+import { saveKeySync, removeKey } from "./persistence";
 import { uploadBackup, isBackupEnabled, type BackupStatus } from "@/lib/api/cloudBackup";
 
 interface ConfirmFn {
@@ -102,7 +103,7 @@ export function useFinnanceFile({
     const t = setTimeout(() => {
       try {
         const env: DraftEnvelope = { ts: Date.now(), state, scenarios };
-        localStorage.setItem(draftKey(state.companyName), JSON.stringify(env));
+        saveKeySync(draftKey(state.companyName), env);
       } catch {
         /* quota / privacy mode — ignora */
       }
@@ -154,7 +155,7 @@ export function useFinnanceFile({
     setDirty(false);
     setLastModified(Date.now());
     try {
-      localStorage.removeItem(draftKey(state.companyName));
+      removeKey(draftKey(state.companyName));
     } catch {
       /* ignora */
     }

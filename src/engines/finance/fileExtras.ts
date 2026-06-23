@@ -8,6 +8,7 @@
 // no localStorage local sob a chave da empresa do arquivo aberto.
 import type { ScenarioRecord } from "@/engines/scenarios/store";
 import type { ActionItem } from "@/engines/actions/store";
+import { saveKeySync } from "@/engines/finance/persistence";
 
 const ACTIONS_KEY = (company: string) => `gz-finance-actions-${company || "default"}`;
 const SIMSCEN_KEY = (company: string) => `gz-finance-scenarios-${company || "default"}`;
@@ -36,10 +37,10 @@ export function applyExtras(company: string, extras: FileExtras | undefined) {
   if (!extras) return;
   try {
     if (Array.isArray(extras.actions)) {
-      localStorage.setItem(ACTIONS_KEY(company), JSON.stringify(extras.actions));
+      saveKeySync(ACTIONS_KEY(company), extras.actions);
     }
     if (Array.isArray(extras.simScenarios)) {
-      localStorage.setItem(SIMSCEN_KEY(company), JSON.stringify(extras.simScenarios));
+      saveKeySync(SIMSCEN_KEY(company), extras.simScenarios);
     }
   } catch {
     // localStorage indisponível (modo privado/cota) — silencioso.
