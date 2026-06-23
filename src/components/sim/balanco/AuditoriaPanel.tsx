@@ -4,6 +4,7 @@
 import { useMemo } from "react";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
+import { deriveAbertura } from "@/engines/finance/aberturaDerivada";
 import { fmtBRL } from "@/engines/finance/format";
 import { Button } from "@/components/ui/button";
 import { X, Search } from "lucide-react";
