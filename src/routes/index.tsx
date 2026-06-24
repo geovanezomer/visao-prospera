@@ -1,6 +1,8 @@
 // Rota pública / — landing page principal do FinancePRO.
-import { createFileRoute } from "@tanstack/react-router";
+// Quando VITE_LANDING_PAGE=OFF, redireciona para /app (que faz fallback para /login se não autenticado).
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { LandingPage } from "@/components/landing/LandingPage";
+import { isLandingEnabled } from "@/lib/featureFlags";
 
 const CANONICAL = "https://visao-prospera.lovable.app/";
 
@@ -47,5 +49,12 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
-  component: LandingPage,
+  component: IndexRoute,
 });
+
+function IndexRoute() {
+  if (!isLandingEnabled()) {
+    return <Navigate to="/app" />;
+  }
+  return <LandingPage />;
+}
