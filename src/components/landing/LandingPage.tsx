@@ -12,7 +12,6 @@ import {
   Calculator,
   CheckCircle2,
   Clock,
-  Crown,
   FileSpreadsheet,
   Gauge,
   LineChart,
@@ -627,22 +626,6 @@ function PricingSection() {
       ],
       cta: "Assinar Anual",
     },
-    {
-      nome: "Vitalício",
-      descricao: "Pague uma vez. Use para sempre.",
-      preco: "4.997",
-      periodo: "pagamento único",
-      badge: { texto: "Edição Fundadores", icone: Crown },
-      destaque: false,
-      recursos: [
-        "Acesso vitalício a todas as atualizações",
-        "Sem mensalidades. Sem renovação.",
-        "Selo de Membro Fundador",
-        "Acesso antecipado a novos módulos",
-        "Suporte VIP com Geovane Zomer",
-      ],
-      cta: "Garantir Vitalício",
-    },
   ];
 
   return (
@@ -651,14 +634,14 @@ function PricingSection() {
         <div className="text-center">
           <SectionEyebrow>Planos</SectionEyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Três caminhos. O mesmo destino:
+            Dois caminhos. O mesmo destino:
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
             <strong className="text-foreground">controle absoluto</strong> sobre seu dinheiro.
           </p>
         </div>
 
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
+        <div className="mt-14 grid gap-6 md:grid-cols-2">
           {planos.map((plano) => (
             <div
               key={plano.nome}
