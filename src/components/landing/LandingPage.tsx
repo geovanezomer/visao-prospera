@@ -525,7 +525,8 @@ function ComparisonTable() {
           </p>
         </div>
 
-        <div className="relative mt-12 overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-primary/5">
+        {/* Desktop: tabela tradicional */}
+        <div className="relative mt-12 hidden overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-primary/5 sm:block">
           <div
             aria-hidden
             className="pointer-events-none absolute right-0 top-0 h-full w-1/2"
@@ -546,7 +547,7 @@ function ComparisonTable() {
               <div className="border-b border-border p-5 text-foreground/90">{l[0]}</div>
               <div className="flex items-center justify-center border-b border-l border-border p-5 text-center text-muted-foreground">
                 <span className="inline-flex items-center gap-2">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-[10px] text-destructive">
+                  <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-[10px] text-destructive">
                     ✕
                   </span>
                   {l[1]}
@@ -554,9 +555,32 @@ function ComparisonTable() {
               </div>
               <div className="flex items-center justify-center border-b border-l border-border bg-primary/5 p-5 text-center font-medium text-primary">
                 <span className="inline-flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4" />
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
                   {l[2]}
                 </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Mobile: cards empilhados */}
+        <div className="mt-12 space-y-4 sm:hidden">
+          {linhas.map((l, i) => (
+            <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card">
+              <div className="border-b border-border bg-background/60 p-4 text-sm font-semibold text-foreground">
+                {l[0]}
+              </div>
+              <div className="grid grid-cols-2 divide-x divide-border">
+                <div className="flex flex-col items-center justify-center gap-2 p-4 text-center text-sm text-muted-foreground">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-xs text-destructive">
+                    ✕
+                  </span>
+                  <span>{l[1]}</span>
+                </div>
+                <div className="flex flex-col items-center justify-center gap-2 bg-primary/5 p-4 text-center text-sm font-medium text-primary">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span>{l[2]}</span>
+                </div>
               </div>
             </div>
           ))}
