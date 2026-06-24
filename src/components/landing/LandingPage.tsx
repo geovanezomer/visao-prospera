@@ -627,22 +627,6 @@ function PricingSection() {
       ],
       cta: "Assinar Anual",
     },
-    {
-      nome: "Vitalício",
-      descricao: "Pague uma vez. Use para sempre.",
-      preco: "4.997",
-      periodo: "pagamento único",
-      badge: { texto: "Edição Fundadores", icone: Crown },
-      destaque: false,
-      recursos: [
-        "Acesso vitalício a todas as atualizações",
-        "Sem mensalidades. Sem renovação.",
-        "Selo de Membro Fundador",
-        "Acesso antecipado a novos módulos",
-        "Suporte VIP com Geovane Zomer",
-      ],
-      cta: "Garantir Vitalício",
-    },
   ];
 
   return (
