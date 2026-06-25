@@ -27,12 +27,20 @@ type Editing = {
   asaasPlanRef: string;
   active: boolean;
   sortOrder: number;
+  upsellEnabled: boolean;
+  upsellName: string;
+  upsellDescription: string;
+  upsellPriceReais: string;
+  upsellStripePriceId: string;
+  upsellAsaasRef: string;
 };
 
 const empty: Editing = {
   slug: "", name: "", description: "", priceReais: "0", currency: "brl",
   interval: "month", features: "", limits: "{}", stripePriceId: "",
   asaasPlanRef: "", active: true, sortOrder: 10,
+  upsellEnabled: false, upsellName: "", upsellDescription: "",
+  upsellPriceReais: "0", upsellStripePriceId: "", upsellAsaasRef: "",
 };
 
 function rowToEditing(r: PlanRow): Editing {
@@ -50,8 +58,15 @@ function rowToEditing(r: PlanRow): Editing {
     asaasPlanRef: r.asaasPlanRef ?? "",
     active: r.active,
     sortOrder: r.sortOrder,
+    upsellEnabled: r.upsellEnabled,
+    upsellName: r.upsellName ?? "",
+    upsellDescription: r.upsellDescription ?? "",
+    upsellPriceReais: (r.upsellPriceCents / 100).toFixed(2),
+    upsellStripePriceId: r.upsellStripePriceId ?? "",
+    upsellAsaasRef: r.upsellAsaasRef ?? "",
   };
 }
+
 
 export function PlansTab() {
   const [plans, setPlans] = useState<PlanRow[]>([]);
@@ -74,6 +89,7 @@ export function PlansTab() {
     try {
       const limits = editing.limits.trim() ? JSON.parse(editing.limits) : {};
       const cents = Math.round(parseFloat(editing.priceReais.replace(",", ".") || "0") * 100);
+      const upsellCents = Math.round(parseFloat(editing.upsellPriceReais.replace(",", ".") || "0") * 100);
       setSaving(true);
       await upsertPlan({
         data: {
@@ -90,6 +106,12 @@ export function PlansTab() {
           asaasPlanRef: editing.asaasPlanRef || null,
           active: editing.active,
           sortOrder: editing.sortOrder,
+          upsellEnabled: editing.upsellEnabled,
+          upsellName: editing.upsellName || null,
+          upsellDescription: editing.upsellDescription || null,
+          upsellPriceCents: upsellCents,
+          upsellStripePriceId: editing.upsellStripePriceId || null,
+          upsellAsaasRef: editing.upsellAsaasRef || null,
         },
       });
       toast.success("Plano salvo.");
