@@ -4,7 +4,7 @@
 // ============================================================================
 import { useEffect } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { ShieldCheck, ArrowLeft, Users, Settings, Mail, Webhook, CreditCard, LayoutDashboard, FileClock } from "lucide-react";
+import { ShieldCheck, ArrowLeft, Users, Settings, Mail, Webhook, CreditCard, LayoutDashboard, FileClock, Flag, Megaphone } from "lucide-react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
@@ -21,8 +21,10 @@ import { EmailsTab } from "@/components/admin/tabs/EmailsTab";
 import { WebhooksTab } from "@/components/admin/tabs/WebhooksTab";
 import { ProviderTab } from "@/components/admin/tabs/ProviderTab";
 import { AuditTab } from "@/components/admin/tabs/AuditTab";
+import { FlagsTab } from "@/components/admin/tabs/FlagsTab";
+import { BroadcastsTab } from "@/components/admin/tabs/BroadcastsTab";
 
-const TAB_KEYS = ["dashboard", "usuarios", "sistema", "emails", "webhooks", "provider", "auditoria"] as const;
+const TAB_KEYS = ["dashboard", "usuarios", "sistema", "emails", "broadcasts", "webhooks", "provider", "flags", "auditoria"] as const;
 const searchSchema = z.object({
   tab: fallback(z.enum(TAB_KEYS), "dashboard").default("dashboard"),
 });
