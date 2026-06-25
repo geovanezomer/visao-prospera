@@ -18,7 +18,6 @@ import {
   Share2,
   FolderOpen,
   Calculator,
-  Cloud,
 } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 
