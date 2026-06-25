@@ -51,6 +51,7 @@ import type { BackupStatus } from "@/lib/api/cloudBackup";
 import { isBackupEnabled } from "@/lib/api/cloudBackup";
 import { RestoreBackupDialog } from "@/components/sim/shared/RestoreBackupDialog";
 import { SaveShareDialog } from "@/components/sim/shared/SaveShareDialog";
+import { OpenRestoreDialog } from "@/components/sim/shared/OpenRestoreDialog";
 import { FeedbackDialog } from "@/components/sim/shared/FeedbackDialog";
 import { SharedLinksDialog } from "@/components/sim/shared/SharedLinksDialog";
 import { cn } from "@/lib/utils";
@@ -144,6 +145,7 @@ function SimulaPro() {
   // Status do backup automático no Supabase Storage (header indicator).
   const [backupStatus, setBackupStatus] = useState<BackupStatus>("idle");
   const [restoreOpen, setRestoreOpen] = useState(false);
+  const [openRestoreOpen, setOpenRestoreOpen] = useState(false);
   const [saveShareOpen, setSaveShareOpen] = useState(false);
   const fileApi = useFinnanceFile({
     state,
@@ -212,10 +214,7 @@ function SimulaPro() {
               }
             }}
             onSave={() => setSaveShareOpen(true)}
-            onOpen={fileApi.open}
-            onRestoreFromCloud={
-              user && isBackupEnabled() ? () => setRestoreOpen(true) : undefined
-            }
+            onOpenRestore={() => setOpenRestoreOpen(true)}
             currentFileName={fileApi.currentFileName}
             dirty={fileApi.dirty}
           />
@@ -427,6 +426,13 @@ function SimulaPro() {
               onRestored={() => { /* file foi carregado pelo setState */ }}
             />
           )}
+          <OpenRestoreDialog
+            open={openRestoreOpen}
+            onOpenChange={setOpenRestoreOpen}
+            onOpenDisk={fileApi.open}
+            onOpenCloud={user && isBackupEnabled() ? () => setRestoreOpen(true) : undefined}
+            canUseCloud={!!user && isBackupEnabled()}
+          />
           <SaveShareDialog
             open={saveShareOpen}
             onOpenChange={setSaveShareOpen}

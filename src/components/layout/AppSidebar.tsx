@@ -18,7 +18,6 @@ import {
   Share2,
   FolderOpen,
   Calculator,
-  Cloud,
 } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 
@@ -34,8 +33,7 @@ interface AppSidebarProps {
   activeTab: TabKey | "ai" | "calculadoras";
   setActiveTab: (tab: TabKey | "ai" | "calculadoras") => void;
   onSave: () => void;
-  onOpen: () => void;
-  onRestoreFromCloud?: () => void;
+  onOpenRestore: () => void;
   currentFileName: string | null;
   dirty: boolean;
 }
@@ -44,8 +42,7 @@ export function AppSidebar({
   activeTab,
   setActiveTab,
   onSave,
-  onOpen,
-  onRestoreFromCloud,
+  onOpenRestore,
   currentFileName,
   dirty,
 }: AppSidebarProps) {
@@ -146,27 +143,14 @@ export function AppSidebar({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={onOpen}
+                onClick={onOpenRestore}
                 className="h-8 w-full justify-start"
                 data-meeting-hide="true"
-                title="Abrir arquivo .finnance (Ctrl+O)"
+                title="Abrir arquivo do computador ou restaurar da nuvem"
               >
                 <FolderOpen className="h-3.5 w-3.5 mr-2" />
-                <span>Abrir</span>
+                <span>Abrir / Restaurar</span>
               </Button>
-              {user && onRestoreFromCloud && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onRestoreFromCloud}
-                  className="h-8 w-full justify-start"
-                  data-meeting-hide="true"
-                  title="Listar e restaurar arquivos salvos na nuvem"
-                >
-                  <Cloud className="h-3.5 w-3.5 mr-2" />
-                  <span>Restaurar da nuvem</span>
-                </Button>
-              )}
             </div>
           </div>
         </SidebarGroup>
