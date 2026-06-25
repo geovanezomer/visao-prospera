@@ -106,13 +106,14 @@ export function invalidateProviderCache(): void {
   _activeName = null;
 }
 
-export function getProviderPlanRef(plan: "starter" | "pro"): string {
+export function getProviderPlanRef(plan: string): string {
   const name = _activeName ?? pickFromEnv();
   if (!name) throw new Error("Provider não inicializado.");
+  const isStarter = plan === "starter";
   const key =
     name === "stripe"
-      ? plan === "starter" ? "STRIPE_PRICE_STARTER" : "STRIPE_PRICE_PRO"
-      : plan === "starter" ? "ASAAS_PLAN_STARTER" : "ASAAS_PLAN_PRO";
+      ? isStarter ? "STRIPE_PRICE_STARTER" : "STRIPE_PRICE_PRO"
+      : isStarter ? "ASAAS_PLAN_STARTER" : "ASAAS_PLAN_PRO";
   const value = process.env[key];
   if (!value) throw new Error(`Variável ${key} não configurada no .env`);
   return value;
