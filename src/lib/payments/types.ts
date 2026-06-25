@@ -5,8 +5,8 @@
 // (Stripe ↔ Asaas) = mudar PAYMENT_PROVIDER no .env e reiniciar o container.
 // ============================================================================
 
-/** Identificadores estáveis de plano usados pela UI/landing. */
-export type PlanId = "starter" | "pro";
+/** Identificadores estáveis de plano (slug). Aceita qualquer slug do CRUD admin. */
+export type PlanId = string;
 
 /** Provedor ativo no boot. */
 export type ProviderName = "stripe" | "asaas";
@@ -64,6 +64,16 @@ export interface PaymentProvider {
     email: string;
     successUrl: string;
     cancelUrl: string;
+    /** Intervalo de recorrência. "one_time" gera cobrança única. */
+    interval?: "month" | "year" | "week" | "day" | "lifetime" | "one_time";
+    /** Preço em centavos — usado quando não há providerRef pré-configurado. */
+    priceCents?: number;
+    /** Moeda ISO-4217 (ex. "BRL", "USD"). Default: "BRL". */
+    currency?: string;
+    /** Referência no provedor (Stripe price_id ou Asaas plan ref). */
+    providerRef?: string | null;
+    /** Nome legível do plano (description/product_data). */
+    planName?: string;
   }): Promise<{ url: string }>;
 
   /**

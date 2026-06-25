@@ -12,7 +12,7 @@ import { z } from "zod";
 import { resolveProvider } from "@/lib/payments";
 
 const Body = z.object({
-  plan: z.enum(["starter", "pro"]),
+  plan: z.string().min(1).max(40).regex(/^[a-z0-9_]+$/),
   email: z.string().email().max(200),
 });
 
@@ -31,6 +31,39 @@ function rateLimited(key: string): boolean {
   }
   b.count += 1;
   return b.count > LIMIT;
+}
+
+type PlanDetails = {
+  interval: "month" | "year" | "week" | "day" | "lifetime" | "one_time";
+  priceCents?: number;
+  currency?: string;
+  providerRef?: string | null;
+  planName?: string;
+};
+
+async function loadPlanDetails(slug: string, providerName: string): Promise<PlanDetails | null> {
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    });
+    const { data } = await sb
+      .from("plans")
+      .select("name,price_cents,currency,interval,stripe_price_id,asaas_plan_ref,active")
+      .eq("slug", slug)
+      .eq("active", true)
+      .maybeSingle();
+    if (!data) return null;
+    return {
+      interval: data.interval as PlanDetails["interval"],
+      priceCents: data.price_cents,
+      currency: data.currency,
+      providerRef: providerName === "stripe" ? data.stripe_price_id : data.asaas_plan_ref,
+      planName: data.name,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export const Route = createFileRoute("/api/public/payments/checkout")({
@@ -59,11 +92,17 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
 
         try {
           const provider = await resolveProvider();
+          const details = await loadPlanDetails(parsed.plan, provider.name);
           const { url } = await provider.createCheckout({
             plan: parsed.plan,
             email: parsed.email,
             successUrl: `${appUrl}/checkout/sucesso?plan=${parsed.plan}`,
             cancelUrl: `${appUrl}/planos?canceled=1`,
+            interval: details?.interval,
+            priceCents: details?.priceCents,
+            currency: details?.currency,
+            providerRef: details?.providerRef,
+            planName: details?.planName,
           });
           return Response.json({ url, provider: provider.name });
         } catch (e) {

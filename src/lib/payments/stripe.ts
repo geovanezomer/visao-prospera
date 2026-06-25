@@ -53,19 +53,57 @@ export class StripeProvider implements PaymentProvider {
     email: string;
     successUrl: string;
     cancelUrl: string;
+    interval?: "month" | "year" | "week" | "day" | "lifetime" | "one_time";
+    priceCents?: number;
+    currency?: string;
+    providerRef?: string | null;
+    planName?: string;
   }): Promise<{ url: string }> {
-    const price = getProviderPlanRef(input.plan);
-    const session = await stripeFetch<{ url: string }>("/checkout/sessions", {
-      mode: "subscription",
-      "line_items[0][price]": price,
+    const isOneTime = input.interval === "one_time" || input.interval === "lifetime";
+    const mode = isOneTime ? "payment" : "subscription";
+
+    // Resolve referência do preço:
+    // 1) providerRef explícito (stripe_price_id no plano do banco);
+    // 2) fallback legacy via getProviderPlanRef + env vars (starter/pro).
+    const explicitRef = input.providerRef && input.providerRef.trim() !== "" ? input.providerRef : null;
+
+    const body: Record<string, string | number | boolean | undefined> = {
+      mode,
       "line_items[0][quantity]": 1,
       customer_email: input.email,
       success_url: input.successUrl,
       cancel_url: input.cancelUrl,
-      "subscription_data[metadata][plan]": input.plan,
       "metadata[plan]": input.plan,
       allow_promotion_codes: "true",
-    });
+    };
+
+    if (explicitRef) {
+      body["line_items[0][price]"] = explicitRef;
+    } else if (typeof input.priceCents === "number" && input.priceCents > 0) {
+      // price_data inline — suporta planos criados na UI sem mapear no Stripe.
+      const currency = (input.currency || "BRL").toLowerCase();
+      body["line_items[0][price_data][currency]"] = currency;
+      body["line_items[0][price_data][unit_amount]"] = input.priceCents;
+      body["line_items[0][price_data][product_data][name]"] = input.planName || `Plano ${input.plan}`;
+      if (!isOneTime) {
+        const interval = input.interval === "year" ? "year"
+          : input.interval === "week" ? "week"
+          : input.interval === "day" ? "day"
+          : "month";
+        body["line_items[0][price_data][recurring][interval]"] = interval;
+      }
+    } else {
+      // Fallback legacy (starter/pro via env).
+      body["line_items[0][price]"] = getProviderPlanRef(input.plan);
+    }
+
+    if (mode === "subscription") {
+      body["subscription_data[metadata][plan]"] = input.plan;
+    } else {
+      body["payment_intent_data[metadata][plan]"] = input.plan;
+    }
+
+    const session = await stripeFetch<{ url: string }>("/checkout/sessions", body);
     return { url: session.url };
   }
 
