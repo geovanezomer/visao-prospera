@@ -19,7 +19,8 @@ import {
   listAdminUsers, setUserActive, sendPasswordReset, revalidatePlan, refundPayment, resendMagicLink,
   type AdminUserRow, type AdminUserSort, type AdminUserFilters,
 } from "@/lib/admin/admin.functions";
-import { createManualUser } from "@/lib/admin/userDetail.functions";
+import { createManualUser, checkEmailAvailable } from "@/lib/admin/userDetail.functions";
+import { z } from "zod";
 import { exportUsersCsv } from "@/lib/admin/export.functions";
 import { Download } from "lucide-react";
 import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
