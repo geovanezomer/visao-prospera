@@ -294,7 +294,12 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
               status: "failed",
               last_error: msg.slice(0, 1000),
             });
-            throw provErr;
+            console.error("[checkout] provedor recusou checkout:", msg);
+            return err(
+              422,
+              "provider_error",
+              "O provedor de pagamento recusou os dados do checkout. Confira nome, CPF e telefone e tente novamente.",
+            );
           }
 
           // 7) Persiste intenção (status='redirected') com providerIds para
