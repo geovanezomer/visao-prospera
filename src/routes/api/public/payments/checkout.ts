@@ -249,6 +249,10 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
             return Response.json({ url: existing.checkout_url, provider: provider.name, reused: true });
           }
 
+          // Token assinado por HMAC — vai na URL de retorno em vez do raw key.
+          // Quem não tiver o segredo do servidor não consegue forjar/alterar.
+          const signedToken = await signIntentKey(idempotencyKey);
+
           // 6b) Cria checkout no provedor (com idempotency key).
           const providerRef =
             provider.name === "stripe" ? plan.stripe_price_id : plan.asaas_plan_ref;
@@ -258,8 +262,8 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
             providerResult = await provider.createCheckout({
               plan: parsed.plan,
               email: parsed.email,
-              successUrl: `${appUrl}/checkout/sucesso?plan=${parsed.plan}&i=${idempotencyKey}`,
-              cancelUrl: `${appUrl}/planos?canceled=1&i=${idempotencyKey}`,
+              successUrl: `${appUrl}/checkout/sucesso?plan=${parsed.plan}&i=${encodeURIComponent(signedToken)}`,
+              cancelUrl: `${appUrl}/planos?canceled=1&i=${encodeURIComponent(signedToken)}`,
               interval: plan.interval,
               priceCents: plan.price_cents,
               currency: plan.currency,
