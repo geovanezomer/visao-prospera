@@ -706,8 +706,6 @@ function PricingSection() {
     setError(null);
     setEmail("");
     setFullName("");
-    setCpf("");
-    setPhone("");
     setConfirmFor(planId);
   }
 
