@@ -62,9 +62,11 @@ export const listWebhookEvents = createServerFn({ method: "POST" })
       .from("webhook_events")
       .select("status", { count: "exact", head: false })
       .gte("received_at", since);
-    const k = { total: kpiRows?.length ?? 0, ok: 0, failed: 0 };
+    const k = { total: kpiRows?.length ?? 0, ok: 0, failed: 0, pending: 0, dead: 0 };
     for (const r of kpiRows ?? []) {
       if (r.status === "failed") k.failed++;
+      else if (r.status === "dead_letter") k.dead++;
+      else if (r.status === "pending_retry") k.pending++;
       else if (r.status === "processed" || r.status === "replayed") k.ok++;
     }
     return { rows: rows ?? [], total: count ?? 0, page, perPage, kpi24h: k };
