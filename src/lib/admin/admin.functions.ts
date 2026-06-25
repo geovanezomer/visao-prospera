@@ -43,16 +43,42 @@ export type AdminUserRow = {
   isAdmin: boolean;
 };
 
+export type AdminUserFilters = {
+  plan?: "all" | "free" | "starter" | "pro" | "lifetime";
+  status?: "all" | "active" | "trialing" | "past_due" | "canceled" | "none";
+  provider?: "all" | "stripe" | "asaas";
+};
+export type AdminUserSort = "created_desc" | "created_asc" | "expires_desc" | "expires_asc" | "name_asc";
+
 export const listAdminUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { page?: number; perPage?: number; search?: string }) =>
-    z
-      .object({
-        page: z.number().int().min(1).max(1000).optional(),
-        perPage: z.number().int().min(1).max(200).optional(),
-        search: z.string().max(120).optional(),
-      })
-      .parse(data ?? {}),
+  .inputValidator(
+    (data: {
+      page?: number;
+      perPage?: number;
+      search?: string;
+      sort?: AdminUserSort;
+      filters?: AdminUserFilters;
+    }) =>
+      z
+        .object({
+          page: z.number().int().min(1).max(1000).optional(),
+          perPage: z.number().int().min(1).max(200).optional(),
+          search: z.string().max(120).optional(),
+          sort: z
+            .enum(["created_desc", "created_asc", "expires_desc", "expires_asc", "name_asc"])
+            .optional(),
+          filters: z
+            .object({
+              plan: z.enum(["all", "free", "starter", "pro", "lifetime"]).optional(),
+              status: z
+                .enum(["all", "active", "trialing", "past_due", "canceled", "none"])
+                .optional(),
+              provider: z.enum(["all", "stripe", "asaas"]).optional(),
+            })
+            .optional(),
+        })
+        .parse(data ?? {}),
   )
   .handler(async ({ data, context }) => {
     assertAdmin(context.claims);
@@ -60,17 +86,20 @@ export const listAdminUsers = createServerFn({ method: "POST" })
 
     const page = data.page ?? 1;
     const perPage = data.perPage ?? 50;
+    const sort = data.sort ?? "created_desc";
+    const filters = data.filters ?? {};
 
-    const { data: usersPage, error: usersErr } = await supabaseAdmin.auth.admin.listUsers({
-      page,
-      perPage,
-    });
-    if (usersErr) throw new Error(usersErr.message);
+    // Carrega TODOS os usuários (Supabase Admin não suporta filtro/sort server-side).
+    // Limite prático: até 10k usuários. Acima disso, paginar via auth.admin.listUsers.
+    const all: any[] = [];
+    for (let p = 1; p <= 50; p++) {
+      const { data: usersPage, error } = await supabaseAdmin.auth.admin.listUsers({ page: p, perPage: 200 });
+      if (error) throw new Error(error.message);
+      all.push(...(usersPage.users ?? []));
+      if ((usersPage.users ?? []).length < 200) break;
+    }
 
-    const users = usersPage.users ?? [];
-    const ids = users.map((u) => u.id);
-
-    // Assinaturas mais recentes por usuário
+    const ids = all.map((u) => u.id);
     const { data: subs } = await supabaseAdmin
       .from("subscriptions")
       .select(
@@ -78,13 +107,9 @@ export const listAdminUsers = createServerFn({ method: "POST" })
       )
       .in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"])
       .order("created_at", { ascending: false });
-
     const subByUser = new Map<string, any>();
-    for (const s of subs ?? []) {
-      if (!subByUser.has(s.user_id)) subByUser.set(s.user_id, s);
-    }
+    for (const s of subs ?? []) if (!subByUser.has(s.user_id)) subByUser.set(s.user_id, s);
 
-    // Perfis (display_name)
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
       .select("id, display_name")
@@ -92,7 +117,7 @@ export const listAdminUsers = createServerFn({ method: "POST" })
     const profById = new Map<string, any>();
     for (const p of profiles ?? []) profById.set(p.id, p);
 
-    const rows: AdminUserRow[] = users.map((u) => {
+    let rows: AdminUserRow[] = all.map((u) => {
       const s = subByUser.get(u.id);
       const p = profById.get(u.id);
       const bannedUntil = (u as any).banned_until ?? null;
@@ -103,14 +128,6 @@ export const listAdminUsers = createServerFn({ method: "POST" })
         (typeof meta.full_name === "string" && meta.full_name) ||
         p?.display_name ||
         (u.email ? u.email.split("@")[0] : null);
-
-      const q = (data.search ?? "").trim().toLowerCase();
-      const matches =
-        !q ||
-        u.email?.toLowerCase().includes(q) ||
-        (displayName ?? "").toLowerCase().includes(q) ||
-        (u.phone ?? "").includes(q);
-
       return {
         id: u.id,
         email: u.email ?? "",
@@ -126,12 +143,50 @@ export const listAdminUsers = createServerFn({ method: "POST" })
         subscriptionId: s?.stripe_subscription_id ?? null,
         customerId: s?.provider_customer_id ?? s?.stripe_customer_id ?? null,
         isAdmin: isAdminEmail(u.email),
-        _match: matches,
-      } as AdminUserRow & { _match: boolean };
+      } as AdminUserRow;
     });
 
-    const filtered = rows.filter((r) => (r as any)._match).map(({ ...rest }) => rest);
-    return { users: filtered, page, perPage, total: usersPage.total ?? filtered.length };
+    // Filtros
+    const q = (data.search ?? "").trim().toLowerCase();
+    if (q) {
+      rows = rows.filter(
+        (r) =>
+          r.email.toLowerCase().includes(q) ||
+          (r.displayName ?? "").toLowerCase().includes(q) ||
+          (r.phone ?? "").includes(q) ||
+          (r.subscriptionId ?? "").toLowerCase().includes(q),
+      );
+    }
+    if (filters.plan && filters.plan !== "all") {
+      rows = filters.plan === "free" ? rows.filter((r) => !r.plan) : rows.filter((r) => r.plan === filters.plan);
+    }
+    if (filters.status && filters.status !== "all") {
+      rows = filters.status === "none" ? rows.filter((r) => !r.planStatus) : rows.filter((r) => r.planStatus === filters.status);
+    }
+    if (filters.provider && filters.provider !== "all") {
+      rows = rows.filter((r) => r.provider === filters.provider);
+    }
+
+    // Ordenação
+    const cmpDate = (a?: string | null, b?: string | null) => {
+      const A = a ? new Date(a).getTime() : 0;
+      const B = b ? new Date(b).getTime() : 0;
+      return A - B;
+    };
+    rows.sort((a, b) => {
+      switch (sort) {
+        case "created_asc": return cmpDate(a.createdAt, b.createdAt);
+        case "created_desc": return cmpDate(b.createdAt, a.createdAt);
+        case "expires_asc": return cmpDate(a.currentPeriodEnd, b.currentPeriodEnd);
+        case "expires_desc": return cmpDate(b.currentPeriodEnd, a.currentPeriodEnd);
+        case "name_asc": return (a.displayName ?? "").localeCompare(b.displayName ?? "");
+      }
+    });
+
+    const total = rows.length;
+    const from = (page - 1) * perPage;
+    const paged = rows.slice(from, from + perPage);
+    return { users: paged, page, perPage, total };
   });
 
 // ----------------------------------------------------------------------------

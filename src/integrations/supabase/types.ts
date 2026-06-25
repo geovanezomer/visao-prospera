@@ -14,6 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
+      email_settings: {
+        Row: {
+          from_email: string | null
+          from_name: string | null
+          id: string
+          reply_to: string | null
+          resend_api_key: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          reply_to?: string | null
+          resend_api_key?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          reply_to?: string | null
+          resend_api_key?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      email_templates: {
+        Row: {
+          enabled: boolean
+          html: string
+          id: string
+          kind: string
+          subject: string
+          text: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          html: string
+          id?: string
+          kind: string
+          subject: string
+          text?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          html?: string
+          id?: string
+          kind?: string
+          subject?: string
+          text?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -29,6 +113,42 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+        }
+        Relationships: []
+      }
+      provider_credentials: {
+        Row: {
+          api_key: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          mode: string
+          provider: string
+          updated_at: string
+          updated_by: string | null
+          webhook_secret: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          mode?: string
+          provider: string
+          updated_at?: string
+          updated_by?: string | null
+          webhook_secret?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          mode?: string
+          provider?: string
+          updated_at?: string
+          updated_by?: string | null
+          webhook_secret?: string | null
         }
         Relationships: []
       }
@@ -107,6 +227,42 @@ export type Database = {
           stripe_subscription_id?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_events: {
+        Row: {
+          customer_email: string | null
+          error: string | null
+          event_type: string
+          id: string
+          payload: Json
+          provider: string
+          received_at: string
+          status: string
+          subscription_id: string | null
+        }
+        Insert: {
+          customer_email?: string | null
+          error?: string | null
+          event_type: string
+          id?: string
+          payload?: Json
+          provider: string
+          received_at?: string
+          status?: string
+          subscription_id?: string | null
+        }
+        Update: {
+          customer_email?: string | null
+          error?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          provider?: string
+          received_at?: string
+          status?: string
+          subscription_id?: string | null
         }
         Relationships: []
       }
