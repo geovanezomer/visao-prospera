@@ -64,7 +64,9 @@ export class StripeProvider implements PaymentProvider {
     providerRef?: string | null;
     planName?: string;
     upsell?: { name: string; priceCents: number; stripePriceId?: string | null; asaasRef?: string | null } | null;
-  }): Promise<{ url: string }> {
+    idempotencyKey?: string;
+  }): Promise<{ url: string; providerSessionId?: string | null; providerCustomerId?: string | null }> {
+
     const isOneTime = input.interval === "one_time" || input.interval === "lifetime";
     const mode = isOneTime ? "payment" : "subscription";
 
