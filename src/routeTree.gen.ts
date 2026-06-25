@@ -23,6 +23,7 @@ import { Route as CheckoutSucessoRouteImport } from './routes/checkout.sucesso'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiFeedbackRouteImport } from './routes/api/feedback'
 import { Route as ApiPublicPaymentsCheckoutRouteImport } from './routes/api/public/payments/checkout'
+import { Route as ApiPublicHooksWebhookRetryRouteImport } from './routes/api/public/hooks/webhook-retry'
 import { Route as ApiPublicPaymentsWebhookStripeRouteImport } from './routes/api/public/payments/webhook.stripe'
 import { Route as ApiPublicPaymentsWebhookAsaasRouteImport } from './routes/api/public/payments/webhook.asaas'
 
@@ -97,6 +98,12 @@ const ApiPublicPaymentsCheckoutRoute =
     path: '/api/public/payments/checkout',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksWebhookRetryRoute =
+  ApiPublicHooksWebhookRetryRouteImport.update({
+    id: '/api/public/hooks/webhook-retry',
+    path: '/api/public/hooks/webhook-retry',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPaymentsWebhookStripeRoute =
   ApiPublicPaymentsWebhookStripeRouteImport.update({
     id: '/api/public/payments/webhook/stripe',
@@ -124,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/checkout/sucesso': typeof CheckoutSucessoRoute
   '/shared/$shareId': typeof SharedShareIdRoute
+  '/api/public/hooks/webhook-retry': typeof ApiPublicHooksWebhookRetryRoute
   '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
   '/api/public/payments/webhook/asaas': typeof ApiPublicPaymentsWebhookAsaasRoute
   '/api/public/payments/webhook/stripe': typeof ApiPublicPaymentsWebhookStripeRoute
@@ -142,6 +150,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/checkout/sucesso': typeof CheckoutSucessoRoute
   '/shared/$shareId': typeof SharedShareIdRoute
+  '/api/public/hooks/webhook-retry': typeof ApiPublicHooksWebhookRetryRoute
   '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
   '/api/public/payments/webhook/asaas': typeof ApiPublicPaymentsWebhookAsaasRoute
   '/api/public/payments/webhook/stripe': typeof ApiPublicPaymentsWebhookStripeRoute
@@ -161,6 +170,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/checkout/sucesso': typeof CheckoutSucessoRoute
   '/shared/$shareId': typeof SharedShareIdRoute
+  '/api/public/hooks/webhook-retry': typeof ApiPublicHooksWebhookRetryRoute
   '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
   '/api/public/payments/webhook/asaas': typeof ApiPublicPaymentsWebhookAsaasRoute
   '/api/public/payments/webhook/stripe': typeof ApiPublicPaymentsWebhookStripeRoute
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/checkout/sucesso'
     | '/shared/$shareId'
+    | '/api/public/hooks/webhook-retry'
     | '/api/public/payments/checkout'
     | '/api/public/payments/webhook/asaas'
     | '/api/public/payments/webhook/stripe'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/checkout/sucesso'
     | '/shared/$shareId'
+    | '/api/public/hooks/webhook-retry'
     | '/api/public/payments/checkout'
     | '/api/public/payments/webhook/asaas'
     | '/api/public/payments/webhook/stripe'
@@ -217,6 +229,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/checkout/sucesso'
     | '/shared/$shareId'
+    | '/api/public/hooks/webhook-retry'
     | '/api/public/payments/checkout'
     | '/api/public/payments/webhook/asaas'
     | '/api/public/payments/webhook/stripe'
@@ -236,6 +249,7 @@ export interface RootRouteChildren {
   AuthCallbackRoute: typeof AuthCallbackRoute
   CheckoutSucessoRoute: typeof CheckoutSucessoRoute
   SharedShareIdRoute: typeof SharedShareIdRoute
+  ApiPublicHooksWebhookRetryRoute: typeof ApiPublicHooksWebhookRetryRoute
   ApiPublicPaymentsCheckoutRoute: typeof ApiPublicPaymentsCheckoutRoute
   ApiPublicPaymentsWebhookAsaasRoute: typeof ApiPublicPaymentsWebhookAsaasRoute
   ApiPublicPaymentsWebhookStripeRoute: typeof ApiPublicPaymentsWebhookStripeRoute
@@ -341,6 +355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/webhook-retry': {
+      id: '/api/public/hooks/webhook-retry'
+      path: '/api/public/hooks/webhook-retry'
+      fullPath: '/api/public/hooks/webhook-retry'
+      preLoaderRoute: typeof ApiPublicHooksWebhookRetryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/payments/webhook/stripe': {
       id: '/api/public/payments/webhook/stripe'
       path: '/api/public/payments/webhook/stripe'
@@ -372,6 +393,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthCallbackRoute: AuthCallbackRoute,
   CheckoutSucessoRoute: CheckoutSucessoRoute,
   SharedShareIdRoute: SharedShareIdRoute,
+  ApiPublicHooksWebhookRetryRoute: ApiPublicHooksWebhookRetryRoute,
   ApiPublicPaymentsCheckoutRoute: ApiPublicPaymentsCheckoutRoute,
   ApiPublicPaymentsWebhookAsaasRoute: ApiPublicPaymentsWebhookAsaasRoute,
   ApiPublicPaymentsWebhookStripeRoute: ApiPublicPaymentsWebhookStripeRoute,

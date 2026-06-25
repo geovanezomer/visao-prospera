@@ -20,7 +20,7 @@ export const listWebhookEvents = createServerFn({ method: "POST" })
       perPage?: number;
       search?: string;
       provider?: "all" | "stripe" | "asaas" | "admin";
-      status?: "all" | "processed" | "failed" | "skipped" | "replayed";
+      status?: "all" | "processed" | "failed" | "skipped" | "replayed" | "pending_retry" | "dead_letter";
     }) =>
       z
         .object({
@@ -28,7 +28,7 @@ export const listWebhookEvents = createServerFn({ method: "POST" })
           perPage: z.number().int().min(1).max(200).optional(),
           search: z.string().max(120).optional(),
           provider: z.enum(["all", "stripe", "asaas", "admin"]).optional(),
-          status: z.enum(["all", "processed", "failed", "skipped", "replayed"]).optional(),
+          status: z.enum(["all", "processed", "failed", "skipped", "replayed", "pending_retry", "dead_letter"]).optional(),
         })
         .parse(d ?? {}),
   )
@@ -41,9 +41,10 @@ export const listWebhookEvents = createServerFn({ method: "POST" })
     const to = from + perPage - 1;
     let q = supabaseAdmin
       .from("webhook_events")
-      .select("id, provider, event_type, subscription_id, customer_email, status, error, received_at", {
-        count: "exact",
-      })
+      .select(
+        "id, provider, event_type, subscription_id, customer_email, status, error, received_at, attempts, last_attempt_at, next_attempt_at, replayed_at",
+        { count: "exact" },
+      )
       .order("received_at", { ascending: false })
       .range(from, to);
     if (data.provider && data.provider !== "all") q = q.eq("provider", data.provider);
@@ -61,9 +62,11 @@ export const listWebhookEvents = createServerFn({ method: "POST" })
       .from("webhook_events")
       .select("status", { count: "exact", head: false })
       .gte("received_at", since);
-    const k = { total: kpiRows?.length ?? 0, ok: 0, failed: 0 };
+    const k = { total: kpiRows?.length ?? 0, ok: 0, failed: 0, pending: 0, dead: 0 };
     for (const r of kpiRows ?? []) {
       if (r.status === "failed") k.failed++;
+      else if (r.status === "dead_letter") k.dead++;
+      else if (r.status === "pending_retry") k.pending++;
       else if (r.status === "processed" || r.status === "replayed") k.ok++;
     }
     return { rows: rows ?? [], total: count ?? 0, page, perPage, kpi24h: k };
@@ -86,37 +89,59 @@ export const getWebhookEvent = createServerFn({ method: "POST" })
 
 export const replayWebhookEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .inputValidator((d: { id: string; force?: boolean }) =>
+    z.object({ id: z.string().uuid(), force: z.boolean().optional() }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: ev, error } = await supabaseAdmin
-      .from("webhook_events")
-      .select("*")
-      .eq("id", data.id)
-      .maybeSingle();
-    if (error || !ev) throw new Error("Evento não encontrado.");
-    // Reexecuta o handler com o payload normalizado salvo.
-    const { handleNormalizedEvent } = await import("@/lib/payments/webhook-handler.server");
+    const { reprocessWebhookEventRow } = await import("@/lib/payments/webhook-handler.server");
     const { logAudit } = await import("./audit.server");
-    try {
-      await handleNormalizedEvent(ev.provider as any, ev.payload as any);
+
+    // Em "force": destrava lock e zera next_attempt_at para reentrada imediata.
+    if (data.force) {
       await supabaseAdmin
         .from("webhook_events")
-        .update({ status: "replayed", error: null })
-        .eq("id", ev.id);
-      await logAudit({
-        actorId: context.userId,
-        actorEmail: (context.claims as any)?.email,
-        action: "webhook.replay",
-        resource: "webhook_event",
-        targetId: ev.id,
-        metadata: { provider: ev.provider, event_type: ev.event_type },
-      });
-      return { ok: true };
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "erro";
-      await supabaseAdmin.from("webhook_events").update({ status: "failed", error: msg }).eq("id", ev.id);
-      throw new Error(msg);
+        .update({ locked_at: null, next_attempt_at: new Date(0).toISOString() })
+        .eq("id", data.id);
     }
+
+    const result = await reprocessWebhookEventRow(data.id, {
+      manual: true,
+      actorId: context.userId,
+    });
+    await logAudit({
+      actorId: context.userId,
+      actorEmail: (context.claims as any)?.email,
+      action: result.ok ? "webhook.replay.ok" : "webhook.replay.fail",
+      resource: "webhook_event",
+      targetId: data.id,
+      metadata: { status: result.status, error: result.error ?? null, forced: !!data.force },
+    });
+    if (!result.ok) throw new Error(result.error ?? `Reprocessamento falhou (status=${result.status}).`);
+    return { ok: true, status: result.status };
   });
+
+/**
+ * Disparo manual do worker de retry (útil para testar fora do cron).
+ */
+export const runWebhookRetryNow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { limit?: number }) =>
+    z.object({ limit: z.number().int().min(1).max(100).optional() }).parse(d ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.claims);
+    const { runRetryBatch } = await import("@/lib/payments/webhook-handler.server");
+    const { logAudit } = await import("./audit.server");
+    const r = await runRetryBatch(data.limit ?? 25);
+    await logAudit({
+      actorId: context.userId,
+      actorEmail: (context.claims as any)?.email,
+      action: "webhook.retry.batch",
+      resource: "webhook_event",
+      metadata: r,
+    });
+    return r;
+  });
+

@@ -88,28 +88,162 @@ async function sendMagicLink(admin: any, email: string, plan?: string): Promise<
   }).catch((err) => console.error("[webhook] envio Resend falhou:", err));
 }
 
-async function logEvent(
+// Backoff exponencial: 1m → 5m → 30m → 2h → 12h (depois → dead_letter)
+const BACKOFF_SECONDS = [60, 300, 1800, 7200, 43200];
+const MAX_ATTEMPTS = BACKOFF_SECONDS.length;
+
+function nextDelaySeconds(attempts: number): number | null {
+  if (attempts >= MAX_ATTEMPTS) return null;
+  return BACKOFF_SECONDS[attempts];
+}
+
+async function insertEvent(
   admin: any,
   provider: ProviderName | "admin",
   event: NormalizedEvent,
-  status: "processed" | "failed" | "skipped",
-  error?: string,
-) {
+  status: "processed" | "failed" | "skipped" | "pending_retry",
+  error: string | null,
+  attempts: number,
+  nextAttemptAt: string | null,
+): Promise<string | null> {
   try {
-    await admin.from("webhook_events").insert({
-      provider,
-      event_type: (event as any).type ?? "unknown",
-      subscription_id: (event as any).subscriptionId ?? null,
-      customer_email: (event as any).email ?? null,
+    const historyEntry = {
+      at: new Date().toISOString(),
       status,
-      payload: event,
+      attempt: attempts,
       error: error ?? null,
-    });
+    };
+    const { data } = await admin
+      .from("webhook_events")
+      .insert({
+        provider,
+        event_type: (event as any).type ?? "unknown",
+        subscription_id: (event as any).subscriptionId ?? null,
+        customer_email: (event as any).email ?? null,
+        status,
+        payload: event,
+        error,
+        attempts,
+        last_attempt_at: new Date().toISOString(),
+        next_attempt_at: nextAttemptAt,
+        attempt_history: [historyEntry],
+      })
+      .select("id")
+      .maybeSingle();
+    return data?.id ?? null;
   } catch (e) {
-    console.error("[webhook] logEvent falhou:", e);
+    console.error("[webhook] insertEvent falhou:", e);
+    return null;
   }
 }
 
+/**
+ * Executa apenas a lógica de negócio para um evento normalizado.
+ * Não escreve em webhook_events — o caller cuida da persistência/retry.
+ */
+async function runEventLogic(
+  admin: any,
+  provider: ProviderName,
+  event: NormalizedEvent,
+): Promise<void> {
+  if (event.type === "ignored") return;
+  switch (event.type) {
+    case "subscription.activated": {
+      const userId = await getOrCreateUserId(admin, event.email);
+      if (!userId) throw new Error(`sem userId para ${event.email}`);
+      const row: Partial<DbRow> = {
+        user_id: userId,
+        provider,
+        provider_customer_id: event.customerId,
+        stripe_customer_id: provider === "stripe" ? event.customerId : null,
+        stripe_subscription_id: event.subscriptionId,
+        plan: event.plan,
+        price_id: event.plan,
+        status: "active",
+        current_period_end: event.currentPeriodEnd,
+        cancel_at_period_end: false,
+      };
+      const { error } = await admin
+        .from("subscriptions")
+        .upsert(row as any, { onConflict: "stripe_subscription_id" });
+      if (error) throw new Error(error.message);
+      await sendMagicLink(admin, event.email, event.plan);
+      const { notifyAdmin } = await import("@/lib/admin/notify.server");
+      await notifyAdmin({
+        event: "signup",
+        title: `Nova assinatura ativada (${event.plan})`,
+        body: `Cliente: ${event.email}\nProvider: ${provider}\nSub: ${event.subscriptionId}`,
+        dedupKey: `act:${event.subscriptionId}`,
+      });
+      return;
+    }
+    case "subscription.updated": {
+      const { data, error } = await admin
+        .from("subscriptions")
+        .update({
+          plan: event.plan,
+          price_id: event.plan,
+          status: event.status,
+          current_period_end: event.currentPeriodEnd,
+        })
+        .eq("stripe_subscription_id", event.subscriptionId)
+        .select("id");
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) {
+        console.warn(`[webhook] updated sem row prévia: ${event.subscriptionId} (ignorado)`);
+      }
+      return;
+    }
+    case "subscription.canceled": {
+      const { data, error } = await admin
+        .from("subscriptions")
+        .update({ status: "canceled" })
+        .eq("stripe_subscription_id", event.subscriptionId)
+        .select("id");
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) {
+        console.warn(`[webhook] canceled sem row prévia: ${event.subscriptionId}`);
+      }
+      const { notifyAdmin } = await import("@/lib/admin/notify.server");
+      await notifyAdmin({
+        event: "churn",
+        title: "Assinatura cancelada (churn)",
+        body: `Sub: ${event.subscriptionId}\nProvider: ${provider}`,
+        dedupKey: `churn:${event.subscriptionId}`,
+      });
+      return;
+    }
+    case "subscription.past_due": {
+      const { data, error } = await admin
+        .from("subscriptions")
+        .update({ status: "past_due" })
+        .eq("stripe_subscription_id", event.subscriptionId)
+        .select("id");
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) {
+        console.warn(`[webhook] past_due sem row prévia: ${event.subscriptionId}`);
+      }
+      const { notifyAdmin } = await import("@/lib/admin/notify.server");
+      await notifyAdmin({
+        event: "past_due",
+        title: "Pagamento atrasado (past_due)",
+        body: `Sub: ${event.subscriptionId}\nProvider: ${provider}`,
+        dedupKey: `pd:${event.subscriptionId}`,
+      });
+      return;
+    }
+    case "subscription.trial_will_end": {
+      console.log(`[webhook] trial_will_end ${event.subscriptionId} em ${event.trialEnd ?? "?"}`);
+      return;
+    }
+  }
+}
+
+/**
+ * Caminho de chegada do webhook. Em falha transitória, agenda retry
+ * com backoff exponencial; após esgotar tentativas vai a dead_letter
+ * e notifica o admin.
+ */
 export async function handleNormalizedEvent(
   provider: ProviderName,
   event: NormalizedEvent,
@@ -117,119 +251,141 @@ export async function handleNormalizedEvent(
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   if (event.type === "ignored") {
-    await logEvent(supabaseAdmin, provider, event, "skipped", event.reason);
+    await insertEvent(supabaseAdmin, provider, event, "skipped", event.reason, 0, null);
     return;
   }
 
   try {
-    switch (event.type) {
-      case "subscription.activated": {
-        const userId = await getOrCreateUserId(supabaseAdmin, event.email);
-        if (!userId) throw new Error(`sem userId para ${event.email}`);
-        const row: Partial<DbRow> = {
-          user_id: userId,
-          provider,
-          provider_customer_id: event.customerId,
-          stripe_customer_id: provider === "stripe" ? event.customerId : null,
-          stripe_subscription_id: event.subscriptionId,
-          plan: event.plan,
-          price_id: event.plan,
-          status: "active",
-          current_period_end: event.currentPeriodEnd,
-          cancel_at_period_end: false,
-        };
-        const { error } = await supabaseAdmin
-          .from("subscriptions")
-          .upsert(row as any, { onConflict: "stripe_subscription_id" });
-        if (error) throw new Error(error.message);
-        await sendMagicLink(supabaseAdmin, event.email, event.plan);
-        const { notifyAdmin } = await import("@/lib/admin/notify.server");
-        await notifyAdmin({
-          event: "signup",
-          title: `Nova assinatura ativada (${event.plan})`,
-          body: `Cliente: ${event.email}\nProvider: ${provider}\nSub: ${event.subscriptionId}`,
-          dedupKey: `act:${event.subscriptionId}`,
-        });
-        break;
-      }
-      case "subscription.updated": {
-        // Upsert por stripe_subscription_id — se a ativação chegou fora de ordem,
-        // criamos a linha mínima (user_id desconhecido ficaria null → não usamos
-        // upsert nesse caso; apenas update e log se 0 rows).
-        const { data, error } = await supabaseAdmin
-          .from("subscriptions")
-          .update({
-            plan: event.plan,
-            price_id: event.plan,
-            status: event.status,
-            current_period_end: event.currentPeriodEnd,
-          })
-          .eq("stripe_subscription_id", event.subscriptionId)
-          .select("id");
-        if (error) throw new Error(error.message);
-        if (!data || data.length === 0) {
-          console.warn(`[webhook] updated sem row prévia: ${event.subscriptionId} (ignorado)`);
-        }
-        break;
-      }
-      case "subscription.canceled": {
-        const { data, error } = await supabaseAdmin
-          .from("subscriptions")
-          .update({ status: "canceled" })
-          .eq("stripe_subscription_id", event.subscriptionId)
-          .select("id");
-        if (error) throw new Error(error.message);
-        if (!data || data.length === 0) {
-          console.warn(`[webhook] canceled sem row prévia: ${event.subscriptionId}`);
-        }
-        const { notifyAdmin: n1 } = await import("@/lib/admin/notify.server");
-        await n1({
-          event: "churn",
-          title: "Assinatura cancelada (churn)",
-          body: `Sub: ${event.subscriptionId}\nProvider: ${provider}`,
-          dedupKey: `churn:${event.subscriptionId}`,
-        });
-        break;
-      }
-      case "subscription.past_due": {
-        const { data, error } = await supabaseAdmin
-          .from("subscriptions")
-          .update({ status: "past_due" })
-          .eq("stripe_subscription_id", event.subscriptionId)
-          .select("id");
-        if (error) throw new Error(error.message);
-        if (!data || data.length === 0) {
-          console.warn(`[webhook] past_due sem row prévia: ${event.subscriptionId}`);
-        }
-        const { notifyAdmin: n2 } = await import("@/lib/admin/notify.server");
-        await n2({
-          event: "past_due",
-          title: "Pagamento atrasado (past_due)",
-          body: `Sub: ${event.subscriptionId}\nProvider: ${provider}`,
-          dedupKey: `pd:${event.subscriptionId}`,
-        });
-        break;
-      }
-      case "subscription.trial_will_end": {
-        // Apenas registra o evento; envio de e-mail de aviso pode ser plugado aqui.
-        console.log(`[webhook] trial_will_end ${event.subscriptionId} em ${event.trialEnd ?? "?"}`);
-        break;
-      }
-    }
-    await logEvent(supabaseAdmin, provider, event, "processed");
+    await runEventLogic(supabaseAdmin, provider, event);
+    await insertEvent(supabaseAdmin, provider, event, "processed", null, 1, null);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "erro";
+    const delay = nextDelaySeconds(1);
+    const next = delay ? new Date(Date.now() + delay * 1000).toISOString() : null;
+    const status = delay ? "pending_retry" : "failed";
+    await insertEvent(supabaseAdmin, provider, event, status, msg, 1, next);
+    if (!delay) {
+      try {
+        const { notifyAdmin } = await import("@/lib/admin/notify.server");
+        await notifyAdmin({
+          event: "webhook_failure",
+          title: `Webhook falhou (${provider})`,
+          body: `Tipo: ${(event as any).type}\nErro: ${msg}`,
+          dedupKey: `whf:${provider}:${(event as any).subscriptionId ?? (event as any).type}`,
+        });
+      } catch {/* noop */}
+    }
+    // Não relança — o status fica registrado e o retry/replay assume.
     console.error("[webhook] processamento falhou:", msg);
-    await logEvent(supabaseAdmin, provider, event, "failed", msg);
-    try {
-      const { notifyAdmin } = await import("@/lib/admin/notify.server");
-      await notifyAdmin({
-        event: "webhook_failure",
-        title: `Webhook falhou (${provider})`,
-        body: `Tipo: ${(event as any).type}\nErro: ${msg}`,
-        dedupKey: `whf:${provider}:${(event as any).subscriptionId ?? (event as any).type}`,
-      });
-    } catch {/* noop */}
-    throw e;
   }
 }
+
+/**
+ * Reprocessa um evento já persistido (worker de retry ou replay manual).
+ * Faz lock leve via `locked_at` para evitar processamento concorrente.
+ */
+export async function reprocessWebhookEventRow(eventId: string, opts?: {
+  manual?: boolean;
+  actorId?: string | null;
+}): Promise<{ ok: boolean; status: string; error?: string }> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  // Lock leve: só claima se locked_at IS NULL ou expirado (>2min).
+  const lockCutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  const { data: claimed, error: lockErr } = await supabaseAdmin
+    .from("webhook_events")
+    .update({ locked_at: new Date().toISOString() })
+    .eq("id", eventId)
+    .or(`locked_at.is.null,locked_at.lt.${lockCutoff}`)
+    .select("*")
+    .maybeSingle();
+  if (lockErr) throw new Error(lockErr.message);
+  if (!claimed) return { ok: false, status: "locked", error: "Evento em processamento por outra rotina." };
+
+  const ev = claimed as any;
+  const provider = ev.provider as ProviderName;
+  const payload = ev.payload as NormalizedEvent;
+  const newAttempts = (ev.attempts ?? 0) + 1;
+  const startedAt = new Date().toISOString();
+
+  try {
+    await runEventLogic(supabaseAdmin, provider, payload);
+    const finalStatus = opts?.manual ? "replayed" : "processed";
+    const history = Array.isArray(ev.attempt_history) ? ev.attempt_history : [];
+    history.push({ at: startedAt, status: finalStatus, attempt: newAttempts, error: null, manual: !!opts?.manual });
+    await supabaseAdmin
+      .from("webhook_events")
+      .update({
+        status: finalStatus,
+        error: null,
+        attempts: newAttempts,
+        last_attempt_at: startedAt,
+        next_attempt_at: null,
+        locked_at: null,
+        attempt_history: history,
+        replayed_at: opts?.manual ? startedAt : ev.replayed_at,
+        replayed_by: opts?.manual ? (opts?.actorId ?? null) : ev.replayed_by,
+      })
+      .eq("id", eventId);
+    return { ok: true, status: finalStatus };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "erro";
+    const delay = nextDelaySeconds(newAttempts);
+    const next = delay ? new Date(Date.now() + delay * 1000).toISOString() : null;
+    const finalStatus = delay ? "pending_retry" : "dead_letter";
+    const history = Array.isArray(ev.attempt_history) ? ev.attempt_history : [];
+    history.push({ at: startedAt, status: finalStatus, attempt: newAttempts, error: msg, manual: !!opts?.manual });
+    await supabaseAdmin
+      .from("webhook_events")
+      .update({
+        status: finalStatus,
+        error: msg,
+        attempts: newAttempts,
+        last_attempt_at: startedAt,
+        next_attempt_at: next,
+        locked_at: null,
+        attempt_history: history,
+      })
+      .eq("id", eventId);
+    if (finalStatus === "dead_letter") {
+      try {
+        const { notifyAdmin } = await import("@/lib/admin/notify.server");
+        await notifyAdmin({
+          event: "webhook_failure",
+          title: `Webhook em dead-letter (${provider})`,
+          body: `Tipo: ${ev.event_type}\nTentativas: ${newAttempts}\nÚltimo erro: ${msg}`,
+          dedupKey: `whdl:${eventId}`,
+        });
+      } catch {/* noop */}
+    }
+    return { ok: false, status: finalStatus, error: msg };
+  }
+}
+
+/**
+ * Worker chamado pelo cron: pega lotes de pending_retry maduros.
+ */
+export async function runRetryBatch(limit = 25): Promise<{
+  picked: number; ok: number; failed: number; deadLetter: number;
+}> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const nowIso = new Date().toISOString();
+  const { data: due } = await supabaseAdmin
+    .from("webhook_events")
+    .select("id")
+    .eq("status", "pending_retry")
+    .lte("next_attempt_at", nowIso)
+    .order("next_attempt_at", { ascending: true })
+    .limit(limit);
+
+  const ids = (due ?? []).map((r: any) => r.id);
+  let ok = 0, failed = 0, deadLetter = 0;
+  for (const id of ids) {
+    const r = await reprocessWebhookEventRow(id, { manual: false });
+    if (r.ok) ok++;
+    else if (r.status === "dead_letter") deadLetter++;
+    else failed++;
+  }
+  return { picked: ids.length, ok, failed, deadLetter };
+}
+
