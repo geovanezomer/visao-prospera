@@ -171,8 +171,8 @@ export function ScenarioBar() {
           </DialogHeader>
           {historicals.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nenhum ano arquivado ainda. Use <strong>Salvar ANO</strong> para
-              arquivar o exercício atual.
+              Nenhum cenário arquivado ainda. Use <strong>Salvar ANO / Previsão</strong> para
+              arquivar o exercício atual ou uma projeção (budget).
             </p>
           ) : (
             <div className="scrollbar-thin max-h-[60vh] overflow-y-auto">
