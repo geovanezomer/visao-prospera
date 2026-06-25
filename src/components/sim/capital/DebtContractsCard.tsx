@@ -294,10 +294,28 @@ export function DebtContractsCard({
 
           {/* totais agregados */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2">
-            <Stat label="Saldo total (Dívida onerosa)" value={fmtBRL(agg.saldoTotal)} />
-            <Stat label="Parcela total/mês" value={fmtBRL(agg.parcelaMesTotal)} tone="warn" />
-            <Stat label="Total amortizações/ano" value={fmtBRL(agg.totalAmortAno)} />
-            <Stat label="Total juros/ano" value={fmtBRL(agg.totalJurosAno)} tone="warn" />
+            <Stat
+              label="Saldo total (Dívida onerosa)"
+              value={fmtBRL(agg.saldoTotal)}
+              hint="Dívida onerosa = empréstimos e financiamentos que PAGAM JUROS (banco, BNDES, debêntures). Não inclui fornecedores nem impostos a pagar. É a base para calcular Dívida Líquida, alavancagem e WACC."
+            />
+            <Stat
+              label="Parcela total/mês"
+              value={fmtBRL(agg.parcelaMesTotal)}
+              tone="warn"
+              hint="Soma das parcelas mensais de TODOS os contratos (juros + amortização do principal). É o que sai do caixa por mês — também chamado de 'serviço da dívida'."
+            />
+            <Stat
+              label="Total amortizações/ano"
+              value={fmtBRL(agg.totalAmortAno)}
+              hint="Quanto do PRINCIPAL (saldo devedor) você devolve ao banco em 12 meses. Reduz a dívida no Balanço — não passa pela DRE (não é despesa, é devolução)."
+            />
+            <Stat
+              label="Total juros/ano"
+              value={fmtBRL(agg.totalJurosAno)}
+              tone="warn"
+              hint="Juros pagos em 12 meses. Esta é a parte que vira DESPESA FINANCEIRA na DRE e impacta o lucro líquido."
+            />
           </div>
           <div className="text-[10px] text-muted-foreground">
             Os contratos alimentam automaticamente: Dívida Onerosa, Serviço da Dívida,
