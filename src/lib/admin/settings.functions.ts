@@ -16,13 +16,14 @@ function assertAdmin(claims: any) {
 const KEYS = ["branding", "login_texts", "footer", "active_provider"] as const;
 export type SettingKey = (typeof KEYS)[number];
 
-/** Leitura pública — usada por landing/login/sidebar. Sem auth. */
+/** Leitura pública — só chaves seguras para anon (branding/login/footer). */
+const PUBLIC_KEYS = ["branding", "login_texts", "footer"] as const;
 export const getAppSettings = createServerFn({ method: "GET" }).handler(async () => {
   const { createClient } = await import("@supabase/supabase-js");
   const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
   });
-  const { data } = await sb.from("app_settings").select("key, value");
+  const { data } = await sb.from("app_settings").select("key, value").in("key", PUBLIC_KEYS as any);
   const out: Record<string, any> = {};
   for (const row of data ?? []) out[row.key] = row.value;
   return out as Partial<Record<SettingKey, any>>;

@@ -28,8 +28,11 @@ export type RefundResult = {
 };
 
 export async function refundLastPayment(input: RefundInput): Promise<RefundResult> {
-  if (input.provider === "stripe") return refundStripe(input);
-  if (input.provider === "asaas") return refundAsaas(input);
+  // Garante que process.env.STRIPE_SECRET_KEY/ASAAS_API_KEY estão carregadas
+  // do banco — caso o admin tenha configurado o provider só pelo painel.
+  const { hydrateProviderEnv } = await import("./index");
+  if (input.provider === "stripe") { await hydrateProviderEnv("stripe"); return refundStripe(input); }
+  if (input.provider === "asaas") { await hydrateProviderEnv("asaas"); return refundAsaas(input); }
   throw new Error(`Provedor não suportado para estorno: ${input.provider}`);
 }
 
