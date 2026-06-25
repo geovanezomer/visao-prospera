@@ -58,18 +58,6 @@ export function SystemTab() {
     finally { setTesting(false); }
   };
 
-  const saveAll = async () => {
-    setSaving(true);
-    try {
-      await Promise.all([
-        updateAppSetting({ data: { key: "branding", value: branding } }),
-        updateAppSetting({ data: { key: "login_texts", value: login } }),
-        updateAppSetting({ data: { key: "footer", value: footer } }),
-      ]);
-      toast.success("Configurações salvas.");
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
-    finally { setSaving(false); }
-  };
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></div>;
 
