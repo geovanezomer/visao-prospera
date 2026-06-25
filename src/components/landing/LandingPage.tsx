@@ -738,6 +738,33 @@ function PricingSection() {
                 ))}
               </ul>
 
+              {/* Upsell opcional */}
+              {plano.upsell && (
+                <label
+                  className="mt-6 flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 bg-background/40 p-3 text-sm transition hover:border-primary/40"
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                    checked={!!upsellSel[plano.planId]}
+                    onChange={(e) =>
+                      setUpsellSel((s) => ({ ...s, [plano.planId]: e.target.checked }))
+                    }
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-foreground">+ {plano.upsell.name}</span>
+                      <span className="text-sm font-semibold text-primary">
+                        + R$ {(plano.upsell.priceCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    {plano.upsell.description && (
+                      <p className="mt-0.5 text-xs text-muted-foreground">{plano.upsell.description}</p>
+                    )}
+                  </div>
+                </label>
+              )}
+
               {/* CTA */}
               <div className="mt-8">
                 <button
