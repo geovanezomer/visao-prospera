@@ -24,7 +24,16 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 
 /* ============================================================
    HERO
@@ -653,20 +662,51 @@ function PricingSection() {
 
 
 
-  async function handleSubscribe(planId: string) {
-    const email = window.prompt(
-      "Informe seu e-mail para receber o acesso após o pagamento:",
-    );
-    if (!email) return;
+  // Estado do modal de confirmação de checkout.
+  // Mostra ao usuário o resumo (plano + upsell + total) ANTES de
+  // chamar o provedor de pagamento.
+  const [confirmFor, setConfirmFor] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const planoConfirm = useMemo(
+    () => planos.find((p) => p.planId === confirmFor) ?? null,
+    [confirmFor, planos],
+  );
+  const upsellLigado = !!(planoConfirm && upsellSel[planoConfirm.planId] && planoConfirm.upsell);
+  const totalReais = useMemo(() => {
+    if (!planoConfirm) return 0;
+    // O preço do plano vem formatado em string ptBR; reconvertemos para number
+    // sem perder os centavos quando houver.
+    const base = Number(planoConfirm.preco.replace(/\./g, "").replace(",", ".")) || 0;
+    const add = upsellLigado ? (planoConfirm.upsell!.priceCents / 100) : 0;
+    return base + add;
+  }, [planoConfirm, upsellLigado]);
+
+  function openConfirm(planId: string) {
+    setError(null);
+    setEmail("");
+    setConfirmFor(planId);
+  }
+
+  async function handleSubscribe() {
+    if (!planoConfirm) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      window.alert("E-mail inválido.");
+      setError("E-mail inválido.");
       return;
     }
+    setSubmitting(true);
+    setError(null);
     try {
       const res = await fetch("/api/public/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planId, email, withUpsell: !!upsellSel[planId] }),
+        body: JSON.stringify({
+          plan: planoConfirm.planId,
+          email,
+          withUpsell: !!upsellSel[planoConfirm.planId],
+        }),
       });
       const json = (await res.json()) as { url?: string; error?: string };
       if (!res.ok || !json.url) {
@@ -674,10 +714,11 @@ function PricingSection() {
       }
       window.location.href = json.url;
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Erro ao iniciar checkout";
-      window.alert(msg);
+      setError(e instanceof Error ? e.message : "Erro ao iniciar checkout");
+      setSubmitting(false);
     }
   }
+
 
   return (
     <section id="planos" className="scroll-mt-20 border-b border-border/50 py-24">
@@ -769,7 +810,7 @@ function PricingSection() {
               <div className="mt-8">
                 <button
                   type="button"
-                  onClick={() => handleSubscribe(plano.planId)}
+                  onClick={() => openConfirm(plano.planId)}
                   className={`group flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition ${
                     plano.destaque
                       ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40"
@@ -792,9 +833,109 @@ function PricingSection() {
           </span>
         </div>
       </div>
+
+      {/* ── Modal: confirmação do checkout (resumo + e-mail) ───────────── */}
+      <Dialog
+        open={!!confirmFor}
+        onOpenChange={(o) => {
+          if (!o && !submitting) setConfirmFor(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar assinatura</DialogTitle>
+            <DialogDescription>
+              Revise os itens abaixo antes de seguir para o pagamento.
+            </DialogDescription>
+          </DialogHeader>
+
+          {planoConfirm && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border bg-card/60 p-4 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-semibold text-foreground">Plano {planoConfirm.nome}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Cobrança {planoConfirm.periodo || "única"}
+                    </div>
+                  </div>
+                  <div className="text-right font-semibold text-foreground">
+                    R$ {planoConfirm.preco}
+                    <div className="text-[11px] font-normal text-muted-foreground">
+                      {planoConfirm.periodo}
+                    </div>
+                  </div>
+                </div>
+
+                {upsellLigado && planoConfirm.upsell && (
+                  <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+                    <div>
+                      <div className="text-foreground">+ {planoConfirm.upsell.name}</div>
+                      <div className="text-xs text-muted-foreground">Adicional único</div>
+                    </div>
+                    <div className="text-right font-semibold text-primary">
+                      + R$ {(planoConfirm.upsell.priceCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
+                  <span className="text-sm font-semibold text-foreground">Total hoje</span>
+                  <span className="text-base font-bold text-foreground">
+                    R$ {totalReais.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="checkout-email" className="text-xs font-medium text-foreground">
+                  E-mail para receber o acesso
+                </label>
+                <input
+                  id="checkout-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="voce@empresa.com.br"
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none ring-primary/40 focus:ring-2"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={submitting}
+                />
+              </div>
+
+              {error && (
+                <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                  {error}
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirmFor(null)}
+              disabled={submitting}
+              className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-card disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSubscribe}
+              disabled={submitting}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition hover:shadow-primary/40 disabled:opacity-60"
+            >
+              {submitting ? "Redirecionando…" : "Ir para o pagamento"}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
+
 
 /* ============================================================
     AUTORIDADE
