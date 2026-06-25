@@ -936,21 +936,76 @@ function PricingSection() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label htmlFor="checkout-email" className="text-xs font-medium text-foreground">
-                  E-mail para receber o acesso
-                </label>
-                <input
-                  id="checkout-email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="voce@empresa.com.br"
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none ring-primary/40 focus:ring-2"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={submitting}
-                />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label htmlFor="checkout-name" className="text-xs font-medium text-foreground">
+                    Nome completo
+                  </label>
+                  <input
+                    id="checkout-name"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Maria da Silva"
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none ring-primary/40 focus:ring-2"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label htmlFor="checkout-email" className="text-xs font-medium text-foreground">
+                    E-mail para receber o acesso
+                  </label>
+                  <input
+                    id="checkout-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="voce@empresa.com.br"
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none ring-primary/40 focus:ring-2"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="checkout-cpf" className="text-xs font-medium text-foreground">
+                    CPF
+                  </label>
+                  <input
+                    id="checkout-cpf"
+                    inputMode="numeric"
+                    placeholder="000.000.000-00"
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none ring-primary/40 focus:ring-2"
+                    value={cpf}
+                    onChange={(e) => setCpf(formatCPF(e.target.value))}
+                    maxLength={14}
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="checkout-phone" className="text-xs font-medium text-foreground">
+                    Telefone (com DDD)
+                  </label>
+                  <input
+                    id="checkout-phone"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="(11) 91234-5678"
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none ring-primary/40 focus:ring-2"
+                    value={phone}
+                    onChange={(e) => setPhone(formatPhoneBR(e.target.value))}
+                    maxLength={16}
+                    disabled={submitting}
+                  />
+                </div>
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                Seus dados são usados pelo provedor de pagamento (Asaas/Stripe) para emitir a cobrança (PIX/boleto/cartão) e enviar o recibo.
+              </p>
+
 
               {error && (
                 <div className="space-y-1 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
