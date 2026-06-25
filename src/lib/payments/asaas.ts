@@ -168,14 +168,15 @@ export class AsaasProvider implements PaymentProvider {
         expiredUrl: input.cancelUrl,
       },
       items,
-      customerData: {
-        email: input.email,
-        name: input.name || input.email.split("@")[0],
-        ...(input.cpfCnpj ? { cpfCnpj: input.cpfCnpj } : {}),
-        ...(input.phone ? { phone: input.phone } : {}),
-      },
       externalReference: input.plan,
     };
+
+    // IMPORTANTE: no Checkout hospedado v3, quando `customerData` é enviado,
+    // o Asaas valida um cadastro quase completo (nome, CPF/CNPJ, telefone,
+    // endereço, número, CEP e bairro). Como nossa landing coleta apenas dados
+    // básicos, omitir `customerData` é intencional: o próprio checkout Asaas
+    // coleta/valida os dados obrigatórios do pagador sem recusar a criação do
+    // link por campos de endereço ausentes.
     if (!isOneTime) {
       // subscription é obrigatório quando chargeTypes = RECURRENT.
       // endDate é opcional — omitimos ao invés de enviar null.
