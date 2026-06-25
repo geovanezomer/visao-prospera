@@ -232,6 +232,9 @@ export function UsersTab() {
                         <Button size="sm" variant="ghost" className="h-7 px-2" title="Revalidar plano" onClick={() => handleRevalidate(u)} disabled={busyId === u.id}>
                           <RefreshCw className="h-3.5 w-3.5" />
                         </Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2" title="Reenviar magic link" onClick={() => handleResendMagic(u)} disabled={busyId === u.id}>
+                          <Mail className="h-3.5 w-3.5" />
+                        </Button>
                         <Button size="sm" variant="ghost" className="h-7 px-2" title="Reset de senha" onClick={() => handleReset(u)} disabled={busyId === u.id}>
                           <KeyRound className="h-3.5 w-3.5" />
                         </Button>
@@ -239,6 +242,7 @@ export function UsersTab() {
                           <Undo2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
+
                     </td>
                   </tr>
                 ))
