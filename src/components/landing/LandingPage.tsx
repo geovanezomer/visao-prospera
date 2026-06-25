@@ -1362,7 +1362,7 @@ function Footer() {
 /* ============================================================
    EXPORT — composição final
    ============================================================ */
-export function LandingPage() {
+export function LandingPage({ initialPlans }: { initialPlans?: any[] | null } = {}) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
@@ -1374,7 +1374,7 @@ export function LandingPage() {
         <FeatureGrid />
         <HowItWorks />
         <ComparisonTable />
-        <PricingSection />
+        <PricingSection initialPlans={initialPlans ?? null} />
         <AuthorityBlock />
         <SocialProof />
         <div id="faq">
