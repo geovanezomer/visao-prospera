@@ -98,12 +98,21 @@ export const replayWebhookEvent = createServerFn({ method: "POST" })
     if (error || !ev) throw new Error("Evento não encontrado.");
     // Reexecuta o handler com o payload normalizado salvo.
     const { handleNormalizedEvent } = await import("@/lib/payments/webhook-handler.server");
+    const { logAudit } = await import("./audit.server");
     try {
       await handleNormalizedEvent(ev.provider as any, ev.payload as any);
       await supabaseAdmin
         .from("webhook_events")
         .update({ status: "replayed", error: null })
         .eq("id", ev.id);
+      await logAudit({
+        actorId: context.userId,
+        actorEmail: (context.claims as any)?.email,
+        action: "webhook.replay",
+        resource: "webhook_event",
+        targetId: ev.id,
+        metadata: { provider: ev.provider, event_type: ev.event_type },
+      });
       return { ok: true };
     } catch (e) {
       const msg = e instanceof Error ? e.message : "erro";
