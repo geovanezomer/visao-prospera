@@ -186,7 +186,7 @@ export function SystemTab() {
         {/* Logo */}
         <div className="space-y-2">
           <Label>Logo</Label>
-          <p className="text-[11px] text-muted-foreground">PNG/SVG com fundo transparente · sugerido 240×64 px · máx 200 KB.</p>
+          <p className="text-[11px] text-muted-foreground">PNG/SVG/WebP/JPG · quadrado a 2:1 (largura até 2× a altura) · 64–1024 px por lado · máx 200 KB. Aparece na sidebar, login e header da landing.</p>
           <div className="flex items-center gap-3 rounded-md border border-border/50 bg-muted/30 p-3">
             <div className="flex h-12 w-32 items-center justify-center rounded bg-background ring-1 ring-border/50 overflow-hidden">
               {branding.logo_url
