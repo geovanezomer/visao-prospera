@@ -155,6 +155,13 @@ export class StripeProvider implements PaymentProvider {
           customerId: String(obj.customer),
           subscriptionId: String(obj.subscription ?? ""),
         };
+      case "customer.subscription.trial_will_end":
+        return {
+          type: "subscription.trial_will_end",
+          customerId: String(obj.customer),
+          subscriptionId: String(obj.id),
+          trialEnd: obj.trial_end ? new Date(obj.trial_end * 1000).toISOString() : null,
+        };
       default:
         return { type: "ignored", reason: event.type };
     }
