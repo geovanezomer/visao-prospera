@@ -63,6 +63,7 @@ export class AsaasProvider implements PaymentProvider {
     currency?: string;
     providerRef?: string | null;
     planName?: string;
+    upsell?: { name: string; priceCents: number; stripePriceId?: string | null; asaasRef?: string | null } | null;
   }): Promise<{ url: string }> {
     // 1) Garante customer
     const found = await asaasFetch<{ data: Array<{ id: string }> }>(
@@ -96,18 +97,23 @@ export class AsaasProvider implements PaymentProvider {
 
     const nextDueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const isOneTime = input.interval === "one_time" || input.interval === "lifetime";
+    const upsellValue = input.upsell && input.upsell.priceCents > 0 ? input.upsell.priceCents / 100 : 0;
     const description = `${input.planName || `FinancePRO — plano ${input.plan}`}${isOneTime ? " (pagamento único)" : ""}`;
 
     if (isOneTime) {
-      // Cobrança única: cria diretamente em /payments (sem assinatura).
+      // Cobrança única: soma o upsell direto no valor para uma só cobrança.
+      const totalValue = value + upsellValue;
+      const fullDesc = upsellValue > 0
+        ? `${description} + ${input.upsell!.name}`
+        : description;
       const pay = await asaasFetch<{ id: string; invoiceUrl?: string }>("/payments", {
         method: "POST",
         body: {
           customer: customerId,
           billingType: "UNDEFINED",
-          value,
+          value: totalValue,
           dueDate: nextDueDate,
-          description,
+          description: fullDesc,
           externalReference: input.plan,
         },
       });
@@ -128,6 +134,28 @@ export class AsaasProvider implements PaymentProvider {
         externalReference: input.plan,
       },
     });
+
+    // Upsell em assinatura — cria uma cobrança avulsa (one-shot) para o mesmo
+    // customer, vencendo amanhã. Não vira recorrência. Fica separado da
+    // primeira fatura da assinatura, mas é apresentado em paralelo.
+    if (upsellValue > 0) {
+      try {
+        await asaasFetch<{ id: string }>("/payments", {
+          method: "POST",
+          body: {
+            customer: customerId,
+            billingType: "UNDEFINED",
+            value: upsellValue,
+            dueDate: nextDueDate,
+            description: `Upsell: ${input.upsell!.name}`,
+            externalReference: `${input.plan}__upsell`,
+          },
+        });
+      } catch (e) {
+        // Não bloqueia o checkout principal — apenas loga.
+        console.error("[asaas] falha ao criar upsell:", e);
+      }
+    }
 
     // 3) Recupera primeira cobrança para obter o link de checkout hospedado.
     const payments = await asaasFetch<{ data: Array<{ invoiceUrl: string }> }>(
