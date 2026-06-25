@@ -2,7 +2,7 @@
 // UsersTab — listagem paginada com filtros e ordenação.
 // ============================================================================
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, KeyRound, Undo2, Search, Loader2, CheckCircle2, XCircle, ArrowUpDown, Mail } from "lucide-react";
+import { RefreshCw, KeyRound, Undo2, Search, Loader2, CheckCircle2, XCircle, ArrowUpDown, Mail, UserPlus, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import {
   listAdminUsers, setUserActive, sendPasswordReset, revalidatePlan, refundPayment, resendMagicLink,
   type AdminUserRow, type AdminUserSort, type AdminUserFilters,
 } from "@/lib/admin/admin.functions";
+import { createManualUser } from "@/lib/admin/userDetail.functions";
 import { exportUsersCsv } from "@/lib/admin/export.functions";
 import { Download } from "lucide-react";
 import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
