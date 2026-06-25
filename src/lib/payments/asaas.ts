@@ -1,0 +1,172 @@
+// ============================================================================
+// Adaptador Asaas — REST API v3.
+//
+// Docs:
+//   - Checkout: https://docs.asaas.com/reference/criar-nova-cobranca (subscriptions)
+//   - Portal:   "Central do Cliente" — Asaas gera link único via
+//               POST /v3/customers/{id}/payments (link autosserviço).
+//   - Webhook:  header `asaas-access-token` deve bater com ASAAS_WEBHOOK_TOKEN.
+// ============================================================================
+
+import type { PaymentProvider, NormalizedEvent, PlanId } from "./types";
+import { getProviderPlanRef } from "./index";
+
+function asaasBase(): string {
+  const env = (process.env.ASAAS_ENV || "production").toLowerCase();
+  return env === "sandbox"
+    ? "https://sandbox.asaas.com/api/v3"
+    : "https://api.asaas.com/v3";
+}
+
+async function asaasFetch<T>(
+  path: string,
+  init?: { method?: string; body?: Record<string, unknown>; headers?: Record<string, string> },
+): Promise<T> {
+  const key = process.env.ASAAS_API_KEY!;
+  const res = await fetch(`${asaasBase()}${path}`, {
+    method: init?.method ?? "GET",
+    headers: {
+      access_token: key,
+      "Content-Type": "application/json",
+      ...(init?.headers || {}),
+    },
+    body: init?.body ? JSON.stringify(init.body) : undefined,
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    throw new Error(`Asaas API ${path}: ${JSON.stringify(json)}`);
+  }
+  return json as T;
+}
+
+function planFromValue(value: number): PlanId {
+  // Heurística simples — preço PRO costuma ser maior. Asaas não tem
+  // lookup_key; usamos o valor cobrado para mapear de volta.
+  // Para precisão, podemos comparar com env vars de preço.
+  const priceStarter = Number(process.env.ASAAS_PRICE_STARTER ?? 0);
+  const pricePro = Number(process.env.ASAAS_PRICE_PRO ?? 0);
+  if (pricePro && Math.abs(value - pricePro) < 0.5) return "pro";
+  if (priceStarter && Math.abs(value - priceStarter) < 0.5) return "starter";
+  return value >= 500 ? "pro" : "starter";
+}
+
+export class AsaasProvider implements PaymentProvider {
+  readonly name = "asaas" as const;
+
+  async createCheckout(input: {
+    plan: PlanId;
+    email: string;
+    successUrl: string;
+    cancelUrl: string;
+  }): Promise<{ url: string }> {
+    // 1) Garante customer
+    const found = await asaasFetch<{ data: Array<{ id: string }> }>(
+      `/customers?email=${encodeURIComponent(input.email)}`,
+    );
+    let customerId = found.data?.[0]?.id;
+    if (!customerId) {
+      const created = await asaasFetch<{ id: string }>("/customers", {
+        method: "POST",
+        body: { name: input.email.split("@")[0], email: input.email },
+      });
+      customerId = created.id;
+    }
+
+    // 2) Cria assinatura recorrente. ASAAS_PLAN_* contém o valor (em reais)
+    //    do plano e o ciclo. Formato esperado: "97.00:MONTHLY" ou só "97.00".
+    const ref = getProviderPlanRef(input.plan);
+    const [valueStr, cycleStr] = ref.split(":");
+    const value = Number(valueStr);
+    const cycle = (cycleStr || "MONTHLY").toUpperCase();
+    const nextDueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    const sub = await asaasFetch<{ id: string; invoiceUrl?: string }>("/subscriptions", {
+      method: "POST",
+      body: {
+        customer: customerId,
+        billingType: "UNDEFINED", // permite cartão/pix/boleto na tela
+        value,
+        nextDueDate,
+        cycle, // MONTHLY | YEARLY
+        description: `FinancePRO — plano ${input.plan}`,
+        externalReference: input.plan,
+      },
+    });
+
+    // 3) Recupera primeira cobrança para obter o link de checkout hospedado.
+    const payments = await asaasFetch<{ data: Array<{ invoiceUrl: string }> }>(
+      `/payments?subscription=${sub.id}`,
+    );
+    const url = payments.data?.[0]?.invoiceUrl ?? sub.invoiceUrl;
+    if (!url) throw new Error("Asaas: invoiceUrl não retornado.");
+    return { url };
+  }
+
+  async createPortal(input: { customerId: string; returnUrl: string }): Promise<{ url: string }> {
+    // Asaas Central do Cliente: URL pública por customer.
+    // Fallback: lista de pagamentos do cliente (página hospedada).
+    const env = (process.env.ASAAS_ENV || "production").toLowerCase();
+    const base = env === "sandbox" ? "https://sandbox.asaas.com" : "https://www.asaas.com";
+    return { url: `${base}/c/${input.customerId}` };
+  }
+
+  async verifyWebhook(req: Request, rawBody: string): Promise<NormalizedEvent> {
+    const token = req.headers.get("asaas-access-token");
+    const expected = process.env.ASAAS_WEBHOOK_TOKEN;
+    if (!expected) throw new Error("Asaas webhook: ASAAS_WEBHOOK_TOKEN não configurado.");
+    if (token !== expected) throw new Error("Asaas webhook: token inválido.");
+
+    const event = JSON.parse(rawBody) as { event: string; payment?: any; subscription?: any };
+    return this.parseEvent(event);
+  }
+
+  private parseEvent(event: {
+    event: string;
+    payment?: any;
+    subscription?: any;
+  }): NormalizedEvent {
+    const p = event.payment;
+    const s = event.subscription;
+    switch (event.event) {
+      case "PAYMENT_CONFIRMED":
+      case "PAYMENT_RECEIVED": {
+        if (!p) return { type: "ignored", reason: "no payment" };
+        const plan = (p.externalReference as PlanId) || planFromValue(Number(p.value ?? 0));
+        return {
+          type: "subscription.activated",
+          email: p.customerEmail ?? "",
+          customerId: String(p.customer),
+          subscriptionId: String(p.subscription ?? p.id),
+          plan,
+          currentPeriodEnd: p.dueDate ? new Date(p.dueDate).toISOString() : null,
+        };
+      }
+      case "SUBSCRIPTION_UPDATED": {
+        if (!s) return { type: "ignored", reason: "no subscription" };
+        return {
+          type: "subscription.updated",
+          customerId: String(s.customer),
+          subscriptionId: String(s.id),
+          plan: (s.externalReference as PlanId) || planFromValue(Number(s.value ?? 0)),
+          status: s.status === "ACTIVE" ? "active" : "canceled",
+          currentPeriodEnd: s.nextDueDate ? new Date(s.nextDueDate).toISOString() : null,
+        };
+      }
+      case "SUBSCRIPTION_DELETED":
+      case "PAYMENT_DELETED":
+        return {
+          type: "subscription.canceled",
+          customerId: String((s ?? p)?.customer ?? ""),
+          subscriptionId: String((s ?? p)?.id ?? ""),
+        };
+      case "PAYMENT_OVERDUE":
+        return {
+          type: "subscription.past_due",
+          customerId: String(p?.customer ?? ""),
+          subscriptionId: String(p?.subscription ?? ""),
+        };
+      default:
+        return { type: "ignored", reason: event.event };
+    }
+  }
+}
