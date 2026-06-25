@@ -9,7 +9,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { getProvider } from "@/lib/payments";
+import { resolveProvider } from "@/lib/payments";
 
 const Body = z.object({
   plan: z.enum(["starter", "pro"]),
@@ -33,7 +33,7 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
         }
 
         try {
-          const provider = getProvider();
+          const provider = await resolveProvider();
           const { url } = await provider.createCheckout({
             plan: parsed.plan,
             email: parsed.email,

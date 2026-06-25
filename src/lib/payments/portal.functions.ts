@@ -7,7 +7,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { getProvider } from "./index";
+import { resolveProvider } from "./index";
 
 export const createPortalSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -34,7 +34,7 @@ export const createPortalSession = createServerFn({ method: "POST" })
     const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
     const returnUrl = data.returnUrl ?? `${appUrl}/app`;
 
-    const provider = getProvider();
+    const provider = await resolveProvider();
     const { url } = await provider.createPortal({ customerId, returnUrl });
     return { url };
   });

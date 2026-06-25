@@ -53,13 +53,13 @@ export function UsersTab() {
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [page, perPage, sort, filters]);
-  // Busca: debounce 350ms
+  // Único efeito controla recarga: muda em paginação/filtros/sort, e a busca
+  // entra via debounce de 350ms (sem disparo duplo no mount).
   useEffect(() => {
-    const t = setTimeout(() => { setPage(1); void load(); }, 350);
+    const t = setTimeout(() => { void load(); }, 300);
     return () => clearTimeout(t);
-    // eslint-disable-next-line
-  }, [search]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, perPage, sort, filters, search]);
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
   const summary = useMemo(() => {

@@ -127,6 +127,9 @@ export const setActiveProvider = createServerFn({ method: "POST" })
         { key: "active_provider", value: { provider: data.provider }, updated_by: context.userId, updated_at: new Date().toISOString() },
         { onConflict: "key" },
       );
+    // Invalida cache do seletor de provider (evita janela de 60s servindo o antigo).
+    const { invalidateProviderCache } = await import("@/lib/payments");
+    invalidateProviderCache();
     return { ok: true };
   });
 

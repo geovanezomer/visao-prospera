@@ -146,7 +146,10 @@ export async function handleNormalizedEvent(
         break;
       }
       case "subscription.updated": {
-        const { error } = await supabaseAdmin
+        // Upsert por stripe_subscription_id — se a ativação chegou fora de ordem,
+        // criamos a linha mínima (user_id desconhecido ficaria null → não usamos
+        // upsert nesse caso; apenas update e log se 0 rows).
+        const { data, error } = await supabaseAdmin
           .from("subscriptions")
           .update({
             plan: event.plan,
@@ -154,24 +157,36 @@ export async function handleNormalizedEvent(
             status: event.status,
             current_period_end: event.currentPeriodEnd,
           })
-          .eq("stripe_subscription_id", event.subscriptionId);
+          .eq("stripe_subscription_id", event.subscriptionId)
+          .select("id");
         if (error) throw new Error(error.message);
+        if (!data || data.length === 0) {
+          console.warn(`[webhook] updated sem row prévia: ${event.subscriptionId} (ignorado)`);
+        }
         break;
       }
       case "subscription.canceled": {
-        const { error } = await supabaseAdmin
+        const { data, error } = await supabaseAdmin
           .from("subscriptions")
           .update({ status: "canceled" })
-          .eq("stripe_subscription_id", event.subscriptionId);
+          .eq("stripe_subscription_id", event.subscriptionId)
+          .select("id");
         if (error) throw new Error(error.message);
+        if (!data || data.length === 0) {
+          console.warn(`[webhook] canceled sem row prévia: ${event.subscriptionId}`);
+        }
         break;
       }
       case "subscription.past_due": {
-        const { error } = await supabaseAdmin
+        const { data, error } = await supabaseAdmin
           .from("subscriptions")
           .update({ status: "past_due" })
-          .eq("stripe_subscription_id", event.subscriptionId);
+          .eq("stripe_subscription_id", event.subscriptionId)
+          .select("id");
         if (error) throw new Error(error.message);
+        if (!data || data.length === 0) {
+          console.warn(`[webhook] past_due sem row prévia: ${event.subscriptionId}`);
+        }
         break;
       }
     }

@@ -1,11 +1,9 @@
 // ============================================================================
 // POST /api/public/payments/webhook/asaas
-//
-// Recebe eventos do Asaas. Verificação por token (header asaas-access-token)
-// contra ASAAS_WEBHOOK_TOKEN. Persiste estado e dispara magic link.
+// Hidrata ASAAS_API_KEY/ASAAS_WEBHOOK_TOKEN do banco antes de validar.
 // ============================================================================
-
 import { createFileRoute } from "@tanstack/react-router";
+import { hydrateProviderEnv } from "@/lib/payments";
 import { AsaasProvider } from "@/lib/payments/asaas";
 import { handleNormalizedEvent } from "@/lib/payments/webhook-handler.server";
 
@@ -15,6 +13,7 @@ export const Route = createFileRoute("/api/public/payments/webhook/asaas")({
       POST: async ({ request }) => {
         const rawBody = await request.text();
         try {
+          await hydrateProviderEnv("asaas");
           const provider = new AsaasProvider();
           const event = await provider.verifyWebhook(request, rawBody);
           await handleNormalizedEvent("asaas", event);
