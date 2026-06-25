@@ -116,12 +116,12 @@ export function ScenarioBar() {
       <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
         <DialogTrigger asChild>
           <Button className="shadow-lg shadow-primary/30">
-            <Save className="mr-2 h-4 w-4" /> Salvar ANO
+            <Save className="mr-2 h-4 w-4" /> Salvar ANO / Previsão
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Arquivar ano fechado</DialogTitle>
+            <DialogTitle>Arquivar ano / previsão</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
@@ -162,17 +162,17 @@ export function ScenarioBar() {
       <Dialog open={listOpen} onOpenChange={setListOpen}>
         <DialogTrigger asChild>
           <Button variant="outline">
-            <CalendarDays className="mr-2 h-4 w-4" /> ANO ({historicals.length})
+            <CalendarDays className="mr-2 h-4 w-4" /> Cenários ({historicals.length})
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-5xl w-[95vw]">
           <DialogHeader>
-            <DialogTitle>Anos arquivados</DialogTitle>
+            <DialogTitle>Cenários arquivados (anos e previsões)</DialogTitle>
           </DialogHeader>
           {historicals.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nenhum ano arquivado ainda. Use <strong>Salvar ANO</strong> para
-              arquivar o exercício atual.
+              Nenhum cenário arquivado ainda. Use <strong>Salvar ANO / Previsão</strong> para
+              arquivar o exercício atual ou uma projeção (budget).
             </p>
           ) : (
             <div className="scrollbar-thin max-h-[60vh] overflow-y-auto">
