@@ -66,7 +66,7 @@ export const listAdminUsers = createServerFn({ method: "POST" })
           perPage: z.number().int().min(1).max(200).optional(),
           search: z.string().max(120).optional(),
           sort: z
-            .enum(["created_desc", "created_asc", "expires_desc", "expires_asc", "name_asc"])
+            .enum(["created_desc", "created_asc", "expires_desc", "expires_asc", "name_asc", "name_desc"])
             .optional(),
           filters: z
             .object({
