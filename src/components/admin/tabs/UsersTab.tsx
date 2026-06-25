@@ -270,6 +270,7 @@ export function UsersTab() {
       </div>
 
       <RefundDialog user={refundFor} onClose={() => setRefundFor(null)} onDone={() => { setRefundFor(null); void load(); }} />
+      <UserDetailDrawer userId={detailFor} onClose={() => setDetailFor(null)} onChanged={() => void load()} />
     </div>
   );
 }
