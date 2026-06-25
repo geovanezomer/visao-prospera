@@ -309,19 +309,48 @@ export function DebtContractsCard({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: HelpHint;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block space-y-1">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <span>{label}</span>
+        {hint &&
+          (typeof hint === "string" ? (
+            <HelpTip text={hint} />
+          ) : (
+            <HelpTip text={hint.description} formula={hint.formula} example={hint.example} />
+          ))}
+      </div>
       {children}
     </label>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
+function Stat({
+  label,
+  value,
+  tone,
+  hint,
+}: {
+  label: string;
+  value: string;
+  tone?: "warn";
+  hint?: string;
+}) {
   return (
     <div className="rounded-md border border-border/40 bg-background/40 p-2">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <span>{label}</span>
+        {hint && <HelpTip text={hint} />}
+      </div>
       <div className={`mt-0.5 text-sm font-semibold num ${tone === "warn" ? "text-warning" : "text-foreground"}`}>
         {value}
       </div>
