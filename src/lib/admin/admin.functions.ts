@@ -218,6 +218,14 @@ export const setUserActive = createServerFn({ method: "POST" })
       ban_duration: data.active ? "none" : "100000h",
     } as any);
     if (error) throw new Error(error.message);
+    const { logAudit } = await import("./audit.server");
+    await logAudit({
+      actorId: context.userId,
+      actorEmail: (context.claims as any)?.email,
+      action: data.active ? "user.activate" : "user.deactivate",
+      resource: "user",
+      targetId: data.userId,
+    });
     return { ok: true };
   });
 
@@ -241,6 +249,15 @@ export const sendPasswordReset = createServerFn({ method: "POST" })
       redirectTo: appUrl ? `${appUrl}/reset-password` : undefined,
     });
     if (error) throw new Error(error.message);
+    const { logAudit } = await import("./audit.server");
+    await logAudit({
+      actorId: context.userId,
+      actorEmail: (context.claims as any)?.email,
+      action: "user.password_reset",
+      resource: "user",
+      targetId: data.userId,
+      targetLabel: u.user.email,
+    });
     return { ok: true, email: u.user.email };
   });
 
@@ -306,6 +323,15 @@ export const refundPayment = createServerFn({ method: "POST" })
       customerId: sub.provider_customer_id ?? sub.stripe_customer_id,
       amount: data.amount,
       reason: data.reason,
+    });
+    const { logAudit } = await import("./audit.server");
+    await logAudit({
+      actorId: context.userId,
+      actorEmail: (context.claims as any)?.email,
+      action: "payment.refund",
+      resource: "subscription",
+      targetId: data.userId,
+      metadata: { amount: data.amount, reason: data.reason, provider: sub.provider },
     });
     return result;
   });

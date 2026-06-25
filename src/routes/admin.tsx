@@ -4,7 +4,7 @@
 // ============================================================================
 import { useEffect } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { ShieldCheck, ArrowLeft, Users, Settings, Mail, Webhook, CreditCard } from "lucide-react";
+import { ShieldCheck, ArrowLeft, Users, Settings, Mail, Webhook, CreditCard, LayoutDashboard, FileClock } from "lucide-react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
@@ -14,15 +14,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
+import { DashboardTab } from "@/components/admin/tabs/DashboardTab";
 import { UsersTab } from "@/components/admin/tabs/UsersTab";
 import { SystemTab } from "@/components/admin/tabs/SystemTab";
 import { EmailsTab } from "@/components/admin/tabs/EmailsTab";
 import { WebhooksTab } from "@/components/admin/tabs/WebhooksTab";
 import { ProviderTab } from "@/components/admin/tabs/ProviderTab";
+import { AuditTab } from "@/components/admin/tabs/AuditTab";
 
-const TAB_KEYS = ["usuarios", "sistema", "emails", "webhooks", "provider"] as const;
+const TAB_KEYS = ["dashboard", "usuarios", "sistema", "emails", "webhooks", "provider", "auditoria"] as const;
 const searchSchema = z.object({
-  tab: fallback(z.enum(TAB_KEYS), "usuarios").default("usuarios"),
+  tab: fallback(z.enum(TAB_KEYS), "dashboard").default("dashboard"),
 });
 
 export const Route = createFileRoute("/admin")({
@@ -67,18 +69,22 @@ function AdminPage() {
 
       <main className="mx-auto max-w-[1400px] p-4 sm:p-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="mb-4 grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+          <TabsList className="mb-4 grid w-full grid-cols-7 lg:w-auto lg:inline-flex">
+            <TabsTrigger value="dashboard"><LayoutDashboard className="mr-1.5 h-3.5 w-3.5" />Dashboard</TabsTrigger>
             <TabsTrigger value="usuarios"><Users className="mr-1.5 h-3.5 w-3.5" />Usuários</TabsTrigger>
             <TabsTrigger value="sistema"><Settings className="mr-1.5 h-3.5 w-3.5" />Sistema</TabsTrigger>
             <TabsTrigger value="emails"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mails</TabsTrigger>
             <TabsTrigger value="webhooks"><Webhook className="mr-1.5 h-3.5 w-3.5" />Webhooks</TabsTrigger>
             <TabsTrigger value="provider"><CreditCard className="mr-1.5 h-3.5 w-3.5" />Provider</TabsTrigger>
+            <TabsTrigger value="auditoria"><FileClock className="mr-1.5 h-3.5 w-3.5" />Auditoria</TabsTrigger>
           </TabsList>
+          <TabsContent value="dashboard"><DashboardTab /></TabsContent>
           <TabsContent value="usuarios"><UsersTab /></TabsContent>
           <TabsContent value="sistema"><SystemTab /></TabsContent>
           <TabsContent value="emails"><EmailsTab /></TabsContent>
           <TabsContent value="webhooks"><WebhooksTab /></TabsContent>
           <TabsContent value="provider"><ProviderTab /></TabsContent>
+          <TabsContent value="auditoria"><AuditTab /></TabsContent>
         </Tabs>
       </main>
     </div>
