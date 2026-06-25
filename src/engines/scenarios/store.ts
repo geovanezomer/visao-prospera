@@ -206,25 +206,41 @@ export function listHistoricals(company: string): ScenarioRecord[] {
 export const MAX_HISTORICALS_PER_COMPANY = 20;
 
 /**
- * Arquiva o AppState atual como snapshot histórico do ano informado.
- * Idempotente por ano: se já existe historical para `fiscalYear`, sobrescreve.
- * Faz auto-pruning: ao exceder MAX_HISTORICALS_PER_COMPANY, descarta os anos
- * mais antigos (menor fiscalYear) primeiro.
+ * Arquiva o AppState atual como snapshot histórico.
+ *
+ * - `subKind === "realizado"` (default): idempotente por ano — se já existe
+ *   realizado para `fiscalYear`, sobrescreve. Nome default: "Ano YYYY".
+ * - `subKind === "previsao"`: permite múltiplas previsões por ano (ex:
+ *   "Previsão 2026 - Conservador" e "Previsão 2026 - Agressivo"). Idempotente
+ *   por nome dentro do mesmo ano.
+ *
+ * Faz auto-pruning ao exceder MAX_HISTORICALS_PER_COMPANY (mantém os
+ * `fiscalYear` mais recentes).
  */
 export function archiveYearAsHistorical(
   company: string,
   fiscalYear: number,
   state: import("@/engines/finance/types").AppState,
   summary?: ScenarioRecord["summary"],
+  opts?: { subKind?: "realizado" | "previsao"; name?: string },
 ): ScenarioRecord {
-  const existing = listScenarios(company).find(
-    (s) => s.kind === "historical" && s.fiscalYear === fiscalYear,
-  );
+  const subKind = opts?.subKind ?? "realizado";
+  const defaultName =
+    subKind === "previsao" ? `Previsão ${fiscalYear}` : `Ano ${fiscalYear}`;
+  const name = opts?.name?.trim() || defaultName;
+  // Idempotência: realizado → por ano. Previsão → por (ano, nome).
+  const existing = listScenarios(company).find((s) => {
+    if (s.kind !== "historical" || s.fiscalYear !== fiscalYear) return false;
+    const sSub = s.subKind ?? "realizado";
+    if (sSub !== subKind) return false;
+    return subKind === "realizado" ? true : s.name === name;
+  });
   const stamped = { ...state, fiscalYear };
   const rec = saveScenario(company, {
     id: existing?.id,
-    name: `Ano ${fiscalYear}`,
+    name,
     kind: "historical",
+    subKind,
     fiscalYear,
     state: stamped,
     summary,
