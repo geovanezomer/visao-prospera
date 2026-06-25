@@ -162,12 +162,12 @@ export function ScenarioBar() {
       <Dialog open={listOpen} onOpenChange={setListOpen}>
         <DialogTrigger asChild>
           <Button variant="outline">
-            <CalendarDays className="mr-2 h-4 w-4" /> ANO ({historicals.length})
+            <CalendarDays className="mr-2 h-4 w-4" /> Cenários ({historicals.length})
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-5xl w-[95vw]">
           <DialogHeader>
-            <DialogTitle>Anos arquivados</DialogTitle>
+            <DialogTitle>Cenários arquivados (anos e previsões)</DialogTitle>
           </DialogHeader>
           {historicals.length === 0 ? (
             <p className="text-sm text-muted-foreground">
