@@ -82,6 +82,35 @@ export function SystemTab() {
         <div className="space-y-1"><Label>Texto</Label><Input value={footer.text} onChange={(e) => setFooter({ text: e.target.value })} /></div>
       </section>
 
+      {notif && (
+        <section className="space-y-4 rounded-lg border border-border/60 bg-card p-4 lg:col-span-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Notificações do administrador</h3>
+            <Button size="sm" variant="outline" onClick={runTest} disabled={testing}>
+              {testing ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-1.5 h-3.5 w-3.5" />}Testar
+            </Button>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1">
+              <Label>Slack webhook URL</Label>
+              <Input value={notif.slackWebhookUrl ?? ""} onChange={(e) => setNotif({ ...notif, slackWebhookUrl: e.target.value || null })} placeholder="https://hooks.slack.com/services/…" />
+            </div>
+            <div className="space-y-1">
+              <Label>E-mail destino</Label>
+              <Input type="email" value={notif.emailTo ?? ""} onChange={(e) => setNotif({ ...notif, emailTo: e.target.value || null })} placeholder="admin@empresa.com" />
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {(["signup", "churn", "past_due", "webhook_failure"] as const).map((k) => (
+              <label key={k} className="flex items-center gap-2 rounded border border-border/40 px-2 py-1.5 text-xs">
+                <Switch checked={notif.events[k]} onCheckedChange={(c) => setNotif({ ...notif, events: { ...notif.events, [k]: c } })} />
+                <span>{k}</span>
+              </label>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="lg:col-span-2 flex justify-end">
         <Button onClick={saveAll} disabled={saving}>
           {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
