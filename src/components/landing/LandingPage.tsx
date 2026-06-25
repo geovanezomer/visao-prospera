@@ -615,10 +615,6 @@ function PricingSection() {
     planId: string;
     upsell?: { name: string; description: string; priceCents: number } | null;
   };
-  const FALLBACK: Plano[] = [
-    { nome: "Mensal", descricao: "Para testar o poder da plataforma", preco: "197", periodo: "/mês", badge: null, destaque: false, recursos: ["Acesso completo a todos os módulos", "Diagnóstico, DRE, Fluxo de Caixa e Valuation", "Reforma Tributária CBS/IBS", "Suporte por e-mail", "Cancelamento a qualquer momento"], cta: "Assinar Mensal", planId: "starter", upsell: null },
-    { nome: "Anual", descricao: "O escolhido por 8 em cada 10 consultores", preco: "1.497", periodo: "/ano", badge: { texto: "Mais Popular · 37% OFF", icone: Zap }, destaque: true, recursos: ["Tudo do plano Mensal", "Economia equivalente a 4 meses grátis", "Consultor IA com contexto da sua empresa", "Cenários ilimitados e Monte Carlo", "Suporte prioritário em até 24h"], cta: "Assinar Anual", planId: "pro", upsell: null },
-  ];
   const [planos, setPlanos] = useState<Plano[] | null>(null);
   // Estado: upsell selecionado por planId.
   const [upsellSel, setUpsellSel] = useState<Record<string, boolean>>({});
@@ -633,8 +629,8 @@ function PricingSection() {
           .eq("active", true)
           .order("sort_order", { ascending: true });
         if (cancelled) return;
-        if (error || !data?.length) {
-          setPlanos(FALLBACK);
+        if (error || !data) {
+          setPlanos([]);
           return;
         }
         const mapped: Plano[] = data.map((p: any) => ({
@@ -660,9 +656,9 @@ function PricingSection() {
               }
             : null,
         }));
-        setPlanos(mapped.length ? mapped : FALLBACK);
+        setPlanos(mapped);
       } catch {
-        if (!cancelled) setPlanos(FALLBACK);
+        if (!cancelled) setPlanos([]);
       }
     })();
     return () => { cancelled = true; };
