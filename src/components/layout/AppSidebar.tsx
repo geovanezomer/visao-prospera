@@ -42,8 +42,7 @@ export function AppSidebar({
   activeTab,
   setActiveTab,
   onSave,
-  onOpen,
-  onRestoreFromCloud,
+  onOpenRestore,
   currentFileName,
   dirty,
 }: AppSidebarProps) {
