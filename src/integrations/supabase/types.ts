@@ -77,6 +77,48 @@ export type Database = {
         }
         Relationships: []
       }
+      broadcasts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          failed_count: number
+          html: string
+          id: string
+          segment: Json
+          sent_at: string | null
+          sent_count: number
+          status: string
+          subject: string
+          total_recipients: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          failed_count?: number
+          html: string
+          id?: string
+          segment?: Json
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
+          subject: string
+          total_recipients?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          failed_count?: number
+          html?: string
+          id?: string
+          segment?: Json
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
+          subject?: string
+          total_recipients?: number
+        }
+        Relationships: []
+      }
       email_settings: {
         Row: {
           from_email: string | null
@@ -135,6 +177,42 @@ export type Database = {
           kind?: string
           subject?: string
           text?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      feature_flags: {
+        Row: {
+          allowed_emails: string[]
+          allowed_plans: string[]
+          created_at: string
+          description: string | null
+          enabled: boolean
+          key: string
+          rollout_percent: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allowed_emails?: string[]
+          allowed_plans?: string[]
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          key: string
+          rollout_percent?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allowed_emails?: string[]
+          allowed_plans?: string[]
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          key?: string
+          rollout_percent?: number
           updated_at?: string
           updated_by?: string | null
         }

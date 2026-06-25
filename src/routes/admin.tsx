@@ -4,7 +4,7 @@
 // ============================================================================
 import { useEffect } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { ShieldCheck, ArrowLeft, Users, Settings, Mail, Webhook, CreditCard, LayoutDashboard, FileClock } from "lucide-react";
+import { ShieldCheck, ArrowLeft, Users, Settings, Mail, Webhook, CreditCard, LayoutDashboard, FileClock, Flag, Megaphone } from "lucide-react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
@@ -21,8 +21,10 @@ import { EmailsTab } from "@/components/admin/tabs/EmailsTab";
 import { WebhooksTab } from "@/components/admin/tabs/WebhooksTab";
 import { ProviderTab } from "@/components/admin/tabs/ProviderTab";
 import { AuditTab } from "@/components/admin/tabs/AuditTab";
+import { FlagsTab } from "@/components/admin/tabs/FlagsTab";
+import { BroadcastsTab } from "@/components/admin/tabs/BroadcastsTab";
 
-const TAB_KEYS = ["dashboard", "usuarios", "sistema", "emails", "webhooks", "provider", "auditoria"] as const;
+const TAB_KEYS = ["dashboard", "usuarios", "sistema", "emails", "broadcasts", "webhooks", "provider", "flags", "auditoria"] as const;
 const searchSchema = z.object({
   tab: fallback(z.enum(TAB_KEYS), "dashboard").default("dashboard"),
 });
@@ -69,21 +71,25 @@ function AdminPage() {
 
       <main className="mx-auto max-w-[1400px] p-4 sm:p-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="mb-4 grid w-full grid-cols-7 lg:w-auto lg:inline-flex">
+          <TabsList className="mb-4 grid w-full grid-cols-3 gap-1 sm:grid-cols-5 lg:w-auto lg:grid-cols-9 lg:inline-flex">
             <TabsTrigger value="dashboard"><LayoutDashboard className="mr-1.5 h-3.5 w-3.5" />Dashboard</TabsTrigger>
             <TabsTrigger value="usuarios"><Users className="mr-1.5 h-3.5 w-3.5" />Usuários</TabsTrigger>
             <TabsTrigger value="sistema"><Settings className="mr-1.5 h-3.5 w-3.5" />Sistema</TabsTrigger>
             <TabsTrigger value="emails"><Mail className="mr-1.5 h-3.5 w-3.5" />E-mails</TabsTrigger>
+            <TabsTrigger value="broadcasts"><Megaphone className="mr-1.5 h-3.5 w-3.5" />Broadcasts</TabsTrigger>
             <TabsTrigger value="webhooks"><Webhook className="mr-1.5 h-3.5 w-3.5" />Webhooks</TabsTrigger>
             <TabsTrigger value="provider"><CreditCard className="mr-1.5 h-3.5 w-3.5" />Provider</TabsTrigger>
+            <TabsTrigger value="flags"><Flag className="mr-1.5 h-3.5 w-3.5" />Flags</TabsTrigger>
             <TabsTrigger value="auditoria"><FileClock className="mr-1.5 h-3.5 w-3.5" />Auditoria</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard"><DashboardTab /></TabsContent>
           <TabsContent value="usuarios"><UsersTab /></TabsContent>
           <TabsContent value="sistema"><SystemTab /></TabsContent>
           <TabsContent value="emails"><EmailsTab /></TabsContent>
+          <TabsContent value="broadcasts"><BroadcastsTab /></TabsContent>
           <TabsContent value="webhooks"><WebhooksTab /></TabsContent>
           <TabsContent value="provider"><ProviderTab /></TabsContent>
+          <TabsContent value="flags"><FlagsTab /></TabsContent>
           <TabsContent value="auditoria"><AuditTab /></TabsContent>
         </Tabs>
       </main>

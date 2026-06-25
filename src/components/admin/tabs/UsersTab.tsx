@@ -19,6 +19,8 @@ import {
   listAdminUsers, setUserActive, sendPasswordReset, revalidatePlan, refundPayment, resendMagicLink,
   type AdminUserRow, type AdminUserSort, type AdminUserFilters,
 } from "@/lib/admin/admin.functions";
+import { exportUsersCsv } from "@/lib/admin/export.functions";
+import { Download } from "lucide-react";
 import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
 
 function fmt(iso: string | null | undefined) {
@@ -167,6 +169,26 @@ export function UsersTab() {
         <Button onClick={load} disabled={loading} size="sm" variant="outline" className="self-end">
           {loading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1.5 h-3.5 w-3.5" />}
           Atualizar
+        </Button>
+        <Button
+          onClick={async () => {
+            try {
+              const r = await exportUsersCsv();
+              const blob = new Blob([r.csv], { type: "text/csv;charset=utf-8;" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `usuarios-${new Date().toISOString().slice(0, 10)}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+              toast.success(`${r.rows} linhas exportadas.`);
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "Falha ao exportar.");
+            }
+          }}
+          size="sm" variant="outline" className="self-end"
+        >
+          <Download className="mr-1.5 h-3.5 w-3.5" />CSV
         </Button>
       </div>
 
