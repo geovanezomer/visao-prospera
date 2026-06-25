@@ -119,9 +119,18 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
         );
         if (!rlEmail.allowed) return tooManyRequests(rlEmail.retryAfter);
 
-        // 3) Config base
-        const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
-        if (!appUrl) return err(500, "config_missing", "APP_URL não configurado");
+        // 3) Config base — usa APP_URL se configurado, senão deriva do request.
+        let appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
+        if (!appUrl) {
+          try {
+            const u = new URL(request.url);
+            const proto = request.headers.get("x-forwarded-proto") || u.protocol.replace(":", "");
+            const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || u.host;
+            appUrl = `${proto}://${host}`;
+          } catch {
+            return err(500, "config_missing", "APP_URL não configurado e não foi possível derivar do request");
+          }
+        }
 
         try {
           const provider = await resolveProvider();
