@@ -4,6 +4,7 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { isLandingEnabled } from "@/lib/featureFlags";
+import { faqPageJsonLd } from "@/lib/seo/faqs";
 
 const CANONICAL = "https://visao-prospera.lovable.app/landing";
 
@@ -12,25 +13,33 @@ export const Route = createFileRoute("/landing")({
     meta: [
       {
         title:
-          "FinancePRO — Raio-X Financeiro para PMEs | GZ Consultoria",
+          "Tour do FinancePRO — Recursos, Planos e Demonstração | GZ Consultoria",
       },
       {
         name: "description",
         content:
-          "DRE, Balanço, Fluxo de Caixa, Reforma Tributária (CBS/IBS) e +40 indicadores em um único painel inteligente, com IA estratégica. Construído por consultor CVM.",
+          "Conheça o tour completo do FinancePRO: módulos de DRE, Balanço, Fluxo de Caixa, simulador CBS/IBS, comparação de planos e exemplos práticos para consultores e PMEs.",
       },
       {
         property: "og:title",
-        content:
-          "FinancePRO — O Raio-X financeiro que transforma consultor em CFO da PME",
+        content: "Tour do FinancePRO — Recursos, Planos e Demonstração",
       },
       {
         property: "og:description",
         content:
-          "+40 indicadores, módulo CBS/IBS e IA estratégica para consultores financeiros brasileiros.",
+          "Veja todos os módulos do FinancePRO em detalhe: indicadores, Reforma Tributária, IA estratégica e tabela de planos.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: CANONICAL },
+      {
+        name: "twitter:title",
+        content: "Tour do FinancePRO — Recursos, Planos e Demonstração",
+      },
+      {
+        name: "twitter:description",
+        content:
+          "Tour completo do FinancePRO: módulos, indicadores, Reforma Tributária e planos.",
+      },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
@@ -41,12 +50,16 @@ export const Route = createFileRoute("/landing")({
           "@type": "Product",
           name: "FinancePRO",
           description:
-            "Plataforma de análise financeira para PMEs brasileiras — DRE, Balanço, Fluxo de Caixa, Reforma Tributária CBS/IBS, +40 indicadores e IA estratégica.",
+            "Tour do FinancePRO: módulos de análise financeira, Reforma Tributária CBS/IBS, indicadores e planos para PMEs brasileiras.",
           brand: {
             "@type": "Organization",
             name: "GZ Consultoria Financeira & Investimentos",
           },
         }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify(faqPageJsonLd()),
       },
     ],
   }),

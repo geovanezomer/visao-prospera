@@ -16,6 +16,16 @@ export const Route = createFileRoute("/login")({
         content:
           "Acesse o FinnancePRO: diagnóstico, DRE simulado, regime tributário e análise de cenários.",
       },
+      { property: "og:title", content: "Entrar no FinnancePRO" },
+      {
+        property: "og:description",
+        content: "Acesse sua conta para abrir cenários, DRE, Balanço e simulação CBS/IBS.",
+      },
+      { name: "twitter:title", content: "Entrar no FinnancePRO" },
+      {
+        name: "twitter:description",
+        content: "Acesse sua conta para abrir cenários, DRE, Balanço e simulação CBS/IBS.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),
