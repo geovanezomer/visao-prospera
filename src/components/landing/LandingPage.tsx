@@ -24,7 +24,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 /* ============================================================
    HERO
@@ -616,7 +616,7 @@ function PricingSection() {
         const { data, error } = await supabase
           .from("plans")
           .select("slug,name,description,price_cents,interval,features,is_highlighted,badge_text")
-          .eq("is_active", true)
+          .eq("active", true)
           .order("price_cents", { ascending: true });
         if (error || !data?.length) return;
         const mapped: Plano[] = data
