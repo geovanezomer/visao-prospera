@@ -22,22 +22,27 @@ function form(data: Record<string, string | number | boolean | undefined>): stri
   return u.toString();
 }
 
-async function stripeFetch<T>(path: string, body: Record<string, unknown>): Promise<T> {
+async function stripeFetch<T>(
+  path: string,
+  body: Record<string, unknown>,
+  opts?: { idempotencyKey?: string },
+): Promise<T> {
   const key = process.env.STRIPE_SECRET_KEY!;
-  const res = await fetch(`${STRIPE_API}${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: form(body as Record<string, string | number | boolean | undefined>),
-  });
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${key}`,
+    "Content-Type": "application/x-www-form-urlencoded",
+  };
+  // Stripe aceita Idempotency-Key em qualquer POST: garante que reenvio
+  // da mesma chave devolve a sessão já criada (sem cobrar/criar de novo).
+  if (opts?.idempotencyKey) headers["Idempotency-Key"] = opts.idempotencyKey;
+  const res = await fetch(`${STRIPE_API}${path}`, { method: "POST", headers, body: form(body as Record<string, string | number | boolean | undefined>) });
   const json = (await res.json()) as { error?: { message?: string } } & T;
   if (!res.ok) {
     throw new Error(`Stripe API ${path}: ${json.error?.message ?? res.statusText}`);
   }
   return json;
 }
+
 
 /** Mapeia priceId (lookup_key) de volta para o PlanId interno. */
 function planFromPriceRef(priceRef: string): PlanId {
