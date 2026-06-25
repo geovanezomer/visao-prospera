@@ -51,6 +51,7 @@ import type { BackupStatus } from "@/lib/api/cloudBackup";
 import { isBackupEnabled } from "@/lib/api/cloudBackup";
 import { RestoreBackupDialog } from "@/components/sim/shared/RestoreBackupDialog";
 import { SaveShareDialog } from "@/components/sim/shared/SaveShareDialog";
+import { OpenRestoreDialog } from "@/components/sim/shared/OpenRestoreDialog";
 import { FeedbackDialog } from "@/components/sim/shared/FeedbackDialog";
 import { SharedLinksDialog } from "@/components/sim/shared/SharedLinksDialog";
 import { cn } from "@/lib/utils";
