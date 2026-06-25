@@ -309,3 +309,56 @@ export const refundPayment = createServerFn({ method: "POST" })
     });
     return result;
   });
+
+// ----------------------------------------------------------------------------
+// resendMagicLink — gera novo magic link Supabase e envia via Resend (usando
+// templates/SMTP do banco quando configurado). Útil quando o e-mail inicial
+// (pós-checkout) se perdeu.
+// ----------------------------------------------------------------------------
+export const resendMagicLink = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { userId: string }) =>
+    z.object({ userId: z.string().uuid() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: u, error } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    if (error || !u?.user?.email) throw new Error(error?.message ?? "Usuário sem e-mail.");
+
+    const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
+    const { data: link, error: lerr } = await supabaseAdmin.auth.admin.generateLink({
+      type: "magiclink",
+      email: u.user.email,
+      options: appUrl ? { redirectTo: `${appUrl}/app` } : undefined,
+    });
+    if (lerr) throw new Error(lerr.message);
+    const actionLink = (link as any)?.properties?.action_link as string | undefined;
+    if (!actionLink) throw new Error("Falha ao gerar link.");
+
+    // Tenta enviar via Resend (banco → env fallback). Se nada configurado,
+    // devolve o link para o admin copiar manualmente.
+    const { data: cfg } = await supabaseAdmin.from("email_settings").select("*").limit(1).maybeSingle();
+    const apiKey = cfg?.resend_api_key || process.env.RESEND_API_KEY;
+    const fromEmail = cfg?.from_email || process.env.FEEDBACK_FROM || process.env.MAGICLINK_FROM;
+    const fromName = cfg?.from_name || "Finnance";
+    if (!apiKey || !fromEmail) {
+      return { ok: true, email: u.user.email, link: actionLink, sent: false };
+    }
+    const name = u.user.email.split("@")[0];
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: `${fromName} <${fromEmail}>`,
+        to: u.user.email,
+        subject: "Seu acesso ao Finnance",
+        html: `<p>Olá ${name}, acesse novamente clicando <a href="${actionLink}">aqui</a>.</p>`,
+      }),
+    });
+    if (!res.ok) {
+      console.error("[admin] resendMagicLink Resend falhou", await res.text());
+      return { ok: true, email: u.user.email, link: actionLink, sent: false };
+    }
+    return { ok: true, email: u.user.email, sent: true };
+  });
