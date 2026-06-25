@@ -218,6 +218,14 @@ export const setUserActive = createServerFn({ method: "POST" })
       ban_duration: data.active ? "none" : "100000h",
     } as any);
     if (error) throw new Error(error.message);
+    const { logAudit } = await import("./audit.server");
+    await logAudit({
+      actorId: context.userId,
+      actorEmail: (context.claims as any)?.email,
+      action: data.active ? "user.activate" : "user.deactivate",
+      resource: "user",
+      targetId: data.userId,
+    });
     return { ok: true };
   });
 
