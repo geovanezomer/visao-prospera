@@ -121,7 +121,7 @@ export function ScenarioBar() {
         </DialogTrigger>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Arquivar ano fechado</DialogTitle>
+            <DialogTitle>Arquivar ano / previsão</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
