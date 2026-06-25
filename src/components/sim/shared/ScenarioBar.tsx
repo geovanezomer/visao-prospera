@@ -116,7 +116,7 @@ export function ScenarioBar() {
       <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
         <DialogTrigger asChild>
           <Button className="shadow-lg shadow-primary/30">
-            <Save className="mr-2 h-4 w-4" /> Salvar ANO
+            <Save className="mr-2 h-4 w-4" /> Salvar ANO / Previsão
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-sm">
