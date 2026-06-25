@@ -5,8 +5,8 @@
 // (Stripe ↔ Asaas) = mudar PAYMENT_PROVIDER no .env e reiniciar o container.
 // ============================================================================
 
-/** Identificadores estáveis de plano usados pela UI/landing. */
-export type PlanId = "starter" | "pro";
+/** Identificadores estáveis de plano (slug). Aceita qualquer slug do CRUD admin. */
+export type PlanId = string;
 
 /** Provedor ativo no boot. */
 export type ProviderName = "stripe" | "asaas";
