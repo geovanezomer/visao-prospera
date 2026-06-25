@@ -152,14 +152,25 @@ export const testProviderConnection = createServerFn({ method: "POST" })
         const r = await fetch("https://api.stripe.com/v1/balance", {
           headers: { Authorization: `Bearer ${cred.api_key}` },
         });
-        if (!r.ok) throw new Error(`Stripe ${r.status}`);
+        if (!r.ok) {
+          const msg = r.status === 401
+            ? "Stripe 401: chave inválida ou sem permissão. Verifique a Secret Key (sk_...) e o modo (test/live)."
+            : `Stripe ${r.status}: falha ao validar credenciais.`;
+          return { ok: false, message: msg };
+        }
       } else {
         const base = cred.mode === "live" ? "https://api.asaas.com/v3" : "https://sandbox.asaas.com/api/v3";
         const r = await fetch(`${base}/myAccount`, { headers: { access_token: cred.api_key } });
-        if (!r.ok) throw new Error(`Asaas ${r.status}`);
+        if (!r.ok) {
+          const msg = r.status === 401
+            ? "Asaas 401: access_token inválido. Verifique a chave e o ambiente (sandbox/live)."
+            : `Asaas ${r.status}: falha ao validar credenciais.`;
+          return { ok: false, message: msg };
+        }
       }
       return { ok: true, message: "Conexão OK." };
     } catch (e) {
-      throw new Error(e instanceof Error ? e.message : "Falha na conexão.");
+      return { ok: false, message: e instanceof Error ? e.message : "Falha na conexão." };
     }
   });
+
