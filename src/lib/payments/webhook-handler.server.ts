@@ -189,6 +189,11 @@ export async function handleNormalizedEvent(
         }
         break;
       }
+      case "subscription.trial_will_end": {
+        // Apenas registra o evento; envio de e-mail de aviso pode ser plugado aqui.
+        console.log(`[webhook] trial_will_end ${event.subscriptionId} em ${event.trialEnd ?? "?"}`);
+        break;
+      }
     }
     await logEvent(supabaseAdmin, provider, event, "processed");
   } catch (e) {
