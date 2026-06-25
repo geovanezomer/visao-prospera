@@ -54,20 +54,8 @@ const PlanRowSchema = z.object({
 });
 type PlanRow = z.infer<typeof PlanRowSchema>;
 
-// ─── Rate limit em memória (worker-local) ────────────────────────────────────
-const buckets = new Map<string, { count: number; resetAt: number }>();
-const LIMIT = 10;
-const WINDOW_MS = 60_000;
-function rateLimited(key: string): boolean {
-  const now = Date.now();
-  const b = buckets.get(key);
-  if (!b || b.resetAt < now) {
-    buckets.set(key, { count: 1, resetAt: now + WINDOW_MS });
-    return false;
-  }
-  b.count += 1;
-  return b.count > LIMIT;
-}
+// Rate limiting agora é distribuído via tabela `rate_limit_buckets` (rl_consume).
+
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function err(
