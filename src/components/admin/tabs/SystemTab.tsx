@@ -120,10 +120,154 @@ export function SystemTab() {
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <section className="space-y-4 rounded-lg border border-border/60 bg-card p-4">
         <h3 className="text-sm font-semibold">Marca</h3>
-        <div className="space-y-1"><Label>Nome do sistema</Label><Input value={branding.system_name} onChange={(e) => setBranding({ ...branding, system_name: e.target.value })} /></div>
-        <div className="space-y-1"><Label>URL do logo</Label><Input value={branding.logo_url} onChange={(e) => setBranding({ ...branding, logo_url: e.target.value })} placeholder="https://…/logo.png" /></div>
-        <div className="space-y-1"><Label>URL do favicon</Label><Input value={branding.favicon_url} onChange={(e) => setBranding({ ...branding, favicon_url: e.target.value })} placeholder="https://…/favicon.ico" /></div>
+        <div className="space-y-1">
+          <Label>Nome do sistema</Label>
+          <Input value={branding.system_name} onChange={(e) => setBranding({ ...branding, system_name: e.target.value })} />
+        </div>
+
+        {/* Logo */}
+        <div className="space-y-2">
+          <Label>Logo</Label>
+          <p className="text-[11px] text-muted-foreground">PNG/SVG com fundo transparente · sugerido 240×64 px · máx 200 KB.</p>
+          <div className="flex items-center gap-3 rounded-md border border-border/50 bg-muted/30 p-3">
+            <div className="flex h-12 w-32 items-center justify-center rounded bg-background ring-1 ring-border/50 overflow-hidden">
+              {branding.logo_url
+                ? <img src={branding.logo_url} alt="logo" className="max-h-full max-w-full object-contain" />
+                : <span className="text-[10px] text-muted-foreground">sem logo</span>}
+            </div>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/png,image/svg+xml,image/jpeg,image/webp"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0]; if (!f) return;
+                try {
+                  const url = await readAsDataUrl(f, 200 * 1024);
+                  setBranding({ ...branding, logo_url: url });
+                } catch (err) { toast.error(err instanceof Error ? err.message : "Falha"); }
+                finally { if (logoInputRef.current) logoInputRef.current.value = ""; }
+              }}
+            />
+            <Button size="sm" variant="outline" onClick={() => logoInputRef.current?.click()}>
+              <Upload className="mr-1.5 h-3.5 w-3.5" />Fazer upload
+            </Button>
+            {branding.logo_url && (
+              <Button size="sm" variant="ghost" onClick={() => setBranding({ ...branding, logo_url: "" })}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Favicon */}
+        <div className="space-y-2">
+          <Label>Favicon</Label>
+          <p className="text-[11px] text-muted-foreground">PNG/ICO quadrado · sugerido 32×32 ou 64×64 px · máx 50 KB.</p>
+          <div className="flex items-center gap-3 rounded-md border border-border/50 bg-muted/30 p-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded bg-background ring-1 ring-border/50 overflow-hidden">
+              {branding.favicon_url
+                ? <img src={branding.favicon_url} alt="favicon" className="max-h-full max-w-full object-contain" />
+                : <span className="text-[10px] text-muted-foreground">—</span>}
+            </div>
+            <input
+              ref={faviconInputRef}
+              type="file"
+              accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/svg+xml"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0]; if (!f) return;
+                try {
+                  const url = await readAsDataUrl(f, 50 * 1024);
+                  setBranding({ ...branding, favicon_url: url });
+                } catch (err) { toast.error(err instanceof Error ? err.message : "Falha"); }
+                finally { if (faviconInputRef.current) faviconInputRef.current.value = ""; }
+              }}
+            />
+            <Button size="sm" variant="outline" onClick={() => faviconInputRef.current?.click()}>
+              <Upload className="mr-1.5 h-3.5 w-3.5" />Fazer upload
+            </Button>
+            {branding.favicon_url && (
+              <Button size="sm" variant="ghost" onClick={() => setBranding({ ...branding, favicon_url: "" })}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Cores principais */}
+        <div className="space-y-2">
+          <Label>Cores principais</Label>
+          <p className="text-[11px] text-muted-foreground">
+            Aplicada nos botões, destaques e elementos ativos do sistema. Escolha uma paleta ou personalize.
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            {COLOR_PRESETS.map((p) => {
+              const active = branding.colors.primary.toLowerCase() === p.primary.toLowerCase();
+              return (
+                <button
+                  key={p.primary}
+                  type="button"
+                  title={p.label}
+                  onClick={() => setBranding({ ...branding, colors: { primary: p.primary, accent: p.accent ?? p.primary } })}
+                  className={`relative h-10 rounded-md ring-1 ring-border/50 transition hover:scale-[1.03] ${active ? "ring-2 ring-foreground" : ""}`}
+                  style={{ background: `linear-gradient(135deg, ${p.primary} 60%, ${p.accent ?? p.primary})` }}
+                >
+                  {active && <Check className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow" />}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-3 pt-1">
+            <div className="space-y-1">
+              <Label className="text-[11px]">Primária</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={branding.colors.primary}
+                  onChange={(e) => setBranding({ ...branding, colors: { ...branding.colors, primary: e.target.value } })}
+                  className="h-8 w-10 cursor-pointer rounded border border-border/50 bg-transparent"
+                />
+                <Input
+                  className="h-8 w-24 font-mono text-xs"
+                  value={branding.colors.primary}
+                  onChange={(e) => setBranding({ ...branding, colors: { ...branding.colors, primary: e.target.value } })}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[11px]">Acento (escura)</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={branding.colors.accent}
+                  onChange={(e) => setBranding({ ...branding, colors: { ...branding.colors, accent: e.target.value } })}
+                  className="h-8 w-10 cursor-pointer rounded border border-border/50 bg-transparent"
+                />
+                <Input
+                  className="h-8 w-24 font-mono text-xs"
+                  value={branding.colors.accent}
+                  onChange={(e) => setBranding({ ...branding, colors: { ...branding.colors, accent: e.target.value } })}
+                />
+              </div>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-[11px] text-muted-foreground">Prévia</span>
+              <button
+                type="button"
+                className="rounded-md px-3 py-1.5 text-xs font-medium text-white shadow"
+                style={{ background: branding.colors.primary }}
+              >
+                Botão
+              </button>
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Salve as alterações para aplicar em todo o sistema. O contraste do texto é calculado automaticamente.
+          </p>
+        </div>
       </section>
+
 
       <section className="space-y-4 rounded-lg border border-border/60 bg-card p-4">
         <h3 className="text-sm font-semibold">Tela de Login</h3>
