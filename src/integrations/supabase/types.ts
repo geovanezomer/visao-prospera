@@ -218,6 +218,84 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_settings: {
+        Row: {
+          email_to: string | null
+          events: Json
+          id: number
+          slack_webhook_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          email_to?: string | null
+          events?: Json
+          id?: number
+          slack_webhook_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          email_to?: string | null
+          events?: Json
+          id?: number
+          slack_webhook_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      plans: {
+        Row: {
+          active: boolean
+          asaas_plan_ref: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          features: Json
+          id: string
+          interval: string
+          limits: Json
+          name: string
+          price_cents: number
+          slug: string
+          sort_order: number
+          stripe_price_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          asaas_plan_ref?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          interval?: string
+          limits?: Json
+          name: string
+          price_cents?: number
+          slug: string
+          sort_order?: number
+          stripe_price_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          asaas_plan_ref?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          interval?: string
+          limits?: Json
+          name?: string
+          price_cents?: number
+          slug?: string
+          sort_order?: number
+          stripe_price_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -302,6 +380,30 @@ export type Database = {
         }
         Relationships: []
       }
+      signup_events: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          notified: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          notified?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          notified?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           cancel_at_period_end: boolean
@@ -346,6 +448,36 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_notes: {
+        Row: {
+          author_email: string | null
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          pinned: boolean
+          user_id: string
+        }
+        Insert: {
+          author_email?: string | null
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          user_id: string
+        }
+        Update: {
+          author_email?: string | null
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
           user_id?: string
         }
         Relationships: []
