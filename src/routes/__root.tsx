@@ -14,6 +14,7 @@ import { AuthProvider } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { TrackingInjector } from "@/components/TrackingInjector";
+import { BrandingApplier } from "@/components/BrandingApplier";
 
 function NotFoundComponent() {
   return (
