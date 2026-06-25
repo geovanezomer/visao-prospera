@@ -120,29 +120,47 @@ export class AsaasProvider implements PaymentProvider {
     const upsellValue = input.upsell && input.upsell.priceCents > 0 ? input.upsell.priceCents / 100 : 0;
     const planDesc = input.planName || `FinancePRO — plano ${input.plan}`;
 
-    // Asaas Checkout hospedado — coleta CPF/CNPJ e dados do pagador na
-    // própria página do Asaas. Evita exigir CPF no nosso formulário.
-    // Docs: https://docs.asaas.com/reference/criar-checkout
+    // Asaas Checkout hospedado — o link é criado sem pré-cadastrar cliente;
+    // a página do Asaas coleta/valida os dados completos do pagador.
+    // Docs: https://docs.asaas.com/reference/criar-novo-checkout
     const expirationMinutes = 1440; // 24h (máx permitido pelo Asaas)
-    // Asaas exige name <= 30 caracteres por item.
+    // Asaas exige name <= 30 caracteres por item e, na referência OpenAPI
+    // atual do /v3/checkouts, imageBase64 também aparece como obrigatório.
+    // Usamos um pixel transparente para não depender de URL pública de imagem.
     const truncate30 = (s: string) => (s.length > 30 ? s.slice(0, 30) : s);
-    const items: Array<{ name: string; description: string; quantity: number; value: number }> = [
-      { name: truncate30(planDesc), description: planDesc, quantity: 1, value },
+    const transparentPixelBase64 =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+    const items: Array<{
+      name: string;
+      description: string;
+      quantity: number;
+      value: number;
+      imageBase64: string;
+    }> = [
+      {
+        name: truncate30(planDesc),
+        description: planDesc.slice(0, 150),
+        quantity: 1,
+        value,
+        imageBase64: transparentPixelBase64,
+      },
     ];
     if (upsellValue > 0) {
       items.push({
         name: truncate30(input.upsell!.name),
-        description: input.upsell!.name,
+        description: input.upsell!.name.slice(0, 150),
         quantity: 1,
         value: upsellValue,
+        imageBase64: transparentPixelBase64,
       });
     }
     const totalValue = items.reduce((s, it) => s + it.value * it.quantity, 0);
 
     // Asaas /v3/checkouts só aceita CREDIT_CARD e PIX em billingTypes.
-    // BOLETO não é suportado neste endpoint e causa HTTP 400.
+    // Porém, para RECURRENT o Asaas permite apenas CREDIT_CARD; PIX só pode
+    // ser usado em DETACHED. BOLETO não é suportado neste endpoint.
     const body: Record<string, unknown> = {
-      billingTypes: ["CREDIT_CARD", "PIX"],
+      billingTypes: isOneTime ? ["CREDIT_CARD", "PIX"] : ["CREDIT_CARD"],
       chargeTypes: isOneTime ? ["DETACHED"] : ["RECURRENT"],
       minutesToExpire: expirationMinutes,
       callback: {
@@ -151,14 +169,15 @@ export class AsaasProvider implements PaymentProvider {
         expiredUrl: input.cancelUrl,
       },
       items,
-      customerData: {
-        email: input.email,
-        name: input.name || input.email.split("@")[0],
-        ...(input.cpfCnpj ? { cpfCnpj: input.cpfCnpj } : {}),
-        ...(input.phone ? { phone: input.phone } : {}),
-      },
       externalReference: input.plan,
     };
+
+    // IMPORTANTE: no Checkout hospedado v3, quando `customerData` é enviado,
+    // o Asaas valida um cadastro quase completo (nome, CPF/CNPJ, telefone,
+    // endereço, número, CEP e bairro). Como nossa landing coleta apenas dados
+    // básicos, omitir `customerData` é intencional: o próprio checkout Asaas
+    // coleta/valida os dados obrigatórios do pagador sem recusar a criação do
+    // link por campos de endereço ausentes.
     if (!isOneTime) {
       // subscription é obrigatório quando chargeTypes = RECURRENT.
       // endDate é opcional — omitimos ao invés de enviar null.
