@@ -19,6 +19,7 @@ import {
   listAdminUsers, setUserActive, sendPasswordReset, revalidatePlan, refundPayment, resendMagicLink,
   type AdminUserRow, type AdminUserSort, type AdminUserFilters,
 } from "@/lib/admin/admin.functions";
+import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
 
 function fmt(iso: string | null | undefined) {
   if (!iso) return "—";
