@@ -1,0 +1,45 @@
+// ============================================================================
+// Server fns: app_settings (branding, login_texts, footer, active_provider)
+// Leitura é pública (anon); escrita exige admin.
+// ============================================================================
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isAdminEmail } from "./constants";
+
+function assertAdmin(claims: any) {
+  if (!isAdminEmail((claims?.email as string) ?? "")) {
+    throw new Error("Acesso negado: apenas administrador.");
+  }
+}
+
+const KEYS = ["branding", "login_texts", "footer", "active_provider"] as const;
+export type SettingKey = (typeof KEYS)[number];
+
+/** Leitura pública — usada por landing/login/sidebar. Sem auth. */
+export const getAppSettings = createServerFn({ method: "GET" }).handler(async () => {
+  const { createClient } = await import("@supabase/supabase-js");
+  const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
+  const { data } = await sb.from("app_settings").select("key, value");
+  const out: Record<string, any> = {};
+  for (const row of data ?? []) out[row.key] = row.value;
+  return out as Partial<Record<SettingKey, any>>;
+});
+
+export const updateAppSetting = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { key: SettingKey; value: any }) =>
+    z.object({ key: z.enum(KEYS), value: z.any() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("app_settings").upsert(
+      { key: data.key, value: data.value, updated_by: context.userId, updated_at: new Date().toISOString() },
+      { onConflict: "key" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
