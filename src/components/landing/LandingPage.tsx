@@ -662,20 +662,51 @@ function PricingSection() {
 
 
 
-  async function handleSubscribe(planId: string) {
-    const email = window.prompt(
-      "Informe seu e-mail para receber o acesso após o pagamento:",
-    );
-    if (!email) return;
+  // Estado do modal de confirmação de checkout.
+  // Mostra ao usuário o resumo (plano + upsell + total) ANTES de
+  // chamar o provedor de pagamento.
+  const [confirmFor, setConfirmFor] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const planoConfirm = useMemo(
+    () => planos.find((p) => p.planId === confirmFor) ?? null,
+    [confirmFor, planos],
+  );
+  const upsellLigado = !!(planoConfirm && upsellSel[planoConfirm.planId] && planoConfirm.upsell);
+  const totalReais = useMemo(() => {
+    if (!planoConfirm) return 0;
+    // O preço do plano vem formatado em string ptBR; reconvertemos para number
+    // sem perder os centavos quando houver.
+    const base = Number(planoConfirm.preco.replace(/\./g, "").replace(",", ".")) || 0;
+    const add = upsellLigado ? (planoConfirm.upsell!.priceCents / 100) : 0;
+    return base + add;
+  }, [planoConfirm, upsellLigado]);
+
+  function openConfirm(planId: string) {
+    setError(null);
+    setEmail("");
+    setConfirmFor(planId);
+  }
+
+  async function handleSubscribe() {
+    if (!planoConfirm) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      window.alert("E-mail inválido.");
+      setError("E-mail inválido.");
       return;
     }
+    setSubmitting(true);
+    setError(null);
     try {
       const res = await fetch("/api/public/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planId, email, withUpsell: !!upsellSel[planId] }),
+        body: JSON.stringify({
+          plan: planoConfirm.planId,
+          email,
+          withUpsell: !!upsellSel[planoConfirm.planId],
+        }),
       });
       const json = (await res.json()) as { url?: string; error?: string };
       if (!res.ok || !json.url) {
@@ -683,10 +714,11 @@ function PricingSection() {
       }
       window.location.href = json.url;
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Erro ao iniciar checkout";
-      window.alert(msg);
+      setError(e instanceof Error ? e.message : "Erro ao iniciar checkout");
+      setSubmitting(false);
     }
   }
+
 
   return (
     <section id="planos" className="scroll-mt-20 border-b border-border/50 py-24">
