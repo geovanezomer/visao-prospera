@@ -124,11 +124,16 @@ export class AsaasProvider implements PaymentProvider {
     // própria página do Asaas. Evita exigir CPF no nosso formulário.
     // Docs: https://docs.asaas.com/reference/criar-checkout
     const expirationMinutes = 60 * 24; // 24h
-    const items: Array<{ description: string; quantity: number; value: number }> = [
-      { description: planDesc, quantity: 1, value },
+    const items: Array<{ name: string; description: string; quantity: number; value: number }> = [
+      { name: planDesc, description: planDesc, quantity: 1, value },
     ];
     if (upsellValue > 0) {
-      items.push({ description: input.upsell!.name, quantity: 1, value: upsellValue });
+      items.push({
+        name: input.upsell!.name,
+        description: input.upsell!.name,
+        quantity: 1,
+        value: upsellValue,
+      });
     }
     const totalValue = items.reduce((s, it) => s + it.value * it.quantity, 0);
 
