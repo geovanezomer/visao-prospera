@@ -141,7 +141,7 @@ export const getUserDetail = createServerFn({ method: "POST" })
         bannedUntil: au.banned_until ?? null,
         emailConfirmedAt: au.email_confirmed_at ?? null,
         provider: au.app_metadata?.provider ?? null,
-        metadata: meta,
+        metadata: meta as Json,
       },
       subscriptions: (subs ?? []).map((s: any) => ({
         id: s.id,
