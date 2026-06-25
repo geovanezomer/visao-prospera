@@ -86,16 +86,27 @@ export function ScenarioBar() {
   const [year, setYear] = useState<number>(
     YEARS.includes(defaultYear) ? defaultYear : 2025,
   );
+  const [subKind, setSubKind] = useState<"realizado" | "previsao">("realizado");
+  const [previsaoName, setPrevisaoName] = useState<string>("");
   const [saveOpen, setSaveOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
 
   const handleSave = () => {
-    archiveYearAsHistorical(company, year, state);
+    const name =
+      subKind === "previsao"
+        ? previsaoName.trim() || `Previsão ${year}`
+        : undefined;
+    archiveYearAsHistorical(company, year, state, undefined, { subKind, name });
     // Estampa o ano no AppState ativo — a partir daqui, trocar de pill faz
     // auto-arquivamento correto sob este `fiscalYear`.
     update((s) => ({ ...s, fiscalYear: year }));
-    toast.success(`Ano ${year} arquivado`);
+    toast.success(
+      subKind === "previsao"
+        ? `Previsão ${year} arquivada${name ? ` (${name})` : ""}`
+        : `Ano ${year} arquivado`,
+    );
     setSaveOpen(false);
+    setPrevisaoName("");
   };
 
   const handleLoad = (id: string) => {
@@ -108,7 +119,13 @@ export function ScenarioBar() {
     setListOpen(false);
   };
 
-  const alreadyExists = historicals.some((h) => h.fiscalYear === year);
+  const alreadyExists = historicals.some(
+    (h) =>
+      h.fiscalYear === year &&
+      (h.subKind ?? "realizado") === subKind &&
+      (subKind === "realizado" ||
+        h.name === (previsaoName.trim() || `Previsão ${year}`)),
+  );
 
   return (
     <div data-meeting-hide="true" className="fixed bottom-6 right-6 z-40 flex gap-2">
