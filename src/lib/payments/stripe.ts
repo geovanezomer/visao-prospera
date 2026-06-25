@@ -22,22 +22,27 @@ function form(data: Record<string, string | number | boolean | undefined>): stri
   return u.toString();
 }
 
-async function stripeFetch<T>(path: string, body: Record<string, unknown>): Promise<T> {
+async function stripeFetch<T>(
+  path: string,
+  body: Record<string, unknown>,
+  opts?: { idempotencyKey?: string },
+): Promise<T> {
   const key = process.env.STRIPE_SECRET_KEY!;
-  const res = await fetch(`${STRIPE_API}${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: form(body as Record<string, string | number | boolean | undefined>),
-  });
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${key}`,
+    "Content-Type": "application/x-www-form-urlencoded",
+  };
+  // Stripe aceita Idempotency-Key em qualquer POST: garante que reenvio
+  // da mesma chave devolve a sessão já criada (sem cobrar/criar de novo).
+  if (opts?.idempotencyKey) headers["Idempotency-Key"] = opts.idempotencyKey;
+  const res = await fetch(`${STRIPE_API}${path}`, { method: "POST", headers, body: form(body as Record<string, string | number | boolean | undefined>) });
   const json = (await res.json()) as { error?: { message?: string } } & T;
   if (!res.ok) {
     throw new Error(`Stripe API ${path}: ${json.error?.message ?? res.statusText}`);
   }
   return json;
 }
+
 
 /** Mapeia priceId (lookup_key) de volta para o PlanId interno. */
 function planFromPriceRef(priceRef: string): PlanId {
@@ -59,7 +64,9 @@ export class StripeProvider implements PaymentProvider {
     providerRef?: string | null;
     planName?: string;
     upsell?: { name: string; priceCents: number; stripePriceId?: string | null; asaasRef?: string | null } | null;
-  }): Promise<{ url: string }> {
+    idempotencyKey?: string;
+  }): Promise<{ url: string; providerSessionId?: string | null; providerCustomerId?: string | null }> {
+
     const isOneTime = input.interval === "one_time" || input.interval === "lifetime";
     const mode = isOneTime ? "payment" : "subscription";
 
@@ -143,8 +150,17 @@ export class StripeProvider implements PaymentProvider {
     }
 
 
-    const session = await stripeFetch<{ url: string }>("/checkout/sessions", body);
-    return { url: session.url };
+    const session = await stripeFetch<{ id?: string; url: string; customer?: string | null }>(
+      "/checkout/sessions",
+      body,
+      input.idempotencyKey ? { idempotencyKey: `co_${input.idempotencyKey}` } : undefined,
+    );
+    return {
+      url: session.url,
+      providerSessionId: session.id ?? null,
+      providerCustomerId: session.customer ?? null,
+    };
+
   }
 
   async createPortal(input: { customerId: string; returnUrl: string }): Promise<{ url: string }> {

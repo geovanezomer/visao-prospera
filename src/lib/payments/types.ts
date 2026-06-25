@@ -81,7 +81,14 @@ export interface PaymentProvider {
       stripePriceId?: string | null;
       asaasRef?: string | null;
     } | null;
-  }): Promise<{ url: string }>;
+    /**
+     * Chave de idempotência — quando presente, o provedor deve garantir
+     * que a mesma chave não cria recursos duplicados (Stripe:
+     * header `Idempotency-Key`; Asaas: header `idempotency-key`).
+     */
+    idempotencyKey?: string;
+  }): Promise<{ url: string; providerSessionId?: string | null; providerCustomerId?: string | null }>;
+
 
   /**
    * Cria uma sessão do Portal do Cliente (cancelamento, troca de cartão,

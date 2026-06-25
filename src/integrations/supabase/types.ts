@@ -121,40 +121,67 @@ export type Database = {
       }
       checkout_intents: {
         Row: {
+          checkout_url: string | null
+          confirmed_at: string | null
           created_at: string
           currency: string | null
           email: string
           id: string
+          idempotency_key: string | null
           ip: string | null
+          last_error: string | null
           plan_amount_cents: number | null
           plan_slug: string
           provider: string
+          provider_customer_id: string | null
+          provider_session_id: string | null
+          provider_subscription_id: string | null
+          status: string
+          updated_at: string
           upsell_amount_cents: number | null
           user_agent: string | null
           with_upsell: boolean
         }
         Insert: {
+          checkout_url?: string | null
+          confirmed_at?: string | null
           created_at?: string
           currency?: string | null
           email: string
           id?: string
+          idempotency_key?: string | null
           ip?: string | null
+          last_error?: string | null
           plan_amount_cents?: number | null
           plan_slug: string
           provider: string
+          provider_customer_id?: string | null
+          provider_session_id?: string | null
+          provider_subscription_id?: string | null
+          status?: string
+          updated_at?: string
           upsell_amount_cents?: number | null
           user_agent?: string | null
           with_upsell?: boolean
         }
         Update: {
+          checkout_url?: string | null
+          confirmed_at?: string | null
           created_at?: string
           currency?: string | null
           email?: string
           id?: string
+          idempotency_key?: string | null
           ip?: string | null
+          last_error?: string | null
           plan_amount_cents?: number | null
           plan_slug?: string
           provider?: string
+          provider_customer_id?: string | null
+          provider_session_id?: string | null
+          provider_subscription_id?: string | null
+          status?: string
+          updated_at?: string
           upsell_amount_cents?: number | null
           user_agent?: string | null
           with_upsell?: boolean

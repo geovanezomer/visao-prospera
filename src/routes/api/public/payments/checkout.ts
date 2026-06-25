@@ -211,32 +211,60 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
             };
           }
 
-          // 6) Cria checkout no provedor ativo
+          // 6) Idempotency key — determinística por (email|plan|upsell|janela 30min).
+          //    Reenvio do mesmo formulário dentro da janela reutiliza a sessão
+          //    já criada (zero duplicação no Stripe/Asaas).
+          const window30m = Math.floor(Date.now() / (30 * 60 * 1000));
+          const idemRaw = `${parsed.email.toLowerCase()}|${parsed.plan}|${parsed.withUpsell ? 1 : 0}|${provider.name}|${window30m}`;
+          const idemBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(idemRaw));
+          const idempotencyKey = Array.from(new Uint8Array(idemBuf))
+            .slice(0, 16)
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+
+          const { createClient } = await import("@supabase/supabase-js");
+          const sb = createClient(
+            process.env.SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
+          );
+
+          // 6a) Se já existe intent com mesma chave e URL viva, reutiliza.
+          const { data: existing } = await sb
+            .from("checkout_intents")
+            .select("id,checkout_url,status")
+            .eq("idempotency_key", idempotencyKey)
+            .maybeSingle();
+          if (existing?.checkout_url && existing.status !== "paid" && existing.status !== "failed") {
+            await sb
+              .from("checkout_intents")
+              .update({ status: "redirected" })
+              .eq("id", existing.id);
+            return Response.json({ url: existing.checkout_url, provider: provider.name, reused: true });
+          }
+
+          // 6b) Cria checkout no provedor (com idempotency key).
           const providerRef =
             provider.name === "stripe" ? plan.stripe_price_id : plan.asaas_plan_ref;
 
-          const { url } = await provider.createCheckout({
-            plan: parsed.plan,
-            email: parsed.email,
-            successUrl: `${appUrl}/checkout/sucesso?plan=${parsed.plan}`,
-            cancelUrl: `${appUrl}/planos?canceled=1`,
-            interval: plan.interval,
-            priceCents: plan.price_cents,
-            currency: plan.currency,
-            providerRef,
-            planName: plan.name,
-            upsell: upsellPayload,
-          });
-
-          // 7) Best-effort: registra a intenção de compra para rastrear o
-          //    comprador mesmo antes do webhook confirmar.
+          let providerResult: { url: string; providerSessionId?: string | null; providerCustomerId?: string | null };
           try {
-            const { createClient } = await import("@supabase/supabase-js");
-            const sb = createClient(
-              process.env.SUPABASE_URL!,
-              process.env.SUPABASE_SERVICE_ROLE_KEY!,
-              { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-            );
+            providerResult = await provider.createCheckout({
+              plan: parsed.plan,
+              email: parsed.email,
+              successUrl: `${appUrl}/checkout/sucesso?plan=${parsed.plan}`,
+              cancelUrl: `${appUrl}/planos?canceled=1`,
+              interval: plan.interval,
+              priceCents: plan.price_cents,
+              currency: plan.currency,
+              providerRef,
+              planName: plan.name,
+              upsell: upsellPayload,
+              idempotencyKey,
+            });
+          } catch (provErr) {
+            const msg = provErr instanceof Error ? provErr.message : "Erro desconhecido";
+            // Registra a falha no intent para auditoria/admin.
             await sb.from("checkout_intents").insert({
               plan_slug: parsed.plan,
               email: parsed.email.toLowerCase(),
@@ -247,12 +275,38 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
               currency: plan.currency,
               ip,
               user_agent: request.headers.get("user-agent")?.slice(0, 500) ?? null,
+              idempotency_key: idempotencyKey,
+              status: "failed",
+              last_error: msg.slice(0, 1000),
+            });
+            throw provErr;
+          }
+
+          // 7) Persiste intenção (status='redirected') com providerIds para
+          //    o webhook conseguir correlacionar de volta.
+          try {
+            await sb.from("checkout_intents").insert({
+              plan_slug: parsed.plan,
+              email: parsed.email.toLowerCase(),
+              with_upsell: parsed.withUpsell,
+              provider: provider.name,
+              plan_amount_cents: plan.price_cents,
+              upsell_amount_cents: upsellPayload?.priceCents ?? null,
+              currency: plan.currency,
+              ip,
+              user_agent: request.headers.get("user-agent")?.slice(0, 500) ?? null,
+              idempotency_key: idempotencyKey,
+              status: "redirected",
+              checkout_url: providerResult.url,
+              provider_session_id: providerResult.providerSessionId ?? null,
+              provider_customer_id: providerResult.providerCustomerId ?? null,
             });
           } catch (logErr) {
             console.error("[checkout] log de intenção falhou (ignorado):", logErr);
           }
 
-          return Response.json({ url, provider: provider.name });
+          return Response.json({ url: providerResult.url, provider: provider.name });
+
         } catch (e) {
           const msg = e instanceof Error ? e.message : "Erro desconhecido";
           console.error("[checkout] falhou:", msg);
