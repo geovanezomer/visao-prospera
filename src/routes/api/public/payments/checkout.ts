@@ -24,10 +24,13 @@ const Body = z.object({
   plan: z.string().min(1).max(40).regex(/^[a-z0-9_]+$/, "slug do plano inválido"),
   email: z.string().email("e-mail inválido").max(200),
   name: z.string().trim().min(3, "nome muito curto").max(120),
-  cpf: z.string().transform(onlyDigits).refine(isValidCPF, "CPF inválido"),
-  phone: z.string().transform(onlyDigits).refine(isValidPhoneBR, "telefone inválido"),
+  // CPF e telefone passaram a ser coletados na página do provedor (Asaas/Stripe).
+  // Mantemos aceitos como opcionais para compatibilidade com clientes antigos.
+  cpf: z.string().transform(onlyDigits).refine((v) => v === "" || isValidCPF(v), "CPF inválido").optional(),
+  phone: z.string().transform(onlyDigits).refine((v) => v === "" || isValidPhoneBR(v), "telefone inválido").optional(),
   withUpsell: z.boolean().optional().default(false),
 });
+
 
 // ─── Schemas que validam o que veio do BANCO ─────────────────────────────────
 // O banco é confiável, mas pode estar mal configurado (preço negativo,
