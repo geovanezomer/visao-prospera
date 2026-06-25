@@ -213,13 +213,21 @@ export class StripeProvider implements PaymentProvider {
     const obj = event.data.object;
     switch (event.type) {
       case "checkout.session.completed": {
-        // Primeira ativação — Stripe envia este evento com customer_email preenchido.
-        if (obj.mode !== "subscription") return { type: "ignored", reason: "not subscription" };
+        // Primeira ativação — Stripe envia em ambos os modos:
+        //   - mode=subscription: subscription preenchido
+        //   - mode=payment (one_time/lifetime): payment_intent preenchido
+        // Para pagamentos únicos usamos `pi_<id>` como subscriptionId sintético
+        // (correlaciona com checkout_intents e identifica o pagamento).
+        const email = obj.customer_email ?? obj.customer_details?.email ?? "";
+        const isSub = obj.mode === "subscription";
+        const subscriptionId = isSub
+          ? String(obj.subscription ?? "")
+          : `pi_${String(obj.payment_intent ?? obj.id)}`;
         return {
           type: "subscription.activated",
-          email: obj.customer_email ?? obj.customer_details?.email ?? "",
-          customerId: String(obj.customer),
-          subscriptionId: String(obj.subscription),
+          email,
+          customerId: String(obj.customer ?? ""),
+          subscriptionId,
           plan: (obj.metadata?.plan as PlanId) ?? "starter",
           currentPeriodEnd: null,
         };
