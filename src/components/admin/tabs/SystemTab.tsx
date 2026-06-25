@@ -20,6 +20,7 @@ export function SystemTab() {
   const [branding, setBranding] = useState({ system_name: "Finnance", logo_url: "", favicon_url: "" });
   const [login, setLogin] = useState({ headline: "", subheadline: "", cta: "Entrar" });
   const [footer, setFooter] = useState({ text: "" });
+  const [tracking, setTracking] = useState({ head: "", body_start: "", body_end: "" });
   const [notif, setNotif] = useState<NotifSettings | null>(null);
   const [testing, setTesting] = useState(false);
 
@@ -30,6 +31,10 @@ export function SystemTab() {
         if (s.branding) setBranding({ system_name: s.branding.system_name ?? "Finnance", logo_url: s.branding.logo_url ?? "", favicon_url: s.branding.favicon_url ?? "" });
         if (s.login_texts) setLogin({ headline: s.login_texts.headline ?? "", subheadline: s.login_texts.subheadline ?? "", cta: s.login_texts.cta ?? "Entrar" });
         if (s.footer) setFooter({ text: s.footer.text ?? "" });
+        if ((s as any).tracking) {
+          const t = (s as any).tracking;
+          setTracking({ head: t.head ?? "", body_start: t.body_start ?? "", body_end: t.body_end ?? "" });
+        }
         setNotif(n);
       } finally { setLoading(false); }
     })();
@@ -42,6 +47,7 @@ export function SystemTab() {
         updateAppSetting({ data: { key: "branding", value: branding } }),
         updateAppSetting({ data: { key: "login_texts", value: login } }),
         updateAppSetting({ data: { key: "footer", value: footer } }),
+        updateAppSetting({ data: { key: "tracking", value: tracking } }),
         notif ? updateNotifSettings({ data: notif }) : Promise.resolve(),
       ]);
       toast.success("Configurações salvas.");
@@ -80,6 +86,53 @@ export function SystemTab() {
       <section className="space-y-4 rounded-lg border border-border/60 bg-card p-4 lg:col-span-2">
         <h3 className="text-sm font-semibold">Rodapé</h3>
         <div className="space-y-1"><Label>Texto</Label><Input value={footer.text} onChange={(e) => setFooter({ text: e.target.value })} /></div>
+      </section>
+
+      <section className="space-y-4 rounded-lg border border-border/60 bg-card p-4 lg:col-span-2">
+        <div>
+          <h3 className="text-sm font-semibold">Scripts de rastreamento</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Cole aqui os snippets de <strong>Google Analytics (GA4)</strong>, <strong>Google Tag Manager</strong> e <strong>Meta Pixel</strong>.
+            Inclua as tags <code className="rounded bg-muted px-1">&lt;script&gt;…&lt;/script&gt;</code> completas.
+            Os snippets são injetados em todas as páginas após a carga inicial.
+          </p>
+        </div>
+
+        <div className="space-y-1">
+          <Label>JavaScript Head <span className="text-muted-foreground">(antes de &lt;/head&gt;)</span></Label>
+          <Textarea
+            rows={6}
+            className="font-mono text-[11px]"
+            value={tracking.head}
+            onChange={(e) => setTracking({ ...tracking, head: e.target.value })}
+            placeholder={`<!-- Google Tag Manager -->\n<script>(function(w,d,s,l,i){…})(window,document,'script','dataLayer','GTM-XXXXXXX');</script>\n\n<!-- Meta Pixel -->\n<script>!function(f,b,e,v,n,t,s){…}(window,…);fbq('init','XXXXXXXXXX');fbq('track','PageView');</script>`}
+          />
+          <p className="text-[11px] text-muted-foreground">Recomendado para: GA4 (gtag.js), GTM principal, Meta Pixel (fbq).</p>
+        </div>
+
+        <div className="space-y-1">
+          <Label>JavaScript Body Start <span className="text-muted-foreground">(logo após &lt;body&gt;)</span></Label>
+          <Textarea
+            rows={4}
+            className="font-mono text-[11px]"
+            value={tracking.body_start}
+            onChange={(e) => setTracking({ ...tracking, body_start: e.target.value })}
+            placeholder={`<!-- Google Tag Manager (noscript) -->\n<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXX" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>`}
+          />
+          <p className="text-[11px] text-muted-foreground">Obrigatório para o fallback &lt;noscript&gt; do GTM.</p>
+        </div>
+
+        <div className="space-y-1">
+          <Label>JavaScript Footer <span className="text-muted-foreground">(antes de &lt;/body&gt;)</span></Label>
+          <Textarea
+            rows={4}
+            className="font-mono text-[11px]"
+            value={tracking.body_end}
+            onChange={(e) => setTracking({ ...tracking, body_end: e.target.value })}
+            placeholder={`<!-- Scripts diferidos: chat, hotjar, fallbacks <noscript>, etc. -->`}
+          />
+          <p className="text-[11px] text-muted-foreground">Para scripts pesados/diferidos e fallback &lt;noscript&gt; do Meta Pixel.</p>
+        </div>
       </section>
 
       {notif && (
