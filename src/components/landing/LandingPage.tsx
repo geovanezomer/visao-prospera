@@ -625,7 +625,12 @@ function PricingSection() {
             nome: p.name,
             descricao: p.description ?? "",
             preco: (p.price_cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
-            periodo: p.interval === "year" ? "/ano" : "/mês",
+            periodo:
+              p.interval === "year"
+                ? "/ano"
+                : p.interval === "one_time"
+                ? ""
+                : "/mês",
             badge: p.slug === "pro" ? { texto: "Mais Popular", icone: Zap } : null,
             destaque: p.slug === "pro",
             recursos: Array.isArray(p.features) ? (p.features as string[]) : [],
