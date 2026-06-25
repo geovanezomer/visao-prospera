@@ -142,7 +142,7 @@ export function ScenarioBar() {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Salva o AppState corrente como snapshot. Use <strong>Ano realizado</strong>
+              Use <strong>Ano realizado</strong>
               {" "}para arquivar um exercício fechado/em andamento, ou <strong>Previsão</strong>
               {" "}para guardar um orçamento (budget) e comparar Previsto × Realizado.
             </p>
