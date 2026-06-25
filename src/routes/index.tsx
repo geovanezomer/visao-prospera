@@ -3,6 +3,7 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { isLandingEnabled } from "@/lib/featureFlags";
+import { faqPageJsonLd } from "@/lib/seo/faqs";
 
 const CANONICAL = "https://visao-prospera.lovable.app/";
 
@@ -30,6 +31,16 @@ export const Route = createFileRoute("/")({
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: CANONICAL },
+      {
+        name: "twitter:title",
+        content:
+          "FinancePRO — O Raio-X financeiro que transforma consultor em CFO da PME",
+      },
+      {
+        name: "twitter:description",
+        content:
+          "+40 indicadores, módulo CBS/IBS e IA estratégica para PMEs brasileiras.",
+      },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
@@ -46,6 +57,10 @@ export const Route = createFileRoute("/")({
             name: "GZ Consultoria Financeira & Investimentos",
           },
         }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify(faqPageJsonLd()),
       },
     ],
   }),

@@ -11,6 +11,16 @@ export const Route = createFileRoute("/signup")({
         name: "description",
         content: "O cadastro de novas contas no FinnancePRO está temporariamente desativado.",
       },
+      { property: "og:title", content: "Cadastro indisponível — FinnancePRO" },
+      {
+        property: "og:description",
+        content: "Novos cadastros estão temporariamente pausados. Entre em contato com a GZ Consultoria.",
+      },
+      { name: "twitter:title", content: "Cadastro indisponível — FinnancePRO" },
+      {
+        name: "twitter:description",
+        content: "Novos cadastros estão temporariamente pausados.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),

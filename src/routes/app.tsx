@@ -87,6 +87,23 @@ export const Route = createFileRoute("/app")({
         content:
           "FinnancePRO: diagnóstico financeiro, DRE simulado, regime tributário, WACC e análise de cenários para empresas brasileiras.",
       },
+      {
+        property: "og:title",
+        content: "Painel FinnancePRO — Diagnóstico & Simulação",
+      },
+      {
+        property: "og:description",
+        content: "Painel privado de DRE, Balanço, Fluxo de Caixa, WACC e cenários.",
+      },
+      {
+        name: "twitter:title",
+        content: "Painel FinnancePRO — Diagnóstico & Simulação",
+      },
+      {
+        name: "twitter:description",
+        content: "Painel privado de DRE, Balanço, Fluxo de Caixa, WACC e cenários.",
+      },
+      { name: "robots", content: "noindex" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
