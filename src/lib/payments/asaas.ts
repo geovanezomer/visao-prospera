@@ -123,13 +123,15 @@ export class AsaasProvider implements PaymentProvider {
     // Asaas Checkout hospedado — coleta CPF/CNPJ e dados do pagador na
     // própria página do Asaas. Evita exigir CPF no nosso formulário.
     // Docs: https://docs.asaas.com/reference/criar-checkout
-    const expirationMinutes = 60 * 24; // 24h
+    const expirationMinutes = 1440; // 24h (máx permitido pelo Asaas)
+    // Asaas exige name <= 30 caracteres por item.
+    const truncate30 = (s: string) => (s.length > 30 ? s.slice(0, 30) : s);
     const items: Array<{ name: string; description: string; quantity: number; value: number }> = [
-      { name: planDesc, description: planDesc, quantity: 1, value },
+      { name: truncate30(planDesc), description: planDesc, quantity: 1, value },
     ];
     if (upsellValue > 0) {
       items.push({
-        name: input.upsell!.name,
+        name: truncate30(input.upsell!.name),
         description: input.upsell!.name,
         quantity: 1,
         value: upsellValue,
@@ -137,8 +139,10 @@ export class AsaasProvider implements PaymentProvider {
     }
     const totalValue = items.reduce((s, it) => s + it.value * it.quantity, 0);
 
+    // Asaas /v3/checkouts só aceita CREDIT_CARD e PIX em billingTypes.
+    // BOLETO não é suportado neste endpoint e causa HTTP 400.
     const body: Record<string, unknown> = {
-      billingTypes: ["CREDIT_CARD", "PIX", "BOLETO"],
+      billingTypes: ["CREDIT_CARD", "PIX"],
       chargeTypes: isOneTime ? ["DETACHED"] : ["RECURRENT"],
       minutesToExpire: expirationMinutes,
       callback: {
@@ -156,10 +160,14 @@ export class AsaasProvider implements PaymentProvider {
       externalReference: input.plan,
     };
     if (!isOneTime) {
-      body.subscription = { cycle, nextDueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10), endDate: null };
-    } else {
-      body.dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      // subscription é obrigatório quando chargeTypes = RECURRENT.
+      // endDate é opcional — omitimos ao invés de enviar null.
+      body.subscription = {
+        cycle,
+        nextDueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+      };
     }
+
 
     const checkout = await this.fetch<{ id: string; link?: string; url?: string }>("/checkouts", {
       method: "POST",
