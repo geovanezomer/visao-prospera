@@ -39,19 +39,77 @@ const DEFAULT_BRANDING: Branding = {
   colors: { primary: "#10b981", accent: "#0f3a2e" },
 };
 
-// Lê um File como data URL com limite de tamanho.
-function readAsDataUrl(file: File, maxBytes: number): Promise<string> {
+// Tipos MIME aceitos por tipo de asset.
+const LOGO_MIME = ["image/png", "image/svg+xml", "image/jpeg", "image/webp"] as const;
+const FAVICON_MIME = ["image/png", "image/x-icon", "image/vnd.microsoft.icon", "image/svg+xml"] as const;
+
+type ImageRule = {
+  label: string;
+  accept: readonly string[];
+  maxBytes: number;
+  minSide?: number;
+  maxSide?: number;
+  // Razão largura/altura permitida (inclusiva). Ex.: logo quadrado a 2:1 → [1, 2].
+  minAspect?: number;
+  maxAspect?: number;
+};
+
+// Lê um File como data URL após validar tipo, tamanho e dimensões.
+// SVG não tem dimensões intrínsecas confiáveis no FileReader; pulamos checagem de px.
+function readImageAsDataUrl(file: File, rule: ImageRule): Promise<string> {
   return new Promise((resolve, reject) => {
-    if (file.size > maxBytes) {
-      reject(new Error(`Arquivo muito grande (máx ${Math.round(maxBytes / 1024)} KB).`));
+    if (!rule.accept.includes(file.type)) {
+      reject(new Error(`${rule.label}: formato não suportado (${file.type || "desconhecido"}). Use ${rule.accept.map((m) => m.replace("image/", "")).join(", ")}.`));
+      return;
+    }
+    if (file.size > rule.maxBytes) {
+      reject(new Error(`${rule.label}: arquivo muito grande (${Math.round(file.size / 1024)} KB). Máx ${Math.round(rule.maxBytes / 1024)} KB.`));
       return;
     }
     const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(new Error("Falha ao ler arquivo."));
+    r.onerror = () => reject(new Error(`${rule.label}: falha ao ler arquivo.`));
+    r.onload = () => {
+      const dataUrl = String(r.result);
+      if (file.type === "image/svg+xml") { resolve(dataUrl); return; }
+      const img = new Image();
+      img.onerror = () => reject(new Error(`${rule.label}: imagem inválida ou corrompida.`));
+      img.onload = () => {
+        const w = img.naturalWidth, h = img.naturalHeight;
+        if (rule.minSide && (w < rule.minSide || h < rule.minSide)) {
+          reject(new Error(`${rule.label}: dimensões muito pequenas (${w}×${h}). Mínimo ${rule.minSide}×${rule.minSide} px.`));
+          return;
+        }
+        if (rule.maxSide && (w > rule.maxSide || h > rule.maxSide)) {
+          reject(new Error(`${rule.label}: dimensões muito grandes (${w}×${h}). Máximo ${rule.maxSide}×${rule.maxSide} px.`));
+          return;
+        }
+        const aspect = w / h;
+        if (rule.minAspect !== undefined && aspect < rule.minAspect - 0.01) {
+          reject(new Error(`${rule.label}: proporção inválida (${w}×${h}). A altura não pode ser maior que a largura.`));
+          return;
+        }
+        if (rule.maxAspect !== undefined && aspect > rule.maxAspect + 0.01) {
+          reject(new Error(`${rule.label}: proporção inválida (${w}×${h} ≈ ${aspect.toFixed(2)}:1). Largura não pode passar de ${rule.maxAspect}× a altura.`));
+          return;
+        }
+        resolve(dataUrl);
+      };
+      img.src = dataUrl;
+    };
     r.readAsDataURL(file);
   });
 }
+
+// Logo: quadrado (1:1) até retangular 2:1 (largura até 2× altura).
+const LOGO_RULE: ImageRule = {
+  label: "Logo", accept: LOGO_MIME, maxBytes: 200 * 1024,
+  minSide: 64, maxSide: 1024, minAspect: 1, maxAspect: 2,
+};
+// Favicon: precisa ser quadrado.
+const FAVICON_RULE: ImageRule = {
+  label: "Favicon", accept: FAVICON_MIME, maxBytes: 50 * 1024,
+  minSide: 16, maxSide: 512, minAspect: 1, maxAspect: 1,
+};
 
 export function SystemTab() {
   const [loading, setLoading] = useState(true);
@@ -128,7 +186,7 @@ export function SystemTab() {
         {/* Logo */}
         <div className="space-y-2">
           <Label>Logo</Label>
-          <p className="text-[11px] text-muted-foreground">PNG/SVG com fundo transparente · sugerido 240×64 px · máx 200 KB.</p>
+          <p className="text-[11px] text-muted-foreground">PNG/SVG/WebP/JPG · quadrado a 2:1 (largura até 2× a altura) · 64–1024 px por lado · máx 200 KB. Aparece na sidebar, login e header da landing.</p>
           <div className="flex items-center gap-3 rounded-md border border-border/50 bg-muted/30 p-3">
             <div className="flex h-12 w-32 items-center justify-center rounded bg-background ring-1 ring-border/50 overflow-hidden">
               {branding.logo_url
@@ -143,7 +201,7 @@ export function SystemTab() {
               onChange={async (e) => {
                 const f = e.target.files?.[0]; if (!f) return;
                 try {
-                  const url = await readAsDataUrl(f, 200 * 1024);
+                  const url = await readImageAsDataUrl(f, LOGO_RULE);
                   setBranding({ ...branding, logo_url: url });
                 } catch (err) { toast.error(err instanceof Error ? err.message : "Falha"); }
                 finally { if (logoInputRef.current) logoInputRef.current.value = ""; }
@@ -163,7 +221,7 @@ export function SystemTab() {
         {/* Favicon */}
         <div className="space-y-2">
           <Label>Favicon</Label>
-          <p className="text-[11px] text-muted-foreground">PNG/ICO quadrado · sugerido 32×32 ou 64×64 px · máx 50 KB.</p>
+          <p className="text-[11px] text-muted-foreground">PNG/ICO/SVG quadrado (1:1) · 16–512 px por lado · máx 50 KB.</p>
           <div className="flex items-center gap-3 rounded-md border border-border/50 bg-muted/30 p-3">
             <div className="flex h-10 w-10 items-center justify-center rounded bg-background ring-1 ring-border/50 overflow-hidden">
               {branding.favicon_url
@@ -178,7 +236,7 @@ export function SystemTab() {
               onChange={async (e) => {
                 const f = e.target.files?.[0]; if (!f) return;
                 try {
-                  const url = await readAsDataUrl(f, 50 * 1024);
+                  const url = await readImageAsDataUrl(f, FAVICON_RULE);
                   setBranding({ ...branding, favicon_url: url });
                 } catch (err) { toast.error(err instanceof Error ? err.message : "Falha"); }
                 finally { if (faviconInputRef.current) faviconInputRef.current.value = ""; }
