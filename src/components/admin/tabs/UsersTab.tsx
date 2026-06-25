@@ -19,6 +19,7 @@ import {
   listAdminUsers, setUserActive, sendPasswordReset, revalidatePlan, refundPayment, resendMagicLink,
   type AdminUserRow, type AdminUserSort, type AdminUserFilters,
 } from "@/lib/admin/admin.functions";
+import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
 
 function fmt(iso: string | null | undefined) {
   if (!iso) return "—";
@@ -42,6 +43,7 @@ export function UsersTab() {
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [refundFor, setRefundFor] = useState<AdminUserRow | null>(null);
+  const [detailFor, setDetailFor] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -203,13 +205,13 @@ export function UsersTab() {
                 users.map((u) => (
                   <tr key={u.id} className="border-t border-border/40 hover:bg-muted/20">
                     <td className="p-2">
-                      <div className="flex flex-col">
+                      <button onClick={() => setDetailFor(u.id)} className="flex flex-col text-left hover:underline">
                         <div className="flex items-center gap-1.5 font-medium">
                           {u.displayName ?? "—"}
                           {u.isAdmin && <Badge className="h-4 px-1.5 text-[9px]" variant="outline">ADMIN</Badge>}
                         </div>
                         <span className="text-[11px] text-muted-foreground">{u.email}</span>
-                      </div>
+                      </button>
                     </td>
                     <td className="p-2 text-muted-foreground">{u.phone ?? "—"}</td>
                     <td className="p-2">
@@ -268,6 +270,7 @@ export function UsersTab() {
       </div>
 
       <RefundDialog user={refundFor} onClose={() => setRefundFor(null)} onDone={() => { setRefundFor(null); void load(); }} />
+      <UserDetailDrawer userId={detailFor} onClose={() => setDetailFor(null)} onChanged={() => void load()} />
     </div>
   );
 }
