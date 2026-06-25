@@ -110,25 +110,77 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
         try {
           const provider = await resolveProvider();
           const details = await loadPlanDetails(parsed.plan, provider.name);
+          if (!details) {
+            return Response.json({ error: "Plano não encontrado ou inativo." }, { status: 404 });
+          }
+
+          // ─── Validação server-side do upsell ───────────────────────────────
+          // Garante coerência com o plano antes de criar cobrança no provedor:
+          //  • upsell habilitado no plano
+          //  • preço inteiro positivo, em centavos
+          //  • teto de sanidade (≤ 5× preço do plano) para evitar
+          //    manipulação no front (o front nunca envia o preço,
+          //    mas defendemos contra plano mal configurado)
+          //  • moeda única: o upsell herda a moeda do plano
+          //    (não há campo upsell_currency no schema, logo só validamos
+          //     que o plano TEM moeda definida quando há upsell pago)
+          let upsellPayload: {
+            name: string;
+            priceCents: number;
+            stripePriceId?: string | null;
+            asaasRef?: string | null;
+          } | null = null;
+
+          if (parsed.withUpsell) {
+            if (!details.upsell?.enabled) {
+              return Response.json(
+                { error: "Este plano não possui upsell disponível." },
+                { status: 400 },
+              );
+            }
+            const cents = details.upsell.priceCents;
+            if (!Number.isInteger(cents) || cents <= 0) {
+              return Response.json(
+                { error: "Configuração de upsell inválida (preço)." },
+                { status: 422 },
+              );
+            }
+            if (!details.currency) {
+              return Response.json(
+                { error: "Moeda do plano não configurada — upsell bloqueado." },
+                { status: 422 },
+              );
+            }
+            const planCents = details.priceCents ?? 0;
+            if (planCents > 0 && cents > planCents * 5) {
+              console.error(
+                "[checkout] upsell desproporcional ao plano",
+                { plan: parsed.plan, planCents, upsellCents: cents },
+              );
+              return Response.json(
+                { error: "Upsell desproporcional ao valor do plano." },
+                { status: 422 },
+              );
+            }
+            upsellPayload = {
+              name: details.upsell.name,
+              priceCents: cents,
+              stripePriceId: details.upsell.stripePriceId,
+              asaasRef: details.upsell.asaasRef,
+            };
+          }
+
           const { url } = await provider.createCheckout({
             plan: parsed.plan,
             email: parsed.email,
             successUrl: `${appUrl}/checkout/sucesso?plan=${parsed.plan}`,
             cancelUrl: `${appUrl}/planos?canceled=1`,
-            interval: details?.interval,
-            priceCents: details?.priceCents,
-            currency: details?.currency,
-            providerRef: details?.providerRef,
-            planName: details?.planName,
-            upsell:
-              parsed.withUpsell && details?.upsell?.enabled && details.upsell.priceCents > 0
-                ? {
-                    name: details.upsell.name,
-                    priceCents: details.upsell.priceCents,
-                    stripePriceId: details.upsell.stripePriceId,
-                    asaasRef: details.upsell.asaasRef,
-                  }
-                : null,
+            interval: details.interval,
+            priceCents: details.priceCents,
+            currency: details.currency,
+            providerRef: details.providerRef,
+            planName: details.planName,
+            upsell: upsellPayload,
           });
           return Response.json({ url, provider: provider.name });
         } catch (e) {
@@ -136,6 +188,7 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
           console.error("[checkout] falhou:", msg);
           return Response.json({ error: msg }, { status: 500 });
         }
+
       },
     },
   },
