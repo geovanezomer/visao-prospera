@@ -214,10 +214,7 @@ function SimulaPro() {
               }
             }}
             onSave={() => setSaveShareOpen(true)}
-            onOpen={fileApi.open}
-            onRestoreFromCloud={
-              user && isBackupEnabled() ? () => setRestoreOpen(true) : undefined
-            }
+            onOpenRestore={() => setOpenRestoreOpen(true)}
             currentFileName={fileApi.currentFileName}
             dirty={fileApi.dirty}
           />
