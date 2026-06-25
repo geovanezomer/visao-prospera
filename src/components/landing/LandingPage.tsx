@@ -25,6 +25,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { isValidCPF, isValidPhoneBR, formatCPF, formatPhoneBR, onlyDigits } from "@/lib/validators/cpf";
 import {
   Dialog,
   DialogContent,
