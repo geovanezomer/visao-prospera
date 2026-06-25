@@ -20,7 +20,7 @@ export type PlanRow = {
   currency: string;
   interval: string;
   features: string[];
-  limits: Record<string, unknown>;
+  limits: Record<string, any>;
   stripePriceId: string | null;
   asaasPlanRef: string | null;
   active: boolean;
@@ -37,7 +37,7 @@ function rowToPlan(r: any): PlanRow {
     currency: r.currency,
     interval: r.interval,
     features: Array.isArray(r.features) ? r.features : [],
-    limits: (r.limits as Record<string, unknown>) ?? {},
+    limits: (r.limits as Record<string, any>) ?? {},
     stripePriceId: r.stripe_price_id,
     asaasPlanRef: r.asaas_plan_ref,
     active: r.active,
@@ -83,7 +83,7 @@ const planSchema = z.object({
   currency: z.string().min(3).max(3),
   interval: z.enum(["month", "year", "week", "day", "lifetime"]),
   features: z.array(z.string().max(200)).max(40),
-  limits: z.record(z.unknown()).default({}),
+  limits: z.record(z.any()).default({}),
   stripePriceId: z.string().nullable().optional(),
   asaasPlanRef: z.string().nullable().optional(),
   active: z.boolean(),
@@ -104,7 +104,7 @@ export const upsertPlan = createServerFn({ method: "POST" })
       currency: data.currency,
       interval: data.interval,
       features: data.features,
-      limits: data.limits,
+      limits: data.limits as any,
       stripe_price_id: data.stripePriceId ?? null,
       asaas_plan_ref: data.asaasPlanRef ?? null,
       active: data.active,
