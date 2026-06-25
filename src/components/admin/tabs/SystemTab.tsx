@@ -1,14 +1,18 @@
 // ============================================================================
-// SystemTab — branding + textos da plataforma.
+// SystemTab — branding + textos + notificações admin.
 // ============================================================================
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { getAppSettings, updateAppSetting } from "@/lib/admin/settings.functions";
+import {
+  getNotifSettings, updateNotifSettings, testNotification, type NotifSettings,
+} from "@/lib/admin/notifications.functions";
 
 export function SystemTab() {
   const [loading, setLoading] = useState(true);
@@ -16,17 +20,43 @@ export function SystemTab() {
   const [branding, setBranding] = useState({ system_name: "Finnance", logo_url: "", favicon_url: "" });
   const [login, setLogin] = useState({ headline: "", subheadline: "", cta: "Entrar" });
   const [footer, setFooter] = useState({ text: "" });
+  const [notif, setNotif] = useState<NotifSettings | null>(null);
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const s = await getAppSettings();
+        const [s, n] = await Promise.all([getAppSettings(), getNotifSettings()]);
         if (s.branding) setBranding({ system_name: s.branding.system_name ?? "Finnance", logo_url: s.branding.logo_url ?? "", favicon_url: s.branding.favicon_url ?? "" });
         if (s.login_texts) setLogin({ headline: s.login_texts.headline ?? "", subheadline: s.login_texts.subheadline ?? "", cta: s.login_texts.cta ?? "Entrar" });
         if (s.footer) setFooter({ text: s.footer.text ?? "" });
+        setNotif(n);
       } finally { setLoading(false); }
     })();
   }, []);
+
+  const saveAll = async () => {
+    setSaving(true);
+    try {
+      await Promise.all([
+        updateAppSetting({ data: { key: "branding", value: branding } }),
+        updateAppSetting({ data: { key: "login_texts", value: login } }),
+        updateAppSetting({ data: { key: "footer", value: footer } }),
+        notif ? updateNotifSettings({ data: notif }) : Promise.resolve(),
+      ]);
+      toast.success("Configurações salvas.");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
+    finally { setSaving(false); }
+  };
+
+  const runTest = async () => {
+    setTesting(true);
+    try {
+      const r = await testNotification();
+      toast.success(r.sent ? "Notificação enviada." : `Não enviou: ${r.reason ?? "config incompleta"}`);
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Falha"); }
+    finally { setTesting(false); }
+  };
 
   const saveAll = async () => {
     setSaving(true);
