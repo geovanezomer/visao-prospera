@@ -201,7 +201,7 @@ export function SystemTab() {
               onChange={async (e) => {
                 const f = e.target.files?.[0]; if (!f) return;
                 try {
-                  const url = await readAsDataUrl(f, 200 * 1024);
+                  const url = await readImageAsDataUrl(f, LOGO_RULE);
                   setBranding({ ...branding, logo_url: url });
                 } catch (err) { toast.error(err instanceof Error ? err.message : "Falha"); }
                 finally { if (logoInputRef.current) logoInputRef.current.value = ""; }
