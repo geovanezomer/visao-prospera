@@ -20,16 +20,20 @@ function asaasBase(): string {
 
 async function asaasFetch<T>(
   path: string,
-  init?: { method?: string; body?: Record<string, unknown>; headers?: Record<string, string> },
+  init?: { method?: string; body?: Record<string, unknown>; headers?: Record<string, string>; idempotencyKey?: string },
 ): Promise<T> {
   const key = process.env.ASAAS_API_KEY!;
+  const headers: Record<string, string> = {
+    access_token: key,
+    "Content-Type": "application/json",
+    ...(init?.headers || {}),
+  };
+  // Asaas: header "idempotency-key" garante que reposts não duplicam
+  // customer/subscription/payment. Vale por 24h no lado do Asaas.
+  if (init?.idempotencyKey) headers["idempotency-key"] = init.idempotencyKey;
   const res = await fetch(`${asaasBase()}${path}`, {
     method: init?.method ?? "GET",
-    headers: {
-      access_token: key,
-      "Content-Type": "application/json",
-      ...(init?.headers || {}),
-    },
+    headers,
     body: init?.body ? JSON.stringify(init.body) : undefined,
   });
   const json = await res.json();
@@ -38,6 +42,7 @@ async function asaasFetch<T>(
   }
   return json as T;
 }
+
 
 function planFromValue(value: number): PlanId {
   // Heurística simples — preço PRO costuma ser maior. Asaas não tem
