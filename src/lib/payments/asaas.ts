@@ -120,9 +120,9 @@ export class AsaasProvider implements PaymentProvider {
     const upsellValue = input.upsell && input.upsell.priceCents > 0 ? input.upsell.priceCents / 100 : 0;
     const planDesc = input.planName || `FinancePRO — plano ${input.plan}`;
 
-    // Asaas Checkout hospedado — coleta CPF/CNPJ e dados do pagador na
-    // própria página do Asaas. Evita exigir CPF no nosso formulário.
-    // Docs: https://docs.asaas.com/reference/criar-checkout
+    // Asaas Checkout hospedado — o link é criado sem pré-cadastrar cliente;
+    // a página do Asaas coleta/valida os dados completos do pagador.
+    // Docs: https://docs.asaas.com/reference/criar-novo-checkout
     const expirationMinutes = 1440; // 24h (máx permitido pelo Asaas)
     // Asaas exige name <= 30 caracteres por item e, na referência OpenAPI
     // atual do /v3/checkouts, imageBase64 também aparece como obrigatório.
