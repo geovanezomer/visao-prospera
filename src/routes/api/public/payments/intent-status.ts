@@ -1,18 +1,32 @@
 // Endpoint público para a página de retorno do checkout consultar o
 // status corrente da intenção (created/redirected/paid/failed).
 // O webhook é a fonte da verdade — aqui apenas lemos o registro.
+//
+// Segurança:
+//   - O parâmetro `i` deve ser um token assinado por HMAC (verifyIntentToken),
+//     impedindo que a URL seja adulterada para consultar intents de terceiros.
+//   - Rate limit distribuído por IP+token, para impedir polling abusivo.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import { verifyIntentToken } from "@/lib/intentToken.server";
+import { clientIp, rlConsume, tooManyRequests } from "@/lib/rateLimit.server";
 
 export const Route = createFileRoute("/api/public/payments/intent-status")({
   server: {
     handlers: {
       GET: async ({ request }) => {
         const url = new URL(request.url);
-        const i = url.searchParams.get("i");
-        if (!i || !/^[a-f0-9]{8,64}$/i.test(i)) {
+        const token = url.searchParams.get("i");
+        const intentKey = await verifyIntentToken(token);
+        if (!intentKey) {
           return Response.json({ error: "invalid_key" }, { status: 400 });
         }
+
+        // Rate limit: 60 reqs/min por par (IP, token) — suficiente para o
+        // polling normal (a cada 2–6s), mas corta scripts abusivos.
+        const ip = clientIp(request);
+        const rl = await rlConsume(`intent-status:${ip}:${intentKey}`, 60, 60);
+        if (!rl.allowed) return tooManyRequests(rl.retryAfter);
 
         const sb = createClient(
           process.env.SUPABASE_URL!,
@@ -25,7 +39,7 @@ export const Route = createFileRoute("/api/public/payments/intent-status")({
           .select(
             "status,plan_slug,with_upsell,currency,plan_amount_cents,upsell_amount_cents,provider,confirmed_at,updated_at,last_error,email",
           )
-          .eq("idempotency_key", i)
+          .eq("idempotency_key", intentKey)
           .maybeSingle();
 
         if (error || !data) {

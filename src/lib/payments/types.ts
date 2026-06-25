@@ -11,6 +11,19 @@ export type PlanId = string;
 /** Provedor ativo no boot. */
 export type ProviderName = "stripe" | "asaas";
 
+/**
+ * Configuração por requisição/escopo — passada para o provider em vez de
+ * mutar `process.env` global. Cada instância carrega suas próprias chaves
+ * e webhook secret, eliminando o risco de vazamento entre requisições
+ * concorrentes em ambientes edge.
+ */
+export type ProviderConfig = {
+  apiKey: string;
+  webhookSecret?: string | null;
+  /** "live" | "sandbox" — usado pelo Asaas para escolher a URL base. */
+  mode?: "live" | "sandbox" | null;
+};
+
 /** Evento normalizado vindo do webhook do provedor. */
 export type NormalizedEvent =
   | {

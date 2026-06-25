@@ -14,6 +14,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { resolveProvider } from "@/lib/payments";
+import { signIntentKey } from "@/lib/intentToken.server";
+import { clientIp, rlConsume, tooManyRequests } from "@/lib/rateLimit.server";
 
 // ─── Validação da requisição vinda do navegador ──────────────────────────────
 const Body = z.object({
@@ -52,20 +54,8 @@ const PlanRowSchema = z.object({
 });
 type PlanRow = z.infer<typeof PlanRowSchema>;
 
-// ─── Rate limit em memória (worker-local) ────────────────────────────────────
-const buckets = new Map<string, { count: number; resetAt: number }>();
-const LIMIT = 10;
-const WINDOW_MS = 60_000;
-function rateLimited(key: string): boolean {
-  const now = Date.now();
-  const b = buckets.get(key);
-  if (!b || b.resetAt < now) {
-    buckets.set(key, { count: 1, resetAt: now + WINDOW_MS });
-    return false;
-  }
-  b.count += 1;
-  return b.count > LIMIT;
-}
+// Rate limiting agora é distribuído via tabela `rate_limit_buckets` (rl_consume).
+
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function err(
@@ -118,14 +108,16 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
           );
         }
 
-        // 2) Rate limit
-        const ip =
-          request.headers.get("cf-connecting-ip") ||
-          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-          "unknown";
-        if (rateLimited(`${ip}:${parsed.email.toLowerCase()}`)) {
-          return err(429, "rate_limited", "Muitas tentativas. Aguarde 1 minuto.");
-        }
+        // 2) Rate limit distribuído por (IP, email)
+        const ip = clientIp(request);
+        const rlIp = await rlConsume(`checkout:ip:${ip}`, 20, 60);
+        if (!rlIp.allowed) return tooManyRequests(rlIp.retryAfter);
+        const rlEmail = await rlConsume(
+          `checkout:email:${parsed.email.toLowerCase()}`,
+          5,
+          60,
+        );
+        if (!rlEmail.allowed) return tooManyRequests(rlEmail.retryAfter);
 
         // 3) Config base
         const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
@@ -245,6 +237,10 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
             return Response.json({ url: existing.checkout_url, provider: provider.name, reused: true });
           }
 
+          // Token assinado por HMAC — vai na URL de retorno em vez do raw key.
+          // Quem não tiver o segredo do servidor não consegue forjar/alterar.
+          const signedToken = await signIntentKey(idempotencyKey);
+
           // 6b) Cria checkout no provedor (com idempotency key).
           const providerRef =
             provider.name === "stripe" ? plan.stripe_price_id : plan.asaas_plan_ref;
@@ -254,8 +250,8 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
             providerResult = await provider.createCheckout({
               plan: parsed.plan,
               email: parsed.email,
-              successUrl: `${appUrl}/checkout/sucesso?plan=${parsed.plan}&i=${idempotencyKey}`,
-              cancelUrl: `${appUrl}/planos?canceled=1&i=${idempotencyKey}`,
+              successUrl: `${appUrl}/checkout/sucesso?plan=${parsed.plan}&i=${encodeURIComponent(signedToken)}`,
+              cancelUrl: `${appUrl}/planos?canceled=1&i=${encodeURIComponent(signedToken)}`,
               interval: plan.interval,
               priceCents: plan.price_cents,
               currency: plan.currency,

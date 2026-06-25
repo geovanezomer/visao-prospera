@@ -8,7 +8,7 @@
 //   - HMAC-SHA256 sobre `t.payload` → validação do webhook
 // ============================================================================
 
-import type { PaymentProvider, NormalizedEvent, PlanId } from "./types";
+import type { PaymentProvider, NormalizedEvent, PlanId, ProviderConfig } from "./types";
 import { getProviderPlanRef } from "./index";
 
 const STRIPE_API = "https://api.stripe.com/v1";
@@ -23,13 +23,13 @@ function form(data: Record<string, string | number | boolean | undefined>): stri
 }
 
 async function stripeFetch<T>(
+  apiKey: string,
   path: string,
   body: Record<string, unknown>,
   opts?: { idempotencyKey?: string },
 ): Promise<T> {
-  const key = process.env.STRIPE_SECRET_KEY!;
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${key}`,
+    Authorization: `Bearer ${apiKey}`,
     "Content-Type": "application/x-www-form-urlencoded",
   };
   // Stripe aceita Idempotency-Key em qualquer POST: garante que reenvio
@@ -52,6 +52,17 @@ function planFromPriceRef(priceRef: string): PlanId {
 
 export class StripeProvider implements PaymentProvider {
   readonly name = "stripe" as const;
+  private readonly apiKey: string;
+  private readonly webhookSecret: string | null;
+
+  /**
+   * Aceita config explícita (preferido) ou cai para process.env como
+   * fallback de compatibilidade. NUNCA muta env global.
+   */
+  constructor(config?: ProviderConfig) {
+    this.apiKey = config?.apiKey ?? process.env.STRIPE_SECRET_KEY ?? "";
+    this.webhookSecret = config?.webhookSecret ?? process.env.STRIPE_WEBHOOK_SECRET ?? null;
+  }
 
   async createCheckout(input: {
     plan: PlanId;
@@ -151,6 +162,7 @@ export class StripeProvider implements PaymentProvider {
 
 
     const session = await stripeFetch<{ id?: string; url: string; customer?: string | null }>(
+      this.apiKey,
       "/checkout/sessions",
       body,
       input.idempotencyKey ? { idempotencyKey: `co_${input.idempotencyKey}` } : undefined,
@@ -164,7 +176,7 @@ export class StripeProvider implements PaymentProvider {
   }
 
   async createPortal(input: { customerId: string; returnUrl: string }): Promise<{ url: string }> {
-    const session = await stripeFetch<{ url: string }>("/billing_portal/sessions", {
+    const session = await stripeFetch<{ url: string }>(this.apiKey, "/billing_portal/sessions", {
       customer: input.customerId,
       return_url: input.returnUrl,
     });
@@ -173,7 +185,7 @@ export class StripeProvider implements PaymentProvider {
 
   async verifyWebhook(req: Request, rawBody: string): Promise<NormalizedEvent> {
     const signature = req.headers.get("stripe-signature");
-    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+    const secret = this.webhookSecret;
     if (!signature || !secret) throw new Error("Stripe webhook: assinatura/secret ausente.");
 
     let timestamp: string | undefined;

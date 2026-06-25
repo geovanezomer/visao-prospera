@@ -1,20 +1,26 @@
 // ============================================================================
 // POST /api/public/payments/webhook/asaas
-// Hidrata ASAAS_API_KEY/ASAAS_WEBHOOK_TOKEN do banco antes de validar.
+// Carrega config do Asaas do banco (sem mutar process.env) e instancia o
+// provider com a config própria daquela requisição.
 // ============================================================================
 import { createFileRoute } from "@tanstack/react-router";
-import { hydrateProviderEnv } from "@/lib/payments";
+import { loadProviderConfig } from "@/lib/payments";
 import { AsaasProvider } from "@/lib/payments/asaas";
 import { handleNormalizedEvent } from "@/lib/payments/webhook-handler.server";
+import { clientIp, rlConsume, tooManyRequests } from "@/lib/rateLimit.server";
 
 export const Route = createFileRoute("/api/public/payments/webhook/asaas")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const ip = clientIp(request);
+        const rl = await rlConsume(`wh:asaas:${ip}`, 120, 60);
+        if (!rl.allowed) return tooManyRequests(rl.retryAfter);
+
         const rawBody = await request.text();
         try {
-          await hydrateProviderEnv("asaas");
-          const provider = new AsaasProvider();
+          const cfg = (await loadProviderConfig("asaas")) ?? undefined;
+          const provider = new AsaasProvider(cfg);
           const event = await provider.verifyWebhook(request, rawBody);
           await handleNormalizedEvent("asaas", event);
           return Response.json({ received: true });

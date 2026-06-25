@@ -1,20 +1,28 @@
 // ============================================================================
 // POST /api/public/payments/webhook/stripe
-// Hidrata STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRET do banco antes de validar.
+// Carrega config do Stripe do banco (sem mutar process.env) e instancia o
+// provider com a config própria daquela requisição.
 // ============================================================================
 import { createFileRoute } from "@tanstack/react-router";
-import { hydrateProviderEnv } from "@/lib/payments";
+import { loadProviderConfig } from "@/lib/payments";
 import { StripeProvider } from "@/lib/payments/stripe";
 import { handleNormalizedEvent } from "@/lib/payments/webhook-handler.server";
+import { clientIp, rlConsume, tooManyRequests } from "@/lib/rateLimit.server";
 
 export const Route = createFileRoute("/api/public/payments/webhook/stripe")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Rate limit por IP — webhooks legítimos do Stripe vêm de poucos IPs
+        // estáveis, então 120/min é largo o bastante e bloqueia floods.
+        const ip = clientIp(request);
+        const rl = await rlConsume(`wh:stripe:${ip}`, 120, 60);
+        if (!rl.allowed) return tooManyRequests(rl.retryAfter);
+
         const rawBody = await request.text();
         try {
-          await hydrateProviderEnv("stripe");
-          const provider = new StripeProvider();
+          const cfg = (await loadProviderConfig("stripe")) ?? undefined;
+          const provider = new StripeProvider(cfg);
           const event = await provider.verifyWebhook(request, rawBody);
           await handleNormalizedEvent("stripe", event);
           return Response.json({ received: true });
