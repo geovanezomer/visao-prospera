@@ -484,35 +484,56 @@ export type Database = {
       }
       webhook_events: {
         Row: {
+          attempt_history: Json
+          attempts: number
           customer_email: string | null
           error: string | null
           event_type: string
           id: string
+          last_attempt_at: string | null
+          locked_at: string | null
+          next_attempt_at: string | null
           payload: Json
           provider: string
           received_at: string
+          replayed_at: string | null
+          replayed_by: string | null
           status: string
           subscription_id: string | null
         }
         Insert: {
+          attempt_history?: Json
+          attempts?: number
           customer_email?: string | null
           error?: string | null
           event_type: string
           id?: string
+          last_attempt_at?: string | null
+          locked_at?: string | null
+          next_attempt_at?: string | null
           payload?: Json
           provider: string
           received_at?: string
+          replayed_at?: string | null
+          replayed_by?: string | null
           status?: string
           subscription_id?: string | null
         }
         Update: {
+          attempt_history?: Json
+          attempts?: number
           customer_email?: string | null
           error?: string | null
           event_type?: string
           id?: string
+          last_attempt_at?: string | null
+          locked_at?: string | null
+          next_attempt_at?: string | null
           payload?: Json
           provider?: string
           received_at?: string
+          replayed_at?: string | null
+          replayed_by?: string | null
           status?: string
           subscription_id?: string | null
         }
