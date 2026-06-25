@@ -48,7 +48,7 @@ export type AdminUserFilters = {
   status?: "all" | "active" | "trialing" | "past_due" | "canceled" | "none";
   provider?: "all" | "stripe" | "asaas";
 };
-export type AdminUserSort = "created_desc" | "created_asc" | "expires_desc" | "expires_asc" | "name_asc";
+export type AdminUserSort = "created_desc" | "created_asc" | "expires_desc" | "expires_asc" | "name_asc" | "name_desc";
 
 export const listAdminUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
