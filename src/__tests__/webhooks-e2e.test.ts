@@ -207,7 +207,7 @@ async function signStripe(rawBody: string, secret = STRIPE_WEBHOOK_SECRET): Prom
 
 function stripeReq(body: any, sig: string): Request {
   const raw = JSON.stringify(body);
-  return new Request("https://x.test/api/public/payments/webhook/stripe", {
+  return new Request("https://x.test/api/public/payments/webhook.stripe", {
     method: "POST",
     headers: { "content-type": "application/json", "stripe-signature": sig },
     body: raw,
@@ -215,7 +215,7 @@ function stripeReq(body: any, sig: string): Request {
 }
 
 function asaasReq(body: any, token = ASAAS_WEBHOOK_TOKEN): Request {
-  return new Request("https://x.test/api/public/payments/webhook/asaas", {
+  return new Request("https://x.test/api/public/payments/webhook.asaas", {
     method: "POST",
     headers: { "content-type": "application/json", "asaas-access-token": token },
     body: JSON.stringify(body),
@@ -227,7 +227,7 @@ function asaasReq(body: any, token = ASAAS_WEBHOOK_TOKEN): Request {
 // ════════════════════════════════════════════════════════════════════════════
 describe("Stripe webhook E2E", () => {
   test("rejeita assinatura inválida → 400, sem efeitos colaterais", async () => {
-    const POST = await loadPost("@/routes/api/public/payments/webhook/stripe");
+    const POST = await loadPost("@/routes/api/public/payments/webhook.stripe");
     const r = await POST({
       request: stripeReq(
         { type: "checkout.session.completed", data: { object: {} } },
@@ -253,7 +253,7 @@ describe("Stripe webhook E2E", () => {
       },
     };
     const raw = JSON.stringify(body);
-    const POST = await loadPost("@/routes/api/public/payments/webhook/stripe");
+    const POST = await loadPost("@/routes/api/public/payments/webhook.stripe");
     const r = await POST({ request: stripeReq(body, await signStripe(raw)) });
 
     expect(r.status).toBe(200);
@@ -289,7 +289,7 @@ describe("Stripe webhook E2E", () => {
       },
     };
     const raw = JSON.stringify(body);
-    const POST = await loadPost("@/routes/api/public/payments/webhook/stripe");
+    const POST = await loadPost("@/routes/api/public/payments/webhook.stripe");
     const r = await POST({ request: stripeReq(body, await signStripe(raw)) });
     expect(r.status).toBe(200);
     expect(cap.subscriptionsUpsert[0].stripe_subscription_id).toBe("pi_pi_xyz");
@@ -309,7 +309,7 @@ describe("Stripe webhook E2E", () => {
         },
       },
     };
-    const POST = await loadPost("@/routes/api/public/payments/webhook/stripe");
+    const POST = await loadPost("@/routes/api/public/payments/webhook.stripe");
     const r = await POST({ request: stripeReq(body, await signStripe(JSON.stringify(body))) });
     expect(r.status).toBe(200);
     expect(cap.subscriptionsUpdate).toHaveLength(1);
@@ -322,7 +322,7 @@ describe("Stripe webhook E2E", () => {
       type: "customer.subscription.deleted",
       data: { object: { id: "sub_del", customer: "cus_x" } },
     };
-    const POST = await loadPost("@/routes/api/public/payments/webhook/stripe");
+    const POST = await loadPost("@/routes/api/public/payments/webhook.stripe");
     const r = await POST({ request: stripeReq(body, await signStripe(JSON.stringify(body))) });
     expect(r.status).toBe(200);
     expect(cap.subscriptionsUpdate.at(-1)).toMatchObject({ status: "canceled" });
@@ -333,7 +333,7 @@ describe("Stripe webhook E2E", () => {
       type: "invoice.payment_failed",
       data: { object: { customer: "cus_x", subscription: "sub_pd" } },
     };
-    const POST = await loadPost("@/routes/api/public/payments/webhook/stripe");
+    const POST = await loadPost("@/routes/api/public/payments/webhook.stripe");
     const r = await POST({ request: stripeReq(body, await signStripe(JSON.stringify(body))) });
     expect(r.status).toBe(200);
     expect(cap.subscriptionsUpdate.at(-1)).toMatchObject({ status: "past_due" });
@@ -341,7 +341,7 @@ describe("Stripe webhook E2E", () => {
 
   test("evento ignorado → 200 sem upsert e registrado como skipped", async () => {
     const body = { type: "ping.something", data: { object: {} } };
-    const POST = await loadPost("@/routes/api/public/payments/webhook/stripe");
+    const POST = await loadPost("@/routes/api/public/payments/webhook.stripe");
     const r = await POST({ request: stripeReq(body, await signStripe(JSON.stringify(body))) });
     expect(r.status).toBe(200);
     expect(cap.subscriptionsUpsert).toHaveLength(0);
@@ -354,7 +354,7 @@ describe("Stripe webhook E2E", () => {
 // ════════════════════════════════════════════════════════════════════════════
 describe("Asaas webhook E2E", () => {
   test("token inválido → 400, sem efeitos colaterais", async () => {
-    const POST = await loadPost("@/routes/api/public/payments/webhook/asaas");
+    const POST = await loadPost("@/routes/api/public/payments/webhook.asaas");
     const r = await POST({
       request: asaasReq({ event: "PAYMENT_CONFIRMED", payment: {} }, "token_errado"),
     });
@@ -375,7 +375,7 @@ describe("Asaas webhook E2E", () => {
         dueDate: "2026-07-25",
       },
     };
-    const POST = await loadPost("@/routes/api/public/payments/webhook/asaas");
+    const POST = await loadPost("@/routes/api/public/payments/webhook.asaas");
     const r = await POST({ request: asaasReq(body) });
     expect(r.status).toBe(200);
     expect(cap.subscriptionsUpsert[0]).toMatchObject({
@@ -398,7 +398,7 @@ describe("Asaas webhook E2E", () => {
         value: 199.0,
       },
     };
-    const POST = await loadPost("@/routes/api/public/payments/webhook/asaas");
+    const POST = await loadPost("@/routes/api/public/payments/webhook.asaas");
     const r = await POST({ request: asaasReq(body) });
     expect(r.status).toBe(200);
     // Email recuperado pelo lookup mockado em globalThis.fetch.
@@ -411,7 +411,7 @@ describe("Asaas webhook E2E", () => {
       event: "SUBSCRIPTION_DELETED",
       subscription: { id: "sub_asaas_del", customer: "cus_asaas_del" },
     };
-    const POST = await loadPost("@/routes/api/public/payments/webhook/asaas");
+    const POST = await loadPost("@/routes/api/public/payments/webhook.asaas");
     const r = await POST({ request: asaasReq(body) });
     expect(r.status).toBe(200);
     expect(cap.subscriptionsUpdate.at(-1)).toMatchObject({ status: "canceled" });
@@ -422,7 +422,7 @@ describe("Asaas webhook E2E", () => {
       event: "PAYMENT_OVERDUE",
       payment: { id: "pay_pd", customer: "cus_pd", subscription: "sub_pd_asaas" },
     };
-    const POST = await loadPost("@/routes/api/public/payments/webhook/asaas");
+    const POST = await loadPost("@/routes/api/public/payments/webhook.asaas");
     const r = await POST({ request: asaasReq(body) });
     expect(r.status).toBe(200);
     expect(cap.subscriptionsUpdate.at(-1)).toMatchObject({ status: "past_due" });
@@ -430,7 +430,7 @@ describe("Asaas webhook E2E", () => {
   });
 
   test("evento desconhecido → skipped, 200", async () => {
-    const POST = await loadPost("@/routes/api/public/payments/webhook/asaas");
+    const POST = await loadPost("@/routes/api/public/payments/webhook.asaas");
     const r = await POST({ request: asaasReq({ event: "ACCOUNT_STATUS_UPDATED" }) });
     expect(r.status).toBe(200);
     expect(cap.webhookEventsInsert.at(-1)?.status).toBe("skipped");
