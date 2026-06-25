@@ -931,10 +931,21 @@ function PricingSection() {
               </div>
 
               {error && (
-                <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                  {error}
+                <div className="space-y-1 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                  <div className="flex items-start gap-2">
+                    {error.field && (
+                      <span className="shrink-0 rounded bg-destructive/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+                        {error.field === "upsell" ? "Adicional" : error.field === "email" ? "E-mail" : error.field}
+                      </span>
+                    )}
+                    <span className="flex-1">{error.message}</span>
+                  </div>
+                  {error.code && (
+                    <div className="text-[10px] opacity-70">cód.: {error.code}</div>
+                  )}
                 </div>
               )}
+
             </div>
           )}
 
