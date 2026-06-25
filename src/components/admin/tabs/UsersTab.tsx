@@ -2,7 +2,7 @@
 // UsersTab — listagem paginada com filtros e ordenação.
 // ============================================================================
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, KeyRound, Undo2, Search, Loader2, CheckCircle2, XCircle, ArrowUpDown } from "lucide-react";
+import { RefreshCw, KeyRound, Undo2, Search, Loader2, CheckCircle2, XCircle, ArrowUpDown, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  listAdminUsers, setUserActive, sendPasswordReset, revalidatePlan, refundPayment,
+  listAdminUsers, setUserActive, sendPasswordReset, revalidatePlan, refundPayment, resendMagicLink,
   type AdminUserRow, type AdminUserSort, type AdminUserFilters,
 } from "@/lib/admin/admin.functions";
 
@@ -69,7 +69,7 @@ export function UsersTab() {
   }, [users]);
 
   const toggleSort = (key: "created" | "expires" | "name") => {
-    if (key === "name") setSort("name_asc");
+    if (key === "name") setSort(sort === "name_asc" ? "name_desc" : "name_asc");
     else if (key === "created") setSort(sort === "created_desc" ? "created_asc" : "created_desc");
     else setSort(sort === "expires_desc" ? "expires_asc" : "expires_desc");
   };
@@ -95,6 +95,15 @@ export function UsersTab() {
       const r = await revalidatePlan({ data: { userId: row.id } });
       toast.success(r.sub ? `Plano: ${r.sub.plan} (${r.sub.status}).` : "Sem assinatura.");
       void load();
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
+    finally { setBusyId(null); }
+  };
+  const handleResendMagic = async (row: AdminUserRow) => {
+    setBusyId(row.id);
+    try {
+      const r = await resendMagicLink({ data: { userId: row.id } });
+      if (r.sent) toast.success(`Magic link enviado para ${r.email}.`);
+      else toast.message("Resend não configurado — link copiado.", { description: r.link });
     } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
     finally { setBusyId(null); }
   };
@@ -223,6 +232,9 @@ export function UsersTab() {
                         <Button size="sm" variant="ghost" className="h-7 px-2" title="Revalidar plano" onClick={() => handleRevalidate(u)} disabled={busyId === u.id}>
                           <RefreshCw className="h-3.5 w-3.5" />
                         </Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2" title="Reenviar magic link" onClick={() => handleResendMagic(u)} disabled={busyId === u.id}>
+                          <Mail className="h-3.5 w-3.5" />
+                        </Button>
                         <Button size="sm" variant="ghost" className="h-7 px-2" title="Reset de senha" onClick={() => handleReset(u)} disabled={busyId === u.id}>
                           <KeyRound className="h-3.5 w-3.5" />
                         </Button>
@@ -230,6 +242,7 @@ export function UsersTab() {
                           <Undo2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
+
                     </td>
                   </tr>
                 ))

@@ -16,6 +16,23 @@ const Body = z.object({
   email: z.string().email().max(200),
 });
 
+// Rate limit ad-hoc em memória: 10 req/min por IP+email. O backend não tem
+// primitivo de rate limit padrão; isso é o suficiente para barrar spam óbvio
+// sem cluster (1 worker por vez). Em escala, mover para Redis/Upstash.
+const buckets = new Map<string, { count: number; resetAt: number }>();
+const LIMIT = 10;
+const WINDOW_MS = 60_000;
+function rateLimited(key: string): boolean {
+  const now = Date.now();
+  const b = buckets.get(key);
+  if (!b || b.resetAt < now) {
+    buckets.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    return false;
+  }
+  b.count += 1;
+  return b.count > LIMIT;
+}
+
 export const Route = createFileRoute("/api/public/payments/checkout")({
   server: {
     handlers: {
@@ -25,6 +42,14 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
           parsed = Body.parse(await request.json());
         } catch (e) {
           return Response.json({ error: "Payload inválido" }, { status: 400 });
+        }
+
+        const ip =
+          request.headers.get("cf-connecting-ip") ||
+          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          "unknown";
+        if (rateLimited(`${ip}:${parsed.email.toLowerCase()}`)) {
+          return Response.json({ error: "Muitas tentativas. Aguarde 1 minuto." }, { status: 429 });
         }
 
         const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");

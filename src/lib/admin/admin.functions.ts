@@ -48,7 +48,7 @@ export type AdminUserFilters = {
   status?: "all" | "active" | "trialing" | "past_due" | "canceled" | "none";
   provider?: "all" | "stripe" | "asaas";
 };
-export type AdminUserSort = "created_desc" | "created_asc" | "expires_desc" | "expires_asc" | "name_asc";
+export type AdminUserSort = "created_desc" | "created_asc" | "expires_desc" | "expires_asc" | "name_asc" | "name_desc";
 
 export const listAdminUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -66,7 +66,7 @@ export const listAdminUsers = createServerFn({ method: "POST" })
           perPage: z.number().int().min(1).max(200).optional(),
           search: z.string().max(120).optional(),
           sort: z
-            .enum(["created_desc", "created_asc", "expires_desc", "expires_asc", "name_asc"])
+            .enum(["created_desc", "created_asc", "expires_desc", "expires_asc", "name_asc", "name_desc"])
             .optional(),
           filters: z
             .object({
@@ -89,14 +89,20 @@ export const listAdminUsers = createServerFn({ method: "POST" })
     const sort = data.sort ?? "created_desc";
     const filters = data.filters ?? {};
 
-    // Carrega TODOS os usuários (Supabase Admin não suporta filtro/sort server-side).
-    // Limite prático: até 10k usuários. Acima disso, paginar via auth.admin.listUsers.
+    // Carrega usuários em lotes. Cap prático: 5000 (25 páginas × 200).
+    // Acima disso a UI deve usar busca específica; logamos um aviso.
+    const MAX_PAGES = 25;
     const all: any[] = [];
-    for (let p = 1; p <= 50; p++) {
+    let truncated = false;
+    for (let p = 1; p <= MAX_PAGES; p++) {
       const { data: usersPage, error } = await supabaseAdmin.auth.admin.listUsers({ page: p, perPage: 200 });
       if (error) throw new Error(error.message);
       all.push(...(usersPage.users ?? []));
       if ((usersPage.users ?? []).length < 200) break;
+      if (p === MAX_PAGES) truncated = true;
+    }
+    if (truncated) {
+      console.warn(`[admin] listAdminUsers atingiu cap de ${MAX_PAGES * 200} usuários; refine a busca.`);
     }
 
     const ids = all.map((u) => u.id);
@@ -180,6 +186,8 @@ export const listAdminUsers = createServerFn({ method: "POST" })
         case "expires_asc": return cmpDate(a.currentPeriodEnd, b.currentPeriodEnd);
         case "expires_desc": return cmpDate(b.currentPeriodEnd, a.currentPeriodEnd);
         case "name_asc": return (a.displayName ?? "").localeCompare(b.displayName ?? "");
+        case "name_desc": return (b.displayName ?? "").localeCompare(a.displayName ?? "");
+        default: return 0;
       }
     });
 
@@ -300,4 +308,57 @@ export const refundPayment = createServerFn({ method: "POST" })
       reason: data.reason,
     });
     return result;
+  });
+
+// ----------------------------------------------------------------------------
+// resendMagicLink — gera novo magic link Supabase e envia via Resend (usando
+// templates/SMTP do banco quando configurado). Útil quando o e-mail inicial
+// (pós-checkout) se perdeu.
+// ----------------------------------------------------------------------------
+export const resendMagicLink = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { userId: string }) =>
+    z.object({ userId: z.string().uuid() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: u, error } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    if (error || !u?.user?.email) throw new Error(error?.message ?? "Usuário sem e-mail.");
+
+    const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
+    const { data: link, error: lerr } = await supabaseAdmin.auth.admin.generateLink({
+      type: "magiclink",
+      email: u.user.email,
+      options: appUrl ? { redirectTo: `${appUrl}/app` } : undefined,
+    });
+    if (lerr) throw new Error(lerr.message);
+    const actionLink = (link as any)?.properties?.action_link as string | undefined;
+    if (!actionLink) throw new Error("Falha ao gerar link.");
+
+    // Tenta enviar via Resend (banco → env fallback). Se nada configurado,
+    // devolve o link para o admin copiar manualmente.
+    const { data: cfg } = await supabaseAdmin.from("email_settings").select("*").limit(1).maybeSingle();
+    const apiKey = cfg?.resend_api_key || process.env.RESEND_API_KEY;
+    const fromEmail = cfg?.from_email || process.env.FEEDBACK_FROM || process.env.MAGICLINK_FROM;
+    const fromName = cfg?.from_name || "Finnance";
+    if (!apiKey || !fromEmail) {
+      return { ok: true, email: u.user.email, link: actionLink, sent: false };
+    }
+    const name = u.user.email.split("@")[0];
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: `${fromName} <${fromEmail}>`,
+        to: u.user.email,
+        subject: "Seu acesso ao Finnance",
+        html: `<p>Olá ${name}, acesse novamente clicando <a href="${actionLink}">aqui</a>.</p>`,
+      }),
+    });
+    if (!res.ok) {
+      console.error("[admin] resendMagicLink Resend falhou", await res.text());
+      return { ok: true, email: u.user.email, link: actionLink, sent: false };
+    }
+    return { ok: true, email: u.user.email, sent: true };
   });

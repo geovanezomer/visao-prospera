@@ -39,6 +39,12 @@ export type NormalizedEvent =
       customerId: string;
       subscriptionId: string;
     }
+  | {
+      type: "subscription.trial_will_end";
+      customerId: string;
+      subscriptionId: string;
+      trialEnd: string | null;
+    }
   | { type: "ignored"; reason: string };
 
 /** Contrato único que cada provedor (Stripe, Asaas) deve implementar. */
