@@ -323,6 +323,7 @@ function SimulaPro() {
                     <RotateCcw className="h-3.5 w-3.5" />
                   </Button>
                   <SharedLinksDialog />
+                  <BillingButton />
                   <FeedbackDialog />
                 </div>
               </div>
