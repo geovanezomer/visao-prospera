@@ -146,11 +146,36 @@ export const testProviderConnection = createServerFn({ method: "POST" })
       .select("api_key, mode")
       .eq("provider", data.provider)
       .maybeSingle();
-    if (!cred?.api_key) throw new Error("API Key não configurada.");
+    if (!cred?.api_key) return { ok: false, message: "API Key não configurada." };
+
+    const key = cred.api_key.trim();
+
+    // Validação de prefixo: bloqueia teste cruzado entre provedores.
+    // Stripe Secret Key: sk_test_ / sk_live_  |  Asaas: $aact_ (ou access token alfanumérico).
+    if (data.provider === "stripe") {
+      if (key.startsWith("$aact_")) {
+        return { ok: false, message: "Esta chave parece ser do Asaas ($aact_...). Cole a Secret Key do Stripe (sk_test_... ou sk_live_...) no slot do Stripe." };
+      }
+      if (key.startsWith("whsec_")) {
+        return { ok: false, message: "Isto é um Webhook Secret do Stripe (whsec_...), não a Secret Key. Use sk_test_... ou sk_live_..." };
+      }
+      if (!key.startsWith("sk_test_") && !key.startsWith("sk_live_") && !key.startsWith("rk_")) {
+        return { ok: false, message: "Formato de chave Stripe inválido. Esperado sk_test_... ou sk_live_..." };
+      }
+    } else {
+      // Asaas
+      if (key.startsWith("sk_test_") || key.startsWith("sk_live_") || key.startsWith("whsec_") || key.startsWith("rk_")) {
+        return { ok: false, message: "Esta chave parece ser do Stripe. Cole o access_token do Asaas ($aact_...) no slot do Asaas." };
+      }
+      if (!key.startsWith("$aact_") && key.length < 40) {
+        return { ok: false, message: "Formato de access_token do Asaas inválido. Esperado começar com $aact_..." };
+      }
+    }
+
     try {
       if (data.provider === "stripe") {
         const r = await fetch("https://api.stripe.com/v1/balance", {
-          headers: { Authorization: `Bearer ${cred.api_key}` },
+          headers: { Authorization: `Bearer ${key}` },
         });
         if (!r.ok) {
           const msg = r.status === 401
@@ -160,7 +185,7 @@ export const testProviderConnection = createServerFn({ method: "POST" })
         }
       } else {
         const base = cred.mode === "live" ? "https://api.asaas.com/v3" : "https://sandbox.asaas.com/api/v3";
-        const r = await fetch(`${base}/myAccount`, { headers: { access_token: cred.api_key } });
+        const r = await fetch(`${base}/myAccount`, { headers: { access_token: key } });
         if (!r.ok) {
           const msg = r.status === 401
             ? "Asaas 401: access_token inválido. Verifique a chave e o ambiente (sandbox/live)."
