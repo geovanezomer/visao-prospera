@@ -20,6 +20,21 @@ function assertAdmin(claims: any) {
   }
 }
 
+// Procura usuário por e-mail paginando auth.admin.listUsers (até 5k usuários).
+async function findUserByEmail(supabaseAdmin: any, email: string) {
+  const target = email.toLowerCase();
+  const perPage = 200;
+  for (let page = 1; page <= 25; page++) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+    if (error) throw new Error(error.message);
+    const users = data?.users ?? [];
+    const hit = users.find((u: any) => (u.email ?? "").toLowerCase() === target);
+    if (hit) return hit;
+    if (users.length < perPage) break;
+  }
+  return null;
+}
+
 type Json = string | number | boolean | null | { [k: string]: Json } | Json[];
 
 // ---------------------------------------------------------------------------
