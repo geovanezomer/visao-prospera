@@ -7,6 +7,7 @@ import { Loader2, RefreshCw, TrendingUp, Users as UsersIcon, AlertTriangle, Acti
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getDashboardMetrics, type DashboardMetrics } from "@/lib/admin/dashboard.functions";
+import { DashboardCharts } from "@/components/admin/DashboardCharts";
 
 function brl(centavos: number): string {
   return (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -134,6 +135,14 @@ export function DashboardTab() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Gráficos */}
+      <div>
+        <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <TrendingUp className="h-3.5 w-3.5" /> Gráficos
+        </div>
+        <DashboardCharts />
       </div>
     </div>
   );
