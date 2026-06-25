@@ -17,6 +17,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedShareIdRouteImport } from './routes/shared.$shareId'
+import { Route as CheckoutSucessoRouteImport } from './routes/checkout.sucesso'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiFeedbackRouteImport } from './routes/api/feedback'
 import { Route as ApiPublicPaymentsCheckoutRouteImport } from './routes/api/public/payments/checkout'
@@ -63,6 +64,11 @@ const SharedShareIdRoute = SharedShareIdRouteImport.update({
   path: '/shared/$shareId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckoutSucessoRoute = CheckoutSucessoRouteImport.update({
+  id: '/checkout/sucesso',
+  path: '/checkout/sucesso',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/api/feedback': typeof ApiFeedbackRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/checkout/sucesso': typeof CheckoutSucessoRoute
   '/shared/$shareId': typeof SharedShareIdRoute
   '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
   '/api/public/payments/webhook/asaas': typeof ApiPublicPaymentsWebhookAsaasRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/api/feedback': typeof ApiFeedbackRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/checkout/sucesso': typeof CheckoutSucessoRoute
   '/shared/$shareId': typeof SharedShareIdRoute
   '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
   '/api/public/payments/webhook/asaas': typeof ApiPublicPaymentsWebhookAsaasRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/api/feedback': typeof ApiFeedbackRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/checkout/sucesso': typeof CheckoutSucessoRoute
   '/shared/$shareId': typeof SharedShareIdRoute
   '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
   '/api/public/payments/webhook/asaas': typeof ApiPublicPaymentsWebhookAsaasRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/api/feedback'
     | '/auth/callback'
+    | '/checkout/sucesso'
     | '/shared/$shareId'
     | '/api/public/payments/checkout'
     | '/api/public/payments/webhook/asaas'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/api/feedback'
     | '/auth/callback'
+    | '/checkout/sucesso'
     | '/shared/$shareId'
     | '/api/public/payments/checkout'
     | '/api/public/payments/webhook/asaas'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/api/feedback'
     | '/auth/callback'
+    | '/checkout/sucesso'
     | '/shared/$shareId'
     | '/api/public/payments/checkout'
     | '/api/public/payments/webhook/asaas'
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   ApiFeedbackRoute: typeof ApiFeedbackRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  CheckoutSucessoRoute: typeof CheckoutSucessoRoute
   SharedShareIdRoute: typeof SharedShareIdRoute
   ApiPublicPaymentsCheckoutRoute: typeof ApiPublicPaymentsCheckoutRoute
   ApiPublicPaymentsWebhookAsaasRoute: typeof ApiPublicPaymentsWebhookAsaasRoute
@@ -260,6 +273,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SharedShareIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/checkout/sucesso': {
+      id: '/checkout/sucesso'
+      path: '/checkout/sucesso'
+      fullPath: '/checkout/sucesso'
+      preLoaderRoute: typeof CheckoutSucessoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/auth/callback'
@@ -308,6 +328,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   ApiFeedbackRoute: ApiFeedbackRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  CheckoutSucessoRoute: CheckoutSucessoRoute,
   SharedShareIdRoute: SharedShareIdRoute,
   ApiPublicPaymentsCheckoutRoute: ApiPublicPaymentsCheckoutRoute,
   ApiPublicPaymentsWebhookAsaasRoute: ApiPublicPaymentsWebhookAsaasRoute,

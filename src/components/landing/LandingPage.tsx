@@ -593,7 +593,17 @@ function ComparisonTable() {
     PLANOS — Mock de precificação
     ============================================================ */
 function PricingSection() {
-  const planos = [
+  const planos: Array<{
+    nome: string;
+    descricao: string;
+    preco: string;
+    periodo: string;
+    badge: { texto: string; icone: typeof Zap } | null;
+    destaque: boolean;
+    recursos: string[];
+    cta: string;
+    planId: "starter" | "pro";
+  }> = [
     {
       nome: "Mensal",
       descricao: "Para testar o poder da plataforma",
@@ -609,6 +619,7 @@ function PricingSection() {
         "Cancelamento a qualquer momento",
       ],
       cta: "Assinar Mensal",
+      planId: "starter",
     },
     {
       nome: "Anual",
@@ -625,8 +636,35 @@ function PricingSection() {
         "Suporte prioritário em até 24h",
       ],
       cta: "Assinar Anual",
+      planId: "pro",
     },
   ];
+
+  async function handleSubscribe(planId: "starter" | "pro") {
+    const email = window.prompt(
+      "Informe seu e-mail para receber o acesso após o pagamento:",
+    );
+    if (!email) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      window.alert("E-mail inválido.");
+      return;
+    }
+    try {
+      const res = await fetch("/api/public/payments/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planId, email }),
+      });
+      const json = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !json.url) {
+        throw new Error(json.error || "Falha ao iniciar o checkout.");
+      }
+      window.location.href = json.url;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao iniciar checkout";
+      window.alert(msg);
+    }
+  }
 
   return (
     <section id="planos" className="scroll-mt-20 border-b border-border/50 py-24">
@@ -691,6 +729,7 @@ function PricingSection() {
               <div className="mt-8">
                 <button
                   type="button"
+                  onClick={() => handleSubscribe(plano.planId)}
                   className={`group flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition ${
                     plano.destaque
                       ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40"

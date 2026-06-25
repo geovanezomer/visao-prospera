@@ -39,6 +39,7 @@ import {
   SimulatorParams,
 } from "@/engines/finance/simulator";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import { BillingButton } from "@/components/billing/BillingButton";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Presentation, X, FileText, Printer } from "lucide-react";
 // pdfExport e buildFinancialModel são carregados via dynamic import dentro
@@ -322,6 +323,7 @@ function SimulaPro() {
                     <RotateCcw className="h-3.5 w-3.5" />
                   </Button>
                   <SharedLinksDialog />
+                  <BillingButton />
                   <FeedbackDialog />
                 </div>
               </div>
