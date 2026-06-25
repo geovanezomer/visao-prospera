@@ -602,23 +602,63 @@ function ComparisonTable() {
 /* ============================================================
     PLANOS — Mock de precificação
     ============================================================ */
-function PricingSection() {
-  type Plano = {
-    nome: string;
-    descricao: string;
-    preco: string;
-    periodo: string;
-    badge: { texto: string; icone: typeof Zap } | null;
-    destaque: boolean;
-    recursos: string[];
-    cta: string;
-    planId: string;
-    upsell?: { name: string; description: string; priceCents: number } | null;
+type RawPlan = {
+  slug: string;
+  name: string;
+  description: string | null;
+  price_cents?: number;
+  priceCents?: number;
+  interval: string;
+  features?: string[];
+  upsell_enabled?: boolean;
+  upsellEnabled?: boolean;
+  upsell_name?: string | null;
+  upsellName?: string | null;
+  upsell_description?: string | null;
+  upsellDescription?: string | null;
+  upsell_price_cents?: number;
+  upsellPriceCents?: number;
+};
+
+function mapPlan(p: RawPlan) {
+  const priceCents = p.price_cents ?? p.priceCents ?? 0;
+  const upsellEnabled = p.upsell_enabled ?? p.upsellEnabled ?? false;
+  const upsellPriceCents = p.upsell_price_cents ?? p.upsellPriceCents ?? 0;
+  return {
+    nome: p.name,
+    descricao: p.description ?? "",
+    preco: (priceCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+    periodo:
+      p.interval === "year"
+        ? "/ano"
+        : p.interval === "one_time" || p.interval === "lifetime"
+        ? ""
+        : "/mês",
+    badge: p.slug === "pro" ? { texto: "Mais Popular", icone: Zap } : null,
+    destaque: p.slug === "pro",
+    recursos: Array.isArray(p.features) ? (p.features as string[]) : [],
+    cta: `Assinar ${p.name}`,
+    planId: p.slug as string,
+    upsell: upsellEnabled && upsellPriceCents > 0
+      ? {
+          name: (p.upsell_name ?? p.upsellName) ?? "Adicional",
+          description: (p.upsell_description ?? p.upsellDescription) ?? "",
+          priceCents: upsellPriceCents,
+        }
+      : null,
   };
-  const [planos, setPlanos] = useState<Plano[] | null>(null);
+}
+
+function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
+  type Plano = ReturnType<typeof mapPlan>;
+  const initialMapped: Plano[] | null = initialPlans
+    ? initialPlans.map((p) => mapPlan(p as RawPlan))
+    : null;
+  const [planos, setPlanos] = useState<Plano[] | null>(initialMapped);
   // Estado: upsell selecionado por planId.
   const [upsellSel, setUpsellSel] = useState<Record<string, boolean>>({});
   useEffect(() => {
+    if (initialMapped) return; // já veio do loader (SSR) — não refaz fetch
     let cancelled = false;
     (async () => {
       try {
@@ -629,39 +669,14 @@ function PricingSection() {
           .eq("active", true)
           .order("sort_order", { ascending: true });
         if (cancelled) return;
-        if (error || !data) {
-          setPlanos([]);
-          return;
-        }
-        const mapped: Plano[] = data.map((p: any) => ({
-          nome: p.name,
-          descricao: p.description ?? "",
-          preco: (p.price_cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
-          periodo:
-            p.interval === "year"
-              ? "/ano"
-              : p.interval === "one_time" || p.interval === "lifetime"
-              ? ""
-              : "/mês",
-          badge: p.slug === "pro" ? { texto: "Mais Popular", icone: Zap } : null,
-          destaque: p.slug === "pro",
-          recursos: Array.isArray(p.features) ? (p.features as string[]) : [],
-          cta: `Assinar ${p.name}`,
-          planId: p.slug as string,
-          upsell: p.upsell_enabled && p.upsell_price_cents > 0
-            ? {
-                name: p.upsell_name ?? "Adicional",
-                description: p.upsell_description ?? "",
-                priceCents: p.upsell_price_cents,
-              }
-            : null,
-        }));
-        setPlanos(mapped);
+        if (error || !data) { setPlanos([]); return; }
+        setPlanos(data.map((p) => mapPlan(p as RawPlan)));
       } catch {
         if (!cancelled) setPlanos([]);
       }
     })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
