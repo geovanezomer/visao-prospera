@@ -116,7 +116,7 @@ export type Database = {
     }
     Functions: {
       get_active_plan: {
-        Args: { _user_id: string }
+        Args: never
         Returns: {
           cancel_at_period_end: boolean
           current_period_end: string
