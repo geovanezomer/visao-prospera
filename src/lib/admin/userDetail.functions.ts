@@ -214,6 +214,7 @@ export const grantManualPlan = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.from("subscriptions").insert({
       user_id: data.userId,
       plan: data.plan,
+      price_id: `manual_${data.plan}`,
       status,
       provider: "manual",
       current_period_end: periodEnd,
