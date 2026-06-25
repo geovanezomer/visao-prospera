@@ -670,9 +670,7 @@ function PricingSection() {
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   // CPF/telefone deixaram de ser pedidos no lightbox — o provedor coleta no checkout.
-  const [cpf, setCpf] = useState("");
-  const [phone, setPhone] = useState("");
-  void cpf; void phone; void setCpf; void setPhone;
+
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<{ message: string; code?: string; field?: string } | null>(null);
