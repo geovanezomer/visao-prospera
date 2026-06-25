@@ -668,7 +668,22 @@ function PricingSection() {
   const [confirmFor, setConfirmFor] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; code?: string; field?: string } | null>(null);
+
+  // Mensagens humanizadas por `code` retornado pelo backend.
+  // Cobrem todos os cenários validados no /api/public/payments/checkout.
+  const ERROR_LABELS: Record<string, string> = {
+    plan_not_found: "Este plano não está mais ativo. Recarregue a página e tente outro.",
+    upsell_disabled: "O adicional foi desativado para este plano.",
+    upsell_invalid_price: "O preço do adicional está mal configurado. Tente novamente sem o adicional.",
+    upsell_currency_mismatch: "A moeda do adicional não confere com a do plano.",
+    upsell_below_min: "O adicional está abaixo do valor mínimo permitido (R$ 0,50).",
+    upsell_above_max: "O adicional está com valor desproporcional ao plano.",
+    rate_limited: "Muitas tentativas seguidas. Aguarde 1 minuto e tente novamente.",
+    invalid_payload: "Verifique os dados informados e tente de novo.",
+    config_missing: "Pagamentos indisponíveis no momento. Tente novamente em instantes.",
+    provider_error: "O provedor de pagamento recusou a operação. Tente novamente.",
+  };
 
   const planoConfirm = useMemo(
     () => planos.find((p) => p.planId === confirmFor) ?? null,
@@ -677,8 +692,6 @@ function PricingSection() {
   const upsellLigado = !!(planoConfirm && upsellSel[planoConfirm.planId] && planoConfirm.upsell);
   const totalReais = useMemo(() => {
     if (!planoConfirm) return 0;
-    // O preço do plano vem formatado em string ptBR; reconvertemos para number
-    // sem perder os centavos quando houver.
     const base = Number(planoConfirm.preco.replace(/\./g, "").replace(",", ".")) || 0;
     const add = upsellLigado ? (planoConfirm.upsell!.priceCents / 100) : 0;
     return base + add;
@@ -693,7 +706,7 @@ function PricingSection() {
   async function handleSubscribe() {
     if (!planoConfirm) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("E-mail inválido.");
+      setError({ message: "E-mail inválido.", field: "email" });
       return;
     }
     setSubmitting(true);
@@ -708,16 +721,30 @@ function PricingSection() {
           withUpsell: !!upsellSel[planoConfirm.planId],
         }),
       });
-      const json = (await res.json()) as { url?: string; error?: string };
+      const json = (await res.json()) as {
+        url?: string;
+        error?: string;
+        code?: string;
+        field?: string;
+      };
       if (!res.ok || !json.url) {
-        throw new Error(json.error || "Falha ao iniciar o checkout.");
+        const code = json.code;
+        const friendly = (code && ERROR_LABELS[code]) || json.error || "Falha ao iniciar o checkout.";
+        setError({ message: friendly, code, field: json.field });
+        // Upsell mal configurado? Desliga o adicional para o usuário poder reenviar.
+        if (code?.startsWith("upsell_")) {
+          setUpsellSel((s) => ({ ...s, [planoConfirm.planId]: false }));
+        }
+        setSubmitting(false);
+        return;
       }
       window.location.href = json.url;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao iniciar checkout");
+      setError({ message: e instanceof Error ? e.message : "Erro ao iniciar checkout" });
       setSubmitting(false);
     }
   }
+
 
 
   return (
@@ -904,10 +931,21 @@ function PricingSection() {
               </div>
 
               {error && (
-                <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                  {error}
+                <div className="space-y-1 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                  <div className="flex items-start gap-2">
+                    {error.field && (
+                      <span className="shrink-0 rounded bg-destructive/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+                        {error.field === "upsell" ? "Adicional" : error.field === "email" ? "E-mail" : error.field}
+                      </span>
+                    )}
+                    <span className="flex-1">{error.message}</span>
+                  </div>
+                  {error.code && (
+                    <div className="text-[10px] opacity-70">cód.: {error.code}</div>
+                  )}
                 </div>
               )}
+
             </div>
           )}
 

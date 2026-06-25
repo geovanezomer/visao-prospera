@@ -75,8 +75,12 @@ export class StripeProvider implements PaymentProvider {
       success_url: input.successUrl,
       cancel_url: input.cancelUrl,
       "metadata[plan]": input.plan,
+      // Email no metadata da Session para correlacionar antes do
+      // customer.subscription.* (que não traz customer_email).
+      "metadata[email]": input.email,
       allow_promotion_codes: "true",
     };
+
 
     if (explicitRef) {
       body["line_items[0][price]"] = explicitRef;
@@ -132,9 +136,12 @@ export class StripeProvider implements PaymentProvider {
 
     if (mode === "subscription") {
       body["subscription_data[metadata][plan]"] = input.plan;
+      body["subscription_data[metadata][email]"] = input.email;
     } else {
       body["payment_intent_data[metadata][plan]"] = input.plan;
+      body["payment_intent_data[metadata][email]"] = input.email;
     }
+
 
     const session = await stripeFetch<{ url: string }>("/checkout/sessions", body);
     return { url: session.url };

@@ -119,6 +119,48 @@ export type Database = {
         }
         Relationships: []
       }
+      checkout_intents: {
+        Row: {
+          created_at: string
+          currency: string | null
+          email: string
+          id: string
+          ip: string | null
+          plan_amount_cents: number | null
+          plan_slug: string
+          provider: string
+          upsell_amount_cents: number | null
+          user_agent: string | null
+          with_upsell: boolean
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          email: string
+          id?: string
+          ip?: string | null
+          plan_amount_cents?: number | null
+          plan_slug: string
+          provider: string
+          upsell_amount_cents?: number | null
+          user_agent?: string | null
+          with_upsell?: boolean
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          email?: string
+          id?: string
+          ip?: string | null
+          plan_amount_cents?: number | null
+          plan_slug?: string
+          provider?: string
+          upsell_amount_cents?: number | null
+          user_agent?: string | null
+          with_upsell?: boolean
+        }
+        Relationships: []
+      }
       email_settings: {
         Row: {
           from_email: string | null
