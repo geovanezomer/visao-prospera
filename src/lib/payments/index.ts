@@ -40,13 +40,46 @@ async function resolveFromDb(): Promise<{ provider: ProviderName; apiKey?: strin
   }
 }
 
-function instantiate(name: ProviderName): PaymentProvider {
+async function instantiate(name: ProviderName): Promise<PaymentProvider> {
+  // Dynamic import — funciona em Worker/Edge runtime (CJS require não é suportado).
   if (name === "stripe") {
-    const { StripeProvider } = require("./stripe") as typeof import("./stripe");
-    return new StripeProvider();
+    const mod = await import("./stripe");
+    return new mod.StripeProvider();
   }
-  const { AsaasProvider } = require("./asaas") as typeof import("./asaas");
-  return new AsaasProvider();
+  const mod = await import("./asaas");
+  return new mod.AsaasProvider();
+}
+
+/**
+ * Hidrata `process.env` com credenciais salvas no banco para um provider
+ * específico. Usado por webhooks e por operações administrativas (refund)
+ * antes de qualquer chamada que dependa de `process.env.STRIPE_SECRET_KEY`
+ * / `ASAAS_API_KEY`. Idempotente.
+ */
+export async function hydrateProviderEnv(provider: ProviderName): Promise<boolean> {
+  try {
+    const { createClient } = await import("@supabase/supabase-js");
+    const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    });
+    const { data: cred } = await sb
+      .from("provider_credentials")
+      .select("api_key, webhook_secret, mode")
+      .eq("provider", provider)
+      .maybeSingle();
+    if (!cred?.api_key) return false;
+    if (provider === "stripe") {
+      process.env.STRIPE_SECRET_KEY = cred.api_key;
+      if (cred.webhook_secret) process.env.STRIPE_WEBHOOK_SECRET = cred.webhook_secret;
+    } else {
+      process.env.ASAAS_API_KEY = cred.api_key;
+      if (cred.webhook_secret) process.env.ASAAS_WEBHOOK_TOKEN = cred.webhook_secret;
+      if (cred.mode) process.env.ASAAS_ENV = cred.mode === "live" ? "production" : "sandbox";
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Resolve provider preferindo o banco; fallback para .env. Async. */
@@ -54,20 +87,12 @@ export async function resolveProvider(): Promise<PaymentProvider> {
   if (_cached && _cached.until > Date.now()) return _cached.instance;
   const fromDb = await resolveFromDb();
   if (fromDb) {
-    // Injeta valores no env do request para que stripe.ts/asaas.ts leiam.
-    if (fromDb.provider === "stripe") {
-      process.env.STRIPE_SECRET_KEY = fromDb.apiKey;
-      if (fromDb.webhookSecret) process.env.STRIPE_WEBHOOK_SECRET = fromDb.webhookSecret;
-    } else {
-      process.env.ASAAS_API_KEY = fromDb.apiKey;
-      if (fromDb.webhookSecret) process.env.ASAAS_WEBHOOK_TOKEN = fromDb.webhookSecret;
-      if (fromDb.mode) process.env.ASAAS_ENV = fromDb.mode === "live" ? "production" : "sandbox";
-    }
-    const instance = instantiate(fromDb.provider);
+    await hydrateProviderEnv(fromDb.provider);
+    const instance = await instantiate(fromDb.provider);
     _cached = { name: fromDb.provider, instance, until: Date.now() + TTL_MS };
     return instance;
   }
-  return getProvider();
+  return getProviderSync();
 }
 
 /** Versão síncrona (legacy): lê apenas do env. */
