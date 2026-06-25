@@ -18,7 +18,10 @@ function asaasBase(): string {
     : "https://api.asaas.com/v3";
 }
 
-async function asaasFetch<T>(path: string, init?: RequestInit & { body?: any }): Promise<T> {
+async function asaasFetch<T>(
+  path: string,
+  init?: { method?: string; body?: Record<string, unknown>; headers?: Record<string, string> },
+): Promise<T> {
   const key = process.env.ASAAS_API_KEY!;
   const res = await fetch(`${asaasBase()}${path}`, {
     method: init?.method ?? "GET",
