@@ -318,14 +318,8 @@ export const createManualUser = createServerFn({ method: "POST" })
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // 1) Verifica se já existe via listUsers (filtro por email).
-    const { data: existing } = await supabaseAdmin.auth.admin.listUsers({
-      page: 1,
-      perPage: 200,
-    });
-    const dup = existing?.users?.find(
-      (u) => (u.email ?? "").toLowerCase() === data.email,
-    );
+    // 1) Verifica duplicidade paginando todos os usuários (listUsers não filtra por email).
+    const dup = await findUserByEmail(supabaseAdmin, data.email);
     if (dup) {
       throw new Error(
         `Já existe um usuário com este e-mail (id ${dup.id}). Use o drawer para conceder plano.`,
