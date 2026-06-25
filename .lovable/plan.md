@@ -1,70 +1,42 @@
-## Admin v3 — 5 novas capacidades
+## Plano: Upsell no Checkout
 
-Implementação completa com Claude Opus. Tudo auditado em `admin_audit_log`.
+### 1. Schema (migration)
+Adicionar à tabela `plans`:
+- `upsell_enabled` (bool, default false)
+- `upsell_name` (text)
+- `upsell_description` (text)
+- `upsell_price_cents` (int)
+- `upsell_provider_ref` (jsonb) — `{ stripe_price_id, asaas_product_id }`
 
-### 1. Configuração de Planos via UI (P0)
-Hoje `PLANS` está hardcoded em `src/lib/payments/plans.ts`. Migrar para tabela.
+### 2. Admin UI (`PlansTab.tsx`)
+Card colapsável "Upsell opcional" no formulário do plano:
+- Toggle Ativar upsell
+- Nome, descrição, preço (R$)
+- IDs opcionais por provedor
 
-- **DB:** tabela `plans` (slug, name, price_cents, currency, interval, features jsonb, limits jsonb, stripe_price_id, asaas_plan_id, active, sort_order).
-- **Server:** `plans.functions.ts` — `listPlans`, `upsertPlan`, `togglePlan`, `deletePlan` (admin-gated + audit).
-- **Compat:** `getPlans()` lê do banco com fallback ao hardcoded; landing/pricing e checkout passam a usar a fonte dinâmica.
-- **UI:** nova aba **Planos** no `/admin` — tabela editável com drawer (preço, features list, limites, IDs Stripe/Asaas, toggle ativo).
-- **Seed:** migração popula os planos atuais (free/pro).
+### 3. Server `plans.functions.ts`
+Estender schema Zod e CRUD (`upsertPlan`) para persistir campos de upsell.
 
-### 2. Notas Internas no Usuário (CRM leve)
-- **DB:** tabela `user_notes` (user_id, author_id, body, pinned, created_at).
-- **Server:** `userNotes.functions.ts` — list/create/delete/togglePin.
-- **UI:** nova aba **Notas** no `UserDetailDrawer.tsx` — timeline com autor, "fixar", soft delete.
+### 4. Landing/Checkout UI
+Na página de checkout (rota onde escolhe plano antes do redirect/embed), exibir checkbox "Adicionar [nome] por R$ X" quando `upsell_enabled`. Passar flag `withUpsell` ao endpoint de checkout.
 
-### 3. Notificações para o Admin
-Eventos: novo signup, churn (cancelamento), past_due, webhook failure.
+### 5. Endpoint `checkout.ts` + provedores
+- Carregar plano + upsell do banco.
+- **Stripe** (`stripe.ts`):
+  - `mode: subscription` → adicionar segundo `line_item` recorrente (cobra junto na assinatura) OU usar `price_data` one-time como add-on. Decisão: tratar upsell como **one-time** via `payment_intent_data`/`invoice_items` em assinatura é complexo; usar `line_items` adicional com mesmo `interval` quando assinatura, ou item adicional quando one-time.
+  - Simplificação: upsell é sempre **one-time**. Em subscription, adicionar via `subscription_data.add_invoice_items` (cobra na primeira fatura). Em payment mode, adicionar `line_item` extra.
+- **Asaas** (`asaas.ts`):
+  - Em subscription: criar charge avulsa adicional via `/payments` com mesmo customer + `dueDate` hoje.
+  - Em one-time: somar valor ao `value` da cobrança e descrever no `description`.
 
-- **DB:** `notification_settings` (singleton: slack_webhook_url, email_to, events jsonb com flags por tipo).
-- **Server:** `notify.server.ts` — `notifyAdmin(event, payload)` envia Slack (webhook) + Resend (email), respeita flags. Throttle simples (dedup por chave 5min em `admin_audit_log`).
-- **Integração:** hooks em
-  - `handle_new_user` trigger → tabela `signup_events` + chamada via server fn pós-signup
-  - webhook handlers (Stripe/Asaas): em `subscription.deleted`, `past_due`, e falha de assinatura
-  - `webhook_events` quando `status='failed'`
-- **UI:** aba **Sistema** ganha card "Notificações" (webhook Slack, email destino, checkboxes por evento, botão "Testar").
+### 6. Webhook
+Registrar metadata `upsell: true` na sessão/charge para rastreio em `webhook_events`. Sem mudança de lógica de plano (upsell não altera plano ativo).
 
-### 4. Sessões Ativas / Revogar Tokens
-- **Server:** `sessions.functions.ts` (admin) — `listUserSessions(userId)` via `supabaseAdmin.auth.admin` (lista refresh tokens), `revokeAllSessions(userId)` via `signOut({ scope: 'global' })`, `revokeSession(sessionId)`.
-- **UI:** nova aba **Sessões** no `UserDetailDrawer` — lista (criado em, último uso, IP, user-agent quando disponível), botões "Revogar" / "Revogar todas". Auditado.
+### 7. Tipos
+Atualizar `payments/types.ts` `CreateCheckoutInput` com `upsell?: { name, priceCents, providerRef? }`.
 
-### 5. Status Page Interno
-- **Server:** `status.functions.ts` — checa em paralelo:
-  - **Stripe:** `GET https://status.stripe.com/api/v2/status.json`
-  - **Resend:** ping `GET https://api.resend.com/domains` com API key (HEAD se possível)
-  - **Supabase:** `SELECT 1` + `https://status.supabase.com/api/v2/status.json`
-  - **Asaas:** `GET /v3/finance/balance` com key
-  - **Lovable AI Gateway:** `GET /v1/models` com `LOVABLE_API_KEY`
-- Cada check retorna `{ name, status: 'operational'|'degraded'|'down', latencyMs, message }`.
-- **UI:** nova aba **Status** com 5 cards (LED verde/amarelo/vermelho, latência, última verificação, botão "Recheck"). Auto-refresh 60s.
+### 8. Validação
+- `bunx tsgo` para tipos
+- Smoke test mental dos fluxos: plano recorrente + upsell, plano one-time + upsell, sem upsell.
 
-### Arquivos novos
-```
-src/lib/admin/plans.functions.ts
-src/lib/admin/userNotes.functions.ts
-src/lib/admin/sessions.functions.ts
-src/lib/admin/status.functions.ts
-src/lib/admin/notify.server.ts
-src/components/admin/tabs/PlansTab.tsx
-src/components/admin/tabs/StatusTab.tsx
-src/components/admin/UserNotesPanel.tsx
-src/components/admin/UserSessionsPanel.tsx
-```
-
-### Arquivos alterados
-- `src/routes/admin.tsx` (+2 abas: Planos, Status → 11 abas)
-- `src/components/admin/UserDetailDrawer.tsx` (+2 sub-abas: Notas, Sessões)
-- `src/components/admin/tabs/SystemTab.tsx` (card de notificações)
-- `src/lib/payments/plans.ts` (passa a ler do banco com cache + fallback)
-- `src/routes/api/public/payments/webhook*.ts` (chama `notifyAdmin` em past_due/canceled/failure)
-
-### Migrations (uma única)
-- `plans` + GRANTs + RLS (leitura pública pros ativos; escrita só service_role)
-- `user_notes` + GRANTs + RLS (leitura apenas admin)
-- `notification_settings` (singleton id=1)
-- Seed dos planos atuais
-
-Confirma para eu executar?
+Pronto para executar?

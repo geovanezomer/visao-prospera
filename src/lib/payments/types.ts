@@ -74,6 +74,13 @@ export interface PaymentProvider {
     providerRef?: string | null;
     /** Nome legível do plano (description/product_data). */
     planName?: string;
+    /** Upsell opcional adicionado pelo comprador no checkout. */
+    upsell?: {
+      name: string;
+      priceCents: number;
+      stripePriceId?: string | null;
+      asaasRef?: string | null;
+    } | null;
   }): Promise<{ url: string }>;
 
   /**

@@ -14,6 +14,7 @@ import { resolveProvider } from "@/lib/payments";
 const Body = z.object({
   plan: z.string().min(1).max(40).regex(/^[a-z0-9_]+$/),
   email: z.string().email().max(200),
+  withUpsell: z.boolean().optional().default(false),
 });
 
 // Rate limit ad-hoc em memória: 10 req/min por IP+email. O backend não tem
@@ -39,6 +40,13 @@ type PlanDetails = {
   currency?: string;
   providerRef?: string | null;
   planName?: string;
+  upsell?: {
+    enabled: boolean;
+    name: string;
+    priceCents: number;
+    stripePriceId?: string | null;
+    asaasRef?: string | null;
+  };
 };
 
 async function loadPlanDetails(slug: string, providerName: string): Promise<PlanDetails | null> {
@@ -49,7 +57,7 @@ async function loadPlanDetails(slug: string, providerName: string): Promise<Plan
     });
     const { data } = await sb
       .from("plans")
-      .select("name,price_cents,currency,interval,stripe_price_id,asaas_plan_ref,active")
+      .select("name,price_cents,currency,interval,stripe_price_id,asaas_plan_ref,active,upsell_enabled,upsell_name,upsell_price_cents,upsell_stripe_price_id,upsell_asaas_ref")
       .eq("slug", slug)
       .eq("active", true)
       .maybeSingle();
@@ -60,6 +68,15 @@ async function loadPlanDetails(slug: string, providerName: string): Promise<Plan
       currency: data.currency,
       providerRef: providerName === "stripe" ? data.stripe_price_id : data.asaas_plan_ref,
       planName: data.name,
+      upsell: data.upsell_enabled
+        ? {
+            enabled: true,
+            name: data.upsell_name ?? "Adicional",
+            priceCents: data.upsell_price_cents ?? 0,
+            stripePriceId: data.upsell_stripe_price_id,
+            asaasRef: data.upsell_asaas_ref,
+          }
+        : undefined,
     };
   } catch {
     return null;
@@ -103,6 +120,15 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
             currency: details?.currency,
             providerRef: details?.providerRef,
             planName: details?.planName,
+            upsell:
+              parsed.withUpsell && details?.upsell?.enabled && details.upsell.priceCents > 0
+                ? {
+                    name: details.upsell.name,
+                    priceCents: details.upsell.priceCents,
+                    stripePriceId: details.upsell.stripePriceId,
+                    asaasRef: details.upsell.asaasRef,
+                  }
+                : null,
           });
           return Response.json({ url, provider: provider.name });
         } catch (e) {

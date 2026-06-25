@@ -27,12 +27,20 @@ type Editing = {
   asaasPlanRef: string;
   active: boolean;
   sortOrder: number;
+  upsellEnabled: boolean;
+  upsellName: string;
+  upsellDescription: string;
+  upsellPriceReais: string;
+  upsellStripePriceId: string;
+  upsellAsaasRef: string;
 };
 
 const empty: Editing = {
   slug: "", name: "", description: "", priceReais: "0", currency: "brl",
   interval: "month", features: "", limits: "{}", stripePriceId: "",
   asaasPlanRef: "", active: true, sortOrder: 10,
+  upsellEnabled: false, upsellName: "", upsellDescription: "",
+  upsellPriceReais: "0", upsellStripePriceId: "", upsellAsaasRef: "",
 };
 
 function rowToEditing(r: PlanRow): Editing {
@@ -50,8 +58,15 @@ function rowToEditing(r: PlanRow): Editing {
     asaasPlanRef: r.asaasPlanRef ?? "",
     active: r.active,
     sortOrder: r.sortOrder,
+    upsellEnabled: r.upsellEnabled,
+    upsellName: r.upsellName ?? "",
+    upsellDescription: r.upsellDescription ?? "",
+    upsellPriceReais: (r.upsellPriceCents / 100).toFixed(2),
+    upsellStripePriceId: r.upsellStripePriceId ?? "",
+    upsellAsaasRef: r.upsellAsaasRef ?? "",
   };
 }
+
 
 export function PlansTab() {
   const [plans, setPlans] = useState<PlanRow[]>([]);
@@ -74,6 +89,7 @@ export function PlansTab() {
     try {
       const limits = editing.limits.trim() ? JSON.parse(editing.limits) : {};
       const cents = Math.round(parseFloat(editing.priceReais.replace(",", ".") || "0") * 100);
+      const upsellCents = Math.round(parseFloat(editing.upsellPriceReais.replace(",", ".") || "0") * 100);
       setSaving(true);
       await upsertPlan({
         data: {
@@ -90,6 +106,12 @@ export function PlansTab() {
           asaasPlanRef: editing.asaasPlanRef || null,
           active: editing.active,
           sortOrder: editing.sortOrder,
+          upsellEnabled: editing.upsellEnabled,
+          upsellName: editing.upsellName || null,
+          upsellDescription: editing.upsellDescription || null,
+          upsellPriceCents: upsellCents,
+          upsellStripePriceId: editing.upsellStripePriceId || null,
+          upsellAsaasRef: editing.upsellAsaasRef || null,
         },
       });
       toast.success("Plano salvo.");
@@ -188,6 +210,49 @@ export function PlansTab() {
           <div><Label className="text-xs">Ordem</Label><Input type="number" value={editing.sortOrder} onChange={(e) => setEditing({ ...editing, sortOrder: parseInt(e.target.value || "0", 10) })} /></div>
           <div className="flex items-end gap-2"><Switch checked={editing.active} onCheckedChange={(c) => setEditing({ ...editing, active: c })} /><span className="text-xs">Ativo</span></div>
         </div>
+
+        {/* Upsell opcional no checkout */}
+        <div className="rounded-md border border-dashed border-border/60 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-xs font-semibold">Upsell no checkout</Label>
+              <p className="text-[10px] text-muted-foreground">Oferece um adicional opcional na hora da compra.</p>
+            </div>
+            <Switch
+              checked={editing.upsellEnabled}
+              onCheckedChange={(c) => setEditing({ ...editing, upsellEnabled: c })}
+            />
+          </div>
+          {editing.upsellEnabled && (
+            <div className="space-y-2 pt-1">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Nome</Label>
+                  <Input value={editing.upsellName} onChange={(e) => setEditing({ ...editing, upsellName: e.target.value })} placeholder="Onboarding 1:1" />
+                </div>
+                <div>
+                  <Label className="text-xs">Preço (R$)</Label>
+                  <Input value={editing.upsellPriceReais} onChange={(e) => setEditing({ ...editing, upsellPriceReais: e.target.value })} placeholder="197.00" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Descrição</Label>
+                <Input value={editing.upsellDescription} onChange={(e) => setEditing({ ...editing, upsellDescription: e.target.value })} placeholder="Sessão de 1h com nosso especialista" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Stripe price_id (opcional)</Label>
+                  <Input value={editing.upsellStripePriceId} onChange={(e) => setEditing({ ...editing, upsellStripePriceId: e.target.value })} placeholder="price_xxx" />
+                </div>
+                <div>
+                  <Label className="text-xs">Asaas ref (opcional)</Label>
+                  <Input value={editing.upsellAsaasRef} onChange={(e) => setEditing({ ...editing, upsellAsaasRef: e.target.value })} />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         <Button onClick={save} disabled={saving} className="w-full">
           {saving ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-2 h-3.5 w-3.5" />}Salvar
         </Button>

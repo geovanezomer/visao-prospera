@@ -58,6 +58,7 @@ export class StripeProvider implements PaymentProvider {
     currency?: string;
     providerRef?: string | null;
     planName?: string;
+    upsell?: { name: string; priceCents: number; stripePriceId?: string | null; asaasRef?: string | null } | null;
   }): Promise<{ url: string }> {
     const isOneTime = input.interval === "one_time" || input.interval === "lifetime";
     const mode = isOneTime ? "payment" : "subscription";
@@ -95,6 +96,38 @@ export class StripeProvider implements PaymentProvider {
     } else {
       // Fallback legacy (starter/pro via env).
       body["line_items[0][price]"] = getProviderPlanRef(input.plan);
+    }
+
+    // Upsell — adicional opcional escolhido no checkout.
+    // Stripe: em `mode=payment`, adicionamos um line_item extra (one-time).
+    // Em `mode=subscription`, usamos `subscription_data[add_invoice_items]`
+    // que cobra o valor na 1ª fatura sem virar recorrência.
+    if (input.upsell && input.upsell.priceCents > 0) {
+      const u = input.upsell;
+      const currency = (input.currency || "BRL").toLowerCase();
+      if (mode === "payment") {
+        body["line_items[1][quantity]"] = 1;
+        if (u.stripePriceId && u.stripePriceId.trim()) {
+          body["line_items[1][price]"] = u.stripePriceId;
+        } else {
+          body["line_items[1][price_data][currency]"] = currency;
+          body["line_items[1][price_data][unit_amount]"] = u.priceCents;
+          body["line_items[1][price_data][product_data][name]"] = u.name;
+        }
+      } else {
+        // Add invoice item — cobrado junto na primeira fatura da assinatura.
+        if (u.stripePriceId && u.stripePriceId.trim()) {
+          body["subscription_data[add_invoice_items][0][price]"] = u.stripePriceId;
+          body["subscription_data[add_invoice_items][0][quantity]"] = 1;
+        } else {
+          body["subscription_data[add_invoice_items][0][quantity]"] = 1;
+          body["subscription_data[add_invoice_items][0][price_data][currency]"] = currency;
+          body["subscription_data[add_invoice_items][0][price_data][unit_amount]"] = u.priceCents;
+          body["subscription_data[add_invoice_items][0][price_data][product_data][name]"] = u.name;
+        }
+      }
+      body["metadata[upsell]"] = "1";
+      body["metadata[upsell_name]"] = u.name;
     }
 
     if (mode === "subscription") {

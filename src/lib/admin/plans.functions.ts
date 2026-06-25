@@ -25,6 +25,12 @@ export type PlanRow = {
   asaasPlanRef: string | null;
   active: boolean;
   sortOrder: number;
+  upsellEnabled: boolean;
+  upsellName: string | null;
+  upsellDescription: string | null;
+  upsellPriceCents: number;
+  upsellStripePriceId: string | null;
+  upsellAsaasRef: string | null;
 };
 
 function rowToPlan(r: any): PlanRow {
@@ -42,8 +48,15 @@ function rowToPlan(r: any): PlanRow {
     asaasPlanRef: r.asaas_plan_ref,
     active: r.active,
     sortOrder: r.sort_order,
+    upsellEnabled: !!r.upsell_enabled,
+    upsellName: r.upsell_name ?? null,
+    upsellDescription: r.upsell_description ?? null,
+    upsellPriceCents: r.upsell_price_cents ?? 0,
+    upsellStripePriceId: r.upsell_stripe_price_id ?? null,
+    upsellAsaasRef: r.upsell_asaas_ref ?? null,
   };
 }
+
 
 // Listagem admin (todos, ativos e inativos).
 export const listPlansAdmin = createServerFn({ method: "POST" })
@@ -88,6 +101,12 @@ const planSchema = z.object({
   asaasPlanRef: z.string().nullable().optional(),
   active: z.boolean(),
   sortOrder: z.number().int(),
+  upsellEnabled: z.boolean().optional().default(false),
+  upsellName: z.string().max(120).nullable().optional(),
+  upsellDescription: z.string().max(500).nullable().optional(),
+  upsellPriceCents: z.number().int().min(0).optional().default(0),
+  upsellStripePriceId: z.string().nullable().optional(),
+  upsellAsaasRef: z.string().nullable().optional(),
 });
 
 export const upsertPlan = createServerFn({ method: "POST" })
@@ -109,6 +128,12 @@ export const upsertPlan = createServerFn({ method: "POST" })
       asaas_plan_ref: data.asaasPlanRef ?? null,
       active: data.active,
       sort_order: data.sortOrder,
+      upsell_enabled: data.upsellEnabled ?? false,
+      upsell_name: data.upsellName ?? null,
+      upsell_description: data.upsellDescription ?? null,
+      upsell_price_cents: data.upsellPriceCents ?? 0,
+      upsell_stripe_price_id: data.upsellStripePriceId ?? null,
+      upsell_asaas_ref: data.upsellAsaasRef ?? null,
     };
     const q = data.id
       ? supabaseAdmin.from("plans").update(payload).eq("id", data.id).select().maybeSingle()

@@ -259,6 +259,12 @@ export type Database = {
           sort_order: number
           stripe_price_id: string | null
           updated_at: string
+          upsell_asaas_ref: string | null
+          upsell_description: string | null
+          upsell_enabled: boolean
+          upsell_name: string | null
+          upsell_price_cents: number
+          upsell_stripe_price_id: string | null
         }
         Insert: {
           active?: boolean
@@ -276,6 +282,12 @@ export type Database = {
           sort_order?: number
           stripe_price_id?: string | null
           updated_at?: string
+          upsell_asaas_ref?: string | null
+          upsell_description?: string | null
+          upsell_enabled?: boolean
+          upsell_name?: string | null
+          upsell_price_cents?: number
+          upsell_stripe_price_id?: string | null
         }
         Update: {
           active?: boolean
@@ -293,6 +305,12 @@ export type Database = {
           sort_order?: number
           stripe_price_id?: string | null
           updated_at?: string
+          upsell_asaas_ref?: string | null
+          upsell_description?: string | null
+          upsell_enabled?: boolean
+          upsell_name?: string | null
+          upsell_price_cents?: number
+          upsell_stripe_price_id?: string | null
         }
         Relationships: []
       }
