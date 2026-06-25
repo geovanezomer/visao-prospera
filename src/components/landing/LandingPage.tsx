@@ -780,7 +780,25 @@ function PricingSection() {
         </div>
 
         <div className="mt-14 grid gap-6 md:grid-cols-2">
-          {planos.map((plano) => (
+          {planos === null
+            ? Array.from({ length: 2 }).map((_, i) => (
+                <div
+                  key={`sk-${i}`}
+                  className="relative flex flex-col rounded-2xl border border-border bg-card/60 p-7"
+                  aria-hidden="true"
+                >
+                  <div className="h-5 w-24 animate-pulse rounded bg-muted" />
+                  <div className="mt-2 h-4 w-56 animate-pulse rounded bg-muted" />
+                  <div className="mt-6 h-10 w-40 animate-pulse rounded bg-muted" />
+                  <div className="mt-6 space-y-3">
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <div key={j} className="h-4 w-full animate-pulse rounded bg-muted" />
+                    ))}
+                  </div>
+                  <div className="mt-8 h-11 w-full animate-pulse rounded bg-muted" />
+                </div>
+              ))
+            : planos.map((plano) => (
             <div
               key={plano.nome}
               className={`relative flex flex-col rounded-2xl border p-7 transition ${
