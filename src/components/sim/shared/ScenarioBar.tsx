@@ -254,7 +254,8 @@ export function ScenarioBar() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[10px] uppercase text-muted-foreground">
-                    <th className="p-2">Ano</th>
+                    <th className="p-2">Cenário</th>
+                    <th className="p-2">Tipo</th>
                     <th className="p-2 text-right">Faturamento</th>
                     <th className="p-2 text-right">EBITDA</th>
                     <th className="p-2 text-right">ROE</th>
@@ -266,9 +267,22 @@ export function ScenarioBar() {
                 <tbody>
                   {historicals.map((h) => {
                     const m = metrics.get(h.id);
+                    const isPrev = (h.subKind ?? "realizado") === "previsao";
                     return (
                     <tr key={h.id} className="border-t border-border/40">
                       <td className="p-2 font-semibold">{h.name}</td>
+                      <td className="p-2">
+                        <span
+                          className={
+                            "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium " +
+                            (isPrev
+                              ? "bg-[var(--warning)]/15 text-[var(--warning)] border border-[var(--warning)]/40"
+                              : "bg-primary/15 text-primary border border-primary/40")
+                          }
+                        >
+                          {isPrev ? "Previsão" : "Realizado"}
+                        </span>
+                      </td>
                       <td className="num p-2 text-right">
                         {m ? fmtBRL(m.faturamento) : "—"}
                       </td>
