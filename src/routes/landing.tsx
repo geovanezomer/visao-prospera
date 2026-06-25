@@ -5,10 +5,21 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { isLandingEnabled } from "@/lib/featureFlags";
 import { faqPageJsonLd } from "@/lib/seo/faqs";
+import { listPlansPublic } from "@/lib/admin/plans.functions";
 
 const CANONICAL = "https://visao-prospera.lovable.app/landing";
 
 export const Route = createFileRoute("/landing")({
+  loader: async () => {
+    if (!isLandingEnabled()) return { plans: [] as any[] };
+    try {
+      const { plans } = await listPlansPublic();
+      return { plans };
+    } catch {
+      return { plans: [] as any[] };
+    }
+  },
+  staleTime: 60_000,
   head: () => ({
     meta: [
       {
@@ -63,6 +74,8 @@ export const Route = createFileRoute("/landing")({
       },
     ],
   }),
+  errorComponent: () => <LandingPage initialPlans={[]} />,
+  notFoundComponent: () => <Navigate to="/" />,
   component: LandingRoute,
 });
 
@@ -70,5 +83,6 @@ function LandingRoute() {
   if (!isLandingEnabled()) {
     return <Navigate to="/login" />;
   }
-  return <LandingPage />;
+  const { plans } = Route.useLoaderData();
+  return <LandingPage initialPlans={plans} />;
 }
