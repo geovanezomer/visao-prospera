@@ -81,7 +81,7 @@ const planSchema = z.object({
   description: z.string().max(500).nullable().optional(),
   priceCents: z.number().int().min(0),
   currency: z.string().min(3).max(3),
-  interval: z.enum(["month", "year", "week", "day", "lifetime"]),
+  interval: z.enum(["month", "year", "week", "day", "lifetime", "one_time"]),
   features: z.array(z.string().max(200)).max(40),
   limits: z.record(z.any()).default({}),
   stripePriceId: z.string().nullable().optional(),

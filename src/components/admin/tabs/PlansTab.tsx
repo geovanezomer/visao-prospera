@@ -167,6 +167,7 @@ export function PlansTab() {
                 <SelectItem value="week">Semanal</SelectItem>
                 <SelectItem value="day">Diário</SelectItem>
                 <SelectItem value="lifetime">Vitalício</SelectItem>
+                <SelectItem value="one_time">Pagamento único</SelectItem>
               </SelectContent>
             </Select>
           </div>
