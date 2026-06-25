@@ -619,10 +619,11 @@ function PricingSection() {
     { nome: "Mensal", descricao: "Para testar o poder da plataforma", preco: "197", periodo: "/mês", badge: null, destaque: false, recursos: ["Acesso completo a todos os módulos", "Diagnóstico, DRE, Fluxo de Caixa e Valuation", "Reforma Tributária CBS/IBS", "Suporte por e-mail", "Cancelamento a qualquer momento"], cta: "Assinar Mensal", planId: "starter", upsell: null },
     { nome: "Anual", descricao: "O escolhido por 8 em cada 10 consultores", preco: "1.497", periodo: "/ano", badge: { texto: "Mais Popular · 37% OFF", icone: Zap }, destaque: true, recursos: ["Tudo do plano Mensal", "Economia equivalente a 4 meses grátis", "Consultor IA com contexto da sua empresa", "Cenários ilimitados e Monte Carlo", "Suporte prioritário em até 24h"], cta: "Assinar Anual", planId: "pro", upsell: null },
   ];
-  const [planos, setPlanos] = useState<Plano[]>(FALLBACK);
+  const [planos, setPlanos] = useState<Plano[] | null>(null);
   // Estado: upsell selecionado por planId.
   const [upsellSel, setUpsellSel] = useState<Record<string, boolean>>({});
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
         const { supabase } = await import("@/integrations/supabase/client");
@@ -631,34 +632,40 @@ function PricingSection() {
           .select("slug,name,description,price_cents,interval,features,sort_order,upsell_enabled,upsell_name,upsell_description,upsell_price_cents")
           .eq("active", true)
           .order("sort_order", { ascending: true });
-        if (error || !data?.length) return;
-        const mapped: Plano[] = data
-          .map((p: any) => ({
-            nome: p.name,
-            descricao: p.description ?? "",
-            preco: (p.price_cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
-            periodo:
-              p.interval === "year"
-                ? "/ano"
-                : p.interval === "one_time" || p.interval === "lifetime"
-                ? ""
-                : "/mês",
-            badge: p.slug === "pro" ? { texto: "Mais Popular", icone: Zap } : null,
-            destaque: p.slug === "pro",
-            recursos: Array.isArray(p.features) ? (p.features as string[]) : [],
-            cta: `Assinar ${p.name}`,
-            planId: p.slug as string,
-            upsell: p.upsell_enabled && p.upsell_price_cents > 0
-              ? {
-                  name: p.upsell_name ?? "Adicional",
-                  description: p.upsell_description ?? "",
-                  priceCents: p.upsell_price_cents,
-                }
-              : null,
-          }));
-        if (mapped.length) setPlanos(mapped);
-      } catch {/* fallback */}
+        if (cancelled) return;
+        if (error || !data?.length) {
+          setPlanos(FALLBACK);
+          return;
+        }
+        const mapped: Plano[] = data.map((p: any) => ({
+          nome: p.name,
+          descricao: p.description ?? "",
+          preco: (p.price_cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+          periodo:
+            p.interval === "year"
+              ? "/ano"
+              : p.interval === "one_time" || p.interval === "lifetime"
+              ? ""
+              : "/mês",
+          badge: p.slug === "pro" ? { texto: "Mais Popular", icone: Zap } : null,
+          destaque: p.slug === "pro",
+          recursos: Array.isArray(p.features) ? (p.features as string[]) : [],
+          cta: `Assinar ${p.name}`,
+          planId: p.slug as string,
+          upsell: p.upsell_enabled && p.upsell_price_cents > 0
+            ? {
+                name: p.upsell_name ?? "Adicional",
+                description: p.upsell_description ?? "",
+                priceCents: p.upsell_price_cents,
+              }
+            : null,
+        }));
+        setPlanos(mapped.length ? mapped : FALLBACK);
+      } catch {
+        if (!cancelled) setPlanos(FALLBACK);
+      }
     })();
+    return () => { cancelled = true; };
   }, []);
 
 
@@ -691,7 +698,7 @@ function PricingSection() {
   };
 
   const planoConfirm = useMemo(
-    () => planos.find((p) => p.planId === confirmFor) ?? null,
+    () => planos?.find((p) => p.planId === confirmFor) ?? null,
     [confirmFor, planos],
   );
   const upsellLigado = !!(planoConfirm && upsellSel[planoConfirm.planId] && planoConfirm.upsell);
@@ -773,7 +780,25 @@ function PricingSection() {
         </div>
 
         <div className="mt-14 grid gap-6 md:grid-cols-2">
-          {planos.map((plano) => (
+          {planos === null
+            ? Array.from({ length: 2 }).map((_, i) => (
+                <div
+                  key={`sk-${i}`}
+                  className="relative flex flex-col rounded-2xl border border-border bg-card/60 p-7"
+                  aria-hidden="true"
+                >
+                  <div className="h-5 w-24 animate-pulse rounded bg-muted" />
+                  <div className="mt-2 h-4 w-56 animate-pulse rounded bg-muted" />
+                  <div className="mt-6 h-10 w-40 animate-pulse rounded bg-muted" />
+                  <div className="mt-6 space-y-3">
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <div key={j} className="h-4 w-full animate-pulse rounded bg-muted" />
+                    ))}
+                  </div>
+                  <div className="mt-8 h-11 w-full animate-pulse rounded bg-muted" />
+                </div>
+              ))
+            : planos.map((plano) => (
             <div
               key={plano.nome}
               className={`relative flex flex-col rounded-2xl border p-7 transition ${
