@@ -80,8 +80,14 @@ export function DebtContractsCard({
           <div className="hidden md:grid grid-cols-[1.6fr_1fr_0.8fr_0.7fr_0.8fr_0.8fr_24px] gap-2 px-2 text-[10px] uppercase tracking-wider text-muted-foreground">
             <div>Credor / descrição</div>
             <div className="text-right">Saldo devedor</div>
-            <div className="text-right">Taxa a.a.</div>
-            <div className="text-center">Sistema</div>
+            <div className="text-right inline-flex items-center justify-end gap-1">
+              Taxa a.a.
+              <HelpTip text="Taxa de juros anual do contrato (ao ano). Ex.: 18% a.a. equivale a aproximadamente 1,39% ao mês." />
+            </div>
+            <div className="text-center inline-flex items-center justify-center gap-1">
+              Sistema
+              <HelpTip text="Price = parcela mensal fixa (juros caem e amortização sobe ao longo do tempo). SAC = amortização constante (parcela começa maior e cai mês a mês). Bancos costumam usar Price em capital de giro e SAC em financiamentos longos." />
+            </div>
             <div className="text-center">Vencimento</div>
             <div className="text-right">Parcela/mês</div>
             <div />
