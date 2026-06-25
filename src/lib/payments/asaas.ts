@@ -124,17 +124,34 @@ export class AsaasProvider implements PaymentProvider {
     // própria página do Asaas. Evita exigir CPF no nosso formulário.
     // Docs: https://docs.asaas.com/reference/criar-checkout
     const expirationMinutes = 1440; // 24h (máx permitido pelo Asaas)
-    // Asaas exige name <= 30 caracteres por item.
+    // Asaas exige name <= 30 caracteres por item e, na referência OpenAPI
+    // atual do /v3/checkouts, imageBase64 também aparece como obrigatório.
+    // Usamos um pixel transparente para não depender de URL pública de imagem.
     const truncate30 = (s: string) => (s.length > 30 ? s.slice(0, 30) : s);
-    const items: Array<{ name: string; description: string; quantity: number; value: number }> = [
-      { name: truncate30(planDesc), description: planDesc, quantity: 1, value },
+    const transparentPixelBase64 =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+    const items: Array<{
+      name: string;
+      description: string;
+      quantity: number;
+      value: number;
+      imageBase64: string;
+    }> = [
+      {
+        name: truncate30(planDesc),
+        description: planDesc.slice(0, 150),
+        quantity: 1,
+        value,
+        imageBase64: transparentPixelBase64,
+      },
     ];
     if (upsellValue > 0) {
       items.push({
         name: truncate30(input.upsell!.name),
-        description: input.upsell!.name,
+        description: input.upsell!.name.slice(0, 150),
         quantity: 1,
         value: upsellValue,
+        imageBase64: transparentPixelBase64,
       });
     }
     const totalValue = items.reduce((s, it) => s + it.value * it.quantity, 0);
