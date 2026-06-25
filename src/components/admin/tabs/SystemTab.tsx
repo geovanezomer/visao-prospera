@@ -221,7 +221,7 @@ export function SystemTab() {
         {/* Favicon */}
         <div className="space-y-2">
           <Label>Favicon</Label>
-          <p className="text-[11px] text-muted-foreground">PNG/ICO quadrado · sugerido 32×32 ou 64×64 px · máx 50 KB.</p>
+          <p className="text-[11px] text-muted-foreground">PNG/ICO/SVG quadrado (1:1) · 16–512 px por lado · máx 50 KB.</p>
           <div className="flex items-center gap-3 rounded-md border border-border/50 bg-muted/30 p-3">
             <div className="flex h-10 w-10 items-center justify-center rounded bg-background ring-1 ring-border/50 overflow-hidden">
               {branding.favicon_url
