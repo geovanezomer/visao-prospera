@@ -69,7 +69,15 @@ export function SystemTab() {
     (async () => {
       try {
         const [s, n] = await Promise.all([getAppSettings(), getNotifSettings()]);
-        if (s.branding) setBranding({ system_name: s.branding.system_name ?? "Finnance", logo_url: s.branding.logo_url ?? "", favicon_url: s.branding.favicon_url ?? "" });
+        if (s.branding) setBranding({
+          system_name: s.branding.system_name ?? DEFAULT_BRANDING.system_name,
+          logo_url: s.branding.logo_url ?? "",
+          favicon_url: s.branding.favicon_url ?? "",
+          colors: {
+            primary: s.branding.colors?.primary ?? DEFAULT_BRANDING.colors.primary,
+            accent:  s.branding.colors?.accent  ?? DEFAULT_BRANDING.colors.accent,
+          },
+        });
         if (s.login_texts) setLogin({ headline: s.login_texts.headline ?? "", subheadline: s.login_texts.subheadline ?? "", cta: s.login_texts.cta ?? "Entrar" });
         if (s.footer) setFooter({ text: s.footer.text ?? "" });
         if ((s as any).tracking) {
