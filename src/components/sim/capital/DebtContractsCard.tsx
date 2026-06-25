@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { Plus, Trash2, ChevronDown, ChevronUp, Landmark } from "lucide-react";
 import { fmtBRL } from "@/engines/finance/format";
-import { MoneyInput } from "@/components/sim/shared/primitives";
+import { MoneyInput, HelpTip, type HelpHint } from "@/components/sim/shared/primitives";
 import type { DebtContract, DebtSystem } from "@/engines/finance/types";
 import {
   aggregateContracts,
@@ -80,8 +80,14 @@ export function DebtContractsCard({
           <div className="hidden md:grid grid-cols-[1.6fr_1fr_0.8fr_0.7fr_0.8fr_0.8fr_24px] gap-2 px-2 text-[10px] uppercase tracking-wider text-muted-foreground">
             <div>Credor / descrição</div>
             <div className="text-right">Saldo devedor</div>
-            <div className="text-right">Taxa a.a.</div>
-            <div className="text-center">Sistema</div>
+            <div className="text-right inline-flex items-center justify-end gap-1">
+              Taxa a.a.
+              <HelpTip text="Taxa de juros anual do contrato (ao ano). Ex.: 18% a.a. equivale a aproximadamente 1,39% ao mês." />
+            </div>
+            <div className="text-center inline-flex items-center justify-center gap-1">
+              Sistema
+              <HelpTip text="Price = parcela mensal fixa (juros caem e amortização sobe ao longo do tempo). SAC = amortização constante (parcela começa maior e cai mês a mês). Bancos costumam usar Price em capital de giro e SAC em financiamentos longos." />
+            </div>
             <div className="text-center">Vencimento</div>
             <div className="text-right">Parcela/mês</div>
             <div />
@@ -153,13 +159,19 @@ export function DebtContractsCard({
                           className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm outline-none focus:border-primary"
                         />
                       </Field>
-                      <Field label="Saldo devedor (R$)">
+                      <Field
+                        label="Saldo devedor (R$)"
+                        hint="Quanto ainda falta pagar do contrato HOJE (principal em aberto). Não é o valor original do empréstimo — é o saldo atual que aparece no extrato do banco."
+                      >
                         <MoneyInput
                           value={c.saldoDevedor}
                           onChange={(n) => update(c.id, { saldoDevedor: n })}
                         />
                       </Field>
-                      <Field label="Taxa a.a. (%)">
+                      <Field
+                        label="Taxa a.a. (%)"
+                        hint="Taxa de juros ANUAL do contrato. Se o banco informa só a taxa mensal, multiplique por 12 (aproximação) ou use: (1 + im)^12 − 1 para conversão exata."
+                      >
                         <input
                           type="number"
                           step="0.1"
@@ -168,7 +180,10 @@ export function DebtContractsCard({
                           className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm outline-none focus:border-primary"
                         />
                       </Field>
-                      <Field label="Sistema de amortização">
+                      <Field
+                        label="Sistema de amortização"
+                        hint="Price = parcela mensal FIXA (mais comum em capital de giro). SAC = você paga uma parcela maior no início que vai DIMINUINDO mês a mês (juros totais menores, comum em financiamentos longos do BNDES/imóveis)."
+                      >
                         <select
                           value={c.sistema}
                           onChange={(e) => update(c.id, { sistema: e.target.value as DebtSystem })}
@@ -188,7 +203,10 @@ export function DebtContractsCard({
                           className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm outline-none focus:border-primary"
                         />
                       </Field>
-                      <Field label="Tipo de credor">
+                      <Field
+                        label="Tipo de credor"
+                        hint="Quem emprestou o dinheiro. Fomento (BNDES, FINEP, bancos de desenvolvimento) costuma ter taxa mais baixa. Sócio = empréstimo do dono à empresa (mútuo) — exige contrato formal."
+                      >
                         <select
                           value={c.tipoCredor ?? "banco"}
                           onChange={(e) => update(c.id, { tipoCredor: e.target.value as DebtContract["tipoCredor"] })}
@@ -201,7 +219,10 @@ export function DebtContractsCard({
                           <option value="outro">Outro</option>
                         </select>
                       </Field>
-                      <Field label="Frequência de amortização">
+                      <Field
+                        label="Frequência de amortização"
+                        hint="De quanto em quanto tempo você paga uma parcela. Bullet = paga só os juros durante o contrato e devolve TODO o principal de uma vez no vencimento (comum em capital de giro de curto prazo e debêntures)."
+                      >
                         <select
                           value={c.frequenciaAmortizacao ?? "mensal"}
                           onChange={(e) => update(c.id, { frequenciaAmortizacao: e.target.value as DebtContract["frequenciaAmortizacao"] })}
@@ -214,7 +235,10 @@ export function DebtContractsCard({
                           <option value="bullet">Bullet (só no final)</option>
                         </select>
                       </Field>
-                      <Field label="Garantia">
+                      <Field
+                        label="Garantia"
+                        hint="O que o banco pode tomar se você não pagar. Aval = um sócio (ou cônjuge) responde com o patrimônio pessoal. Alienação fiduciária = bem (imóvel/veículo) fica em nome do banco até a quitação."
+                      >
                         <input
                           value={c.garantia ?? ""}
                           onChange={(e) => update(c.id, { garantia: e.target.value })}
@@ -222,7 +246,10 @@ export function DebtContractsCard({
                           className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm outline-none focus:border-primary"
                         />
                       </Field>
-                      <Field label="Covenants">
+                      <Field
+                        label="Covenants"
+                        hint="Compromissos financeiros que você assina no contrato. Se quebrar, o banco pode antecipar a dívida toda. Exemplos: DSCR ≥ 1,25× (EBITDA precisa cobrir 1,25× o serviço da dívida) ou Dívida Líquida / EBITDA ≤ 3× (endividamento máximo)."
+                      >
                         <input
                           value={c.covenants ?? ""}
                           onChange={(e) => update(c.id, { covenants: e.target.value })}
@@ -267,10 +294,28 @@ export function DebtContractsCard({
 
           {/* totais agregados */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2">
-            <Stat label="Saldo total (Dívida onerosa)" value={fmtBRL(agg.saldoTotal)} />
-            <Stat label="Parcela total/mês" value={fmtBRL(agg.parcelaMesTotal)} tone="warn" />
-            <Stat label="Total amortizações/ano" value={fmtBRL(agg.totalAmortAno)} />
-            <Stat label="Total juros/ano" value={fmtBRL(agg.totalJurosAno)} tone="warn" />
+            <Stat
+              label="Saldo total (Dívida onerosa)"
+              value={fmtBRL(agg.saldoTotal)}
+              hint="Dívida onerosa = empréstimos e financiamentos que PAGAM JUROS (banco, BNDES, debêntures). Não inclui fornecedores nem impostos a pagar. É a base para calcular Dívida Líquida, alavancagem e WACC."
+            />
+            <Stat
+              label="Parcela total/mês"
+              value={fmtBRL(agg.parcelaMesTotal)}
+              tone="warn"
+              hint="Soma das parcelas mensais de TODOS os contratos (juros + amortização do principal). É o que sai do caixa por mês — também chamado de 'serviço da dívida'."
+            />
+            <Stat
+              label="Total amortizações/ano"
+              value={fmtBRL(agg.totalAmortAno)}
+              hint="Quanto do PRINCIPAL (saldo devedor) você devolve ao banco em 12 meses. Reduz a dívida no Balanço — não passa pela DRE (não é despesa, é devolução)."
+            />
+            <Stat
+              label="Total juros/ano"
+              value={fmtBRL(agg.totalJurosAno)}
+              tone="warn"
+              hint="Juros pagos em 12 meses. Esta é a parte que vira DESPESA FINANCEIRA na DRE e impacta o lucro líquido."
+            />
           </div>
           <div className="text-[10px] text-muted-foreground">
             Os contratos alimentam automaticamente: Dívida Onerosa, Serviço da Dívida,
@@ -282,19 +327,48 @@ export function DebtContractsCard({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: HelpHint;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block space-y-1">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <span>{label}</span>
+        {hint &&
+          (typeof hint === "string" ? (
+            <HelpTip text={hint} />
+          ) : (
+            <HelpTip text={hint.description} formula={hint.formula} example={hint.example} />
+          ))}
+      </div>
       {children}
     </label>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
+function Stat({
+  label,
+  value,
+  tone,
+  hint,
+}: {
+  label: string;
+  value: string;
+  tone?: "warn";
+  hint?: string;
+}) {
   return (
     <div className="rounded-md border border-border/40 bg-background/40 p-2">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <span>{label}</span>
+        {hint && <HelpTip text={hint} />}
+      </div>
       <div className={`mt-0.5 text-sm font-semibold num ${tone === "warn" ? "text-warning" : "text-foreground"}`}>
         {value}
       </div>
