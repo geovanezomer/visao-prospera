@@ -142,9 +142,42 @@ export function ScenarioBar() {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Salva o AppState corrente como snapshot histórico. Esse ano poderá ser
-              comparado lado a lado nos cards de DRE e Fluxo de Caixa.
+              Salva o AppState corrente como snapshot. Use <strong>Ano realizado</strong>
+              {" "}para arquivar um exercício fechado/em andamento, ou <strong>Previsão</strong>
+              {" "}para guardar um orçamento (budget) e comparar Previsto × Realizado.
             </p>
+
+            {/* Toggle Realizado / Previsão */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">Tipo</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSubKind("realizado")}
+                  className={
+                    "rounded-md border px-3 py-2 text-xs font-medium transition-colors " +
+                    (subKind === "realizado"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-input bg-background hover:bg-accent")
+                  }
+                >
+                  Ano realizado
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSubKind("previsao")}
+                  className={
+                    "rounded-md border px-3 py-2 text-xs font-medium transition-colors " +
+                    (subKind === "previsao"
+                      ? "border-[var(--warning)] bg-[var(--warning)]/10 text-[var(--warning)]"
+                      : "border-input bg-background hover:bg-accent")
+                  }
+                >
+                  Previsão (budget)
+                </button>
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <label className="text-xs font-medium">Ano</label>
               <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
@@ -159,18 +192,43 @@ export function ScenarioBar() {
                   ))}
                 </SelectContent>
               </Select>
-              {alreadyExists && (
-                <p className="text-[11px] text-[var(--warning)]">
-                  Já existe um snapshot para {year} — será sobrescrito.
-                </p>
-              )}
             </div>
+
+            {subKind === "previsao" && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">
+                  Nome da previsão{" "}
+                  <span className="text-muted-foreground">(opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={previsaoName}
+                  maxLength={60}
+                  placeholder={`Previsão ${year}`}
+                  onChange={(e) => setPrevisaoName(e.target.value)}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Dica: nomeie cenários distintos (ex: "Conservador", "Otimista").
+                </p>
+              </div>
+            )}
+
+            {alreadyExists && (
+              <p className="text-[11px] text-[var(--warning)]">
+                Já existe um snapshot equivalente para {year} — será sobrescrito.
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setSaveOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSave}>Salvar Ano {year}</Button>
+            <Button onClick={handleSave}>
+              {subKind === "previsao"
+                ? `Salvar Previsão ${year}`
+                : `Salvar Ano ${year}`}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
