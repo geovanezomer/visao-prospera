@@ -58,6 +58,11 @@ export class AsaasProvider implements PaymentProvider {
     email: string;
     successUrl: string;
     cancelUrl: string;
+    interval?: "month" | "year" | "week" | "day" | "lifetime" | "one_time";
+    priceCents?: number;
+    currency?: string;
+    providerRef?: string | null;
+    planName?: string;
   }): Promise<{ url: string }> {
     // 1) Garante customer
     const found = await asaasFetch<{ data: Array<{ id: string }> }>(
@@ -72,14 +77,45 @@ export class AsaasProvider implements PaymentProvider {
       customerId = created.id;
     }
 
-    // 2) Cria assinatura recorrente. ASAAS_PLAN_* contém o valor (em reais)
-    //    do plano e o ciclo. Formato esperado: "97.00:MONTHLY" ou só "97.00".
-    const ref = getProviderPlanRef(input.plan);
-    const [valueStr, cycleStr] = ref.split(":");
-    const value = Number(valueStr);
-    const cycle = (cycleStr || "MONTHLY").toUpperCase();
-    const nextDueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    // 2) Resolve valor e ciclo.
+    // Prioridade: priceCents (DB) → ASAAS_PLAN_* env legacy ("97.00:MONTHLY").
+    let value: number;
+    let cycle = "MONTHLY";
+    if (typeof input.priceCents === "number" && input.priceCents > 0) {
+      value = input.priceCents / 100;
+      cycle = input.interval === "year" ? "YEARLY"
+        : input.interval === "week" ? "WEEKLY"
+        : input.interval === "day" ? "DAILY"
+        : "MONTHLY";
+    } else {
+      const ref = input.providerRef || getProviderPlanRef(input.plan);
+      const [valueStr, cycleStr] = ref.split(":");
+      value = Number(valueStr);
+      cycle = (cycleStr || "MONTHLY").toUpperCase();
+    }
 
+    const nextDueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const isOneTime = input.interval === "one_time" || input.interval === "lifetime";
+    const description = `${input.planName || `FinancePRO — plano ${input.plan}`}${isOneTime ? " (pagamento único)" : ""}`;
+
+    if (isOneTime) {
+      // Cobrança única: cria diretamente em /payments (sem assinatura).
+      const pay = await asaasFetch<{ id: string; invoiceUrl?: string }>("/payments", {
+        method: "POST",
+        body: {
+          customer: customerId,
+          billingType: "UNDEFINED",
+          value,
+          dueDate: nextDueDate,
+          description,
+          externalReference: input.plan,
+        },
+      });
+      if (!pay.invoiceUrl) throw new Error("Asaas: invoiceUrl não retornado para cobrança única.");
+      return { url: pay.invoiceUrl };
+    }
+
+    // Recorrente — assinatura.
     const sub = await asaasFetch<{ id: string; invoiceUrl?: string }>("/subscriptions", {
       method: "POST",
       body: {
@@ -88,7 +124,7 @@ export class AsaasProvider implements PaymentProvider {
         value,
         nextDueDate,
         cycle, // MONTHLY | YEARLY
-        description: `FinancePRO — plano ${input.plan}`,
+        description,
         externalReference: input.plan,
       },
     });
