@@ -26,6 +26,7 @@ import { NAV_ITEMS } from "./nav-config";
 import { TabKey } from "@/engines/finance/types";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { AdminSidebarButton } from "@/components/admin/AdminSidebarButton";
 
 import { cn } from "@/lib/utils";
 
@@ -129,6 +130,8 @@ export function AppSidebar({
         <SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
           <div className="space-y-3 px-2 py-2">
             <div className="mt-2 space-y-1.5 border-t border-sidebar-border/50 pt-3">
+              <AdminSidebarButton />
+
               <Button
                 size="sm"
                 variant="default"
