@@ -180,6 +180,8 @@ export const listAdminUsers = createServerFn({ method: "POST" })
         case "expires_asc": return cmpDate(a.currentPeriodEnd, b.currentPeriodEnd);
         case "expires_desc": return cmpDate(b.currentPeriodEnd, a.currentPeriodEnd);
         case "name_asc": return (a.displayName ?? "").localeCompare(b.displayName ?? "");
+        case "name_desc": return (b.displayName ?? "").localeCompare(a.displayName ?? "");
+        default: return 0;
       }
     });
 
