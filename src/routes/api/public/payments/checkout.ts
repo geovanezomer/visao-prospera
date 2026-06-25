@@ -211,11 +211,13 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
             };
           }
 
-          // 6) Idempotency key — determinística por (email|plan|upsell|janela 30min).
-          //    Reenvio do mesmo formulário dentro da janela reutiliza a sessão
-          //    já criada (zero duplicação no Stripe/Asaas).
+          // 6) Idempotency key — determinística por (email|plan|upsell|preço|janela 30min).
+          //    Reenvio do mesmo formulário dentro da janela reutiliza a sessão.
+          //    Incluímos o snapshot do preço (plano + upsell) para que mudança
+          //    de preço no Admin invalide a sessão antiga e force criar uma nova.
           const window30m = Math.floor(Date.now() / (30 * 60 * 1000));
-          const idemRaw = `${parsed.email.toLowerCase()}|${parsed.plan}|${parsed.withUpsell ? 1 : 0}|${provider.name}|${window30m}`;
+          const priceSnap = `${plan.price_cents}:${upsellPayload?.priceCents ?? 0}`;
+          const idemRaw = `${parsed.email.toLowerCase()}|${parsed.plan}|${parsed.withUpsell ? 1 : 0}|${priceSnap}|${provider.name}|${window30m}`;
           const idemBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(idemRaw));
           const idempotencyKey = Array.from(new Uint8Array(idemBuf))
             .slice(0, 16)
