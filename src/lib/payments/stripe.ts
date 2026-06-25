@@ -75,8 +75,12 @@ export class StripeProvider implements PaymentProvider {
       success_url: input.successUrl,
       cancel_url: input.cancelUrl,
       "metadata[plan]": input.plan,
+      // Email no metadata da Session para correlacionar antes do
+      // customer.subscription.* (que não traz customer_email).
+      "metadata[email]": input.email,
       allow_promotion_codes: "true",
     };
+
 
     if (explicitRef) {
       body["line_items[0][price]"] = explicitRef;
