@@ -157,9 +157,10 @@ export class AsaasProvider implements PaymentProvider {
     const totalValue = items.reduce((s, it) => s + it.value * it.quantity, 0);
 
     // Asaas /v3/checkouts só aceita CREDIT_CARD e PIX em billingTypes.
-    // BOLETO não é suportado neste endpoint e causa HTTP 400.
+    // Porém, para RECURRENT o Asaas permite apenas CREDIT_CARD; PIX só pode
+    // ser usado em DETACHED. BOLETO não é suportado neste endpoint.
     const body: Record<string, unknown> = {
-      billingTypes: ["CREDIT_CARD", "PIX"],
+      billingTypes: isOneTime ? ["CREDIT_CARD", "PIX"] : ["CREDIT_CARD"],
       chargeTypes: isOneTime ? ["DETACHED"] : ["RECURRENT"],
       minutesToExpire: expirationMinutes,
       callback: {
