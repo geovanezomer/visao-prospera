@@ -159,13 +159,19 @@ export function DebtContractsCard({
                           className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm outline-none focus:border-primary"
                         />
                       </Field>
-                      <Field label="Saldo devedor (R$)">
+                      <Field
+                        label="Saldo devedor (R$)"
+                        hint="Quanto ainda falta pagar do contrato HOJE (principal em aberto). Não é o valor original do empréstimo — é o saldo atual que aparece no extrato do banco."
+                      >
                         <MoneyInput
                           value={c.saldoDevedor}
                           onChange={(n) => update(c.id, { saldoDevedor: n })}
                         />
                       </Field>
-                      <Field label="Taxa a.a. (%)">
+                      <Field
+                        label="Taxa a.a. (%)"
+                        hint="Taxa de juros ANUAL do contrato. Se o banco informa só a taxa mensal, multiplique por 12 (aproximação) ou use: (1 + im)^12 − 1 para conversão exata."
+                      >
                         <input
                           type="number"
                           step="0.1"
@@ -174,7 +180,10 @@ export function DebtContractsCard({
                           className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm outline-none focus:border-primary"
                         />
                       </Field>
-                      <Field label="Sistema de amortização">
+                      <Field
+                        label="Sistema de amortização"
+                        hint="Price = parcela mensal FIXA (mais comum em capital de giro). SAC = você paga uma parcela maior no início que vai DIMINUINDO mês a mês (juros totais menores, comum em financiamentos longos do BNDES/imóveis)."
+                      >
                         <select
                           value={c.sistema}
                           onChange={(e) => update(c.id, { sistema: e.target.value as DebtSystem })}
@@ -194,7 +203,10 @@ export function DebtContractsCard({
                           className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm outline-none focus:border-primary"
                         />
                       </Field>
-                      <Field label="Tipo de credor">
+                      <Field
+                        label="Tipo de credor"
+                        hint="Quem emprestou o dinheiro. Fomento (BNDES, FINEP, bancos de desenvolvimento) costuma ter taxa mais baixa. Sócio = empréstimo do dono à empresa (mútuo) — exige contrato formal."
+                      >
                         <select
                           value={c.tipoCredor ?? "banco"}
                           onChange={(e) => update(c.id, { tipoCredor: e.target.value as DebtContract["tipoCredor"] })}
@@ -207,7 +219,10 @@ export function DebtContractsCard({
                           <option value="outro">Outro</option>
                         </select>
                       </Field>
-                      <Field label="Frequência de amortização">
+                      <Field
+                        label="Frequência de amortização"
+                        hint="De quanto em quanto tempo você paga uma parcela. Bullet = paga só os juros durante o contrato e devolve TODO o principal de uma vez no vencimento (comum em capital de giro de curto prazo e debêntures)."
+                      >
                         <select
                           value={c.frequenciaAmortizacao ?? "mensal"}
                           onChange={(e) => update(c.id, { frequenciaAmortizacao: e.target.value as DebtContract["frequenciaAmortizacao"] })}
@@ -220,7 +235,10 @@ export function DebtContractsCard({
                           <option value="bullet">Bullet (só no final)</option>
                         </select>
                       </Field>
-                      <Field label="Garantia">
+                      <Field
+                        label="Garantia"
+                        hint="O que o banco pode tomar se você não pagar. Aval = um sócio (ou cônjuge) responde com o patrimônio pessoal. Alienação fiduciária = bem (imóvel/veículo) fica em nome do banco até a quitação."
+                      >
                         <input
                           value={c.garantia ?? ""}
                           onChange={(e) => update(c.id, { garantia: e.target.value })}
@@ -228,7 +246,10 @@ export function DebtContractsCard({
                           className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm outline-none focus:border-primary"
                         />
                       </Field>
-                      <Field label="Covenants">
+                      <Field
+                        label="Covenants"
+                        hint="Compromissos financeiros que você assina no contrato. Se quebrar, o banco pode antecipar a dívida toda. Exemplos: DSCR ≥ 1,25× (EBITDA precisa cobrir 1,25× o serviço da dívida) ou Dívida Líquida / EBITDA ≤ 3× (endividamento máximo)."
+                      >
                         <input
                           value={c.covenants ?? ""}
                           onChange={(e) => update(c.id, { covenants: e.target.value })}
