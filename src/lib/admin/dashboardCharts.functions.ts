@@ -55,14 +55,18 @@ function monthLabel(d: Date): string {
 
 export const getDashboardCharts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<DashboardCharts> => {
+  .inputValidator((input: { months?: number } | undefined) => ({
+    months: Math.max(1, Math.min(36, Number(input?.months ?? 12))),
+  }))
+  .handler(async ({ data, context }): Promise<DashboardCharts> => {
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Janela: últimos 12 meses (inclusivo do mês corrente).
+    // Janela: últimos N meses (inclusivo do mês corrente).
+    const N = data.months;
     const now = new Date();
     const months: { key: string; label: string; start: Date; end: Date }[] = [];
-    for (let i = 11; i >= 0; i--) {
+    for (let i = N - 1; i >= 0; i--) {
       const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
       const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i + 1, 1));
       months.push({ key: monthKey(start), label: monthLabel(start), start, end });
