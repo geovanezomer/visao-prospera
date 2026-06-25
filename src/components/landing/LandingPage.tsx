@@ -729,6 +729,7 @@ function PricingSection() {
               <div className="mt-8">
                 <button
                   type="button"
+                  onClick={() => handleSubscribe(plano.planId)}
                   className={`group flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition ${
                     plano.destaque
                       ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40"
