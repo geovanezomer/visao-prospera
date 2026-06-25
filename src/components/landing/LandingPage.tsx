@@ -698,7 +698,7 @@ function PricingSection() {
   };
 
   const planoConfirm = useMemo(
-    () => planos.find((p) => p.planId === confirmFor) ?? null,
+    () => planos?.find((p) => p.planId === confirmFor) ?? null,
     [confirmFor, planos],
   );
   const upsellLigado = !!(planoConfirm && upsellSel[planoConfirm.planId] && planoConfirm.upsell);
