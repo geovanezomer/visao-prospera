@@ -192,6 +192,9 @@ export function UsersTab() {
         >
           <Download className="mr-1.5 h-3.5 w-3.5" />CSV
         </Button>
+        <Button onClick={() => setCreateOpen(true)} size="sm" className="self-end">
+          <UserPlus className="mr-1.5 h-3.5 w-3.5" />Novo usuário
+        </Button>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border/60 bg-card">
