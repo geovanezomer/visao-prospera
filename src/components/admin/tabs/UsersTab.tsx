@@ -19,7 +19,8 @@ import {
   listAdminUsers, setUserActive, sendPasswordReset, revalidatePlan, refundPayment, resendMagicLink,
   type AdminUserRow, type AdminUserSort, type AdminUserFilters,
 } from "@/lib/admin/admin.functions";
-import { createManualUser } from "@/lib/admin/userDetail.functions";
+import { createManualUser, checkEmailAvailable } from "@/lib/admin/userDetail.functions";
+import { z } from "zod";
 import { exportUsersCsv } from "@/lib/admin/export.functions";
 import { Download } from "lucide-react";
 import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
@@ -303,8 +304,19 @@ export function UsersTab() {
   );
 }
 
+const emailSchema = z.string().trim().toLowerCase().email("E-mail inválido").max(255);
+
+function planLabel(p: "starter" | "pro" | "lifetime") {
+  return p === "starter" ? "Starter" : p === "pro" ? "Pro" : "Lifetime";
+}
+function modeLabel(m: "trial" | "ativo" | "lifetime") {
+  return m === "trial" ? "Trial" : m === "ativo" ? "Ativo" : "Vitalício";
+}
+
 function CreateUserDialog({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: () => void }) {
+  const [step, setStep] = useState<"form" | "confirm">("form");
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [grantOn, setGrantOn] = useState(true);
   const [plan, setPlan] = useState<"starter" | "pro" | "lifetime">("lifetime");
@@ -313,23 +325,54 @@ function CreateUserDialog({ open, onClose, onDone }: { open: boolean; onClose: (
   const [sendMagicLink, setSendMagicLink] = useState(true);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [resultLink, setResultLink] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      setEmail(""); setDisplayName(""); setGrantOn(true); setPlan("lifetime");
+      setStep("form");
+      setEmail(""); setEmailError(null); setDisplayName(""); setGrantOn(true); setPlan("lifetime");
       setMode("lifetime"); setDurationDays(""); setSendMagicLink(true);
       setReason(""); setResultLink(null);
     }
   }, [open]);
 
+  // Valida e-mail e duração; abre etapa de confirmação após checagem de duplicidade.
+  const goConfirm = async () => {
+    setEmailError(null);
+    const parsed = emailSchema.safeParse(email);
+    if (!parsed.success) {
+      setEmailError(parsed.error.issues[0]?.message ?? "E-mail inválido");
+      return;
+    }
+    const normalized = parsed.data;
+    if (grantOn && mode !== "lifetime") {
+      const days = durationDays.trim() ? Number(durationDays) : NaN;
+      if (!Number.isInteger(days) || days < 1 || days > 3650) {
+        toast.error("Duração inválida (1–3650 dias).");
+        return;
+      }
+    }
+    setChecking(true);
+    try {
+      const r = await checkEmailAvailable({ data: { email: normalized } });
+      if (!r.available) {
+        setEmailError("Já existe um usuário com este e-mail.");
+        return;
+      }
+      setEmail(normalized);
+      setStep("confirm");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao validar e-mail.");
+    } finally {
+      setChecking(false);
+    }
+  };
+
   const submit = async () => {
     setBusy(true);
     try {
       const days = durationDays.trim() ? Number(durationDays) : undefined;
-      if (days !== undefined && (!Number.isInteger(days) || days < 1)) {
-        throw new Error("Duração inválida.");
-      }
       const r = await createManualUser({
         data: {
           email,
@@ -347,18 +390,27 @@ function CreateUserDialog({ open, onClose, onDone }: { open: boolean; onClose: (
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao criar.");
+      setStep("form");
     } finally {
       setBusy(false);
     }
   };
 
+  const effectiveDays = mode === "lifetime"
+    ? null
+    : (durationDays.trim() ? Number(durationDays) : (mode === "trial" ? 14 : 30));
+
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) { resultLink ? onDone() : onClose(); } }}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Novo usuário</DialogTitle>
+          <DialogTitle>
+            {resultLink ? "Usuário criado" : step === "confirm" ? "Confirmar criação" : "Novo usuário"}
+          </DialogTitle>
           <DialogDescription>
-            Cria a conta direto no painel. Útil para presentear acesso (cursos, parcerias), beta-testers ou suporte.
+            {step === "confirm"
+              ? "Revise os dados antes de criar a conta e conceder o plano."
+              : "Cria a conta direto no painel. Útil para presentear acesso (cursos, parcerias), beta-testers ou suporte."}
           </DialogDescription>
         </DialogHeader>
 
@@ -381,12 +433,68 @@ function CreateUserDialog({ open, onClose, onDone }: { open: boolean; onClose: (
               <Button onClick={onDone}>Concluir</Button>
             </DialogFooter>
           </div>
+        ) : step === "confirm" ? (
+          <div className="space-y-3 py-2">
+            <div className="rounded-lg border border-border/60 p-3 text-sm space-y-1.5">
+              <div className="flex justify-between"><span className="text-muted-foreground">E-mail</span><span className="font-medium">{email}</span></div>
+              {displayName.trim() && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Nome</span><span className="font-medium">{displayName.trim()}</span></div>
+              )}
+              <div className="flex justify-between"><span className="text-muted-foreground">Magic link</span><span className="font-medium">{sendMagicLink ? "Sim" : "Não"}</span></div>
+            </div>
+
+            <div className={`rounded-lg border p-3 text-sm space-y-1.5 ${grantOn ? "border-primary/30 bg-primary/5" : "border-border/60"}`}>
+              {grantOn ? (
+                <>
+                  <div className="font-medium mb-1">Conceder plano</div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Plano</span><Badge variant="outline" className={planClass(plan)}>{planLabel(plan)}</Badge></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Período</span><span className="font-medium">{modeLabel(mode)}</span></div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Validade</span>
+                    <span className="font-medium">
+                      {effectiveDays === null
+                        ? "Vitalício (sem expiração)"
+                        : `${effectiveDays} dias · expira ${new Date(Date.now() + effectiveDays * 86400_000).toLocaleDateString("pt-BR")}`}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="text-muted-foreground">Nenhum plano será concedido agora.</div>
+              )}
+            </div>
+
+            {reason.trim() && (
+              <div className="rounded-lg border border-border/60 p-3 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Motivo: </span>{reason.trim()}
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setStep("form")} disabled={busy}>Voltar</Button>
+              <Button onClick={submit} disabled={busy}>
+                {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <UserPlus className="mr-1.5 h-3.5 w-3.5" />}
+                Confirmar e criar
+              </Button>
+            </DialogFooter>
+          </div>
         ) : (
           <div className="space-y-3 py-2">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label className="text-xs">E-mail *</Label>
-                <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="aluno@exemplo.com" type="email" />
+                <Input
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); if (emailError) setEmailError(null); }}
+                  onBlur={() => {
+                    if (!email.trim()) return;
+                    const p = emailSchema.safeParse(email);
+                    setEmailError(p.success ? null : (p.error.issues[0]?.message ?? "E-mail inválido"));
+                  }}
+                  placeholder="aluno@exemplo.com"
+                  type="email"
+                  aria-invalid={!!emailError}
+                />
+                {emailError && <p className="text-xs text-destructive">{emailError}</p>}
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Nome (opcional)</Label>
@@ -451,10 +559,10 @@ function CreateUserDialog({ open, onClose, onDone }: { open: boolean; onClose: (
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={onClose} disabled={busy}>Cancelar</Button>
-              <Button onClick={submit} disabled={busy || !email.trim()}>
-                {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <UserPlus className="mr-1.5 h-3.5 w-3.5" />}
-                Criar usuário
+              <Button variant="outline" onClick={onClose} disabled={checking}>Cancelar</Button>
+              <Button onClick={goConfirm} disabled={checking || !email.trim() || !!emailError}>
+                {checking ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                Revisar
               </Button>
             </DialogFooter>
           </div>

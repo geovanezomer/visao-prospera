@@ -20,6 +20,21 @@ function assertAdmin(claims: any) {
   }
 }
 
+// Procura usuário por e-mail paginando auth.admin.listUsers (até 5k usuários).
+async function findUserByEmail(supabaseAdmin: any, email: string) {
+  const target = email.toLowerCase();
+  const perPage = 200;
+  for (let page = 1; page <= 25; page++) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+    if (error) throw new Error(error.message);
+    const users = data?.users ?? [];
+    const hit = users.find((u: any) => (u.email ?? "").toLowerCase() === target);
+    if (hit) return hit;
+    if (users.length < perPage) break;
+  }
+  return null;
+}
+
 type Json = string | number | boolean | null | { [k: string]: Json } | Json[];
 
 // ---------------------------------------------------------------------------
@@ -318,14 +333,8 @@ export const createManualUser = createServerFn({ method: "POST" })
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // 1) Verifica se já existe via listUsers (filtro por email).
-    const { data: existing } = await supabaseAdmin.auth.admin.listUsers({
-      page: 1,
-      perPage: 200,
-    });
-    const dup = existing?.users?.find(
-      (u) => (u.email ?? "").toLowerCase() === data.email,
-    );
+    // 1) Verifica duplicidade paginando todos os usuários (listUsers não filtra por email).
+    const dup = await findUserByEmail(supabaseAdmin, data.email);
     if (dup) {
       throw new Error(
         `Já existe um usuário com este e-mail (id ${dup.id}). Use o drawer para conceder plano.`,
@@ -411,4 +420,23 @@ export const createManualUser = createServerFn({ method: "POST" })
       grant: grantInfo,
       magicLink,
     };
+  });
+
+// ---------------------------------------------------------------------------
+// checkEmailAvailable — usada pelo dialog de "Novo usuário" para detectar
+// duplicidade ANTES da etapa de confirmação, evitando 1 chamada perdida ao
+// admin.createUser.
+// ---------------------------------------------------------------------------
+export const checkEmailAvailable = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { email: string }) =>
+    z.object({ email: z.string().trim().toLowerCase().email().max(255) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const hit = await findUserByEmail(supabaseAdmin, data.email);
+    return hit
+      ? { available: false as const, userId: hit.id as string, email: data.email }
+      : { available: true as const, email: data.email };
   });
