@@ -47,6 +47,7 @@ export function UsersTab() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [refundFor, setRefundFor] = useState<AdminUserRow | null>(null);
   const [detailFor, setDetailFor] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
