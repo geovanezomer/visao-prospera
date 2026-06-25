@@ -75,6 +75,12 @@ export interface PaymentProvider {
   createCheckout(input: {
     plan: PlanId;
     email: string;
+    /** Nome completo do comprador (coletado no formulário). */
+    name?: string;
+    /** CPF (apenas dígitos) — exigido pelo Asaas, opcional no Stripe. */
+    cpfCnpj?: string;
+    /** Telefone BR (apenas dígitos). */
+    phone?: string;
     successUrl: string;
     cancelUrl: string;
     /** Intervalo de recorrência. "one_time" gera cobrança única. */
