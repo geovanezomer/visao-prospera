@@ -280,7 +280,7 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
           } catch (provErr) {
             const msg = provErr instanceof Error ? provErr.message : "Erro desconhecido";
             // Registra a falha no intent para auditoria/admin.
-            await sb.from("checkout_intents").insert({
+            await sb.from("checkout_intents").upsert({
               plan_slug: parsed.plan,
               email: parsed.email.toLowerCase(),
               with_upsell: parsed.withUpsell,
@@ -293,7 +293,7 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
               idempotency_key: idempotencyKey,
               status: "failed",
               last_error: msg.slice(0, 1000),
-            });
+            }, { onConflict: "idempotency_key" });
             console.error("[checkout] provedor recusou checkout:", msg);
             return err(
               422,
@@ -305,7 +305,7 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
           // 7) Persiste intenção (status='redirected') com providerIds para
           //    o webhook conseguir correlacionar de volta.
           try {
-            await sb.from("checkout_intents").insert({
+            await sb.from("checkout_intents").upsert({
               plan_slug: parsed.plan,
               email: parsed.email.toLowerCase(),
               with_upsell: parsed.withUpsell,
@@ -320,7 +320,8 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
               checkout_url: providerResult.url,
               provider_session_id: providerResult.providerSessionId ?? null,
               provider_customer_id: providerResult.providerCustomerId ?? null,
-            });
+              last_error: null,
+            }, { onConflict: "idempotency_key" });
           } catch (logErr) {
             console.error("[checkout] log de intenção falhou (ignorado):", logErr);
           }
