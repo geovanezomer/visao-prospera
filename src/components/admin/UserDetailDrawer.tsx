@@ -19,6 +19,8 @@ import {
   impersonateUser,
   type UserDetail,
 } from "@/lib/admin/userDetail.functions";
+import { UserNotesPanel } from "./UserNotesPanel";
+import { UserSessionsPanel } from "./UserSessionsPanel";
 
 function fmt(iso: string | null | undefined) {
   if (!iso) return "—";
@@ -62,11 +64,13 @@ export function UserDetailDrawer({
           <div className="flex h-64 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>
         ) : detail ? (
           <Tabs defaultValue="resumo" className="mt-4">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="resumo">Resumo</TabsTrigger>
-              <TabsTrigger value="assinaturas">Assinaturas</TabsTrigger>
+              <TabsTrigger value="assinaturas">Assin.</TabsTrigger>
+              <TabsTrigger value="notas">Notas</TabsTrigger>
+              <TabsTrigger value="sessoes">Sessões</TabsTrigger>
               <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-              <TabsTrigger value="auditoria">Auditoria</TabsTrigger>
+              <TabsTrigger value="auditoria">Audit.</TabsTrigger>
               <TabsTrigger value="acoes">Ações</TabsTrigger>
             </TabsList>
 
@@ -107,6 +111,15 @@ export function UserDetailDrawer({
                 </div>
               )}
             </TabsContent>
+
+            <TabsContent value="notas" className="pt-3">
+              <UserNotesPanel userId={detail.user.id} />
+            </TabsContent>
+
+            <TabsContent value="sessoes" className="pt-3">
+              <UserSessionsPanel userId={detail.user.id} />
+            </TabsContent>
+
 
             <TabsContent value="webhooks" className="pt-3">
               {detail.webhookEvents.length === 0 ? (

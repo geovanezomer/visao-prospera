@@ -24,7 +24,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 /* ============================================================
    HERO
@@ -593,7 +593,7 @@ function ComparisonTable() {
     PLANOS — Mock de precificação
     ============================================================ */
 function PricingSection() {
-  const planos: Array<{
+  type Plano = {
     nome: string;
     descricao: string;
     preco: string;
@@ -603,42 +603,41 @@ function PricingSection() {
     recursos: string[];
     cta: string;
     planId: "starter" | "pro";
-  }> = [
-    {
-      nome: "Mensal",
-      descricao: "Para testar o poder da plataforma",
-      preco: "197",
-      periodo: "/mês",
-      badge: null,
-      destaque: false,
-      recursos: [
-        "Acesso completo a todos os módulos",
-        "Diagnóstico, DRE, Fluxo de Caixa e Valuation",
-        "Reforma Tributária CBS/IBS",
-        "Suporte por e-mail",
-        "Cancelamento a qualquer momento",
-      ],
-      cta: "Assinar Mensal",
-      planId: "starter",
-    },
-    {
-      nome: "Anual",
-      descricao: "O escolhido por 8 em cada 10 consultores",
-      preco: "1.497",
-      periodo: "/ano",
-      badge: { texto: "Mais Popular · 37% OFF", icone: Zap },
-      destaque: true,
-      recursos: [
-        "Tudo do plano Mensal",
-        "Economia equivalente a 4 meses grátis",
-        "Consultor IA com contexto da sua empresa",
-        "Cenários ilimitados e Monte Carlo",
-        "Suporte prioritário em até 24h",
-      ],
-      cta: "Assinar Anual",
-      planId: "pro",
-    },
+  };
+  const FALLBACK: Plano[] = [
+    { nome: "Mensal", descricao: "Para testar o poder da plataforma", preco: "197", periodo: "/mês", badge: null, destaque: false, recursos: ["Acesso completo a todos os módulos", "Diagnóstico, DRE, Fluxo de Caixa e Valuation", "Reforma Tributária CBS/IBS", "Suporte por e-mail", "Cancelamento a qualquer momento"], cta: "Assinar Mensal", planId: "starter" },
+    { nome: "Anual", descricao: "O escolhido por 8 em cada 10 consultores", preco: "1.497", periodo: "/ano", badge: { texto: "Mais Popular · 37% OFF", icone: Zap }, destaque: true, recursos: ["Tudo do plano Mensal", "Economia equivalente a 4 meses grátis", "Consultor IA com contexto da sua empresa", "Cenários ilimitados e Monte Carlo", "Suporte prioritário em até 24h"], cta: "Assinar Anual", planId: "pro" },
   ];
+  const [planos, setPlanos] = useState<Plano[]>(FALLBACK);
+  useEffect(() => {
+    (async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data, error } = await supabase
+          .from("plans")
+          .select("slug,name,description,price_cents,interval,features,sort_order")
+          .eq("active", true)
+          .order("sort_order", { ascending: true });
+        if (error || !data?.length) return;
+        const mapped: Plano[] = data
+          .filter((p: any) => p.slug === "starter" || p.slug === "pro")
+          .map((p: any) => ({
+            nome: p.name,
+            descricao: p.description ?? "",
+            preco: (p.price_cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+            periodo: p.interval === "year" ? "/ano" : "/mês",
+            badge: p.slug === "pro" ? { texto: "Mais Popular", icone: Zap } : null,
+            destaque: p.slug === "pro",
+            recursos: Array.isArray(p.features) ? (p.features as string[]) : [],
+            cta: `Assinar ${p.name}`,
+            planId: p.slug as "starter" | "pro",
+          }));
+        if (mapped.length) setPlanos(mapped);
+      } catch {/* fallback */}
+    })();
+  }, []);
+
+
 
   async function handleSubscribe(planId: "starter" | "pro") {
     const email = window.prompt(

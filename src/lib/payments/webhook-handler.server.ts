@@ -143,6 +143,13 @@ export async function handleNormalizedEvent(
           .upsert(row as any, { onConflict: "stripe_subscription_id" });
         if (error) throw new Error(error.message);
         await sendMagicLink(supabaseAdmin, event.email, event.plan);
+        const { notifyAdmin } = await import("@/lib/admin/notify.server");
+        await notifyAdmin({
+          event: "signup",
+          title: `Nova assinatura ativada (${event.plan})`,
+          body: `Cliente: ${event.email}\nProvider: ${provider}\nSub: ${event.subscriptionId}`,
+          dedupKey: `act:${event.subscriptionId}`,
+        });
         break;
       }
       case "subscription.updated": {
@@ -175,6 +182,13 @@ export async function handleNormalizedEvent(
         if (!data || data.length === 0) {
           console.warn(`[webhook] canceled sem row prévia: ${event.subscriptionId}`);
         }
+        const { notifyAdmin: n1 } = await import("@/lib/admin/notify.server");
+        await n1({
+          event: "churn",
+          title: "Assinatura cancelada (churn)",
+          body: `Sub: ${event.subscriptionId}\nProvider: ${provider}`,
+          dedupKey: `churn:${event.subscriptionId}`,
+        });
         break;
       }
       case "subscription.past_due": {
@@ -187,6 +201,13 @@ export async function handleNormalizedEvent(
         if (!data || data.length === 0) {
           console.warn(`[webhook] past_due sem row prévia: ${event.subscriptionId}`);
         }
+        const { notifyAdmin: n2 } = await import("@/lib/admin/notify.server");
+        await n2({
+          event: "past_due",
+          title: "Pagamento atrasado (past_due)",
+          body: `Sub: ${event.subscriptionId}\nProvider: ${provider}`,
+          dedupKey: `pd:${event.subscriptionId}`,
+        });
         break;
       }
       case "subscription.trial_will_end": {
@@ -200,6 +221,15 @@ export async function handleNormalizedEvent(
     const msg = e instanceof Error ? e.message : "erro";
     console.error("[webhook] processamento falhou:", msg);
     await logEvent(supabaseAdmin, provider, event, "failed", msg);
+    try {
+      const { notifyAdmin } = await import("@/lib/admin/notify.server");
+      await notifyAdmin({
+        event: "webhook_failure",
+        title: `Webhook falhou (${provider})`,
+        body: `Tipo: ${(event as any).type}\nErro: ${msg}`,
+        dedupKey: `whf:${provider}:${(event as any).subscriptionId ?? (event as any).type}`,
+      });
+    } catch {/* noop */}
     throw e;
   }
 }

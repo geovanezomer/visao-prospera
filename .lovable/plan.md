@@ -1,105 +1,70 @@
-## Objetivo
+## Admin v3 — 5 novas capacidades
 
-Transformar o botão "Salvar" da sidebar em **"Salvar / Compartilhar"**, que abre um diálogo com 3 cards (mesma estética da imagem de referência, mas usando os tokens do design system FinnancePRO — nada de cores hard-coded):
+Implementação completa com Claude Opus. Tudo auditado em `admin_audit_log`.
 
-1. **Salvar no computador** — exporta `.finnance` (já existe)
-2. **Salvar na nuvem** — backup no Supabase Storage (já existe, hoje é silencioso)
-3. **Compartilhar (link somente leitura)** — gera URL pública que carrega o sistema inteiro em modo read-only (novo)
+### 1. Configuração de Planos via UI (P0)
+Hoje `PLANS` está hardcoded em `src/lib/payments/plans.ts`. Migrar para tabela.
 
----
+- **DB:** tabela `plans` (slug, name, price_cents, currency, interval, features jsonb, limits jsonb, stripe_price_id, asaas_plan_id, active, sort_order).
+- **Server:** `plans.functions.ts` — `listPlans`, `upsertPlan`, `togglePlan`, `deletePlan` (admin-gated + audit).
+- **Compat:** `getPlans()` lê do banco com fallback ao hardcoded; landing/pricing e checkout passam a usar a fonte dinâmica.
+- **UI:** nova aba **Planos** no `/admin` — tabela editável com drawer (preço, features list, limites, IDs Stripe/Asaas, toggle ativo).
+- **Seed:** migração popula os planos atuais (free/pro).
 
-## Arquitetura analisada
+### 2. Notas Internas no Usuário (CRM leve)
+- **DB:** tabela `user_notes` (user_id, author_id, body, pinned, created_at).
+- **Server:** `userNotes.functions.ts` — list/create/delete/togglePin.
+- **UI:** nova aba **Notas** no `UserDetailDrawer.tsx` — timeline com autor, "fixar", soft delete.
 
-- **Botão atual:** `src/components/layout/AppSidebar.tsx` (linhas 135-141) — chama `onSave` vindo de `src/routes/index.tsx`.
-- **Engine de save:** `src/engines/finance/useFinnanceFile.ts` — `save()` hoje faz **download local + backup nuvem** acoplados (debounce 1500 ms). Precisa ser **desacoplado** em três operações independentes.
-- **Cloud backup:** `src/lib/api/cloudBackup.ts` já tem `uploadBackup/listBackups/downloadBackup` no bucket `backups` (privado, por `userId`).
-- **Infra de compartilhamento já existe no banco** (mas sem código):
-  - Tabela `public.shared_reports` (share_id, owner_id, storage_path, company_name, expires_at, revoked_at) com policy `SELECT TO public` (leitura pública) e CRUD restrito ao owner.
-  - Bucket `shared-reports` (privado — usaremos signed URL ou download via server fn).
-- **Serialização:** `serialize(state, scenarios, extras)` em `fileFormat/index.ts` produz o JSON canônico — reusar idêntico para os 3 fluxos.
+### 3. Notificações para o Admin
+Eventos: novo signup, churn (cancelamento), past_due, webhook failure.
 
----
+- **DB:** `notification_settings` (singleton: slack_webhook_url, email_to, events jsonb com flags por tipo).
+- **Server:** `notify.server.ts` — `notifyAdmin(event, payload)` envia Slack (webhook) + Resend (email), respeita flags. Throttle simples (dedup por chave 5min em `admin_audit_log`).
+- **Integração:** hooks em
+  - `handle_new_user` trigger → tabela `signup_events` + chamada via server fn pós-signup
+  - webhook handlers (Stripe/Asaas): em `subscription.deleted`, `past_due`, e falha de assinatura
+  - `webhook_events` quando `status='failed'`
+- **UI:** aba **Sistema** ganha card "Notificações" (webhook Slack, email destino, checkboxes por evento, botão "Testar").
 
-## Plano de implementação
+### 4. Sessões Ativas / Revogar Tokens
+- **Server:** `sessions.functions.ts` (admin) — `listUserSessions(userId)` via `supabaseAdmin.auth.admin` (lista refresh tokens), `revokeAllSessions(userId)` via `signOut({ scope: 'global' })`, `revokeSession(sessionId)`.
+- **UI:** nova aba **Sessões** no `UserDetailDrawer` — lista (criado em, último uso, IP, user-agent quando disponível), botões "Revogar" / "Revogar todas". Auditado.
 
-### 1. Refatorar `useFinnanceFile.ts` (desacoplar operações)
+### 5. Status Page Interno
+- **Server:** `status.functions.ts` — checa em paralelo:
+  - **Stripe:** `GET https://status.stripe.com/api/v2/status.json`
+  - **Resend:** ping `GET https://api.resend.com/domains` com API key (HEAD se possível)
+  - **Supabase:** `SELECT 1` + `https://status.supabase.com/api/v2/status.json`
+  - **Asaas:** `GET /v3/finance/balance` com key
+  - **Lovable AI Gateway:** `GET /v1/models` com `LOVABLE_API_KEY`
+- Cada check retorna `{ name, status: 'operational'|'degraded'|'down', latencyMs, message }`.
+- **UI:** nova aba **Status** com 5 cards (LED verde/amarelo/vermelho, latência, última verificação, botão "Recheck"). Auto-refresh 60s.
 
-Substituir o `save()` monolítico por três callbacks expostos:
+### Arquivos novos
+```
+src/lib/admin/plans.functions.ts
+src/lib/admin/userNotes.functions.ts
+src/lib/admin/sessions.functions.ts
+src/lib/admin/status.functions.ts
+src/lib/admin/notify.server.ts
+src/components/admin/tabs/PlansTab.tsx
+src/components/admin/tabs/StatusTab.tsx
+src/components/admin/UserNotesPanel.tsx
+src/components/admin/UserSessionsPanel.tsx
+```
 
-- `saveToDisk()` — só faz download local + limpa dirty/draft.
-- `saveToCloud()` — só faz upload no bucket `backups` (sem debounce, com toast de progresso/sucesso/erro; usa `onBackupStatus`). Requer `userId`.
-- `createShareLink()` — gera `shareId` (nanoid 12 chars), faz upload em `shared-reports/{ownerId}/{shareId}.finnance`, insere linha em `shared_reports`, retorna `{ shareId, url }`.
+### Arquivos alterados
+- `src/routes/admin.tsx` (+2 abas: Planos, Status → 11 abas)
+- `src/components/admin/UserDetailDrawer.tsx` (+2 sub-abas: Notas, Sessões)
+- `src/components/admin/tabs/SystemTab.tsx` (card de notificações)
+- `src/lib/payments/plans.ts` (passa a ler do banco com cache + fallback)
+- `src/routes/api/public/payments/webhook*.ts` (chama `notifyAdmin` em past_due/canceled/failure)
 
-Manter `save()` como atalho que chama `saveToDisk()` + (se logado) `saveToCloud()` em background — preserva o atalho **Ctrl+S** sem regressão.
+### Migrations (uma única)
+- `plans` + GRANTs + RLS (leitura pública pros ativos; escrita só service_role)
+- `user_notes` + GRANTs + RLS (leitura apenas admin)
+- `notification_settings` (singleton id=1)
+- Seed dos planos atuais
 
-### 2. Novo componente `SaveShareDialog.tsx`
-
-Em `src/components/sim/shared/SaveShareDialog.tsx`. Usa `shadcn Dialog` + 3 cards (ícones `HardDrive`, `Cloud`, `Link2` de lucide-react). Tokens do design system (`bg-card`, `text-primary`, `bg-primary/10` para os badges circulares). Estados de loading por card; após gerar link, mostra input com URL + botão "Copiar".
-
-### 3. Atualizar `AppSidebar.tsx` e `src/routes/index.tsx`
-
-- Botão renomeado para **"Salvar / Compartilhar"** (label + ícone `Share2`).
-- `onSave` vira `onOpenSaveShare` → abre o dialog.
-- `fileApi` agora expõe os 3 callbacks; passar todos via props.
-
-### 4. Nova rota pública read-only `/shared/$shareId`
-
-Arquivo `src/routes/shared.$shareId.tsx` (rota pública, fora de `_authenticated`):
-
-- **Loader** chama server fn `getSharedReport({ shareId })` (em `src/lib/api/sharedReports.functions.ts`) que: lê linha em `shared_reports` (policy pública), valida `revoked_at`/`expires_at`, faz `supabaseAdmin.storage.from('shared-reports').download(path)` e devolve `{ payload, companyName }`.
-- Renderiza a aplicação inteira em modo somente leitura (ver passo 5).
-- `head()` com OG tags (título = nome da empresa) para links compartilháveis.
-
-### 5. Modo read-only global
-
-Adicionar `readOnly: boolean` ao `AppStateContext`:
-
-- Quando `true`, os setters (`setState`, mutators de cenários, ações, etc.) viram no-ops e disparam `toast.info("Modo somente leitura")`.
-- Hook auxiliar `useReadOnly()` para componentes que precisam desabilitar botões/inputs visualmente (`disabled`, opacity).
-- Rota pública monta `<AppStateProvider initialState={payload.state} readOnly>`; a app normal continua com `readOnly={false}`.
-- Esconder controles destrutivos quando readOnly: botão Salvar/Compartilhar, Reset, plano de ação (edição), config da empresa, dialogs de cenário. Mostrar badge fixo no topo: **"📖 Visualização compartilhada — somente leitura"**.
-
-### 6. Server functions e segurança
-
-`src/lib/api/sharedReports.functions.ts`:
-
-- `createShareLink` — `requireSupabaseAuth`, gera `shareId`, upload (admin client lazy-importado), insert na tabela.
-- `getSharedReport` — pública (sem middleware), valida revoked/expires, download via admin client, retorna JSON.
-- `revokeShareLink` — `requireSupabaseAuth`, set `revoked_at = now()` no `share_id` do owner.
-
-Carregar `supabaseAdmin` com `await import(...)` dentro do handler (conforme regra `tanstack-supabase-import-graph`).
-
-### 7. Testes manuais
-
-- Salvar no disco: arquivo baixa, dirty zera.
-- Salvar na nuvem: aparece no `listBackups`.
-- Gerar link: abrir em janela anônima → carrega read-only, edições bloqueadas.
-- Revogar link: 404 amigável.
-
----
-
-## Arquivos afetados
-
-**Editados:**
-- `src/engines/finance/useFinnanceFile.ts`
-- `src/components/layout/AppSidebar.tsx`
-- `src/routes/index.tsx`
-- `src/engines/finance/AppStateContext.tsx` (flag readOnly)
-- `src/engines/scenarios/store.ts` (guarda readOnly nos mutators)
-- `src/engines/actions/store.ts` (idem)
-
-**Novos:**
-- `src/components/sim/shared/SaveShareDialog.tsx`
-- `src/components/sim/shared/ReadOnlyBanner.tsx`
-- `src/lib/api/sharedReports.functions.ts`
-- `src/routes/shared.$shareId.tsx`
-
-Sem migrations — tabela e bucket já existem.
-
----
-
-## Fora de escopo (perguntar depois se necessário)
-
-- Expiração configurável do link (default: sem expiração, revogável).
-- Página de gerenciamento de links compartilhados (listar/revogar).
-- Proteção por senha do link.
+Confirma para eu executar?
