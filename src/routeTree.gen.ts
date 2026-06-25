@@ -22,6 +22,7 @@ import { Route as SharedShareIdRouteImport } from './routes/shared.$shareId'
 import { Route as CheckoutSucessoRouteImport } from './routes/checkout.sucesso'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiFeedbackRouteImport } from './routes/api/feedback'
+import { Route as ApiPublicPaymentsResendMagicLinkRouteImport } from './routes/api/public/payments/resend-magic-link'
 import { Route as ApiPublicPaymentsIntentStatusRouteImport } from './routes/api/public/payments/intent-status'
 import { Route as ApiPublicPaymentsCheckoutRouteImport } from './routes/api/public/payments/checkout'
 import { Route as ApiPublicHooksWebhookRetryRouteImport } from './routes/api/public/hooks/webhook-retry'
@@ -94,6 +95,12 @@ const ApiFeedbackRoute = ApiFeedbackRouteImport.update({
   path: '/api/feedback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPaymentsResendMagicLinkRoute =
+  ApiPublicPaymentsResendMagicLinkRouteImport.update({
+    id: '/api/public/payments/resend-magic-link',
+    path: '/api/public/payments/resend-magic-link',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPaymentsIntentStatusRoute =
   ApiPublicPaymentsIntentStatusRouteImport.update({
     id: '/api/public/payments/intent-status',
@@ -149,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/webhook-retry': typeof ApiPublicHooksWebhookRetryRoute
   '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
   '/api/public/payments/intent-status': typeof ApiPublicPaymentsIntentStatusRoute
+  '/api/public/payments/resend-magic-link': typeof ApiPublicPaymentsResendMagicLinkRoute
   '/api/public/payments/webhook/asaas': typeof ApiPublicPaymentsWebhookAsaasRoute
   '/api/public/payments/webhook/stripe': typeof ApiPublicPaymentsWebhookStripeRoute
 }
@@ -170,6 +178,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/webhook-retry': typeof ApiPublicHooksWebhookRetryRoute
   '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
   '/api/public/payments/intent-status': typeof ApiPublicPaymentsIntentStatusRoute
+  '/api/public/payments/resend-magic-link': typeof ApiPublicPaymentsResendMagicLinkRoute
   '/api/public/payments/webhook/asaas': typeof ApiPublicPaymentsWebhookAsaasRoute
   '/api/public/payments/webhook/stripe': typeof ApiPublicPaymentsWebhookStripeRoute
 }
@@ -192,6 +201,7 @@ export interface FileRoutesById {
   '/api/public/hooks/webhook-retry': typeof ApiPublicHooksWebhookRetryRoute
   '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
   '/api/public/payments/intent-status': typeof ApiPublicPaymentsIntentStatusRoute
+  '/api/public/payments/resend-magic-link': typeof ApiPublicPaymentsResendMagicLinkRoute
   '/api/public/payments/webhook/asaas': typeof ApiPublicPaymentsWebhookAsaasRoute
   '/api/public/payments/webhook/stripe': typeof ApiPublicPaymentsWebhookStripeRoute
 }
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/webhook-retry'
     | '/api/public/payments/checkout'
     | '/api/public/payments/intent-status'
+    | '/api/public/payments/resend-magic-link'
     | '/api/public/payments/webhook/asaas'
     | '/api/public/payments/webhook/stripe'
   fileRoutesByTo: FileRoutesByTo
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/webhook-retry'
     | '/api/public/payments/checkout'
     | '/api/public/payments/intent-status'
+    | '/api/public/payments/resend-magic-link'
     | '/api/public/payments/webhook/asaas'
     | '/api/public/payments/webhook/stripe'
   id:
@@ -257,6 +269,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/webhook-retry'
     | '/api/public/payments/checkout'
     | '/api/public/payments/intent-status'
+    | '/api/public/payments/resend-magic-link'
     | '/api/public/payments/webhook/asaas'
     | '/api/public/payments/webhook/stripe'
   fileRoutesById: FileRoutesById
@@ -279,6 +292,7 @@ export interface RootRouteChildren {
   ApiPublicHooksWebhookRetryRoute: typeof ApiPublicHooksWebhookRetryRoute
   ApiPublicPaymentsCheckoutRoute: typeof ApiPublicPaymentsCheckoutRoute
   ApiPublicPaymentsIntentStatusRoute: typeof ApiPublicPaymentsIntentStatusRoute
+  ApiPublicPaymentsResendMagicLinkRoute: typeof ApiPublicPaymentsResendMagicLinkRoute
   ApiPublicPaymentsWebhookAsaasRoute: typeof ApiPublicPaymentsWebhookAsaasRoute
   ApiPublicPaymentsWebhookStripeRoute: typeof ApiPublicPaymentsWebhookStripeRoute
 }
@@ -376,6 +390,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiFeedbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/payments/resend-magic-link': {
+      id: '/api/public/payments/resend-magic-link'
+      path: '/api/public/payments/resend-magic-link'
+      fullPath: '/api/public/payments/resend-magic-link'
+      preLoaderRoute: typeof ApiPublicPaymentsResendMagicLinkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/payments/intent-status': {
       id: '/api/public/payments/intent-status'
       path: '/api/public/payments/intent-status'
@@ -440,6 +461,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksWebhookRetryRoute: ApiPublicHooksWebhookRetryRoute,
   ApiPublicPaymentsCheckoutRoute: ApiPublicPaymentsCheckoutRoute,
   ApiPublicPaymentsIntentStatusRoute: ApiPublicPaymentsIntentStatusRoute,
+  ApiPublicPaymentsResendMagicLinkRoute: ApiPublicPaymentsResendMagicLinkRoute,
   ApiPublicPaymentsWebhookAsaasRoute: ApiPublicPaymentsWebhookAsaasRoute,
   ApiPublicPaymentsWebhookStripeRoute: ApiPublicPaymentsWebhookStripeRoute,
 }

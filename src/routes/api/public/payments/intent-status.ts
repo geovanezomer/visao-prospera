@@ -23,7 +23,7 @@ export const Route = createFileRoute("/api/public/payments/intent-status")({
         const { data, error } = await sb
           .from("checkout_intents")
           .select(
-            "status,plan_slug,with_upsell,currency,plan_amount_cents,upsell_amount_cents,provider,confirmed_at,updated_at,last_error",
+            "status,plan_slug,with_upsell,currency,plan_amount_cents,upsell_amount_cents,provider,confirmed_at,updated_at,last_error,email",
           )
           .eq("idempotency_key", i)
           .maybeSingle();
@@ -32,7 +32,15 @@ export const Route = createFileRoute("/api/public/payments/intent-status")({
           return Response.json({ status: "unknown" }, { status: 404 });
         }
 
-        // Resposta minimalista — sem PII (email/IP/UA).
+        // Mascara o e-mail: "g***e@dominio.com" — evita enumeração se a chave vazar.
+        function maskEmail(e: string | null | undefined): string | null {
+          if (!e) return null;
+          const [u, d] = e.split("@");
+          if (!u || !d) return null;
+          if (u.length <= 2) return `${u[0] ?? "*"}***@${d}`;
+          return `${u[0]}***${u[u.length - 1]}@${d}`;
+        }
+
         return Response.json({
           status: data.status,
           plan: data.plan_slug,
@@ -43,6 +51,7 @@ export const Route = createFileRoute("/api/public/payments/intent-status")({
           provider: data.provider,
           confirmedAt: data.confirmed_at,
           updatedAt: data.updated_at,
+          emailMasked: maskEmail(data.email as string | null),
           lastError: data.status === "failed" ? data.last_error : null,
         });
       },
