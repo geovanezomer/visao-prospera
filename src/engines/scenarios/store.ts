@@ -93,9 +93,14 @@ export interface ScenarioRecord {
   };
   /** Tipo do cenário:
    *  - "whatif" (default): simulação de alavanca, comparado contra base.
-   *  - "historical": snapshot de um ano fiscal fechado, usado pelas pills
-   *    de período no cabeçalho. Carrega AppState inteiro ao ser restaurado. */
+   *  - "historical": snapshot de um AppState (ano fechado OU previsão/budget),
+   *    usado pelas pills de período no cabeçalho. Carrega AppState inteiro
+   *    ao ser restaurado. */
   kind?: "whatif" | "historical";
+  /** Apenas para `kind: "historical"`:
+   *  - "realizado" (default): ano fiscal fechado/em andamento.
+   *  - "previsao": orçamento/projeção (budget) para uso em Previsto × Realizado. */
+  subKind?: "realizado" | "previsao";
   /** Apenas para `kind: "historical"`: ano fiscal do snapshot (ex: 2024). */
   fiscalYear?: number;
   /** Snapshot completo do AppState. Obrigatório quando `kind === "historical"`. */
