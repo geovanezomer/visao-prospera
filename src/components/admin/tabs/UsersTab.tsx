@@ -98,6 +98,15 @@ export function UsersTab() {
     } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
     finally { setBusyId(null); }
   };
+  const handleResendMagic = async (row: AdminUserRow) => {
+    setBusyId(row.id);
+    try {
+      const r = await resendMagicLink({ data: { userId: row.id } });
+      if (r.sent) toast.success(`Magic link enviado para ${r.email}.`);
+      else toast.message("Resend não configurado — link copiado.", { description: r.link });
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
+    finally { setBusyId(null); }
+  };
 
   return (
     <div className="space-y-4">
