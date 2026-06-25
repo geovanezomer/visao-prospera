@@ -167,6 +167,27 @@ async function runEventLogic(
         .from("subscriptions")
         .upsert(row as any, { onConflict: "stripe_subscription_id" });
       if (error) throw new Error(error.message);
+
+      // Vincula a intenção de compra (a mais recente do mesmo email/provider
+      // ainda não confirmada) ao customer/subscription do provedor.
+      try {
+        await admin
+          .from("checkout_intents")
+          .update({
+            status: "paid",
+            provider_customer_id: event.customerId,
+            provider_subscription_id: event.subscriptionId,
+            confirmed_at: new Date().toISOString(),
+          })
+          .eq("provider", provider)
+          .eq("email", (event.email || "").toLowerCase())
+          .in("status", ["created", "redirected"])
+          .order("created_at", { ascending: false })
+          .limit(1);
+      } catch (e) {
+        console.warn("[webhook] vincular intent falhou (ignorado):", e);
+      }
+
       await sendMagicLink(admin, event.email, event.plan);
       const { notifyAdmin } = await import("@/lib/admin/notify.server");
       await notifyAdmin({
@@ -177,6 +198,7 @@ async function runEventLogic(
       });
       return;
     }
+
     case "subscription.updated": {
       const { data, error } = await admin
         .from("subscriptions")
