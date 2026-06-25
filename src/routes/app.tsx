@@ -145,6 +145,7 @@ function SimulaPro() {
   // Status do backup automático no Supabase Storage (header indicator).
   const [backupStatus, setBackupStatus] = useState<BackupStatus>("idle");
   const [restoreOpen, setRestoreOpen] = useState(false);
+  const [openRestoreOpen, setOpenRestoreOpen] = useState(false);
   const [saveShareOpen, setSaveShareOpen] = useState(false);
   const fileApi = useFinnanceFile({
     state,
