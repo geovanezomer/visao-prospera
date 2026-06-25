@@ -5,21 +5,54 @@
 // URL hospedada para redirect. Rota PÚBLICA — não exige login porque é
 // usada na landing/planos. A criação de conta acontece via magic link
 // após a confirmação do pagamento (webhook).
+//
+// Toda a validação de entrada e da coerência do upsell é feita aqui com
+// Zod ANTES de chamar o provedor. Erros retornam um shape estável
+// `{ error, code, field? }` que a UI usa para mostrar mensagem específica.
 // ============================================================================
 
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { resolveProvider } from "@/lib/payments";
 
+// ─── Validação da requisição vinda do navegador ──────────────────────────────
 const Body = z.object({
-  plan: z.string().min(1).max(40).regex(/^[a-z0-9_]+$/),
-  email: z.string().email().max(200),
+  plan: z.string().min(1).max(40).regex(/^[a-z0-9_]+$/, "slug do plano inválido"),
+  email: z.string().email("e-mail inválido").max(200),
   withUpsell: z.boolean().optional().default(false),
 });
 
-// Rate limit ad-hoc em memória: 10 req/min por IP+email. O backend não tem
-// primitivo de rate limit padrão; isso é o suficiente para barrar spam óbvio
-// sem cluster (1 worker por vez). Em escala, mover para Redis/Upstash.
+// ─── Schemas que validam o que veio do BANCO ─────────────────────────────────
+// O banco é confiável, mas pode estar mal configurado (preço negativo,
+// currency vazia, etc.). Tratar como entrada externa.
+const CURRENCY_ALLOWLIST = ["BRL", "USD", "EUR"] as const;
+const IntervalSchema = z.enum(["month", "year", "week", "day", "lifetime", "one_time"]);
+const CurrencySchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(3)
+  .transform((s) => s.toUpperCase())
+  .refine((c) => (CURRENCY_ALLOWLIST as readonly string[]).includes(c), {
+    message: "moeda não suportada",
+  });
+
+const PlanRowSchema = z.object({
+  name: z.string().min(1),
+  interval: IntervalSchema,
+  price_cents: z.number().int().nonnegative(),
+  currency: CurrencySchema,
+  stripe_price_id: z.string().nullable().optional(),
+  asaas_plan_ref: z.string().nullable().optional(),
+  upsell_enabled: z.boolean().nullable().optional(),
+  upsell_name: z.string().nullable().optional(),
+  upsell_price_cents: z.number().int().nullable().optional(),
+  upsell_stripe_price_id: z.string().nullable().optional(),
+  upsell_asaas_ref: z.string().nullable().optional(),
+});
+type PlanRow = z.infer<typeof PlanRowSchema>;
+
+// ─── Rate limit em memória (worker-local) ────────────────────────────────────
 const buckets = new Map<string, { count: number; resetAt: number }>();
 const LIMIT = 10;
 const WINDOW_MS = 60_000;
@@ -34,96 +67,80 @@ function rateLimited(key: string): boolean {
   return b.count > LIMIT;
 }
 
-type PlanDetails = {
-  interval: "month" | "year" | "week" | "day" | "lifetime" | "one_time";
-  priceCents?: number;
-  currency?: string;
-  providerRef?: string | null;
-  planName?: string;
-  upsell?: {
-    enabled: boolean;
-    name: string;
-    priceCents: number;
-    stripePriceId?: string | null;
-    asaasRef?: string | null;
-  };
-};
-
-async function loadPlanDetails(slug: string, providerName: string): Promise<PlanDetails | null> {
-  try {
-    const { createClient } = await import("@supabase/supabase-js");
-    const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    });
-    const { data } = await sb
-      .from("plans")
-      .select("name,price_cents,currency,interval,stripe_price_id,asaas_plan_ref,active,upsell_enabled,upsell_name,upsell_price_cents,upsell_stripe_price_id,upsell_asaas_ref")
-      .eq("slug", slug)
-      .eq("active", true)
-      .maybeSingle();
-    if (!data) return null;
-    return {
-      interval: data.interval as PlanDetails["interval"],
-      priceCents: data.price_cents,
-      currency: data.currency,
-      providerRef: providerName === "stripe" ? data.stripe_price_id : data.asaas_plan_ref,
-      planName: data.name,
-      upsell: data.upsell_enabled
-        ? {
-            enabled: true,
-            name: data.upsell_name ?? "Adicional",
-            priceCents: data.upsell_price_cents ?? 0,
-            stripePriceId: data.upsell_stripe_price_id,
-            asaasRef: data.upsell_asaas_ref,
-          }
-        : undefined,
-    };
-  } catch {
-    return null;
-  }
+// ─── Helpers ────────────────────────────────────────────────────────────────
+function err(
+  status: number,
+  code: string,
+  message: string,
+  field?: string,
+) {
+  return Response.json({ error: message, code, field }, { status });
 }
 
+async function loadPlanRow(slug: string): Promise<PlanRow | null> {
+  const { createClient } = await import("@supabase/supabase-js");
+  const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
+  const { data } = await sb
+    .from("plans")
+    .select(
+      "name,price_cents,currency,interval,stripe_price_id,asaas_plan_ref,active,upsell_enabled,upsell_name,upsell_price_cents,upsell_stripe_price_id,upsell_asaas_ref",
+    )
+    .eq("slug", slug)
+    .eq("active", true)
+    .maybeSingle();
+  if (!data) return null;
+  const parsed = PlanRowSchema.safeParse(data);
+  if (!parsed.success) {
+    console.error("[checkout] plano com dados inválidos:", slug, parsed.error.flatten());
+    return null;
+  }
+  return parsed.data;
+}
+
+// ─── Handler ────────────────────────────────────────────────────────────────
 export const Route = createFileRoute("/api/public/payments/checkout")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // 1) Validação da requisição
         let parsed: z.infer<typeof Body>;
         try {
           parsed = Body.parse(await request.json());
         } catch (e) {
-          return Response.json({ error: "Payload inválido" }, { status: 400 });
+          const issue = e instanceof z.ZodError ? e.issues[0] : null;
+          return err(
+            400,
+            "invalid_payload",
+            issue?.message ?? "Payload inválido",
+            issue?.path?.[0]?.toString(),
+          );
         }
 
+        // 2) Rate limit
         const ip =
           request.headers.get("cf-connecting-ip") ||
           request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
           "unknown";
         if (rateLimited(`${ip}:${parsed.email.toLowerCase()}`)) {
-          return Response.json({ error: "Muitas tentativas. Aguarde 1 minuto." }, { status: 429 });
+          return err(429, "rate_limited", "Muitas tentativas. Aguarde 1 minuto.");
         }
 
+        // 3) Config base
         const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
-        if (!appUrl) {
-          return Response.json({ error: "APP_URL não configurado" }, { status: 500 });
-        }
+        if (!appUrl) return err(500, "config_missing", "APP_URL não configurado");
 
         try {
           const provider = await resolveProvider();
-          const details = await loadPlanDetails(parsed.plan, provider.name);
-          if (!details) {
-            return Response.json({ error: "Plano não encontrado ou inativo." }, { status: 404 });
+
+          // 4) Carrega plano + valida shape vindo do banco
+          const plan = await loadPlanRow(parsed.plan);
+          if (!plan) {
+            return err(404, "plan_not_found", "Plano não encontrado ou inativo.", "plan");
           }
 
-          // ─── Validação server-side do upsell ───────────────────────────────
-          // Garante coerência com o plano antes de criar cobrança no provedor:
-          //  • upsell habilitado no plano
-          //  • preço inteiro positivo, em centavos
-          //  • teto de sanidade (≤ 5× preço do plano) para evitar
-          //    manipulação no front (o front nunca envia o preço,
-          //    mas defendemos contra plano mal configurado)
-          //  • moeda única: o upsell herda a moeda do plano
-          //    (não há campo upsell_currency no schema, logo só validamos
-          //     que o plano TEM moeda definida quando há upsell pago)
+          // 5) Validação do upsell — só se o usuário marcou
           let upsellPayload: {
             name: string;
             priceCents: number;
@@ -132,63 +149,115 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
           } | null = null;
 
           if (parsed.withUpsell) {
-            if (!details.upsell?.enabled) {
-              return Response.json(
-                { error: "Este plano não possui upsell disponível." },
-                { status: 400 },
+            if (!plan.upsell_enabled) {
+              return err(
+                400,
+                "upsell_disabled",
+                "Este plano não possui adicional disponível no momento.",
+                "upsell",
               );
             }
-            const cents = details.upsell.priceCents;
+            const cents = plan.upsell_price_cents ?? 0;
             if (!Number.isInteger(cents) || cents <= 0) {
-              return Response.json(
-                { error: "Configuração de upsell inválida (preço)." },
-                { status: 422 },
+              return err(
+                422,
+                "upsell_invalid_price",
+                "O preço do adicional está mal configurado. Tente novamente sem o adicional.",
+                "upsell",
               );
             }
-            if (!details.currency) {
-              return Response.json(
-                { error: "Moeda do plano não configurada — upsell bloqueado." },
-                { status: 422 },
+            // Coerência de moeda: o upsell SEMPRE usa a moeda do plano.
+            // Se o plano não tem moeda válida, bloqueia antes do provedor.
+            if (!plan.currency) {
+              return err(
+                422,
+                "upsell_currency_mismatch",
+                "Moeda do plano não está configurada — adicional bloqueado.",
+                "upsell",
               );
             }
-            const planCents = details.priceCents ?? 0;
-            if (planCents > 0 && cents > planCents * 5) {
-              console.error(
-                "[checkout] upsell desproporcional ao plano",
-                { plan: parsed.plan, planCents, upsellCents: cents },
-              );
-              return Response.json(
-                { error: "Upsell desproporcional ao valor do plano." },
-                { status: 422 },
+            // Faixa de sanidade: 0,50 ≤ upsell ≤ 5× preço do plano
+            // (centavos). Evita upsell descomunal por erro de cadastro.
+            const planCents = plan.price_cents;
+            const MIN_CENTS = 50;
+            const MAX_CENTS = planCents > 0 ? planCents * 5 : 100_000_00;
+            if (cents < MIN_CENTS) {
+              return err(
+                422,
+                "upsell_below_min",
+                "O adicional está abaixo do valor mínimo (R$ 0,50).",
+                "upsell",
               );
             }
+            if (cents > MAX_CENTS) {
+              console.error("[checkout] upsell desproporcional", {
+                plan: parsed.plan,
+                planCents,
+                upsellCents: cents,
+              });
+              return err(
+                422,
+                "upsell_above_max",
+                "O adicional está desproporcional ao valor do plano.",
+                "upsell",
+              );
+            }
+
             upsellPayload = {
-              name: details.upsell.name,
+              name: plan.upsell_name?.trim() || "Adicional",
               priceCents: cents,
-              stripePriceId: details.upsell.stripePriceId,
-              asaasRef: details.upsell.asaasRef,
+              stripePriceId: plan.upsell_stripe_price_id,
+              asaasRef: plan.upsell_asaas_ref,
             };
           }
+
+          // 6) Cria checkout no provedor ativo
+          const providerRef =
+            provider.name === "stripe" ? plan.stripe_price_id : plan.asaas_plan_ref;
 
           const { url } = await provider.createCheckout({
             plan: parsed.plan,
             email: parsed.email,
             successUrl: `${appUrl}/checkout/sucesso?plan=${parsed.plan}`,
             cancelUrl: `${appUrl}/planos?canceled=1`,
-            interval: details.interval,
-            priceCents: details.priceCents,
-            currency: details.currency,
-            providerRef: details.providerRef,
-            planName: details.planName,
+            interval: plan.interval,
+            priceCents: plan.price_cents,
+            currency: plan.currency,
+            providerRef,
+            planName: plan.name,
             upsell: upsellPayload,
           });
+
+          // 7) Best-effort: registra a intenção de compra para rastrear o
+          //    comprador mesmo antes do webhook confirmar.
+          try {
+            const { createClient } = await import("@supabase/supabase-js");
+            const sb = createClient(
+              process.env.SUPABASE_URL!,
+              process.env.SUPABASE_SERVICE_ROLE_KEY!,
+              { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
+            );
+            await sb.from("checkout_intents").insert({
+              plan_slug: parsed.plan,
+              email: parsed.email.toLowerCase(),
+              with_upsell: parsed.withUpsell,
+              provider: provider.name,
+              plan_amount_cents: plan.price_cents,
+              upsell_amount_cents: upsellPayload?.priceCents ?? null,
+              currency: plan.currency,
+              ip,
+              user_agent: request.headers.get("user-agent")?.slice(0, 500) ?? null,
+            });
+          } catch (logErr) {
+            console.error("[checkout] log de intenção falhou (ignorado):", logErr);
+          }
+
           return Response.json({ url, provider: provider.name });
         } catch (e) {
           const msg = e instanceof Error ? e.message : "Erro desconhecido";
           console.error("[checkout] falhou:", msg);
-          return Response.json({ error: msg }, { status: 500 });
+          return err(500, "provider_error", msg);
         }
-
       },
     },
   },
