@@ -4,16 +4,25 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { isLandingEnabled } from "@/lib/featureFlags";
 import { faqPageJsonLd } from "@/lib/seo/faqs";
+import { listPlansPublic } from "@/lib/admin/plans.functions";
 
 const CANONICAL = "https://visao-prospera.lovable.app/";
 
 export const Route = createFileRoute("/")({
+  // Prefetch dos planos no SSR — evita "flash" de skeleton/mock no cliente.
+  loader: async () => {
+    if (!isLandingEnabled()) return { plans: [] as any[] };
+    try {
+      const { plans } = await listPlansPublic();
+      return { plans };
+    } catch {
+      return { plans: [] as any[] };
+    }
+  },
+  staleTime: 60_000,
   head: () => ({
     meta: [
-      {
-        title:
-          "FinancePRO — Raio-X Financeiro para PMEs | GZ Consultoria",
-      },
+      { title: "FinancePRO — Raio-X Financeiro para PMEs | GZ Consultoria" },
       {
         name: "description",
         content:
@@ -64,6 +73,8 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
+  errorComponent: () => <LandingPage initialPlans={[]} />,
+  notFoundComponent: () => <Navigate to="/" />,
   component: IndexRoute,
 });
 
@@ -71,5 +82,6 @@ function IndexRoute() {
   if (!isLandingEnabled()) {
     return <Navigate to="/app" />;
   }
-  return <LandingPage />;
+  const { plans } = Route.useLoaderData();
+  return <LandingPage initialPlans={plans} />;
 }
