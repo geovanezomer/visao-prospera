@@ -236,7 +236,7 @@ export function SystemTab() {
               onChange={async (e) => {
                 const f = e.target.files?.[0]; if (!f) return;
                 try {
-                  const url = await readAsDataUrl(f, 50 * 1024);
+                  const url = await readImageAsDataUrl(f, FAVICON_RULE);
                   setBranding({ ...branding, favicon_url: url });
                 } catch (err) { toast.error(err instanceof Error ? err.message : "Falha"); }
                 finally { if (faviconInputRef.current) faviconInputRef.current.value = ""; }
