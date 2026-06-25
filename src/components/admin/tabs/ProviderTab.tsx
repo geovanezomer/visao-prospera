@@ -53,7 +53,7 @@ export function ProviderTab() {
   };
   const test = async (p: "stripe" | "asaas") => {
     setBusy(p);
-    try { const r = await testProviderConnection({ data: { provider: p } }); toast.success(r.message); }
+    try { const r = await testProviderConnection({ data: { provider: p } }); r.ok ? toast.success(r.message) : toast.error(r.message); }
     catch (err) { toast.error(err instanceof Error ? err.message : "Falha."); }
     finally { setBusy(null); }
   };
