@@ -112,6 +112,15 @@ export function UserDetailDrawer({
               )}
             </TabsContent>
 
+            <TabsContent value="notas" className="pt-3">
+              <UserNotesPanel userId={detail.user.id} />
+            </TabsContent>
+
+            <TabsContent value="sessoes" className="pt-3">
+              <UserSessionsPanel userId={detail.user.id} />
+            </TabsContent>
+
+
             <TabsContent value="webhooks" className="pt-3">
               {detail.webhookEvents.length === 0 ? (
                 <Empty>Sem eventos relacionados.</Empty>
