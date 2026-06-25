@@ -210,18 +210,6 @@ export async function handleNormalizedEvent(
         });
         break;
       }
-      case "subscription.past_due": {
-        const { data, error } = await supabaseAdmin
-          .from("subscriptions")
-          .update({ status: "past_due" })
-          .eq("stripe_subscription_id", event.subscriptionId)
-          .select("id");
-        if (error) throw new Error(error.message);
-        if (!data || data.length === 0) {
-          console.warn(`[webhook] past_due sem row prévia: ${event.subscriptionId}`);
-        }
-        break;
-      }
       case "subscription.trial_will_end": {
         // Apenas registra o evento; envio de e-mail de aviso pode ser plugado aqui.
         console.log(`[webhook] trial_will_end ${event.subscriptionId} em ${event.trialEnd ?? "?"}`);
