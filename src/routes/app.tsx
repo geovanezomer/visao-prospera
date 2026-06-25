@@ -426,6 +426,13 @@ function SimulaPro() {
               onRestored={() => { /* file foi carregado pelo setState */ }}
             />
           )}
+          <OpenRestoreDialog
+            open={openRestoreOpen}
+            onOpenChange={setOpenRestoreOpen}
+            onOpenDisk={fileApi.open}
+            onOpenCloud={user && isBackupEnabled() ? () => setRestoreOpen(true) : undefined}
+            canUseCloud={!!user && isBackupEnabled()}
+          />
           <SaveShareDialog
             open={saveShareOpen}
             onOpenChange={setSaveShareOpen}
