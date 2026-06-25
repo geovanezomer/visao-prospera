@@ -615,9 +615,9 @@ function PricingSection() {
         const { supabase } = await import("@/integrations/supabase/client");
         const { data, error } = await supabase
           .from("plans")
-          .select("slug,name,description,price_cents,interval,features,is_highlighted,badge_text")
+          .select("slug,name,description,price_cents,interval,features,sort_order")
           .eq("active", true)
-          .order("price_cents", { ascending: true });
+          .order("sort_order", { ascending: true });
         if (error || !data?.length) return;
         const mapped: Plano[] = data
           .filter((p: any) => p.slug === "starter" || p.slug === "pro")
@@ -626,9 +626,9 @@ function PricingSection() {
             descricao: p.description ?? "",
             preco: (p.price_cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
             periodo: p.interval === "year" ? "/ano" : "/mês",
-            badge: p.badge_text ? { texto: p.badge_text, icone: Zap } : null,
-            destaque: !!p.is_highlighted,
-            recursos: Array.isArray(p.features) ? p.features : [],
+            badge: p.slug === "pro" ? { texto: "Mais Popular", icone: Zap } : null,
+            destaque: p.slug === "pro",
+            recursos: Array.isArray(p.features) ? (p.features as string[]) : [],
             cta: `Assinar ${p.name}`,
             planId: p.slug as "starter" | "pro",
           }));
