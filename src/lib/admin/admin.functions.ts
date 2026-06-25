@@ -89,14 +89,20 @@ export const listAdminUsers = createServerFn({ method: "POST" })
     const sort = data.sort ?? "created_desc";
     const filters = data.filters ?? {};
 
-    // Carrega TODOS os usuários (Supabase Admin não suporta filtro/sort server-side).
-    // Limite prático: até 10k usuários. Acima disso, paginar via auth.admin.listUsers.
+    // Carrega usuários em lotes. Cap prático: 5000 (25 páginas × 200).
+    // Acima disso a UI deve usar busca específica; logamos um aviso.
+    const MAX_PAGES = 25;
     const all: any[] = [];
-    for (let p = 1; p <= 50; p++) {
+    let truncated = false;
+    for (let p = 1; p <= MAX_PAGES; p++) {
       const { data: usersPage, error } = await supabaseAdmin.auth.admin.listUsers({ page: p, perPage: 200 });
       if (error) throw new Error(error.message);
       all.push(...(usersPage.users ?? []));
       if ((usersPage.users ?? []).length < 200) break;
+      if (p === MAX_PAGES) truncated = true;
+    }
+    if (truncated) {
+      console.warn(`[admin] listAdminUsers atingiu cap de ${MAX_PAGES * 200} usuários; refine a busca.`);
     }
 
     const ids = all.map((u) => u.id);
