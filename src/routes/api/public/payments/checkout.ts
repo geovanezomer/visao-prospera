@@ -120,6 +120,15 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
             currency: details?.currency,
             providerRef: details?.providerRef,
             planName: details?.planName,
+            upsell:
+              parsed.withUpsell && details?.upsell?.enabled && details.upsell.priceCents > 0
+                ? {
+                    name: details.upsell.name,
+                    priceCents: details.upsell.priceCents,
+                    stripePriceId: details.upsell.stripePriceId,
+                    asaasRef: details.upsell.asaasRef,
+                  }
+                : null,
           });
           return Response.json({ url, provider: provider.name });
         } catch (e) {
