@@ -421,3 +421,22 @@ export const createManualUser = createServerFn({ method: "POST" })
       magicLink,
     };
   });
+
+// ---------------------------------------------------------------------------
+// checkEmailAvailable — usada pelo dialog de "Novo usuário" para detectar
+// duplicidade ANTES da etapa de confirmação, evitando 1 chamada perdida ao
+// admin.createUser.
+// ---------------------------------------------------------------------------
+export const checkEmailAvailable = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { email: string }) =>
+    z.object({ email: z.string().trim().toLowerCase().email().max(255) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const hit = await findUserByEmail(supabaseAdmin, data.email);
+    return hit
+      ? { available: false as const, userId: hit.id as string, email: data.email }
+      : { available: true as const, email: data.email };
+  });
