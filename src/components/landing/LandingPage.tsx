@@ -720,14 +720,6 @@ function PricingSection() {
       setError({ message: "E-mail inválido.", field: "email" });
       return;
     }
-    if (!isValidCPF(cpf)) {
-      setError({ message: "CPF inválido.", field: "cpf" });
-      return;
-    }
-    if (!isValidPhoneBR(phone)) {
-      setError({ message: "Telefone inválido (DDD + número).", field: "phone" });
-      return;
-    }
     setSubmitting(true);
     setError(null);
     try {
@@ -738,11 +730,10 @@ function PricingSection() {
           plan: planoConfirm.planId,
           email,
           name: fullName.trim(),
-          cpf: onlyDigits(cpf),
-          phone: onlyDigits(phone),
           withUpsell: !!upsellSel[planoConfirm.planId],
         }),
       });
+
       const json = (await res.json()) as {
         url?: string;
         error?: string;
