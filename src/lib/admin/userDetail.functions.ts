@@ -20,6 +20,8 @@ function assertAdmin(claims: any) {
   }
 }
 
+type Json = string | number | boolean | null | { [k: string]: Json } | Json[];
+
 // ---------------------------------------------------------------------------
 // getUserDetail
 // ---------------------------------------------------------------------------
