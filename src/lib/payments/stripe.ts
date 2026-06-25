@@ -136,9 +136,12 @@ export class StripeProvider implements PaymentProvider {
 
     if (mode === "subscription") {
       body["subscription_data[metadata][plan]"] = input.plan;
+      body["subscription_data[metadata][email]"] = input.email;
     } else {
       body["payment_intent_data[metadata][plan]"] = input.plan;
+      body["payment_intent_data[metadata][email]"] = input.email;
     }
+
 
     const session = await stripeFetch<{ url: string }>("/checkout/sessions", body);
     return { url: session.url };
