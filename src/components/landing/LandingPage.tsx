@@ -602,25 +602,27 @@ function PricingSection() {
     destaque: boolean;
     recursos: string[];
     cta: string;
-    planId: "starter" | "pro";
+    planId: string;
+    upsell?: { name: string; description: string; priceCents: number } | null;
   };
   const FALLBACK: Plano[] = [
-    { nome: "Mensal", descricao: "Para testar o poder da plataforma", preco: "197", periodo: "/mês", badge: null, destaque: false, recursos: ["Acesso completo a todos os módulos", "Diagnóstico, DRE, Fluxo de Caixa e Valuation", "Reforma Tributária CBS/IBS", "Suporte por e-mail", "Cancelamento a qualquer momento"], cta: "Assinar Mensal", planId: "starter" },
-    { nome: "Anual", descricao: "O escolhido por 8 em cada 10 consultores", preco: "1.497", periodo: "/ano", badge: { texto: "Mais Popular · 37% OFF", icone: Zap }, destaque: true, recursos: ["Tudo do plano Mensal", "Economia equivalente a 4 meses grátis", "Consultor IA com contexto da sua empresa", "Cenários ilimitados e Monte Carlo", "Suporte prioritário em até 24h"], cta: "Assinar Anual", planId: "pro" },
+    { nome: "Mensal", descricao: "Para testar o poder da plataforma", preco: "197", periodo: "/mês", badge: null, destaque: false, recursos: ["Acesso completo a todos os módulos", "Diagnóstico, DRE, Fluxo de Caixa e Valuation", "Reforma Tributária CBS/IBS", "Suporte por e-mail", "Cancelamento a qualquer momento"], cta: "Assinar Mensal", planId: "starter", upsell: null },
+    { nome: "Anual", descricao: "O escolhido por 8 em cada 10 consultores", preco: "1.497", periodo: "/ano", badge: { texto: "Mais Popular · 37% OFF", icone: Zap }, destaque: true, recursos: ["Tudo do plano Mensal", "Economia equivalente a 4 meses grátis", "Consultor IA com contexto da sua empresa", "Cenários ilimitados e Monte Carlo", "Suporte prioritário em até 24h"], cta: "Assinar Anual", planId: "pro", upsell: null },
   ];
   const [planos, setPlanos] = useState<Plano[]>(FALLBACK);
+  // Estado: upsell selecionado por planId.
+  const [upsellSel, setUpsellSel] = useState<Record<string, boolean>>({});
   useEffect(() => {
     (async () => {
       try {
         const { supabase } = await import("@/integrations/supabase/client");
         const { data, error } = await supabase
           .from("plans")
-          .select("slug,name,description,price_cents,interval,features,sort_order")
+          .select("slug,name,description,price_cents,interval,features,sort_order,upsell_enabled,upsell_name,upsell_description,upsell_price_cents")
           .eq("active", true)
           .order("sort_order", { ascending: true });
         if (error || !data?.length) return;
         const mapped: Plano[] = data
-          .filter((p: any) => p.slug === "starter" || p.slug === "pro")
           .map((p: any) => ({
             nome: p.name,
             descricao: p.description ?? "",
@@ -628,14 +630,21 @@ function PricingSection() {
             periodo:
               p.interval === "year"
                 ? "/ano"
-                : p.interval === "one_time"
+                : p.interval === "one_time" || p.interval === "lifetime"
                 ? ""
                 : "/mês",
             badge: p.slug === "pro" ? { texto: "Mais Popular", icone: Zap } : null,
             destaque: p.slug === "pro",
             recursos: Array.isArray(p.features) ? (p.features as string[]) : [],
             cta: `Assinar ${p.name}`,
-            planId: p.slug as "starter" | "pro",
+            planId: p.slug as string,
+            upsell: p.upsell_enabled && p.upsell_price_cents > 0
+              ? {
+                  name: p.upsell_name ?? "Adicional",
+                  description: p.upsell_description ?? "",
+                  priceCents: p.upsell_price_cents,
+                }
+              : null,
           }));
         if (mapped.length) setPlanos(mapped);
       } catch {/* fallback */}
@@ -644,7 +653,7 @@ function PricingSection() {
 
 
 
-  async function handleSubscribe(planId: "starter" | "pro") {
+  async function handleSubscribe(planId: string) {
     const email = window.prompt(
       "Informe seu e-mail para receber o acesso após o pagamento:",
     );
@@ -657,7 +666,7 @@ function PricingSection() {
       const res = await fetch("/api/public/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planId, email }),
+        body: JSON.stringify({ plan: planId, email, withUpsell: !!upsellSel[planId] }),
       });
       const json = (await res.json()) as { url?: string; error?: string };
       if (!res.ok || !json.url) {
