@@ -36,7 +36,7 @@ export type UserDetail = {
     bannedUntil: string | null;
     emailConfirmedAt: string | null;
     provider: string | null;
-    metadata: Record<string, unknown>;
+    metadata: Json;
   };
   subscriptions: Array<{
     id: string;
@@ -65,7 +65,7 @@ export type UserDetail = {
     resource: string;
     actorEmail: string | null;
     createdAt: string;
-    metadata: Record<string, unknown> | null;
+    metadata: Json | null;
   }>;
 };
 
