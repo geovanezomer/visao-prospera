@@ -188,14 +188,27 @@ export class AsaasProvider implements PaymentProvider {
     if (token !== expected) throw new Error("Asaas webhook: token inválido.");
 
     const event = JSON.parse(rawBody) as { event: string; payment?: any; subscription?: any };
-    return this.parseEvent(event);
+    return await this.parseEvent(event);
   }
 
-  private parseEvent(event: {
+  // Asaas não envia customerEmail no webhook por padrão. Quando faltar,
+  // buscamos no endpoint /customers/{id} para conseguir liberar o acesso.
+  private async fetchCustomerEmail(customerId: string): Promise<string> {
+    if (!customerId) return "";
+    try {
+      const c = await asaasFetch<{ email?: string }>(`/customers/${customerId}`);
+      return c?.email ?? "";
+    } catch (e) {
+      console.error("[asaas] fetchCustomerEmail falhou:", e);
+      return "";
+    }
+  }
+
+  private async parseEvent(event: {
     event: string;
     payment?: any;
     subscription?: any;
-  }): NormalizedEvent {
+  }): Promise<NormalizedEvent> {
     const p = event.payment;
     const s = event.subscription;
     switch (event.event) {
@@ -203,9 +216,11 @@ export class AsaasProvider implements PaymentProvider {
       case "PAYMENT_RECEIVED": {
         if (!p) return { type: "ignored", reason: "no payment" };
         const plan = (p.externalReference as PlanId) || planFromValue(Number(p.value ?? 0));
+        // Fallback: busca email do customer se o webhook não trouxer.
+        const email = p.customerEmail || (await this.fetchCustomerEmail(String(p.customer ?? "")));
         return {
           type: "subscription.activated",
-          email: p.customerEmail ?? "",
+          email,
           customerId: String(p.customer),
           subscriptionId: String(p.subscription ?? p.id),
           plan,

@@ -42,9 +42,24 @@ async function getTemplate(admin: any, kind: string) {
 
 async function getOrCreateUserId(admin: any, email: string): Promise<string | null> {
   if (!email) return null;
-  const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-  const found = list?.users?.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
-  if (found) return found.id;
+  const target = email.toLowerCase();
+  // Pagina até encontrar o usuário (Supabase Auth lista até 200/página).
+  // Sem paginação, contas além de 200 usuários nunca seriam encontradas,
+  // gerando criação duplicada (createUser falha por email já existir) e
+  // ativação travada.
+  const PER_PAGE = 200;
+  const MAX_PAGES = 50; // 10k usuários — limite de sanidade
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const { data: list, error } = await admin.auth.admin.listUsers({ page, perPage: PER_PAGE });
+    if (error) {
+      console.error("[webhook] listUsers falhou:", error.message);
+      break;
+    }
+    const users = list?.users ?? [];
+    const found = users.find((u: any) => u.email?.toLowerCase() === target);
+    if (found) return found.id;
+    if (users.length < PER_PAGE) break; // última página
+  }
   const { data: created, error } = await admin.auth.admin.createUser({ email, email_confirm: true });
   if (error) {
     console.error("[webhook] createUser falhou:", error.message);
