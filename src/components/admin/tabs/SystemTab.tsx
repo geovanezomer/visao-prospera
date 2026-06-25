@@ -39,19 +39,77 @@ const DEFAULT_BRANDING: Branding = {
   colors: { primary: "#10b981", accent: "#0f3a2e" },
 };
 
-// Lê um File como data URL com limite de tamanho.
-function readAsDataUrl(file: File, maxBytes: number): Promise<string> {
+// Tipos MIME aceitos por tipo de asset.
+const LOGO_MIME = ["image/png", "image/svg+xml", "image/jpeg", "image/webp"] as const;
+const FAVICON_MIME = ["image/png", "image/x-icon", "image/vnd.microsoft.icon", "image/svg+xml"] as const;
+
+type ImageRule = {
+  label: string;
+  accept: readonly string[];
+  maxBytes: number;
+  minSide?: number;
+  maxSide?: number;
+  // Razão largura/altura permitida (inclusiva). Ex.: logo quadrado a 2:1 → [1, 2].
+  minAspect?: number;
+  maxAspect?: number;
+};
+
+// Lê um File como data URL após validar tipo, tamanho e dimensões.
+// SVG não tem dimensões intrínsecas confiáveis no FileReader; pulamos checagem de px.
+function readImageAsDataUrl(file: File, rule: ImageRule): Promise<string> {
   return new Promise((resolve, reject) => {
-    if (file.size > maxBytes) {
-      reject(new Error(`Arquivo muito grande (máx ${Math.round(maxBytes / 1024)} KB).`));
+    if (!rule.accept.includes(file.type)) {
+      reject(new Error(`${rule.label}: formato não suportado (${file.type || "desconhecido"}). Use ${rule.accept.map((m) => m.replace("image/", "")).join(", ")}.`));
+      return;
+    }
+    if (file.size > rule.maxBytes) {
+      reject(new Error(`${rule.label}: arquivo muito grande (${Math.round(file.size / 1024)} KB). Máx ${Math.round(rule.maxBytes / 1024)} KB.`));
       return;
     }
     const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(new Error("Falha ao ler arquivo."));
+    r.onerror = () => reject(new Error(`${rule.label}: falha ao ler arquivo.`));
+    r.onload = () => {
+      const dataUrl = String(r.result);
+      if (file.type === "image/svg+xml") { resolve(dataUrl); return; }
+      const img = new Image();
+      img.onerror = () => reject(new Error(`${rule.label}: imagem inválida ou corrompida.`));
+      img.onload = () => {
+        const w = img.naturalWidth, h = img.naturalHeight;
+        if (rule.minSide && (w < rule.minSide || h < rule.minSide)) {
+          reject(new Error(`${rule.label}: dimensões muito pequenas (${w}×${h}). Mínimo ${rule.minSide}×${rule.minSide} px.`));
+          return;
+        }
+        if (rule.maxSide && (w > rule.maxSide || h > rule.maxSide)) {
+          reject(new Error(`${rule.label}: dimensões muito grandes (${w}×${h}). Máximo ${rule.maxSide}×${rule.maxSide} px.`));
+          return;
+        }
+        const aspect = w / h;
+        if (rule.minAspect !== undefined && aspect < rule.minAspect - 0.01) {
+          reject(new Error(`${rule.label}: proporção inválida (${w}×${h}). A altura não pode ser maior que a largura.`));
+          return;
+        }
+        if (rule.maxAspect !== undefined && aspect > rule.maxAspect + 0.01) {
+          reject(new Error(`${rule.label}: proporção inválida (${w}×${h} ≈ ${aspect.toFixed(2)}:1). Largura não pode passar de ${rule.maxAspect}× a altura.`));
+          return;
+        }
+        resolve(dataUrl);
+      };
+      img.src = dataUrl;
+    };
     r.readAsDataURL(file);
   });
 }
+
+// Logo: quadrado (1:1) até retangular 2:1 (largura até 2× altura).
+const LOGO_RULE: ImageRule = {
+  label: "Logo", accept: LOGO_MIME, maxBytes: 200 * 1024,
+  minSide: 64, maxSide: 1024, minAspect: 1, maxAspect: 2,
+};
+// Favicon: precisa ser quadrado.
+const FAVICON_RULE: ImageRule = {
+  label: "Favicon", accept: FAVICON_MIME, maxBytes: 50 * 1024,
+  minSide: 16, maxSide: 512, minAspect: 1, maxAspect: 1,
+};
 
 export function SystemTab() {
   const [loading, setLoading] = useState(true);
