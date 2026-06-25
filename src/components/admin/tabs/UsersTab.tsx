@@ -2,7 +2,7 @@
 // UsersTab — listagem paginada com filtros e ordenação.
 // ============================================================================
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, KeyRound, Undo2, Search, Loader2, CheckCircle2, XCircle, ArrowUpDown, Mail } from "lucide-react";
+import { RefreshCw, KeyRound, Undo2, Search, Loader2, CheckCircle2, XCircle, ArrowUpDown, Mail, UserPlus, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import {
   listAdminUsers, setUserActive, sendPasswordReset, revalidatePlan, refundPayment, resendMagicLink,
   type AdminUserRow, type AdminUserSort, type AdminUserFilters,
 } from "@/lib/admin/admin.functions";
+import { createManualUser } from "@/lib/admin/userDetail.functions";
 import { exportUsersCsv } from "@/lib/admin/export.functions";
 import { Download } from "lucide-react";
 import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
@@ -46,6 +47,7 @@ export function UsersTab() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [refundFor, setRefundFor] = useState<AdminUserRow | null>(null);
   const [detailFor, setDetailFor] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -190,6 +192,9 @@ export function UsersTab() {
         >
           <Download className="mr-1.5 h-3.5 w-3.5" />CSV
         </Button>
+        <Button onClick={() => setCreateOpen(true)} size="sm" className="self-end">
+          <UserPlus className="mr-1.5 h-3.5 w-3.5" />Novo usuário
+        </Button>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border/60 bg-card">
@@ -293,7 +298,169 @@ export function UsersTab() {
 
       <RefundDialog user={refundFor} onClose={() => setRefundFor(null)} onDone={() => { setRefundFor(null); void load(); }} />
       <UserDetailDrawer userId={detailFor} onClose={() => setDetailFor(null)} onChanged={() => void load()} />
+      <CreateUserDialog open={createOpen} onClose={() => setCreateOpen(false)} onDone={() => { setCreateOpen(false); void load(); }} />
     </div>
+  );
+}
+
+function CreateUserDialog({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: () => void }) {
+  const [email, setEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [grantOn, setGrantOn] = useState(true);
+  const [plan, setPlan] = useState<"starter" | "pro" | "lifetime">("lifetime");
+  const [mode, setMode] = useState<"trial" | "ativo" | "lifetime">("lifetime");
+  const [durationDays, setDurationDays] = useState<string>("");
+  const [sendMagicLink, setSendMagicLink] = useState(true);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [resultLink, setResultLink] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setEmail(""); setDisplayName(""); setGrantOn(true); setPlan("lifetime");
+      setMode("lifetime"); setDurationDays(""); setSendMagicLink(true);
+      setReason(""); setResultLink(null);
+    }
+  }, [open]);
+
+  const submit = async () => {
+    setBusy(true);
+    try {
+      const days = durationDays.trim() ? Number(durationDays) : undefined;
+      if (days !== undefined && (!Number.isInteger(days) || days < 1)) {
+        throw new Error("Duração inválida.");
+      }
+      const r = await createManualUser({
+        data: {
+          email,
+          displayName: displayName.trim() || undefined,
+          grant: grantOn ? { plan, mode, durationDays: mode === "lifetime" ? undefined : days } : undefined,
+          sendMagicLink,
+          reason: reason.trim() || undefined,
+        },
+      });
+      toast.success(`Usuário criado: ${r.email}`);
+      if (r.magicLink) {
+        setResultLink(r.magicLink);
+      } else {
+        onDone();
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao criar.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { resultLink ? onDone() : onClose(); } }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Novo usuário</DialogTitle>
+          <DialogDescription>
+            Cria a conta direto no painel. Útil para presentear acesso (cursos, parcerias), beta-testers ou suporte.
+          </DialogDescription>
+        </DialogHeader>
+
+        {resultLink ? (
+          <div className="space-y-3 py-2">
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
+              Usuário criado com sucesso. Compartilhe o link mágico abaixo (válido por ~1h):
+            </div>
+            <div className="flex gap-2">
+              <Input readOnly value={resultLink} className="font-mono text-xs" />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => { void navigator.clipboard.writeText(resultLink); toast.success("Copiado."); }}
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <DialogFooter>
+              <Button onClick={onDone}>Concluir</Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="space-y-3 py-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label className="text-xs">E-mail *</Label>
+                <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="aluno@exemplo.com" type="email" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Nome (opcional)</Label>
+                <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Maria Souza" />
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-border/60 p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Conceder plano agora</Label>
+                <Switch checked={grantOn} onCheckedChange={setGrantOn} />
+              </div>
+              {grantOn && (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Plano</Label>
+                    <Select value={plan} onValueChange={(v) => setPlan(v as any)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="starter">Starter</SelectItem>
+                        <SelectItem value="pro">Pro</SelectItem>
+                        <SelectItem value="lifetime">Lifetime</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Modo</Label>
+                    <Select value={mode} onValueChange={(v) => setMode(v as any)}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="trial">Trial</SelectItem>
+                        <SelectItem value="ativo">Ativo</SelectItem>
+                        <SelectItem value="lifetime">Vitalício</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Duração (dias)</Label>
+                    <Input
+                      value={durationDays}
+                      onChange={(e) => setDurationDays(e.target.value)}
+                      placeholder={mode === "trial" ? "14" : mode === "ativo" ? "30" : "—"}
+                      disabled={mode === "lifetime"}
+                      inputMode="numeric"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-border/60 p-3">
+              <div>
+                <Label className="text-sm font-medium">Enviar magic link</Label>
+                <p className="text-xs text-muted-foreground">Gera link para o usuário entrar e definir senha.</p>
+              </div>
+              <Switch checked={sendMagicLink} onCheckedChange={setSendMagicLink} />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Motivo (opcional)</Label>
+              <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Aluno do curso Finanças PRO 2026" />
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={onClose} disabled={busy}>Cancelar</Button>
+              <Button onClick={submit} disabled={busy || !email.trim()}>
+                {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <UserPlus className="mr-1.5 h-3.5 w-3.5" />}
+                Criar usuário
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
