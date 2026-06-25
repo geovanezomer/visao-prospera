@@ -78,23 +78,45 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "FinnancePRO" },
       { name: "description", content: "Diagnóstico & Simulação Financeira" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "FinnancePRO" },
-      { property: "og:description", content: "Diagnóstico & Simulação Financeira" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "FinnancePRO" },
-      { name: "twitter:description", content: "Diagnóstico & Simulação Financeira" },
+      { name: "author", content: "GZ Consultoria Financeira & Investimentos" },
+      { property: "og:title", content: "FinnancePRO — Gestão Financeira para PMEs" },
       {
-        property: "og:image",
+        property: "og:description",
         content:
-          "https://storage.googleapis.com/gpt-engineer-file-uploads/ccesxdNjHKg20zgbBNAkTxtms2r1/social-images/social-1780074348673-logo.webp",
+          "Diagnóstico, DRE, Balanço, Fluxo de Caixa, Reforma Tributária (CBS/IBS) e +40 indicadores em um único painel.",
       },
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "FinnancePRO" },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "FinnancePRO — Gestão Financeira para PMEs" },
       {
-        name: "twitter:image",
+        name: "twitter:description",
         content:
-          "https://storage.googleapis.com/gpt-engineer-file-uploads/ccesxdNjHKg20zgbBNAkTxtms2r1/social-images/social-1780074348673-logo.webp",
+          "Diagnóstico, DRE, Balanço, Fluxo de Caixa e Reforma Tributária (CBS/IBS) em um painel inteligente.",
+      },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              name: "GZ Consultoria Financeira & Investimentos",
+              url: "https://visao-prospera.lovable.app",
+            },
+            {
+              "@type": "WebSite",
+              name: "FinnancePRO",
+              url: "https://visao-prospera.lovable.app",
+              publisher: {
+                "@type": "Organization",
+                name: "GZ Consultoria Financeira & Investimentos",
+              },
+            },
+          ],
+        }),
       },
     ],
     links: [
