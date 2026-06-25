@@ -120,14 +120,16 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
           );
         }
 
-        // 2) Rate limit
-        const ip =
-          request.headers.get("cf-connecting-ip") ||
-          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-          "unknown";
-        if (rateLimited(`${ip}:${parsed.email.toLowerCase()}`)) {
-          return err(429, "rate_limited", "Muitas tentativas. Aguarde 1 minuto.");
-        }
+        // 2) Rate limit distribuído por (IP, email)
+        const ip = clientIp(request);
+        const rlIp = await rlConsume(`checkout:ip:${ip}`, 20, 60);
+        if (!rlIp.allowed) return tooManyRequests(rlIp.retryAfter);
+        const rlEmail = await rlConsume(
+          `checkout:email:${parsed.email.toLowerCase()}`,
+          5,
+          60,
+        );
+        if (!rlEmail.allowed) return tooManyRequests(rlEmail.retryAfter);
 
         // 3) Config base
         const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
