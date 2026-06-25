@@ -1,9 +1,9 @@
 // ============================================================================
 // SystemTab — branding + textos + notificações admin.
 // ============================================================================
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Save, Send } from "lucide-react";
+import { Loader2, Save, Send, Upload, Trash2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,45 @@ import { getAppSettings, updateAppSetting } from "@/lib/admin/settings.functions
 import {
   getNotifSettings, updateNotifSettings, testNotification, type NotifSettings,
 } from "@/lib/admin/notifications.functions";
+
+// Paletas pré-definidas (cor primária). O sistema deriva foreground/ring automaticamente.
+const COLOR_PRESETS: { label: string; primary: string; accent?: string }[] = [
+  { label: "Verde Esmeralda (padrão)", primary: "#10b981", accent: "#0f3a2e" },
+  { label: "Azul Profissional",        primary: "#2563eb", accent: "#0c2340" },
+  { label: "Roxo Premium",             primary: "#7c3aed", accent: "#2e1065" },
+  { label: "Laranja Energia",          primary: "#f97316", accent: "#3b1f0a" },
+  { label: "Rosa Moderno",             primary: "#ec4899", accent: "#3d0f29" },
+  { label: "Ciano Tech",               primary: "#06b6d4", accent: "#0b3a44" },
+  { label: "Âmbar Premium",            primary: "#d4a017", accent: "#3a2e0b" },
+  { label: "Vermelho Bold",            primary: "#ef4444", accent: "#3a0e0e" },
+];
+
+type Branding = {
+  system_name: string;
+  logo_url: string;
+  favicon_url: string;
+  colors: { primary: string; accent: string };
+};
+const DEFAULT_BRANDING: Branding = {
+  system_name: "Finnance",
+  logo_url: "",
+  favicon_url: "",
+  colors: { primary: "#10b981", accent: "#0f3a2e" },
+};
+
+// Lê um File como data URL com limite de tamanho.
+function readAsDataUrl(file: File, maxBytes: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (file.size > maxBytes) {
+      reject(new Error(`Arquivo muito grande (máx ${Math.round(maxBytes / 1024)} KB).`));
+      return;
+    }
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(new Error("Falha ao ler arquivo."));
+    r.readAsDataURL(file);
+  });
+}
 
 export function SystemTab() {
   const [loading, setLoading] = useState(true);
