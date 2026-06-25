@@ -277,3 +277,138 @@ export const impersonateUser = createServerFn({ method: "POST" })
     });
     return { ok: true, email: u.user.email, link: actionLink };
   });
+
+// ---------------------------------------------------------------------------
+// createManualUser — cria um usuário manualmente no painel admin.
+// Caso de uso: presentear acesso (curso/parceria), beta-testers, suporte
+// (alguém que pagou fora do checkout). Opcionalmente já concede plano e
+// dispara magic link para o convidado definir senha / entrar.
+// ---------------------------------------------------------------------------
+export const createManualUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (d: {
+      email: string;
+      displayName?: string;
+      grant?: {
+        plan: "starter" | "pro" | "lifetime";
+        mode: "trial" | "ativo" | "lifetime";
+        durationDays?: number;
+      };
+      sendMagicLink?: boolean;
+      reason?: string;
+    }) =>
+      z
+        .object({
+          email: z.string().trim().toLowerCase().email("E-mail inválido").max(255),
+          displayName: z.string().trim().max(120).optional(),
+          grant: z
+            .object({
+              plan: z.enum(["starter", "pro", "lifetime"]),
+              mode: z.enum(["trial", "ativo", "lifetime"]),
+              durationDays: z.number().int().min(1).max(3650).optional(),
+            })
+            .optional(),
+          sendMagicLink: z.boolean().optional(),
+          reason: z.string().max(500).optional(),
+        })
+        .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // 1) Verifica se já existe via listUsers (filtro por email).
+    const { data: existing } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 200,
+    });
+    const dup = existing?.users?.find(
+      (u) => (u.email ?? "").toLowerCase() === data.email,
+    );
+    if (dup) {
+      throw new Error(
+        `Já existe um usuário com este e-mail (id ${dup.id}). Use o drawer para conceder plano.`,
+      );
+    }
+
+    // 2) Cria usuário (e-mail já confirmado para evitar bloqueio).
+    const { data: created, error: cerr } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      email_confirm: true,
+      user_metadata: data.displayName ? { display_name: data.displayName } : undefined,
+    });
+    if (cerr || !created?.user) {
+      throw new Error(cerr?.message ?? "Falha ao criar usuário.");
+    }
+    const newUserId = created.user.id;
+
+    // 3) Garante linha em profiles (o trigger handle_new_user normalmente cuida,
+    //    mas reforçamos de forma idempotente).
+    if (data.displayName) {
+      await supabaseAdmin
+        .from("profiles")
+        .upsert({ id: newUserId, display_name: data.displayName }, { onConflict: "id" });
+    }
+
+    // 4) Concessão opcional de plano (mesma lógica do grantManualPlan).
+    let grantInfo: { status: string; currentPeriodEnd: string | null } | null = null;
+    if (data.grant) {
+      const g = data.grant;
+      const days =
+        g.mode === "lifetime" ? null : g.durationDays ?? (g.mode === "trial" ? 14 : 30);
+      const periodEnd = days ? new Date(Date.now() + days * 86400_000).toISOString() : null;
+      const status =
+        g.mode === "lifetime" ? "lifetime" : g.mode === "trial" ? "trialing" : "active";
+
+      const { error: serr } = await supabaseAdmin.from("subscriptions").insert({
+        user_id: newUserId,
+        plan: g.plan,
+        price_id: `manual_${g.plan}`,
+        status,
+        provider: "manual",
+        current_period_end: periodEnd,
+        cancel_at_period_end: false,
+      });
+      if (serr) throw new Error(serr.message);
+      grantInfo = { status, currentPeriodEnd: periodEnd };
+    }
+
+    // 5) Magic link opcional (convite para o usuário entrar).
+    let magicLink: string | null = null;
+    if (data.sendMagicLink) {
+      const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
+      const { data: link, error: lerr } = await supabaseAdmin.auth.admin.generateLink({
+        type: "magiclink",
+        email: data.email,
+        options: appUrl ? { redirectTo: `${appUrl}/app` } : undefined,
+      });
+      if (lerr) throw new Error(lerr.message);
+      magicLink = (link as any)?.properties?.action_link ?? null;
+    }
+
+    // 6) Auditoria.
+    const { logAudit } = await import("./audit.server");
+    await logAudit({
+      actorId: context.userId,
+      actorEmail: (context.claims as any)?.email,
+      action: "user.created_manually",
+      resource: "user",
+      targetId: newUserId,
+      targetLabel: data.email,
+      metadata: {
+        displayName: data.displayName ?? null,
+        grant: data.grant ?? null,
+        sendMagicLink: !!data.sendMagicLink,
+        reason: data.reason ?? null,
+      },
+    });
+
+    return {
+      ok: true,
+      userId: newUserId,
+      email: data.email,
+      grant: grantInfo,
+      magicLink,
+    };
+  });
