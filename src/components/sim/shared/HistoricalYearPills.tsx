@@ -123,18 +123,23 @@ export function HistoricalYearPills() {
           Período:
         </span>
 
-        {historicals.map((h) => (
+        {historicals.map((h) => {
+          const isPrev = (h.subKind ?? "realizado") === "previsao";
+          return (
           <div key={h.id} className="group/pill inline-flex items-center">
             <button
               type="button"
               role="tab"
               onClick={() => setPendingLoadId(h.id)}
               className={cn(
-                "rounded-l-full border border-r-0 border-input bg-background px-2.5 py-0.5 text-[11px] font-medium",
-                "transition-colors hover:bg-accent hover:text-accent-foreground",
+                "rounded-l-full border border-r-0 px-2.5 py-0.5 text-[11px] font-medium transition-colors",
+                isPrev
+                  ? "border-[var(--warning)]/50 bg-[var(--warning)]/10 text-[var(--warning)] hover:bg-[var(--warning)]/20"
+                  : "border-input bg-background hover:bg-accent hover:text-accent-foreground",
               )}
-              title={`Carregar snapshot de ${h.fiscalYear}`}
+              title={`Carregar ${isPrev ? "previsão" : "snapshot"} de ${h.fiscalYear}`}
             >
+              {isPrev && <span className="mr-1 opacity-70">◇</span>}
               {h.name}
             </button>
             <DropdownMenu>
@@ -142,8 +147,10 @@ export function HistoricalYearPills() {
                 <button
                   type="button"
                   className={cn(
-                    "h-[22px] rounded-r-full border border-input bg-background px-1",
-                    "text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+                    "h-[22px] rounded-r-full border px-1 transition-colors",
+                    isPrev
+                      ? "border-[var(--warning)]/50 bg-[var(--warning)]/10 text-[var(--warning)] hover:bg-[var(--warning)]/20"
+                      : "border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                   )}
                   aria-label={`Gerenciar ${h.name}`}
                 >
@@ -163,7 +170,8 @@ export function HistoricalYearPills() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        ))}
+          );
+        })}
 
         {/* Pill "Atual" — indicador do período em edição. */}
         <span

@@ -86,16 +86,27 @@ export function ScenarioBar() {
   const [year, setYear] = useState<number>(
     YEARS.includes(defaultYear) ? defaultYear : 2025,
   );
+  const [subKind, setSubKind] = useState<"realizado" | "previsao">("realizado");
+  const [previsaoName, setPrevisaoName] = useState<string>("");
   const [saveOpen, setSaveOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
 
   const handleSave = () => {
-    archiveYearAsHistorical(company, year, state);
+    const name =
+      subKind === "previsao"
+        ? previsaoName.trim() || `Previsão ${year}`
+        : undefined;
+    archiveYearAsHistorical(company, year, state, undefined, { subKind, name });
     // Estampa o ano no AppState ativo — a partir daqui, trocar de pill faz
     // auto-arquivamento correto sob este `fiscalYear`.
     update((s) => ({ ...s, fiscalYear: year }));
-    toast.success(`Ano ${year} arquivado`);
+    toast.success(
+      subKind === "previsao"
+        ? `Previsão ${year} arquivada${name ? ` (${name})` : ""}`
+        : `Ano ${year} arquivado`,
+    );
     setSaveOpen(false);
+    setPrevisaoName("");
   };
 
   const handleLoad = (id: string) => {
@@ -108,7 +119,13 @@ export function ScenarioBar() {
     setListOpen(false);
   };
 
-  const alreadyExists = historicals.some((h) => h.fiscalYear === year);
+  const alreadyExists = historicals.some(
+    (h) =>
+      h.fiscalYear === year &&
+      (h.subKind ?? "realizado") === subKind &&
+      (subKind === "realizado" ||
+        h.name === (previsaoName.trim() || `Previsão ${year}`)),
+  );
 
   return (
     <div data-meeting-hide="true" className="fixed bottom-6 right-6 z-40 flex gap-2">
@@ -125,9 +142,42 @@ export function ScenarioBar() {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Salva o AppState corrente como snapshot histórico. Esse ano poderá ser
-              comparado lado a lado nos cards de DRE e Fluxo de Caixa.
+              Salva o AppState corrente como snapshot. Use <strong>Ano realizado</strong>
+              {" "}para arquivar um exercício fechado/em andamento, ou <strong>Previsão</strong>
+              {" "}para guardar um orçamento (budget) e comparar Previsto × Realizado.
             </p>
+
+            {/* Toggle Realizado / Previsão */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">Tipo</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSubKind("realizado")}
+                  className={
+                    "rounded-md border px-3 py-2 text-xs font-medium transition-colors " +
+                    (subKind === "realizado"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-input bg-background hover:bg-accent")
+                  }
+                >
+                  Ano realizado
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSubKind("previsao")}
+                  className={
+                    "rounded-md border px-3 py-2 text-xs font-medium transition-colors " +
+                    (subKind === "previsao"
+                      ? "border-[var(--warning)] bg-[var(--warning)]/10 text-[var(--warning)]"
+                      : "border-input bg-background hover:bg-accent")
+                  }
+                >
+                  Previsão (budget)
+                </button>
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <label className="text-xs font-medium">Ano</label>
               <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
@@ -142,18 +192,43 @@ export function ScenarioBar() {
                   ))}
                 </SelectContent>
               </Select>
-              {alreadyExists && (
-                <p className="text-[11px] text-[var(--warning)]">
-                  Já existe um snapshot para {year} — será sobrescrito.
-                </p>
-              )}
             </div>
+
+            {subKind === "previsao" && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">
+                  Nome da previsão{" "}
+                  <span className="text-muted-foreground">(opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={previsaoName}
+                  maxLength={60}
+                  placeholder={`Previsão ${year}`}
+                  onChange={(e) => setPrevisaoName(e.target.value)}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Dica: nomeie cenários distintos (ex: "Conservador", "Otimista").
+                </p>
+              </div>
+            )}
+
+            {alreadyExists && (
+              <p className="text-[11px] text-[var(--warning)]">
+                Já existe um snapshot equivalente para {year} — será sobrescrito.
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setSaveOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSave}>Salvar Ano {year}</Button>
+            <Button onClick={handleSave}>
+              {subKind === "previsao"
+                ? `Salvar Previsão ${year}`
+                : `Salvar Ano ${year}`}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -179,7 +254,8 @@ export function ScenarioBar() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[10px] uppercase text-muted-foreground">
-                    <th className="p-2">Ano</th>
+                    <th className="p-2">Cenário</th>
+                    <th className="p-2">Tipo</th>
                     <th className="p-2 text-right">Faturamento</th>
                     <th className="p-2 text-right">EBITDA</th>
                     <th className="p-2 text-right">ROE</th>
@@ -191,9 +267,22 @@ export function ScenarioBar() {
                 <tbody>
                   {historicals.map((h) => {
                     const m = metrics.get(h.id);
+                    const isPrev = (h.subKind ?? "realizado") === "previsao";
                     return (
                     <tr key={h.id} className="border-t border-border/40">
                       <td className="p-2 font-semibold">{h.name}</td>
+                      <td className="p-2">
+                        <span
+                          className={
+                            "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium " +
+                            (isPrev
+                              ? "bg-[var(--warning)]/15 text-[var(--warning)] border border-[var(--warning)]/40"
+                              : "bg-primary/15 text-primary border border-primary/40")
+                          }
+                        >
+                          {isPrev ? "Previsão" : "Realizado"}
+                        </span>
+                      </td>
                       <td className="num p-2 text-right">
                         {m ? fmtBRL(m.faturamento) : "—"}
                       </td>
