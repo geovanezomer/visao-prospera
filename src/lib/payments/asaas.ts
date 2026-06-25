@@ -84,6 +84,9 @@ export class AsaasProvider implements PaymentProvider {
   async createCheckout(input: {
     plan: PlanId;
     email: string;
+    name?: string;
+    cpfCnpj?: string;
+    phone?: string;
     successUrl: string;
     cancelUrl: string;
     interval?: "month" | "year" | "week" | "day" | "lifetime" | "one_time";
