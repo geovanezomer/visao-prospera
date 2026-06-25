@@ -69,7 +69,7 @@ export function UsersTab() {
   }, [users]);
 
   const toggleSort = (key: "created" | "expires" | "name") => {
-    if (key === "name") setSort("name_asc");
+    if (key === "name") setSort(sort === "name_asc" ? "name_desc" : "name_asc");
     else if (key === "created") setSort(sort === "created_desc" ? "created_asc" : "created_desc");
     else setSort(sort === "expires_desc" ? "expires_asc" : "expires_desc");
   };
