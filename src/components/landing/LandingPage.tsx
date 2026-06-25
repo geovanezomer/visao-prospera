@@ -712,8 +712,20 @@ function PricingSection() {
 
   async function handleSubscribe() {
     if (!planoConfirm) return;
+    if (fullName.trim().length < 3) {
+      setError({ message: "Informe seu nome completo.", field: "name" });
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError({ message: "E-mail inválido.", field: "email" });
+      return;
+    }
+    if (!isValidCPF(cpf)) {
+      setError({ message: "CPF inválido.", field: "cpf" });
+      return;
+    }
+    if (!isValidPhoneBR(phone)) {
+      setError({ message: "Telefone inválido (DDD + número).", field: "phone" });
       return;
     }
     setSubmitting(true);
@@ -725,6 +737,9 @@ function PricingSection() {
         body: JSON.stringify({
           plan: planoConfirm.planId,
           email,
+          name: fullName.trim(),
+          cpf: onlyDigits(cpf),
+          phone: onlyDigits(phone),
           withUpsell: !!upsellSel[planoConfirm.planId],
         }),
       });
