@@ -33,8 +33,7 @@ interface AppSidebarProps {
   activeTab: TabKey | "ai" | "calculadoras";
   setActiveTab: (tab: TabKey | "ai" | "calculadoras") => void;
   onSave: () => void;
-  onOpen: () => void;
-  onRestoreFromCloud?: () => void;
+  onOpenRestore: () => void;
   currentFileName: string | null;
   dirty: boolean;
 }
