@@ -18,9 +18,14 @@ import { signIntentKey } from "@/lib/intentToken.server";
 import { clientIp, rlConsume, tooManyRequests } from "@/lib/rateLimit.server";
 
 // ─── Validação da requisição vinda do navegador ──────────────────────────────
+import { isValidCPF, isValidPhoneBR, onlyDigits } from "@/lib/validators/cpf";
+
 const Body = z.object({
   plan: z.string().min(1).max(40).regex(/^[a-z0-9_]+$/, "slug do plano inválido"),
   email: z.string().email("e-mail inválido").max(200),
+  name: z.string().trim().min(3, "nome muito curto").max(120),
+  cpf: z.string().transform(onlyDigits).refine(isValidCPF, "CPF inválido"),
+  phone: z.string().transform(onlyDigits).refine(isValidPhoneBR, "telefone inválido"),
   withUpsell: z.boolean().optional().default(false),
 });
 
@@ -259,6 +264,9 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
             providerResult = await provider.createCheckout({
               plan: parsed.plan,
               email: parsed.email,
+              name: parsed.name,
+              cpfCnpj: parsed.cpf,
+              phone: parsed.phone,
               successUrl: `${appUrl}/checkout/sucesso?plan=${parsed.plan}&i=${encodeURIComponent(signedToken)}`,
               cancelUrl: `${appUrl}/planos?canceled=1&i=${encodeURIComponent(signedToken)}`,
               interval: plan.interval,

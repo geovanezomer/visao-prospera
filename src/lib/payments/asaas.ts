@@ -84,6 +84,9 @@ export class AsaasProvider implements PaymentProvider {
   async createCheckout(input: {
     plan: PlanId;
     email: string;
+    name?: string;
+    cpfCnpj?: string;
+    phone?: string;
     successUrl: string;
     cancelUrl: string;
     interval?: "month" | "year" | "week" | "day" | "lifetime" | "one_time";
@@ -139,7 +142,12 @@ export class AsaasProvider implements PaymentProvider {
         expiredUrl: input.cancelUrl,
       },
       items,
-      customerData: { email: input.email, name: input.email.split("@")[0] },
+      customerData: {
+        email: input.email,
+        name: input.name || input.email.split("@")[0],
+        ...(input.cpfCnpj ? { cpfCnpj: input.cpfCnpj } : {}),
+        ...(input.phone ? { phone: input.phone } : {}),
+      },
       externalReference: input.plan,
     };
     if (!isOneTime) {

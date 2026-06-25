@@ -25,6 +25,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { isValidCPF, isValidPhoneBR, formatCPF, formatPhoneBR, onlyDigits } from "@/lib/validators/cpf";
 import {
   Dialog,
   DialogContent,
@@ -667,6 +668,9 @@ function PricingSection() {
   // chamar o provedor de pagamento.
   const [confirmFor, setConfirmFor] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<{ message: string; code?: string; field?: string } | null>(null);
 
@@ -700,13 +704,28 @@ function PricingSection() {
   function openConfirm(planId: string) {
     setError(null);
     setEmail("");
+    setFullName("");
+    setCpf("");
+    setPhone("");
     setConfirmFor(planId);
   }
 
   async function handleSubscribe() {
     if (!planoConfirm) return;
+    if (fullName.trim().length < 3) {
+      setError({ message: "Informe seu nome completo.", field: "name" });
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError({ message: "E-mail inválido.", field: "email" });
+      return;
+    }
+    if (!isValidCPF(cpf)) {
+      setError({ message: "CPF inválido.", field: "cpf" });
+      return;
+    }
+    if (!isValidPhoneBR(phone)) {
+      setError({ message: "Telefone inválido (DDD + número).", field: "phone" });
       return;
     }
     setSubmitting(true);
@@ -718,6 +737,9 @@ function PricingSection() {
         body: JSON.stringify({
           plan: planoConfirm.planId,
           email,
+          name: fullName.trim(),
+          cpf: onlyDigits(cpf),
+          phone: onlyDigits(phone),
           withUpsell: !!upsellSel[planoConfirm.planId],
         }),
       });
@@ -914,28 +936,83 @@ function PricingSection() {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label htmlFor="checkout-email" className="text-xs font-medium text-foreground">
-                  E-mail para receber o acesso
-                </label>
-                <input
-                  id="checkout-email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="voce@empresa.com.br"
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none ring-primary/40 focus:ring-2"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={submitting}
-                />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label htmlFor="checkout-name" className="text-xs font-medium text-foreground">
+                    Nome completo
+                  </label>
+                  <input
+                    id="checkout-name"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Maria da Silva"
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none ring-primary/40 focus:ring-2"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label htmlFor="checkout-email" className="text-xs font-medium text-foreground">
+                    E-mail para receber o acesso
+                  </label>
+                  <input
+                    id="checkout-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="voce@empresa.com.br"
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none ring-primary/40 focus:ring-2"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="checkout-cpf" className="text-xs font-medium text-foreground">
+                    CPF
+                  </label>
+                  <input
+                    id="checkout-cpf"
+                    inputMode="numeric"
+                    placeholder="000.000.000-00"
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none ring-primary/40 focus:ring-2"
+                    value={cpf}
+                    onChange={(e) => setCpf(formatCPF(e.target.value))}
+                    maxLength={14}
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="checkout-phone" className="text-xs font-medium text-foreground">
+                    Telefone (com DDD)
+                  </label>
+                  <input
+                    id="checkout-phone"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="(11) 91234-5678"
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none ring-primary/40 focus:ring-2"
+                    value={phone}
+                    onChange={(e) => setPhone(formatPhoneBR(e.target.value))}
+                    maxLength={16}
+                    disabled={submitting}
+                  />
+                </div>
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                Seus dados são usados pelo provedor de pagamento (Asaas/Stripe) para emitir a cobrança (PIX/boleto/cartão) e enviar o recibo.
+              </p>
+
 
               {error && (
                 <div className="space-y-1 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                   <div className="flex items-start gap-2">
                     {error.field && (
                       <span className="shrink-0 rounded bg-destructive/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
-                        {error.field === "upsell" ? "Adicional" : error.field === "email" ? "E-mail" : error.field}
+                        {({ upsell: "Adicional", email: "E-mail", name: "Nome", cpf: "CPF", phone: "Telefone" } as Record<string,string>)[error.field] ?? error.field}
                       </span>
                     )}
                     <span className="flex-1">{error.message}</span>
