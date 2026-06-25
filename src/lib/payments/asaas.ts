@@ -94,26 +94,10 @@ export class AsaasProvider implements PaymentProvider {
     upsell?: { name: string; priceCents: number; stripePriceId?: string | null; asaasRef?: string | null } | null;
     idempotencyKey?: string;
   }): Promise<{ url: string; providerSessionId?: string | null; providerCustomerId?: string | null }> {
-    // Chaves derivadas para cada POST — Asaas exige idempotency-key
-    // por endpoint. Prefixos evitam colisão entre customer/sub/payment.
     const ik = input.idempotencyKey;
     const ikFor = (suffix: string) => (ik ? `${ik}:${suffix}` : undefined);
 
-    // 1) Garante customer
-    const found = await this.fetch<{ data: Array<{ id: string }> }>(
-      `/customers?email=${encodeURIComponent(input.email)}`,
-    );
-    let customerId = found.data?.[0]?.id;
-    if (!customerId) {
-      const created = await this.fetch<{ id: string }>("/customers", {
-        method: "POST",
-        body: { name: input.email.split("@")[0], email: input.email },
-        idempotencyKey: ikFor("cus"),
-      });
-      customerId = created.id;
-    }
-
-    // 2) Resolve valor e ciclo.
+    // Resolve valor e ciclo.
     let value: number;
     let cycle = "MONTHLY";
     if (typeof input.priceCents === "number" && input.priceCents > 0) {
@@ -129,70 +113,49 @@ export class AsaasProvider implements PaymentProvider {
       cycle = (cycleStr || "MONTHLY").toUpperCase();
     }
 
-    const nextDueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const isOneTime = input.interval === "one_time" || input.interval === "lifetime";
     const upsellValue = input.upsell && input.upsell.priceCents > 0 ? input.upsell.priceCents / 100 : 0;
-    const description = `${input.planName || `FinancePRO — plano ${input.plan}`}${isOneTime ? " (pagamento único)" : ""}`;
+    const planDesc = input.planName || `FinancePRO — plano ${input.plan}`;
 
-    if (isOneTime) {
-      const totalValue = value + upsellValue;
-      const fullDesc = upsellValue > 0 ? `${description} + ${input.upsell!.name}` : description;
-      const pay = await this.fetch<{ id: string; invoiceUrl?: string }>("/payments", {
-        method: "POST",
-        body: {
-          customer: customerId,
-          billingType: "UNDEFINED",
-          value: totalValue,
-          dueDate: nextDueDate,
-          description: fullDesc,
-          externalReference: input.plan,
-        },
-        idempotencyKey: ikFor("pay"),
-      });
-      if (!pay.invoiceUrl) throw new Error("Asaas: invoiceUrl não retornado para cobrança única.");
-      return { url: pay.invoiceUrl, providerSessionId: pay.id ?? null, providerCustomerId: customerId };
-    }
-
-    // Recorrente — assinatura.
-    const sub = await this.fetch<{ id: string; invoiceUrl?: string }>("/subscriptions", {
-      method: "POST",
-      body: {
-        customer: customerId,
-        billingType: "UNDEFINED",
-        value,
-        nextDueDate,
-        cycle,
-        description,
-        externalReference: input.plan,
-      },
-      idempotencyKey: ikFor("sub"),
-    });
-
+    // Asaas Checkout hospedado — coleta CPF/CNPJ e dados do pagador na
+    // própria página do Asaas. Evita exigir CPF no nosso formulário.
+    // Docs: https://docs.asaas.com/reference/criar-checkout
+    const expirationMinutes = 60 * 24; // 24h
+    const items: Array<{ description: string; quantity: number; value: number }> = [
+      { description: planDesc, quantity: 1, value },
+    ];
     if (upsellValue > 0) {
-      try {
-        await this.fetch<{ id: string }>("/payments", {
-          method: "POST",
-          body: {
-            customer: customerId,
-            billingType: "UNDEFINED",
-            value: upsellValue,
-            dueDate: nextDueDate,
-            description: `Upsell: ${input.upsell!.name}`,
-            externalReference: `${input.plan}__upsell`,
-          },
-          idempotencyKey: ikFor("upsell"),
-        });
-      } catch (e) {
-        console.error("[asaas] falha ao criar upsell:", e);
-      }
+      items.push({ description: input.upsell!.name, quantity: 1, value: upsellValue });
+    }
+    const totalValue = items.reduce((s, it) => s + it.value * it.quantity, 0);
+
+    const body: Record<string, unknown> = {
+      billingTypes: ["CREDIT_CARD", "PIX", "BOLETO"],
+      chargeTypes: isOneTime ? ["DETACHED"] : ["RECURRENT"],
+      minutesToExpire: expirationMinutes,
+      callback: {
+        successUrl: input.successUrl,
+        cancelUrl: input.cancelUrl,
+        expiredUrl: input.cancelUrl,
+      },
+      items,
+      customerData: { email: input.email, name: input.email.split("@")[0] },
+      externalReference: input.plan,
+    };
+    if (!isOneTime) {
+      body.subscription = { cycle, nextDueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10), endDate: null };
+    } else {
+      body.dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     }
 
-    const payments = await this.fetch<{ data: Array<{ invoiceUrl: string }> }>(
-      `/payments?subscription=${sub.id}`,
-    );
-    const url = payments.data?.[0]?.invoiceUrl ?? sub.invoiceUrl;
-    if (!url) throw new Error("Asaas: invoiceUrl não retornado.");
-    return { url, providerSessionId: sub.id, providerCustomerId: customerId };
+    const checkout = await this.fetch<{ id: string; link?: string; url?: string }>("/checkouts", {
+      method: "POST",
+      body,
+      idempotencyKey: ikFor("checkout"),
+    });
+    const url = checkout.link || checkout.url;
+    if (!url) throw new Error(`Asaas: link de checkout não retornado (total ${totalValue}).`);
+    return { url, providerSessionId: checkout.id ?? null, providerCustomerId: null };
   }
 
 
