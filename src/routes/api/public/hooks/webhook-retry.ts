@@ -20,7 +20,7 @@ export const Route = createFileRoute("/api/public/hooks/webhook-retry")({
         } catch { /* corpo opcional */ }
         const { runRetryBatch } = await import("@/lib/payments/webhook-handler.server");
         const result = await runRetryBatch(limit);
-        return Response.json({ ok: true, ...result });
+        return Response.json({ ...result });
       },
     },
   },
