@@ -77,7 +77,7 @@ export interface PaymentProvider {
     email: string;
     /** Nome completo do comprador (coletado no formulário). */
     name?: string;
-    /** CPF (apenas dígitos) — exigido pelo Asaas, opcional no Stripe. */
+    /** CPF/CNPJ (apenas dígitos) — coletado para auditoria/compatibilidade do checkout. */
     cpfCnpj?: string;
     /** Telefone BR (apenas dígitos). */
     phone?: string;
