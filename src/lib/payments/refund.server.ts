@@ -28,37 +28,43 @@ export type RefundResult = {
 };
 
 export async function refundLastPayment(input: RefundInput): Promise<RefundResult> {
-  // Garante que process.env.STRIPE_SECRET_KEY/ASAAS_API_KEY estão carregadas
-  // do banco — caso o admin tenha configurado o provider só pelo painel.
-  const { hydrateProviderEnv } = await import("./index");
-  if (input.provider === "stripe") { await hydrateProviderEnv("stripe"); return refundStripe(input); }
-  if (input.provider === "asaas") { await hydrateProviderEnv("asaas"); return refundAsaas(input); }
+  // Carrega config do provider do banco (sem mutar process.env) e usa
+  // localmente nos helpers do refund.
+  const { loadProviderConfig } = await import("./index");
+  if (input.provider === "stripe") {
+    const cfg = await loadProviderConfig("stripe");
+    return refundStripe(input, cfg?.apiKey ?? process.env.STRIPE_SECRET_KEY ?? "");
+  }
+  if (input.provider === "asaas") {
+    const cfg = await loadProviderConfig("asaas");
+    const apiKey = cfg?.apiKey ?? process.env.ASAAS_API_KEY ?? "";
+    const mode = cfg?.mode ?? (process.env.ASAAS_ENV === "sandbox" ? "sandbox" : "live");
+    return refundAsaas(input, apiKey, mode);
+  }
   throw new Error(`Provedor não suportado para estorno: ${input.provider}`);
 }
 
 // ----------------------------------------------------------------------------
 // Stripe
 // ----------------------------------------------------------------------------
-async function stripeGet<T>(path: string): Promise<T> {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) throw new Error("STRIPE_SECRET_KEY ausente.");
+async function stripeGet<T>(apiKey: string, path: string): Promise<T> {
+  if (!apiKey) throw new Error("STRIPE_SECRET_KEY ausente.");
   const r = await fetch(`https://api.stripe.com/v1${path}`, {
-    headers: { Authorization: `Bearer ${key}` },
+    headers: { Authorization: `Bearer ${apiKey}` },
   });
   const j = (await r.json()) as any;
   if (!r.ok) throw new Error(`Stripe ${path}: ${j.error?.message ?? r.statusText}`);
   return j as T;
 }
 
-async function stripePost<T>(path: string, body: Record<string, string | number>): Promise<T> {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) throw new Error("STRIPE_SECRET_KEY ausente.");
+async function stripePost<T>(apiKey: string, path: string, body: Record<string, string | number>): Promise<T> {
+  if (!apiKey) throw new Error("STRIPE_SECRET_KEY ausente.");
   const u = new URLSearchParams();
   for (const [k, v] of Object.entries(body)) u.set(k, String(v));
   const r = await fetch(`https://api.stripe.com/v1${path}`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${key}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: u.toString(),
@@ -68,12 +74,12 @@ async function stripePost<T>(path: string, body: Record<string, string | number>
   return j as T;
 }
 
-async function refundStripe(input: RefundInput): Promise<RefundResult> {
+async function refundStripe(input: RefundInput, apiKey: string): Promise<RefundResult> {
   if (!input.subscriptionId) throw new Error("Stripe: subscriptionId ausente.");
-  const sub = await stripeGet<any>(`/subscriptions/${input.subscriptionId}`);
+  const sub = await stripeGet<any>(apiKey, `/subscriptions/${input.subscriptionId}`);
   const invoiceId = sub.latest_invoice;
   if (!invoiceId) throw new Error("Stripe: assinatura sem fatura.");
-  const invoice = await stripeGet<any>(`/invoices/${invoiceId}`);
+  const invoice = await stripeGet<any>(apiKey, `/invoices/${invoiceId}`);
   const paymentIntent = invoice.payment_intent;
   if (!paymentIntent) throw new Error("Stripe: fatura sem payment_intent.");
 
@@ -81,7 +87,7 @@ async function refundStripe(input: RefundInput): Promise<RefundResult> {
   if (input.amount && input.amount > 0) body.amount = Math.round(input.amount);
   if (input.reason) body["metadata[reason]"] = input.reason.slice(0, 500);
 
-  const refund = await stripePost<any>("/refunds", body);
+  const refund = await stripePost<any>(apiKey, "/refunds", body);
   return {
     ok: true,
     provider: "stripe",
@@ -95,16 +101,16 @@ async function refundStripe(input: RefundInput): Promise<RefundResult> {
 // Asaas
 // ----------------------------------------------------------------------------
 async function asaasReq<T>(
+  apiKey: string,
+  mode: "live" | "sandbox",
   path: string,
   init?: { method?: string; body?: Record<string, unknown> },
 ): Promise<T> {
-  const key = process.env.ASAAS_API_KEY;
-  if (!key) throw new Error("ASAAS_API_KEY ausente.");
-  const env = (process.env.ASAAS_ENV || "production").toLowerCase();
-  const base = env === "sandbox" ? "https://sandbox.asaas.com/api/v3" : "https://api.asaas.com/v3";
+  if (!apiKey) throw new Error("ASAAS_API_KEY ausente.");
+  const base = mode === "sandbox" ? "https://sandbox.asaas.com/api/v3" : "https://api.asaas.com/v3";
   const r = await fetch(`${base}${path}`, {
     method: init?.method ?? "GET",
-    headers: { access_token: key, "Content-Type": "application/json" },
+    headers: { access_token: apiKey, "Content-Type": "application/json" },
     body: init?.body ? JSON.stringify(init.body) : undefined,
   });
   const j = (await r.json()) as any;
@@ -112,9 +118,11 @@ async function asaasReq<T>(
   return j as T;
 }
 
-async function refundAsaas(input: RefundInput): Promise<RefundResult> {
+async function refundAsaas(input: RefundInput, apiKey: string, mode: "live" | "sandbox"): Promise<RefundResult> {
   if (!input.subscriptionId) throw new Error("Asaas: subscriptionId ausente.");
   const payments = await asaasReq<{ data: Array<any> }>(
+    apiKey,
+    mode,
     `/payments?subscription=${encodeURIComponent(input.subscriptionId)}&status=CONFIRMED&limit=10`,
   );
   const paid = payments.data?.find((p) => p.status === "CONFIRMED" || p.status === "RECEIVED");
@@ -124,7 +132,7 @@ async function refundAsaas(input: RefundInput): Promise<RefundResult> {
   if (input.amount && input.amount > 0) body.value = input.amount;
   if (input.reason) body.description = input.reason.slice(0, 500);
 
-  const refund = await asaasReq<any>(`/payments/${paid.id}/refund`, {
+  const refund = await asaasReq<any>(apiKey, mode, `/payments/${paid.id}/refund`, {
     method: "POST",
     body,
   });
@@ -136,3 +144,4 @@ async function refundAsaas(input: RefundInput): Promise<RefundResult> {
     status: String(refund.status ?? "REFUNDED"),
   };
 }
+

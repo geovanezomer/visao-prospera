@@ -130,6 +130,7 @@ export type Database = {
           idempotency_key: string | null
           ip: string | null
           last_error: string | null
+          payment_method: string | null
           plan_amount_cents: number | null
           plan_slug: string
           provider: string
@@ -152,6 +153,7 @@ export type Database = {
           idempotency_key?: string | null
           ip?: string | null
           last_error?: string | null
+          payment_method?: string | null
           plan_amount_cents?: number | null
           plan_slug: string
           provider: string
@@ -174,6 +176,7 @@ export type Database = {
           idempotency_key?: string | null
           ip?: string | null
           last_error?: string | null
+          payment_method?: string | null
           plan_amount_cents?: number | null
           plan_slug?: string
           provider?: string
@@ -437,6 +440,24 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_buckets: {
+        Row: {
+          bucket_key: string
+          count: number
+          reset_at: string
+        }
+        Insert: {
+          bucket_key: string
+          count?: number
+          reset_at: string
+        }
+        Update: {
+          bucket_key?: string
+          count?: number
+          reset_at?: string
+        }
+        Relationships: []
+      }
       shared_reports: {
         Row: {
           company_name: string
@@ -642,6 +663,15 @@ export type Database = {
         }[]
       }
       has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
+      rl_consume: {
+        Args: { _key: string; _limit: number; _window_seconds: number }
+        Returns: {
+          allowed: boolean
+          remaining: number
+          retry_after_seconds: number
+        }[]
+      }
+      rl_gc: { Args: never; Returns: number }
     }
     Enums: {
       [_ in never]: never

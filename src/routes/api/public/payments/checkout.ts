@@ -14,6 +14,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { resolveProvider } from "@/lib/payments";
+import { signIntentKey } from "@/lib/intentToken.server";
+import { clientIp, rlConsume, tooManyRequests } from "@/lib/rateLimit.server";
 
 // ─── Validação da requisição vinda do navegador ──────────────────────────────
 const Body = z.object({

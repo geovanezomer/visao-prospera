@@ -8,30 +8,38 @@
 //   - Webhook:  header `asaas-access-token` deve bater com ASAAS_WEBHOOK_TOKEN.
 // ============================================================================
 
-import type { PaymentProvider, NormalizedEvent, PlanId } from "./types";
+import type { PaymentProvider, NormalizedEvent, PlanId, ProviderConfig } from "./types";
 import { getProviderPlanRef } from "./index";
 
-function asaasBase(): string {
-  const env = (process.env.ASAAS_ENV || "production").toLowerCase();
-  return env === "sandbox"
+function asaasBaseFor(mode: "live" | "sandbox" | null | undefined): string {
+  const envMode = (mode ?? (process.env.ASAAS_ENV === "sandbox" ? "sandbox" : "live")) as
+    | "live"
+    | "sandbox";
+  return envMode === "sandbox"
     ? "https://sandbox.asaas.com/api/v3"
     : "https://api.asaas.com/v3";
 }
 
+type AsaasFetchOpts = {
+  method?: string;
+  body?: Record<string, unknown>;
+  headers?: Record<string, string>;
+  idempotencyKey?: string;
+};
+
 async function asaasFetch<T>(
+  apiKey: string,
+  baseUrl: string,
   path: string,
-  init?: { method?: string; body?: Record<string, unknown>; headers?: Record<string, string>; idempotencyKey?: string },
+  init?: AsaasFetchOpts,
 ): Promise<T> {
-  const key = process.env.ASAAS_API_KEY!;
   const headers: Record<string, string> = {
-    access_token: key,
+    access_token: apiKey,
     "Content-Type": "application/json",
     ...(init?.headers || {}),
   };
-  // Asaas: header "idempotency-key" garante que reposts não duplicam
-  // customer/subscription/payment. Vale por 24h no lado do Asaas.
   if (init?.idempotencyKey) headers["idempotency-key"] = init.idempotencyKey;
-  const res = await fetch(`${asaasBase()}${path}`, {
+  const res = await fetch(`${baseUrl}${path}`, {
     method: init?.method ?? "GET",
     headers,
     body: init?.body ? JSON.stringify(init.body) : undefined,
@@ -47,7 +55,6 @@ async function asaasFetch<T>(
 function planFromValue(value: number): PlanId {
   // Heurística simples — preço PRO costuma ser maior. Asaas não tem
   // lookup_key; usamos o valor cobrado para mapear de volta.
-  // Para precisão, podemos comparar com env vars de preço.
   const priceStarter = Number(process.env.ASAAS_PRICE_STARTER ?? 0);
   const pricePro = Number(process.env.ASAAS_PRICE_PRO ?? 0);
   if (pricePro && Math.abs(value - pricePro) < 0.5) return "pro";
@@ -57,6 +64,22 @@ function planFromValue(value: number): PlanId {
 
 export class AsaasProvider implements PaymentProvider {
   readonly name = "asaas" as const;
+  private readonly apiKey: string;
+  private readonly webhookSecret: string | null;
+  private readonly mode: "live" | "sandbox";
+  private readonly baseUrl: string;
+
+  constructor(config?: ProviderConfig) {
+    this.apiKey = config?.apiKey ?? process.env.ASAAS_API_KEY ?? "";
+    this.webhookSecret = config?.webhookSecret ?? process.env.ASAAS_WEBHOOK_TOKEN ?? null;
+    this.mode = (config?.mode ??
+      (process.env.ASAAS_ENV === "sandbox" ? "sandbox" : "live")) as "live" | "sandbox";
+    this.baseUrl = asaasBaseFor(this.mode);
+  }
+
+  private fetch<T>(path: string, init?: AsaasFetchOpts): Promise<T> {
+    return asaasFetch<T>(this.apiKey, this.baseUrl, path, init);
+  }
 
   async createCheckout(input: {
     plan: PlanId;
@@ -77,12 +100,12 @@ export class AsaasProvider implements PaymentProvider {
     const ikFor = (suffix: string) => (ik ? `${ik}:${suffix}` : undefined);
 
     // 1) Garante customer
-    const found = await asaasFetch<{ data: Array<{ id: string }> }>(
+    const found = await this.fetch<{ data: Array<{ id: string }> }>(
       `/customers?email=${encodeURIComponent(input.email)}`,
     );
     let customerId = found.data?.[0]?.id;
     if (!customerId) {
-      const created = await asaasFetch<{ id: string }>("/customers", {
+      const created = await this.fetch<{ id: string }>("/customers", {
         method: "POST",
         body: { name: input.email.split("@")[0], email: input.email },
         idempotencyKey: ikFor("cus"),
@@ -114,7 +137,7 @@ export class AsaasProvider implements PaymentProvider {
     if (isOneTime) {
       const totalValue = value + upsellValue;
       const fullDesc = upsellValue > 0 ? `${description} + ${input.upsell!.name}` : description;
-      const pay = await asaasFetch<{ id: string; invoiceUrl?: string }>("/payments", {
+      const pay = await this.fetch<{ id: string; invoiceUrl?: string }>("/payments", {
         method: "POST",
         body: {
           customer: customerId,
@@ -131,7 +154,7 @@ export class AsaasProvider implements PaymentProvider {
     }
 
     // Recorrente — assinatura.
-    const sub = await asaasFetch<{ id: string; invoiceUrl?: string }>("/subscriptions", {
+    const sub = await this.fetch<{ id: string; invoiceUrl?: string }>("/subscriptions", {
       method: "POST",
       body: {
         customer: customerId,
@@ -147,7 +170,7 @@ export class AsaasProvider implements PaymentProvider {
 
     if (upsellValue > 0) {
       try {
-        await asaasFetch<{ id: string }>("/payments", {
+        await this.fetch<{ id: string }>("/payments", {
           method: "POST",
           body: {
             customer: customerId,
@@ -164,7 +187,7 @@ export class AsaasProvider implements PaymentProvider {
       }
     }
 
-    const payments = await asaasFetch<{ data: Array<{ invoiceUrl: string }> }>(
+    const payments = await this.fetch<{ data: Array<{ invoiceUrl: string }> }>(
       `/payments?subscription=${sub.id}`,
     );
     const url = payments.data?.[0]?.invoiceUrl ?? sub.invoiceUrl;
@@ -175,15 +198,13 @@ export class AsaasProvider implements PaymentProvider {
 
   async createPortal(input: { customerId: string; returnUrl: string }): Promise<{ url: string }> {
     // Asaas Central do Cliente: URL pública por customer.
-    // Fallback: lista de pagamentos do cliente (página hospedada).
-    const env = (process.env.ASAAS_ENV || "production").toLowerCase();
-    const base = env === "sandbox" ? "https://sandbox.asaas.com" : "https://www.asaas.com";
+    const base = this.mode === "sandbox" ? "https://sandbox.asaas.com" : "https://www.asaas.com";
     return { url: `${base}/c/${input.customerId}` };
   }
 
   async verifyWebhook(req: Request, rawBody: string): Promise<NormalizedEvent> {
     const token = req.headers.get("asaas-access-token");
-    const expected = process.env.ASAAS_WEBHOOK_TOKEN;
+    const expected = this.webhookSecret;
     if (!expected) throw new Error("Asaas webhook: ASAAS_WEBHOOK_TOKEN não configurado.");
     if (token !== expected) throw new Error("Asaas webhook: token inválido.");
 
@@ -196,7 +217,7 @@ export class AsaasProvider implements PaymentProvider {
   private async fetchCustomerEmail(customerId: string): Promise<string> {
     if (!customerId) return "";
     try {
-      const c = await asaasFetch<{ email?: string }>(`/customers/${customerId}`);
+      const c = await this.fetch<{ email?: string }>(`/customers/${customerId}`);
       return c?.email ?? "";
     } catch (e) {
       console.error("[asaas] fetchCustomerEmail falhou:", e);

@@ -5,9 +5,13 @@
 //   1) Tenta ler app_settings.active_provider + provider_credentials no banco
 //      (configurado via Painel Admin > Provider). [Async; cache 60s]
 //   2) Fallback: PAYMENT_PROVIDER do .env / detecção por env keys.
+//
+// IMPORTANTE: este módulo NÃO muta `process.env`. Credenciais carregadas
+// do banco são passadas por construtor (ProviderConfig) — cada instância
+// fica isolada, evitando vazamento entre requisições concorrentes em edge.
 // ============================================================================
 
-import type { PaymentProvider, ProviderName } from "./types";
+import type { PaymentProvider, ProviderConfig, ProviderName } from "./types";
 
 let _cached: { name: ProviderName; instance: PaymentProvider; until: number } | null = null;
 let _activeName: ProviderName | null = null;
@@ -32,14 +36,13 @@ async function resolveFromDb(): Promise<{ provider: ProviderName } | null> {
   }
 }
 
-async function instantiate(name: ProviderName): Promise<PaymentProvider> {
-  // Dynamic import — funciona em Worker/Edge runtime (CJS require não é suportado).
+async function instantiate(name: ProviderName, config?: ProviderConfig): Promise<PaymentProvider> {
   if (name === "stripe") {
     const mod = await import("./stripe");
-    return new mod.StripeProvider();
+    return new mod.StripeProvider(config);
   }
   const mod = await import("./asaas");
-  return new mod.AsaasProvider();
+  return new mod.AsaasProvider(config);
 }
 
 function pickFromEnv(): ProviderName | null {
@@ -51,12 +54,13 @@ function pickFromEnv(): ProviderName | null {
 }
 
 /**
- * Hidrata `process.env` com credenciais salvas no banco para um provider
- * específico. Usado por webhooks e operações administrativas (refund) antes
- * de chamadas que dependem de `process.env.STRIPE_SECRET_KEY` /
- * `ASAAS_API_KEY`. Idempotente.
+ * Carrega credenciais do provider a partir do banco (provider_credentials).
+ * Retorna `null` se não houver registro. **Não muta `process.env`.**
+ *
+ * Usado por webhooks e operações administrativas (refund) que precisam de
+ * uma instância configurada com a chave certa para o provider escolhido.
  */
-export async function hydrateProviderEnv(provider: ProviderName): Promise<boolean> {
+export async function loadProviderConfig(provider: ProviderName): Promise<ProviderConfig | null> {
   try {
     const { createClient } = await import("@supabase/supabase-js");
     const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -67,20 +71,24 @@ export async function hydrateProviderEnv(provider: ProviderName): Promise<boolea
       .select("api_key, webhook_secret, mode")
       .eq("provider", provider)
       .maybeSingle();
-    if (!cred?.api_key) return false;
-    if (provider === "stripe") {
-      process.env.STRIPE_SECRET_KEY = cred.api_key;
-      if (cred.webhook_secret) process.env.STRIPE_WEBHOOK_SECRET = cred.webhook_secret;
-    } else {
-      process.env.ASAAS_API_KEY = cred.api_key;
-      if (cred.webhook_secret) process.env.ASAAS_WEBHOOK_TOKEN = cred.webhook_secret;
-      if (cred.mode) process.env.ASAAS_ENV = cred.mode === "live" ? "production" : "sandbox";
-    }
-    _activeName = provider;
-    return true;
+    if (!cred?.api_key) return null;
+    return {
+      apiKey: cred.api_key as string,
+      webhookSecret: (cred.webhook_secret as string | null) ?? null,
+      mode: (cred.mode === "live" ? "live" : cred.mode === "sandbox" ? "sandbox" : null),
+    };
   } catch {
-    return false;
+    return null;
   }
+}
+
+/**
+ * Constrói uma instância do provider já com a config do banco (ou cai para
+ * process.env como fallback de compatibilidade — sem mutar env global).
+ */
+export async function buildProvider(provider: ProviderName): Promise<PaymentProvider> {
+  const cfg = (await loadProviderConfig(provider)) ?? undefined;
+  return instantiate(provider, cfg);
 }
 
 /** Resolve provider preferindo o banco; fallback para .env. */
@@ -93,8 +101,8 @@ export async function resolveProvider(): Promise<PaymentProvider> {
       "Nenhum provedor de pagamento configurado. Configure no Painel Admin > Provider ou defina PAYMENT_PROVIDER/chaves no .env.",
     );
   }
-  if (fromDb) await hydrateProviderEnv(choice);
-  const instance = await instantiate(choice);
+  const cfg = fromDb ? (await loadProviderConfig(choice)) ?? undefined : undefined;
+  const instance = await instantiate(choice, cfg);
   _cached = { name: choice, instance, until: Date.now() + TTL_MS };
   _activeName = choice;
   return instance;
@@ -119,4 +127,4 @@ export function getProviderPlanRef(plan: string): string {
   return value;
 }
 
-export type { PaymentProvider, NormalizedEvent, PlanId, ProviderName } from "./types";
+export type { PaymentProvider, NormalizedEvent, PlanId, ProviderName, ProviderConfig } from "./types";
