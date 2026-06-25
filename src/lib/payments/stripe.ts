@@ -150,8 +150,17 @@ export class StripeProvider implements PaymentProvider {
     }
 
 
-    const session = await stripeFetch<{ url: string }>("/checkout/sessions", body);
-    return { url: session.url };
+    const session = await stripeFetch<{ id?: string; url: string; customer?: string | null }>(
+      "/checkout/sessions",
+      body,
+      input.idempotencyKey ? { idempotencyKey: `co_${input.idempotencyKey}` } : undefined,
+    );
+    return {
+      url: session.url,
+      providerSessionId: session.id ?? null,
+      providerCustomerId: session.customer ?? null,
+    };
+
   }
 
   async createPortal(input: { customerId: string; returnUrl: string }): Promise<{ url: string }> {
