@@ -221,6 +221,15 @@ export async function handleNormalizedEvent(
     const msg = e instanceof Error ? e.message : "erro";
     console.error("[webhook] processamento falhou:", msg);
     await logEvent(supabaseAdmin, provider, event, "failed", msg);
+    try {
+      const { notifyAdmin } = await import("@/lib/admin/notify.server");
+      await notifyAdmin({
+        event: "webhook_failure",
+        title: `Webhook falhou (${provider})`,
+        body: `Tipo: ${(event as any).type}\nErro: ${msg}`,
+        dedupKey: `whf:${provider}:${(event as any).subscriptionId ?? (event as any).type}`,
+      });
+    } catch {/* noop */}
     throw e;
   }
 }
