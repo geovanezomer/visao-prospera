@@ -667,6 +667,9 @@ function PricingSection() {
   // chamar o provedor de pagamento.
   const [confirmFor, setConfirmFor] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<{ message: string; code?: string; field?: string } | null>(null);
 
@@ -700,6 +703,9 @@ function PricingSection() {
   function openConfirm(planId: string) {
     setError(null);
     setEmail("");
+    setFullName("");
+    setCpf("");
+    setPhone("");
     setConfirmFor(planId);
   }
 
