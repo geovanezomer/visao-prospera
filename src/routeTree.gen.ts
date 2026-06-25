@@ -19,6 +19,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedShareIdRouteImport } from './routes/shared.$shareId'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiFeedbackRouteImport } from './routes/api/feedback'
+import { Route as ApiPublicPaymentsCheckoutRouteImport } from './routes/api/public/payments/checkout'
+import { Route as ApiPublicPaymentsWebhookStripeRouteImport } from './routes/api/public/payments/webhook.stripe'
+import { Route as ApiPublicPaymentsWebhookAsaasRouteImport } from './routes/api/public/payments/webhook.asaas'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -70,6 +73,24 @@ const ApiFeedbackRoute = ApiFeedbackRouteImport.update({
   path: '/api/feedback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPaymentsCheckoutRoute =
+  ApiPublicPaymentsCheckoutRouteImport.update({
+    id: '/api/public/payments/checkout',
+    path: '/api/public/payments/checkout',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicPaymentsWebhookStripeRoute =
+  ApiPublicPaymentsWebhookStripeRouteImport.update({
+    id: '/api/public/payments/webhook/stripe',
+    path: '/api/public/payments/webhook/stripe',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicPaymentsWebhookAsaasRoute =
+  ApiPublicPaymentsWebhookAsaasRouteImport.update({
+    id: '/api/public/payments/webhook/asaas',
+    path: '/api/public/payments/webhook/asaas',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -82,6 +103,9 @@ export interface FileRoutesByFullPath {
   '/api/feedback': typeof ApiFeedbackRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/shared/$shareId': typeof SharedShareIdRoute
+  '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
+  '/api/public/payments/webhook/asaas': typeof ApiPublicPaymentsWebhookAsaasRoute
+  '/api/public/payments/webhook/stripe': typeof ApiPublicPaymentsWebhookStripeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +118,9 @@ export interface FileRoutesByTo {
   '/api/feedback': typeof ApiFeedbackRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/shared/$shareId': typeof SharedShareIdRoute
+  '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
+  '/api/public/payments/webhook/asaas': typeof ApiPublicPaymentsWebhookAsaasRoute
+  '/api/public/payments/webhook/stripe': typeof ApiPublicPaymentsWebhookStripeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +134,9 @@ export interface FileRoutesById {
   '/api/feedback': typeof ApiFeedbackRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/shared/$shareId': typeof SharedShareIdRoute
+  '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
+  '/api/public/payments/webhook/asaas': typeof ApiPublicPaymentsWebhookAsaasRoute
+  '/api/public/payments/webhook/stripe': typeof ApiPublicPaymentsWebhookStripeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +151,9 @@ export interface FileRouteTypes {
     | '/api/feedback'
     | '/auth/callback'
     | '/shared/$shareId'
+    | '/api/public/payments/checkout'
+    | '/api/public/payments/webhook/asaas'
+    | '/api/public/payments/webhook/stripe'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +166,9 @@ export interface FileRouteTypes {
     | '/api/feedback'
     | '/auth/callback'
     | '/shared/$shareId'
+    | '/api/public/payments/checkout'
+    | '/api/public/payments/webhook/asaas'
+    | '/api/public/payments/webhook/stripe'
   id:
     | '__root__'
     | '/'
@@ -145,6 +181,9 @@ export interface FileRouteTypes {
     | '/api/feedback'
     | '/auth/callback'
     | '/shared/$shareId'
+    | '/api/public/payments/checkout'
+    | '/api/public/payments/webhook/asaas'
+    | '/api/public/payments/webhook/stripe'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -158,6 +197,9 @@ export interface RootRouteChildren {
   ApiFeedbackRoute: typeof ApiFeedbackRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   SharedShareIdRoute: typeof SharedShareIdRoute
+  ApiPublicPaymentsCheckoutRoute: typeof ApiPublicPaymentsCheckoutRoute
+  ApiPublicPaymentsWebhookAsaasRoute: typeof ApiPublicPaymentsWebhookAsaasRoute
+  ApiPublicPaymentsWebhookStripeRoute: typeof ApiPublicPaymentsWebhookStripeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -232,6 +274,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiFeedbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/payments/checkout': {
+      id: '/api/public/payments/checkout'
+      path: '/api/public/payments/checkout'
+      fullPath: '/api/public/payments/checkout'
+      preLoaderRoute: typeof ApiPublicPaymentsCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/webhook/stripe': {
+      id: '/api/public/payments/webhook/stripe'
+      path: '/api/public/payments/webhook/stripe'
+      fullPath: '/api/public/payments/webhook/stripe'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookStripeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/webhook/asaas': {
+      id: '/api/public/payments/webhook/asaas'
+      path: '/api/public/payments/webhook/asaas'
+      fullPath: '/api/public/payments/webhook/asaas'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookAsaasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -246,6 +309,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiFeedbackRoute: ApiFeedbackRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   SharedShareIdRoute: SharedShareIdRoute,
+  ApiPublicPaymentsCheckoutRoute: ApiPublicPaymentsCheckoutRoute,
+  ApiPublicPaymentsWebhookAsaasRoute: ApiPublicPaymentsWebhookAsaasRoute,
+  ApiPublicPaymentsWebhookStripeRoute: ApiPublicPaymentsWebhookStripeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
