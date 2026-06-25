@@ -69,7 +69,13 @@ export class AsaasProvider implements PaymentProvider {
     providerRef?: string | null;
     planName?: string;
     upsell?: { name: string; priceCents: number; stripePriceId?: string | null; asaasRef?: string | null } | null;
-  }): Promise<{ url: string }> {
+    idempotencyKey?: string;
+  }): Promise<{ url: string; providerSessionId?: string | null; providerCustomerId?: string | null }> {
+    // Chaves derivadas para cada POST — Asaas exige idempotency-key
+    // por endpoint. Prefixos evitam colisão entre customer/sub/payment.
+    const ik = input.idempotencyKey;
+    const ikFor = (suffix: string) => (ik ? `${ik}:${suffix}` : undefined);
+
     // 1) Garante customer
     const found = await asaasFetch<{ data: Array<{ id: string }> }>(
       `/customers?email=${encodeURIComponent(input.email)}`,
@@ -79,12 +85,12 @@ export class AsaasProvider implements PaymentProvider {
       const created = await asaasFetch<{ id: string }>("/customers", {
         method: "POST",
         body: { name: input.email.split("@")[0], email: input.email },
+        idempotencyKey: ikFor("cus"),
       });
       customerId = created.id;
     }
 
     // 2) Resolve valor e ciclo.
-    // Prioridade: priceCents (DB) → ASAAS_PLAN_* env legacy ("97.00:MONTHLY").
     let value: number;
     let cycle = "MONTHLY";
     if (typeof input.priceCents === "number" && input.priceCents > 0) {
@@ -106,11 +112,8 @@ export class AsaasProvider implements PaymentProvider {
     const description = `${input.planName || `FinancePRO — plano ${input.plan}`}${isOneTime ? " (pagamento único)" : ""}`;
 
     if (isOneTime) {
-      // Cobrança única: soma o upsell direto no valor para uma só cobrança.
       const totalValue = value + upsellValue;
-      const fullDesc = upsellValue > 0
-        ? `${description} + ${input.upsell!.name}`
-        : description;
+      const fullDesc = upsellValue > 0 ? `${description} + ${input.upsell!.name}` : description;
       const pay = await asaasFetch<{ id: string; invoiceUrl?: string }>("/payments", {
         method: "POST",
         body: {
@@ -121,9 +124,10 @@ export class AsaasProvider implements PaymentProvider {
           description: fullDesc,
           externalReference: input.plan,
         },
+        idempotencyKey: ikFor("pay"),
       });
       if (!pay.invoiceUrl) throw new Error("Asaas: invoiceUrl não retornado para cobrança única.");
-      return { url: pay.invoiceUrl };
+      return { url: pay.invoiceUrl, providerSessionId: pay.id ?? null, providerCustomerId: customerId };
     }
 
     // Recorrente — assinatura.
@@ -131,18 +135,16 @@ export class AsaasProvider implements PaymentProvider {
       method: "POST",
       body: {
         customer: customerId,
-        billingType: "UNDEFINED", // permite cartão/pix/boleto na tela
+        billingType: "UNDEFINED",
         value,
         nextDueDate,
-        cycle, // MONTHLY | YEARLY
+        cycle,
         description,
         externalReference: input.plan,
       },
+      idempotencyKey: ikFor("sub"),
     });
 
-    // Upsell em assinatura — cria uma cobrança avulsa (one-shot) para o mesmo
-    // customer, vencendo amanhã. Não vira recorrência. Fica separado da
-    // primeira fatura da assinatura, mas é apresentado em paralelo.
     if (upsellValue > 0) {
       try {
         await asaasFetch<{ id: string }>("/payments", {
@@ -155,21 +157,21 @@ export class AsaasProvider implements PaymentProvider {
             description: `Upsell: ${input.upsell!.name}`,
             externalReference: `${input.plan}__upsell`,
           },
+          idempotencyKey: ikFor("upsell"),
         });
       } catch (e) {
-        // Não bloqueia o checkout principal — apenas loga.
         console.error("[asaas] falha ao criar upsell:", e);
       }
     }
 
-    // 3) Recupera primeira cobrança para obter o link de checkout hospedado.
     const payments = await asaasFetch<{ data: Array<{ invoiceUrl: string }> }>(
       `/payments?subscription=${sub.id}`,
     );
     const url = payments.data?.[0]?.invoiceUrl ?? sub.invoiceUrl;
     if (!url) throw new Error("Asaas: invoiceUrl não retornado.");
-    return { url };
+    return { url, providerSessionId: sub.id, providerCustomerId: customerId };
   }
+
 
   async createPortal(input: { customerId: string; returnUrl: string }): Promise<{ url: string }> {
     // Asaas Central do Cliente: URL pública por customer.
