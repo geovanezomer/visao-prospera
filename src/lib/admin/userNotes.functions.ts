@@ -1,0 +1,95 @@
+// ============================================================================
+// Admin · User Notes (CRM leve) — apenas admin lê/escreve via service_role.
+// ============================================================================
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isAdminEmail } from "./constants";
+
+function assertAdmin(claims: any) {
+  if (!isAdminEmail((claims?.email as string) ?? "")) throw new Error("Acesso negado.");
+}
+
+export type UserNote = {
+  id: string;
+  userId: string;
+  authorId: string | null;
+  authorEmail: string | null;
+  body: string;
+  pinned: boolean;
+  createdAt: string;
+};
+
+function rowToNote(r: any): UserNote {
+  return {
+    id: r.id,
+    userId: r.user_id,
+    authorId: r.author_id,
+    authorEmail: r.author_email,
+    body: r.body,
+    pinned: r.pinned,
+    createdAt: r.created_at,
+  };
+}
+
+export const listUserNotes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("user_notes")
+      .select("*")
+      .eq("user_id", data.userId)
+      .order("pinned", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return { notes: (rows ?? []).map(rowToNote) };
+  });
+
+export const createUserNote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { userId: string; body: string }) =>
+    z.object({ userId: z.string().uuid(), body: z.string().min(1).max(4000) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error } = await supabaseAdmin
+      .from("user_notes")
+      .insert({
+        user_id: data.userId,
+        author_id: context.userId,
+        author_email: (context.claims as any)?.email ?? null,
+        body: data.body,
+      })
+      .select()
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return { note: row ? rowToNote(row) : null };
+  });
+
+export const toggleNotePin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string; pinned: boolean }) =>
+    z.object({ id: z.string().uuid(), pinned: z.boolean() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("user_notes").update({ pinned: data.pinned }).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteUserNote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string }) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("user_notes").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
