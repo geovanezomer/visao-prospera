@@ -252,8 +252,8 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
             providerResult = await provider.createCheckout({
               plan: parsed.plan,
               email: parsed.email,
-              successUrl: `${appUrl}/checkout/sucesso?plan=${parsed.plan}`,
-              cancelUrl: `${appUrl}/planos?canceled=1`,
+              successUrl: `${appUrl}/checkout/sucesso?plan=${parsed.plan}&i=${idempotencyKey}`,
+              cancelUrl: `${appUrl}/planos?canceled=1&i=${idempotencyKey}`,
               interval: plan.interval,
               priceCents: plan.price_cents,
               currency: plan.currency,
