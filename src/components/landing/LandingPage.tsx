@@ -4,6 +4,7 @@
 
 import { Link } from "@tanstack/react-router";
 import { useBranding } from "@/hooks/useBranding";
+import { BrandedLogo } from "@/components/BrandedLogo";
 import {
   ArrowRight,
   BarChart3,
