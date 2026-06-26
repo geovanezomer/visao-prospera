@@ -98,89 +98,117 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "FinnancePRO" },
-      { name: "description", content: "Diagnóstico & Simulação Financeira" },
-      { name: "author", content: "GZ Consultoria Financeira & Investimentos" },
-      { property: "og:title", content: "FinnancePRO — Gestão Financeira para PMEs" },
-      {
-        property: "og:description",
-        content:
-          "Diagnóstico, DRE, Balanço, Fluxo de Caixa, Reforma Tributária (CBS/IBS) e +40 indicadores em um único painel.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "FinnancePRO" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "FinnancePRO — Gestão Financeira para PMEs" },
-      {
-        name: "twitter:description",
-        content:
-          "Diagnóstico, DRE, Balanço, Fluxo de Caixa e Reforma Tributária (CBS/IBS) em um painel inteligente.",
-      },
-    ],
-    scripts: [
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@graph": [
-            {
-              "@type": "Organization",
-              name: "GZ Consultoria Financeira & Investimentos",
-              url: "https://visao-prospera.lovable.app",
-            },
-            {
-              "@type": "WebSite",
-              name: "FinnancePRO",
-              url: "https://visao-prospera.lovable.app",
-              publisher: {
+  // Pré-carrega app_settings no SSR para que cores e favicon do admin
+  // estejam disponíveis ao montar o <head> — sem flash de tema padrão.
+  loader: async ({ context }) => {
+    try {
+      const settings = await context.queryClient.ensureQueryData({
+        queryKey: ["app_settings"],
+        queryFn: () => getAppSettings(),
+        staleTime: 5 * 60_000,
+      });
+      const branding = (settings as any)?.branding ?? {};
+      return {
+        colors: (branding.colors ?? null) as { primary?: string; accent?: string } | null,
+        faviconUrl: (branding.favicon_url ?? null) as string | null,
+      };
+    } catch {
+      return { colors: null, faviconUrl: null };
+    }
+  },
+  head: ({ loaderData }) => {
+    const css = buildBrandingCss(loaderData?.colors ?? undefined);
+    const customFavicon = loaderData?.faviconUrl ?? null;
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { title: "FinnancePRO" },
+        { name: "description", content: "Diagnóstico & Simulação Financeira" },
+        { name: "author", content: "GZ Consultoria Financeira & Investimentos" },
+        { property: "og:title", content: "FinnancePRO — Gestão Financeira para PMEs" },
+        {
+          property: "og:description",
+          content:
+            "Diagnóstico, DRE, Balanço, Fluxo de Caixa, Reforma Tributária (CBS/IBS) e +40 indicadores em um único painel.",
+        },
+        { property: "og:type", content: "website" },
+        { property: "og:site_name", content: "FinnancePRO" },
+        { name: "twitter:card", content: "summary" },
+        { name: "twitter:title", content: "FinnancePRO — Gestão Financeira para PMEs" },
+        {
+          name: "twitter:description",
+          content:
+            "Diagnóstico, DRE, Balanço, Fluxo de Caixa e Reforma Tributária (CBS/IBS) em um painel inteligente.",
+        },
+      ],
+      // Estilo inline com as cores configuradas no admin — emitido no SSR,
+      // chega ANTES do React montar, eliminando o flash do tema padrão.
+      styles: css ? [{ id: "branding-colors", children: css }] : [],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
                 "@type": "Organization",
                 name: "GZ Consultoria Financeira & Investimentos",
+                url: "https://visao-prospera.lovable.app",
               },
-            },
-          ],
-        }),
-      },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      // Fontes globais: Inter (UI) + JetBrains Mono (números financeiros).
-      // Carregadas no root para que TODAS as rotas (não só a home) usem
-      // a mesma família monoespaçada nos indicadores.
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap",
-      },
-      {
-        rel: "icon",
-        type: "image/png",
-        sizes: "96x96",
-        href: "/__l5e/assets-v1/febbcf92-de98-4f7b-a0f1-db4deb3dc4b2/favicon-96x96.png",
-      },
-      {
-        rel: "icon",
-        type: "image/png",
-        sizes: "192x192",
-        href: "/__l5e/assets-v1/480e6bea-4f93-43e4-8b24-9e471d769091/web-app-manifest-192x192.png",
-      },
-      {
-        rel: "icon",
-        type: "image/png",
-        sizes: "512x512",
-        href: "/__l5e/assets-v1/fd8a7196-3533-41dd-aa42-2094c0b84a91/web-app-manifest-512x512.png",
-      },
-      {
-        rel: "apple-touch-icon",
-        sizes: "180x180",
-        href: "/__l5e/assets-v1/1ce793f8-a897-49a2-b577-aa2b78926aca/apple-touch-icon.png",
-      },
-    ],
-  }),
+              {
+                "@type": "WebSite",
+                name: "FinnancePRO",
+                url: "https://visao-prospera.lovable.app",
+                publisher: {
+                  "@type": "Organization",
+                  name: "GZ Consultoria Financeira & Investimentos",
+                },
+              },
+            ],
+          }),
+        },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap",
+        },
+        // Favicon: usa o configurado no admin quando disponível; senão, fallbacks padrão.
+        ...(customFavicon
+          ? [{ rel: "icon", href: customFavicon } as const]
+          : [
+              {
+                rel: "icon",
+                type: "image/png",
+                sizes: "96x96",
+                href: "/__l5e/assets-v1/febbcf92-de98-4f7b-a0f1-db4deb3dc4b2/favicon-96x96.png",
+              } as const,
+              {
+                rel: "icon",
+                type: "image/png",
+                sizes: "192x192",
+                href: "/__l5e/assets-v1/480e6bea-4f93-43e4-8b24-9e471d769091/web-app-manifest-192x192.png",
+              } as const,
+              {
+                rel: "icon",
+                type: "image/png",
+                sizes: "512x512",
+                href: "/__l5e/assets-v1/fd8a7196-3533-41dd-aa42-2094c0b84a91/web-app-manifest-512x812.png".replace("812", "512"),
+              } as const,
+              {
+                rel: "apple-touch-icon",
+                sizes: "180x180",
+                href: "/__l5e/assets-v1/1ce793f8-a897-49a2-b577-aa2b78926aca/apple-touch-icon.png",
+              } as const,
+            ]),
+      ],
+    };
+  },
+
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
