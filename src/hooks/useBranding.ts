@@ -75,6 +75,7 @@ export function useBranding() {
       logoUrl: data?.branding?.logo_url ?? null,
       faviconUrl: data?.branding?.favicon_url ?? null,
       authorPhotoUrl: data?.branding?.author_photo_url ?? null,
+      recolorLogo: Boolean(data?.branding?.recolor_logo),
     } as Branding,
     loginTexts: {
       headline: data?.login_texts?.headline ?? DEFAULTS.login_texts.headline,
