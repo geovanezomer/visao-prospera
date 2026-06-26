@@ -85,10 +85,12 @@ function LoginPage() {
             </div>
           ) : (
             <>
-              <img
+              <BrandedLogo
                 src={branding.logoUrl ?? logoAsset.url}
                 alt={branding.systemName}
-                className="h-10 w-10 rounded-md object-contain"
+                recolor={branding.recolorLogo}
+                className="h-10 w-10 [&>svg]:h-10 [&>svg]:w-10"
+                imgProps={{ className: "h-10 w-10 rounded-md object-contain" }}
               />
               <div>
                 <p className="text-sm font-semibold tracking-tight">{branding.systemName}</p>
