@@ -144,6 +144,11 @@ export function SystemTab() {
           const t = (s as any).tracking;
           setTracking({ head: t.head ?? "", body_start: t.body_start ?? "", body_end: t.body_end ?? "" });
         }
+        if ((s as any).landing_video) {
+          const v = (s as any).landing_video;
+          setLandingVideo({ enabled: Boolean(v.enabled), url: v.url ?? "" });
+        }
+
         setNotif(n);
       } finally { setLoading(false); }
     })();
