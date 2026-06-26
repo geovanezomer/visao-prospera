@@ -1378,6 +1378,12 @@ function Footer() {
           <strong className="text-foreground">GZ Consultoria Financeira & Investimentos</strong>
         </span>
         <div className="flex items-center gap-5">
+          <Link to="/termos" className="transition hover:text-foreground">
+            Termos
+          </Link>
+          <Link to="/privacidade" className="transition hover:text-foreground">
+            Privacidade
+          </Link>
           <Link to="/login" className="transition hover:text-foreground">
             Entrar
           </Link>
