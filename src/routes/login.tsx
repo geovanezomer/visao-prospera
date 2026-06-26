@@ -3,11 +3,21 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Lock, Mail } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { useAuth } from "@/lib/auth";
+import { useBranding } from "@/hooks/useBranding";
+import { getAppSettings } from "@/lib/admin/settings.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/login")({
+  // Pré-carrega branding/login_texts no SSR para evitar flash do mock.
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData({
+      queryKey: ["app_settings"],
+      queryFn: () => getAppSettings(),
+      staleTime: 5 * 60_000,
+    });
+  },
   head: () => ({
     meta: [
       { title: "Entrar — FinnancePRO" },
