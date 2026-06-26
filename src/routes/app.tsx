@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useAppState, useScenarios } from "@/engines/finance/store";
 import { FinanceProvider, FinanceErrorBoundary } from "@/engines/finance/AppStateContext";
 import { usePersistedSimParams } from "@/engines/finance/usePersistedSimParams";
