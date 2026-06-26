@@ -3,6 +3,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Lock } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { useAuth } from "@/lib/auth";
+import { useBranding } from "@/hooks/useBranding";
+import { BrandedLogo } from "@/components/BrandedLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +19,7 @@ export const Route = createFileRoute("/reset-password")({
 function ResetPasswordPage() {
   const { updatePassword, session, hydrated } = useAuth();
   const navigate = useNavigate();
+  const { branding } = useBranding();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -59,14 +62,14 @@ function ResetPasswordPage() {
     <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex items-center gap-3">
-          <img
-            src={logoAsset.url}
-            alt="FinnancePRO"
-            className="h-9 w-9 rounded-md object-contain"
+          <BrandedLogo
+            src={branding.logoUrl ?? logoAsset.url}
+            alt={branding.systemName}
+            recolor={branding.recolorLogo}
+            className="h-9 w-9 [&>svg]:h-9 [&>svg]:w-9"
+            imgProps={{ className: "h-9 w-9 rounded-md object-contain" }}
           />
-          <p className="text-base font-semibold tracking-tight">
-            Finnance<span className="text-primary">PRO</span>
-          </p>
+          <p className="text-base font-semibold tracking-tight">{branding.systemName}</p>
         </div>
 
         <h2 className="text-2xl font-semibold tracking-tight">Definir nova senha</h2>
