@@ -94,8 +94,8 @@ function LoginPage() {
                 imgProps={{ className: "h-10 w-10 rounded-md object-contain" }}
               />
               <div>
-                <p className="text-sm font-semibold tracking-tight">{branding.systemName}</p>
-                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                <p className="text-base font-semibold tracking-tight">{branding.systemName}</p>
+                <p className="text-[11.5px] uppercase tracking-[0.2em] text-muted-foreground">
                   Diagnóstico & Simulação
                 </p>
               </div>
