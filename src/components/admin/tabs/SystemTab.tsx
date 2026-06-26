@@ -124,6 +124,7 @@ export function SystemTab() {
   const [branding, setBranding] = useState<Branding>(DEFAULT_BRANDING);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const faviconInputRef = useRef<HTMLInputElement>(null);
+  const authorInputRef = useRef<HTMLInputElement>(null);
   const [login, setLogin] = useState({ headline: "", subheadline: "", cta: "Entrar" });
   const [footer, setFooter] = useState({ text: "" });
   const [tracking, setTracking] = useState({ head: "", body_start: "", body_end: "" });
