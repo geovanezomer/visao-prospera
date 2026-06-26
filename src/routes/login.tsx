@@ -78,47 +78,58 @@ function LoginPage() {
         }}
       >
         <div className="flex items-center gap-3">
-          <img
-            src={logoAsset.url}
-            alt="FinnancePRO"
-            className="h-10 w-10 rounded-md object-contain"
-          />
-          <div>
-            <p className="text-sm font-semibold tracking-tight">
-              Finnance<span className="text-primary">PRO</span>
-            </p>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Diagnóstico & Simulação
-            </p>
-          </div>
+          {!isReady ? (
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 animate-pulse rounded-md bg-muted" />
+              <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+            </div>
+          ) : (
+            <>
+              <img
+                src={branding.logoUrl ?? logoAsset.url}
+                alt={branding.systemName}
+                className="h-10 w-10 rounded-md object-contain"
+              />
+              <div>
+                <p className="text-sm font-semibold tracking-tight">{branding.systemName}</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Diagnóstico & Simulação
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="max-w-xl">
           <h1 className="text-4xl font-semibold leading-tight tracking-tight text-foreground xl:text-5xl">
-            Sua operação financeira, com clareza em tempo real.
+            {loginTexts.headline}
           </h1>
           <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Acesse a plataforma para fazer um Raio-X do Fluxo de Caixa, DRE, Balanço, Impactos da
-            Reforma Tributária e +40 Indicadores, além fazer cálculos trabalhistas e Análises com I.A.
+            {loginTexts.subheadline}
           </p>
         </div>
 
-        <div className="text-[11px] text-muted-foreground">
-          Desenvolvido por GZ Consultoria Financeira &amp; Investimentos
-        </div>
+        <div className="text-[11px] text-muted-foreground">{footer.text}</div>
       </section>
 
       <section className="flex items-center justify-center px-6 py-12 lg:px-12">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <img
-              src={logoAsset.url}
-              alt="FinnancePRO"
-              className="h-9 w-9 rounded-md object-contain"
-            />
-            <p className="text-base font-semibold tracking-tight">
-              Finnance<span className="text-primary">PRO</span>
-            </p>
+            {!isReady ? (
+              <>
+                <div className="h-9 w-9 animate-pulse rounded-md bg-muted" />
+                <div className="h-4 w-28 animate-pulse rounded bg-muted" />
+              </>
+            ) : (
+              <>
+                <img
+                  src={branding.logoUrl ?? logoAsset.url}
+                  alt={branding.systemName}
+                  className="h-9 w-9 rounded-md object-contain"
+                />
+                <p className="text-base font-semibold tracking-tight">{branding.systemName}</p>
+              </>
+            )}
           </div>
 
           <h2 className="text-2xl font-semibold tracking-tight">Bem-vindo de volta</h2>
