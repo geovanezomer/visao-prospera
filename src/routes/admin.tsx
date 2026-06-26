@@ -86,6 +86,7 @@ function AdminPage() {
             <TabsTrigger value="flags"><Flag className="mr-1.5 h-3.5 w-3.5" />Flags</TabsTrigger>
             <TabsTrigger value="status"><Activity className="mr-1.5 h-3.5 w-3.5" />Status</TabsTrigger>
             <TabsTrigger value="auditoria"><FileClock className="mr-1.5 h-3.5 w-3.5" />Auditoria</TabsTrigger>
+            <TabsTrigger value="legal"><FileText className="mr-1.5 h-3.5 w-3.5" />Termos / Privacidade</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard"><DashboardTab /></TabsContent>
           <TabsContent value="usuarios"><UsersTab /></TabsContent>
@@ -98,6 +99,7 @@ function AdminPage() {
           <TabsContent value="flags"><FlagsTab /></TabsContent>
           <TabsContent value="status"><StatusTab /></TabsContent>
           <TabsContent value="auditoria"><AuditTab /></TabsContent>
+          <TabsContent value="legal"><LegalTab /></TabsContent>
         </Tabs>
       </main>
     </div>
