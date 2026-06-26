@@ -179,7 +179,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         },
         // Favicon: usa o configurado no admin quando disponível; senão, fallbacks padrão.
         ...(customFavicon
-          ? [{ rel: "icon", href: customFavicon } as const]
+          ? [{ rel: "icon", href: customFavicon }]
           : [
               {
                 rel: "icon",
