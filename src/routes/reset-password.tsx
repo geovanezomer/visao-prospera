@@ -19,6 +19,7 @@ export const Route = createFileRoute("/reset-password")({
 function ResetPasswordPage() {
   const { updatePassword, session, hydrated } = useAuth();
   const navigate = useNavigate();
+  const { branding } = useBranding();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
