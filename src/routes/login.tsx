@@ -1,10 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Lock, Mail } from "lucide-react";
-import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { useAuth } from "@/lib/auth";
 import { useBranding } from "@/hooks/useBranding";
-import { BrandedLogo } from "@/components/BrandedLogo";
+import { BrandHeader } from "@/components/BrandHeader";
 import { getAppSettings } from "@/lib/admin/settings.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +44,7 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const { user, hydrated, login } = useAuth();
-  const { branding, loginTexts, footer, isReady } = useBranding();
+  const { loginTexts, footer } = useBranding();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -78,30 +77,7 @@ function LoginPage() {
             "radial-gradient(120% 80% at 0% 0%, color-mix(in oklab, var(--primary) 18%, transparent) 0%, transparent 55%), linear-gradient(160deg, color-mix(in oklab, var(--primary) 14%, var(--background)) 0%, var(--background) 65%, color-mix(in oklab, var(--primary) 8%, var(--background)) 100%)",
         }}
       >
-        <div className="flex items-center gap-3">
-          {!isReady ? (
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 animate-pulse rounded-md bg-muted" />
-              <div className="h-4 w-32 animate-pulse rounded bg-muted" />
-            </div>
-          ) : (
-            <>
-              <BrandedLogo
-                src={branding.logoUrl ?? logoAsset.url}
-                alt={branding.systemName}
-                recolor={branding.recolorLogo}
-                className="h-10 w-10 [&>svg]:h-10 [&>svg]:w-10"
-                imgProps={{ className: "h-10 w-10 rounded-md object-contain" }}
-              />
-              <div>
-                <p className="text-base font-semibold tracking-tight">{branding.systemName}</p>
-                <p className="text-[11.5px] uppercase tracking-[0.2em] text-muted-foreground">
-                  Diagnóstico & Simulação
-                </p>
-              </div>
-            </>
-          )}
-        </div>
+        <BrandHeader size="lg" subtitle="Diagnóstico & Simulação" />
 
         <div className="max-w-xl">
           <h1 className="text-4xl font-semibold leading-tight tracking-tight text-foreground xl:text-5xl">
