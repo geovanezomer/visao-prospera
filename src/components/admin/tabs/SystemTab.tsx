@@ -140,35 +140,54 @@ export function SystemTab() {
   const [notif, setNotif] = useState<NotifSettings | null>(null);
   const [testing, setTesting] = useState(false);
 
+  // Hidrata o estado local a partir do payload completo do app_settings.
+  // Usado no mount inicial e em eventos de sincronização multi-aba.
+  const hydrateFromSettings = useCallback((s: any) => {
+    if (!s || typeof s !== "object") return;
+    if (s.branding) setBranding({
+      system_name: s.branding.system_name ?? DEFAULT_BRANDING.system_name,
+      logo_url: s.branding.logo_url ?? "",
+      favicon_url: s.branding.favicon_url ?? "",
+      author_photo_url: s.branding.author_photo_url ?? "",
+      colors: {
+        primary: s.branding.colors?.primary ?? DEFAULT_BRANDING.colors.primary,
+        accent:  s.branding.colors?.accent  ?? DEFAULT_BRANDING.colors.accent,
+      },
+    });
+    if (s.login_texts) setLogin({ headline: s.login_texts.headline ?? "", subheadline: s.login_texts.subheadline ?? "", cta: s.login_texts.cta ?? "Entrar" });
+    if (s.footer) setFooter({ text: s.footer.text ?? "" });
+    if (s.tracking) setTracking({ head: s.tracking.head ?? "", body_start: s.tracking.body_start ?? "", body_end: s.tracking.body_end ?? "" });
+    if (s.landing_video) setLandingVideo({ enabled: Boolean(s.landing_video.enabled), url: s.landing_video.url ?? "" });
+  }, []);
+
   useEffect(() => {
     (async () => {
       try {
         const [s, n] = await Promise.all([getAppSettings(), getNotifSettings()]);
-        if (s.branding) setBranding({
-          system_name: s.branding.system_name ?? DEFAULT_BRANDING.system_name,
-          logo_url: s.branding.logo_url ?? "",
-          favicon_url: s.branding.favicon_url ?? "",
-          author_photo_url: s.branding.author_photo_url ?? "",
-          colors: {
-            primary: s.branding.colors?.primary ?? DEFAULT_BRANDING.colors.primary,
-            accent:  s.branding.colors?.accent  ?? DEFAULT_BRANDING.colors.accent,
-          },
-        });
-        if (s.login_texts) setLogin({ headline: s.login_texts.headline ?? "", subheadline: s.login_texts.subheadline ?? "", cta: s.login_texts.cta ?? "Entrar" });
-        if (s.footer) setFooter({ text: s.footer.text ?? "" });
-        if ((s as any).tracking) {
-          const t = (s as any).tracking;
-          setTracking({ head: t.head ?? "", body_start: t.body_start ?? "", body_end: t.body_end ?? "" });
-        }
-        if ((s as any).landing_video) {
-          const v = (s as any).landing_video;
-          setLandingVideo({ enabled: Boolean(v.enabled), url: v.url ?? "" });
-        }
-
+        hydrateFromSettings(s);
         setNotif(n);
       } finally { setLoading(false); }
     })();
-  }, []);
+  }, [hydrateFromSettings]);
+
+  // Sincronização multi-aba: quando outra aba salva app_settings, atualiza
+  // o preview do admin (foto do autor, cores, logo, textos) em tempo real.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== SETTINGS_CACHE_KEY || !e.newValue) return;
+      try { hydrateFromSettings(JSON.parse(e.newValue)); } catch { /* ignore */ }
+    };
+    const onLocal = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) hydrateFromSettings(detail);
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener(SETTINGS_CHANGE_EVENT, onLocal as EventListener);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(SETTINGS_CHANGE_EVENT, onLocal as EventListener);
+    };
+  }, [hydrateFromSettings]);
 
   const saveAll = async () => {
     setSaving(true);
@@ -182,6 +201,12 @@ export function SystemTab() {
 
         notif ? updateNotifSettings({ data: notif }) : Promise.resolve(),
       ]);
+      // Atualiza o cache do React Query + localStorage imediatamente para
+      // que LandingPage, login, sidebar, etc. reflitam sem aguardar refetch,
+      // e dispara storage event para sincronizar todas as abas abertas.
+      const fresh = await getAppSettings();
+      queryClient.setQueryData(["app_settings"], fresh);
+      writeSettingsCache(fresh);
       toast.success("Configurações salvas.");
     } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
     finally { setSaving(false); }
