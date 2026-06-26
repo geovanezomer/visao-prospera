@@ -138,7 +138,7 @@ function LoginPage() {
                   className="h-9 w-9 [&>svg]:h-9 [&>svg]:w-9"
                   imgProps={{ className: "h-9 w-9 rounded-md object-contain" }}
                 />
-                <p className="text-base font-semibold tracking-tight">{branding.systemName}</p>
+                <p className="text-lg font-semibold tracking-tight">{branding.systemName}</p>
               </>
             )}
           </div>
