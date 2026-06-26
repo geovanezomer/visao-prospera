@@ -15,6 +15,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { TrackingInjector } from "@/components/TrackingInjector";
 import { BrandingApplier } from "@/components/BrandingApplier";
+import { getAppSettings } from "@/lib/admin/settings.functions";
+
+// Heurística de contraste preto/branco para foreground sobre cor primária.
+// Mantida aqui (e não importada do BrandingApplier) para que o head() do
+// SSR seja totalmente síncrono e sem dependências de runtime.
+function contrastForeground(hex: string): string {
+  const h = (hex || "").replace("#", "");
+  if (h.length !== 6) return "#ffffff";
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return L > 0.55 ? "#0b0f1a" : "#ffffff";
+}
+
+// CSS emitido inline no <head> do SSR — chega ao browser ANTES do primeiro
+// paint, eliminando o "flash" do tema padrão antes das cores do admin.
+function buildBrandingCss(colors?: { primary?: string; accent?: string }): string | null {
+  if (!colors?.primary) return null;
+  const fg = contrastForeground(colors.primary);
+  const accent = colors.accent ?? colors.primary;
+  return `:root,.dark{--primary:${colors.primary};--primary-foreground:${fg};--ring:${colors.primary};--accent:${accent};--sidebar-primary:${colors.primary};--sidebar-primary-foreground:${fg};--sidebar-ring:${colors.primary};}`;
+}
+
 
 function NotFoundComponent() {
   return (
