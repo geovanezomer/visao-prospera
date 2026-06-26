@@ -4,7 +4,7 @@
 // ============================================================================
 import { useEffect } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { ShieldCheck, ArrowLeft, Users, Settings, Mail, Webhook, CreditCard, LayoutDashboard, FileClock, Flag, Megaphone, Package, Activity } from "lucide-react";
+import { ShieldCheck, ArrowLeft, Users, Settings, Mail, Webhook, CreditCard, LayoutDashboard, FileClock, Flag, Megaphone, Package, Activity, FileText } from "lucide-react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
