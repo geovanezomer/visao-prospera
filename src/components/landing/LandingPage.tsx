@@ -842,7 +842,7 @@ function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
           <SectionEyebrow>Planos</SectionEyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             Dois caminhos.
-            <span className="text-primary">O mesmo destino.</span>.
+            <span className="text-primary"> O mesmo destino.</span>
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
             <strong className="text-foreground">Controle absoluto</strong> sobre os resultados.
