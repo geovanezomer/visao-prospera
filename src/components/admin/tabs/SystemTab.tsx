@@ -265,6 +265,42 @@ export function SystemTab() {
           </div>
         </div>
 
+        {/* Foto do autor (Landing — bloco "Construído por quem vive isso") */}
+        <div className="space-y-2">
+          <Label>Foto do autor (Landing Page)</Label>
+          <p className="text-[11px] text-muted-foreground">PNG/JPG/WebP quadrado (1:1) · recomendado <strong>512×512 px</strong> (mín 128, máx 1024) · máx 500 KB. Substitui o avatar "GZ" do bloco de autoridade na landing.</p>
+          <div className="flex items-center gap-3 rounded-md border border-border/50 bg-muted/30 p-3">
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-background ring-1 ring-border/50">
+              {branding.author_photo_url
+                ? <img src={branding.author_photo_url} alt="foto" className="h-full w-full object-cover" />
+                : <span className="text-xs font-semibold text-muted-foreground">GZ</span>}
+            </div>
+            <input
+              ref={authorInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0]; if (!f) return;
+                try {
+                  const url = await readImageAsDataUrl(f, AUTHOR_PHOTO_RULE);
+                  setBranding({ ...branding, author_photo_url: url });
+                } catch (err) { toast.error(err instanceof Error ? err.message : "Falha"); }
+                finally { if (authorInputRef.current) authorInputRef.current.value = ""; }
+              }}
+            />
+            <Button size="sm" variant="outline" onClick={() => authorInputRef.current?.click()}>
+              <Upload className="mr-1.5 h-3.5 w-3.5" />Fazer upload
+            </Button>
+            {branding.author_photo_url && (
+              <Button size="sm" variant="ghost" onClick={() => setBranding({ ...branding, author_photo_url: "" })}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
+
+
         {/* Cores principais */}
         <div className="space-y-2">
           <Label>Cores principais</Label>
