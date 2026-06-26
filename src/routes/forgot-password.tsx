@@ -1,10 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, CheckCircle2, Mail } from "lucide-react";
-import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { useAuth } from "@/lib/auth";
-import { useBranding } from "@/hooks/useBranding";
-import { BrandedLogo } from "@/components/BrandedLogo";
+import { BrandHeader } from "@/components/BrandHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +16,6 @@ export const Route = createFileRoute("/forgot-password")({
 
 function ForgotPasswordPage() {
   const { requestPasswordReset } = useAuth();
-  const { branding } = useBranding();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -40,16 +37,7 @@ function ForgotPasswordPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex items-center gap-3">
-          <BrandedLogo
-            src={branding.logoUrl ?? logoAsset.url}
-            alt={branding.systemName}
-            recolor={branding.recolorLogo}
-            className="h-9 w-9 [&>svg]:h-9 [&>svg]:w-9"
-            imgProps={{ className: "h-9 w-9 rounded-md object-contain" }}
-          />
-          <p className="text-base font-semibold tracking-tight">{branding.systemName}</p>
-        </div>
+        <BrandHeader size="md" className="mb-8" />
 
         {sent ? (
           <div className="rounded-lg border border-border/60 bg-card/40 p-6 text-center">

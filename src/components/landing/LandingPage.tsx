@@ -5,6 +5,7 @@
 import { Link } from "@tanstack/react-router";
 import { useBranding } from "@/hooks/useBranding";
 import { BrandedLogo } from "@/components/BrandedLogo";
+import { BrandHeader } from "@/components/BrandHeader";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import {
   ArrowRight,
@@ -1381,26 +1382,11 @@ function SectionEyebrow({ children }: { children: React.ReactNode }) {
 }
 
 function Header() {
-  const { branding, isReady } = useBranding();
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
         <Link to="/landing" className="flex items-center gap-2 min-h-8">
-          {!isReady ? (
-            // Placeholder neutro enquanto o branding carrega — evita "flash" do mock.
-            <div className="h-8 w-40 animate-pulse rounded-md bg-muted/50" aria-hidden />
-          ) : (
-            <>
-              <BrandedLogo
-                src={branding.logoUrl ?? logoAsset.url}
-                alt={branding.systemName}
-                recolor={branding.recolorLogo}
-                className="h-8 w-8 [&>svg]:h-8 [&>svg]:w-8"
-                imgProps={{ className: "h-8 w-8 rounded-md object-contain" }}
-              />
-              <span className="text-base font-semibold tracking-tight text-foreground">{branding.systemName}</span>
-            </>
-          )}
+          <BrandHeader size="sm" />
         </Link>
 
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
