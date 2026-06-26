@@ -23,10 +23,12 @@ export function LegalPage({ kind }: Props) {
           <Link to="/" className="flex items-center gap-2">
             {isReady ? (
               <>
-                <img
+                <BrandedLogo
                   src={branding.logoUrl ?? logoAsset.url}
                   alt={branding.systemName}
-                  className="h-8 w-8 rounded-md object-contain"
+                  recolor={branding.recolorLogo}
+                  className="h-8 w-8 [&>svg]:h-8 [&>svg]:w-8"
+                  imgProps={{ className: "h-8 w-8 rounded-md object-contain" }}
                 />
                 <span className="text-sm font-semibold tracking-tight">{branding.systemName}</span>
               </>
