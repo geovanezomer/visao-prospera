@@ -64,6 +64,26 @@ function sanitizeAndRecolor(svgText: string): string {
   // Remove tags perigosas.
   doc.querySelectorAll("script, foreignObject").forEach((n) => n.remove());
 
+  // Reescreve fill/stroke dentro de <style> embutidos (CorelDRAW/Illustrator
+  // costumam exportar cores como classes CSS — ex.: .fil0 { fill:#FEFEFE }).
+  doc.querySelectorAll("style").forEach((styleEl) => {
+    const css = styleEl.textContent ?? "";
+    if (!css) return;
+    const rewritten = css.replace(
+      /(fill|stroke)\s*:\s*([^;}]+)/gi,
+      (_m, prop: string, val: string) => {
+        const v = val.trim().toLowerCase();
+        if (v === "none" || v.startsWith("url(") || v === "currentcolor") {
+          return `${prop}:${val.trim()}`;
+        }
+        return `${prop}:currentColor`;
+      },
+    );
+    styleEl.textContent = rewritten;
+  });
+
+
+
   const walker = doc.createTreeWalker(svg, NodeFilter.SHOW_ELEMENT);
   const nodes: Element[] = [svg];
   let cur = walker.nextNode();
