@@ -197,8 +197,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
                 rel: "icon",
                 type: "image/png",
                 sizes: "512x512",
-                href: "/__l5e/assets-v1/fd8a7196-3533-41dd-aa42-2094c0b84a91/web-app-manifest-512x812.png".replace("812", "512"),
+                href: "/__l5e/assets-v1/fd8a7196-3533-41dd-aa42-2094c0b84a91/web-app-manifest-512x512.png",
               } as const,
+
               {
                 rel: "apple-touch-icon",
                 sizes: "180x180",
