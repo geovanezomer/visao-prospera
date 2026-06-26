@@ -43,12 +43,22 @@ export function useBranding() {
   const { data, isLoading, isFetched } = useQuery({
     queryKey: ["app_settings"],
     queryFn: () => getAppSettings(),
-    staleTime: 5 * 60_000,
+    // Settings administrativas (logo, cores, textos, vídeo) mudam raramente.
+    // staleTime alto evita refetch a cada navegação SPA e elimina o "flash".
+    staleTime: 60 * 60_000, // 1h
+    gcTime: 24 * 60 * 60_000, // 24h
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
     // initialData sincroniza com o cache localStorage da última visita,
     // evitando o flash do default em qualquer cold start client-side.
+    // initialDataUpdatedAt sintetizado com Date.now() faz o React Query
+    // tratar o cache como FRESH, então não há refetch em background que
+    // dispare re-render com dados diferentes ("cache → real (se mudou)").
     initialData: readSettingsCache,
-    initialDataUpdatedAt: 0, // força refetch em background sem bloquear
+    initialDataUpdatedAt: () => (readSettingsCache() ? Date.now() : 0),
   });
+
 
   // Persiste em localStorage a cada novo payload bem-sucedido.
   useEffect(() => {
