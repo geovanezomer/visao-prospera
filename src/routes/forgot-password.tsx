@@ -16,7 +16,6 @@ export const Route = createFileRoute("/forgot-password")({
 
 function ForgotPasswordPage() {
   const { requestPasswordReset } = useAuth();
-  const { branding } = useBranding();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
