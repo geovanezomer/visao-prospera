@@ -3,6 +3,7 @@
 // Ativada/desativada via VITE_LANDING_PAGE no .env.
 
 import { Link } from "@tanstack/react-router";
+import { useBranding } from "@/hooks/useBranding";
 import {
   ArrowRight,
   BarChart3,
