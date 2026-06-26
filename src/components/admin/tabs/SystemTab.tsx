@@ -243,7 +243,14 @@ export function SystemTab() {
           <div className="flex items-center gap-3 rounded-md border border-border/50 bg-muted/30 p-3">
             <div className="flex h-12 w-32 items-center justify-center rounded bg-background ring-1 ring-border/50 overflow-hidden">
               {branding.logo_url
-                ? <img src={branding.logo_url} alt="logo" className="max-h-full max-w-full object-contain" />
+                ? <BrandedLogo
+                    src={branding.logo_url}
+                    alt="logo"
+                    recolor={branding.recolor_logo}
+                    color={branding.colors.primary}
+                    className="max-h-full max-w-full [&>svg]:max-h-12 [&>svg]:max-w-[128px] [&>svg]:h-auto [&>svg]:w-auto"
+                    imgProps={{ className: "max-h-full max-w-full object-contain" }}
+                  />
                 : <span className="text-[10px] text-muted-foreground">sem logo</span>}
             </div>
             <input
@@ -268,6 +275,19 @@ export function SystemTab() {
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             )}
+          </div>
+          {/* Toggle: aplicar cor primária em logos SVG */}
+          <div className="flex items-start justify-between gap-3 rounded-md border border-border/40 bg-muted/20 px-3 py-2">
+            <div className="space-y-0.5">
+              <Label className="text-xs">Aplicar cor do sistema na logo (SVG)</Label>
+              <p className="text-[11px] text-muted-foreground">
+                Substitui as cores do SVG por <code>currentColor</code> e usa a cor primária do branding. Funciona apenas para arquivos <strong>.svg</strong>. PNG/JPG/WebP permanecem inalterados.
+              </p>
+            </div>
+            <Switch
+              checked={branding.recolor_logo}
+              onCheckedChange={(v) => setBranding({ ...branding, recolor_logo: v })}
+            />
           </div>
         </div>
 
