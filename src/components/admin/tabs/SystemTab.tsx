@@ -19,6 +19,7 @@ import {
   SETTINGS_CHANGE_EVENT,
   writeSettingsCache,
 } from "@/lib/admin/settingsCache";
+import { BrandedLogo } from "@/components/BrandedLogo";
 
 // Paletas pré-definidas (cor primária). O sistema deriva foreground/ring automaticamente.
 const COLOR_PRESETS: { label: string; primary: string; accent?: string }[] = [
