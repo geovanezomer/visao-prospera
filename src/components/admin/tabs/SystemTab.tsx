@@ -1,8 +1,9 @@
 // ============================================================================
 // SystemTab — branding + textos + notificações admin.
 // ============================================================================
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save, Send, Upload, Trash2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,11 @@ import { getAppSettings, updateAppSetting } from "@/lib/admin/settings.functions
 import {
   getNotifSettings, updateNotifSettings, testNotification, type NotifSettings,
 } from "@/lib/admin/notifications.functions";
+import {
+  SETTINGS_CACHE_KEY,
+  SETTINGS_CHANGE_EVENT,
+  writeSettingsCache,
+} from "@/lib/admin/settingsCache";
 
 // Paletas pré-definidas (cor primária). O sistema deriva foreground/ring automaticamente.
 const COLOR_PRESETS: { label: string; primary: string; accent?: string }[] = [
