@@ -112,6 +112,11 @@ const FAVICON_RULE: ImageRule = {
   label: "Favicon", accept: FAVICON_MIME, maxBytes: 50 * 1024,
   minSide: 16, maxSide: 512, minAspect: 1, maxAspect: 1,
 };
+// Foto do autor: quadrada, ideal 512×512.
+const AUTHOR_PHOTO_RULE: ImageRule = {
+  label: "Foto do autor", accept: ["image/png", "image/jpeg", "image/webp"] as const,
+  maxBytes: 500 * 1024, minSide: 128, maxSide: 1024, minAspect: 1, maxAspect: 1,
+};
 
 export function SystemTab() {
   const [loading, setLoading] = useState(true);
