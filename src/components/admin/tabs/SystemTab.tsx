@@ -37,6 +37,7 @@ type Branding = {
   logo_url: string;
   favicon_url: string;
   author_photo_url: string;
+  recolor_logo: boolean;
   colors: { primary: string; accent: string };
 };
 const DEFAULT_BRANDING: Branding = {
@@ -44,6 +45,7 @@ const DEFAULT_BRANDING: Branding = {
   logo_url: "",
   favicon_url: "",
   author_photo_url: "",
+  recolor_logo: false,
   colors: { primary: "#10b981", accent: "#0f3a2e" },
 };
 
