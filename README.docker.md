@@ -1,45 +1,59 @@
-# GZ FinnancePRO — Build local com Docker
+# FinancePRO — Deploy com Docker (VPS)
 
-Este projeto é uma aplicação **TanStack Start** (React 19 + Vite 7 + Nitro) que utiliza **Bun** como gerenciador de pacotes.
-Os arquivos abaixo permitem buildar e rodar localmente em qualquer máquina com
-Docker instalado, sem precisar do Node nem Bun no host.
+Aplicação **TanStack Start** (React 19 + Vite 7 + Nitro) usando **Bun** como
+gerenciador de pacotes. Esta configuração permite buildar e rodar em qualquer
+VPS com Docker, sem precisar de Node ou Bun no host.
 
-## Arquivos incluídos
+## Arquivos
 
-| Arquivo              | Função                                               |
-| -------------------- | ---------------------------------------------------- |
-| `Dockerfile`         | Build de produção (multi-stage, gera servidor Node)  |
-| `Dockerfile.dev`     | Container de desenvolvimento com hot reload          |
-| `docker-compose.yml` | Orquestra os serviços `app` (prod) e `app-dev` (dev) |
-| `.dockerignore`      | Reduz o contexto enviado ao Docker daemon            |
+| Arquivo              | Função                                                |
+| -------------------- | ----------------------------------------------------- |
+| `Dockerfile`         | Build de produção multi-stage (gera servidor Node 20) |
+| `Dockerfile.dev`     | Container de desenvolvimento com hot reload           |
+| `docker-compose.yml` | Serviços `app` (prod) e `app-dev` (dev)               |
+| `.dockerignore`      | Reduz o contexto enviado ao Docker daemon             |
 
 ## Pré-requisitos
 
-- Docker 24+
-- Docker Compose v2 (já vem com o Docker Desktop)
-- Arquivo **`.env`** na raiz do projeto (copie de `.env.example` e preencha
-  com suas credenciais do Lovable Cloud / Supabase). **Sem ele o build
-  gera bundle quebrado** — as `VITE_*` são injetadas em build-time.
-
-Verifique:
+- Docker 24+ e Docker Compose v2
+- Arquivo **`.env`** na raiz (copie de `.env.example` e preencha com
+  credenciais do Supabase, Stripe/Asaas, Resend, etc.).
+  **Sem ele o bundle sai quebrado** — as `VITE_*` são injetadas em
+  build-time pelo Vite.
 
 ```bash
 docker --version
 docker compose version
-test -f .env && echo "OK .env presente" || echo "FALTA .env — copie de .env.example"
+test -f .env && echo "OK .env presente" || cp .env.example .env
 ```
+
+Edite `.env` antes de buildar.
+
+## Variáveis de ambiente
+
+Dois grupos lidos a partir do mesmo `.env`:
+
+| Prefixo               | Quando é lida                            | Exemplos                                                     |
+| --------------------- | ---------------------------------------- | ------------------------------------------------------------ |
+| `VITE_*`              | **Build-time** (bundlada no JS do client) | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`         |
+| Sem prefixo (runtime) | **Runtime SSR** (`process.env`)           | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_*`, etc. |
+
+O Dockerfile **copia o `.env` no estágio de build E no runtime**, então a
+imagem roda standalone (`docker run`). O `docker-compose.yml` também usa
+`env_file: .env` no runtime — manter ambos é redundância segura.
+
+> Mudou uma `VITE_*`? Rebuilde a imagem (`--build`). Mudou só uma var de
+> runtime? Basta reiniciar o container.
 
 ---
 
-## Modo PRODUÇÃO
-
-Build da imagem e subida do container:
+## Produção
 
 ```bash
 docker compose up app -d --build
 ```
 
-Acesse: **http://localhost:3000**
+Acesse: **http://SEU_IP:3000**
 
 Logs:
 
@@ -55,16 +69,16 @@ docker compose down
 
 ### O que o build faz
 
-1. **Stage `builder`** — usa a imagem `oven/bun:1-alpine` para instalar dependências
-   com `bun install --frozen-lockfile`, define `NITRO_PRESET=node-server`
-   (o template default é Cloudflare Workers, aqui forçamos Node) e roda
-   `bun run build`. O Nitro gera `.output/server/index.mjs` auto-contido.
-2. **Stage `runner`** — imagem `node:20-alpine` mínima copiando apenas
-   `.output/`. Sem `node_modules` extra. Container final ~150MB.
+1. **Stage `builder`** (`oven/bun:1-alpine`) — `bun install --frozen-lockfile`,
+   copia `.env` para que o Vite leia as `VITE_*`, define
+   `NITRO_PRESET=node-server` (o template default é Cloudflare Workers, aqui
+   forçamos Node) e roda `bun run build`. Saída: `.output/server/index.mjs`.
+2. **Stage `runner`** (`node:20-alpine`) — copia `.output/` + `.env`.
+   Sem `node_modules` extra. Imagem final ~150 MB.
 
 ---
 
-## Modo DESENVOLVIMENTO (hot reload)
+## Desenvolvimento (hot reload)
 
 ```bash
 docker compose --profile dev up app-dev --build
@@ -72,55 +86,9 @@ docker compose --profile dev up app-dev --build
 
 Acesse: **http://localhost:5173**
 
-O código-fonte é montado via volume — qualquer alteração no host recarrega
-automaticamente. `node_modules` fica isolado em volume anônimo (não conflita
-com o que está no host).
+Código montado via volume — qualquer alteração recarrega.
 
----
-
-## Build manual (sem compose)
-
-Produção:
-
-```bash
-docker build -t gzfinancepro:latest .
-docker run -d --name gzfinancepro -p 3000:3000 gzfinancepro:latest
-```
-
-Desenvolvimento:
-
-```bash
-docker build -f Dockerfile.dev -t gzfinancepro:dev .
-docker run --rm -it -p 5173:5173 -v "$(pwd)":/app -v /app/node_modules \
-  gzfinancepro:dev
-```
-
----
-
-## Persistência de dados
-
-A aplicação armazena cenários, autenticação e configurações no **`localStorage`
-do navegador** — não há banco de dados no container. Não é preciso configurar
-volume para dados; cada navegador mantém seus próprios cenários.
-
-Usuários padrão (definidos em código):
-
-- `adminfinancepro` / `admin7184#`
-- `clientefinancepro` / `cliente7184#`
-
----
-
-## Troubleshooting
-
-**Build falha na etapa do Nitro com erro de Cloudflare/Wrangler:**
-Confirme que a variável `NITRO_PRESET=node-server` está no Dockerfile (já está).
-
-**Porta 3000 já em uso:**
-Altere o mapeamento no `docker-compose.yml` para `"8080:3000"` e acesse em
-`http://localhost:8080`.
-
-**Hot reload não funciona no Windows/macOS:**
-Em alguns hosts o file-watching via volume é lento. Force polling:
+### Hot reload lento no Windows/macOS
 
 ```bash
 docker compose --profile dev run --rm \
@@ -128,6 +96,75 @@ docker compose --profile dev run --rm \
   app-dev
 ```
 
-**Imagem muito grande:**
-A imagem final usa `node:20-alpine` (~50MB base) + `.output/` (~80–100MB).
-Para enxugar ainda mais, troque a base por `gcr.io/distroless/nodejs20`.
+---
+
+## Build manual (sem compose)
+
+```bash
+docker build -t financepro:latest .
+docker run -d --name financepro -p 3000:3000 --env-file .env financepro:latest
+```
+
+---
+
+## Deploy em VPS — checklist
+
+1. Clonar o repositório no VPS.
+2. Criar `.env` com as credenciais reais (`cp .env.example .env && nano .env`).
+3. `docker compose up app -d --build`.
+4. Confirmar saúde: `docker compose ps` (status `healthy`) e
+   `curl -I http://127.0.0.1:3000`.
+5. Subir Nginx/Caddy na frente do container fazendo proxy para `:3000`
+   com TLS (Let's Encrypt).
+
+Exemplo mínimo de Nginx:
+
+```nginx
+server {
+  listen 443 ssl http2;
+  server_name app.seu-dominio.com.br;
+
+  ssl_certificate     /etc/letsencrypt/live/app.seu-dominio.com.br/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/app.seu-dominio.com.br/privkey.pem;
+
+  location / {
+    proxy_pass         http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header   Host              $host;
+    proxy_set_header   X-Real-IP         $remote_addr;
+    proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header   X-Forwarded-Proto $scheme;
+  }
+}
+```
+
+Lembre-se de ajustar `APP_URL` no `.env` para a URL pública final
+(usado nos `return_url`/`success_url` do checkout).
+
+---
+
+## Backend
+
+Este projeto usa **Supabase** (hospedado) como backend — banco, auth,
+storage e edge runtime ficam fora do VPS. O container Docker roda apenas
+o servidor SSR + bundle do client. Cenários e configurações de usuário
+são persistidos no Supabase quando autenticado, ou em `localStorage` para
+uso anônimo.
+
+---
+
+## Troubleshooting
+
+**Build falha no Nitro com erro de Cloudflare/Wrangler**
+Confirme que `NITRO_PRESET=node-server` está no Dockerfile (já está).
+
+**Bundle gerado mas o app quebra no browser com `Missing Supabase environment variable`**
+O `.env` não estava presente no build. Confirme `test -f .env` antes do
+`docker compose build` — o `.dockerignore` permite que ele seja enviado ao daemon.
+
+**Porta 3000 ocupada no VPS**
+Mude o mapeamento em `docker-compose.yml` para `"8080:3000"`.
+
+**Imagem muito grande**
+Já usa `node:20-alpine` (~50 MB base) + `.output/` (~80–100 MB). Para enxugar,
+troque a base por `gcr.io/distroless/nodejs20`.

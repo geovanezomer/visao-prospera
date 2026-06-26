@@ -1,5 +1,5 @@
 # ============================================================
-# .dockerignore — reduz tamanho do contexto enviado ao daemon
+# .dockerignore — reduz o contexto enviado ao daemon Docker
 # ============================================================
 
 # Dependências e builds locais
@@ -15,11 +15,14 @@ build
 .gitignore
 .github
 
-# Variáveis de ambiente locais
-# IMPORTANTE: .env é necessário no build (Vite injeta VITE_* em build-time)
-# e no runtime (SSR lê SUPABASE_URL etc). NÃO ignorar.
+# Variáveis de ambiente locais — IMPORTANTE
+# .env É NECESSÁRIO no build (Vite injeta VITE_* em build-time)
+# e no runtime SSR (process.env). NÃO ignorar.
+# Apenas variantes locais/secundárias ficam de fora:
 .env.local
 .env.*.local
+.env.development
+.env.production
 
 # IDE / editor
 .vscode
@@ -36,16 +39,15 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Próprio Docker
+# Próprio Docker e docs
 Dockerfile
 Dockerfile.dev
 docker-compose.yml
 .dockerignore
+README.docker.md
 
-# Lovable / sandbox
-.lovable
+# Workspaces de agentes/sandbox (irrelevantes em runtime)
 .workspace
 .agents
 .claude
 mem
-README.docker.md

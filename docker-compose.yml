@@ -1,8 +1,11 @@
 # ============================================================
-# GZ FinancePRO — Docker Compose
+# FinancePRO — Docker Compose (VPS)
 #
 # Produção:        docker compose up app -d --build
 # Desenvolvimento: docker compose --profile dev up app-dev --build
+#
+# Pré-requisito: arquivo .env presente na raiz (copie de .env.example
+# e preencha as credenciais Supabase, Stripe/Asaas, Resend, etc.).
 # ============================================================
 
 services:
@@ -11,8 +14,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: gzfinancepro:latest
-    container_name: gzfinancepro
+    image: financepro:latest
+    container_name: financepro
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -29,8 +32,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    image: gzfinancepro:dev
-    container_name: gzfinancepro-dev
+    image: financepro:dev
+    container_name: financepro-dev
     ports:
       - "5173:5173"
     env_file:
@@ -38,10 +41,11 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=5173
+      - NODE_ENV=development
     volumes:
       # Código-fonte montado para hot reload
       - .:/app
-      # Volume anônimo isola node_modules do host
+      # Volumes anônimos isolam node_modules e .output do host
       - /app/node_modules
       - /app/.output
     command: ["bun", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
