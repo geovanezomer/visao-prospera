@@ -1456,9 +1456,10 @@ function Footer() {
           <Link to="/login" className="transition hover:text-foreground">
             Entrar
           </Link>
-          <Link to="/signup" className="transition hover:text-foreground">
-            Criar conta
-          </Link>
+          <a href="#planos" className="transition hover:text-foreground">
+            Criar Conta
+          </a>
+
         </div>
       </div>
     </footer>
