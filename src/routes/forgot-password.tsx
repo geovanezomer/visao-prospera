@@ -37,16 +37,7 @@ function ForgotPasswordPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex items-center gap-3">
-          <BrandedLogo
-            src={branding.logoUrl ?? logoAsset.url}
-            alt={branding.systemName}
-            recolor={branding.recolorLogo}
-            className="h-9 w-9 [&>svg]:h-9 [&>svg]:w-9"
-            imgProps={{ className: "h-9 w-9 rounded-md object-contain" }}
-          />
-          <p className="text-base font-semibold tracking-tight">{branding.systemName}</p>
-        </div>
+        <BrandHeader size="md" className="mb-8" />
 
         {sent ? (
           <div className="rounded-lg border border-border/60 bg-card/40 p-6 text-center">
