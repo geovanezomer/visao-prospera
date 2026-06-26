@@ -1381,7 +1381,6 @@ function SectionEyebrow({ children }: { children: React.ReactNode }) {
 
 function Header() {
   const { branding, isReady } = useBranding();
-  const initial = (branding.systemName || "F").charAt(0).toUpperCase();
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
@@ -1389,23 +1388,16 @@ function Header() {
           {!isReady ? (
             // Placeholder neutro enquanto o branding carrega — evita "flash" do mock.
             <div className="h-8 w-40 animate-pulse rounded-md bg-muted/50" aria-hidden />
-          ) : branding.logoUrl ? (
-            <>
-              <BrandedLogo
-                src={branding.logoUrl}
-                alt={branding.systemName}
-                recolor={branding.recolorLogo}
-                className="h-8 max-w-[160px] [&>svg]:h-8 [&>svg]:w-auto [&>svg]:max-w-[160px]"
-                imgProps={{ className: "h-8 w-auto max-w-[160px] object-contain" }}
-              />
-              <span className="text-base font-semibold tracking-tight text-foreground">{branding.systemName}</span>
-            </>
           ) : (
             <>
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
-                {initial}
-              </div>
-              <span className="text-sm font-semibold tracking-tight text-foreground">{branding.systemName}</span>
+              <BrandedLogo
+                src={branding.logoUrl ?? logoAsset.url}
+                alt={branding.systemName}
+                recolor={branding.recolorLogo}
+                className="h-8 w-8 [&>svg]:h-8 [&>svg]:w-8"
+                imgProps={{ className: "h-8 w-8 rounded-md object-contain" }}
+              />
+              <span className="text-base font-semibold tracking-tight text-foreground">{branding.systemName}</span>
             </>
           )}
         </Link>
