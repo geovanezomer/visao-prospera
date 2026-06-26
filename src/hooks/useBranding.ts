@@ -18,6 +18,8 @@ export type Branding = {
   logoUrl: string | null;
   faviconUrl: string | null;
   authorPhotoUrl: string | null;
+  /** Aplica a cor primária na logo (somente SVG). Configurado no admin. */
+  recolorLogo: boolean;
 };
 export type LoginTexts = {
   headline: string;
@@ -28,7 +30,7 @@ export type Footer = { text: string };
 export type LandingVideo = { enabled: boolean; url: string };
 
 const DEFAULTS = {
-  branding: { systemName: "Finnance", logoUrl: null, faviconUrl: null, authorPhotoUrl: null } as Branding,
+  branding: { systemName: "Finnance", logoUrl: null, faviconUrl: null, authorPhotoUrl: null, recolorLogo: false } as Branding,
   login_texts: {
     headline: "Análise financeira completa para sua empresa",
     subheadline:
@@ -73,6 +75,7 @@ export function useBranding() {
       logoUrl: data?.branding?.logo_url ?? null,
       faviconUrl: data?.branding?.favicon_url ?? null,
       authorPhotoUrl: data?.branding?.author_photo_url ?? null,
+      recolorLogo: Boolean(data?.branding?.recolor_logo),
     } as Branding,
     loginTexts: {
       headline: data?.login_texts?.headline ?? DEFAULTS.login_texts.headline,

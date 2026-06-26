@@ -4,6 +4,7 @@ import { ArrowRight, Lock, Mail } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { useAuth } from "@/lib/auth";
 import { useBranding } from "@/hooks/useBranding";
+import { BrandedLogo } from "@/components/BrandedLogo";
 import { getAppSettings } from "@/lib/admin/settings.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,10 +86,12 @@ function LoginPage() {
             </div>
           ) : (
             <>
-              <img
+              <BrandedLogo
                 src={branding.logoUrl ?? logoAsset.url}
                 alt={branding.systemName}
-                className="h-10 w-10 rounded-md object-contain"
+                recolor={branding.recolorLogo}
+                className="h-10 w-10 [&>svg]:h-10 [&>svg]:w-10"
+                imgProps={{ className: "h-10 w-10 rounded-md object-contain" }}
               />
               <div>
                 <p className="text-sm font-semibold tracking-tight">{branding.systemName}</p>
@@ -128,10 +131,12 @@ function LoginPage() {
               </>
             ) : (
               <>
-                <img
+                <BrandedLogo
                   src={branding.logoUrl ?? logoAsset.url}
                   alt={branding.systemName}
-                  className="h-9 w-9 rounded-md object-contain"
+                  recolor={branding.recolorLogo}
+                  className="h-9 w-9 [&>svg]:h-9 [&>svg]:w-9"
+                  imgProps={{ className: "h-9 w-9 rounded-md object-contain" }}
                 />
                 <p className="text-base font-semibold tracking-tight">{branding.systemName}</p>
               </>
