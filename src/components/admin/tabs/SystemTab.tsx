@@ -125,6 +125,7 @@ const AUTHOR_PHOTO_RULE: ImageRule = {
 };
 
 export function SystemTab() {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [branding, setBranding] = useState<Branding>(DEFAULT_BRANDING);
