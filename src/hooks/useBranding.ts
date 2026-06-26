@@ -28,7 +28,7 @@ export type Footer = { text: string };
 export type LandingVideo = { enabled: boolean; url: string };
 
 const DEFAULTS = {
-  branding: { systemName: "Finnance", logoUrl: null, faviconUrl: null } as Branding,
+  branding: { systemName: "Finnance", logoUrl: null, faviconUrl: null, authorPhotoUrl: null } as Branding,
   login_texts: {
     headline: "Análise financeira completa para sua empresa",
     subheadline:
