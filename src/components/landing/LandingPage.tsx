@@ -17,6 +17,7 @@ import {
   Gauge,
   LineChart,
   Lock,
+  PlayCircle,
   Quote,
   ShieldCheck,
   Sparkles,
@@ -71,13 +72,13 @@ function Hero() {
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            to="/signup"
+          <a
+            href="#planos"
             className="group inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:shadow-primary/40"
           >
-            Começar gratuitamente
+            Criar Conta
             <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-          </Link>
+          </a>
           <a
             href="#como-funciona"
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-5 py-3 text-sm font-medium text-foreground transition hover:bg-card"
@@ -85,6 +86,7 @@ function Hero() {
             Ver como funciona
           </a>
         </div>
+
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
@@ -435,7 +437,39 @@ function MetricsBand() {
 /* ============================================================
    COMO FUNCIONA
    ============================================================ */
+function getYouTubeEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url.trim());
+    // youtu.be/<id>
+    if (u.hostname.includes("youtu.be")) {
+      const id = u.pathname.replace(/^\//, "").split("/")[0];
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    // youtube.com/embed/<id>
+    if (u.pathname.startsWith("/embed/")) {
+      return `https://www.youtube.com${u.pathname}`;
+    }
+    // youtube.com/watch?v=<id>
+    const v = u.searchParams.get("v");
+    if (v) return `https://www.youtube.com/embed/${v}`;
+    // youtube.com/shorts/<id>
+    if (u.pathname.startsWith("/shorts/")) {
+      const id = u.pathname.split("/")[2];
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function HowItWorks() {
+  const { landingVideo } = useBranding();
+  const [videoOpen, setVideoOpen] = useState(false);
+  const embedUrl = useMemo(() => getYouTubeEmbedUrl(landingVideo.url), [landingVideo.url]);
+  const showVideoBtn = landingVideo.enabled && !!embedUrl;
+
   const passos = [
     {
       n: "01",
@@ -476,7 +510,6 @@ function HowItWorks() {
         </div>
 
         <div className="relative mt-14">
-          {/* linha conectora desktop */}
           <div
             aria-hidden
             className="absolute left-0 right-0 top-[2.75rem] hidden h-px md:block"
@@ -503,10 +536,44 @@ function HowItWorks() {
             ))}
           </div>
         </div>
+
+        {showVideoBtn && (
+          <div className="mt-12 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setVideoOpen(true)}
+              className="group inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:shadow-primary/40"
+            >
+              <PlayCircle className="h-5 w-5" />
+              Assista ao Vídeo
+            </button>
+          </div>
+        )}
+
+        <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
+          <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black border-border/60">
+            <DialogHeader className="sr-only">
+              <DialogTitle>Como funciona</DialogTitle>
+              <DialogDescription>Vídeo demonstrativo</DialogDescription>
+            </DialogHeader>
+            <div className="relative aspect-video w-full">
+              {embedUrl && videoOpen && (
+                <iframe
+                  src={`${embedUrl}?autoplay=1&rel=0`}
+                  title="Como funciona"
+                  className="absolute inset-0 h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </section>
   );
 }
+
 
 /* ============================================================
    COMPARATIVO
@@ -1270,13 +1337,14 @@ function FinalCta() {
           Em menos de 15 minutos você tem um dashboard gráfico e +40 indicadores.
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            to="/signup"
+          <a
+            href="#planos"
             className="group inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-xl shadow-primary/30 transition hover:shadow-primary/50"
           >
-            Criar minha conta gratuita
+            Criar Conta
             <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-          </Link>
+          </a>
+
           <Link
             to="/login"
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-6 py-3.5 text-sm font-medium text-foreground transition hover:bg-card"
@@ -1356,13 +1424,14 @@ function Header() {
           >
             Entrar
           </Link>
-          <Link
-            to="/signup"
+          <a
+            href="#planos"
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           >
-            Começar
+            Criar Conta
             <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+          </a>
+
         </div>
       </div>
     </header>
@@ -1387,9 +1456,10 @@ function Footer() {
           <Link to="/login" className="transition hover:text-foreground">
             Entrar
           </Link>
-          <Link to="/signup" className="transition hover:text-foreground">
-            Criar conta
-          </Link>
+          <a href="#planos" className="transition hover:text-foreground">
+            Criar Conta
+          </a>
+
         </div>
       </div>
     </footer>

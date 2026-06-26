@@ -120,6 +120,8 @@ export function SystemTab() {
   const [login, setLogin] = useState({ headline: "", subheadline: "", cta: "Entrar" });
   const [footer, setFooter] = useState({ text: "" });
   const [tracking, setTracking] = useState({ head: "", body_start: "", body_end: "" });
+  const [landingVideo, setLandingVideo] = useState({ enabled: false, url: "" });
+
   const [notif, setNotif] = useState<NotifSettings | null>(null);
   const [testing, setTesting] = useState(false);
 
@@ -142,6 +144,11 @@ export function SystemTab() {
           const t = (s as any).tracking;
           setTracking({ head: t.head ?? "", body_start: t.body_start ?? "", body_end: t.body_end ?? "" });
         }
+        if ((s as any).landing_video) {
+          const v = (s as any).landing_video;
+          setLandingVideo({ enabled: Boolean(v.enabled), url: v.url ?? "" });
+        }
+
         setNotif(n);
       } finally { setLoading(false); }
     })();
@@ -155,6 +162,8 @@ export function SystemTab() {
         updateAppSetting({ data: { key: "login_texts", value: login } }),
         updateAppSetting({ data: { key: "footer", value: footer } }),
         updateAppSetting({ data: { key: "tracking", value: tracking } }),
+        updateAppSetting({ data: { key: "landing_video", value: landingVideo } }),
+
         notif ? updateNotifSettings({ data: notif }) : Promise.resolve(),
       ]);
       toast.success("Configurações salvas.");
@@ -385,6 +394,38 @@ export function SystemTab() {
           <p className="text-[11px] text-muted-foreground">Para scripts pesados/diferidos e fallback &lt;noscript&gt; do Meta Pixel.</p>
         </div>
       </section>
+
+      <section className="space-y-4 rounded-lg border border-border/60 bg-card p-4 lg:col-span-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold">Vídeo "Como Funciona" — Landing Page</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Exibe um botão <strong>"Assista ao Vídeo"</strong> abaixo dos cards da seção "Como funciona" na landing page.
+              Ao clicar, abre um lightbox com o vídeo do YouTube embebed.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-xs">
+            <Switch
+              checked={landingVideo.enabled}
+              onCheckedChange={(c) => setLandingVideo({ ...landingVideo, enabled: c })}
+            />
+            <span>{landingVideo.enabled ? "Ativo" : "Desativado"}</span>
+          </label>
+        </div>
+        <div className="space-y-1">
+          <Label>URL do vídeo (YouTube)</Label>
+          <Input
+            value={landingVideo.url}
+            onChange={(e) => setLandingVideo({ ...landingVideo, url: e.target.value })}
+            placeholder="https://www.youtube.com/watch?v=XXXXXXXXXXX"
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Cole o link completo do YouTube (watch, youtu.be ou /embed/). Controles padrão do player do YouTube.
+          </p>
+        </div>
+      </section>
+
+
 
       {notif && (
         <section className="space-y-4 rounded-lg border border-border/60 bg-card p-4 lg:col-span-2">
