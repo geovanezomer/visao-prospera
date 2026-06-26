@@ -1,9 +1,17 @@
 // ============================================================================
-// useBranding — hook que lê app_settings (branding/login_texts/footer) com SWR.
-// Defaults garantem que nada quebre antes do admin configurar.
+// useBranding — hook que lê app_settings (branding/login_texts/footer/vídeo)
+// com SWR + cache persistente em localStorage.
+//
+// Persistência: `initialData` lê de localStorage (escrita por requests
+// anteriores), então textos, logo, cores e demais personalizações aparecem
+// SEM flash do default, mesmo em cold start do client, navegação SPA ou
+// rotas sem loader. O write back é feito via React Query `onSuccess` em
+// QueryProvider central (vide src/start.tsx) e também aqui via useEffect.
 // ============================================================================
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getAppSettings } from "@/lib/admin/settings.functions";
+import { readSettingsCache, writeSettingsCache } from "@/lib/admin/settingsCache";
 
 export type Branding = {
   systemName: string;
@@ -35,7 +43,17 @@ export function useBranding() {
     queryKey: ["app_settings"],
     queryFn: () => getAppSettings(),
     staleTime: 5 * 60_000,
+    // initialData sincroniza com o cache localStorage da última visita,
+    // evitando o flash do default em qualquer cold start client-side.
+    initialData: readSettingsCache,
+    initialDataUpdatedAt: 0, // força refetch em background sem bloquear
   });
+
+  // Persiste em localStorage a cada novo payload bem-sucedido.
+  useEffect(() => {
+    if (data) writeSettingsCache(data);
+  }, [data]);
+
   return {
     isLoading,
     isReady: isFetched || data !== undefined,
@@ -56,5 +74,3 @@ export function useBranding() {
     } as LandingVideo,
   };
 }
-
-

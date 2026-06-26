@@ -10,6 +10,7 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getAppSettings } from "@/lib/admin/settings.functions";
+import { readSettingsCache, writeSettingsCache } from "@/lib/admin/settingsCache";
 
 function contrastForeground(hex: string): string {
   const h = (hex || "").replace("#", "");
@@ -26,7 +27,18 @@ export function BrandingApplier() {
     queryKey: ["app_settings"],
     queryFn: () => getAppSettings(),
     staleTime: 5 * 60_000,
+    // Cache localStorage como initialData — branding aparece imediatamente
+    // em qualquer navegação client-side, sem aguardar o fetch.
+    initialData: readSettingsCache,
+    initialDataUpdatedAt: 0,
   });
+
+  // Persiste cada novo payload em localStorage para o próximo cold start.
+  useEffect(() => {
+    if (data) writeSettingsCache(data);
+  }, [data]);
+
+
 
   // Favicon — substitui o href do <link rel="icon"> existente (SSR ou default).
   useEffect(() => {

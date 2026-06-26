@@ -128,17 +128,17 @@ function RunwayCard({ state }: { state: AppState }) {
             <AreaChart data={MESES.map((m, i) => ({ mes: m, Saldo: cf.saldoFinal[i] }))}>
               <defs>
                 <linearGradient id="grSaldo" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#5BA8F5" stopOpacity={0.6} />
-                  <stop offset="100%" stopColor="#5BA8F5" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.6} />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-              <XAxis dataKey="mes" stroke="#9ca3af" fontSize={11} />
-              <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
               <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => fmtBRL(v)} />
-              <ReferenceLine y={caixaMinimo} stroke="#FF6B6B" strokeDasharray="4 4" label={{ value: "Caixa mínimo", fill: "#FF6B6B", fontSize: 10, position: "insideTopRight" }} />
-              <ReferenceLine y={0} stroke="#9ca3af" />
-              <Area type="monotone" dataKey="Saldo" stroke="#5BA8F5" fill="url(#grSaldo)" strokeWidth={2} />
+              <ReferenceLine y={caixaMinimo} stroke="var(--destructive)" strokeDasharray="4 4" label={{ value: "Caixa mínimo", fill: "var(--destructive)", fontSize: 10, position: "insideTopRight" }} />
+              <ReferenceLine y={0} stroke="var(--muted-foreground)" />
+              <Area type="monotone" dataKey="Saldo" stroke="var(--primary)" fill="url(#grSaldo)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -272,13 +272,13 @@ function CronogramaDividas({ state }: { state: AppState }) {
       </div>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-          <XAxis dataKey="mes" stroke="#9ca3af" fontSize={11} />
-          <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
+          <YAxis stroke="var(--muted-foreground)" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
           <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => fmtBRL(v)} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
-          <Bar dataKey="Amortização" stackId="d" fill="#5BA8F5" />
-          <Bar dataKey="Juros" stackId="d" fill="#FF6B6B" />
+          <Bar dataKey="Amortização" stackId="d" fill="var(--primary)" />
+          <Bar dataKey="Juros" stackId="d" fill="var(--destructive)" />
         </BarChart>
       </ResponsiveContainer>
     </Card>
@@ -303,7 +303,7 @@ function ScoreSaude({ state }: { state: AppState }) {
     return norms.reduce((a, b) => a + b, 0) / norms.length;
   }, [ind]);
 
-  const cor = score >= 70 ? "#00E5A0" : score >= 40 ? "#F5B85B" : "#FF6B6B";
+  const cor = score >= 70 ? "var(--success)" : score >= 40 ? "#F5B85B" : "var(--destructive)";
   const conceito =
     score >= 80 ? "Excelente" : score >= 65 ? "Boa" : score >= 45 ? "Regular" : score >= 30 ? "Frágil" : "Crítica";
 
@@ -362,7 +362,7 @@ function Top5Despesas({ state }: { state: AppState }) {
     );
   }
 
-  const cores = ["#FF6B6B", "#F5B85B", "#C77DFF", "#5BA8F5", "#7DD3FC"];
+  const cores = ["var(--destructive)", "#F5B85B", "#C77DFF", "var(--primary)", "#7DD3FC"];
 
   return (
     <Card title="Top 5 Despesas — Onde o dinheiro vai">

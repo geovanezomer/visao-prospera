@@ -67,12 +67,12 @@ export function IndicatorsCharts({ state }: { state: AppState }) {
       <ChartCard title="Da receita ao lucro líquido (waterfall)">
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={waterfall}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-            <XAxis dataKey="name" stroke="#9ca3af" fontSize={11} />
-            <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={11} />
+            <YAxis stroke="var(--muted-foreground)" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
             <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} formatter={(v: number) => fmtBRL(v)} />
             <Bar dataKey="value">
-              {waterfall.map((d, i) => <Cell key={i} fill={d.value >= 0 ? "#00E5A0" : "#FF6B6B"} />)}
+              {waterfall.map((d, i) => <Cell key={i} fill={d.value >= 0 ? "var(--success)" : "var(--destructive)"} />)}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
