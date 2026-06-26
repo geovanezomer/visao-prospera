@@ -105,7 +105,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       const settings = await context.queryClient.ensureQueryData({
         queryKey: ["app_settings"],
         queryFn: () => getAppSettings(),
-        staleTime: 5 * 60_000,
+        staleTime: 60 * 60_000,
       });
       const branding = (settings as any)?.branding ?? {};
       return {
