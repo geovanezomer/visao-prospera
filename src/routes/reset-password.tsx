@@ -17,7 +17,6 @@ export const Route = createFileRoute("/reset-password")({
 function ResetPasswordPage() {
   const { updatePassword, session, hydrated } = useAuth();
   const navigate = useNavigate();
-  const { branding } = useBranding();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -59,16 +58,7 @@ function ResetPasswordPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex items-center gap-3">
-          <BrandedLogo
-            src={branding.logoUrl ?? logoAsset.url}
-            alt={branding.systemName}
-            recolor={branding.recolorLogo}
-            className="h-9 w-9 [&>svg]:h-9 [&>svg]:w-9"
-            imgProps={{ className: "h-9 w-9 rounded-md object-contain" }}
-          />
-          <p className="text-base font-semibold tracking-tight">{branding.systemName}</p>
-        </div>
+        <BrandHeader size="md" className="mb-8" />
 
         <h2 className="text-2xl font-semibold tracking-tight">Definir nova senha</h2>
         <p className="mt-1 text-sm text-muted-foreground">
