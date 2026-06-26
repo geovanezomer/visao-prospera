@@ -1114,6 +1114,7 @@ function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
     AUTORIDADE
    ============================================================ */
 function AuthorityBlock() {
+  const { branding } = useBranding();
   return (
     <section className="border-b border-border/50 bg-card/30 py-24">
       <div className="mx-auto max-w-5xl px-6">
@@ -1127,8 +1128,12 @@ function AuthorityBlock() {
               }}
             >
               <div className="text-center">
-                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-2 border-primary/40 bg-background text-2xl font-semibold text-primary">
-                  GZ
+                <div className="mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-2 border-primary/40 bg-background text-2xl font-semibold text-primary">
+                  {branding.authorPhotoUrl ? (
+                    <img src={branding.authorPhotoUrl} alt="Geovane Zomer" className="h-full w-full object-cover" />
+                  ) : (
+                    "GZ"
+                  )}
                 </div>
                 <div className="mt-4 text-sm font-semibold text-foreground">Geovane Zomer</div>
                 <div className="text-xs text-muted-foreground">Consultor Financeiro & Investimentos</div>
