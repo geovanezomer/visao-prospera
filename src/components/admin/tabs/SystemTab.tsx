@@ -151,6 +151,7 @@ export function SystemTab() {
       logo_url: s.branding.logo_url ?? "",
       favicon_url: s.branding.favicon_url ?? "",
       author_photo_url: s.branding.author_photo_url ?? "",
+      recolor_logo: Boolean(s.branding.recolor_logo),
       colors: {
         primary: s.branding.colors?.primary ?? DEFAULT_BRANDING.colors.primary,
         accent:  s.branding.colors?.accent  ?? DEFAULT_BRANDING.colors.accent,
