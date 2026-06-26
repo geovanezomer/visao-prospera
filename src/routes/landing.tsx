@@ -13,7 +13,9 @@ const CANONICAL = "https://visao-prospera.lovable.app/landing";
 export const Route = createFileRoute("/landing")({
   loader: async ({ context }) => {
     if (!isLandingEnabled()) return { plans: [] as any[] };
-    await context.queryClient.prefetchQuery({
+    // ensureQueryData hidrata o cache do React Query no SSR e em SPA nav,
+    // garantindo que useBranding() leia o valor real no 1º render.
+    await context.queryClient.ensureQueryData({
       queryKey: ["app_settings"],
       queryFn: () => getAppSettings(),
       staleTime: 5 * 60_000,

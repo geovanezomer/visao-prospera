@@ -13,8 +13,10 @@ export const Route = createFileRoute("/")({
   // Prefetch dos planos + branding no SSR — evita "flash" de logo/skeleton no cliente.
   loader: async ({ context }) => {
     if (!isLandingEnabled()) return { plans: [] as any[] };
-    // Prime do cache do React Query para o useBranding() já ler do cache no 1º render.
-    await context.queryClient.prefetchQuery({
+    // ensureQueryData garante que o cache do React Query seja populado
+    // tanto no SSR (dehydrated → hydrate no client) quanto em navegação SPA,
+    // eliminando o "flash" do branding default antes do real ser carregado.
+    await context.queryClient.ensureQueryData({
       queryKey: ["app_settings"],
       queryFn: () => getAppSettings(),
       staleTime: 5 * 60_000,
