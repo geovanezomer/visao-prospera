@@ -32,7 +32,7 @@ import {
   type MonthlyPoint,
 } from "@/lib/admin/dashboardCharts.functions";
 
-const PIE_COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899"];
+const PIE_COLORS = ["#10b981", "var(--primary)", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899"];
 const PERIODS = [6, 12, 24] as const;
 type Period = (typeof PERIODS)[number];
 
@@ -342,7 +342,7 @@ export function DashboardCharts() {
                   return [`${fmtNum(Number(v))} (${ratioPrev}% etapa anterior · ${ratioTop}% do topo)`, "Usuários"];
                 }}
               />
-              <Bar dataKey="value" name="Usuários" fill="#3b82f6" radius={[0, 6, 6, 0]} />
+              <Bar dataKey="value" name="Usuários" fill="var(--primary)" radius={[0, 6, 6, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Panel>
@@ -379,7 +379,7 @@ export function DashboardCharts() {
                 onClick={(e: any) => toggle(String(e.dataKey))}
               />
               {!hidden.newUsers && (
-                <Line type="monotone" dataKey="newUsers" name="Novos" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="newUsers" name="Novos" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
               )}
               {!hidden.activeUsers && (
                 <Line type="monotone" dataKey="activeUsers" name="Ativos" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
