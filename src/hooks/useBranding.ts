@@ -16,6 +16,7 @@ export type LoginTexts = {
   cta: string;
 };
 export type Footer = { text: string };
+export type LandingVideo = { enabled: boolean; url: string };
 
 const DEFAULTS = {
   branding: { systemName: "Finnance", logoUrl: null, faviconUrl: null } as Branding,
@@ -26,6 +27,7 @@ const DEFAULTS = {
     cta: "Entrar",
   } as LoginTexts,
   footer: { text: "Desenvolvido por GZ Consultoria Financeira & Investimentos" } as Footer,
+  landing_video: { enabled: false, url: "" } as LandingVideo,
 };
 
 export function useBranding() {
@@ -36,8 +38,6 @@ export function useBranding() {
   });
   return {
     isLoading,
-    // Pronto assim que houver dados em cache (hidratados do SSR ou ensureQueryData no loader)
-    // ou após o primeiro fetch concluído — evita "flash" de defaults em navegação SPA.
     isReady: isFetched || data !== undefined,
     branding: {
       systemName: data?.branding?.system_name ?? DEFAULTS.branding.systemName,
@@ -50,6 +50,11 @@ export function useBranding() {
       cta: data?.login_texts?.cta ?? DEFAULTS.login_texts.cta,
     } as LoginTexts,
     footer: { text: data?.footer?.text ?? DEFAULTS.footer.text } as Footer,
+    landingVideo: {
+      enabled: Boolean(data?.landing_video?.enabled),
+      url: (data?.landing_video?.url as string) ?? "",
+    } as LandingVideo,
   };
 }
+
 
