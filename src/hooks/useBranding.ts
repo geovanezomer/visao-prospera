@@ -17,6 +17,7 @@ export type Branding = {
   systemName: string;
   logoUrl: string | null;
   faviconUrl: string | null;
+  authorPhotoUrl: string | null;
 };
 export type LoginTexts = {
   headline: string;
