@@ -1318,7 +1318,10 @@ function Header() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
         <Link to="/landing" className="flex items-center gap-2">
           {branding.logoUrl ? (
-            <img src={branding.logoUrl} alt={branding.systemName} className="h-8 w-auto max-w-[160px] object-contain" />
+            <>
+              <img src={branding.logoUrl} alt={branding.systemName} className="h-8 w-auto max-w-[160px] object-contain" />
+              <span className="text-sm font-semibold tracking-tight text-foreground">{branding.systemName}</span>
+            </>
           ) : (
             <>
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
