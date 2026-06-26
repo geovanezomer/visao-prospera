@@ -18,7 +18,7 @@ export const Route = createFileRoute("/landing")({
     await context.queryClient.ensureQueryData({
       queryKey: ["app_settings"],
       queryFn: () => getAppSettings(),
-      staleTime: 5 * 60_000,
+      staleTime: 60 * 60_000,
     });
     try {
       const { plans } = await listPlansPublic();
