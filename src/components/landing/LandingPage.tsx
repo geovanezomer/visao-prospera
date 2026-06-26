@@ -71,13 +71,13 @@ function Hero() {
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            to="/signup"
+          <a
+            href="#planos"
             className="group inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:shadow-primary/40"
           >
-            Começar gratuitamente
+            Criar Conta
             <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-          </Link>
+          </a>
           <a
             href="#como-funciona"
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-5 py-3 text-sm font-medium text-foreground transition hover:bg-card"
@@ -85,6 +85,7 @@ function Hero() {
             Ver como funciona
           </a>
         </div>
+
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
