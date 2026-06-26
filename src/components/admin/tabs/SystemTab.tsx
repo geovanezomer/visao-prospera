@@ -162,6 +162,8 @@ export function SystemTab() {
         updateAppSetting({ data: { key: "login_texts", value: login } }),
         updateAppSetting({ data: { key: "footer", value: footer } }),
         updateAppSetting({ data: { key: "tracking", value: tracking } }),
+        updateAppSetting({ data: { key: "landing_video", value: landingVideo } }),
+
         notif ? updateNotifSettings({ data: notif }) : Promise.resolve(),
       ]);
       toast.success("Configurações salvas.");
