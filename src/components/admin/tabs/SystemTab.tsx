@@ -395,6 +395,38 @@ export function SystemTab() {
         </div>
       </section>
 
+      <section className="space-y-4 rounded-lg border border-border/60 bg-card p-4 lg:col-span-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold">Vídeo "Como Funciona" — Landing Page</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Exibe um botão <strong>"Assista ao Vídeo"</strong> abaixo dos cards da seção "Como funciona" na landing page.
+              Ao clicar, abre um lightbox com o vídeo do YouTube embebed.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-xs">
+            <Switch
+              checked={landingVideo.enabled}
+              onCheckedChange={(c) => setLandingVideo({ ...landingVideo, enabled: c })}
+            />
+            <span>{landingVideo.enabled ? "Ativo" : "Desativado"}</span>
+          </label>
+        </div>
+        <div className="space-y-1">
+          <Label>URL do vídeo (YouTube)</Label>
+          <Input
+            value={landingVideo.url}
+            onChange={(e) => setLandingVideo({ ...landingVideo, url: e.target.value })}
+            placeholder="https://www.youtube.com/watch?v=XXXXXXXXXXX"
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Cole o link completo do YouTube (watch, youtu.be ou /embed/). Controles padrão do player do YouTube.
+          </p>
+        </div>
+      </section>
+
+
+
       {notif && (
         <section className="space-y-4 rounded-lg border border-border/60 bg-card p-4 lg:col-span-2">
           <div className="flex items-center justify-between">
