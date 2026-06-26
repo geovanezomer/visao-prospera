@@ -406,6 +406,10 @@ function SimulaPro() {
 
             <footer className="border-t border-border/20 py-4 text-center text-[10px] text-muted-foreground">
               <p>© 2026 FinnancePRO | Desenvolvido por GZ Consultoria Financeira &amp; Investimentos</p>
+              <p className="mt-1 flex items-center justify-center gap-4">
+                <Link to="/termos" className="hover:text-foreground">Termos</Link>
+                <Link to="/privacidade" className="hover:text-foreground">Privacidade</Link>
+              </p>
             </footer>
           </SidebarInset>
 
