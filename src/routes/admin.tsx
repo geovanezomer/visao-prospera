@@ -25,8 +25,9 @@ import { FlagsTab } from "@/components/admin/tabs/FlagsTab";
 import { BroadcastsTab } from "@/components/admin/tabs/BroadcastsTab";
 import { PlansTab } from "@/components/admin/tabs/PlansTab";
 import { StatusTab } from "@/components/admin/tabs/StatusTab";
+import { LegalTab } from "@/components/admin/tabs/LegalTab";
 
-const TAB_KEYS = ["dashboard", "usuarios", "planos", "sistema", "emails", "broadcasts", "webhooks", "provider", "flags", "status", "auditoria"] as const;
+const TAB_KEYS = ["dashboard", "usuarios", "planos", "sistema", "emails", "broadcasts", "webhooks", "provider", "flags", "status", "auditoria", "legal"] as const;
 const searchSchema = z.object({
   tab: fallback(z.enum(TAB_KEYS), "dashboard").default("dashboard"),
 });
