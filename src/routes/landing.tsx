@@ -6,12 +6,18 @@ import { LandingPage } from "@/components/landing/LandingPage";
 import { isLandingEnabled } from "@/lib/featureFlags";
 import { faqPageJsonLd } from "@/lib/seo/faqs";
 import { listPlansPublic } from "@/lib/admin/plans.functions";
+import { getAppSettings } from "@/lib/admin/settings.functions";
 
 const CANONICAL = "https://visao-prospera.lovable.app/landing";
 
 export const Route = createFileRoute("/landing")({
-  loader: async () => {
+  loader: async ({ context }) => {
     if (!isLandingEnabled()) return { plans: [] as any[] };
+    await context.queryClient.prefetchQuery({
+      queryKey: ["app_settings"],
+      queryFn: () => getAppSettings(),
+      staleTime: 5 * 60_000,
+    });
     try {
       const { plans } = await listPlansPublic();
       return { plans };
@@ -19,6 +25,7 @@ export const Route = createFileRoute("/landing")({
       return { plans: [] as any[] };
     }
   },
+
   staleTime: 60_000,
   head: () => ({
     meta: [
