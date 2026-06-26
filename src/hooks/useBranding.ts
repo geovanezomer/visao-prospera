@@ -18,6 +18,8 @@ export type Branding = {
   logoUrl: string | null;
   faviconUrl: string | null;
   authorPhotoUrl: string | null;
+  /** Aplica a cor primária na logo (somente SVG). Configurado no admin. */
+  recolorLogo: boolean;
 };
 export type LoginTexts = {
   headline: string;
