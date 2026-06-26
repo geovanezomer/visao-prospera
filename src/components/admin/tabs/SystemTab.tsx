@@ -135,6 +135,7 @@ export function SystemTab() {
           system_name: s.branding.system_name ?? DEFAULT_BRANDING.system_name,
           logo_url: s.branding.logo_url ?? "",
           favicon_url: s.branding.favicon_url ?? "",
+          author_photo_url: s.branding.author_photo_url ?? "",
           colors: {
             primary: s.branding.colors?.primary ?? DEFAULT_BRANDING.colors.primary,
             accent:  s.branding.colors?.accent  ?? DEFAULT_BRANDING.colors.accent,
