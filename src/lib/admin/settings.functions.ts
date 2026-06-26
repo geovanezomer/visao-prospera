@@ -13,11 +13,11 @@ function assertAdmin(claims: any) {
   }
 }
 
-const KEYS = ["branding", "login_texts", "footer", "active_provider", "tracking"] as const;
+const KEYS = ["branding", "login_texts", "footer", "active_provider", "tracking", "legal"] as const;
 export type SettingKey = (typeof KEYS)[number];
 
-/** Leitura pública — só chaves seguras para anon (branding/login/footer/tracking). */
-const PUBLIC_KEYS = ["branding", "login_texts", "footer", "tracking"] as const;
+/** Leitura pública — só chaves seguras para anon (branding/login/footer/tracking/legal). */
+const PUBLIC_KEYS = ["branding", "login_texts", "footer", "tracking", "legal"] as const;
 export const getAppSettings = createServerFn({ method: "GET" }).handler(async () => {
   const { createClient } = await import("@supabase/supabase-js");
   const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
