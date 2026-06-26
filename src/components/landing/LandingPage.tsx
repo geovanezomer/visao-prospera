@@ -1310,14 +1310,22 @@ function SectionEyebrow({ children }: { children: React.ReactNode }) {
 }
 
 function Header() {
+  const { branding } = useBranding();
+  const initial = (branding.systemName || "F").charAt(0).toUpperCase();
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
         <Link to="/landing" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
-            F
-          </div>
-          <span className="text-sm font-semibold tracking-tight text-foreground">FinnancePRO</span>
+          {branding.logoUrl ? (
+            <img src={branding.logoUrl} alt={branding.systemName} className="h-8 w-auto max-w-[160px] object-contain" />
+          ) : (
+            <>
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
+                {initial}
+              </div>
+              <span className="text-sm font-semibold tracking-tight text-foreground">{branding.systemName}</span>
+            </>
+          )}
         </Link>
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
           <a href="#recursos" className="transition hover:text-foreground">
