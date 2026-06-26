@@ -8,9 +8,14 @@
 // (ex.: admin salva novas cores e invalida a query).
 // ============================================================================
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAppSettings } from "@/lib/admin/settings.functions";
-import { readSettingsCache, writeSettingsCache } from "@/lib/admin/settingsCache";
+import {
+  readSettingsCache,
+  writeSettingsCache,
+  SETTINGS_CACHE_KEY,
+  SETTINGS_CHANGE_EVENT,
+} from "@/lib/admin/settingsCache";
 
 function contrastForeground(hex: string): string {
   const h = (hex || "").replace("#", "");
@@ -23,6 +28,7 @@ function contrastForeground(hex: string): string {
 }
 
 export function BrandingApplier() {
+  const queryClient = useQueryClient();
   const { data } = useQuery({
     queryKey: ["app_settings"],
     queryFn: () => getAppSettings(),
@@ -37,6 +43,39 @@ export function BrandingApplier() {
   useEffect(() => {
     if (data) writeSettingsCache(data);
   }, [data]);
+
+  // Sincronização multi-aba: quando outra aba salva novas configurações
+  // (cores, textos, logo, vídeo, etc.), o evento `storage` dispara aqui
+  // e nós atualizamos o React Query cache — os effects abaixo reagem na
+  // sequência e re-pintam tema/favicon em tempo real, sem reload.
+  useEffect(() => {
+    const apply = (next: unknown) => {
+      if (next && typeof next === "object") {
+        queryClient.setQueryData(["app_settings"], next);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["app_settings"] });
+      }
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== SETTINGS_CACHE_KEY) return;
+      try {
+        apply(e.newValue ? JSON.parse(e.newValue) : null);
+      } catch {
+        /* ignore */
+      }
+    };
+    const onLocal = (e: Event) => {
+      apply((e as CustomEvent).detail);
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener(SETTINGS_CHANGE_EVENT, onLocal as EventListener);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(SETTINGS_CHANGE_EVENT, onLocal as EventListener);
+    };
+  }, [queryClient]);
+
+
 
 
 
