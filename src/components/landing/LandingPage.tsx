@@ -1337,13 +1337,14 @@ function FinalCta() {
           Em menos de 15 minutos você tem um dashboard gráfico e +40 indicadores.
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            to="/signup"
+          <a
+            href="#planos"
             className="group inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-xl shadow-primary/30 transition hover:shadow-primary/50"
           >
-            Criar minha conta gratuita
+            Criar Conta
             <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-          </Link>
+          </a>
+
           <Link
             to="/login"
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-6 py-3.5 text-sm font-medium text-foreground transition hover:bg-card"
