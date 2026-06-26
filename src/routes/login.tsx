@@ -44,6 +44,7 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const { user, hydrated, login } = useAuth();
+  const { branding, loginTexts, footer, isReady } = useBranding();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
