@@ -436,7 +436,39 @@ function MetricsBand() {
 /* ============================================================
    COMO FUNCIONA
    ============================================================ */
+function getYouTubeEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url.trim());
+    // youtu.be/<id>
+    if (u.hostname.includes("youtu.be")) {
+      const id = u.pathname.replace(/^\//, "").split("/")[0];
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    // youtube.com/embed/<id>
+    if (u.pathname.startsWith("/embed/")) {
+      return `https://www.youtube.com${u.pathname}`;
+    }
+    // youtube.com/watch?v=<id>
+    const v = u.searchParams.get("v");
+    if (v) return `https://www.youtube.com/embed/${v}`;
+    // youtube.com/shorts/<id>
+    if (u.pathname.startsWith("/shorts/")) {
+      const id = u.pathname.split("/")[2];
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function HowItWorks() {
+  const { landingVideo } = useBranding();
+  const [videoOpen, setVideoOpen] = useState(false);
+  const embedUrl = useMemo(() => getYouTubeEmbedUrl(landingVideo.url), [landingVideo.url]);
+  const showVideoBtn = landingVideo.enabled && !!embedUrl;
+
   const passos = [
     {
       n: "01",
@@ -477,7 +509,6 @@ function HowItWorks() {
         </div>
 
         <div className="relative mt-14">
-          {/* linha conectora desktop */}
           <div
             aria-hidden
             className="absolute left-0 right-0 top-[2.75rem] hidden h-px md:block"
@@ -504,10 +535,44 @@ function HowItWorks() {
             ))}
           </div>
         </div>
+
+        {showVideoBtn && (
+          <div className="mt-12 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setVideoOpen(true)}
+              className="group inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:shadow-primary/40"
+            >
+              <PlayCircle className="h-5 w-5" />
+              Assista ao Vídeo
+            </button>
+          </div>
+        )}
+
+        <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
+          <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black border-border/60">
+            <DialogHeader className="sr-only">
+              <DialogTitle>Como funciona</DialogTitle>
+              <DialogDescription>Vídeo demonstrativo</DialogDescription>
+            </DialogHeader>
+            <div className="relative aspect-video w-full">
+              {embedUrl && videoOpen && (
+                <iframe
+                  src={`${embedUrl}?autoplay=1&rel=0`}
+                  title="Como funciona"
+                  className="absolute inset-0 h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </section>
   );
 }
+
 
 /* ============================================================
    COMPARATIVO
