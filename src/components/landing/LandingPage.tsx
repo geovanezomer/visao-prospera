@@ -17,6 +17,7 @@ import {
   Gauge,
   LineChart,
   Lock,
+  PlayCircle,
   Quote,
   ShieldCheck,
   Sparkles,
