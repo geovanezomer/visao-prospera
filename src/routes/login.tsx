@@ -4,6 +4,7 @@ import { ArrowRight, Lock, Mail } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { useAuth } from "@/lib/auth";
 import { useBranding } from "@/hooks/useBranding";
+import { BrandedLogo } from "@/components/BrandedLogo";
 import { getAppSettings } from "@/lib/admin/settings.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
