@@ -29,12 +29,14 @@ const DEFAULTS = {
 };
 
 export function useBranding() {
-  const { data } = useQuery({
+  const { data, isLoading, isFetched } = useQuery({
     queryKey: ["app_settings"],
     queryFn: () => getAppSettings(),
     staleTime: 5 * 60_000,
   });
   return {
+    isLoading,
+    isReady: isFetched,
     branding: {
       systemName: data?.branding?.system_name ?? DEFAULTS.branding.systemName,
       logoUrl: data?.branding?.logo_url ?? null,
@@ -48,3 +50,4 @@ export function useBranding() {
     footer: { text: data?.footer?.text ?? DEFAULTS.footer.text } as Footer,
   };
 }
+
