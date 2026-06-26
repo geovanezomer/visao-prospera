@@ -8,7 +8,7 @@ VPS com Docker, sem precisar de Node ou Bun no host.
 
 | Arquivo              | Função                                                |
 | -------------------- | ----------------------------------------------------- |
-| `Dockerfile`         | Build de produção multi-stage (gera servidor Node 20) |
+| `Dockerfile`         | Build de produção multi-stage (gera servidor Node 22) |
 | `Dockerfile.dev`     | Container de desenvolvimento com hot reload           |
 | `docker-compose.yml` | Serviços `app` (prod) e `app-dev` (dev)               |
 | `.dockerignore`      | Reduz o contexto enviado ao Docker daemon             |
@@ -73,7 +73,7 @@ docker compose down
    copia `.env` para que o Vite leia as `VITE_*`, define
    `NITRO_PRESET=node-server` (o template default é Cloudflare Workers, aqui
    forçamos Node) e roda `bun run build`. Saída: `.output/server/index.mjs`.
-2. **Stage `runner`** (`node:20-alpine`) — copia `.output/` + `.env`.
+2. **Stage `runner`** (`node:22-alpine`) — copia `.output/` + `.env`.
    Sem `node_modules` extra. Imagem final ~150 MB.
 
 ---
@@ -166,5 +166,5 @@ O `.env` não estava presente no build. Confirme `test -f .env` antes do
 Mude o mapeamento em `docker-compose.yml` para `"8080:3000"`.
 
 **Imagem muito grande**
-Já usa `node:20-alpine` (~50 MB base) + `.output/` (~80–100 MB). Para enxugar,
+Já usa `node:22-alpine` (~50 MB base) + `.output/` (~80–100 MB). Para enxugar,
 troque a base por `gcr.io/distroless/nodejs20`.
