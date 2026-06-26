@@ -37,7 +37,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-
 /* ============================================================
    HERO
    ============================================================ */
@@ -87,7 +86,6 @@ function Hero() {
           </a>
         </div>
 
-
         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <ShieldCheck className="h-4 w-4 text-primary" />
@@ -99,7 +97,7 @@ function Hero() {
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Zap className="h-4 w-4 text-primary" />
-            Sem cartão de crédito
+            Análises em tempo real
           </span>
         </div>
       </div>
@@ -121,7 +119,7 @@ function Hero() {
               <div className="text-xs text-muted-foreground">calculados automaticamente</div>
             </div>
             <div className="text-center sm:text-left">
-              <div className="text-5xl font-semibold tracking-tight text-primary">5 min</div>
+              <div className="text-5xl font-semibold tracking-tight text-primary">15 min</div>
               <div className="mt-2 text-sm font-semibold text-foreground">Primeira análise</div>
               <div className="text-xs text-muted-foreground">do cadastro ao diagnóstico</div>
             </div>
@@ -149,7 +147,7 @@ function AudienceStrip() {
   const personas = [
     {
       icon: Building2,
-      title: "Empresário & Sócio",
+      title: "Empresário",
       desc: "Entenda seu negócio sem depender de jargão. Saiba se está ganhando, perdendo e por quê — em linguagem clara.",
     },
     {
@@ -211,11 +209,11 @@ function ProblemAgitation() {
   const dores = [
     {
       dor: "Planilhas frágeis que quebram",
-      consequencia: "Decisão tomada sobre número errado.",
+      consequencia: "Decisão tomada sobre dados inconsistentes.",
     },
     {
       dor: "Reforma Tributária mudando o jogo",
-      consequencia: "Preço e margem desatualizados a cada trimestre.",
+      consequencia: "Margens desatualizados a cada trimestre.",
     },
     {
       dor: "Indicadores espalhados em 10 abas",
@@ -254,7 +252,7 @@ function ProblemAgitation() {
           </h2>
           <p className="mt-4 text-base text-muted-foreground">
             Toda decisão financeira mal calculada custa caro. E quase nunca aparece no extrato — aparece no resultado do
-            próximo trimestre.
+            próximo trimestre da empresa.
           </p>
         </div>
 
@@ -345,12 +343,12 @@ function FeatureGrid() {
     {
       icon: TrendingUp,
       t: "+40 Indicadores",
-      d: "EBITDA, ROIC, WACC, liquidez, endividamento, cobertura — automáticos.",
+      d: "EBITDA, ROIC, WACC, liquidez e outras dezenas — automáticos.",
     },
     {
       icon: BarChart3,
-      t: "Valuation DCF",
-      d: "Fluxo de caixa descontado + múltiplos. Sensibilidade integrada.",
+      t: "I.A Embarcada",
+      d: "Inteligência artificial treinada para análise empresarial.",
     },
     {
       icon: Gauge,
@@ -359,8 +357,8 @@ function FeatureGrid() {
     },
     {
       icon: ShieldCheck,
-      t: "Split Payment",
-      d: "Impacto do novo modelo de recolhimento CBS/IBS no caixa diário.",
+      t: "Reforma Tributária",
+      d: "Impacto do Split Payment e do CBS/IBS no caixa da empresa.",
     },
     {
       icon: LineChart,
@@ -487,7 +485,7 @@ function HowItWorks() {
       n: "03",
       icon: Brain,
       t: "Receba o diagnóstico",
-      d: "A IA explica o que está acontecendo, o porquê e quais alavancas mexer para melhorar.",
+      d: "A IA explica o que está acontecendo e quais alavancas mexer para melhorar.",
     },
     {
       n: "04",
@@ -573,7 +571,6 @@ function HowItWorks() {
     </section>
   );
 }
-
 
 /* ============================================================
    COMPARATIVO
@@ -696,32 +693,26 @@ function mapPlan(p: RawPlan) {
     nome: p.name,
     descricao: p.description ?? "",
     preco: (priceCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
-    periodo:
-      p.interval === "year"
-        ? "/ano"
-        : p.interval === "one_time" || p.interval === "lifetime"
-        ? ""
-        : "/mês",
+    periodo: p.interval === "year" ? "/ano" : p.interval === "one_time" || p.interval === "lifetime" ? "" : "/mês",
     badge: p.slug === "pro" ? { texto: "Mais Popular", icone: Zap } : null,
     destaque: p.slug === "pro",
     recursos: Array.isArray(p.features) ? (p.features as string[]) : [],
     cta: `Assinar ${p.name}`,
     planId: p.slug as string,
-    upsell: upsellEnabled && upsellPriceCents > 0
-      ? {
-          name: (p.upsell_name ?? p.upsellName) ?? "Adicional",
-          description: (p.upsell_description ?? p.upsellDescription) ?? "",
-          priceCents: upsellPriceCents,
-        }
-      : null,
+    upsell:
+      upsellEnabled && upsellPriceCents > 0
+        ? {
+            name: p.upsell_name ?? p.upsellName ?? "Adicional",
+            description: p.upsell_description ?? p.upsellDescription ?? "",
+            priceCents: upsellPriceCents,
+          }
+        : null,
   };
 }
 
 function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
   type Plano = ReturnType<typeof mapPlan>;
-  const initialMapped: Plano[] | null = initialPlans
-    ? initialPlans.map((p) => mapPlan(p as RawPlan))
-    : null;
+  const initialMapped: Plano[] | null = initialPlans ? initialPlans.map((p) => mapPlan(p as RawPlan)) : null;
   const [planos, setPlanos] = useState<Plano[] | null>(initialMapped);
   // Estado: upsell selecionado por planId.
   const [upsellSel, setUpsellSel] = useState<Record<string, boolean>>({});
@@ -733,21 +724,26 @@ function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
         const { supabase } = await import("@/integrations/supabase/client");
         const { data, error } = await supabase
           .from("plans")
-          .select("slug,name,description,price_cents,interval,features,sort_order,upsell_enabled,upsell_name,upsell_description,upsell_price_cents")
+          .select(
+            "slug,name,description,price_cents,interval,features,sort_order,upsell_enabled,upsell_name,upsell_description,upsell_price_cents",
+          )
           .eq("active", true)
           .order("sort_order", { ascending: true });
         if (cancelled) return;
-        if (error || !data) { setPlanos([]); return; }
+        if (error || !data) {
+          setPlanos([]);
+          return;
+        }
         setPlanos(data.map((p) => mapPlan(p as RawPlan)));
       } catch {
         if (!cancelled) setPlanos([]);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-
 
   // Estado do modal de confirmação de checkout.
   // Mostra ao usuário o resumo (plano + upsell + total) ANTES de
@@ -756,7 +752,6 @@ function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   // CPF/telefone deixaram de ser pedidos no lightbox — o provedor coleta no checkout.
-
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<{ message: string; code?: string; field?: string } | null>(null);
@@ -776,15 +771,12 @@ function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
     provider_error: "O provedor de pagamento recusou a operação. Tente novamente.",
   };
 
-  const planoConfirm = useMemo(
-    () => planos?.find((p) => p.planId === confirmFor) ?? null,
-    [confirmFor, planos],
-  );
+  const planoConfirm = useMemo(() => planos?.find((p) => p.planId === confirmFor) ?? null, [confirmFor, planos]);
   const upsellLigado = !!(planoConfirm && upsellSel[planoConfirm.planId] && planoConfirm.upsell);
   const totalReais = useMemo(() => {
     if (!planoConfirm) return 0;
     const base = Number(planoConfirm.preco.replace(/\./g, "").replace(",", ".")) || 0;
-    const add = upsellLigado ? (planoConfirm.upsell!.priceCents / 100) : 0;
+    const add = upsellLigado ? planoConfirm.upsell!.priceCents / 100 : 0;
     return base + add;
   }, [planoConfirm, upsellLigado]);
 
@@ -843,18 +835,17 @@ function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
     }
   }
 
-
-
   return (
     <section id="planos" className="scroll-mt-20 border-b border-border/50 py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center">
           <SectionEyebrow>Planos</SectionEyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Dois caminhos. O mesmo destino:
+            Dois caminhos.
+            <span className="text-primary">O mesmo destino.</span>.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-            <strong className="text-foreground">controle absoluto</strong> sobre seu dinheiro.
+            <strong className="text-foreground">Controle absoluto</strong> sobre os resultados.
           </p>
         </div>
 
@@ -878,101 +869,105 @@ function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
                 </div>
               ))
             : planos.map((plano) => (
-            <div
-              key={plano.nome}
-              className={`relative flex flex-col rounded-2xl border p-7 transition ${
-                plano.destaque ? "border-primary/40 bg-card shadow-2xl shadow-primary/10" : "border-border bg-card/60"
-              }`}
-            >
-              {/* Badge */}
-              {plano.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-                      plano.destaque
-                        ? "bg-primary text-primary-foreground"
-                        : "border border-border bg-background text-foreground"
-                    }`}
-                  >
-                    <plano.badge.icone className="h-3.5 w-3.5" />
-                    {plano.badge.texto}
-                  </span>
-                </div>
-              )}
-
-              {/* Topo */}
-              <div className="mt-2">
-                <h3 className="text-lg font-semibold text-foreground">{plano.nome}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{plano.descricao}</p>
-              </div>
-
-              {/* Preço */}
-              <div className="mt-5 flex items-baseline gap-1">
-                <span className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">R$ {plano.preco}</span>
-                <span className="text-sm text-muted-foreground">{plano.periodo}</span>
-              </div>
-
-              {/* Recursos */}
-              <ul className="mt-6 flex-1 space-y-3">
-                {plano.recursos.map((r) => (
-                  <li key={r} className="flex items-start gap-2.5 text-sm text-foreground/90">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <span>{r}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Upsell opcional */}
-              {plano.upsell && (
-                <label
-                  className="mt-6 flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 bg-background/40 p-3 text-sm transition hover:border-primary/40"
-                >
-                  <input
-                    type="checkbox"
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
-                    checked={!!upsellSel[plano.planId]}
-                    onChange={(e) =>
-                      setUpsellSel((s) => ({ ...s, [plano.planId]: e.target.checked }))
-                    }
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-foreground">+ {plano.upsell.name}</span>
-                      <span className="text-sm font-semibold text-primary">
-                        + R$ {(plano.upsell.priceCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                    {plano.upsell.description && (
-                      <p className="mt-0.5 text-xs text-muted-foreground">{plano.upsell.description}</p>
-                    )}
-                  </div>
-                </label>
-              )}
-
-              {/* CTA */}
-              <div className="mt-8">
-                <button
-                  type="button"
-                  onClick={() => openConfirm(plano.planId)}
-                  className={`group flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition ${
+                <div
+                  key={plano.nome}
+                  className={`relative flex flex-col rounded-2xl border p-7 transition ${
                     plano.destaque
-                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40"
-                      : "border border-border bg-background/60 text-foreground hover:bg-card"
+                      ? "border-primary/40 bg-card shadow-2xl shadow-primary/10"
+                      : "border-border bg-card/60"
                   }`}
                 >
-                  {plano.cta}
-                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-                </button>
-              </div>
-            </div>
-          ))}
+                  {/* Badge */}
+                  {plano.badge && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
+                          plano.destaque
+                            ? "bg-primary text-primary-foreground"
+                            : "border border-border bg-background text-foreground"
+                        }`}
+                      >
+                        <plano.badge.icone className="h-3.5 w-3.5" />
+                        {plano.badge.texto}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Topo */}
+                  <div className="mt-2">
+                    <h3 className="text-lg font-semibold text-foreground">{plano.nome}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{plano.descricao}</p>
+                  </div>
+
+                  {/* Preço */}
+                  <div className="mt-5 flex items-baseline gap-1">
+                    <span className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                      R$ {plano.preco}
+                    </span>
+                    <span className="text-sm text-muted-foreground">{plano.periodo}</span>
+                  </div>
+
+                  {/* Recursos */}
+                  <ul className="mt-6 flex-1 space-y-3">
+                    {plano.recursos.map((r) => (
+                      <li key={r} className="flex items-start gap-2.5 text-sm text-foreground/90">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span>{r}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Upsell opcional */}
+                  {plano.upsell && (
+                    <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 bg-background/40 p-3 text-sm transition hover:border-primary/40">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                        checked={!!upsellSel[plano.planId]}
+                        onChange={(e) => setUpsellSel((s) => ({ ...s, [plano.planId]: e.target.checked }))}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold text-foreground">+ {plano.upsell.name}</span>
+                          <span className="text-sm font-semibold text-primary">
+                            + R${" "}
+                            {(plano.upsell.priceCents / 100).toLocaleString("pt-BR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                        </div>
+                        {plano.upsell.description && (
+                          <p className="mt-0.5 text-xs text-muted-foreground">{plano.upsell.description}</p>
+                        )}
+                      </div>
+                    </label>
+                  )}
+
+                  {/* CTA */}
+                  <div className="mt-8">
+                    <button
+                      type="button"
+                      onClick={() => openConfirm(plano.planId)}
+                      className={`group flex w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition ${
+                        plano.destaque
+                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40"
+                          : "border border-border bg-background/60 text-foreground hover:bg-card"
+                      }`}
+                    >
+                      {plano.cta}
+                      <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
         </div>
 
         {/* Rodapé de segurança */}
         <div className="mt-10 text-center text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <Lock className="h-3.5 w-3.5" />
-            Pagamento 100% seguro · 7 dias de garantia incondicional · Nota fiscal automática
+            Pagamento 100% seguro | 7 dias de garantia incondicional
           </span>
         </div>
       </div>
@@ -987,9 +982,7 @@ function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Confirmar assinatura</DialogTitle>
-            <DialogDescription>
-              Revise os itens abaixo antes de seguir para o pagamento.
-            </DialogDescription>
+            <DialogDescription>Revise os itens abaixo antes de seguir para o pagamento.</DialogDescription>
           </DialogHeader>
 
           {planoConfirm && (
@@ -998,15 +991,11 @@ function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="font-semibold text-foreground">Plano {planoConfirm.nome}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Cobrança {planoConfirm.periodo || "única"}
-                    </div>
+                    <div className="text-xs text-muted-foreground">Cobrança {planoConfirm.periodo || "única"}</div>
                   </div>
                   <div className="text-right font-semibold text-foreground">
                     R$ {planoConfirm.preco}
-                    <div className="text-[11px] font-normal text-muted-foreground">
-                      {planoConfirm.periodo}
-                    </div>
+                    <div className="text-[11px] font-normal text-muted-foreground">{planoConfirm.periodo}</div>
                   </div>
                 </div>
 
@@ -1017,7 +1006,11 @@ function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
                       <div className="text-xs text-muted-foreground">Adicional único</div>
                     </div>
                     <div className="text-right font-semibold text-primary">
-                      + R$ {(planoConfirm.upsell.priceCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      + R${" "}
+                      {(planoConfirm.upsell.priceCents / 100).toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </div>
                   </div>
                 )}
@@ -1062,30 +1055,33 @@ function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
                     disabled={submitting}
                   />
                 </div>
-
               </div>
               <p className="text-[11px] text-muted-foreground">
-                O CPF e demais dados de cobrança serão solicitados na próxima etapa, diretamente na página segura do provedor de pagamento (Asaas/Stripe).
+                Demais dados serão solicitados na próxima etapa, diretamente no checkout seguro do provedor de
+                pagamento.
               </p>
-
-
 
               {error && (
                 <div className="space-y-1 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                   <div className="flex items-start gap-2">
                     {error.field && (
                       <span className="shrink-0 rounded bg-destructive/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
-                        {({ upsell: "Adicional", email: "E-mail", name: "Nome", cpf: "CPF", phone: "Telefone" } as Record<string,string>)[error.field] ?? error.field}
+                        {(
+                          {
+                            upsell: "Adicional",
+                            email: "E-mail",
+                            name: "Nome",
+                            cpf: "CPF",
+                            phone: "Telefone",
+                          } as Record<string, string>
+                        )[error.field] ?? error.field}
                       </span>
                     )}
                     <span className="flex-1">{error.message}</span>
                   </div>
-                  {error.code && (
-                    <div className="text-[10px] opacity-70">cód.: {error.code}</div>
-                  )}
+                  {error.code && <div className="text-[10px] opacity-70">cód.: {error.code}</div>}
                 </div>
               )}
-
             </div>
           )}
 
@@ -1113,7 +1109,6 @@ function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
     </section>
   );
 }
-
 
 /* ============================================================
     AUTORIDADE
@@ -1146,19 +1141,19 @@ function AuthorityBlock() {
             <div className="p-10">
               <SectionEyebrow>Construído por quem vive isso</SectionEyebrow>
               <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                Engenharia financeira de banca — feita para a realidade da PME brasileira.
+                Engenharia financeira — adaptada para a realidade da PME brasileira.
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
                 O FinnancePRO nasceu dentro da{" "}
                 <strong className="text-foreground">GZ Consultoria Financeira & Investimentos</strong> para resolver o
-                que toda planilha falha: dar a empresários, consultores e gestores a mesma profundidade de análise que
-                grandes corporações têm — sem o custo de um time de CFO.
+                que toda planilha falha: dar a empresários, consultores e BPOs Financeiros a mesma profundidade de
+                análise que grandes corporações têm — sem o custo de um time de CFO.
               </p>
               <ul className="mt-6 space-y-2 text-sm text-foreground/90">
                 {[
                   "Engine financeira versionada e com updates constantes",
                   "Cálculos compatíveis com LC 214/2025 (CBS / IBS)",
-                  "IA com prompts e skills pré-configuradas",
+                  "IA treinada em finanças empresariais com skills configuradas",
                   "Pensado para quem decide — não só para quem analisa",
                 ].map((i) => (
                   <li key={i} className="flex items-start gap-2">
@@ -1242,18 +1237,18 @@ function FaqAccordion() {
   const faqs = [
     {
       q: "Preciso ser da área financeira para usar?",
-      a: "Não. O FinnancePRO foi desenhado para traduzir números em decisão — qualquer empresário, consultor ou gestor consegue operar com fluxo guiado e diagnóstico em linguagem clara.",
+      a: "Não. O FinnancePRO foi desenhado para traduzir números em decisão — qualquer empresário, consultor ou profissional consegue operar com fluxo guiado e diagnóstico em linguagem clara.",
     },
     {
       q: "Preciso instalar alguma coisa?",
-      a: "Não. O FinnancePRO roda 100% no navegador. Login, insere os dados e começa a analisar sozinho ou com ajuda da I.A.",
+      a: "Não. O FinnancePRO roda 100% no navegador. Login, insere os dados e começa a analisar sozinho ou com ajuda da I.A. literalmente conversando com os dados obtidos.",
     },
     {
       q: "Meus dados ficam seguros?",
       a: "Sim. O Sitema usa IndexeDB, os dados ficam no seu Navegador. Podendo ser, opcionalmente, armazenados na nuvem com backup através de arquivo baixável. Você controla o que sai do seu computador.",
     },
     {
-      q: "A Reforma Tributária está realmente atualizada?",
+      q: "O sistema está preparado para analisar a Reforma Tributária?",
       a: "Sim. O motor tributário acompanha a LC 214/2025 e as fases de transição CBS/IBS (2026-2033), incluindo Split Payment.",
     },
     {
@@ -1261,12 +1256,12 @@ function FaqAccordion() {
       a: "Sim. Você cria quantos cenários e empresas quiser, cada um com seu próprio conjunto de dados, relatórios e link de compartilhamento. Basta salvar um arquivo por cliente.",
     },
     {
-      q: "Como funciona a IA?",
-      a: "Traga sua chave da OpenAI ou Claude para gerar um diagnóstico executivo a partir dos números reais da empresa simulada. Você revisa, ajusta e entrega — com prompt versionado para auditoria.",
+      q: "Como funcionam as análises I.A. assistida?",
+      a: "Traga sua chave da OpenAI ou Claude para gerar um diagnóstico executivo a partir dos números reais da empresa simulada. A I.A. faz as análises, você revisa, ajusta e entrega — com prompt versionado para auditoria.",
     },
     {
       q: "Posso cancelar quando quiser?",
-      a: "Sim. Sem fidelidade, sem multa. Você cancela direto da sua conta.",
+      a: "Sim. Sem fidelidade, sem multa. Você cancela direto da sua conta, quando quiser.",
     },
   ];
   const [open, setOpen] = useState<number | null>(0);
@@ -1334,7 +1329,7 @@ function FinalCta() {
           <span className="text-primary">Comece a tomar decisões.</span>
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
-          Em menos de 15 minutos você tem um dashboard gráfico e +40 indicadores.
+          Em menos de 15 minutos você tem uma análise 360º de uma empresa.
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <a
@@ -1363,7 +1358,7 @@ function FinalCta() {
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Zap className="h-4 w-4 text-primary" />
-            Sem cartão de crédito
+            Análises em tempo real
           </span>
         </div>
       </div>
@@ -1390,7 +1385,11 @@ function Header() {
             <div className="h-8 w-40 animate-pulse rounded-md bg-muted/50" aria-hidden />
           ) : branding.logoUrl ? (
             <>
-              <img src={branding.logoUrl} alt={branding.systemName} className="h-8 w-auto max-w-[160px] object-contain" />
+              <img
+                src={branding.logoUrl}
+                alt={branding.systemName}
+                className="h-8 w-auto max-w-[160px] object-contain"
+              />
               <span className="text-sm font-semibold tracking-tight text-foreground">{branding.systemName}</span>
             </>
           ) : (
@@ -1431,7 +1430,6 @@ function Header() {
             Criar Conta
             <ArrowRight className="h-3.5 w-3.5" />
           </a>
-
         </div>
       </div>
     </header>
@@ -1459,7 +1457,6 @@ function Footer() {
           <a href="#planos" className="transition hover:text-foreground">
             Criar Conta
           </a>
-
         </div>
       </div>
     </footer>
