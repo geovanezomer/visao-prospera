@@ -62,6 +62,7 @@ export function useBranding() {
       systemName: data?.branding?.system_name ?? DEFAULTS.branding.systemName,
       logoUrl: data?.branding?.logo_url ?? null,
       faviconUrl: data?.branding?.favicon_url ?? null,
+      authorPhotoUrl: data?.branding?.author_photo_url ?? null,
     } as Branding,
     loginTexts: {
       headline: data?.login_texts?.headline ?? DEFAULTS.login_texts.headline,
