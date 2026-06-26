@@ -1,5 +1,5 @@
 # ============================================================
-# GZ FinancePRO — Desenvolvimento com hot reload
+# FinancePRO — Desenvolvimento com hot reload
 # Use junto com docker-compose.yml (service: app-dev)
 # ============================================================
 FROM oven/bun:1-alpine
@@ -10,11 +10,13 @@ WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
 RUN bun install --frozen-lockfile
 
-# Código será montado via volume — copia inicial para o caso de subir sem volume
+# Código será montado via volume — copia inicial para o caso
+# de subir sem volume.
 COPY . .
 
 ENV HOST=0.0.0.0
 ENV PORT=5173
+ENV NODE_ENV=development
 
 EXPOSE 5173
 
