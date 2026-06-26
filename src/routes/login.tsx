@@ -99,25 +99,7 @@ function LoginPage() {
 
       <section className="flex items-center justify-center px-6 py-12 lg:px-12">
         <div className="w-full max-w-sm">
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            {!isReady ? (
-              <>
-                <div className="h-9 w-9 animate-pulse rounded-md bg-muted" />
-                <div className="h-4 w-28 animate-pulse rounded bg-muted" />
-              </>
-            ) : (
-              <>
-                <BrandedLogo
-                  src={branding.logoUrl ?? logoAsset.url}
-                  alt={branding.systemName}
-                  recolor={branding.recolorLogo}
-                  className="h-9 w-9 [&>svg]:h-9 [&>svg]:w-9"
-                  imgProps={{ className: "h-9 w-9 rounded-md object-contain" }}
-                />
-                <p className="text-lg font-semibold tracking-tight">{branding.systemName}</p>
-              </>
-            )}
-          </div>
+          <BrandHeader size="md" className="mb-8 lg:hidden" />
 
           <h2 className="text-2xl font-semibold tracking-tight">Bem-vindo de volta</h2>
           <p className="mt-1 text-sm text-muted-foreground">Acesse sua plataforma FinnancePRO.</p>
