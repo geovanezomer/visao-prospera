@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -30,6 +31,11 @@ import { Route as ApiPublicHooksReconcileCheckoutIntentsRouteImport } from './ro
 import { Route as ApiPublicPaymentsWebhookStripeRouteImport } from './routes/api/public/payments/webhook.stripe'
 import { Route as ApiPublicPaymentsWebhookAsaasRouteImport } from './routes/api/public/payments/webhook.asaas'
 
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -148,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/termos': typeof TermosRoute
   '/api/feedback': typeof ApiFeedbackRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/checkout/sucesso': typeof CheckoutSucessoRoute
@@ -170,6 +177,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/termos': typeof TermosRoute
   '/api/feedback': typeof ApiFeedbackRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/checkout/sucesso': typeof CheckoutSucessoRoute
@@ -193,6 +201,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/termos': typeof TermosRoute
   '/api/feedback': typeof ApiFeedbackRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/checkout/sucesso': typeof CheckoutSucessoRoute
@@ -217,6 +226,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/sitemap.xml'
+    | '/termos'
     | '/api/feedback'
     | '/auth/callback'
     | '/checkout/sucesso'
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/sitemap.xml'
+    | '/termos'
     | '/api/feedback'
     | '/auth/callback'
     | '/checkout/sucesso'
@@ -261,6 +272,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/sitemap.xml'
+    | '/termos'
     | '/api/feedback'
     | '/auth/callback'
     | '/checkout/sucesso'
@@ -284,6 +296,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  TermosRoute: typeof TermosRoute
   ApiFeedbackRoute: typeof ApiFeedbackRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   CheckoutSucessoRoute: typeof CheckoutSucessoRoute
@@ -299,6 +312,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -452,6 +472,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  TermosRoute: TermosRoute,
   ApiFeedbackRoute: ApiFeedbackRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   CheckoutSucessoRoute: CheckoutSucessoRoute,
