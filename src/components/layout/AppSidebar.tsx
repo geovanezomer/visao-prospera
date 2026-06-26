@@ -20,6 +20,8 @@ import {
   Calculator,
 } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
+import { BrandedLogo } from "@/components/BrandedLogo";
+import { useBranding } from "@/hooks/useBranding";
 
 import { NAV_ITEMS } from "./nav-config";
 import { TabKey } from "@/engines/finance/types";
@@ -48,6 +50,7 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const { user, logout } = useAuth();
   const { setOpenMobile } = useSidebar();
+  const { branding, isReady } = useBranding();
 
   useEffect(() => {
     const handleClose = () => setOpenMobile(false);
@@ -61,18 +64,33 @@ export function AppSidebar({
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="border-b border-sidebar-border/50 py-4">
         <div className="flex items-center gap-3 px-2">
-          <img
-            src={logoAsset.url}
-            alt="FinnancePRO"
-            className="h-8 w-8 shrink-0 rounded-md object-contain"
-          />
+          {isReady ? (
+            <BrandedLogo
+              src={branding.logoUrl ?? logoAsset.url}
+              alt={branding.systemName}
+              recolor={branding.recolorLogo}
+              className="h-8 w-8 shrink-0 rounded-md object-contain [&>svg]:h-8 [&>svg]:w-8"
+              imgProps={{ className: "h-8 w-8 shrink-0 rounded-md object-contain" }}
+            />
+          ) : (
+            <div className="h-8 w-8 shrink-0 animate-pulse rounded-md bg-sidebar-accent" />
+          )}
           <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-bold leading-none tracking-tight">
-              FINNANCE<span className="text-primary">PRO</span>
-            </span>
-            <span className="mt-1 text-[9px] uppercase tracking-widest text-muted-foreground/80 truncate">
-              Auditoria & Gestão
-            </span>
+            {isReady ? (
+              <>
+                <span className="truncate text-base font-bold leading-none tracking-tight">
+                  {branding.systemName}
+                </span>
+                <span className="mt-1 truncate text-[10px] uppercase tracking-widest text-muted-foreground/80">
+                  Auditoria & Gestão
+                </span>
+              </>
+            ) : (
+              <>
+                <div className="h-4 w-28 animate-pulse rounded bg-sidebar-accent" />
+                <div className="mt-1 h-2.5 w-20 animate-pulse rounded bg-sidebar-accent" />
+              </>
+            )}
           </div>
         </div>
       </SidebarHeader>
