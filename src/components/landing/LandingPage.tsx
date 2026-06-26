@@ -5,6 +5,7 @@
 import { Link } from "@tanstack/react-router";
 import { useBranding } from "@/hooks/useBranding";
 import { BrandedLogo } from "@/components/BrandedLogo";
+import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import {
   ArrowRight,
   BarChart3,
