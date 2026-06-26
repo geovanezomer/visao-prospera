@@ -35,7 +35,7 @@ import { DashboardExtras } from "./DashboardExtras";
 import { WaccRoicMeter } from "@/components/sim/capital/WaccRoicMeter";
 import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
 
-const COLORS = ["#00E5A0", "#5BA8F5", "#F5B85B", "#C77DFF", "#FF6B6B", "#7DD3FC", "#FACC15"];
+const COLORS = ["var(--success)", "var(--primary)", "#F5B85B", "#C77DFF", "var(--destructive)", "#7DD3FC", "#FACC15"];
 
 const TOOLTIP_STYLE = {
   background: "var(--popover)",
@@ -66,8 +66,8 @@ function Gauge({
 }) {
   const clamped = Math.max(0, Math.min(value, max));
   const ratio = max > 0 ? clamped / max : 0;
-  const tone = good === "high" ? (ratio > 0.66 ? "#00E5A0" : ratio > 0.33 ? "#F5B85B" : "#FF6B6B")
-                                : (ratio < 0.33 ? "#00E5A0" : ratio < 0.66 ? "#F5B85B" : "#FF6B6B");
+  const tone = good === "high" ? (ratio > 0.66 ? "var(--success)" : ratio > 0.33 ? "#F5B85B" : "var(--destructive)")
+                                : (ratio < 0.33 ? "var(--success)" : ratio < 0.66 ? "#F5B85B" : "var(--destructive)");
   const data = [
     { name: "v", value: clamped, fill: tone },
     { name: "r", value: Math.max(0, max - clamped), fill: "var(--muted)" },
@@ -298,25 +298,25 @@ export function DashboardTab() {
           <ChartCard title="Receita Mensal × Margem Líquida (%)">
             <ResponsiveContainer width="100%" height={280}>
               <ComposedChart data={receitaMargem}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                <XAxis dataKey="mes" stroke="#9ca3af" fontSize={11} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
                 <YAxis
                   yAxisId="left"
-                  stroke="#9ca3af"
+                  stroke="var(--muted-foreground)"
                   fontSize={10}
                   tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
                 />
                 <YAxis
                   yAxisId="right"
                   orientation="right"
-                  stroke="#9ca3af"
+                  stroke="var(--muted-foreground)"
                   fontSize={10}
                   tickFormatter={(v) => `${v.toFixed(0)}%`}
                 />
                 <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number, n) => n === "Margem %" ? `${v.toFixed(1)}%` : fmtBRL(v)} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar yAxisId="left" dataKey="Receita" fill="#5BA8F5" radius={[4, 4, 0, 0]} />
-                <Line yAxisId="right" type="monotone" dataKey="Margem %" stroke="#00E5A0" strokeWidth={2} dot={false} />
+                <Bar yAxisId="left" dataKey="Receita" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                <Line yAxisId="right" type="monotone" dataKey="Margem %" stroke="var(--success)" strokeWidth={2} dot={false} />
               </ComposedChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -342,15 +342,15 @@ export function DashboardTab() {
             <AreaChart data={acumulado}>
               <defs>
                 <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#00E5A0" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="#00E5A0" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--success)" stopOpacity={0.5} />
+                  <stop offset="100%" stopColor="var(--success)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-              <XAxis dataKey="mes" stroke="#9ca3af" fontSize={11} />
-              <YAxis stroke="#9ca3af" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
               <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => fmtBRL(v)} />
-              <Area type="monotone" dataKey="Acumulado" stroke="#00E5A0" fill="url(#grad)" strokeWidth={2} />
+              <Area type="monotone" dataKey="Acumulado" stroke="var(--success)" fill="url(#grad)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -383,9 +383,9 @@ export function DashboardTab() {
         <ChartCard title="Perfil Financeiro (Radar)">
           <ResponsiveContainer width="100%" height={260}>
             <RadarChart data={radar}>
-              <PolarGrid stroke="#ffffff20" />
-              <PolarAngleAxis dataKey="eixo" tick={{ fill: "#9ca3af", fontSize: 10 }} />
-              <Radar dataKey="valor" stroke="#5BA8F5" fill="#5BA8F5" fillOpacity={0.4} />
+              <PolarGrid stroke="var(--border)" />
+              <PolarAngleAxis dataKey="eixo" tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} />
+              <Radar dataKey="valor" stroke="var(--primary)" fill="var(--primary)" fillOpacity={0.4} />
               <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => `${v.toFixed(0)}/100`} />
             </RadarChart>
           </ResponsiveContainer>
