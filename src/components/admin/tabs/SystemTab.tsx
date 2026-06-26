@@ -120,6 +120,8 @@ export function SystemTab() {
   const [login, setLogin] = useState({ headline: "", subheadline: "", cta: "Entrar" });
   const [footer, setFooter] = useState({ text: "" });
   const [tracking, setTracking] = useState({ head: "", body_start: "", body_end: "" });
+  const [landingVideo, setLandingVideo] = useState({ enabled: false, url: "" });
+
   const [notif, setNotif] = useState<NotifSettings | null>(null);
   const [testing, setTesting] = useState(false);
 
