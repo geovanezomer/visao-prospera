@@ -5,6 +5,7 @@
 import { Link } from "@tanstack/react-router";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { useBranding } from "@/hooks/useBranding";
+import { BrandedLogo } from "@/components/BrandedLogo";
 import { useLegal } from "@/hooks/useLegal";
 
 type Props = { kind: "terms" | "privacy" };
