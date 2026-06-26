@@ -36,7 +36,9 @@ export function useBranding() {
   });
   return {
     isLoading,
-    isReady: isFetched,
+    // Pronto assim que houver dados em cache (hidratados do SSR ou ensureQueryData no loader)
+    // ou após o primeiro fetch concluído — evita "flash" de defaults em navegação SPA.
+    isReady: isFetched || data !== undefined,
     branding: {
       systemName: data?.branding?.system_name ?? DEFAULTS.branding.systemName,
       logoUrl: data?.branding?.logo_url ?? null,
