@@ -4,7 +4,7 @@
 // ============================================================================
 import { useEffect } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { ShieldCheck, ArrowLeft, Users, Settings, Mail, Webhook, CreditCard, LayoutDashboard, FileClock, Flag, Megaphone, Package, Activity } from "lucide-react";
+import { ShieldCheck, ArrowLeft, Users, Settings, Mail, Webhook, CreditCard, LayoutDashboard, FileClock, Flag, Megaphone, Package, Activity, FileText } from "lucide-react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
@@ -25,8 +25,9 @@ import { FlagsTab } from "@/components/admin/tabs/FlagsTab";
 import { BroadcastsTab } from "@/components/admin/tabs/BroadcastsTab";
 import { PlansTab } from "@/components/admin/tabs/PlansTab";
 import { StatusTab } from "@/components/admin/tabs/StatusTab";
+import { LegalTab } from "@/components/admin/tabs/LegalTab";
 
-const TAB_KEYS = ["dashboard", "usuarios", "planos", "sistema", "emails", "broadcasts", "webhooks", "provider", "flags", "status", "auditoria"] as const;
+const TAB_KEYS = ["dashboard", "usuarios", "planos", "sistema", "emails", "broadcasts", "webhooks", "provider", "flags", "status", "auditoria", "legal"] as const;
 const searchSchema = z.object({
   tab: fallback(z.enum(TAB_KEYS), "dashboard").default("dashboard"),
 });
@@ -85,6 +86,7 @@ function AdminPage() {
             <TabsTrigger value="flags"><Flag className="mr-1.5 h-3.5 w-3.5" />Flags</TabsTrigger>
             <TabsTrigger value="status"><Activity className="mr-1.5 h-3.5 w-3.5" />Status</TabsTrigger>
             <TabsTrigger value="auditoria"><FileClock className="mr-1.5 h-3.5 w-3.5" />Auditoria</TabsTrigger>
+            <TabsTrigger value="legal"><FileText className="mr-1.5 h-3.5 w-3.5" />Termos / Privacidade</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard"><DashboardTab /></TabsContent>
           <TabsContent value="usuarios"><UsersTab /></TabsContent>
@@ -97,6 +99,7 @@ function AdminPage() {
           <TabsContent value="flags"><FlagsTab /></TabsContent>
           <TabsContent value="status"><StatusTab /></TabsContent>
           <TabsContent value="auditoria"><AuditTab /></TabsContent>
+          <TabsContent value="legal"><LegalTab /></TabsContent>
         </Tabs>
       </main>
     </div>
