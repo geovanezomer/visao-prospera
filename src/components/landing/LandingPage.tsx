@@ -1398,7 +1398,7 @@ function Header() {
                 className="h-8 max-w-[160px] [&>svg]:h-8 [&>svg]:w-auto [&>svg]:max-w-[160px]"
                 imgProps={{ className: "h-8 w-auto max-w-[160px] object-contain" }}
               />
-              <span className="text-sm font-semibold tracking-tight text-foreground">{branding.systemName}</span>
+              <span className="text-base font-semibold tracking-tight text-foreground">{branding.systemName}</span>
             </>
           ) : (
             <>

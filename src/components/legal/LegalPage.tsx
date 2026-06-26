@@ -30,7 +30,7 @@ export function LegalPage({ kind }: Props) {
                   className="h-8 w-8 [&>svg]:h-8 [&>svg]:w-8"
                   imgProps={{ className: "h-8 w-8 rounded-md object-contain" }}
                 />
-                <span className="text-sm font-semibold tracking-tight">{branding.systemName}</span>
+                <span className="text-base font-semibold tracking-tight">{branding.systemName}</span>
               </>
             ) : (
               <div className="flex items-center gap-2">
