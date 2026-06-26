@@ -38,6 +38,10 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
 
+# psql é necessário para o bootstrap aplicar as migrations no boot.
+# wget é usado pelo HEALTHCHECK.
+RUN apk add --no-cache postgresql-client wget
+
 # Copia apenas o output do Nitro (auto-contido)
 COPY --from=builder /app/.output ./.output
 
@@ -47,9 +51,14 @@ COPY --from=builder /app/.output ./.output
 # manter ambos garante que a imagem rode standalone (docker run).
 COPY --from=builder /app/.env ./.env
 
+# Migrations + scripts de bootstrap (rodam no entrypoint)
+COPY --from=builder /app/supabase/migrations ./supabase/migrations
+COPY --from=builder /app/scripts ./scripts
+RUN chmod +x /app/scripts/db-bootstrap.sh /app/scripts/docker-entrypoint.sh
+
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3000/ >/dev/null 2>&1 || exit 1
 
-CMD ["node", ".output/server/index.mjs"]
+ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
