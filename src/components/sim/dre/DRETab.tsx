@@ -43,6 +43,8 @@ import { Badge } from "@/components/ui/badge";
 
 import { DREComparison } from "@/components/sim/comparison/ComparisonView";
 import { useAnnualSnapshots } from "@/hooks/useAnnualSnapshots";
+import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
+import { useComparisonMode } from "@/engines/scenarios/comparisonStore";
 import { ChevronRight } from "lucide-react";
 
 const CHART_COLORS = [
