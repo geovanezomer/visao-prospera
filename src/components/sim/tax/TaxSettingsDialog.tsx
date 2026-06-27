@@ -987,3 +987,180 @@ function SimplesTableEditor({
     </Section>
   );
 }
+
+// =====================================================================
+// STEP — Folha & Sócios (Plano v3)
+// =====================================================================
+function StepFolhaSocios({
+  ov,
+  patchOv,
+}: {
+  ov: TaxRatesOverride;
+  patchOv: (p: Partial<TaxRatesOverride>) => void;
+}) {
+  const pr: PayrollOverride = ov.payroll ?? {};
+  const patchPr = (patch: Partial<PayrollOverride>) =>
+    patchOv({ payroll: { ...pr, ...patch } });
+
+  const irpfTable = pr.irpfTable ?? IRPF_TABLE_DEFAULT;
+  const isIrpfCustom = !!pr.irpfTable;
+
+  const setIrpfFaixa = (i: number, j: 0 | 1 | 2, v: number) => {
+    const next = irpfTable.map((f) => [...f] as IrpfFaixa);
+    next[i][j] = v;
+    patchPr({ irpfTable: next });
+  };
+  const resetIrpf = () => patchPr({ irpfTable: undefined });
+
+  return (
+    <div className="space-y-4">
+      <Callout tone="info" title="Por que esta tela existe?">
+        <p className="text-[13px]">
+          O cartão <b>"Pró-labore × Distribuição de Lucros"</b> em Tributos usa estes parâmetros
+          para calcular INSS do sócio, INSS patronal, IRPF mensal e o limite de distribuição
+          isenta. Todos os valores vêm preenchidos com os padrões oficiais 2025 — só mude se houver
+          alteração regulatória ou para simulações.
+        </p>
+      </Callout>
+
+      <Section title="Salário mínimo & piso legal de pró-labore">
+        <FriendlyRow
+          label="Salário mínimo nacional"
+          suffix="R$"
+          defaultVal={SALARIO_MINIMO_DEFAULT}
+          help="Piso aplicado ao pró-labore quando o sócio é OPERACIONAL (IN RFB 971/2009, art. 55). Sócio investidor não exige piso."
+          value={pr.salarioMinimo ?? SALARIO_MINIMO_DEFAULT}
+          onChange={(v) => patchPr({ salarioMinimo: v })}
+          onReset={() => patchPr({ salarioMinimo: undefined })}
+        />
+      </Section>
+
+      <Section title="INSS do sócio (contribuinte individual)">
+        <FriendlyRow
+          label="Alíquota INSS sócio"
+          suffix="%"
+          defaultVal={INSS_SOCIO_ALIQ_DEFAULT}
+          help="Plano simplificado (Lei 9.876/99). Padrão 11% sobre o pró-labore limitado ao teto."
+          value={pr.inssSocioAliq ?? INSS_SOCIO_ALIQ_DEFAULT}
+          onChange={(v) => patchPr({ inssSocioAliq: v })}
+          onReset={() => patchPr({ inssSocioAliq: undefined })}
+        />
+        <FriendlyRow
+          label="Teto contributivo INSS"
+          suffix="R$"
+          defaultVal={INSS_TETO_DEFAULT}
+          help="Teto mensal de contribuição (Portaria MPS 2025). Pró-labore acima do teto não gera INSS adicional."
+          value={pr.inssTeto ?? INSS_TETO_DEFAULT}
+          onChange={(v) => patchPr({ inssTeto: v })}
+          onReset={() => patchPr({ inssTeto: undefined })}
+        />
+        <FriendlyRow
+          label="Cota patronal (Presumido/Real)"
+          suffix="%"
+          defaultVal={INSS_PATRONAL_ALIQ_DEFAULT}
+          help="20% sobre o pró-labore, devido pela PJ no Lucro Presumido e Real. No Simples já está embutido no DAS (exceto Anexo IV)."
+          value={pr.inssPatronalAliq ?? INSS_PATRONAL_ALIQ_DEFAULT}
+          onChange={(v) => patchPr({ inssPatronalAliq: v })}
+          onReset={() => patchPr({ inssPatronalAliq: undefined })}
+        />
+        <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+          <div className="flex-1">
+            <div className="text-sm font-medium">Aplicar patronal também no Simples (Anexo IV)</div>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              Empresas no Anexo IV recolhem patronal por fora do DAS. Para os demais anexos, manter desligado.
+            </p>
+          </div>
+          <Switch
+            checked={pr.inssPatronalSimples ?? false}
+            onCheckedChange={(v) => patchPr({ inssPatronalSimples: v })}
+          />
+        </div>
+      </Section>
+
+      <Section title="IRPF mensal — tabela e deduções">
+        <FriendlyRow
+          label="Dedução por dependente"
+          suffix="R$"
+          defaultVal={IRPF_DEPENDENTE_DEDUCAO_DEFAULT}
+          help="Dedução mensal por dependente no IRPF (modelo tradicional)."
+          value={pr.irpfDependenteDeducao ?? IRPF_DEPENDENTE_DEDUCAO_DEFAULT}
+          onChange={(v) => patchPr({ irpfDependenteDeducao: v })}
+          onReset={() => patchPr({ irpfDependenteDeducao: undefined })}
+        />
+        <FriendlyRow
+          label="Desconto simplificado mensal"
+          suffix="R$"
+          defaultVal={IRPF_DESCONTO_SIMPLIFICADO_DEFAULT}
+          help="Lei 14.973/2024 — desconto único opcional. Sistema escolhe automaticamente o mais vantajoso."
+          value={pr.irpfDescontoSimplificado ?? IRPF_DESCONTO_SIMPLIFICADO_DEFAULT}
+          onChange={(v) => patchPr({ irpfDescontoSimplificado: v })}
+          onReset={() => patchPr({ irpfDescontoSimplificado: undefined })}
+        />
+        <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+          <div className="flex-1">
+            <div className="text-sm font-medium">Escolher automaticamente tradicional × simplificado</div>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              Quando ligado, o sistema testa os dois modelos para cada sócio e aplica o que resulta em menor IRPF.
+            </p>
+          </div>
+          <Switch
+            checked={pr.irpfSimplificadoAuto ?? true}
+            onCheckedChange={(v) => patchPr({ irpfSimplificadoAuto: v })}
+          />
+        </div>
+
+        <div className="rounded-md border border-border/40 bg-background/40 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Tabela mensal IRPF{" "}
+              {isIrpfCustom && (
+                <span className="ml-1 rounded-full bg-[var(--warning)]/15 px-1.5 py-0.5 text-[9px] uppercase text-[var(--warning)]">
+                  customizado
+                </span>
+              )}
+            </div>
+            <Button size="sm" variant="ghost" disabled={!isIrpfCustom} onClick={resetIrpf}>
+              <RotateCcw className="mr-1 h-3.5 w-3.5" /> Restaurar
+            </Button>
+          </div>
+          <div className="grid grid-cols-[40px,1fr,1fr,1fr] items-center gap-2 text-[11px]">
+            <div className="text-muted-foreground">Faixa</div>
+            <div className="text-right text-muted-foreground">Até (R$)</div>
+            <div className="text-right text-muted-foreground">Alíquota (%)</div>
+            <div className="text-right text-muted-foreground">P. deduzir (R$)</div>
+            {irpfTable.map((f, i) => (
+              <div key={i} className="contents">
+                <div className="text-muted-foreground">{i + 1}ª</div>
+                <NumInput
+                  value={Number.isFinite(f[0]) ? f[0] : 999999}
+                  onChange={(v) => setIrpfFaixa(i, 0, v)}
+                />
+                <NumInput value={f[1]} onChange={(v) => setIrpfFaixa(i, 1, v)} />
+                <NumInput value={f[2]} onChange={(v) => setIrpfFaixa(i, 2, v)} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      <Section title="Distribuição de lucros isenta">
+        <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+          <div className="flex-1">
+            <div className="text-sm font-medium">
+              Limitar distribuição no Presumido (sem escrituração completa)
+            </div>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              Quando ligado, a engine aplica o limite "Base de Presunção − tributos federais"
+              (RIR/2018 art. 238) como teto de distribuição isenta. Desligue se a empresa mantém
+              escrituração contábil regular — nesse caso, distribuição é livre.
+            </p>
+          </div>
+          <Switch
+            checked={pr.distribuicaoLimitePresumidoAuto ?? true}
+            onCheckedChange={(v) => patchPr({ distribuicaoLimitePresumidoAuto: v })}
+          />
+        </div>
+      </Section>
+    </div>
+  );
+}
