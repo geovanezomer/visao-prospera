@@ -41,31 +41,31 @@ const DEFAULTS = {
   landing_video: { enabled: false, url: "" } as LandingVideo,
 };
 
+type AppSettingsShape = {
+  branding?: { system_name?: string; logo_url?: string; favicon_url?: string; author_photo_url?: string; recolor_logo?: boolean };
+  login_texts?: { headline?: string; subheadline?: string; cta?: string };
+  footer?: { text?: string };
+  landing_video?: { enabled?: boolean; url?: string };
+};
+
 export function useBranding() {
-  const { data, isLoading, isFetched } = useQuery({
+  const { data: raw, isLoading, isFetched } = useQuery({
     queryKey: ["app_settings"],
     queryFn: () => getAppSettings(),
-    // Settings administrativas (logo, cores, textos, vídeo) mudam raramente.
-    // staleTime alto evita refetch a cada navegação SPA e elimina o "flash".
-    staleTime: 60 * 60_000, // 1h
-    gcTime: 24 * 60 * 60_000, // 24h
+    staleTime: 60 * 60_000,
+    gcTime: 24 * 60 * 60_000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
-    // initialData sincroniza com o cache localStorage da última visita,
-    // evitando o flash do default em qualquer cold start client-side.
-    // initialDataUpdatedAt sintetizado com Date.now() faz o React Query
-    // tratar o cache como FRESH, então não há refetch em background que
-    // dispare re-render com dados diferentes ("cache → real (se mudou)").
     initialData: () => readSettingsCache() as Awaited<ReturnType<typeof getAppSettings>> | undefined,
     initialDataUpdatedAt: () => (readSettingsCache() ? Date.now() : 0),
   });
 
+  const data = raw as AppSettingsShape | undefined;
 
-  // Persiste em localStorage a cada novo payload bem-sucedido.
   useEffect(() => {
-    if (data) writeSettingsCache(data);
-  }, [data]);
+    if (raw) writeSettingsCache(raw);
+  }, [raw]);
 
   return {
     isLoading,
@@ -85,7 +85,7 @@ export function useBranding() {
     footer: { text: data?.footer?.text ?? DEFAULTS.footer.text } as Footer,
     landingVideo: {
       enabled: Boolean(data?.landing_video?.enabled),
-      url: (data?.landing_video?.url as string) ?? "",
+      url: data?.landing_video?.url ?? "",
     } as LandingVideo,
   };
 }

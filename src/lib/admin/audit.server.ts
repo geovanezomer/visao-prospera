@@ -4,6 +4,7 @@
 // Nunca lança — falhas de log não devem bloquear a ação principal.
 // ============================================================================
 import { getRequestHeader } from "@tanstack/react-start/server";
+import type { Json } from "@/integrations/supabase/types";
 
 export type AuditEntry = {
   actorId?: string | null;
@@ -36,7 +37,7 @@ export async function logAudit(entry: AuditEntry): Promise<void> {
       resource: entry.resource,
       target_id: entry.targetId ?? null,
       target_label: entry.targetLabel ?? null,
-      metadata: (entry.metadata ?? {}) as Record<string, unknown>,
+      metadata: (entry.metadata ?? {}) as unknown as Json,
       ip,
       user_agent: userAgent,
     });
