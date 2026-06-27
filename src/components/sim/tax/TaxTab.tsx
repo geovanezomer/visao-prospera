@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { HelpTip, PctInput, SectionTitle } from "@/components/sim/shared/primitives";
+import { SociosCard } from "./SociosCard";
 
 // =================================================================
 // Componentes movidos para o topo do módulo (B9) — evitam recriação
