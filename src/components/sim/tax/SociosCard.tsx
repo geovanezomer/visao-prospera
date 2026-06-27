@@ -1,16 +1,16 @@
 /**
  * SociosCard — UI dedicada de Pró-labore × Distribuição de Lucros.
- * Faz CRUD dos sócios e exibe o cálculo mês-a-mês (líquido / custo PJ).
+ * Layout em tabela, padronizado com Receitas/Despesas.
  *
  * SSOT: ao alterar a lista, chama applySociosChange que sincroniza
- * linhas system em state.costs — todos os módulos veem o custo.
+ * linhas system em state.costs — todos os módulos (DRE, FCF, Indicadores)
+ * enxergam o custo automaticamente.
  */
 import { useMemo } from "react";
 import { Plus, Trash2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -29,7 +29,7 @@ import {
   syncSociosToCosts,
 } from "@/engines/finance/socios";
 import type { SocioRetirada } from "@/engines/finance/types";
-import { SectionTitle } from "@/components/sim/shared/primitives";
+import { SectionTitle, renderHint } from "@/components/sim/shared/primitives";
 import { getSalarioMinimo } from "@/engines/finance/taxDefaults";
 
 function novoSocio(idx: number): SocioRetirada {
@@ -45,6 +45,15 @@ function novoSocio(idx: number): SocioRetirada {
   };
 }
 
+const HINT = {
+  description:
+    "Cadastre cada sócio em uma linha. O pró-labore vira despesa administrativa (linha sintética em Despesas) e o INSS patronal (Presumido/Real) também. A distribuição de lucros é estimada com base no lucro líquido projetado e respeita o limite isento. Impacta: DRE (custo de pessoal), Fluxo de Caixa (saída mensal), Tributos (Fator R no Simples) e Indicadores (margem líquida, EBITDA).",
+  formula:
+    "Líquido sócio = Pró-labore − INSS sócio − IRPF + Distribuição de Lucros\nCusto PJ = Pró-labore + INSS patronal",
+  example:
+    "A soma das participações deve fechar 100%. Use 'Otimizar' para sugerir o split que minimiza carga tributária respeitando o piso legal (salário mínimo para sócio operacional).",
+};
+
 export function SociosCard() {
   const { state } = useFinance();
   const update = useFinanceUpdate();
@@ -52,12 +61,8 @@ export function SociosCard() {
   const socios = state.socios ?? [];
   const salarioMin = getSalarioMinimo(state.tax);
 
-  // Lucro mensal disponível para distribuição (proxy: lucro líquido anual / 12).
-  // Não distribui se prejuízo.
   const lucroMensalDisponivel = useMemo(() => {
     try {
-      // Calcula DRE EXCLUINDO os pró-labores já inseridos (evita dupla contagem
-      // ao "ver" quanto sobra antes da retirada).
       const semSocios = syncSociosToCosts({ ...state, socios: [] }, regime);
       const { dre } = buildDRE(semSocios, regime);
       const lucroAno = dre.lucroLiquido.reduce((a, b) => a + b, 0);
@@ -70,7 +75,14 @@ export function SociosCard() {
   const setSocios = (next: SocioRetirada[]) =>
     update((s) => applySociosChange(s, next, regime));
 
-  const addSocio = () => setSocios([...socios, novoSocio(socios.length)]);
+  const addSocio = () => {
+    // Auto-distribui participação restante na nova linha.
+    const usado = socios.reduce((a, s) => a + s.participacaoPct, 0);
+    const restante = Math.max(0, 100 - usado);
+    const novo = novoSocio(socios.length);
+    novo.participacaoPct = Math.round(restante * 100) / 100;
+    setSocios([...socios, novo]);
+  };
   const removeSocio = (id: string) => setSocios(socios.filter((s) => s.id !== id));
   const patchSocio = (id: string, patch: Partial<SocioRetirada>) =>
     setSocios(socios.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -101,21 +113,30 @@ export function SociosCard() {
         (a, r) => a + r.inssSocio + r.inssPatronal + r.irpfMensal,
         0,
       ) * 12,
+    liquido: resultados.reduce((a, r) => a + r.liquidoSocio, 0) * 12,
+    custoPJ: resultados.reduce((a, r) => a + r.custoTotalPJ, 0) * 12,
   };
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <SectionTitle>Pró-labore × Distribuição de Lucros</SectionTitle>
+          <SectionTitle hint={HINT}>Pró-labore × Distribuição de Lucros</SectionTitle>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            Distribuição mensal disponível (estimativa): <b>{fmtBRL(lucroMensalDisponivel)}</b> ·
-            Regime efetivo: <b className="uppercase">{regime}</b>
+            Lucro mensal estimado disponível para distribuição:{" "}
+            <b>{fmtBRL(lucroMensalDisponivel)}</b> · Regime efetivo:{" "}
+            <b className="uppercase">{regime}</b> · Piso legal (salário mínimo):{" "}
+            <b>{fmtBRL(salarioMin)}</b>
           </p>
         </div>
         <div className="flex gap-2">
           {socios.length > 0 && (
-            <Button size="sm" variant="outline" onClick={otimizarTodos} title="Aplicar split ótimo (mínimo legal de pró-labore quando vantajoso)">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={otimizarTodos}
+              title="Aplicar split ótimo (mínimo legal de pró-labore quando vantajoso)"
+            >
               <Sparkles className="mr-1 h-3.5 w-3.5" /> Otimizar
             </Button>
           )}
@@ -130,174 +151,203 @@ export function SociosCard() {
           Nenhum sócio cadastrado. Clique em <b>Adicionar sócio</b> para começar.
         </div>
       ) : (
-        <div className="mt-4 space-y-3">
-          {socios.map((s, i) => {
-            const r = resultados[i];
-            const abaixoDoPiso = s.operacional && s.prolaboreMensal > 0 && s.prolaboreMensal < salarioMin;
-            return (
-              <div
-                key={s.id}
-                className="rounded-md border border-border/60 bg-background/40 p-3 sm:p-4"
-              >
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr,90px,140px,90px,90px,auto] sm:items-end">
-                  <div>
-                    <Label className="text-[10px] uppercase text-muted-foreground">Nome</Label>
-                    <Input
-                      value={s.nome}
-                      onChange={(e) => patchSocio(s.id, { nome: e.target.value })}
-                      className="h-9"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[10px] uppercase text-muted-foreground">% partic.</Label>
-                    <Input
-                      type="number"
-                      value={s.participacaoPct}
-                      onChange={(e) =>
-                        patchSocio(s.id, { participacaoPct: Number(e.target.value) || 0 })
-                      }
-                      className="h-9 text-right"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[10px] uppercase text-muted-foreground">Pró-labore/mês</Label>
-                    <Input
-                      type="number"
-                      value={s.prolaboreMensal}
-                      onChange={(e) =>
-                        patchSocio(s.id, {
-                          prolaboreMensal: Number(e.target.value) || 0,
-                          modo: "manual",
-                        })
-                      }
-                      className="h-9 text-right"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[10px] uppercase text-muted-foreground">Dep.</Label>
-                    <Input
-                      type="number"
-                      value={s.dependentes}
-                      onChange={(e) =>
-                        patchSocio(s.id, { dependentes: Number(e.target.value) || 0 })
-                      }
-                      className="h-9 text-right"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[10px] uppercase text-muted-foreground">Outras ded.</Label>
-                    <Input
-                      type="number"
-                      value={s.outrasDeducoes}
-                      onChange={(e) =>
-                        patchSocio(s.id, { outrasDeducoes: Number(e.target.value) || 0 })
-                      }
-                      className="h-9 text-right"
-                    />
-                  </div>
-                  <div className="flex items-end justify-end">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => removeSocio(s.id)}
-                      title="Remover sócio"
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center gap-4 text-[12px]">
-                  <label className="flex items-center gap-2">
-                    <Switch
-                      checked={s.operacional}
-                      onCheckedChange={(v) => patchSocio(s.id, { operacional: v })}
-                    />
-                    Sócio operacional (exige piso de salário mínimo)
-                  </label>
-                  <Select
-                    value={s.modo}
-                    onValueChange={(v) => patchSocio(s.id, { modo: v as "manual" | "otimizar" })}
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="border-b border-border/60 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                <th className="px-2 py-2 font-medium">Nome do sócio</th>
+                <th className="px-2 py-2 font-medium text-right">Participação (%)</th>
+                <th className="px-2 py-2 font-medium text-center">Operacional</th>
+                <th className="px-2 py-2 font-medium text-center">Modo</th>
+                <th className="px-2 py-2 font-medium text-right">Pró-labore (mês)</th>
+                <th className="px-2 py-2 font-medium text-right">Dependentes</th>
+                <th className="px-2 py-2 font-medium text-right">Outras deduções</th>
+                <th className="px-2 py-2 font-medium text-right">INSS sócio</th>
+                <th className="px-2 py-2 font-medium text-right">INSS patronal</th>
+                <th className="px-2 py-2 font-medium text-right">IRPF</th>
+                <th className="px-2 py-2 font-medium text-right">Distribuição isenta</th>
+                <th className="px-2 py-2 font-medium text-right">Distribuição tributável</th>
+                <th className="px-2 py-2 font-medium text-right">Líquido sócio (mês)</th>
+                <th className="px-2 py-2 font-medium text-right">Custo PJ (mês)</th>
+                <th className="px-2 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {socios.map((s, i) => {
+                const r = resultados[i];
+                const abaixoDoPiso =
+                  s.operacional && s.prolaboreMensal > 0 && s.prolaboreMensal < salarioMin;
+                return (
+                  <tr
+                    key={s.id}
+                    className="border-b border-border/40 hover:bg-muted/20"
                   >
-                    <SelectTrigger className="h-8 w-[140px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="manual">Manual</SelectItem>
-                      <SelectItem value="otimizar">Otimizar</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {abaixoDoPiso && (
-                  <div className="mt-2 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/5 px-2 py-1.5 text-[11px] text-[var(--warning)]">
-                    ⚠️ Pró-labore abaixo do piso ({fmtBRL(salarioMin)}). Sócio operacional deve receber ao menos o salário mínimo (IN RFB 971/2009).
-                  </div>
-                )}
-
-                <div className="mt-3 grid grid-cols-2 gap-2 rounded bg-muted/30 p-2 text-[12px] sm:grid-cols-4">
-                  <Resultado label="INSS sócio" valor={r.inssSocio} />
-                  <Resultado label="INSS patronal" valor={r.inssPatronal} />
-                  <Resultado label={`IRPF (${r.irpfModo === "simplificado" ? "simpl." : "trad."})`} valor={r.irpfMensal} />
-                  <Resultado label="Dist. isenta" valor={r.distribuicaoIsentaMensal} pos />
-                  {r.distribuicaoTributavelMensal > 0 && (
-                    <Resultado
-                      label="Dist. excedente"
-                      valor={r.distribuicaoTributavelMensal}
-                      destaque
-                    />
+                    <td className="px-2 py-1.5">
+                      <Input
+                        value={s.nome}
+                        onChange={(e) => patchSocio(s.id, { nome: e.target.value })}
+                        className="h-8 min-w-[140px]"
+                      />
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <Input
+                        type="number"
+                        value={s.participacaoPct}
+                        onChange={(e) =>
+                          patchSocio(s.id, { participacaoPct: Number(e.target.value) || 0 })
+                        }
+                        className="h-8 w-[80px] text-right"
+                      />
+                    </td>
+                    <td className="px-2 py-1.5 text-center">
+                      <Switch
+                        checked={s.operacional}
+                        onCheckedChange={(v) => patchSocio(s.id, { operacional: v })}
+                      />
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <Select
+                        value={s.modo}
+                        onValueChange={(v) =>
+                          patchSocio(s.id, { modo: v as "manual" | "otimizar" })
+                        }
+                      >
+                        <SelectTrigger className="h-8 w-[110px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="manual">Manual</SelectItem>
+                          <SelectItem value="otimizar">Otimizar</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <Input
+                        type="number"
+                        value={s.prolaboreMensal}
+                        onChange={(e) =>
+                          patchSocio(s.id, {
+                            prolaboreMensal: Number(e.target.value) || 0,
+                            modo: "manual",
+                          })
+                        }
+                        className={`h-8 w-[110px] text-right ${
+                          abaixoDoPiso ? "border-[var(--warning)]" : ""
+                        }`}
+                        title={
+                          abaixoDoPiso
+                            ? `Abaixo do piso de ${fmtBRL(salarioMin)} (IN RFB 971/2009)`
+                            : undefined
+                        }
+                      />
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <Input
+                        type="number"
+                        value={s.dependentes}
+                        onChange={(e) =>
+                          patchSocio(s.id, { dependentes: Number(e.target.value) || 0 })
+                        }
+                        className="h-8 w-[70px] text-right"
+                      />
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <Input
+                        type="number"
+                        value={s.outrasDeducoes}
+                        onChange={(e) =>
+                          patchSocio(s.id, { outrasDeducoes: Number(e.target.value) || 0 })
+                        }
+                        className="h-8 w-[100px] text-right"
+                      />
+                    </td>
+                    <td className="num px-2 py-1.5 text-right text-foreground/90">
+                      {fmtBRL(r.inssSocio)}
+                    </td>
+                    <td className="num px-2 py-1.5 text-right text-foreground/90">
+                      {fmtBRL(r.inssPatronal)}
+                    </td>
+                    <td className="num px-2 py-1.5 text-right text-foreground/90">
+                      {fmtBRL(r.irpfMensal)}
+                    </td>
+                    <td className="num px-2 py-1.5 text-right text-pos">
+                      {fmtBRL(r.distribuicaoIsentaMensal)}
+                    </td>
+                    <td className="num px-2 py-1.5 text-right text-[var(--warning)]">
+                      {fmtBRL(r.distribuicaoTributavelMensal)}
+                    </td>
+                    <td className="num px-2 py-1.5 text-right font-semibold text-pos">
+                      {fmtBRL(r.liquidoSocio)}
+                    </td>
+                    <td className="num px-2 py-1.5 text-right font-semibold">
+                      {fmtBRL(r.custoTotalPJ)}
+                    </td>
+                    <td className="px-2 py-1.5 text-right">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => removeSocio(s.id)}
+                        title="Remover sócio"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-border/60 bg-muted/20 text-[12px] font-semibold">
+                <td className="px-2 py-2">Total anual</td>
+                <td
+                  className={`num px-2 py-2 text-right ${
+                    partOk ? "text-foreground" : "text-[var(--warning)]"
+                  }`}
+                  title={partOk ? "Soma das participações = 100%" : "Soma deve fechar 100%"}
+                >
+                  {somaPartic.toFixed(2)}%
+                </td>
+                <td colSpan={2}></td>
+                <td className="num px-2 py-2 text-right">{fmtBRL(totaisAno.prolab)}</td>
+                <td colSpan={2}></td>
+                <td className="num px-2 py-2 text-right">
+                  {fmtBRL(
+                    resultados.reduce((a, r) => a + r.inssSocio, 0) * 12,
                   )}
-                  <Resultado label="Líquido sócio (mês)" valor={r.liquidoSocio} pos bold />
-                  <Resultado label="Custo PJ (mês)" valor={r.custoTotalPJ} bold />
-                </div>
-              </div>
-            );
-          })}
+                </td>
+                <td className="num px-2 py-2 text-right">{fmtBRL(totaisAno.patronal)}</td>
+                <td className="num px-2 py-2 text-right">
+                  {fmtBRL(resultados.reduce((a, r) => a + r.irpfMensal, 0) * 12)}
+                </td>
+                <td className="num px-2 py-2 text-right text-pos">
+                  {fmtBRL(totaisAno.distIsenta)}
+                </td>
+                <td className="num px-2 py-2 text-right text-[var(--warning)]">
+                  {fmtBRL(totaisAno.distTrib)}
+                </td>
+                <td className="num px-2 py-2 text-right text-pos">{fmtBRL(totaisAno.liquido)}</td>
+                <td className="num px-2 py-2 text-right">{fmtBRL(totaisAno.custoPJ)}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
 
           {!partOk && (
-            <div className="rounded border border-[var(--warning)]/40 bg-[var(--warning)]/5 px-3 py-2 text-[12px] text-[var(--warning)]">
-              ⚠️ Soma das participações = <b>{somaPartic.toFixed(1)}%</b>. Ajuste para totalizar 100%.
+            <div className="mt-3 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/5 px-3 py-2 text-[12px] text-[var(--warning)]">
+              ⚠️ A soma das participações é <b>{somaPartic.toFixed(2)}%</b> e precisa fechar{" "}
+              <b>100%</b> para que a distribuição de lucros seja calculada corretamente.
             </div>
           )}
 
-          {/* Resumo consolidado */}
-          <div className="mt-2 rounded-md border border-border/60 bg-background/40 p-3">
-            <div className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-              Resumo anual consolidado
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-[12px] sm:grid-cols-4">
-              <Resultado label="Pró-labore/ano" valor={totaisAno.prolab} bold />
-              <Resultado label="INSS patronal/ano" valor={totaisAno.patronal} />
-              <Resultado label="Distribuição isenta/ano" valor={totaisAno.distIsenta} pos />
-              <Resultado label="Carga tributária sócios/ano" valor={totaisAno.cargaTotal} destaque />
-            </div>
-          </div>
+          {/* Tooltip-style helper: nota legal */}
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            Sócio operacional deve receber pró-labore ≥ salário mínimo (IN RFB 971/2009). No
+            Simples Nacional não há INSS patronal sobre pró-labore; em Presumido/Real aplica-se
+            20%. A distribuição de lucros é isenta de IRPF dentro do limite contábil; valores
+            acima do limite isento aparecem como tributáveis.
+          </p>
         </div>
       )}
-    </div>
-  );
-}
-
-function Resultado({
-  label,
-  valor,
-  pos,
-  destaque,
-  bold,
-}: {
-  label: string;
-  valor: number;
-  pos?: boolean;
-  destaque?: boolean;
-  bold?: boolean;
-}) {
-  const cor = pos ? "text-pos" : destaque ? "text-[var(--warning)]" : "text-foreground";
-  return (
-    <div>
-      <div className="text-[10px] uppercase text-muted-foreground">{label}</div>
-      <div className={`num ${bold ? "text-sm font-semibold" : "text-sm"} ${cor}`}>
-        {fmtBRL(valor)}
-      </div>
     </div>
   );
 }
