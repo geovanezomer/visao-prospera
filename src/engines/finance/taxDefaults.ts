@@ -265,3 +265,28 @@ export const getSplitPaymentAtivo = (tax: TaxConfig): boolean =>
   pick(tax.splitPaymentAtivo, SPLIT_PAYMENT_DEFAULT);
 export const getSplitPaymentAnoInicio = (tax: TaxConfig): number =>
   pick(tax.splitPaymentAnoInicio, SPLIT_PAYMENT_ANO_INICIO_DEFAULT);
+
+// =====================================================================
+// FOLHA & SÓCIOS — resolvers (lê override.payroll ?? default oficial)
+// =====================================================================
+const payroll = (tax: TaxConfig) => ov(tax)?.payroll;
+export const getSalarioMinimo = (tax: TaxConfig): number =>
+  pick(payroll(tax)?.salarioMinimo, SALARIO_MINIMO_DEFAULT);
+export const getInssSocioAliq = (tax: TaxConfig): number =>
+  pick(payroll(tax)?.inssSocioAliq, INSS_SOCIO_ALIQ_DEFAULT);
+export const getInssTeto = (tax: TaxConfig): number =>
+  pick(payroll(tax)?.inssTeto, INSS_TETO_DEFAULT);
+export const getInssPatronalAliq = (tax: TaxConfig): number =>
+  pick(payroll(tax)?.inssPatronalAliq, INSS_PATRONAL_ALIQ_DEFAULT);
+export const getInssPatronalSimples = (tax: TaxConfig): boolean =>
+  pick(payroll(tax)?.inssPatronalSimples, false);
+export const getIrpfTable = (tax: TaxConfig): IrpfFaixa[] =>
+  payroll(tax)?.irpfTable ?? IRPF_TABLE_DEFAULT;
+export const getIrpfDependenteDeducao = (tax: TaxConfig): number =>
+  pick(payroll(tax)?.irpfDependenteDeducao, IRPF_DEPENDENTE_DEDUCAO_DEFAULT);
+export const getIrpfDescontoSimplificado = (tax: TaxConfig): number =>
+  pick(payroll(tax)?.irpfDescontoSimplificado, IRPF_DESCONTO_SIMPLIFICADO_DEFAULT);
+export const getIrpfSimplificadoAuto = (tax: TaxConfig): boolean =>
+  pick(payroll(tax)?.irpfSimplificadoAuto, true);
+export const getDistribuicaoLimitePresumidoAuto = (tax: TaxConfig): boolean =>
+  pick(payroll(tax)?.distribuicaoLimitePresumidoAuto, true);
