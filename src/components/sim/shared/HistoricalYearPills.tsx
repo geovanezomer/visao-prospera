@@ -77,6 +77,7 @@ export function HistoricalYearPills() {
   const [renameTarget, setRenameTarget] = useState<ScenarioRecord | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<ScenarioRecord | null>(null);
+  const { active: compareActive, selected } = useComparisonMode();
 
   // Regra-chave: sem 2+ historicals, header fica limpo.
   if (historicals.length < 2) return null;
