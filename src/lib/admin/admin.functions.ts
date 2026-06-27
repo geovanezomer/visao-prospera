@@ -10,9 +10,16 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { User } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { ADMIN_EMAIL, isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
+
+/**
+ * `banned_until` é um campo admin-only do Supabase Auth e não vem
+ * declarado no tipo `User` público. Tipamos localmente para não usar `any`.
+ */
+type AdminUser = User & { banned_until?: string | null };
 
 // ----------------------------------------------------------------------------
 // Helper — checagem de admin (server-side, autoritativa).
@@ -93,12 +100,12 @@ export const listAdminUsers = createServerFn({ method: "POST" })
     // Carrega usuários em lotes. Cap prático: 5000 (25 páginas × 200).
     // Acima disso a UI deve usar busca específica; logamos um aviso.
     const MAX_PAGES = 25;
-    const all: any[] = [];
+    const all: AdminUser[] = [];
     let truncated = false;
     for (let p = 1; p <= MAX_PAGES; p++) {
       const { data: usersPage, error } = await supabaseAdmin.auth.admin.listUsers({ page: p, perPage: 200 });
       if (error) throw new Error(error.message);
-      all.push(...(usersPage.users ?? []));
+      all.push(...((usersPage.users ?? []) as AdminUser[]));
       if ((usersPage.users ?? []).length < 200) break;
       if (p === MAX_PAGES) truncated = true;
     }
@@ -114,21 +121,23 @@ export const listAdminUsers = createServerFn({ method: "POST" })
       )
       .in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"])
       .order("created_at", { ascending: false });
-    const subByUser = new Map<string, any>();
+    type SubRow = NonNullable<typeof subs>[number];
+    const subByUser = new Map<string, SubRow>();
     for (const s of subs ?? []) if (!subByUser.has(s.user_id)) subByUser.set(s.user_id, s);
 
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
       .select("id, display_name")
       .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
-    const profById = new Map<string, any>();
+    type ProfRow = NonNullable<typeof profiles>[number];
+    const profById = new Map<string, ProfRow>();
     for (const p of profiles ?? []) profById.set(p.id, p);
 
     let rows: AdminUserRow[] = all.map((u) => {
       const s = subByUser.get(u.id);
       const p = profById.get(u.id);
-      const bannedUntil = (u as any).banned_until ?? null;
-      const isBanned = bannedUntil && new Date(bannedUntil).getTime() > Date.now();
+      const bannedUntil = u.banned_until ?? null;
+      const isBanned = bannedUntil ? new Date(bannedUntil).getTime() > Date.now() : false;
       const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
       const displayName =
         (typeof meta.display_name === "string" && meta.display_name) ||
@@ -215,9 +224,12 @@ export const setUserActive = createServerFn({ method: "POST" })
       throw new Error("Você não pode desativar a própria conta de administrador.");
     }
 
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
-      ban_duration: data.active ? "none" : "100000h",
-    } as any);
+    // `ban_duration` é parte da API admin do Supabase mas não está nos
+    // tipos públicos. Cast estreito (apenas o campo necessário) em vez de `any`.
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(
+      data.userId,
+      { ban_duration: data.active ? "none" : "100000h" } as { ban_duration: string },
+    );
     if (error) throw new Error(error.message);
     const { logAudit } = await import("./audit.server");
     await logAudit({
