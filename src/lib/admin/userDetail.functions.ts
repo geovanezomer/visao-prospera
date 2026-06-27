@@ -13,22 +13,23 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminEmail } from "./constants";
+import type { AdminClient, AuthClaims } from "./_types";
 
-function assertAdmin(claims: any) {
-  if (!isAdminEmail((claims?.email as string) ?? "")) {
+function assertAdmin(claims: AuthClaims | undefined | null) {
+  if (!isAdminEmail((claims?.email ?? "") as string)) {
     throw new Error("Acesso negado: apenas administrador.");
   }
 }
 
 // Procura usuário por e-mail paginando auth.admin.listUsers (até 5k usuários).
-async function findUserByEmail(supabaseAdmin: any, email: string) {
+async function findUserByEmail(supabaseAdmin: AdminClient, email: string) {
   const target = email.toLowerCase();
   const perPage = 200;
   for (let page = 1; page <= 25; page++) {
     const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
     if (error) throw new Error(error.message);
     const users = data?.users ?? [];
-    const hit = users.find((u: any) => (u.email ?? "").toLowerCase() === target);
+    const hit = users.find((u) => (u.email ?? "").toLowerCase() === target);
     if (hit) return hit;
     if (users.length < perPage) break;
   }
@@ -95,7 +96,7 @@ export const getUserDetail = createServerFn({ method: "POST" })
 
     const { data: u, error: uerr } = await supabaseAdmin.auth.admin.getUserById(data.userId);
     if (uerr || !u?.user) throw new Error(uerr?.message ?? "Usuário não encontrado.");
-    const au = u.user as any;
+    const au = u.user;
 
     const { data: prof } = await supabaseAdmin
       .from("profiles").select("display_name").eq("id", data.userId).maybeSingle();
@@ -116,8 +117,8 @@ export const getUserDetail = createServerFn({ method: "POST" })
 
     // webhook_events não tem user_id; cruzamos por customer_email + subscription_id.
     const subIds = (subs ?? [])
-      .map((s: any) => s.stripe_subscription_id)
-      .filter((v: any): v is string => !!v);
+      .map((s) => s.stripe_subscription_id)
+      .filter((v): v is string => !!v);
     let whQuery = supabaseAdmin
       .from("webhook_events")
       .select("id, provider, event_type, status, subscription_id, received_at, error")
@@ -153,12 +154,12 @@ export const getUserDetail = createServerFn({ method: "POST" })
         displayName,
         createdAt: au.created_at,
         lastSignInAt: au.last_sign_in_at ?? null,
-        bannedUntil: au.banned_until ?? null,
+        bannedUntil: (au as { banned_until?: string | null }).banned_until ?? null,
         emailConfirmedAt: au.email_confirmed_at ?? null,
-        provider: au.app_metadata?.provider ?? null,
+        provider: (au.app_metadata as { provider?: string } | undefined)?.provider ?? null,
         metadata: meta as Json,
       },
-      subscriptions: (subs ?? []).map((s: any) => ({
+      subscriptions: (subs ?? []).map((s) => ({
         id: s.id,
         plan: s.plan,
         status: s.status,
@@ -170,7 +171,7 @@ export const getUserDetail = createServerFn({ method: "POST" })
         createdAt: s.created_at,
         updatedAt: s.updated_at,
       })),
-      webhookEvents: (wh ?? []).map((e: any) => ({
+      webhookEvents: (wh ?? []).map((e) => ({
         id: e.id,
         provider: e.provider,
         eventType: e.event_type,
@@ -179,13 +180,13 @@ export const getUserDetail = createServerFn({ method: "POST" })
         receivedAt: e.received_at,
         error: e.error,
       })),
-      auditEntries: (audit ?? []).map((a: any) => ({
+      auditEntries: (audit ?? []).map((a) => ({
         id: a.id,
         action: a.action,
         resource: a.resource,
         actorEmail: a.actor_email,
         createdAt: a.created_at,
-        metadata: a.metadata,
+        metadata: a.metadata as Json | null,
       })),
     };
   });
@@ -240,7 +241,7 @@ export const grantManualPlan = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as any)?.email,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
       action: "plan.grant_manual",
       resource: "subscription",
       targetId: data.userId,
@@ -277,13 +278,13 @@ export const impersonateUser = createServerFn({ method: "POST" })
       options: appUrl ? { redirectTo: `${appUrl}/app` } : undefined,
     });
     if (lerr) throw new Error(lerr.message);
-    const actionLink = (link as any)?.properties?.action_link as string | undefined;
+    const actionLink = link?.properties?.action_link as string | undefined;
     if (!actionLink) throw new Error("Falha ao gerar link.");
 
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as any)?.email,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
       action: "user.impersonate",
       resource: "user",
       targetId: data.userId,
@@ -393,14 +394,14 @@ export const createManualUser = createServerFn({ method: "POST" })
         options: appUrl ? { redirectTo: `${appUrl}/app` } : undefined,
       });
       if (lerr) throw new Error(lerr.message);
-      magicLink = (link as any)?.properties?.action_link ?? null;
+      magicLink = (link?.properties?.action_link as string | undefined) ?? null;
     }
 
     // 6) Auditoria.
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as any)?.email,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
       action: "user.created_manually",
       resource: "user",
       targetId: newUserId,
