@@ -351,6 +351,11 @@ export function RevenueTab() {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      {(() => {
+        const recFinAnual =
+          r.receitasFinanceiras?.reduce((acc, f) => acc + sum(f.valores), 0) || 0;
+        const totalReceitas = brutaAnual + recFinAnual;
+        return (
       <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <StatCard
           label="Receita Bruta Anual"
@@ -359,6 +364,7 @@ export function RevenueTab() {
           hint={{
             description: "Total faturado no ano antes de qualquer dedução.",
             formula: "Σ Receita Bruta dos 12 meses",
+            calc: `Σ 12 meses = ${fmtBRL(brutaAnual)}`,
           }}
         />
         <StatCard
@@ -369,6 +375,7 @@ export function RevenueTab() {
           hint={{
             description: "Devoluções, cancelamentos, descontos incondicionais e abatimentos.",
             formula: "Devoluções + Descontos Incondicionais + Abatimentos",
+            calc: `${fmtBRL(deducoesAnual)} ÷ ${fmtBRL(brutaAnual)} × 100 = ${fmtPct(pctRec(deducoesAnual))}`,
           }}
         />
         <StatCard
@@ -380,23 +387,34 @@ export function RevenueTab() {
             description:
               "Receita após deduções (devoluções, cancelamentos, descontos e abatimentos). Os impostos sobre venda são abatidos depois, na DRE — só então temos a Receita Líquida contábil.",
             formula: "Receita Bruta − Deduções da Receita",
+            calc: `${fmtBRL(brutaAnual)} − ${fmtBRL(deducoesAnual)} = ${fmtBRL(liqAnual)}`,
           }}
         />
         <StatCard
           label="Média Mensal YTD"
           value={fmtBRL(mediaYTD)}
           sub={`${monthsWithRevenue} ${monthsWithRevenue === 1 ? "mês" : "meses"} com receita`}
-          hint="Média mensal da Receita Operacional considerando apenas meses com receita bruta lançada."
+          hint={{
+            description:
+              "Média mensal da Receita Operacional considerando apenas meses com receita bruta lançada.",
+            formula: "Receita Operacional ÷ Meses com receita",
+            calc: `${fmtBRL(liqAnual)} ÷ ${monthsWithRevenue || 1} = ${fmtBRL(mediaYTD)}`,
+          }}
         />
         <StatCard
           label="Total de Receitas"
-          value={fmtBRL(
-            brutaAnual + (r.receitasFinanceiras?.reduce((acc, f) => acc + sum(f.valores), 0) || 0),
-          )}
+          value={fmtBRL(totalReceitas)}
           tone="pos"
-          hint="Soma da Receita Operacional Bruta com as Receitas Financeiras e demais entradas (aluguéis, venda de ativos)."
+          hint={{
+            description:
+              "Soma da Receita Operacional Bruta com as Receitas Financeiras e demais entradas (aluguéis, venda de ativos).",
+            formula: "Receita Bruta + Receitas Financeiras",
+            calc: `${fmtBRL(brutaAnual)} + ${fmtBRL(recFinAnual)} = ${fmtBRL(totalReceitas)}`,
+          }}
         />
       </div>
+        );
+      })()}
 
       <SectionBlock
         title="Receita Mensal — 12 meses"
