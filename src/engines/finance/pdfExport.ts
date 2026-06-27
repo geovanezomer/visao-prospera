@@ -1324,8 +1324,8 @@ function buildHealthDimensions(ind: FinancialModel["ind"], state: AppState): Hea
 
 type Risk = { title: string; impact: string; probability: string; recommendation: string; severity: "warn" | "bad" | "info" };
 function buildTopRisks(
-  diags: ReturnType<typeof diagnose>, ind: FinancialModel["ind"],
-  prescriptive: ReturnType<typeof buildPrescriptiveCards>,
+  diags: Diagnostic[], ind: FinancialModel["ind"],
+  prescriptive: PrescriptiveCard[],
 ): Risk[] {
   const order: Record<string, number> = { danger: 0, warn: 1, ok: 2 };
   const ranked = [...diags].sort((a, b) => (order[a.level] ?? 9) - (order[b.level] ?? 9));
@@ -1354,8 +1354,8 @@ function buildTopRisks(
 
 type Priority = { title: string; description: string; benefit: string; deadline: string; complexity: string };
 function buildPriorities(
-  prescriptive: ReturnType<typeof buildPrescriptiveCards>,
-  diags: ReturnType<typeof diagnose>,
+  prescriptive: PrescriptiveCard[],
+  diags: Diagnostic[],
 ): Priority[] {
   const sevOrder: Record<string, number> = { danger: 0, warn: 1, info: 2, ok: 3 };
   const ranked = [...prescriptive].sort((a, b) =>
@@ -1396,8 +1396,8 @@ type RiskRec = {
   actions: { title: string; detail: string }[];
 };
 function buildRiscosERecomendacoes(
-  diags: ReturnType<typeof diagnose>,
-  prescriptive: ReturnType<typeof buildPrescriptiveCards>,
+  diags: Diagnostic[],
+  prescriptive: PrescriptiveCard[],
 ): RiskRec[] {
   const sevOrder: Record<string, number> = { danger: 0, warn: 1, info: 2, ok: 3 };
   // Base: cards prescriptivos (já trazem ações completas).
