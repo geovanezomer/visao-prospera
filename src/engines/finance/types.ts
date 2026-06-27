@@ -628,6 +628,10 @@ export interface AppState {
 
   /** Respostas qualitativas do módulo de Análise Estratégica (opcional). */
   strategic?: StrategicAnswers;
+
+  /** Sócios retirantes — Pró-labore × Distribuição de Lucros. Sincronizado
+   *  bidirecionalmente com linhas system em `costs` via syncSociosToCosts. */
+  socios?: SocioRetirada[];
 }
 
 export interface Scenario {
