@@ -136,6 +136,7 @@ export function CapitalTab() {
             description:
               "Soma de Caixa + Recebíveis + Estoques + Imobilizado Líquido + Intangível Líquido + Impostos a Recuperar na data de abertura.",
             formula: "Σ Ativos (Circulante + Não-Circulante)",
+            calc: `Σ Ativos\n= ${fmtBRL(aberturaTotals.ativo)}`,
           }}
         />
         <StatCard
@@ -146,6 +147,7 @@ export function CapitalTab() {
             description:
               "Soma de Fornecedores + Empréstimos CP/LP + Impostos a Pagar + Salários e Encargos na data de abertura.",
             formula: "Σ Passivos (Circulante + Não-Circulante)",
+            calc: `Σ Passivos\n= ${fmtBRL(aberturaTotals.passivo)}`,
           }}
         />
         <StatCard
@@ -156,6 +158,7 @@ export function CapitalTab() {
             description:
               "Patrimônio Líquido de abertura — Capital Social + Reservas + Lucros/Prejuízos Acumulados. Negativo indica passivo a descoberto.",
             formula: "Capital Social + Reservas + Lucros Acumulados",
+            calc: `Ativo − Passivo\n= ${fmtBRL(aberturaTotals.ativo)} − ${fmtBRL(aberturaTotals.passivo)}\n= ${fmtBRL(aberturaTotals.pl)}`,
           }}
         />
       </div>

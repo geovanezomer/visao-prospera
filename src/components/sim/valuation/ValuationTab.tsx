@@ -155,22 +155,42 @@ export function ValuationTab({
             label="EV Pessimista"
             value={fmtBRLCompact(ev.low)}
             tone={ev.low > 0 ? "default" : "neg"}
+            hint={{
+              description: "Faixa pessimista do Enterprise Value (cenário stress).",
+              formula: "EV Base × (1 − margem de segurança)",
+              calc: `EV Base ${fmtBRLCompact(ev.base)} → Pessimista ${fmtBRLCompact(ev.low)}`,
+            }}
           />
           <StatCard
             label="EV Base (provável)"
             value={fmtBRLCompact(ev.base)}
             tone={evTone}
             sub="enterprise value"
+            hint={{
+              description: "Cenário-base de Enterprise Value combinando DCF + múltiplos setoriais.",
+              formula: "Σ FCFF descontados + Valor Terminal − Dívida Líquida",
+              calc: `EV Base = ${fmtBRLCompact(ev.base)}`,
+            }}
           />
           <StatCard
             label="EV Otimista"
             value={fmtBRLCompact(ev.high)}
             tone={ev.high > 0 ? "pos" : "default"}
+            hint={{
+              description: "Faixa otimista do Enterprise Value (cenário upside).",
+              formula: "EV Base × (1 + prêmio de upside)",
+              calc: `EV Base ${fmtBRLCompact(ev.base)} → Otimista ${fmtBRLCompact(ev.high)}`,
+            }}
           />
           <StatCard
             label="Múltiplo implícito"
             value={`${valuation.impliedMultiple.evEbitda.toFixed(2)}x EBITDA`}
             sub={`${valuation.impliedMultiple.evRevenue.toFixed(2)}x receita`}
+            hint={{
+              description: "Múltiplos derivados do EV Base sobre EBITDA e Receita Líquida.",
+              formula: "EV ÷ EBITDA  ·  EV ÷ Receita Líquida",
+              calc: `EV/EBITDA = ${valuation.impliedMultiple.evEbitda.toFixed(2)}×\nEV/Receita = ${valuation.impliedMultiple.evRevenue.toFixed(2)}×`,
+            }}
           />
         </div>
 

@@ -29,6 +29,7 @@ import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
 import { StatCard, renderHint } from "@/components/sim/shared/primitives";
+import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 
 import { IndicatorsCharts } from "./IndicatorsCharts";
 import { DashboardExtras } from "./DashboardExtras";
@@ -62,7 +63,7 @@ function Gauge({
   max: number;
   suffix?: string;
   good?: "high" | "low";
-  hint?: { description: string; formula?: string };
+  hint?: { description: string; formula?: string; calc?: string };
 }) {
   const clamped = Math.max(0, Math.min(value, max));
   const ratio = max > 0 ? clamped / max : 0;
@@ -118,7 +119,8 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 
 export function DashboardTab() {
   const state = useFinanceState();
-  const { dre, ind } = useFinanceModel(state);
+  const { dre, ind, cagrReceitas12m } = useFinanceModel(state);
+  const c = buildIndicatorCalcs(state, dre, ind, cagrReceitas12m);
   // SSOT — mesma fórmula da aba Capital/Indicadores.
   const alav = leverageDisplay("pl", ind.dividaLiqPl, ind.dividaLiquida, state.capital.patrimonioLiquido);
 
@@ -195,6 +197,7 @@ export function DashboardTab() {
           hint={{
             description: "Receita bruta dos últimos 12 meses descontados impostos sobre vendas, devoluções e abatimentos.",
             formula: "Receita Bruta − Impostos sobre Vendas − Devoluções",
+            calc: c.receitaLiquida12m,
           }}
         />
         <StatCard
@@ -205,6 +208,7 @@ export function DashboardTab() {
           hint={{
             description: "Lucro operacional antes de juros, impostos, depreciação e amortização. Mede a geração operacional de caixa.",
             formula: "Lucro Operacional + Depreciação + Amortização",
+            calc: c.ebitda12m,
           }}
         />
         <StatCard
@@ -215,6 +219,7 @@ export function DashboardTab() {
           hint={{
             description: "Resultado final do exercício após todas as despesas, juros e impostos.",
             formula: "Receita Líquida − Custos − Despesas − Juros − IRPJ/CSLL",
+            calc: c.lucroLiquido12m,
           }}
         />
         <StatCard
@@ -226,6 +231,7 @@ export function DashboardTab() {
             description:
               "Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio. Quando o caixa supera a dívida onerosa, a Dívida Líquida é negativa (posição cash-rich).",
             formula: "(Dívida Total − Caixa) ÷ Patrimônio Líquido",
+            calc: c.dividaLiqPl,
           }}
         />
         <StatCard
@@ -237,9 +243,11 @@ export function DashboardTab() {
             description:
               "Debt Service Coverage Ratio — capacidade do EBITDA cobrir o serviço da dívida (juros + amortização do principal). ≥1.25× é saudável; <1.0× sinaliza risco real de inadimplência.",
             formula: "EBITDA Anual ÷ (Juros + Amortizações Anuais)",
+            calc: c.dscr,
           }}
         />
       </div>
+
 
 
       {/* Linha 2 — KPIs em gauges (logo após os cards principais) */}
@@ -251,6 +259,7 @@ export function DashboardTab() {
           hint={{
             description: "O lucro que efetivamente sobra para os sócios, após tudo pago (custos, despesas, juros e impostos).",
             formula: "Lucro Líquido ÷ Receita Líquida × 100",
+            calc: c.margemLiquida,
           }}
         />
         <Gauge
@@ -260,6 +269,7 @@ export function DashboardTab() {
           hint={{
             description: "Retorno sobre o Patrimônio Líquido. Usa PL MÉDIO quando o PL de abertura é informado em Capital; caso contrário, usa PL fim de período.",
             formula: "Lucro Líquido ÷ PL Médio × 100",
+            calc: c.roe,
           }}
         />
         <Gauge
@@ -270,6 +280,7 @@ export function DashboardTab() {
           hint={{
             description: "Capacidade de pagar dívidas de curto prazo com recursos de curto prazo. Acima de 1,0 indica folga; abaixo, aperto.",
             formula: "Ativo Circulante ÷ Passivo Circulante",
+            calc: c.liquidezCorrente,
           }}
         />
         <Gauge
@@ -280,6 +291,7 @@ export function DashboardTab() {
           hint={{
             description: "Percentual do ativo financiado por dívidas (terceiros). Acima de 60% costuma indicar alto risco financeiro.",
             formula: "Passivo Total ÷ Ativo Total × 100",
+            calc: c.endividamentoGeral,
           }}
         />
       </div>

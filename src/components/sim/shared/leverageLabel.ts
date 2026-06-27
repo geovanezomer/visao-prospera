@@ -22,6 +22,8 @@ export interface LeverageDisplay {
   desc?: string;
   /** Override da fórmula exibida no tooltip. */
   formula?: string;
+  /** Memória de cálculo — fórmula resolvida com os números atuais. */
+  calc?: string;
 }
 
 const THRESHOLDS: Record<LeverageMetric, number> = {

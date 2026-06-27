@@ -1,6 +1,7 @@
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { fmtBRL, fmtPct } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
+import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 import { HelpTip, StatCard } from "@/components/sim/shared/primitives";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { IndicatorsGrid } from "./IndicatorsGrid";
@@ -9,7 +10,8 @@ import { IndicatorsGrid } from "./IndicatorsGrid";
 
 export function IndicatorsTab() {
   const state = useFinanceState();
-  const { ind } = useFinanceModel(state);
+  const { dre, ind, cagrReceitas12m } = useFinanceModel(state);
+  const c = buildIndicatorCalcs(state, dre, ind, cagrReceitas12m);
 
 
 
@@ -23,6 +25,7 @@ export function IndicatorsTab() {
             description:
               "Dias entre pagar fornecedores e receber dos clientes. Quanto MAIOR, mais capital de giro a empresa precisa imobilizar.",
             formula: "PMR + PME − PMP",
+            calc: c.cicloFinanceiro,
           }}
           sub={
             ind.cicloFinanceiro > 60
@@ -38,6 +41,7 @@ export function IndicatorsTab() {
             <HelpTip
               text="Dinheiro consumido pela operação. Reflete a defasagem entre recebimento de clientes e pagamento de fornecedores/estoque."
               formula="Contas a Receber + Estoques − Fornecedores"
+              calc={c.ncg}
             />
           </div>
           <div className="mono mt-2 text-2xl font-bold text-foreground">{fmtBRL(ind.ncg)}</div>
@@ -55,9 +59,10 @@ export function IndicatorsTab() {
             description:
               "Diferença entre o que a operação precisa (NCG) e o que a empresa tem (CGD). Positivo = precisa de empréstimo de giro; Negativo = sobra caixa.",
             formula: "NCG − CGD",
+            calc: c.gapCapitalGiro,
           }}
         />
-        <CashConversionSmall conversao={ind.conversaoEbitdaCaixa} />
+        <CashConversionSmall conversao={ind.conversaoEbitdaCaixa} calc={c.conversaoEbitdaCaixa} />
       </div>
 
       <IndicatorsGrid state={state} />
@@ -71,7 +76,7 @@ export function IndicatorsTab() {
 
 
 // (I2) Consome ind.conversaoEbitdaCaixa — não recalcula localmente.
-function CashConversionSmall({ conversao }: { conversao: number }) {
+function CashConversionSmall({ conversao, calc }: { conversao: number; calc?: string }) {
   const conversaoEbitda = conversao;
   const tone = conversaoEbitda >= 70 ? "pos" : conversaoEbitda >= 40 ? "default" : "neg";
 
@@ -82,6 +87,7 @@ function CashConversionSmall({ conversao }: { conversao: number }) {
         <HelpTip
           text="Mede quanto do EBITDA efetivamente vira caixa livre (FCF)."
           formula="FCF ÷ EBITDA × 100"
+          calc={calc}
         />
       </div>
       <div

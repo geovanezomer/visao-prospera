@@ -11,6 +11,7 @@ import {
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/engines/finance/format";
+import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 import { monthValues } from "@/engines/finance";
 import { splitReceitasFinanceiras } from "@/engines/finance/shared";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
@@ -80,7 +81,7 @@ export function DRETab() {
   // SSOT: useFinanceModel aplica `resolveEffectiveRegime` (Simples pode cair
   // automaticamente para Presumido se exceder o teto). Garante que DRE/ind/cf
   // sejam idênticos aos da aba Indicadores.
-  const { regime, dre, ind, cf, model } = useFinanceModel(state);
+  const { regime, dre, ind, cf, cagrReceitas12m, model } = useFinanceModel(state);
   const tax = model.tax;
 
 
@@ -99,6 +100,7 @@ export function DRETab() {
   const cvLabel = COST_VENDAS_LABEL[state.businessType];
 
   const rb = sum(dre.receitaBruta);
+  const calcs = buildIndicatorCalcs(state, dre, ind, cagrReceitas12m);
   const ll = sum(dre.lucroLiquido);
 
   // Descontos Incondicionais e Abatimentos — busca por id em revenue.deducoes
@@ -392,7 +394,11 @@ export function DRETab() {
           label="Faturamento"
           value={fmtBRL(rb)}
           tone="pos"
-          hint={{ description: "Faturamento bruto anual.", formula: "Σ Receita Bruta" }}
+          hint={{
+            description: "Faturamento bruto anual.",
+            formula: "Σ Receita Bruta",
+            calc: `Σ dos 12 meses\n= ${fmtBRL(rb)}`,
+          }}
         />
         <StatCard
           label="EBITDA"
@@ -403,6 +409,7 @@ export function DRETab() {
             description:
               "Geração operacional de caixa antes de juros, impostos e depreciação. Mede a operação 'pura', sem efeitos de estrutura de capital nem fiscalidade.",
             formula: "Receita Líquida − CPV − Despesas Operacionais (excl. D&A)",
+            calc: calcs.ebitda12m,
           }}
         />
 
@@ -414,6 +421,7 @@ export function DRETab() {
           hint={{
             description: "Resultado operacional após depreciação/amortização (LAJIR).",
             formula: "EBITDA − Depreciação/Amortização",
+            calc: `${fmtBRL(sum(dre.ebitda))} − ${fmtBRL(sum(dre.depreciacao))}\n= ${fmtBRL(sum(dre.ebit))}`,
           }}
         />
         <StatCard
@@ -421,14 +429,22 @@ export function DRETab() {
           value={fmtBRL(ll)}
           sub={`${ind.margemLiquida.toFixed(1)}%`}
           tone={ll >= 0 ? "pos" : "neg"}
-          hint={{ description: "Resultado final.", formula: "LAIR − Impostos" }}
+          hint={{
+            description: "Resultado final.",
+            formula: "LAIR − Impostos",
+            calc: calcs.lucroLiquido12m,
+          }}
         />
         <StatCard
           label="Impostos"
           value={fmtBRL(tax.annual)}
           tone="warn"
           sub={`${fmtPct(tax.effective / 100)}`}
-          hint={{ description: "Carga tributária.", formula: "Impostos ÷ Receita Bruta" }}
+          hint={{
+            description: "Carga tributária.",
+            formula: "Impostos ÷ Receita Bruta",
+            calc: `${fmtBRL(tax.annual)} ÷ ${fmtBRL(rb)} × 100\n= ${fmtPct(tax.effective / 100)}`,
+          }}
         />
       </div>
 

@@ -202,6 +202,7 @@ export function BalancoTab() {
             description:
               "Folga financeira de curto prazo: quanto sobra do ativo circulante após quitar todo o passivo circulante.",
             formula: "Ativo Circulante − Passivo Circulante",
+            calc: `${fmtBRL(totalsAtual.ativoCirculante)} − ${fmtBRL(totalsAtual.passivoCirculante)}\n= ${fmtBRL(totalsAtual.ativoCirculante - totalsAtual.passivoCirculante)}`,
           }}
         />
         <StatCard
@@ -211,6 +212,7 @@ export function BalancoTab() {
             description:
               "Dívidas que geram juros (empréstimos, financiamentos e debêntures de CP + LP). Base do endividamento financeiro.",
             formula: "Empréstimos CP + Empréstimos LP + Debêntures",
+            calc: `Total consolidado\n= ${fmtBRL(totalsAtual.dividaOnerosa)}`,
           }}
         />
         <StatCard
@@ -220,6 +222,7 @@ export function BalancoTab() {
             description:
               "Obrigações operacionais sem juros (fornecedores, impostos, salários). Funcionam como funding gratuito do giro.",
             formula: "Fornecedores + Impostos a pagar + Salários + Outros operacionais",
+            calc: `Total consolidado\n= ${fmtBRL(totalsAtual.passivosNaoOnerosos)}`,
           }}
         />
         <StatCard
@@ -234,9 +237,14 @@ export function BalancoTab() {
             description:
               "Quanto a empresa deve (oneroso) para cada R$ 1 de capital próprio. Acima de 1× sinaliza alavancagem agressiva.",
             formula: "Dívida Onerosa ÷ Patrimônio Líquido",
+            calc:
+              totalsAtual.patrimonioLiquido > 0
+                ? `${fmtBRL(totalsAtual.dividaOnerosa)} ÷ ${fmtBRL(totalsAtual.patrimonioLiquido)}\n= ${(totalsAtual.dividaOnerosa / totalsAtual.patrimonioLiquido).toFixed(2)}×`
+                : "Patrimônio Líquido ≤ 0 — cálculo indisponível",
           }}
         />
       </div>
+
 
       {/* Header — toolbar apenas (escondida em modo somente leitura) */}
       {!readOnly && (
