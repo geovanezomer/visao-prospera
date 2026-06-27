@@ -347,7 +347,7 @@ export function DashboardCharts() {
               <Tooltip
                 contentStyle={{ fontSize: 12 }}
                 formatter={(v: number | string, _n: string, item: FunnelTooltipItem) => {
-                  const idx = data.funnel.findIndex((f) => f.stage === item.payload.stage);
+                  const idx = data.funnel.findIndex((f) => f.stage === item.payload?.stage);
                   const top = data.funnel[0]?.value || 0;
                   const prev = idx > 0 ? data.funnel[idx - 1].value : top;
                   const ratioTop = top > 0 ? ((Number(v) / top) * 100).toFixed(1) : "0";
