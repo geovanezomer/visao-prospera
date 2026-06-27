@@ -102,7 +102,13 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        // 1) Validação da requisição
+        // 1) Rate limit por IP — antes de qualquer parsing, para que bursts
+        //    de payloads inválidos também sejam contidos no mesmo bucket.
+        const ip = clientIp(request);
+        const rlIp = await rlConsume(`checkout:ip:${ip}`, 20, 60);
+        if (!rlIp.allowed) return tooManyRequests(rlIp.retryAfter);
+
+        // 2) Validação da requisição
         let parsed: z.infer<typeof Body>;
         try {
           parsed = Body.parse(await request.json());
@@ -116,10 +122,7 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
           );
         }
 
-        // 2) Rate limit distribuído por (IP, email)
-        const ip = clientIp(request);
-        const rlIp = await rlConsume(`checkout:ip:${ip}`, 20, 60);
-        if (!rlIp.allowed) return tooManyRequests(rlIp.retryAfter);
+        // 3) Rate limit adicional por email (após termos um email válido)
         const rlEmail = await rlConsume(
           `checkout:email:${parsed.email.toLowerCase()}`,
           5,
