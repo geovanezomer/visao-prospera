@@ -21,7 +21,17 @@ export type UserNote = {
   createdAt: string;
 };
 
-function rowToNote(r: any): UserNote {
+type DbNoteRow = {
+  id: string;
+  user_id: string;
+  author_id: string | null;
+  author_email: string | null;
+  body: string;
+  pinned: boolean;
+  created_at: string;
+};
+
+function rowToNote(r: DbNoteRow): UserNote {
   return {
     id: r.id,
     userId: r.user_id,

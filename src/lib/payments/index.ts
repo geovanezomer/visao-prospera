@@ -28,7 +28,7 @@ async function resolveFromDb(): Promise<{ provider: ProviderName } | null> {
       .select("value")
       .eq("key", "active_provider")
       .maybeSingle();
-    const chosen = (active?.value as any)?.provider as ProviderName | undefined;
+    const chosen = (active?.value as { provider?: ProviderName } | null)?.provider;
     if (!chosen) return null;
     return { provider: chosen };
   } catch {

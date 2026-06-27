@@ -25,15 +25,18 @@ export const getAppSettings = createServerFn({ method: "GET" }).handler(async ()
   const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
   });
-  const { data } = await sb.from("app_settings").select("key, value").in("key", PUBLIC_KEYS as any);
-  const out: Record<string, any> = {};
+  const { data } = await sb
+    .from("app_settings")
+    .select("key, value")
+    .in("key", PUBLIC_KEYS as unknown as string[]);
+  const out: Record<string, unknown> = {};
   for (const row of data ?? []) out[row.key] = row.value;
-  return out as Partial<Record<SettingKey, any>>;
+  return out as Partial<Record<SettingKey, unknown>>;
 });
 
 export const updateAppSetting = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { key: SettingKey; value: any }) =>
+  .inputValidator((data: { key: SettingKey; value: unknown }) =>
     z.object({ key: z.enum(KEYS), value: z.any() }).parse(data),
   )
   .handler(async ({ data, context }) => {

@@ -49,9 +49,9 @@ export async function notifyAdmin(payload: NotifyPayload): Promise<{ sent: boole
 
     if (cfg.email_to) {
       const { data: emailCfg } = await supabaseAdmin.from("email_settings").select("*").limit(1).maybeSingle();
-      const apiKey = (emailCfg as any)?.resend_api_key || process.env.RESEND_API_KEY;
-      const fromEmail = (emailCfg as any)?.from_email || process.env.FEEDBACK_FROM;
-      const fromName = (emailCfg as any)?.from_name || "Finnance Admin";
+      const apiKey = emailCfg?.resend_api_key || process.env.RESEND_API_KEY;
+      const fromEmail = emailCfg?.from_email || process.env.FEEDBACK_FROM;
+      const fromName = emailCfg?.from_name || "Finnance Admin";
       if (apiKey && fromEmail) {
         tasks.push(
           fetch("https://api.resend.com/emails", {
@@ -75,7 +75,7 @@ export async function notifyAdmin(payload: NotifyPayload): Promise<{ sent: boole
       action: `notify.${payload.event}`,
       resource: "notify",
       target_label: payload.dedupKey ?? payload.title,
-      metadata: { title: payload.title } as any,
+      metadata: { title: payload.title } as unknown as import("@/integrations/supabase/types").Json,
     });
 
     return { sent: tasks.length > 0 };
