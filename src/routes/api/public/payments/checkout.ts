@@ -274,7 +274,7 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
               cpfCnpj: parsed.cpf,
               phone: parsed.phone,
               successUrl: `${appUrl}/checkout/sucesso?plan=${parsed.plan}&i=${encodeURIComponent(signedToken)}`,
-              cancelUrl: `${appUrl}/planos?canceled=1&i=${encodeURIComponent(signedToken)}`,
+              cancelUrl: `${appUrl}/#planos`,
               interval: plan.interval,
               priceCents: plan.price_cents,
               currency: plan.currency,
