@@ -131,21 +131,32 @@ export function HistoricalYearPills() {
 
         {historicals.map((h) => {
           const isPrev = (h.subKind ?? "realizado") === "previsao";
+          const isSel = compareActive && selected.has(h.id);
           return (
           <div key={h.id} className="group/pill inline-flex items-center">
             <button
               type="button"
-              role="tab"
-              onClick={() => setPendingLoadId(h.id)}
+              role={compareActive ? "checkbox" : "tab"}
+              aria-checked={compareActive ? isSel : undefined}
+              onClick={() =>
+                compareActive ? toggleSelected(h.id) : setPendingLoadId(h.id)
+              }
               className={cn(
-                "rounded-l-full border border-r-0 px-2.5 py-0.5 text-[11px] font-medium transition-colors",
-                isPrev
-                  ? "border-[var(--warning)]/50 bg-[var(--warning)]/10 text-[var(--warning)] hover:bg-[var(--warning)]/20"
-                  : "border-input bg-background hover:bg-accent hover:text-accent-foreground",
+                "rounded-l-full border border-r-0 px-2.5 py-0.5 text-[11px] font-medium transition-colors inline-flex items-center gap-1",
+                isSel
+                  ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                  : isPrev
+                    ? "border-[var(--warning)]/50 bg-[var(--warning)]/10 text-[var(--warning)] hover:bg-[var(--warning)]/20"
+                    : "border-input bg-background hover:bg-accent hover:text-accent-foreground",
               )}
-              title={`Carregar ${isPrev ? "previsão" : "snapshot"} de ${h.fiscalYear}`}
+              title={
+                compareActive
+                  ? `${isSel ? "Remover" : "Incluir"} ${h.name} na comparação`
+                  : `Carregar ${isPrev ? "previsão" : "snapshot"} de ${h.fiscalYear}`
+              }
             >
-              {isPrev && <span className="mr-1 opacity-70">◇</span>}
+              {compareActive && isSel && <Check className="h-3 w-3" />}
+              {!compareActive && isPrev && <span className="mr-0.5 opacity-70">◇</span>}
               {h.name}
             </button>
             <DropdownMenu>
@@ -154,9 +165,11 @@ export function HistoricalYearPills() {
                   type="button"
                   className={cn(
                     "h-[22px] rounded-r-full border px-1 transition-colors",
-                    isPrev
-                      ? "border-[var(--warning)]/50 bg-[var(--warning)]/10 text-[var(--warning)] hover:bg-[var(--warning)]/20"
-                      : "border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                    isSel
+                      ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                      : isPrev
+                        ? "border-[var(--warning)]/50 bg-[var(--warning)]/10 text-[var(--warning)] hover:bg-[var(--warning)]/20"
+                        : "border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                   )}
                   aria-label={`Gerenciar ${h.name}`}
                 >
@@ -179,20 +192,80 @@ export function HistoricalYearPills() {
           );
         })}
 
-        {/* Pill "Atual" — indicador do período em edição. */}
-        <span
-          role="tab"
-          aria-selected
-          className="rounded-full border border-primary bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary"
+        {/* Pill "Atual" — em modo Comparar vira checkbox; senão, indicador. */}
+        {compareActive ? (
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={selected.has("atual")}
+            onClick={() => toggleSelected("atual")}
+            className={cn(
+              "rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition-colors inline-flex items-center gap-1",
+              selected.has("atual")
+                ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                : "border-primary bg-primary/10 text-primary hover:bg-primary/20",
+            )}
+          >
+            {selected.has("atual") && <Check className="h-3 w-3" />}
+            Atual
+            {mesesAtual < 12 && (
+              <span className="ml-0.5 text-[10px] font-normal opacity-80">
+                · parcial {mesesAtual}/12
+              </span>
+            )}
+          </button>
+        ) : (
+          <span
+            role="tab"
+            aria-selected
+            className="rounded-full border border-primary bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary"
+          >
+            Atual
+            {mesesAtual < 12 && (
+              <span className="ml-1.5 text-[10px] font-normal opacity-80">
+                · parcial {mesesAtual}/12
+              </span>
+            )}
+          </span>
+        )}
+
+        {/* Botão Comparar / Sair — alterna modo multi-seleção FP&A. */}
+        <Button
+          type="button"
+          size="sm"
+          variant={compareActive ? "default" : "outline"}
+          onClick={toggleComparisonMode}
+          className="ml-2 h-6 px-2 text-[11px]"
+          title={
+            compareActive
+              ? "Sair do modo comparar"
+              : "Comparar 2+ cenários lado a lado no DRE e Fluxo de Caixa"
+          }
         >
-          Atual
-          {mesesAtual < 12 && (
-            <span className="ml-1.5 text-[10px] font-normal opacity-80">
-              · parcial {mesesAtual}/12
-            </span>
+          {compareActive ? (
+            <>
+              <X className="mr-1 h-3 w-3" /> Sair
+              {selected.size > 0 && (
+                <span className="ml-1 rounded bg-primary-foreground/20 px-1 text-[10px]">
+                  {selected.size}
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <GitCompareArrows className="mr-1 h-3 w-3" /> Comparar
+            </>
           )}
-        </span>
+        </Button>
       </div>
+
+      {compareActive && selected.size < 2 && (
+        <p className="mt-1.5 text-[10px] text-muted-foreground">
+          Selecione 2 ou mais cenários (incluindo <strong>Atual</strong>) para
+          ver o comparativo no DRE e no Fluxo de Caixa.
+        </p>
+      )}
+
 
       {/* Confirmação de troca de período. */}
       <AlertDialog
