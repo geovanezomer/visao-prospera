@@ -97,6 +97,8 @@ const formSchema = z.object({
     .min(-100, "Margem inválida")
     .max(100, "Margem inválida")
     .optional(),
+  payoutPolicyPct: z.number().min(0).max(100),
+  reservaMinimaMensal: z.number().min(0).max(1_000_000_000),
 });
 
 /** Métricas do benchmark personalizável (P50). Mantém ordem de exibição. */
