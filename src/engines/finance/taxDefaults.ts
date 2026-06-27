@@ -148,6 +148,50 @@ export const ALIQ_PRESUMIDA_CBS_SN = 3.0;
 export const ALIQ_PRESUMIDA_IBS_SN = 1.2;
 
 // =====================================================================
+// FOLHA & SÓCIOS — INSS contribuinte individual, IRPF mensal, piso legal
+// (Plano v3 — todos editáveis via lightbox "Folha & Sócios")
+// =====================================================================
+/** Salário mínimo nacional vigente (R$/mês) — piso para pró-labore de sócio operacional. */
+export const SALARIO_MINIMO_DEFAULT = 1518;
+/** INSS sócio (contribuinte individual) — plano simplificado, Lei 9.876/99. */
+export const INSS_SOCIO_ALIQ_DEFAULT = 11;
+/** Teto contributivo do INSS (R$/mês) — Portaria MPS 2025. */
+export const INSS_TETO_DEFAULT = 8157.41;
+/** Cota patronal de INSS sobre pró-labore (Lucro Presumido/Real). */
+export const INSS_PATRONAL_ALIQ_DEFAULT = 20;
+/** Faixa do IRPF mensal: [até R$, alíquota %, parcela a deduzir R$]. */
+export type IrpfFaixa = [number, number, number];
+/** Tabela mensal do IRPF — vigente desde maio/2024 (Lei 14.848/2024). */
+export const IRPF_TABLE_DEFAULT: IrpfFaixa[] = [
+  [2259.2, 0, 0],
+  [2826.65, 7.5, 169.44],
+  [3751.05, 15, 381.44],
+  [4664.68, 22.5, 662.77],
+  [Number.POSITIVE_INFINITY, 27.5, 896.0],
+];
+/** Dedução por dependente no IRPF mensal (R$). */
+export const IRPF_DEPENDENTE_DEDUCAO_DEFAULT = 189.59;
+/** Desconto simplificado mensal opcional — Lei 14.973/2024 (R$). */
+export const IRPF_DESCONTO_SIMPLIFICADO_DEFAULT = 564.8;
+
+export interface PayrollOverride {
+  salarioMinimo?: number;
+  inssSocioAliq?: number;
+  inssTeto?: number;
+  inssPatronalAliq?: number;
+  /** Quando true, Simples Nacional também recolhe patronal (Anexo IV). Default false. */
+  inssPatronalSimples?: boolean;
+  irpfTable?: IrpfFaixa[];
+  irpfDependenteDeducao?: number;
+  irpfDescontoSimplificado?: number;
+  /** Quando true, sistema escolhe automaticamente entre tradicional × simplificado. Default true. */
+  irpfSimplificadoAuto?: boolean;
+  /** Quando true E regime=Presumido, distribuição isenta é limitada por (Base presunção − tributos federais).
+   *  False = presume escrituração contábil completa, distribuição livre. Default true. */
+  distribuicaoLimitePresumidoAuto?: boolean;
+}
+
+// =====================================================================
 // Tipo dos overrides — espelha exatamente as constantes acima
 // =====================================================================
 export interface TaxRatesOverride {
@@ -167,6 +211,8 @@ export interface TaxRatesOverride {
   presumidoBases?: Partial<Record<BusinessType, PresumidoBases>>;
   reformaTransicaoIbsMult?: number;
   reformaTransicaoIcmsIssMult?: number;
+  /** Parâmetros de folha & sócios (Plano v3). */
+  payroll?: PayrollOverride;
 }
 
 // =====================================================================
