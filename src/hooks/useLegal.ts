@@ -22,8 +22,8 @@ export function useLegal() {
     isLoading,
     isReady: isFetched || data !== undefined,
     legal: {
-      termsHtml: ((data?.legal as { terms_html?: string } | undefined)?.terms_html) || DEFAULT_TERMS_HTML,
-      privacyHtml: ((data?.legal as { privacy_html?: string } | undefined)?.privacy_html) || DEFAULT_PRIVACY_HTML,
+      termsHtml: ((data?.legal as unknown as { terms_html?: string } | undefined)?.terms_html) || DEFAULT_TERMS_HTML,
+      privacyHtml: ((data?.legal as unknown as { privacy_html?: string } | undefined)?.privacy_html) || DEFAULT_PRIVACY_HTML,
     } as LegalContent,
   };
 }
