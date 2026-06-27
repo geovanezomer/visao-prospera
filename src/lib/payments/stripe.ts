@@ -256,7 +256,7 @@ export class StripeProvider implements PaymentProvider {
           customerId: String(obj.customer),
           subscriptionId: String(obj.id),
           plan: (obj.metadata?.plan as PlanId) ?? planFromPriceRef(priceRef),
-          status: obj.status,
+          status: (obj.status as "active" | "canceled" | "incomplete" | "past_due" | "trialing") ?? "active",
           currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
         };
       }
