@@ -4,8 +4,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminEmail } from "./constants";
+import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: any) {
+function assertAdmin(claims: AuthClaims | undefined | null) {
   if (!isAdminEmail((claims?.email as string) ?? "")) {
     throw new Error("Acesso negado: apenas administrador.");
   }
@@ -84,7 +85,7 @@ export const exportUsersCsv = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as any)?.email,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
       action: "users.export_csv",
       resource: "user",
       metadata: { rows: all.length },

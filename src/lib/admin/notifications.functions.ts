@@ -5,8 +5,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminEmail } from "./constants";
+import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: any) {
+function assertAdmin(claims: AuthClaims | undefined | null) {
   if (!isAdminEmail((claims?.email as string) ?? "")) throw new Error("Acesso negado.");
 }
 
@@ -59,7 +60,7 @@ export const updateNotifSettings = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as any)?.email,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
       action: "notify.settings_update",
       resource: "notify",
     });
@@ -74,7 +75,7 @@ export const testNotification = createServerFn({ method: "POST" })
     const r = await notifyAdmin({
       event: "signup",
       title: "Teste de notificação",
-      body: `Disparado por ${(context.claims as any)?.email ?? "admin"} em ${new Date().toLocaleString("pt-BR")}.`,
+      body: `Disparado por ${(context.claims as AuthClaims | undefined)?.email ?? "admin"} em ${new Date().toLocaleString("pt-BR")}.`,
     });
     return r;
   });

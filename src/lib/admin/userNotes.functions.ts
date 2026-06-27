@@ -5,8 +5,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminEmail } from "./constants";
+import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: any) {
+function assertAdmin(claims: AuthClaims | undefined | null) {
   if (!isAdminEmail((claims?.email as string) ?? "")) throw new Error("Acesso negado.");
 }
 
@@ -61,7 +62,7 @@ export const createUserNote = createServerFn({ method: "POST" })
       .insert({
         user_id: data.userId,
         author_id: context.userId,
-        author_email: (context.claims as any)?.email ?? null,
+        author_email: (context.claims as AuthClaims | undefined)?.email ?? null,
         body: data.body,
       })
       .select()

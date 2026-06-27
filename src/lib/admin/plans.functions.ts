@@ -6,8 +6,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminEmail } from "./constants";
+import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: any) {
+function assertAdmin(claims: AuthClaims | undefined | null) {
   if (!isAdminEmail((claims?.email as string) ?? "")) throw new Error("Acesso negado.");
 }
 
@@ -143,7 +144,7 @@ export const upsertPlan = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as any)?.email,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
       action: data.id ? "plan.update" : "plan.create",
       resource: "plan",
       targetId: row?.id ?? null,
@@ -165,7 +166,7 @@ export const deletePlan = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as any)?.email,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
       action: "plan.delete",
       resource: "plan",
       targetId: data.id,

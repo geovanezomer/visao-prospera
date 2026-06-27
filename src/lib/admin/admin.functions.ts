@@ -12,11 +12,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { ADMIN_EMAIL, isAdminEmail } from "./constants";
+import type { AuthClaims } from "./_types";
 
 // ----------------------------------------------------------------------------
 // Helper — checagem de admin (server-side, autoritativa).
 // ----------------------------------------------------------------------------
-function assertAdmin(claims: any): void {
+function assertAdmin(claims: AuthClaims | undefined | null): void {
   const email = (claims?.email as string | undefined) ?? "";
   if (!isAdminEmail(email)) {
     throw new Error("Acesso negado: apenas administrador.");
@@ -221,7 +222,7 @@ export const setUserActive = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as any)?.email,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
       action: data.active ? "user.activate" : "user.deactivate",
       resource: "user",
       targetId: data.userId,
@@ -252,7 +253,7 @@ export const sendPasswordReset = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as any)?.email,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
       action: "user.password_reset",
       resource: "user",
       targetId: data.userId,
@@ -327,7 +328,7 @@ export const refundPayment = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as any)?.email,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
       action: "payment.refund",
       resource: "subscription",
       targetId: data.userId,
