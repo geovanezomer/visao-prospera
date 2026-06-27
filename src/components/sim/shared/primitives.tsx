@@ -8,10 +8,13 @@ export type HelpHint = string | { description: string; formula?: string; example
 export function HelpTip({
   text,
   formula,
+  calc,
   example,
 }: {
   text: string;
   formula?: string;
+  /** Memória de cálculo: fórmula resolvida com os números atuais. */
+  calc?: string;
   example?: string;
 }) {
   return (
@@ -30,6 +33,16 @@ export function HelpTip({
                 Fórmula
               </div>
               <div className="mono mt-0.5 text-[11px] text-primary">{formula}</div>
+              {calc && (
+                <>
+                  <div className="mt-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Memória de cálculo
+                  </div>
+                  <div className="mono mt-0.5 text-[11px] text-foreground/90 whitespace-pre-line">
+                    {calc}
+                  </div>
+                </>
+              )}
             </div>
           )}
           {example && (
@@ -40,6 +53,7 @@ export function HelpTip({
     </TooltipProvider>
   );
 }
+
 
 export function renderHint(hint: HelpHint | undefined) {
   if (!hint) return null;
