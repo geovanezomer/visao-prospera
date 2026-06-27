@@ -211,6 +211,8 @@ export function CompanyConfigForm({
       periodoAnaliseMeses: d.periodoAnaliseMeses,
       fiscalYearStartMonth: d.fiscalYearStartMonth,
       margemAlvoPct: d.margemAlvoPct,
+      payoutPolicyPct: d.payoutPolicyPct,
+      reservaMinimaMensal: d.reservaMinimaMensal,
       moedaBase: "BRL",
     });
     setTax({ regime: d.regime });
