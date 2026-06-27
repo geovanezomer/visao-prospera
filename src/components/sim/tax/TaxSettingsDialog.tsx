@@ -152,7 +152,7 @@ export function TaxSettingsDialog() {
           <Settings className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl w-screen h-[100dvh] max-h-[100dvh] rounded-none sm:rounded-lg sm:h-auto sm:max-h-[88vh] overflow-hidden p-0 flex flex-col">
+      <DialogContent className="max-w-6xl w-screen h-[100dvh] max-h-[100dvh] rounded-none sm:rounded-lg sm:h-auto sm:max-h-[90vh] overflow-hidden p-0 flex flex-col">
         <DialogHeader className="border-b border-border/60 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 shrink-0">
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <step.icon className="h-5 w-5 text-primary shrink-0" />
