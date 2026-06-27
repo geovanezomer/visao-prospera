@@ -1,6 +1,7 @@
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { fmtBRL, fmtPct } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
+import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 import { HelpTip, StatCard } from "@/components/sim/shared/primitives";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { IndicatorsGrid } from "./IndicatorsGrid";
@@ -9,7 +10,8 @@ import { IndicatorsGrid } from "./IndicatorsGrid";
 
 export function IndicatorsTab() {
   const state = useFinanceState();
-  const { ind } = useFinanceModel(state);
+  const { dre, ind, cagrReceitas12m } = useFinanceModel(state);
+  const c = buildIndicatorCalcs(state, dre, ind, cagrReceitas12m);
 
 
 
