@@ -461,19 +461,18 @@ export function DRETab() {
         />
       </div>
 
-      {/* DRE Table — substituída por comparação anual quando view=anual e há histórico */}
-      {view === "anual" && annualSnaps.length >= 2 ? (
+      {/* DRE Table — substituída por comparação quando: (a) modo "Comparar" ativo
+          com ≥ 2 selecionados, ou (b) view=anual com histórico. */}
+      {showCompare ? (
         <div className="rounded-lg border border-border/60 bg-card/40 overflow-hidden shadow-sm">
           <div className="border-b border-border/60 p-3 sm:p-4">
-            <h3 className="text-sm sm:text-base font-semibold">
-              D.R.E. — Comparativo anual (últimos {annualSnaps.length - 1} anos + atual)
-            </h3>
+            <h3 className="text-sm sm:text-base font-semibold">{compareTitle}</h3>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
               Regime de Competência · valores anuais lado a lado
             </p>
           </div>
           <div className="p-3 sm:p-4">
-            <DREComparison snapshots={annualSnaps} />
+            <DREComparison snapshots={compareSnaps} />
           </div>
         </div>
       ) : (
