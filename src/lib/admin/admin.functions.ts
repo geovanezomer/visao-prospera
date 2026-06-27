@@ -372,7 +372,7 @@ export const resendMagicLink = createServerFn({ method: "POST" })
       options: appUrl ? { redirectTo: `${appUrl}/app` } : undefined,
     });
     if (lerr) throw new Error(lerr.message);
-    const actionLink = (link as any)?.properties?.action_link as string | undefined;
+    const actionLink = link?.properties?.action_link as string | undefined;
     if (!actionLink) throw new Error("Falha ao gerar link.");
 
     // Tenta enviar via Resend (banco → env fallback). Se nada configurado,
