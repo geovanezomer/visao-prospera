@@ -157,10 +157,19 @@ export function SociosCard() {
         <div>
           <SectionTitle hint={HINT}>Pró-labore × Distribuição de Lucros</SectionTitle>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            Lucro mensal estimado disponível para distribuição:{" "}
-            <b>{fmtBRL(lucroMensalDisponivel)}</b> · Regime efetivo:{" "}
-            <b className="uppercase">{regime}</b> · Piso legal (salário mínimo):{" "}
-            <b>{fmtBRL(salarioMin)}</b>
+            Lucro mensal disponível para distribuição:{" "}
+            <b>{fmtBRL(lucroMensalDisponivel)}</b>
+            {(payoutPct !== 100 || reservaMin > 0) && (
+              <>
+                {" "}
+                <span className="text-muted-foreground/70">
+                  (lucro bruto {fmtBRL(lucroMensalBruto)} − reserva{" "}
+                  {fmtBRL(reservaMin)} × payout {payoutPct}%)
+                </span>
+              </>
+            )}{" "}
+            · Regime efetivo: <b className="uppercase">{regime}</b> · Piso legal
+            (salário mínimo): <b>{fmtBRL(salarioMin)}</b>
           </p>
         </div>
         <div className="flex gap-2">
