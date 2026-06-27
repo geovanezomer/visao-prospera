@@ -66,6 +66,17 @@ export function DRETab() {
   const readOnly = useFinanceReadOnly();
   const [view, setView] = usePeriodView("trimestral");
   const annualSnaps = useAnnualSnapshots(3);
+  const compareMode = useComparisonMode();
+  const selectedSnaps = useSelectedSnapshots();
+  const showCompare =
+    (compareMode.active && selectedSnaps.length >= 2) ||
+    (view === "anual" && annualSnaps.length >= 2);
+  const compareSnaps =
+    compareMode.active && selectedSnaps.length >= 2 ? selectedSnaps : annualSnaps;
+  const compareTitle =
+    compareMode.active && selectedSnaps.length >= 2
+      ? `D.R.E. — Comparativo (${selectedSnaps.length} cenários selecionados)`
+      : `D.R.E. — Comparativo anual (últimos ${annualSnaps.length - 1} anos + atual)`;
 
 
   // Períodos exibidos na tabela conforme o modo de visualização.
