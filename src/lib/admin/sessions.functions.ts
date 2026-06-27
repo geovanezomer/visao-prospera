@@ -7,8 +7,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminEmail } from "./constants";
+import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: any) {
+function assertAdmin(claims: AuthClaims | undefined | null) {
   if (!isAdminEmail((claims?.email as string) ?? "")) throw new Error("Acesso negado.");
 }
 
@@ -28,13 +29,13 @@ export const getUserSessions = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: u, error } = await supabaseAdmin.auth.admin.getUserById(data.userId);
     if (error || !u?.user) throw new Error(error?.message ?? "Usuário não encontrado.");
-    const user = u.user as any;
+    const user = u.user;
     const session: UserSession = {
       userId: user.id,
       email: user.email ?? null,
       lastSignInAt: user.last_sign_in_at ?? null,
       createdAt: user.created_at,
-      identities: (user.identities ?? []).map((i: any) => ({
+      identities: (user.identities ?? []).map((i) => ({
         provider: i.provider,
         createdAt: i.created_at ?? null,
         lastSignInAt: i.last_sign_in_at ?? null,
@@ -49,13 +50,16 @@ export const revokeAllSessions = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // `signOut` no admin client revoga todos os refresh tokens do usuário.
-    const { error } = await (supabaseAdmin.auth.admin as any).signOut(data.userId, "global");
+    // `signOut(userId, scope)` é admin-only e exposta como helper sem
+    // tipagem pública. Mantemos um cast estreito para a assinatura.
+    type AdminSignOut = (userId: string, scope: "global" | "local") => Promise<{ error: { message: string } | null }>;
+    const adminAuth = supabaseAdmin.auth.admin as unknown as { signOut: AdminSignOut };
+    const { error } = await adminAuth.signOut(data.userId, "global");
     if (error) throw new Error(error.message);
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as any)?.email,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
       action: "user.sessions_revoked",
       resource: "user",
       targetId: data.userId,

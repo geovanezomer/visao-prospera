@@ -8,6 +8,7 @@
 // ============================================================================
 
 import type { NormalizedEvent, ProviderName, PlanId } from "./types";
+import type { AdminClient } from "@/lib/admin/_types";
 
 type DbRow = {
   user_id: string;
@@ -22,11 +23,34 @@ type DbRow = {
   cancel_at_period_end: boolean;
 };
 
+/**
+ * Narrowing seguro do payload persistido em `webhook_events.payload`
+ * (Json no banco). Lê o `type` discriminante; se ausente, devolve "unknown".
+ */
+function eventType(ev: NormalizedEvent): string {
+  return ev.type ?? "unknown";
+}
+
+/**
+ * Lê `subscriptionId` quando existir no variant. `subscription.activated`,
+ * `updated`, `canceled`, `past_due` e `trial_will_end` o possuem; `ignored` não.
+ */
+function eventSubscriptionId(ev: NormalizedEvent): string | null {
+  return "subscriptionId" in ev ? ev.subscriptionId : null;
+}
+
+/**
+ * Lê `email` quando existir (atualmente apenas em `subscription.activated`).
+ */
+function eventEmail(ev: NormalizedEvent): string | null {
+  return "email" in ev ? ev.email : null;
+}
+
 function renderTemplate(tpl: string, vars: Record<string, string>): string {
   return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
 }
 
-async function getEmailConfig(admin: any) {
+async function getEmailConfig(admin: AdminClient) {
   const { data } = await admin.from("email_settings").select("*").limit(1).maybeSingle();
   const apiKey = data?.resend_api_key || process.env.RESEND_API_KEY || null;
   const fromEmail = data?.from_email || process.env.FEEDBACK_FROM || process.env.MAGICLINK_FROM || null;
@@ -35,12 +59,12 @@ async function getEmailConfig(admin: any) {
   return { apiKey, from: fromName ? `${fromName} <${fromEmail}>` : fromEmail };
 }
 
-async function getTemplate(admin: any, kind: string) {
+async function getTemplate(admin: AdminClient, kind: string) {
   const { data } = await admin.from("email_templates").select("*").eq("kind", kind).maybeSingle();
   return data?.enabled ? data : null;
 }
 
-async function getOrCreateUserId(admin: any, email: string): Promise<string | null> {
+async function getOrCreateUserId(admin: AdminClient, email: string): Promise<string | null> {
   if (!email) return null;
   const target = email.toLowerCase();
   // Pagina até encontrar o usuário (Supabase Auth lista até 200/página).
@@ -56,7 +80,7 @@ async function getOrCreateUserId(admin: any, email: string): Promise<string | nu
       break;
     }
     const users = list?.users ?? [];
-    const found = users.find((u: any) => u.email?.toLowerCase() === target);
+    const found = users.find((u) => u.email?.toLowerCase() === target);
     if (found) return found.id;
     if (users.length < PER_PAGE) break; // última página
   }
@@ -68,7 +92,7 @@ async function getOrCreateUserId(admin: any, email: string): Promise<string | nu
   return created.user?.id ?? null;
 }
 
-async function sendMagicLink(admin: any, email: string, plan?: string): Promise<void> {
+async function sendMagicLink(admin: AdminClient, email: string, plan?: string): Promise<void> {
   if (!email) return;
   const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
   const redirectTo = appUrl ? `${appUrl}/app` : undefined;
@@ -113,7 +137,7 @@ function nextDelaySeconds(attempts: number): number | null {
 }
 
 async function insertEvent(
-  admin: any,
+  admin: AdminClient,
   provider: ProviderName | "admin",
   event: NormalizedEvent,
   status: "processed" | "failed" | "skipped" | "pending_retry",
@@ -132,9 +156,9 @@ async function insertEvent(
       .from("webhook_events")
       .insert({
         provider,
-        event_type: (event as any).type ?? "unknown",
-        subscription_id: (event as any).subscriptionId ?? null,
-        customer_email: (event as any).email ?? null,
+        event_type: eventType(event),
+        subscription_id: eventSubscriptionId(event),
+        customer_email: eventEmail(event),
         status,
         payload: event,
         error,
@@ -157,7 +181,7 @@ async function insertEvent(
  * Não escreve em webhook_events — o caller cuida da persistência/retry.
  */
 async function runEventLogic(
-  admin: any,
+  admin: AdminClient,
   provider: ProviderName,
   event: NormalizedEvent,
 ): Promise<void> {
@@ -180,7 +204,7 @@ async function runEventLogic(
       };
       const { error } = await admin
         .from("subscriptions")
-        .upsert(row as any, { onConflict: "stripe_subscription_id" });
+        .upsert(row as DbRow, { onConflict: "stripe_subscription_id" });
       if (error) throw new Error(error.message);
 
       // Vincula a intenção de compra (a mais recente do mesmo email/provider
@@ -307,8 +331,8 @@ export async function handleNormalizedEvent(
         await notifyAdmin({
           event: "webhook_failure",
           title: `Webhook falhou (${provider})`,
-          body: `Tipo: ${(event as any).type}\nErro: ${msg}`,
-          dedupKey: `whf:${provider}:${(event as any).subscriptionId ?? (event as any).type}`,
+          body: `Tipo: ${eventType(event)}\nErro: ${msg}`,
+          dedupKey: `whf:${provider}:${eventSubscriptionId(event) ?? eventType(event)}`,
         });
       } catch {/* noop */}
     }
@@ -339,7 +363,10 @@ export async function reprocessWebhookEventRow(eventId: string, opts?: {
   if (lockErr) throw new Error(lockErr.message);
   if (!claimed) return { ok: false, status: "locked", error: "Evento em processamento por outra rotina." };
 
-  const ev = claimed as any;
+  // `claimed` é uma linha de webhook_events tipada pelo schema gerado.
+  // Os campos `provider`, `payload`, `attempts` etc. existem no schema;
+  // só precisamos narrowar `payload` (jsonb) para `NormalizedEvent`.
+  const ev = claimed;
   const provider = ev.provider as ProviderName;
   const payload = ev.payload as NormalizedEvent;
   const newAttempts = (ev.attempts ?? 0) + 1;
@@ -415,7 +442,7 @@ export async function runRetryBatch(limit = 25): Promise<{
     .order("next_attempt_at", { ascending: true })
     .limit(limit);
 
-  const ids = (due ?? []).map((r: any) => r.id);
+  const ids = (due ?? []).map((r) => r.id);
   let ok = 0, failed = 0, deadLetter = 0;
   for (const id of ids) {
     const r = await reprocessWebhookEventRow(id, { manual: false });

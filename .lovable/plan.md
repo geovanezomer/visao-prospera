@@ -1,117 +1,79 @@
-# Refactor `pdfExport` para renderer puro (sem duplicar call-sites de domínio)
 
-## Problema
+## Diagnóstico
 
-`src/engines/finance/pdfExport.ts` é hoje um **segundo call-site** de:
+149 ocorrências de `any` (não 186 — a contagem original incluía comentários e o `types.ts` autogerado do Supabase, que não conta como dívida). Distribuição:
 
-- `diagnose(state, dre, ind)` — diagnóstico de saúde financeira
-- `buildPrescriptiveCards(state, { dre, tax, ind, cf })` — recomendações priorizadas
-- `buildBriefing(state, dre, ind)` + IA (`loadConfig`, `isAIConfigured`, `gerarDiagnostico`, cache)
-
-A tela já calcula tudo isso por hooks/selectors. Se algum dia mudar a assinatura, parâmetro obrigatório, ou ordem de chamada de uma dessas funções, **PDF e tela podem divergir silenciosamente**. Hoje produzem o mesmo número porque são funções puras; amanhã, não há garantia.
-
-## Objetivo
-
-`pdfExport` vira **render-only**: recebe os resultados já calculados; não invoca lógica de domínio. O call-site (`src/routes/app.tsx`, o único existente) passa a montar o payload com as mesmas funções/hooks que a UI consome — uma SSOT por execução.
-
-## Mudanças
-
-### 1. Novo contrato de `exportFinancePDF`
-
-```ts
-// src/engines/finance/pdfExport.ts
-import type { DiagnoseItem } from "@/engines/finance/diagnose";
-import type { PrescriptiveCard } from "@/engines/finance/prescriptive";
-import type { DiagnosticoResult } from "@/engines/ai/diagnostico";
-
-export interface ExportPDFInput {
-  state: AppState;
-  model: FinancialModel;
-  diags: DiagnoseItem[];               // já calculado pelo caller
-  prescriptive: PrescriptiveCard[];    // já calculado pelo caller
-  aiDiagnostico?: DiagnosticoResult | null; // opcional, vindo do hook useDiagnosticoIA
-}
+```text
+src/lib/admin           72  ← funções server-side do painel
+src/components/admin    30  ← UI do painel + DashboardCharts
+src/lib/payments        29  ← webhook handler, refund, adapters
+src/engines/finance      4  ← resíduo do pdfExport
+outros                  14  ← ruído marginal
 ```
 
-- Remove os imports executáveis: `diagnose`, `buildPrescriptiveCards`, `buildBriefing`, `briefingCacheKey`, `loadConfig`, `isAIConfigured`, `gerarDiagnostico`, `getCached`, `setCached`, `PROMPT_VERSION`.
-- Mantém apenas `type`-only imports.
-- A seção "Diagnóstico Executivo IA" só renderiza se `aiDiagnostico` chegar preenchido. O exportador **não busca, não chama provedor, não toca em cache** — isso é responsabilidade do hook na UI.
+Não são 149 problemas distintos — são **6 famílias** repetidas, fruto da pressa de construir a esteira de pagamentos antes do lançamento.
 
-### 2. Call-site único em `src/routes/app.tsx`
+## Famílias e correção
 
-No `onClick` do botão de exportar:
+### F1 — `admin: any` / `supabaseAdmin: any` (≈ 35 ocorrências)
 
-```ts
-const [
-  { exportFinancePDF },
-  { buildFinancialModel },
-  { diagnose },
-  { buildPrescriptiveCards },
-] = await Promise.all([
-  import("@/engines/finance/pdfExport"),
-  import("@/engines/finance/financialModel"),
-  import("@/engines/finance/diagnose"),
-  import("@/engines/finance/prescriptive"),
-]);
+Helpers internos recebem o cliente admin como `any`. Já existe o tipo certo: `SupabaseClient<Database>` de `@supabase/supabase-js` + `Database` de `@/integrations/supabase/types`.
 
-const model = buildFinancialModel(state);
-const { dre, ind, tax, cf } = model;
-const diags = diagnose(state, dre, ind);
-const prescriptive = buildPrescriptiveCards(state, { dre, tax, ind, cf });
+- Criar `src/lib/admin/_types.ts` com `export type AdminClient = SupabaseClient<Database>`.
+- Trocar todas as assinaturas `admin: any` por `admin: AdminClient`.
+- Arquivos: `webhook-handler.server.ts`, `userDetail.functions.ts`, `notify.server.ts`, `refund.server.ts`, e os demais `*.functions.ts` do admin.
 
-// IA: reusa o resultado já presente no hook useDiagnosticoIA (cache compartilhado).
-// Se ainda não houver, passa null — o PDF omite a página, sem fallback de chamada.
-const aiDiagnostico = diagnosticoIA.data ?? null;
+### F2 — `claims: any` (≈ 10 ocorrências)
 
-await exportFinancePDF({ state, model, diags, prescriptive, aiDiagnostico });
-```
+JWT claims vindos do `requireSupabaseAuth` são tratados como `any` para ler `email` e fazer `assertAdmin`.
 
-O hook `useDiagnosticoIA` (já consumido pelo Dashboard/Strategic) passa a ser também chamado no nível do `app.tsx` para que o botão consiga ler `diagnosticoIA.data` no clique. Como o hook é memoizado por `briefingCacheKey`, isso não dispara nova chamada à IA quando já está em cache.
+- Definir `AuthClaims` (`sub: string; email?: string; role?: string; app_metadata?: {...}`) em `src/lib/admin/_types.ts`.
+- Substituir `(context.claims as any)?.email` e `assertAdmin(claims: any)` por `AuthClaims`.
 
-### 3. Guardrail arquitetural (novo teste)
+### F3 — Respostas brutas de Stripe/Asaas (≈ 20 ocorrências)
 
-Adicionar em `src/__tests__/architecture.test.ts`:
+`refund.server.ts`, `stripe.ts`, `asaas.ts` fazem `(await r.json()) as any`.
 
-```ts
-it("pdfExport é render-only (não importa lógica de domínio executável)", () => {
-  const src = readFileSync(join(ROOT, "src/engines/finance/pdfExport.ts"), "utf8");
-  const forbidden = [
-    /\bfrom\s+["']@\/engines\/finance\/diagnose["']/,
-    /\bfrom\s+["']@\/engines\/finance\/prescriptive["']/,
-    /\bfrom\s+["']@\/engines\/finance\/briefing["']/,
-    /\bfrom\s+["']@\/engines\/ai\/diagnostico["']/,
-    /\bfrom\s+["']@\/engines\/ai\/diagnosticoCache["']/,
-    /\bfrom\s+["']@\/engines\/ai\/providers["']/,
-  ];
-  // Permitido apenas `import type { ... } from`
-  for (const re of forbidden) {
-    const match = src.match(re);
-    if (!match) continue;
-    const line = src.slice(0, match.index!).split("\n").pop() ?? "";
-    expect(line.trim().startsWith("import type"), `pdfExport importa runtime de ${match[0]}`).toBe(true);
-  }
-});
-```
+- Criar `src/lib/payments/_remote-types.ts` com shapes mínimos do que efetivamente usamos: `StripeSubscription`, `StripeInvoice`, `StripeRefund`, `AsaasPayment`, `AsaasRefund` (campos consumidos apenas — não replicar a API inteira).
+- Trocar `stripeGet<any>` / `asaasReq<any>` pelos genéricos certos.
 
-### 4. Testes existentes
+### F4 — `PaymentEvent` apagado para `any` (≈ 8 ocorrências em `webhook-handler.server.ts`)
 
-Todos os 343 testes seguem verdes. A suíte não testava o conteúdo do PDF, apenas o boundary — a nova regra acima é o que protege a SSOT daqui pra frente.
+O union `PaymentEvent` já existe e é validado pelos testes E2E. As linhas `(event as any).type`, `(event as any).subscriptionId`, `(event as any).email` derrotam a discriminação.
+
+- Tipar `event: PaymentEvent` no entry-point e narrowar por `event.type` (já é discriminated union). Isso elimina os 8 casts e fortalece o handler — se um campo deixar de existir num evento, o TS pega na hora.
+
+### F5 — Linhas de tabela em `.map((row: any) => ...)` (≈ 25 ocorrências)
+
+`userDetail.functions.ts`, `webhook-handler.server.ts`, `admin.functions.ts` mapeiam resultados de `.from('subscriptions')`, `.from('webhook_events')`, `.from('audit_log')` com `(s: any) => ...`.
+
+- Deixar o Supabase inferir: removendo o `: any` o tipo gerado vem sozinho. Onde a query usa `.select('a,b,c')`, o tipo já é parcial e correto.
+- Onde precisarmos compor (ex.: `.map((s) => ({ id: s.stripe_subscription_id }))`), declarar um `Row = Tables<'subscriptions'>` local.
+
+### F6 — Recharts callbacks (8 em `DashboardCharts.tsx`)
+
+`(e: any) => toggle(...)`, `formatter={(v: any, n: any, item: any) => ...}` etc.
+
+- Recharts exporta `TooltipProps`, `LegendProps`, `PieLabel`. Já que o callback shape varia por chart, criar tipos locais mínimos (`type LegendClickPayload = { dataKey?: string | number; value?: string }`) no topo do arquivo e usar.
+- Para o `payload?: any[]` do tooltip customizado, usar `TooltipProps<number, string>['payload']`.
+
+## Guardrail
+
+Após a limpeza, adicionar ao `src/__tests__/architecture.test.ts` um teste que conta `any` explícitos em `src/lib/admin/**`, `src/lib/payments/**`, `src/components/admin/**` e falha se ultrapassar um teto (ex.: 5 — algumas integrações externas legitimamente exigem). Isso impede regressão silenciosa em PRs futuros.
+
+## Execução
+
+Vou dividir em 4 commits lógicos, parando para verificar `tsgo` e a suíte de testes entre eles:
+
+1. **F1 + F2** — `AdminClient` e `AuthClaims` (libera ~45 ocorrências em arquivos compartilhados; mudança mecânica).
+2. **F4** — `PaymentEvent` tipado no `webhook-handler.server.ts` (é o que dá mais segurança real — esses 8 casts escondiam bugs em potencial).
+3. **F3 + F5** — Shapes remotos e inferência das rows do Supabase.
+4. **F6** + resíduos de `pdfExport.ts`/`BrandingApplier.tsx` + **guardrail arquitetural**.
+
+Meta: ≤ 5 `any` remanescentes no escopo, todos justificados por comentário `// any-ok:` explicando a razão (ex.: JSON dinâmico de payload de webhook bruto antes da validação Zod).
 
 ## Não-objetivos
 
-- Não mexer no layout/visual do PDF.
-- Não alterar o conjunto de páginas geradas (apêndice, narrativa, KPIs).
-- Não mover/renomear `pdfExport.ts` de novo (já está em `src/engines/finance/`).
-- Não mexer em `pdfCalculadora.ts` (escopo distinto).
-
-## Riscos & mitigações
-
-- **Risco:** `diagnosticoIA.data` ainda não disponível no momento do clique → PDF sem página IA. **Mitigação:** comportamento idêntico ao atual quando a IA falha (página é omitida silenciosamente). Aceito porque pré-cache via hook é o caso comum.
-- **Risco:** caller esquecer de passar `diags`/`prescriptive`. **Mitigação:** ambos são obrigatórios no tipo — typecheck quebra build.
-
-## Entregáveis
-
-1. `src/engines/finance/pdfExport.ts` — assinatura e imports atualizados.
-2. `src/routes/app.tsx` — novo call-site computa tudo antes de chamar.
-3. `src/__tests__/architecture.test.ts` — novo guardrail.
-4. `bun run test` verde (343 passa → 344 passa).
+- **Não** vou caçar `any` fora de payments/admin nesta passagem — o resto do projeto já está disciplinado e não justifica o churn.
+- **Não** vou redesenhar as APIs internas; só tipar o que já existe.
+- **Não** mexo em `src/integrations/supabase/types.ts` (autogerado).

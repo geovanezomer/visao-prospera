@@ -63,6 +63,19 @@ function pickExtremes(points: MonthlyPoint[], key: keyof MonthlyPoint) {
 }
 
 // Tooltip customizado com delta vs mês anterior.
+// Shapes locais para callbacks do Recharts (impedância da lib: typings
+// genéricos com `any` no upstream). Tipamos só o que efetivamente lemos.
+type TooltipPayloadItem = {
+  dataKey: string;
+  value: number | string;
+  name?: string;
+  color?: string;
+  payload?: Record<string, unknown>;
+};
+type LegendClickArg = { dataKey?: unknown; value?: string };
+type FunnelTooltipItem = { payload?: { stage?: string } };
+type PieLabelArg = { plan: string; value: number };
+
 function MonthlyTooltip({
   active,
   payload,
@@ -71,7 +84,7 @@ function MonthlyTooltip({
   formatters,
 }: {
   active?: boolean;
-  payload?: any[];
+  payload?: TooltipPayloadItem[];
   label?: string;
   data: MonthlyPoint[];
   formatters: Record<string, (v: number) => string>;
@@ -85,7 +98,7 @@ function MonthlyTooltip({
       {payload.map((p) => {
         const fmt = formatters[p.dataKey] ?? fmtNum;
         const cur = Number(p.value ?? 0);
-        const prevVal = prev ? Number((prev as any)[p.dataKey] ?? 0) : 0;
+        const prevVal = prev ? Number((prev as unknown as Record<string, number>)[p.dataKey] ?? 0) : 0;
         const d = fmtDelta(cur - prevVal, p.dataKey === "mrr");
         return (
           <div key={p.dataKey} className="flex items-center justify-between gap-4">
@@ -280,7 +293,7 @@ export function DashboardCharts() {
               />
               <Legend
                 wrapperStyle={{ fontSize: 12, cursor: "pointer" }}
-                onClick={(e: any) => toggle(String(e.dataKey))}
+                onClick={(e: LegendClickArg) => toggle(String(e.dataKey ?? ""))}
               />
               {!hidden.mrr && (
                 <Area
@@ -333,8 +346,8 @@ export function DashboardCharts() {
               <YAxis type="category" dataKey="stage" tick={{ fontSize: 11 }} width={140} />
               <Tooltip
                 contentStyle={{ fontSize: 12 }}
-                formatter={(v: any, _n: any, item: any) => {
-                  const idx = data.funnel.findIndex((f) => f.stage === item.payload.stage);
+                formatter={(v: number | string, _n: string, item: FunnelTooltipItem) => {
+                  const idx = data.funnel.findIndex((f) => f.stage === item.payload?.stage);
                   const top = data.funnel[0]?.value || 0;
                   const prev = idx > 0 ? data.funnel[idx - 1].value : top;
                   const ratioTop = top > 0 ? ((Number(v) / top) * 100).toFixed(1) : "0";
@@ -376,7 +389,7 @@ export function DashboardCharts() {
               />
               <Legend
                 wrapperStyle={{ fontSize: 12, cursor: "pointer" }}
-                onClick={(e: any) => toggle(String(e.dataKey))}
+                onClick={(e: LegendClickArg) => toggle(String(e.dataKey ?? ""))}
               />
               {!hidden.newUsers && (
                 <Line type="monotone" dataKey="newUsers" name="Novos" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
@@ -397,7 +410,7 @@ export function DashboardCharts() {
               <PieChart>
                 <Tooltip
                   contentStyle={{ fontSize: 12 }}
-                  formatter={(v: any, n: any) => {
+                  formatter={(v: number | string, n: string) => {
                     const total = data.byPlan.reduce((acc, x) => acc + x.value, 0);
                     const pct = total > 0 ? ((Number(v) / total) * 100).toFixed(1) : "0";
                     return [`${fmtNum(Number(v))} (${pct}%)`, n];
@@ -405,7 +418,7 @@ export function DashboardCharts() {
                 />
                 <Legend
                   wrapperStyle={{ fontSize: 12, cursor: "pointer" }}
-                  onClick={(e: any) => toggle(`plan:${e.value}`)}
+                  onClick={(e: LegendClickArg) => toggle(`plan:${e.value ?? ""}`)}
                 />
                 <Pie
                   data={data.byPlan.filter((p) => !hidden[`plan:${p.plan}`])}
@@ -416,7 +429,7 @@ export function DashboardCharts() {
                   innerRadius={50}
                   outerRadius={85}
                   paddingAngle={2}
-                  label={(e: any) => `${e.plan}: ${e.value}`}
+                  label={(e: PieLabelArg) => `${e.plan}: ${e.value}`}
                 >
                   {data.byPlan
                     .filter((p) => !hidden[`plan:${p.plan}`])

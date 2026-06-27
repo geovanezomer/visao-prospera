@@ -41,8 +41,8 @@ export function LegalTab() {
       await updateAppSetting({ data: { key: "legal", value } });
       await qc.invalidateQueries({ queryKey: ["app_settings"] });
       toast.success(which === "terms" ? "Termos atualizados." : "Política atualizada.");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Erro ao salvar.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Erro ao salvar.");
     } finally {
       set(false);
     }

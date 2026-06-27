@@ -10,8 +10,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminEmail } from "./constants";
+import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: any) {
+function assertAdmin(claims: AuthClaims | undefined | null) {
   if (!isAdminEmail((claims?.email as string) ?? "")) {
     throw new Error("Acesso negado: apenas administrador.");
   }
@@ -112,7 +113,7 @@ export const sendBroadcast = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as any)?.email,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
       action: "broadcast.send",
       resource: "broadcast",
       targetId: row.id,
@@ -149,7 +150,7 @@ async function resolveAudience(seg: BroadcastSegment): Promise<{ recipients: { i
   }
 
   // Lê todos os usuários (até 5000).
-  const all: any[] = [];
+  const all: Array<{ id: string; email?: string | null }> = [];
   for (let p = 1; p <= 25; p++) {
     const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: p, perPage: 200 });
     if (error) throw new Error(error.message);

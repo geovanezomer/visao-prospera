@@ -219,12 +219,12 @@ export class StripeProvider implements PaymentProvider {
       .join("");
     if (!v1.includes(expected)) throw new Error("Stripe webhook: assinatura inválida.");
 
-    const event = JSON.parse(rawBody) as { type: string; data: { object: any } };
+    const event = JSON.parse(rawBody) as import("./_remote-types").StripeWebhookEvent;
     return this.parseEvent(event);
   }
 
   // Converte evento bruto do Stripe em NormalizedEvent.
-  private parseEvent(event: { type: string; data: { object: any } }): NormalizedEvent {
+  private parseEvent(event: import("./_remote-types").StripeWebhookEvent): NormalizedEvent {
     const obj = event.data.object;
     switch (event.type) {
       case "checkout.session.completed": {
@@ -256,7 +256,7 @@ export class StripeProvider implements PaymentProvider {
           customerId: String(obj.customer),
           subscriptionId: String(obj.id),
           plan: (obj.metadata?.plan as PlanId) ?? planFromPriceRef(priceRef),
-          status: obj.status,
+          status: (obj.status as "active" | "canceled" | "incomplete" | "past_due" | "trialing") ?? "active",
           currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
         };
       }

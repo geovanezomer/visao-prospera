@@ -6,8 +6,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminEmail } from "./constants";
+import type { AuthClaims } from "./_types";
+import type { Json } from "@/integrations/supabase/types";
 
-function assertAdmin(claims: any) {
+function assertAdmin(claims: AuthClaims | undefined | null) {
   if (!isAdminEmail((claims?.email as string) ?? "")) throw new Error("Acesso negado.");
 }
 
@@ -20,7 +22,7 @@ export type PlanRow = {
   currency: string;
   interval: string;
   features: string[];
-  limits: Record<string, any>;
+  limits: Json;
   stripePriceId: string | null;
   asaasPlanRef: string | null;
   active: boolean;
@@ -33,7 +35,34 @@ export type PlanRow = {
   upsellAsaasRef: string | null;
 };
 
-function rowToPlan(r: any): PlanRow {
+/**
+ * Shape mínimo de uma linha da tabela `plans` (subset consumido aqui).
+ * Não usamos `Tables<'plans'>` direto para evitar ressentir cada coluna
+ * nova do schema — só os campos que efetivamente lemos.
+ */
+type DbPlanRow = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  price_cents: number;
+  currency: string;
+  interval: string;
+  features: unknown;
+  limits: unknown;
+  stripe_price_id: string | null;
+  asaas_plan_ref: string | null;
+  active: boolean;
+  sort_order: number;
+  upsell_enabled: boolean | null;
+  upsell_name: string | null;
+  upsell_description: string | null;
+  upsell_price_cents: number | null;
+  upsell_stripe_price_id: string | null;
+  upsell_asaas_ref: string | null;
+};
+
+function rowToPlan(r: DbPlanRow): PlanRow {
   return {
     id: r.id,
     slug: r.slug,
@@ -42,8 +71,8 @@ function rowToPlan(r: any): PlanRow {
     priceCents: r.price_cents,
     currency: r.currency,
     interval: r.interval,
-    features: Array.isArray(r.features) ? r.features : [],
-    limits: (r.limits as Record<string, any>) ?? {},
+    features: Array.isArray(r.features) ? (r.features as string[]) : [],
+    limits: (r.limits ?? {}) as Json,
     stripePriceId: r.stripe_price_id,
     asaasPlanRef: r.asaas_plan_ref,
     active: r.active,
@@ -123,7 +152,9 @@ export const upsertPlan = createServerFn({ method: "POST" })
       currency: data.currency,
       interval: data.interval,
       features: data.features,
-      limits: data.limits as any,
+      // `limits` é jsonb no banco — Json é compatível mas o tipo gerado
+      // do PostgREST exige cast explícito para `Json`.
+      limits: data.limits as Json,
       stripe_price_id: data.stripePriceId ?? null,
       asaas_plan_ref: data.asaasPlanRef ?? null,
       active: data.active,
@@ -143,7 +174,7 @@ export const upsertPlan = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as any)?.email,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
       action: data.id ? "plan.update" : "plan.create",
       resource: "plan",
       targetId: row?.id ?? null,
@@ -165,7 +196,7 @@ export const deletePlan = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as any)?.email,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
       action: "plan.delete",
       resource: "plan",
       targetId: data.id,

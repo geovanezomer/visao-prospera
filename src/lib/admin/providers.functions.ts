@@ -6,8 +6,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminEmail } from "./constants";
+import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: any) {
+function assertAdmin(claims: AuthClaims | undefined | null) {
   if (!isAdminEmail((claims?.email as string) ?? "")) {
     throw new Error("Acesso negado: apenas administrador.");
   }
@@ -38,10 +39,10 @@ export const listProviders = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin.from("provider_credentials").select("*");
     if (error) throw new Error(error.message);
-    const rows: ProviderRow[] = (data ?? []).map((r: any) => ({
+    const rows: ProviderRow[] = (data ?? []).map((r) => ({
       id: r.id,
-      provider: r.provider,
-      mode: r.mode,
+      provider: r.provider as ProviderRow["provider"],
+      mode: r.mode as ProviderRow["mode"],
       apiKeyMasked: mask(r.api_key),
       webhookSecretMasked: mask(r.webhook_secret),
       hasApiKey: !!r.api_key,
@@ -90,7 +91,14 @@ export const upsertProvider = createServerFn({ method: "POST" })
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // Upsert preservando campos não enviados (não sobrescreve secret com null).
-    const patch: any = {
+    const patch: {
+      provider: string;
+      mode: string;
+      updated_by: string;
+      updated_at: string;
+      api_key?: string;
+      webhook_secret?: string;
+    } = {
       provider: data.provider,
       mode: data.mode,
       updated_by: context.userId,

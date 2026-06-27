@@ -32,15 +32,23 @@ function statusClass(s: string) {
 }
 
 export function WebhooksTab() {
-  const [rows, setRows] = useState<any[]>([]);
+  type ProviderFilter = "all" | "stripe" | "asaas" | "admin";
+  type StatusFilter = "all" | "processed" | "failed" | "skipped" | "replayed" | "pending_retry" | "dead_letter";
+  type ListedRow = Awaited<ReturnType<typeof listWebhookEvents>>["rows"][number];
+  type Kpi = Awaited<ReturnType<typeof listWebhookEvents>>["kpi24h"];
+  type SelectedRow = Awaited<ReturnType<typeof getWebhookEvent>>["event"];
+
+  const [rows, setRows] = useState<ListedRow[]>([]);
   const [total, setTotal] = useState(0);
   const [kpi, setKpi] = useState<{ total: number; ok: number; failed: number; pending: number; dead: number }>({
     total: 0, ok: 0, failed: 0, pending: 0, dead: 0,
   });
   const [page, setPage] = useState(1); const [perPage] = useState(50);
-  const [search, setSearch] = useState(""); const [provider, setProvider] = useState<any>("all"); const [status, setStatus] = useState<any>("all");
+  const [search, setSearch] = useState("");
+  const [provider, setProvider] = useState<ProviderFilter>("all");
+  const [status, setStatus] = useState<StatusFilter>("all");
   const [loading, setLoading] = useState(false);
-  const [selected, setSelected] = useState<any>(null);
+  const [selected, setSelected] = useState<SelectedRow | null>(null);
   const [busyReplay, setBusyReplay] = useState(false);
   const [busyBatch, setBusyBatch] = useState(false);
 
@@ -48,7 +56,7 @@ export function WebhooksTab() {
     setLoading(true);
     try {
       const r = await listWebhookEvents({ data: { page, perPage, search, provider, status } });
-      setRows(r.rows); setTotal(r.total); setKpi(r.kpi24h as any);
+      setRows(r.rows); setTotal(r.total); setKpi(r.kpi24h as Kpi);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
     finally { setLoading(false); }
   };
@@ -100,12 +108,12 @@ export function WebhooksTab() {
           </div>
         </div>
         <div><Label className="text-xs">Provider</Label>
-          <Select value={provider} onValueChange={setProvider}><SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+          <Select value={provider} onValueChange={(v) => setProvider(v as ProviderFilter)}><SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="stripe">Stripe</SelectItem><SelectItem value="asaas">Asaas</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent>
           </Select>
         </div>
         <div><Label className="text-xs">Status</Label>
-          <Select value={status} onValueChange={setStatus}><SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+          <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}><SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="processed">Processed</SelectItem>
@@ -202,7 +210,7 @@ export function WebhooksTab() {
                   <div>
                     <strong className="mb-1 block">Histórico de tentativas</strong>
                     <div className="space-y-1 rounded border border-border/40 bg-muted/10 p-2 text-[11px]">
-                      {selected.attempt_history.map((h: any, i: number) => (
+                      {(selected.attempt_history as Array<{ attempt: number; status: string; at: string; manual?: boolean; error?: string }>).map((h, i) => (
                         <div key={i} className="flex items-start gap-2 border-b border-border/20 pb-1 last:border-0">
                           <Badge variant="outline" className={`${statusClass(h.status)} shrink-0 text-[10px]`}>#{h.attempt} {h.status}</Badge>
                           <div className="flex-1">

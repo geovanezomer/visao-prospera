@@ -13,13 +13,13 @@
 export const SETTINGS_CACHE_KEY = "finance:app_settings:v1";
 export const SETTINGS_CHANGE_EVENT = "app_settings:changed";
 
-export function readSettingsCache(): any | undefined {
+export function readSettingsCache(): Record<string, unknown> | undefined {
   if (typeof window === "undefined") return undefined;
   try {
     const raw = window.localStorage.getItem(SETTINGS_CACHE_KEY);
     if (!raw) return undefined;
     const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === "object") return parsed;
+    if (parsed && typeof parsed === "object") return parsed as Record<string, unknown>;
   } catch {
     /* ignore quota/SSR/parse errors */
   }

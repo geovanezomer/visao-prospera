@@ -4,8 +4,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminEmail } from "./constants";
+import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: any) {
+function assertAdmin(claims: AuthClaims | undefined | null) {
   if (!isAdminEmail((claims?.email as string) ?? "")) throw new Error("Acesso negado.");
 }
 
@@ -50,9 +51,9 @@ export const getSystemStatus = createServerFn({ method: "POST" })
       check("Stripe", async () => {
         const r = await fetch("https://status.stripe.com/api/v2/status.json");
         if (!r.ok) return { status: "degraded", message: `HTTP ${r.status}` };
-        const j = (await r.json()) as any;
-        const ind = j?.status?.indicator as string;
-        const desc = j?.status?.description as string;
+        const j = (await r.json()) as { status?: { indicator?: string; description?: string } };
+        const ind = j?.status?.indicator;
+        const desc = j?.status?.description;
         if (ind === "none") return { status: "operational", message: desc ?? "All systems normal" };
         if (ind === "minor" || ind === "maintenance")
           return { status: "degraded", message: desc ?? "Minor issues" };
