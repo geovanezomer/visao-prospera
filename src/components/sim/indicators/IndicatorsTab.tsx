@@ -76,7 +76,7 @@ export function IndicatorsTab() {
 
 
 // (I2) Consome ind.conversaoEbitdaCaixa — não recalcula localmente.
-function CashConversionSmall({ conversao }: { conversao: number }) {
+function CashConversionSmall({ conversao, calc }: { conversao: number; calc?: string }) {
   const conversaoEbitda = conversao;
   const tone = conversaoEbitda >= 70 ? "pos" : conversaoEbitda >= 40 ? "default" : "neg";
 
@@ -87,6 +87,7 @@ function CashConversionSmall({ conversao }: { conversao: number }) {
         <HelpTip
           text="Mede quanto do EBITDA efetivamente vira caixa livre (FCF)."
           formula="FCF ÷ EBITDA × 100"
+          calc={calc}
         />
       </div>
       <div
