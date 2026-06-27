@@ -830,9 +830,10 @@ export async function exportFinancePDF({
   const { dre, ind, cf, balancoFechamento, regime, tax } = model;
   const periodoMeses = state.periodoAnaliseMeses ?? 12;
   const { score, conceito, tone } = computeGuardianScore(ind);
-  const diags = diagnose(state, dre, ind);
-  // Otimização: passa o modelo já computado para evitar 3 passagens da engine.
-  const prescriptive = buildPrescriptiveCards(state, { dre, tax, ind, cf });
+  // `diags` e `prescriptive` chegam JÁ CALCULADOS via `ExportPDFInput`
+  // — pdfExport é render-only e nunca invoca `diagnose` ou
+  // `buildPrescriptiveCards` diretamente (ver guardrail em
+  // src/__tests__/architecture.test.ts).
 
   // Mensagem executiva de capa: 2-3 frases, derivadas dos diagnósticos.
   const topRiscos = diags.filter((d) => d.level === "danger").slice(0, 2);
@@ -1136,21 +1137,15 @@ export async function exportFinancePDF({
   }
 
   // ── PÁGINA 7 — DIAGNÓSTICO EXECUTIVO IA (opcional) ─────────────────
-  // Renderizada apenas se IA estiver configurada. Reaproveita cache do
-  // hook `useDiagnosticoIA` quando existe; senão tenta gerar uma vez.
-  const aiCfg = loadConfig();
-  if (isAIConfigured(aiCfg)) {
+  // Renderiza somente se o caller (UI) passou `aiDiagnostico` já calculado
+  // (tipicamente vindo do hook `useDiagnosticoIA` e seu cache compartilhado).
+  // pdfExport NÃO chama provedores de IA nem lê/escreve cache — isso é
+  // responsabilidade do hook na UI. Ver guardrail arquitetural.
+  if (aiDiagnostico) {
     try {
-      const briefing = buildBriefing(state, dre, ind);
-      const cacheKey = `${PROMPT_VERSION}::${aiCfg.provider}::${aiCfg.model}::${briefingCacheKey(briefing)}`;
-      let diag: DiagnosticoResult | null = getCached(cacheKey);
-      if (!diag) {
-        diag = await gerarDiagnostico(briefing, aiCfg);
-        setCached(cacheKey, diag);
-      }
-      renderDiagnosticoIA(doc, diag);
+      renderDiagnosticoIA(doc, aiDiagnostico);
     } catch (err) {
-      console.warn("[pdfExport] Diagnóstico IA falhou:", err);
+      console.warn("[pdfExport] Render do diagnóstico IA falhou:", err);
       // segue sem a página — não bloqueia o PDF
     }
   }
