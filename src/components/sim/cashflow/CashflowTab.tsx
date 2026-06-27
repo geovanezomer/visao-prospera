@@ -170,6 +170,7 @@ export function CashflowTab() {
             description:
               "Total efetivamente recebido em caixa no ano, já descontada a inadimplência e respeitando o PMR (prazo médio de recebimento).",
             formula: "Σ Recebimentos mensais (Receita Líquida defasada pelo PMR)",
+            calc: `Σ 12 meses\n= ${fmtBRL(cf.totais.recebimentos)}`,
           }}
         />
         <StatCard
@@ -180,6 +181,7 @@ export function CashflowTab() {
             description:
               "Total de saídas operacionais de caixa no ano: fornecedores (PMP), custos fixos e variáveis, despesas financeiras e impostos pagos (defasados em 1 mês).",
             formula: "Σ (Fornecedores + Fixos + Variáveis + Financeiros + Impostos)",
+            calc: `Σ 12 meses\n= ${fmtBRL(cf.totais.pagamentosTotais)}`,
           }}
         />
         <StatCard
@@ -190,6 +192,7 @@ export function CashflowTab() {
             description:
               "Caixa gerado (ou consumido) pela operação no ano. Já considera PMR/PMP e impostos pagos com 1 mês de defasagem.",
             formula: "Recebimentos − Pagamentos Operacionais − Impostos pagos",
+            calc: `${fmtBRL(cf.totais.recebimentos)} − ${fmtBRL(cf.totais.pagamentosTotais)}\n= ${fmtBRL(cf.totais.fluxoOperacional)}`,
           }}
         />
         <div className="relative">
@@ -208,6 +211,7 @@ export function CashflowTab() {
               description:
                 "Saldo de caixa projetado para dezembro. Deve ficar acima do caixa mínimo de segurança definido na configuração.",
               formula: "Saldo Inicial + Σ Variações mensais de caixa",
+              calc: `Saldo projetado em Dez\n= ${fmtBRL(saldoDez)}`,
             }}
           />
         </div>
@@ -340,6 +344,7 @@ export function CashflowTab() {
             hint={{
               description: "Média mensal de consumo (ou geração) operacional de caixa no ano.",
               formula: "Σ (Pagamentos Operacionais − Recebimentos) ÷ 12",
+              calc: `(${fmtBRL(cf.totais.pagamentosTotais)} − ${fmtBRL(cf.totais.recebimentos)}) ÷ 12\n= ${fmtBRL(burnRunway.burnMedio12)}/mês`,
             }}
           />
           <StatCard
@@ -355,6 +360,7 @@ export function CashflowTab() {
               description:
                 "Média de queima de caixa nos últimos 3 meses do horizonte projetado. Mais sensível ao momento atual da operação.",
               formula: "Σ (−Fluxo Operacional dos últimos 3 meses) ÷ 3",
+              calc: `Média dos 3 meses finais\n= ${fmtBRL(burnRunway.burnMedio3)}/mês`,
             }}
           />
           <StatCard
@@ -366,6 +372,10 @@ export function CashflowTab() {
               description:
                 "Quantos meses o colchão de caixa + recebíveis sustenta a empresa, mantido o burn médio dos últimos 3 meses.",
               formula: "(Disponibilidades + Contas a Receber) ÷ Burn médio 3m",
+              calc:
+                burnRunway.burnMedio3 > 0
+                  ? `(${fmtBRL(caixaAtual)} + ${fmtBRL(recebiveis)}) ÷ ${fmtBRL(burnRunway.burnMedio3)}\n= ${runwayLabel}`
+                  : "Sem burn (operação gerando caixa) — runway indefinido",
             }}
           />
         </div>

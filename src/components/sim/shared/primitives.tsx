@@ -3,7 +3,9 @@ import { Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-export type HelpHint = string | { description: string; formula?: string; example?: string };
+export type HelpHint =
+  | string
+  | { description: string; formula?: string; calc?: string; example?: string };
 
 export function HelpTip({
   text,
@@ -58,7 +60,14 @@ export function HelpTip({
 export function renderHint(hint: HelpHint | undefined) {
   if (!hint) return null;
   if (typeof hint === "string") return <HelpTip text={hint} />;
-  return <HelpTip text={hint.description} formula={hint.formula} example={hint.example} />;
+  return (
+    <HelpTip
+      text={hint.description}
+      formula={hint.formula}
+      calc={hint.calc}
+      example={hint.example}
+    />
+  );
 }
 
 function numToText(n: number): string {

@@ -1,79 +1,119 @@
+# Plano — Memória de cálculo em todos os indicadores
 
-## Diagnóstico
+## Objetivo
+Replicar o bloco **"Memória de cálculo"** (fórmula resolvida com os números do estado atual) que já existe no card *Margem Bruta* em **todos os demais indicadores** — grade de Indicadores, página Simulador e cards do topo de cada aba (Dashboard, DRE, Fluxo, Balanço, Capital, Valuation, Receitas, Despesas).
 
-149 ocorrências de `any` (não 186 — a contagem original incluía comentários e o `types.ts` autogerado do Supabase, que não conta como dívida). Distribuição:
+Sem mudar fórmulas, sem mudar valores — apenas mostrar **de onde** o número saiu.
+
+---
+
+## 1. Fonte única (SSOT) — `src/engines/finance/indicatorCalc.ts` (novo)
+
+Função `buildIndicatorCalcs(state, dre, ind)` retorna um objeto tipado `IndicatorCalcs` com strings pt-BR prontas:
 
 ```text
-src/lib/admin           72  ← funções server-side do painel
-src/components/admin    30  ← UI do painel + DashboardCharts
-src/lib/payments        29  ← webhook handler, refund, adapters
-src/engines/finance      4  ← resíduo do pdfExport
-outros                  14  ← ruído marginal
+{
+  margemBruta:   "R$ 1.000.000,00 ÷ R$ 1.030.500,00 × 100\n= 97,04%"
+  margemEbitda:  "−R$ 136.300,00 ÷ R$ 1.030.500,00 × 100\n= −13,23%"
+  roe:           "−R$ 186.230,00 ÷ R$ 305.000,00 × 100\n= −61,07%"
+  liquidezCorrente: "R$ 444.000,00 ÷ R$ 100.000,00\n= 4,44"
+  dscr:          "R$ 0,00 ÷ (R$ 0,00 + R$ 0,00)\n= —"
+  ...
+}
 ```
 
-Não são 149 problemas distintos — são **6 famílias** repetidas, fruto da pressa de construir a esteira de pagamentos antes do lançamento.
+Regras:
+- Quando o denominador for 0 ou a base for insuficiente: `"Base insuficiente — cálculo indisponível"`.
+- Quando o indicador é capeado (ex.: Liquidez 99): mostra valor real + nota `"(capeado)"`.
+- Anualização: usa os mesmos campos já anualizados expostos em `Indicators` (`ebitdaAnual`, `receitaLiquidaAnual`, `lucroLiquidoAnual`, …) — sem recálculo.
+- Para alavancagem (`leverageDisplay`): a string vai junto com o display retornado.
 
-## Famílias e correção
+Testes em `__tests__/indicatorCalc.test.ts`: snapshot dos formatos pt-BR e tratamento de denominadores zero.
 
-### F1 — `admin: any` / `supabaseAdmin: any` (≈ 35 ocorrências)
+## 2. Formatação pt-BR centralizada — `src/engines/finance/format.ts`
 
-Helpers internos recebem o cliente admin como `any`. Já existe o tipo certo: `SupabaseClient<Database>` de `@supabase/supabase-js` + `Database` de `@/integrations/supabase/types`.
+Já existem `fmtBRL`, `fmtPct`, `fmtTimes`. Acrescentar:
+- `fmtNum(n, decimals=2)` — `1.234,56`
+- `fmtRatio(n, decimals=2)` — `4,44` (sem unidade)
+- `fmtDays(n)` — `30 dias`
+- `fmtAnos(n)` — `2,5 anos`
 
-- Criar `src/lib/admin/_types.ts` com `export type AdminClient = SupabaseClient<Database>`.
-- Trocar todas as assinaturas `admin: any` por `admin: AdminClient`.
-- Arquivos: `webhook-handler.server.ts`, `userDetail.functions.ts`, `notify.server.ts`, `refund.server.ts`, e os demais `*.functions.ts` do admin.
+A `IndicatorCalcs` usa apenas esses helpers, garantindo consistência total.
 
-### F2 — `claims: any` (≈ 10 ocorrências)
+## 3. Componentes — suporte `calc` sem quebrar TS
 
-JWT claims vindos do `requireSupabaseAuth` são tratados como `any` para ler `email` e fazer `assertAdmin`.
+- `HelpTip` já aceita `calc` ✅
+- `HelpHint` (type): adicionar `calc?: string` opcional.
+- `renderHint`: propagar `calc` para `HelpTip`.
+- `StatCard`: já recebe `hint: HelpHint` → herda `calc` automaticamente.
+- `Gauge` (DashboardTab): já passa `hint` para `HelpTip` → herda `calc`.
+- `Ind` (IndicatorsGrid): já passa `calc` ✅
+- `LeverageDisplay`: adicionar campo opcional `calc?: string` → repassado ao `Ind`.
 
-- Definir `AuthClaims` (`sub: string; email?: string; role?: string; app_metadata?: {...}`) em `src/lib/admin/_types.ts`.
-- Substituir `(context.claims as any)?.email` e `assertAdmin(claims: any)` por `AuthClaims`.
+Resultado: nenhuma assinatura nova é exigida nas calls existentes — `calc` flui pelo mesmo `hint`.
 
-### F3 — Respostas brutas de Stripe/Asaas (≈ 20 ocorrências)
+## 4. Locais de wiring
 
-`refund.server.ts`, `stripe.ts`, `asaas.ts` fazem `(await r.json()) as any`.
+| Arquivo                                  | Cards a alimentar                                                |
+| ---------------------------------------- | ---------------------------------------------------------------- |
+| `IndicatorsGrid.tsx`                     | os 35+ indicadores da grade (passar `calc={calcs.<id>}`)         |
+| `IndicatorsTab.tsx`                      | topo: Ciclo Financeiro, NCG, Gap CG, Conversão de Caixa          |
+| `dashboard/DashboardTab.tsx`             | 5 StatCards de topo + 4 Gauges (Margem Líq., ROE, Liq., Endiv.)  |
+| `dre/DRETab.tsx`                         | 5 StatCards de topo (Receita Líq., Lucro Bruto, EBITDA, …)       |
+| `cashflow/CashflowTab.tsx`               | StatCards de topo + linhas FCO/FCI/FCF                           |
+| `balanco/BalancoTab.tsx`                 | 4 StatCards (Ativo, Passivo, PL, …)                              |
+| `capital/CapitalTab.tsx`                 | 3 StatCards (Estrutura de Capital, WACC, …)                      |
+| `valuation/ValuationTab.tsx`             | 4 StatCards (FCFF, Terminal, EV, …)                              |
+| `costs/CostsTab.tsx` · `revenue/RevenueTab.tsx` | StatCards de resumo                                       |
+| `capital/WaccRoicMeter.tsx`              | tooltip WACC e ROIC já consome `calcs.wacc` / `calcs.roic`       |
 
-- Criar `src/lib/payments/_remote-types.ts` com shapes mínimos do que efetivamente usamos: `StripeSubscription`, `StripeInvoice`, `StripeRefund`, `AsaasPayment`, `AsaasRefund` (campos consumidos apenas — não replicar a API inteira).
-- Trocar `stripeGet<any>` / `asaasReq<any>` pelos genéricos certos.
+A página **Simulador** (`SimulatorTab` → `IndicatorsCard`) reusa `IndicatorsGrid` — herda tudo sem mudança extra.
 
-### F4 — `PaymentEvent` apagado para `any` (≈ 8 ocorrências em `webhook-handler.server.ts`)
+## 5. Entrega — passos
 
-O union `PaymentEvent` já existe e é validado pelos testes E2E. As linhas `(event as any).type`, `(event as any).subscriptionId`, `(event as any).email` derrotam a discriminação.
+1. `format.ts`: novos helpers (`fmtNum`, `fmtRatio`, `fmtDays`, `fmtAnos`).
+2. `indicatorCalc.ts`: SSOT + testes.
+3. `primitives.tsx`: `HelpHint.calc` opcional + `renderHint` propaga.
+4. `leverageLabel.ts`: campo `calc` no `LeverageDisplay`.
+5. Wiring: `IndicatorsGrid`, `IndicatorsTab` (topo), `DashboardTab` (StatCards + Gauges), `DRETab`, `CashflowTab`, `BalancoTab`, `CapitalTab`, `ValuationTab`, `CostsTab`, `RevenueTab`, `WaccRoicMeter`.
+6. `bun run typecheck` + `bun run test` + checagem visual no preview.
 
-- Tipar `event: PaymentEvent` no entry-point e narrowar por `event.type` (já é discriminated union). Isso elimina os 8 casts e fortalece o handler — se um campo deixar de existir num evento, o TS pega na hora.
+## 6. Não-objetivos (deixar para depois)
 
-### F5 — Linhas de tabela em `.map((row: any) => ...)` (≈ 25 ocorrências)
+- Não mudar fórmulas, regras de anualização ou capeamentos.
+- Não tocar PDFs/exports (já recebem `ind` direto).
+- Não criar tooltip novo no AI/Chat (consome `Indicators` por outro caminho).
 
-`userDetail.functions.ts`, `webhook-handler.server.ts`, `admin.functions.ts` mapeiam resultados de `.from('subscriptions')`, `.from('webhook_events')`, `.from('audit_log')` com `(s: any) => ...`.
+---
 
-- Deixar o Supabase inferir: removendo o `: any` o tipo gerado vem sozinho. Onde a query usa `.select('a,b,c')`, o tipo já é parcial e correto.
-- Onde precisarmos compor (ex.: `.map((s) => ({ id: s.stripe_subscription_id }))`), declarar um `Row = Tables<'subscriptions'>` local.
+## Detalhe técnico — exemplo do helper
 
-### F6 — Recharts callbacks (8 em `DashboardCharts.tsx`)
+```ts
+// src/engines/finance/indicatorCalc.ts
+export interface IndicatorCalcs {
+  margemBruta: string; margemEbitda: string; margemEbit: string;
+  margemLiquida: string; margemContribuicao: string;
+  roe: string; roa: string; roic: string; wacc: string;
+  liquidezCorrente: string; liquidezSeca: string; liquidezImediata: string; liquidezGeral: string;
+  coberturaJuros: string; giroAtivo: string; dscr: string;
+  cicloFinanceiro: string; ncg: string; gapCapitalGiro: string; conversaoEbitdaCaixa: string;
+  endividamentoGeral: string; capitalProprio: string;
+  dividaLiqEbitda: string; dividaLiqEbit: string; dividaLiqPl: string;
+  margemSeguranca: string; gao: string; qualidadeLucro: string;
+  fcf: string; paybackCapex: string; amortizacaoPlPorLucro: string;
+  cagrReceitas12m: string;
+  faturamentoPorColab: string; receitaPorColab: string;
+  ebitdaPorColab: string; lucroPorColab: string;
+  folhaSobreReceita: string;
+  impostosSobreReceita: string; impostosSobreLucro: string;
+  // topo de páginas
+  receitaLiquida12m: string; ebitda12m: string; lucroLiquido12m: string;
+  alavancagemPatrimonial: string;
+}
 
-`(e: any) => toggle(...)`, `formatter={(v: any, n: any, item: any) => ...}` etc.
+export function buildIndicatorCalcs(
+  state: AppState, dre: DRE, ind: Indicators,
+): IndicatorCalcs { /* compõe strings com fmtBRL/fmtPct/fmtRatio */ }
+```
 
-- Recharts exporta `TooltipProps`, `LegendProps`, `PieLabel`. Já que o callback shape varia por chart, criar tipos locais mínimos (`type LegendClickPayload = { dataKey?: string | number; value?: string }`) no topo do arquivo e usar.
-- Para o `payload?: any[]` do tooltip customizado, usar `TooltipProps<number, string>['payload']`.
-
-## Guardrail
-
-Após a limpeza, adicionar ao `src/__tests__/architecture.test.ts` um teste que conta `any` explícitos em `src/lib/admin/**`, `src/lib/payments/**`, `src/components/admin/**` e falha se ultrapassar um teto (ex.: 5 — algumas integrações externas legitimamente exigem). Isso impede regressão silenciosa em PRs futuros.
-
-## Execução
-
-Vou dividir em 4 commits lógicos, parando para verificar `tsgo` e a suíte de testes entre eles:
-
-1. **F1 + F2** — `AdminClient` e `AuthClaims` (libera ~45 ocorrências em arquivos compartilhados; mudança mecânica).
-2. **F4** — `PaymentEvent` tipado no `webhook-handler.server.ts` (é o que dá mais segurança real — esses 8 casts escondiam bugs em potencial).
-3. **F3 + F5** — Shapes remotos e inferência das rows do Supabase.
-4. **F6** + resíduos de `pdfExport.ts`/`BrandingApplier.tsx` + **guardrail arquitetural**.
-
-Meta: ≤ 5 `any` remanescentes no escopo, todos justificados por comentário `// any-ok:` explicando a razão (ex.: JSON dinâmico de payload de webhook bruto antes da validação Zod).
-
-## Não-objetivos
-
-- **Não** vou caçar `any` fora de payments/admin nesta passagem — o resto do projeto já está disciplinado e não justifica o churn.
-- **Não** vou redesenhar as APIs internas; só tipar o que já existe.
-- **Não** mexo em `src/integrations/supabase/types.ts` (autogerado).
+Cada card faz apenas `calc={calcs.<id>}`. Zero lógica de cálculo em UI.
