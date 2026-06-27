@@ -17,19 +17,16 @@ import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { sum, fmtBRL, fmtPct, MESES } from "@/engines/finance/format";
 import type { AppState, BalancoDetalhado } from "@/engines/finance/types";
 import type { FinancialModel } from "@/engines/finance/financialModel";
-import { diagnose } from "@/engines/finance/diagnose";
-import { buildPrescriptiveCards } from "@/engines/finance/prescriptive";
 import { monthValues } from "@/engines/finance/costs";
 import { splitReceitasFinanceiras } from "@/engines/finance/shared";
-import { loadConfig } from "@/engines/ai/providers";
-import {
-  isAIConfigured,
-  gerarDiagnostico,
-  type DiagnosticoResult,
-} from "@/engines/ai/diagnostico";
-import { buildBriefing, briefingCacheKey } from "@/engines/finance/briefing";
-import { PROMPT_VERSION } from "@/engines/ai/diagnosticoPrompt";
-import { getCached, setCached } from "@/engines/ai/diagnosticoCache";
+// IMPORTS APENAS DE TIPO — pdfExport é render-only.
+// Diagnóstico, recomendações e IA são CALCULADOS pelo caller (UI) e
+// passados como input via `ExportPDFInput`. Isso garante SSOT: a tela e o
+// PDF nunca podem divergir por chamarem `diagnose` / `buildPrescriptiveCards`
+// / `buildBriefing` de formas diferentes — só existe um call-site.
+import type { Diagnostic } from "@/engines/finance/diagnose";
+import type { PrescriptiveCard } from "@/engines/finance/prescriptive";
+import type { DiagnosticoResult } from "@/engines/ai/diagnostico";
 
 // ── Paleta (mínima, executiva) ────────────────────────────────────────
 const INK = [10, 10, 10] as [number, number, number];           // preto
@@ -754,12 +751,27 @@ function computeGuardianScore(ind: FinancialModel["ind"]): {
 // =====================================================================
 // EXPORT PRINCIPAL
 // =====================================================================
-export interface ExportPDFInput { state: AppState; model: FinancialModel; }
+export interface ExportPDFInput {
+  state: AppState;
+  model: FinancialModel;
+  /** Diagnósticos da saúde financeira — calculados pelo caller via `diagnose(state, dre, ind)`. */
+  diags: Diagnostic[];
+  /** Cards prescritivos — calculados pelo caller via `buildPrescriptiveCards(state, { dre, tax, ind, cf })`. */
+  prescriptive: PrescriptiveCard[];
+  /** Diagnóstico Executivo IA — opcional; quando ausente, a página é omitida. */
+  aiDiagnostico?: DiagnosticoResult | null;
+}
 
 interface PageMeta { eyebrow: string; title: string }
 const pageMeta: Record<number, PageMeta> = {}; // mapeia índice → seção (para header)
 
-export async function exportFinancePDF({ state, model }: ExportPDFInput): Promise<void> {
+export async function exportFinancePDF({
+  state,
+  model,
+  diags,
+  prescriptive,
+  aiDiagnostico = null,
+}: ExportPDFInput): Promise<void> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
 
   // ── Sanitização global de texto ────────────────────────────────────
@@ -818,9 +830,10 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   const { dre, ind, cf, balancoFechamento, regime, tax } = model;
   const periodoMeses = state.periodoAnaliseMeses ?? 12;
   const { score, conceito, tone } = computeGuardianScore(ind);
-  const diags = diagnose(state, dre, ind);
-  // Otimização: passa o modelo já computado para evitar 3 passagens da engine.
-  const prescriptive = buildPrescriptiveCards(state, { dre, tax, ind, cf });
+  // `diags` e `prescriptive` chegam JÁ CALCULADOS via `ExportPDFInput`
+  // — pdfExport é render-only e nunca invoca `diagnose` ou
+  // `buildPrescriptiveCards` diretamente (ver guardrail em
+  // src/__tests__/architecture.test.ts).
 
   // Mensagem executiva de capa: 2-3 frases, derivadas dos diagnósticos.
   const topRiscos = diags.filter((d) => d.level === "danger").slice(0, 2);
@@ -1124,21 +1137,15 @@ export async function exportFinancePDF({ state, model }: ExportPDFInput): Promis
   }
 
   // ── PÁGINA 7 — DIAGNÓSTICO EXECUTIVO IA (opcional) ─────────────────
-  // Renderizada apenas se IA estiver configurada. Reaproveita cache do
-  // hook `useDiagnosticoIA` quando existe; senão tenta gerar uma vez.
-  const aiCfg = loadConfig();
-  if (isAIConfigured(aiCfg)) {
+  // Renderiza somente se o caller (UI) passou `aiDiagnostico` já calculado
+  // (tipicamente vindo do hook `useDiagnosticoIA` e seu cache compartilhado).
+  // pdfExport NÃO chama provedores de IA nem lê/escreve cache — isso é
+  // responsabilidade do hook na UI. Ver guardrail arquitetural.
+  if (aiDiagnostico) {
     try {
-      const briefing = buildBriefing(state, dre, ind);
-      const cacheKey = `${PROMPT_VERSION}::${aiCfg.provider}::${aiCfg.model}::${briefingCacheKey(briefing)}`;
-      let diag: DiagnosticoResult | null = getCached(cacheKey);
-      if (!diag) {
-        diag = await gerarDiagnostico(briefing, aiCfg);
-        setCached(cacheKey, diag);
-      }
-      renderDiagnosticoIA(doc, diag);
+      renderDiagnosticoIA(doc, aiDiagnostico);
     } catch (err) {
-      console.warn("[pdfExport] Diagnóstico IA falhou:", err);
+      console.warn("[pdfExport] Render do diagnóstico IA falhou:", err);
       // segue sem a página — não bloqueia o PDF
     }
   }
@@ -1317,8 +1324,8 @@ function buildHealthDimensions(ind: FinancialModel["ind"], state: AppState): Hea
 
 type Risk = { title: string; impact: string; probability: string; recommendation: string; severity: "warn" | "bad" | "info" };
 function buildTopRisks(
-  diags: ReturnType<typeof diagnose>, ind: FinancialModel["ind"],
-  prescriptive: ReturnType<typeof buildPrescriptiveCards>,
+  diags: Diagnostic[], ind: FinancialModel["ind"],
+  prescriptive: PrescriptiveCard[],
 ): Risk[] {
   const order: Record<string, number> = { danger: 0, warn: 1, ok: 2 };
   const ranked = [...diags].sort((a, b) => (order[a.level] ?? 9) - (order[b.level] ?? 9));
@@ -1347,8 +1354,8 @@ function buildTopRisks(
 
 type Priority = { title: string; description: string; benefit: string; deadline: string; complexity: string };
 function buildPriorities(
-  prescriptive: ReturnType<typeof buildPrescriptiveCards>,
-  diags: ReturnType<typeof diagnose>,
+  prescriptive: PrescriptiveCard[],
+  diags: Diagnostic[],
 ): Priority[] {
   const sevOrder: Record<string, number> = { danger: 0, warn: 1, info: 2, ok: 3 };
   const ranked = [...prescriptive].sort((a, b) =>
@@ -1389,8 +1396,8 @@ type RiskRec = {
   actions: { title: string; detail: string }[];
 };
 function buildRiscosERecomendacoes(
-  diags: ReturnType<typeof diagnose>,
-  prescriptive: ReturnType<typeof buildPrescriptiveCards>,
+  diags: Diagnostic[],
+  prescriptive: PrescriptiveCard[],
 ): RiskRec[] {
   const sevOrder: Record<string, number> = { danger: 0, warn: 1, info: 2, ok: 3 };
   // Base: cards prescriptivos (já trazem ações completas).

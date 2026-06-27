@@ -1,117 +1,117 @@
-# Plano: Eliminar Flash of Default Content (FODC) e Otimizar Performance
+# Refactor `pdfExport` para renderer puro (sem duplicar call-sites de domínio)
+
+## Problema
+
+`src/engines/finance/pdfExport.ts` é hoje um **segundo call-site** de:
+
+- `diagnose(state, dre, ind)` — diagnóstico de saúde financeira
+- `buildPrescriptiveCards(state, { dre, tax, ind, cf })` — recomendações priorizadas
+- `buildBriefing(state, dre, ind)` + IA (`loadConfig`, `isAIConfigured`, `gerarDiagnostico`, cache)
+
+A tela já calcula tudo isso por hooks/selectors. Se algum dia mudar a assinatura, parâmetro obrigatório, ou ordem de chamada de uma dessas funções, **PDF e tela podem divergir silenciosamente**. Hoje produzem o mesmo número porque são funções puras; amanhã, não há garantia.
 
 ## Objetivo
-Acabar com o "flash" do conteúdo mock na Landing/Login/App, reduzir refetches desnecessários e diminuir o bundle inicial. O usuário deve ver apenas: **cache → real** (se mudou). Nunca **default → real**.
 
----
+`pdfExport` vira **render-only**: recebe os resultados já calculados; não invoca lógica de domínio. O call-site (`src/routes/app.tsx`, o único existente) passa a montar o payload com as mesmas funções/hooks que a UI consome — uma SSOT por execução.
 
-## Fase 1 — Correção do FODC (raiz do problema)
+## Mudanças
 
-### 1.1 `useBranding.ts` — separar "defaults de fallback" de "defaults de render"
-- Remover `initialDataUpdatedAt: 0` (força refetch imediato).
-- Subir `staleTime` para `60 * 60_000` (1h). Settings mudam raramente.
-- Expor `isReady` real: `true` somente quando `data !== undefined` (cache OU fetch).
-- DEFAULTS continuam existindo, mas usados apenas como último recurso (primeiro deploy / banco offline).
-- Componentes que sofrem FODC vão **aguardar `isReady`** antes de renderizar conteúdo dinâmico (logo, nome, textos, vídeo).
+### 1. Novo contrato de `exportFinancePDF`
 
-### 1.2 Loaders pré-hidratam o React Query (SSR-first)
-Já existe parcialmente em `__root.tsx`. Garantir o mesmo em todas as rotas que mostram branding:
-- `src/routes/index.tsx` (Landing)
-- `src/routes/landing.tsx`
-- `src/routes/login.tsx`
-- `src/routes/termos.tsx` / `src/routes/privacidade.tsx`
-
-Padrão: `loader: ({ context }) => context.queryClient.ensureQueryData({ queryKey: ["app_settings"], queryFn: getAppSettings, staleTime: 60*60_000 })`.
-
-### 1.3 Cache localStorage como `initialData` (já existe) + sincronização
-- Manter `readSettingsCache` como `initialData` (cold start client).
-- Persistência cross-tab via `storage` event já está OK.
-- Garantir que **toda escrita do admin** invalide a query (`invalidateQueries(["app_settings"])`) e refaça `writeSettingsCache`.
-
-### 1.4 Skeletons em vez de mock durante `!isReady`
-Na Landing, Login e Header:
-- Logo: `<Skeleton className="h-10 w-32" />` enquanto `!branding.logoUrl && !isReady`.
-- Textos do hero/CTA: `<Skeleton>` em vez de strings DEFAULT.
-- Assim que `isReady=true`, renderiza o real **uma única vez**.
-
----
-
-## Fase 2 — React Query: cache estável e persistente
-
-### 2.1 Configuração global do QueryClient (`src/router.tsx`)
 ```ts
-new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60_000,
-      gcTime: 30 * 60_000,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-    },
-  },
-})
+// src/engines/finance/pdfExport.ts
+import type { DiagnoseItem } from "@/engines/finance/diagnose";
+import type { PrescriptiveCard } from "@/engines/finance/prescriptive";
+import type { DiagnosticoResult } from "@/engines/ai/diagnostico";
+
+export interface ExportPDFInput {
+  state: AppState;
+  model: FinancialModel;
+  diags: DiagnoseItem[];               // já calculado pelo caller
+  prescriptive: PrescriptiveCard[];    // já calculado pelo caller
+  aiDiagnostico?: DiagnosticoResult | null; // opcional, vindo do hook useDiagnosticoIA
+}
 ```
 
-### 2.2 Persist plugin (opcional, recomendado)
-- Adicionar `@tanstack/react-query-persist-client` + `createSyncStoragePersister` (localStorage).
-- Whitelist apenas `["app_settings"]` e outras queries "frias" (planos públicos, legal).
-- Evita refetch entre sessões e elimina FODC em 100% das navegações.
+- Remove os imports executáveis: `diagnose`, `buildPrescriptiveCards`, `buildBriefing`, `briefingCacheKey`, `loadConfig`, `isAIConfigured`, `gerarDiagnostico`, `getCached`, `setCached`, `PROMPT_VERSION`.
+- Mantém apenas `type`-only imports.
+- A seção "Diagnóstico Executivo IA" só renderiza se `aiDiagnostico` chegar preenchido. O exportador **não busca, não chama provedor, não toca em cache** — isso é responsabilidade do hook na UI.
 
-### 2.3 Invalidação no admin
-Após `updateAppSetting` em `SystemTab`/`LegalTab`/`PlansTab`:
-- `queryClient.invalidateQueries({ queryKey: ["app_settings"] })`
-- `writeSettingsCache(newData)` (já feito) — manter.
+### 2. Call-site único em `src/routes/app.tsx`
 
----
+No `onClick` do botão de exportar:
 
-## Fase 3 — Bundle e renderização da Landing
+```ts
+const [
+  { exportFinancePDF },
+  { buildFinancialModel },
+  { diagnose },
+  { buildPrescriptiveCards },
+] = await Promise.all([
+  import("@/engines/finance/pdfExport"),
+  import("@/engines/finance/financialModel"),
+  import("@/engines/finance/diagnose"),
+  import("@/engines/finance/prescriptive"),
+]);
 
-### 3.1 Code splitting da `LandingPage`
-Hoje é um único arquivo de ~48KB. Quebrar em:
-- `LandingHero` (eager — acima da dobra, LCP)
-- `HowItWorks`, `Features`, `Pricing`, `FAQ`, `Authority`, `Footer` → `React.lazy` + `<Suspense>`.
+const model = buildFinancialModel(state);
+const { dre, ind, tax, cf } = model;
+const diags = diagnose(state, dre, ind);
+const prescriptive = buildPrescriptiveCards(state, { dre, tax, ind, cf });
 
-### 3.2 Memoização
-- `React.memo` nos blocos estáticos (FAQ, HowItWorks, Footer).
-- `useMemo` para listas de features/planos derivadas.
+// IA: reusa o resultado já presente no hook useDiagnosticoIA (cache compartilhado).
+// Se ainda não houver, passa null — o PDF omite a página, sem fallback de chamada.
+const aiDiagnostico = diagnosticoIA.data ?? null;
 
-### 3.3 Ícones Lucide
-- Importar individualmente (já é o padrão do projeto). Auditar para garantir que não há `import * as Icons`.
+await exportFinancePDF({ state, model, diags, prescriptive, aiDiagnostico });
+```
 
-### 3.4 Lightbox de vídeo
-- Dialog do YouTube já é montado on-demand. Garantir que o `<iframe>` só é criado quando `open=true`.
+O hook `useDiagnosticoIA` (já consumido pelo Dashboard/Strategic) passa a ser também chamado no nível do `app.tsx` para que o botão consiga ler `diagnosticoIA.data` no clique. Como o hook é memoizado por `briefingCacheKey`, isso não dispara nova chamada à IA quando já está em cache.
 
----
+### 3. Guardrail arquitetural (novo teste)
 
-## Fase 4 — Auditoria pós-correção (checklist de lançamento)
+Adicionar em `src/__tests__/architecture.test.ts`:
 
-- [ ] LCP Landing < 2.5s (medir com Lighthouse)
-- [ ] CLS < 0.1 (skeletons com dimensões fixas)
-- [ ] INP < 200ms
-- [ ] Nenhum refetch em navegação SPA entre `/`, `/login`, `/termos`
-- [ ] Network tab: `app_settings` chamado no máximo 1x por sessão (após persist)
-- [ ] Bundle inicial da Landing reduzido (medir antes/depois com `vite build --report`)
-- [ ] Componentes abaixo da dobra carregam via `Suspense`
+```ts
+it("pdfExport é render-only (não importa lógica de domínio executável)", () => {
+  const src = readFileSync(join(ROOT, "src/engines/finance/pdfExport.ts"), "utf8");
+  const forbidden = [
+    /\bfrom\s+["']@\/engines\/finance\/diagnose["']/,
+    /\bfrom\s+["']@\/engines\/finance\/prescriptive["']/,
+    /\bfrom\s+["']@\/engines\/finance\/briefing["']/,
+    /\bfrom\s+["']@\/engines\/ai\/diagnostico["']/,
+    /\bfrom\s+["']@\/engines\/ai\/diagnosticoCache["']/,
+    /\bfrom\s+["']@\/engines\/ai\/providers["']/,
+  ];
+  // Permitido apenas `import type { ... } from`
+  for (const re of forbidden) {
+    const match = src.match(re);
+    if (!match) continue;
+    const line = src.slice(0, match.index!).split("\n").pop() ?? "";
+    expect(line.trim().startsWith("import type"), `pdfExport importa runtime de ${match[0]}`).toBe(true);
+  }
+});
+```
 
----
+### 4. Testes existentes
 
-## Detalhes técnicos
+Todos os 343 testes seguem verdes. A suíte não testava o conteúdo do PDF, apenas o boundary — a nova regra acima é o que protege a SSOT daqui pra frente.
 
-### Arquivos modificados
-- `src/hooks/useBranding.ts` — staleTime, isReady, remover `initialDataUpdatedAt: 0`
-- `src/router.tsx` — defaultOptions do QueryClient
-- `src/routes/login.tsx`, `landing.tsx`, `termos.tsx`, `privacidade.tsx` — `ensureQueryData` no loader
-- `src/components/landing/LandingPage.tsx` — split em sub-componentes lazy + skeletons + memo
-- `src/components/admin/tabs/SystemTab.tsx` (e demais) — invalidate após save
-- (Opcional) `bun add @tanstack/react-query-persist-client` + setup em `__root.tsx`
+## Não-objetivos
 
-### Critério de aceite
-Abrir a Landing em janela anônima → ver logo real (ou skeleton) → **nunca** ver "Finnance" + headline default piscando antes do conteúdo do admin.
+- Não mexer no layout/visual do PDF.
+- Não alterar o conjunto de páginas geradas (apêndice, narrativa, KPIs).
+- Não mover/renomear `pdfExport.ts` de novo (já está em `src/engines/finance/`).
+- Não mexer em `pdfCalculadora.ts` (escopo distinto).
 
----
+## Riscos & mitigações
 
-## Fora de escopo (próxima rodada)
-- Revisão de RLS/índices Supabase (item 10 da auditoria) — fazer em plano separado.
-- Migração para `@tanstack/react-query-persist-client` é opcional na Fase 1; se quiser, faço já na Fase 2.
+- **Risco:** `diagnosticoIA.data` ainda não disponível no momento do clique → PDF sem página IA. **Mitigação:** comportamento idêntico ao atual quando a IA falha (página é omitida silenciosamente). Aceito porque pré-cache via hook é o caso comum.
+- **Risco:** caller esquecer de passar `diags`/`prescriptive`. **Mitigação:** ambos são obrigatórios no tipo — typecheck quebra build.
 
-Confirma para eu executar as Fases 1–3? A Fase 4 é validação após implementação.
+## Entregáveis
+
+1. `src/engines/finance/pdfExport.ts` — assinatura e imports atualizados.
+2. `src/routes/app.tsx` — novo call-site computa tudo antes de chamar.
+3. `src/__tests__/architecture.test.ts` — novo guardrail.
+4. `bun run test` verde (343 passa → 344 passa).

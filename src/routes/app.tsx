@@ -311,12 +311,57 @@ function SimulaPro() {
                       try {
                         toast.loading("Gerando PDF…", { id: "pdf-export" });
                         // Dynamic imports — jsPDF + autotable (~850 KB) só carregam ao clicar.
-                        const [{ exportFinancePDF }, { buildFinancialModel }] = await Promise.all([
+                        // Importa também `diagnose`, `buildPrescriptiveCards` e `buildBriefing` aqui
+                        // porque pdfExport é render-only (não invoca lógica de domínio).
+                        // Assim, o PDF e a tela compartilham EXATAMENTE o mesmo call-site dessas
+                        // funções — não há risco de divergência silenciosa.
+                        const [
+                          { exportFinancePDF },
+                          { buildFinancialModel },
+                          { diagnose },
+                          { buildPrescriptiveCards },
+                          { buildBriefing, briefingCacheKey },
+                          { loadConfig },
+                          { isAIConfigured, gerarDiagnostico },
+                          { PROMPT_VERSION },
+                          { getCached, setCached },
+                        ] = await Promise.all([
                           import("@/engines/finance/pdfExport"),
                           import("@/engines/finance/financialModel"),
+                          import("@/engines/finance/diagnose"),
+                          import("@/engines/finance/prescriptive"),
+                          import("@/engines/finance/briefing"),
+                          import("@/engines/ai/providers"),
+                          import("@/engines/ai/diagnostico"),
+                          import("@/engines/ai/diagnosticoPrompt"),
+                          import("@/engines/ai/diagnosticoCache"),
                         ]);
                         const model = buildFinancialModel(state);
-                        await exportFinancePDF({ state, model });
+                        const { dre, ind, tax, cf } = model;
+                        const diags = diagnose(state, dre, ind);
+                        const prescriptive = buildPrescriptiveCards(state, { dre, tax, ind, cf });
+
+                        // Diagnóstico IA: tenta cache primeiro, gera uma vez se ainda
+                        // não houver. Preserva o comportamento histórico do exportador,
+                        // mas mantém o pdfExport puro (render-only).
+                        let aiDiagnostico = null as Awaited<ReturnType<typeof gerarDiagnostico>> | null;
+                        const aiCfg = loadConfig();
+                        if (isAIConfigured(aiCfg)) {
+                          try {
+                            const briefing = buildBriefing(state, dre, ind);
+                            const key = `${PROMPT_VERSION}::${aiCfg.provider}::${aiCfg.model}::${briefingCacheKey(briefing)}`;
+                            aiDiagnostico = getCached(key) ?? null;
+                            if (!aiDiagnostico) {
+                              aiDiagnostico = await gerarDiagnostico(briefing, aiCfg);
+                              setCached(key, aiDiagnostico);
+                            }
+                          } catch (e) {
+                            console.warn("[pdf-export] diagnóstico IA falhou:", e);
+                            aiDiagnostico = null; // segue sem a página IA
+                          }
+                        }
+
+                        await exportFinancePDF({ state, model, diags, prescriptive, aiDiagnostico });
                         toast.success("PDF gerado com sucesso", { id: "pdf-export" });
                       } catch (err) {
                         console.error("[pdf-export] falhou:", err);
