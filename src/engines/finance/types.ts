@@ -617,6 +617,10 @@ export interface AppState {
   fiscalYear?: number;
   /** Margem-alvo interna do consultor (%). Benchmark adicional ao setorial. */
   margemAlvoPct?: number;
+  /** Política de payout: % do lucro líquido distribuído aos sócios. Default 100. */
+  payoutPolicyPct?: number;
+  /** Reserva mínima mensal (R$) retida antes de calcular distribuição. Default 0. */
+  reservaMinimaMensal?: number;
   /** Moeda base (default "BRL"). Preparação para i18n futura. */
   moedaBase?: string;
 
