@@ -63,6 +63,19 @@ function pickExtremes(points: MonthlyPoint[], key: keyof MonthlyPoint) {
 }
 
 // Tooltip customizado com delta vs mês anterior.
+// Shapes locais para callbacks do Recharts (impedância da lib: typings
+// genéricos com `any` no upstream). Tipamos só o que efetivamente lemos.
+type TooltipPayloadItem = {
+  dataKey: string;
+  value: number | string;
+  name?: string;
+  color?: string;
+  payload?: Record<string, unknown>;
+};
+type LegendClickArg = { dataKey?: string | number; value?: string };
+type FunnelTooltipItem = { payload: { stage: string } };
+type PieLabelArg = { plan: string; value: number };
+
 function MonthlyTooltip({
   active,
   payload,
@@ -71,7 +84,7 @@ function MonthlyTooltip({
   formatters,
 }: {
   active?: boolean;
-  payload?: any[];
+  payload?: TooltipPayloadItem[];
   label?: string;
   data: MonthlyPoint[];
   formatters: Record<string, (v: number) => string>;
@@ -85,7 +98,7 @@ function MonthlyTooltip({
       {payload.map((p) => {
         const fmt = formatters[p.dataKey] ?? fmtNum;
         const cur = Number(p.value ?? 0);
-        const prevVal = prev ? Number((prev as any)[p.dataKey] ?? 0) : 0;
+        const prevVal = prev ? Number((prev as unknown as Record<string, number>)[p.dataKey] ?? 0) : 0;
         const d = fmtDelta(cur - prevVal, p.dataKey === "mrr");
         return (
           <div key={p.dataKey} className="flex items-center justify-between gap-4">
