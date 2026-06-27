@@ -57,7 +57,7 @@ export function useBranding() {
     // initialDataUpdatedAt sintetizado com Date.now() faz o React Query
     // tratar o cache como FRESH, então não há refetch em background que
     // dispare re-render com dados diferentes ("cache → real (se mudou)").
-    initialData: readSettingsCache,
+    initialData: () => readSettingsCache() as Awaited<ReturnType<typeof getAppSettings>> | undefined,
     initialDataUpdatedAt: () => (readSettingsCache() ? Date.now() : 0),
   });
 
