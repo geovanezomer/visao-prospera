@@ -53,3 +53,45 @@ export type AsaasRefund = {
   description?: string;
   dateCreated?: string;
 };
+
+// ─────────────── Webhook payloads brutos (subset consumido) ──────────────
+// Apenas os campos que o parseEvent lê. Mantém validação local (switch +
+// ?.) — payload final externo é JSON dinâmico, não cabe contrato 100% rígido.
+
+export type StripeWebhookObject = {
+  customer_email?: string;
+  customer_details?: { email?: string };
+  customer?: string;
+  subscription?: string;
+  payment_intent?: string;
+  id?: string;
+  mode?: string;
+  metadata?: { plan?: string };
+  items?: { data?: Array<{ price?: { lookup_key?: string; id?: string } | null; current_period_end?: number }> };
+  current_period_end?: number;
+  status?: string;
+};
+export type StripeWebhookEvent = { type: string; data: { object: StripeWebhookObject } };
+
+export type AsaasWebhookPayment = {
+  id?: string;
+  customer?: string;
+  customerEmail?: string;
+  subscription?: string;
+  externalReference?: string;
+  value?: number | string;
+  dueDate?: string;
+};
+export type AsaasWebhookSubscription = {
+  id?: string;
+  customer?: string;
+  externalReference?: string;
+  value?: number | string;
+  status?: string;
+  nextDueDate?: string;
+};
+export type AsaasWebhookEvent = {
+  event: string;
+  payment?: AsaasWebhookPayment;
+  subscription?: AsaasWebhookSubscription;
+};

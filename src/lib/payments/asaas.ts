@@ -211,7 +211,7 @@ export class AsaasProvider implements PaymentProvider {
     if (!expected) throw new Error("Asaas webhook: ASAAS_WEBHOOK_TOKEN não configurado.");
     if (token !== expected) throw new Error("Asaas webhook: token inválido.");
 
-    const event = JSON.parse(rawBody) as { event: string; payment?: any; subscription?: any };
+    const event = JSON.parse(rawBody) as import("./_remote-types").AsaasWebhookEvent;
     return await this.parseEvent(event);
   }
 
@@ -228,11 +228,7 @@ export class AsaasProvider implements PaymentProvider {
     }
   }
 
-  private async parseEvent(event: {
-    event: string;
-    payment?: any;
-    subscription?: any;
-  }): Promise<NormalizedEvent> {
+  private async parseEvent(event: import("./_remote-types").AsaasWebhookEvent): Promise<NormalizedEvent> {
     const p = event.payment;
     const s = event.subscription;
     switch (event.event) {
