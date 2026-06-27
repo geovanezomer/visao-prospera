@@ -15,7 +15,7 @@ function assertAdmin(claims: AuthClaims | undefined | null) {
 
 export const listWebhookEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (d: {
       page?: number;
       perPage?: number;
@@ -75,7 +75,7 @@ export const listWebhookEvents = createServerFn({ method: "POST" })
 
 export const getWebhookEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -90,7 +90,7 @@ export const getWebhookEvent = createServerFn({ method: "POST" })
 
 export const replayWebhookEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string; force?: boolean }) =>
+  .validator((d: { id: string; force?: boolean }) =>
     z.object({ id: z.string().uuid(), force: z.boolean().optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -128,7 +128,7 @@ export const replayWebhookEvent = createServerFn({ method: "POST" })
  */
 export const runWebhookRetryNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { limit?: number }) =>
+  .validator((d: { limit?: number }) =>
     z.object({ limit: z.number().int().min(1).max(100).optional() }).parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {

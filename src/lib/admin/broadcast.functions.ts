@@ -30,7 +30,7 @@ export type BroadcastSegment = z.infer<typeof SegmentSchema>;
 // ----------------------------------------------------------------------------
 export const previewBroadcastAudience = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { segment: BroadcastSegment }) =>
+  .validator((d: { segment: BroadcastSegment }) =>
     z.object({ segment: SegmentSchema }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -44,7 +44,7 @@ export const previewBroadcastAudience = createServerFn({ method: "POST" })
 // ----------------------------------------------------------------------------
 export const sendBroadcast = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { subject: string; html: string; segment: BroadcastSegment }) =>
+  .validator((d: { subject: string; html: string; segment: BroadcastSegment }) =>
     z
       .object({
         subject: z.string().min(3).max(200),

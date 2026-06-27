@@ -56,7 +56,7 @@ function monthLabel(d: Date): string {
 
 export const getDashboardCharts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { months?: number } | undefined) => ({
+  .validator((input: { months?: number } | undefined) => ({
     months: Math.max(1, Math.min(36, Number(input?.months ?? 12))),
   }))
   .handler(async ({ data, context }): Promise<DashboardCharts> => {

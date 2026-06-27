@@ -60,7 +60,7 @@ export type AdminUserSort = "created_desc" | "created_asc" | "expires_desc" | "e
 
 export const listAdminUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (data: {
       page?: number;
       perPage?: number;
@@ -212,7 +212,7 @@ export const listAdminUsers = createServerFn({ method: "POST" })
 // ----------------------------------------------------------------------------
 export const setUserActive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { userId: string; active: boolean }) =>
+  .validator((data: { userId: string; active: boolean }) =>
     z.object({ userId: z.string().uuid(), active: z.boolean() }).parse(data),
   )
   .handler(async ({ data, context }) => {
@@ -247,7 +247,7 @@ export const setUserActive = createServerFn({ method: "POST" })
 // ----------------------------------------------------------------------------
 export const sendPasswordReset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { userId: string }) =>
+  .validator((data: { userId: string }) =>
     z.object({ userId: z.string().uuid() }).parse(data),
   )
   .handler(async ({ data, context }) => {
@@ -280,7 +280,7 @@ export const sendPasswordReset = createServerFn({ method: "POST" })
 // ----------------------------------------------------------------------------
 export const revalidatePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { userId: string }) =>
+  .validator((data: { userId: string }) =>
     z.object({ userId: z.string().uuid() }).parse(data),
   )
   .handler(async ({ data, context }) => {
@@ -304,7 +304,7 @@ export const revalidatePlan = createServerFn({ method: "POST" })
 // ----------------------------------------------------------------------------
 export const refundPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { userId: string; amount?: number; reason?: string }) =>
+  .validator((data: { userId: string; amount?: number; reason?: string }) =>
     z
       .object({
         userId: z.string().uuid(),
@@ -356,7 +356,7 @@ export const refundPayment = createServerFn({ method: "POST" })
 // ----------------------------------------------------------------------------
 export const resendMagicLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { userId: string }) =>
+  .validator((data: { userId: string }) =>
     z.object({ userId: z.string().uuid() }).parse(data),
   )
   .handler(async ({ data, context }) => {

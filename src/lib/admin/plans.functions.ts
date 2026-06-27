@@ -140,7 +140,7 @@ const planSchema = z.object({
 
 export const upsertPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: z.infer<typeof planSchema>) => planSchema.parse(data))
+  .validator((data: z.infer<typeof planSchema>) => planSchema.parse(data))
   .handler(async ({ data, context }) => {
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -186,7 +186,7 @@ export const upsertPlan = createServerFn({ method: "POST" })
 
 export const deletePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string }) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: { id: string }) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

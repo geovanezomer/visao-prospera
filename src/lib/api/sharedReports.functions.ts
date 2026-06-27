@@ -38,7 +38,7 @@ const DEFAULT_TTL_MS = 48 * 60 * 60 * 1000;
 
 export const createShareLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => createSchema.parse(d))
+  .validator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const shareId = generateShareId();
@@ -72,7 +72,7 @@ export const createShareLink = createServerFn({ method: "POST" })
 const getSchema = z.object({ shareId: z.string().min(4).max(64) });
 
 export const getSharedReport = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => getSchema.parse(d))
+  .validator((d: unknown) => getSchema.parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
@@ -103,7 +103,7 @@ export const getSharedReport = createServerFn({ method: "GET" })
 
 export const revokeShareLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => getSchema.parse(d))
+  .validator((d: unknown) => getSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
@@ -152,7 +152,7 @@ const updateExpirationSchema = z.object({
 
 export const updateShareExpiration = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => updateExpirationSchema.parse(d))
+  .validator((d: unknown) => updateExpirationSchema.parse(d))
   .handler(async ({ data, context }) => {
     if (data.expiresAt && new Date(data.expiresAt).getTime() <= Date.now()) {
       throw new Error("A nova expiração deve estar no futuro");

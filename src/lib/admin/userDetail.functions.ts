@@ -87,7 +87,7 @@ export type UserDetail = {
 
 export const getUserDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { userId: string }) =>
+  .validator((d: { userId: string }) =>
     z.object({ userId: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<UserDetail> => {
@@ -197,7 +197,7 @@ export const getUserDetail = createServerFn({ method: "POST" })
 // ---------------------------------------------------------------------------
 export const grantManualPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (d: {
       userId: string;
       plan: "starter" | "pro" | "lifetime";
@@ -261,7 +261,7 @@ export const grantManualPlan = createServerFn({ method: "POST" })
 // ---------------------------------------------------------------------------
 export const impersonateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { userId: string; reason?: string }) =>
+  .validator((d: { userId: string; reason?: string }) =>
     z.object({ userId: z.string().uuid(), reason: z.string().max(500).optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -302,7 +302,7 @@ export const impersonateUser = createServerFn({ method: "POST" })
 // ---------------------------------------------------------------------------
 export const createManualUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (d: {
       email: string;
       displayName?: string;
@@ -430,7 +430,7 @@ export const createManualUser = createServerFn({ method: "POST" })
 // ---------------------------------------------------------------------------
 export const checkEmailAvailable = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { email: string }) =>
+  .validator((d: { email: string }) =>
     z.object({ email: z.string().trim().toLowerCase().email().max(255) }).parse(d),
   )
   .handler(async ({ data, context }) => {

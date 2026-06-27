@@ -23,7 +23,7 @@ export type UserSession = {
 
 export const getUserSessions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
+  .validator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -46,7 +46,7 @@ export const getUserSessions = createServerFn({ method: "POST" })
 
 export const revokeAllSessions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
+  .validator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

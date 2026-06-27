@@ -15,7 +15,7 @@ function assertAdmin(claims: AuthClaims | undefined | null) {
 
 export const listAuditLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (d: {
       page?: number;
       perPage?: number;

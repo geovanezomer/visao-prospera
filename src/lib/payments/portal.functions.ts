@@ -11,7 +11,7 @@ import { resolveProvider } from "./index";
 
 export const createPortalSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { returnUrl?: string }) =>
+  .validator((data: { returnUrl?: string }) =>
     z.object({ returnUrl: z.string().url().optional() }).parse(data),
   )
   .handler(async ({ data, context }) => {
