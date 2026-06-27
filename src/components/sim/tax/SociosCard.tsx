@@ -61,16 +61,22 @@ export function SociosCard() {
   const socios = state.socios ?? [];
   const salarioMin = getSalarioMinimo(state.tax);
 
-  const lucroMensalDisponivel = useMemo(() => {
+  const payoutPct = state.payoutPolicyPct ?? 100;
+  const reservaMin = state.reservaMinimaMensal ?? 0;
+
+  const { lucroMensalBruto, lucroMensalDisponivel } = useMemo(() => {
     try {
       const semSocios = syncSociosToCosts({ ...state, socios: [] }, regime);
       const { dre } = buildDRE(semSocios, regime);
       const lucroAno = dre.lucroLiquido.reduce((a, b) => a + b, 0);
-      return Math.max(0, lucroAno / 12);
+      const bruto = Math.max(0, lucroAno / 12);
+      const aposReserva = Math.max(0, bruto - reservaMin);
+      const disp = (aposReserva * payoutPct) / 100;
+      return { lucroMensalBruto: bruto, lucroMensalDisponivel: disp };
     } catch {
-      return 0;
+      return { lucroMensalBruto: 0, lucroMensalDisponivel: 0 };
     }
-  }, [state, regime]);
+  }, [state, regime, payoutPct, reservaMin]);
 
   const setSocios = (next: SocioRetirada[]) =>
     update((s) => applySociosChange(s, next, regime));
@@ -151,10 +157,19 @@ export function SociosCard() {
         <div>
           <SectionTitle hint={HINT}>Pró-labore × Distribuição de Lucros</SectionTitle>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            Lucro mensal estimado disponível para distribuição:{" "}
-            <b>{fmtBRL(lucroMensalDisponivel)}</b> · Regime efetivo:{" "}
-            <b className="uppercase">{regime}</b> · Piso legal (salário mínimo):{" "}
-            <b>{fmtBRL(salarioMin)}</b>
+            Lucro mensal disponível para distribuição:{" "}
+            <b>{fmtBRL(lucroMensalDisponivel)}</b>
+            {(payoutPct !== 100 || reservaMin > 0) && (
+              <>
+                {" "}
+                <span className="text-muted-foreground/70">
+                  (lucro bruto {fmtBRL(lucroMensalBruto)} − reserva{" "}
+                  {fmtBRL(reservaMin)} × payout {payoutPct}%)
+                </span>
+              </>
+            )}{" "}
+            · Regime efetivo: <b className="uppercase">{regime}</b> · Piso legal
+            (salário mínimo): <b>{fmtBRL(salarioMin)}</b>
           </p>
         </div>
         <div className="flex gap-2">

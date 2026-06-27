@@ -97,6 +97,8 @@ const formSchema = z.object({
     .min(-100, "Margem inválida")
     .max(100, "Margem inválida")
     .optional(),
+  payoutPolicyPct: z.number().min(0).max(100),
+  reservaMinimaMensal: z.number().min(0).max(1_000_000_000),
 });
 
 /** Métricas do benchmark personalizável (P50). Mantém ordem de exibição. */
@@ -172,6 +174,8 @@ export function CompanyConfigForm({
     state.periodoAnaliseMeses,
     state.fiscalYearStartMonth,
     state.margemAlvoPct,
+    state.payoutPolicyPct,
+    state.reservaMinimaMensal,
     state.tax.regime,
   ]);
 
@@ -209,6 +213,8 @@ export function CompanyConfigForm({
       periodoAnaliseMeses: d.periodoAnaliseMeses,
       fiscalYearStartMonth: d.fiscalYearStartMonth,
       margemAlvoPct: d.margemAlvoPct,
+      payoutPolicyPct: d.payoutPolicyPct,
+      reservaMinimaMensal: d.reservaMinimaMensal,
       moedaBase: "BRL",
     });
     setTax({ regime: d.regime });
@@ -476,7 +482,63 @@ export function CompanyConfigForm({
         </div>
       </section>
 
+      {/* Política de Distribuição de Lucros */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Política de Distribuição de Lucros
+          </h3>
+          <HelpTip
+            text="Define quanto do lucro líquido mensal é distribuído aos sócios e quanto fica retido na empresa para reinvestimento, formação de caixa ou reserva. Usado no cartão 'Pró-labore × Distribuição de Lucros' para limitar a distribuição isenta proporcional à participação de cada sócio."
+            formula="Lucro distribuível = max(0, Lucro Líquido mensal − Reserva mínima) × Payout%"
+            example="LL = R$ 100.000/mês · Reserva = R$ 20.000 · Payout 60% → distribuível = (100.000 − 20.000) × 60% = R$ 48.000/mês. Os outros R$ 52.000 ficam em caixa/reservas."
+          />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="payoutPolicyPct">Payout — % do lucro distribuído</Label>
+            <Input
+              id="payoutPolicyPct"
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              value={Number.isFinite(form.payoutPolicyPct) ? form.payoutPolicyPct : 100}
+              onChange={(e) =>
+                commit({
+                  ...form,
+                  payoutPolicyPct: Math.min(100, Math.max(0, Number(e.target.value) || 0)),
+                })
+              }
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Padrão 100% (distribui todo o lucro). Use 0% para reter integralmente.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="reservaMinimaMensal">Reserva mínima mensal (R$)</Label>
+            <Input
+              id="reservaMinimaMensal"
+              type="number"
+              min={0}
+              step={100}
+              value={Number.isFinite(form.reservaMinimaMensal) ? form.reservaMinimaMensal : 0}
+              onChange={(e) =>
+                commit({
+                  ...form,
+                  reservaMinimaMensal: Math.max(0, Number(e.target.value) || 0),
+                })
+              }
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Valor absoluto retido antes do payout (capital de giro, reserva legal, reinvestimento).
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Análise */}
+
       <section className="space-y-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Período de Análise
@@ -578,6 +640,8 @@ function buildFormFromState(state: AppState): FormData {
     periodoAnaliseMeses: state.periodoAnaliseMeses ?? 12,
     fiscalYearStartMonth: state.fiscalYearStartMonth ?? 1,
     margemAlvoPct: state.margemAlvoPct,
+    payoutPolicyPct: state.payoutPolicyPct ?? 100,
+    reservaMinimaMensal: state.reservaMinimaMensal ?? 0,
   };
 }
 
