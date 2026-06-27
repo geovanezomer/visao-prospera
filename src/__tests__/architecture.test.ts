@@ -88,4 +88,39 @@ describe("arquitetura de pastas", () => {
     }
     expect(offenders, `Módulos de tools acoplados:\n${offenders.join("\n")}`).toEqual([]);
   });
+
+  it("pdfExport é render-only (não importa lógica de domínio executável)", () => {
+    // Protege a SSOT entre tela e PDF: `diagnose`, `buildPrescriptiveCards`,
+    // `buildBriefing` e o subsistema de IA (`diagnostico` / `diagnosticoCache`
+    // / `providers`) devem ser CALCULADOS pelo caller (UI) e passados ao
+    // exportador via `ExportPDFInput`. pdfExport pode apenas importar TIPOS
+    // dessas origens — runtime, nunca.
+    const src = readFileSync(join(ROOT, "src/engines/finance/pdfExport.ts"), "utf8");
+    const forbidden = [
+      "@/engines/finance/diagnose",
+      "@/engines/finance/prescriptive",
+      "@/engines/finance/briefing",
+      "@/engines/ai/diagnostico",
+      "@/engines/ai/diagnosticoCache",
+      "@/engines/ai/diagnosticoPrompt",
+      "@/engines/ai/providers",
+    ];
+    const offenders: string[] = [];
+    for (const mod of forbidden) {
+      // captura toda linha que importa do módulo proibido (com aspas simples ou duplas)
+      const re = new RegExp(`^[^\\n]*from\\s+["']${mod.replace(/[/$.]/g, "\\$&")}["'][^\\n]*$`, "gm");
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(src))) {
+        const line = m[0].trim();
+        // Permitido APENAS quando é estritamente type-only: `import type { ... } from`.
+        if (!/^import\s+type\s/.test(line)) {
+          offenders.push(`${mod} → ${line}`);
+        }
+      }
+    }
+    expect(
+      offenders,
+      `pdfExport.ts não pode importar runtime de lógica de domínio:\n${offenders.join("\n")}`,
+    ).toEqual([]);
+  });
 });
