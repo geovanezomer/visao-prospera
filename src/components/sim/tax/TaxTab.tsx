@@ -608,6 +608,9 @@ export function TaxTab() {
           (≈26,5%) ou conservador (≈28%).
         </div>
       </div>
+
+      {/* Pró-labore × Distribuição de Lucros (Plano v3) */}
+      <SociosCard />
     </div>
   );
 }
