@@ -312,7 +312,7 @@ function SimulaPro() {
                         toast.loading("Gerando PDF…", { id: "pdf-export" });
                         // Dynamic imports — jsPDF + autotable (~850 KB) só carregam ao clicar.
                         const [{ exportFinancePDF }, { buildFinancialModel }] = await Promise.all([
-                          import("@/lib/pdfExport"),
+                          import("@/engines/finance/pdfExport"),
                           import("@/engines/finance/financialModel"),
                         ]);
                         const model = buildFinancialModel(state);
