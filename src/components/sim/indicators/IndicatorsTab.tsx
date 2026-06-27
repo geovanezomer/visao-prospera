@@ -25,6 +25,7 @@ export function IndicatorsTab() {
             description:
               "Dias entre pagar fornecedores e receber dos clientes. Quanto MAIOR, mais capital de giro a empresa precisa imobilizar.",
             formula: "PMR + PME − PMP",
+            calc: c.cicloFinanceiro,
           }}
           sub={
             ind.cicloFinanceiro > 60
@@ -40,6 +41,7 @@ export function IndicatorsTab() {
             <HelpTip
               text="Dinheiro consumido pela operação. Reflete a defasagem entre recebimento de clientes e pagamento de fornecedores/estoque."
               formula="Contas a Receber + Estoques − Fornecedores"
+              calc={c.ncg}
             />
           </div>
           <div className="mono mt-2 text-2xl font-bold text-foreground">{fmtBRL(ind.ncg)}</div>
@@ -57,9 +59,10 @@ export function IndicatorsTab() {
             description:
               "Diferença entre o que a operação precisa (NCG) e o que a empresa tem (CGD). Positivo = precisa de empréstimo de giro; Negativo = sobra caixa.",
             formula: "NCG − CGD",
+            calc: c.gapCapitalGiro,
           }}
         />
-        <CashConversionSmall conversao={ind.conversaoEbitdaCaixa} />
+        <CashConversionSmall conversao={ind.conversaoEbitdaCaixa} calc={c.conversaoEbitdaCaixa} />
       </div>
 
       <IndicatorsGrid state={state} />
