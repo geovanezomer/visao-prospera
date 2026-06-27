@@ -164,6 +164,27 @@ export interface CostLine {
   ativacao?: { mes: number; valor: number; vidaUtilMeses: number };
   /** @deprecated legacy */ group?: "operacional" | "financeiro";
   /** @deprecated legacy */ variavel?: boolean;
+  /** Linha sintética gerada por outro módulo (ex.: pró-labore de sócios).
+   *  UI deve exibi-la como somente leitura e direcionar edição à fonte. */
+  system?: boolean;
+}
+
+/** Sócio retirante — Pró-labore × Distribuição de Lucros (Plano v3). */
+export interface SocioRetirada {
+  id: string;
+  nome: string;
+  /** % de participação no capital (0..100). Soma de todos os sócios = 100. */
+  participacaoPct: number;
+  /** Sócio operacional (presta serviço à PJ) — exige piso de salário mínimo. */
+  operacional: boolean;
+  /** Pró-labore mensal escolhido pelo usuário (R$). */
+  prolaboreMensal: number;
+  /** Dependentes para IRPF. */
+  dependentes: number;
+  /** Outras deduções mensais do IRPF (PGBL, pensão etc.) em R$. */
+  outrasDeducoes: number;
+  /** "manual" = respeita prolaboreMensal; "otimizar" = engine calcula split ótimo. */
+  modo: "manual" | "otimizar";
 }
 
 export interface CapitalStructure {
