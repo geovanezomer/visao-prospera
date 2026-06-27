@@ -3,7 +3,7 @@
 //
 // Cria sessão de checkout no provedor ativo (Stripe ou Asaas) e devolve a
 // URL hospedada para redirect. Rota PÚBLICA — não exige login porque é
-// usada na landing/planos. A criação de conta acontece via magic link
+// usada na landing (#planos). A criação de conta acontece via magic link
 // após a confirmação do pagamento (webhook).
 //
 // Toda a validação de entrada e da coerência do upsell é feita aqui com
