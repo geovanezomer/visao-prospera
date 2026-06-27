@@ -5,6 +5,8 @@ import { SectionTitle } from "@/components/sim/shared/primitives";
 import { aggregate, periodLabels, Period } from "@/components/sim/cashflow/tableHelpers";
 import { usePeriodView } from "@/hooks/usePeriodView";
 import { useAnnualSnapshots } from "@/hooks/useAnnualSnapshots";
+import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
+import { useComparisonMode } from "@/engines/scenarios/comparisonStore";
 import { CashFlowComparison } from "@/components/sim/comparison/ComparisonView";
 import { useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 
@@ -13,8 +15,16 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
   const [period, setPeriod] = usePeriodView("trimestral") as [Period, (p: Period) => void];
   const readOnly = useFinanceReadOnly();
   const annualSnaps = useAnnualSnapshots(3);
+  const compareMode = useComparisonMode();
+  const selectedSnaps = useSelectedSnapshots();
   const cols = periodLabels(period);
   const showAnnualComparison = period === "anual" && annualSnaps.length >= 2;
+  const showCompareMode = compareMode.active && selectedSnaps.length >= 2;
+  const showComparison = showAnnualComparison || showCompareMode;
+  const comparisonSnaps = showCompareMode ? selectedSnaps : annualSnaps;
+  const comparisonLabel = showCompareMode
+    ? `Comparativo — ${selectedSnaps.length} cenários selecionados`
+    : `Comparativo anual — últimos ${annualSnaps.length - 1} anos + atual`;
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40">
