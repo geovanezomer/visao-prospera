@@ -192,6 +192,7 @@ export function TaxSettingsDialog() {
           {step.key === "presumido" && (
             <StepPresumido ov={ov} patchOv={patchOv} state={state} patchTax={patchTax} />
           )}
+          {step.key === "folha" && <StepFolhaSocios ov={ov} patchOv={patchOv} />}
           {step.key === "reforma" && (
             <StepReforma ov={ov} patchOv={patchOv} state={state} patchTax={patchTax} />
           )}
