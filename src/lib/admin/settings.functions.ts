@@ -7,6 +7,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
+import type { Json } from "@/integrations/supabase/types";
 
 function assertAdmin(claims: AuthClaims | undefined | null) {
   if (!isAdminEmail((claims?.email as string) ?? "")) {
@@ -29,9 +30,9 @@ export const getAppSettings = createServerFn({ method: "GET" }).handler(async ()
     .from("app_settings")
     .select("key, value")
     .in("key", PUBLIC_KEYS as unknown as string[]);
-  const out: Record<string, unknown> = {};
-  for (const row of data ?? []) out[row.key] = row.value;
-  return out as Partial<Record<SettingKey, unknown>>;
+  const out: Partial<Record<SettingKey, Json>> = {};
+  for (const row of data ?? []) out[row.key as SettingKey] = row.value as Json;
+  return out;
 });
 
 export const updateAppSetting = createServerFn({ method: "POST" })

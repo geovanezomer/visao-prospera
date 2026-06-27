@@ -41,8 +41,8 @@ export const listProviders = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     const rows: ProviderRow[] = (data ?? []).map((r) => ({
       id: r.id,
-      provider: r.provider,
-      mode: r.mode,
+      provider: r.provider as ProviderRow["provider"],
+      mode: r.mode as ProviderRow["mode"],
       apiKeyMasked: mask(r.api_key),
       webhookSecretMasked: mask(r.webhook_secret),
       hasApiKey: !!r.api_key,
