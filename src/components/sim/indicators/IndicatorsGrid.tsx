@@ -18,6 +18,15 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
   // cagrReceitas12m já vem em fração (0,15 = 15%); não dividir por 100.
   const cagrReceitas12mFmt = Number.isFinite(cagrReceitas12m) ? fmtPct(cagrReceitas12m) : "—";
 
+  // Memória de cálculo da Margem Bruta (ano corrente):
+  // Margem Bruta = Lucro Bruto ÷ Receita Líquida × 100
+  const lucroBrutoAnual = sum(dre.lucroBruto);
+  const receitaLiqAnual = sum(dre.receitaLiquida);
+  const margemBrutaCalc =
+    receitaLiqAnual > 0
+      ? `${fmtBRL(lucroBrutoAnual)} ÷ ${fmtBRL(receitaLiqAnual)} × 100\n= ${fmtPct(lucroBrutoAnual / receitaLiqAnual)}`
+      : "Receita Líquida = 0 → cálculo indisponível";
+
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5">
       <SectionTitle
@@ -34,7 +43,9 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           v={fmtPct(ind.margemBruta / 100)}
           desc="Quanto sobra da receita após pagar o custo direto do produto/serviço. Mede a eficiência da operação antes das despesas."
           formula="Lucro Bruto ÷ Receita Líquida × 100"
+          calc={margemBrutaCalc}
         />
+
         <Ind
           label="Margem EBITDA"
           v={fmtPct(ind.margemEbitda / 100)}
