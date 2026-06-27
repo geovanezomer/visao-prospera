@@ -72,8 +72,8 @@ type TooltipPayloadItem = {
   color?: string;
   payload?: Record<string, unknown>;
 };
-type LegendClickArg = { dataKey?: string | number; value?: string };
-type FunnelTooltipItem = { payload: { stage: string } };
+type LegendClickArg = { dataKey?: unknown; value?: string };
+type FunnelTooltipItem = { payload?: { stage?: string } };
 type PieLabelArg = { plan: string; value: number };
 
 function MonthlyTooltip({
