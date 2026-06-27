@@ -53,12 +53,12 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
           ))}
         </div>
       </div>
-      {showAnnualComparison ? (
+      {showComparison ? (
         <div className="p-4">
           <p className="mb-3 text-[10px] uppercase tracking-wider text-muted-foreground">
-            Comparativo anual — últimos {annualSnaps.length - 1} anos + atual
+            {comparisonLabel}
           </p>
-          <CashFlowComparison snapshots={annualSnaps} />
+          <CashFlowComparison snapshots={comparisonSnaps} />
         </div>
       ) : (
       <>
