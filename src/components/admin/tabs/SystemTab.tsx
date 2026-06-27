@@ -145,8 +145,15 @@ export function SystemTab() {
 
   // Hidrata o estado local a partir do payload completo do app_settings.
   // Usado no mount inicial e em eventos de sincronização multi-aba.
-  const hydrateFromSettings = useCallback((s: any) => {
-    if (!s || typeof s !== "object") return;
+  const hydrateFromSettings = useCallback((raw: unknown) => {
+    if (!raw || typeof raw !== "object") return;
+    const s = raw as {
+      branding?: { system_name?: string; logo_url?: string; favicon_url?: string; author_photo_url?: string; recolor_logo?: boolean; colors?: { primary?: string; accent?: string } };
+      login_texts?: { headline?: string; subheadline?: string; cta?: string };
+      footer?: { text?: string };
+      tracking?: { head?: string; body_start?: string; body_end?: string };
+      landing_video?: { enabled?: boolean; url?: string };
+    };
     if (s.branding) setBranding({
       system_name: s.branding.system_name ?? DEFAULT_BRANDING.system_name,
       logo_url: s.branding.logo_url ?? "",

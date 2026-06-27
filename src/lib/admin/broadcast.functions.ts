@@ -150,7 +150,7 @@ async function resolveAudience(seg: BroadcastSegment): Promise<{ recipients: { i
   }
 
   // Lê todos os usuários (até 5000).
-  const all: any[] = [];
+  const all: Array<{ id: string; email?: string | null }> = [];
   for (let p = 1; p <= 25; p++) {
     const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: p, perPage: 200 });
     if (error) throw new Error(error.message);

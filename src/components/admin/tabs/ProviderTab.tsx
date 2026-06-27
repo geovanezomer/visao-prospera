@@ -28,7 +28,7 @@ export function ProviderTab() {
     try {
       const r = await listProviders();
       setRows(r.rows);
-      const e: any = {};
+      const e: Record<string, { apiKey: string; webhookSecret: string; mode: "test" | "live" }> = {};
       for (const row of r.rows) e[row.provider] = { apiKey: "", webhookSecret: "", mode: row.mode };
       setEdits(e);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
@@ -82,7 +82,7 @@ export function ProviderTab() {
 
               <div className="space-y-1">
                 <Label className="text-xs">Modo</Label>
-                <Select value={e.mode} onValueChange={(v) => setEdits({ ...edits, [row.provider]: { ...e, mode: v as any } })}>
+                <Select value={e.mode} onValueChange={(v) => setEdits({ ...edits, [row.provider]: { ...e, mode: v as "test" | "live" } })}>
                   <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="test">Test</SelectItem><SelectItem value="live">Live</SelectItem></SelectContent>
                 </Select>

@@ -56,9 +56,16 @@ export const updateEmailSettings = createServerFn({ method: "POST" })
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: existing } = await supabaseAdmin.from("email_settings").select("id").limit(1).maybeSingle();
-    const patch: any = {
+    const patch: {
+      updated_at: string;
+      updated_by: string | null;
+      resend_api_key?: string;
+      from_email?: string;
+      from_name?: string;
+      reply_to?: string | null;
+    } = {
       updated_at: new Date().toISOString(),
-      updated_by: context.userId,
+      updated_by: context.userId ?? null,
     };
     if (data.apiKey) patch.resend_api_key = data.apiKey;
     if (data.fromEmail !== undefined) patch.from_email = data.fromEmail;
