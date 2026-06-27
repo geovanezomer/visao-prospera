@@ -182,12 +182,12 @@ function StatusBody({
             {data.lastError}
           </p>
         )}
-        <Link
-          to="/planos"
-          className="mt-6 inline-block w-full rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
+        <a
+          href="/#planos"
+          className="mt-6 inline-block w-full rounded-lg bg-primary px-5 py-3 text-center text-sm font-semibold text-primary-foreground hover:opacity-90"
         >
           Tentar novamente
-        </Link>
+        </a>
       </>
     );
   }
