@@ -11,13 +11,6 @@ import { Plus, Trash2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useFinance, useFinanceUpdate } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { buildDRE } from "@/engines/finance/dre";
@@ -201,7 +194,6 @@ export function SociosCard() {
                 <th className="px-2 py-2 font-medium">Nome do sócio</th>
                 <th className="px-2 py-2 font-medium text-right">Participação (%)</th>
                 <th className="px-2 py-2 font-medium text-center">Operacional</th>
-                <th className="px-2 py-2 font-medium text-center">Modo</th>
                 <th className="px-2 py-2 font-medium text-right">Pró-labore (mês)</th>
                 <th className="px-2 py-2 font-medium text-right">Dependentes</th>
                 <th className="px-2 py-2 font-medium text-right">Outras deduções</th>
@@ -247,22 +239,6 @@ export function SociosCard() {
                         checked={s.operacional}
                         onCheckedChange={(v) => patchSocio(s.id, { operacional: v })}
                       />
-                    </td>
-                    <td className="px-2 py-1.5">
-                      <Select
-                        value={s.modo}
-                        onValueChange={(v) =>
-                          patchSocio(s.id, { modo: v as "manual" | "otimizar" })
-                        }
-                      >
-                        <SelectTrigger className="h-8 w-[110px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="manual">Manual</SelectItem>
-                          <SelectItem value="otimizar">Otimizar</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </td>
                     <td className="px-2 py-1.5">
                       <Input
@@ -350,7 +326,7 @@ export function SociosCard() {
                 >
                   {somaPartic.toFixed(2)}%
                 </td>
-                <td colSpan={2}></td>
+                <td></td>
                 <td className="num px-2 py-2 text-right">{fmtBRL(totaisAno.prolab)}</td>
                 <td colSpan={2}></td>
                 <td className="num px-2 py-2 text-right">
