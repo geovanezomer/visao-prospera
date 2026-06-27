@@ -16,8 +16,14 @@ export function useAnnualSnapshots(max = 3): Snapshot[] {
 
   return useMemo(() => {
     const recent = hist.slice(-max);
-    const out: Snapshot[] = recent.map((r) => ({ label: r.name, state: r.state! }));
-    out.push({ label: "Atual", state, isCurrent: true });
+    const out: Snapshot[] = recent.map((r) => ({
+      label: r.name,
+      state: r.state!,
+      // Propaga `subKind` para que ComparisonView consiga ativar o modo
+      // "Orçado × Realizado" (FP&A) quando houver uma `previsao` selecionada.
+      subKind: r.subKind ?? "realizado",
+    }));
+    out.push({ label: "Atual", state, isCurrent: true, subKind: "realizado" });
     return out;
   }, [hist, state, max]);
 }

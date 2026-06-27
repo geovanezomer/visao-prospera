@@ -26,6 +26,15 @@ export interface Snapshot {
   state: AppState;
   /** True quando é o ano vivo — usado para badge "parcial X/12". */
   isCurrent?: boolean;
+  /**
+   * Distingue cenários arquivados como "realizado" (ano fechado/em curso) de
+   * "previsao" (orçamento/budget). Quando o usuário seleciona Atual + previsao,
+   * o ComparisonView ativa o modo "Orçado × Realizado" (FP&A):
+   *   - Δ R$ exibido junto do Δ %
+   *   - Semáforo INVERTE em linhas de custo/despesa (gastar mais = vermelho)
+   *   - Cabeçalho da coluna previsão recebe sufixo "(orçado)"
+   */
+  subKind?: "realizado" | "previsao";
 }
 
 interface Row {
@@ -39,6 +48,13 @@ interface Row {
   bold?: boolean;
   /** Quando true, exibe percentual em vez de R$. */
   asPercent?: boolean;
+  /**
+   * Marca a linha como CUSTO/DESPESA (ou saída de caixa). Usado só no modo
+   * "Orçado × Realizado" para INVERTER a cor do semáforo: realizar mais que
+   * o orçado em despesa é RUIM (vermelho), embora o Δ seja positivo.
+   * Para Receita/EBITDA/Lucro (padrão), Δ positivo = bom (verde).
+   */
+  isCost?: boolean;
 }
 
 const ALERT_THRESHOLD = 10; // %
@@ -53,16 +69,22 @@ function annualizedSum(arr: number[], snap: Snapshot): number {
   return meses < 12 ? anualizar(total, meses) : total;
 }
 
-function VariationBadge({ pct }: { pct: number }) {
+/**
+ * Badge de variação. `invert=true` troca a polaridade do semáforo:
+ * Δ positivo passa a ser vermelho (usado em linhas de custo/despesa no
+ * modo Orçado × Realizado — estourar o orçado é ruim).
+ */
+function VariationBadge({ pct, invert = false }: { pct: number; invert?: boolean }) {
   if (!Number.isFinite(pct)) {
     return <span className="text-[10px] text-muted-foreground">—</span>;
   }
   const abs = Math.abs(pct);
   const Icon = pct > 0.1 ? TrendingUp : pct < -0.1 ? TrendingDown : Minus;
+  const isGood = invert ? pct < 0 : pct > 0;
   const color =
     abs < ALERT_THRESHOLD
       ? "text-muted-foreground"
-      : pct > 0
+      : isGood
         ? "text-emerald-600 dark:text-emerald-400"
         : "text-rose-600 dark:text-rose-400";
   return (
@@ -72,6 +94,16 @@ function VariationBadge({ pct }: { pct: number }) {
       {pct.toFixed(1)}%
     </span>
   );
+}
+
+/** Δ R$ formatado curto (k/M) com sinal — usado no modo Orçado × Realizado. */
+function fmtDeltaBRL(v: number): string {
+  if (!Number.isFinite(v) || v === 0) return "R$ 0";
+  const sign = v > 0 ? "+" : "−";
+  const abs = Math.abs(v);
+  if (abs >= 1_000_000) return `${sign}R$ ${(abs / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000) return `${sign}R$ ${(abs / 1_000).toFixed(1)}k`;
+  return `${sign}R$ ${abs.toFixed(0)}`;
 }
 
 // ─── Tabela genérica ──────────────────────────────────────────────────
