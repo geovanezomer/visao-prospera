@@ -22,7 +22,7 @@ export type PlanRow = {
   currency: string;
   interval: string;
   features: string[];
-  limits: Record<string, unknown>;
+  limits: Json;
   stripePriceId: string | null;
   asaasPlanRef: string | null;
   active: boolean;
@@ -72,7 +72,7 @@ function rowToPlan(r: DbPlanRow): PlanRow {
     currency: r.currency,
     interval: r.interval,
     features: Array.isArray(r.features) ? (r.features as string[]) : [],
-    limits: (r.limits as Record<string, unknown> | null) ?? {},
+    limits: (r.limits ?? {}) as Json,
     stripePriceId: r.stripe_price_id,
     asaasPlanRef: r.asaas_plan_ref,
     active: r.active,
@@ -153,8 +153,8 @@ export const upsertPlan = createServerFn({ method: "POST" })
       interval: data.interval,
       features: data.features,
       // `limits` é jsonb no banco — Json é compatível mas o tipo gerado
-      // do PostgREST exige cast explícito do Record<string, unknown>.
-      limits: data.limits as Record<string, unknown>,
+      // do PostgREST exige cast explícito para `Json`.
+      limits: data.limits as Json,
       stripe_price_id: data.stripePriceId ?? null,
       asaas_plan_ref: data.asaasPlanRef ?? null,
       active: data.active,
