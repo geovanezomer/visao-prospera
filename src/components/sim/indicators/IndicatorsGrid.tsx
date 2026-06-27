@@ -374,6 +374,7 @@ function Ind({
   v,
   desc,
   formula,
+  calc,
   tone,
   chip,
 }: {
@@ -381,6 +382,7 @@ function Ind({
   v: string;
   desc?: string;
   formula?: string;
+  calc?: string;
   tone?: "pos" | "neg" | "warn";
   chip?: string | null;
 }) {
@@ -395,7 +397,8 @@ function Ind({
   return (
     <div className="rounded-md border border-border/40 bg-background/40 p-3">
       <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-        <span>{label}</span> {desc && <HelpTip text={desc} formula={formula} />}
+        <span>{label}</span>{" "}
+        {desc && <HelpTip text={desc} formula={formula} calc={calc} />}
         {chip && (
           <span className="ml-auto rounded-full bg-pos/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-pos">
             {chip}
@@ -406,3 +409,4 @@ function Ind({
     </div>
   );
 }
+
