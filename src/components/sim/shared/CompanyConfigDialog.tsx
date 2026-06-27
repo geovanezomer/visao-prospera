@@ -580,6 +580,8 @@ function buildFormFromState(state: AppState): FormData {
     periodoAnaliseMeses: state.periodoAnaliseMeses ?? 12,
     fiscalYearStartMonth: state.fiscalYearStartMonth ?? 1,
     margemAlvoPct: state.margemAlvoPct,
+    payoutPolicyPct: state.payoutPolicyPct ?? 100,
+    reservaMinimaMensal: state.reservaMinimaMensal ?? 0,
   };
 }
 
