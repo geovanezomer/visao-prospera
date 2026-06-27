@@ -191,38 +191,53 @@ export function CostsTab() {
           value={fmtBRL(totCPV)}
           tone="neg"
           sub={fmtPct(pctRec(totCPV)) + " da receita"}
-          hint={COST_VENDAS_LABEL[state.businessType].long}
+          hint={{
+            description: COST_VENDAS_LABEL[state.businessType].long,
+            formula: "Σ CPV/CMV/CSP dos 12 meses",
+          }}
         />
         <StatCard
-          label="Custos Fixos"
+          label="Despesas Administrativas"
           value={fmtBRL(totFix)}
           tone="neg"
           sub={fmtPct(pctRec(totFix)) + " da receita"}
-          hint="Não variam com o volume vendido (aluguel, pró-labore, contabilidade…)."
+          hint={{
+            description:
+              "Despesas de estrutura que não variam com o volume vendido (aluguel, pró-labore, contabilidade, salários administrativos).",
+            formula: "Σ Despesas Administrativas dos 12 meses",
+          }}
         />
         <StatCard
-          label="Custos Variáveis"
+          label="Despesas Comerciais"
           value={fmtBRL(totVar)}
           tone="neg"
           sub={fmtPct(pctRec(totVar)) + " da receita"}
-          hint="Variam com vendas (marketing, comissões, insumos, terceirização…)."
+          hint={{
+            description:
+              "Despesas que variam proporcionalmente às vendas (comissões, marketing, frete sobre vendas, royalties).",
+            formula: "Σ Despesas Comerciais dos 12 meses",
+          }}
         />
         <StatCard
-          label="Custos Financeiros"
+          label="Despesas Financeiras"
           value={fmtBRL(totFin)}
           tone="neg"
           sub={fmtPct(pctRec(totFin)) + " da receita"}
-          hint="Juros, IOF, antecipação de recebíveis, tarifas bancárias, maquininha."
+          hint={{
+            description:
+              "Juros, IOF, antecipação de recebíveis, tarifas bancárias e taxas de maquininha.",
+            formula: "Σ Despesas Financeiras dos 12 meses",
+          }}
         />
         <StatCard
-          label="Total de Custos"
+          label="Total de Custos e Despesas"
           value={fmtBRL(totGeral)}
           tone="neg"
           sub={fmtPct(pctRec(totGeral)) + " da receita"}
           hint={{
             description:
-              "Soma de todos os custos. Quanto menor o % sobre a receita, mais saudável a operação.",
-            formula: "CPV/CMV/CSP + Custos Fixos + Variáveis + Financeiros",
+              "Soma de todos os custos e despesas. Quanto menor o % sobre a receita, mais saudável é a operação.",
+            formula: "CPV/CMV/CSP + Desp. Administrativas + Desp. Comerciais + Desp. Financeiras",
           }}
         />
       </div>
