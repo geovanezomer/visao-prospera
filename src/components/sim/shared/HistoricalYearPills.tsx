@@ -47,8 +47,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, GitCompareArrows, X, Check } from "lucide-react";
 import { toast } from "sonner";
+import {
+  useComparisonMode,
+  toggleComparisonMode,
+  toggleSelected,
+} from "@/engines/scenarios/comparisonStore";
 
 export function HistoricalYearPills() {
   const { state, update } = useFinance();
