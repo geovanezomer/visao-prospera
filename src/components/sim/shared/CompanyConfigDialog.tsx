@@ -174,6 +174,8 @@ export function CompanyConfigForm({
     state.periodoAnaliseMeses,
     state.fiscalYearStartMonth,
     state.margemAlvoPct,
+    state.payoutPolicyPct,
+    state.reservaMinimaMensal,
     state.tax.regime,
   ]);
 
