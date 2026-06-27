@@ -11,10 +11,20 @@ function assertAdmin(claims: AuthClaims | undefined | null) {
   if (!isAdminEmail((claims?.email as string) ?? "")) throw new Error("Acesso negado.");
 }
 
+export type NotifEvents = {
+  signup: boolean;
+  churn: boolean;
+  past_due: boolean;
+  webhook_failure: boolean;
+};
 export type NotifSettings = {
   slackWebhookUrl: string | null;
   emailTo: string | null;
-  events: { signup: boolean; churn: boolean; past_due: boolean; webhook_failure: boolean };
+  events: NotifEvents;
+};
+
+const DEFAULT_EVENTS: NotifEvents = {
+  signup: true, churn: true, past_due: true, webhook_failure: true,
 };
 
 export const getNotifSettings = createServerFn({ method: "POST" })
@@ -23,7 +33,7 @@ export const getNotifSettings = createServerFn({ method: "POST" })
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin.from("notification_settings").select("*").eq("id", 1).maybeSingle();
-    const events = (data?.events as any) ?? { signup: true, churn: true, past_due: true, webhook_failure: true };
+    const events = (data?.events as NotifEvents | null) ?? DEFAULT_EVENTS;
     return {
       slackWebhookUrl: data?.slack_webhook_url ?? null,
       emailTo: data?.email_to ?? null,
@@ -53,7 +63,7 @@ export const updateNotifSettings = createServerFn({ method: "POST" })
       .update({
         slack_webhook_url: data.slackWebhookUrl ?? null,
         email_to: data.emailTo ?? null,
-        events: data.events as any,
+        events: data.events as unknown as NotifEvents,
       })
       .eq("id", 1);
     if (error) throw new Error(error.message);
