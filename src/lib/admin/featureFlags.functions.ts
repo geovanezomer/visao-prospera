@@ -41,7 +41,7 @@ export const listFeatureFlags = createServerFn({ method: "POST" })
 // ----------------------------------------------------------------------------
 export const upsertFeatureFlag = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: {
+  .validator((d: {
     key: string;
     description?: string;
     enabled: boolean;
@@ -94,7 +94,7 @@ export const upsertFeatureFlag = createServerFn({ method: "POST" })
 // ----------------------------------------------------------------------------
 export const deleteFeatureFlag = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { key: string }) => z.object({ key: z.string().min(1) }).parse(d))
+  .validator((d: { key: string }) => z.object({ key: z.string().min(1) }).parse(d))
   .handler(async ({ data, context }) => {
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

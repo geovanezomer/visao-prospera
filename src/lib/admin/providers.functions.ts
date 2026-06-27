@@ -71,7 +71,7 @@ export const listProviders = createServerFn({ method: "POST" })
 
 export const upsertProvider = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (data: {
       provider: "stripe" | "asaas";
       mode: "test" | "live";
@@ -115,7 +115,7 @@ export const upsertProvider = createServerFn({ method: "POST" })
 
 export const setActiveProvider = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { provider: "stripe" | "asaas" }) =>
+  .validator((data: { provider: "stripe" | "asaas" }) =>
     z.object({ provider: z.enum(["stripe", "asaas"]) }).parse(data),
   )
   .handler(async ({ data, context }) => {
@@ -143,7 +143,7 @@ export const setActiveProvider = createServerFn({ method: "POST" })
 
 export const testProviderConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { provider: "stripe" | "asaas" }) =>
+  .validator((data: { provider: "stripe" | "asaas" }) =>
     z.object({ provider: z.enum(["stripe", "asaas"]) }).parse(data),
   )
   .handler(async ({ data, context }) => {

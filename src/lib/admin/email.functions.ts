@@ -41,7 +41,7 @@ export const getEmailSettings = createServerFn({ method: "POST" })
 
 export const updateEmailSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (d: { apiKey?: string; fromEmail?: string; fromName?: string; replyTo?: string }) =>
       z
         .object({
@@ -83,7 +83,7 @@ export const updateEmailSettings = createServerFn({ method: "POST" })
 
 export const sendTestEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { to: string }) => z.object({ to: z.string().email() }).parse(d))
+  .validator((d: { to: string }) => z.object({ to: z.string().email() }).parse(d))
   .handler(async ({ data, context }) => {
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -116,7 +116,7 @@ export const listEmailTemplates = createServerFn({ method: "POST" })
 
 export const updateEmailTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (d: { kind: TemplateKind; subject: string; html: string; text?: string; enabled?: boolean }) =>
       z
         .object({

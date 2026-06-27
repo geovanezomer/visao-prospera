@@ -54,7 +54,7 @@ const schema = z.object({
 
 export const updateNotifSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: z.infer<typeof schema>) => schema.parse(data))
+  .validator((data: z.infer<typeof schema>) => schema.parse(data))
   .handler(async ({ data, context }) => {
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

@@ -45,7 +45,7 @@ function rowToNote(r: DbNoteRow): UserNote {
 
 export const listUserNotes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
+  .validator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -61,7 +61,7 @@ export const listUserNotes = createServerFn({ method: "POST" })
 
 export const createUserNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { userId: string; body: string }) =>
+  .validator((data: { userId: string; body: string }) =>
     z.object({ userId: z.string().uuid(), body: z.string().min(1).max(4000) }).parse(data),
   )
   .handler(async ({ data, context }) => {
@@ -83,7 +83,7 @@ export const createUserNote = createServerFn({ method: "POST" })
 
 export const toggleNotePin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string; pinned: boolean }) =>
+  .validator((data: { id: string; pinned: boolean }) =>
     z.object({ id: z.string().uuid(), pinned: z.boolean() }).parse(data),
   )
   .handler(async ({ data, context }) => {
@@ -96,7 +96,7 @@ export const toggleNotePin = createServerFn({ method: "POST" })
 
 export const deleteUserNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string }) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: { id: string }) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     assertAdmin(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

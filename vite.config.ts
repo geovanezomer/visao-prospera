@@ -39,6 +39,19 @@ export default defineConfig({
       client: {
         build: {
           rollupOptions: {
+            // Silencia o warning "Module level directives cause errors when
+            // bundled, 'use client' was ignored" emitido por libs do
+            // node_modules (Radix UI, etc.). É inofensivo no nosso bundle
+            // SSR/CSR — não somos um RSC framework.
+            onwarn(warning, defaultHandler) {
+              if (
+                warning.code === "MODULE_LEVEL_DIRECTIVE" &&
+                /use client/.test(warning.message)
+              ) {
+                return;
+              }
+              defaultHandler(warning);
+            },
             output: {
               // Chunks dedicados para libs pesadas — apenas no bundle do cliente.
               // No SSR essas libs são externas (resolvidas pelo runtime) e não
@@ -54,3 +67,4 @@ export default defineConfig({
     },
   },
 });
+

@@ -37,7 +37,7 @@ export const getAppSettings = createServerFn({ method: "GET" }).handler(async ()
 
 export const updateAppSetting = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { key: SettingKey; value: unknown }) =>
+  .validator((data: { key: SettingKey; value: unknown }) =>
     z.object({ key: z.enum(KEYS), value: z.any() }).parse(data),
   )
   .handler(async ({ data, context }) => {
