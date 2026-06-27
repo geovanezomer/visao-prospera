@@ -17,19 +17,16 @@ import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { sum, fmtBRL, fmtPct, MESES } from "@/engines/finance/format";
 import type { AppState, BalancoDetalhado } from "@/engines/finance/types";
 import type { FinancialModel } from "@/engines/finance/financialModel";
-import { diagnose } from "@/engines/finance/diagnose";
-import { buildPrescriptiveCards } from "@/engines/finance/prescriptive";
 import { monthValues } from "@/engines/finance/costs";
 import { splitReceitasFinanceiras } from "@/engines/finance/shared";
-import { loadConfig } from "@/engines/ai/providers";
-import {
-  isAIConfigured,
-  gerarDiagnostico,
-  type DiagnosticoResult,
-} from "@/engines/ai/diagnostico";
-import { buildBriefing, briefingCacheKey } from "@/engines/finance/briefing";
-import { PROMPT_VERSION } from "@/engines/ai/diagnosticoPrompt";
-import { getCached, setCached } from "@/engines/ai/diagnosticoCache";
+// IMPORTS APENAS DE TIPO — pdfExport é render-only.
+// Diagnóstico, recomendações e IA são CALCULADOS pelo caller (UI) e
+// passados como input via `ExportPDFInput`. Isso garante SSOT: a tela e o
+// PDF nunca podem divergir por chamarem `diagnose` / `buildPrescriptiveCards`
+// / `buildBriefing` de formas diferentes — só existe um call-site.
+import type { Diagnostic } from "@/engines/finance/diagnose";
+import type { PrescriptiveCard } from "@/engines/finance/prescriptive";
+import type { DiagnosticoResult } from "@/engines/ai/diagnostico";
 
 // ── Paleta (mínima, executiva) ────────────────────────────────────────
 const INK = [10, 10, 10] as [number, number, number];           // preto
@@ -754,12 +751,27 @@ function computeGuardianScore(ind: FinancialModel["ind"]): {
 // =====================================================================
 // EXPORT PRINCIPAL
 // =====================================================================
-export interface ExportPDFInput { state: AppState; model: FinancialModel; }
+export interface ExportPDFInput {
+  state: AppState;
+  model: FinancialModel;
+  /** Diagnósticos da saúde financeira — calculados pelo caller via `diagnose(state, dre, ind)`. */
+  diags: Diagnostic[];
+  /** Cards prescritivos — calculados pelo caller via `buildPrescriptiveCards(state, { dre, tax, ind, cf })`. */
+  prescriptive: PrescriptiveCard[];
+  /** Diagnóstico Executivo IA — opcional; quando ausente, a página é omitida. */
+  aiDiagnostico?: DiagnosticoResult | null;
+}
 
 interface PageMeta { eyebrow: string; title: string }
 const pageMeta: Record<number, PageMeta> = {}; // mapeia índice → seção (para header)
 
-export async function exportFinancePDF({ state, model }: ExportPDFInput): Promise<void> {
+export async function exportFinancePDF({
+  state,
+  model,
+  diags,
+  prescriptive,
+  aiDiagnostico = null,
+}: ExportPDFInput): Promise<void> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
 
   // ── Sanitização global de texto ────────────────────────────────────
