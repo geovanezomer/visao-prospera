@@ -70,13 +70,14 @@ const BUSINESS: { key: BusinessType; label: string; hint: string }[] = [
 ];
 
 // Passos do wizard. Cada um traz um título amigável e ícone próprio.
-type StepKey = "intro" | "empresa" | "federais" | "simples" | "presumido" | "reforma" | "revisao";
+type StepKey = "intro" | "empresa" | "federais" | "simples" | "presumido" | "folha" | "reforma" | "revisao";
 const STEPS: { key: StepKey; label: string; icon: typeof Settings }[] = [
   { key: "intro", label: "Boas-vindas", icon: Sparkles },
   { key: "empresa", label: "Empresa", icon: Building2 },
   { key: "federais", label: "Federais", icon: Landmark },
   { key: "simples", label: "Simples", icon: FileText },
   { key: "presumido", label: "Presumido", icon: Building2 },
+  { key: "folha", label: "Folha & Sócios", icon: Building2 },
   { key: "reforma", label: "Reforma", icon: Scale },
   { key: "revisao", label: "Revisão", icon: Check },
 ];
