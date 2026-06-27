@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { HelpTip, PctInput, SectionTitle } from "@/components/sim/shared/primitives";
+import { SociosCard } from "./SociosCard";
 
 // =================================================================
 // Componentes movidos para o topo do módulo (B9) — evitam recriação
@@ -607,6 +608,9 @@ export function TaxTab() {
           (≈26,5%) ou conservador (≈28%).
         </div>
       </div>
+
+      {/* Pró-labore × Distribuição de Lucros (Plano v3) */}
+      <SociosCard />
     </div>
   );
 }

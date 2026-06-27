@@ -1,0 +1,326 @@
+/**
+ * socios.ts — Pró-labore × Distribuição de Lucros (Plano v3).
+ *
+ * Engine pura. Sem React, sem UI. Calcula:
+ *  - INSS sócio (contribuinte individual, plano simplificado, limitado ao teto)
+ *  - INSS patronal (20% Presumido/Real; zero Simples salvo Anexo IV)
+ *  - IRPF mensal (escolhe automaticamente tradicional × simplificado)
+ *  - Limite de distribuição isenta (Presumido sem escrituração: base presunção − tributos)
+ *  - Otimização do mix pró-labore × distribuição (analítico Simples; ternário Presumido/Real)
+ *  - Sincronização SSOT com linhas system em `state.costs` (sem invadir o pipeline)
+ *
+ * Toda alíquota/tabela é lida via getters de taxDefaults — ZERO hardcode aqui.
+ */
+import type {
+  AppState,
+  CostLine,
+  Months,
+  SocioRetirada,
+  TaxConfig,
+  TaxRegime,
+} from "./types";
+import {
+  getInssSocioAliq,
+  getInssTeto,
+  getInssPatronalAliq,
+  getInssPatronalSimples,
+  getIrpfTable,
+  getIrpfDependenteDeducao,
+  getIrpfDescontoSimplificado,
+  getIrpfSimplificadoAuto,
+  getDistribuicaoLimitePresumidoAuto,
+  getSalarioMinimo,
+  getPresumidoBases,
+  getIrpjPct,
+  getCsllPct,
+  getPisCumPct,
+  getCofinsCumPct,
+} from "./taxDefaults";
+import { sum } from "./format";
+
+// IDs reservados para linhas sintéticas em state.costs.
+export const SOCIOS_PROLABORE_LINE_ID = "__socios_prolabore__";
+export const SOCIOS_PATRONAL_LINE_ID = "__socios_inss_patronal__";
+
+export interface SocioCalcResult {
+  socioId: string;
+  prolaboreMensal: number;
+  /** INSS retido do sócio (contribuinte individual). */
+  inssSocio: number;
+  /** Cota patronal de INSS — custo da PJ (Presumido/Real apenas, salvo flag). */
+  inssPatronal: number;
+  /** IRPF mensal devido — após escolher tradicional × simplificado (auto). */
+  irpfMensal: number;
+  /** Modo de IRPF efetivamente aplicado. */
+  irpfModo: "tradicional" | "simplificado";
+  /** Distribuição isenta de IR (dentro do limite). */
+  distribuicaoIsentaMensal: number;
+  /** Distribuição além do limite (tributável como rendimento comum no sócio). */
+  distribuicaoTributavelMensal: number;
+  /** Líquido mensal ao sócio: (prolab − INSS − IRPF) + distribuição isenta + tributável líquido. */
+  liquidoSocio: number;
+  /** Custo total para a PJ no mês: prolab + INSS patronal. */
+  custoTotalPJ: number;
+}
+
+const fill12 = (n: number): Months =>
+  [n, n, n, n, n, n, n, n, n, n, n, n] as Months;
+
+// =====================================================================
+// INSS sócio — contribuinte individual (plano simplificado)
+// =====================================================================
+export function calcInssSocio(prolaboreMensal: number, tax: TaxConfig): number {
+  if (prolaboreMensal <= 0) return 0;
+  const aliq = getInssSocioAliq(tax) / 100;
+  const teto = getInssTeto(tax);
+  const base = Math.min(prolaboreMensal, teto);
+  return base * aliq;
+}
+
+// =====================================================================
+// INSS patronal — 20% sobre pró-labore (Presumido/Real)
+// =====================================================================
+export function calcInssPatronal(
+  prolaboreMensal: number,
+  regime: TaxRegime,
+  tax: TaxConfig,
+): number {
+  if (prolaboreMensal <= 0) return 0;
+  // Simples Nacional: CPP já no DAS (exceto Anexo IV via flag).
+  if (regime === "simples" && !getInssPatronalSimples(tax)) return 0;
+  return prolaboreMensal * (getInssPatronalAliq(tax) / 100);
+}
+
+// =====================================================================
+// IRPF mensal — escolhe automaticamente tradicional × simplificado
+// =====================================================================
+function irpfPorTabela(base: number, tax: TaxConfig): number {
+  if (base <= 0) return 0;
+  const tabela = getIrpfTable(tax);
+  for (const [teto, aliq, deduzir] of tabela) {
+    if (base <= teto) return Math.max(0, base * (aliq / 100) - deduzir);
+  }
+  // Acima de todas faixas (não deveria ocorrer — última faixa é Infinity)
+  const last = tabela[tabela.length - 1];
+  return Math.max(0, base * (last[1] / 100) - last[2]);
+}
+
+export function calcIrpfMensal(
+  prolaboreMensal: number,
+  inssSocio: number,
+  dependentes: number,
+  outrasDeducoes: number,
+  tax: TaxConfig,
+): { valor: number; modo: "tradicional" | "simplificado" } {
+  if (prolaboreMensal <= 0) return { valor: 0, modo: "tradicional" };
+  const deducaoDep = getIrpfDependenteDeducao(tax);
+  // Tradicional: prolab − INSS − dependentes − outras.
+  const baseTrad =
+    prolaboreMensal - inssSocio - dependentes * deducaoDep - outrasDeducoes;
+  const irpfTrad = irpfPorTabela(Math.max(0, baseTrad), tax);
+
+  if (!getIrpfSimplificadoAuto(tax)) return { valor: irpfTrad, modo: "tradicional" };
+
+  // Simplificado (Lei 14.973/2024): prolab − desconto único (sem outras deduções).
+  const descSimp = getIrpfDescontoSimplificado(tax);
+  const baseSimp = prolaboreMensal - descSimp;
+  const irpfSimp = irpfPorTabela(Math.max(0, baseSimp), tax);
+
+  return irpfSimp < irpfTrad
+    ? { valor: irpfSimp, modo: "simplificado" }
+    : { valor: irpfTrad, modo: "tradicional" };
+}
+
+// =====================================================================
+// Limite de distribuição isenta — Presumido sem escrituração
+// =====================================================================
+/**
+ * Retorna o teto MENSAL de distribuição isenta. Quando o usuário marca
+ * `distribuicaoLimitePresumidoAuto=false`, assume escrituração contábil
+ * completa (RIR/2018 art. 238) → retorna Infinity (sem teto regulatório).
+ *
+ * Para Lucro Real, default = Infinity (escrituração já é exigida).
+ * Para Simples, default = Infinity (RBT × percentuais — a engine simplifica).
+ */
+export function calcDistribuicaoIsentaLimite(
+  state: AppState,
+  regime: TaxRegime,
+): number {
+  const { tax } = state;
+  if (regime !== "presumido") return Number.POSITIVE_INFINITY;
+  if (!getDistribuicaoLimitePresumidoAuto(tax)) return Number.POSITIVE_INFINITY;
+
+  // Base de presunção mensal × (1 − IRPJ − CSLL − PIS − COFINS) — proxy do
+  // "lucro presumido disponível" para distribuição isenta sem escrituração.
+  const receitaBrutaAno = sum(state.revenue.bruta);
+  const bases = getPresumidoBases(tax, state.businessType);
+  const basePresumida = receitaBrutaAno * (bases.irpj / 100); // base IRPJ (proxy)
+  // Tributos federais sobre essa base (aprox; superestima ligeiramente):
+  const tributosFed =
+    basePresumida * ((getIrpjPct(tax) + getCsllPct(tax)) / 100) +
+    receitaBrutaAno * ((getPisCumPct(tax) + getCofinsCumPct(tax)) / 100);
+  const disponivelAno = Math.max(0, basePresumida - tributosFed);
+  return disponivelAno / 12;
+}
+
+// =====================================================================
+// Cálculo completo de um sócio
+// =====================================================================
+export function calcRetiradaSocio(
+  socio: SocioRetirada,
+  state: AppState,
+  regime: TaxRegime,
+  /** Lucro distribuível mensal disponível (proporcional à participação). */
+  distribuicaoMensalDisponivel: number,
+): SocioCalcResult {
+  const tax = state.tax;
+  const prolab = Math.max(0, socio.prolaboreMensal);
+  const inssSocio = calcInssSocio(prolab, tax);
+  const inssPatronal = calcInssPatronal(prolab, regime, tax);
+  const { valor: irpfMensal, modo: irpfModo } = calcIrpfMensal(
+    prolab,
+    inssSocio,
+    socio.dependentes,
+    socio.outrasDeducoes,
+    tax,
+  );
+
+  // Distribuição (proporcional à participação do sócio).
+  const limiteIsento = calcDistribuicaoIsentaLimite(state, regime);
+  const distSocio = Math.max(0, distribuicaoMensalDisponivel);
+  const distIsenta = Math.min(distSocio, limiteIsento);
+  const distExcedente = Math.max(0, distSocio - distIsenta);
+  // IRPF sobre excedente — alíquota máxima (27,5%) por simplificação; o sócio
+  // somaria à renda anual. Para refinamento futuro: usar tabela anual.
+  const tabela = getIrpfTable(tax);
+  const aliqTopo = tabela[tabela.length - 1][1] / 100;
+  const irpfDistExcedente = distExcedente * aliqTopo;
+
+  const liquidoSocio =
+    prolab - inssSocio - irpfMensal + distIsenta + (distExcedente - irpfDistExcedente);
+  const custoTotalPJ = prolab + inssPatronal;
+
+  return {
+    socioId: socio.id,
+    prolaboreMensal: prolab,
+    inssSocio,
+    inssPatronal,
+    irpfMensal,
+    irpfModo,
+    distribuicaoIsentaMensal: distIsenta,
+    distribuicaoTributavelMensal: distExcedente,
+    liquidoSocio,
+    custoTotalPJ,
+  };
+}
+
+// =====================================================================
+// Otimização — minimiza carga total (INSS sócio + patronal + IRPF)
+// =====================================================================
+/**
+ * Encontra o pró-labore ótimo para um sócio dado o total a retirar
+ * (prolab + distribuição). Em Simples sem patronal, o ótimo é o piso.
+ * Em Presumido/Real, usa busca ternária no intervalo [piso, totalRetirada].
+ */
+export function otimizarProLabore(
+  socio: SocioRetirada,
+  totalRetiradaMensal: number,
+  state: AppState,
+  regime: TaxRegime,
+): number {
+  const tax = state.tax;
+  const piso = socio.operacional ? getSalarioMinimo(tax) : 0;
+  const hi = Math.max(piso, totalRetiradaMensal);
+  if (hi <= piso) return piso;
+
+  // Atalho Simples sem patronal: 100% dos encargos extras são prejuízo →
+  // pró-labore mínimo (piso) é sempre ótimo.
+  const hasPatronal = calcInssPatronal(100, regime, tax) > 0;
+  if (!hasPatronal) return piso;
+
+  // Custo "para o caixa do sócio + PJ" ao escolher pró-labore = p.
+  const custoTotal = (p: number): number => {
+    const inssS = calcInssSocio(p, tax);
+    const inssP = calcInssPatronal(p, regime, tax);
+    const { valor: irpf } = calcIrpfMensal(
+      p,
+      inssS,
+      socio.dependentes,
+      socio.outrasDeducoes,
+      tax,
+    );
+    return inssS + inssP + irpf;
+  };
+
+  // Busca ternária (função aprox. convexa em p, com saltos nas faixas).
+  let lo = piso;
+  let hiB = hi;
+  for (let i = 0; i < 60 && hiB - lo > 0.5; i++) {
+    const m1 = lo + (hiB - lo) / 3;
+    const m2 = hiB - (hiB - lo) / 3;
+    if (custoTotal(m1) < custoTotal(m2)) hiB = m2;
+    else lo = m1;
+  }
+  return Math.round((lo + hiB) / 2);
+}
+
+// =====================================================================
+// Sincronização SSOT — `state.socios` → linhas system em `state.costs`
+// =====================================================================
+/**
+ * Upserta linhas sintéticas `__socios_prolabore__` e `__socios_inss_patronal__`
+ * em `state.costs` a partir de `state.socios`. Chamada após qualquer CRUD em
+ * sócios para que TODOS os consumers (DRE, balanço, forecast, simulator,
+ * sensitivity, montecarlo) enxerguem o pró-labore como custo normal.
+ *
+ * Não invade o pipeline da engine: mantém SSOT em `state.costs`.
+ */
+export function syncSociosToCosts(state: AppState, regime: TaxRegime): AppState {
+  const socios = state.socios ?? [];
+  const prolaboreMensal = socios.reduce((acc, s) => acc + Math.max(0, s.prolaboreMensal), 0);
+  const patronalMensal = socios.reduce(
+    (acc, s) => acc + calcInssPatronal(Math.max(0, s.prolaboreMensal), regime, state.tax),
+    0,
+  );
+
+  // Remove linhas system anteriores e reinsere com valores atuais.
+  const semSystem = state.costs.filter(
+    (c) => c.id !== SOCIOS_PROLABORE_LINE_ID && c.id !== SOCIOS_PATRONAL_LINE_ID,
+  );
+  const novas: CostLine[] = [];
+  if (prolaboreMensal > 0) {
+    novas.push({
+      id: SOCIOS_PROLABORE_LINE_ID,
+      label: "Pró-labore (sócios)",
+      category: "despesa_administrativa",
+      values: fill12(prolaboreMensal),
+      fixed: true,
+      comportamento: "fixo",
+      system: true,
+    });
+  }
+  if (patronalMensal > 0) {
+    novas.push({
+      id: SOCIOS_PATRONAL_LINE_ID,
+      label: "INSS Patronal sócios",
+      category: "despesa_administrativa",
+      values: fill12(patronalMensal),
+      fixed: true,
+      comportamento: "fixo",
+      system: true,
+    });
+  }
+  return { ...state, costs: [...semSystem, ...novas] };
+}
+
+/**
+ * Helper de mutação SSOT: aplica nova lista de sócios E reconcilia
+ * `state.costs`. Use sempre que a UI alterar sócios.
+ */
+export function applySociosChange(
+  state: AppState,
+  novosSocios: SocioRetirada[],
+  regime: TaxRegime,
+): AppState {
+  return syncSociosToCosts({ ...state, socios: novosSocios }, regime);
+}

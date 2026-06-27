@@ -316,6 +316,8 @@ export const DEFAULT_STATE: AppState = {
     competitive: {},
     regulatory: {},
   },
+
+  socios: [],
 };
 
 // ============ Migração de estados antigos ============
