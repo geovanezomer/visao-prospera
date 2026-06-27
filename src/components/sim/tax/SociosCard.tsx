@@ -83,7 +83,35 @@ export function SociosCard() {
     novo.participacaoPct = Math.round(restante * 100) / 100;
     setSocios([...socios, novo]);
   };
-  const removeSocio = (id: string) => setSocios(socios.filter((s) => s.id !== id));
+  const removeSocio = (id: string) => {
+    const restantes = socios.filter((s) => s.id !== id);
+    if (restantes.length === 0) return setSocios([]);
+    // Rebalanceia proporcionalmente para manter soma = 100%.
+    const somaRest = restantes.reduce((a, s) => a + s.participacaoPct, 0);
+    let rebalanced: SocioRetirada[];
+    if (somaRest > 0) {
+      const fator = 100 / somaRest;
+      rebalanced = restantes.map((s) => ({
+        ...s,
+        participacaoPct: Math.round(s.participacaoPct * fator * 100) / 100,
+      }));
+    } else {
+      // Todos zerados → divide igual.
+      const cada = Math.round((100 / restantes.length) * 100) / 100;
+      rebalanced = restantes.map((s) => ({ ...s, participacaoPct: cada }));
+    }
+    // Corrige resíduo de arredondamento na última linha.
+    const soma = rebalanced.reduce((a, s) => a + s.participacaoPct, 0);
+    const diff = Math.round((100 - soma) * 100) / 100;
+    if (diff !== 0 && rebalanced.length > 0) {
+      const last = rebalanced[rebalanced.length - 1];
+      rebalanced[rebalanced.length - 1] = {
+        ...last,
+        participacaoPct: Math.round((last.participacaoPct + diff) * 100) / 100,
+      };
+    }
+    setSocios(rebalanced);
+  };
   const patchSocio = (id: string, patch: Partial<SocioRetirada>) =>
     setSocios(socios.map((s) => (s.id === id ? { ...s, ...patch } : s)));
 
