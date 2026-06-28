@@ -154,11 +154,7 @@ export function CashflowTab() {
   return (
     <div className="space-y-6">
 
-      {/* Permutas simples — movimentações de caixa não operacionais (sem juros,
-          contrato ou amortização). Exibidas no topo para edição rápida. */}
-      {!readOnly && <PermutasCard />}
-
-      {/* Sumário */}
+      {/* Sumário — KPIs no topo */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
           label="Recebimentos no ano"
@@ -214,6 +210,10 @@ export function CashflowTab() {
           />
         </div>
       </div>
+
+      {/* Permutas simples — movimentações de caixa não operacionais (sem juros,
+          contrato ou amortização). Logo após os KPIs. */}
+      {!readOnly && <PermutasCard />}
 
       {/* Movimentações de caixa não operacionais foram movidas para a aba Retiradas e Aportes. */}
 
