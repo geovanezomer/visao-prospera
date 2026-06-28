@@ -155,14 +155,14 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
 
             <SectionRow label="ATIVIDADES DE INVESTIMENTO" cols={cols.length} />
             <Row
-              label="(−) CapEx — aportes em ativo fixo"
+              label="(−) CapEx — Investimentos em equipamentos e ativo (Capital)"
               values={aggregate(
-                state.cashflow.capex.map((v) => -v),
+                cf.capex.map((v) => -v),
                 period,
                 "sum",
               )}
               tone="neg"
-              rawTotal={-sum(state.cashflow.capex)}
+              rawTotal={-sum(cf.capex)}
             />
             <Row
               label="(=) Fluxo de Investimento"
