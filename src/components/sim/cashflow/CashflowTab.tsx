@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useFinance, usePatchCashflow, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
 import { fmtBRL, MESES } from "@/engines/finance/format";
-import { buildCashFlow } from "@/engines/finance/cashflow";
+import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { MoneyInput, SectionTitle, StatCard } from "@/components/sim/shared/primitives";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle } from "lucide-react";
