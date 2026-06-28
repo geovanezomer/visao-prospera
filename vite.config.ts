@@ -7,6 +7,11 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import fs from "node:fs";
 import path from "node:path";
+import { visualizer } from "rollup-plugin-visualizer";
+
+// Ativado por `ANALYZE=1 bun run build` — gera dist/bundle-stats.html
+// com o treemap dos chunks (não afeta o build normal).
+const ANALYZE = process.env.ANALYZE === "1";
 
 // Lê SUPABASE_BACKUP do .env (sem prefixo VITE_, conforme spec) e expõe ao bundle
 // via `define` — o wrapper @lovable.dev só injeta automaticamente vars com prefixo VITE_*.
