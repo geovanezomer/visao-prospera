@@ -90,5 +90,9 @@ export function useBranding() {
       enabled: Boolean(data?.landing_video?.enabled),
       url: data?.landing_video?.url ?? "",
     } as LandingVideo,
+    trial: {
+      enabled: Boolean(data?.trial?.enabled),
+      durationHours: Number(data?.trial?.duration_hours ?? DEFAULTS.trial.durationHours),
+    } as Trial,
   };
 }
