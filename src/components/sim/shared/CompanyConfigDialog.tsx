@@ -540,6 +540,9 @@ export function CompanyConfigForm({
         </div>
       </section>
 
+      {/* Sócios — cadastro centralizado (usado em Pró-labore × Distribuição) */}
+      <SociosSection />
+
       {/* Análise */}
 
       <section className="space-y-3">
