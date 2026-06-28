@@ -26,6 +26,9 @@ import {
 import type { MutuoSocio } from "@/engines/finance/types";
 import { SectionTitle, MoneyInput } from "@/components/sim/shared/primitives";
 
+const EMPTY_MUTUOS: MutuoSocio[] = [];
+const EMPTY_SOCIOS: NonNullable<import("@/engines/finance/types").AppState["socios"]> = [];
+
 const HINT = {
   description:
     "Cadastre empréstimos da empresa aos sócios (mútuo PJ→PF). Cada contrato gera saída de caixa na concessão, entradas mensais de amortização (Price) e juros recebidos. O saldo devedor remanescente vai ao Balanço como Mútuos a Receber.",
@@ -51,8 +54,8 @@ export function MutuosSociosCard() {
   const patchCashflow = usePatchCashflow();
   const readOnly = useFinanceReadOnly();
 
-  const mutuos = state.mutuosSocios ?? [];
-  const socios = state.socios ?? [];
+  const mutuos = state.mutuosSocios ?? EMPTY_MUTUOS;
+  const socios = state.socios ?? EMPTY_SOCIOS;
 
   const agg = useMemo(() => aggregateMutuos(mutuos), [mutuos]);
 
