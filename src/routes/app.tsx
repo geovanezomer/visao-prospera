@@ -225,6 +225,7 @@ function SimulaPro() {
           />
 
           <SidebarInset className="flex flex-col">
+            <TrialBannerSlot />
             <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/80 px-4 backdrop-blur sm:px-6">
               <div className="flex items-center gap-2 min-w-0">
                 <SidebarTrigger className="h-9 w-9" data-meeting-hide="true" />
