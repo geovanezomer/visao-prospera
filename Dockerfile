@@ -54,7 +54,7 @@ COPY --from=builder /app/.env ./.env
 # Migrations + scripts de bootstrap (rodam no entrypoint)
 COPY --from=builder /app/supabase/migrations ./supabase/migrations
 COPY --from=builder /app/scripts ./scripts
-RUN chmod +x /app/scripts/db-bootstrap.sh /app/scripts/docker-entrypoint.sh
+RUN chmod +x /app/scripts/db-bootstrap.sh /app/scripts/docker-entrypoint.sh /app/scripts/admin-bootstrap.sh
 
 EXPOSE 3000
 
