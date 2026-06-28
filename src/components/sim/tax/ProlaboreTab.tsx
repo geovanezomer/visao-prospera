@@ -125,6 +125,12 @@ export function ProlaboreTab() {
           alerta tributário fixo. Sincroniza com Fluxo de Caixa via SSOT. */}
       <MutuosSociosCard />
 
+      {/* Mútuos PF→PJ — espelho simétrico: sócio empresta para a empresa.
+          Captação entra no caixa, devolução sai, juros viram Despesa Financeira. */}
+      <MutuosPassivosCard />
+
+
+
 
       {/* Movimentações de caixa não operacionais — movido da aba Fluxo de Caixa */}
       {!readOnly && (
