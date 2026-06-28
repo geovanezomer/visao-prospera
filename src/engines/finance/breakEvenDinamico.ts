@@ -16,6 +16,7 @@ import { buildDRE } from "./dre";
 import { calcIndicators } from "./indicators";
 import { buildCashFlow } from "./cashflow";
 import { resolveEffectiveRegime } from "./regime";
+import { MESES as MESES_PT } from "./format";
 
 export type RestricaoBreakEven = "dscr" | "caixa_min" | "ebitda_positivo";
 
@@ -48,20 +49,6 @@ export interface BreakEvenDinamicoResult {
   observacao?: string;
 }
 
-const MESES_PT = [
-  "Jan",
-  "Fev",
-  "Mar",
-  "Abr",
-  "Mai",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Set",
-  "Out",
-  "Nov",
-  "Dez",
-];
 
 /** Default da meta conforme restrição. */
 function defaultMeta(restricao: RestricaoBreakEven): number {

@@ -16,9 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { compararCltVsPj, regimePJLabel, type RegimePJ } from "@/engines/calculadoras/cltVsPj";
 import { useAppState } from "@/engines/finance/store";
 import { getIrpjAdicionalPct, getIrpjAdicionalGatilhoTri } from "@/engines/finance/taxDefaults";
+import { fmtBRL } from "@/engines/finance/format";
 
-const fmtBRL = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
 const fmtPct = (n: number) => `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 
 export function CltVsPjCalc() {

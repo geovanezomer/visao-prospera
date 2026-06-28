@@ -1,61 +1,66 @@
-# Plano de correção — Análise v17
+## Veredito da auditoria
 
-Objetivo: endereçar os 4 achados sem alterar a engine financeira nem o comportamento visível do usuário.
+Validei cada ponto contra o codebase. A maioria está correta, com 1 **falso positivo** e 2 ressalvas:
 
-## 1. Memória do build (risco operacional)
+| # | Auditoria | Veredito |
+|---|---|---|
+| 1 | `external.ts` 22 funções mortas | ✅ Confirmado — só `vplExcel`, `vplClassico`, `tir`, `parcela` são usadas. `media`/`mediana` também não são. |
+| 2 | `spreadForecast.ts` morto | ✅ Confirmado — zero importadores. |
+| 3 | `selftests.ts` morto | ✅ Confirmado. |
+| 4 | `KpiTile`, `SummaryList`, `IntroCard`, `AIFab` mortos | ✅ Confirmado. |
+| 6 | `fmtBRL` duplicado em 11 lugares | ✅ Real. |
+| 7 | `const n =` duplicado nos arquivos de balanço | ✅ Real. SSOT é `safeNumber`. |
+| 8 | `MESES_PT` duplicado em `breakEvenDinamico.ts` | ✅ Real. |
+| 9 | Exports não usados em `comparisonStore.ts` | ⚠️ Baixo valor, deixar. |
+| 10 | Adoção de `clampFinite`/`safePositive` | ⚠️ Refactor cosmético, baixo ROI agora. |
+| 11 | `useFeatureFlag`/`useSubscription` sem migrations | ❌ **FALSO** — as migrations `feature_flags` e `get_active_plan` existem (4 arquivos em `supabase/migrations/`). Ignorar. |
+| 12 | `cashflowProjection` ignora `debtContracts` | ✅ Gap real de precisão financeira. |
+| 13 | Recharts síncrono no Dashboard | ⚠️ Real, mas Dashboard é a primeira tela — lazy adicionaria flash. Adiar. |
 
-- Em `package.json`, ajustar o script `build` (e `build:dev` se existir) para incluir `NODE_OPTIONS=--max-old-space-size=4096` via `cross-env` (já compatível com Linux/CI/Docker do projeto).
-- Validar que o `Dockerfile` e o workflow `.github/workflows/ci.yml` não sobrescrevem `NODE_OPTIONS`. Se sobrescreverem, harmonizar.
+**Impacto real do bundle de #1:** modesto. `@formulajs/formulajs` e `simple-statistics` ainda permanecem como deps porque `vplExcel`/`vplClassico`/`tir`/`parcela` usam `formulajs`. Ganho real: remoção das reexports + possibilidade de drop futuro de `simple-statistics` do `package.json`.
 
-## 2. Lazy loading de abas (padrão recorrente)
+---
 
-Criar um único utilitário e aplicar em 2 lugares:
+## Plano de execução (Claude Opus 4.5)
 
-- Novo arquivo `src/components/common/LazyTab.tsx`:
-  - Exporta `lazyTab(loader)` que devolve um componente `React.lazy` envolto em `<Suspense fallback={<TabSkeleton />}>`.
-  - `TabSkeleton` usa `Skeleton` do shadcn já existente.
-- Refatorar `src/components/calculadoras/CalculadorasTab.tsx`:
-  - Trocar os 10 imports estáticos das `*Calc` por `lazyTab(() => import("..."))`.
-  - Garantir que cada calculadora tenha `export default` (adicionar onde não houver — sem mudar a API nomeada existente, mantendo `export { X }` + `export default X`).
-- Refatorar `src/routes/admin.tsx`:
-  - Trocar os 12 imports estáticos das `tabs/*Tab` pelo mesmo padrão.
-  - Mesma regra de `export default` nos componentes de aba.
-- Critério de sucesso: chunks `admin` e `calculadoras` deixam de existir como bloco único; cada aba vira chunk próprio sob demanda. Sem mudança visual além do skeleton no primeiro clique.
+Ordem por risco crescente. Cada etapa termina com `bunx vitest run` + `tsgo`.
 
-## 3. Peso da Landing (660 KB)
+### Etapa 1 — Remoções diretas (sem refactor)
+- Deletar `src/engines/finance/spreadForecast.ts`.
+- Deletar `src/engines/finance/selftests.ts`.
+- Deletar `src/components/sim/capital/parts.tsx` e `src/components/sim/capital/IntroCard.tsx`.
+- Deletar `src/components/ai/AIFab.tsx`.
+- Confirmar via `rg` que não restou importador órfão.
 
-Investigação antes de fatiar:
+### Etapa 2 — Enxugar `external.ts`
+- Manter apenas: `vplExcel` (NPV), `vplClassico`, `tir` (IRR), `parcela` (PMT).
+- Remover imports de `simple-statistics` inteiro + 17 funções não usadas de `@formulajs/formulajs`.
+- Rodar `bun pm ls simple-statistics` — se ninguém mais usar, remover do `package.json` com `bun remove simple-statistics`.
+- Validar `cross-formulajs.test.ts` continua passando.
 
-- Adicionar `rollup-plugin-visualizer` como `devDependency`.
-- Em `vite.config.ts`, registrar o plugin apenas quando `process.env.ANALYZE === "1"` (não afeta build de produção normal).
-- Adicionar script `build:analyze` no `package.json`.
-- Após rodar uma vez, aplicar correções pontuais baseadas no relatório (provavelmente: lazy do `TrialRequestDialog`, do bloco de vídeo/lightbox e do `FAQ` JSON-LD-only). Essas correções entram como segundo passo, com base em evidência.
+### Etapa 3 — Consolidar `fmtBRL` (SSOT em `format.ts`)
+- Em cada arquivo da auditoria #6: remover declaração local e importar de `@/engines/finance/format`.
+- `fmtBRLShort` → `fmtBRLCompact` (já existe).
+- Arquivos afetados: 8 calculadoras + `cashflowProjection.ts` + `diagnose.ts` + `prescriptive.ts`.
 
-## 4. Regex do Fator R (dívida técnica)
+### Etapa 4 — Consolidar `const n =` no módulo balanço
+- Em `balanco.ts`, `balancoFechamento.ts`, `aberturaDerivada.ts`:
+  - Trocar helper local por `import { safeNumber as n } from "./safeMath"`.
+- **Manter** o helper em `migrations/v1_to_v2.ts` (migrations devem ser autossuficientes — sem dependência interna que possa mudar).
 
-Em `src/engines/finance/regime.ts`:
+### Etapa 5 — `MESES_PT` em `breakEvenDinamico.ts`
+- Substituir constante local por `import { MESES } from "./format"`.
 
-- Separar em dois padrões nomeados:
-  - `PLR_EMPREGADO_RE` — captura PLR de empregado CLT (entra no Fator R).
-  - `DISTRIBUICAO_SOCIO_RE` — captura "distribuição"/"dividendos"/"participação de sócio" (NÃO entra, usada como exclusão explícita).
-- Ajustar `LABOR_INCLUDE_RE` para excluir matches de `DISTRIBUICAO_SOCIO_RE` antes de aceitar.
-- Comentário em PT explicando a ambiguidade histórica de "participação nos lucros".
-- Adicionar testes em `src/engines/finance/__tests__` cobrindo:
-  - "PLR funcionários" → incluído.
-  - "Participação nos lucros — diretoria sócia" → excluído.
-  - "Distribuição de lucros sócio" → excluído.
+### Etapa 6 — Precisão financeira: `cashflowProjection` × `debtContracts`
+- Importar `scheduleContract`/`aggregateContracts` de `debtContracts.ts`.
+- No início de `projectCenario`, gerar cronograma agregado dos contratos existentes em `state.debtContracts` e somar juros + amortizações nos meses do horizonte (não só os 12 já cobertos pela engine base).
+- Para horizonte >12 meses, projetar continuidade dos contratos até o vencimento.
+- Adicionar teste cobrindo: cenário com 1 contrato Price 24m → projeção 24m deve refletir amortização caindo a zero.
 
-## Ordem de execução e verificação
+### Fora do escopo (rejeitados/adiados)
+- #9, #10, #11, #13 — explicados acima.
 
-1. Item 4 (regex + testes) — menor risco, valida pipeline de testes.
-2. Item 2 (lazy tabs) — maior ganho de bundle, mecânico.
-3. Item 1 (NODE_OPTIONS) — uma linha, depois de confirmar que build local ainda passa.
-4. Item 3 (visualizer + ações derivadas) — investigação + segundo PR baseado em evidência.
-
-Validação final: `bun run build` local, `bunx vitest run`, e leitura dos tamanhos de chunk no output do Vite para confirmar que `admin` e `calculadoras` ficaram fatiados.
-
-## Fora de escopo
-
-- Não tocar na engine financeira (`src/engines/finance/*`) além do regex do item 4.
-- Não alterar UI/UX visível (apenas skeleton no carregamento de aba).
-- Não mexer em pagamentos, auth ou migrations.
+### Critério de pronto
+- 386+ testes verdes.
+- `tsgo` sem erros.
+- `bun run build` rodando, com chunk size delta reportado para evidenciar ganho da Etapa 2.

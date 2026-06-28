@@ -8,8 +8,8 @@
 // tesouraria entram como POSITIVOS no input e são SUBTRAÍDAS aqui.
 import type { AppState, BalancoDetalhado, CostLine } from "./types";
 import { aggregateMutuosPassivos } from "./mutuosPassivos";
+import { safeNumber as n } from "./safeMath";
 
-const n = (v: number | undefined): number => (typeof v === "number" && isFinite(v) ? v : 0);
 const sumObj = (o: Record<string, number | undefined> | undefined): number =>
   o ? Object.values(o).reduce<number>((a, b) => a + n(b), 0) : 0;
 

@@ -4,7 +4,7 @@
 // =====================================================================
 
 import { AppState } from "./types";
-import { sum } from "./format";
+import { sum, fmtBRLCompact } from "./format";
 import type { DRE } from "./dre";
 import type { Indicators } from "./indicators";
 
@@ -16,8 +16,6 @@ export interface Diagnostic {
 
 export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic[] {
   const out: Diagnostic[] = [];
-  const fmtR = (n: number) =>
-    n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
   const receitaBrutaAnual = sum(state.revenue.bruta);
   const receitaLiqAnual = sum(dre.receitaLiquida);
@@ -40,7 +38,7 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
       out.push({
         level: "danger",
         title: "Lucro que não vira caixa",
-        message: `Empresa é lucrativa (${fmtR(llAnual)}), mas queima caixa livre (${fmtR(fcfAnual)}). Risco de crise de liquidez por excesso de NCG ou serviço de dívida.`,
+        message: `Empresa é lucrativa (${fmtBRLCompact(llAnual)}), mas queima caixa livre (${fmtBRLCompact(fcfAnual)}). Risco de crise de liquidez por excesso de NCG ou serviço de dívida.`,
       });
     }
   }
@@ -85,13 +83,13 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
     out.push({
       level: "danger",
       title: "Operação inviável: receita zero com custos fixos",
-      message: `Sem receita projetada e ${fmtR(custosFixosAnual)} de custos fixos no ano. EBITDA projetado = ${fmtR(ebitdaAnual)}. Ponto de equilíbrio indefinido — preencha a aba Receita.`,
+      message: `Sem receita projetada e ${fmtBRLCompact(custosFixosAnual)} de custos fixos no ano. EBITDA projetado = ${fmtBRLCompact(ebitdaAnual)}. Ponto de equilíbrio indefinido — preencha a aba Receita.`,
     });
   } else if (receitaBrutaAnual > 0 && receitaLiqAnual <= 0) {
     out.push({
       level: "danger",
       title: "Receita líquida zerada",
-      message: `Receita bruta de ${fmtR(receitaBrutaAnual)} foi totalmente consumida por deduções/inadimplência/impostos. Receita líquida = ${fmtR(receitaLiqAnual)}, EBITDA = ${fmtR(ebitdaAnual)}. Indicadores percentuais (margens, folha %, ROIC) ficam indefinidos — revise inadimplência e regime tributário.`,
+      message: `Receita bruta de ${fmtBRLCompact(receitaBrutaAnual)} foi totalmente consumida por deduções/inadimplência/impostos. Receita líquida = ${fmtBRLCompact(receitaLiqAnual)}, EBITDA = ${fmtBRLCompact(ebitdaAnual)}. Indicadores percentuais (margens, folha %, ROIC) ficam indefinidos — revise inadimplência e regime tributário.`,
     });
   }
 
@@ -99,13 +97,13 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
     out.push({
       level: "danger",
       title: "Custo de mão de obra elevado",
-      message: `Folha (com encargos) ${folhaPct.toFixed(1)}% da receita líquida (${fmtR(folha)} de ${fmtR(receitaLiqAnual)}).`,
+      message: `Folha (com encargos) ${folhaPct.toFixed(1)}% da receita líquida (${fmtBRLCompact(folha)} de ${fmtBRLCompact(receitaLiqAnual)}).`,
     });
   else if (folhaPct > 25)
     out.push({
       level: "warn",
       title: "Folha em zona de atenção",
-      message: `Folha em ${folhaPct.toFixed(1)}% da receita líquida (${fmtR(folha)}).`,
+      message: `Folha em ${folhaPct.toFixed(1)}% da receita líquida (${fmtBRLCompact(folha)}).`,
     });
 
   const fixoPct = receitaLiqAnual > 0 ? (sum(dre.custosFixos) / receitaLiqAnual) * 100 : 0;
@@ -113,14 +111,14 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
     out.push({
       level: "danger",
       title: "Custos fixos altos demais",
-      message: `Custos fixos somam ${fixoPct.toFixed(1)}% da receita líquida (${fmtR(custosFixosAnual)}).`,
+      message: `Custos fixos somam ${fixoPct.toFixed(1)}% da receita líquida (${fmtBRLCompact(custosFixosAnual)}).`,
     });
 
   if (receitaLiqAnual > 0 && ind.margemBruta < 25)
     out.push({
       level: "danger",
       title: "Margem bruta baixa",
-      message: `Margem bruta de ${ind.margemBruta.toFixed(1)}% — EBITDA ${fmtR(ebitdaAnual)} (margem EBITDA ${ind.margemEbitda.toFixed(1)}%).`,
+      message: `Margem bruta de ${ind.margemBruta.toFixed(1)}% — EBITDA ${fmtBRLCompact(ebitdaAnual)} (margem EBITDA ${ind.margemEbitda.toFixed(1)}%).`,
     });
   if (receitaLiqAnual > 0 && ind.margemLiquida < 5)
     out.push({

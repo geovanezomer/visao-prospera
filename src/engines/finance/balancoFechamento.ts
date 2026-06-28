@@ -30,9 +30,8 @@
 import type { AppState, BalancoDetalhado, CostLine } from "./types";
 import type { FinancialModelCashflow, FinancialModelDRE } from "./financialModel";
 import { deriveAbertura } from "./aberturaDerivada";
+import { safeNumber as n } from "./safeMath";
 
-const n = (v: number | undefined): number =>
-  typeof v === "number" && isFinite(v) ? v : 0;
 
 const sumArr = (a: number[] | undefined): number =>
   (a ?? []).reduce((x, y) => x + (y || 0), 0);

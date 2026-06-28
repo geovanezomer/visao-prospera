@@ -25,9 +25,9 @@ export function safePct(num: number, den: number, fallback = 0): number {
   return safeDivide(num, den, fallback) * 100;
 }
 
-/** Sanitiza um número: NaN/Infinity → fallback. */
-export function safeNumber(n: number, fallback = 0): number {
-  return Number.isFinite(n) ? n : fallback;
+/** Sanitiza um número: NaN/Infinity/undefined → fallback. */
+export function safeNumber(n: number | undefined | null, fallback = 0): number {
+  return typeof n === "number" && Number.isFinite(n) ? n : fallback;
 }
 
 /** Garante valor finito ≥ 0. Útil para denominadores estruturais (PL, Ativo, CI). */

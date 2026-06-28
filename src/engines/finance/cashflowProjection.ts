@@ -5,6 +5,7 @@
 import type { AppState } from "./types";
 import { buildCashFlow } from "./cashflow";
 import { resolveEffectiveRegime } from "./regime";
+import { fmtBRLCompact as fmtBRL } from "./format";
 
 /** Evento de captação de dívida no horizonte projetado. */
 export interface CaptacaoDivida {
@@ -175,9 +176,6 @@ export function projectCashflow(
 // Formatação markdown + spec finance-chart
 // ============================================================
 
-function fmtBRL(n: number): string {
-  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-}
 
 export function projectionToMarkdown(res: ProjecaoResult): string {
   const out: string[] = [];

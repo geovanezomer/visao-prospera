@@ -24,9 +24,8 @@
 //   impostosRecuperar← capital.abertura.impostosRecuperar (editável)
 //   lucrosAcumulados ← capital.abertura.lucrosAcumulados (plug histórico)
 import type { AppState, CostLine, DebtContract } from "./types";
+import { safeNumber as n } from "./safeMath";
 
-const n = (v: number | undefined): number =>
-  typeof v === "number" && isFinite(v) ? v : 0;
 
 const firstMonth = (a: number[] | undefined): number => n(a?.[0]);
 

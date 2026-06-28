@@ -20,9 +20,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { simularSacPrice, type ResultadoSistema } from "@/engines/calculadoras/sacPrice";
+import { fmtBRL } from "@/engines/finance/format";
 
-const fmtBRL = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
 const fmtPct = (n: number) => `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 
 const PRAZOS_RAPIDOS = [
@@ -57,8 +56,6 @@ export function SacVsPriceCalc() {
 
   async function exportar() {
     if (!sim) return;
-    const fmtBRL = (n: number) =>
-      n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
     const fmtPct = (n: number) =>
       `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 4 })}%`;
     await exportCalculadoraPDF({

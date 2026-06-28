@@ -35,9 +35,8 @@ import {
   motivosLabel,
   type MotivoRescisao,
 } from "@/engines/calculadoras/rescisao";
+import { fmtBRL } from "@/engines/finance/format";
 
-const fmtBRL = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
 
 export function RescisaoCltCalc() {
   const [motivo, setMotivo] = useState<MotivoRescisao>("sem_justa_causa");
@@ -109,8 +108,6 @@ export function RescisaoCltCalc() {
 
   async function exportar() {
     if (!resultado) return;
-    const fmtBRL = (n: number) =>
-      n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
     await exportCalculadoraPDF({
       title: "Rescisão Trabalhista CLT",
       subtitle:

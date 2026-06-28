@@ -13,6 +13,7 @@ import { buildDRE } from "./dre";
 import { calcIndicators } from "./indicators";
 import { compareRegimes } from "./tax/compare";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
+import { fmtBRL } from "./format";
 import { buildCashFlow } from "./cashflow";
 import { sum } from "./format";
 import { resolveBenchmark } from "@/engines/benchmark/sectors";
@@ -183,18 +184,18 @@ export function buildPrescriptiveCards(
       metricLabel: "Folha / Receita Líquida",
       metricValue: `${folhaPct.toFixed(1)}%`,
       benchmark: `${sectorLabel}: ${folhaMin}–${folhaMax}% (faixa saudável)`,
-      cause: `Folha mensal de ${folhaMensal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}. Quadro pode estar dimensionado para um faturamento maior que o atual.`,
+      cause: `Folha mensal de ${fmtBRL(folhaMensal)}. Quadro pode estar dimensionado para um faturamento maior que o atual.`,
       actions: [
         {
           id: "dismiss_2_severance",
           title: "Demitir 2 posições (com custo rescisório real)",
-          detail: `Aviso + 13º + férias + 1/3 + multa FGTS 40% ≈ ${(severanceCostPerPosition(custoMedio / 1.7) * 2).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} de saída de caixa one-shot (Mês 1), redução estrutural da folha a partir do mês 2.`,
+          detail: `Aviso + 13º + férias + 1/3 + multa FGTS 40% ≈ ${fmtBRL((severanceCostPerPosition(custoMedio / 1.7) * 2))} de saída de caixa one-shot (Mês 1), redução estrutural da folha a partir do mês 2.`,
           apply: (s) => dismissWithSeverance(s, 2, custoMedio / 1.7, 0),
         },
         {
           id: "reduce_clt_2",
           title: "Reduzir 2 posições CLT (sem rescisão — encerramento de contrato/aposentadoria)",
-          detail: `Corte equivalente a ~${(2 * custoMedio).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}/mês incluindo encargos. Não impacta caixa one-shot.`,
+          detail: `Corte equivalente a ~${fmtBRL((2 * custoMedio))}/mês incluindo encargos. Não impacta caixa one-shot.`,
           apply: (s) => reduceLaborByPositions(s, 2, custoMedio),
         },
         {
@@ -267,14 +268,14 @@ export function buildPrescriptiveCards(
       problem: "Caixa projetado fura o mínimo de segurança",
       metricLabel: "Pior mês de caixa",
       metricValue: pior
-        ? `${pior.mes}: ${pior.saldo.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`
+        ? `${pior.mes}: ${fmtBRL(pior.saldo)}`
         : "—",
       cause:
         "Mesmo lucrando, a empresa pode ficar sem dinheiro em caixa em determinado mês por descasamento entre recebimentos (PMR) e pagamentos (PMP) e/ou sazonalidade.",
       actions: [
         {
           id: "loan_giro",
-          title: `Captar empréstimo de capital de giro (${principal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} @ 2%a.m. × 12m)`,
+          title: `Captar empréstimo de capital de giro (${fmtBRL(principal)} @ 2%a.m. × 12m)`,
           detail: "Entra no mês 1. Cria parcela de juros + amortização mensal.",
           apply: (s) => addLoan(s, principal, 2, 12, 0),
           asSimulatorParams: { loanPrincipal: principal, loanRatePctAm: 2, loanTermMonths: 12 },
@@ -336,10 +337,7 @@ export function buildPrescriptiveCards(
       severity: "warn",
       problem: "Necessidade de Capital de Giro não coberta",
       metricLabel: "Gap de Capital de Giro",
-      metricValue: ind.gapCapitalGiro.toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      }),
+      metricValue: fmtBRL(ind.gapCapitalGiro),
       cause: `Ciclo financeiro de ${ind.cicloFinanceiro.toFixed(1)} dias. Empresa financia o cliente por mais tempo do que o fornecedor financia a ela.`,
       actions: [
         {
@@ -412,7 +410,7 @@ export function buildPrescriptiveCards(
     const comparativo = ranked
       .map(
         ([k, v]) =>
-          `${labelRegime(k)}: ${v.annual.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}/ano (${v.effective.toFixed(1)}%)`,
+          `${labelRegime(k)}: ${fmtBRL(v.annual)}/ano (${v.effective.toFixed(1)}%)`,
       )
       .join(" · ");
 
@@ -435,7 +433,7 @@ export function buildPrescriptiveCards(
         problem: `Regime tributário sub-ótimo (atual: ${labelRegime(state.tax.regime)})`,
         metricLabel: "Carga atual × melhor opção",
         metricValue: `${atual.effective.toFixed(1)}% × ${melhor[1].effective.toFixed(1)}%`,
-        cause: `Migrar para ${labelRegime(melhor[0])} economizaria ${economia.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}/ano (${economiaPct.toFixed(1)}% da carga atual). Comparativo: ${comparativo}. Valide com contador (CNAE, fator R, créditos, sublimites do Simples).`,
+        cause: `Migrar para ${labelRegime(melhor[0])} economizaria ${fmtBRL(economia)}/ano (${economiaPct.toFixed(1)}% da carga atual). Comparativo: ${comparativo}. Valide com contador (CNAE, fator R, créditos, sublimites do Simples).`,
         actions: [
           {
             id: "switch_regime",

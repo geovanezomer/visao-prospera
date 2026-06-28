@@ -37,9 +37,8 @@ import {
   type GrauRAT,
   type RegimeEmpresa,
 } from "@/engines/calculadoras/custoFuncionario";
+import { fmtBRL } from "@/engines/finance/format";
 
-const fmtBRL = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
 const fmtPct = (n: number) => `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 
 const DEFAULT_VT = 0;
