@@ -148,6 +148,9 @@ function projectScenario(
     }
   }
 
+  // Delta dos contratos de dívida existentes (corrige meses >12 que o ciclo de ano-base repete).
+  const debtDelta = debtContractsDelta(state.debtContracts ?? [], meses);
+
   const meses_out: ProjecaoMes[] = [];
   let saldo = saldoInicialProj;
   for (let i = 1; i <= meses; i++) {
@@ -161,6 +164,7 @@ function projectScenario(
       cf.pagamentosFixos[b] * fFator +
       cf.pagamentosVariaveis[b] * rFator +
       cf.pagamentosFinanceiros[b] +
+      debtDelta.deltaJuros[i] +
       cf.pagamentosImpostos[b] * rFator;
     const capex = cf.capex[b];
     const financiamento =
@@ -168,6 +172,7 @@ function projectScenario(
       cf.emprestimosCaptados[b] +
       extraCapt[i] -
       cf.amortizacoes[b] -
+      debtDelta.deltaAmort[i] -
       extraAmort[i] -
       cf.dividendos[b];
 
