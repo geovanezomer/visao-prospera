@@ -4,16 +4,29 @@
  */
 import { useMemo } from "react";
 import { SociosCard } from "./SociosCard";
-import { StatCard } from "@/components/sim/shared/primitives";
-import { useFinance } from "@/engines/finance/AppStateContext";
+import { SectionTitle, StatCard } from "@/components/sim/shared/primitives";
+import { useFinance, usePatchCashflow, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { buildDRE } from "@/engines/finance/dre";
 import { syncSociosToCosts } from "@/engines/finance/socios";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, MESES } from "@/engines/finance/format";
+import { NonOpTable } from "@/components/sim/cashflow/NonOpTable";
+import { NonOpKey } from "@/components/sim/cashflow/tableHelpers";
 
 export function ProlaboreTab() {
   const { state } = useFinance();
+  const patchCashflow = usePatchCashflow();
+  const readOnly = useFinanceReadOnly();
   const regime = resolveEffectiveRegime(state);
+
+  const setNonOp = (key: NonOpKey, monthIdx: number, value: number) =>
+    patchCashflow((cur) => ({
+      [key]: cur[key].map((v, i) => (i === monthIdx ? value : v)),
+    }));
+
+  const setNonOpAll = (key: NonOpKey, v: number) =>
+    patchCashflow({ [key]: MESES.map(() => v) });
+
 
   const payoutPct = state.payoutPolicyPct ?? 100;
   const reservaMin = state.reservaMinimaMensal ?? 0;
