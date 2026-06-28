@@ -40,6 +40,17 @@ export default defineConfig({
     define: {
       "import.meta.env.SUPABASE_BACKUP": JSON.stringify(SUPABASE_BACKUP),
     },
+    plugins: ANALYZE
+      ? [
+          visualizer({
+            filename: "dist/bundle-stats.html",
+            template: "treemap",
+            gzipSize: true,
+            brotliSize: true,
+            open: false,
+          }),
+        ]
+      : [],
     environments: {
       client: {
         build: {
