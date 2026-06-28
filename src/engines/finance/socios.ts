@@ -172,6 +172,27 @@ export function calcDistribuicaoIsentaLimite(
   return disponivelAno / 12;
 }
 
+/**
+ * Detalhamento do teto de distribuição isenta — útil para tooltip/UI.
+ * Mostra como o adicional IRPJ (10% sobre lucro trimestral > gatilho) reduz
+ * o "lucro disponível para distribuição isenta sem escrituração".
+ */
+export function calcDistribuicaoIsentaBreakdown(state: AppState, regime: TaxRegime) {
+  const { tax } = state;
+  const receitaBrutaAno = sum(state.revenue.bruta);
+  const bases = getPresumidoBases(tax, state.businessType);
+  const basePresumida = receitaBrutaAno * (bases.irpj / 100);
+  const tributosFed =
+    basePresumida * ((getIrpjPct(tax) + getCsllPct(tax)) / 100) +
+    receitaBrutaAno * ((getPisCumPct(tax) + getCofinsCumPct(tax)) / 100);
+  const baseTri = basePresumida / 4;
+  const gatilhoTri = getIrpjAdicionalGatilhoTri(tax);
+  const adicionalIrpjAno =
+    Math.max(0, baseTri - gatilhoTri) * (getIrpjAdicionalPct(tax) / 100) * 4;
+  const limiteMensal = calcDistribuicaoIsentaLimite(state, regime);
+  return { basePresumida, tributosFed, adicionalIrpjAno, baseTri, gatilhoTri, limiteMensal };
+}
+
 // =====================================================================
 // Cálculo completo de um sócio
 // =====================================================================
