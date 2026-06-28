@@ -14,18 +14,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-import { DashboardTab } from "@/components/admin/tabs/DashboardTab";
-import { UsersTab } from "@/components/admin/tabs/UsersTab";
-import { SystemTab } from "@/components/admin/tabs/SystemTab";
-import { EmailsTab } from "@/components/admin/tabs/EmailsTab";
-import { WebhooksTab } from "@/components/admin/tabs/WebhooksTab";
-import { ProviderTab } from "@/components/admin/tabs/ProviderTab";
-import { AuditTab } from "@/components/admin/tabs/AuditTab";
-import { FlagsTab } from "@/components/admin/tabs/FlagsTab";
-import { BroadcastsTab } from "@/components/admin/tabs/BroadcastsTab";
-import { PlansTab } from "@/components/admin/tabs/PlansTab";
-import { StatusTab } from "@/components/admin/tabs/StatusTab";
-import { LegalTab } from "@/components/admin/tabs/LegalTab";
+import { lazyNamed } from "@/components/common/LazyTab";
+
+// Abas do Admin carregadas sob demanda — ver src/components/common/LazyTab.tsx.
+// Cada aba vira chunk próprio; reduz o bundle do /admin de ~524KB para
+// apenas o shell + a aba ativa.
+const DashboardTab = lazyNamed(() => import("@/components/admin/tabs/DashboardTab"), "DashboardTab");
+const UsersTab = lazyNamed(() => import("@/components/admin/tabs/UsersTab"), "UsersTab");
+const SystemTab = lazyNamed(() => import("@/components/admin/tabs/SystemTab"), "SystemTab");
+const EmailsTab = lazyNamed(() => import("@/components/admin/tabs/EmailsTab"), "EmailsTab");
+const WebhooksTab = lazyNamed(() => import("@/components/admin/tabs/WebhooksTab"), "WebhooksTab");
+const ProviderTab = lazyNamed(() => import("@/components/admin/tabs/ProviderTab"), "ProviderTab");
+const AuditTab = lazyNamed(() => import("@/components/admin/tabs/AuditTab"), "AuditTab");
+const FlagsTab = lazyNamed(() => import("@/components/admin/tabs/FlagsTab"), "FlagsTab");
+const BroadcastsTab = lazyNamed(() => import("@/components/admin/tabs/BroadcastsTab"), "BroadcastsTab");
+const PlansTab = lazyNamed(() => import("@/components/admin/tabs/PlansTab"), "PlansTab");
+const StatusTab = lazyNamed(() => import("@/components/admin/tabs/StatusTab"), "StatusTab");
+const LegalTab = lazyNamed(() => import("@/components/admin/tabs/LegalTab"), "LegalTab");
 
 const TAB_KEYS = ["dashboard", "usuarios", "planos", "sistema", "emails", "broadcasts", "webhooks", "provider", "flags", "status", "auditoria", "legal"] as const;
 const searchSchema = z.object({

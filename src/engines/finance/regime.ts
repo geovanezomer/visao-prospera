@@ -23,8 +23,16 @@ import { effectiveMonthValues } from "./costs";
 // EXCLUI:
 //   - Comissões (custo COMERCIAL atrelado à venda, não folha)
 //   - Despesas financeiras
+// ATENÇÃO — ambiguidade histórica de "participação nos lucros":
+//   - PLR de empregado CLT → ENTRA na folha (Fator R, Folha/Receita).
+//   - Distribuição/dividendos a SÓCIO → NÃO entra (é remuneração de capital,
+//     não folha de pessoal; em geral isenta de IR, sem encargos previdenciários).
+// Por isso o include cobre PLR genérico, e o exclude derruba qualquer linha
+// que mencione sócio/dividendo/distribuição (mesmo que case com o include).
 const LABOR_INCLUDE_RE =
   /sal[áa]rio|folha|pr[óo]\s*-?\s*labore|prolabore|\bmod\b|m[ãa]o\s*de\s*obra|m\.o\.|\bclt\b|benef[íi]cio|\bplr\b|participa[çc][ãa]o.*lucro|terceiriz/i;
+const DISTRIBUICAO_SOCIO_RE =
+  /s[óo]cio|sócios|acionist|cotist|dividendo|distribui[çc][ãa]o.*(lucro|result)|lucro.*distribu/i;
 const LABOR_EXCLUDE_RE = /comiss[ãa]o|comiss[õo]es/i;
 
 export function folhaAnual(state: AppState): number {
@@ -34,6 +42,7 @@ export function folhaAnual(state: AppState): number {
   const laborCosts = state.costs.filter((c) => {
     if (c.category === "financeiro") return false;
     if (LABOR_EXCLUDE_RE.test(c.label)) return false; // comissões nunca entram, mesmo com encargosAuto.
+    if (DISTRIBUICAO_SOCIO_RE.test(c.label)) return false; // distribuição a sócio nunca é folha.
     return c.encargosAuto || LABOR_INCLUDE_RE.test(c.label);
   });
   return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c, regime)), 0);
