@@ -514,6 +514,8 @@ export function migrateState(s: AppState): AppState {
   cashflow.capex = coerceMonths(cashflow.capex);
   cashflow.dividendos = coerceMonths(cashflow.dividendos);
   cashflow.amortizacoes = coerceMonths(cashflow.amortizacoes);
+  cashflow.mutuosConcedidos = coerceMonths(cashflow.mutuosConcedidos ?? []);
+  cashflow.mutuosDevolvidos = coerceMonths(cashflow.mutuosDevolvidos ?? []);
 
   // Aplica migrações versionadas (breaking changes) e estampa schemaVersion atual.
   return applySchemaMigrations({ ...rest, revenue, capital, tax, costs, cashflow, strategic });
