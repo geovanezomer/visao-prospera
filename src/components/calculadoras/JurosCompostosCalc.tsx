@@ -39,6 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+import { fmtBRL } from "@/engines/finance/format";
   Select,
   SelectContent,
   SelectItem,
@@ -46,8 +47,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const fmtBRL = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
 const fmtBRLShort = (n: number) => {
   if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (Math.abs(n) >= 1_000) return `${Math.round(n / 1_000)}k`;

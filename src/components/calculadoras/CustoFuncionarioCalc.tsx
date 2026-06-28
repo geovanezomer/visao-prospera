@@ -32,14 +32,13 @@ import {
 } from "@/components/ui/table";
 import { useAppState } from "@/engines/finance/store";
 import {
+import { fmtBRL } from "@/engines/finance/format";
   calcularCustoFuncionario,
   labelRegime,
   type GrauRAT,
   type RegimeEmpresa,
 } from "@/engines/calculadoras/custoFuncionario";
 
-const fmtBRL = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
 const fmtPct = (n: number) => `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 
 const DEFAULT_VT = 0;

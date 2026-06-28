@@ -38,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fmtBRL, fmtPct } from "@/engines/finance/format";
+import { fmtBRL, fmtBRLCompact, fmtPct } from "@/engines/finance/format";
 
 const fmtBRLShort = (n: number) => {
   if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -193,8 +193,6 @@ export function IndependenciaCalc() {
   }
 
   async function exportar() {
-    const fmtBRL = (n: number) =>
-      n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 });
     const idadeFireStr =
       sim.idadeFire !== null ? `${sim.idadeFire.toFixed(1)} anos` : "Não atinge em 80 anos";
     const linhasAnuais = sim.linhas.filter((_, i) => i % 5 === 0 || i === sim.linhas.length - 1);
@@ -204,17 +202,17 @@ export function IndependenciaCalc() {
         "Simulação em termos reais — descontada a inflação (equação de Fisher).",
       inputs: [
         { label: "Idade atual / alvo", value: `${idadeAtual} → ${idadeAlvo} anos` },
-        { label: "Gastos mensais", value: fmtBRL(gastosMensais) },
-        { label: "Patrimônio inicial", value: fmtBRL(patrimonio) },
-        { label: "Aporte mensal", value: fmtBRL(aporteMensal) },
+        { label: "Gastos mensais", value: fmtBRLCompact(gastosMensais) },
+        { label: "Patrimônio inicial", value: fmtBRLCompact(patrimonio) },
+        { label: "Aporte mensal", value: fmtBRLCompact(aporteMensal) },
         { label: "Retorno anual nominal", value: `${retornoAnual}%` },
         { label: "Inflação anual (IPCA)", value: `${inflacaoAnual}%` },
         { label: "Taxa de retirada", value: `${taxaRetirada}%` },
       ],
       kpis: [
-        { label: "Número FIRE", value: fmtBRL(sim.numeroFire), sub: "Patrimônio necessário", tone: "neutral" },
+        { label: "Número FIRE", value: fmtBRLCompact(sim.numeroFire), sub: "Patrimônio necessário", tone: "neutral" },
         { label: "Idade FIRE", value: idadeFireStr, sub: sim.atingeNoTempo ? "Atinge no tempo" : "Após a idade-alvo", tone: sim.atingeNoTempo ? "ok" : "warn" },
-        { label: "Renda na idade-alvo", value: `${fmtBRL(sim.rendaMensalAlvo)}/mês`, sub: `${(sim.pctFire * 100).toFixed(0)}% do FIRE`, tone: sim.pctFire >= 1 ? "ok" : "warn" },
+        { label: "Renda na idade-alvo", value: `${fmtBRLCompact(sim.rendaMensalAlvo)}/mês`, sub: `${(sim.pctFire * 100).toFixed(0)}% do FIRE`, tone: sim.pctFire >= 1 ? "ok" : "warn" },
       ],
       sections: [
         {
@@ -224,9 +222,9 @@ export function IndependenciaCalc() {
           body: linhasAnuais.map((l) => [
             l.ano,
             l.idade,
-            fmtBRL(l.aporteAno),
-            fmtBRL(l.totalInvestido),
-            fmtBRL(l.patrimonio),
+            fmtBRLCompact(l.aporteAno),
+            fmtBRLCompact(l.totalInvestido),
+            fmtBRLCompact(l.patrimonio),
           ]),
         },
       ],

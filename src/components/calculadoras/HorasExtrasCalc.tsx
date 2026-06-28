@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+import { fmtBRL } from "@/engines/finance/format";
   Select,
   SelectContent,
   SelectItem,
@@ -32,8 +33,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const fmtBRL = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
 const fmtPct = (n: number) => `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 
 // Jornada semanal → horas mensais (semana × 5 dias úteis ÷ 7 × 30 → aproximação CLT padrão)
