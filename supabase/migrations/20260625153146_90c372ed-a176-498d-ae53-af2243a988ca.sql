@@ -1,6 +1,7 @@
 
 -- 1) app_settings: narrow public SELECT to safe keys only
 DROP POLICY IF EXISTS "app_settings public read" ON public.app_settings;
+DROP POLICY IF EXISTS "app_settings public read safe keys" ON public.app_settings;
 CREATE POLICY "app_settings public read safe keys"
   ON public.app_settings
   FOR SELECT
