@@ -5,7 +5,7 @@
 //   • 409 already_used → "Você já testou. Escolha um plano."
 //   • 429 rate_limited / outros erros → mensagem amigável.
 // ============================================================================
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Mail, Loader2, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import {
@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
 
 type State =
   | { kind: "idle" }
@@ -28,6 +29,22 @@ export function TrialRequestDialog({
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
   const [state, setState] = useState<State>({ kind: "idle" });
+  const [cfgHours, setCfgHours] = useState<number>(2);
+
+  // Lê duração configurada em Admin → Sistema (app_settings.trial.duration_hours).
+  // Policy pública permite SELECT do key='trial' para anon.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    void supabase.from("app_settings").select("value").eq("key", "trial").maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data?.value) return;
+        const v = data.value as { duration_hours?: number };
+        const h = Number(v.duration_hours);
+        if (Number.isFinite(h) && h > 0) setCfgHours(Math.min(Math.max(h, 1), 72));
+      });
+    return () => { cancelled = true; };
+  }, [open]);
 
   const reset = () => { setEmail(""); setWebsite(""); setState({ kind: "idle" }); };
 
@@ -110,13 +127,16 @@ export function TrialRequestDialog({
 
         {(state.kind === "idle" || state.kind === "loading" || state.kind === "err") && (
           <form onSubmit={submit} className="space-y-4">
-            <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
+            <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
               <p className="flex items-start gap-2">
                 <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                 <span>
                   Você recebe um <strong>link mágico</strong> por e-mail. Ao clicar, entra direto na plataforma — sem senha.
-                  O acesso é único por e-mail e expira no fim do período.
                 </span>
+              </p>
+              <p className="pl-5">
+                Seu acesso expira em <strong>{cfgHours}h</strong> a partir do envio do link.
+                Não deixe de verificar sua <strong>caixa de entrada</strong> e a pasta de <strong>spam</strong>.
               </p>
             </div>
             <div className="space-y-1.5">
