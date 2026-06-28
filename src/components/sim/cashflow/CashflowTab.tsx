@@ -18,8 +18,6 @@ import {
 } from "recharts";
 
 import { DFCTable } from "@/components/sim/cashflow/DFCTable";
-import { NonOpTable } from "@/components/sim/cashflow/NonOpTable";
-import { NonOpKey } from "@/components/sim/cashflow/tableHelpers";
 
 
 // Estilo padrão do tooltip dos gráficos (DRY)
