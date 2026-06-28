@@ -21,7 +21,8 @@ import { buildCashFlow } from "../cashflow";
 import { suggestBalancoFromState, calcPassivoNaoCirculante } from "../balanco";
 import type { MutuoPassivo, CostLine } from "../types";
 
-/** Cria um state com 1 mútuo passivo + a linha sintética que o card injeta. */
+/** Cria um state com 1 mútuo passivo + a linha sintética que o card injeta.
+ *  Preserva os costs do DEFAULT_STATE (deepMerge substitui arrays). */
 function stateComMutuo(mutuo: MutuoPassivo) {
   const agg = aggregateMutuosPassivos([mutuo]);
   const linhaJuros: CostLine = {
@@ -32,9 +33,10 @@ function stateComMutuo(mutuo: MutuoPassivo) {
     fixed: true,
     custom: false,
   };
+  const base = createState();
   return createState({
     mutuosPassivos: [mutuo],
-    costs: [linhaJuros],
+    costs: [...base.costs, linhaJuros],
     cashflow: {
       mutuosPassivosCaptados: agg.captacao,
       mutuosPassivosAmortizados: agg.amortizacao,
