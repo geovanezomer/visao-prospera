@@ -215,6 +215,8 @@ export function SystemTab() {
         updateAppSetting({ data: { key: "footer", value: footer } }),
         updateAppSetting({ data: { key: "tracking", value: tracking } }),
         updateAppSetting({ data: { key: "landing_video", value: landingVideo } }),
+        updateAppSetting({ data: { key: "trial", value: trial } }),
+
 
         notif ? updateNotifSettings({ data: notif }) : Promise.resolve(),
       ]);
