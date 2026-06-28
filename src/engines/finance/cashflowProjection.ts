@@ -2,10 +2,66 @@
 // de captação de dívida. Reusa `buildCashFlow` como SSOT do perfil mensal e
 // projeta N meses à frente aplicando deltas multiplicativos por categoria.
 
-import type { AppState } from "./types";
+import type { AppState, DebtContract } from "./types";
 import { buildCashFlow } from "./cashflow";
 import { resolveEffectiveRegime } from "./regime";
 import { fmtBRLCompact as fmtBRL } from "./format";
+
+/**
+ * Gera cronograma estendido (N meses) de juros e amortização para um contrato,
+ * usado para projetar saídas de caixa além dos 12 meses do ano-base.
+ * Reproduz a mesma lógica de `scheduleContract` (Price/SAC) sem o teto de 12.
+ */
+function scheduleContractFull(c: DebtContract, meses: number): { juros: number[]; amort: number[] } {
+  const juros = new Array(meses).fill(0);
+  const amort = new Array(meses).fill(0);
+  const saldoIni = Math.max(0, c.saldoDevedor || 0);
+  const n = Math.max(1, Math.floor(c.prazoMeses || 0));
+  const im = Math.max(0, (c.taxaAA || 0) / 100) / 12;
+  if (saldoIni <= 0) return { juros, amort };
+
+  let saldo = saldoIni;
+  const parcelaPrice = im > 0 ? (saldo * im) / (1 - Math.pow(1 + im, -n)) : saldo / n;
+  const amortSAC = saldo / n;
+  const limite = Math.min(meses, n);
+  for (let m = 0; m < limite; m++) {
+    const j = saldo * im;
+    let a = c.sistema === "price" ? parcelaPrice - j : amortSAC;
+    if (a > saldo) a = saldo;
+    if (a < 0) a = 0;
+    juros[m] = j;
+    amort[m] = a;
+    saldo -= a;
+    if (saldo <= 0) break;
+  }
+  return { juros, amort };
+}
+
+/**
+ * Calcula o delta (mês-a-mês) entre o cronograma REAL dos contratos no
+ * horizonte projetado e o que `buildCashFlow` repete ciclicamente do
+ * ano-base (índice b = (i-1) % 12). Para i<=12 o delta é zero (cf já
+ * contempla); para i>12 corrige o "loop" do ano-base com o vencimento real.
+ */
+function debtContractsDelta(contracts: DebtContract[], meses: number) {
+  const deltaAmort = new Array(meses + 1).fill(0);
+  const deltaJuros = new Array(meses + 1).fill(0);
+  if (!contracts?.length) return { deltaAmort, deltaJuros };
+
+  for (const c of contracts) {
+    const real = scheduleContractFull(c, meses);
+    // Cronograma "ano-base" (12 primeiros meses) que o engine repete ciclicamente.
+    const base12Amort = real.amort.slice(0, 12);
+    const base12Juros = real.juros.slice(0, 12);
+    for (let i = 1; i <= meses; i++) {
+      if (i <= 12) continue; // ano-base já refletido em cf
+      const b = (i - 1) % 12;
+      deltaAmort[i] += (real.amort[i - 1] || 0) - (base12Amort[b] || 0);
+      deltaJuros[i] += (real.juros[i - 1] || 0) - (base12Juros[b] || 0);
+    }
+  }
+  return { deltaAmort, deltaJuros };
+}
 
 /** Evento de captação de dívida no horizonte projetado. */
 export interface CaptacaoDivida {
@@ -92,6 +148,9 @@ function projectScenario(
     }
   }
 
+  // Delta dos contratos de dívida existentes (corrige meses >12 que o ciclo de ano-base repete).
+  const debtDelta = debtContractsDelta(state.capital?.debtContracts ?? [], meses);
+
   const meses_out: ProjecaoMes[] = [];
   let saldo = saldoInicialProj;
   for (let i = 1; i <= meses; i++) {
@@ -105,6 +164,7 @@ function projectScenario(
       cf.pagamentosFixos[b] * fFator +
       cf.pagamentosVariaveis[b] * rFator +
       cf.pagamentosFinanceiros[b] +
+      debtDelta.deltaJuros[i] +
       cf.pagamentosImpostos[b] * rFator;
     const capex = cf.capex[b];
     const financiamento =
@@ -112,6 +172,7 @@ function projectScenario(
       cf.emprestimosCaptados[b] +
       extraCapt[i] -
       cf.amortizacoes[b] -
+      debtDelta.deltaAmort[i] -
       extraAmort[i] -
       cf.dividendos[b];
 
