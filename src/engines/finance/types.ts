@@ -204,6 +204,21 @@ export interface MutuoSocio {
   mesInicioDevolucao: number; // 1..12 (mês da 1ª parcela)
 }
 
+/** Contrato de mútuo PF→PJ (empréstimo do sócio para a empresa, AFAC remunerado).
+ *  Espelho simétrico de MutuoSocio: entrada de caixa na captação,
+ *  saídas mensais de amortização + juros pagos (Despesa Financeira).
+ *  Saldo devedor remanescente é Passivo (Mútuos a Pagar). */
+export interface MutuoPassivo {
+  id: string;
+  socioId?: string;
+  nome: string;
+  valorCaptado: number; // R$ principal recebido pela empresa
+  mesCaptacao: number; // 1..12 (mês da entrada de caixa)
+  taxaMensalPct: number; // % a.m. paga ao sócio (≥ SELIC mensal recomendado)
+  prazoMeses: number;
+  mesInicioDevolucao: number;
+}
+
 export interface CapitalStructure {
   proprio: number; // % capital próprio (E) — usado apenas como referência se dividaOnerosa/PL não preenchidos
   ke: number;
