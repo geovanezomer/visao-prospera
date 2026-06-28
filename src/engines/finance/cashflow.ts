@@ -211,6 +211,8 @@ export function computeFluxos(args: {
   const variacaoCaixa = zeros12();
   const mutCon = args.mutuosConcedidos ?? zeros12();
   const mutDev = args.mutuosDevolvidos ?? zeros12();
+  const mutPassCap = args.mutuosPassivosCaptados ?? zeros12();
+  const mutPassAmort = args.mutuosPassivosAmortizados ?? zeros12();
   for (let i = 0; i < 12; i++) {
     fluxoOperacional[i] =
       args.recebimentos[i] +
