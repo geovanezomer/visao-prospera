@@ -32,9 +32,9 @@ export function lazyNamed<
 >(loader: () => Promise<T>, name: K): ComponentType<Record<string, unknown>> {
   const Lazy = lazy(async () => {
     const mod = await loader();
-    return { default: mod[name] };
+    return { default: mod[name] as ComponentType<Record<string, unknown>> };
   });
-  return function LazyTabContent(props) {
+  return function LazyTabContent(props: Record<string, unknown>) {
     return (
       <Suspense fallback={<TabSkeleton />}>
         <Lazy {...props} />
