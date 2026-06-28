@@ -10,8 +10,8 @@ import { clientIp, rlConsume } from "@/lib/rateLimit.server";
 
 const Body = z.object({
   email: z.string().trim().toLowerCase().email(),
-  // honeypot: deve vir vazio (bots tendem a preencher).
-  website: z.string().max(0).optional().or(z.literal("")),
+  // honeypot: usuário real envia vazio; bot pode preencher qualquer texto.
+  website: z.string().optional().default(""),
 });
 
 // Domínios de e-mail descartáveis bloqueados (lista mínima).
@@ -81,7 +81,7 @@ export const Route = createFileRoute("/api/public/trial/request")({
           .eq("key", "trial")
           .maybeSingle();
         const cfg = (cfgRow?.value ?? {}) as { enabled?: boolean; duration_hours?: number };
-        if (cfg.enabled === false) {
+        if (cfg.enabled !== true) {
           return Response.json({ error: "trial_disabled" }, { status: 403 });
         }
         const hours = Math.min(Math.max(Number(cfg.duration_hours ?? 2), 1), 72);
