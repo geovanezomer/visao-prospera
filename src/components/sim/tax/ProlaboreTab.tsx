@@ -6,7 +6,7 @@ import { useEffect, useMemo } from "react";
 import { SociosCard } from "./SociosCard";
 import { MutuosSociosCard } from "./MutuosSociosCard";
 import { MutuosPassivosCard } from "./MutuosPassivosCard";
-import { PermutasCard } from "./PermutasCard";
+
 import { StatCard } from "@/components/sim/shared/primitives";
 import { useFinance, usePatchCashflow, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
@@ -118,10 +118,7 @@ export function ProlaboreTab() {
       {/* Mútuos PF→PJ — espelho simétrico: sócio empresta para a empresa.
           Captação entra no caixa, devolução sai, juros viram Despesa Financeira. */}
       <MutuosPassivosCard />
-      {/* Permutas simples — movimentações de caixa não operacionais sem juros,
-          contrato ou amortização (serviço por serviço, cheques, recebíveis, etc.).
-          Não impactam DRE; afetam apenas o Fluxo de Caixa. */}
-      {!readOnly && <PermutasCard />}
+      {/* PermutasCard movido para o topo da aba Fluxo de Caixa. */}
 
 
     </div>

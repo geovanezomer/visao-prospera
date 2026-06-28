@@ -18,6 +18,7 @@ import {
 } from "recharts";
 
 import { DFCTable } from "@/components/sim/cashflow/DFCTable";
+import { PermutasCard } from "@/components/sim/tax/PermutasCard";
 
 
 // Estilo padrão do tooltip dos gráficos (DRY)
@@ -152,6 +153,10 @@ export function CashflowTab() {
 
   return (
     <div className="space-y-6">
+
+      {/* Permutas simples — movimentações de caixa não operacionais (sem juros,
+          contrato ou amortização). Exibidas no topo para edição rápida. */}
+      {!readOnly && <PermutasCard />}
 
       {/* Sumário */}
       <div className="grid gap-4 md:grid-cols-4">
