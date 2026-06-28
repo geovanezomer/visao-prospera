@@ -90,6 +90,15 @@ export function UsersTab() {
     } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
     finally { setBusyId(null); }
   };
+  const handleToggleAI = async (row: AdminUserRow, next: boolean) => {
+    setBusyId(row.id);
+    try {
+      await setUserAIEnabled({ data: { userId: row.id, enabled: next } });
+      toast.success(next ? "Consultor IA liberado." : "Consultor IA bloqueado.");
+      setUsers((prev) => prev.map((u) => (u.id === row.id ? { ...u, aiEnabled: next } : u)));
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
+    finally { setBusyId(null); }
+  };
   const handleReset = async (row: AdminUserRow) => {
     setBusyId(row.id);
     try { const r = await sendPasswordReset({ data: { userId: row.id } }); toast.success(`Reset enviado para ${r.email}.`); }
