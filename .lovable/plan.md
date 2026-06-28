@@ -1,66 +1,61 @@
-# Previsão × Realizada — Distribuição de Lucros
+# Plano de correção — Análise v17
 
-## Por que mudar
+Objetivo: endereçar os 4 achados sem alterar a engine financeira nem o comportamento visível do usuário.
 
-Hoje o sistema confunde **capacidade de distribuir** (cálculo a partir do lucro) com **distribuição efetivamente realizada** (decisão dos sócios). Empresas frequentemente seguram caixa, e isso precisa refletir em DRE/DFC/Balanço com precisão — inclusive no Adicional IRPJ de 10%, que incide sobre o **lucro tributável** (não sobre a retirada), mas o **IRPF do excedente** sim depende do que foi distribuído.
+## 1. Memória do build (risco operacional)
 
-## Proposta refinada (melhorando a sua)
+- Em `package.json`, ajustar o script `build` (e `build:dev` se existir) para incluir `NODE_OPTIONS=--max-old-space-size=4096` via `cross-env` (já compatível com Linux/CI/Docker do projeto).
+- Validar que o `Dockerfile` e o workflow `.github/workflows/ci.yml` não sobrescrevem `NODE_OPTIONS`. Se sobrescreverem, harmonizar.
 
-### Card "Pró-labore × Distribuição de Lucros — Previsão"
-- Renomear o título.
-- A tabela atual continua, mas com rótulo claro de **"Capacidade teórica (planejamento)"**.
-- Colunas de Distribuição (isenta/tributável) passam a ser **referência informativa**, com badge "Previsão" — NÃO alimentam mais Caixa/DRE/Balanço.
-- Pró-labore, INSS sócio, INSS patronal e IRPF do pró-labore **continuam** alimentando custos/DRE/caixa normalmente (isso é folha, é realizado por natureza).
+## 2. Lazy loading de abas (padrão recorrente)
 
-### Bloco novo "Distribuição Realizada — 12 meses" (no rodapé do mesmo card, com separador)
-Linha única por sócio (ou agregada) com:
-- **Toggle "Fixar todos os meses"** (igual ao padrão de Receitas/Despesas): ligado → 1 input replica nos 12 meses; desligado → grid mês-a-mês.
-- **Botão "Usar Previsão"**: 1-clique copia a capacidade teórica para a Realizada (ajuda quem quer distribuir 100%).
-- **Botão "Zerar"**: caso a empresa decida segurar caixa.
-- Indicador visual abaixo: *"Distribuído R$ X de R$ Y disponíveis (Z%)"* — verde se ≤ teto isento, amarelo se acima.
+Criar um único utilitário e aplicar em 2 lugares:
 
-### Impactos sistêmicos (auditados)
+- Novo arquivo `src/components/common/LazyTab.tsx`:
+  - Exporta `lazyTab(loader)` que devolve um componente `React.lazy` envolto em `<Suspense fallback={<TabSkeleton />}>`.
+  - `TabSkeleton` usa `Skeleton` do shadcn já existente.
+- Refatorar `src/components/calculadoras/CalculadorasTab.tsx`:
+  - Trocar os 10 imports estáticos das `*Calc` por `lazyTab(() => import("..."))`.
+  - Garantir que cada calculadora tenha `export default` (adicionar onde não houver — sem mudar a API nomeada existente, mantendo `export { X }` + `export default X`).
+- Refatorar `src/routes/admin.tsx`:
+  - Trocar os 12 imports estáticos das `tabs/*Tab` pelo mesmo padrão.
+  - Mesma regra de `export default` nos componentes de aba.
+- Critério de sucesso: chunks `admin` e `calculadoras` deixam de existir como bloco único; cada aba vira chunk próprio sob demanda. Sem mudança visual além do skeleton no primeiro clique.
 
-| Módulo | Antes | Depois |
-|---|---|---|
-| **DFC** (Atividades de Financiamento → Dividendos) | Lia capacidade calculada via `state.cashflow.dividendos` sincronizado pelo `useEffect` | Lê **Distribuição Realizada** (soma por mês de todos os sócios) |
-| **DRE** | Distribuição não afeta DRE (correto — é destinação do lucro). Adicional IRPJ 10% já calculado sobre lucro presumido trimestral | **Inalterado**. Adicional IRPJ continua sobre lucro tributável (não sobre retirada) — está correto pela Lei 9.249/95 |
-| **Balanço** | Lucros Acumulados = ∑ Lucro Líquido − Dividendos pagos | Mesma fórmula, mas Dividendos pagos = Realizado (não mais Previsão) |
-| **IRPF do excedente** (coluna "Distribuição tributável") | Calculado sobre Previsão | Recalculado sobre **Realizado**: `max(0, Realizado − Limite isento) × alíquota topo` |
-| **Líquido sócio** | Pró-labore líq. + Distribuição prevista | Pró-labore líq. + Distribuição **realizada** (isenta + tributável líquida de IRPF) |
+## 3. Peso da Landing (660 KB)
 
-### UX — assimilação fácil
-1. **Hierarquia visual clara**: bloco Previsão em opacidade 90% + badge cinza "Planejamento". Bloco Realizada em destaque (borda accent) + badge verde "Efetivado em caixa".
-2. **Tooltip didático** no separador: *"A Previsão mostra quanto a empresa PODERIA distribuir sem violar limites legais. A Realizada é o que de fato saiu do caixa. DRE, Fluxo de Caixa e Balanço usam a Realizada."*
-3. **Alerta inteligente**: se Realizada > Capacidade isenta → banner amarelo *"R$ X excede o limite isento e será tributado a 27,5% IRPF na PF dos sócios."*
-4. **Alerta de retenção de caixa**: se Realizada < 50% da capacidade por 3+ meses → badge informativo *"Empresa está fortalecendo caixa (retendo R$ Y)."*
+Investigação antes de fatiar:
 
-## Arquivos a alterar
+- Adicionar `rollup-plugin-visualizer` como `devDependency`.
+- Em `vite.config.ts`, registrar o plugin apenas quando `process.env.ANALYZE === "1"` (não afeta build de produção normal).
+- Adicionar script `build:analyze` no `package.json`.
+- Após rodar uma vez, aplicar correções pontuais baseadas no relatório (provavelmente: lazy do `TrialRequestDialog`, do bloco de vídeo/lightbox e do `FAQ` JSON-LD-only). Essas correções entram como segundo passo, com base em evidência.
 
-1. **`src/engines/finance/types.ts`** — adicionar `distribuicaoRealizada: { id, socioId, values: number[], fixed: boolean }[]` no `AppState` (ou simplificar: `state.distribuicaoRealizada: number[]` agregada de 12 meses, já que rateio segue participação%).
-   - Decisão: **agregada 12 meses** (1 array) — replica o padrão de `cashflow.dividendos` que já existia; mais simples, e o rateio por sócio segue `participacaoPct`.
+## 4. Regex do Fator R (dívida técnica)
 
-2. **`src/engines/finance/socios.ts`**:
-   - Nova função `calcDistribuicaoRealizadaPorSocio(state, regime)` retornando isenta/tributável/IRPF **com base no array realizado**.
-   - `syncDistribuicaoToCashflow(state)` passa a usar `state.distribuicaoRealizada` em vez de capacidade.
-   - Manter `calcRetiradaSocio` para previsão (UI superior) e criar variante `calcRetiradaSocioRealizada` para o bloco inferior.
+Em `src/engines/finance/regime.ts`:
 
-3. **`src/components/sim/tax/SociosCard.tsx`**:
-   - Renomear título.
-   - Adicionar `<Separator />` + novo sub-componente `DistribuicaoRealizadaBlock` (toggle fixo, grid 12m, botões Usar Previsão / Zerar, indicadores).
-   - Coluna "Distribuição tributável" passa a refletir Realizada (manter Previsão em tooltip).
+- Separar em dois padrões nomeados:
+  - `PLR_EMPREGADO_RE` — captura PLR de empregado CLT (entra no Fator R).
+  - `DISTRIBUICAO_SOCIO_RE` — captura "distribuição"/"dividendos"/"participação de sócio" (NÃO entra, usada como exclusão explícita).
+- Ajustar `LABOR_INCLUDE_RE` para excluir matches de `DISTRIBUICAO_SOCIO_RE` antes de aceitar.
+- Comentário em PT explicando a ambiguidade histórica de "participação nos lucros".
+- Adicionar testes em `src/engines/finance/__tests__` cobrindo:
+  - "PLR funcionários" → incluído.
+  - "Participação nos lucros — diretoria sócia" → excluído.
+  - "Distribuição de lucros sócio" → excluído.
 
-4. **`src/components/sim/tax/ProlaboreTab.tsx`** — atualizar KPI "Disponível para Distribuição" para mostrar também "Realizado YTD".
+## Ordem de execução e verificação
 
-5. **`src/components/sim/cashflow/DFCTable.tsx`** — já lê de `state.cashflow.dividendos`; vamos mantê-lo lendo daí, mas a sincronização passa a vir do realizado (não da previsão).
+1. Item 4 (regex + testes) — menor risco, valida pipeline de testes.
+2. Item 2 (lazy tabs) — maior ganho de bundle, mecânico.
+3. Item 1 (NODE_OPTIONS) — uma linha, depois de confirmar que build local ainda passa.
+4. Item 3 (visualizer + ações derivadas) — investigação + segundo PR baseado em evidência.
 
-6. **`src/engines/finance/__tests__/socios.test.ts`** — adicionar testes: realizada=0 → caixa preservado; realizada > teto → IRPF excedente correto; realizada substitui previsão na sincronização.
+Validação final: `bun run build` local, `bunx vitest run`, e leitura dos tamanhos de chunk no output do Vite para confirmar que `admin` e `calculadoras` ficaram fatiados.
 
-## Riscos / mitigações
-- **Migração de dados existentes**: usuários com `cashflow.dividendos` preenchido → na primeira carga, copiar para `distribuicaoRealizada` (one-shot migration em `defaults.ts` ou loader).
-- **Quebra de testes E2E**: `mutuosPassivos.test.ts` e fluxos de balanço — rodar suite após mudança.
+## Fora de escopo
 
-## Estimativa
-~5 arquivos editados, ~250 linhas líquidas, +6 testes. Sem mudança de schema do backend (puro client state).
-
-**Confirma o plano para eu implementar?**
+- Não tocar na engine financeira (`src/engines/finance/*`) além do regex do item 4.
+- Não alterar UI/UX visível (apenas skeleton no carregamento de aba).
+- Não mexer em pagamentos, auth ou migrations.
