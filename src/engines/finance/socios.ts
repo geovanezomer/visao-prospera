@@ -39,6 +39,7 @@ import {
   getCofinsCumPct,
 } from "./taxDefaults";
 import { sum } from "./format";
+import { coerceMonths } from "./safeMath";
 
 // IDs reservados para linhas sintéticas em state.costs.
 export const SOCIOS_PROLABORE_LINE_ID = "__socios_prolabore__";
@@ -199,10 +200,10 @@ export function calcDistribuicaoIsentaBreakdown(state: AppState, regime: TaxRegi
 /** Retorna o array de 12 meses de distribuição realizada (default zero). */
 export function getDistribuicaoRealizadaMeses(state: AppState): Months {
   const dr = state.distribuicaoRealizada;
-  if (!dr || !Array.isArray(dr.values) || dr.values.length !== 12) {
+  if (!dr || !Array.isArray(dr.values)) {
     return fill12(0);
   }
-  return dr.values as Months;
+  return coerceMonths(dr.values) as Months;
 }
 
 /** Distribuição mensal MÉDIA realizada (R$/mês) — útil para cálculo do IRPF
@@ -235,7 +236,13 @@ export function calcRetiradaSocio(
   );
 
   // Distribuição (proporcional à participação do sócio).
-  const limiteIsento = calcDistribuicaoIsentaLimite(state, regime);
+  // O limite calculado é da EMPRESA; para avaliar cada sócio, aplica-se a
+  // participação societária. Sem esse rateio, dois sócios poderiam consumir o
+  // mesmo teto integral e subestimar a parcela tributável.
+  const limiteEmpresa = calcDistribuicaoIsentaLimite(state, regime);
+  const limiteIsento = Number.isFinite(limiteEmpresa)
+    ? limiteEmpresa * (Math.max(0, socio.participacaoPct) / 100)
+    : limiteEmpresa;
   const distSocio = Math.max(0, distribuicaoMensalDisponivel);
   const distIsenta = Math.min(distSocio, limiteIsento);
   const distExcedente = Math.max(0, distSocio - distIsenta);
