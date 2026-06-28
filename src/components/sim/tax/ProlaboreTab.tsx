@@ -52,6 +52,16 @@ export function ProlaboreTab() {
     }
   }, [state, regime, payoutPct, reservaMin]);
 
+  // SSOT: Distribuição de dividendos no Fluxo de Caixa vem EXCLUSIVAMENTE
+  // do cálculo de Pró-labore × Distribuição de Lucros (payout mensal).
+  useEffect(() => {
+    if (readOnly) return;
+    const atual = state.cashflow.dividendos;
+    const alvo = MESES.map(() => payoutRS);
+    const igual = atual.length === 12 && atual.every((v, i) => Math.abs(v - alvo[i]) < 0.01);
+    if (!igual) patchCashflow({ dividendos: alvo as typeof atual });
+  }, [payoutRS, readOnly, state.cashflow.dividendos, patchCashflow]);
+
   const pct = (v: number) =>
     lucroBruto > 0 ? `${((v / lucroBruto) * 100).toFixed(1)}% do Lucro Bruto` : "—";
 
