@@ -156,12 +156,19 @@ export function calcDistribuicaoIsentaLimite(
   // "lucro presumido disponível" para distribuição isenta sem escrituração.
   const receitaBrutaAno = sum(state.revenue.bruta);
   const bases = getPresumidoBases(tax, state.businessType);
-  const basePresumida = receitaBrutaAno * (bases.irpj / 100); // base IRPJ (proxy)
+  const basePresumida = receitaBrutaAno * (bases.irpj / 100); // base IRPJ anual (proxy)
   // Tributos federais sobre essa base (aprox; superestima ligeiramente):
   const tributosFed =
     basePresumida * ((getIrpjPct(tax) + getCsllPct(tax)) / 100) +
     receitaBrutaAno * ((getPisCumPct(tax) + getCofinsCumPct(tax)) / 100);
-  const disponivelAno = Math.max(0, basePresumida - tributosFed);
+  // Adicional IRPJ (10%) sobre o excedente trimestral acima do gatilho
+  // (R$ 60k/trim por padrão). Sem isso, o teto de distribuição isenta fica
+  // SUPERESTIMADO em empresas com lucro alto — o adicional já saiu do caixa.
+  const baseTri = basePresumida / 4;
+  const gatilhoTri = getIrpjAdicionalGatilhoTri(tax);
+  const adicionalIrpjAno =
+    Math.max(0, baseTri - gatilhoTri) * (getIrpjAdicionalPct(tax) / 100) * 4;
+  const disponivelAno = Math.max(0, basePresumida - tributosFed - adicionalIrpjAno);
   return disponivelAno / 12;
 }
 
