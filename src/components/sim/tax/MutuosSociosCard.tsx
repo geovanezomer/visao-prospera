@@ -74,6 +74,43 @@ export function MutuosSociosCard() {
     }
   }, [agg, readOnly, state.cashflow.mutuosConcedidos, state.cashflow.mutuosDevolvidos, patchCashflow]);
 
+  // SSOT — Juros recebidos vão automaticamente para Receita Financeira na DRE.
+  // Como `cashflow.receitasFinanceiras` deriva de `revenue.receitasFinanceiras`
+  // via splitReceitasFinanceiras, o impacto no Fluxo de Caixa é automático.
+  // Linha de sistema (id `__mutuos_juros__`); recolhida quando não há juros.
+  useEffect(() => {
+    if (readOnly) return;
+    const MUTUO_JUROS_ID = "__mutuos_juros__";
+    const totalJuros = agg.juros.reduce((a, b) => a + b, 0);
+    update((s) => {
+      const list = s.revenue.receitasFinanceiras ?? [];
+      const semSystem = list.filter((d) => d.id !== MUTUO_JUROS_ID);
+      if (totalJuros <= 0.005) {
+        if (semSystem.length === list.length) return s;
+        return { ...s, revenue: { ...s.revenue, receitasFinanceiras: semSystem } };
+      }
+      const existente = list.find((d) => d.id === MUTUO_JUROS_ID);
+      const igual =
+        existente &&
+        existente.valores.length === 12 &&
+        existente.valores.every((v, i) => Math.abs(v - agg.juros[i]) < 0.01);
+      if (igual) return s;
+      const novaLinha = {
+        id: MUTUO_JUROS_ID,
+        label: "Juros sobre mútuo a sócios",
+        valores: agg.juros.slice() as typeof agg.juros,
+        fixed: false,
+        tipo: "financeira" as const,
+        custom: false,
+      };
+      return {
+        ...s,
+        revenue: { ...s.revenue, receitasFinanceiras: [...semSystem, novaLinha] },
+      };
+    });
+  }, [agg, readOnly, update]);
+
+
   const setMutuos = (next: MutuoSocio[]) =>
     update((s) => ({ ...s, mutuosSocios: next }));
 
