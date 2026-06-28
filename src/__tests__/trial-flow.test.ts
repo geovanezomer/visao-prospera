@@ -69,18 +69,18 @@ function makeClient(_token?: string) {
         async maybeSingle() {
           if (table === "trial_requests") {
             const row = db.trial_requests.find((r) =>
-              this._filters.every((f) => r[f.k] === f.v),
+              this._filters.every((f: { k: string; v: any }) => r[f.k] === f.v),
             );
             return { data: row ?? null, error: null };
           }
           if (table === "app_settings") {
-            const f = this._filters.find((x) => x.k === "key");
+            const f = this._filters.find((x: { k: string }) => x.k === "key");
             const value = f ? db.app_settings[f.v] : null;
             return { data: value ? { value } : null, error: null };
           }
           if (table === "email_settings") return { data: db.email_settings, error: null };
           if (table === "email_templates") {
-            const f = this._filters.find((x) => x.k === "kind");
+            const f = this._filters.find((x: { k: string }) => x.k === "kind");
             const row = db.email_templates.find((t) => t.kind === f?.v) ?? null;
             return { data: row, error: null };
           }
@@ -96,15 +96,23 @@ function makeClient(_token?: string) {
           }
           return { error: null };
         },
-        async delete() {
-          if (table === "trial_requests") {
-            const before = db.trial_requests.length;
-            db.trial_requests = db.trial_requests.filter(
-              (r) => !this._filters.every((f) => r[f.k] === f.v),
-            );
-            return { error: null, count: before - db.trial_requests.length };
-          }
-          return { error: null };
+        delete() {
+          const filters: Array<{ k: string; v: any }> = [];
+          const chain: any = {
+            eq(k: string, v: any) {
+              filters.push({ k, v });
+              return chain;
+            },
+            then(resolve: any) {
+              if (table === "trial_requests") {
+                db.trial_requests = db.trial_requests.filter(
+                  (r) => !filters.every((f) => r[f.k] === f.v),
+                );
+              }
+              resolve({ error: null });
+            },
+          };
+          return chain;
         },
         update(patch: any) {
           return {
@@ -123,6 +131,7 @@ function makeClient(_token?: string) {
       };
       return api;
     },
+
     rpc: async () => ({ data: [{ allowed: true, remaining: 100, retry_after_seconds: 0 }], error: null }),
     auth: {
       async getUser(token: string) {
