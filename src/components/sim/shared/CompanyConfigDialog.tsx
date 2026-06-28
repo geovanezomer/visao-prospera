@@ -705,7 +705,7 @@ function SociosSection() {
   const socios = state.socios ?? [];
 
   const setSocios = (next: SocioRetirada[]) =>
-    update((s) => applySociosChange(s, next, regime));
+    update((s) => ({ ...applySociosChange(s, next, regime), numSocios: next.length }));
 
   const addSocio = () => {
     const usado = socios.reduce((a, s) => a + s.participacaoPct, 0);
