@@ -4,7 +4,7 @@
 // e impede reuso do mesmo e-mail.
 // ============================================================================
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { clientIp, rlConsume } from "@/lib/rateLimit.server";
 
@@ -19,6 +19,20 @@ const DISPOSABLE = new Set([
   "mailinator.com", "guerrillamail.com", "tempmail.com", "10minutemail.com",
   "trashmail.com", "yopmail.com", "getnada.com", "discard.email",
 ]);
+
+type AdminClient = SupabaseClient<any, "public", any>;
+
+function appOrigin(request: Request): string {
+  const configured = (process.env.APP_URL || process.env.SITE_URL || "").replace(/\/$/, "");
+  if (configured) return configured;
+  return new URL(request.url).origin;
+}
+
+async function deleteTrialUser(admin: AdminClient, userId: string | null | undefined) {
+  if (!userId) return;
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) console.error("[trial] rollback deleteUser falhou:", error.message);
+}
 
 export const Route = createFileRoute("/api/public/trial/request")({
   server: {
@@ -50,10 +64,10 @@ export const Route = createFileRoute("/api/public/trial/request")({
           { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
         );
 
-        // 1) Já solicitou antes?
+        // 1) Já solicitou antes? A tabela é o lock permanente de 1 teste por e-mail.
         const { data: existing } = await admin
           .from("trial_requests")
-          .select("id")
+          .select("id,user_id")
           .eq("email", email)
           .maybeSingle();
         if (existing) {
@@ -95,20 +109,33 @@ export const Route = createFileRoute("/api/public/trial/request")({
           return Response.json({ error: "create_failed", detail: createErr?.message }, { status: 500 });
         }
 
-        // 4) Registra trial_requests (lock anti-reuso)
-        await admin.from("trial_requests").insert({
+        const userId = created.user.id;
+
+        // 4) Registra trial_requests antes de enviar e-mail. Se falhar, desfaz o usuário
+        // recém-criado para não deixar auth.users sem lock de trial.
+        const { error: insertErr } = await admin.from("trial_requests").insert({
           email, user_id: created.user.id, ip, expires_at: expiresAt,
         });
+        if (insertErr) {
+          await deleteTrialUser(admin, userId);
+          if (/duplicate|unique/i.test(insertErr.message)) {
+            return Response.json({ error: "already_used" }, { status: 409 });
+          }
+          console.error("[trial] insert trial_requests falhou:", insertErr.message);
+          return Response.json({ error: "request_register_failed" }, { status: 500 });
+        }
 
-        // 5) Gera magic link
-        const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
-        const redirectTo = appUrl ? `${appUrl}/app` : undefined;
+        // 5) Gera magic link apontando para o callback público. O callback hidrata
+        // a sessão no navegador e só então encaminha para /app.
+        const redirectTo = `${appOrigin(request)}/auth/callback`;
         const { data: linkRes, error: linkErr } = await admin.auth.admin.generateLink({
           type: "magiclink",
           email,
-          options: redirectTo ? { redirectTo } : undefined,
+          options: { redirectTo },
         });
         if (linkErr || !linkRes?.properties?.action_link) {
+          await deleteTrialUser(admin, userId);
+          await admin.from("trial_requests").delete().eq("email", email);
           return Response.json({ error: "link_failed", detail: linkErr?.message }, { status: 500 });
         }
         const actionLink = linkRes.properties.action_link;
@@ -125,7 +152,14 @@ export const Route = createFileRoute("/api/public/trial/request")({
         const fromEmail = emailCfg?.from_email || process.env.MAGICLINK_FROM;
         const fromName = emailCfg?.from_name || "Finnance";
 
-        if (apiKey && fromEmail && tpl?.enabled !== false) {
+        if (!apiKey || !fromEmail || tpl?.enabled === false) {
+          await deleteTrialUser(admin, userId);
+          await admin.from("trial_requests").delete().eq("email", email);
+          console.error("[trial] configuração de e-mail ausente ou template trial desativado.");
+          return Response.json({ error: "email_config_missing" }, { status: 500 });
+        }
+
+        {
           const name = email.split("@")[0];
           // Lê system_name de app_settings.branding se existir.
           const { data: brandingRow } = await admin
@@ -153,12 +187,13 @@ export const Route = createFileRoute("/api/public/trial/request")({
             }),
           });
           if (!sendRes.ok) {
-            // E-mail falhou — não cancelamos o usuário; retornamos warning.
+            // Sem e-mail, o usuário não recebe o acesso. Desfaz o trial para permitir
+            // nova tentativa depois da correção da configuração/entregabilidade.
+            await deleteTrialUser(admin, userId);
+            await admin.from("trial_requests").delete().eq("email", email);
             console.error("[trial] resend falhou:", sendRes.status, await sendRes.text());
-            return Response.json({ ok: true, sent: false }, { status: 200 });
+            return Response.json({ error: "email_send_failed" }, { status: 502 });
           }
-        } else {
-          console.warn("[trial] config Resend/template ausente — link gerado sem envio.");
         }
 
         return Response.json({ ok: true, sent: true, hours });
