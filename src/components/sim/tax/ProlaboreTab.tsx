@@ -136,8 +136,6 @@ export function ProlaboreTab() {
                 tone: "pos",
                 values: state.cashflow.aportes,
               },
-              {
-                key: "dividendos",
                 label: "Distribuição de dividendos",
                 hint: "Saída de caixa para distribuir lucros aos sócios.",
                 tone: "neg",
