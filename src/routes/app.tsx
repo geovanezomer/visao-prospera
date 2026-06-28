@@ -139,6 +139,10 @@ function SimulaPro() {
     const id = setInterval(() => setTick((n) => n + 1), 30_000);
     return () => clearInterval(id);
   }, []);
+  // Bloqueio do Consultor IA por usuário (admin controla em /admin → Usuários).
+  useEffect(() => {
+    if (user && user.aiEnabled === false && activeTab === "ai") setActiveTab("dashboard");
+  }, [user, activeTab]);
   const simulatedState = useMemo(() => applySimulator(state, simParams), [state, simParams]);
   const simActive = countActiveLevers(simParams);
 

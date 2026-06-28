@@ -16,7 +16,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  listAdminUsers, setUserActive, sendPasswordReset, revalidatePlan, refundPayment, resendMagicLink,
+  listAdminUsers, setUserActive, setUserAIEnabled, sendPasswordReset, revalidatePlan, refundPayment, resendMagicLink,
   type AdminUserRow, type AdminUserSort, type AdminUserFilters,
 } from "@/lib/admin/admin.functions";
 import { createManualUser, checkEmailAvailable } from "@/lib/admin/userDetail.functions";
@@ -87,6 +87,15 @@ export function UsersTab() {
       await setUserActive({ data: { userId: row.id, active: next } });
       toast.success(next ? "Reativado." : "Desativado.");
       setUsers((prev) => prev.map((u) => (u.id === row.id ? { ...u, isActive: next } : u)));
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
+    finally { setBusyId(null); }
+  };
+  const handleToggleAI = async (row: AdminUserRow, next: boolean) => {
+    setBusyId(row.id);
+    try {
+      await setUserAIEnabled({ data: { userId: row.id, enabled: next } });
+      toast.success(next ? "Consultor IA liberado." : "Consultor IA bloqueado.");
+      setUsers((prev) => prev.map((u) => (u.id === row.id ? { ...u, aiEnabled: next } : u)));
     } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
     finally { setBusyId(null); }
   };
@@ -220,15 +229,16 @@ export function UsersTab() {
                     Expira <ArrowUpDown className="h-3 w-3" />
                   </button>
                 </th>
+                <th className="p-2 text-center" title="Acesso ao Consultor IA na sidebar">I.A.</th>
                 <th className="p-2 text-center">Ativo</th>
                 <th className="p-2 text-right">Ações</th>
               </tr>
             </thead>
             <tbody>
               {loading && users.length === 0 ? (
-                <tr><td colSpan={7} className="p-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>
+                <tr><td colSpan={8} className="p-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>
               ) : users.length === 0 ? (
-                <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Nenhum usuário.</td></tr>
+                <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Nenhum usuário.</td></tr>
               ) : (
                 users.map((u) => (
                   <tr key={u.id} className="border-t border-border/40 hover:bg-muted/20">
@@ -251,6 +261,14 @@ export function UsersTab() {
                     </td>
                     <td className="p-2 text-muted-foreground">{fmt(u.createdAt)}</td>
                     <td className="p-2 text-muted-foreground">{fmt(u.currentPeriodEnd)}</td>
+                    <td className="p-2 text-center">
+                      <Switch
+                        checked={u.aiEnabled}
+                        disabled={busyId === u.id}
+                        onCheckedChange={(v) => handleToggleAI(u, v)}
+                        title={u.aiEnabled ? "Consultor IA liberado" : "Consultor IA bloqueado"}
+                      />
+                    </td>
                     <td className="p-2 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <Switch checked={u.isActive} disabled={busyId === u.id || u.isAdmin} onCheckedChange={(v) => handleToggle(u, v)} />

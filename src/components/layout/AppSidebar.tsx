@@ -98,7 +98,7 @@ export function AppSidebar({
       <SidebarContent className="py-2">
         <SidebarGroup>
           <SidebarMenu className="gap-0.5">
-            {NAV_ITEMS.map((item) => (
+            {NAV_ITEMS.filter((it) => it.value !== "ai" || user?.aiEnabled !== false).map((item) => (
               <SidebarMenuItem key={item.value}>
                 <SidebarMenuButton
                   isActive={activeTab === item.value}
