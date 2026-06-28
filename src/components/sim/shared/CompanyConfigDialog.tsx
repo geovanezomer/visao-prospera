@@ -124,11 +124,11 @@ interface Props {
 export function CompanyConfigDialog({ open, onOpenChange }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Configurar Empresa</DialogTitle>
           <DialogDescription>
-            Dados centralizados da empresa, regime tributário atual e período de análise.
+            Dados centralizados da empresa, regime tributário, sócios e período de análise.
             Estas configurações afetam cálculos em todas as abas.
           </DialogDescription>
         </DialogHeader>
