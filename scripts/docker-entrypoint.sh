@@ -34,6 +34,9 @@ fi
 # ---------- Bootstrap do banco (best-effort) ----------
 /app/scripts/db-bootstrap.sh || echo "[entrypoint] db-bootstrap retornou erro — seguindo mesmo assim."
 
+# ---------- Bootstrap do admin (best-effort) ----------
+/app/scripts/admin-bootstrap.sh || echo "[entrypoint] admin-bootstrap retornou erro — seguindo mesmo assim."
+
 # ---------- Servidor ----------
 echo "[entrypoint] Iniciando servidor em http://${HOST:-0.0.0.0}:${PORT:-3000}"
 exec node .output/server/index.mjs
