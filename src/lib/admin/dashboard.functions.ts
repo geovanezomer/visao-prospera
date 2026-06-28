@@ -174,6 +174,51 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
       else if (r.status === "processed" || r.status === "replayed") wOk++;
     }
 
+    // ── Funil de trial: requested → activated → converted ────────────────────
+    const { data: trialRows } = await supabaseAdmin
+      .from("trial_requests")
+      .select("email, user_id, created_at")
+      .limit(50000);
+    const requested = trialRows?.length ?? 0;
+    const activated = (trialRows ?? []).filter((r) => !!r.user_id).length;
+    const last30dRequested = (trialRows ?? []).filter(
+      (r) => r.created_at && new Date(r.created_at).getTime() >= d30,
+    ).length;
+
+    // Conversão real: cruza trial_requests.user_id com subscriptions ativas/lifetime/past_due.
+    const trialUserIds = new Set(
+      (trialRows ?? []).map((r) => r.user_id).filter((x): x is string => !!x),
+    );
+    let converted = 0;
+    let last30dConverted = 0;
+    let convTimeSumHours = 0;
+    let convTimeCount = 0;
+    const trialCreatedByUser = new Map<string, string>();
+    for (const r of trialRows ?? []) {
+      if (r.user_id && r.created_at) trialCreatedByUser.set(r.user_id, r.created_at);
+    }
+    const seenConverted = new Set<string>();
+    for (const s of subs ?? []) {
+      if (!trialUserIds.has(s.user_id)) continue;
+      if (!(s.status === "active" || s.status === "lifetime" || s.status === "past_due")) continue;
+      if (seenConverted.has(s.user_id)) continue;
+      seenConverted.add(s.user_id);
+      converted++;
+      const tCreated = trialCreatedByUser.get(s.user_id);
+      if (s.created_at && tCreated) {
+        const subT = new Date(s.created_at).getTime();
+        const trT = new Date(tCreated).getTime();
+        if (subT >= trT) {
+          convTimeSumHours += (subT - trT) / 3_600_000;
+          convTimeCount++;
+        }
+        if (subT >= d30) last30dConverted++;
+      }
+    }
+    const conversionRate = requested > 0 ? converted / requested : 0;
+    const activationRate = requested > 0 ? activated / requested : 0;
+    const avgTimeToConvertHours = convTimeCount > 0 ? convTimeSumHours / convTimeCount : 0;
+
     return {
       mrr: Math.round(mrr),
       arr: Math.round(mrr * 12),
@@ -190,6 +235,17 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
       byProvider,
       byPlan,
       webhook24h: { total: hooks?.length ?? 0, ok: wOk, failed: wFail },
+      trialFunnel: {
+        requested,
+        activated,
+        converted,
+        conversionRate,
+        activationRate,
+        avgTimeToConvertHours,
+        last30dRequested,
+        last30dConverted,
+      },
       generatedAt: new Date().toISOString(),
     };
+
   });
