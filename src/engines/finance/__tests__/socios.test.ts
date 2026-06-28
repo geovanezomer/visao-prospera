@@ -9,6 +9,8 @@ import {
   calcRetiradaSocio,
   otimizarProLabore,
   syncSociosToCosts,
+  calcDistribuicaoIsentaLimite,
+  getDistribuicaoRealizadaMeses,
   SOCIOS_PROLABORE_LINE_ID,
   SOCIOS_PATRONAL_LINE_ID,
 } from "../socios";
@@ -134,5 +136,46 @@ describe("socios — calcRetiradaSocio", () => {
     expect(r.inssPatronal).toBeCloseTo(1000, 2);
     expect(r.custoTotalPJ).toBeCloseTo(5000 + 1000, 2);
     expect(r.liquidoSocio).toBeGreaterThan(0);
+  });
+
+  it("rateia o limite isento da empresa pela participação do sócio", () => {
+    const state: AppState = {
+      ...DEFAULT_STATE,
+      tax: { ...DEFAULT_STATE.tax, regime: "presumido" },
+      revenue: { ...DEFAULT_STATE.revenue, bruta: Array(12).fill(150000) },
+    };
+    const limiteEmpresa = calcDistribuicaoIsentaLimite(state, "presumido");
+    const r = calcRetiradaSocio(
+      mkSocio({ participacaoPct: 50, prolaboreMensal: 5000 }),
+      state,
+      "presumido",
+      limiteEmpresa,
+    );
+    expect(r.distribuicaoIsentaMensal).toBeCloseTo(limiteEmpresa * 0.5, 2);
+    expect(r.distribuicaoTributavelMensal).toBeCloseTo(limiteEmpresa * 0.5, 2);
+  });
+});
+
+describe("socios — distribuição realizada", () => {
+  it("quando fixed=true, replica o primeiro mês como fonte de verdade", () => {
+    const state: AppState = {
+      ...DEFAULT_STATE,
+      distribuicaoRealizada: {
+        fixed: true,
+        values: [1000, 2000, 3000],
+      },
+    };
+    expect(getDistribuicaoRealizadaMeses(state)).toEqual(Array(12).fill(1000));
+  });
+
+  it("quando fixed=false, sanitiza para 12 meses sem perder sazonalidade", () => {
+    const state: AppState = {
+      ...DEFAULT_STATE,
+      distribuicaoRealizada: {
+        fixed: false,
+        values: [1000, Number.NaN, 3000],
+      },
+    };
+    expect(getDistribuicaoRealizadaMeses(state).slice(0, 4)).toEqual([1000, 0, 3000, 0]);
   });
 });

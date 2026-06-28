@@ -60,13 +60,23 @@ describe("buildCashFlow — PMR e PMP", () => {
     expect(cfCom.totais.saldoFinal - cfBase.totais.saldoFinal).toBeCloseTo(100000, 2);
   });
 
-  it("Capex sai como fluxo de investimento negativo", () => {
+  it("Capex ativado em Capital sai como fluxo de investimento negativo", () => {
     const s = createState({
-      cashflow: { capex: [50000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+      capital: {
+        capexAtivacao: [{ id: "capex-1", label: "Equipamento", valor: 50000, mes: 1, vidaUtilMeses: 60 }],
+      },
     });
     const cf = buildCashFlow(s);
     expect(cf.fluxoInvestimento[0]).toBe(-50000);
     expect(sum(cf.fluxoInvestimento)).toBe(-50000);
+  });
+
+  it("Capex manual legado em cashflow.capex não cria linha avulsa no Fluxo de Caixa", () => {
+    const s = createState({
+      cashflow: { capex: [50000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+    });
+    const cf = buildCashFlow(s);
+    expect(sum(cf.fluxoInvestimento)).toBe(0);
   });
 
   it("PDD aparece na DRE como despesa, mas NÃO entra em pagamentosFixos do caixa", () => {
