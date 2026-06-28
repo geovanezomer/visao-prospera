@@ -1,164 +1,66 @@
+# Previsão × Realizada — Distribuição de Lucros
 
-# Plano Revisado v2 — Otimização Pró-labore × Distribuição de Lucros
+## Por que mudar
 
-Mudanças desta revisão:
-1. **Zero hardcode tributário.** Todas as tabelas e alíquotas (INSS sócio, IRPF, salário mínimo, redução Lei 15.000/2025, limites de presunção) vivem em `taxDefaults.ts` no padrão atual e são editáveis na **lightbox de Configurações** (`TaxSettingsDialog.tsx`).
-2. **Card dedicado** "Pró-labore × Distribuição" dentro de `TaxTab.tsx`, separado dos cards de regime/Fator R, com seu próprio header, CRUD e otimizador.
-3. Tudo o mais (engine pura, separação de regex em `regime.ts`, `injectSociosCostLine`, card prescritivo, ordem de implementação) segue a v1 já validada.
+Hoje o sistema confunde **capacidade de distribuir** (cálculo a partir do lucro) com **distribuição efetivamente realizada** (decisão dos sócios). Empresas frequentemente seguram caixa, e isso precisa refletir em DRE/DFC/Balanço com precisão — inclusive no Adicional IRPJ de 10%, que incide sobre o **lucro tributável** (não sobre a retirada), mas o **IRPF do excedente** sim depende do que foi distribuído.
 
----
+## Proposta refinada (melhorando a sua)
 
-## A. Configuração — sem hardcode
+### Card "Pró-labore × Distribuição de Lucros — Previsão"
+- Renomear o título.
+- A tabela atual continua, mas com rótulo claro de **"Capacidade teórica (planejamento)"**.
+- Colunas de Distribuição (isenta/tributável) passam a ser **referência informativa**, com badge "Previsão" — NÃO alimentam mais Caixa/DRE/Balanço.
+- Pró-labore, INSS sócio, INSS patronal e IRPF do pró-labore **continuam** alimentando custos/DRE/caixa normalmente (isso é folha, é realizado por natureza).
 
-### A.1. `taxDefaults.ts` — novas constantes (defaults editáveis)
+### Bloco novo "Distribuição Realizada — 12 meses" (no rodapé do mesmo card, com separador)
+Linha única por sócio (ou agregada) com:
+- **Toggle "Fixar todos os meses"** (igual ao padrão de Receitas/Despesas): ligado → 1 input replica nos 12 meses; desligado → grid mês-a-mês.
+- **Botão "Usar Previsão"**: 1-clique copia a capacidade teórica para a Realizada (ajuda quem quer distribuir 100%).
+- **Botão "Zerar"**: caso a empresa decida segurar caixa.
+- Indicador visual abaixo: *"Distribuído R$ X de R$ Y disponíveis (Z%)"* — verde se ≤ teto isento, amarelo se acima.
 
-Seguir o padrão já estabelecido (`IRPJ_PCT`, `SIMPLES_TABLES_DEFAULT`, etc.):
+### Impactos sistêmicos (auditados)
 
-```typescript
-// === Pró-labore / Distribuição — defaults 2026, REVISAR ANUALMENTE ===
-export const SALARIO_MINIMO_DEFAULT = 1_518;          // Decreto anual
-export const INSS_SOCIO_ALIQ_DEFAULT = 0.11;          // contribuinte individual
-export const INSS_PATRONAL_ALIQ_DEFAULT = 0.20;       // Presumido/Real
-export const INSS_TETO_CONTRIB_DEFAULT = 8_475.55;    // Portaria MPS/MF
-export const IRPF_DEDUCAO_DEPENDENTE_DEFAULT = 189.59;
-export const IRPF_LIMITE_PGBL_PCT_DEFAULT = 0.12;
-export const IRPF_FAIXAS_DEFAULT: IrpfFaixa[] = [
-  { ate: 2_428.80, aliquota: 0,     deduzir: 0 },
-  { ate: 2_826.65, aliquota: 0.075, deduzir: 182.16 },
-  { ate: 3_751.05, aliquota: 0.15,  deduzir: 394.16 },
-  { ate: 4_664.68, aliquota: 0.225, deduzir: 675.49 },
-  { ate: Infinity, aliquota: 0.275, deduzir: 908.73 },
-];
-// Lei 15.000/2025 — desconto simplificado faixa R$5k–R$7,35k
-export const IRPF_REDUCAO_LEI_15000_DEFAULT = {
-  ativo: true,
-  isencaoAte: 5_000,
-  fimReducao: 7_350,
-};
-// Presumido sem ECD — % de presunção que vira limite de distribuição isenta
-export const PRESUMIDO_BASE_DISTRIB_ISENTA_DEFAULT = {
-  comercio: 0.08, servicos: 0.32, industria: 0.08,
-};
+| Módulo | Antes | Depois |
+|---|---|---|
+| **DFC** (Atividades de Financiamento → Dividendos) | Lia capacidade calculada via `state.cashflow.dividendos` sincronizado pelo `useEffect` | Lê **Distribuição Realizada** (soma por mês de todos os sócios) |
+| **DRE** | Distribuição não afeta DRE (correto — é destinação do lucro). Adicional IRPJ 10% já calculado sobre lucro presumido trimestral | **Inalterado**. Adicional IRPJ continua sobre lucro tributável (não sobre retirada) — está correto pela Lei 9.249/95 |
+| **Balanço** | Lucros Acumulados = ∑ Lucro Líquido − Dividendos pagos | Mesma fórmula, mas Dividendos pagos = Realizado (não mais Previsão) |
+| **IRPF do excedente** (coluna "Distribuição tributável") | Calculado sobre Previsão | Recalculado sobre **Realizado**: `max(0, Realizado − Limite isento) × alíquota topo` |
+| **Líquido sócio** | Pró-labore líq. + Distribuição prevista | Pró-labore líq. + Distribuição **realizada** (isenta + tributável líquida de IRPF) |
 
-export type IrpfFaixa = { ate: number; aliquota: number; deduzir: number };
+### UX — assimilação fácil
+1. **Hierarquia visual clara**: bloco Previsão em opacidade 90% + badge cinza "Planejamento". Bloco Realizada em destaque (borda accent) + badge verde "Efetivado em caixa".
+2. **Tooltip didático** no separador: *"A Previsão mostra quanto a empresa PODERIA distribuir sem violar limites legais. A Realizada é o que de fato saiu do caixa. DRE, Fluxo de Caixa e Balanço usam a Realizada."*
+3. **Alerta inteligente**: se Realizada > Capacidade isenta → banner amarelo *"R$ X excede o limite isento e será tributado a 27,5% IRPF na PF dos sócios."*
+4. **Alerta de retenção de caixa**: se Realizada < 50% da capacidade por 3+ meses → badge informativo *"Empresa está fortalecendo caixa (retendo R$ Y)."*
 
-export interface PayrollOverride {
-  salarioMinimo?: number;
-  inssSocioAliq?: number;
-  inssPatronalAliq?: number;
-  inssTetoContrib?: number;
-  irpfDeducaoDependente?: number;
-  irpfLimitePgblPct?: number;
-  irpfFaixas?: IrpfFaixa[];
-  irpfReducaoLei15000?: { ativo: boolean; isencaoAte: number; fimReducao: number };
-}
-```
+## Arquivos a alterar
 
-Acrescentar `payroll?: PayrollOverride` ao tipo de override já consumido pelo dialog (mesmo padrão de `taxRatesOverride`). Todos os reads dentro da engine fazem `state.tax.payroll?.X ?? X_DEFAULT`.
+1. **`src/engines/finance/types.ts`** — adicionar `distribuicaoRealizada: { id, socioId, values: number[], fixed: boolean }[]` no `AppState` (ou simplificar: `state.distribuicaoRealizada: number[]` agregada de 12 meses, já que rateio segue participação%).
+   - Decisão: **agregada 12 meses** (1 array) — replica o padrão de `cashflow.dividendos` que já existia; mais simples, e o rateio por sócio segue `participacaoPct`.
 
-### A.2. `TaxSettingsDialog.tsx` — novo passo "Folha / Sócios"
+2. **`src/engines/finance/socios.ts`**:
+   - Nova função `calcDistribuicaoRealizadaPorSocio(state, regime)` retornando isenta/tributável/IRPF **com base no array realizado**.
+   - `syncDistribuicaoToCashflow(state)` passa a usar `state.distribuicaoRealizada` em vez de capacidade.
+   - Manter `calcRetiradaSocio` para previsão (UI superior) e criar variante `calcRetiradaSocioRealizada` para o bloco inferior.
 
-Adicionar `{ key: "folha", label: "Folha", icon: Users }` à constante `STEPS` (entre `reforma` e `revisao`). Campos do passo:
-- Salário mínimo vigente (com nota "atualizar em janeiro").
-- INSS sócio (%) + teto de contribuição.
-- INSS patronal (%) — com badge "aplicado apenas em Presumido/Real".
-- Tabela IRPF editável (linhas dinâmicas: faixa / alíquota / parcela a deduzir) + dedução por dependente + limite PGBL.
-- Toggle "Aplicar redução Lei 15.000/2025" + dois campos de faixa.
+3. **`src/components/sim/tax/SociosCard.tsx`**:
+   - Renomear título.
+   - Adicionar `<Separator />` + novo sub-componente `DistribuicaoRealizadaBlock` (toggle fixo, grid 12m, botões Usar Previsão / Zerar, indicadores).
+   - Coluna "Distribuição tributável" passa a refletir Realizada (manter Previsão em tooltip).
 
-Botão **"Restaurar defaults 2026"** por seção, igual aos outros passos.
+4. **`src/components/sim/tax/ProlaboreTab.tsx`** — atualizar KPI "Disponível para Distribuição" para mostrar também "Realizado YTD".
 
-### A.3. Constantes versionadas por ano (futuro próximo, fora do MVP)
+5. **`src/components/sim/cashflow/DFCTable.tsx`** — já lê de `state.cashflow.dividendos`; vamos mantê-lo lendo daí, mas a sincronização passa a vir do realizado (não da previsão).
 
-Estrutura sugerida `TAX_DEFAULTS_BY_YEAR[2026|2027]` para o app oferecer "carregar tabela do ano X". Manter como nota de roadmap — no MVP basta o override editável.
+6. **`src/engines/finance/__tests__/socios.test.ts`** — adicionar testes: realizada=0 → caixa preservado; realizada > teto → IRPF excedente correto; realizada substitui previsão na sincronização.
 
----
+## Riscos / mitigações
+- **Migração de dados existentes**: usuários com `cashflow.dividendos` preenchido → na primeira carga, copiar para `distribuicaoRealizada` (one-shot migration em `defaults.ts` ou loader).
+- **Quebra de testes E2E**: `mutuosPassivos.test.ts` e fluxos de balanço — rodar suite após mudança.
 
-## B. Tipos — `src/engines/finance/types.ts`
+## Estimativa
+~5 arquivos editados, ~250 linhas líquidas, +6 testes. Sem mudança de schema do backend (puro client state).
 
-```typescript
-export interface SocioRetirada {
-  id: string;
-  nome: string;
-  participacaoPct: number;        // valida cláusula desproporcional
-  exerceFuncao: boolean;          // define piso de pró-labore
-  proLaboreMensal: number;
-  distribuicaoLucroMensal: number;
-  dependentes?: number;
-  previdenciaPrivadaMensal?: number;
-}
-// AppState.socios?: SocioRetirada[];
-```
-
----
-
-## C. Engine — `src/engines/finance/socios.ts`
-
-Funções públicas (todas recebem `state` ou `payroll: PayrollOverride` resolvido — **nenhuma constante hardcoded no corpo**):
-
-- `resolvePayroll(state)` → mescla `state.tax.payroll` com os DEFAULTs. Ponto único de leitura.
-- `calcularRetiradaSocio(input, regimeTributario, payroll): RetiradaResult` — inclui INSS sócio com teto, INSS patronal (apenas se `regime !== 'simples'`), IRPF com tabela editável, dedução por dependente, PGBL até `irpfLimitePgblPct`, redução Lei 15.000/2025 quando ativa. Retorna também `custoEmpresa = proLabore + inssPatronal`.
-- `limiteDistribuicaoIsenta(state): number` — Simples: lucro líquido contábil; Presumido sem ECD: `receita × basePresuncao − (IRPJ + CSLL + PIS + COFINS)`; Real: lucro líquido.
-- `pisoProLabore(socio, payroll): number` — `socio.exerceFuncao ? payroll.salarioMinimo : 0`.
-- `otimizarSplit(totalDesejado, regime, payroll, piso): Split[]` — analítico no Simples (ótimo = piso); busca ternária + verificação de breakpoints da tabela IRPF no Presumido/Real.
-- `injectSociosCostLines(state, payroll): CostLine[]` — gera (1) linha `__socios_prolabore__` (administrativa) e (2) linha `__socios_inss_patronal__` quando aplicável. Idempotente por `id`.
-
-Cobertura de testes (`__tests__/socios.test.ts`):
-- INSS sócio com/sem teto.
-- IRPF zerado na isenção, com dependentes, com PGBL no limite.
-- Comportamento da redução Lei 15.000/2025 ligada/desligada.
-- `limiteDistribuicaoIsenta` nos 3 regimes.
-- Otimizador: Simples → piso; Presumido → 3 cenários conferidos à mão.
-- Idempotência de `injectSociosCostLines`.
-- Override de `payroll` muda o resultado conforme esperado (sem hardcode).
-
----
-
-## D. `regime.ts` — Fator R correto + desambiguação de regex
-
-No mesmo PR, separar:
-- `PLR_EMPREGADO_RE` → continua entrando no Fator R.
-- `DISTRIB_SOCIO_RE` → **nunca** entra.
-- Somar `proLaboreMensal × 12` de `state.socios` (nunca distribuição).
-
-Testes de regressão obrigatórios no `cross-formulajs.test.ts`.
-
----
-
-## E. UI — card dedicado em `TaxTab.tsx`
-
-**Novo `ProLaboreCard.tsx`** (componente próprio em `src/components/sim/tax/`), renderizado abaixo dos cards de regime/Fator R no `TaxTab.tsx`. Estrutura:
-
-1. **Header**: título "Pró-labore × Distribuição de Lucros" + badge do regime atual + mini-explainer (1 linha) sobre o efeito do regime (Simples = sem 20% patronal; Presumido/Real = com).
-2. **Tabela de sócios** (CRUD): nome, participação, exerce função, pró-labore, distribuição, dependentes, PGBL. Padrão visual igual às listas de `CostLine`.
-3. **Linha por sócio**: bruto → INSS sócio → INSS patronal → IRPF → líquido pró-labore + distribuição → total líquido. Tooltip com a memória de cálculo (padrão `HelpHint.calc` já consolidado).
-4. **Bloco "Otimizar split"**: split atual × split ótimo, ganho líquido mensal/anual, **nota de base previdenciária** ("base do INSS cai de X para Y — considerar previdência complementar").
-5. **Alertas** (componente de alerta já usado em `crossValidation.ts`):
-   - distribuição total > `limiteDistribuicaoIsenta(state)`,
-   - split desproporcional sem cláusula no contrato social (informativo),
-   - pró-labore < piso quando `exerceFuncao`.
-6. **Badge cruzado**: "Pró-labore contribui com X% do Fator R atual (Y%)" — reaproveita o cálculo do card de Fator R existente.
-
----
-
-## F. Card prescritivo — `prescriptive.ts`
-
-Item novo `socios-split-subotimo`, severidade `info`, limiar mínimo R$ 100/mês de ganho, texto inclui aviso sobre base previdenciária.
-
----
-
-## G. Ordem de implementação
-
-1. `taxDefaults.ts` (constantes + tipo `PayrollOverride`) + passo "Folha" no `TaxSettingsDialog.tsx` — sem dependência de engine, validável visualmente.
-2. `socios.ts` + testes (engine pura, lendo overrides).
-3. Separação de regex + soma do pró-labore em `regime.ts` + testes de regressão.
-4. `injectSociosCostLines` + linha de INSS patronal + teste de DRE com e sem sócios.
-5. `ProLaboreCard.tsx` + integração em `TaxTab.tsx`.
-6. Card prescritivo.
-
----
-
-## H. Fora de escopo (registrar)
-
-- PJ-do-sócio (pejotização) — exige modelo legal próprio.
-- Tabelas por ano (`TAX_DEFAULTS_BY_YEAR`) — depois do MVP.
-- Comparativo com a calculadora CLT vs PJ existente.
+**Confirma o plano para eu implementar?**
