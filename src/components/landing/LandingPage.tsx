@@ -1308,8 +1308,7 @@ function FaqAccordion() {
 /* ============================================================
    CTA FINAL
    ============================================================ */
-function FinalCta() {
-  const [trialOpen, setTrialOpen] = useState(false);
+function FinalCta({ onRequestTrial }: { onRequestTrial: () => void }) {
   return (
     <section className="relative overflow-hidden py-28">
       <div
@@ -1352,13 +1351,12 @@ function FinalCta() {
 
           <button
             type="button"
-            onClick={() => setTrialOpen(true)}
+            onClick={onRequestTrial}
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-6 py-3.5 text-sm font-medium text-foreground transition hover:bg-card"
           >
             Solicitar teste
           </button>
         </div>
-        <TrialRequestDialog open={trialOpen} onOpenChange={setTrialOpen} />
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
@@ -1459,6 +1457,8 @@ function Footer() {
    EXPORT — composição final
    ============================================================ */
 export function LandingPage({ initialPlans }: { initialPlans?: any[] | null } = {}) {
+  const [trialOpen, setTrialOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
@@ -1476,9 +1476,10 @@ export function LandingPage({ initialPlans }: { initialPlans?: any[] | null } = 
         <div id="faq">
           <FaqAccordion />
         </div>
-        <FinalCta />
+        <FinalCta onRequestTrial={() => setTrialOpen(true)} />
       </main>
       <Footer />
+      <TrialRequestDialog open={trialOpen} onOpenChange={setTrialOpen} />
     </div>
   );
 }

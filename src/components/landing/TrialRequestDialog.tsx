@@ -33,19 +33,31 @@ export function TrialRequestDialog({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) return;
     setState({ kind: "loading" });
     try {
       const r = await fetch("/api/public/trial/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, website }),
+        body: JSON.stringify({ email: normalizedEmail, website }),
       });
-      const body = (await r.json().catch(() => ({}))) as { error?: string; hours?: number };
-      if (r.ok) { setState({ kind: "ok", hours: body.hours ?? 2 }); return; }
+      const body = (await r.json().catch(() => ({}))) as { error?: string; hours?: number; sent?: boolean };
+      if (r.ok && body.sent !== false) {
+        setEmail(normalizedEmail);
+        setState({ kind: "ok", hours: body.hours ?? 2 });
+        return;
+      }
+      if (r.ok && body.sent === false) {
+        setState({ kind: "err", msg: "Seu teste foi criado, mas o e-mail não pôde ser enviado agora. Tente novamente em alguns minutos ou fale com o suporte." });
+        return;
+      }
       if (r.status === 409) { setState({ kind: "already" }); return; }
       if (r.status === 429) { setState({ kind: "err", msg: "Muitas tentativas. Tente novamente em alguns minutos." }); return; }
       if (body.error === "disposable_email") { setState({ kind: "err", msg: "Use um e-mail corporativo ou pessoal válido." }); return; }
       if (body.error === "trial_disabled") { setState({ kind: "err", msg: "Testes gratuitos temporariamente desativados." }); return; }
+      if (body.error === "email_config_missing") { setState({ kind: "err", msg: "O envio de e-mail do teste ainda não está configurado corretamente. Fale com o administrador." }); return; }
+      if (body.error === "email_send_failed") { setState({ kind: "err", msg: "Não foi possível enviar o link de teste agora. Verifique o e-mail informado e tente novamente." }); return; }
       setState({ kind: "err", msg: "Não foi possível processar agora. Tente novamente." });
     } catch {
       setState({ kind: "err", msg: "Erro de rede. Verifique sua conexão." });
