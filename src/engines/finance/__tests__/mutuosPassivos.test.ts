@@ -30,7 +30,7 @@ function stateComMutuo(mutuo: MutuoPassivo) {
     label: "Juros sobre mútuos passivos (sócios)",
     category: "financeiro",
     values: agg.juros.slice() as CostLine["values"],
-    fixed: true,
+    fixed: false,
     custom: false,
   };
   const base = createState();
