@@ -71,7 +71,7 @@ export function RevenueTab() {
 
     // VERDADE ABSOLUTA: deriva Receita Operacional da DRE central.
     // Receita Operacional = Receita Líquida + Impostos sobre Venda (Receita antes da carga tributária).
-    const { dre } = buildDRE(state, state.tax.regime);
+    const { dre } = buildDRE(state, resolveEffectiveRegime(state));
     const liquidas = dre.receitaLiquida.map((rl, i) => rl + (dre.impostosVendas[i] || 0));
 
     const brutaAnual = sum(r.bruta);
