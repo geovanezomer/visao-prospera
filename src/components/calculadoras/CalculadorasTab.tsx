@@ -1,18 +1,53 @@
 /**
  * Aba "Calculadoras" — agrupa todas as calculadoras financeiras/trabalhistas
  * em sub-abas, renderizada dentro do shell do FinnancePRO (sidebar/header/footer).
+ *
+ * Cada calculadora é carregada via React.lazy (chunk separado, baixado só
+ * quando a aba é ativada). Ver `src/components/common/LazyTab.tsx`.
  */
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CustoFuncionarioCalc } from "@/components/calculadoras/CustoFuncionarioCalc";
-import { RescisaoCltCalc } from "@/components/calculadoras/RescisaoCltCalc";
-import { CltVsPjCalc } from "@/components/calculadoras/CltVsPjCalc";
-import { SalarioLiquidoCalc } from "@/components/calculadoras/SalarioLiquidoCalc";
-import { FeriasCltCalc } from "@/components/calculadoras/FeriasCltCalc";
-import { DecimoTerceiroCalc } from "@/components/calculadoras/DecimoTerceiroCalc";
-import { HorasExtrasCalc } from "@/components/calculadoras/HorasExtrasCalc";
-import { SacVsPriceCalc } from "@/components/calculadoras/SacVsPriceCalc";
-import { JurosCompostosCalc } from "@/components/calculadoras/JurosCompostosCalc";
-import { IndependenciaCalc } from "@/components/calculadoras/IndependenciaCalc";
+import { lazyNamed } from "@/components/common/LazyTab";
+
+const CustoFuncionarioCalc = lazyNamed(
+  () => import("@/components/calculadoras/CustoFuncionarioCalc"),
+  "CustoFuncionarioCalc",
+);
+const RescisaoCltCalc = lazyNamed(
+  () => import("@/components/calculadoras/RescisaoCltCalc"),
+  "RescisaoCltCalc",
+);
+const CltVsPjCalc = lazyNamed(
+  () => import("@/components/calculadoras/CltVsPjCalc"),
+  "CltVsPjCalc",
+);
+const SalarioLiquidoCalc = lazyNamed(
+  () => import("@/components/calculadoras/SalarioLiquidoCalc"),
+  "SalarioLiquidoCalc",
+);
+const FeriasCltCalc = lazyNamed(
+  () => import("@/components/calculadoras/FeriasCltCalc"),
+  "FeriasCltCalc",
+);
+const DecimoTerceiroCalc = lazyNamed(
+  () => import("@/components/calculadoras/DecimoTerceiroCalc"),
+  "DecimoTerceiroCalc",
+);
+const HorasExtrasCalc = lazyNamed(
+  () => import("@/components/calculadoras/HorasExtrasCalc"),
+  "HorasExtrasCalc",
+);
+const SacVsPriceCalc = lazyNamed(
+  () => import("@/components/calculadoras/SacVsPriceCalc"),
+  "SacVsPriceCalc",
+);
+const JurosCompostosCalc = lazyNamed(
+  () => import("@/components/calculadoras/JurosCompostosCalc"),
+  "JurosCompostosCalc",
+);
+const IndependenciaCalc = lazyNamed(
+  () => import("@/components/calculadoras/IndependenciaCalc"),
+  "IndependenciaCalc",
+);
 
 export function CalculadorasTab() {
   return (
@@ -38,36 +73,16 @@ export function CalculadorasTab() {
           <TabsTrigger value="independencia">Independência</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="custo-funcionario">
-          <CustoFuncionarioCalc />
-        </TabsContent>
-        <TabsContent value="rescisao">
-          <RescisaoCltCalc />
-        </TabsContent>
-        <TabsContent value="clt-vs-pj">
-          <CltVsPjCalc />
-        </TabsContent>
-        <TabsContent value="salario-liquido">
-          <SalarioLiquidoCalc />
-        </TabsContent>
-        <TabsContent value="ferias">
-          <FeriasCltCalc />
-        </TabsContent>
-        <TabsContent value="decimo-terceiro">
-          <DecimoTerceiroCalc />
-        </TabsContent>
-        <TabsContent value="horas-extras">
-          <HorasExtrasCalc />
-        </TabsContent>
-        <TabsContent value="sac-vs-price">
-          <SacVsPriceCalc />
-        </TabsContent>
-        <TabsContent value="juros-compostos">
-          <JurosCompostosCalc />
-        </TabsContent>
-        <TabsContent value="independencia">
-          <IndependenciaCalc />
-        </TabsContent>
+        <TabsContent value="custo-funcionario"><CustoFuncionarioCalc /></TabsContent>
+        <TabsContent value="rescisao"><RescisaoCltCalc /></TabsContent>
+        <TabsContent value="clt-vs-pj"><CltVsPjCalc /></TabsContent>
+        <TabsContent value="salario-liquido"><SalarioLiquidoCalc /></TabsContent>
+        <TabsContent value="ferias"><FeriasCltCalc /></TabsContent>
+        <TabsContent value="decimo-terceiro"><DecimoTerceiroCalc /></TabsContent>
+        <TabsContent value="horas-extras"><HorasExtrasCalc /></TabsContent>
+        <TabsContent value="sac-vs-price"><SacVsPriceCalc /></TabsContent>
+        <TabsContent value="juros-compostos"><JurosCompostosCalc /></TabsContent>
+        <TabsContent value="independencia"><IndependenciaCalc /></TabsContent>
       </Tabs>
     </div>
   );
