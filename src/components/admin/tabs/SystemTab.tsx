@@ -171,6 +171,10 @@ export function SystemTab() {
     if (s.footer) setFooter({ text: s.footer.text ?? "" });
     if (s.tracking) setTracking({ head: s.tracking.head ?? "", body_start: s.tracking.body_start ?? "", body_end: s.tracking.body_end ?? "" });
     if (s.landing_video) setLandingVideo({ enabled: Boolean(s.landing_video.enabled), url: s.landing_video.url ?? "" });
+    if (s.trial) setTrial({
+      enabled: Boolean(s.trial.enabled),
+      duration_hours: Math.min(72, Math.max(1, Number(s.trial.duration_hours ?? 2))),
+    });
   }, []);
 
   useEffect(() => {
