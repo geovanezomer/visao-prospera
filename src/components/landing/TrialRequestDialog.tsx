@@ -127,13 +127,16 @@ export function TrialRequestDialog({
 
         {(state.kind === "idle" || state.kind === "loading" || state.kind === "err") && (
           <form onSubmit={submit} className="space-y-4">
-            <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
+            <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-2">
               <p className="flex items-start gap-2">
                 <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                 <span>
                   Você recebe um <strong>link mágico</strong> por e-mail. Ao clicar, entra direto na plataforma — sem senha.
-                  O acesso é único por e-mail e expira no fim do período.
                 </span>
+              </p>
+              <p className="pl-5">
+                Seu acesso expira em <strong>{cfgHours}h</strong> a partir do envio do link.
+                Não deixe de verificar sua <strong>caixa de entrada</strong> e a pasta de <strong>spam</strong>.
               </p>
             </div>
             <div className="space-y-1.5">
