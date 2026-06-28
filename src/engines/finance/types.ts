@@ -21,6 +21,7 @@ export type TabKey =
   | "custos" // 2. CPV/CMV/CSP + fixos + variáveis + financeiros
   | "capital" // 3. Estrutura de capital, WACC, capex
   | "tributos" // 4. Regime tributário (Simples/Presumido/Real + reforma CBS/IBS)
+  | "prolabore" // 4b. Pró-labore × Distribuição de Lucros
   | "caixa" // 5. Fluxo de Caixa (DFC) + burn/runway
   | "governanca" // 6. Análise estratégica (concentração, governança, competitiva, regulatória)
   | "dre" // 7. DRE consolidada
@@ -37,6 +38,7 @@ export const TAB_KEYS: readonly TabKey[] = [
   "custos",
   "capital",
   "tributos",
+  "prolabore",
   "caixa",
   "governanca",
   "dre",
@@ -47,6 +49,7 @@ export const TAB_KEYS: readonly TabKey[] = [
   "simulador",
   "valuation",
 ] as const;
+
 
 export type BusinessType = "servicos" | "comercio" | "industria";
 export type TaxRegime = "simples" | "presumido" | "real";

@@ -17,6 +17,7 @@ const RevenueTab = lazy(() => import("@/components/sim/revenue/RevenueTab").then
 const CostsTab = lazy(() => import("@/components/sim/costs/CostsTab").then(m => ({ default: m.CostsTab })));
 const CapitalTab = lazy(() => import("@/components/sim/capital/CapitalTab").then(m => ({ default: m.CapitalTab })));
 const TaxTab = lazy(() => import("@/components/sim/tax/TaxTab").then(m => ({ default: m.TaxTab })));
+const ProlaboreTab = lazy(() => import("@/components/sim/tax/ProlaboreTab").then(m => ({ default: m.ProlaboreTab })));
 const DRETab = lazy(() => import("@/components/sim/dre/DRETab").then(m => ({ default: m.DRETab })));
 const BalancoTab = lazy(() => import("@/components/sim/balanco/BalancoTab").then(m => ({ default: m.BalancoTab })));
 const CashflowTab = lazy(() => import("@/components/sim/cashflow/CashflowTab").then(m => ({ default: m.CashflowTab })));
@@ -420,6 +421,7 @@ function SimulaPro() {
                         {activeTab === "custos" && <CostsTab />}
                         {activeTab === "capital" && <CapitalTab />}
                         {activeTab === "tributos" && <TaxTab />}
+                        {activeTab === "prolabore" && <ProlaboreTab />}
                         {activeTab === "caixa" && <CashflowTab />}
                         {activeTab === "governanca" && <StrategicTab />}
                         {activeTab === "dre" && <DRETab />}
