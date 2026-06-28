@@ -191,6 +191,10 @@ export function computeFluxos(args: {
   emprestimosCaptados: number[];
   amortizacoes: number[];
   dividendos: number[];
+  /** Empréstimos PJ→PF concedidos a sócios (saída). Opcional p/ retrocompat. */
+  mutuosConcedidos?: number[];
+  /** Devolução de empréstimos pelos sócios (entrada). Opcional p/ retrocompat. */
+  mutuosDevolvidos?: number[];
 }): {
   fluxoOperacional: number[];
   fluxoInvestimento: number[];
@@ -201,6 +205,8 @@ export function computeFluxos(args: {
   const fluxoInvestimento = zeros12();
   const fluxoFinanciamento = zeros12();
   const variacaoCaixa = zeros12();
+  const mutCon = args.mutuosConcedidos ?? zeros12();
+  const mutDev = args.mutuosDevolvidos ?? zeros12();
   for (let i = 0; i < 12; i++) {
     fluxoOperacional[i] =
       args.recebimentos[i] +
@@ -212,7 +218,12 @@ export function computeFluxos(args: {
       args.impostos[i];
     fluxoInvestimento[i] = -args.capex[i];
     fluxoFinanciamento[i] =
-      args.aportes[i] + args.emprestimosCaptados[i] - args.amortizacoes[i] - args.dividendos[i];
+      args.aportes[i] +
+      args.emprestimosCaptados[i] -
+      args.amortizacoes[i] -
+      args.dividendos[i] -
+      (mutCon[i] ?? 0) +
+      (mutDev[i] ?? 0);
     variacaoCaixa[i] = fluxoOperacional[i] + fluxoInvestimento[i] + fluxoFinanciamento[i];
   }
   return { fluxoOperacional, fluxoInvestimento, fluxoFinanciamento, variacaoCaixa };
