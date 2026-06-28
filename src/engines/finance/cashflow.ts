@@ -358,6 +358,8 @@ export function buildCashFlow(
     dividendos,
     mutuosConcedidos,
     mutuosDevolvidos,
+    mutuosPassivosCaptados,
+    mutuosPassivosAmortizados,
   });
 
   const { saldoInicial, saldoFinal } = computeSaldos(
