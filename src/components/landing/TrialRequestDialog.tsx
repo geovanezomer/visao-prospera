@@ -5,7 +5,7 @@
 //   • 409 already_used → "Você já testou. Escolha um plano."
 //   • 429 rate_limited / outros erros → mensagem amigável.
 // ============================================================================
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Mail, Loader2, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import {
@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
 
 type State =
   | { kind: "idle" }
