@@ -4,7 +4,7 @@
 // =====================================================================
 
 import { AppState } from "./types";
-import { sum } from "./format";
+import { sum, fmtBRLCompact } from "./format";
 import type { DRE } from "./dre";
 import type { Indicators } from "./indicators";
 
