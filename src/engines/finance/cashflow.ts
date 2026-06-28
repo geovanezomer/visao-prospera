@@ -380,9 +380,12 @@ export function buildCashFlow(
     mutuosPassivosAmortizados,
   });
 
+  // Permutas: somam direto à variação de caixa, fora de OP/INV/FIN.
+  const variacaoCaixa = fluxos.variacaoCaixa.map((v, i) => v + permutasLiquido[i]);
+
   const { saldoInicial, saldoFinal } = computeSaldos(
     capital.disponibilidades,
-    fluxos.variacaoCaixa,
+    variacaoCaixa,
   );
   const alertas = computeAlertas(saldoFinal, cashflow.caixaMinimo);
   const pior = computePiorMes(saldoFinal);
@@ -404,7 +407,10 @@ export function buildCashFlow(
     fluxoFinanciamento: fluxos.fluxoFinanciamento,
     capex,
     fluxoInvestimento: fluxos.fluxoInvestimento,
-    variacaoCaixa: fluxos.variacaoCaixa,
+    permutasCredito,
+    permutasDebito,
+    permutasLiquido,
+    variacaoCaixa,
     saldoFinal,
     alertas,
     contasReceberAnoSeguinte: rec.transbordo,
