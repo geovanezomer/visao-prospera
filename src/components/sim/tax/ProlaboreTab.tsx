@@ -11,7 +11,7 @@ import { StatCard } from "@/components/sim/shared/primitives";
 import { useFinance, usePatchCashflow, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { buildDRE } from "@/engines/finance/dre";
-import { syncSociosToCosts } from "@/engines/finance/socios";
+import { syncSociosToCosts, getDistribuicaoRealizadaMeses } from "@/engines/finance/socios";
 import { fmtBRL } from "@/engines/finance/format";
 
 export function ProlaboreTab() {
