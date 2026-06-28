@@ -120,6 +120,11 @@ export function ProlaboreTab() {
       </div>
       <SociosCard />
 
+      {/* Empréstimos a sócios (mútuo PJ→PF) — cadastro de contratos com
+          alerta tributário fixo. Sincroniza com Fluxo de Caixa via SSOT. */}
+      <MutuosSociosCard />
+
+
       {/* Movimentações de caixa não operacionais — movido da aba Fluxo de Caixa */}
       {!readOnly && (
         <div className="rounded-lg border border-border/60 border-l-4 border-l-[color:var(--primary)] bg-card/40">
