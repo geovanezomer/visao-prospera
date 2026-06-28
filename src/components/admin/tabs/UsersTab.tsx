@@ -262,6 +262,14 @@ export function UsersTab() {
                     <td className="p-2 text-muted-foreground">{fmt(u.createdAt)}</td>
                     <td className="p-2 text-muted-foreground">{fmt(u.currentPeriodEnd)}</td>
                     <td className="p-2 text-center">
+                      <Switch
+                        checked={u.aiEnabled}
+                        disabled={busyId === u.id}
+                        onCheckedChange={(v) => handleToggleAI(u, v)}
+                        title={u.aiEnabled ? "Consultor IA liberado" : "Consultor IA bloqueado"}
+                      />
+                    </td>
+                    <td className="p-2 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <Switch checked={u.isActive} disabled={busyId === u.id || u.isAdmin} onCheckedChange={(v) => handleToggle(u, v)} />
                         {u.isActive ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <XCircle className="h-3.5 w-3.5 text-red-500" />}
