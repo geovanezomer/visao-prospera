@@ -79,7 +79,7 @@ function Hero() {
             href="#planos"
             className="group inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:shadow-primary/40"
           >
-            Criar Conta
+            Ver Planos
             <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
           </a>
           <a
@@ -1345,7 +1345,7 @@ function FinalCta({ onRequestTrial }: { onRequestTrial: () => void }) {
             href="#planos"
             className="group inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-xl shadow-primary/30 transition hover:shadow-primary/50"
           >
-            Criar Conta
+            Ver Planos
             <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
           </a>
 
@@ -1445,7 +1445,7 @@ function Footer() {
             Entrar
           </Link>
           <a href="#planos" className="transition hover:text-foreground">
-            Criar Conta
+            Ver Planos
           </a>
         </div>
       </div>
