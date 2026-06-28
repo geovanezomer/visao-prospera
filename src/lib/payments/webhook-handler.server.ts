@@ -207,6 +207,25 @@ async function runEventLogic(
         .upsert(row as DbRow, { onConflict: "stripe_subscription_id" });
       if (error) throw new Error(error.message);
 
+      // ── Conversão de trial → pago: limpa flags de trial e registra timestamp.
+      try {
+        const { data: u } = await admin.auth.admin.getUserById(userId);
+        const meta = (u?.user?.user_metadata ?? {}) as Record<string, unknown>;
+        if (meta.is_trial) {
+          await admin.auth.admin.updateUserById(userId, {
+            user_metadata: {
+              ...meta,
+              is_trial: false,
+              trial_expires_at: null,
+              trial_converted_at: new Date().toISOString(),
+              trial_converted_plan: event.plan,
+            },
+          });
+        }
+      } catch (e) {
+        console.warn("[webhook] limpar flags trial falhou (ignorado):", e);
+      }
+
       // Vincula a intenção de compra (a mais recente do mesmo email/provider
       // ainda não confirmada) ao customer/subscription do provedor.
       try {

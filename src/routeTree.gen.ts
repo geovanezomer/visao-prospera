@@ -29,6 +29,7 @@ import { Route as ApiPublicPaymentsResendMagicLinkRouteImport } from './routes/a
 import { Route as ApiPublicPaymentsIntentStatusRouteImport } from './routes/api/public/payments/intent-status'
 import { Route as ApiPublicPaymentsCheckoutRouteImport } from './routes/api/public/payments/checkout'
 import { Route as ApiPublicHooksWebhookRetryRouteImport } from './routes/api/public/hooks/webhook-retry'
+import { Route as ApiPublicHooksTrialCleanupRouteImport } from './routes/api/public/hooks/trial-cleanup'
 import { Route as ApiPublicHooksReconcileCheckoutIntentsRouteImport } from './routes/api/public/hooks/reconcile-checkout-intents'
 import { Route as ApiPublicPaymentsWebhookStripeRouteImport } from './routes/api/public/payments/webhook.stripe'
 import { Route as ApiPublicPaymentsWebhookAsaasRouteImport } from './routes/api/public/payments/webhook.asaas'
@@ -137,6 +138,12 @@ const ApiPublicHooksWebhookRetryRoute =
     path: '/api/public/hooks/webhook-retry',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksTrialCleanupRoute =
+  ApiPublicHooksTrialCleanupRouteImport.update({
+    id: '/api/public/hooks/trial-cleanup',
+    path: '/api/public/hooks/trial-cleanup',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksReconcileCheckoutIntentsRoute =
   ApiPublicHooksReconcileCheckoutIntentsRouteImport.update({
     id: '/api/public/hooks/reconcile-checkout-intents',
@@ -173,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/checkout/sucesso': typeof CheckoutSucessoRoute
   '/shared/$shareId': typeof SharedShareIdRoute
   '/api/public/hooks/reconcile-checkout-intents': typeof ApiPublicHooksReconcileCheckoutIntentsRoute
+  '/api/public/hooks/trial-cleanup': typeof ApiPublicHooksTrialCleanupRoute
   '/api/public/hooks/webhook-retry': typeof ApiPublicHooksWebhookRetryRoute
   '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
   '/api/public/payments/intent-status': typeof ApiPublicPaymentsIntentStatusRoute
@@ -198,6 +206,7 @@ export interface FileRoutesByTo {
   '/checkout/sucesso': typeof CheckoutSucessoRoute
   '/shared/$shareId': typeof SharedShareIdRoute
   '/api/public/hooks/reconcile-checkout-intents': typeof ApiPublicHooksReconcileCheckoutIntentsRoute
+  '/api/public/hooks/trial-cleanup': typeof ApiPublicHooksTrialCleanupRoute
   '/api/public/hooks/webhook-retry': typeof ApiPublicHooksWebhookRetryRoute
   '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
   '/api/public/payments/intent-status': typeof ApiPublicPaymentsIntentStatusRoute
@@ -224,6 +233,7 @@ export interface FileRoutesById {
   '/checkout/sucesso': typeof CheckoutSucessoRoute
   '/shared/$shareId': typeof SharedShareIdRoute
   '/api/public/hooks/reconcile-checkout-intents': typeof ApiPublicHooksReconcileCheckoutIntentsRoute
+  '/api/public/hooks/trial-cleanup': typeof ApiPublicHooksTrialCleanupRoute
   '/api/public/hooks/webhook-retry': typeof ApiPublicHooksWebhookRetryRoute
   '/api/public/payments/checkout': typeof ApiPublicPaymentsCheckoutRoute
   '/api/public/payments/intent-status': typeof ApiPublicPaymentsIntentStatusRoute
@@ -251,6 +261,7 @@ export interface FileRouteTypes {
     | '/checkout/sucesso'
     | '/shared/$shareId'
     | '/api/public/hooks/reconcile-checkout-intents'
+    | '/api/public/hooks/trial-cleanup'
     | '/api/public/hooks/webhook-retry'
     | '/api/public/payments/checkout'
     | '/api/public/payments/intent-status'
@@ -276,6 +287,7 @@ export interface FileRouteTypes {
     | '/checkout/sucesso'
     | '/shared/$shareId'
     | '/api/public/hooks/reconcile-checkout-intents'
+    | '/api/public/hooks/trial-cleanup'
     | '/api/public/hooks/webhook-retry'
     | '/api/public/payments/checkout'
     | '/api/public/payments/intent-status'
@@ -301,6 +313,7 @@ export interface FileRouteTypes {
     | '/checkout/sucesso'
     | '/shared/$shareId'
     | '/api/public/hooks/reconcile-checkout-intents'
+    | '/api/public/hooks/trial-cleanup'
     | '/api/public/hooks/webhook-retry'
     | '/api/public/payments/checkout'
     | '/api/public/payments/intent-status'
@@ -327,6 +340,7 @@ export interface RootRouteChildren {
   CheckoutSucessoRoute: typeof CheckoutSucessoRoute
   SharedShareIdRoute: typeof SharedShareIdRoute
   ApiPublicHooksReconcileCheckoutIntentsRoute: typeof ApiPublicHooksReconcileCheckoutIntentsRoute
+  ApiPublicHooksTrialCleanupRoute: typeof ApiPublicHooksTrialCleanupRoute
   ApiPublicHooksWebhookRetryRoute: typeof ApiPublicHooksWebhookRetryRoute
   ApiPublicPaymentsCheckoutRoute: typeof ApiPublicPaymentsCheckoutRoute
   ApiPublicPaymentsIntentStatusRoute: typeof ApiPublicPaymentsIntentStatusRoute
@@ -478,6 +492,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksWebhookRetryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/trial-cleanup': {
+      id: '/api/public/hooks/trial-cleanup'
+      path: '/api/public/hooks/trial-cleanup'
+      fullPath: '/api/public/hooks/trial-cleanup'
+      preLoaderRoute: typeof ApiPublicHooksTrialCleanupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/reconcile-checkout-intents': {
       id: '/api/public/hooks/reconcile-checkout-intents'
       path: '/api/public/hooks/reconcile-checkout-intents'
@@ -520,6 +541,7 @@ const rootRouteChildren: RootRouteChildren = {
   SharedShareIdRoute: SharedShareIdRoute,
   ApiPublicHooksReconcileCheckoutIntentsRoute:
     ApiPublicHooksReconcileCheckoutIntentsRoute,
+  ApiPublicHooksTrialCleanupRoute: ApiPublicHooksTrialCleanupRoute,
   ApiPublicHooksWebhookRetryRoute: ApiPublicHooksWebhookRetryRoute,
   ApiPublicPaymentsCheckoutRoute: ApiPublicPaymentsCheckoutRoute,
   ApiPublicPaymentsIntentStatusRoute: ApiPublicPaymentsIntentStatusRoute,

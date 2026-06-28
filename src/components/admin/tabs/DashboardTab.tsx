@@ -3,7 +3,7 @@
 // ============================================================================
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, TrendingUp, Users as UsersIcon, AlertTriangle, Activity } from "lucide-react";
+import { Loader2, RefreshCw, TrendingUp, Users as UsersIcon, AlertTriangle, Activity, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getDashboardMetrics, type DashboardMetrics } from "@/lib/admin/dashboard.functions";
@@ -137,6 +137,19 @@ export function DashboardTab() {
         </div>
       </div>
 
+      {/* Funil de Trial */}
+      <div>
+        <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <Sparkles className="h-3.5 w-3.5" /> Funil de Trial (Landing → Magic Link → Pago)
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Card label="Solicitações" value={String(m.trialFunnel.requested)} sub={`${m.trialFunnel.last30dRequested} nos últimos 30d`} tone="info" />
+          <Card label="Ativados" value={String(m.trialFunnel.activated)} sub={`Taxa: ${pct(m.trialFunnel.activationRate)}`} />
+          <Card label="Convertidos" value={String(m.trialFunnel.converted)} sub={`${m.trialFunnel.last30dConverted} nos últimos 30d`} tone={m.trialFunnel.converted > 0 ? "ok" : undefined} />
+          <Card label="Conversão" value={pct(m.trialFunnel.conversionRate)} sub={m.trialFunnel.avgTimeToConvertHours > 0 ? `Tempo médio: ${m.trialFunnel.avgTimeToConvertHours.toFixed(1)}h` : "—"} tone="ok" />
+        </div>
+      </div>
+
       {/* Gráficos */}
       <div>
         <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -147,3 +160,4 @@ export function DashboardTab() {
     </div>
   );
 }
+
