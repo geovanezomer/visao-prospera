@@ -190,6 +190,20 @@ export interface SocioRetirada {
   modo: "manual" | "otimizar";
 }
 
+/** Contrato de mútuo PJ→PF (empréstimo da empresa para um sócio).
+ *  Registra principal, taxa, prazo e cronograma. O engine deriva
+ *  concessão/devolução/juros/saldo. ZERO hardcode tributário aqui. */
+export interface MutuoSocio {
+  id: string;
+  socioId?: string; // referencia opcional a SocioRetirada.id
+  nome: string; // nome do sócio para exibição (denormalizado)
+  valorConcedido: number; // R$ principal
+  mesConcessao: number; // 1..12 (mês da saída de caixa)
+  taxaMensalPct: number; // % a.m. (juros cobrados; ≥ SELIC mensal recomendado)
+  prazoMeses: number; // nº de parcelas de devolução
+  mesInicioDevolucao: number; // 1..12 (mês da 1ª parcela)
+}
+
 export interface CapitalStructure {
   proprio: number; // % capital próprio (E) — usado apenas como referência se dividaOnerosa/PL não preenchidos
   ke: number;
@@ -508,6 +522,11 @@ export interface CashFlowConfig {
   capex: Months;
   dividendos: Months;
   amortizacoes: Months;
+  /** Empréstimos concedidos a sócios (mútuo PJ→PF) — saída de caixa.
+   *  Derivado de state.mutuosSocios via aggregateMutuos (SSOT). */
+  mutuosConcedidos: Months;
+  /** Devolução de empréstimos por sócios (amortização do principal) — entrada de caixa. */
+  mutuosDevolvidos: Months;
 }
 
 // ============= Análise Estratégica (qualitativa, opcional) =============
@@ -643,6 +662,10 @@ export interface AppState {
   /** Sócios retirantes — Pró-labore × Distribuição de Lucros. Sincronizado
    *  bidirecionalmente com linhas system em `costs` via syncSociosToCosts. */
   socios?: SocioRetirada[];
+
+  /** Empréstimos PJ→PF concedidos aos sócios (mútuo ativo). Sincronizado
+   *  com cashflow.mutuosConcedidos/Devolvidos via aggregateMutuos (SSOT). */
+  mutuosSocios?: MutuoSocio[];
 }
 
 export interface Scenario {
