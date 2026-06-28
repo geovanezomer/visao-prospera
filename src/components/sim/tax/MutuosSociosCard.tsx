@@ -74,6 +74,43 @@ export function MutuosSociosCard() {
     }
   }, [agg, readOnly, state.cashflow.mutuosConcedidos, state.cashflow.mutuosDevolvidos, patchCashflow]);
 
+  // SSOT — Juros recebidos vão automaticamente para Receita Financeira na DRE.
+  // Como `cashflow.receitasFinanceiras` deriva de `revenue.receitasFinanceiras`
+  // via splitReceitasFinanceiras, o impacto no Fluxo de Caixa é automático.
+  // Linha de sistema (id `__mutuos_juros__`); recolhida quando não há juros.
+  useEffect(() => {
+    if (readOnly) return;
+    const MUTUO_JUROS_ID = "__mutuos_juros__";
+    const totalJuros = agg.juros.reduce((a, b) => a + b, 0);
+    update((s) => {
+      const list = s.revenue.receitasFinanceiras ?? [];
+      const semSystem = list.filter((d) => d.id !== MUTUO_JUROS_ID);
+      if (totalJuros <= 0.005) {
+        if (semSystem.length === list.length) return s;
+        return { ...s, revenue: { ...s.revenue, receitasFinanceiras: semSystem } };
+      }
+      const existente = list.find((d) => d.id === MUTUO_JUROS_ID);
+      const igual =
+        existente &&
+        existente.valores.length === 12 &&
+        existente.valores.every((v, i) => Math.abs(v - agg.juros[i]) < 0.01);
+      if (igual) return s;
+      const novaLinha = {
+        id: MUTUO_JUROS_ID,
+        label: "Juros sobre mútuo a sócios",
+        valores: agg.juros.slice() as typeof agg.juros,
+        fixed: false,
+        tipo: "financeira" as const,
+        custom: false,
+      };
+      return {
+        ...s,
+        revenue: { ...s.revenue, receitasFinanceiras: [...semSystem, novaLinha] },
+      };
+    });
+  }, [agg, readOnly, update]);
+
+
   const setMutuos = (next: MutuoSocio[]) =>
     update((s) => ({ ...s, mutuosSocios: next }));
 
@@ -258,7 +295,7 @@ export function MutuosSociosCard() {
                 <td className="px-3 py-2">Totais</td>
                 <td className="px-2 py-2 text-right font-mono">{fmtBRL(agg.totalConcedido)}</td>
                 <td colSpan={4} className="px-2 py-2 text-right text-muted-foreground">
-                  Juros recebidos no ano (Receita Financeira informativa):
+                  Juros recebidos no ano (lançados em Receita Financeira da DRE):
                 </td>
                 <td className="px-2 py-2 text-right font-mono text-pos">
                   {fmtBRL(agg.totalJurosAno)}
@@ -269,8 +306,9 @@ export function MutuosSociosCard() {
                 <td colSpan={6} className="px-3 py-2">
                   <Info className="mr-1 inline h-3 w-3" />
                   Saldo devedor remanescente ao fim do ano vai ao Balanço (Mútuos a Receber).
-                  Juros cobrados são apenas informativos — registre-os manualmente em Receitas
-                  Financeiras se desejar refletir na DRE.
+                  Juros são sincronizados automaticamente em Receitas → "Juros sobre mútuo a
+                  sócios" e refletem na DRE (Resultado Financeiro) e no Fluxo de Caixa
+                  Operacional.
                 </td>
                 <td className="px-2 py-2 text-right font-mono">{fmtBRL(agg.saldoFinal)}</td>
                 <td></td>
