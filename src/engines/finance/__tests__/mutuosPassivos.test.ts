@@ -70,19 +70,21 @@ describe("Mútuos Passivos (PF→PJ) — integração entre abas", () => {
 
   it("2. Fluxo de Caixa: Financiamento reflete captação (+) e amortização (−)", () => {
     const s = stateComMutuo(MUTUO);
-    const { dre } = buildDRE(s, s.tax.regime);
-    const cf = buildCashFlow(s, dre, s.tax.regime);
+    const cf = buildCashFlow(s, s.tax.regime);
     const agg = aggregateMutuosPassivos([MUTUO]);
 
-    // Financiamento mensal soma captação − amortização (entre outros itens).
-    // Validamos que os arrays expostos batem com o agregado.
-    expect(cf.financiamento.mutuosPassivosCaptados).toEqual(agg.captacao);
-    expect(cf.financiamento.mutuosPassivosAmortizados).toEqual(agg.amortizacao);
+    // SSOT: o cashflow do state expõe os arrays sincronizados pelo card.
+    expect(s.cashflow.mutuosPassivosCaptados).toEqual(agg.captacao);
+    expect(s.cashflow.mutuosPassivosAmortizados).toEqual(agg.amortizacao);
 
-    // O fluxo de financiamento do mês 1 deve incluir +120k de captação.
-    expect(cf.financiamento.fluxoFinanciamento[0]).toBeGreaterThanOrEqual(
-      agg.captacao[0] - 1,
-    );
+    // Variação líquida anual de financiamento incorpora (+captação − amortização).
+    const deltaEsperado =
+      agg.captacao.reduce((a, b) => a + b, 0) -
+      agg.amortizacao.reduce((a, b) => a + b, 0);
+    expect(cf.totais.fluxoFinanciamento).toBeGreaterThanOrEqual(deltaEsperado - 1);
+
+    // Mês da captação: fluxo de financiamento contém o ingresso de 120k.
+    expect(cf.fluxoFinanciamento[0]).toBeGreaterThanOrEqual(agg.captacao[0] - 1);
   });
 
   it("3. DRE: juros pagos entram em Resultado Financeiro como DESPESA", () => {
