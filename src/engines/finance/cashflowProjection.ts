@@ -176,9 +176,6 @@ export function projectCashflow(
 // Formatação markdown + spec finance-chart
 // ============================================================
 
-function fmtBRL(n: number): string {
-  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-}
 
 export function projectionToMarkdown(res: ProjecaoResult): string {
   const out: string[] = [];
