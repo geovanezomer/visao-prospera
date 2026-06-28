@@ -55,7 +55,16 @@ import { SaveShareDialog } from "@/components/sim/shared/SaveShareDialog";
 import { OpenRestoreDialog } from "@/components/sim/shared/OpenRestoreDialog";
 import { FeedbackDialog } from "@/components/sim/shared/FeedbackDialog";
 import { SharedLinksDialog } from "@/components/sim/shared/SharedLinksDialog";
+import { TrialBanner } from "@/components/TrialBanner";
 import { cn } from "@/lib/utils";
+
+// Renderiza o TrialBanner apenas se o usuário logado for um trial válido.
+function TrialBannerSlot() {
+  const { user } = useAuth();
+  const exp = (user?.metadata as { trial_expires_at?: string; is_trial?: boolean } | null | undefined);
+  if (!exp?.is_trial || !exp.trial_expires_at) return null;
+  return <TrialBanner expiresAt={exp.trial_expires_at} />;
+}
 
 // Fallback enquanto o chunk da aba carrega.
 function TabLoading() {
