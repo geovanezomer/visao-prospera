@@ -5,6 +5,7 @@
 import type { AppState } from "./types";
 import { buildCashFlow } from "./cashflow";
 import { resolveEffectiveRegime } from "./regime";
+import { fmtBRLCompact as fmtBRL } from "./format";
 
 /** Evento de captação de dívida no horizonte projetado. */
 export interface CaptacaoDivida {
