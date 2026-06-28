@@ -25,13 +25,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-import { fmtBRL } from "@/engines/finance/format";
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { fmtBRL } from "@/engines/finance/format";
 
 const fmtPct = (n: number) => `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 

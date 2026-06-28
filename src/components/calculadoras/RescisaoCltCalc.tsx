@@ -30,12 +30,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-import { fmtBRL } from "@/engines/finance/format";
   calcularRescisao,
   motivoDescricao,
   motivosLabel,
   type MotivoRescisao,
 } from "@/engines/calculadoras/rescisao";
+import { fmtBRL } from "@/engines/finance/format";
 
 
 export function RescisaoCltCalc() {

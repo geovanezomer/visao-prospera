@@ -39,13 +39,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-import { fmtBRL } from "@/engines/finance/format";
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { fmtBRL } from "@/engines/finance/format";
 
 const fmtBRLShort = (n: number) => {
   if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
