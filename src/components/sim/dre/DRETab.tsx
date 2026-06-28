@@ -137,10 +137,10 @@ export function DRETab() {
   }
   // Receitas Financeiras — separar genuínas (rendimentos de aplicações, juros recebidos)
   // das operacionais (aluguéis, venda de ativos). As operacionais JÁ entram no EBITDA via
-  // `dre.outrasReceitasOperacionais`; exibi-las também pós-EBIT causaria DUPLA CONTAGEM
-  // no Lucro Antes do Financiamento. Aqui, somente as financeiras genuínas vão pós-EBIT.
-  const { financeiras: receitasFinMensal, operacionais: outrasReceitasOpMensal } =
-    splitReceitasFinanceiras(state);
+  // `dre.outrasReceitasOperacionais` (SSOT da engine) — usamos esse array diretamente para
+  // evitar dupla contagem / divergência de cálculo.
+  const { financeiras: receitasFinMensal } = splitReceitasFinanceiras(state);
+  const outrasReceitasOpMensal = dre.outrasReceitasOperacionais;
   // Linhas detalhadas (somente genuinamente financeiras) p/ o accordion pós-EBIT.
   const linhasReceitasFin = (state.revenue.receitasFinanceiras ?? [])
     .filter((rf) => rf.id !== "alugueis" && rf.id !== "venda_ativos")
