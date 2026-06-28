@@ -14,9 +14,13 @@ import { useFinance } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { buildDRE } from "@/engines/finance/dre";
 import { fmtBRL } from "@/engines/finance/format";
-import { calcRetiradaSocio, syncSociosToCosts } from "@/engines/finance/socios";
-import { SectionTitle } from "@/components/sim/shared/primitives";
-import { getSalarioMinimo } from "@/engines/finance/taxDefaults";
+import {
+  calcRetiradaSocio,
+  syncSociosToCosts,
+  calcDistribuicaoIsentaBreakdown,
+} from "@/engines/finance/socios";
+import { SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
+import { getSalarioMinimo, getIrpfTable } from "@/engines/finance/taxDefaults";
 import { CompanyConfigDialog } from "@/components/sim/shared/CompanyConfigDialog";
 import { useState } from "react";
 
