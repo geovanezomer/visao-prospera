@@ -15,11 +15,11 @@ function assertAdmin(claims: AuthClaims | undefined | null) {
   }
 }
 
-const KEYS = ["branding", "login_texts", "footer", "active_provider", "tracking", "legal", "landing_video"] as const;
+const KEYS = ["branding", "login_texts", "footer", "active_provider", "tracking", "legal", "landing_video", "trial"] as const;
 export type SettingKey = (typeof KEYS)[number];
 
-/** Leitura pública — só chaves seguras para anon (branding/login/footer/tracking/legal/landing_video). */
-const PUBLIC_KEYS = ["branding", "login_texts", "footer", "tracking", "legal", "landing_video"] as const;
+/** Leitura pública — só chaves seguras para anon. `trial` é público para a landing saber se exibe o CTA. */
+const PUBLIC_KEYS = ["branding", "login_texts", "footer", "tracking", "legal", "landing_video", "trial"] as const;
 
 export const getAppSettings = createServerFn({ method: "GET" }).handler(async () => {
   const { createClient } = await import("@supabase/supabase-js");

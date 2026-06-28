@@ -9,6 +9,10 @@ export type AuthUser = {
   emailConfirmed: boolean;
   /** Acesso ao Consultor IA. Default = true; admin pode desativar via painel. */
   aiEnabled: boolean;
+  /** Marca usuário como teste gratuito (auto-logout ao expirar). */
+  isTrial: boolean;
+  /** ISO timestamp do fim do trial; null quando não-trial. */
+  trialExpiresAt: string | null;
 };
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
@@ -43,6 +47,8 @@ function toAuthUser(u: User | null | undefined): AuthUser | null {
     displayName,
     emailConfirmed: Boolean(u.email_confirmed_at),
     aiEnabled: meta.ai_enabled !== false,
+    isTrial: meta.is_trial === true,
+    trialExpiresAt: typeof meta.trial_expires_at === "string" ? meta.trial_expires_at : null,
   };
 }
 

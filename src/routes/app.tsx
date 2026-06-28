@@ -55,7 +55,15 @@ import { SaveShareDialog } from "@/components/sim/shared/SaveShareDialog";
 import { OpenRestoreDialog } from "@/components/sim/shared/OpenRestoreDialog";
 import { FeedbackDialog } from "@/components/sim/shared/FeedbackDialog";
 import { SharedLinksDialog } from "@/components/sim/shared/SharedLinksDialog";
+import { TrialBanner } from "@/components/TrialBanner";
 import { cn } from "@/lib/utils";
+
+// Renderiza o TrialBanner apenas se o usuário logado for um trial válido.
+function TrialBannerSlot() {
+  const { user } = useAuth();
+  if (!user?.isTrial || !user.trialExpiresAt) return null;
+  return <TrialBanner expiresAt={user.trialExpiresAt} />;
+}
 
 // Fallback enquanto o chunk da aba carrega.
 function TabLoading() {
@@ -225,6 +233,7 @@ function SimulaPro() {
           />
 
           <SidebarInset className="flex flex-col">
+            <TrialBannerSlot />
             <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/80 px-4 backdrop-blur sm:px-6">
               <div className="flex items-center gap-2 min-w-0">
                 <SidebarTrigger className="h-9 w-9" data-meeting-hide="true" />

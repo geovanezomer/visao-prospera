@@ -21,8 +21,9 @@ const KIND_LABEL: Record<TemplateKind, string> = {
   password_reset: "Redefinição de senha",
   refund: "Estorno",
   welcome: "Boas-vindas",
+  trial_magic_link: "Acesso de Teste (Trial)",
 };
-const VARS_HINT = "Variáveis: {{name}} {{link}} {{amount}} {{plan}}";
+const VARS_HINT = "Variáveis: {{name}} {{link}} {{amount}} {{plan}} {{hours}} {{system_name}}";
 
 export function EmailsTab() {
   const [loading, setLoading] = useState(true);

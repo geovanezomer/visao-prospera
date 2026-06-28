@@ -139,6 +139,7 @@ export function SystemTab() {
   const [footer, setFooter] = useState({ text: "" });
   const [tracking, setTracking] = useState({ head: "", body_start: "", body_end: "" });
   const [landingVideo, setLandingVideo] = useState({ enabled: false, url: "" });
+  const [trial, setTrial] = useState({ enabled: false, duration_hours: 2 });
 
   const [notif, setNotif] = useState<NotifSettings | null>(null);
   const [testing, setTesting] = useState(false);
@@ -153,6 +154,7 @@ export function SystemTab() {
       footer?: { text?: string };
       tracking?: { head?: string; body_start?: string; body_end?: string };
       landing_video?: { enabled?: boolean; url?: string };
+      trial?: { enabled?: boolean; duration_hours?: number };
     };
     if (s.branding) setBranding({
       system_name: s.branding.system_name ?? DEFAULT_BRANDING.system_name,
@@ -169,6 +171,10 @@ export function SystemTab() {
     if (s.footer) setFooter({ text: s.footer.text ?? "" });
     if (s.tracking) setTracking({ head: s.tracking.head ?? "", body_start: s.tracking.body_start ?? "", body_end: s.tracking.body_end ?? "" });
     if (s.landing_video) setLandingVideo({ enabled: Boolean(s.landing_video.enabled), url: s.landing_video.url ?? "" });
+    if (s.trial) setTrial({
+      enabled: Boolean(s.trial.enabled),
+      duration_hours: Math.min(72, Math.max(1, Number(s.trial.duration_hours ?? 2))),
+    });
   }, []);
 
   useEffect(() => {
@@ -209,6 +215,8 @@ export function SystemTab() {
         updateAppSetting({ data: { key: "footer", value: footer } }),
         updateAppSetting({ data: { key: "tracking", value: tracking } }),
         updateAppSetting({ data: { key: "landing_video", value: landingVideo } }),
+        updateAppSetting({ data: { key: "trial", value: trial } }),
+
 
         notif ? updateNotifSettings({ data: notif }) : Promise.resolve(),
       ]);
@@ -532,6 +540,47 @@ export function SystemTab() {
           </p>
         </div>
       </section>
+
+      <section className="space-y-4 rounded-lg border border-border/60 bg-card p-4 lg:col-span-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold">Teste gratuito (Trial) — Landing Page</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Quando ativo, exibe o botão <strong>"Solicitar teste"</strong> na landing. O usuário recebe um
+              link mágico por e-mail (Resend) e tem acesso completo pelo período definido. Após o término,
+              a sessão é encerrada automaticamente e ele é direcionado para a seção de planos. Um e-mail só
+              pode solicitar teste uma única vez.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-xs">
+            <Switch
+              checked={trial.enabled}
+              onCheckedChange={(c) => setTrial({ ...trial, enabled: c })}
+            />
+            <span>{trial.enabled ? "Ativo" : "Desativado"}</span>
+          </label>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-1">
+            <Label>Duração do teste (horas)</Label>
+            <Input
+              type="number" min={1} max={72} step={1}
+              value={trial.duration_hours}
+              onChange={(e) => setTrial({
+                ...trial,
+                duration_hours: Math.min(72, Math.max(1, Number(e.target.value) || 1)),
+              })}
+            />
+            <p className="text-[11px] text-muted-foreground">Entre 1 e 72 horas. Recomendado: 2h.</p>
+          </div>
+          <div className="rounded-md bg-muted/50 p-3 text-[11px] text-muted-foreground">
+            Requer template <strong>"Acesso de Teste (Trial)"</strong> ativo na aba <strong>E-mails</strong> e
+            credenciais Resend configuradas (chave e remetente).
+          </div>
+        </div>
+      </section>
+
+
 
 
 

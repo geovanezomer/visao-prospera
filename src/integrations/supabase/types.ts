@@ -560,6 +560,36 @@ export type Database = {
         }
         Relationships: []
       }
+      trial_requests: {
+        Row: {
+          consumed_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          ip: unknown
+          user_id: string | null
+        }
+        Insert: {
+          consumed_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          ip?: unknown
+          user_id?: string | null
+        }
+        Update: {
+          consumed_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          ip?: unknown
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_notes: {
         Row: {
           author_email: string | null

@@ -13,7 +13,7 @@ function assertAdmin(claims: AuthClaims | undefined | null) {
   }
 }
 
-const TEMPLATE_KINDS = ["magic_link", "receipt", "password_reset", "refund", "welcome"] as const;
+const TEMPLATE_KINDS = ["magic_link", "receipt", "password_reset", "refund", "welcome", "trial_magic_link"] as const;
 export type TemplateKind = (typeof TEMPLATE_KINDS)[number];
 
 function mask(v: string | null | undefined): string | null {
