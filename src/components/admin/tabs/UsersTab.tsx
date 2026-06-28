@@ -236,9 +236,9 @@ export function UsersTab() {
             </thead>
             <tbody>
               {loading && users.length === 0 ? (
-                <tr><td colSpan={7} className="p-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>
+                <tr><td colSpan={8} className="p-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>
               ) : users.length === 0 ? (
-                <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Nenhum usuário.</td></tr>
+                <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Nenhum usuário.</td></tr>
               ) : (
                 users.map((u) => (
                   <tr key={u.id} className="border-t border-border/40 hover:bg-muted/20">
