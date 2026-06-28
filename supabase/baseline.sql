@@ -294,6 +294,20 @@ DROP FUNCTION IF EXISTS public.get_active_plan(uuid);
 REVOKE ALL ON FUNCTION public.get_active_plan() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_active_plan() TO authenticated;
 
+-- Garante que a função exista antes do REVOKE/GRANT (definição final reaparece adiante)
+CREATE OR REPLACE FUNCTION public.has_active_subscription(_user_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.subscriptions
+    WHERE user_id = _user_id
+      AND status IN ('active','trialing','lifetime')
+  )
+$$;
+
 REVOKE ALL ON FUNCTION public.has_active_subscription(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.has_active_subscription(uuid) TO authenticated, service_role;
 
