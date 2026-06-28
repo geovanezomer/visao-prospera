@@ -107,8 +107,8 @@ export function snapshot(state: AppState, pre?: PrescriptivePrecomputed): Metric
   // Usa regime efetivo (Simples pode ter excedido limite).
   const built = pre ?? (() => {
     const { dre, tax } = buildDRE(state, resolveEffectiveRegime(state));
-    const ind = calcIndicators(state, dre);
     const cf = buildCashFlow(state);
+    const ind = calcIndicators(state, dre, cf);
     return { dre, tax, ind, cf };
   })();
   const { dre, tax, ind, cf } = built;
