@@ -127,13 +127,6 @@ export function ProlaboreTab() {
                 values: state.cashflow.aportes,
               },
               {
-                key: "emprestimosCaptados",
-                label: "Captação de empréstimos (avulso)",
-                hint: "Use apenas para captações pontuais que NÃO virarão contrato cadastrado. O ideal é cadastrar como Contrato de Dívida em Capital — isso integra amortização, juros, DSCR e cobertura automaticamente.",
-                tone: "pos",
-                values: state.cashflow.emprestimosCaptados,
-              },
-              {
                 key: "dividendos",
                 label: "Distribuição de dividendos",
                 hint: "Saída de caixa para distribuir lucros aos sócios.",

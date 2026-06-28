@@ -204,6 +204,30 @@ export function DebtContractsCard({
                         />
                       </Field>
                       <Field
+                        label="Mês da captação (1–12)"
+                        hint="Mês do ano em que o desembolso (entrada de caixa) acontece. Deixe vazio (0) para contrato já existente — sem nova captação no ano. Alimenta automaticamente a linha '(+) Captação de empréstimos' no Fluxo de Caixa."
+                      >
+                        <input
+                          type="number"
+                          step="1"
+                          min={0}
+                          max={12}
+                          value={c.mesCaptacao ?? 0}
+                          onChange={(e) => update(c.id, { mesCaptacao: Math.max(0, Math.min(12, Math.floor(Number(e.target.value) || 0))) })}
+                          className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm outline-none focus:border-primary"
+                        />
+                      </Field>
+                      <Field
+                        label="Valor captado (R$)"
+                        hint="Valor liberado pelo banco no mês da captação. Aparece como (+) Captação de empréstimos no DFC. Para contratos antigos sem nova captação no ano, deixe 0."
+                      >
+                        <MoneyInput
+                          value={c.valorCaptado ?? 0}
+                          onChange={(n) => update(c.id, { valorCaptado: n })}
+                        />
+                      </Field>
+
+                      <Field
                         label="Tipo de credor"
                         hint="Quem emprestou o dinheiro. Fomento (BNDES, FINEP, bancos de desenvolvimento) costuma ter taxa mais baixa. Sócio = empréstimo do dono à empresa (mútuo) — exige contrato formal."
                       >

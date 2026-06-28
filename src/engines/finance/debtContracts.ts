@@ -52,6 +52,7 @@ export function scheduleContract(c: DebtContract): ContractSchedule {
 export function aggregateContracts(contracts: DebtContract[]) {
   const juros = new Array(12).fill(0);
   const amort = new Array(12).fill(0);
+  const captacao = new Array(12).fill(0);
   let saldoTotal = 0;
   let parcelaMesTotal = 0;
   for (const c of contracts) {
@@ -62,16 +63,23 @@ export function aggregateContracts(contracts: DebtContract[]) {
     }
     saldoTotal += Math.max(0, c.saldoDevedor || 0);
     parcelaMesTotal += s.parcelaMes;
+    // Captação: novo desembolso no mês informado (1..12).
+    const m = Math.floor(c.mesCaptacao || 0);
+    const v = Math.max(0, c.valorCaptado || 0);
+    if (m >= 1 && m <= 12 && v > 0) captacao[m - 1] += v;
   }
   return {
     juros,
     amort,
+    captacao,
     saldoTotal,
     parcelaMesTotal,
     totalJurosAno: juros.reduce((s, v) => s + v, 0),
     totalAmortAno: amort.reduce((s, v) => s + v, 0),
+    totalCaptacaoAno: captacao.reduce((s, v) => s + v, 0),
   };
 }
+
 
 /** Converte prazo em meses (a partir de hoje) para rótulo "Mmm/AAAA". */
 export function vencimentoLabel(prazoMeses: number, from = new Date()): string {

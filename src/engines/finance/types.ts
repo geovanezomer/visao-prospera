@@ -419,6 +419,10 @@ export interface DebtContract {
   garantia?: string;
   /** Observações livres do consultor. */
   observacoes?: string;
+  /** Mês (1..12) em que ocorre a captação (novo desembolso). Se omitido, considera-se contrato pré-existente (sem captação no ano). */
+  mesCaptacao?: number;
+  /** Valor captado no `mesCaptacao` (R$). Entra como (+) Captação de empréstimos no DFC. */
+  valorCaptado?: number;
 }
 
 export interface CapexAtivacao {
