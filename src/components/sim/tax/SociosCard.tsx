@@ -152,8 +152,27 @@ export function SociosCard() {
                 <th className="px-2 py-2 font-medium text-right">INSS sócio</th>
                 <th className="px-2 py-2 font-medium text-right">INSS patronal</th>
                 <th className="px-2 py-2 font-medium text-right">IRPF</th>
-                <th className="px-2 py-2 font-medium text-right">Distribuição isenta</th>
-                <th className="px-2 py-2 font-medium text-right">Distribuição tributável</th>
+                <th className="px-2 py-2 font-medium text-right">
+                  <span className="inline-flex items-center gap-1">
+                    Distribuição isenta
+                    <HelpTip
+                      text={isentaHint.description}
+                      formula={isentaHint.formula}
+                      calc={isentaHint.calc}
+                    />
+                  </span>
+                </th>
+                <th className="px-2 py-2 font-medium text-right">
+                  <span className="inline-flex items-center gap-1">
+                    Distribuição tributável
+                    <HelpTip
+                      text={tribHint.description}
+                      formula={tribHint.formula}
+                      calc={tribHint.calc}
+                      example={tribHint.example}
+                    />
+                  </span>
+                </th>
                 <th className="px-2 py-2 font-medium text-right">Líquido sócio (mês)</th>
                 <th className="px-2 py-2 font-medium text-right">Custo PJ (mês)</th>
               </tr>
