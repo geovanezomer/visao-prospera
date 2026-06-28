@@ -28,6 +28,7 @@ export type LoginTexts = {
 };
 export type Footer = { text: string };
 export type LandingVideo = { enabled: boolean; url: string };
+export type Trial = { enabled: boolean; durationHours: number };
 
 const DEFAULTS = {
   branding: { systemName: "Finnance", logoUrl: null, faviconUrl: null, authorPhotoUrl: null, recolorLogo: false } as Branding,
@@ -39,6 +40,7 @@ const DEFAULTS = {
   } as LoginTexts,
   footer: { text: "Desenvolvido por GZ Consultoria Financeira & Investimentos" } as Footer,
   landing_video: { enabled: false, url: "" } as LandingVideo,
+  trial: { enabled: false, durationHours: 2 } as Trial,
 };
 
 type AppSettingsShape = {
@@ -46,6 +48,7 @@ type AppSettingsShape = {
   login_texts?: { headline?: string; subheadline?: string; cta?: string };
   footer?: { text?: string };
   landing_video?: { enabled?: boolean; url?: string };
+  trial?: { enabled?: boolean; duration_hours?: number };
 };
 
 export function useBranding() {
