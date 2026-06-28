@@ -82,11 +82,7 @@ const formSchema = z.object({
     .int("Use um número inteiro")
     .min(0, "Não pode ser negativo")
     .max(100000, "Valor irreal"),
-  numSocios: z
-    .number({ invalid_type_error: "Informe um número" })
-    .int("Use um número inteiro")
-    .min(0, "Não pode ser negativo")
-    .max(1000, "Valor irreal"),
+  // numSocios removido: agora é derivado de state.socios.length na seção Sócios.
   regime: z.enum(["simples", "presumido", "real"]),
   periodoAnaliseMeses: z.union([
     z.literal(6),
@@ -211,7 +207,7 @@ export function CompanyConfigForm({
           ? d.benchmarkCustom
           : undefined,
       numColaboradores: d.numColaboradores,
-      numSocios: d.numSocios,
+      
       headcountRange: rangeFromNumber(d.numColaboradores),
       periodoAnaliseMeses: d.periodoAnaliseMeses,
       fiscalYearStartMonth: d.fiscalYearStartMonth,
@@ -436,26 +432,8 @@ export function CompanyConfigForm({
               Base para indicadores de produtividade (Receita/Colaborador, Lucro/Colaborador etc.).
             </p>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="numSocios">Número de sócios / acionistas *</Label>
-            <Input
-              id="numSocios"
-              type="number"
-              min={0}
-              max={1000}
-              step={1}
-              value={Number.isFinite(form.numSocios) ? form.numSocios : 0}
-              onChange={(e) =>
-                commit({
-                  ...form,
-                  numSocios: Math.max(0, Math.floor(Number(e.target.value) || 0)),
-                })
-              }
-            />
-            <p className="text-[10px] text-muted-foreground">
-              Usado em análise de governança (concentração societária, risco-chave, sucessão).
-            </p>
-          </div>
+          {/* Campo "Número de sócios / acionistas" removido: derivado automaticamente
+              do cadastro de sócios (seção abaixo). */}
         </div>
       </section>
 
@@ -641,7 +619,7 @@ function buildFormFromState(state: AppState): FormData {
     ramoAtuacao: ramoEfetivo,
     benchmarkCustom: state.benchmarkCustom,
     numColaboradores: inferNum(),
-    numSocios: typeof state.numSocios === "number" ? state.numSocios : 1,
+    
     regime: state.tax.regime,
     periodoAnaliseMeses: state.periodoAnaliseMeses ?? 12,
     fiscalYearStartMonth: state.fiscalYearStartMonth ?? 1,
@@ -726,8 +704,16 @@ function SociosSection() {
   const regime = resolveEffectiveRegime(state);
   const socios = state.socios ?? [];
 
+  // Mantém state.numSocios sincronizado com o tamanho do cadastro (SSOT).
+  // Substitui o antigo campo manual "Número de sócios / acionistas".
+  useEffect(() => {
+    if (state.numSocios !== socios.length) {
+      update({ numSocios: socios.length });
+    }
+  }, [socios.length, state.numSocios, update]);
+
   const setSocios = (next: SocioRetirada[]) =>
-    update((s) => applySociosChange(s, next, regime));
+    update((s) => ({ ...applySociosChange(s, next, regime), numSocios: next.length }));
 
   const addSocio = () => {
     const usado = socios.reduce((a, s) => a + s.participacaoPct, 0);
