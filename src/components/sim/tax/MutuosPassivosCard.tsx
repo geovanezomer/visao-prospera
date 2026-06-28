@@ -111,7 +111,9 @@ export function MutuosPassivosCard() {
         label: "Juros sobre mútuos passivos (sócios)",
         category: "financeiro",
         values: agg.juros.slice() as CostLine["values"],
-        fixed: true,
+        // Juros Price variam por mês — NÃO marcar como fixed, senão a engine
+        // replicaria o valor-base nos 12 meses (perda de fidelidade da DRE).
+        fixed: false,
         custom: false,
       };
       return { ...s, costs: [...semSystem, novaLinha] };
