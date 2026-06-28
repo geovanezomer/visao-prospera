@@ -30,7 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Capital", icon: Wallet, value: "capital" },
   { title: "Receitas", icon: Receipt, value: "receitas" },
   { title: "Despesas", icon: ReceiptText, value: "custos" },
-  { title: "Pró-labore", icon: Users, value: "prolabore" },
+  { title: "Retiradas e Aportes", icon: Users, value: "prolabore" },
   { title: "Fluxo de Caixa", icon: BarChart3, value: "caixa" },
   { title: "Regime Tributário", icon: Gavel, value: "tributos" },
   { title: "DRE", icon: FileSpreadsheet, value: "dre" },
