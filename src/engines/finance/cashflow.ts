@@ -338,6 +338,8 @@ export function buildCashFlow(
   const dividendos = cashflow.dividendos.slice();
   const mutuosConcedidos = (cashflow.mutuosConcedidos ?? zeros12()).slice();
   const mutuosDevolvidos = (cashflow.mutuosDevolvidos ?? zeros12()).slice();
+  const mutuosPassivosCaptados = (cashflow.mutuosPassivosCaptados ?? zeros12()).slice();
+  const mutuosPassivosAmortizados = (cashflow.mutuosPassivosAmortizados ?? zeros12()).slice();
   // SSOT: CAPEX = manual (cashflow.capex) + ativações de imobilizado (capital.capexAtivacao).
   const capex = computeCapexMensal(state);
 
