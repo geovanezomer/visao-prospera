@@ -6,7 +6,7 @@ import { useEffect, useMemo } from "react";
 import { SociosCard } from "./SociosCard";
 import { MutuosSociosCard } from "./MutuosSociosCard";
 import { MutuosPassivosCard } from "./MutuosPassivosCard";
-import { PermutasCard } from "./PermutasCard";
+
 import { StatCard } from "@/components/sim/shared/primitives";
 import { useFinance, usePatchCashflow, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
