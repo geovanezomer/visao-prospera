@@ -79,46 +79,37 @@ export function BrandingApplier() {
 
 
 
-  // Favicon — substitui o href do <link rel="icon"> existente (SSR ou default).
+  // Favicon — atualiza apenas o href do <link rel="icon"> já emitido no SSR.
+  // NÃO criamos/removemos o nó: o React controla o <head>, e qualquer
+  // appendChild/removeChild aqui causa "Failed to execute 'removeChild' on
+  // 'Node': The node to be removed is not a child of this node" na próxima
+  // reconciliação do head (erro reportado em produção no VPS).
   useEffect(() => {
     const url = (data?.branding as any)?.favicon_url as string | undefined;
     if (!url) return;
-    let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
-    if (!link) {
-      link = document.createElement("link");
-      link.rel = "icon";
-      document.head.appendChild(link);
-    }
-    if (link.href !== url) link.href = url;
+    const link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+    if (link && link.href !== url) link.href = url;
   }, [data]);
 
-  // Cores — reusa/atualiza o <style id="branding-colors"> emitido no SSR.
-  // Como o id é o mesmo, não há duplicação e não há flash em saves do admin.
+  // Cores — atualiza apenas o textContent do <style id="branding-colors">
+  // emitido no SSR. Mesmo motivo do favicon: nunca remover/criar o nó.
+  // Quando não há cor custom, esvaziamos o conteúdo (volta ao tema padrão).
   useEffect(() => {
     const colors = (data?.branding as any)?.colors as
       | { primary?: string; accent?: string }
       | undefined;
-    const styleId = "branding-colors";
-    const existing = document.getElementById(styleId) as HTMLStyleElement | null;
+    const existing = document.getElementById("branding-colors") as HTMLStyleElement | null;
+    if (!existing) return; // SSR garante a presença; se faltar, não forçamos.
 
     if (!colors?.primary) {
-      // Admin removeu as cores customizadas — remove o override.
-      if (existing) existing.remove();
+      if (existing.textContent) existing.textContent = "";
       return;
     }
 
     const fg = contrastForeground(colors.primary);
     const accent = colors.accent ?? colors.primary;
     const css = `:root,.dark{--primary:${colors.primary};--primary-foreground:${fg};--ring:${colors.primary};--accent:${accent};--sidebar-primary:${colors.primary};--sidebar-primary-foreground:${fg};--sidebar-ring:${colors.primary};}`;
-
-    if (existing) {
-      if (existing.textContent !== css) existing.textContent = css;
-    } else {
-      const style = document.createElement("style");
-      style.id = styleId;
-      style.textContent = css;
-      document.head.appendChild(style);
-    }
+    if (existing.textContent !== css) existing.textContent = css;
   }, [data]);
 
   return null;
