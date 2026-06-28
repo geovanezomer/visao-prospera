@@ -63,6 +63,47 @@ export function SociosCard() {
     calcRetiradaSocio(s, state, regime, (lucroMensalDisponivel * s.participacaoPct) / 100),
   );
 
+  // Memória de cálculo do teto de distribuição isenta (Presumido sem escrituração).
+  const breakdown = calcDistribuicaoIsentaBreakdown(state, regime);
+  const tabela = getIrpfTable(state.tax);
+  const aliqTopoPct = tabela[tabela.length - 1][1];
+  const totalIsentaMes = resultados.reduce((a, r) => a + r.distribuicaoIsentaMensal, 0);
+  const totalTribMes = resultados.reduce((a, r) => a + r.distribuicaoTributavelMensal, 0);
+
+  const isentaHint = Number.isFinite(breakdown.limiteMensal)
+    ? {
+        description:
+          "Teto MENSAL de lucros distribuíveis sem IRPF, no Presumido sem escrituração contábil completa. Calculado como Base presumida − (IRPJ 15% + CSLL 9% sobre base + PIS/COFINS sobre receita) − Adicional IRPJ 10% (sobre lucro trimestral > R$ 60k/trim, Lei 9.249/95 art. 3º §1º).",
+        formula:
+          "Limite mês = (Base − Tributos federais − Adicional IRPJ) ÷ 12",
+        calc: [
+          `Base presumida (ano) = ${fmtBRL(breakdown.basePresumida)}`,
+          `Base trimestral = ${fmtBRL(breakdown.baseTri)}  (gatilho: ${fmtBRL(breakdown.gatilhoTri)})`,
+          `Tributos federais (ano) = ${fmtBRL(breakdown.tributosFed)}`,
+          `Adicional IRPJ 10% (ano) = ${fmtBRL(breakdown.adicionalIrpjAno)}`,
+          `→ Limite mensal isento = ${fmtBRL(breakdown.limiteMensal)}`,
+          `Distribuído isento (mês, todos sócios) = ${fmtBRL(totalIsentaMes)}`,
+        ].join("\n"),
+      }
+    : {
+        description:
+          "Sem teto regulatório: a empresa tem escrituração contábil completa (RIR/2018 art. 238) ou está em regime que não exige a proxy (Real/Simples). Todo o lucro distribuído sai isento de IRPF para o sócio.",
+      };
+
+  const tribHint = {
+    description:
+      "Parcela da distribuição que EXCEDE o limite isento. Sem escrituração contábil completa, o excedente é rendimento tributável do sócio na PF — soma à renda anual e tributa pelo IRPF (alíquota topo aplicada aqui como proxy).",
+    formula: `Tributável = max(0, Distribuído − Limite isento)\nIRPF excedente = Tributável × ${aliqTopoPct.toFixed(1)}%`,
+    calc: [
+      `Limite isento mensal = ${fmtBRL(breakdown.limiteMensal)}`,
+      `Adicional IRPJ 10% já descontado = ${fmtBRL(breakdown.adicionalIrpjAno)}/ano`,
+      `Distribuído tributável (mês, todos sócios) = ${fmtBRL(totalTribMes)}`,
+      `IRPF aproximado = ${fmtBRL(totalTribMes * (aliqTopoPct / 100))}/mês`,
+    ].join("\n"),
+    example:
+      "Para eliminar o excedente: adote escrituração contábil completa, reduza o payout, ou aumente a reserva mensal.",
+  };
+
   const totaisAno = {
     prolab: resultados.reduce((a, r) => a + r.prolaboreMensal, 0) * 12,
     patronal: resultados.reduce((a, r) => a + r.inssPatronal, 0) * 12,
