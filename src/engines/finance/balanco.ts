@@ -247,6 +247,14 @@ export function suggestBalancoFromState(
   const caixaOcioso = cap.caixaOcioso || 0;
   const caixaOper = Math.max(0, (cap.disponibilidades || 0) - caixaOcioso);
 
+  // Mútuos passivos (PF→PJ): saldo devedor remanescente ao fim do horizonte
+  // = ΣPV captado − Σamortizações dentro dos 12 meses simulados.
+  const mpAgg = aggregateMutuosPassivos(state.mutuosPassivos);
+  const mutuosPassivosSaldoDevedor = Math.max(
+    0,
+    mpAgg.totalCaptado - mpAgg.amortizacao.reduce((a, b) => a + b, 0),
+  );
+
   // Provisões ~ 1 mês.
   const salariosPagar = folhaAnual > 0 ? folhaAnual / 12 : 0;
   const impostosPagar =
