@@ -24,7 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { useFinance, useFinanceUpdate } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { buildDRE } from "@/engines/finance/dre";
-import { fmtBRL, MESES } from "@/engines/finance/format";
+import { fmtBRL, MESES, sum } from "@/engines/finance/format";
 import {
   calcRetiradaSocio,
   syncSociosToCosts,
@@ -39,7 +39,7 @@ import { fill12 } from "@/engines/finance/format";
 
 const HINT = {
   description:
-    "PREVISÃO: capacidade teórica derivada do cadastro de sócios. Mostra pró-labore, INSS e IRPF (folha — sempre realizados) e o teto de distribuição isenta. A distribuição EFETIVA é registrada no bloco inferior — só ela alimenta Fluxo de Caixa, DRE e Balanço.",
+    "PREVISÃO: capacidade teórica derivada do cadastro de sócios. Mostra pró-labore, INSS e IRPF (folha — sempre realizados) e o teto de distribuição isenta. A distribuição EFETIVA é registrada no bloco inferior — só ela alimenta Fluxo de Caixa e Balanço; dividendos não passam pela DRE.",
   formula:
     "Líquido (folha) = Pró-labore − INSS sócio − IRPF do pró-labore\nCusto PJ = Pró-labore + INSS patronal",
   example:
@@ -48,9 +48,9 @@ const HINT = {
 
 const SEPARATOR_HINT = {
   description:
-    "A PREVISÃO (acima) mostra quanto a empresa PODERIA distribuir sem violar limites legais. A REALIZADA (abaixo) é o que de fato saiu do caixa para os sócios. Apenas a Realizada alimenta DRE, Fluxo de Caixa e Balanço.",
+    "A PREVISÃO (acima) mostra quanto a empresa PODERIA distribuir sem violar limites legais. A REALIZADA (abaixo) é o que de fato saiu do caixa para os sócios. Apenas a Realizada alimenta Fluxo de Caixa e Balanço; na DRE, dividendos não são despesa.",
   formula:
-    "Lucros Acumulados (Balanço) = Σ Lucro Líquido − Σ Distribuição Realizada\nDFC Financiamento (Dividendos) = Distribuição Realizada (mês a mês)",
+    "Resultado do exercício (Balanço) = Σ Lucro Líquido − Σ Distribuição Realizada\nDFC Financiamento (Dividendos) = Distribuição Realizada (mês a mês)",
 };
 
 export function SociosCard() {
@@ -97,15 +97,23 @@ export function SociosCard() {
   const breakdown = calcDistribuicaoIsentaBreakdown(state, regime);
   const tabela = getIrpfTable(state.tax);
   const aliqTopoPct = tabela[tabela.length - 1][1];
+  const limiteIsentoAnual = Number.isFinite(limiteIsentoMensal)
+    ? limiteIsentoMensal * 12
+    : Number.POSITIVE_INFINITY;
 
-  // IRPF excedente sobre o REALIZADO (média mensal — proxy simples e estável).
-  const excedenteMes = Math.max(0, realizadaMediaMes - limiteIsentoMensal);
-  const irpfExcedenteMes = excedenteMes * (aliqTopoPct / 100);
+  // IRPF excedente sobre o REALIZADO: apura mês a mês para não esconder picos.
+  const excedenteArr = Number.isFinite(limiteIsentoMensal)
+    ? realizadaArr.map((v) => Math.max(0, v - limiteIsentoMensal))
+    : fill12(0);
+  const excedenteAno = sum(excedenteArr);
+  const irpfExcedenteAno = excedenteAno * (aliqTopoPct / 100);
+  const irpfExcedenteMes = irpfExcedenteAno / 12;
 
   const setRealizadaFixed = (fixed: boolean) => {
+    const values = fixed ? fill12(realizadaMediaMes) : realizadaArr;
     update((s) => ({
       ...s,
-      distribuicaoRealizada: { values: realizadaArr as number[], fixed },
+      distribuicaoRealizada: { values, fixed },
     }));
   };
   const setRealizadaUniforme = (v: number) => {
@@ -149,7 +157,7 @@ export function SociosCard() {
   };
 
   // Alertas inteligentes
-  const acimaIsento = excedenteMes > 0;
+  const acimaIsento = excedenteAno > 0;
   const retencaoForte = retidoAno > 0 && retidoAno > previsaoTotalAno * 0.3;
 
   return (
@@ -268,7 +276,8 @@ export function SociosCard() {
                 `Capacidade prevista (ano) = ${fmtBRL(previsaoTotalAno)}`,
                 `Realizado (ano) = ${fmtBRL(realizadaTotalAno)}`,
                 `Retido em caixa (ano) = ${fmtBRL(retidoAno)}`,
-                `Limite isento mensal = ${fmtBRL(limiteIsentoMensal)}`,
+                `Limite isento = ${fmtBRL(limiteIsentoMensal)}/mês (${fmtBRL(limiteIsentoAnual)}/ano)`,
+                `Excedente realizado (ano) = ${fmtBRL(excedenteAno)}`,
                 `Adicional IRPJ 10% já no DRE = ${fmtBRL(breakdown.adicionalIrpjAno)}/ano`,
               ].join("\n")}
             />
@@ -357,7 +366,7 @@ export function SociosCard() {
             tone={irpfExcedenteMes > 0 ? "warn" : "default"}
             sub={
               acimaIsento
-                ? `Excede limite isento em ${fmtBRL(excedenteMes)}/mês`
+                ? `Excedente anual ${fmtBRL(excedenteAno)}`
                 : "Dentro do limite isento"
             }
           />
@@ -365,10 +374,9 @@ export function SociosCard() {
 
         {acimaIsento && (
           <div className="mt-3 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/5 px-3 py-2 text-[12px] text-[var(--warning)]">
-            ⚠️ <b>{fmtBRL(excedenteMes)}/mês</b> excede o limite isento de{" "}
-            <b>{fmtBRL(limiteIsentoMensal)}</b> e será tributado a {aliqTopoPct.toFixed(1)}%
-            (IRPF) na PF dos sócios. Considere adotar escrituração contábil completa para
-            eliminar o limite (RIR/2018 art. 238).
+            ⚠️ A distribuição realizada excede o limite isento em <b>{fmtBRL(excedenteAno)}</b> no ano.
+            Estimativa de IRPF sobre o excedente: <b>{fmtBRL(irpfExcedenteAno)}</b> ({aliqTopoPct.toFixed(1)}%).
+            Considere adotar escrituração contábil completa para eliminar o limite (RIR/2018 art. 238).
           </div>
         )}
         {retencaoForte && !acimaIsento && (
