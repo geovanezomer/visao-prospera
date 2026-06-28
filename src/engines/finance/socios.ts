@@ -203,7 +203,8 @@ export function getDistribuicaoRealizadaMeses(state: AppState): Months {
   if (!dr || !Array.isArray(dr.values)) {
     return fill12(0);
   }
-  return coerceMonths(dr.values) as Months;
+  const values = coerceMonths(dr.values);
+  return (dr.fixed ? fill12(values[0] ?? 0) : values) as Months;
 }
 
 /** Distribuição mensal MÉDIA realizada (R$/mês) — útil para cálculo do IRPF
