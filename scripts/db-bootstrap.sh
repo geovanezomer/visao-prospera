@@ -94,4 +94,19 @@ for file in $(ls "$MIGRATIONS_DIR"/*.sql 2>/dev/null | sort); do
 done
 
 echo "[db-bootstrap] Concluído. Aplicadas: $APPLIED | Já existentes: $SKIPPED | Falhas: $FAILED"
+
+# --- Seed opcional (espelho dos dados de produção) ------------------------
+# Aplica supabase/seed.sql se existir. Idempotente (ON CONFLICT DO NOTHING).
+# Pule definindo SKIP_SEED=1 no ambiente.
+SEED_FILE="${SEED_FILE:-/app/supabase/seed.sql}"
+if [ -z "$SKIP_SEED" ] && [ -f "$SEED_FILE" ]; then
+  echo "[db-bootstrap] Aplicando seed: $SEED_FILE"
+  if psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q -f "$SEED_FILE"; then
+    echo "[db-bootstrap] Seed aplicado."
+  else
+    echo "[db-bootstrap] AVISO: seed falhou — continuando."
+  fi
+fi
+
 exit 0
+
