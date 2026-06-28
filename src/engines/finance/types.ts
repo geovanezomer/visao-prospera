@@ -662,6 +662,10 @@ export interface AppState {
   /** Sócios retirantes — Pró-labore × Distribuição de Lucros. Sincronizado
    *  bidirecionalmente com linhas system em `costs` via syncSociosToCosts. */
   socios?: SocioRetirada[];
+
+  /** Empréstimos PJ→PF concedidos aos sócios (mútuo ativo). Sincronizado
+   *  com cashflow.mutuosConcedidos/Devolvidos via aggregateMutuos (SSOT). */
+  mutuosSocios?: MutuoSocio[];
 }
 
 export interface Scenario {
