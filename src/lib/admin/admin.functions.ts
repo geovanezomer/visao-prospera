@@ -49,6 +49,8 @@ export type AdminUserRow = {
   subscriptionId: string | null;
   customerId: string | null;
   isAdmin: boolean;
+  /** Acesso ao Consultor IA na sidebar. Default = true. */
+  aiEnabled: boolean;
 };
 
 export type AdminUserFilters = {
