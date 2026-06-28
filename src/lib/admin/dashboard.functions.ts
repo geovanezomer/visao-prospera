@@ -50,8 +50,20 @@ export type DashboardMetrics = {
   byProvider: { stripe: number; asaas: number };
   byPlan: Record<string, number>;
   webhook24h: { total: number; ok: number; failed: number };
+  // Funil de trial (Landing → magic link → conversão paga)
+  trialFunnel: {
+    requested: number;          // total de trial_requests
+    activated: number;          // trial_requests com user_id criado
+    converted: number;          // usuários que tinham trial e hoje têm assinatura ativa/lifetime
+    conversionRate: number;     // converted / requested (0..1)
+    activationRate: number;     // activated / requested (0..1)
+    avgTimeToConvertHours: number; // tempo médio entre trial_request.created_at e subscription.created_at
+    last30dRequested: number;
+    last30dConverted: number;
+  };
   generatedAt: string;
 };
+
 
 export const getDashboardMetrics = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
