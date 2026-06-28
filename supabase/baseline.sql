@@ -189,6 +189,17 @@ $$;
 
 
 -- ─────────────────────────────────────────────────────────────
+-- helpers globais (necessários antes dos triggers)
+-- ─────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.touch_updated_at()
+RETURNS TRIGGER LANGUAGE plpgsql SET search_path = public AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+-- ─────────────────────────────────────────────────────────────
 -- subscriptions (tabela base — necessária antes dos ALTER/índices)
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.subscriptions (
