@@ -688,6 +688,10 @@ export interface AppState {
   /** Empréstimos PJ→PF concedidos aos sócios (mútuo ativo). Sincronizado
    *  com cashflow.mutuosConcedidos/Devolvidos via aggregateMutuos (SSOT). */
   mutuosSocios?: MutuoSocio[];
+
+  /** Mútuos PF→PJ (sócio empresta para a empresa, AFAC remunerado).
+   *  Sincronizado com cashflow.mutuosPassivos* via aggregateMutuosPassivos (SSOT). */
+  mutuosPassivos?: MutuoPassivo[];
 }
 
 export interface Scenario {
