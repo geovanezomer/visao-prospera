@@ -428,7 +428,7 @@ export function buildCashFlow(
       fluxoOperacional: sum(fluxos.fluxoOperacional),
       fluxoInvestimento: sum(fluxos.fluxoInvestimento),
       fluxoFinanciamento: sum(fluxos.fluxoFinanciamento),
-      variacao: sum(fluxos.variacaoCaixa),
+      variacao: sum(variacaoCaixa),
       saldoFinal: saldoFinal[11],
       pioresMes: pior,
     },
