@@ -79,13 +79,8 @@ export function CashflowTab() {
     }
   }, [mesesCriticosKey, limiar, mesesCriticos]);
 
-  const setNonOp = (key: NonOpKey, monthIdx: number, value: number) =>
-    patchCashflow((cur) => ({
-      [key]: cur[key].map((v, i) => (i === monthIdx ? value : v)),
-    }));
 
-  const setNonOpAll = (key: NonOpKey, v: number) =>
-    patchCashflow({ [key]: MESES.map(() => v) });
+
 
 
   // Usar cf.alertas e cf.totais.pioresMes (já calculados pela engine)
