@@ -3,11 +3,12 @@
 // • Mostra countdown até trial_expires_at.
 // • Toast aos 10 min restantes.
 // • signOut + redirect para /landing#planos ao expirar.
+// • CTA 1-click: "Assinar Pro" cria checkout direto com email do trial.
 // ============================================================================
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Clock, Sparkles } from "lucide-react";
+import { Clock, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -25,6 +26,7 @@ export function TrialBanner({ expiresAt }: { expiresAt: string }) {
   const navigate = useNavigate();
   const target = useMemo(() => new Date(expiresAt).getTime(), [expiresAt]);
   const [now, setNow] = useState(() => Date.now());
+  const [upgrading, setUpgrading] = useState(false);
   const warnedRef = useRef(false);
   const expiredRef = useRef(false);
 
@@ -51,6 +53,39 @@ export function TrialBanner({ expiresAt }: { expiresAt: string }) {
     }
   }, [now, target, navigate]);
 
+  // ── Upgrade 1-click: cria checkout do plano "pro" com o e-mail do trial ──
+  const upgrade = async (plan: "starter" | "pro") => {
+    if (upgrading) return;
+    setUpgrading(true);
+    try {
+      const { data } = await supabase.auth.getUser();
+      const email = data.user?.email ?? "";
+      if (!email) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        return;
+      }
+      const meta = (data.user?.user_metadata ?? {}) as Record<string, unknown>;
+      const name = (meta.display_name as string) || email.split("@")[0];
+
+      const res = await fetch("/api/public/payments/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, email, name, withUpsell: false }),
+      });
+      const json = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !json.url) {
+        toast.error(json.error || "Não foi possível iniciar o checkout.");
+        return;
+      }
+      // Redireciona para a hosted page do provedor.
+      window.location.href = json.url;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao iniciar checkout.");
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
   const remaining = target - now;
   if (remaining <= 0) return null;
 
@@ -65,9 +100,17 @@ export function TrialBanner({ expiresAt }: { expiresAt: string }) {
           <span className="font-mono tabular-nums">{fmt(remaining)}</span>
           <span className="text-muted-foreground">restante</span>
         </div>
-        <Button asChild size="sm" variant="default" className="h-7 px-3 text-xs">
-          <Link to="/landing" hash="planos">Assinar agora</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs">
+            <Link to="/landing" hash="planos">Ver planos</Link>
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 px-3 text-xs" disabled={upgrading} onClick={() => upgrade("starter")}>
+            {upgrading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Assinar Starter"}
+          </Button>
+          <Button size="sm" variant="default" className="h-7 px-3 text-xs" disabled={upgrading} onClick={() => upgrade("pro")}>
+            {upgrading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Assinar Pro"}
+          </Button>
+        </div>
       </div>
     </div>
   );
