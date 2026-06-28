@@ -42,6 +42,7 @@ function toAuthUser(u: User | null | undefined): AuthUser | null {
     email: u.email ?? "",
     displayName,
     emailConfirmed: Boolean(u.email_confirmed_at),
+    aiEnabled: meta.ai_enabled !== false,
   };
 }
 
