@@ -194,6 +194,25 @@ export function calcDistribuicaoIsentaBreakdown(state: AppState, regime: TaxRegi
 }
 
 // =====================================================================
+// Distribuição REALIZADA — fonte da verdade para DRE/DFC/Balanço
+// =====================================================================
+/** Retorna o array de 12 meses de distribuição realizada (default zero). */
+export function getDistribuicaoRealizadaMeses(state: AppState): Months {
+  const dr = state.distribuicaoRealizada;
+  if (!dr || !Array.isArray(dr.values) || dr.values.length !== 12) {
+    return fill12(0);
+  }
+  return dr.values as Months;
+}
+
+/** Distribuição mensal MÉDIA realizada (R$/mês) — útil para cálculo do IRPF
+ *  excedente quando o usuário escolhe usar média anual. */
+export function getDistribuicaoRealizadaMediaMensal(state: AppState): number {
+  const arr = getDistribuicaoRealizadaMeses(state);
+  return arr.reduce((a, b) => a + b, 0) / 12;
+}
+
+// =====================================================================
 // Cálculo completo de um sócio
 // =====================================================================
 export function calcRetiradaSocio(
