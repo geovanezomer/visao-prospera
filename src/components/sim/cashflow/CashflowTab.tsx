@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFinance, usePatchCashflow, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
 import { fmtBRL, MESES } from "@/engines/finance/format";
-import { buildCashFlow } from "@/engines/finance/cashflow";
+import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { MoneyInput, SectionTitle, StatCard } from "@/components/sim/shared/primitives";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle } from "lucide-react";
@@ -40,8 +40,8 @@ export function CashflowTab() {
   // Em modo somente leitura (link compartilhado), escondemos seções
   // de edição e o gráfico de projeção para focar no resumo.
   const readOnly = useFinanceReadOnly();
-  // Regime efetivo é default em buildCashFlow; memoizar o resultado pesado.
-  const cf = useMemo(() => buildCashFlow(state), [state]);
+  // SSOT: reusa o cf do FinancialModel (cacheado por WeakMap), evita 2ª passada.
+  const { cf } = useFinanceModel(state);
   
 
   const setCaixaMin = (v: number) => patchCashflow({ caixaMinimo: v });

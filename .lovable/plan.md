@@ -1,66 +1,53 @@
-## Veredito da auditoria
+## Análise (Opus 4.5)
 
-Validei cada ponto contra o codebase. A maioria está correta, com 1 **falso positivo** e 2 ressalvas:
+Verifiquei cada apontamento contra o código. Veredito:
 
-| # | Auditoria | Veredito |
-|---|---|---|
-| 1 | `external.ts` 22 funções mortas | ✅ Confirmado — só `vplExcel`, `vplClassico`, `tir`, `parcela` são usadas. `media`/`mediana` também não são. |
-| 2 | `spreadForecast.ts` morto | ✅ Confirmado — zero importadores. |
-| 3 | `selftests.ts` morto | ✅ Confirmado. |
-| 4 | `KpiTile`, `SummaryList`, `IntroCard`, `AIFab` mortos | ✅ Confirmado. |
-| 6 | `fmtBRL` duplicado em 11 lugares | ✅ Real. |
-| 7 | `const n =` duplicado nos arquivos de balanço | ✅ Real. SSOT é `safeNumber`. |
-| 8 | `MESES_PT` duplicado em `breakEvenDinamico.ts` | ✅ Real. |
-| 9 | Exports não usados em `comparisonStore.ts` | ⚠️ Baixo valor, deixar. |
-| 10 | Adoção de `clampFinite`/`safePositive` | ⚠️ Refactor cosmético, baixo ROI agora. |
-| 11 | `useFeatureFlag`/`useSubscription` sem migrations | ❌ **FALSO** — as migrations `feature_flags` e `get_active_plan` existem (4 arquivos em `supabase/migrations/`). Ignorar. |
-| 12 | `cashflowProjection` ignora `debtContracts` | ✅ Gap real de precisão financeira. |
-| 13 | Recharts síncrono no Dashboard | ⚠️ Real, mas Dashboard é a primeira tela — lazy adicionaria flash. Adiar. |
+| # | Apontamento | Status | Decisão |
+|---|---|---|---|
+| SSOT-01 | RevenueTab usa `state.tax.regime` (linha 73) | ✅ Real | **Corrigir** — divergência numérica entre abas |
+| SSOT-02 | DRETab `monthValues(c, state.tax.regime)` (130, 176, 181) | ✅ Real, mas `monthValues` só usa o regime para filtros (`somenteSe`/Simples) | **Corrigir** — barato, elimina drift |
+| SSOT-03 | CashflowTab roda `buildCashFlow` próprio | ✅ Real | **Corrigir** — 1 linha, ganha cache WeakMap |
+| SSOT-04 | `prescriptive.ts` chama `calcIndicators(state, dre)` sem `cf` | ✅ Real (linhas 110 e 162) | **Corrigir** — passar `cf` evita 3ª construção |
+| CALC-01 | DRETab reconstrói `outrasOperacionais` | ✅ Real, mas a fórmula local soma D&A+PDD+outras e a engine só expõe `outrasReceitasOperacionais` separadamente. A linha agregada do display NÃO existe pronta na DRE. | **Não mexer** — refator cosmético com risco de quebrar o agrupamento visual; o número final já bate |
+| CALC-02 | `suggestions.ts` sem `normalizeStateFromBalanco` | ✅ Real | **Corrigir** — 2 linhas |
+| CALC-03 | AI tools sem `getFinancialModelCached` | ✅ Real, mas exige refator de assinatura em N tools | **Adiar** — ROI baixo, performance only |
 
-**Impacto real do bundle de #1:** modesto. `@formulajs/formulajs` e `simple-statistics` ainda permanecem como deps porque `vplExcel`/`vplClassico`/`tir`/`parcela` usam `formulajs`. Ganho real: remoção das reexports + possibilidade de drop futuro de `simple-statistics` do `package.json`.
+Bugs anteriores (BUG-01..11) confirmados como corrigidos. Cadeia SSOT principal (`buildFinancialModel` → `useFinanceModel`) está íntegra.
 
 ---
 
-## Plano de execução (Claude Opus 4.5)
+## Plano de execução
 
-Ordem por risco crescente. Cada etapa termina com `bunx vitest run` + `tsgo`.
+Ordem por risco crescente. Cada etapa = um arquivo, fechada com `bunx vitest run`.
 
-### Etapa 1 — Remoções diretas (sem refactor)
-- Deletar `src/engines/finance/spreadForecast.ts`.
-- Deletar `src/engines/finance/selftests.ts`.
-- Deletar `src/components/sim/capital/parts.tsx` e `src/components/sim/capital/IntroCard.tsx`.
-- Deletar `src/components/ai/AIFab.tsx`.
-- Confirmar via `rg` que não restou importador órfão.
+### Etapa 1 — SSOT-01 · RevenueTab
+`src/components/sim/revenue/RevenueTab.tsx`
+- Importar `resolveEffectiveRegime` de `@/engines/finance/regime`.
+- Linha 73: `buildDRE(state, resolveEffectiveRegime(state))`.
 
-### Etapa 2 — Enxugar `external.ts`
-- Manter apenas: `vplExcel` (NPV), `vplClassico`, `tir` (IRR), `parcela` (PMT).
-- Remover imports de `simple-statistics` inteiro + 17 funções não usadas de `@formulajs/formulajs`.
-- Rodar `bun pm ls simple-statistics` — se ninguém mais usar, remover do `package.json` com `bun remove simple-statistics`.
-- Validar `cross-formulajs.test.ts` continua passando.
+### Etapa 2 — SSOT-02 · DRETab
+`src/components/sim/dre/DRETab.tsx` (linhas 130, 176, 181)
+- Trocar `state.tax.regime` por `regime` (já desestruturado de `useFinanceModel` na linha 97).
 
-### Etapa 3 — Consolidar `fmtBRL` (SSOT em `format.ts`)
-- Em cada arquivo da auditoria #6: remover declaração local e importar de `@/engines/finance/format`.
-- `fmtBRLShort` → `fmtBRLCompact` (já existe).
-- Arquivos afetados: 8 calculadoras + `cashflowProjection.ts` + `diagnose.ts` + `prescriptive.ts`.
+### Etapa 3 — SSOT-03 · CashflowTab
+`src/components/sim/cashflow/CashflowTab.tsx`
+- Substituir `useMemo(() => buildCashFlow(state), [state])` por `const { cf } = useFinanceModel(state)`.
+- Remover import órfão `buildCashFlow` (manter se ainda usado em outro ponto).
 
-### Etapa 4 — Consolidar `const n =` no módulo balanço
-- Em `balanco.ts`, `balancoFechamento.ts`, `aberturaDerivada.ts`:
-  - Trocar helper local por `import { safeNumber as n } from "./safeMath"`.
-- **Manter** o helper em `migrations/v1_to_v2.ts` (migrations devem ser autossuficientes — sem dependência interna que possa mudar).
+### Etapa 4 — SSOT-04 · prescriptive
+`src/engines/finance/prescriptive.ts`
+- Nos dois blocos (linhas 108-111 e 161-163): inverter a ordem para `buildCashFlow` primeiro e chamar `calcIndicators(state, dre, cf)`.
 
-### Etapa 5 — `MESES_PT` em `breakEvenDinamico.ts`
-- Substituir constante local por `import { MESES } from "./format"`.
+### Etapa 5 — CALC-02 · suggestions
+`src/engines/ai/suggestions.ts`
+- Importar `normalizeStateFromBalanco` (já existe na engine).
+- Antes de `buildDRE`: `const ns = normalizeStateFromBalanco(state)` e usar `ns` em `buildDRE`/`buildCashFlow`.
 
-### Etapa 6 — Precisão financeira: `cashflowProjection` × `debtContracts`
-- Importar `scheduleContract`/`aggregateContracts` de `debtContracts.ts`.
-- No início de `projectCenario`, gerar cronograma agregado dos contratos existentes em `state.debtContracts` e somar juros + amortizações nos meses do horizonte (não só os 12 já cobertos pela engine base).
-- Para horizonte >12 meses, projetar continuidade dos contratos até o vencimento.
-- Adicionar teste cobrindo: cenário com 1 contrato Price 24m → projeção 24m deve refletir amortização caindo a zero.
-
-### Fora do escopo (rejeitados/adiados)
-- #9, #10, #11, #13 — explicados acima.
+### Fora do escopo
+- CALC-01 (drift cosmético no DRETab) — manter como está.
+- CALC-03 (refator das AI tools) — adiar até termos sinal de performance ruim.
 
 ### Critério de pronto
 - 386+ testes verdes.
-- `tsgo` sem erros.
-- `bun run build` rodando, com chunk size delta reportado para evidenciar ganho da Etapa 2.
+- `tsgo` limpo.
+- Empresa Simples >R$4,8M anual: valores de tributo idênticos entre Receitas, DRE, Cashflow e Indicadores.

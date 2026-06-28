@@ -3,6 +3,7 @@ import { useFinance, usePatchRevenue } from "@/engines/finance/AppStateContext";
 import { AppState, RevenueDeducao } from "@/engines/finance/types";
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/engines/finance/format";
 import { buildDRE } from "@/engines/finance";
+import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { MoneyInput, PctInput, StatCard, SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -70,7 +71,7 @@ export function RevenueTab() {
 
     // VERDADE ABSOLUTA: deriva Receita Operacional da DRE central.
     // Receita Operacional = Receita Líquida + Impostos sobre Venda (Receita antes da carga tributária).
-    const { dre } = buildDRE(state, state.tax.regime);
+    const { dre } = buildDRE(state, resolveEffectiveRegime(state));
     const liquidas = dre.receitaLiquida.map((rl, i) => rl + (dre.impostosVendas[i] || 0));
 
     const brutaAnual = sum(r.bruta);

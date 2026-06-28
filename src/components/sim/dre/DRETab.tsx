@@ -127,7 +127,7 @@ export function DRETab() {
   const despAdmin = zeros(); // despesa_administrativa (+ alias legado: fixo)
   const despFinanc = zeros(); // financeiro
   for (const c of state.costs) {
-    const v = monthValues(c, state.tax.regime);
+    const v = monthValues(c, regime);
     if (c.category === "despesa_comercial" || c.category === "variavel")
       for (let i = 0; i < 12; i++) despComerciais[i] += v[i];
     else if (c.category === "despesa_administrativa" || c.category === "fixo")
@@ -173,12 +173,12 @@ export function DRETab() {
   const linhaPorCat = (cats: CostCategory[]) =>
     state.costs
       .filter((c) => cats.includes(c.category))
-      .map((c) => ({ label: c.label, values: monthValues(c, state.tax.regime) }))
+      .map((c) => ({ label: c.label, values: monthValues(c, regime) }))
       .filter((x) => sum(x.values) > 0);
   // Linhas detalhadas do CPV/CMV/CSP
   const linhasCpv = state.costs
     .filter((c) => c.category === "custo_vendas" || c.category === "direto_venda")
-    .map((c) => ({ label: c.label, values: monthValues(c, state.tax.regime) }))
+    .map((c) => ({ label: c.label, values: monthValues(c, regime) }))
     .filter((x) => sum(x.values) > 0);
 
   // Estado dos accordions por grupo

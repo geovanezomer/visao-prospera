@@ -10,6 +10,7 @@ import {
   resolveEffectiveRegime,
 } from "@/engines/finance";
 import { buildCashFlow } from "@/engines/finance/cashflow";
+import { normalizeStateFromBalanco } from "@/engines/finance/balanco";
 
 const STATIC_FALLBACK = [
   "Qual o VPL do meu negócio e o que ele significa na prática?",
@@ -96,11 +97,14 @@ export function buildDynamicSuggestions(state: AppState, max = 6): string[] {
   // Garante limite entre 4 e 6 sugestões (UI prevê esse range).
   const cap = Math.max(4, Math.min(6, Math.floor(max)));
   try {
-    const regime = resolveEffectiveRegime(state);
-    const { dre } = buildDRE(state, regime);
-    const ind = calcIndicators(state, dre);
-    const diag = diagnose(state, dre, ind);
-    const cf = buildCashFlow(state, regime);
+    // Normaliza estado a partir do balanço detalhado (quando preenchido),
+    // alinhando com o pipeline de useFinanceModel.
+    const ns = normalizeStateFromBalanco(state);
+    const regime = resolveEffectiveRegime(ns);
+    const { dre } = buildDRE(ns, regime);
+    const cf = buildCashFlow(ns, regime);
+    const ind = calcIndicators(ns, dre, cf);
+    const diag = diagnose(ns, dre, ind);
 
     const out: string[] = [];
 
