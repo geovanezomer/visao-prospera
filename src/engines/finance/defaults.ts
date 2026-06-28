@@ -543,6 +543,25 @@ export function migrateState(s: AppState): AppState {
     values: coerceMonths(p.values),
   }));
 
+  // Distribuição realizada — seed com cashflow.dividendos legado quando ausente
+  // (preserva dados antigos onde a sincronização vinha da capacidade prevista).
+  const distRealizada = (rest as AppState).distribuicaoRealizada;
+  const legacyDividendos = coerceMonths(cashflow.dividendos);
+  const temLegado = legacyDividendos.some((v) => v > 0);
+  const distFinal =
+    distRealizada && Array.isArray(distRealizada.values)
+      ? { values: coerceMonths(distRealizada.values), fixed: distRealizada.fixed ?? true }
+      : { values: temLegado ? legacyDividendos : fill12(0), fixed: !temLegado };
+
   // Aplica migrações versionadas (breaking changes) e estampa schemaVersion atual.
-  return applySchemaMigrations({ ...rest, revenue, capital, tax, costs, cashflow, strategic });
+  return applySchemaMigrations({
+    ...rest,
+    revenue,
+    capital,
+    tax,
+    costs,
+    cashflow,
+    strategic,
+    distribuicaoRealizada: distFinal,
+  });
 }
