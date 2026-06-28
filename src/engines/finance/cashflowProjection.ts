@@ -149,7 +149,7 @@ function projectScenario(
   }
 
   // Delta dos contratos de dívida existentes (corrige meses >12 que o ciclo de ano-base repete).
-  const debtDelta = debtContractsDelta(state.debtContracts ?? [], meses);
+  const debtDelta = debtContractsDelta(state.capital?.debtContracts ?? [], meses);
 
   const meses_out: ProjecaoMes[] = [];
   let saldo = saldoInicialProj;
