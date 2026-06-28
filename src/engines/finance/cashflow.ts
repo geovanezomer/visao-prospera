@@ -195,6 +195,10 @@ export function computeFluxos(args: {
   mutuosConcedidos?: number[];
   /** Devolução de empréstimos pelos sócios (entrada). Opcional p/ retrocompat. */
   mutuosDevolvidos?: number[];
+  /** Mútuos PF→PJ captados de sócios (entrada). Opcional p/ retrocompat. */
+  mutuosPassivosCaptados?: number[];
+  /** Amortização de mútuos passivos (saída). Opcional p/ retrocompat. */
+  mutuosPassivosAmortizados?: number[];
 }): {
   fluxoOperacional: number[];
   fluxoInvestimento: number[];
