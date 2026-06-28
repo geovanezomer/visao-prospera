@@ -508,6 +508,11 @@ export interface CashFlowConfig {
   capex: Months;
   dividendos: Months;
   amortizacoes: Months;
+  /** Empréstimos concedidos a sócios (mútuo PJ→PF) — saída de caixa.
+   *  Derivado de state.mutuosSocios via aggregateMutuos (SSOT). */
+  mutuosConcedidos: Months;
+  /** Devolução de empréstimos por sócios (amortização do principal) — entrada de caixa. */
+  mutuosDevolvidos: Months;
 }
 
 // ============= Análise Estratégica (qualitativa, opcional) =============
