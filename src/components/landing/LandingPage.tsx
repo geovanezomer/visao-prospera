@@ -1310,7 +1310,6 @@ function FaqAccordion() {
    ============================================================ */
 function FinalCta() {
   const [trialOpen, setTrialOpen] = useState(false);
-  const [trialOpen, setTrialOpen] = useState(false);
   return (
     <section className="relative overflow-hidden py-28">
       <div
