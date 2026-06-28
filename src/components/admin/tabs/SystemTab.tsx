@@ -541,6 +541,47 @@ export function SystemTab() {
         </div>
       </section>
 
+      <section className="space-y-4 rounded-lg border border-border/60 bg-card p-4 lg:col-span-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold">Teste gratuito (Trial) — Landing Page</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Quando ativo, exibe o botão <strong>"Solicitar teste"</strong> na landing. O usuário recebe um
+              link mágico por e-mail (Resend) e tem acesso completo pelo período definido. Após o término,
+              a sessão é encerrada automaticamente e ele é direcionado para a seção de planos. Um e-mail só
+              pode solicitar teste uma única vez.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-xs">
+            <Switch
+              checked={trial.enabled}
+              onCheckedChange={(c) => setTrial({ ...trial, enabled: c })}
+            />
+            <span>{trial.enabled ? "Ativo" : "Desativado"}</span>
+          </label>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-1">
+            <Label>Duração do teste (horas)</Label>
+            <Input
+              type="number" min={1} max={72} step={1}
+              value={trial.duration_hours}
+              onChange={(e) => setTrial({
+                ...trial,
+                duration_hours: Math.min(72, Math.max(1, Number(e.target.value) || 1)),
+              })}
+            />
+            <p className="text-[11px] text-muted-foreground">Entre 1 e 72 horas. Recomendado: 2h.</p>
+          </div>
+          <div className="rounded-md bg-muted/50 p-3 text-[11px] text-muted-foreground">
+            Requer template <strong>"Acesso de Teste (Trial)"</strong> ativo na aba <strong>E-mails</strong> e
+            credenciais Resend configuradas (chave e remetente).
+          </div>
+        </div>
+      </section>
+
+
+
 
 
       {notif && (
