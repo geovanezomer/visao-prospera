@@ -25,6 +25,11 @@ export interface CashFlow {
   fluxoFinanciamento: number[];
   capex: number[];
   fluxoInvestimento: number[];
+  /** Permutas simples (não operacionais) — entrada (crédito) − saída (débito).
+   *  Soma direta à variação de caixa, sem trânsito por OP/INV/FIN. */
+  permutasCredito: number[];
+  permutasDebito: number[];
+  permutasLiquido: number[];
   variacaoCaixa: number[];
   saldoFinal: number[];
   alertas: { mes: string; saldo: number; tipo: "negativo" | "abaixoMinimo" }[];
