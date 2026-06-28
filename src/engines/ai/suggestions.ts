@@ -10,6 +10,7 @@ import {
   resolveEffectiveRegime,
 } from "@/engines/finance";
 import { buildCashFlow } from "@/engines/finance/cashflow";
+import { normalizeStateFromBalanco } from "@/engines/finance/balanco";
 
 const STATIC_FALLBACK = [
   "Qual o VPL do meu negócio e o que ele significa na prática?",
