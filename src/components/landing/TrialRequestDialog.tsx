@@ -29,6 +29,22 @@ export function TrialRequestDialog({
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
   const [state, setState] = useState<State>({ kind: "idle" });
+  const [cfgHours, setCfgHours] = useState<number>(2);
+
+  // Lê duração configurada em Admin → Sistema (app_settings.trial.duration_hours).
+  // Policy pública permite SELECT do key='trial' para anon.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    void supabase.from("app_settings").select("value").eq("key", "trial").maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data?.value) return;
+        const v = data.value as { duration_hours?: number };
+        const h = Number(v.duration_hours);
+        if (Number.isFinite(h) && h > 0) setCfgHours(Math.min(Math.max(h, 1), 72));
+      });
+    return () => { cancelled = true; };
+  }, [open]);
 
   const reset = () => { setEmail(""); setWebsite(""); setState({ kind: "idle" }); };
 
