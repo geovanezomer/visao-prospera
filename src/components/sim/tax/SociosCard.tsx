@@ -386,6 +386,22 @@ export function SociosCard() {
           </div>
         )}
 
+        {realizadaTotalAno > 0 && (
+          <div className="mt-3 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/5 px-3 py-2 text-[12px] text-foreground/90">
+            <div className="font-semibold text-[var(--warning)] mb-1">⚖️ Atenção — Requisitos legais para distribuir lucros</div>
+            <p className="leading-relaxed">
+              A distribuição de lucros só é permitida quando a empresa está <b>em dia com tributos federais</b>
+              (Lei nº 4.357/1964, art. 32 — veda a distribuição enquanto houver débito não garantido com a União,
+              INSS, FGTS ou contribuições sociais, sob pena de multa de 50% do valor distribuído aos sócios).
+              É obrigatório manter <b>escrituração contábil regular</b> (Livro Diário, Razão, Balanço e DRE) que
+              comprove a existência de lucro efetivamente apurado (CC/2002 art. 1.078; RIR/2018 arts. 238 e 725;
+              IN RFB 1.700/2017). Sem contabilidade completa, a isenção do IRPF (Lei 9.249/1995 art. 10) fica
+              limitada ao lucro presumido líquido dos tributos — o excedente é tributado como rendimento do sócio.
+              Recomenda-se reter <b>CND/CPEN</b> e <b>ata de deliberação</b> dos sócios antes de cada pagamento.
+            </p>
+          </div>
+        )}
+
         <p className="mt-3 text-[11px] text-muted-foreground">
           Para alterar nome, participação, pró-labore, dependentes ou status operacional,
           edite o cadastro em <b>Configurações → Empresa → Sócios</b>.
