@@ -1786,7 +1786,7 @@ function renderDFC(doc: jsPDF, yStart: number, state: AppState, model: Financial
     { label: "(−) Impostos pagos", meta: "normal", vals: quartersOf(cf.pagamentosImpostos).map((v) => -v) },
     { label: "(=) Fluxo das Operações", meta: "total", vals: quartersOf(cf.fluxoOperacional) },
     { label: "Atividades de Investimento", meta: "section" },
-    { label: "(−) CapEx — aportes em ativo fixo", meta: "normal", vals: quartersOf(state.cashflow.capex).map((v) => -v) },
+    { label: "(−) CapEx — Investimentos em equipamentos e ativo (Capital)", meta: "normal", vals: quartersOf(cf.capex).map((v) => -v) },
     { label: "(=) Fluxo de Investimento", meta: "total", vals: quartersOf(cf.fluxoInvestimento) },
     { label: "Atividades de Financiamento", meta: "section" },
     { label: "(+) Aportes de sócios", meta: "normal", vals: quartersOf(state.cashflow.aportes) },
