@@ -49,20 +49,6 @@ export interface BreakEvenDinamicoResult {
   observacao?: string;
 }
 
-const MESES_PT = [
-  "Jan",
-  "Fev",
-  "Mar",
-  "Abr",
-  "Mai",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Set",
-  "Out",
-  "Nov",
-  "Dez",
-];
 
 /** Default da meta conforme restrição. */
 function defaultMeta(restricao: RestricaoBreakEven): number {
