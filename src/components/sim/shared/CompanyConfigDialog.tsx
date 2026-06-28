@@ -704,6 +704,14 @@ function SociosSection() {
   const regime = resolveEffectiveRegime(state);
   const socios = state.socios ?? [];
 
+  // Mantém state.numSocios sincronizado com o tamanho do cadastro (SSOT).
+  // Substitui o antigo campo manual "Número de sócios / acionistas".
+  useEffect(() => {
+    if (state.numSocios !== socios.length) {
+      update({ numSocios: socios.length });
+    }
+  }, [socios.length, state.numSocios, update]);
+
   const setSocios = (next: SocioRetirada[]) =>
     update((s) => ({ ...applySociosChange(s, next, regime), numSocios: next.length }));
 
