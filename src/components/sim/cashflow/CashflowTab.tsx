@@ -18,6 +18,7 @@ import {
 } from "recharts";
 
 import { DFCTable } from "@/components/sim/cashflow/DFCTable";
+import { PermutasCard } from "@/components/sim/tax/PermutasCard";
 
 
 // Estilo padrão do tooltip dos gráficos (DRY)
