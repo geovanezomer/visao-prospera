@@ -136,11 +136,6 @@ export function ProlaboreTab() {
                 tone: "pos",
                 values: state.cashflow.aportes,
               },
-                label: "Distribuição de dividendos",
-                hint: "Saída de caixa para distribuir lucros aos sócios.",
-                tone: "neg",
-                values: state.cashflow.dividendos,
-              },
             ]}
             onMonth={setNonOp}
             onAllMonths={setNonOpAll}
