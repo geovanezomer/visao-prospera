@@ -49,7 +49,7 @@ export function ProlaboreTab() {
   useEffect(() => {
     if (readOnly) return;
     const atual = state.cashflow.dividendos;
-    const alvo = MESES.map(() => payoutRS);
+    const alvo = atual.map(() => payoutRS);
     const igual = atual.length === 12 && atual.every((v, i) => Math.abs(v - alvo[i]) < 0.01);
     if (!igual) patchCashflow({ dividendos: alvo as typeof atual });
   }, [payoutRS, readOnly, state.cashflow.dividendos, patchCashflow]);
