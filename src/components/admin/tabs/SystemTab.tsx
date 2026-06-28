@@ -154,6 +154,7 @@ export function SystemTab() {
       footer?: { text?: string };
       tracking?: { head?: string; body_start?: string; body_end?: string };
       landing_video?: { enabled?: boolean; url?: string };
+      trial?: { enabled?: boolean; duration_hours?: number };
     };
     if (s.branding) setBranding({
       system_name: s.branding.system_name ?? DEFAULT_BRANDING.system_name,
