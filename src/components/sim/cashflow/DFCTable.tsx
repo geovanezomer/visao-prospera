@@ -227,6 +227,30 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
               rawTotal={sum(cf.fluxoFinanciamento)}
             />
 
+            {(sum(cf.permutasCredito) !== 0 || sum(cf.permutasDebito) !== 0) && (
+              <>
+                <SectionRow label="PERMUTAS (NÃO OPERACIONAIS)" cols={cols.length} />
+                <Row
+                  label="(+) Permutas a crédito"
+                  values={aggregate(cf.permutasCredito, period, "sum")}
+                  tone="pos"
+                  rawTotal={sum(cf.permutasCredito)}
+                />
+                <Row
+                  label="(−) Permutas a débito"
+                  values={aggregate(cf.permutasDebito.map((v) => -v), period, "sum")}
+                  tone="neg"
+                  rawTotal={-sum(cf.permutasDebito)}
+                />
+                <Row
+                  label="(=) Permutas (líquido)"
+                  values={aggregate(cf.permutasLiquido, period, "sum")}
+                  strong
+                  rawTotal={sum(cf.permutasLiquido)}
+                />
+              </>
+            )}
+
             <Row
               label="(=) VARIAÇÃO DE CAIXA"
               values={aggregate(cf.variacaoCaixa, period, "sum")}
