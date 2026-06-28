@@ -154,6 +154,10 @@ export function CashflowTab() {
   return (
     <div className="space-y-6">
 
+      {/* Permutas simples — movimentações de caixa não operacionais (sem juros,
+          contrato ou amortização). Exibidas no topo para edição rápida. */}
+      {!readOnly && <PermutasCard />}
+
       {/* Sumário */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
