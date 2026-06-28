@@ -25,15 +25,16 @@ export function computeNetDebt(state: AppState): number {
 
 /**
  * SSOT — CAPEX MENSAL UNIFICADO.
- * Soma o vetor manual (`cashflow.capex[]`, lançado pelo usuário no mês de desembolso)
- * com cada ativação de imobilizado (`capital.capexAtivacao[]`, lançada no mês `ca.mes`).
- * Usado simultaneamente por:
+ * Fonte única: `capital.capexAtivacao[]` (card "Investimentos em equipamentos
+ * e ativo" da aba Capital), lançada no mês `ca.mes`. Não existe mais entrada
+ * avulsa no Fluxo de Caixa — todo CAPEX deve passar pela ativação de
+ * imobilizado para gerar depreciação e refletir no Balanço.
+ * Usado por:
  *   - `buildCashFlow` (saída de caixa em FCI no mês correto)
  *   - `calcIndicators` (CAPEX anual para `fcfAposCapex` e `paybackCapex`)
- * Evita divergência entre DRE/FCF estimado e o DFC realizado.
  */
 export function computeCapexMensal(state: AppState): number[] {
-  const out = (state.cashflow?.capex ?? zeros12()).slice();
+  const out = zeros12();
   for (const ca of state.capital?.capexAtivacao ?? []) {
     if (!ca || !(ca.valor > 0)) continue;
     const idx = Math.max(0, Math.min(11, (ca.mes || 1) - 1));

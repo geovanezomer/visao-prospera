@@ -221,7 +221,7 @@ export function CashflowTab() {
       {!readOnly && (
         <div className="rounded-lg border border-border/60 border-l-4 border-l-[color:var(--primary)] bg-card/40">
           <div className="flex items-center justify-between border-b border-border/60 p-4">
-            <SectionTitle hint="Apenas itens SEM fonte em outra aba. CapEx vem de Capital → Ativações (com vida útil e mês). Amortização do principal e juros vêm de Capital → Contratos de Dívida.">
+            <SectionTitle hint="Apenas itens SEM fonte em outra aba. CapEx é cadastrado exclusivamente em Capital → Investimentos em equipamentos e ativo (com vida útil e mês de ativação). Amortização do principal e juros vêm de Capital → Contratos de Dívida.">
               Movimentações de caixa não operacionais — 12 meses
             </SectionTitle>
           </div>
