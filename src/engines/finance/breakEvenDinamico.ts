@@ -16,6 +16,7 @@ import { buildDRE } from "./dre";
 import { calcIndicators } from "./indicators";
 import { buildCashFlow } from "./cashflow";
 import { resolveEffectiveRegime } from "./regime";
+import { MESES as MESES_PT } from "./format";
 
 export type RestricaoBreakEven = "dscr" | "caixa_min" | "ebitda_positivo";
 
