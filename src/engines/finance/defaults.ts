@@ -310,6 +310,8 @@ export const DEFAULT_STATE: AppState = {
     amortizacoes: fill12(0),
     mutuosConcedidos: fill12(0),
     mutuosDevolvidos: fill12(0),
+    mutuosPassivosCaptados: fill12(0),
+    mutuosPassivosAmortizados: fill12(0),
   },
 
   strategic: {
@@ -516,6 +518,8 @@ export function migrateState(s: AppState): AppState {
   cashflow.amortizacoes = coerceMonths(cashflow.amortizacoes);
   cashflow.mutuosConcedidos = coerceMonths(cashflow.mutuosConcedidos ?? []);
   cashflow.mutuosDevolvidos = coerceMonths(cashflow.mutuosDevolvidos ?? []);
+  cashflow.mutuosPassivosCaptados = coerceMonths(cashflow.mutuosPassivosCaptados ?? []);
+  cashflow.mutuosPassivosAmortizados = coerceMonths(cashflow.mutuosPassivosAmortizados ?? []);
 
   // Aplica migrações versionadas (breaking changes) e estampa schemaVersion atual.
   return applySchemaMigrations({ ...rest, revenue, capital, tax, costs, cashflow, strategic });

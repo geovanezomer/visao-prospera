@@ -204,6 +204,21 @@ export interface MutuoSocio {
   mesInicioDevolucao: number; // 1..12 (mês da 1ª parcela)
 }
 
+/** Contrato de mútuo PF→PJ (empréstimo do sócio para a empresa, AFAC remunerado).
+ *  Espelho simétrico de MutuoSocio: entrada de caixa na captação,
+ *  saídas mensais de amortização + juros pagos (Despesa Financeira).
+ *  Saldo devedor remanescente é Passivo (Mútuos a Pagar). */
+export interface MutuoPassivo {
+  id: string;
+  socioId?: string;
+  nome: string;
+  valorCaptado: number; // R$ principal recebido pela empresa
+  mesCaptacao: number; // 1..12 (mês da entrada de caixa)
+  taxaMensalPct: number; // % a.m. paga ao sócio (≥ SELIC mensal recomendado)
+  prazoMeses: number;
+  mesInicioDevolucao: number;
+}
+
 export interface CapitalStructure {
   proprio: number; // % capital próprio (E) — usado apenas como referência se dividaOnerosa/PL não preenchidos
   ke: number;
@@ -524,9 +539,16 @@ export interface CashFlowConfig {
   amortizacoes: Months;
   /** Empréstimos concedidos a sócios (mútuo PJ→PF) — saída de caixa.
    *  Derivado de state.mutuosSocios via aggregateMutuos (SSOT). */
+  /** Empréstimos concedidos a sócios (mútuo PJ→PF) — saída de caixa.
+   *  Derivado de state.mutuosSocios via aggregateMutuos (SSOT). */
   mutuosConcedidos: Months;
   /** Devolução de empréstimos por sócios (amortização do principal) — entrada de caixa. */
   mutuosDevolvidos: Months;
+  /** Mútuos PF→PJ captados (sócio empresta para a PJ) — entrada de caixa.
+   *  Derivado de state.mutuosPassivos via aggregateMutuosPassivos (SSOT). */
+  mutuosPassivosCaptados: Months;
+  /** Devolução de principal ao sócio (mútuo passivo) — saída de caixa. */
+  mutuosPassivosAmortizados: Months;
 }
 
 // ============= Análise Estratégica (qualitativa, opcional) =============
@@ -666,6 +688,10 @@ export interface AppState {
   /** Empréstimos PJ→PF concedidos aos sócios (mútuo ativo). Sincronizado
    *  com cashflow.mutuosConcedidos/Devolvidos via aggregateMutuos (SSOT). */
   mutuosSocios?: MutuoSocio[];
+
+  /** Mútuos PF→PJ (sócio empresta para a empresa, AFAC remunerado).
+   *  Sincronizado com cashflow.mutuosPassivos* via aggregateMutuosPassivos (SSOT). */
+  mutuosPassivos?: MutuoPassivo[];
 }
 
 export interface Scenario {

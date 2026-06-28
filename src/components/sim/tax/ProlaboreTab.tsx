@@ -5,6 +5,7 @@
 import { useEffect, useMemo } from "react";
 import { SociosCard } from "./SociosCard";
 import { MutuosSociosCard } from "./MutuosSociosCard";
+import { MutuosPassivosCard } from "./MutuosPassivosCard";
 import { SectionTitle, StatCard } from "@/components/sim/shared/primitives";
 import { useFinance, usePatchCashflow, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
@@ -123,6 +124,12 @@ export function ProlaboreTab() {
       {/* Empréstimos a sócios (mútuo PJ→PF) — cadastro de contratos com
           alerta tributário fixo. Sincroniza com Fluxo de Caixa via SSOT. */}
       <MutuosSociosCard />
+
+      {/* Mútuos PF→PJ — espelho simétrico: sócio empresta para a empresa.
+          Captação entra no caixa, devolução sai, juros viram Despesa Financeira. */}
+      <MutuosPassivosCard />
+
+
 
 
       {/* Movimentações de caixa não operacionais — movido da aba Fluxo de Caixa */}

@@ -195,6 +195,10 @@ export function computeFluxos(args: {
   mutuosConcedidos?: number[];
   /** Devolução de empréstimos pelos sócios (entrada). Opcional p/ retrocompat. */
   mutuosDevolvidos?: number[];
+  /** Mútuos PF→PJ captados de sócios (entrada). Opcional p/ retrocompat. */
+  mutuosPassivosCaptados?: number[];
+  /** Amortização de mútuos passivos (saída). Opcional p/ retrocompat. */
+  mutuosPassivosAmortizados?: number[];
 }): {
   fluxoOperacional: number[];
   fluxoInvestimento: number[];
@@ -207,6 +211,8 @@ export function computeFluxos(args: {
   const variacaoCaixa = zeros12();
   const mutCon = args.mutuosConcedidos ?? zeros12();
   const mutDev = args.mutuosDevolvidos ?? zeros12();
+  const mutPassCap = args.mutuosPassivosCaptados ?? zeros12();
+  const mutPassAmort = args.mutuosPassivosAmortizados ?? zeros12();
   for (let i = 0; i < 12; i++) {
     fluxoOperacional[i] =
       args.recebimentos[i] +
@@ -223,7 +229,9 @@ export function computeFluxos(args: {
       args.amortizacoes[i] -
       args.dividendos[i] -
       (mutCon[i] ?? 0) +
-      (mutDev[i] ?? 0);
+      (mutDev[i] ?? 0) +
+      (mutPassCap[i] ?? 0) -
+      (mutPassAmort[i] ?? 0);
     variacaoCaixa[i] = fluxoOperacional[i] + fluxoInvestimento[i] + fluxoFinanciamento[i];
   }
   return { fluxoOperacional, fluxoInvestimento, fluxoFinanciamento, variacaoCaixa };
@@ -330,6 +338,8 @@ export function buildCashFlow(
   const dividendos = cashflow.dividendos.slice();
   const mutuosConcedidos = (cashflow.mutuosConcedidos ?? zeros12()).slice();
   const mutuosDevolvidos = (cashflow.mutuosDevolvidos ?? zeros12()).slice();
+  const mutuosPassivosCaptados = (cashflow.mutuosPassivosCaptados ?? zeros12()).slice();
+  const mutuosPassivosAmortizados = (cashflow.mutuosPassivosAmortizados ?? zeros12()).slice();
   // SSOT: CAPEX = manual (cashflow.capex) + ativações de imobilizado (capital.capexAtivacao).
   const capex = computeCapexMensal(state);
 
@@ -348,6 +358,8 @@ export function buildCashFlow(
     dividendos,
     mutuosConcedidos,
     mutuosDevolvidos,
+    mutuosPassivosCaptados,
+    mutuosPassivosAmortizados,
   });
 
   const { saldoInicial, saldoFinal } = computeSaldos(
