@@ -706,6 +706,12 @@ export interface AppState {
   /** Mútuos PF→PJ (sócio empresta para a empresa, AFAC remunerado).
    *  Sincronizado com cashflow.mutuosPassivos* via aggregateMutuosPassivos (SSOT). */
   mutuosPassivos?: MutuoPassivo[];
+
+  /** Distribuição de lucros REALIZADA (12 meses). Diferente da "Previsão"
+   *  (capacidade teórica calculada a partir do lucro), esta é a decisão dos
+   *  sócios sobre quanto efetivamente retirar. Alimenta DRE/Balanço/DFC.
+   *  `fixed=true` ⇒ um único valor replicado nos 12 meses. */
+  distribuicaoRealizada?: { values: Months; fixed: boolean };
 }
 
 export interface Scenario {
