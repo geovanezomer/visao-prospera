@@ -52,21 +52,6 @@ if ! PGCONNECT_TIMEOUT=8 psql "$SUPABASE_DB_URL" -tAc "SELECT 1" >/dev/null 2>&1
   exit 0
 fi
 
-# --- Atalho: banco vazio + baseline.sql disponível ------------------------
-# Se _lovable_migrations não existe E o baseline está presente, aplica o
-# baseline de uma vez (recriação rápida do schema em VPS novo).
-BASELINE_FILE="${BASELINE_FILE:-/app/supabase/baseline.sql}"
-LEDGER_EXISTS=$(psql "$SUPABASE_DB_URL" -tAc \
-  "SELECT to_regclass('public._lovable_migrations') IS NOT NULL" 2>/dev/null)
-if [ "$LEDGER_EXISTS" = "f" ] && [ -f "$BASELINE_FILE" ]; then
-  echo "[db-bootstrap] Banco vazio detectado — aplicando baseline.sql..."
-  if psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q -f "$BASELINE_FILE"; then
-    echo "[db-bootstrap] Baseline aplicado com sucesso."
-    exit 0
-  else
-    echo "[db-bootstrap] AVISO: baseline falhou — tentando migrations incrementais."
-  fi
-fi
 
 # --- Cria tabela de controle ----------------------------------------------
 if ! psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q <<'SQL'
