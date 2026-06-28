@@ -61,9 +61,8 @@ import { cn } from "@/lib/utils";
 // Renderiza o TrialBanner apenas se o usuário logado for um trial válido.
 function TrialBannerSlot() {
   const { user } = useAuth();
-  const exp = (user?.metadata as { trial_expires_at?: string; is_trial?: boolean } | null | undefined);
-  if (!exp?.is_trial || !exp.trial_expires_at) return null;
-  return <TrialBanner expiresAt={exp.trial_expires_at} />;
+  if (!user?.isTrial || !user.trialExpiresAt) return null;
+  return <TrialBanner expiresAt={user.trialExpiresAt} />;
 }
 
 // Fallback enquanto o chunk da aba carrega.
