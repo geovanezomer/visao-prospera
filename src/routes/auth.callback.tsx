@@ -76,18 +76,26 @@ function AuthCallbackPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6">
-      <div className="text-center">
+      <div className="text-center max-w-md">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
-          {user ? (
+          {status === "ok" ? (
             <CheckCircle2 className="h-6 w-6" />
+          ) : status === "err" ? (
+            <AlertCircle className="h-6 w-6 text-destructive" />
           ) : (
             <Activity className="h-6 w-6 animate-pulse" />
           )}
         </div>
         <h1 className="text-lg font-semibold tracking-tight">
-          {user ? "E-mail confirmado" : "Confirmando seu e-mail…"}
+          {status === "ok" ? "Acesso confirmado" :
+           status === "err" ? "Link inválido ou expirado" :
+           "Confirmando seu acesso…"}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">Redirecionando…</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {status === "err"
+            ? "Solicite um novo link na página inicial. O link pode ter sido aberto antes (ex.: pelo antivírus do e-mail) ou já expirou."
+            : "Redirecionando…"}
+        </p>
       </div>
     </main>
   );
