@@ -205,6 +205,22 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
               rawTotal={-sum(state.cashflow.dividendos)}
             />
             <Row
+              label="(−) Empréstimos concedidos a sócios"
+              values={aggregate(
+                (state.cashflow.mutuosConcedidos ?? []).map((v) => -v),
+                period,
+                "sum",
+              )}
+              tone="neg"
+              rawTotal={-sum(state.cashflow.mutuosConcedidos ?? [])}
+            />
+            <Row
+              label="(+) Devolução de empréstimos de sócios"
+              values={aggregate(state.cashflow.mutuosDevolvidos ?? [], period, "sum")}
+              tone="pos"
+              rawTotal={sum(state.cashflow.mutuosDevolvidos ?? [])}
+            />
+            <Row
               label="(=) Fluxo de Financiamento"
               values={aggregate(cf.fluxoFinanciamento, period, "sum")}
               strong
