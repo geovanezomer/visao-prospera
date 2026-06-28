@@ -44,15 +44,17 @@ export function ProlaboreTab() {
     }
   }, [state, regime, payoutPct, reservaMin]);
 
-  // SSOT: Distribuição de dividendos no Fluxo de Caixa vem EXCLUSIVAMENTE
-  // do cálculo de Pró-labore × Distribuição de Lucros (payout mensal).
+  // SSOT: Distribuição de dividendos no Fluxo de Caixa vem da
+  // Distribuição REALIZADA (decisão dos sócios), não mais da capacidade prevista.
+  // Isso permite à empresa "segurar caixa" sem distorcer DRE/Balanço.
   useEffect(() => {
     if (readOnly) return;
+    const realizada = getDistribuicaoRealizadaMeses(state);
     const atual = state.cashflow.dividendos;
-    const alvo = atual.map(() => payoutRS);
-    const igual = atual.length === 12 && atual.every((v, i) => Math.abs(v - alvo[i]) < 0.01);
-    if (!igual) patchCashflow({ dividendos: alvo as typeof atual });
-  }, [payoutRS, readOnly, state.cashflow.dividendos, patchCashflow]);
+    const igual = atual.length === 12 && atual.every((v, i) => Math.abs(v - realizada[i]) < 0.01);
+    if (!igual) patchCashflow({ dividendos: realizada as typeof atual });
+  }, [state, readOnly, patchCashflow]);
+
 
   const pct = (v: number) =>
     lucroBruto > 0 ? `${((v / lucroBruto) * 100).toFixed(1)}% do Lucro Bruto` : "—";
