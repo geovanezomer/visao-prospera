@@ -82,7 +82,7 @@ export function CapitalTab() {
           dividaOnerosa: Math.round(agg.saldoTotal),
           kd: kdDerivado > 0 ? Number(kdDerivado.toFixed(2)) : s.capital.kd,
         },
-        cashflow: { ...s.cashflow, amortizacoes: agg.amort },
+        cashflow: { ...s.cashflow, amortizacoes: agg.amort, emprestimosCaptados: agg.captacao },
         costs: [...otherCosts, synthetic],
       };
     });
