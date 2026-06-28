@@ -27,13 +27,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, RotateCcw } from "lucide-react";
+import { ChevronDown, ChevronRight, RotateCcw, Plus, Trash2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { HelpTip } from "@/components/sim/shared/primitives";
 // RadioGroup removido: headcount agora é input numérico exato.
 import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
-import type { AppState, BusinessType, TaxRegime } from "@/engines/finance/types";
+import type { AppState, BusinessType, TaxRegime, SocioRetirada } from "@/engines/finance/types";
 import { listSectors, getSector } from "@/engines/benchmark/sectors";
 import { archiveYearAsHistorical, listHistoricals } from "@/engines/scenarios/store";
+import { applySociosChange } from "@/engines/finance/socios";
+import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { toast } from "sonner";
 
 const MESES_FISCAIS = [
@@ -124,11 +127,11 @@ interface Props {
 export function CompanyConfigDialog({ open, onOpenChange }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Configurar Empresa</DialogTitle>
           <DialogDescription>
-            Dados centralizados da empresa, regime tributário atual e período de análise.
+            Dados centralizados da empresa, regime tributário, sócios e período de análise.
             Estas configurações afetam cálculos em todas as abas.
           </DialogDescription>
         </DialogHeader>
@@ -537,6 +540,9 @@ export function CompanyConfigForm({
         </div>
       </section>
 
+      {/* Sócios — cadastro centralizado (usado em Pró-labore × Distribuição) */}
+      <SociosSection />
+
       {/* Análise */}
 
       <section className="space-y-3">
@@ -691,5 +697,201 @@ function ArchiveYearButton({ onClose }: { onClose: () => void }) {
         </span>
       )}
     </div>
+  );
+}
+
+/* ============================================================================
+ * SociosSection — cadastro centralizado dos sócios.
+ *
+ * Editado aqui (Configurações → Empresa) e exibido em modo somente-leitura
+ * no card "Pró-labore × Distribuição de Lucros". Os campos Operacional,
+ * Pró-labore e Dependentes ficam APENAS aqui; o card de retiradas calcula
+ * INSS, IRPF e Distribuição com base nestes dados.
+ * ========================================================================== */
+function novoSocio(idx: number, restantePct: number): SocioRetirada {
+  return {
+    id: `socio_${Date.now()}_${idx}`,
+    nome: `Sócio ${idx + 1}`,
+    participacaoPct: Math.max(0, Math.round(restantePct * 100) / 100),
+    operacional: true,
+    prolaboreMensal: 0,
+    dependentes: 0,
+    outrasDeducoes: 0,
+    modo: "manual",
+  };
+}
+
+function SociosSection() {
+  const { state, update } = useFinance();
+  const regime = resolveEffectiveRegime(state);
+  const socios = state.socios ?? [];
+
+  const setSocios = (next: SocioRetirada[]) =>
+    update((s) => applySociosChange(s, next, regime));
+
+  const addSocio = () => {
+    const usado = socios.reduce((a, s) => a + s.participacaoPct, 0);
+    const restante = Math.max(0, 100 - usado);
+    setSocios([...socios, novoSocio(socios.length, restante)]);
+  };
+
+  const removeSocio = (id: string) => {
+    const restantes = socios.filter((s) => s.id !== id);
+    if (restantes.length === 0) return setSocios([]);
+    const somaRest = restantes.reduce((a, s) => a + s.participacaoPct, 0);
+    let rebal: SocioRetirada[];
+    if (somaRest > 0) {
+      const fator = 100 / somaRest;
+      rebal = restantes.map((s) => ({
+        ...s,
+        participacaoPct: Math.round(s.participacaoPct * fator * 100) / 100,
+      }));
+    } else {
+      const cada = Math.round((100 / restantes.length) * 100) / 100;
+      rebal = restantes.map((s) => ({ ...s, participacaoPct: cada }));
+    }
+    const soma = rebal.reduce((a, s) => a + s.participacaoPct, 0);
+    const diff = Math.round((100 - soma) * 100) / 100;
+    if (diff !== 0) {
+      const last = rebal[rebal.length - 1];
+      rebal[rebal.length - 1] = {
+        ...last,
+        participacaoPct: Math.round((last.participacaoPct + diff) * 100) / 100,
+      };
+    }
+    setSocios(rebal);
+  };
+
+  const patchSocio = (id: string, patch: Partial<SocioRetirada>) =>
+    setSocios(socios.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+
+  const somaPartic = socios.reduce((a, s) => a + s.participacaoPct, 0);
+  const partOk = socios.length === 0 || Math.abs(somaPartic - 100) < 0.01;
+
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Sócios
+          </h3>
+          <HelpTip
+            text="Cadastro dos sócios. Estes dados alimentam o card 'Pró-labore × Distribuição de Lucros'. A soma das participações deve fechar 100%. Pró-labore vira despesa administrativa (linha sintética) e INSS patronal (em Presumido/Real) é adicionado automaticamente."
+            formula="Σ Participações = 100%"
+            example="Sócio A: 60% · Sócio B: 40%"
+          />
+        </div>
+        <Button size="sm" onClick={addSocio}>
+          <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar sócio
+        </Button>
+      </div>
+
+      {socios.length === 0 ? (
+        <div className="rounded-md border border-dashed border-border/60 p-4 text-center text-xs text-muted-foreground">
+          Nenhum sócio cadastrado. Clique em <b>Adicionar sócio</b>.
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-md border border-border/60">
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="border-b border-border/60 bg-muted/30 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                <th className="px-2 py-2 font-medium">Nome do sócio</th>
+                <th className="px-2 py-2 font-medium text-right">Participação (%)</th>
+                <th className="px-2 py-2 font-medium text-center">Operacional</th>
+                <th className="px-2 py-2 font-medium text-right">Pró-labore (mês)</th>
+                <th className="px-2 py-2 font-medium text-right">Dependentes</th>
+                <th className="px-2 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {socios.map((s) => (
+                <tr key={s.id} className="border-b border-border/40 last:border-b-0">
+                  <td className="px-2 py-1.5">
+                    <Input
+                      value={s.nome}
+                      onChange={(e) => patchSocio(s.id, { nome: e.target.value })}
+                      className="h-8 min-w-[160px]"
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <Input
+                      type="number"
+                      value={s.participacaoPct}
+                      onChange={(e) =>
+                        patchSocio(s.id, { participacaoPct: Number(e.target.value) || 0 })
+                      }
+                      className="h-8 w-[90px] text-right"
+                    />
+                  </td>
+                  <td className="px-2 py-1.5 text-center">
+                    <Switch
+                      checked={s.operacional}
+                      onCheckedChange={(v) => patchSocio(s.id, { operacional: v })}
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <Input
+                      type="number"
+                      value={s.prolaboreMensal}
+                      onChange={(e) =>
+                        patchSocio(s.id, {
+                          prolaboreMensal: Number(e.target.value) || 0,
+                          modo: "manual",
+                        })
+                      }
+                      className="h-8 w-[120px] text-right"
+                    />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <Input
+                      type="number"
+                      value={s.dependentes}
+                      onChange={(e) =>
+                        patchSocio(s.id, { dependentes: Number(e.target.value) || 0 })
+                      }
+                      className="h-8 w-[80px] text-right"
+                    />
+                  </td>
+                  <td className="px-2 py-1.5 text-right">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => removeSocio(s.id)}
+                      title="Remover sócio"
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-muted/20 text-[11px] font-semibold">
+                <td className="px-2 py-2 text-right">Total</td>
+                <td
+                  className={`px-2 py-2 text-right ${
+                    partOk ? "text-foreground" : "text-[var(--warning)]"
+                  }`}
+                >
+                  {somaPartic.toFixed(2)}%
+                </td>
+                <td colSpan={4}></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+
+      {!partOk && (
+        <p className="text-[11px] text-[var(--warning)]">
+          ⚠️ A soma das participações precisa fechar <b>100%</b> para a distribuição de
+          lucros ser calculada corretamente.
+        </p>
+      )}
+      <p className="text-[10px] text-muted-foreground">
+        Sócio operacional deve receber pró-labore ≥ salário mínimo (IN RFB 971/2009). No
+        Simples Nacional não há INSS patronal sobre pró-labore; em Presumido/Real aplica-se 20%.
+      </p>
+    </section>
   );
 }
