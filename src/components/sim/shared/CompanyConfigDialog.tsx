@@ -619,7 +619,7 @@ function buildFormFromState(state: AppState): FormData {
     ramoAtuacao: ramoEfetivo,
     benchmarkCustom: state.benchmarkCustom,
     numColaboradores: inferNum(),
-    numSocios: typeof state.numSocios === "number" ? state.numSocios : 1,
+    
     regime: state.tax.regime,
     periodoAnaliseMeses: state.periodoAnaliseMeses ?? 12,
     fiscalYearStartMonth: state.fiscalYearStartMonth ?? 1,
