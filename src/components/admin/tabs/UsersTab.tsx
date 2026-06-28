@@ -229,6 +229,7 @@ export function UsersTab() {
                     Expira <ArrowUpDown className="h-3 w-3" />
                   </button>
                 </th>
+                <th className="p-2 text-center" title="Acesso ao Consultor IA na sidebar">I.A.</th>
                 <th className="p-2 text-center">Ativo</th>
                 <th className="p-2 text-right">Ações</th>
               </tr>
