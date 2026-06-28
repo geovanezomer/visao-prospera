@@ -177,10 +177,10 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
     // ── Funil de trial: requested → activated → converted ────────────────────
     const { data: trialRows } = await supabaseAdmin
       .from("trial_requests")
-      .select("email, user_id, created_at")
+      .select("email, user_id, created_at, consumed_at")
       .limit(50000);
     const requested = trialRows?.length ?? 0;
-    const activated = (trialRows ?? []).filter((r) => !!r.user_id).length;
+    const activated = (trialRows ?? []).filter((r) => !!r.consumed_at).length;
     const last30dRequested = (trialRows ?? []).filter(
       (r) => r.created_at && new Date(r.created_at).getTime() >= d30,
     ).length;
