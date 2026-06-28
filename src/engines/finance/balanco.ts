@@ -275,6 +275,10 @@ export function suggestBalancoFromState(
     },
     passivoNaoCirculante: {
       emprestimosFinanciamentosLP: dividaLP,
+      // Mútuos passivos (PF→PJ) — saldo devedor remanescente ao fim do horizonte
+      // (PV captado − amortizações realizadas dentro de 12m). Compõe Passivo
+      // como "Mútuos a Pagar a Sócios" (obrigação não-onerosa de terceiros).
+      outrasObrigacoesLP: mutuosPassivosSaldoDevedor,
     },
     patrimonioLiquido: {
       resultadoExercicio: opts.dreLucroLiquido,
