@@ -1308,6 +1308,8 @@ function FaqAccordion() {
    CTA FINAL
    ============================================================ */
 function FinalCta() {
+  const { trial } = useBranding();
+  const [trialOpen, setTrialOpen] = useState(false);
   return (
     <section className="relative overflow-hidden py-28">
       <div
@@ -1348,13 +1350,25 @@ function FinalCta() {
             <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
           </a>
 
-          <Link
-            to="/login"
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-6 py-3.5 text-sm font-medium text-foreground transition hover:bg-card"
-          >
-            Já tenho conta
-          </Link>
+          {trial.enabled ? (
+            <button
+              type="button"
+              onClick={() => setTrialOpen(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-6 py-3.5 text-sm font-medium text-foreground transition hover:bg-card"
+            >
+              Solicitar teste
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-6 py-3.5 text-sm font-medium text-foreground transition hover:bg-card"
+            >
+              Já tenho conta
+            </Link>
+          )}
         </div>
+        <TrialRequestDialog open={trialOpen} onOpenChange={setTrialOpen} />
+
         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <ShieldCheck className="h-4 w-4 text-primary" />
