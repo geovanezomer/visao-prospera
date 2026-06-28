@@ -1351,22 +1351,13 @@ function FinalCta() {
             <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
           </a>
 
-          {trial.enabled ? (
-            <button
-              type="button"
-              onClick={() => setTrialOpen(true)}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-6 py-3.5 text-sm font-medium text-foreground transition hover:bg-card"
-            >
-              Solicitar teste
-            </button>
-          ) : (
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-6 py-3.5 text-sm font-medium text-foreground transition hover:bg-card"
-            >
-              Já tenho conta
-            </Link>
-          )}
+          <button
+            type="button"
+            onClick={() => setTrialOpen(true)}
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-card/40 px-6 py-3.5 text-sm font-medium text-foreground transition hover:bg-card"
+          >
+            Solicitar teste
+          </button>
         </div>
         <TrialRequestDialog open={trialOpen} onOpenChange={setTrialOpen} />
 
