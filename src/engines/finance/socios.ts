@@ -283,10 +283,15 @@ export function syncSociosToCosts(state: AppState, regime: TaxRegime): AppState 
     0,
   );
 
-  // Remove linhas system anteriores e reinsere com valores atuais.
-  const semSystem = state.costs.filter(
-    (c) => c.id !== SOCIOS_PROLABORE_LINE_ID && c.id !== SOCIOS_PATRONAL_LINE_ID,
-  );
+  // Remove linhas system anteriores e quaisquer linhas legadas com os mesmos
+  // rótulos (defesa contra duplicatas vindas de estados antigos persistidos).
+  const semSystem = state.costs.filter((c) => {
+    if (c.id === SOCIOS_PROLABORE_LINE_ID || c.id === SOCIOS_PATRONAL_LINE_ID) return false;
+    if (c.system && (c.label === "Pró-labore (sócios)" || c.label === "INSS Patronal sócios")) {
+      return false;
+    }
+    return true;
+  });
   const novas: CostLine[] = [];
   if (prolaboreMensal > 0) {
     novas.push({
