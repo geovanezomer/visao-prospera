@@ -8,15 +8,14 @@ import { MutuosSociosCard } from "./MutuosSociosCard";
 import { MutuosPassivosCard } from "./MutuosPassivosCard";
 
 import { StatCard } from "@/components/sim/shared/primitives";
-import { useFinance, usePatchCashflow, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
+import { useFinance, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { buildDRE } from "@/engines/finance/dre";
 import { syncSociosToCosts, getDistribuicaoRealizadaMeses } from "@/engines/finance/socios";
 import { fmtBRL } from "@/engines/finance/format";
 
 export function ProlaboreTab() {
-  const { state } = useFinance();
-  const patchCashflow = usePatchCashflow();
+  const { state, update } = useFinance();
   const readOnly = useFinanceReadOnly();
   const regime = resolveEffectiveRegime(state);
 
@@ -49,11 +48,14 @@ export function ProlaboreTab() {
   // Isso permite à empresa "segurar caixa" sem distorcer DRE/Balanço.
   useEffect(() => {
     if (readOnly) return;
-    const realizada = getDistribuicaoRealizadaMeses(state);
-    const atual = state.cashflow.dividendos;
-    const igual = atual.length === 12 && atual.every((v, i) => Math.abs(v - realizada[i]) < 0.01);
-    if (!igual) patchCashflow({ dividendos: realizada as typeof atual });
-  }, [state, readOnly, patchCashflow]);
+    update((cur) => {
+      const realizada = getDistribuicaoRealizadaMeses(cur);
+      const atual = cur.cashflow.dividendos;
+      const igual = atual.length === 12 && atual.every((v, i) => Math.abs(v - realizada[i]) < 0.01);
+      if (igual) return cur;
+      return { ...cur, cashflow: { ...cur.cashflow, dividendos: realizada } };
+    });
+  }, [state.distribuicaoRealizada, state.cashflow.dividendos, readOnly, update]);
 
 
   const pct = (v: number) =>
