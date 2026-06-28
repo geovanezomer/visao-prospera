@@ -34,10 +34,11 @@ export function validateDebtContracts(contracts: DebtContract[] | undefined): De
       for (const e of r.error.issues) {
         issues.push({ id: c?.id ?? "?", field: e.path.join("."), message: e.message });
       }
-      continue;
     }
-    if (seen.has(c.id)) issues.push({ id: c.id, field: "id", message: "id duplicado" });
-    seen.add(c.id);
+    if (c?.id) {
+      if (seen.has(c.id)) issues.push({ id: c.id, field: "id", message: "id duplicado" });
+      seen.add(c.id);
+    }
   }
   return issues;
 }
