@@ -7,6 +7,7 @@
 // IMPORTANTE: depreciação acumulada, amortização acumulada, PDD e ações em
 // tesouraria entram como POSITIVOS no input e são SUBTRAÍDAS aqui.
 import type { AppState, BalancoDetalhado, CostLine } from "./types";
+import { aggregateMutuosPassivos } from "./mutuosPassivos";
 
 const n = (v: number | undefined): number => (typeof v === "number" && isFinite(v) ? v : 0);
 const sumObj = (o: Record<string, number | undefined> | undefined): number =>
@@ -246,6 +247,14 @@ export function suggestBalancoFromState(
   const caixaOcioso = cap.caixaOcioso || 0;
   const caixaOper = Math.max(0, (cap.disponibilidades || 0) - caixaOcioso);
 
+  // Mútuos passivos (PF→PJ): saldo devedor remanescente ao fim do horizonte
+  // = ΣPV captado − Σamortizações dentro dos 12 meses simulados.
+  const mpAgg = aggregateMutuosPassivos(state.mutuosPassivos);
+  const mutuosPassivosSaldoDevedor = Math.max(
+    0,
+    mpAgg.totalCaptado - mpAgg.amortizacao.reduce((a, b) => a + b, 0),
+  );
+
   // Provisões ~ 1 mês.
   const salariosPagar = folhaAnual > 0 ? folhaAnual / 12 : 0;
   const impostosPagar =
@@ -274,6 +283,10 @@ export function suggestBalancoFromState(
     },
     passivoNaoCirculante: {
       emprestimosFinanciamentosLP: dividaLP,
+      // Mútuos passivos (PF→PJ) — saldo devedor remanescente ao fim do horizonte
+      // (PV captado − amortizações realizadas dentro de 12m). Compõe Passivo
+      // como "Mútuos a Pagar a Sócios" (obrigação não-onerosa de terceiros).
+      outrasObrigacoesLP: mutuosPassivosSaldoDevedor,
     },
     patrimonioLiquido: {
       resultadoExercicio: opts.dreLucroLiquido,
