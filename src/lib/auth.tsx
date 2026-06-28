@@ -9,6 +9,10 @@ export type AuthUser = {
   emailConfirmed: boolean;
   /** Acesso ao Consultor IA. Default = true; admin pode desativar via painel. */
   aiEnabled: boolean;
+  /** Marca usuário como teste gratuito (auto-logout ao expirar). */
+  isTrial: boolean;
+  /** ISO timestamp do fim do trial; null quando não-trial. */
+  trialExpiresAt: string | null;
 };
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
