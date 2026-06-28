@@ -3,6 +3,7 @@ import { useFinance, usePatchRevenue } from "@/engines/finance/AppStateContext";
 import { AppState, RevenueDeducao } from "@/engines/finance/types";
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/engines/finance/format";
 import { buildDRE } from "@/engines/finance";
+import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { MoneyInput, PctInput, StatCard, SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
