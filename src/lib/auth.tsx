@@ -7,6 +7,8 @@ export type AuthUser = {
   email: string;
   displayName: string;
   emailConfirmed: boolean;
+  /** Acesso ao Consultor IA. Default = true; admin pode desativar via painel. */
+  aiEnabled: boolean;
 };
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
