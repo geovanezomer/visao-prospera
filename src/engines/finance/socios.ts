@@ -32,6 +32,8 @@ import {
   getSalarioMinimo,
   getPresumidoBases,
   getIrpjPct,
+  getIrpjAdicionalPct,
+  getIrpjAdicionalGatilhoTri,
   getCsllPct,
   getPisCumPct,
   getCofinsCumPct,
