@@ -338,6 +338,7 @@ export const DEFAULT_STATE: AppState = {
   },
 
   socios: [],
+  distribuicaoRealizada: { values: fill12(0), fixed: true },
 };
 
 // ============ Migração de estados antigos ============
