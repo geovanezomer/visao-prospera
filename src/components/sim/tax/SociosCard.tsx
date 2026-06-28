@@ -1,40 +1,61 @@
 /**
- * SociosCard — Pró-labore × Distribuição de Lucros (somente leitura).
+ * SociosCard — Pró-labore × Distribuição de Lucros — Previsão.
  *
- * Lista os sócios cadastrados em Configurações → Empresa → Sócios.
- * Aqui apenas exibimos o cálculo derivado (INSS sócio/patronal, IRPF,
- * distribuição isenta/tributável, líquido, custo PJ). Para alterar
- * Nome / Participação / Pró-labore / Dependentes / Operacional, o
- * usuário abre o lightbox de configurações.
+ * Tabela superior (PREVISÃO): cadastrados em Configurações → Empresa → Sócios.
+ * Mostra apenas folha (pró-labore, INSS sócio/patronal, IRPF do pró-labore) e
+ * a CAPACIDADE TEÓRICA de distribuição. Esses números NÃO afetam Caixa/DRE/Balanço.
+ *
+ * Bloco inferior (REALIZADA): decisão dos sócios sobre quanto efetivamente
+ * distribuir mês-a-mês. Esta é a fonte de verdade que alimenta:
+ *  - Fluxo de Caixa (Atividades de Financiamento → Dividendos)
+ *  - Balanço (Lucros Acumulados = Lucro Líquido − Distribuído realizado)
+ *  - IRPF do excedente (parcela tributável calculada sobre o REALIZADO)
+ *
+ * O Adicional IRPJ de 10% (Lei 9.249/95) continua incidindo sobre o LUCRO
+ * presumido trimestral (não sobre a retirada) — está correto e não muda.
  */
-import { useMemo } from "react";
-import { Settings } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Settings, Wand2, Eraser } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useFinance } from "@/engines/finance/AppStateContext";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { useFinance, useFinanceUpdate } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { buildDRE } from "@/engines/finance/dre";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, MESES } from "@/engines/finance/format";
 import {
   calcRetiradaSocio,
   syncSociosToCosts,
   calcDistribuicaoIsentaBreakdown,
+  calcDistribuicaoIsentaLimite,
+  getDistribuicaoRealizadaMeses,
 } from "@/engines/finance/socios";
 import { SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
 import { getSalarioMinimo, getIrpfTable } from "@/engines/finance/taxDefaults";
 import { CompanyConfigDialog } from "@/components/sim/shared/CompanyConfigDialog";
-import { useState } from "react";
+import { fill12 } from "@/engines/finance/format";
 
 const HINT = {
   description:
-    "Cálculo automático a partir dos sócios cadastrados em Configurações → Empresa. Pró-labore, participação e dependentes são fixos (editáveis no cadastro). Aqui você vê INSS, IRPF e distribuição de lucros.",
+    "PREVISÃO: capacidade teórica derivada do cadastro de sócios. Mostra pró-labore, INSS e IRPF (folha — sempre realizados) e o teto de distribuição isenta. A distribuição EFETIVA é registrada no bloco inferior — só ela alimenta Fluxo de Caixa, DRE e Balanço.",
   formula:
-    "Líquido sócio = Pró-labore − INSS sócio − IRPF + Distribuição de Lucros\nCusto PJ = Pró-labore + INSS patronal",
+    "Líquido (folha) = Pró-labore − INSS sócio − IRPF do pró-labore\nCusto PJ = Pró-labore + INSS patronal",
   example:
-    "A distribuição de lucros é proporcional à participação de cada sócio, dentro do limite isento de IRPF.",
+    "Se a empresa pode distribuir R$ 50k mas decide reter R$ 20k para reforçar caixa, registre apenas R$ 30k em 'Distribuição Realizada' — o caixa preservado aparece nos Lucros Acumulados do Balanço.",
+};
+
+const SEPARATOR_HINT = {
+  description:
+    "A PREVISÃO (acima) mostra quanto a empresa PODERIA distribuir sem violar limites legais. A REALIZADA (abaixo) é o que de fato saiu do caixa para os sócios. Apenas a Realizada alimenta DRE, Fluxo de Caixa e Balanço.",
+  formula:
+    "Lucros Acumulados (Balanço) = Σ Lucro Líquido − Σ Distribuição Realizada\nDFC Financiamento (Dividendos) = Distribuição Realizada (mês a mês)",
 };
 
 export function SociosCard() {
   const { state } = useFinance();
+  const update = useFinanceUpdate();
   const regime = resolveEffectiveRegime(state);
   const socios = state.socios ?? [];
   const salarioMin = getSalarioMinimo(state.tax);
@@ -59,69 +80,85 @@ export function SociosCard() {
   const somaPartic = socios.reduce((a, s) => a + s.participacaoPct, 0);
   const partOk = socios.length === 0 || Math.abs(somaPartic - 100) < 0.01;
 
-  const resultados = socios.map((s) =>
+  // Cálculo de folha (independe da distribuição realizada).
+  const resultadosFolha = socios.map((s) =>
     calcRetiradaSocio(s, state, regime, (lucroMensalDisponivel * s.participacaoPct) / 100),
   );
 
-  // Memória de cálculo do teto de distribuição isenta (Presumido sem escrituração).
+  // ─── Distribuição Realizada ──────────────────────────────────────────
+  const realizadaArr = getDistribuicaoRealizadaMeses(state);
+  const realizadaFixed = state.distribuicaoRealizada?.fixed ?? true;
+  const realizadaTotalAno = realizadaArr.reduce((a, b) => a + b, 0);
+  const realizadaMediaMes = realizadaTotalAno / 12;
+  const previsaoTotalAno = lucroMensalDisponivel * 12;
+  const retidoAno = Math.max(0, previsaoTotalAno - realizadaTotalAno);
+
+  const limiteIsentoMensal = calcDistribuicaoIsentaLimite(state, regime);
   const breakdown = calcDistribuicaoIsentaBreakdown(state, regime);
   const tabela = getIrpfTable(state.tax);
   const aliqTopoPct = tabela[tabela.length - 1][1];
-  const totalIsentaMes = resultados.reduce((a, r) => a + r.distribuicaoIsentaMensal, 0);
-  const totalTribMes = resultados.reduce((a, r) => a + r.distribuicaoTributavelMensal, 0);
 
-  const isentaHint = Number.isFinite(breakdown.limiteMensal)
-    ? {
-        description:
-          "Teto MENSAL de lucros distribuíveis sem IRPF, no Presumido sem escrituração contábil completa. Calculado como Base presumida − (IRPJ 15% + CSLL 9% sobre base + PIS/COFINS sobre receita) − Adicional IRPJ 10% (sobre lucro trimestral > R$ 60k/trim, Lei 9.249/95 art. 3º §1º).",
-        formula:
-          "Limite mês = (Base − Tributos federais − Adicional IRPJ) ÷ 12",
-        calc: [
-          `Base presumida (ano) = ${fmtBRL(breakdown.basePresumida)}`,
-          `Base trimestral = ${fmtBRL(breakdown.baseTri)}  (gatilho: ${fmtBRL(breakdown.gatilhoTri)})`,
-          `Tributos federais (ano) = ${fmtBRL(breakdown.tributosFed)}`,
-          `Adicional IRPJ 10% (ano) = ${fmtBRL(breakdown.adicionalIrpjAno)}`,
-          `→ Limite mensal isento = ${fmtBRL(breakdown.limiteMensal)}`,
-          `Distribuído isento (mês, todos sócios) = ${fmtBRL(totalIsentaMes)}`,
-        ].join("\n"),
-      }
-    : {
-        description:
-          "Sem teto regulatório: a empresa tem escrituração contábil completa (RIR/2018 art. 238) ou está em regime que não exige a proxy (Real/Simples). Todo o lucro distribuído sai isento de IRPF para o sócio.",
-      };
+  // IRPF excedente sobre o REALIZADO (média mensal — proxy simples e estável).
+  const excedenteMes = Math.max(0, realizadaMediaMes - limiteIsentoMensal);
+  const irpfExcedenteMes = excedenteMes * (aliqTopoPct / 100);
 
-  const tribHint = {
-    description:
-      "Parcela da distribuição que EXCEDE o limite isento. Sem escrituração contábil completa, o excedente é rendimento tributável do sócio na PF — soma à renda anual e tributa pelo IRPF (alíquota topo aplicada aqui como proxy).",
-    formula: `Tributável = max(0, Distribuído − Limite isento)\nIRPF excedente = Tributável × ${aliqTopoPct.toFixed(1)}%`,
-    calc: [
-      `Limite isento mensal = ${fmtBRL(breakdown.limiteMensal)}`,
-      `Adicional IRPJ 10% já descontado = ${fmtBRL(breakdown.adicionalIrpjAno)}/ano`,
-      `Distribuído tributável (mês, todos sócios) = ${fmtBRL(totalTribMes)}`,
-      `IRPF aproximado = ${fmtBRL(totalTribMes * (aliqTopoPct / 100))}/mês`,
-    ].join("\n"),
-    example:
-      "Para eliminar o excedente: adote escrituração contábil completa, reduza o payout, ou aumente a reserva mensal.",
+  const setRealizadaFixed = (fixed: boolean) => {
+    update((s) => ({
+      ...s,
+      distribuicaoRealizada: { values: realizadaArr as number[], fixed },
+    }));
+  };
+  const setRealizadaUniforme = (v: number) => {
+    const val = Math.max(0, v);
+    update((s) => ({
+      ...s,
+      distribuicaoRealizada: { values: fill12(val), fixed: true },
+    }));
+  };
+  const setRealizadaMes = (idx: number, v: number) => {
+    const next = [...realizadaArr];
+    next[idx] = Math.max(0, v);
+    update((s) => ({
+      ...s,
+      distribuicaoRealizada: { values: next, fixed: false },
+    }));
+  };
+  const usarPrevisao = () => {
+    update((s) => ({
+      ...s,
+      distribuicaoRealizada: { values: fill12(lucroMensalDisponivel), fixed: true },
+    }));
+  };
+  const zerarRealizada = () => {
+    update((s) => ({
+      ...s,
+      distribuicaoRealizada: { values: fill12(0), fixed: true },
+    }));
   };
 
   const totaisAno = {
-    prolab: resultados.reduce((a, r) => a + r.prolaboreMensal, 0) * 12,
-    patronal: resultados.reduce((a, r) => a + r.inssPatronal, 0) * 12,
-    inssSocio: resultados.reduce((a, r) => a + r.inssSocio, 0) * 12,
-    irpf: resultados.reduce((a, r) => a + r.irpfMensal, 0) * 12,
-    distIsenta: resultados.reduce((a, r) => a + r.distribuicaoIsentaMensal, 0) * 12,
-    distTrib: resultados.reduce((a, r) => a + r.distribuicaoTributavelMensal, 0) * 12,
-    liquido: resultados.reduce((a, r) => a + r.liquidoSocio, 0) * 12,
-    custoPJ: resultados.reduce((a, r) => a + r.custoTotalPJ, 0) * 12,
+    prolab: resultadosFolha.reduce((a, r) => a + r.prolaboreMensal, 0) * 12,
+    patronal: resultadosFolha.reduce((a, r) => a + r.inssPatronal, 0) * 12,
+    inssSocio: resultadosFolha.reduce((a, r) => a + r.inssSocio, 0) * 12,
+    irpf: resultadosFolha.reduce((a, r) => a + r.irpfMensal, 0) * 12,
+    liquidoFolha: resultadosFolha.reduce(
+      (a, r) => a + (r.prolaboreMensal - r.inssSocio - r.irpfMensal),
+      0,
+    ) * 12,
+    custoPJ: resultadosFolha.reduce((a, r) => a + r.custoTotalPJ, 0) * 12,
   };
+
+  // Alertas inteligentes
+  const acimaIsento = excedenteMes > 0;
+  const retencaoForte = retidoAno > 0 && retidoAno > previsaoTotalAno * 0.3;
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <SectionTitle hint={HINT}>Pró-labore × Distribuição de Lucros</SectionTitle>
+          <SectionTitle hint={HINT}>Pró-labore × Distribuição de Lucros — Previsão</SectionTitle>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            Lucro mensal disponível: <b>{fmtBRL(lucroMensalDisponivel)}</b>
+            Capacidade teórica mensal: <b>{fmtBRL(lucroMensalDisponivel)}</b>
             {(payoutPct !== 100 || reservaMin > 0) && (
               <span className="text-muted-foreground/70">
                 {" "}(bruto {fmtBRL(lucroMensalBruto)} − reserva {fmtBRL(reservaMin)} × payout {payoutPct}%)
@@ -139,7 +176,7 @@ export function SociosCard() {
       {socios.length === 0 ? (
         <div className="mt-4 rounded-md border border-dashed border-border/60 p-6 text-center text-sm text-muted-foreground">
           Nenhum sócio cadastrado. Clique em <b>Editar sócios</b> para abrir o cadastro
-          em Configurações → Empresa.
+          em Configurações → Empresa → Sócios.
         </div>
       ) : (
         <div className="mt-4 overflow-x-auto">
@@ -151,43 +188,21 @@ export function SociosCard() {
                 <th className="px-2 py-2 font-medium text-right">Pró-labore (mês)</th>
                 <th className="px-2 py-2 font-medium text-right">INSS sócio</th>
                 <th className="px-2 py-2 font-medium text-right">INSS patronal</th>
-                <th className="px-2 py-2 font-medium text-right">IRPF</th>
-                <th className="px-2 py-2 font-medium text-right">
-                  <span className="inline-flex items-center gap-1">
-                    Distribuição isenta
-                    <HelpTip
-                      text={isentaHint.description}
-                      formula={isentaHint.formula}
-                      calc={isentaHint.calc}
-                    />
-                  </span>
-                </th>
-                <th className="px-2 py-2 font-medium text-right">
-                  <span className="inline-flex items-center gap-1">
-                    Distribuição tributável
-                    <HelpTip
-                      text={tribHint.description}
-                      formula={tribHint.formula}
-                      calc={tribHint.calc}
-                      example={tribHint.example}
-                    />
-                  </span>
-                </th>
-                <th className="px-2 py-2 font-medium text-right">Líquido sócio (mês)</th>
+                <th className="px-2 py-2 font-medium text-right">IRPF (pró-labore)</th>
+                <th className="px-2 py-2 font-medium text-right">Líquido folha (mês)</th>
                 <th className="px-2 py-2 font-medium text-right">Custo PJ (mês)</th>
               </tr>
             </thead>
             <tbody>
               {socios.map((s, i) => {
-                const r = resultados[i];
+                const r = resultadosFolha[i];
                 const abaixoDoPiso =
                   s.operacional && s.prolaboreMensal > 0 && s.prolaboreMensal < salarioMin;
+                const liquidoFolha = r.prolaboreMensal - r.inssSocio - r.irpfMensal;
                 return (
                   <tr key={s.id} className="border-b border-border/40 hover:bg-muted/20">
                     <td className="px-2 py-1.5 font-medium">{s.nome}</td>
-                    <td className="num px-2 py-1.5 text-right">
-                      {s.participacaoPct.toFixed(2)}%
-                    </td>
+                    <td className="num px-2 py-1.5 text-right">{s.participacaoPct.toFixed(2)}%</td>
                     <td
                       className={`num px-2 py-1.5 text-right ${
                         abaixoDoPiso ? "text-[var(--warning)]" : ""
@@ -200,27 +215,11 @@ export function SociosCard() {
                     >
                       {fmtBRL(s.prolaboreMensal)}
                     </td>
-                    <td className="num px-2 py-1.5 text-right text-foreground/90">
-                      {fmtBRL(r.inssSocio)}
-                    </td>
-                    <td className="num px-2 py-1.5 text-right text-foreground/90">
-                      {fmtBRL(r.inssPatronal)}
-                    </td>
-                    <td className="num px-2 py-1.5 text-right text-foreground/90">
-                      {fmtBRL(r.irpfMensal)}
-                    </td>
-                    <td className="num px-2 py-1.5 text-right text-pos">
-                      {fmtBRL(r.distribuicaoIsentaMensal)}
-                    </td>
-                    <td className="num px-2 py-1.5 text-right text-[var(--warning)]">
-                      {fmtBRL(r.distribuicaoTributavelMensal)}
-                    </td>
-                    <td className="num px-2 py-1.5 text-right font-semibold text-pos">
-                      {fmtBRL(r.liquidoSocio)}
-                    </td>
-                    <td className="num px-2 py-1.5 text-right font-semibold">
-                      {fmtBRL(r.custoTotalPJ)}
-                    </td>
+                    <td className="num px-2 py-1.5 text-right text-foreground/90">{fmtBRL(r.inssSocio)}</td>
+                    <td className="num px-2 py-1.5 text-right text-foreground/90">{fmtBRL(r.inssPatronal)}</td>
+                    <td className="num px-2 py-1.5 text-right text-foreground/90">{fmtBRL(r.irpfMensal)}</td>
+                    <td className="num px-2 py-1.5 text-right font-semibold text-pos">{fmtBRL(liquidoFolha)}</td>
+                    <td className="num px-2 py-1.5 text-right font-semibold">{fmtBRL(r.custoTotalPJ)}</td>
                   </tr>
                 );
               })}
@@ -239,11 +238,7 @@ export function SociosCard() {
                 <td className="num px-2 py-2 text-right">{fmtBRL(totaisAno.inssSocio)}</td>
                 <td className="num px-2 py-2 text-right">{fmtBRL(totaisAno.patronal)}</td>
                 <td className="num px-2 py-2 text-right">{fmtBRL(totaisAno.irpf)}</td>
-                <td className="num px-2 py-2 text-right text-pos">{fmtBRL(totaisAno.distIsenta)}</td>
-                <td className="num px-2 py-2 text-right text-[var(--warning)]">
-                  {fmtBRL(totaisAno.distTrib)}
-                </td>
-                <td className="num px-2 py-2 text-right text-pos">{fmtBRL(totaisAno.liquido)}</td>
+                <td className="num px-2 py-2 text-right text-pos">{fmtBRL(totaisAno.liquidoFolha)}</td>
                 <td className="num px-2 py-2 text-right">{fmtBRL(totaisAno.custoPJ)}</td>
               </tr>
             </tfoot>
@@ -255,15 +250,167 @@ export function SociosCard() {
               <b>100%</b>. Ajuste em <b>Configurações → Empresa → Sócios</b>.
             </div>
           )}
-
-          <p className="mt-3 text-[11px] text-muted-foreground">
-            Para alterar nome, participação, pró-labore, dependentes ou status operacional,
-            edite o cadastro em <b>Configurações → Empresa → Sócios</b>.
-          </p>
         </div>
       )}
 
+      {/* ───────────────── Separador + Distribuição Realizada ───────────────── */}
+      <div className="mt-6">
+        <Separator className="my-4" />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-semibold">
+              Distribuição Realizada — 12 meses
+            </h4>
+            <HelpTip
+              text={SEPARATOR_HINT.description}
+              formula={SEPARATOR_HINT.formula}
+              calc={[
+                `Capacidade prevista (ano) = ${fmtBRL(previsaoTotalAno)}`,
+                `Realizado (ano) = ${fmtBRL(realizadaTotalAno)}`,
+                `Retido em caixa (ano) = ${fmtBRL(retidoAno)}`,
+                `Limite isento mensal = ${fmtBRL(limiteIsentoMensal)}`,
+                `Adicional IRPJ 10% já no DRE = ${fmtBRL(breakdown.adicionalIrpjAno)}/ano`,
+              ].join("\n")}
+            />
+            <span className="rounded-full bg-pos/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-pos">
+              Efetivado em caixa
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={usarPrevisao} title="Copia a capacidade prevista para todos os meses">
+              <Wand2 className="mr-1 h-3.5 w-3.5" /> Usar Previsão
+            </Button>
+            <Button size="sm" variant="ghost" onClick={zerarRealizada} title="Zera todos os meses (segura o caixa)">
+              <Eraser className="mr-1 h-3.5 w-3.5" /> Zerar
+            </Button>
+          </div>
+        </div>
+
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          O valor preenchido aqui é o que <b>efetivamente</b> sai do caixa para os sócios.
+          Use <b>Usar Previsão</b> para distribuir 100% do disponível, ou ajuste mês-a-mês
+          para reter caixa nos meses críticos.
+        </p>
+
+        <div className="mt-3 flex items-center gap-3">
+          <Switch
+            id="dist-realizada-fixed"
+            checked={realizadaFixed}
+            onCheckedChange={setRealizadaFixed}
+          />
+          <Label htmlFor="dist-realizada-fixed" className="text-[12px] cursor-pointer">
+            Fixar todos os meses (mesmo valor)
+          </Label>
+        </div>
+
+        {realizadaFixed ? (
+          <div className="mt-3 max-w-xs">
+            <Label className="text-[11px] text-muted-foreground">Valor mensal (R$)</Label>
+            <Input
+              type="number"
+              min={0}
+              step={100}
+              value={realizadaArr[0] ?? 0}
+              onChange={(e) => setRealizadaUniforme(Number(e.target.value) || 0)}
+              className="mt-1"
+            />
+          </div>
+        ) : (
+          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-12">
+            {realizadaArr.map((v, i) => (
+              <div key={i} className="space-y-1">
+                <Label className="text-[10px] uppercase text-muted-foreground">{MESES[i]}</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={v}
+                  onChange={(e) => setRealizadaMes(i, Number(e.target.value) || 0)}
+                  className="h-8 text-[12px]"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Resumo + Alertas */}
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <SummaryBox label="Realizado (ano)" value={fmtBRL(realizadaTotalAno)} tone="pos" />
+          <SummaryBox
+            label="Disponível previsto (ano)"
+            value={fmtBRL(previsaoTotalAno)}
+            tone="default"
+          />
+          <SummaryBox
+            label="Retido em caixa (ano)"
+            value={fmtBRL(retidoAno)}
+            tone={retidoAno > 0 ? "warn" : "default"}
+            sub={
+              previsaoTotalAno > 0
+                ? `${((retidoAno / previsaoTotalAno) * 100).toFixed(1)}% do disponível`
+                : undefined
+            }
+          />
+          <SummaryBox
+            label="IRPF excedente (mês)"
+            value={fmtBRL(irpfExcedenteMes)}
+            tone={irpfExcedenteMes > 0 ? "warn" : "default"}
+            sub={
+              acimaIsento
+                ? `Excede limite isento em ${fmtBRL(excedenteMes)}/mês`
+                : "Dentro do limite isento"
+            }
+          />
+        </div>
+
+        {acimaIsento && (
+          <div className="mt-3 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/5 px-3 py-2 text-[12px] text-[var(--warning)]">
+            ⚠️ <b>{fmtBRL(excedenteMes)}/mês</b> excede o limite isento de{" "}
+            <b>{fmtBRL(limiteIsentoMensal)}</b> e será tributado a {aliqTopoPct.toFixed(1)}%
+            (IRPF) na PF dos sócios. Considere adotar escrituração contábil completa para
+            eliminar o limite (RIR/2018 art. 238).
+          </div>
+        )}
+        {retencaoForte && !acimaIsento && (
+          <div className="mt-3 rounded border border-border/60 bg-muted/30 px-3 py-2 text-[12px] text-muted-foreground">
+            💡 Empresa está retendo <b>{fmtBRL(retidoAno)}</b> ({((retidoAno / previsaoTotalAno) * 100).toFixed(0)}%) do disponível.
+            O caixa preservado aparece como aumento de <b>Lucros Acumulados</b> no Balanço.
+          </div>
+        )}
+
+        <p className="mt-3 text-[11px] text-muted-foreground">
+          Para alterar nome, participação, pró-labore, dependentes ou status operacional,
+          edite o cadastro em <b>Configurações → Empresa → Sócios</b>.
+        </p>
+      </div>
+
       <CompanyConfigDialog open={configOpen} onOpenChange={setConfigOpen} />
+    </div>
+  );
+}
+
+function SummaryBox({
+  label,
+  value,
+  tone = "default",
+  sub,
+}: {
+  label: string;
+  value: string;
+  tone?: "default" | "pos" | "warn";
+  sub?: string;
+}) {
+  const toneClass =
+    tone === "pos"
+      ? "text-pos"
+      : tone === "warn"
+      ? "text-[var(--warning)]"
+      : "text-foreground";
+  return (
+    <div className="rounded-md border border-border/60 bg-background/40 px-3 py-2">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`mt-0.5 text-sm font-semibold ${toneClass}`}>{value}</div>
+      {sub && <div className="mt-0.5 text-[10px] text-muted-foreground">{sub}</div>}
     </div>
   );
 }
