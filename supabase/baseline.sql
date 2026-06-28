@@ -105,8 +105,42 @@ CREATE POLICY "shared-reports owner delete"
   USING (bucket_id = 'shared-reports' AND auth.uid()::text = (storage.foldername(name))[1]);
 
 -- ─────────────────────────────────────────────────────────────
+-- shared_reports (tabela base — necessária antes do trigger/policies)
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.shared_reports (
+  share_id     text PRIMARY KEY,
+  owner_id     uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  storage_path text NOT NULL,
+  company_name text NOT NULL,
+  expires_at   timestamptz,
+  revoked_at   timestamptz,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS shared_reports_owner_idx ON public.shared_reports (owner_id);
+CREATE INDEX IF NOT EXISTS shared_reports_company_idx
+  ON public.shared_reports (owner_id, company_name) WHERE revoked_at IS NULL;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.shared_reports TO authenticated;
+GRANT ALL ON public.shared_reports TO service_role;
+
+ALTER TABLE public.shared_reports ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "shared_reports insert proprio" ON public.shared_reports;
+CREATE POLICY "shared_reports insert proprio" ON public.shared_reports
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = owner_id);
+
+DROP POLICY IF EXISTS "shared_reports update proprio" ON public.shared_reports;
+CREATE POLICY "shared_reports update proprio" ON public.shared_reports
+  FOR UPDATE TO authenticated USING (auth.uid() = owner_id) WITH CHECK (auth.uid() = owner_id);
+
+DROP POLICY IF EXISTS "shared_reports delete proprio" ON public.shared_reports;
+CREATE POLICY "shared_reports delete proprio" ON public.shared_reports
+  FOR DELETE TO authenticated USING (auth.uid() = owner_id);
+
+-- ─────────────────────────────────────────────────────────────
 -- 20260623135424_6c5c47c9-bc08-4891-ba51-e0c82f89d52d.sql
 -- ─────────────────────────────────────────────────────────────
+
 
 -- Trigger de imutabilidade: em UPDATE de shared_reports, só o campo
 -- revoked_at pode mudar. Qualquer outra alteração é rejeitada,
