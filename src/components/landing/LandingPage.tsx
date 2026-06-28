@@ -858,9 +858,10 @@ function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
             ? Array.from({ length: 2 }).map((_, i) => (
                 <div
                   key={`sk-${i}`}
-                  className="relative flex flex-col rounded-2xl border border-border bg-card/60 p-7"
+                  className="relative flex min-h-[640px] flex-col rounded-2xl border border-border bg-card/60 p-7"
                   aria-hidden="true"
                 >
+
                   <div className="h-5 w-24 animate-pulse rounded bg-muted" />
                   <div className="mt-2 h-4 w-56 animate-pulse rounded bg-muted" />
                   <div className="mt-6 h-10 w-40 animate-pulse rounded bg-muted" />
