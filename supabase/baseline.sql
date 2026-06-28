@@ -189,8 +189,52 @@ $$;
 
 
 -- ─────────────────────────────────────────────────────────────
+-- helpers globais (necessários antes dos triggers)
+-- ─────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.touch_updated_at()
+RETURNS TRIGGER LANGUAGE plpgsql SET search_path = public AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+-- ─────────────────────────────────────────────────────────────
+-- subscriptions (tabela base — necessária antes dos ALTER/índices)
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.subscriptions (
+  id                     uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id                uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  stripe_customer_id     text,
+  stripe_subscription_id text UNIQUE,
+  price_id               text NOT NULL,
+  plan                   text NOT NULL,
+  status                 text NOT NULL,
+  current_period_end     timestamptz,
+  created_at             timestamptz NOT NULL DEFAULT now(),
+  updated_at             timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON public.subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status  ON public.subscriptions(status);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.subscriptions TO authenticated;
+GRANT ALL ON public.subscriptions TO service_role;
+
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users view own subscriptions" ON public.subscriptions;
+CREATE POLICY "Users view own subscriptions" ON public.subscriptions
+  FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+DROP TRIGGER IF EXISTS subscriptions_touch_updated_at ON public.subscriptions;
+CREATE TRIGGER subscriptions_touch_updated_at
+  BEFORE UPDATE ON public.subscriptions
+  FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
+
+-- ─────────────────────────────────────────────────────────────
 -- 20260625135412_72952dea-009f-46f6-bb89-ac4cd8991151.sql
 -- ─────────────────────────────────────────────────────────────
+
 
 -- Fase 2: multi-provider support para subscriptions
 ALTER TABLE public.subscriptions
