@@ -1,7 +1,8 @@
 // ============================================================================
 // POST /api/public/hooks/trial-cleanup
 // Cron horário: remove usuários de trial expirados que NÃO converteram em
-// assinatura paga e limpa registros antigos de trial_requests (>90d expirados).
+// assinatura paga. Os registros de trial_requests são mantidos para preservar
+// a regra comercial: um único teste por e-mail, para sempre.
 // Acesso: header `apikey` deve corresponder ao SUPABASE_PUBLISHABLE_KEY (padrão
 // de cron pg_cron + pg_net descrito no knowledge).
 // ============================================================================
@@ -72,21 +73,12 @@ export const Route = createFileRoute("/api/public/hooks/trial-cleanup")({
           if (users.length < PER_PAGE) break;
         }
 
-        // Limpa trial_requests muito antigos (>90d após expiração) para liberar
-        // e-mails que foram nunca consumidos e estão criando ruído de funil.
-        const cutoff = new Date(now - 90 * 86400_000).toISOString();
-        const { error: trErr, count: trDeleted } = await admin
-          .from("trial_requests")
-          .delete({ count: "exact" })
-          .lt("expires_at", cutoff);
-        if (trErr) console.error("[trial-cleanup] purge trial_requests:", trErr.message);
-
         return Response.json({
           ok: true,
           scanned,
           deleted,
           skippedConverted,
-          trialRequestsPurged: trDeleted ?? 0,
+          trialRequestsPurged: 0,
           at: new Date().toISOString(),
         });
       },
