@@ -48,14 +48,19 @@ export function CapitalTab() {
   const contracts = useMemo(() => c.debtContracts ?? EMPTY_CONTRACTS, [c.debtContracts]);
   useEffect(() => {
     if (contracts.length === 0) {
-      // Remove linha sintética de juros, se existir.
+      // Sem contratos: remove linha sintética de juros e zera amortizações/captações no fluxo.
       update((s) => {
         const hasSynthetic = s.costs.some((x) => x.id === DEBT_CONTRACTS_COST_ID);
-        if (!hasSynthetic) return s;
-        return { ...s, costs: s.costs.filter((x) => x.id !== DEBT_CONTRACTS_COST_ID) };
+        const zeros = new Array(12).fill(0);
+        return {
+          ...s,
+          costs: hasSynthetic ? s.costs.filter((x) => x.id !== DEBT_CONTRACTS_COST_ID) : s.costs,
+          cashflow: { ...s.cashflow, amortizacoes: zeros, emprestimosCaptados: zeros },
+        };
       });
       return;
     }
+
     const agg = aggregateContracts(contracts);
     // kd derivado: média ponderada das taxas dos contratos (saldo como peso).
     const totalSaldo = contracts.reduce((s, x) => s + Math.max(0, x.saldoDevedor || 0), 0);
