@@ -47,6 +47,8 @@ function toAuthUser(u: User | null | undefined): AuthUser | null {
     displayName,
     emailConfirmed: Boolean(u.email_confirmed_at),
     aiEnabled: meta.ai_enabled !== false,
+    isTrial: meta.is_trial === true,
+    trialExpiresAt: typeof meta.trial_expires_at === "string" ? meta.trial_expires_at : null,
   };
 }
 
