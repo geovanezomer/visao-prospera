@@ -115,6 +115,7 @@ export function useAppState() {
   const update = useCallback((patch: Partial<AppState> | ((s: AppState) => AppState)) => {
     setState((s) => {
       const next = typeof patch === "function" ? patch(s) : { ...s, ...patch };
+      if (next === s) return s;
       return migrateState(next);
     });
   }, []);
