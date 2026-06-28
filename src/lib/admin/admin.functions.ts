@@ -246,6 +246,38 @@ export const setUserActive = createServerFn({ method: "POST" })
   });
 
 // ----------------------------------------------------------------------------
+// setUserAIEnabled — liga/desliga acesso ao Consultor IA (sidebar e rota).
+// Persistido em user_metadata.ai_enabled; lido pelo cliente em toAuthUser.
+// ----------------------------------------------------------------------------
+export const setUserAIEnabled = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { userId: string; enabled: boolean }) =>
+    z.object({ userId: z.string().uuid(), enabled: z.boolean() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.claims);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: u, error: gerr } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    if (gerr || !u?.user) throw new Error(gerr?.message ?? "Usuário não encontrado.");
+    const meta = (u.user.user_metadata ?? {}) as Record<string, unknown>;
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      user_metadata: { ...meta, ai_enabled: data.enabled },
+    });
+    if (error) throw new Error(error.message);
+    const { logAudit } = await import("./audit.server");
+    await logAudit({
+      actorId: context.userId,
+      actorEmail: (context.claims as AuthClaims | undefined)?.email,
+      action: data.enabled ? "user.ai_enable" : "user.ai_disable",
+      resource: "user",
+      targetId: data.userId,
+    });
+    return { ok: true };
+  });
+
+
+// ----------------------------------------------------------------------------
 // sendPasswordReset — gera link de recuperação e dispara via Supabase Auth.
 // ----------------------------------------------------------------------------
 export const sendPasswordReset = createServerFn({ method: "POST" })
