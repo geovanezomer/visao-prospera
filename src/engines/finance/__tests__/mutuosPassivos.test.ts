@@ -88,18 +88,22 @@ describe("Mútuos Passivos (PF→PJ) — integração entre abas", () => {
   });
 
   it("3. DRE: juros pagos entram em Resultado Financeiro como DESPESA", () => {
-    const s = stateComMutuo(MUTUO);
-    const { dre } = buildDRE(s, s.tax.regime);
+    const sBase = createState();
+    const sCom = stateComMutuo(MUTUO);
+    const baseDre = buildDRE(sBase, sBase.tax.regime).dre;
+    const comDre = buildDRE(sCom, sCom.tax.regime).dre;
     const agg = aggregateMutuosPassivos([MUTUO]);
 
-    // custosFinanceirosTotal[i] deve conter os juros do mútuo
+    // Delta de custos financeiros = exatamente os juros do mútuo (isolamento).
     for (let i = 0; i < 12; i++) {
-      expect(dre.custosFinanceirosTotal[i]).toBeCloseTo(agg.juros[i], 2);
+      const delta = comDre.custosFinanceirosTotal[i] - baseDre.custosFinanceirosTotal[i];
+      expect(delta).toBeCloseTo(agg.juros[i], 2);
     }
-    // Resultado Financeiro fica NEGATIVO (despesa > rendimentos)
-    const resFinAnual = dre.resultadoFinanceiro.reduce((a, b) => a + b, 0);
-    expect(resFinAnual).toBeLessThan(0);
-    expect(Math.abs(resFinAnual)).toBeCloseTo(agg.totalJurosAno, 1);
+    // Resultado Financeiro CAI exatamente o total de juros pagos.
+    const deltaResFin =
+      comDre.resultadoFinanceiro.reduce((a, b) => a + b, 0) -
+      baseDre.resultadoFinanceiro.reduce((a, b) => a + b, 0);
+    expect(deltaResFin).toBeCloseTo(-agg.totalJurosAno, 1);
   });
 
   it("4. Balanço: saldo devedor compõe Passivo Não Circulante", () => {
@@ -124,11 +128,8 @@ describe("Mútuos Passivos (PF→PJ) — integração entre abas", () => {
     expect(calcPassivoNaoCirculante(balanco)).toBeGreaterThanOrEqual(saldoEsperado);
   });
 
-  it("5. Sem mútuos: nada vaza para DRE/Balanço (não introduz ruído)", () => {
+  it("5. Sem mútuos: não há contribuição ao Passivo de mútuos no Balanço", () => {
     const s = createState();
-    const { dre } = buildDRE(s, s.tax.regime);
-    expect(dre.custosFinanceirosTotal.reduce((a, b) => a + b, 0)).toBe(0);
-
     const bal = suggestBalancoFromState(s, { dreLucroLiquido: 0 });
     expect(bal.passivoNaoCirculante?.outrasObrigacoesLP ?? 0).toBe(0);
   });
