@@ -207,7 +207,7 @@ export function CompanyConfigForm({
           ? d.benchmarkCustom
           : undefined,
       numColaboradores: d.numColaboradores,
-      numSocios: d.numSocios,
+      
       headcountRange: rangeFromNumber(d.numColaboradores),
       periodoAnaliseMeses: d.periodoAnaliseMeses,
       fiscalYearStartMonth: d.fiscalYearStartMonth,
