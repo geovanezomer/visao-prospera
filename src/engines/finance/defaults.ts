@@ -312,6 +312,22 @@ export const DEFAULT_STATE: AppState = {
     mutuosDevolvidos: fill12(0),
     mutuosPassivosCaptados: fill12(0),
     mutuosPassivosAmortizados: fill12(0),
+    permutas: [
+      {
+        id: "perm-credito-default",
+        label: "Permuta a crédito simples",
+        tipo: "credito",
+        values: fill12(0),
+        isDefault: true,
+      },
+      {
+        id: "perm-debito-default",
+        label: "Permuta a débito simples",
+        tipo: "debito",
+        values: fill12(0),
+        isDefault: true,
+      },
+    ],
   },
 
   strategic: {
@@ -520,6 +536,11 @@ export function migrateState(s: AppState): AppState {
   cashflow.mutuosDevolvidos = coerceMonths(cashflow.mutuosDevolvidos ?? []);
   cashflow.mutuosPassivosCaptados = coerceMonths(cashflow.mutuosPassivosCaptados ?? []);
   cashflow.mutuosPassivosAmortizados = coerceMonths(cashflow.mutuosPassivosAmortizados ?? []);
+  // Permutas simples — coage cada linha; mantém defaults se array ausente.
+  cashflow.permutas = (cashflow.permutas ?? []).map((p) => ({
+    ...p,
+    values: coerceMonths(p.values),
+  }));
 
   // Aplica migrações versionadas (breaking changes) e estampa schemaVersion atual.
   return applySchemaMigrations({ ...rest, revenue, capital, tax, costs, cashflow, strategic });

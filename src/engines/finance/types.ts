@@ -549,6 +549,20 @@ export interface CashFlowConfig {
   mutuosPassivosCaptados: Months;
   /** Devolução de principal ao sócio (mútuo passivo) — saída de caixa. */
   mutuosPassivosAmortizados: Months;
+  /** Permutas simples — operações sem juros, contrato ou amortização
+   *  (serviço por serviço, cheques, recebíveis, materiais). Afetam apenas
+   *  o caixa, NÃO impactam DRE nem geram passivos/ativos próprios. */
+  permutas?: PermutaLinha[];
+}
+
+/** Linha de permuta simples — crédito = entrada de caixa, débito = saída. */
+export interface PermutaLinha {
+  id: string;
+  label: string;
+  tipo: "credito" | "debito";
+  values: Months;
+  /** true para as 2 linhas default (não removíveis). */
+  isDefault?: boolean;
 }
 
 // ============= Análise Estratégica (qualitativa, opcional) =============

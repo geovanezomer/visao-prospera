@@ -25,6 +25,11 @@ export interface CashFlow {
   fluxoFinanciamento: number[];
   capex: number[];
   fluxoInvestimento: number[];
+  /** Permutas simples (não operacionais) — entrada (crédito) − saída (débito).
+   *  Soma direta à variação de caixa, sem trânsito por OP/INV/FIN. */
+  permutasCredito: number[];
+  permutasDebito: number[];
+  permutasLiquido: number[];
   variacaoCaixa: number[];
   saldoFinal: number[];
   alertas: { mes: string; saldo: number; tipo: "negativo" | "abaixoMinimo" }[];
@@ -343,6 +348,19 @@ export function buildCashFlow(
   // SSOT: CAPEX = manual (cashflow.capex) + ativações de imobilizado (capital.capexAtivacao).
   const capex = computeCapexMensal(state);
 
+  // Permutas simples — agrega crédito/débito por mês. SEM impacto em DRE.
+  const permutasCredito = zeros12();
+  const permutasDebito = zeros12();
+  for (const p of cashflow.permutas ?? []) {
+    const vals = p.values ?? [];
+    for (let i = 0; i < 12; i++) {
+      const v = Number(vals[i]) || 0;
+      if (p.tipo === "credito") permutasCredito[i] += v;
+      else permutasDebito[i] += v;
+    }
+  }
+  const permutasLiquido = permutasCredito.map((c, i) => c - permutasDebito[i]);
+
   const fluxos = computeFluxos({
     recebimentos: rec.inAno,
     receitasFinanceiras,
@@ -362,9 +380,12 @@ export function buildCashFlow(
     mutuosPassivosAmortizados,
   });
 
+  // Permutas: somam direto à variação de caixa, fora de OP/INV/FIN.
+  const variacaoCaixa = fluxos.variacaoCaixa.map((v, i) => v + permutasLiquido[i]);
+
   const { saldoInicial, saldoFinal } = computeSaldos(
     capital.disponibilidades,
-    fluxos.variacaoCaixa,
+    variacaoCaixa,
   );
   const alertas = computeAlertas(saldoFinal, cashflow.caixaMinimo);
   const pior = computePiorMes(saldoFinal);
@@ -386,7 +407,10 @@ export function buildCashFlow(
     fluxoFinanciamento: fluxos.fluxoFinanciamento,
     capex,
     fluxoInvestimento: fluxos.fluxoInvestimento,
-    variacaoCaixa: fluxos.variacaoCaixa,
+    permutasCredito,
+    permutasDebito,
+    permutasLiquido,
+    variacaoCaixa,
     saldoFinal,
     alertas,
     contasReceberAnoSeguinte: rec.transbordo,
@@ -404,7 +428,7 @@ export function buildCashFlow(
       fluxoOperacional: sum(fluxos.fluxoOperacional),
       fluxoInvestimento: sum(fluxos.fluxoInvestimento),
       fluxoFinanciamento: sum(fluxos.fluxoFinanciamento),
-      variacao: sum(fluxos.variacaoCaixa),
+      variacao: sum(variacaoCaixa),
       saldoFinal: saldoFinal[11],
       pioresMes: pior,
     },
