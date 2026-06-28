@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Activity, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth/callback")({
   head: () => ({
@@ -21,7 +22,14 @@ function AuthCallbackPage() {
     if (!hydrated) return;
     if (user?.isTrial && !markedTrialRef.current) {
       markedTrialRef.current = true;
-      void fetch("/api/public/trial/activate", { method: "POST" }).catch(() => undefined);
+      void supabase.auth.getSession().then(({ data }) => {
+        const token = data.session?.access_token;
+        if (!token) return;
+        return fetch("/api/public/trial/activate", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }).catch(() => undefined);
     }
     const t = setTimeout(() => {
       navigate({ to: user ? "/app" : "/login" });
