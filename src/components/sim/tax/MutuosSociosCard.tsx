@@ -295,7 +295,7 @@ export function MutuosSociosCard() {
                 <td className="px-3 py-2">Totais</td>
                 <td className="px-2 py-2 text-right font-mono">{fmtBRL(agg.totalConcedido)}</td>
                 <td colSpan={4} className="px-2 py-2 text-right text-muted-foreground">
-                  Juros recebidos no ano (Receita Financeira informativa):
+                  Juros recebidos no ano (lançados em Receita Financeira da DRE):
                 </td>
                 <td className="px-2 py-2 text-right font-mono text-pos">
                   {fmtBRL(agg.totalJurosAno)}
@@ -306,8 +306,9 @@ export function MutuosSociosCard() {
                 <td colSpan={6} className="px-3 py-2">
                   <Info className="mr-1 inline h-3 w-3" />
                   Saldo devedor remanescente ao fim do ano vai ao Balanço (Mútuos a Receber).
-                  Juros cobrados são apenas informativos — registre-os manualmente em Receitas
-                  Financeiras se desejar refletir na DRE.
+                  Juros são sincronizados automaticamente em Receitas → "Juros sobre mútuo a
+                  sócios" e refletem na DRE (Resultado Financeiro) e no Fluxo de Caixa
+                  Operacional.
                 </td>
                 <td className="px-2 py-2 text-right font-mono">{fmtBRL(agg.saldoFinal)}</td>
                 <td></td>
