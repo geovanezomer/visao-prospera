@@ -348,6 +348,19 @@ export function buildCashFlow(
   // SSOT: CAPEX = manual (cashflow.capex) + ativações de imobilizado (capital.capexAtivacao).
   const capex = computeCapexMensal(state);
 
+  // Permutas simples — agrega crédito/débito por mês. SEM impacto em DRE.
+  const permutasCredito = zeros12();
+  const permutasDebito = zeros12();
+  for (const p of cashflow.permutas ?? []) {
+    const vals = p.values ?? [];
+    for (let i = 0; i < 12; i++) {
+      const v = Number(vals[i]) || 0;
+      if (p.tipo === "credito") permutasCredito[i] += v;
+      else permutasDebito[i] += v;
+    }
+  }
+  const permutasLiquido = permutasCredito.map((c, i) => c - permutasDebito[i]);
+
   const fluxos = computeFluxos({
     recebimentos: rec.inAno,
     receitasFinanceiras,
