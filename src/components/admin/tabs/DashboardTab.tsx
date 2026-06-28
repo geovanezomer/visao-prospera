@@ -3,7 +3,7 @@
 // ============================================================================
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, TrendingUp, Users as UsersIcon, AlertTriangle, Activity } from "lucide-react";
+import { Loader2, RefreshCw, TrendingUp, Users as UsersIcon, AlertTriangle, Activity, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getDashboardMetrics, type DashboardMetrics } from "@/lib/admin/dashboard.functions";
