@@ -256,6 +256,11 @@ export const setUserAIEnabled = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     assertAdmin(context.claims);
+    // Bloqueio simétrico ao setUserActive: admin não pode se auto-bloquear
+    // do Consultor IA (evita lockout silencioso da própria conta).
+    if (data.userId === context.userId && !data.enabled) {
+      throw new Error("Você não pode desativar a I.A. da própria conta de administrador.");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: u, error: gerr } = await supabaseAdmin.auth.admin.getUserById(data.userId);

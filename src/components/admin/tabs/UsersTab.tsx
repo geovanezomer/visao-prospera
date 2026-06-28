@@ -264,9 +264,15 @@ export function UsersTab() {
                     <td className="p-2 text-center">
                       <Switch
                         checked={u.aiEnabled}
-                        disabled={busyId === u.id}
+                        disabled={busyId === u.id || u.isAdmin}
                         onCheckedChange={(v) => handleToggleAI(u, v)}
-                        title={u.aiEnabled ? "Consultor IA liberado" : "Consultor IA bloqueado"}
+                        title={
+                          u.isAdmin
+                            ? "Admin sempre tem acesso ao Consultor IA"
+                            : u.aiEnabled
+                              ? "Consultor IA liberado"
+                              : "Consultor IA bloqueado"
+                        }
                       />
                     </td>
                     <td className="p-2 text-center">
