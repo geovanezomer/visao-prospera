@@ -159,8 +159,8 @@ export function buildPrescriptiveCards(
   // passagens completas pela engine por render.
   const built = pre ?? (() => {
     const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-    const ind = calcIndicators(state, dre);
     const cf = buildCashFlow(state);
+    const ind = calcIndicators(state, dre, cf);
     return { dre, tax: null as never, ind, cf };
   })();
   const { dre, ind, cf } = built;
