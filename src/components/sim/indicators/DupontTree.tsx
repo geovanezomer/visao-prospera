@@ -13,6 +13,7 @@ import ReactFlow, {
   Background,
   Controls,
   MarkerType,
+  Position,
   type Edge,
   type Node,
   type NodeProps,
