@@ -398,6 +398,7 @@ export function computeSimView(state: AppState, precomputed?: SimViewPrecomputed
     margemLiquida: ind.margemLiquida,
     roic: ind.roic,
     ncg: ind.ncg,
+    gapCapitalGiro: ind.gapCapitalGiro,
     saldoCaixaFinal: cf.totais.saldoFinal,
     piorMesCaixa: cf.totais.pioresMes?.saldo ?? 0,
     coberturaJuros: ind.coberturaJuros,
