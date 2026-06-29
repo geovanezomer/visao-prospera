@@ -1,24 +1,23 @@
 // ============================================================================
-// TrackingInjector — injeta snippets configurados no painel admin
-// (Google Analytics, GTM, Meta Pixel etc.) em todas as páginas do app.
-// Roda após hidratação para não bloquear o SSR. Re-executa scripts inline
-// criando novos <script> nodes (innerHTML sozinho não executa script).
+// TrackingInjector — injeta snippets configurados no admin (GA, GTM, Meta
+// Pixel) em todas as páginas. Lê o cache compartilhado de app_settings
+// (queryKey ["app_settings"]) para NÃO fazer fetch adicional ao DB —
+// BrandingApplier já hidrata esse cache no SSR.
 // ============================================================================
 import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { getAppSettings } from "@/lib/admin/settings.functions";
 
 type Slot = "head" | "body_start" | "body_end";
 
 function injectHTML(html: string, slot: Slot, marker: string) {
   if (!html.trim()) return;
-  // Evita injeção duplicada em re-mounts (React StrictMode, navegação SPA).
   if (document.querySelector(`[data-tracking-slot="${marker}"]`)) return;
 
   const tpl = document.createElement("template");
   tpl.innerHTML = html;
   const frag = tpl.content;
 
-  // Recria <script> para que o navegador execute-os (innerHTML não roda script).
   frag.querySelectorAll("script").forEach((old) => {
     const s = document.createElement("script");
     for (const attr of Array.from(old.attributes)) s.setAttribute(attr.name, attr.value);
@@ -26,7 +25,6 @@ function injectHTML(html: string, slot: Slot, marker: string) {
     old.replaceWith(s);
   });
 
-  // Wrapper invisível para marcação (e fácil remoção em hot-reload).
   const wrapper = document.createElement("div");
   wrapper.style.display = "contents";
   wrapper.setAttribute("data-tracking-slot", marker);
@@ -42,25 +40,27 @@ function injectHTML(html: string, slot: Slot, marker: string) {
 }
 
 export function TrackingInjector() {
+  // Reusa o cache de app_settings (hidratado pelo loader do __root) — zero
+  // chamadas extras ao DB em produção, mesmo com milhares de pageviews.
+  const { data } = useQuery({
+    queryKey: ["app_settings"],
+    queryFn: () => getAppSettings(),
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
+
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await supabase
-          .from("app_settings")
-          .select("value")
-          .eq("key", "tracking")
-          .maybeSingle();
-        if (cancelled || !data?.value) return;
-        const v = data.value as { head?: string; body_start?: string; body_end?: string };
-        injectHTML(v.head ?? "", "head", "head");
-        injectHTML(v.body_start ?? "", "body_start", "body_start");
-        injectHTML(v.body_end ?? "", "body_end", "body_end");
-      } catch {
-        /* silencioso: tracking nunca deve quebrar o app */
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+    const tracking = (data as any)?.tracking as
+      | { head?: string; body_start?: string; body_end?: string }
+      | undefined;
+    if (!tracking) return;
+    injectHTML(tracking.head ?? "", "head", "head");
+    injectHTML(tracking.body_start ?? "", "body_start", "body_start");
+    injectHTML(tracking.body_end ?? "", "body_end", "body_end");
+  }, [data]);
+
   return null;
 }
