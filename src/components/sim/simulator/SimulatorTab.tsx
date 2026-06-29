@@ -596,80 +596,153 @@ function DREPanel({
   sim: SimDREView;
   inconsistencies: string[];
 }) {
-  const rows: { label: string; b: number; s: number; bold?: boolean; sign?: -1 | 1 }[] = [
+  const rows: {
+    label: string;
+    b: number;
+    s: number;
+    bold?: boolean;
+    sign?: -1 | 1;
+    hint?: string;
+    formula?: string;
+  }[] = [
     {
       label: "(+) Receita Operacional Bruta",
       b: base.receitaBruta,
       s: sim.receitaBruta,
       bold: true,
+      hint: "Total faturado no período antes de qualquer dedução. Inclui mercadorias, produtos e serviços. Base para o cálculo de tributos sobre vendas.",
+      formula: "Σ (Preço × Quantidade vendida) — todas as linhas de receita",
     },
     {
       label: "(−) Devoluções e Cancelamentos",
       b: -base.devolucoesCancelamentos,
       s: -sim.devolucoesCancelamentos,
       sign: -1,
+      hint: "Vendas canceladas ou produtos devolvidos pelos clientes. Reduzem a Receita Bruta para apuração da Receita Líquida (CPC 47 / Lei 6.404).",
     },
     {
       label: "(−) Descontos Incondicionais",
       b: -base.descontosIncondicionais,
       s: -sim.descontosIncondicionais,
       sign: -1,
+      hint: "Descontos concedidos na nota fiscal, sem condição posterior (ex.: desconto à vista). Diferente do desconto financeiro, que é despesa.",
     },
-    { label: "(−) Abatimentos", b: -base.abatimentos, s: -sim.abatimentos, sign: -1 },
+    {
+      label: "(−) Abatimentos",
+      b: -base.abatimentos,
+      s: -sim.abatimentos,
+      sign: -1,
+      hint: "Reduções de preço após a venda por defeito, atraso ou avaria. Lançadas como redutoras da Receita Bruta.",
+    },
     {
       label: "(−) Tributos sobre Receita",
       b: -base.tributosReceita,
       s: -sim.tributosReceita,
       sign: -1,
+      hint: "ICMS, ISS, PIS e COFINS (e, na transição, CBS/IBS — LC 214/2025). Incidem sobre a Receita Bruta e variam conforme o regime tributário.",
+      formula: "Receita Bruta × alíquota efetiva do regime",
     },
     {
       label: "(=) Receita Operacional Líquida",
       b: base.receitaLiquida,
       s: sim.receitaLiquida,
       bold: true,
+      hint: "Receita efetivamente disponível para cobrir custos e gerar lucro. Base de comparação para margens (bruta, EBITDA, líquida).",
+      formula: "Receita Bruta − Devoluções − Descontos − Abatimentos − Tributos",
     },
-    { label: "(−) CPV / CMV / CSP", b: -base.cpv, s: -sim.cpv, sign: -1 },
-    { label: "(=) LUCRO BRUTO", b: base.lucroBruto, s: sim.lucroBruto, bold: true },
+    {
+      label: "(−) CPV / CMV / CSP",
+      b: -base.cpv,
+      s: -sim.cpv,
+      sign: -1,
+      hint: "Custo dos Produtos Vendidos (indústria), Mercadorias (comércio) ou Serviços Prestados. Inclui matéria-prima, mão de obra direta e custos diretos de produção/aquisição.",
+    },
+    {
+      label: "(=) LUCRO BRUTO",
+      b: base.lucroBruto,
+      s: sim.lucroBruto,
+      bold: true,
+      hint: "Quanto sobra da receita após pagar o custo direto do que foi vendido. Indica a eficiência da operação produtiva/comercial.",
+      formula: "Receita Líquida − CPV",
+    },
     {
       label: "(−) Despesas Comerciais",
       b: -base.despesasComerciais,
       s: -sim.despesasComerciais,
       sign: -1,
+      hint: "Gastos para vender: comissões, marketing, frete de entrega, propaganda, equipe comercial. DRE por Função (CPC 26).",
     },
     {
       label: "(−) Despesas Administrativas",
       b: -base.despesasAdministrativas,
       s: -sim.despesasAdministrativas,
       sign: -1,
+      hint: "Gastos para administrar o negócio: aluguel, escritório, contabilidade, salários administrativos, sistemas. DRE por Função (CPC 26).",
     },
     {
       label: "(±) Outras Despesas/Receitas Operacionais",
       b: base.outrasOperacionais,
       s: sim.outrasOperacionais,
+      hint: "Inclui Depreciação & Amortização (D&A) como redutor e outras receitas operacionais não recorrentes. D&A é despesa contábil sem saída de caixa.",
     },
-    { label: "(=) LUCRO OPERACIONAL / EBIT", b: base.ebit, s: sim.ebit, bold: true },
-    { label: "(+) Receitas Financeiras", b: base.receitasFinanceiras, s: sim.receitasFinanceiras },
+    {
+      label: "(=) LUCRO OPERACIONAL / EBIT",
+      b: base.ebit,
+      s: sim.ebit,
+      bold: true,
+      hint: "Resultado da operação antes de juros e impostos. Mede a capacidade do negócio gerar lucro independentemente da estrutura de capital.",
+      formula: "Lucro Bruto − Despesas Comerciais − Administrativas ± Outras Op.",
+    },
+    {
+      label: "(+) Receitas Financeiras",
+      b: base.receitasFinanceiras,
+      s: sim.receitasFinanceiras,
+      hint: "Rendimentos de aplicações, juros recebidos, descontos obtidos em pagamentos. Não fazem parte da operação principal.",
+    },
     {
       label: "(±) Ganho/Perda em alienação de ativos",
       b: base.ganhoAlienacao,
       s: sim.ganhoAlienacao,
+      hint: "Resultado da venda de imobilizado (máquinas, veículos, imóveis). Evento não recorrente — separado do lucro operacional.",
     },
-    { label: "(=) LUCRO ANTES DO FINANC. E TRIBUTOS", b: base.laft, s: sim.laft, bold: true },
+    {
+      label: "(=) LUCRO ANTES DO FINANC. E TRIBUTOS",
+      b: base.laft,
+      s: sim.laft,
+      bold: true,
+      hint: "EBIT + Receitas Financeiras + Ganho na alienação. Linha intermediária antes de subtrair as despesas financeiras.",
+    },
     {
       label: "(−) Despesas Financeiras",
       b: -base.despesasFinanceiras,
       s: -sim.despesasFinanceiras,
       sign: -1,
+      hint: "Juros pagos sobre empréstimos, financiamentos, cheque especial, antecipação de recebíveis e custos bancários.",
     },
-    { label: "(=) LUCRO ANTES DO IR/CSLL (EBT)", b: base.lair, s: sim.lair, bold: true },
-    { label: "(−) IR / CSLL", b: -base.impostos, s: -sim.impostos, sign: -1 },
+    {
+      label: "(=) LUCRO ANTES DO IR/CSLL (EBT)",
+      b: base.lair,
+      s: sim.lair,
+      bold: true,
+      hint: "Lucro antes do Imposto de Renda (IR) e Contribuição Social sobre o Lucro Líquido (CSLL). Base para apuração no Lucro Real.",
+    },
+    {
+      label: "(−) IR / CSLL",
+      b: -base.impostos,
+      s: -sim.impostos,
+      sign: -1,
+      hint: "Imposto de Renda Pessoa Jurídica (IRPJ 15% + adicional 10%) e CSLL (9%). Cálculo depende do regime: Real, Presumido ou Simples.",
+    },
     {
       label: "(=) LUCRO LÍQUIDO DO EXERCÍCIO",
       b: base.lucroLiquido,
       s: sim.lucroLiquido,
       bold: true,
+      hint: "Resultado final disponível para distribuir aos sócios ou reinvestir. Base para Margem Líquida, ROE e distribuição de dividendos.",
+      formula: "EBT − IR/CSLL",
     },
   ];
+
 
   return (
     <div className="space-y-3 rounded-lg border border-border/60 bg-card/60 p-3 sm:p-4">
