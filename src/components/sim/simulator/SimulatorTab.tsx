@@ -986,9 +986,11 @@ function KpiCardsRow({ base, sim }: { base: SimDREView; sim: SimDREView }) {
             key={it.label}
             className="rounded-lg border border-border/60 bg-card/60 p-3 shadow-sm transition-all"
           >
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-              {it.label}
+            <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+              <span>{it.label}</span>
+              <HelpTip text={it.hint} formula={it.formula} />
             </div>
+
             <div className="mt-1 mono text-base sm:text-lg font-bold text-foreground">
               {fmtBRLCompact(it.simV)}
             </div>
