@@ -48,6 +48,7 @@ export interface SimulatorParams {
   pmrDeltaDays: number; // -60..0    (sempre reduz ou 0)
   pmpDeltaDays: number; // 0..+60    (sempre aumenta ou 0)
   antecipPctAm: number; // 0..6      custo % a.m. sobre 50% da receita
+  inadimplenciaDeltaPp: number; // -5..+10 p.p. somados à inadimplência mensal
 
   // Dívida & Juros
   loanPrincipal: number; // R$ captado no mês 1
@@ -70,6 +71,8 @@ export const DEFAULT_SIM: SimulatorParams = {
   pmrDeltaDays: 0,
   pmpDeltaDays: 0,
   antecipPctAm: 0,
+  inadimplenciaDeltaPp: 0,
+
   loanPrincipal: 0,
   loanTermMonths: 12,
   loanRatePctAm: 2,
@@ -99,7 +102,10 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       })),
     },
     costs: cloneCosts(base.costs),
-    capital: { ...base.capital },
+    capital: {
+      ...base.capital,
+      debtContracts: (base.capital.debtContracts ?? []).map((d) => ({ ...d })),
+    },
     cashflow: {
       ...base.cashflow,
       emprestimosCaptados: base.cashflow.emprestimosCaptados.slice(),
@@ -152,16 +158,19 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     );
   }
 
-  // 5) Ajuste de fixos (top-N) — primitiva scaleCostLines.
-  // Positivo = corte; negativo = aumento.
+  // 5) Ajuste de fixos (top-N) — primitiva scaleCostLines (já cobre fixo + despesa_administrativa).
   if (p.fixedCutPct !== 0) {
     const ids = topNFixedIds(s, p.fixedCutTopN);
-    const f = 1 - p.fixedCutPct / 100; // ex: +20 → 0.80 (corte 20%); -20 → 1.20 (aumento 20%)
+    const f = 1 - p.fixedCutPct / 100;
     s.costs = p_scaleCostLines(s, ids, f).costs;
   }
 
-
-
+  // 6) Inadimplência — soma p.p. à série mensal (clampada a [0, 100]).
+  if (p.inadimplenciaDeltaPp !== 0) {
+    s.revenue.inadimplencia = s.revenue.inadimplencia.map((v) =>
+      Math.max(0, Math.min(100, v + p.inadimplenciaDeltaPp)),
+    );
+  }
 
   // 7) PMR / PMP — primitivas setPmr / setPmp.
   if (p.pmrDeltaDays !== 0) {
@@ -171,7 +180,9 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     s.revenue = p_setPmp(s, s.revenue.pmp + p.pmpDeltaDays).revenue;
   }
 
-  // 8) Antecipação de recebíveis (custo financeiro)
+  // 8) Antecipação de recebíveis — custo financeiro + aceleração de caixa (PMR ↓).
+  //    Hipótese: antecipa-se 50% da carteira; reduzimos PMR proporcionalmente ao % a.m.,
+  //    cap em 20 dias para evitar redução irreal em taxas altas.
   if (p.antecipPctAm > 0) {
     const custo = s.revenue.bruta.map((v) => v * 0.5 * (p.antecipPctAm / 100));
     s.costs.push({
@@ -182,27 +193,27 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       fixed: false,
       custom: true,
     });
+    const reduce = Math.min(20, Math.round(s.revenue.pmr * 0.5));
+    s.revenue = p_setPmr(s, Math.max(0, s.revenue.pmr - reduce)).revenue;
   }
 
-  // Reordenação S4/S8: kd → quitar dívida existente → captar empréstimo novo.
-  // Motivos:
-  //  • kd primeiro: novo custo de dívida reflete em TODAS as linhas de juros existentes
-  //    antes da quitação proporcional escalar resíduos errados.
-  //  • Quitar antes de captar: evita que o "% quitar" incida sobre o empréstimo recém-captado
-  //    (caso clássico: usuário capta 100k @ 2% a.m. e "quita 30%" do total — quitava 30% do novo).
-
-  // 9) kd / Selic (antes de quitar para que a redução seja sobre o juros pós-kd)
+  // 9) kd / Selic — escala juros existentes (linhas financeiras com "juros" no rótulo
+  //    OU linhas sintéticas do simulador/contratos de dívida).
+  const isInterestLine = (c: CostLine) =>
+    c.category === "financeiro" &&
+    (/juros/i.test(c.label) ||
+      c.id === "sim_loan_juros" ||
+      c.id.startsWith("__debt_contracts"));
   if (p.kdDeltaPp !== 0) {
     const kdAtual = Math.max(s.capital.kd, 0.5);
     const novoKd = Math.max(0.5, s.capital.kd + p.kdDeltaPp);
     const fator = novoKd / kdAtual;
     s.capital.kd = novoKd;
     s.costs = s.costs.map((c) =>
-      c.category === "financeiro" && /juros/i.test(c.label)
-        ? { ...c, values: c.values.map((v) => v * fator) }
-        : c,
+      isInterestLine(c) ? { ...c, values: c.values.map((v) => v * fator) } : c,
     );
   }
+
 
   // 10) Quitar dívida EXISTENTE (antes de captar)
   if (p.debtPaydownPct > 0) {
@@ -210,14 +221,21 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     const pago = s.capital.dividaOnerosa * pct;
     s.capital.dividaOnerosa = s.capital.dividaOnerosa * (1 - pct);
     s.costs = s.costs.map((c) =>
-      c.category === "financeiro" && /juros/i.test(c.label)
-        ? { ...c, values: c.values.map((v) => v * (1 - pct)) }
-        : c,
+      isInterestLine(c) ? { ...c, values: c.values.map((v) => v * (1 - pct)) } : c,
     );
+    // Reduz também o saldo dos contratos para que a projeção plurianual reflita a quitação.
+    if (s.capital.debtContracts?.length) {
+      s.capital.debtContracts = s.capital.debtContracts.map((d) => ({
+        ...d,
+        saldoDevedor: Math.max(0, (d.saldoDevedor || 0) * (1 - pct)),
+      }));
+    }
     s.cashflow.amortizacoes[0] = (s.cashflow.amortizacoes[0] || 0) + pago;
   }
 
-  // 11) Captar empréstimo NOVO (PRICE) — depois da quitação, para não ser quitado junto
+  // 11) Captar empréstimo NOVO (PRICE) — depois da quitação.
+  //     Bug-fix: também registra como DebtContract para que projectCashflow capture
+  //     juros/amortização nos meses > 12 (antes ficava capado em 12 meses).
   if (p.loanPrincipal > 0 && p.loanTermMonths > 0) {
     const i = p.loanRatePctAm / 100;
     const pmt =
@@ -245,7 +263,24 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       fixed: false,
       custom: true,
     });
+    // Contrato sintético para projeção plurianual (taxa aa equivalente nominal).
+    const taxaAA = p.loanRatePctAm * 12;
+    s.capital.debtContracts = [
+      ...(s.capital.debtContracts ?? []),
+      {
+        id: `sim_loan_${Date.now()}`,
+        credor: "Simulação",
+        descricao: "Empréstimo simulado",
+        saldoDevedor: p.loanPrincipal,
+        taxaAA,
+        sistema: "price",
+        prazoMeses: p.loanTermMonths,
+        mesCaptacao: 1,
+        valorCaptado: p.loanPrincipal,
+      },
+    ];
   }
+
 
   // 12) Regime — primitiva switchRegime.
   if (p.regimeOverride !== "base") {
@@ -335,8 +370,12 @@ export function computeSimView(state: AppState, precomputed?: SimViewPrecomputed
     else if (c.category === "despesa_administrativa" || c.category === "fixo") despAdmin += v;
     else if (c.category === "financeiro") despFinanc += v;
   }
-  const outrasOp = -sum(dre.depreciacao);
+  // Outras receitas/(despesas) operacionais — alinhado ao buildDRE:
+  //   outras = outrasReceitasOperacionais − depreciação (D&A entra como redutor).
+  const outrasOp = sum(dre.outrasReceitasOperacionais) - sum(dre.depreciacao);
   const receitasFin = sum(state.revenue.receitasFinanceiras?.flatMap((r) => r.valores ?? []) ?? []);
+
+
   const ganhoAlien = 0;
   const ebit = sum(dre.ebit);
   const laft = ebit + receitasFin + ganhoAlien;
@@ -398,6 +437,8 @@ export function countActiveLevers(p: SimulatorParams): number {
   if (p.pmrDeltaDays !== 0) n++;
   if (p.pmpDeltaDays !== 0) n++;
   if (p.antecipPctAm > 0) n++;
+  if (p.inadimplenciaDeltaPp !== 0) n++;
+
   if (p.loanPrincipal > 0) n++;
   if (p.debtPaydownPct > 0) n++;
   if (p.kdDeltaPp !== 0) n++;
