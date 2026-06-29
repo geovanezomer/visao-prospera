@@ -18,7 +18,7 @@ describe("DuPont", () => {
   it("EBIT≤0 sinaliza ebitNegativo e não quebra", () => {
     const s = structuredClone(DEFAULT_STATE);
     // Força cenário deficitário inflando todas as linhas de custo.
-    s.costs = s.costs.map((c) => ({ ...c, monthly: c.monthly.map(() => 1e9) }));
+    s.costs = s.costs.map((c) => ({ ...c, values: c.values.map(() => 1e9) as typeof c.values }));
     const { dre, ind } = buildFinancialModel(s);
     const d = buildDupont(s, dre, ind);
     expect(d.ebitNegativo).toBe(true);
