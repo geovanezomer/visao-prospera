@@ -221,14 +221,21 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     const pago = s.capital.dividaOnerosa * pct;
     s.capital.dividaOnerosa = s.capital.dividaOnerosa * (1 - pct);
     s.costs = s.costs.map((c) =>
-      c.category === "financeiro" && /juros/i.test(c.label)
-        ? { ...c, values: c.values.map((v) => v * (1 - pct)) }
-        : c,
+      isInterestLine(c) ? { ...c, values: c.values.map((v) => v * (1 - pct)) } : c,
     );
+    // Reduz também o saldo dos contratos para que a projeção plurianual reflita a quitação.
+    if (s.capital.debtContracts?.length) {
+      s.capital.debtContracts = s.capital.debtContracts.map((d) => ({
+        ...d,
+        saldoDevedor: Math.max(0, (d.saldoDevedor || 0) * (1 - pct)),
+      }));
+    }
     s.cashflow.amortizacoes[0] = (s.cashflow.amortizacoes[0] || 0) + pago;
   }
 
-  // 11) Captar empréstimo NOVO (PRICE) — depois da quitação, para não ser quitado junto
+  // 11) Captar empréstimo NOVO (PRICE) — depois da quitação.
+  //     Bug-fix: também registra como DebtContract para que projectCashflow capture
+  //     juros/amortização nos meses > 12 (antes ficava capado em 12 meses).
   if (p.loanPrincipal > 0 && p.loanTermMonths > 0) {
     const i = p.loanRatePctAm / 100;
     const pmt =
@@ -256,7 +263,24 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       fixed: false,
       custom: true,
     });
+    // Contrato sintético para projeção plurianual (taxa aa equivalente nominal).
+    const taxaAA = p.loanRatePctAm * 12;
+    s.capital.debtContracts = [
+      ...(s.capital.debtContracts ?? []),
+      {
+        id: `sim_loan_${Date.now()}`,
+        credor: "Simulação",
+        descricao: "Empréstimo simulado",
+        saldoDevedor: p.loanPrincipal,
+        taxaAA,
+        sistema: "price",
+        prazoMeses: p.loanTermMonths,
+        mesCaptacao: 1,
+        valorCaptado: p.loanPrincipal,
+      },
+    ];
   }
+
 
   // 12) Regime — primitiva switchRegime.
   if (p.regimeOverride !== "base") {
