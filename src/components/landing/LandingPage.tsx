@@ -725,20 +725,26 @@ function PricingSection({ initialPlans }: { initialPlans: any[] | null }) {
     let cancelled = false;
     (async () => {
       try {
-        const { supabase } = await import("@/integrations/supabase/client");
-        const { data, error } = await supabase
-          .from("plans")
-          .select(
-            "slug,name,description,price_cents,interval,features,sort_order,upsell_enabled,upsell_name,upsell_description,upsell_price_cents",
-          )
-          .eq("active", true)
-          .order("sort_order", { ascending: true });
+        // Server fn cacheada (TTL 5min em memória do worker) — não bate no
+        // DB em rajadas durante campanhas pagas.
+        const { listPlansPublic } = await import("@/lib/admin/plans.functions");
+        const { plans } = await listPlansPublic();
         if (cancelled) return;
-        if (error || !data) {
-          setPlanos([]);
-          return;
-        }
-        setPlanos(data.map((p) => mapPlan(p as RawPlan)));
+        // Adapta o shape de PlanRow (camelCase) para RawPlan (snake_case).
+        const rows = plans.map((p) => ({
+          slug: p.slug,
+          name: p.name,
+          description: p.description,
+          price_cents: p.priceCents,
+          interval: p.interval,
+          features: p.features,
+          sort_order: p.sortOrder,
+          upsell_enabled: p.upsellEnabled,
+          upsell_name: p.upsellName,
+          upsell_description: p.upsellDescription,
+          upsell_price_cents: p.upsellPriceCents,
+        }));
+        setPlanos(rows.map((p) => mapPlan(p as RawPlan)));
       } catch {
         if (!cancelled) setPlanos([]);
       }
