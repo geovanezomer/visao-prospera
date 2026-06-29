@@ -20,5 +20,16 @@ DROP FUNCTION IF EXISTS public.get_active_plan(uuid);
 REVOKE ALL ON FUNCTION public.get_active_plan() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_active_plan() TO authenticated;
 
-REVOKE ALL ON FUNCTION public.has_active_subscription(uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.has_active_subscription(uuid) TO authenticated, service_role;
+-- has_active_subscription pode ainda não existir em bancos novos (é criada
+-- na migration 20260625153146). Aplica REVOKE/GRANT só se já existir.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'has_active_subscription'
+  ) THEN
+    EXECUTE 'REVOKE ALL ON FUNCTION public.has_active_subscription(uuid) FROM PUBLIC, anon';
+    EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_active_subscription(uuid) TO authenticated, service_role';
+  END IF;
+END $$;
