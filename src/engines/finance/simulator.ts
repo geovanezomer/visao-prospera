@@ -373,6 +373,8 @@ export function computeSimView(state: AppState, precomputed?: SimViewPrecomputed
   // Outras receitas/(despesas) operacionais — alinhado ao buildDRE:
   //   outras = outrasReceitasOperacionais − depreciação (D&A entra como redutor).
   const outrasOp = sum(dre.outrasReceitasOperacionais) - sum(dre.depreciacao);
+  const receitasFin = sum(state.revenue.receitasFinanceiras?.flatMap((r) => r.valores ?? []) ?? []);
+
 
   const ganhoAlien = 0;
   const ebit = sum(dre.ebit);
