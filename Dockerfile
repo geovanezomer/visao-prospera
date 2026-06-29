@@ -40,7 +40,7 @@ ENV HOST=0.0.0.0
 
 # psql é necessário para o bootstrap aplicar as migrations no boot.
 # wget é usado pelo HEALTHCHECK.
-RUN apk add --no-cache postgresql-client wget
+RUN apk add --no-cache postgresql-client wget curl
 
 # Copia apenas o output do Nitro (auto-contido)
 COPY --from=builder /app/.output ./.output
