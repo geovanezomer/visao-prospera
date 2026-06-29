@@ -788,7 +788,13 @@ function DREPanel({
                   key={r.label}
                   className={`border-b border-border/20 last:border-0 ${r.bold ? "font-semibold" : ""}`}
                 >
-                  <td className="py-1.5 truncate">{r.label}</td>
+                  <td className="py-1.5 truncate">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="truncate">{r.label}</span>
+                      {r.hint && <HelpTip text={r.hint} formula={r.formula} />}
+                    </span>
+                  </td>
+
                   <td className="py-1.5 pl-2 text-right mono text-muted-foreground">
                     {fmtBRLCompact(r.b)}
                   </td>
