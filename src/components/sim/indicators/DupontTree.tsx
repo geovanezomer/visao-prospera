@@ -326,99 +326,116 @@ export function DupontTree({ state }: { state: AppState }) {
     calc: `${fmtBRL(d.ebit)} × (1 − ${(ind.aliquotaNopat ?? 0).toFixed(1)}%) = ${fmtBRL(nopat)}`,
   };
 
-  // ─── Origens reutilizáveis (cards "source") ──────────────────────────
+  // ─── Helper: nó "source" com decomposição intermediária aninhada ────
+  // Renderiza o card de origem + uma sub-árvore tracejada com as partes
+  // que somam/subtraem para chegar no valor (ex.: AT = AC + ANC).
+  const withBreakdown = (node: ReactNode, parts: ReactNode[]): ReactNode => (
+    <>
+      {node}
+      <ul className="is-source-group">
+        {parts.map((p, i) => (
+          <li key={i} className="is-source">
+            <span className="dupont-stem" />
+            {p}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+
+  const PL_atual = state.capital.patrimonioLiquido;
+  const D_atual = state.capital.dividaOnerosa;
+  const deducoes = Math.max(0, RB - RL);
+
+  // ─── Origens reutilizáveis (cards "source") com camadas intermediárias ──
   const srcRB = (
     <NodeCard label="DRE › Receita Bruta" value={fmtBRL(RB)} tone="source" />
   );
-  const srcRL = (
-    <NodeCard
-      label="DRE › Receita Líquida"
-      value={fmtBRL(RL)}
-      tone="source"
-      sub={`RB ${fmtBRL(RB)} − Deduções/Tributos`}
-    />
+  const srcRL = withBreakdown(
+    <NodeCard label="DRE › Receita Líquida" value={fmtBRL(RL)} tone="source" sub="RB − Deduções/Tributos" />,
+    [
+      <NodeCard key="rb" label="(+) Receita Bruta" value={fmtBRL(RB)} tone="source" />,
+      <NodeCard key="ded" label="(−) Deduções" value={fmtBRL(deducoes)} tone="source" />,
+    ],
   );
   const srcCPV = (
     <NodeCard label="DRE › CPV/CSP/CMV" value={fmtBRL(cpv)} tone="source" />
   );
   const srcOpEx = (
-    <NodeCard
-      label="DRE › Despesas Operacionais"
-      value={fmtBRL(despOp)}
-      tone="source"
-      sub="Adm + Comercial"
-    />
+    <NodeCard label="DRE › Despesas Operacionais" value={fmtBRL(despOp)} tone="source" sub="Adm + Comercial" />
   );
   const srcDepr = (
     <NodeCard label="DRE › Depreciação" value={fmtBRL(depr)} tone="source" />
   );
-  const srcLB = (
-    <NodeCard
-      label="DRE › Lucro Bruto"
-      value={fmtBRL(lucroBruto)}
-      tone="source"
-      sub={`RL − CPV`}
-    />
+  const srcLB = withBreakdown(
+    <NodeCard label="DRE › Lucro Bruto" value={fmtBRL(lucroBruto)} tone="source" sub="RL − CPV" />,
+    [
+      <NodeCard key="rl" label="(+) Receita Líquida" value={fmtBRL(RL)} tone="source" />,
+      <NodeCard key="cpv" label="(−) CPV/CSP/CMV" value={fmtBRL(cpv)} tone="source" />,
+    ],
   );
-  const srcEBITDA = (
-    <NodeCard
-      label="DRE › EBITDA"
-      value={fmtBRL(ebitda)}
-      tone="source"
-      sub="LB − OpEx (sem D&A)"
-    />
+  const srcEBITDA = withBreakdown(
+    <NodeCard label="DRE › EBITDA" value={fmtBRL(ebitda)} tone="source" sub="LB − OpEx" />,
+    [
+      <NodeCard key="lb" label="(+) Lucro Bruto" value={fmtBRL(lucroBruto)} tone="source" />,
+      <NodeCard key="op" label="(−) Desp. Operacionais" value={fmtBRL(despOp)} tone="source" />,
+    ],
   );
-  const srcEBIT = (
-    <NodeCard
-      label="DRE › EBIT"
-      value={fmtBRL(d.ebit)}
-      tone="source"
-      sub="EBITDA − D&A"
-    />
+  const srcEBIT = withBreakdown(
+    <NodeCard label="DRE › EBIT" value={fmtBRL(d.ebit)} tone="source" sub="EBITDA − D&A" />,
+    [
+      <NodeCard key="ebd" label="(+) EBITDA" value={fmtBRL(ebitda)} tone="source" />,
+      <NodeCard key="da" label="(−) Depreciação/Amort." value={fmtBRL(depr)} tone="source" />,
+    ],
   );
-  const srcLAIR = (
-    <NodeCard
-      label="DRE › LAIR"
-      value={fmtBRL(d.lair)}
-      tone="source"
-      sub={`EBIT ± Resultado Fin. (${fmtBRL(resFin)})`}
-    />
+  const srcLAIR = withBreakdown(
+    <NodeCard label="DRE › LAIR" value={fmtBRL(d.lair)} tone="source" sub="EBIT ± Resultado Fin." />,
+    [
+      <NodeCard key="ebit" label="(+) EBIT" value={fmtBRL(d.ebit)} tone="source" />,
+      <NodeCard key="rf" label="(±) Resultado Financeiro" value={fmtBRL(resFin)} tone="source" />,
+    ],
   );
-  const srcLL = (
-    <NodeCard
-      label="DRE › Lucro Líquido"
-      value={fmtBRL(d.lucroLiquido)}
-      tone="source"
-      sub={`LAIR − IR/CSLL (${fmtBRL(impLucro)})`}
-    />
+  const srcLL = withBreakdown(
+    <NodeCard label="DRE › Lucro Líquido" value={fmtBRL(d.lucroLiquido)} tone="source" sub="LAIR − IR/CSLL" />,
+    [
+      <NodeCard key="lair" label="(+) LAIR" value={fmtBRL(d.lair)} tone="source" />,
+      <NodeCard key="ir" label="(−) IR/CSLL" value={fmtBRL(impLucro)} tone="source" />,
+    ],
   );
-  const srcAT = (
+  const srcAT = withBreakdown(
     <NodeCard
       label="Balanço › Ativo Total"
       value={fmtBRL(d.ativoTotalMedio)}
       tone="source"
-      sub={`AC ${fmtBRL(ativoCirc)} + ANC ${fmtBRL(ativoNaoCirc)}`}
+      sub="AC + ANC"
       warn={baseWarn}
-    />
+    />,
+    [
+      <NodeCard key="ac" label="(+) Ativo Circulante" value={fmtBRL(ativoCirc)} tone="source" />,
+      <NodeCard key="anc" label="(+) Ativo Não Circulante" value={fmtBRL(ativoNaoCirc)} tone="source" />,
+    ],
   );
   const srcPL = (
-    <NodeCard
-      label="Balanço › PL Médio"
-      value={fmtBRL(d.plMedio)}
-      tone="source"
-      sub="Capital + Lucros Acum."
-    />
+    <NodeCard label="Balanço › PL Médio" value={fmtBRL(d.plMedio)} tone="source" sub="Capital + Lucros Acum." />
   );
-  const srcCapInv = (
-    <NodeCard
-      label="Capital Investido"
-      value={fmtBRL(capInv)}
-      tone="source"
-      sub="PL + Dívida Onerosa"
-    />
+  const srcCapInv = withBreakdown(
+    <NodeCard label="Capital Investido" value={fmtBRL(capInv)} tone="source" sub="PL + Dívida Onerosa" />,
+    [
+      <NodeCard key="pl" label="(+) PL" value={fmtBRL(PL_atual)} tone="source" />,
+      <NodeCard key="d" label="(+) Dívida Onerosa" value={fmtBRL(D_atual)} tone="source" />,
+    ],
   );
-  const srcNopat = (
-    <NodeCard label="NOPAT" value={fmtBRL(nopat)} tone="source" hint={tipNopat} />
+  const srcNopat = withBreakdown(
+    <NodeCard label="NOPAT" value={fmtBRL(nopat)} tone="source" hint={tipNopat} />,
+    [
+      <NodeCard key="ebit" label="(+) EBIT" value={fmtBRL(d.ebit)} tone="source" />,
+      <NodeCard
+        key="t"
+        label="(×) (1 − t)"
+        value={`${(100 - (ind.aliquotaNopat ?? 0)).toFixed(1)}%`}
+        tone="source"
+      />,
+    ],
   );
 
   // Reconstruído (faixa-resumo)
