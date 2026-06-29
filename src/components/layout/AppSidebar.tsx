@@ -142,36 +142,37 @@ export function AppSidebar({
           </SidebarMenu>
         </SidebarGroup>
 
-        <SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
-          <div className="space-y-3 px-2 py-2">
-            <div className="mt-2 space-y-1.5 border-t border-sidebar-border/50 pt-3">
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-0.5">
+              <li className="my-1 border-t border-sidebar-border/50" aria-hidden="true" />
               <AdminSidebarButton />
-
-              <Button
-                size="sm"
-                variant="default"
-                onClick={onSave}
-                className="h-8 w-full justify-start"
-                data-meeting-hide="true"
-                title="Salvar arquivo, backup na nuvem ou gerar link de compartilhamento"
-              >
-                <Share2 className="h-3.5 w-3.5 mr-2" />
-                <span>Salvar / Compartilhar{dirty ? " ●" : ""}</span>
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onOpenRestore}
-                className="h-8 w-full justify-start"
-                data-meeting-hide="true"
-                title="Abrir arquivo do computador ou restaurar da nuvem"
-              >
-                <FolderOpen className="h-3.5 w-3.5 mr-2" />
-                <span>Abrir / Restaurar</span>
-              </Button>
-            </div>
-          </div>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={onSave}
+                  tooltip="Salvar / Compartilhar"
+                  className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                  data-meeting-hide="true"
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span>Salvar / Compartilhar{dirty ? " ●" : ""}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={onOpenRestore}
+                  tooltip="Abrir / Restaurar"
+                  className="h-8 border border-sidebar-border"
+                  data-meeting-hide="true"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  <span>Abrir / Restaurar</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
         </SidebarGroup>
+
       </SidebarContent>
 
 
