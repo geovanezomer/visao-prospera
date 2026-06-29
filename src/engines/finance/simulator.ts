@@ -437,6 +437,8 @@ export function countActiveLevers(p: SimulatorParams): number {
   if (p.pmrDeltaDays !== 0) n++;
   if (p.pmpDeltaDays !== 0) n++;
   if (p.antecipPctAm > 0) n++;
+  if (p.inadimplenciaDeltaPp !== 0) n++;
+
   if (p.loanPrincipal > 0) n++;
   if (p.debtPaydownPct > 0) n++;
   if (p.kdDeltaPp !== 0) n++;
