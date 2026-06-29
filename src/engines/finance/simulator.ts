@@ -311,6 +311,7 @@ export interface SimDREView {
   margemLiquida: number;
   roic: number;
   ncg: number;
+  gapCapitalGiro: number;
   saldoCaixaFinal: number;
   piorMesCaixa: number;
   coberturaJuros: number;
@@ -397,6 +398,7 @@ export function computeSimView(state: AppState, precomputed?: SimViewPrecomputed
     margemLiquida: ind.margemLiquida,
     roic: ind.roic,
     ncg: ind.ncg,
+    gapCapitalGiro: ind.gapCapitalGiro,
     saldoCaixaFinal: cf.totais.saldoFinal,
     piorMesCaixa: cf.totais.pioresMes?.saldo ?? 0,
     coberturaJuros: ind.coberturaJuros,

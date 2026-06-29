@@ -130,8 +130,12 @@ export function SimulatorTab({
         onReset={reset}
       />
 
+      {/* KPIs em tempo real — refletem o cenário simulado */}
+      <KpiCardsRow base={baseView} sim={simView} />
+
       {/* Grid 2 colunas — DRE ocupa 1/2 da largura da página */}
       <div className="grid gap-4 lg:grid-cols-2">
+
         {/* Sliders */}
         <div className="space-y-3">
           <Accordion
@@ -835,4 +839,59 @@ function Kpi({
 function pctDelta(a: number, b: number): number {
   if (Math.abs(a) < 1e-6) return b === 0 ? 0 : b > 0 ? 100 : -100;
   return ((b - a) / Math.abs(a)) * 100;
+}
+
+// ============== KPI Cards (tempo real) ==============
+// Cards de topo do Simulador: Faturamento, Lucro Líquido, EBITDA (DRE)
+// + NCG e Gap de Capital de Giro (Indicadores). Reagem instantaneamente
+// às alavancas — mesma dinâmica dos KPIs comparativos já presentes no painel DRE.
+
+function KpiCardsRow({ base, sim }: { base: SimDREView; sim: SimDREView }) {
+  const items: {
+    label: string;
+    baseV: number;
+    simV: number;
+    /** true: maior é melhor; false: menor é melhor (NCG/Gap). */
+    higherIsBetter: boolean;
+  }[] = [
+    { label: "Faturamento", baseV: base.receitaBruta, simV: sim.receitaBruta, higherIsBetter: true },
+    { label: "Lucro Líquido", baseV: base.lucroLiquido, simV: sim.lucroLiquido, higherIsBetter: true },
+    { label: "EBITDA", baseV: base.ebitda, simV: sim.ebitda, higherIsBetter: true },
+    { label: "NCG", baseV: base.ncg, simV: sim.ncg, higherIsBetter: false },
+    { label: "Gap de Capital de Giro", baseV: base.gapCapitalGiro, simV: sim.gapCapitalGiro, higherIsBetter: false },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+      {items.map((it) => {
+        const delta = pctDelta(it.baseV, it.simV);
+        const improved = it.higherIsBetter ? it.simV >= it.baseV : it.simV <= it.baseV;
+        const flat = Math.abs(delta) < 0.05;
+        const tone = flat ? "text-muted-foreground" : improved ? "text-pos" : "text-neg";
+        const Icon = flat ? Minus : delta > 0 ? ArrowUpRight : ArrowDownRight;
+        return (
+          <div
+            key={it.label}
+            className="rounded-lg border border-border/60 bg-card/60 p-3 shadow-sm transition-all"
+          >
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+              {it.label}
+            </div>
+            <div className="mt-1 mono text-base sm:text-lg font-bold text-foreground">
+              {fmtBRLCompact(it.simV)}
+            </div>
+            <div className="mt-0.5 flex items-center justify-between gap-2">
+              <span className="mono text-[10px] text-muted-foreground line-through opacity-70">
+                {fmtBRLCompact(it.baseV)}
+              </span>
+              <span className={cn("inline-flex items-center gap-0.5 text-[10px] font-semibold", tone)}>
+                <Icon className="h-3 w-3" />
+                {flat ? "—" : `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%`}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
