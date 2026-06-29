@@ -102,7 +102,10 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       })),
     },
     costs: cloneCosts(base.costs),
-    capital: { ...base.capital },
+    capital: {
+      ...base.capital,
+      debtContracts: (base.capital.debtContracts ?? []).map((d) => ({ ...d })),
+    },
     cashflow: {
       ...base.cashflow,
       emprestimosCaptados: base.cashflow.emprestimosCaptados.slice(),
