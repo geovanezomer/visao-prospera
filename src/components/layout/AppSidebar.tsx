@@ -18,8 +18,6 @@ import {
   Share2,
   FolderOpen,
   Calculator,
-  PanelLeftClose,
-  PanelLeftOpen,
 } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { BrandedLogo } from "@/components/BrandedLogo";
@@ -51,8 +49,7 @@ export function AppSidebar({
   dirty,
 }: AppSidebarProps) {
   const { user, logout } = useAuth();
-  const { setOpenMobile, toggleSidebar, state } = useSidebar();
-  const collapsed = state === "collapsed";
+  const { setOpenMobile } = useSidebar();
   const { branding, isReady } = useBranding();
 
   useEffect(() => {
@@ -95,15 +92,6 @@ export function AppSidebar({
               </>
             )}
           </div>
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            title={collapsed ? "Expandir sidebar" : "Recolher sidebar"}
-            aria-label={collapsed ? "Expandir sidebar" : "Recolher sidebar"}
-            className="ml-auto hidden md:flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:-right-3 group-data-[collapsible=icon]:top-4 group-data-[collapsible=icon]:bg-sidebar group-data-[collapsible=icon]:border group-data-[collapsible=icon]:border-sidebar-border"
-          >
-            {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-          </button>
         </div>
       </SidebarHeader>
 
