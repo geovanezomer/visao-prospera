@@ -192,6 +192,7 @@ export const upsertPlan = createServerFn({ method: "POST" })
       : supabaseAdmin.from("plans").insert(payload).select().maybeSingle();
     const { data: row, error } = await q;
     if (error) throw new Error(error.message);
+    invalidatePublicPlansCache();
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
