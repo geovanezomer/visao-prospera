@@ -130,8 +130,12 @@ export function SimulatorTab({
         onReset={reset}
       />
 
+      {/* KPIs em tempo real — refletem o cenário simulado */}
+      <KpiCardsRow base={baseView} sim={simView} />
+
       {/* Grid 2 colunas — DRE ocupa 1/2 da largura da página */}
       <div className="grid gap-4 lg:grid-cols-2">
+
         {/* Sliders */}
         <div className="space-y-3">
           <Accordion
