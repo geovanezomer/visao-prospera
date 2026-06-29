@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { revokeOtherSessions } from "@/lib/session.functions";
 
 export type AuthUser = {
   id: string;
@@ -97,6 +98,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
     });
     if (error) return { ok: false, error: friendlyError(error.message) };
+    // Sessão única: revoga outros dispositivos em background (não bloqueia o login).
+    revokeOtherSessions().catch((e) => {
+      console.warn("[auth] revokeOtherSessions falhou:", e);
+    });
     return { ok: true };
   }, []);
 
