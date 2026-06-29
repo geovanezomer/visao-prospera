@@ -69,11 +69,11 @@ export function AppSidebar({
               src={branding.logoUrl ?? logoAsset.url}
               alt={branding.systemName}
               recolor={branding.recolorLogo}
-              className="h-8 w-8 shrink-0 rounded-md object-contain [&>svg]:h-8 [&>svg]:w-8"
-              imgProps={{ className: "h-8 w-8 shrink-0 rounded-md object-contain" }}
+              className="h-8 w-8 shrink-0 rounded-md object-contain group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-6 [&>svg]:h-8 [&>svg]:w-8 group-data-[collapsible=icon]:[&>svg]:h-6 group-data-[collapsible=icon]:[&>svg]:w-6"
+              imgProps={{ className: "h-8 w-8 shrink-0 rounded-md object-contain group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-6" }}
             />
           ) : (
-            <div className="h-8 w-8 shrink-0 animate-pulse rounded-md bg-sidebar-accent" />
+            <div className="h-8 w-8 shrink-0 animate-pulse rounded-md bg-sidebar-accent group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-6" />
           )}
           <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
             {isReady ? (
