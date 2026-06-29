@@ -155,16 +155,19 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     );
   }
 
-  // 5) Ajuste de fixos (top-N) — primitiva scaleCostLines.
-  // Positivo = corte; negativo = aumento.
+  // 5) Ajuste de fixos (top-N) — primitiva scaleCostLines (já cobre fixo + despesa_administrativa).
   if (p.fixedCutPct !== 0) {
     const ids = topNFixedIds(s, p.fixedCutTopN);
-    const f = 1 - p.fixedCutPct / 100; // ex: +20 → 0.80 (corte 20%); -20 → 1.20 (aumento 20%)
+    const f = 1 - p.fixedCutPct / 100;
     s.costs = p_scaleCostLines(s, ids, f).costs;
   }
 
-
-
+  // 6) Inadimplência — soma p.p. à série mensal (clampada a [0, 100]).
+  if (p.inadimplenciaDeltaPp !== 0) {
+    s.revenue.inadimplencia = s.revenue.inadimplencia.map((v) =>
+      Math.max(0, Math.min(100, v + p.inadimplenciaDeltaPp)),
+    );
+  }
 
   // 7) PMR / PMP — primitivas setPmr / setPmp.
   if (p.pmrDeltaDays !== 0) {
@@ -174,7 +177,9 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     s.revenue = p_setPmp(s, s.revenue.pmp + p.pmpDeltaDays).revenue;
   }
 
-  // 8) Antecipação de recebíveis (custo financeiro)
+  // 8) Antecipação de recebíveis — custo financeiro + aceleração de caixa (PMR ↓).
+  //    Hipótese: antecipa-se 50% da carteira; reduzimos PMR proporcionalmente ao % a.m.,
+  //    cap em 20 dias para evitar redução irreal em taxas altas.
   if (p.antecipPctAm > 0) {
     const custo = s.revenue.bruta.map((v) => v * 0.5 * (p.antecipPctAm / 100));
     s.costs.push({
@@ -185,27 +190,27 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       fixed: false,
       custom: true,
     });
+    const reduce = Math.min(20, Math.round(s.revenue.pmr * 0.5));
+    s.revenue = p_setPmr(s, Math.max(0, s.revenue.pmr - reduce)).revenue;
   }
 
-  // Reordenação S4/S8: kd → quitar dívida existente → captar empréstimo novo.
-  // Motivos:
-  //  • kd primeiro: novo custo de dívida reflete em TODAS as linhas de juros existentes
-  //    antes da quitação proporcional escalar resíduos errados.
-  //  • Quitar antes de captar: evita que o "% quitar" incida sobre o empréstimo recém-captado
-  //    (caso clássico: usuário capta 100k @ 2% a.m. e "quita 30%" do total — quitava 30% do novo).
-
-  // 9) kd / Selic (antes de quitar para que a redução seja sobre o juros pós-kd)
+  // 9) kd / Selic — escala juros existentes (linhas financeiras com "juros" no rótulo
+  //    OU linhas sintéticas do simulador/contratos de dívida).
+  const isInterestLine = (c: CostLine) =>
+    c.category === "financeiro" &&
+    (/juros/i.test(c.label) ||
+      c.id === "sim_loan_juros" ||
+      c.id.startsWith("__debt_contracts"));
   if (p.kdDeltaPp !== 0) {
     const kdAtual = Math.max(s.capital.kd, 0.5);
     const novoKd = Math.max(0.5, s.capital.kd + p.kdDeltaPp);
     const fator = novoKd / kdAtual;
     s.capital.kd = novoKd;
     s.costs = s.costs.map((c) =>
-      c.category === "financeiro" && /juros/i.test(c.label)
-        ? { ...c, values: c.values.map((v) => v * fator) }
-        : c,
+      isInterestLine(c) ? { ...c, values: c.values.map((v) => v * fator) } : c,
     );
   }
+
 
   // 10) Quitar dívida EXISTENTE (antes de captar)
   if (p.debtPaydownPct > 0) {
