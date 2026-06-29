@@ -51,8 +51,7 @@ export function AppSidebar({
   dirty,
 }: AppSidebarProps) {
   const { user, logout } = useAuth();
-  const { setOpenMobile, toggleSidebar, state } = useSidebar();
-  const collapsed = state === "collapsed";
+  const { setOpenMobile } = useSidebar();
   const { branding, isReady } = useBranding();
 
   useEffect(() => {
