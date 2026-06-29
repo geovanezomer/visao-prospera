@@ -262,7 +262,7 @@ export function SimulatorTab({
               />
               <SliderRow
                 label="Antecipação de recebíveis (custo)"
-                hint="Adiciona despesa financeira mensal proporcional à receita antecipada."
+                hint="Adiciona despesa financeira e acelera entrada de caixa (PMR ↓ até 20 dias)."
                 min={0}
                 max={6}
                 step={0.1}
@@ -270,6 +270,18 @@ export function SimulatorTab({
                 onChange={(v) => set("antecipPctAm", v)}
                 suffix="% a.m."
               />
+              <SliderRow
+                label="Inadimplência (variação)"
+                hint="Soma pontos percentuais à inadimplência mensal — reduz receita líquida e caixa."
+                min={-5}
+                max={10}
+                step={0.5}
+                value={p.inadimplenciaDeltaPp}
+                onChange={(v) => set("inadimplenciaDeltaPp", v)}
+                suffix=" p.p."
+                signed
+              />
+
             </Group>
 
             <Group value="divida" title="Dívida & Juros">
