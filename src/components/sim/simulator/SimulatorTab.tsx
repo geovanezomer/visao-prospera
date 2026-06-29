@@ -191,7 +191,7 @@ export function SimulatorTab({
               />
               <SliderRow
                 label="Elasticidade-preço (|E|)"
-                hint="Volume induzido = −E × ΔPreço. Ex.: E=1,2 e +10% preço → −12% volume. 0 desliga."
+                hint="Quanto o volume de vendas reage quando você mexe no preço. |E|=1 → cada +1% no preço derruba 1% do volume (neutro na receita). |E|<1 (inelástico, ex.: itens essenciais) → subir preço aumenta receita. |E|>1 (elástico, ex.: supérfluos) → subir preço reduz receita. Use 0 para ignorar o efeito e simular preço e volume de forma independente. Fórmula: Δvolume% = −|E| × Δpreço%. Ex.: |E|=1,2 e +10% no preço → −12% no volume."
                 min={0}
                 max={3}
                 step={0.1}
