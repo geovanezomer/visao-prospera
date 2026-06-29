@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { buildFinancialModel } from "../financialModel";
 import { buildDupont } from "../dupont";
-import { defaultAppState } from "../defaults";
+import { DEFAULT_STATE } from "../defaults";
 
 describe("DuPont", () => {
   it("identidade 3F e 5F reconstroem ROE com ≤ 0.5 p.p. de erro", () => {
-    const s = defaultAppState();
+    const s = structuredClone(DEFAULT_STATE);
     const { dre, ind } = buildFinancialModel(s);
     const d = buildDupont(s, dre, ind);
     // Quando há base, identidades devem reconstruir ROE (decimal).
@@ -16,7 +16,7 @@ describe("DuPont", () => {
   });
 
   it("EBIT≤0 sinaliza ebitNegativo e não quebra", () => {
-    const s = defaultAppState();
+    const s = structuredClone(DEFAULT_STATE);
     // Força um cenário deficitário inflando custos fixos.
     s.costs.custosFixos = s.costs.custosFixos.map(() => 1e9);
     const { dre, ind } = buildFinancialModel(s);
@@ -26,7 +26,7 @@ describe("DuPont", () => {
   });
 
   it("Sem PL/AT informado, MAF cai para 0 (não NaN/Infinity)", () => {
-    const s = defaultAppState();
+    const s = structuredClone(DEFAULT_STATE);
     s.capital.patrimonioLiquido = 0;
     s.capital.patrimonioLiquidoAbertura = 0;
     s.capital.ativoTotal = 0;
