@@ -18,6 +18,8 @@ import {
   Share2,
   FolderOpen,
   Calculator,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { BrandedLogo } from "@/components/BrandedLogo";
