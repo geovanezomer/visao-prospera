@@ -237,7 +237,7 @@ export function DupontTree({ state }: { state: AppState }) {
               <Mini label="Disponibilidades" v={state.capital.disponibilidades} />
               <Mini label="Contas a Receber" v={state.capital.contasReceber} />
               <Mini label="Estoques" v={state.capital.estoques} />
-              <Mini label="Imobilizado Líq." v={state.capital.imobilizadoLiquido ?? 0} />
+              <Mini label="Ativo Não Circ." v={ativoNaoCirc} />
             </div>
           </DrillCard>
         </TabsContent>
