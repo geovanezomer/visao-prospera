@@ -102,19 +102,40 @@ export const listPlansAdmin = createServerFn({ method: "POST" })
   });
 
 // Listagem pública (apenas ativos) — usado pela landing/pricing.
+// Cache em memória (TTL 5 min): catálogo muda raramente, mas a landing
+// é o endpoint mais visitado em campanhas pagas.
+const PLANS_TTL_MS = 5 * 60_000;
+let plansCache: { at: number; data: { plans: PlanRow[] } } | null = null;
+let plansInFlight: Promise<{ plans: PlanRow[] }> | null = null;
+
 export const listPlansPublic = createServerFn({ method: "GET" }).handler(async () => {
-  const { createClient } = await import("@supabase/supabase-js");
-  const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  const now = Date.now();
+  if (plansCache && now - plansCache.at < PLANS_TTL_MS) return plansCache.data;
+  if (plansInFlight) return plansInFlight;
+  plansInFlight = (async () => {
+    const { createClient } = await import("@supabase/supabase-js");
+    const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await sb
+      .from("plans")
+      .select("*")
+      .eq("active", true)
+      .order("sort_order", { ascending: true });
+    if (error) throw new Error(error.message);
+    const out = { plans: (data ?? []).map(rowToPlan) };
+    plansCache = { at: Date.now(), data: out };
+    return out;
+  })().finally(() => {
+    plansInFlight = null;
   });
-  const { data, error } = await sb
-    .from("plans")
-    .select("*")
-    .eq("active", true)
-    .order("sort_order", { ascending: true });
-  if (error) throw new Error(error.message);
-  return { plans: (data ?? []).map(rowToPlan) };
+  return plansInFlight;
 });
+
+// Invalida cache de planos públicos — chamado após upsert/delete admin.
+export function invalidatePublicPlansCache() {
+  plansCache = null;
+}
 
 const planSchema = z.object({
   id: z.string().uuid().optional(),
