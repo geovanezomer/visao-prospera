@@ -7,13 +7,13 @@
 // 100% SSOT — consome `useFinanceModel` + `buildDupont`. Nenhum cálculo
 // próprio: só leitura e arrumação visual.
 // =====================================================================
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import type { ReactNode } from "react";
 import type { AppState } from "@/engines/finance/types";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { buildDupont } from "@/engines/finance/dupont";
 import { fmtBRL, fmtPct, fmtRatio, sum } from "@/engines/finance/format";
 import { HelpTip } from "@/components/sim/shared/primitives";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
