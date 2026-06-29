@@ -69,7 +69,9 @@ export interface SimulatorParams {
 export const DEFAULT_SIM: SimulatorParams = {
   priceDeltaPct: 0,
   volumeDeltaPct: 0,
+  priceElasticity: 0,
   cpvDeltaPct: 0,
+
   payrollDeltaPct: 0,
   fixedCutPct: 0,
   fixedCutTopN: 3,
