@@ -160,24 +160,8 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     s.costs = p_scaleCostLines(s, ids, f).costs;
   }
 
-  // 6) Terceirização — reduz CPV proporcionalmente ao % terceirizado e adiciona
-  // (opcionalmente) um custo fixo mensal para o contrato de terceirização.
-  if (p.outsourcePctCpv > 0) {
-    const f = 1 - p.outsourcePctCpv / 100;
-    s.costs = s.costs.map((c) =>
-      c.category === "custo_vendas" ? { ...c, values: c.values.map((v) => v * f) } : c,
-    );
-    if (p.outsourceFixedMonthly > 0) {
-      s.costs.push({
-        id: `sim_outsource`,
-        label: `Terceirização (${p.outsourcePctCpv.toFixed(0)}% da operação)`,
-        category: "despesa_administrativa",
-        values: fill12(p.outsourceFixedMonthly),
-        fixed: true,
-        custom: true,
-      });
-    }
-  }
+
+
 
   // 7) PMR / PMP — primitivas setPmr / setPmp.
   if (p.pmrDeltaDays !== 0) {
