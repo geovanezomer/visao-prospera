@@ -5,6 +5,13 @@ import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 import { HelpTip, StatCard } from "@/components/sim/shared/primitives";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { IndicatorsGrid } from "./IndicatorsGrid";
+import { DupontTree } from "./DupontTree";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 // Tooltip style (mantido para CashConversionSmall e outros consumidores futuros)
 
@@ -66,6 +73,17 @@ export function IndicatorsTab() {
       </div>
 
       <IndicatorsGrid state={state} />
+
+      <Accordion type="single" collapsible className="rounded-lg border border-border/60 bg-card/30 px-4">
+        <AccordionItem value="dupont" className="border-none">
+          <AccordionTrigger className="text-sm font-semibold uppercase tracking-wider text-primary hover:no-underline">
+            Árvore DuPont — Decomposição do ROE
+          </AccordionTrigger>
+          <AccordionContent>
+            <DupontTree state={state} />
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
     </div>
   );
