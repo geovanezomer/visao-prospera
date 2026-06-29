@@ -7,13 +7,13 @@
 // 100% SSOT — consome `useFinanceModel` + `buildDupont`. Nenhum cálculo
 // próprio: só leitura e arrumação visual.
 // =====================================================================
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import type { ReactNode } from "react";
 import type { AppState } from "@/engines/finance/types";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { buildDupont } from "@/engines/finance/dupont";
 import { fmtBRL, fmtPct, fmtRatio, sum } from "@/engines/finance/format";
 import { HelpTip } from "@/components/sim/shared/primitives";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -249,7 +249,7 @@ function Branch({
 export function DupontTree({ state }: { state: AppState }) {
   const { dre, ind } = useFinanceModel(state);
   const d = useMemo(() => buildDupont(state, dre, ind), [state, dre, ind]);
-  const [mode, setMode] = useState<"3f" | "5f" | "completa">("3f");
+  
 
   // ─── Origens (linhas do DRE / Balanço) — só visualização da fonte ───
   const RL = d.receitaLiquida;
@@ -326,99 +326,115 @@ export function DupontTree({ state }: { state: AppState }) {
     calc: `${fmtBRL(d.ebit)} × (1 − ${(ind.aliquotaNopat ?? 0).toFixed(1)}%) = ${fmtBRL(nopat)}`,
   };
 
-  // ─── Origens reutilizáveis (cards "source") ──────────────────────────
-  const srcRB = (
-    <NodeCard label="DRE › Receita Bruta" value={fmtBRL(RB)} tone="source" />
+  // ─── Helper: nó "source" com decomposição intermediária aninhada ────
+  // Renderiza o card de origem + uma sub-árvore tracejada com as partes
+  // que somam/subtraem para chegar no valor (ex.: AT = AC + ANC).
+  const withBreakdown = (node: ReactNode, parts: ReactNode[]): ReactNode => (
+    <>
+      {node}
+      <ul className="is-source-group">
+        {parts.map((p, i) => (
+          <li key={i} className="is-source">
+            <span className="dupont-stem" />
+            {p}
+          </li>
+        ))}
+      </ul>
+    </>
   );
-  const srcRL = (
-    <NodeCard
-      label="DRE › Receita Líquida"
-      value={fmtBRL(RL)}
-      tone="source"
-      sub={`RB ${fmtBRL(RB)} − Deduções/Tributos`}
-    />
+
+  const PL_atual = state.capital.patrimonioLiquido;
+  const D_atual = state.capital.dividaOnerosa;
+  const deducoes = Math.max(0, RB - RL);
+
+  // ─── Origens reutilizáveis (cards "source") com camadas intermediárias ──
+  
+
+  const srcRL = withBreakdown(
+    <NodeCard label="DRE › Receita Líquida" value={fmtBRL(RL)} tone="source" sub="RB − Deduções/Tributos" />,
+    [
+      <NodeCard key="rb" label="(+) Receita Bruta" value={fmtBRL(RB)} tone="source" />,
+      <NodeCard key="ded" label="(−) Deduções" value={fmtBRL(deducoes)} tone="source" />,
+    ],
   );
   const srcCPV = (
     <NodeCard label="DRE › CPV/CSP/CMV" value={fmtBRL(cpv)} tone="source" />
   );
   const srcOpEx = (
-    <NodeCard
-      label="DRE › Despesas Operacionais"
-      value={fmtBRL(despOp)}
-      tone="source"
-      sub="Adm + Comercial"
-    />
+    <NodeCard label="DRE › Despesas Operacionais" value={fmtBRL(despOp)} tone="source" sub="Adm + Comercial" />
   );
   const srcDepr = (
     <NodeCard label="DRE › Depreciação" value={fmtBRL(depr)} tone="source" />
   );
-  const srcLB = (
-    <NodeCard
-      label="DRE › Lucro Bruto"
-      value={fmtBRL(lucroBruto)}
-      tone="source"
-      sub={`RL − CPV`}
-    />
+  const srcLB = withBreakdown(
+    <NodeCard label="DRE › Lucro Bruto" value={fmtBRL(lucroBruto)} tone="source" sub="RL − CPV" />,
+    [
+      <NodeCard key="rl" label="(+) Receita Líquida" value={fmtBRL(RL)} tone="source" />,
+      <NodeCard key="cpv" label="(−) CPV/CSP/CMV" value={fmtBRL(cpv)} tone="source" />,
+    ],
   );
-  const srcEBITDA = (
-    <NodeCard
-      label="DRE › EBITDA"
-      value={fmtBRL(ebitda)}
-      tone="source"
-      sub="LB − OpEx (sem D&A)"
-    />
+  const srcEBITDA = withBreakdown(
+    <NodeCard label="DRE › EBITDA" value={fmtBRL(ebitda)} tone="source" sub="LB − OpEx" />,
+    [
+      <NodeCard key="lb" label="(+) Lucro Bruto" value={fmtBRL(lucroBruto)} tone="source" />,
+      <NodeCard key="op" label="(−) Desp. Operacionais" value={fmtBRL(despOp)} tone="source" />,
+    ],
   );
-  const srcEBIT = (
-    <NodeCard
-      label="DRE › EBIT"
-      value={fmtBRL(d.ebit)}
-      tone="source"
-      sub="EBITDA − D&A"
-    />
+  const srcEBIT = withBreakdown(
+    <NodeCard label="DRE › EBIT" value={fmtBRL(d.ebit)} tone="source" sub="EBITDA − D&A" />,
+    [
+      <NodeCard key="ebd" label="(+) EBITDA" value={fmtBRL(ebitda)} tone="source" />,
+      <NodeCard key="da" label="(−) Depreciação/Amort." value={fmtBRL(depr)} tone="source" />,
+    ],
   );
-  const srcLAIR = (
-    <NodeCard
-      label="DRE › LAIR"
-      value={fmtBRL(d.lair)}
-      tone="source"
-      sub={`EBIT ± Resultado Fin. (${fmtBRL(resFin)})`}
-    />
+  const srcLAIR = withBreakdown(
+    <NodeCard label="DRE › LAIR" value={fmtBRL(d.lair)} tone="source" sub="EBIT ± Resultado Fin." />,
+    [
+      <NodeCard key="ebit" label="(+) EBIT" value={fmtBRL(d.ebit)} tone="source" />,
+      <NodeCard key="rf" label="(±) Resultado Financeiro" value={fmtBRL(resFin)} tone="source" />,
+    ],
   );
-  const srcLL = (
-    <NodeCard
-      label="DRE › Lucro Líquido"
-      value={fmtBRL(d.lucroLiquido)}
-      tone="source"
-      sub={`LAIR − IR/CSLL (${fmtBRL(impLucro)})`}
-    />
+  const srcLL = withBreakdown(
+    <NodeCard label="DRE › Lucro Líquido" value={fmtBRL(d.lucroLiquido)} tone="source" sub="LAIR − IR/CSLL" />,
+    [
+      <NodeCard key="lair" label="(+) LAIR" value={fmtBRL(d.lair)} tone="source" />,
+      <NodeCard key="ir" label="(−) IR/CSLL" value={fmtBRL(impLucro)} tone="source" />,
+    ],
   );
-  const srcAT = (
+  const srcAT = withBreakdown(
     <NodeCard
       label="Balanço › Ativo Total"
       value={fmtBRL(d.ativoTotalMedio)}
       tone="source"
-      sub={`AC ${fmtBRL(ativoCirc)} + ANC ${fmtBRL(ativoNaoCirc)}`}
+      sub="AC + ANC"
       warn={baseWarn}
-    />
+    />,
+    [
+      <NodeCard key="ac" label="(+) Ativo Circulante" value={fmtBRL(ativoCirc)} tone="source" />,
+      <NodeCard key="anc" label="(+) Ativo Não Circulante" value={fmtBRL(ativoNaoCirc)} tone="source" />,
+    ],
   );
   const srcPL = (
-    <NodeCard
-      label="Balanço › PL Médio"
-      value={fmtBRL(d.plMedio)}
-      tone="source"
-      sub="Capital + Lucros Acum."
-    />
+    <NodeCard label="Balanço › PL Médio" value={fmtBRL(d.plMedio)} tone="source" sub="Capital + Lucros Acum." />
   );
-  const srcCapInv = (
-    <NodeCard
-      label="Capital Investido"
-      value={fmtBRL(capInv)}
-      tone="source"
-      sub="PL + Dívida Onerosa"
-    />
+  const srcCapInv = withBreakdown(
+    <NodeCard label="Capital Investido" value={fmtBRL(capInv)} tone="source" sub="PL + Dívida Onerosa" />,
+    [
+      <NodeCard key="pl" label="(+) PL" value={fmtBRL(PL_atual)} tone="source" />,
+      <NodeCard key="d" label="(+) Dívida Onerosa" value={fmtBRL(D_atual)} tone="source" />,
+    ],
   );
-  const srcNopat = (
-    <NodeCard label="NOPAT" value={fmtBRL(nopat)} tone="source" hint={tipNopat} />
+  const srcNopat = withBreakdown(
+    <NodeCard label="NOPAT" value={fmtBRL(nopat)} tone="source" hint={tipNopat} />,
+    [
+      <NodeCard key="ebit" label="(+) EBIT" value={fmtBRL(d.ebit)} tone="source" />,
+      <NodeCard
+        key="t"
+        label="(×) (1 − t)"
+        value={`${(100 - (ind.aliquotaNopat ?? 0)).toFixed(1)}%`}
+        tone="source"
+      />,
+    ],
   );
 
   // Reconstruído (faixa-resumo)
@@ -462,276 +478,116 @@ export function DupontTree({ state }: { state: AppState }) {
         </div>
       </div>
 
-      <Tabs value={mode} onValueChange={(v) => setMode(v as typeof mode)}>
-        <TabsList>
-          <TabsTrigger value="3f">3 Fatores</TabsTrigger>
-          <TabsTrigger value="5f">5 Fatores</TabsTrigger>
-          <TabsTrigger value="completa">Árvore Completa</TabsTrigger>
-        </TabsList>
-
-        {/* =================== 3 FATORES =================== */}
-        <TabsContent value="3f">
-          <div className="dupont-row overflow-x-auto">
-            <NodeCard label="Margem Líquida" value={fmtPct(d.margemLiquida)} tone="pos" hint={tipMargemLiq} size="lg" />
-            <div className="dupont-op">×</div>
-            <NodeCard label="Giro do Ativo" value={`${fmtRatio(d.giroAtivo)}×`} tone="primary" hint={tipGiro} warn={baseWarn} size="lg" />
-            <div className="dupont-op">×</div>
-            <NodeCard label="MAF" value={`${fmtRatio(d.maf)}×`} tone="warn" hint={tipMaf} warn={baseWarn} size="lg" />
-            <div className="dupont-op">=</div>
-            <NodeCard label="ROE" value={fmtPct(d.roeEngine)} tone="accent" size="lg" />
-          </div>
-
-          <div className="dupont-org">
+      {/* =================== ÁRVORE COMPLETA (única) =================== */}
+      <div className="mb-3 text-xs text-muted-foreground">
+        Decomposição estendida: ROE ← MAF ← ROA ← (Margem Líquida × Giro) ← Margem EBIT / EBITDA / Bruta · ROIC paralelo via NOPAT.
+        Linhas tracejadas mostram as camadas intermediárias (ex.: Ativo Total = AC + ANC; Lucro Líquido = LAIR − IR/CSLL).
+      </div>
+      <div className="dupont-org">
+        <ul>
+          <li>
+            {/* RAIZ: Rentabilidade do Acionista */}
+            <NodeCard label="ROE" value={fmtPct(d.roeEngine)} tone="accent" size="xl" />
             <ul>
-              <li>
-                <NodeCard label="ROE" value={fmtPct(d.roeEngine)} tone="accent" size="xl" />
-                <ul>
-                  <Branch
-                    factor={<NodeCard label="Margem Líquida" value={fmtPct(d.margemLiquida)} tone="pos" hint={tipMargemLiq} size="lg" />}
-                    numerator={<NodeCard label="Lucro Líquido" value={fmtBRL(d.lucroLiquido)} tone="pos" />}
-                    denominator={<NodeCard label="Receita Líquida" value={fmtBRL(RL)} tone="primary" />}
-                    sources={{ num: [srcLL], den: [srcRL] }}
-                  />
-                  <Branch
-                    factor={<NodeCard label="Giro do Ativo" value={`${fmtRatio(d.giroAtivo)}×`} tone="primary" hint={tipGiro} size="lg" />}
-                    numerator={<NodeCard label="Receita Líquida" value={fmtBRL(RL)} tone="primary" />}
-                    denominator={<NodeCard label="Ativo Total Médio" value={fmtBRL(d.ativoTotalMedio)} tone="warn" warn={baseWarn} />}
-                    sources={{ num: [srcRL], den: [srcAT] }}
-                  />
-                  <Branch
-                    factor={<NodeCard label="MAF" value={`${fmtRatio(d.maf)}×`} tone="warn" hint={tipMaf} size="lg" />}
-                    numerator={<NodeCard label="Ativo Total Médio" value={fmtBRL(d.ativoTotalMedio)} tone="warn" warn={baseWarn} />}
-                    denominator={<NodeCard label="PL Médio" value={fmtBRL(d.plMedio)} tone="primary" />}
-                    sources={{ num: [srcAT], den: [srcPL] }}
-                  />
-                </ul>
-              </li>
+              {/* Trunk 1 — ROA × MAF */}
+              <Branch
+                factor={<NodeCard label="ROA" value={fmtPct(ind.roa)} tone="primary" hint={tipRoa} size="lg" />}
+                numerator={
+                  <NodeCard label="Margem Líquida" value={fmtPct(d.margemLiquida)} tone="pos" hint={tipMargemLiq} />
+                }
+                denominator={
+                  <NodeCard label="Giro do Ativo" value={`${fmtRatio(d.giroAtivo)}×`} tone="primary" hint={tipGiro} warn={baseWarn} />
+                }
+                sources={{
+                  num: [srcLL, srcRL],
+                  den: [srcRL, srcAT],
+                }}
+              />
+              <Branch
+                factor={<NodeCard label="MAF" value={`${fmtRatio(d.maf)}×`} tone="warn" hint={tipMaf} warn={baseWarn} size="lg" />}
+                numerator={<NodeCard label="Ativo Total Médio" value={fmtBRL(d.ativoTotalMedio)} tone="warn" warn={baseWarn} />}
+                denominator={<NodeCard label="PL Médio" value={fmtBRL(d.plMedio)} tone="primary" />}
+                sources={{ num: [srcAT], den: [srcPL] }}
+              />
+              {/* Trunk 2 — ROIC paralelo */}
+              <Branch
+                factor={<NodeCard label="ROIC" value={fmtPct(ind.roic)} tone="primary" hint={tipRoic} size="lg" />}
+                numerator={<NodeCard label="NOPAT" value={fmtBRL(nopat)} tone="pos" hint={tipNopat} />}
+                denominator={<NodeCard label="Capital Investido" value={fmtBRL(capInv)} tone="warn" />}
+                sources={{
+                  num: [srcNopat, srcEBIT],
+                  den: [srcCapInv],
+                }}
+              />
             </ul>
-          </div>
-          <ReconciliationAlert delta={Math.abs(d.roeReconstruido3F - d.roeEngine) * 100} />
-        </TabsContent>
+          </li>
+        </ul>
+      </div>
 
-        {/* =================== 5 FATORES =================== */}
-        <TabsContent value="5f">
-          <div className="dupont-row overflow-x-auto">
-            <NodeCard label="Margem EBIT" value={fmtPct(d.margemEbit)} tone="pos" hint={tipMargemEbit} size="lg" />
-            <div className="dupont-op">×</div>
-            <NodeCard label="Giro" value={`${fmtRatio(d.giroAtivo)}×`} tone="primary" hint={tipGiro} warn={baseWarn} size="lg" />
-            <div className="dupont-op">×</div>
-            <NodeCard label="MAF" value={`${fmtRatio(d.maf)}×`} tone="warn" hint={tipMaf} warn={baseWarn} size="lg" />
-            <div className="dupont-op">×</div>
-            <NodeCard
-              label="Carga Fin."
-              value={d.ebitNegativo ? "n/d" : fmtPct(d.cargaFinanceira)}
-              tone={d.ebitNegativo ? "muted" : d.cargaFinanceira < 1 ? "neg" : "pos"}
-              hint={tipCFin}
-              size="lg"
-            />
-            <div className="dupont-op">×</div>
-            <NodeCard
-              label="Carga Trib."
-              value={d.lairNegativo ? "n/d" : fmtPct(d.cargaTributaria)}
-              tone={d.lairNegativo ? "muted" : "neg"}
-              hint={tipCTrib}
-              size="lg"
-            />
-            <div className="dupont-op">=</div>
-            <NodeCard label="ROE" value={fmtPct(d.roeEngine)} tone="accent" size="lg" />
-          </div>
-
-          <div className="dupont-org">
-            <ul>
-              <li>
-                <NodeCard label="ROE" value={fmtPct(d.roeEngine)} tone="accent" size="xl" />
-                <ul>
-                  <Branch
-                    factor={<NodeCard label="Margem EBIT" value={fmtPct(d.margemEbit)} tone="pos" hint={tipMargemEbit} size="lg" />}
-                    numerator={<NodeCard label="EBIT" value={fmtBRL(d.ebit)} tone="pos" />}
-                    denominator={<NodeCard label="Receita Líquida" value={fmtBRL(RL)} tone="primary" />}
-                    sources={{ num: [srcEBIT], den: [srcRL] }}
-                  />
-                  <Branch
-                    factor={<NodeCard label="Giro" value={`${fmtRatio(d.giroAtivo)}×`} tone="primary" hint={tipGiro} size="lg" />}
-                    numerator={<NodeCard label="Receita Líquida" value={fmtBRL(RL)} tone="primary" />}
-                    denominator={<NodeCard label="Ativo Total Médio" value={fmtBRL(d.ativoTotalMedio)} tone="warn" warn={baseWarn} />}
-                    sources={{ num: [srcRL], den: [srcAT] }}
-                  />
-                  <Branch
-                    factor={<NodeCard label="MAF" value={`${fmtRatio(d.maf)}×`} tone="warn" hint={tipMaf} size="lg" />}
-                    numerator={<NodeCard label="Ativo Total Médio" value={fmtBRL(d.ativoTotalMedio)} tone="warn" warn={baseWarn} />}
-                    denominator={<NodeCard label="PL Médio" value={fmtBRL(d.plMedio)} tone="primary" />}
-                    sources={{ num: [srcAT], den: [srcPL] }}
-                  />
-                  <Branch
-                    factor={
-                      <NodeCard
-                        label="Carga Financeira"
-                        value={d.ebitNegativo ? "n/d" : fmtPct(d.cargaFinanceira)}
-                        tone={d.ebitNegativo ? "muted" : d.cargaFinanceira < 1 ? "neg" : "pos"}
-                        hint={tipCFin}
-                        size="lg"
-                      />
-                    }
-                    numerator={<NodeCard label="LAIR" value={fmtBRL(d.lair)} tone="primary" />}
-                    denominator={<NodeCard label="EBIT" value={fmtBRL(d.ebit)} tone="pos" />}
-                    sources={{ num: [srcLAIR], den: [srcEBIT] }}
-                  />
-                  <Branch
-                    factor={
-                      <NodeCard
-                        label="Carga Tributária"
-                        value={d.lairNegativo ? "n/d" : fmtPct(d.cargaTributaria)}
-                        tone={d.lairNegativo ? "muted" : "neg"}
-                        hint={tipCTrib}
-                        size="lg"
-                      />
-                    }
-                    numerator={<NodeCard label="Lucro Líquido" value={fmtBRL(d.lucroLiquido)} tone="pos" />}
-                    denominator={<NodeCard label="LAIR" value={fmtBRL(d.lair)} tone="primary" />}
-                    sources={{ num: [srcLL], den: [srcLAIR] }}
-                  />
-                </ul>
-              </li>
-            </ul>
-          </div>
-          <ReconciliationAlert
-            delta={d.ebitNegativo || d.lairNegativo ? 0 : Math.abs(d.roeReconstruido5F - d.roeEngine) * 100}
-          />
-        </TabsContent>
-
-        {/* =================== ÁRVORE COMPLETA =================== */}
-        {/* Três trunks: ROE → ROA → ROIC, com decomposição operacional
-            (EBITDA / EBIT / Margem Bruta) compartilhada. */}
-        <TabsContent value="completa">
-          <div className="mb-3 text-xs text-muted-foreground">
-            Decomposição estendida: ROE ← MAF ← ROA ← (Margem Líquida × Giro) ← Margem EBIT / EBITDA / Bruta · ROIC paralelo via NOPAT.
-          </div>
-          <div className="dupont-org">
-            <ul>
-              <li>
-                {/* RAIZ: Rentabilidade do Acionista */}
-                <NodeCard label="ROE" value={fmtPct(d.roeEngine)} tone="accent" size="xl" />
-                <ul>
-                  {/* Trunk 1 — ROA × MAF */}
-                  <Branch
-                    factor={<NodeCard label="ROA" value={fmtPct(ind.roa)} tone="primary" hint={tipRoa} size="lg" />}
-                    numerator={
-                      <NodeCard label="Margem Líquida" value={fmtPct(d.margemLiquida)} tone="pos" hint={tipMargemLiq} />
-                    }
-                    denominator={
-                      <NodeCard label="Giro do Ativo" value={`${fmtRatio(d.giroAtivo)}×`} tone="primary" hint={tipGiro} warn={baseWarn} />
-                    }
-                    sources={{
-                      num: [
-                        <NodeCard
-                          key="me"
-                          label="Margem EBIT"
-                          value={fmtPct(d.margemEbit)}
-                          tone="source"
-                          hint={tipMargemEbit}
-                        />,
-                        <NodeCard
-                          key="mb"
-                          label="Margem EBITDA"
-                          value={fmtPct(ind.margemEbitda)}
-                          tone="source"
-                          hint={tipMargemEbitda}
-                        />,
-                        <NodeCard
-                          key="mbr"
-                          label="Margem Bruta"
-                          value={fmtPct(ind.margemBruta)}
-                          tone="source"
-                          hint={tipMargemBruta}
-                        />,
-                      ],
-                      den: [srcRL, srcAT],
-                    }}
-                  />
-                  <Branch
-                    factor={<NodeCard label="MAF" value={`${fmtRatio(d.maf)}×`} tone="warn" hint={tipMaf} warn={baseWarn} size="lg" />}
-                    numerator={<NodeCard label="Ativo Total Médio" value={fmtBRL(d.ativoTotalMedio)} tone="warn" warn={baseWarn} />}
-                    denominator={<NodeCard label="PL Médio" value={fmtBRL(d.plMedio)} tone="primary" />}
-                    sources={{ num: [srcAT], den: [srcPL] }}
-                  />
-                  {/* Trunk 2 — ROIC paralelo */}
-                  <Branch
-                    factor={<NodeCard label="ROIC" value={fmtPct(ind.roic)} tone="primary" hint={tipRoic} size="lg" />}
-                    numerator={<NodeCard label="NOPAT" value={fmtBRL(nopat)} tone="pos" hint={tipNopat} />}
-                    denominator={<NodeCard label="Capital Investido" value={fmtBRL(capInv)} tone="warn" />}
-                    sources={{
-                      num: [srcEBIT, srcNopat],
-                      den: [srcCapInv, srcPL],
-                    }}
-                  />
-                </ul>
-              </li>
-            </ul>
-          </div>
-
-          {/* Decomposição operacional vertical (EBITDA → EBIT → LAIR → LL) */}
-          <div className="mt-6">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Cascata Operacional (do Faturamento ao Lucro Líquido)
-            </div>
-            <div className="dupont-org">
+      {/* Decomposição operacional vertical (Receita → EBITDA → EBIT → LAIR → LL) */}
+      <div className="mt-6">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Cascata Operacional (do Faturamento ao Lucro Líquido)
+        </div>
+        <div className="dupont-org">
+          <ul>
+            <li>
+              <NodeCard label="Receita Bruta" value={fmtBRL(RB)} tone="primary" size="lg" />
               <ul>
                 <li>
-                  <NodeCard label="Receita Bruta" value={fmtBRL(RB)} tone="primary" size="lg" />
+                  <span className="dupont-stem" />
+                  <NodeCard label="Receita Líquida" value={fmtBRL(RL)} tone="primary" size="lg" sub={`Deduções: ${fmtBRL(RB - RL)}`} />
                   <ul>
                     <li>
                       <span className="dupont-stem" />
-                      <NodeCard label="Receita Líquida" value={fmtBRL(RL)} tone="primary" size="lg" sub={`Deduções: ${fmtBRL(RB - RL)}`} />
+                      <NodeCard label="Lucro Bruto" value={fmtBRL(lucroBruto)} tone="pos" size="lg" hint={tipMargemBruta} sub={`CPV: ${fmtBRL(cpv)}`} />
                       <ul>
                         <li>
                           <span className="dupont-stem" />
-                          <NodeCard label="Lucro Bruto" value={fmtBRL(lucroBruto)} tone="pos" size="lg" hint={tipMargemBruta} sub={`CPV: ${fmtBRL(cpv)}`} />
+                          <NodeCard label="EBITDA" value={fmtBRL(ebitda)} tone="pos" size="lg" hint={tipMargemEbitda} sub={`OpEx: ${fmtBRL(despOp)}`} />
                           <ul>
                             <li>
                               <span className="dupont-stem" />
-                              <NodeCard label="EBITDA" value={fmtBRL(ebitda)} tone="pos" size="lg" hint={tipMargemEbitda} sub={`OpEx: ${fmtBRL(despOp)}`} />
+                              <NodeCard label="EBIT" value={fmtBRL(d.ebit)} tone="pos" size="lg" hint={tipMargemEbit} sub={`D&A: ${fmtBRL(depr)}`} />
                               <ul>
                                 <li>
                                   <span className="dupont-stem" />
-                                  <NodeCard label="EBIT" value={fmtBRL(d.ebit)} tone="pos" size="lg" hint={tipMargemEbit} sub={`D&A: ${fmtBRL(depr)}`} />
+                                  <NodeCard label="LAIR" value={fmtBRL(d.lair)} tone="primary" size="lg" sub={`Res.Fin: ${fmtBRL(resFin)}`} />
                                   <ul>
                                     <li>
                                       <span className="dupont-stem" />
-                                      <NodeCard label="LAIR" value={fmtBRL(d.lair)} tone="primary" size="lg" sub={`Res.Fin: ${fmtBRL(resFin)}`} />
-                                      <ul>
-                                        <li>
-                                          <span className="dupont-stem" />
-                                          <NodeCard label="Lucro Líquido" value={fmtBRL(d.lucroLiquido)} tone="accent" size="lg" hint={tipCTrib} sub={`IR/CSLL: ${fmtBRL(impLucro)}`} />
-                                        </li>
-                                      </ul>
+                                      <NodeCard label="Lucro Líquido" value={fmtBRL(d.lucroLiquido)} tone="accent" size="lg" hint={tipCTrib} sub={`IR/CSLL: ${fmtBRL(impLucro)}`} />
                                     </li>
                                   </ul>
                                 </li>
                               </ul>
                             </li>
-                            <li className="is-source">
-                              <span className="dupont-stem" />
-                              {srcCPV}
-                            </li>
                           </ul>
                         </li>
                         <li className="is-source">
                           <span className="dupont-stem" />
-                          {srcOpEx}
-                        </li>
-                        <li className="is-source">
-                          <span className="dupont-stem" />
-                          {srcDepr}
+                          {srcCPV}
                         </li>
                       </ul>
+                    </li>
+                    <li className="is-source">
+                      <span className="dupont-stem" />
+                      {srcOpEx}
+                    </li>
+                    <li className="is-source">
+                      <span className="dupont-stem" />
+                      {srcDepr}
                     </li>
                   </ul>
                 </li>
               </ul>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <ReconciliationAlert delta={Math.abs(d.roeReconstruido3F - d.roeEngine) * 100} />
+
 
       <div className="text-[10px] text-muted-foreground italic">
         Linhas sólidas (azul) = decomposição matemática. Linhas tracejadas (cinza) = origens no DRE / Balanço.
