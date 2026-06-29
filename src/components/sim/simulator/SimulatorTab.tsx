@@ -189,7 +189,23 @@ export function SimulatorTab({
                 suffix="%"
                 signed
               />
+              <SliderRow
+                label="Elasticidade-preço (|E|)"
+                hint="Volume induzido = −E × ΔPreço. Ex.: E=1,2 e +10% preço → −12% volume. 0 desliga."
+                min={0}
+                max={3}
+                step={0.1}
+                value={p.priceElasticity}
+                onChange={(v) => set("priceElasticity", v)}
+                suffix=""
+                current={
+                  p.priceDeltaPct !== 0 && p.priceElasticity > 0
+                    ? `Volume induzido: ${(-p.priceElasticity * p.priceDeltaPct).toFixed(1)}%`
+                    : "Desligada"
+                }
+              />
             </Group>
+
 
             <Group value="custos" title="Custos & Pessoal">
               <SliderRow
