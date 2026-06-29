@@ -348,9 +348,8 @@ export function DupontTree({ state }: { state: AppState }) {
   const deducoes = Math.max(0, RB - RL);
 
   // ─── Origens reutilizáveis (cards "source") com camadas intermediárias ──
-  const srcRB = (
-    <NodeCard label="DRE › Receita Bruta" value={fmtBRL(RB)} tone="source" />
-  );
+  void RB;
+
   const srcRL = withBreakdown(
     <NodeCard label="DRE › Receita Líquida" value={fmtBRL(RL)} tone="source" sub="RB − Deduções/Tributos" />,
     [
