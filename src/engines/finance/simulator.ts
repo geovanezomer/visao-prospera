@@ -43,8 +43,6 @@ export interface SimulatorParams {
   payrollDeltaPct: number; // -30..+30  → multiplica linhas com encargosAuto
   fixedCutPct: number; // -50..+50  → positivo = corte, negativo = aumento nos top-N fixos
   fixedCutTopN: number; // 1..5
-  outsourcePctCpv: number; // 0..100    → % do CPV substituído
-  outsourceFixedMonthly: number; // R$/mês fixo contratado
 
   // Capital de Giro
   pmrDeltaDays: number; // -60..0    (sempre reduz ou 0)
