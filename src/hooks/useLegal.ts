@@ -17,6 +17,10 @@ export function useLegal() {
     queryKey: ["app_settings"],
     queryFn: () => getAppSettings(),
     staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
   return {
     isLoading,
