@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (error) return { ok: false, error: friendlyError(error.message) };
     // Sessão única: revoga outros dispositivos em background (não bloqueia o login).
-    revokeOtherSessions({ data: undefined }).catch((e) => {
+    revokeOtherSessions().catch((e) => {
       console.warn("[auth] revokeOtherSessions falhou:", e);
     });
     return { ok: true };
