@@ -48,6 +48,7 @@ export interface SimulatorParams {
   pmrDeltaDays: number; // -60..0    (sempre reduz ou 0)
   pmpDeltaDays: number; // 0..+60    (sempre aumenta ou 0)
   antecipPctAm: number; // 0..6      custo % a.m. sobre 50% da receita
+  inadimplenciaDeltaPp: number; // -5..+10 p.p. somados à inadimplência mensal
 
   // Dívida & Juros
   loanPrincipal: number; // R$ captado no mês 1
@@ -70,6 +71,8 @@ export const DEFAULT_SIM: SimulatorParams = {
   pmrDeltaDays: 0,
   pmpDeltaDays: 0,
   antecipPctAm: 0,
+  inadimplenciaDeltaPp: 0,
+
   loanPrincipal: 0,
   loanTermMonths: 12,
   loanRatePctAm: 2,
