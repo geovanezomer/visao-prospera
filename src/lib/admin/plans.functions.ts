@@ -215,6 +215,7 @@ export const deletePlan = createServerFn({ method: "POST" })
     const { data: existing } = await supabaseAdmin.from("plans").select("slug").eq("id", data.id).maybeSingle();
     const { error } = await supabaseAdmin.from("plans").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    invalidatePublicPlansCache();
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
