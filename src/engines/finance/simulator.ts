@@ -311,6 +311,7 @@ export interface SimDREView {
   margemLiquida: number;
   roic: number;
   ncg: number;
+  gapCapitalGiro: number;
   saldoCaixaFinal: number;
   piorMesCaixa: number;
   coberturaJuros: number;
