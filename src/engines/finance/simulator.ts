@@ -130,9 +130,15 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
   // 2) Volume: receita + custo_vendas + variavel + deduções absolutas (S2)
   // Inadimplência é %, escala automaticamente. Devoluções/descontos/abatimentos são R$ absolutos —
   // precisam crescer junto, senão Receita Líquida fica artificialmente alta em volumes maiores.
-  if (p.volumeDeltaPct !== 0) {
-    const f = 1 + p.volumeDeltaPct / 100;
+  // Volume efetivo = volumeDeltaPct manual + induzido pela elasticidade-preço.
+  // E.g., E=1.2 e +10% preço → −12% volume induzido. Clamp em [−90, +200] para
+  // evitar destruição completa da receita em combinações extremas.
+  const inducedVolPct = -(p.priceElasticity || 0) * (p.priceDeltaPct || 0);
+  const effectiveVolPct = Math.max(-90, Math.min(200, (p.volumeDeltaPct || 0) + inducedVolPct));
+  if (effectiveVolPct !== 0) {
+    const f = 1 + effectiveVolPct / 100;
     s.revenue.bruta = s.revenue.bruta.map((v) => v * f);
+
     if (s.revenue.deducoes) {
       s.revenue.deducoes = s.revenue.deducoes.map((d) => ({
         ...d,
