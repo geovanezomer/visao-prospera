@@ -43,8 +43,6 @@ export interface SimulatorParams {
   payrollDeltaPct: number; // -30..+30  → multiplica linhas com encargosAuto
   fixedCutPct: number; // -50..+50  → positivo = corte, negativo = aumento nos top-N fixos
   fixedCutTopN: number; // 1..5
-  outsourcePctCpv: number; // 0..100    → % do CPV substituído
-  outsourceFixedMonthly: number; // R$/mês fixo contratado
 
   // Capital de Giro
   pmrDeltaDays: number; // -60..0    (sempre reduz ou 0)
@@ -69,8 +67,6 @@ export const DEFAULT_SIM: SimulatorParams = {
   payrollDeltaPct: 0,
   fixedCutPct: 0,
   fixedCutTopN: 3,
-  outsourcePctCpv: 0,
-  outsourceFixedMonthly: 0,
   pmrDeltaDays: 0,
   pmpDeltaDays: 0,
   antecipPctAm: 0,
@@ -164,24 +160,8 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     s.costs = p_scaleCostLines(s, ids, f).costs;
   }
 
-  // 6) Terceirização — reduz CPV proporcionalmente ao % terceirizado e adiciona
-  // (opcionalmente) um custo fixo mensal para o contrato de terceirização.
-  if (p.outsourcePctCpv > 0) {
-    const f = 1 - p.outsourcePctCpv / 100;
-    s.costs = s.costs.map((c) =>
-      c.category === "custo_vendas" ? { ...c, values: c.values.map((v) => v * f) } : c,
-    );
-    if (p.outsourceFixedMonthly > 0) {
-      s.costs.push({
-        id: `sim_outsource`,
-        label: `Terceirização (${p.outsourcePctCpv.toFixed(0)}% da operação)`,
-        category: "despesa_administrativa",
-        values: fill12(p.outsourceFixedMonthly),
-        fixed: true,
-        custom: true,
-      });
-    }
-  }
+
+
 
   // 7) PMR / PMP — primitivas setPmr / setPmp.
   if (p.pmrDeltaDays !== 0) {
@@ -414,7 +394,7 @@ export function countActiveLevers(p: SimulatorParams): number {
   if (p.cpvDeltaPct !== 0) n++;
   if (p.payrollDeltaPct !== 0) n++;
   if (p.fixedCutPct !== 0) n++;
-  if (p.outsourcePctCpv > 0) n++;
+  
   if (p.pmrDeltaDays !== 0) n++;
   if (p.pmpDeltaDays !== 0) n++;
   if (p.antecipPctAm > 0) n++;
