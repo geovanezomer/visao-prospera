@@ -113,8 +113,8 @@ function layout(nodes: Node[], edges: Edge[]) {
     return {
       ...n,
       position: { x: p.x - NODE_W / 2, y: p.y - NODE_H / 2 },
-      targetPosition: "top" as const,
-      sourcePosition: "bottom" as const,
+      targetPosition: Position.Top,
+      sourcePosition: Position.Bottom,
     };
   });
 }
