@@ -37,6 +37,11 @@ export interface SimulatorParams {
   // Receita & Preço
   priceDeltaPct: number; // -30..+30  → multiplica receita
   volumeDeltaPct: number; // -50..+50  → multiplica receita + CPV variável
+  // Elasticidade-preço da demanda (|E|). 0 = desliga (volume independe do preço).
+  // Convenção: variação induzida de volume = −priceElasticity × priceDeltaPct.
+  // Ex.: E=1.2, +10% preço → −12% volume induzido (soma ao volumeDeltaPct manual).
+  priceElasticity: number; // 0..3
+
 
   // Custos & Pessoal
   cpvDeltaPct: number; // -20..+30  → multiplica linhas custo_vendas
