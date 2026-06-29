@@ -21,18 +21,37 @@ export type SettingKey = (typeof KEYS)[number];
 /** Leitura pública — só chaves seguras para anon. `trial` é público para a landing saber se exibe o CTA. */
 const PUBLIC_KEYS = ["branding", "login_texts", "footer", "tracking", "legal", "landing_video", "trial"] as const;
 
+// Cache em memória do worker (TTL 60s) — reduz drasticamente as queries ao
+// banco em SSR de alto volume (Black Friday). Mudanças do admin propagam em
+// até 60s sem invalidação explícita. Dedupe de in-flight evita thundering
+// herd em picos concorrentes.
+const SETTINGS_TTL_MS = 60_000;
+let settingsCache: { at: number; data: Partial<Record<SettingKey, Json>> } | null = null;
+let settingsInFlight: Promise<Partial<Record<SettingKey, Json>>> | null = null;
+
 export const getAppSettings = createServerFn({ method: "GET" }).handler(async () => {
-  const { createClient } = await import("@supabase/supabase-js");
-  const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  const now = Date.now();
+  if (settingsCache && now - settingsCache.at < SETTINGS_TTL_MS) {
+    return settingsCache.data;
+  }
+  if (settingsInFlight) return settingsInFlight;
+  settingsInFlight = (async () => {
+    const { createClient } = await import("@supabase/supabase-js");
+    const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    });
+    const { data } = await sb
+      .from("app_settings")
+      .select("key, value")
+      .in("key", PUBLIC_KEYS as unknown as string[]);
+    const out: Partial<Record<SettingKey, Json>> = {};
+    for (const row of data ?? []) out[row.key as SettingKey] = row.value as Json;
+    settingsCache = { at: Date.now(), data: out };
+    return out;
+  })().finally(() => {
+    settingsInFlight = null;
   });
-  const { data } = await sb
-    .from("app_settings")
-    .select("key, value")
-    .in("key", PUBLIC_KEYS as unknown as string[]);
-  const out: Partial<Record<SettingKey, Json>> = {};
-  for (const row of data ?? []) out[row.key as SettingKey] = row.value as Json;
-  return out;
+  return settingsInFlight;
 });
 
 export const updateAppSetting = createServerFn({ method: "POST" })
@@ -48,5 +67,7 @@ export const updateAppSetting = createServerFn({ method: "POST" })
       { onConflict: "key" },
     );
     if (error) throw new Error(error.message);
+    // Invalida cache em memória para refletir mudança imediatamente.
+    settingsCache = null;
     return { ok: true };
   });
