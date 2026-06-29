@@ -67,5 +67,7 @@ export const updateAppSetting = createServerFn({ method: "POST" })
       { onConflict: "key" },
     );
     if (error) throw new Error(error.message);
+    // Invalida cache em memória para refletir mudança imediatamente.
+    settingsCache = null;
     return { ok: true };
   });
