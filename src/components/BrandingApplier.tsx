@@ -33,6 +33,10 @@ export function BrandingApplier() {
     queryKey: ["app_settings"],
     queryFn: () => getAppSettings(),
     staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
     // Cache localStorage como initialData — branding aparece imediatamente
     // em qualquer navegação client-side, sem aguardar o fetch.
     initialData: readSettingsCache,
