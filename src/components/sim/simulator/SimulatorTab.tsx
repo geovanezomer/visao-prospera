@@ -927,13 +927,51 @@ function KpiCardsRow({ base, sim }: { base: SimDREView; sim: SimDREView }) {
     simV: number;
     /** true: maior é melhor; false: menor é melhor (NCG/Gap). */
     higherIsBetter: boolean;
+    hint: string;
+    formula?: string;
   }[] = [
-    { label: "Faturamento", baseV: base.receitaBruta, simV: sim.receitaBruta, higherIsBetter: true },
-    { label: "Lucro Líquido", baseV: base.lucroLiquido, simV: sim.lucroLiquido, higherIsBetter: true },
-    { label: "EBITDA", baseV: base.ebitda, simV: sim.ebitda, higherIsBetter: true },
-    { label: "NCG", baseV: base.ncg, simV: sim.ncg, higherIsBetter: false },
-    { label: "Gap de Capital de Giro", baseV: base.gapCapitalGiro, simV: sim.gapCapitalGiro, higherIsBetter: false },
+    {
+      label: "Faturamento",
+      baseV: base.receitaBruta,
+      simV: sim.receitaBruta,
+      higherIsBetter: true,
+      hint: "Receita Operacional Bruta anual — total faturado antes de devoluções, descontos e tributos. Reage em tempo real às alavancas de Preço, Volume e Elasticidade.",
+      formula: "Σ (Preço × Quantidade) nos 12 meses",
+    },
+    {
+      label: "Lucro Líquido",
+      baseV: base.lucroLiquido,
+      simV: sim.lucroLiquido,
+      higherIsBetter: true,
+      hint: "Resultado final após todos os custos, despesas, juros e tributos (IR/CSLL). É o lucro disponível para distribuir aos sócios ou reinvestir.",
+      formula: "EBT − IR/CSLL",
+    },
+    {
+      label: "EBITDA",
+      baseV: base.ebitda,
+      simV: sim.ebitda,
+      higherIsBetter: true,
+      hint: "Lucro antes de juros, impostos, depreciação e amortização. Proxy de geração de caixa operacional — neutraliza efeitos de estrutura de capital e contabilidade.",
+      formula: "EBIT + Depreciação + Amortização",
+    },
+    {
+      label: "NCG",
+      baseV: base.ncg,
+      simV: sim.ncg,
+      higherIsBetter: false,
+      hint: "Necessidade de Capital de Giro — quanto de dinheiro a operação precisa para girar (financiar clientes e estoque, descontando o crédito de fornecedores). Quanto menor, melhor.",
+      formula: "(Clientes + Estoque) − Fornecedores",
+    },
+    {
+      label: "Gap de Capital de Giro",
+      baseV: base.gapCapitalGiro,
+      simV: sim.gapCapitalGiro,
+      higherIsBetter: false,
+      hint: "Diferença entre a NCG e o Capital de Giro disponível. Positivo = a empresa precisa captar para financiar a operação. Negativo = sobra de caixa operacional.",
+      formula: "NCG − Capital de Giro Próprio",
+    },
   ];
+
 
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
