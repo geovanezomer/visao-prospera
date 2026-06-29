@@ -119,7 +119,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
         parts.push(
           `fixos ${p.fixedCutPct > 0 ? "-" : "+"}${Math.abs(p.fixedCutPct)}% (top ${p.fixedCutTopN})`,
         );
-      if (p.outsourcePctCpv) parts.push(`terceirizar ${p.outsourcePctCpv}% CPV`);
+      
       if (p.pmrDeltaDays) parts.push(`PMR ${p.pmrDeltaDays > 0 ? "+" : ""}${p.pmrDeltaDays}d`);
       if (p.pmpDeltaDays) parts.push(`PMP ${p.pmpDeltaDays > 0 ? "+" : ""}${p.pmpDeltaDays}d`);
       if (p.antecipPctAm) parts.push(`antecipação ${p.antecipPctAm}% a.m.`);
