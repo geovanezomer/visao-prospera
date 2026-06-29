@@ -249,7 +249,7 @@ function Branch({
 export function DupontTree({ state }: { state: AppState }) {
   const { dre, ind } = useFinanceModel(state);
   const d = useMemo(() => buildDupont(state, dre, ind), [state, dre, ind]);
-  const [mode, setMode] = useState<"3f" | "5f" | "completa">("3f");
+  
 
   // ─── Origens (linhas do DRE / Balanço) — só visualização da fonte ───
   const RL = d.receitaLiquida;
