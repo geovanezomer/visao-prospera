@@ -458,10 +458,10 @@ export function DashboardTab() {
             />
             <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => fmtBRL(v)} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar yAxisId="left" dataKey="CPV/CMV/CSP" stackId="custos" fill="#0F2C5C" radius={[0, 0, 0, 0]} />
-            <Bar yAxisId="left" dataKey="Administrativas" stackId="custos" fill="#1E5BB8" />
-            <Bar yAxisId="left" dataKey="Comerciais" stackId="custos" fill="#3FA9F5" />
-            <Bar yAxisId="left" dataKey="Financeiras" stackId="custos" fill="#5ED4A8" radius={[4, 4, 0, 0]} />
+            <Bar yAxisId="left" dataKey="CPV/CMV/CSP" stackId="custos" fill="#1E5BB8" radius={[0, 0, 0, 0]} />
+            <Bar yAxisId="left" dataKey="Administrativas" stackId="custos" fill="#F59E0B" />
+            <Bar yAxisId="left" dataKey="Comerciais" stackId="custos" fill="#A855F7" />
+            <Bar yAxisId="left" dataKey="Financeiras" stackId="custos" fill="#EF4444" radius={[4, 4, 0, 0]} />
             <Line yAxisId="right" type="monotone" dataKey="EBIT" stroke="var(--success)" strokeWidth={2.5} dot={{ r: 3 }} />
           </ComposedChart>
         </ResponsiveContainer>
