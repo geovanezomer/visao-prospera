@@ -26,6 +26,7 @@ export function KanitzCard({ compact = false }: { compact?: boolean }) {
   const state = useFinanceState();
   const { ind } = useFinanceModel(state);
   const k = calcKanitz(state, ind);
+  const crisis = assessCrisisStage(state, ind);
 
   const toneColor =
     k.tone === "pos"
