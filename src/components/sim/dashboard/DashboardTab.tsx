@@ -301,34 +301,6 @@ export function DashboardTab() {
       <DashboardExtras state={state} />
 
 
-      {/* Linha 3 — Combo Receita + Margem (largura total) */}
-      <ChartCard title="Receita Mensal × Margem Líquida (%)">
-        <ResponsiveContainer width="100%" height={280}>
-          <ComposedChart data={receitaMargem}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
-            <YAxis
-              yAxisId="left"
-              stroke="var(--muted-foreground)"
-              fontSize={10}
-              tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
-            />
-            <YAxis
-              yAxisId="right"
-              orientation="right"
-              stroke="var(--muted-foreground)"
-              fontSize={10}
-              tickFormatter={(v) => `${v.toFixed(0)}%`}
-            />
-            <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number, n) => n === "Margem %" ? `${v.toFixed(1)}%` : fmtBRL(v)} />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar yAxisId="left" dataKey="Receita" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-            <Line yAxisId="right" type="monotone" dataKey="Margem %" stroke="var(--success)" strokeWidth={2} dot={false} />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </ChartCard>
-
-
       {/* Linha 4 — Receitas vs Despesas | Top 5 Despesas */}
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard title="Receitas vs Despesas (12m)">
@@ -348,8 +320,35 @@ export function DashboardTab() {
         <Top5Despesas state={state} />
       </div>
 
-      {/* Linha 4b — Lucro Acumulado */}
+      {/* Linha 4b — Receita × Margem | Lucro Acumulado */}
       <div className="grid gap-4 lg:grid-cols-2">
+        <ChartCard title="Receita Mensal × Margem Líquida (%)">
+          <ResponsiveContainer width="100%" height={280}>
+            <ComposedChart data={receitaMargem}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
+              <YAxis
+                yAxisId="left"
+                stroke="var(--muted-foreground)"
+                fontSize={10}
+                tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                stroke="var(--muted-foreground)"
+                fontSize={10}
+                tickFormatter={(v) => `${v.toFixed(0)}%`}
+              />
+              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number, n) => n === "Margem %" ? `${v.toFixed(1)}%` : fmtBRL(v)} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar yAxisId="left" dataKey="Receita" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+              <Line yAxisId="right" type="monotone" dataKey="Margem %" stroke="var(--success)" strokeWidth={2} dot={false} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+
 
 
         <ChartCard title="Lucro Líquido Acumulado (12m)">
