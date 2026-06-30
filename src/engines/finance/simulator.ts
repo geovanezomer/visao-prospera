@@ -79,8 +79,11 @@ export const DEFAULT_SIM: SimulatorParams = {
   cpvDeltaPct: 0,
 
   payrollDeltaPct: 0,
+  prolaboreDeltaPct: 0,
+  distribuicaoDeltaPct: 0,
   fixedCutPct: 0,
   fixedCutTopN: 3,
+
   pmrDeltaDays: 0,
   pmpDeltaDays: 0,
   antecipPctAm: 0,
