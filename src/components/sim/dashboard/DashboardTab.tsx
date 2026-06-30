@@ -395,10 +395,6 @@ export function DashboardTab() {
         </ChartCard>
       </div>
 
-      {/* Waterfall em linha própria */}
-      <div className="grid gap-4 lg:grid-cols-1">
-        <IndicatorsCharts state={state} />
-      </div>
 
       {/* Linha 5 — Despesas | Radar */}
       <div className="grid gap-4 lg:grid-cols-2">
