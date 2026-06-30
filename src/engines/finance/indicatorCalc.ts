@@ -136,10 +136,13 @@ export function buildIndicatorCalcs(
     const r = safe(EBITDA, RL);
     return r == null ? NA : line(`${fmtBRL(EBITDA)} ÷ ${fmtBRL(RL)} × 100`, fmtPct(r));
   })();
-  const margemEbit = (() => {
-    const r = safe(EBIT, RL);
-    return r == null ? NA : line(`${fmtBRL(EBIT)} ÷ ${fmtBRL(RL)} × 100`, fmtPct(r));
-  })();
+  // EVA = (ROIC − WACC) × Capital Investido. ROIC/WACC em % → divide por 100.
+  const evaStr = ind.capitalInvestido > 0
+    ? line(
+        `(${fmtPct(ind.roic / 100)} − ${fmtPct(ind.wacc / 100)}) × ${fmtBRL(ind.capitalInvestido)}`,
+        fmtBRL(ind.eva),
+      )
+    : NA;
   const margemLiquida = (() => {
     const r = safe(LL, RL);
     return r == null ? NA : line(`${fmtBRL(LL)} ÷ ${fmtBRL(RL)} × 100`, fmtPct(r));
