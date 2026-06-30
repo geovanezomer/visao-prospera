@@ -1,4 +1,4 @@
-import { useState, Fragment } from "react";
+import { useMemo, useState, Fragment } from "react";
 import { useFinance, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { usePeriodView } from "@/hooks/usePeriodView";
 import {
@@ -333,25 +333,40 @@ export function DRETab() {
     },
   ];
 
-  // chart data
-  const monthlyChart = MESES.map((m, i) => ({
-    mes: m,
-    Receita: dre.receitaLiquida[i],
-    Custos:
-      dre.cpv[i] + dre.despesasOperacionais[i] + dre.custosFinanceirosTotal[i] + dre.depreciacao[i],
-    Lucro: dre.lucroLiquido[i],
-  }));
+  // chart data — memoizado: depende só dos arrays da engine (referências estáveis por render)
+  const monthlyChart = useMemo(
+    () =>
+      MESES.map((m, i) => ({
+        mes: m,
+        Receita: dre.receitaLiquida[i],
+        Custos:
+          dre.cpv[i] +
+          dre.despesasOperacionais[i] +
+          dre.custosFinanceirosTotal[i] +
+          dre.depreciacao[i],
+        Lucro: dre.lucroLiquido[i],
+      })),
+    [dre.receitaLiquida, dre.cpv, dre.despesasOperacionais, dre.custosFinanceirosTotal, dre.depreciacao, dre.lucroLiquido],
+  );
 
-  const acumulado = dre.lucroLiquido.reduce<{ mes: string; valor: number }[]>((acc, v, i) => {
-    const last = i === 0 ? 0 : acc[i - 1].valor;
-    acc.push({ mes: MESES[i], valor: last + v });
-    return acc;
-  }, []);
+  const acumulado = useMemo(
+    () =>
+      dre.lucroLiquido.reduce<{ mes: string; valor: number }[]>((acc, v, i) => {
+        const last = i === 0 ? 0 : acc[i - 1].valor;
+        acc.push({ mes: MESES[i], valor: last + v });
+        return acc;
+      }, []),
+    [dre.lucroLiquido],
+  );
 
-  const costPie = Object.entries(dre.despesasPorCategoria)
-    .map(([k, v]) => ({ name: k, value: sum(v) }))
-    .filter((x) => x.value > 0)
-    .sort((a, b) => b.value - a.value);
+  const costPie = useMemo(
+    () =>
+      Object.entries(dre.despesasPorCategoria)
+        .map(([k, v]) => ({ name: k, value: sum(v) }))
+        .filter((x) => x.value > 0)
+        .sort((a, b) => b.value - a.value),
+    [dre.despesasPorCategoria],
+  );
 
   const waterfall = [
     { name: "Receita Bruta", value: sum(dre.receitaBruta) },
@@ -369,19 +384,23 @@ export function DRETab() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          <div className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
-            {(readOnly ? (["trimestral", "mensal"] as const) : (["anual", "trimestral", "mensal"] as const)).map((v) => (
-              <div
-                key={v}
-                role="button"
-                tabIndex={0}
-                onClick={() => setView(v)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setView(v); } }}
-                className={`cursor-pointer select-none rounded px-3 py-1 text-xs transition-all ${view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"} ${v === "mensal" ? "hidden lg:block" : ""}`}
-              >
-                {v === "anual" ? "Anual" : v === "trimestral" ? "Trimestral" : "Mensal"}
-              </div>
-            ))}
+          <div role="tablist" aria-label="Período de visualização da DRE" className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
+            {(readOnly ? (["trimestral", "mensal"] as const) : (["anual", "trimestral", "mensal"] as const)).map((v) => {
+              const active = view === v;
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  aria-controls="dre-tabela"
+                  onClick={() => setView(v)}
+                  className={`cursor-pointer select-none rounded px-3 py-1 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"} ${v === "mensal" ? "hidden lg:block" : ""}`}
+                >
+                  {v === "anual" ? "Anual" : v === "trimestral" ? "Trimestral" : "Mensal"}
+                </button>
+              );
+            })}
           </div>
 
           {/* Seleção de regime fica na aba Tributário — aqui apenas refletimos o regime ativo abaixo. */}
@@ -490,7 +509,7 @@ export function DRETab() {
           </div>
         </div>
         <div className="scrollbar-none w-full overflow-x-auto overflow-y-hidden touch-pan-x">
-          <table className="w-full min-w-[600px] md:min-w-full text-[clamp(0.65rem,1vw+0.3rem,0.875rem)] table-fixed md:table-auto">
+          <table id="dre-tabela" aria-label="Demonstração do Resultado do Exercício" className="w-full min-w-[600px] md:min-w-full text-[clamp(0.65rem,1vw+0.3rem,0.875rem)] table-fixed md:table-auto">
             <colgroup>
               <col className="w-[120px] sm:w-auto" />
               {showPeriods &&
@@ -503,20 +522,21 @@ export function DRETab() {
 
             <thead>
               <tr className="bg-card text-[10px] uppercase tracking-wider text-muted-foreground">
-                <th className="sticky left-0 z-20 bg-card px-4 py-2 text-left shadow-[1px_0_0_0_var(--border)]">
+                <th scope="col" className="sticky left-0 z-20 bg-card px-4 py-2 text-left shadow-[1px_0_0_0_var(--border)]">
                   Descrição
                 </th>
                 {showPeriods &&
                   periodLabels.map((m, i) => (
                     <th
+                      scope="col"
                       key={m}
                       className={`px-2 py-2 text-right ${periodCritical(i) ? "text-destructive" : ""}`}
                     >
                       {m}
                     </th>
                   ))}
-                <th className="px-4 py-2 text-right">Anual</th>
-                <th className="px-3 py-2 text-right">% Rec</th>
+                <th scope="col" className="px-4 py-2 text-right">Anual</th>
+                <th scope="col" className="px-3 py-2 text-right">% Rec</th>
               </tr>
             </thead>
 
