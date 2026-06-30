@@ -31,7 +31,7 @@ import { fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
 import { StatCard, renderHint } from "@/components/sim/shared/primitives";
 import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 
-import { IndicatorsCharts } from "./IndicatorsCharts";
+
 import { DashboardExtras } from "./DashboardExtras";
 import { WaccRoicMeter } from "@/components/sim/capital/WaccRoicMeter";
 import { KanitzCard } from "@/components/sim/shared/KanitzCard";
@@ -395,10 +395,6 @@ export function DashboardTab() {
         </ChartCard>
       </div>
 
-      {/* Waterfall em linha própria */}
-      <div className="grid gap-4 lg:grid-cols-1">
-        <IndicatorsCharts state={state} />
-      </div>
 
       {/* Linha 5 — Despesas | Radar */}
       <div className="grid gap-4 lg:grid-cols-2">
