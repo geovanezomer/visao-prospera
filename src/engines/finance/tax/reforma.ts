@@ -44,7 +44,7 @@ export function getIbsCredCpvPct(ibsPct: number, snFornecedorPct: number): numbe
  *  • 2026 — fase de teste: CBS 0,9% e IBS 0,1% (DEVIDOS, porém COMPENSÁVEIS com PIS/COFINS — art. 343).
  *  • 2027 — CBS pleno; PIS/COFINS extintos; IBS segue em fase de teste (0,1%).
  *  • 2029–2032 — IBS faseado 10/20/30/40%; ICMS/ISS reduzidos 10pp/ano.
- *  • 2033 — IBS pleno; ICMS/ISS extintos.
+ *  • 2033 — IBS pleno; ICMS/ISS extintos. */
 export interface ReformaRates {
   cbsPct: number;
   ibsPct: number;
