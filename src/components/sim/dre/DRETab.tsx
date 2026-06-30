@@ -333,25 +333,40 @@ export function DRETab() {
     },
   ];
 
-  // chart data
-  const monthlyChart = MESES.map((m, i) => ({
-    mes: m,
-    Receita: dre.receitaLiquida[i],
-    Custos:
-      dre.cpv[i] + dre.despesasOperacionais[i] + dre.custosFinanceirosTotal[i] + dre.depreciacao[i],
-    Lucro: dre.lucroLiquido[i],
-  }));
+  // chart data — memoizado: depende só dos arrays da engine (referências estáveis por render)
+  const monthlyChart = useMemo(
+    () =>
+      MESES.map((m, i) => ({
+        mes: m,
+        Receita: dre.receitaLiquida[i],
+        Custos:
+          dre.cpv[i] +
+          dre.despesasOperacionais[i] +
+          dre.custosFinanceirosTotal[i] +
+          dre.depreciacao[i],
+        Lucro: dre.lucroLiquido[i],
+      })),
+    [dre.receitaLiquida, dre.cpv, dre.despesasOperacionais, dre.custosFinanceirosTotal, dre.depreciacao, dre.lucroLiquido],
+  );
 
-  const acumulado = dre.lucroLiquido.reduce<{ mes: string; valor: number }[]>((acc, v, i) => {
-    const last = i === 0 ? 0 : acc[i - 1].valor;
-    acc.push({ mes: MESES[i], valor: last + v });
-    return acc;
-  }, []);
+  const acumulado = useMemo(
+    () =>
+      dre.lucroLiquido.reduce<{ mes: string; valor: number }[]>((acc, v, i) => {
+        const last = i === 0 ? 0 : acc[i - 1].valor;
+        acc.push({ mes: MESES[i], valor: last + v });
+        return acc;
+      }, []),
+    [dre.lucroLiquido],
+  );
 
-  const costPie = Object.entries(dre.despesasPorCategoria)
-    .map(([k, v]) => ({ name: k, value: sum(v) }))
-    .filter((x) => x.value > 0)
-    .sort((a, b) => b.value - a.value);
+  const costPie = useMemo(
+    () =>
+      Object.entries(dre.despesasPorCategoria)
+        .map(([k, v]) => ({ name: k, value: sum(v) }))
+        .filter((x) => x.value > 0)
+        .sort((a, b) => b.value - a.value),
+    [dre.despesasPorCategoria],
+  );
 
   const waterfall = [
     { name: "Receita Bruta", value: sum(dre.receitaBruta) },
