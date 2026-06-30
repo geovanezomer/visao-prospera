@@ -56,8 +56,14 @@ export function leverageDisplay(
   if (dividaLiquida < 0) {
     const baseNome =
       metric === "ebitda" ? "EBITDA" : metric === "ebit" ? "EBIT" : "Patrimônio Líquido";
+    const labelCurta =
+      metric === "ebitda"
+        ? "Caixa Líq. / EBITDA"
+        : metric === "ebit"
+          ? "Caixa Líq. / EBIT"
+          : "Caixa Líq. / PL";
     return {
-      label: "Posição Líquida de Caixa",
+      label: labelCurta,
       value: "Caixa supera a dívida",
       tone: "pos",
       chip: "Cash-rich",
