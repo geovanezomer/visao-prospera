@@ -24,16 +24,8 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
   // Memória de cálculo — SSOT para todos os cards.
   const c = buildIndicatorCalcs(state, dre, ind, cagrReceitas12m);
 
-  // Endividamento Geral pela soma explícita PC + PNC ÷ Ativo Total
-  // (usa balanço de fechamento derivado pela engine — SSOT contábil).
-  const pcSum = sum(Object.values(model.balancoFechamento.balanco.passivoCirculante ?? {}) as number[]);
-  const pncSum = sum(Object.values(model.balancoFechamento.balanco.passivoNaoCirculante ?? {}) as number[]);
-  const ativoTot = model.balancoFechamento.totals.ativo;
-  const endivPcPnc = ativoTot > 0 ? ((pcSum + pncSum) / ativoTot) * 100 : 0;
-  const endivPcPncCalc =
-    ativoTot > 0
-      ? `(${fmtBRL(pcSum)} + ${fmtBRL(pncSum)}) ÷ ${fmtBRL(ativoTot)} × 100 = ${fmtPct(endivPcPnc / 100)}`
-      : "Ativo Total = 0 → indicador indisponível";
+
+
   // EVA (Economic Value Added) — forma equivalente via spread ROIC−WACC:
   // EVA = (ROIC − WACC) × Capital Investido. Aproveita indicadores já calculados.
   const spread = (ind.roic - ind.wacc) / 100;
@@ -126,17 +118,6 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             desc="Economic Value Added — lucro que sobra DEPOIS de remunerar todo o capital (próprio + terceiros) ao custo do WACC. EVA > 0 ⇒ a empresa cria valor; EVA < 0 ⇒ destrói valor mesmo com lucro contábil positivo."
             formula="(ROIC − WACC) × Capital Investido"
             calc={evaCalc}
-          />
-          <Ind
-            label="Amortização do PL pelo Lucro"
-            v={
-              Number.isFinite(ind.amortizacaoPlPorLucro)
-                ? `${ind.amortizacaoPlPorLucro.toFixed(1)} anos`
-                : "—"
-            }
-            desc="Tempo (anos) para o lucro contábil acumulado igualar o Patrimônio Líquido. NÃO confundir com o Payback clássico — este indicador mede a velocidade de remuneração do capital próprio pelo lucro contábil."
-            formula="Patrimônio Líquido ÷ Lucro Líquido Anual"
-            calc={c.amortizacaoPlPorLucro}
           />
         </Group>
 
@@ -258,13 +239,17 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             calc={c.endividamentoGeral}
           />
           <Ind
-            label="Endividamento Geral (PC+PNC)"
-            v={ativoTot > 0 ? fmtPct(endivPcPnc / 100) : "—"}
-            tone={ativoTot > 0 ? (endivPcPnc <= 60 ? "pos" : "neg") : undefined}
-            desc="Variação contábil clássica do endividamento: soma DIRETA das obrigações com terceiros (Passivo Circulante + Passivo Não Circulante) dividida pelo Ativo Total. Igual ao Endividamento Geral acima quando o balanço está fechado; útil para conferência por linha do BP."
-            formula="(Passivo Circulante + Passivo Não Circulante) ÷ Ativo Total × 100"
-            calc={endivPcPncCalc}
+            label="Amortização do PL pelo Lucro"
+            v={
+              Number.isFinite(ind.amortizacaoPlPorLucro)
+                ? `${ind.amortizacaoPlPorLucro.toFixed(1)} anos`
+                : "—"
+            }
+            desc="Tempo (anos) para o lucro contábil acumulado igualar o Patrimônio Líquido. NÃO confundir com o Payback clássico — este indicador mede a velocidade de remuneração do capital próprio pelo lucro contábil."
+            formula="Patrimônio Líquido ÷ Lucro Líquido Anual"
+            calc={c.amortizacaoPlPorLucro}
           />
+
           <Ind
             label="Capital Próprio"
             v={`${ind.proprioPercent.toFixed(1)}%`}
