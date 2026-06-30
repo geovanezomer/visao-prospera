@@ -297,11 +297,8 @@ export function DashboardTab() {
         />
       </div>
 
-      {/* Termômetro de Valor — último indicador da lista (WACC × ROIC) */}
-      <WaccRoicMeter wacc={ind.wacc} roic={ind.roic} />
 
-      {/* Termômetro de Insolvência (Kanitz) — alerta precoce de descontinuidade */}
-      <KanitzCard />
+
 
 
 
@@ -409,7 +406,14 @@ export function DashboardTab() {
         </ChartCard>
       </div>
 
+      {/* Termômetro de Valor — WACC × ROIC */}
+      <WaccRoicMeter wacc={ind.wacc} roic={ind.roic} />
+
+      {/* Termômetro de Insolvência (Kanitz) — alerta precoce de descontinuidade */}
+      <KanitzCard />
+
     </div>
   );
 }
+
 
