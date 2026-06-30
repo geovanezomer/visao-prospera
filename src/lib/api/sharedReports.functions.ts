@@ -27,11 +27,40 @@ function generateShareId(): string {
     .slice(0, 12);
 }
 
-const createSchema = z.object({
-  // payload .finnance já serializado (objeto JSON).
-  payload: z.unknown(),
-  companyName: z.string().min(1).max(200),
-});
+/**
+ * Limite duro de tamanho do payload (P4-03): 2 MiB serializados.
+ * Um snapshot .finnance típico tem 50–300 KiB; 2 MiB já cobre cenários
+ * extremos e bloqueia uploads abusivos (DoS / custo de storage).
+ */
+const MAX_PAYLOAD_BYTES = 2 * 1024 * 1024;
+
+const createSchema = z
+  .object({
+    // payload .finnance já serializado (objeto JSON).
+    payload: z.unknown().refine(
+      (v) => v != null && typeof v === "object",
+      "payload deve ser um objeto JSON",
+    ),
+    companyName: z.string().min(1).max(200),
+  })
+  .superRefine((d, ctx) => {
+    try {
+      const bytes = new TextEncoder().encode(JSON.stringify(d.payload)).length;
+      if (bytes > MAX_PAYLOAD_BYTES) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["payload"],
+          message: `payload excede o limite de ${Math.round(MAX_PAYLOAD_BYTES / 1024)} KiB (recebido: ${Math.round(bytes / 1024)} KiB).`,
+        });
+      }
+    } catch {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["payload"],
+        message: "payload não-serializável",
+      });
+    }
+  });
 
 /** Padrão: 48h de validade do link público (em ms). */
 const DEFAULT_TTL_MS = 48 * 60 * 60 * 1000;
