@@ -34,6 +34,7 @@ import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 import { IndicatorsCharts } from "./IndicatorsCharts";
 import { DashboardExtras } from "./DashboardExtras";
 import { WaccRoicMeter } from "@/components/sim/capital/WaccRoicMeter";
+import { KanitzCard } from "@/components/sim/shared/KanitzCard";
 import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
 
 const COLORS = ["var(--success)", "var(--primary)", "#F5B85B", "#C77DFF", "var(--destructive)", "#7DD3FC", "#FACC15"];
