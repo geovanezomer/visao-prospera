@@ -13,7 +13,7 @@ import { getDistribuicaoRealizadaMeses } from "@/engines/finance/socios";
 // `buildIndicatorCalcs` — SSOT de exibição. Qualquer ajuste em
 // label/descrição/fórmula/tone é feito SOMENTE aqui.
 export function IndicatorsGrid({ state }: { state: AppState }) {
-  const { dre, ind, cagrReceitas12m, model } = useFinanceModel(state);
+  const { dre, ind, cf, cagrReceitas12m, model } = useFinanceModel(state);
 
   const ebitAnual = sum(dre.ebit);
   const ebitdaAnual = sum(dre.ebitda);
