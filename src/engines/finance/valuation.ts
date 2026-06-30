@@ -477,12 +477,12 @@ export function traceValuation(
           },
           {
             label: "Valor terminal (Gordon)",
-            formula: `FCL_LTM / (WACC − g) = ${dcf.fcfProjected
+            formula: `FCL_LTM · (1+g) / (WACC − g) = ${dcf.fcfProjected
               .slice(-12)
               .reduce((a, b) => a + b, 0)
-              .toFixed(0)} / ${(dcf.wacc / 100 - dcf.growthTerminal).toFixed(4)}`,
+              .toFixed(0)} · ${(1 + dcf.growthTerminal).toFixed(4)} / ${(dcf.wacc / 100 - dcf.growthTerminal).toFixed(4)}`,
             value: dcf.terminalValue,
-            note: "Auditoria #7: (1+g) removido — FCL_LTM já é período T.",
+            note: "Gordon clássico: numerador é FCF_{T+1} = FCF_T · (1+g).",
           },
           { label: "VP do terminal", formula: `VT / (1+wacc_m)^N`, value: dcf.npvTerminal },
           { label: "EV DCF (VPN+VP_terminal)", formula: "VPN_fluxos + VP_terminal", value: evDCF },
