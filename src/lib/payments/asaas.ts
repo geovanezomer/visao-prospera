@@ -209,7 +209,9 @@ export class AsaasProvider implements PaymentProvider {
     const token = req.headers.get("asaas-access-token");
     const expected = this.webhookSecret;
     if (!expected) throw new Error("Asaas webhook: ASAAS_WEBHOOK_TOKEN não configurado.");
-    if (token !== expected) throw new Error("Asaas webhook: token inválido.");
+    // Constant-time compare para evitar timing attack na descoberta do token.
+    const { timingSafeEqual } = await import("@/lib/timingSafe");
+    if (!timingSafeEqual(token, expected)) throw new Error("Asaas webhook: token inválido.");
 
     const event = JSON.parse(rawBody) as import("./_remote-types").AsaasWebhookEvent;
     return await this.parseEvent(event);
