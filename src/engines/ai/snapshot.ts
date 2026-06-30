@@ -16,6 +16,7 @@ import { deriveAbertura } from "@/engines/finance/aberturaDerivada";
 import { MESES, sum, fmtNum } from "@/engines/finance/format";
 import { getCbsAliquota, getIbsAliquotaRef } from "@/engines/finance/taxDefaults";
 import { getFinancialModelCached } from "@/engines/finance/financialModel";
+import { calcKanitz } from "@/engines/finance/kanitz";
 
 // ===== Helpers =====
 const safe = (n: unknown): number => (typeof n === "number" && Number.isFinite(n) ? n : 0);
