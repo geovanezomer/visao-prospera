@@ -34,7 +34,7 @@ export interface IndicatorCalcs {
   // Margens
   margemBruta: string;
   margemEbitda: string;
-  margemEbit: string;
+  eva: string;
   margemLiquida: string;
   margemContribuicao: string;
   // Ponto de equilíbrio
