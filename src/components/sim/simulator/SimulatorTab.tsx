@@ -1008,4 +1008,4 @@ const KpiCardsRow = memo(function KpiCardsRow({ base, sim }: { base: SimDREView;
       })}
     </div>
   );
-}
+});
