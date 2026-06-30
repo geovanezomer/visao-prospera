@@ -59,6 +59,23 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
       ? `${fmtBRL(distribuicaoTotalAnual)} ÷ ${fmtBRL(llAnual)} × 100 = ${fmtPct(distIsentaSobreLucro / 100)}`
       : "Lucro Líquido ≤ 0 → indicador indisponível";
 
+  // ─── Análises de Fluxo de Caixa ───
+  // FCO (Método Indireto): LL + D&A ± ΔNCG — base do CPC 03 / IAS 7.
+  // Usa o MESMO valor consumido pelo FluxoCaixaTab (SSOT cf.fluxoOperacional).
+  const fcoAnual = sum(cf.fluxoOperacional);
+  const llAnualFco = sum(dre.lucroLiquido);
+  const daAnual = sum(dre.depreciacao);
+  const deltaNcgAnual = fcoAnual - llAnualFco - daAnual; // derivado por identidade
+  const fcoCalc = `${fmtBRL(llAnualFco)} + ${fmtBRL(daAnual)} ± ${fmtBRL(deltaNcgAnual)} = ${fmtBRL(fcoAnual)}`;
+
+  const receitaLiquidaAnual = sum(dre.receitaLiquida);
+  const margemCaixaOp = receitaLiquidaAnual > 0 ? (fcoAnual / receitaLiquidaAnual) * 100 : 0;
+  const margemCaixaOpCalc =
+    receitaLiquidaAnual > 0
+      ? `${fmtBRL(fcoAnual)} ÷ ${fmtBRL(receitaLiquidaAnual)} × 100 = ${fmtPct(margemCaixaOp / 100)}`
+      : "Receita Líquida = 0 → indicador indisponível";
+
+
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5">
