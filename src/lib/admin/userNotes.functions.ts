@@ -2,9 +2,9 @@
 // Admin · User Notes (CRM leve) — apenas admin lê/escreve via service_role.
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
+import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
 
 function assertAdmin(claims: AuthClaims | undefined | null) {
@@ -47,7 +47,7 @@ export const listUserNotes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("user_notes")
@@ -65,7 +65,7 @@ export const createUserNote = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid(), body: z.string().min(1).max(4000) }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("user_notes")
@@ -87,7 +87,7 @@ export const toggleNotePin = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), pinned: z.boolean() }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("user_notes").update({ pinned: data.pinned }).eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -98,7 +98,7 @@ export const deleteUserNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { id: string }) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("user_notes").delete().eq("id", data.id);
     if (error) throw new Error(error.message);

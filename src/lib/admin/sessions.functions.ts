@@ -4,9 +4,9 @@
 // usa signOut com escopo `global`.
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
+import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
 
 function assertAdmin(claims: AuthClaims | undefined | null) {
@@ -25,7 +25,7 @@ export const getUserSessions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: u, error } = await supabaseAdmin.auth.admin.getUserById(data.userId);
     if (error || !u?.user) throw new Error(error?.message ?? "Usuário não encontrado.");
@@ -48,7 +48,7 @@ export const revokeAllSessions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // `signOut(userId, scope)` é admin-only e exposta como helper sem
     // tipagem pública. Mantemos um cast estreito para a assinatura.

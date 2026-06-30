@@ -4,8 +4,8 @@
 // além do funil de conversão e distribuição por plano.
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
+import { assertAdmin } from "./assertAdmin";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
 
 function assertAdmin(claims: AuthClaims | undefined | null) {
@@ -60,7 +60,7 @@ export const getDashboardCharts = createServerFn({ method: "POST" })
     months: Math.max(1, Math.min(36, Number(input?.months ?? 12))),
   }))
   .handler(async ({ data, context }): Promise<DashboardCharts> => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Janela: últimos N meses (inclusivo do mês corrente).

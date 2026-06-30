@@ -2,9 +2,9 @@
 // Server fns: email_settings + email_templates (Resend).
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
+import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
 
 function assertAdmin(claims: AuthClaims | undefined | null) {
@@ -25,7 +25,7 @@ function mask(v: string | null | undefined): string | null {
 export const getEmailSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin.from("email_settings").select("*").limit(1).maybeSingle();
     return {
@@ -53,7 +53,7 @@ export const updateEmailSettings = createServerFn({ method: "POST" })
         .parse(d),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: existing } = await supabaseAdmin.from("email_settings").select("id").limit(1).maybeSingle();
     const patch: {
@@ -85,7 +85,7 @@ export const sendTestEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: { to: string }) => z.object({ to: z.string().email() }).parse(d))
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: s } = await supabaseAdmin.from("email_settings").select("*").limit(1).maybeSingle();
     if (!s?.resend_api_key || !s?.from_email) throw new Error("Configuração de e-mail incompleta.");
@@ -107,7 +107,7 @@ export const sendTestEmail = createServerFn({ method: "POST" })
 export const listEmailTemplates = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin.from("email_templates").select("*").order("kind");
     if (error) throw new Error(error.message);
@@ -129,7 +129,7 @@ export const updateEmailTemplate = createServerFn({ method: "POST" })
         .parse(d),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("email_templates")

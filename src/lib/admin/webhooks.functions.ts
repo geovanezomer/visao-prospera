@@ -2,9 +2,9 @@
 // Server fns: webhook_events (consulta e replay).
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
+import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
 
 function assertAdmin(claims: AuthClaims | undefined | null) {
@@ -34,7 +34,7 @@ export const listWebhookEvents = createServerFn({ method: "POST" })
         .parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const page = data.page ?? 1;
     const perPage = data.perPage ?? 50;
@@ -77,7 +77,7 @@ export const getWebhookEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: ev, error } = await supabaseAdmin
       .from("webhook_events")
@@ -94,7 +94,7 @@ export const replayWebhookEvent = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), force: z.boolean().optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { reprocessWebhookEventRow } = await import("@/lib/payments/webhook-handler.server");
     const { logAudit } = await import("./audit.server");
@@ -132,7 +132,7 @@ export const runWebhookRetryNow = createServerFn({ method: "POST" })
     z.object({ limit: z.number().int().min(1).max(100).optional() }).parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { runRetryBatch } = await import("@/lib/payments/webhook-handler.server");
     const { logAudit } = await import("./audit.server");
     const r = await runRetryBatch(data.limit ?? 25);

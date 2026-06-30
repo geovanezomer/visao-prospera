@@ -2,9 +2,9 @@
 // Server fns: leitura do admin_audit_log (apenas admin).
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
+import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
 
 function assertAdmin(claims: AuthClaims | undefined | null) {
@@ -34,7 +34,7 @@ export const listAuditLog = createServerFn({ method: "POST" })
         .parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const page = data.page ?? 1;
     const perPage = data.perPage ?? 50;

@@ -3,9 +3,9 @@
 // Leitura pública (plans ativos) é livre via RLS; escrita exige admin.
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
+import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -91,7 +91,7 @@ function rowToPlan(r: DbPlanRow): PlanRow {
 export const listPlansAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("plans")
@@ -163,7 +163,7 @@ export const upsertPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: z.infer<typeof planSchema>) => planSchema.parse(data))
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const payload = {
       slug: data.slug,
@@ -210,7 +210,7 @@ export const deletePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { id: string }) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: existing } = await supabaseAdmin.from("plans").select("slug").eq("id", data.id).maybeSingle();
     const { error } = await supabaseAdmin.from("plans").delete().eq("id", data.id);
