@@ -358,10 +358,13 @@ export function SimulatorTab({
         {/* DRE */}
         <div className="lg:sticky lg:top-[72px] lg:h-fit">
           <DREPanel base={baseView} sim={simView} inconsistencies={inconsistencies} />
+        </div>
       </div>
 
       {/* Termômetro de Insolvência (Kanitz) — reativo às alavancas do simulador */}
       <KanitzCard state={simState} />
+
+
 
 
 
