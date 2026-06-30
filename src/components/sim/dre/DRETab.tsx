@@ -369,19 +369,23 @@ export function DRETab() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          <div className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
-            {(readOnly ? (["trimestral", "mensal"] as const) : (["anual", "trimestral", "mensal"] as const)).map((v) => (
-              <div
-                key={v}
-                role="button"
-                tabIndex={0}
-                onClick={() => setView(v)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setView(v); } }}
-                className={`cursor-pointer select-none rounded px-3 py-1 text-xs transition-all ${view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"} ${v === "mensal" ? "hidden lg:block" : ""}`}
-              >
-                {v === "anual" ? "Anual" : v === "trimestral" ? "Trimestral" : "Mensal"}
-              </div>
-            ))}
+          <div role="tablist" aria-label="Período de visualização da DRE" className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
+            {(readOnly ? (["trimestral", "mensal"] as const) : (["anual", "trimestral", "mensal"] as const)).map((v) => {
+              const active = view === v;
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  aria-controls="dre-tabela"
+                  onClick={() => setView(v)}
+                  className={`cursor-pointer select-none rounded px-3 py-1 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"} ${v === "mensal" ? "hidden lg:block" : ""}`}
+                >
+                  {v === "anual" ? "Anual" : v === "trimestral" ? "Trimestral" : "Mensal"}
+                </button>
+              );
+            })}
           </div>
 
           {/* Seleção de regime fica na aba Tributário — aqui apenas refletimos o regime ativo abaixo. */}
