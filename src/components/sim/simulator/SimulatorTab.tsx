@@ -393,10 +393,21 @@ export function SimulatorTab({
 
       {/* Projeções refletindo o cenário simulado */}
       <div className="space-y-4 border-t border-border/60 pt-6">
-        <div className="rounded-lg border border-border/40 bg-background/30 p-3 text-xs text-muted-foreground">
-          As análises abaixo refletem o cenário{" "}
-          <strong className="text-foreground">simulado</strong> acima. Sem ajustes nos sliders, elas
-          representam o cenário base atual do sistema.
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-lg border-l-4 border-amber-500 bg-amber-500/10 p-4 text-sm text-foreground shadow-sm"
+        >
+          <TriangleAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" />
+          <div>
+            <div className="font-semibold text-amber-700 dark:text-amber-400">
+              Atenção — Cenário Simulado
+            </div>
+            <div className="mt-1 text-muted-foreground">
+              As análises abaixo refletem o cenário{" "}
+              <strong className="text-foreground">simulado</strong> acima. Sem ajustes nos sliders,
+              elas representam o cenário base atual do sistema.
+            </div>
+          </div>
         </div>
         <IndicatorsCard state={simState} />
         <ForecastCard state={simState} />
