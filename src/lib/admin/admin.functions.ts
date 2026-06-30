@@ -124,6 +124,15 @@ export const listAdminUsers = createServerFn({ method: "POST" })
     const profById = new Map<string, ProfRow>();
     for (const p of profiles ?? []) profById.set(p.id, p);
 
+    // Admins via banco (RBAC SSOT). Substitui checagem por env var.
+    const { data: adminRoleRows } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin")
+      .in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+    const adminIds = new Set<string>((adminRoleRows ?? []).map((r) => r.user_id));
+
+
     let rows: AdminUserRow[] = all.map((u) => {
       const s = subByUser.get(u.id);
       const p = profById.get(u.id);
