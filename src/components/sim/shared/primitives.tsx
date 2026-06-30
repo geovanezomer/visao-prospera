@@ -23,9 +23,14 @@ export function HelpTip({
     <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-flex cursor-help text-muted-foreground hover:text-primary">
-            <Info className="h-3.5 w-3.5" />
-          </span>
+          <button
+            type="button"
+            tabIndex={0}
+            aria-label={`Ajuda: ${text}`}
+            className="inline-flex cursor-help text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm"
+          >
+            <Info className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
         </TooltipTrigger>
         <TooltipContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm space-y-2 bg-popover p-3 text-xs leading-relaxed text-popover-foreground shadow-lg border border-border">
           <div className="text-foreground">{text}</div>
