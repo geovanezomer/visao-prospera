@@ -303,20 +303,6 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             );
           })()}
           {(() => {
-            const dl = leverageDisplay("ebit", ind.dividaLiqEbit, ind.dividaLiquida, ebitAnual);
-            return (
-              <Ind
-                label={dl.label}
-                v={dl.value}
-                tone={dl.tone}
-                chip={dl.chip}
-                desc="Quantos anos de lucro operacional (já líquido da depreciação) seriam necessários para quitar a dívida líquida. Mais conservador que Dívida/EBITDA."
-                formula="(Dívida Onerosa − Disponibilidades) ÷ EBIT"
-                calc={c.dividaLiqEbit}
-              />
-            );
-          })()}
-          {(() => {
             const dl = leverageDisplay("pl", ind.dividaLiqPl, ind.dividaLiquida, state.capital.patrimonioLiquido);
             return (
               <Ind
