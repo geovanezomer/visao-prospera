@@ -31,6 +31,7 @@ import {
 import { SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
 import { ForecastCard, MonteCarloCard } from "@/components/sim/analysis/AnalysisTab";
 import { IndicatorsCard } from "@/components/sim/indicators/IndicatorsCard";
+import { KanitzCard } from "@/components/sim/shared/KanitzCard";
 import {
   ArrowDownRight,
   ArrowUpRight,
