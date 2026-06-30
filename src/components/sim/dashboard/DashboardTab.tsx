@@ -360,8 +360,22 @@ export function DashboardTab() {
         </ChartCard>
       </div>
 
-      {/* Linha 4 — Lucro Acumulado (12m) ao lado do Waterfall (2 colunas iguais) */}
+      {/* Linha 4 — Receitas vs Despesas | Lucro Acumulado (12m) */}
       <div className="grid gap-4 lg:grid-cols-2">
+        <ChartCard title="Receitas vs Despesas (12m)">
+          <ResponsiveContainer width="100%" height={280}>
+            <ComposedChart data={receitasDespesas}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => fmtBRL(v)} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Line type="monotone" dataKey="Receitas" stroke="var(--success)" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="Despesas" stroke="var(--destructive)" strokeWidth={2} dot={false} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
         <ChartCard title="Lucro Líquido Acumulado (12m)">
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={acumulado}>
