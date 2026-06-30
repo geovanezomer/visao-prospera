@@ -51,24 +51,18 @@ export function IndicatorsTab() {
               : `Sobra ${fmtBRL(Math.abs(ind.gapCapitalGiro))} (CDG cobre a NCG)`}
           </div>
         </div>
-        {(() => {
-          const spread = (ind.roic - ind.wacc) / 100;
-          const eva = spread * ind.capitalInvestido;
-          return (
-            <StatCard
-              label="EVA (Lucro Econômico)"
-              value={fmtBRL(eva)}
-              tone={eva >= 0 ? "pos" : "neg"}
-              sub={eva >= 0 ? "Gerando Valor" : "Destruindo Valor"}
-              hint={{
-                description:
-                  "Economic Value Added — lucro que sobra DEPOIS de remunerar todo o capital (próprio + terceiros) ao custo do WACC.",
-                formula: "(ROIC − WACC) × Capital Investido",
-                calc: `(${fmtPct(ind.roic / 100)} − ${fmtPct(ind.wacc / 100)}) × ${fmtBRL(ind.capitalInvestido)} = ${fmtBRL(eva)}`,
-              }}
-            />
-          );
-        })()}
+        <StatCard
+          label="EVA (Lucro Econômico)"
+          value={fmtBRL(ind.eva)}
+          tone={ind.eva >= 0 ? "pos" : "neg"}
+          sub={ind.eva >= 0 ? "Gerando Valor" : "Destruindo Valor"}
+          hint={{
+            description:
+              "Economic Value Added — lucro que sobra DEPOIS de remunerar todo o capital (próprio + terceiros) ao custo do WACC.",
+            formula: "(ROIC − WACC) × Capital Investido",
+            calc: c.eva,
+          }}
+        />
 
         <CashConversionSmall conversao={ind.conversaoEbitdaCaixa} calc={c.conversaoEbitdaCaixa} />
       </div>
