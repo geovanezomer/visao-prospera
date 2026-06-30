@@ -177,6 +177,13 @@ export interface Indicators {
   nopat: number;
   /** Capital investido usado no ROIC. Zero = base insuficiente para cálculo confiável. */
   capitalInvestido: number;
+  /**
+   * EVA (Economic Value Added) — lucro econômico em R$.
+   * EVA = (ROIC − WACC) × Capital Investido. ROIC e WACC em %.
+   * Positivo: a operação remunera o capital acima do custo (cria valor).
+   * Negativo: destrói valor mesmo havendo lucro contábil.
+   */
+  eva: number;
   /** Alíquota operacional usada no NOPAT, em %. */
   aliquotaNopat: number;
   /** Serviço da dívida mensal médio = (Juros Anuais + Amortizações Anuais) ÷ 12. */
