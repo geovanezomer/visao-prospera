@@ -4,6 +4,7 @@ import { fmtBRL, fmtPct, fmtTimes, sum } from "@/engines/finance/format";
 import { HelpTip, SectionTitle } from "@/components/sim/shared/primitives";
 import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
 import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
+import { getDistribuicaoRealizadaMeses } from "@/engines/finance/socios";
 
 // SSOT visual dos indicadores financeiros.
 // Renderizado IDENTICAMENTE na página Indicadores (IndicatorsTab) e no
@@ -38,6 +39,25 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
   const spread = (ind.roic - ind.wacc) / 100;
   const eva = spread * ind.capitalInvestido;
   const evaCalc = `(${fmtPct(ind.roic / 100)} − ${fmtPct(ind.wacc / 100)}) × ${fmtBRL(ind.capitalInvestido)} = ${fmtBRL(eva)}`;
+
+  // ─── Análise Tributária — métricas adicionais ───
+  // Carga Tributária Efetiva: total de tributos (s/ vendas + IRPJ/CSLL) ÷ Receita Bruta.
+  const receitaBrutaAnual = sum(dre.receitaBruta);
+  const totalTributos = sum(dre.impostosVendas) + sum(dre.impostos);
+  const cargaTribEfetiva = receitaBrutaAnual > 0 ? (totalTributos / receitaBrutaAnual) * 100 : 0;
+  const cargaTribEfetivaCalc =
+    receitaBrutaAnual > 0
+      ? `${fmtBRL(totalTributos)} ÷ ${fmtBRL(receitaBrutaAnual)} × 100 = ${fmtPct(cargaTribEfetiva / 100)}`
+      : "Receita Bruta = 0 → indicador indisponível";
+
+  // Distribuição Isenta / Lucro Líquido — % do lucro distribuído sem IRPF (isenção PJ→PF).
+  const distribuicaoTotalAnual = sum(getDistribuicaoRealizadaMeses(state));
+  const llAnual = sum(dre.lucroLiquido);
+  const distIsentaSobreLucro = llAnual > 0 ? (distribuicaoTotalAnual / llAnual) * 100 : 0;
+  const distIsentaCalc =
+    llAnual > 0
+      ? `${fmtBRL(distribuicaoTotalAnual)} ÷ ${fmtBRL(llAnual)} × 100 = ${fmtPct(distIsentaSobreLucro / 100)}`
+      : "Lucro Líquido ≤ 0 → indicador indisponível";
 
 
   return (
@@ -430,6 +450,24 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             desc="Quanto a empresa paga de impostos TOTAIS para cada R$ 1,00 de lucro líquido gerado. Acima de 100% indica que o fisco leva mais do que sobra para os sócios — sinal de regime tributário ineficiente."
             formula="(Impostos s/ Vendas + IRPJ/CSLL) ÷ Lucro Líquido × 100"
             calc={c.impostosSobreLucro}
+          />
+          <Ind
+            label="Carga Tributária Efetiva"
+            v={receitaBrutaAnual > 0 ? fmtPct(cargaTribEfetiva / 100) : "—"}
+            tone={
+              cargaTribEfetiva > 30 ? "neg" : cargaTribEfetiva > 0 ? "pos" : undefined
+            }
+            desc="Total de tributos (impostos sobre vendas + IRPJ/CSLL) sobre a Receita Bruta. Mais correto que usar Receita Líquida, pois muitos tributos incidem sobre o bruto. Mede o peso fiscal real do negócio."
+            formula="Total de Tributos ÷ Receita Bruta × 100"
+            calc={cargaTribEfetivaCalc}
+          />
+          <Ind
+            label="Distribuição Isenta / Lucro Líquido"
+            v={llAnual > 0 ? fmtPct(distIsentaSobreLucro / 100) : "—"}
+            tone={llAnual > 0 ? (distIsentaSobreLucro > 0 ? "pos" : undefined) : undefined}
+            desc="Percentual do lucro líquido que foi distribuído aos sócios via distribuição de lucros — atualmente isenta de IRPF (PJ→PF). Quanto maior, mais eficiente fiscalmente está a remuneração do sócio."
+            formula="Distribuição de Lucros Realizada ÷ Lucro Líquido × 100"
+            calc={distIsentaCalc}
           />
         </Group>
 
