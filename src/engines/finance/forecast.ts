@@ -5,6 +5,7 @@ import { effectiveMonthValues, isCpvCost } from "./costs";
 import { resolveEffectiveRegime } from "./regime";
 import { sum } from "./format";
 import { vplClassico } from "./external";
+import { computeCapexMensal } from "./shared";
 
 export interface ForecastMonth {
   idx: number; // 0..N-1
