@@ -489,6 +489,9 @@ export function countActiveLevers(p: SimulatorParams): number {
   if (p.priceElasticity > 0 && p.priceDeltaPct !== 0) n++;
   if (p.cpvDeltaPct !== 0) n++;
   if (p.payrollDeltaPct !== 0) n++;
+  if (p.prolaboreDeltaPct !== 0) n++;
+  if (p.distribuicaoDeltaPct !== 0) n++;
+
   if (p.fixedCutPct !== 0) n++;
 
   
