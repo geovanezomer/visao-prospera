@@ -293,10 +293,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
       ),
     );
     // Kanitz — Termômetro de Insolvência
-    const kanitz = tryRun(() => {
-      const { calcKanitz } = require("@/engines/finance/kanitz") as typeof import("@/engines/finance/kanitz");
-      return calcKanitz(state, ind);
-    }, null as null | ReturnType<typeof import("@/engines/finance/kanitz").calcKanitz>);
+    const kanitz = tryRun(() => calcKanitz(state, ind), null as null | ReturnType<typeof calcKanitz>);
     if (kanitz && !kanitz.baseInsuficiente) {
       indLines.push(
         `\n**Kanitz (Termômetro de Insolvência):** FI = ${fmtNum(safe(kanitz.fi), 2)} → **${kanitz.label}**`,
