@@ -16,10 +16,6 @@ import {
   Line,
   Pie,
   PieChart,
-  PolarAngleAxis,
-  PolarGrid,
-  Radar,
-  RadarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -180,18 +176,6 @@ export function DashboardTab() {
     [dre],
   );
 
-  // Radar do perfil financeiro (normalizado 0–100)
-  const radar = useMemo(
-    () => [
-      { eixo: "Margem Líq.", valor: Math.max(0, Math.min(100, ind.margemLiquida * 5)) },
-      { eixo: "ROE", valor: Math.max(0, Math.min(100, ind.roe * 4)) },
-      { eixo: "ROIC", valor: Math.max(0, Math.min(100, ind.roic * 4)) },
-      { eixo: "Liquidez", valor: Math.max(0, Math.min(100, ind.liquidezCorrente * 33)) },
-      { eixo: "Cob. Juros", valor: Math.max(0, Math.min(100, ind.coberturaJuros * 20)) },
-      { eixo: "Cap. Próprio", valor: Math.max(0, Math.min(100, ind.proprioPercent)) },
-    ],
-    [ind],
-  );
 
   return (
     <div className="space-y-6">
@@ -317,48 +301,33 @@ export function DashboardTab() {
       <DashboardExtras state={state} />
 
 
-      {/* Linha 3 — Combo Receita + Margem  |  Estrutura de Capital */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <ChartCard title="Receita Mensal × Margem Líquida (%)">
-            <ResponsiveContainer width="100%" height={280}>
-              <ComposedChart data={receitaMargem}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
-                <YAxis
-                  yAxisId="left"
-                  stroke="var(--muted-foreground)"
-                  fontSize={10}
-                  tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
-                />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  stroke="var(--muted-foreground)"
-                  fontSize={10}
-                  tickFormatter={(v) => `${v.toFixed(0)}%`}
-                />
-                <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number, n) => n === "Margem %" ? `${v.toFixed(1)}%` : fmtBRL(v)} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar yAxisId="left" dataKey="Receita" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-                <Line yAxisId="right" type="monotone" dataKey="Margem %" stroke="var(--success)" strokeWidth={2} dot={false} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </ChartCard>
-        </div>
+      {/* Linha 3 — Combo Receita + Margem (largura total) */}
+      <ChartCard title="Receita Mensal × Margem Líquida (%)">
+        <ResponsiveContainer width="100%" height={280}>
+          <ComposedChart data={receitaMargem}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
+            <YAxis
+              yAxisId="left"
+              stroke="var(--muted-foreground)"
+              fontSize={10}
+              tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              stroke="var(--muted-foreground)"
+              fontSize={10}
+              tickFormatter={(v) => `${v.toFixed(0)}%`}
+            />
+            <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number, n) => n === "Margem %" ? `${v.toFixed(1)}%` : fmtBRL(v)} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Bar yAxisId="left" dataKey="Receita" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+            <Line yAxisId="right" type="monotone" dataKey="Margem %" stroke="var(--success)" strokeWidth={2} dot={false} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </ChartCard>
 
-        <ChartCard title="Estrutura de Capital">
-          <ResponsiveContainer width="100%" height={280}>
-            <PieChart>
-              <Pie data={capitalPie} dataKey="value" nameKey="name" innerRadius="55%" outerRadius="85%" paddingAngle={2}>
-                {capitalPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-              </Pie>
-              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => fmtBRL(v)} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      </div>
 
       {/* Linha 4 — Receitas vs Despesas | Lucro Acumulado (12m) */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -396,7 +365,7 @@ export function DashboardTab() {
       </div>
 
 
-      {/* Linha 5 — Despesas | Radar */}
+      {/* Linha 5 — Despesas | Estrutura de Capital */}
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard title="Composição de Despesas">
           <ResponsiveContainer width="100%" height={260}>
@@ -414,20 +383,21 @@ export function DashboardTab() {
               />
             </PieChart>
           </ResponsiveContainer>
-
         </ChartCard>
 
-        <ChartCard title="Perfil Financeiro (Radar)">
+        <ChartCard title="Estrutura de Capital">
           <ResponsiveContainer width="100%" height={260}>
-            <RadarChart data={radar}>
-              <PolarGrid stroke="var(--border)" />
-              <PolarAngleAxis dataKey="eixo" tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} />
-              <Radar dataKey="valor" stroke="var(--primary)" fill="var(--primary)" fillOpacity={0.4} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => `${v.toFixed(0)}/100`} />
-            </RadarChart>
+            <PieChart>
+              <Pie data={capitalPie} dataKey="value" nameKey="name" innerRadius="55%" outerRadius="85%" paddingAngle={2}>
+                {capitalPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+              </Pie>
+              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => fmtBRL(v)} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+            </PieChart>
           </ResponsiveContainer>
         </ChartCard>
       </div>
+
 
       {/* Termômetro de Valor — WACC × ROIC */}
       <WaccRoicMeter wacc={ind.wacc} roic={ind.roic} />
