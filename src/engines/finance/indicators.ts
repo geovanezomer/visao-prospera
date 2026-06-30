@@ -177,6 +177,13 @@ export interface Indicators {
   nopat: number;
   /** Capital investido usado no ROIC. Zero = base insuficiente para cálculo confiável. */
   capitalInvestido: number;
+  /**
+   * EVA (Economic Value Added) — lucro econômico em R$.
+   * EVA = (ROIC − WACC) × Capital Investido. ROIC e WACC em %.
+   * Positivo: a operação remunera o capital acima do custo (cria valor).
+   * Negativo: destrói valor mesmo havendo lucro contábil.
+   */
+  eva: number;
   /** Alíquota operacional usada no NOPAT, em %. */
   aliquotaNopat: number;
   /** Serviço da dívida mensal médio = (Juros Anuais + Amortizações Anuais) ÷ 12. */
@@ -584,6 +591,7 @@ export function calcIndicators(
     aliquotaNopat: aliquotaNopatFrac * 100,
     servicoDividaMensal: (jurosAnual + amortizPrincipalAnual) / 12,
     proprioPercent: V > 0 ? (PL / V) * 100 : Math.max(0, Math.min(100, capital.proprio)),
+    eva: safeNumber(((roic - safeNumber(wacc)) / 100) * capitalInvestido),
     dividaPlBruto: PL > 0 ? D / PL : 0,
   };
 }
