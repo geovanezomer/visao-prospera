@@ -554,6 +554,7 @@ export function calcIndicators(
     fcfAposCapex: safeNumber(fcfAposCapex),
     conversaoEbitdaCaixa: ebitdaAnual > 0 ? safePct(fcf, ebitdaAnual) : 0,
     gao,
+    gaf,
     qualidadeLucro,
     receitaPorColaborador,
     faturamentoPorColaborador,
