@@ -40,6 +40,25 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
   const eva = spread * ind.capitalInvestido;
   const evaCalc = `(${fmtPct(ind.roic / 100)} − ${fmtPct(ind.wacc / 100)}) × ${fmtBRL(ind.capitalInvestido)} = ${fmtBRL(eva)}`;
 
+  // ─── Análise Tributária — métricas adicionais ───
+  // Carga Tributária Efetiva: total de tributos (s/ vendas + IRPJ/CSLL) ÷ Receita Bruta.
+  const receitaBrutaAnual = sum(dre.receitaBruta);
+  const totalTributos = sum(dre.impostosVendas) + sum(dre.impostos);
+  const cargaTribEfetiva = receitaBrutaAnual > 0 ? (totalTributos / receitaBrutaAnual) * 100 : 0;
+  const cargaTribEfetivaCalc =
+    receitaBrutaAnual > 0
+      ? `${fmtBRL(totalTributos)} ÷ ${fmtBRL(receitaBrutaAnual)} × 100 = ${fmtPct(cargaTribEfetiva / 100)}`
+      : "Receita Bruta = 0 → indicador indisponível";
+
+  // Distribuição Isenta / Lucro Líquido — % do lucro distribuído sem IRPF (isenção PJ→PF).
+  const distribuicaoTotalAnual = sum(getDistribuicaoRealizadaMeses(state));
+  const llAnual = sum(dre.lucroLiquido);
+  const distIsentaSobreLucro = llAnual > 0 ? (distribuicaoTotalAnual / llAnual) * 100 : 0;
+  const distIsentaCalc =
+    llAnual > 0
+      ? `${fmtBRL(distribuicaoTotalAnual)} ÷ ${fmtBRL(llAnual)} × 100 = ${fmtPct(distIsentaSobreLucro / 100)}`
+      : "Lucro Líquido ≤ 0 → indicador indisponível";
+
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5">
