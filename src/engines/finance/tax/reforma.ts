@@ -40,9 +40,11 @@ export function getIbsCredCpvPct(ibsPct: number, snFornecedorPct: number): numbe
 /** Parâmetros vigentes da reforma para uma dada era.
  *  - cbsPct, ibsPct: alíquotas de débito sobre a receita bruta (%).
  *  - pisCofinsMult, icmsIssMult: multiplicador (0..1) sobre o que seria devido no sistema antigo.
- *  Cronograma oficial: 2026 teste (CBS 0.9% compensável c/ PIS/COFINS, IBS 0.1%);
- *  2027 CBS pleno e PIS/COFINS extintos; IBS faseado 20/40/60/80% em 2029–2032;
- *  ICMS/ISS reduzido 10pp/ano de 2029 a 2032 até extinção em 2033. */
+ *  Cronograma oficial LC 214/2025:
+ *  • 2026 — fase de teste: CBS 0,9% e IBS 0,1% (DEVIDOS, porém COMPENSÁVEIS com PIS/COFINS — art. 343).
+ *  • 2027 — CBS pleno; PIS/COFINS extintos; IBS segue em fase de teste (0,1%).
+ *  • 2029–2032 — IBS faseado 10/20/30/40%; ICMS/ISS reduzidos 10pp/ano.
+ *  • 2033 — IBS pleno; ICMS/ISS extintos.
 export interface ReformaRates {
   cbsPct: number;
   ibsPct: number;
