@@ -26,11 +26,8 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
 
 
 
-  // EVA (Economic Value Added) — forma equivalente via spread ROIC−WACC:
-  // EVA = (ROIC − WACC) × Capital Investido. Aproveita indicadores já calculados.
-  const spread = (ind.roic - ind.wacc) / 100;
-  const eva = spread * ind.capitalInvestido;
-  const evaCalc = `(${fmtPct(ind.roic / 100)} − ${fmtPct(ind.wacc / 100)}) × ${fmtBRL(ind.capitalInvestido)} = ${fmtBRL(eva)}`;
+
+
 
   // ─── Análise Tributária — métricas adicionais ───
   // Carga Tributária Efetiva: total de tributos (s/ vendas + IRPJ/CSLL) ÷ Receita Bruta.
@@ -109,15 +106,6 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             desc="Quanto cada R$ vendido contribui para pagar os custos fixos e gerar lucro. Quanto maior, mais resiliente é o negócio."
             formula="(Receita − Custos Variáveis) ÷ Receita × 100"
             calc={c.margemContribuicao}
-          />
-
-          <Ind
-            label="EVA (Lucro Econômico)"
-            v={fmtBRL(eva)}
-            tone={eva >= 0 ? "pos" : "neg"}
-            desc="Economic Value Added — lucro que sobra DEPOIS de remunerar todo o capital (próprio + terceiros) ao custo do WACC. EVA > 0 ⇒ a empresa cria valor; EVA < 0 ⇒ destrói valor mesmo com lucro contábil positivo."
-            formula="(ROIC − WACC) × Capital Investido"
-            calc={evaCalc}
           />
         </Group>
 
