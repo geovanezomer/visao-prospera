@@ -165,13 +165,6 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             formula="NOPAT ÷ Capital Investido × 100  (NOPAT = EBIT × (1 − IR))"
             calc={c.roic}
           />
-          <Ind
-            label="WACC"
-            v={fmtPct(ind.wacc / 100)}
-            desc="Custo Médio Ponderado de Capital. É o retorno mínimo que a empresa precisa entregar para remunerar sócios e credores. Funciona como 'meta' do ROIC."
-            formula="(E/V × Ke) + (D/V × Kd × (1 − IR))"
-            calc={c.wacc}
-          />
         </Group>
 
         {/* ───── Análise de Liquidez ───── */}
