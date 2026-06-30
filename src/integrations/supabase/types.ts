@@ -633,6 +633,7 @@ export type Database = {
           next_attempt_at: string | null
           payload: Json
           provider: string
+          provider_event_id: string | null
           received_at: string
           replayed_at: string | null
           replayed_by: string | null
@@ -651,6 +652,7 @@ export type Database = {
           next_attempt_at?: string | null
           payload?: Json
           provider: string
+          provider_event_id?: string | null
           received_at?: string
           replayed_at?: string | null
           replayed_by?: string | null
@@ -669,6 +671,7 @@ export type Database = {
           next_attempt_at?: string | null
           payload?: Json
           provider?: string
+          provider_event_id?: string | null
           received_at?: string
           replayed_at?: string | null
           replayed_by?: string | null
