@@ -49,8 +49,11 @@ export interface SimulatorParams {
   // Custos & Pessoal
   cpvDeltaPct: number; // -20..+30  → multiplica linhas custo_vendas
   payrollDeltaPct: number; // -30..+30  → multiplica linhas com encargosAuto
+  prolaboreDeltaPct: number; // -50..+50  → multiplica linhas de pró-labore (subset folha) — afeta DRE
+  distribuicaoDeltaPct: number; // -100..+200 → escala distribuição de lucros — afeta CAIXA (não DRE)
   fixedCutPct: number; // -50..+50  → positivo = corte, negativo = aumento nos top-N fixos
   fixedCutTopN: number; // 1..5
+
 
   // Capital de Giro
   pmrDeltaDays: number; // -60..0    (sempre reduz ou 0)
