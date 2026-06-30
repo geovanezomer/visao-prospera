@@ -466,6 +466,12 @@ export function calcIndicators(
 
   const mcReais = receitaLiqAnual - custosVarAnual;
   const gao = Math.abs(ebitAnual) > 1 ? Math.max(-99, Math.min(99, mcReais / ebitAnual)) : 0;
+  // GAF = EBIT / LAIR. Sem juros (lairAnual ≈ ebitAnual) → GAF = 1 (sem alavancagem).
+  // Quando juros ≥ EBIT (LAIR ≤ 0), o múltiplo perde sentido econômico → 0 (UI mostra "—").
+  const gaf =
+    Math.abs(ebitAnual) > 1 && lairAnual > 1
+      ? Math.max(-99, Math.min(99, ebitAnual / lairAnual))
+      : 0;
   // Qualidade do Lucro = FCO / Lucro Líquido (CPC 03/IAS 7).
   // Usa o MESMO FCO do FluxoCaixaTab (buildCashFlow.fluxoOperacional),
   // não o FCFF estimado — caixa operacional realizado vs. lucro contábil.
