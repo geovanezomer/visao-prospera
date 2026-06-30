@@ -4,6 +4,7 @@ import { fmtBRL, fmtPct, fmtTimes, sum } from "@/engines/finance/format";
 import { HelpTip, SectionTitle } from "@/components/sim/shared/primitives";
 import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
 import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
+import { getDistribuicaoRealizadaMeses } from "@/engines/finance/socios";
 
 // SSOT visual dos indicadores financeiros.
 // Renderizado IDENTICAMENTE na página Indicadores (IndicatorsTab) e no
