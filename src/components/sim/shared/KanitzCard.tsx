@@ -22,8 +22,16 @@ function pctFromFi(fi: number): number {
   return ((clamped - MIN) / RANGE) * 100;
 }
 
-export function KanitzCard({ compact = false }: { compact?: boolean }) {
-  const state = useFinanceState();
+export function KanitzCard({
+  compact = false,
+  state: stateProp,
+}: {
+  compact?: boolean;
+  /** Estado opcional (cenário simulado). Sem prop, lê do contexto (base). */
+  state?: ReturnType<typeof useFinanceState>;
+}) {
+  const ctxState = useFinanceState();
+  const state = stateProp ?? ctxState;
   const { ind } = useFinanceModel(state);
   const k = calcKanitz(state, ind);
   const crisis = assessCrisisStage(state, ind);

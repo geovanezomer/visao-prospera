@@ -31,6 +31,7 @@ import {
 import { SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
 import { ForecastCard, MonteCarloCard } from "@/components/sim/analysis/AnalysisTab";
 import { IndicatorsCard } from "@/components/sim/indicators/IndicatorsCard";
+import { KanitzCard } from "@/components/sim/shared/KanitzCard";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -359,6 +360,13 @@ export function SimulatorTab({
           <DREPanel base={baseView} sim={simView} inconsistencies={inconsistencies} />
         </div>
       </div>
+
+      {/* Termômetro de Insolvência (Kanitz) — reativo às alavancas do simulador */}
+      <KanitzCard state={simState} />
+
+
+
+
 
       {/* Projeções refletindo o cenário simulado */}
       <div className="space-y-4 border-t border-border/60 pt-6">
