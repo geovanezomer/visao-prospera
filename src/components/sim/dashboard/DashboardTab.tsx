@@ -300,6 +300,10 @@ export function DashboardTab() {
       {/* Termômetro de Valor — último indicador da lista (WACC × ROIC) */}
       <WaccRoicMeter wacc={ind.wacc} roic={ind.roic} />
 
+      {/* Termômetro de Insolvência (Kanitz) — alerta precoce de descontinuidade */}
+      <KanitzCard />
+
+
 
       {/* Elementos visuais para o empresário: runway, semáforos, score e top despesas */}
       <DashboardExtras state={state} />
