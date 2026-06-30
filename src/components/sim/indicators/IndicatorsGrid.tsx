@@ -86,11 +86,12 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             calc={c.margemContribuicao}
           />
           <Ind
-            label="Faturamento / Colaborador"
-            v={hasHeadcount ? fmtBRL(ind.faturamentoPorColaborador) : "—"}
-            desc="Receita BRUTA gerada por colaborador no ano — métrica clássica de benchmarking de produtividade. Ajuste o nº de colaboradores em Configurações Rápidas (sidebar)."
-            formula="Receita Bruta ÷ Nº de Colaboradores"
-            calc={c.faturamentoPorColaborador}
+            label="Qualidade do Lucro"
+            v={ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}×` : "—"}
+            tone={ind.qualidadeLucro >= 1 ? "pos" : "neg"}
+            desc="O lucro contábil está virando caixa? ≥1 saudável; <1 indica lucro 'no papel' (preso em NCG, inadimplência ou estoques)."
+            formula="Fluxo de Caixa Operacional ÷ Lucro Líquido"
+            calc={c.qualidadeLucro}
           />
         </Group>
 
