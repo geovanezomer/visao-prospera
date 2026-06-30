@@ -9,11 +9,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 import type { Json } from "@/integrations/supabase/types";
 
-function assertAdmin(claims: AuthClaims | undefined | null) {
-  if (!isAdminEmail((claims?.email as string) ?? "")) {
-    throw new Error("Acesso negado: apenas administrador.");
-  }
-}
 
 const KEYS = ["branding", "login_texts", "footer", "active_provider", "tracking", "legal", "landing_video", "trial"] as const;
 export type SettingKey = (typeof KEYS)[number];

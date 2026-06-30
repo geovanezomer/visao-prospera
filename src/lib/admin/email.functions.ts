@@ -7,11 +7,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: AuthClaims | undefined | null) {
-  if (!isAdminEmail((claims?.email as string) ?? "")) {
-    throw new Error("Acesso negado: apenas administrador.");
-  }
-}
 
 const TEMPLATE_KINDS = ["magic_link", "receipt", "password_reset", "refund", "welcome", "trial_magic_link"] as const;
 export type TemplateKind = (typeof TEMPLATE_KINDS)[number];

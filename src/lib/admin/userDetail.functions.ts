@@ -15,11 +15,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AdminClient, AuthClaims } from "./_types";
 
-function assertAdmin(claims: AuthClaims | undefined | null) {
-  if (!isAdminEmail((claims?.email ?? "") as string)) {
-    throw new Error("Acesso negado: apenas administrador.");
-  }
-}
 
 // Procura usuário por e-mail paginando auth.admin.listUsers (até 5k usuários).
 async function findUserByEmail(supabaseAdmin: AdminClient, email: string) {

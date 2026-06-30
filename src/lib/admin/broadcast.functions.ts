@@ -12,11 +12,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: AuthClaims | undefined | null) {
-  if (!isAdminEmail((claims?.email as string) ?? "")) {
-    throw new Error("Acesso negado: apenas administrador.");
-  }
-}
 
 const SegmentSchema = z.object({
   plan: z.enum(["all", "free", "starter", "pro", "lifetime"]).optional(),

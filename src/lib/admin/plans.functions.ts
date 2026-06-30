@@ -9,9 +9,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 import type { Json } from "@/integrations/supabase/types";
 
-function assertAdmin(claims: AuthClaims | undefined | null) {
-  if (!isAdminEmail((claims?.email as string) ?? "")) throw new Error("Acesso negado.");
-}
 
 export type PlanRow = {
   id: string;
