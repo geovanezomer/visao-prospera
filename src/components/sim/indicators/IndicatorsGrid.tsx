@@ -289,64 +289,40 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             calc={c.coberturaJuros}
           />
           {(() => {
-            if (ind.dividaLiquida < 0) {
-              const dl = leverageDisplay("ebitda", ind.dividaLiqEbitda, ind.dividaLiquida, ebitdaAnual);
-              return (
-                <Ind
-                  label={dl.label}
-                  v={dl.value}
-                  tone={dl.tone}
-                  chip={dl.chip}
-                  desc={dl.desc}
-                  formula={dl.formula}
-                  calc={c.dividaLiqEbitda}
-                />
-              );
-            }
+            // Sempre renderiza os 3 múltiplos de alavancagem (EBITDA, EBIT, PL).
+            // `leverageDisplay` já trata cash-rich por métrica (Dívida Líq < 0 → "Posição Líquida de Caixa").
+            const dlEbitda = leverageDisplay("ebitda", ind.dividaLiqEbitda, ind.dividaLiquida, ebitdaAnual);
+            const dlEbit = leverageDisplay("ebit", ind.dividaLiqEbit, ind.dividaLiquida, ebitAnual);
+            const dlPl = leverageDisplay("pl", ind.dividaLiqPl, ind.dividaLiquida, state.capital.patrimonioLiquido);
             return (
               <>
-                {(() => {
-                  const dl = leverageDisplay("ebitda", ind.dividaLiqEbitda, ind.dividaLiquida, ebitdaAnual);
-                  return (
-                    <Ind
-                      label={dl.label}
-                      v={dl.value}
-                      tone={dl.tone}
-                      chip={dl.chip}
-                      desc="Em quantos anos de geração de caixa (EBITDA) a empresa quitaria sua dívida líquida. Acima de 3× preocupa bancos."
-                      formula="(Dívida Onerosa − Disponibilidades) ÷ EBITDA"
-                      calc={c.dividaLiqEbitda}
-                    />
-                  );
-                })()}
-                {(() => {
-                  const dl = leverageDisplay("ebit", ind.dividaLiqEbit, ind.dividaLiquida, ebitAnual);
-                  return (
-                    <Ind
-                      label={dl.label}
-                      v={dl.value}
-                      tone={dl.tone}
-                      chip={dl.chip}
-                      desc="Quantos anos de lucro operacional (já líquido da depreciação) seriam necessários para quitar a dívida líquida. Mais conservador que Dívida/EBITDA."
-                      formula="(Dívida Onerosa − Disponibilidades) ÷ EBIT"
-                      calc={c.dividaLiqEbit}
-                    />
-                  );
-                })()}
-                {(() => {
-                  const dl = leverageDisplay("pl", ind.dividaLiqPl, ind.dividaLiquida, state.capital.patrimonioLiquido);
-                  return (
-                    <Ind
-                      label={dl.label}
-                      v={dl.value}
-                      tone={dl.tone}
-                      chip={dl.chip}
-                      desc="Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio."
-                      formula="(Dívida Onerosa − Disponibilidades) ÷ Patrimônio Líquido"
-                      calc={c.dividaLiqPl}
-                    />
-                  );
-                })()}
+                <Ind
+                  label={dlEbitda.label}
+                  v={dlEbitda.value}
+                  tone={dlEbitda.tone}
+                  chip={dlEbitda.chip}
+                  desc={dlEbitda.desc ?? "Em quantos anos de geração de caixa (EBITDA) a empresa quitaria sua dívida líquida. Acima de 3× preocupa bancos."}
+                  formula={dlEbitda.formula ?? "(Dívida Onerosa − Disponibilidades) ÷ EBITDA"}
+                  calc={c.dividaLiqEbitda}
+                />
+                <Ind
+                  label={dlEbit.label}
+                  v={dlEbit.value}
+                  tone={dlEbit.tone}
+                  chip={dlEbit.chip}
+                  desc={dlEbit.desc ?? "Quantos anos de lucro operacional (já líquido da depreciação) seriam necessários para quitar a dívida líquida. Mais conservador que Dívida/EBITDA."}
+                  formula={dlEbit.formula ?? "(Dívida Onerosa − Disponibilidades) ÷ EBIT"}
+                  calc={c.dividaLiqEbit}
+                />
+                <Ind
+                  label={dlPl.label}
+                  v={dlPl.value}
+                  tone={dlPl.tone}
+                  chip={dlPl.chip}
+                  desc={dlPl.desc ?? "Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio."}
+                  formula={dlPl.formula ?? "(Dívida Onerosa − Disponibilidades) ÷ Patrimônio Líquido"}
+                  calc={c.dividaLiqPl}
+                />
               </>
             );
           })()}
