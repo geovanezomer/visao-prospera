@@ -591,6 +591,7 @@ export function calcIndicators(
     aliquotaNopat: aliquotaNopatFrac * 100,
     servicoDividaMensal: (jurosAnual + amortizPrincipalAnual) / 12,
     proprioPercent: V > 0 ? (PL / V) * 100 : Math.max(0, Math.min(100, capital.proprio)),
+    eva: safeNumber(((roic - safeNumber(wacc)) / 100) * capitalInvestido),
     dividaPlBruto: PL > 0 ? D / PL : 0,
   };
 }
