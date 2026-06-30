@@ -68,6 +68,8 @@ export function IndicatorsTab() {
 
       <IndicatorsGrid state={state} />
 
+      <KanitzCard />
+
     </div>
   );
 }
