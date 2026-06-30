@@ -595,5 +595,6 @@ export function calcIndicators(
     proprioPercent: V > 0 ? (PL / V) * 100 : Math.max(0, Math.min(100, capital.proprio)),
     eva: safeNumber(((roic - safeNumber(wacc)) / 100) * capitalInvestido),
     dividaPlBruto: PL > 0 ? D / PL : 0,
+    fcoAnual: safeNumber(fcoAnual),
   };
 }
