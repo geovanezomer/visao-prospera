@@ -461,23 +461,13 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
         {/* ───── Análises de Fluxo de Caixa ───── */}
         <Group title="Análises Fluxo de Caixa">
           <Ind
-            label="FCO (Método Indireto)"
-            v={fmtBRL(fcoAnual)}
-            tone={fcoAnual >= 0 ? "pos" : "neg"}
-            desc="Fluxo de Caixa Operacional pelo método indireto (CPC 03 / IAS 7): parte do Lucro Líquido, soma itens não-caixa (D&A) e ajusta pela variação de NCG. É a base de tudo — mostra quanto caixa a operação de fato gera."
-            formula="Lucro Líquido + Depreciação/Amortização ± Δ NCG"
-            calc={fcoCalc}
+            label="FCF estimado"
+            v={fmtBRL(ind.fcf)}
+            tone={ind.fcf >= 0 ? "pos" : "neg"}
+            desc="Free Cash Flow operacional antes do CAPEX — geração de caixa após imposto operacional e variação de capital de giro."
+            formula="NOPAT + D&A − Δ NCG"
+            calc={c.fcf}
           />
-          <Ind
-
-            label="Qualidade do Lucro"
-            v={ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}×` : "—"}
-            tone={ind.qualidadeLucro >= 1 ? "pos" : "neg"}
-            desc="O lucro contábil está virando caixa? ≥1 saudável; <1 indica lucro 'no papel' (preso em NCG, inadimplência ou estoques)."
-            formula="Fluxo de Caixa Operacional ÷ Lucro Líquido"
-            calc={c.qualidadeLucro}
-          />
-
           <Ind
             label="Margem de Caixa Operacional"
             v={receitaLiquidaAnual > 0 ? fmtPct(margemCaixaOp / 100) : "—"}
@@ -487,12 +477,20 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             calc={margemCaixaOpCalc}
           />
           <Ind
-            label="FCF estimado"
-            v={fmtBRL(ind.fcf)}
-            tone={ind.fcf >= 0 ? "pos" : "neg"}
-            desc="Free Cash Flow operacional antes do CAPEX — geração de caixa após imposto operacional e variação de capital de giro."
-            formula="NOPAT + D&A − Δ NCG"
-            calc={c.fcf}
+            label="FCO (Método Indireto)"
+            v={fmtBRL(fcoAnual)}
+            tone={fcoAnual >= 0 ? "pos" : "neg"}
+            desc="Fluxo de Caixa Operacional pelo método indireto (CPC 03 / IAS 7): parte do Lucro Líquido, soma itens não-caixa (D&A) e ajusta pela variação de NCG. É a base de tudo — mostra quanto caixa a operação de fato gera."
+            formula="Lucro Líquido + Depreciação/Amortização ± Δ NCG"
+            calc={fcoCalc}
+          />
+          <Ind
+            label="Qualidade do Lucro"
+            v={ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}×` : "—"}
+            tone={ind.qualidadeLucro >= 1 ? "pos" : "neg"}
+            desc="O lucro contábil está virando caixa? ≥1 saudável; <1 indica lucro 'no papel' (preso em NCG, inadimplência ou estoques)."
+            formula="Fluxo de Caixa Operacional ÷ Lucro Líquido"
+            calc={c.qualidadeLucro}
           />
         </Group>
       </div>
