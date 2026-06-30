@@ -158,7 +158,7 @@ export const listAdminUsers = createServerFn({ method: "POST" })
         provider: s?.provider ?? null,
         subscriptionId: s?.stripe_subscription_id ?? null,
         customerId: s?.provider_customer_id ?? s?.stripe_customer_id ?? null,
-        isAdmin: isAdminEmail(u.email),
+        isAdmin: adminIds.has(u.id),
         aiEnabled: (meta as Record<string, unknown>).ai_enabled !== false,
       } as AdminUserRow;
     });
