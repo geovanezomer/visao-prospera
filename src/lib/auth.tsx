@@ -200,12 +200,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // máquinas compartilhadas.
     try {
       if (typeof window !== "undefined") {
-        // localStorage — remove tudo do escopo da aplicação.
         const keysToRemove: string[] = [];
         for (let i = 0; i < window.localStorage.length; i++) {
           const k = window.localStorage.key(i);
           if (!k) continue;
           if (
+            k === LAST_USER_KEY ||
             k.startsWith("gz-finance-") ||
             k.startsWith("finnance-") ||
             k.startsWith("finnance:") ||
@@ -217,7 +217,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         for (const k of keysToRemove) window.localStorage.removeItem(k);
         window.sessionStorage.clear();
 
-        // IndexedDB — apaga bancos conhecidos da aplicação.
         if ("indexedDB" in window && typeof window.indexedDB.databases === "function") {
           try {
             const dbs = await window.indexedDB.databases();
