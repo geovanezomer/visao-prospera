@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AppState, TaxRegime } from "@/engines/finance/types";
 import {
@@ -377,7 +377,7 @@ export function SimulatorTab({
 
 // ============== Status bar ==============
 
-function StatusBar({
+const StatusBar = memo(function StatusBar({
   active,
   base,
   sim,
@@ -436,7 +436,7 @@ function StatusBar({
       </div>
     </div>
   );
-}
+});
 
 function Delta({
   label,
@@ -478,7 +478,7 @@ function Delta({
 
 // ============== Slider row ==============
 
-function SliderRow({
+const SliderRow = memo(function SliderRow({
   label,
   hint,
   min,
@@ -536,7 +536,7 @@ function SliderRow({
       </div>
     </div>
   );
-}
+});
 
 function NumInput({
   label,
@@ -920,7 +920,7 @@ function pctDelta(a: number, b: number): number {
 // + NCG e Gap de Capital de Giro (Indicadores). Reagem instantaneamente
 // às alavancas — mesma dinâmica dos KPIs comparativos já presentes no painel DRE.
 
-function KpiCardsRow({ base, sim }: { base: SimDREView; sim: SimDREView }) {
+const KpiCardsRow = memo(function KpiCardsRow({ base, sim }: { base: SimDREView; sim: SimDREView }) {
   const items: {
     label: string;
     baseV: number;
@@ -1008,4 +1008,4 @@ function KpiCardsRow({ base, sim }: { base: SimDREView; sim: SimDREView }) {
       })}
     </div>
   );
-}
+});

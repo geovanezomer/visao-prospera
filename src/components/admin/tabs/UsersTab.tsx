@@ -283,17 +283,17 @@ export function UsersTab() {
                     </td>
                     <td className="p-2">
                       <div className="flex items-center justify-end gap-1">
-                        <Button size="sm" variant="ghost" className="h-7 px-2" title="Revalidar plano" onClick={() => handleRevalidate(u)} disabled={busyId === u.id}>
-                          <RefreshCw className="h-3.5 w-3.5" />
+                        <Button size="sm" variant="ghost" className="h-7 px-2" title="Revalidar plano" aria-label={`Revalidar plano de ${u.email}`} onClick={() => handleRevalidate(u)} disabled={busyId === u.id}>
+                          <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-7 px-2" title="Reenviar magic link" onClick={() => handleResendMagic(u)} disabled={busyId === u.id}>
-                          <Mail className="h-3.5 w-3.5" />
+                        <Button size="sm" variant="ghost" className="h-7 px-2" title="Reenviar magic link" aria-label={`Reenviar magic link para ${u.email}`} onClick={() => handleResendMagic(u)} disabled={busyId === u.id}>
+                          <Mail className="h-3.5 w-3.5" aria-hidden="true" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-7 px-2" title="Reset de senha" onClick={() => handleReset(u)} disabled={busyId === u.id}>
-                          <KeyRound className="h-3.5 w-3.5" />
+                        <Button size="sm" variant="ghost" className="h-7 px-2" title="Reset de senha" aria-label={`Reset de senha de ${u.email}`} onClick={() => handleReset(u)} disabled={busyId === u.id}>
+                          <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-red-600 hover:text-red-700" title="Estornar" onClick={() => setRefundFor(u)} disabled={busyId === u.id || !u.subscriptionId}>
-                          <Undo2 className="h-3.5 w-3.5" />
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-red-600 hover:text-red-700" title="Estornar" aria-label={`Estornar assinatura de ${u.email}`} onClick={() => setRefundFor(u)} disabled={busyId === u.id || !u.subscriptionId}>
+                          <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />
                         </Button>
                       </div>
 
