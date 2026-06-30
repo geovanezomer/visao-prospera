@@ -26,11 +26,8 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
 
 
 
-  // EVA (Economic Value Added) — forma equivalente via spread ROIC−WACC:
-  // EVA = (ROIC − WACC) × Capital Investido. Aproveita indicadores já calculados.
-  const spread = (ind.roic - ind.wacc) / 100;
-  const eva = spread * ind.capitalInvestido;
-  const evaCalc = `(${fmtPct(ind.roic / 100)} − ${fmtPct(ind.wacc / 100)}) × ${fmtBRL(ind.capitalInvestido)} = ${fmtBRL(eva)}`;
+
+
 
   // ─── Análise Tributária — métricas adicionais ───
   // Carga Tributária Efetiva: total de tributos (s/ vendas + IRPJ/CSLL) ÷ Receita Bruta.
