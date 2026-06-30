@@ -15,13 +15,17 @@ export interface ContractSchedule {
   totalAmortAno: number;
 }
 
-/** Gera cronograma 12 meses do contrato. Usa juros nominais i/12. */
+/** Gera cronograma 12 meses do contrato.
+ *  Auditoria F-02: usa taxa mensal EQUIVALENTE (juros compostos) — `taxaAA` é
+ *  efetiva anual; `i_m = (1+i_a)^(1/12) − 1`. Antes usava nominal/linear
+ *  (`i_a/12`), o que subestimava juros em ~5–10% para taxas altas. */
 export function scheduleContract(c: DebtContract): ContractSchedule {
   const juros: number[] = new Array(12).fill(0);
   const amort: number[] = new Array(12).fill(0);
   const saldoIni = Math.max(0, c.saldoDevedor || 0);
   const n = Math.max(1, Math.floor(c.prazoMeses || 0));
-  const im = Math.max(0, (c.taxaAA || 0) / 100) / 12;
+  const ia = Math.max(0, (c.taxaAA || 0) / 100);
+  const im = ia > 0 ? Math.pow(1 + ia, 1 / 12) - 1 : 0;
   if (saldoIni <= 0 || n <= 0) {
     return { juros, amort, parcelaMes: 0, totalJurosAno: 0, totalAmortAno: 0 };
   }
