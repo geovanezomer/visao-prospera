@@ -450,6 +450,23 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             desc="Quanto a empresa paga de impostos TOTAIS para cada R$ 1,00 de lucro líquido gerado. Acima de 100% indica que o fisco leva mais do que sobra para os sócios — sinal de regime tributário ineficiente."
             formula="(Impostos s/ Vendas + IRPJ/CSLL) ÷ Lucro Líquido × 100"
             calc={c.impostosSobreLucro}
+          <Ind
+            label="Carga Tributária Efetiva"
+            v={receitaBrutaAnual > 0 ? fmtPct(cargaTribEfetiva / 100) : "—"}
+            tone={
+              cargaTribEfetiva > 30 ? "neg" : cargaTribEfetiva > 0 ? "pos" : undefined
+            }
+            desc="Total de tributos (impostos sobre vendas + IRPJ/CSLL) sobre a Receita Bruta. Mais correto que usar Receita Líquida, pois muitos tributos incidem sobre o bruto. Mede o peso fiscal real do negócio."
+            formula="Total de Tributos ÷ Receita Bruta × 100"
+            calc={cargaTribEfetivaCalc}
+          />
+          <Ind
+            label="Distribuição Isenta / Lucro Líquido"
+            v={llAnual > 0 ? fmtPct(distIsentaSobreLucro / 100) : "—"}
+            tone={llAnual > 0 ? (distIsentaSobreLucro > 0 ? "pos" : undefined) : undefined}
+            desc="Percentual do lucro líquido que foi distribuído aos sócios via distribuição de lucros — atualmente isenta de IRPF (PJ→PF). Quanto maior, mais eficiente fiscalmente está a remuneração do sócio."
+            formula="Distribuição de Lucros Realizada ÷ Lucro Líquido × 100"
+            calc={distIsentaCalc}
           />
         </Group>
 
