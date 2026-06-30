@@ -101,7 +101,7 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             v={fmtBRL(eva)}
             tone={eva >= 0 ? "pos" : "neg"}
             desc="Economic Value Added — lucro que sobra DEPOIS de remunerar todo o capital (próprio + terceiros) ao custo do WACC. EVA > 0 ⇒ a empresa cria valor; EVA < 0 ⇒ destrói valor mesmo com lucro contábil positivo."
-            formula="NOPAT − (WACC × Capital Investido)"
+            formula="(ROIC − WACC) × Capital Investido"
             calc={evaCalc}
           />
         </Group>
