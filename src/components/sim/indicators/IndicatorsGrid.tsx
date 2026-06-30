@@ -260,17 +260,6 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             formula="Passivo Total ÷ Ativo Total × 100"
             calc={c.endividamentoGeral}
           />
-          <Ind
-            label="Amortização do PL pelo Lucro"
-            v={
-              Number.isFinite(ind.amortizacaoPlPorLucro)
-                ? `${ind.amortizacaoPlPorLucro.toFixed(1)} anos`
-                : "—"
-            }
-            desc="Tempo (anos) para o lucro contábil acumulado igualar o Patrimônio Líquido. NÃO confundir com o Payback clássico — este indicador mede a velocidade de remuneração do capital próprio pelo lucro contábil."
-            formula="Patrimônio Líquido ÷ Lucro Líquido Anual"
-            calc={c.amortizacaoPlPorLucro}
-          />
 
           <Ind
             label="Capital Próprio"
@@ -289,65 +278,45 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             calc={c.coberturaJuros}
           />
           {(() => {
-            if (ind.dividaLiquida < 0) {
-              const dl = leverageDisplay("ebitda", ind.dividaLiqEbitda, ind.dividaLiquida, ebitdaAnual);
-              return (
-                <Ind
-                  label={dl.label}
-                  v={dl.value}
-                  tone={dl.tone}
-                  chip={dl.chip}
-                  desc={dl.desc}
-                  formula={dl.formula}
-                  calc={c.dividaLiqEbitda}
-                />
-              );
-            }
+            const dl = leverageDisplay("ebitda", ind.dividaLiqEbitda, ind.dividaLiquida, ebitdaAnual);
             return (
-              <>
-                {(() => {
-                  const dl = leverageDisplay("ebitda", ind.dividaLiqEbitda, ind.dividaLiquida, ebitdaAnual);
-                  return (
-                    <Ind
-                      label={dl.label}
-                      v={dl.value}
-                      tone={dl.tone}
-                      chip={dl.chip}
-                      desc="Em quantos anos de geração de caixa (EBITDA) a empresa quitaria sua dívida líquida. Acima de 3× preocupa bancos."
-                      formula="(Dívida Onerosa − Disponibilidades) ÷ EBITDA"
-                      calc={c.dividaLiqEbitda}
-                    />
-                  );
-                })()}
-                {(() => {
-                  const dl = leverageDisplay("ebit", ind.dividaLiqEbit, ind.dividaLiquida, ebitAnual);
-                  return (
-                    <Ind
-                      label={dl.label}
-                      v={dl.value}
-                      tone={dl.tone}
-                      chip={dl.chip}
-                      desc="Quantos anos de lucro operacional (já líquido da depreciação) seriam necessários para quitar a dívida líquida. Mais conservador que Dívida/EBITDA."
-                      formula="(Dívida Onerosa − Disponibilidades) ÷ EBIT"
-                      calc={c.dividaLiqEbit}
-                    />
-                  );
-                })()}
-                {(() => {
-                  const dl = leverageDisplay("pl", ind.dividaLiqPl, ind.dividaLiquida, state.capital.patrimonioLiquido);
-                  return (
-                    <Ind
-                      label={dl.label}
-                      v={dl.value}
-                      tone={dl.tone}
-                      chip={dl.chip}
-                      desc="Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio."
-                      formula="(Dívida Onerosa − Disponibilidades) ÷ Patrimônio Líquido"
-                      calc={c.dividaLiqPl}
-                    />
-                  );
-                })()}
-              </>
+              <Ind
+                label={dl.label}
+                v={dl.value}
+                tone={dl.tone}
+                chip={dl.chip}
+                desc="Em quantos anos de geração de caixa (EBITDA) a empresa quitaria sua dívida líquida. Acima de 3× preocupa bancos."
+                formula="(Dívida Onerosa − Disponibilidades) ÷ EBITDA"
+                calc={c.dividaLiqEbitda}
+              />
+            );
+          })()}
+          {(() => {
+            const dl = leverageDisplay("ebit", ind.dividaLiqEbit, ind.dividaLiquida, ebitAnual);
+            return (
+              <Ind
+                label={dl.label}
+                v={dl.value}
+                tone={dl.tone}
+                chip={dl.chip}
+                desc="Quantos anos de lucro operacional (já líquido da depreciação) seriam necessários para quitar a dívida líquida. Mais conservador que Dívida/EBITDA."
+                formula="(Dívida Onerosa − Disponibilidades) ÷ EBIT"
+                calc={c.dividaLiqEbit}
+              />
+            );
+          })()}
+          {(() => {
+            const dl = leverageDisplay("pl", ind.dividaLiqPl, ind.dividaLiquida, state.capital.patrimonioLiquido);
+            return (
+              <Ind
+                label={dl.label}
+                v={dl.value}
+                tone={dl.tone}
+                chip={dl.chip}
+                desc="Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio."
+                formula="(Dívida Onerosa − Disponibilidades) ÷ Patrimônio Líquido"
+                calc={c.dividaLiqPl}
+              />
             );
           })()}
           <Ind
