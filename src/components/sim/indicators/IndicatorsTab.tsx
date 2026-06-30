@@ -46,22 +46,29 @@ export function IndicatorsTab() {
           </div>
           <div className="mono mt-2 text-2xl font-bold text-foreground">{fmtBRL(ind.ncg)}</div>
         </div>
-        <StatCard
-          label="Gap de Capital de Giro"
-          value={fmtBRL(ind.gapCapitalGiro)}
-          tone={ind.gapCapitalGiro > 0 ? "neg" : "pos"}
-          sub={
-            ind.gapCapitalGiro > 0
-              ? "Falta caixa: negocie prazos, antecipe recebíveis ou capte giro"
-              : "Folga: sobra para investir ou amortizar dívidas"
-          }
-          hint={{
-            description:
-              "Diferença entre o que a operação precisa (NCG) e o que a empresa tem (CGD). Positivo = precisa de empréstimo de giro; Negativo = sobra caixa.",
-            formula: "NCG − CGD",
-            calc: c.gapCapitalGiro,
-          }}
-        />
+        {(() => {
+          const spread = (ind.roic - ind.wacc) / 100;
+          const eva = spread * ind.capitalInvestido;
+          return (
+            <StatCard
+              label="EVA (Lucro Econômico)"
+              value={fmtBRL(eva)}
+              tone={eva >= 0 ? "pos" : "neg"}
+              sub={
+                eva >= 0
+                  ? "Cria valor: ROIC supera o custo do capital (WACC)"
+                  : "Destrói valor: ROIC abaixo do WACC, mesmo com lucro contábil"
+              }
+              hint={{
+                description:
+                  "Economic Value Added — lucro que sobra DEPOIS de remunerar todo o capital (próprio + terceiros) ao custo do WACC.",
+                formula: "(ROIC − WACC) × Capital Investido",
+                calc: `(${fmtPct(ind.roic / 100)} − ${fmtPct(ind.wacc / 100)}) × ${fmtBRL(ind.capitalInvestido)} = ${fmtBRL(eva)}`,
+              }}
+            />
+          );
+        })()}
+
         <CashConversionSmall conversao={ind.conversaoEbitdaCaixa} calc={c.conversaoEbitdaCaixa} />
       </div>
 
