@@ -54,11 +54,7 @@ export function IndicatorsTab() {
               label="EVA (Lucro Econômico)"
               value={fmtBRL(eva)}
               tone={eva >= 0 ? "pos" : "neg"}
-              sub={
-                eva >= 0
-                  ? "Cria valor: ROIC supera o custo do capital (WACC)"
-                  : "Destrói valor: ROIC abaixo do WACC, mesmo com lucro contábil"
-              }
+              sub={eva >= 0 ? "Gerando Valor" : "Destruindo Valor"}
               hint={{
                 description:
                   "Economic Value Added — lucro que sobra DEPOIS de remunerar todo o capital (próprio + terceiros) ao custo do WACC.",
