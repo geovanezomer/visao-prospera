@@ -1,4 +1,4 @@
-import { useState, Fragment } from "react";
+import { useMemo, useState, Fragment } from "react";
 import { useFinance, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { usePeriodView } from "@/hooks/usePeriodView";
 import {
