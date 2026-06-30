@@ -499,8 +499,24 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           />
         </Group>
 
-        {/* ───── Análises Individuais (extras) ───── */}
-        <Group title="Análises Individuais">
+        {/* ───── Análises de Fluxo de Caixa ───── */}
+        <Group title="Análises Fluxo de Caixa">
+          <Ind
+            label="FCO (Método Indireto)"
+            v={fmtBRL(fcoAnual)}
+            tone={fcoAnual >= 0 ? "pos" : "neg"}
+            desc="Fluxo de Caixa Operacional pelo método indireto (CPC 03 / IAS 7): parte do Lucro Líquido, soma itens não-caixa (D&A) e ajusta pela variação de NCG. É a base de tudo — mostra quanto caixa a operação de fato gera."
+            formula="Lucro Líquido + Depreciação/Amortização ± Δ NCG"
+            calc={fcoCalc}
+          />
+          <Ind
+            label="Margem de Caixa Operacional"
+            v={receitaLiquidaAnual > 0 ? fmtPct(margemCaixaOp / 100) : "—"}
+            tone={margemCaixaOp >= 0 ? "pos" : "neg"}
+            desc="Equivalente 'em caixa' da margem operacional: quantos centavos de caixa cada R$ 1,00 de Receita Líquida efetivamente converte. Comparar com a Margem EBITDA evidencia o quanto a NCG está 'comendo' a geração operacional."
+            formula="FCO ÷ Receita Líquida × 100"
+            calc={margemCaixaOpCalc}
+          />
           <Ind
             label="FCF estimado"
             v={fmtBRL(ind.fcf)}
@@ -510,26 +526,11 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             calc={c.fcf}
           />
           <Ind
-            label="Payback (CAPEX)"
-            v={
-              Number.isFinite(ind.paybackCapex) && ind.paybackCapex > 0
-                ? `${ind.paybackCapex.toFixed(1)} anos`
-                : "—"
-            }
-            desc="Payback CLÁSSICO (conceito bancário): tempo para a geração de caixa recuperar o CAPEX total do ano. '—' quando não há CAPEX informado ou quando FCF ≤ 0."
-            formula="CAPEX Anual ÷ FCF Operacional"
-            calc={c.paybackCapex}
-          />
-          <Ind
-            label="Amortização do PL pelo Lucro"
-            v={
-              Number.isFinite(ind.amortizacaoPlPorLucro)
-                ? `${ind.amortizacaoPlPorLucro.toFixed(1)} anos`
-                : "—"
-            }
-            desc="Tempo (anos) para o lucro contábil acumulado igualar o Patrimônio Líquido. NÃO confundir com o Payback clássico — este indicador mede a velocidade de remuneração do capital próprio pelo lucro contábil."
-            formula="Patrimônio Líquido ÷ Lucro Líquido Anual"
-            calc={c.amortizacaoPlPorLucro}
+            label="WACC"
+            v={fmtPct(ind.wacc / 100)}
+            desc="Custo Médio Ponderado de Capital. É o retorno mínimo que a empresa precisa entregar para remunerar sócios e credores. Funciona como 'meta' do ROIC."
+            formula="(E/V × Ke) + (D/V × Kd × (1 − IR))"
+            calc={c.wacc}
           />
         </Group>
       </div>
