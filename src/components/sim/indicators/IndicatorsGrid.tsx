@@ -33,8 +33,10 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
     ativoTot > 0
       ? `(${fmtBRL(pcSum)} + ${fmtBRL(pncSum)}) ÷ ${fmtBRL(ativoTot)} × 100 = ${fmtPct(endivPcPnc / 100)}`
       : "Ativo Total = 0 → indicador indisponível";
-
-
+  // EVA (Economic Value Added) — lucro econômico após remunerar TODO o capital
+  // (próprio + terceiros) ao custo do WACC. EVA > 0 ⇒ criação de valor.
+  const eva = ind.nopat - (ind.wacc / 100) * ind.capitalInvestido;
+  const evaCalc = `${fmtBRL(ind.nopat)} − (${fmtPct(ind.wacc / 100)} × ${fmtBRL(ind.capitalInvestido)}) = ${fmtBRL(eva)}`;
 
 
   return (
