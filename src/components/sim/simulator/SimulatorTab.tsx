@@ -232,6 +232,29 @@ export function SimulatorTab({
                 signed
               />
               <SliderRow
+                label="Pró-labore (sócios)"
+                hint="Escala apenas as linhas de pró-labore (subset da folha). Afeta DRE: aumenta despesa de pessoal, reduz EBITDA, LAIR e Lucro Líquido. Também altera INSS do sócio e IRPF na ficha tributária. + aumenta retirada via folha, − reduz."
+                min={-50}
+                max={50}
+                step={1}
+                value={p.prolaboreDeltaPct}
+                onChange={(v) => set("prolaboreDeltaPct", v)}
+                suffix="%"
+                signed
+              />
+              <SliderRow
+                label="Distribuição de lucros"
+                hint="Escala a distribuição realizada aos sócios. NÃO afeta DRE (é destinação do lucro líquido, pós-imposto), mas IMPACTA o CAIXA: + reduz saldo de caixa, − preserva caixa. Lembre-se: distribuição só é isenta de IR até o limite presumido."
+                min={-100}
+                max={200}
+                step={5}
+                value={p.distribuicaoDeltaPct}
+                onChange={(v) => set("distribuicaoDeltaPct", v)}
+                suffix="%"
+                signed
+              />
+
+              <SliderRow
                 label="Cortar custos fixos (top-N)"
                 hint="Aplica corte percentual nas N maiores rubricas fixas."
                 min={0}

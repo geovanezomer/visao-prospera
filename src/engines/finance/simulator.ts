@@ -31,7 +31,10 @@ import {
 
 // Mesmo regex usado em sensitivity.ts/prescriptive.ts — verdade única para identificar folha.
 const LABOR_RE = /sal[áa]rio|folha|clt|prolabore|pr[óo]-labore|mod|m[ãa]o de obra/i;
+const PROLABORE_RE = /pr[óo]-?labore|prolabore/i;
 const isLaborLine = (c: CostLine) => c.encargosAuto === true || LABOR_RE.test(c.label);
+const isProlaboreLine = (c: CostLine) => PROLABORE_RE.test(c.label);
+
 
 export interface SimulatorParams {
   // Receita & Preço
@@ -46,8 +49,11 @@ export interface SimulatorParams {
   // Custos & Pessoal
   cpvDeltaPct: number; // -20..+30  → multiplica linhas custo_vendas
   payrollDeltaPct: number; // -30..+30  → multiplica linhas com encargosAuto
+  prolaboreDeltaPct: number; // -50..+50  → multiplica linhas de pró-labore (subset folha) — afeta DRE
+  distribuicaoDeltaPct: number; // -100..+200 → escala distribuição de lucros — afeta CAIXA (não DRE)
   fixedCutPct: number; // -50..+50  → positivo = corte, negativo = aumento nos top-N fixos
   fixedCutTopN: number; // 1..5
+
 
   // Capital de Giro
   pmrDeltaDays: number; // -60..0    (sempre reduz ou 0)
@@ -73,8 +79,11 @@ export const DEFAULT_SIM: SimulatorParams = {
   cpvDeltaPct: 0,
 
   payrollDeltaPct: 0,
+  prolaboreDeltaPct: 0,
+  distribuicaoDeltaPct: 0,
   fixedCutPct: 0,
   fixedCutTopN: 3,
+
   pmrDeltaDays: 0,
   pmpDeltaDays: 0,
   antecipPctAm: 0,
@@ -118,7 +127,15 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       emprestimosCaptados: base.cashflow.emprestimosCaptados.slice(),
       amortizacoes: base.cashflow.amortizacoes.slice(),
       capex: base.cashflow.capex.slice(),
+      dividendos: base.cashflow.dividendos.slice(),
     },
+    distribuicaoRealizada: base.distribuicaoRealizada
+      ? {
+          ...base.distribuicaoRealizada,
+          values: base.distribuicaoRealizada.values.slice() as typeof base.distribuicaoRealizada.values,
+        }
+      : base.distribuicaoRealizada,
+
     tax: { ...base.tax },
   };
 
@@ -170,6 +187,32 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       isLaborLine(c) ? { ...c, values: c.values.map((v) => v * f) } : c,
     );
   }
+
+  // 4b) Pró-labore — escala APENAS linhas de pró-labore (subset de folha). Afeta DRE
+  //     (despesa de pessoal/administrativa), portanto EBITDA, LAIR e Lucro Líquido.
+  //     Aplicado APÓS a folha (compõe multiplicativamente se ambas alavancas estiverem ativas).
+  if (p.prolaboreDeltaPct !== 0) {
+    const f = 1 + p.prolaboreDeltaPct / 100;
+    s.costs = s.costs.map((c) =>
+      isProlaboreLine(c) ? { ...c, values: c.values.map((v) => v * f) } : c,
+    );
+  }
+
+  // 4c) Distribuição de Lucros — NÃO afeta DRE (é destinação do lucro líquido).
+  //     Afeta CAIXA via cashflow.dividendos e o estado de distribuicaoRealizada
+  //     (mantém consistência com ProlaboreTab/SociosCard).
+  if (p.distribuicaoDeltaPct !== 0) {
+    const f = 1 + p.distribuicaoDeltaPct / 100;
+    s.cashflow.dividendos = s.cashflow.dividendos.map((v) => Math.max(0, v * f));
+    if (s.distribuicaoRealizada) {
+      s.distribuicaoRealizada = {
+        ...s.distribuicaoRealizada,
+        values: s.distribuicaoRealizada.values.map((v) => Math.max(0, v * f)) as typeof s.distribuicaoRealizada.values,
+      };
+    }
+  }
+
+
 
   // 5) Ajuste de fixos (top-N) — primitiva scaleCostLines (já cobre fixo + despesa_administrativa).
   if (p.fixedCutPct !== 0) {
@@ -446,6 +489,9 @@ export function countActiveLevers(p: SimulatorParams): number {
   if (p.priceElasticity > 0 && p.priceDeltaPct !== 0) n++;
   if (p.cpvDeltaPct !== 0) n++;
   if (p.payrollDeltaPct !== 0) n++;
+  if (p.prolaboreDeltaPct !== 0) n++;
+  if (p.distribuicaoDeltaPct !== 0) n++;
+
   if (p.fixedCutPct !== 0) n++;
 
   
