@@ -355,14 +355,14 @@ export function SimulatorTab({
           </Accordion>
         </div>
 
-        {/* DRE */}
-        <div className="lg:sticky lg:top-[72px] lg:h-fit">
+        {/* DRE + Kanitz (coluna direita) */}
+        <div className="lg:sticky lg:top-[72px] lg:h-fit space-y-4">
           <DREPanel base={baseView} sim={simView} inconsistencies={inconsistencies} />
+          {/* Termômetro de Insolvência (Kanitz) — reativo às alavancas do simulador */}
+          <KanitzCard state={simState} />
         </div>
       </div>
 
-      {/* Termômetro de Insolvência (Kanitz) — reativo às alavancas do simulador */}
-      <KanitzCard state={simState} />
 
 
 
