@@ -41,8 +41,14 @@ export const Route = createFileRoute("/api/public/hooks/reconcile-checkout-inten
       POST: async ({ request }) => {
         const apiKey = request.headers.get("apikey") ?? request.headers.get("x-api-key");
         const expected = process.env.SUPABASE_PUBLISHABLE_KEY;
-        if (expected && apiKey && apiKey !== expected) {
-          return new Response("forbidden", { status: 403 });
+        // FIX P0: lógica anterior `expected && apiKey && apiKey !== expected`
+        // permitia bypass quando o header não vinha. Agora: se há `expected`
+        // configurado, o header é obrigatório e comparado em constant-time.
+        if (expected) {
+          const { timingSafeEqual } = await import("@/lib/timingSafe");
+          if (!apiKey || !timingSafeEqual(apiKey, expected)) {
+            return new Response("forbidden", { status: 403 });
+          }
         }
 
         const sb = createClient(

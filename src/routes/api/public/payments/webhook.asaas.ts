@@ -22,7 +22,10 @@ export const Route = createFileRoute("/api/public/payments/webhook/asaas")({
           const cfg = (await loadProviderConfig("asaas")) ?? undefined;
           const provider = new AsaasProvider(cfg);
           const event = await provider.verifyWebhook(request, rawBody);
-          await handleNormalizedEvent("asaas", event);
+          // FIX P0 — extrai event.id do payload para replay protection.
+          let providerEventId: string | null = null;
+          try { providerEventId = (JSON.parse(rawBody)?.id ?? null) as string | null; } catch { /* noop */ }
+          await handleNormalizedEvent("asaas", event, providerEventId);
           return Response.json({ received: true });
         } catch (e) {
           const msg = e instanceof Error ? e.message : "erro";

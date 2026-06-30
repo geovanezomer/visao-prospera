@@ -144,6 +144,7 @@ async function insertEvent(
   error: string | null,
   attempts: number,
   nextAttemptAt: string | null,
+  providerEventId: string | null,
 ): Promise<string | null> {
   try {
     const historyEntry = {
@@ -156,6 +157,7 @@ async function insertEvent(
       .from("webhook_events")
       .insert({
         provider,
+        provider_event_id: providerEventId,
         event_type: eventType(event),
         subscription_id: eventSubscriptionId(event),
         customer_email: eventEmail(event),
@@ -174,6 +176,29 @@ async function insertEvent(
     console.error("[webhook] insertEvent falhou:", e);
     return null;
   }
+}
+
+/**
+ * FIX P0 — Replay protection.
+ * Verifica se um evento (provider, provider_event_id) já foi processado/replayed
+ * antes. Devolve `true` quando o caller deve pular (idempotência garantida pelo
+ * UNIQUE INDEX `webhook_events_provider_event_unique`).
+ */
+async function isDuplicateEvent(
+  admin: AdminClient,
+  provider: ProviderName | "admin",
+  providerEventId: string | null,
+): Promise<boolean> {
+  if (!providerEventId) return false;
+  const { data } = await admin
+    .from("webhook_events")
+    .select("id,status")
+    .eq("provider", provider)
+    .eq("provider_event_id", providerEventId)
+    .in("status", ["processed", "replayed"])
+    .limit(1)
+    .maybeSingle();
+  return !!data;
 }
 
 /**
@@ -327,23 +352,32 @@ async function runEventLogic(
 export async function handleNormalizedEvent(
   provider: ProviderName,
   event: NormalizedEvent,
+  providerEventId: string | null = null,
 ): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+  // FIX P0 — Replay protection: se o mesmo (provider, provider_event_id)
+  // já foi processado, ignora. Defesa em profundidade complementar ao
+  // UNIQUE INDEX (que protege contra race conditions concorrentes).
+  if (await isDuplicateEvent(supabaseAdmin, provider, providerEventId)) {
+    console.log(`[webhook] evento ${provider}/${providerEventId} já processado — replay ignorado`);
+    return;
+  }
+
   if (event.type === "ignored") {
-    await insertEvent(supabaseAdmin, provider, event, "skipped", event.reason, 0, null);
+    await insertEvent(supabaseAdmin, provider, event, "skipped", event.reason, 0, null, providerEventId);
     return;
   }
 
   try {
     await runEventLogic(supabaseAdmin, provider, event);
-    await insertEvent(supabaseAdmin, provider, event, "processed", null, 1, null);
+    await insertEvent(supabaseAdmin, provider, event, "processed", null, 1, null, providerEventId);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "erro";
     const delay = nextDelaySeconds(1);
     const next = delay ? new Date(Date.now() + delay * 1000).toISOString() : null;
     const status = delay ? "pending_retry" : "failed";
-    await insertEvent(supabaseAdmin, provider, event, status, msg, 1, next);
+    await insertEvent(supabaseAdmin, provider, event, status, msg, 1, next, providerEventId);
     if (!delay) {
       try {
         const { notifyAdmin } = await import("@/lib/admin/notify.server");
