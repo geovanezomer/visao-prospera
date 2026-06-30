@@ -536,7 +536,7 @@ const SliderRow = memo(function SliderRow({
       </div>
     </div>
   );
-}
+});
 
 function NumInput({
   label,
@@ -920,7 +920,7 @@ function pctDelta(a: number, b: number): number {
 // + NCG e Gap de Capital de Giro (Indicadores). Reagem instantaneamente
 // às alavancas — mesma dinâmica dos KPIs comparativos já presentes no painel DRE.
 
-function KpiCardsRow({ base, sim }: { base: SimDREView; sim: SimDREView }) {
+const KpiCardsRow = memo(function KpiCardsRow({ base, sim }: { base: SimDREView; sim: SimDREView }) {
   const items: {
     label: string;
     baseV: number;
