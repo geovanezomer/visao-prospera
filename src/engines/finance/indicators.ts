@@ -323,12 +323,24 @@ export function calcIndicators(
   const ncg = crEstimado + estoqueMedio - fornecEstimado;
 
   // SSOT: caixa disponível imediato = `disponibilidades` (Caixa+Bancos do BP).
-  // O campo legado `capitalGiroDisponivel` foi descontinuado na UI; usamos
-  // como fallback apenas para estados antigos sem `disponibilidades`.
+  // Mantido para outros indicadores; gap usa CDG (working capital estrutural).
   const caixaImediato = capital.disponibilidades > 0
     ? capital.disponibilidades
     : (capital.capitalGiroDisponivel ?? 0);
-  const gapCapitalGiro = ncg - caixaImediato;
+  // Gap de Capital de Giro = NCG − CDG (Fleuriet/Modelo Dinâmico).
+  // CDG (Capital de Giro) = AC − PC = recursos de longo prazo aplicados no giro.
+  // Quando NCG > CDG, falta financiamento permanente para o ciclo operacional
+  // (Saldo de Tesouraria negativo = gap > 0).
+  const acParaCdg =
+    capital.ativoCirculante > 0
+      ? capital.ativoCirculante
+      : capital.disponibilidades + crEstimado + estoqueMedio;
+  const pcParaCdg =
+    capital.passivoCirculante > 0
+      ? capital.passivoCirculante
+      : fornecEstimado;
+  const cdg = acParaCdg - pcParaCdg;
+  const gapCapitalGiro = ncg - cdg;
 
   // ---- Liquidez ----
   const ativoCirculante =
