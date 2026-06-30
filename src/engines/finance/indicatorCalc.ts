@@ -66,6 +66,7 @@ export interface IndicatorCalcs {
   fcf: string;
   cagrReceitas12m: string;
   gao: string;
+  gaf: string;
   qualidadeLucro: string;
   conversaoEbitdaCaixa: string;
   cicloFinanceiro: string;
