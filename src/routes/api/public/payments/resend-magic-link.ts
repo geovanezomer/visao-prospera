@@ -69,7 +69,8 @@ export const Route = createFileRoute("/api/public/payments/resend-magic-link")({
         const fromEmail = cfg?.from_email || process.env.MAGICLINK_FROM;
         const fromName = cfg?.from_name || "Finnance";
         if (!apiKey || !fromEmail) {
-          console.log("[resend-magic] link gerado sem envio (config faltando):", intent.email);
+          // F-06: nunca logar action_link (token de auth). Mascarar email.
+          console.log("[resend-magic] sem envio (config faltando) para:", String(intent.email).replace(/(.{2}).+(@.+)/, "$1***$2"));
           return Response.json({ ok: true, sent: false });
         }
         const name = (intent.email as string).split("@")[0];

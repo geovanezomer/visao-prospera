@@ -110,7 +110,8 @@ async function sendMagicLink(admin: AdminClient, email: string, plan?: string): 
 
   const cfg = await getEmailConfig(admin);
   if (!cfg) {
-    console.log("[webhook] magic link gerado (sem envio):", email, actionLink);
+    // Etapa 1 P1 / F-06: nunca logar o action_link (contém token de auth).
+    console.log("[webhook] magic link gerado (sem envio) para:", email.replace(/(.{2}).+(@.+)/, "$1***$2"));
     return;
   }
   const tpl = await getTemplate(admin, "magic_link");

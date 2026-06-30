@@ -217,7 +217,10 @@ export class StripeProvider implements PaymentProvider {
     const expected = Array.from(new Uint8Array(sig))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
-    if (!v1.includes(expected)) throw new Error("Stripe webhook: assinatura inválida.");
+    // F-05: comparação constant-time (evita timing attack via Array.includes).
+    const { timingSafeEqual } = await import("@/lib/timingSafe");
+    const match = v1.some((cand) => timingSafeEqual(cand, expected));
+    if (!match) throw new Error("Stripe webhook: assinatura inválida.");
 
     const event = JSON.parse(rawBody) as import("./_remote-types").StripeWebhookEvent;
     return this.parseEvent(event);
