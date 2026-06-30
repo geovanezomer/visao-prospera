@@ -31,7 +31,7 @@ import { fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
 import { StatCard, renderHint } from "@/components/sim/shared/primitives";
 import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 
-import { IndicatorsCharts } from "./IndicatorsCharts";
+
 import { DashboardExtras } from "./DashboardExtras";
 import { WaccRoicMeter } from "@/components/sim/capital/WaccRoicMeter";
 import { KanitzCard } from "@/components/sim/shared/KanitzCard";
