@@ -509,7 +509,7 @@ export function DRETab() {
           </div>
         </div>
         <div className="scrollbar-none w-full overflow-x-auto overflow-y-hidden touch-pan-x">
-          <table className="w-full min-w-[600px] md:min-w-full text-[clamp(0.65rem,1vw+0.3rem,0.875rem)] table-fixed md:table-auto">
+          <table id="dre-tabela" aria-label="Demonstração do Resultado do Exercício" className="w-full min-w-[600px] md:min-w-full text-[clamp(0.65rem,1vw+0.3rem,0.875rem)] table-fixed md:table-auto">
             <colgroup>
               <col className="w-[120px] sm:w-auto" />
               {showPeriods &&
@@ -522,20 +522,21 @@ export function DRETab() {
 
             <thead>
               <tr className="bg-card text-[10px] uppercase tracking-wider text-muted-foreground">
-                <th className="sticky left-0 z-20 bg-card px-4 py-2 text-left shadow-[1px_0_0_0_var(--border)]">
+                <th scope="col" className="sticky left-0 z-20 bg-card px-4 py-2 text-left shadow-[1px_0_0_0_var(--border)]">
                   Descrição
                 </th>
                 {showPeriods &&
                   periodLabels.map((m, i) => (
                     <th
+                      scope="col"
                       key={m}
                       className={`px-2 py-2 text-right ${periodCritical(i) ? "text-destructive" : ""}`}
                     >
                       {m}
                     </th>
                   ))}
-                <th className="px-4 py-2 text-right">Anual</th>
-                <th className="px-3 py-2 text-right">% Rec</th>
+                <th scope="col" className="px-4 py-2 text-right">Anual</th>
+                <th scope="col" className="px-3 py-2 text-right">% Rec</th>
               </tr>
             </thead>
 
