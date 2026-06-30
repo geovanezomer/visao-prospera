@@ -238,8 +238,12 @@ function SimulaPro() {
               <div className="flex items-center gap-2 min-w-0">
                 <SidebarTrigger className="h-9 w-9" data-meeting-hide="true" />
                 <div className="flex items-center gap-2 md:gap-4 min-w-0">
-                  <h2 className="text-sm font-medium capitalize text-muted-foreground md:text-base shrink-0">
-                    {activeTab === "ai" ? "Consultor IA" : activeTab}
+                  <h2 className="text-sm font-medium text-muted-foreground md:text-base shrink-0">
+                    {activeTab === "ai"
+                      ? "Consultor IA"
+                      : activeTab === "calculadoras"
+                      ? "Calculadoras"
+                      : (NAV_ITEMS.find((i) => i.value === activeTab)?.title ?? activeTab)}
                   </h2>
                   {/* Breadcrumb: empresa + status de backup na nuvem. */}
                   <div
