@@ -103,6 +103,9 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             formula="NOPAT − (WACC × Capital Investido)"
             calc={evaCalc}
           />
+        </Group>
+
+
 
 
         {/* ───── Análise de Ponto de Equilíbrio ───── */}
