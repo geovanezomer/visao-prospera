@@ -12,24 +12,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { User } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { ADMIN_EMAIL, isAdminEmail } from "./constants";
-import type { AuthClaims } from "./_types";
+import { assertAdmin } from "./assertAdmin";
 
 /**
  * `banned_until` é um campo admin-only do Supabase Auth e não vem
  * declarado no tipo `User` público. Tipamos localmente para não usar `any`.
  */
 type AdminUser = User & { banned_until?: string | null };
-
-// ----------------------------------------------------------------------------
-// Helper — checagem de admin (server-side, autoritativa).
-// ----------------------------------------------------------------------------
-function assertAdmin(claims: AuthClaims | undefined | null): void {
-  const email = (claims?.email as string | undefined) ?? "";
-  if (!isAdminEmail(email)) {
-    throw new Error("Acesso negado: apenas administrador.");
-  }
-}
 
 // ----------------------------------------------------------------------------
 // listAdminUsers — devolve a página com usuários + assinatura + ban status.
