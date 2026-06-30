@@ -114,8 +114,136 @@ export function KanitzCard({ compact = false }: { compact?: boolean }) {
         empresas brasileiras. Excelente alerta precoce de descontinuidade —
         deve ser lido junto com DSCR, geração de caixa e covenants.
       </p>
+
+      {/* ── Termômetro de Crise — estágio operacional + rota recomendada ── */}
+      <CrisisStagePanel crisis={crisis} compact={compact} />
     </div>
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Painel de Estágio de Crise (Lei 11.101/2005 — Lei 14.112/2020)
+// ─────────────────────────────────────────────────────────────────────
+function CrisisStagePanel({
+  crisis,
+  compact,
+}: {
+  crisis: ReturnType<typeof assessCrisisStage>;
+  compact: boolean;
+}) {
+  const palette = toneToPalette(crisis.tone);
+  const Icon = stageIcon(crisis.stage);
+
+  return (
+    <div
+      className="mt-4 rounded-lg border p-4"
+      style={{ borderColor: palette.border, background: palette.bg }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Icon className="h-5 w-5" style={{ color: palette.fg }} aria-hidden />
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: palette.fg }}>
+              Estágio {crisis.stage} de 4 · Termômetro de Crise
+            </div>
+            <div className="mt-0.5 text-sm font-semibold" style={{ color: palette.fg }}>
+              {crisis.label}
+            </div>
+          </div>
+        </div>
+        <HelpTip
+          text={
+            "Classificação operacional do estágio de crise — complementar ao Kanitz. " +
+            "Combina margens, FCO, liquidez, alavancagem e PL para indicar a ROTA recomendada: " +
+            "ajuste gerencial → renegociação extrajudicial → recuperação extrajudicial → RJ. " +
+            "Base: Lei 11.101/2005, atualizada pela Lei 14.112/2020."
+          }
+        />
+      </div>
+
+      <p className="mt-2 text-[12px] leading-relaxed text-foreground/90">
+        {crisis.description}
+      </p>
+
+      {/* Régua dos 4 estágios */}
+      <div className="mt-3 grid grid-cols-5 gap-1">
+        {(["0", "1", "2", "3", "4"] as const).map((s) => {
+          const n = Number(s) as 0 | 1 | 2 | 3 | 4;
+          const active = n === crisis.stage;
+          const passed = n < crisis.stage;
+          return (
+            <div
+              key={s}
+              className="h-1.5 rounded-full"
+              style={{
+                background: active
+                  ? palette.fg
+                  : passed
+                    ? "var(--muted-foreground)"
+                    : "var(--muted)",
+                opacity: active ? 1 : passed ? 0.55 : 0.35,
+              }}
+              title={`Estágio ${s}`}
+            />
+          );
+        })}
+      </div>
+
+      {!compact && (
+        <>
+          <div className="mt-3 rounded-md bg-background/60 p-2.5">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Recomendação
+            </div>
+            <div className="mt-0.5 text-[12px] leading-relaxed text-foreground">
+              {crisis.recommendation}
+            </div>
+            <div className="mt-1.5 text-[10px] italic text-muted-foreground">
+              {crisis.legalBasis}
+            </div>
+          </div>
+
+          {crisis.triggers.length > 0 && (
+            <div className="mt-2">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Gatilhos detectados
+              </div>
+              <ul className="mt-1 space-y-0.5">
+                {crisis.triggers.map((t, i) => (
+                  <li key={i} className="text-[11px] text-foreground/85">
+                    • {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function toneToPalette(tone: CrisisTone) {
+  switch (tone) {
+    case "pos":
+      return { fg: "var(--success)", border: "color-mix(in srgb, var(--success) 35%, transparent)", bg: "color-mix(in srgb, var(--success) 8%, transparent)" };
+    case "warn":
+      return { fg: "#F5B85B", border: "color-mix(in srgb, #F5B85B 40%, transparent)", bg: "color-mix(in srgb, #F5B85B 10%, transparent)" };
+    case "neg":
+      return { fg: "var(--destructive)", border: "color-mix(in srgb, var(--destructive) 40%, transparent)", bg: "color-mix(in srgb, var(--destructive) 8%, transparent)" };
+    case "crit":
+      return { fg: "var(--destructive)", border: "var(--destructive)", bg: "color-mix(in srgb, var(--destructive) 16%, transparent)" };
+    default:
+      return { fg: "var(--muted-foreground)", border: "var(--border)", bg: "transparent" };
+  }
+}
+
+function stageIcon(stage: 0 | 1 | 2 | 3 | 4) {
+  if (stage === 0) return CheckCircle2;
+  if (stage === 1) return TrendingDown;
+  if (stage === 2) return AlertTriangle;
+  if (stage === 3) return ShieldAlert;
+  return Skull;
 }
 
 function KanitzCell({
