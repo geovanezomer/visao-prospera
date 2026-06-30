@@ -192,6 +192,8 @@ export interface Indicators {
   proprioPercent: number;
   /** D/PL BRUTO (Dívida Onerosa ÷ PL) — múltiplo, não a métrica líquida `dividaLiqPl`. */
   dividaPlBruto: number;
+  /** FCO (Fluxo de Caixa Operacional) anualizado — mesmo total do FluxoCaixaTab. */
+  fcoAnual: number;
 }
 
 // ─── Thresholds publicados (SSOT) ───────────────────────────────────
@@ -593,5 +595,6 @@ export function calcIndicators(
     proprioPercent: V > 0 ? (PL / V) * 100 : Math.max(0, Math.min(100, capital.proprio)),
     eva: safeNumber(((roic - safeNumber(wacc)) / 100) * capitalInvestido),
     dividaPlBruto: PL > 0 ? D / PL : 0,
+    fcoAnual: safeNumber(fcoAnual),
   };
 }
