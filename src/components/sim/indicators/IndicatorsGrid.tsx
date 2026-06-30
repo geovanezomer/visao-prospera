@@ -450,6 +450,7 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             desc="Quanto a empresa paga de impostos TOTAIS para cada R$ 1,00 de lucro líquido gerado. Acima de 100% indica que o fisco leva mais do que sobra para os sócios — sinal de regime tributário ineficiente."
             formula="(Impostos s/ Vendas + IRPJ/CSLL) ÷ Lucro Líquido × 100"
             calc={c.impostosSobreLucro}
+          />
           <Ind
             label="Carga Tributária Efetiva"
             v={receitaBrutaAnual > 0 ? fmtPct(cargaTribEfetiva / 100) : "—"}
