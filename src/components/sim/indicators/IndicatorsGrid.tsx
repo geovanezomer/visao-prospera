@@ -105,13 +105,6 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             calc={c.margemEbitda}
           />
           <Ind
-            label="Margem EBIT"
-            v={fmtPct(ind.margemEbit / 100)}
-            desc="Lucro operacional (após depreciação, antes de juros e impostos) sobre receita. Mede a rentabilidade da operação considerando o desgaste dos ativos."
-            formula="EBIT ÷ Receita Líquida × 100"
-            calc={c.margemEbit}
-          />
-          <Ind
             label="Margem Líquida"
             v={fmtPct(ind.margemLiquida / 100)}
             desc="O lucro que efetivamente sobra para os sócios, após tudo pago (custos, despesas, juros e impostos)."
@@ -125,14 +118,7 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             formula="(Receita − Custos Variáveis) ÷ Receita × 100"
             calc={c.margemContribuicao}
           />
-          <Ind
-            label="Qualidade do Lucro"
-            v={ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}×` : "—"}
-            tone={ind.qualidadeLucro >= 1 ? "pos" : "neg"}
-            desc="O lucro contábil está virando caixa? ≥1 saudável; <1 indica lucro 'no papel' (preso em NCG, inadimplência ou estoques)."
-            formula="Fluxo de Caixa Operacional ÷ Lucro Líquido"
-            calc={c.qualidadeLucro}
-          />
+
           <Ind
             label="EVA (Lucro Econômico)"
             v={fmtBRL(eva)}
@@ -509,6 +495,16 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             formula="Lucro Líquido + Depreciação/Amortização ± Δ NCG"
             calc={fcoCalc}
           />
+          <Ind
+
+            label="Qualidade do Lucro"
+            v={ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}×` : "—"}
+            tone={ind.qualidadeLucro >= 1 ? "pos" : "neg"}
+            desc="O lucro contábil está virando caixa? ≥1 saudável; <1 indica lucro 'no papel' (preso em NCG, inadimplência ou estoques)."
+            formula="Fluxo de Caixa Operacional ÷ Lucro Líquido"
+            calc={c.qualidadeLucro}
+          />
+
           <Ind
             label="Margem de Caixa Operacional"
             v={receitaLiquidaAnual > 0 ? fmtPct(margemCaixaOp / 100) : "—"}
