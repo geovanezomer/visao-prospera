@@ -465,14 +465,11 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             formula="Patrimônio Líquido ÷ Lucro Líquido Anual"
             calc={c.amortizacaoPlPorLucro}
           />
-          <Ind
-            label="WACC"
-            v={fmtPct(ind.wacc / 100)}
-            desc="Custo Médio Ponderado de Capital. É o retorno mínimo que a empresa precisa entregar para remunerar sócios e credores. Funciona como 'meta' do ROIC."
-            formula="(E/V × Ke) + (D/V × Kd × (1 − IR))"
-            calc={c.wacc}
-          />
         </Group>
+      </div>
+    </div>
+  );
+}
       </div>
     </div>
   );
