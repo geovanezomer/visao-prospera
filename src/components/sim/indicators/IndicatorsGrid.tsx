@@ -494,7 +494,9 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             desc="Fluxo de Caixa Operacional pelo método indireto (CPC 03 / IAS 7): parte do Lucro Líquido, soma itens não-caixa (D&A) e ajusta pela variação de NCG. É a base de tudo — mostra quanto caixa a operação de fato gera."
             formula="Lucro Líquido + Depreciação/Amortização ± Δ NCG"
             calc={fcoCalc}
+          />
           <Ind
+
             label="Qualidade do Lucro"
             v={ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}×` : "—"}
             tone={ind.qualidadeLucro >= 1 ? "pos" : "neg"}
