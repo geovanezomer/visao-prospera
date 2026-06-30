@@ -66,6 +66,7 @@ export interface IndicatorCalcs {
   fcf: string;
   cagrReceitas12m: string;
   gao: string;
+  gaf: string;
   qualidadeLucro: string;
   conversaoEbitdaCaixa: string;
   cicloFinanceiro: string;
@@ -266,6 +267,10 @@ export function buildIndicatorCalcs(
   const gaoStr = Math.abs(EBIT) > 1
     ? line(`${fmtBRL(RL - cv)} ÷ ${fmtBRL(EBIT)}`, `${fmtRatio(ind.gao)}×`)
     : NA;
+  const LAIR = EBIT - juros;
+  const gafStr = Math.abs(EBIT) > 1 && LAIR > 1
+    ? line(`${fmtBRL(EBIT)} ÷ ${fmtBRL(LAIR)}`, `${fmtRatio(ind.gaf)}×`)
+    : NA;
   const qualidadeLucro = Math.abs(LL) > 1
     ? line(`FCO ÷ ${fmtBRL(LL)}`, `${fmtRatio(ind.qualidadeLucro)}×`)
     : NA;
@@ -373,6 +378,7 @@ export function buildIndicatorCalcs(
     fcf: fcfStr,
     cagrReceitas12m: cagrStr,
     gao: gaoStr,
+    gaf: gafStr,
     qualidadeLucro,
     conversaoEbitdaCaixa,
     cicloFinanceiro: cicloFinanceiroStr,

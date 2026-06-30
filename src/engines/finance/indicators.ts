@@ -111,6 +111,14 @@ export interface Indicators {
   conversaoEbitdaCaixa: number;
   /** Margem de Contribuição (R$) ÷ EBIT — elasticidade do lucro à receita. */
   gao: number;
+  /**
+   * Grau de Alavancagem Financeira (GAF) = EBIT ÷ LAIR.
+   * Mede o efeito da dívida sobre o lucro líquido: para cada 1% de variação
+   * no EBIT, o LAIR (e o LL, mantida a alíquota) varia GAF%. GAF=1 → sem
+   * alavancagem; >1 → dívida amplifica o resultado; <0 ou indefinido quando
+   * juros ≥ EBIT (LAIR ≤ 0). Cap em ±99 para evitar explosões numéricas.
+   */
+  gaf: number;
   /** FCO ÷ Lucro Líquido — quanto do lucro contábil virou caixa operacional (CPC 03/IAS 7). */
   qualidadeLucro: number;
   /** Receita Líquida Anual ÷ nº de colaboradores. */
@@ -458,6 +466,12 @@ export function calcIndicators(
 
   const mcReais = receitaLiqAnual - custosVarAnual;
   const gao = Math.abs(ebitAnual) > 1 ? Math.max(-99, Math.min(99, mcReais / ebitAnual)) : 0;
+  // GAF = EBIT / LAIR. Sem juros (lairAnual ≈ ebitAnual) → GAF = 1 (sem alavancagem).
+  // Quando juros ≥ EBIT (LAIR ≤ 0), o múltiplo perde sentido econômico → 0 (UI mostra "—").
+  const gaf =
+    Math.abs(ebitAnual) > 1 && lairAnual > 1
+      ? Math.max(-99, Math.min(99, ebitAnual / lairAnual))
+      : 0;
   // Qualidade do Lucro = FCO / Lucro Líquido (CPC 03/IAS 7).
   // Usa o MESMO FCO do FluxoCaixaTab (buildCashFlow.fluxoOperacional),
   // não o FCFF estimado — caixa operacional realizado vs. lucro contábil.
@@ -540,6 +554,7 @@ export function calcIndicators(
     fcfAposCapex: safeNumber(fcfAposCapex),
     conversaoEbitdaCaixa: ebitdaAnual > 0 ? safePct(fcf, ebitdaAnual) : 0,
     gao,
+    gaf,
     qualidadeLucro,
     receitaPorColaborador,
     faturamentoPorColaborador,

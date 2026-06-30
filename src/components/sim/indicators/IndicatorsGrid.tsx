@@ -297,6 +297,14 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           calc={c.gao}
         />
         <Ind
+          label="GAF"
+          v={ind.gaf !== 0 ? `${ind.gaf.toFixed(2)}×` : "—"}
+          tone={ind.gaf > 2 ? "warn" : ind.gaf > 0 ? "pos" : undefined}
+          desc="Grau de Alavancagem Financeira. Mede o efeito da dívida sobre o lucro líquido: se o EBIT variar 1%, o lucro varia GAF%. GAF=1 → sem alavancagem; >1 → dívida amplifica o resultado (bom em alta, perigoso em queda); indefinido quando os juros consomem todo o EBIT (LAIR ≤ 0)."
+          formula="EBIT ÷ LAIR  (LAIR = EBIT − Despesas Financeiras)"
+          calc={c.gaf}
+        />
+        <Ind
           label="Qualidade do Lucro"
           v={ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}×` : "—"}
           tone={ind.qualidadeLucro >= 1 ? "pos" : "neg"}
