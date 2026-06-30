@@ -136,25 +136,7 @@ export function DashboardTab() {
     [dre],
   );
 
-  // Estrutura de capital (PL vs Dívida onerosa)
-  const capitalPie = useMemo(() => {
-    const pl = Math.max(0, ind.capitalInvestido - ind.dividaOnerosa);
-    return [
-      { name: "Patrimônio Líquido", value: pl },
-      { name: "Dívida Onerosa", value: ind.dividaOnerosa },
-    ].filter((d) => d.value > 0);
-  }, [ind]);
 
-  // Composição de despesas
-  const despesasPie = useMemo(
-    () =>
-      Object.entries(dre.despesasPorCategoria)
-        .map(([k, v]) => ({ name: k, value: sum(v) }))
-        .filter((x) => x.value > 0)
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 6),
-    [dre],
-  );
 
   // Lucro acumulado (área)
   const acumulado = useMemo(() => {
