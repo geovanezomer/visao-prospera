@@ -127,7 +127,15 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       emprestimosCaptados: base.cashflow.emprestimosCaptados.slice(),
       amortizacoes: base.cashflow.amortizacoes.slice(),
       capex: base.cashflow.capex.slice(),
+      dividendos: base.cashflow.dividendos.slice(),
     },
+    distribuicaoRealizada: base.distribuicaoRealizada
+      ? {
+          ...base.distribuicaoRealizada,
+          values: base.distribuicaoRealizada.values.slice() as typeof base.distribuicaoRealizada.values,
+        }
+      : base.distribuicaoRealizada,
+
     tax: { ...base.tax },
   };
 
