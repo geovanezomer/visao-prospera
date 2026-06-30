@@ -280,8 +280,11 @@ export function buildIndicatorCalcs(
     `Contas a Receber + Estoques − Fornecedores`,
     fmtBRL(ind.ncg),
   );
+  const acGap = capital.ativoCirculante > 0 ? capital.ativoCirculante : disp;
+  const pcGap = capital.passivoCirculante > 0 ? capital.passivoCirculante : 0;
+  const cdgVal = acGap - pcGap;
   const gapCgStr = line(
-    `${fmtBRL(ind.ncg)} − ${fmtBRL(disp)}`,
+    `NCG − CDG = ${fmtBRL(ind.ncg)} − (${fmtBRL(acGap)} − ${fmtBRL(pcGap)}) = ${fmtBRL(ind.ncg)} − ${fmtBRL(cdgVal)}`,
     fmtBRL(ind.gapCapitalGiro),
   );
 
