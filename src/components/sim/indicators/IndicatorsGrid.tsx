@@ -250,13 +250,17 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             calc={c.endividamentoGeral}
           />
           <Ind
-            label="Endividamento Geral (PC+PNC)"
-            v={ativoTot > 0 ? fmtPct(endivPcPnc / 100) : "—"}
-            tone={ativoTot > 0 ? (endivPcPnc <= 60 ? "pos" : "neg") : undefined}
-            desc="Variação contábil clássica do endividamento: soma DIRETA das obrigações com terceiros (Passivo Circulante + Passivo Não Circulante) dividida pelo Ativo Total. Igual ao Endividamento Geral acima quando o balanço está fechado; útil para conferência por linha do BP."
-            formula="(Passivo Circulante + Passivo Não Circulante) ÷ Ativo Total × 100"
-            calc={endivPcPncCalc}
+            label="Amortização do PL pelo Lucro"
+            v={
+              Number.isFinite(ind.amortizacaoPlPorLucro)
+                ? `${ind.amortizacaoPlPorLucro.toFixed(1)} anos`
+                : "—"
+            }
+            desc="Tempo (anos) para o lucro contábil acumulado igualar o Patrimônio Líquido. NÃO confundir com o Payback clássico — este indicador mede a velocidade de remuneração do capital próprio pelo lucro contábil."
+            formula="Patrimônio Líquido ÷ Lucro Líquido Anual"
+            calc={c.amortizacaoPlPorLucro}
           />
+
           <Ind
             label="Capital Próprio"
             v={`${ind.proprioPercent.toFixed(1)}%`}
