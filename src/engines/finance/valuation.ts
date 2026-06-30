@@ -598,14 +598,14 @@ export function runValuationSelfTests(): { results: ValuationTestCase[]; allPass
     const fcl = 600_000,
       g = 0.02,
       wacc = 0.12;
-    const vt = fcl / (wacc - g);
-    add("Valor terminal Gordon (FCL=600k, g=2%, WACC=12%)", "FCL/(WACC−g)", 6_000_000, vt);
+    const vt = (fcl * (1 + g)) / (wacc - g);
+    add("Valor terminal Gordon (FCL=600k, g=2%, WACC=12%)", "FCL·(1+g)/(WACC−g)", 6_120_000, vt);
   }
   {
     const fcl = 600_000,
       g = 0.15,
       wacc = 0.1;
-    const vt = wacc - g >= 0.005 ? fcl / (wacc - g) : fcl * 5;
+    const vt = wacc - g >= 0.005 ? (fcl * (1 + g)) / (wacc - g) : fcl * 5;
     add("Fallback quando g≥WACC", "FCL × 5", 3_000_000, vt);
   }
   {
