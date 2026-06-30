@@ -32,7 +32,7 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
   // ─── Análise Tributária — métricas adicionais ───
   // Carga Tributária Efetiva: total de tributos (s/ vendas + IRPJ/CSLL) ÷ Receita Bruta.
   const receitaBrutaAnual = sum(dre.receitaBruta);
-  const totalTributos = sum(dre.impostosVendas) + sum(dre.impostos);
+  const totalTributos = sum(dre.impostosTotal);
   const cargaTribEfetiva = receitaBrutaAnual > 0 ? (totalTributos / receitaBrutaAnual) * 100 : 0;
   const cargaTribEfetivaCalc =
     receitaBrutaAnual > 0
