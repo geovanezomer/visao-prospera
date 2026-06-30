@@ -12,7 +12,7 @@ import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 // `buildIndicatorCalcs` — SSOT de exibição. Qualquer ajuste em
 // label/descrição/fórmula/tone é feito SOMENTE aqui.
 export function IndicatorsGrid({ state }: { state: AppState }) {
-  const { dre, ind, cagrReceitas12m } = useFinanceModel(state);
+  const { dre, ind, cagrReceitas12m, model } = useFinanceModel(state);
 
   const ebitAnual = sum(dre.ebit);
   const ebitdaAnual = sum(dre.ebitda);
@@ -22,6 +22,19 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
 
   // Memória de cálculo — SSOT para todos os cards.
   const c = buildIndicatorCalcs(state, dre, ind, cagrReceitas12m);
+
+  // Endividamento Geral pela soma explícita PC + PNC ÷ Ativo Total
+  // (usa balanço de fechamento derivado pela engine — SSOT contábil).
+  const pcSum = sum(Object.values(model.balancoFechamento.balanco.passivoCirculante ?? {}) as number[]);
+  const pncSum = sum(Object.values(model.balancoFechamento.balanco.passivoNaoCirculante ?? {}) as number[]);
+  const ativoTot = model.balancoFechamento.totals.ativo;
+  const endivPcPnc = ativoTot > 0 ? ((pcSum + pncSum) / ativoTot) * 100 : 0;
+  const endivPcPncCalc =
+    ativoTot > 0
+      ? `(${fmtBRL(pcSum)} + ${fmtBRL(pncSum)}) ÷ ${fmtBRL(ativoTot)} × 100 = ${fmtPct(endivPcPnc / 100)}`
+      : "Ativo Total = 0 → indicador indisponível";
+
+
 
 
   return (
