@@ -39,12 +39,17 @@ export function IndicatorsTab() {
           <div className="flex items-center justify-between gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary">
             <span>Necessidade de Capital de Giro (NCG)</span>
             <HelpTip
-              text="Dinheiro consumido pela operação. Reflete a defasagem entre recebimento de clientes e pagamento de fornecedores/estoque."
-              formula="Contas a Receber + Estoques − Fornecedores"
+              text="Dinheiro consumido pela operação (defasagem entre receber dos clientes e pagar fornecedores/estoque). O Gap de Capital de Giro compara a NCG com o Capital de Giro (CDG = recursos de longo prazo aplicados no curto prazo): se o CDG cobre a NCG, sobra caixa; se não cobre, falta — e o déficit precisa ser financiado por dívida onerosa ou atraso a fornecedores."
+              formula="NCG = Contas a Receber + Estoques − Fornecedores  •  Gap = NCG − CDG"
               calc={c.ncg}
             />
           </div>
           <div className="mono mt-2 text-2xl font-bold text-foreground">{fmtBRL(ind.ncg)}</div>
+          <div className={`mt-1 text-[11px] font-medium ${ind.gapCapitalGiro > 0 ? "text-neg" : "text-pos"}`}>
+            {ind.gapCapitalGiro > 0
+              ? `Falta ${fmtBRL(ind.gapCapitalGiro)} (gap de capital)`
+              : `Sobra ${fmtBRL(Math.abs(ind.gapCapitalGiro))} (CDG cobre a NCG)`}
+          </div>
         </div>
         {(() => {
           const spread = (ind.roic - ind.wacc) / 100;
