@@ -53,6 +53,9 @@ export interface ReformaRates {
   cargaCombinadaPct?: number;
   /** Auditoria #11: true quando a carga combinada supera a carga atual (default ICMS 18%). */
   alertaTransicao?: boolean;
+  /** Auditoria A2: parcela (em %) de CBS+IBS compensável com PIS/COFINS no ano
+   *  (LC 214/2025 art. 343 — fase de teste 2026). Já é descontada de `cargaCombinadaPct`. */
+  compensavelComPisCofinsPct?: number;
 }
 
 export function getReformaRates(era: TaxEra | undefined, cfg: TaxConfig): ReformaRates {
