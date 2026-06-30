@@ -33,10 +33,11 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
     ativoTot > 0
       ? `(${fmtBRL(pcSum)} + ${fmtBRL(pncSum)}) ÷ ${fmtBRL(ativoTot)} × 100 = ${fmtPct(endivPcPnc / 100)}`
       : "Ativo Total = 0 → indicador indisponível";
-  // EVA (Economic Value Added) — lucro econômico após remunerar TODO o capital
-  // (próprio + terceiros) ao custo do WACC. EVA > 0 ⇒ criação de valor.
-  const eva = ind.nopat - (ind.wacc / 100) * ind.capitalInvestido;
-  const evaCalc = `${fmtBRL(ind.nopat)} − (${fmtPct(ind.wacc / 100)} × ${fmtBRL(ind.capitalInvestido)}) = ${fmtBRL(eva)}`;
+  // EVA (Economic Value Added) — forma equivalente via spread ROIC−WACC:
+  // EVA = (ROIC − WACC) × Capital Investido. Aproveita indicadores já calculados.
+  const spread = (ind.roic - ind.wacc) / 100;
+  const eva = spread * ind.capitalInvestido;
+  const evaCalc = `(${fmtPct(ind.roic / 100)} − ${fmtPct(ind.wacc / 100)}) × ${fmtBRL(ind.capitalInvestido)} = ${fmtBRL(eva)}`;
 
 
   return (
@@ -100,7 +101,7 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             v={fmtBRL(eva)}
             tone={eva >= 0 ? "pos" : "neg"}
             desc="Economic Value Added — lucro que sobra DEPOIS de remunerar todo o capital (próprio + terceiros) ao custo do WACC. EVA > 0 ⇒ a empresa cria valor; EVA < 0 ⇒ destrói valor mesmo com lucro contábil positivo."
-            formula="NOPAT − (WACC × Capital Investido)"
+            formula="(ROIC − WACC) × Capital Investido"
             calc={evaCalc}
           />
         </Group>
@@ -164,6 +165,13 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             desc="Retorno sobre o Capital Investido na operação. Se ROIC > WACC, a empresa CRIA valor; se ROIC < WACC, DESTRÓI valor."
             formula="NOPAT ÷ Capital Investido × 100  (NOPAT = EBIT × (1 − IR))"
             calc={c.roic}
+          />
+          <Ind
+            label="WACC"
+            v={fmtPct(ind.wacc / 100)}
+            desc="Custo Médio Ponderado de Capital. É o retorno mínimo que a empresa precisa entregar para remunerar sócios e credores. Funciona como 'meta' do ROIC."
+            formula="(E/V × Ke) + (D/V × Kd × (1 − IR))"
+            calc={c.wacc}
           />
         </Group>
 
@@ -456,13 +464,6 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             desc="Tempo (anos) para o lucro contábil acumulado igualar o Patrimônio Líquido. NÃO confundir com o Payback clássico — este indicador mede a velocidade de remuneração do capital próprio pelo lucro contábil."
             formula="Patrimônio Líquido ÷ Lucro Líquido Anual"
             calc={c.amortizacaoPlPorLucro}
-          />
-          <Ind
-            label="WACC"
-            v={fmtPct(ind.wacc / 100)}
-            desc="Custo Médio Ponderado de Capital. É o retorno mínimo que a empresa precisa entregar para remunerar sócios e credores. Funciona como 'meta' do ROIC."
-            formula="(E/V × Ke) + (D/V × Kd × (1 − IR))"
-            calc={c.wacc}
           />
         </Group>
       </div>
