@@ -5,6 +5,7 @@ import { effectiveMonthValues, isCpvCost } from "./costs";
 import { resolveEffectiveRegime } from "./regime";
 import { sum } from "./format";
 import { vplClassico } from "./external";
+import { computeCapexMensal } from "./shared";
 
 export interface ForecastMonth {
   idx: number; // 0..N-1
@@ -161,7 +162,9 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   const meses: ForecastMonth[] = [];
   let saldo = capital.disponibilidades - cfg.capexInicial;
   let ncgAnterior = ncg0;
-  const capexBase = state.cashflow.capex.slice();
+  // Auditoria F-03: CapEx vem do card "Investimentos em equipamentos e ativo"
+  // (SSOT — capital.capexAtivacao) e NÃO de uma linha avulsa em cashflow.
+  const capexBase = computeCapexMensal(state);
 
   for (let i = 0; i < horizon; i++) {
     const ano = Math.floor(i / 12) + 1;
