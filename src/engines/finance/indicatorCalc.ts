@@ -355,7 +355,7 @@ export function buildIndicatorCalcs(
   return {
     margemBruta,
     margemEbitda,
-    margemEbit,
+    eva: evaStr,
     margemLiquida,
     margemContribuicao,
     pontoEquilibrioOperacional: peOp,
