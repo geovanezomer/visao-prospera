@@ -1,7 +1,7 @@
 // =====================================================================
 // SSOT — rótulo/valor/tone para indicadores de alavancagem (DL/EBITDA,
 // DL/EBIT, DL/PL). Centraliza tratamento de:
-//   - cash-rich (Dívida Líquida < 0) → "Posição Líquida de Caixa" + tone "pos".
+//   - cash-rich (Dívida Líquida < 0) → mantém o indicador original e exibe múltiplo de caixa líquido.
 //   - prejuízo / base ≤ 0 → ratio indefinido, exibe "—".
 //   - thresholds clássicos por métrica.
 // Usado por IndicatorsCard e IndicatorsTab para evitar divergências.
@@ -10,7 +10,7 @@
 export type LeverageMetric = "ebitda" | "ebit" | "pl";
 
 export interface LeverageDisplay {
-  /** Rótulo do card — substituído por "Posição Líquida de Caixa" quando cash-rich. */
+  /** Rótulo do card. */
   label: string;
   /** Valor formatado pronto para render. */
   value: string;
@@ -50,30 +50,23 @@ export function leverageDisplay(
   dividaLiquida: number,
   base: number,
 ): LeverageDisplay {
-  // Cash-rich domina: sobreposição independe da base ser positiva ou não.
-  // Removemos o múltiplo entre parênteses porque ele representa |DL|/base
-  // (EBITDA/EBIT/PL), e não Caixa/Dívida — gerava confusão de leitura.
+  // Cash-rich não deve esconder o indicador. Mantém "Dívida Líq. / EBITDA",
+  // "Dívida Líq. / EBIT" e "Dívida Líq. / PL" para evitar aparência de cards duplicados.
   if (dividaLiquida < 0) {
     const baseNome =
       metric === "ebitda" ? "EBITDA" : metric === "ebit" ? "EBIT" : "Patrimônio Líquido";
-    const labelCurta =
-      metric === "ebitda"
-        ? "Caixa Líq. / EBITDA"
-        : metric === "ebit"
-          ? "Caixa Líq. / EBIT"
-          : "Caixa Líq. / PL";
+    const caixaLiquidoMultiplo = base > 0 ? Math.abs(dividaLiquida / base) : null;
     return {
-      label: labelCurta,
-      value: "Caixa supera a dívida",
+      label: DEFAULT_LABEL[metric],
+      value: caixaLiquidoMultiplo == null ? "Caixa líquido" : `${caixaLiquidoMultiplo.toFixed(2)}× caixa líq.`,
       tone: "pos",
       chip: "Cash-rich",
       desc:
         `A empresa está cash-rich: as disponibilidades (caixa + aplicações) ` +
         `superam a dívida onerosa, então a Dívida Líquida é NEGATIVA. ` +
-        `Por isso o múltiplo clássico (Dívida Líquida ÷ ${baseNome}) deixa de ` +
-        `fazer sentido como indicador de risco — o numerador (Dívida Líquida) ` +
-        `é o que está negativo, não o denominador.`,
-      formula: `Numerador: Dívida Onerosa − Disponibilidades < 0 · Denominador: ${baseNome}`,
+        `O valor exibido mostra quanto caixa líquido existe em relação ao ${baseNome}, ` +
+        `mantendo a leitura do indicador original sem parecer duplicado.`,
+      formula: `|Dívida Onerosa − Disponibilidades| ÷ ${baseNome}`,
     };
   }
   if (!(base > 0)) {
