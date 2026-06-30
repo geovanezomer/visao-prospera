@@ -2,16 +2,11 @@
 // Feature Flags — leitura pública (authenticated) + escrita admin.
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
+import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: AuthClaims | undefined | null) {
-  if (!isAdminEmail((claims?.email as string) ?? "")) {
-    throw new Error("Acesso negado: apenas administrador.");
-  }
-}
 
 export type FeatureFlag = {
   key: string;
@@ -29,7 +24,7 @@ export type FeatureFlag = {
 export const listFeatureFlags = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin.from("feature_flags").select("*").order("key");
     if (error) throw new Error(error.message);
@@ -61,7 +56,7 @@ export const upsertFeatureFlag = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("feature_flags").upsert(
       {
@@ -96,7 +91,7 @@ export const deleteFeatureFlag = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: { key: string }) => z.object({ key: z.string().min(1) }).parse(d))
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("feature_flags").delete().eq("key", data.key);
     if (error) throw new Error(error.message);

@@ -3,16 +3,11 @@
 // Apenas admin. Apenas 1 ativo por vez (constraint do banco).
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
+import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: AuthClaims | undefined | null) {
-  if (!isAdminEmail((claims?.email as string) ?? "")) {
-    throw new Error("Acesso negado: apenas administrador.");
-  }
-}
 
 function mask(v: string | null | undefined): string | null {
   if (!v) return null;
@@ -35,7 +30,7 @@ export type ProviderRow = {
 export const listProviders = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin.from("provider_credentials").select("*");
     if (error) throw new Error(error.message);
@@ -88,7 +83,7 @@ export const upsertProvider = createServerFn({ method: "POST" })
         .parse(data),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // Upsert preservando campos não enviados (não sobrescreve secret com null).
     const patch: {
@@ -119,7 +114,7 @@ export const setActiveProvider = createServerFn({ method: "POST" })
     z.object({ provider: z.enum(["stripe", "asaas"]) }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // Desativa todos e ativa o escolhido (transação implícita não é crítica aqui).
     await supabaseAdmin.from("provider_credentials").update({ is_active: false }).neq("provider", "");
@@ -147,7 +142,7 @@ export const testProviderConnection = createServerFn({ method: "POST" })
     z.object({ provider: z.enum(["stripe", "asaas"]) }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: cred } = await supabaseAdmin
       .from("provider_credentials")

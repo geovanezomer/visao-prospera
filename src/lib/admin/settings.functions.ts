@@ -3,17 +3,12 @@
 // Leitura é pública (anon); escrita exige admin.
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
+import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
 import type { Json } from "@/integrations/supabase/types";
 
-function assertAdmin(claims: AuthClaims | undefined | null) {
-  if (!isAdminEmail((claims?.email as string) ?? "")) {
-    throw new Error("Acesso negado: apenas administrador.");
-  }
-}
 
 const KEYS = ["branding", "login_texts", "footer", "active_provider", "tracking", "legal", "landing_video", "trial"] as const;
 export type SettingKey = (typeof KEYS)[number];
@@ -60,7 +55,7 @@ export const updateAppSetting = createServerFn({ method: "POST" })
     z.object({ key: z.enum(KEYS), value: z.any() }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("app_settings").upsert(
       { key: data.key, value: data.value, updated_by: context.userId, updated_at: new Date().toISOString() },

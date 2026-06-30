@@ -12,24 +12,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { User } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { ADMIN_EMAIL, isAdminEmail } from "./constants";
-import type { AuthClaims } from "./_types";
+import { assertAdmin } from "./assertAdmin";
 
 /**
  * `banned_until` é um campo admin-only do Supabase Auth e não vem
  * declarado no tipo `User` público. Tipamos localmente para não usar `any`.
  */
 type AdminUser = User & { banned_until?: string | null };
-
-// ----------------------------------------------------------------------------
-// Helper — checagem de admin (server-side, autoritativa).
-// ----------------------------------------------------------------------------
-function assertAdmin(claims: AuthClaims | undefined | null): void {
-  const email = (claims?.email as string | undefined) ?? "";
-  if (!isAdminEmail(email)) {
-    throw new Error("Acesso negado: apenas administrador.");
-  }
-}
 
 // ----------------------------------------------------------------------------
 // listAdminUsers — devolve a página com usuários + assinatura + ban status.
@@ -91,7 +80,7 @@ export const listAdminUsers = createServerFn({ method: "POST" })
         .parse(data ?? {}),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const page = data.page ?? 1;
@@ -135,6 +124,15 @@ export const listAdminUsers = createServerFn({ method: "POST" })
     const profById = new Map<string, ProfRow>();
     for (const p of profiles ?? []) profById.set(p.id, p);
 
+    // Admins via banco (RBAC SSOT). Substitui checagem por env var.
+    const { data: adminRoleRows } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin")
+      .in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+    const adminIds = new Set<string>((adminRoleRows ?? []).map((r) => r.user_id));
+
+
     let rows: AdminUserRow[] = all.map((u) => {
       const s = subByUser.get(u.id);
       const p = profById.get(u.id);
@@ -160,7 +158,7 @@ export const listAdminUsers = createServerFn({ method: "POST" })
         provider: s?.provider ?? null,
         subscriptionId: s?.stripe_subscription_id ?? null,
         customerId: s?.provider_customer_id ?? s?.stripe_customer_id ?? null,
-        isAdmin: isAdminEmail(u.email),
+        isAdmin: adminIds.has(u.id),
         aiEnabled: (meta as Record<string, unknown>).ai_enabled !== false,
       } as AdminUserRow;
     });
@@ -219,7 +217,7 @@ export const setUserActive = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid(), active: z.boolean() }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Bloqueio: o próprio admin não pode se desativar.
@@ -237,7 +235,7 @@ export const setUserActive = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as AuthClaims | undefined)?.email,
+      actorEmail: (context.claims as { email?: string } | undefined)?.email,
       action: data.active ? "user.activate" : "user.deactivate",
       resource: "user",
       targetId: data.userId,
@@ -255,7 +253,7 @@ export const setUserAIEnabled = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid(), enabled: z.boolean() }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     // Bloqueio simétrico ao setUserActive: admin não pode se auto-bloquear
     // do Consultor IA (evita lockout silencioso da própria conta).
     if (data.userId === context.userId && !data.enabled) {
@@ -273,7 +271,7 @@ export const setUserAIEnabled = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as AuthClaims | undefined)?.email,
+      actorEmail: (context.claims as { email?: string } | undefined)?.email,
       action: data.enabled ? "user.ai_enable" : "user.ai_disable",
       resource: "user",
       targetId: data.userId,
@@ -291,7 +289,7 @@ export const sendPasswordReset = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid() }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: u, error: gerr } = await supabaseAdmin.auth.admin.getUserById(data.userId);
@@ -305,7 +303,7 @@ export const sendPasswordReset = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as AuthClaims | undefined)?.email,
+      actorEmail: (context.claims as { email?: string } | undefined)?.email,
       action: "user.password_reset",
       resource: "user",
       targetId: data.userId,
@@ -324,7 +322,7 @@ export const revalidatePlan = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid() }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: sub, error } = await supabaseAdmin
@@ -354,7 +352,7 @@ export const refundPayment = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: sub, error } = await supabaseAdmin
@@ -380,7 +378,7 @@ export const refundPayment = createServerFn({ method: "POST" })
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as AuthClaims | undefined)?.email,
+      actorEmail: (context.claims as { email?: string } | undefined)?.email,
       action: "payment.refund",
       resource: "subscription",
       targetId: data.userId,
@@ -400,7 +398,7 @@ export const resendMagicLink = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid() }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: u, error } = await supabaseAdmin.auth.admin.getUserById(data.userId);
     if (error || !u?.user?.email) throw new Error(error?.message ?? "Usuário sem e-mail.");

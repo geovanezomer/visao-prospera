@@ -10,16 +10,11 @@
 //   navegador (modo "logar como"). NÃO altera a sessão atual do admin.
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
+import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isAdminEmail } from "./constants";
 import type { AdminClient, AuthClaims } from "./_types";
 
-function assertAdmin(claims: AuthClaims | undefined | null) {
-  if (!isAdminEmail((claims?.email ?? "") as string)) {
-    throw new Error("Acesso negado: apenas administrador.");
-  }
-}
 
 // Procura usuário por e-mail paginando auth.admin.listUsers (até 5k usuários).
 async function findUserByEmail(supabaseAdmin: AdminClient, email: string) {
@@ -91,7 +86,7 @@ export const getUserDetail = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }): Promise<UserDetail> => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: u, error: uerr } = await supabaseAdmin.auth.admin.getUserById(data.userId);
@@ -216,7 +211,7 @@ export const grantManualPlan = createServerFn({ method: "POST" })
         .parse(d),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const days =
@@ -265,7 +260,7 @@ export const impersonateUser = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid(), reason: z.string().max(500).optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: u, error } = await supabaseAdmin.auth.admin.getUserById(data.userId);
@@ -331,7 +326,7 @@ export const createManualUser = createServerFn({ method: "POST" })
         .parse(d),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // 1) Verifica duplicidade paginando todos os usuários (listUsers não filtra por email).
@@ -434,7 +429,7 @@ export const checkEmailAvailable = createServerFn({ method: "POST" })
     z.object({ email: z.string().trim().toLowerCase().email().max(255) }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const hit = await findUserByEmail(supabaseAdmin, data.email);
     return hit

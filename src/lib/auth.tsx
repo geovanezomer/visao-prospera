@@ -136,7 +136,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
+    // P4-09 / P4-04: limpa qualquer estado financeiro local (cenários,
+    // configs por empresa, drafts), evitando vazamento cross-user em
+    // máquinas compartilhadas.
+    try {
+      if (typeof window !== "undefined") {
+        // localStorage — remove tudo do escopo da aplicação.
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const k = window.localStorage.key(i);
+          if (!k) continue;
+          if (
+            k.startsWith("gz-finance-") ||
+            k.startsWith("finnance-") ||
+            k.startsWith("finnance:") ||
+            k.includes("::")
+          ) {
+            keysToRemove.push(k);
+          }
+        }
+        for (const k of keysToRemove) window.localStorage.removeItem(k);
+        window.sessionStorage.clear();
+
+        // IndexedDB — apaga bancos conhecidos da aplicação.
+        if ("indexedDB" in window && typeof window.indexedDB.databases === "function") {
+          try {
+            const dbs = await window.indexedDB.databases();
+            for (const db of dbs) {
+              if (db.name && /finnance|finance|gz-/i.test(db.name)) {
+                window.indexedDB.deleteDatabase(db.name);
+              }
+            }
+          } catch {
+            /* navegadores sem .databases() (Firefox antigo) — ignora */
+          }
+        }
+      }
+    } catch {
+      /* limpeza best-effort: não bloqueia o logout */
+    }
   }, []);
+
 
   return (
     <Ctx.Provider

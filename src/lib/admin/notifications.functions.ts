@@ -2,14 +2,11 @@
 // Admin · Settings de notificações (Slack/E-mail) — get/update/test.
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
+import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: AuthClaims | undefined | null) {
-  if (!isAdminEmail((claims?.email as string) ?? "")) throw new Error("Acesso negado.");
-}
 
 export type NotifEvents = {
   signup: boolean;
@@ -30,7 +27,7 @@ const DEFAULT_EVENTS: NotifEvents = {
 export const getNotifSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin.from("notification_settings").select("*").eq("id", 1).maybeSingle();
     const events = (data?.events as NotifEvents | null) ?? DEFAULT_EVENTS;
@@ -56,7 +53,7 @@ export const updateNotifSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: z.infer<typeof schema>) => schema.parse(data))
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("notification_settings")
@@ -80,7 +77,7 @@ export const updateNotifSettings = createServerFn({ method: "POST" })
 export const testNotification = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { notifyAdmin } = await import("./notify.server");
     const r = await notifyAdmin({
       event: "signup",

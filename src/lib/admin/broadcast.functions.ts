@@ -7,16 +7,11 @@
 // Limite prático: 1000 destinatários por broadcast (rate de Resend free ~10 req/s).
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
+import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: AuthClaims | undefined | null) {
-  if (!isAdminEmail((claims?.email as string) ?? "")) {
-    throw new Error("Acesso negado: apenas administrador.");
-  }
-}
 
 const SegmentSchema = z.object({
   plan: z.enum(["all", "free", "starter", "pro", "lifetime"]).optional(),
@@ -34,7 +29,7 @@ export const previewBroadcastAudience = createServerFn({ method: "POST" })
     z.object({ segment: SegmentSchema }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { recipients } = await resolveAudience(data.segment);
     return { total: recipients.length, sample: recipients.slice(0, 20).map((r) => r.email) };
   });
@@ -54,7 +49,7 @@ export const sendBroadcast = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { recipients } = await resolveAudience(data.segment);
@@ -128,7 +123,7 @@ export const sendBroadcast = createServerFn({ method: "POST" })
 export const listBroadcasts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("broadcasts")

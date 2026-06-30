@@ -2,13 +2,10 @@
 // Admin · Status Page interno — pinga serviços externos críticos.
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
+import { assertAdmin } from "./assertAdmin";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { isAdminEmail } from "./constants";
 import type { AuthClaims } from "./_types";
 
-function assertAdmin(claims: AuthClaims | undefined | null) {
-  if (!isAdminEmail((claims?.email as string) ?? "")) throw new Error("Acesso negado.");
-}
 
 export type ServiceStatus = {
   name: string;
@@ -38,7 +35,7 @@ async function check(name: string, fn: () => Promise<{ status: ServiceStatus["st
 export const getSystemStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    assertAdmin(context.claims);
+    await assertAdmin(context);
 
     const checks = await Promise.all([
       check("Supabase", async () => {
