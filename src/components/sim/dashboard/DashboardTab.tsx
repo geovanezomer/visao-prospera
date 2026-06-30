@@ -393,8 +393,10 @@ export function DashboardTab() {
             </AreaChart>
           </ResponsiveContainer>
         </ChartCard>
+      </div>
 
-        {/* Waterfall vem do IndicatorsCharts; ocupa a 2ª coluna */}
+      {/* Waterfall em linha própria */}
+      <div className="grid gap-4 lg:grid-cols-1">
         <IndicatorsCharts state={state} />
       </div>
 
