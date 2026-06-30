@@ -169,6 +169,17 @@ export function DashboardTab() {
     });
   }, [dre]);
 
+  // Receitas vs Despesas (12m) — linhas verde/vermelha
+  const receitasDespesas = useMemo(
+    () =>
+      MESES.map((m, i) => ({
+        mes: m,
+        Receitas: dre.receitaLiquida[i] ?? 0,
+        Despesas: (dre.cpv[i] ?? 0) + (dre.despesasOperacionais[i] ?? 0),
+      })),
+    [dre],
+  );
+
   // Radar do perfil financeiro (normalizado 0–100)
   const radar = useMemo(
     () => [
