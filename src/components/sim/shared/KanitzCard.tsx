@@ -6,8 +6,10 @@
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { calcKanitz, kanitzCalcMemo } from "@/engines/finance/kanitz";
+import { assessCrisisStage, type CrisisTone } from "@/engines/finance/crisisStage";
 import { HelpTip } from "@/components/sim/shared/primitives";
 import { cn } from "@/lib/utils";
+import { AlertTriangle, CheckCircle2, ShieldAlert, Skull, TrendingDown } from "lucide-react";
 
 // Escala visual: [-7, +7]. Faixas: <-3 vermelho, -3..0 âmbar, >0 verde.
 const MIN = -7;
