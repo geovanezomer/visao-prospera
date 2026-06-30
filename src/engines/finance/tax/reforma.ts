@@ -40,9 +40,11 @@ export function getIbsCredCpvPct(ibsPct: number, snFornecedorPct: number): numbe
 /** Parâmetros vigentes da reforma para uma dada era.
  *  - cbsPct, ibsPct: alíquotas de débito sobre a receita bruta (%).
  *  - pisCofinsMult, icmsIssMult: multiplicador (0..1) sobre o que seria devido no sistema antigo.
- *  Cronograma oficial: 2026 teste (CBS 0.9% compensável c/ PIS/COFINS, IBS 0.1%);
- *  2027 CBS pleno e PIS/COFINS extintos; IBS faseado 20/40/60/80% em 2029–2032;
- *  ICMS/ISS reduzido 10pp/ano de 2029 a 2032 até extinção em 2033. */
+ *  Cronograma oficial LC 214/2025:
+ *  • 2026 — fase de teste: CBS 0,9% e IBS 0,1% (DEVIDOS, porém COMPENSÁVEIS com PIS/COFINS — art. 343).
+ *  • 2027 — CBS pleno; PIS/COFINS extintos; IBS segue em fase de teste (0,1%).
+ *  • 2029–2032 — IBS faseado 10/20/30/40%; ICMS/ISS reduzidos 10pp/ano.
+ *  • 2033 — IBS pleno; ICMS/ISS extintos. */
 export interface ReformaRates {
   cbsPct: number;
   ibsPct: number;
@@ -53,6 +55,9 @@ export interface ReformaRates {
   cargaCombinadaPct?: number;
   /** Auditoria #11: true quando a carga combinada supera a carga atual (default ICMS 18%). */
   alertaTransicao?: boolean;
+  /** Auditoria A2: parcela (em %) de CBS+IBS compensável com PIS/COFINS no ano
+   *  (LC 214/2025 art. 343 — fase de teste 2026). Já é descontada de `cargaCombinadaPct`. */
+  compensavelComPisCofinsPct?: number;
 }
 
 export function getReformaRates(era: TaxEra | undefined, cfg: TaxConfig): ReformaRates {
@@ -133,7 +138,12 @@ export function getReformaRatesForYear(year: number, cfg: TaxConfig): ReformaRat
   const icmsIssMult = getIcmsIssFractionForYear(year);
   // Carga IVA combinada (estimada) = CBS + IBS + ICMS legado (~18%) × mult
   const icmsLegado = (cfg.issIcms ?? 18) * icmsIssMult;
-  const cargaCombinadaPct = cbsPct + ibsPct + icmsLegado;
+  // Auditoria A2 — LC 214/2025 art. 343: em 2026 (fase de teste), CBS 0,9% e IBS 0,1%
+  // são DEVIDOS mas integralmente COMPENSÁVEIS com PIS/COFINS apurados no mesmo período.
+  // Resultado prático: carga adicional líquida ≈ 0%. Antes, somávamos CBS+IBS sobre PIS/COFINS
+  // cheio (pisCofinsMult=1), resultando em bitributação irreal no 1º ano da reforma.
+  const compensavelComPisCofinsPct = year === 2026 ? cbsPct + ibsPct : 0;
+  const cargaCombinadaPct = cbsPct + ibsPct + icmsLegado - compensavelComPisCofinsPct;
   const cargaAtual = cfg.issIcms ?? 18;
   return {
     cbsPct,
@@ -142,6 +152,7 @@ export function getReformaRatesForYear(year: number, cfg: TaxConfig): ReformaRat
     icmsIssMult,
     cargaCombinadaPct,
     alertaTransicao: cargaCombinadaPct > cargaAtual + 0.01,
+    compensavelComPisCofinsPct,
   };
 }
 

@@ -194,13 +194,16 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     const fixosNaoFolha = fixosNaoFolhaMensalBase * fatorInflacao;
 
     const despesasOp = fixosNaoFolha + folhaFixa + variaveisNaoCpv;
-    const lucroBruto = receita - cpv;
-    const ebitda = lucroBruto - despesasOp;
+    // Auditoria A1/F-01: EBITDA segue CPC 26 / DRE legal brasileira.
+    // Receita Líquida = Receita Bruta − Impostos sobre Vendas (PIS/COFINS/ICMS/ISS/CBS/IBS).
+    // Antes, EBITDA era calculado sobre receita BRUTA, inflando margem.
     const impostosReceita = receita * taxReceitaRatio;
-    const ebit = ebitda - impostosReceita - depMensal;
+    const receitaLiquida = receita - impostosReceita;
+    const lucroBruto = receitaLiquida - cpv;
+    const ebitda = lucroBruto - despesasOp;
+    const ebit = ebitda - depMensal;
     const resultadoFinanceiro = receita * resultadoFinanceiroRatioBase; // negativo para empresas alavancadas
     const impostosLucro = Math.max(0, ebit) * taxLucroRatio;
-    const impostos = impostosReceita + impostosLucro;
     const lucroLiquido = ebit + resultadoFinanceiro - impostosLucro;
 
     // NCG do mês: anualiza receita e CPV do mês para PMR/PMP
