@@ -136,7 +136,12 @@ export function getReformaRatesForYear(year: number, cfg: TaxConfig): ReformaRat
   const icmsIssMult = getIcmsIssFractionForYear(year);
   // Carga IVA combinada (estimada) = CBS + IBS + ICMS legado (~18%) × mult
   const icmsLegado = (cfg.issIcms ?? 18) * icmsIssMult;
-  const cargaCombinadaPct = cbsPct + ibsPct + icmsLegado;
+  // Auditoria A2 — LC 214/2025 art. 343: em 2026 (fase de teste), CBS 0,9% e IBS 0,1%
+  // são DEVIDOS mas integralmente COMPENSÁVEIS com PIS/COFINS apurados no mesmo período.
+  // Resultado prático: carga adicional líquida ≈ 0%. Antes, somávamos CBS+IBS sobre PIS/COFINS
+  // cheio (pisCofinsMult=1), resultando em bitributação irreal no 1º ano da reforma.
+  const compensavelComPisCofinsPct = year === 2026 ? cbsPct + ibsPct : 0;
+  const cargaCombinadaPct = cbsPct + ibsPct + icmsLegado - compensavelComPisCofinsPct;
   const cargaAtual = cfg.issIcms ?? 18;
   return {
     cbsPct,
@@ -145,6 +150,7 @@ export function getReformaRatesForYear(year: number, cfg: TaxConfig): ReformaRat
     icmsIssMult,
     cargaCombinadaPct,
     alertaTransicao: cargaCombinadaPct > cargaAtual + 0.01,
+    compensavelComPisCofinsPct,
   };
 }
 
