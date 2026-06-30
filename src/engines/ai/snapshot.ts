@@ -247,10 +247,12 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
           ["Ponto Equilíbrio (op.)", brl(ind.pontoEquilibrio)],
           ["Ponto Equilíbrio (fin.)", brl(ind.pontoEquilibrioFinanceiro)],
           ["GAO (alavancagem op.)", fmtNum(safe(ind.gao), 2) + "x"],
+          ["GAF (alavancagem fin.)", fmtNum(safe(ind.gaf), 2) + "x"],
           ["ROE", pct(ind.roe)],
           ["ROA", pct(ind.roa)],
           ["ROIC", pct(ind.roic)],
           ["WACC", pct(ind.wacc, 2)],
+          ["EVA (Lucro Econômico)", brl(ind.eva)],
           ["Ciclo Financeiro (d)", fmtNum(safe(ind.cicloFinanceiro), 0)],
           ["NCG", brl(ind.ncg)],
           ["Gap Cap. Giro", brl(ind.gapCapitalGiro)],
@@ -259,19 +261,28 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
           ["Liquidez Imediata", fmtNum(safe(ind.liquidezImediata), 2)],
           ["Endividamento Geral", pct(ind.endividamentoGeral)],
           ["Grau Endivid. (D/PL)", pct(ind.grauEndividamento)],
+          ["D/PL Bruto", fmtNum(safe(ind.dividaPlBruto), 2) + "x"],
+          ["Capital Próprio %", pct(ind.proprioPercent)],
           ["Cobertura Juros (EBIT/Juros)", fmtNum(safe(ind.coberturaJuros), 2) + "x"],
           ["DSCR (EBITDA/Serviço Dívida)", fmtNum(safe(ind.dscr), 2) + "x"],
+          ["Serviço Dívida Mensal", brl(ind.servicoDividaMensal)],
           ["Giro Ativo", fmtNum(safe(ind.giroAtivo), 2)],
           ["Dívida Líq./EBITDA", fmtNum(safe(ind.dividaLiqEbitda), 2) + "x"],
           ["Dívida Líq./EBIT", fmtNum(safe(ind.dividaLiqEbit), 2) + "x"],
           ["Dívida Líq./PL", fmtNum(safe(ind.dividaLiqPl), 2) + "x"],
           ["Dívida Onerosa", brl(ind.dividaOnerosa)],
+          ["Dívida Líquida", brl(ind.dividaLiquida)],
           ["Ativo Circulante", brl(ind.ativoCirculante)],
           ["Passivo Circulante", brl(ind.passivoCirculante)],
           ["Payback PL (anos)", fmtNum(safe(ind.payback), 1)],
-          ["FCF (proxy)", brl(ind.fcf)],
+          ["Payback CAPEX (anos)", fmtNum(safe(ind.paybackCapex), 1)],
+          ["CAPEX Anual", brl(ind.capexAnual)],
+          ["FCF (antes CAPEX)", brl(ind.fcf)],
+          ["FCF após CAPEX (FCFF)", brl(ind.fcfAposCapex)],
           ["Conversão EBITDA→Caixa", pct(ind.conversaoEbitdaCaixa)],
-          ["Qualidade do Lucro (FCF/LL)", fmtNum(safe(ind.qualidadeLucro), 2)],
+          ["Qualidade do Lucro (FCO/LL)", fmtNum(safe(ind.qualidadeLucro), 2)],
+          ["Impostos/Receita", pct(ind.impostosSobreReceita)],
+          ["Impostos/Lucro", pct(ind.impostosSobreLucro)],
           ["Receita Líq./Colaborador", brl(ind.receitaPorColaborador)],
           ["Faturamento/Colaborador", brl(ind.faturamentoPorColaborador)],
           ["EBITDA/Colaborador", brl(ind.ebitdaPorColaborador)],
@@ -280,6 +291,16 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
         ],
       ),
     );
+    // Kanitz — Termômetro de Insolvência
+    const kanitz = tryRun(() => {
+      const { calcKanitz } = require("@/engines/finance/kanitz") as typeof import("@/engines/finance/kanitz");
+      return calcKanitz(state, ind);
+    }, null as null | ReturnType<typeof import("@/engines/finance/kanitz").calcKanitz>);
+    if (kanitz && !kanitz.baseInsuficiente) {
+      indLines.push(
+        `\n**Kanitz (Termômetro de Insolvência):** FI = ${fmtNum(safe(kanitz.fi), 2)} → **${kanitz.label}**`,
+      );
+    }
   }
 
   // ----- Diagnóstico -----
