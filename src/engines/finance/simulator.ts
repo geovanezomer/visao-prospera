@@ -188,6 +188,32 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     );
   }
 
+  // 4b) Pró-labore — escala APENAS linhas de pró-labore (subset de folha). Afeta DRE
+  //     (despesa de pessoal/administrativa), portanto EBITDA, LAIR e Lucro Líquido.
+  //     Aplicado APÓS a folha (compõe multiplicativamente se ambas alavancas estiverem ativas).
+  if (p.prolaboreDeltaPct !== 0) {
+    const f = 1 + p.prolaboreDeltaPct / 100;
+    s.costs = s.costs.map((c) =>
+      isProlaboreLine(c) ? { ...c, values: c.values.map((v) => v * f) } : c,
+    );
+  }
+
+  // 4c) Distribuição de Lucros — NÃO afeta DRE (é destinação do lucro líquido).
+  //     Afeta CAIXA via cashflow.dividendos e o estado de distribuicaoRealizada
+  //     (mantém consistência com ProlaboreTab/SociosCard).
+  if (p.distribuicaoDeltaPct !== 0) {
+    const f = 1 + p.distribuicaoDeltaPct / 100;
+    s.cashflow.dividendos = s.cashflow.dividendos.map((v) => Math.max(0, v * f));
+    if (s.distribuicaoRealizada) {
+      s.distribuicaoRealizada = {
+        ...s.distribuicaoRealizada,
+        values: s.distribuicaoRealizada.values.map((v) => Math.max(0, v * f)) as typeof s.distribuicaoRealizada.values,
+      };
+    }
+  }
+
+
+
   // 5) Ajuste de fixos (top-N) — primitiva scaleCostLines (já cobre fixo + despesa_administrativa).
   if (p.fixedCutPct !== 0) {
     const ids = topNFixedIds(s, p.fixedCutTopN);
