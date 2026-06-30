@@ -111,6 +111,14 @@ export interface Indicators {
   conversaoEbitdaCaixa: number;
   /** Margem de Contribuição (R$) ÷ EBIT — elasticidade do lucro à receita. */
   gao: number;
+  /**
+   * Grau de Alavancagem Financeira (GAF) = EBIT ÷ LAIR.
+   * Mede o efeito da dívida sobre o lucro líquido: para cada 1% de variação
+   * no EBIT, o LAIR (e o LL, mantida a alíquota) varia GAF%. GAF=1 → sem
+   * alavancagem; >1 → dívida amplifica o resultado; <0 ou indefinido quando
+   * juros ≥ EBIT (LAIR ≤ 0). Cap em ±99 para evitar explosões numéricas.
+   */
+  gaf: number;
   /** FCO ÷ Lucro Líquido — quanto do lucro contábil virou caixa operacional (CPC 03/IAS 7). */
   qualidadeLucro: number;
   /** Receita Líquida Anual ÷ nº de colaboradores. */
