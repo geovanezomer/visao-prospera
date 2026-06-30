@@ -31,7 +31,10 @@ import {
 
 // Mesmo regex usado em sensitivity.ts/prescriptive.ts — verdade única para identificar folha.
 const LABOR_RE = /sal[áa]rio|folha|clt|prolabore|pr[óo]-labore|mod|m[ãa]o de obra/i;
+const PROLABORE_RE = /pr[óo]-?labore|prolabore/i;
 const isLaborLine = (c: CostLine) => c.encargosAuto === true || LABOR_RE.test(c.label);
+const isProlaboreLine = (c: CostLine) => PROLABORE_RE.test(c.label);
+
 
 export interface SimulatorParams {
   // Receita & Preço
