@@ -377,7 +377,7 @@ export function SimulatorTab({
 
 // ============== Status bar ==============
 
-function StatusBar({
+const StatusBar = memo(function StatusBar({
   active,
   base,
   sim,
@@ -436,7 +436,7 @@ function StatusBar({
       </div>
     </div>
   );
-}
+});
 
 function Delta({
   label,
@@ -478,7 +478,7 @@ function Delta({
 
 // ============== Slider row ==============
 
-function SliderRow({
+const SliderRow = memo(function SliderRow({
   label,
   hint,
   min,
