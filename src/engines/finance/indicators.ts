@@ -192,6 +192,8 @@ export interface Indicators {
   proprioPercent: number;
   /** D/PL BRUTO (Dívida Onerosa ÷ PL) — múltiplo, não a métrica líquida `dividaLiqPl`. */
   dividaPlBruto: number;
+  /** FCO (Fluxo de Caixa Operacional) anualizado — mesmo total do FluxoCaixaTab. */
+  fcoAnual: number;
 }
 
 // ─── Thresholds publicados (SSOT) ───────────────────────────────────
