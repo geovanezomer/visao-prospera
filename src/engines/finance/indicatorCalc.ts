@@ -378,6 +378,7 @@ export function buildIndicatorCalcs(
     fcf: fcfStr,
     cagrReceitas12m: cagrStr,
     gao: gaoStr,
+    gaf: gafStr,
     qualidadeLucro,
     conversaoEbitdaCaixa,
     cicloFinanceiro: cicloFinanceiroStr,
