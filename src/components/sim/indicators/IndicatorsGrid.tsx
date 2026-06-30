@@ -202,6 +202,14 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             calc={c.endividamentoGeral}
           />
           <Ind
+            label="Endividamento Geral (PC+PNC)"
+            v={ativoTot > 0 ? fmtPct(endivPcPnc / 100) : "—"}
+            tone={ativoTot > 0 ? (endivPcPnc <= 60 ? "pos" : "neg") : undefined}
+            desc="Variação contábil clássica do endividamento: soma DIRETA das obrigações com terceiros (Passivo Circulante + Passivo Não Circulante) dividida pelo Ativo Total. Igual ao Endividamento Geral acima quando o balanço está fechado; útil para conferência por linha do BP."
+            formula="(Passivo Circulante + Passivo Não Circulante) ÷ Ativo Total × 100"
+            calc={endivPcPncCalc}
+          />
+          <Ind
             label="Capital Próprio"
             v={`${ind.proprioPercent.toFixed(1)}%`}
             tone={ind.proprioPercent >= 50 ? "pos" : ind.proprioPercent >= 30 ? "warn" : "neg"}
