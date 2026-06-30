@@ -28,7 +28,7 @@ import { StatCard, renderHint } from "@/components/sim/shared/primitives";
 import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 
 
-import { DashboardExtras } from "./DashboardExtras";
+import { DashboardExtras, Top5Despesas } from "./DashboardExtras";
 import { WaccRoicMeter } from "@/components/sim/capital/WaccRoicMeter";
 import { KanitzCard } from "@/components/sim/shared/KanitzCard";
 import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
@@ -329,7 +329,7 @@ export function DashboardTab() {
       </ChartCard>
 
 
-      {/* Linha 4 — Receitas vs Despesas | Lucro Acumulado (12m) */}
+      {/* Linha 4 — Receitas vs Despesas | Top 5 Despesas */}
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard title="Receitas vs Despesas (12m)">
           <ResponsiveContainer width="100%" height={280}>
@@ -344,6 +344,13 @@ export function DashboardTab() {
             </ComposedChart>
           </ResponsiveContainer>
         </ChartCard>
+
+        <Top5Despesas state={state} />
+      </div>
+
+      {/* Linha 4b — Lucro Acumulado */}
+      <div className="grid gap-4 lg:grid-cols-2">
+
 
         <ChartCard title="Lucro Líquido Acumulado (12m)">
           <ResponsiveContainer width="100%" height={280}>

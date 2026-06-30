@@ -339,7 +339,7 @@ function ScoreSaude({ state }: { state: AppState }) {
 }
 
 // ============ 5. TOP 5 DESPESAS ============
-function Top5Despesas({ state }: { state: AppState }) {
+export function Top5Despesas({ state }: { state: AppState }) {
   const { dre } = useFinanceModel(state);
   const top = useMemo(
     () =>
@@ -405,7 +405,7 @@ export function DashboardExtras({ state }: { state: AppState }) {
         <ScoreSaude state={state} />
       </div>
 
-      <Top5Despesas state={state} />
+      
 
     </div>
   );
