@@ -322,11 +322,6 @@ export function calcIndicators(
     capital.fornecedores > 0 ? capital.fornecedores : (cpvAnual / 360) * revenue.pmp;
   const ncg = crEstimado + estoqueMedio - fornecEstimado;
 
-  // SSOT: caixa disponível imediato = `disponibilidades` (Caixa+Bancos do BP).
-  // Mantido para outros indicadores; gap usa CDG (working capital estrutural).
-  const caixaImediato = capital.disponibilidades > 0
-    ? capital.disponibilidades
-    : (capital.capitalGiroDisponivel ?? 0);
   // Gap de Capital de Giro = NCG − CDG (Fleuriet/Modelo Dinâmico).
   // CDG (Capital de Giro) = AC − PC = recursos de longo prazo aplicados no giro.
   // Quando NCG > CDG, falta financiamento permanente para o ciclo operacional
