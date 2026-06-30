@@ -68,6 +68,60 @@ function friendlyError(message: string): string {
   return message;
 }
 
+const LAST_USER_KEY = "gz-finance-last-user-id";
+
+/**
+ * P4-04: Purga storage local quando o userId ativo é diferente do
+ * último registrado. Evita vazamento cross-user em browser compartilhado
+ * (usuário A fecha a aba sem deslogar; usuário B entra e herdaria dados).
+ */
+async function purgeLocalStateIfUserChanged(currentUserId: string | null) {
+  if (typeof window === "undefined") return;
+  try {
+    const last = window.localStorage.getItem(LAST_USER_KEY);
+    if (currentUserId && last === currentUserId) return; // mesmo usuário, nada a fazer
+    if (!currentUserId && !last) return; // ambos vazios
+
+    // Remove tudo do escopo da aplicação (preserva chaves de terceiros).
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (!k || k === LAST_USER_KEY) continue;
+      if (
+        k.startsWith("gz-finance-") ||
+        k.startsWith("finnance-") ||
+        k.startsWith("finnance:") ||
+        k.includes("::")
+      ) {
+        keysToRemove.push(k);
+      }
+    }
+    for (const k of keysToRemove) window.localStorage.removeItem(k);
+    window.sessionStorage.clear();
+
+    if ("indexedDB" in window && typeof window.indexedDB.databases === "function") {
+      try {
+        const dbs = await window.indexedDB.databases();
+        for (const db of dbs) {
+          if (db.name && /finnance|finance|gz-/i.test(db.name)) {
+            window.indexedDB.deleteDatabase(db.name);
+          }
+        }
+      } catch {
+        /* navegadores sem .databases() — ignora */
+      }
+    }
+
+    if (currentUserId) {
+      window.localStorage.setItem(LAST_USER_KEY, currentUserId);
+    } else {
+      window.localStorage.removeItem(LAST_USER_KEY);
+    }
+  } catch {
+    /* best-effort: não bloqueia auth */
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -78,12 +132,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      const uid = newSession?.user?.id ?? null;
+      // P4-04: detecta troca de usuário e purga storage do anterior.
+      void purgeLocalStateIfUserChanged(uid);
       setSession(newSession);
       setUser(toAuthUser(newSession?.user));
     });
 
     // Then hydrate from existing session.
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      const uid = data.session?.user?.id ?? null;
+      await purgeLocalStateIfUserChanged(uid);
       setSession(data.session);
       setUser(toAuthUser(data.session?.user));
       setHydrated(true);
