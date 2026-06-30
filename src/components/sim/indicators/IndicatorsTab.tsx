@@ -5,7 +5,6 @@ import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 import { HelpTip, StatCard } from "@/components/sim/shared/primitives";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { IndicatorsGrid } from "./IndicatorsGrid";
-import { KanitzCard } from "@/components/sim/shared/KanitzCard";
 
 // Tooltip style (mantido para CashConversionSmall e outros consumidores futuros)
 
