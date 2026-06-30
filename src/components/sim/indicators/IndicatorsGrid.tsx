@@ -13,7 +13,7 @@ import { getDistribuicaoRealizadaMeses } from "@/engines/finance/socios";
 // `buildIndicatorCalcs` — SSOT de exibição. Qualquer ajuste em
 // label/descrição/fórmula/tone é feito SOMENTE aqui.
 export function IndicatorsGrid({ state }: { state: AppState }) {
-  const { dre, ind, cagrReceitas12m, model } = useFinanceModel(state);
+  const { dre, ind, cf, cagrReceitas12m, model } = useFinanceModel(state);
 
   const ebitAnual = sum(dre.ebit);
   const ebitdaAnual = sum(dre.ebitda);
@@ -58,6 +58,23 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
     llAnual > 0
       ? `${fmtBRL(distribuicaoTotalAnual)} ÷ ${fmtBRL(llAnual)} × 100 = ${fmtPct(distIsentaSobreLucro / 100)}`
       : "Lucro Líquido ≤ 0 → indicador indisponível";
+
+  // ─── Análises de Fluxo de Caixa ───
+  // FCO (Método Indireto): LL + D&A ± ΔNCG — base do CPC 03 / IAS 7.
+  // Usa o MESMO valor consumido pelo FluxoCaixaTab (SSOT cf.fluxoOperacional).
+  const fcoAnual = sum(cf.fluxoOperacional);
+  const llAnualFco = sum(dre.lucroLiquido);
+  const daAnual = sum(dre.depreciacao);
+  const deltaNcgAnual = fcoAnual - llAnualFco - daAnual; // derivado por identidade
+  const fcoCalc = `${fmtBRL(llAnualFco)} + ${fmtBRL(daAnual)} ± ${fmtBRL(deltaNcgAnual)} = ${fmtBRL(fcoAnual)}`;
+
+  const receitaLiquidaAnual = sum(dre.receitaLiquida);
+  const margemCaixaOp = receitaLiquidaAnual > 0 ? (fcoAnual / receitaLiquidaAnual) * 100 : 0;
+  const margemCaixaOpCalc =
+    receitaLiquidaAnual > 0
+      ? `${fmtBRL(fcoAnual)} ÷ ${fmtBRL(receitaLiquidaAnual)} × 100 = ${fmtPct(margemCaixaOp / 100)}`
+      : "Receita Líquida = 0 → indicador indisponível";
+
 
 
   return (
@@ -123,6 +140,17 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             desc="Economic Value Added — lucro que sobra DEPOIS de remunerar todo o capital (próprio + terceiros) ao custo do WACC. EVA > 0 ⇒ a empresa cria valor; EVA < 0 ⇒ destrói valor mesmo com lucro contábil positivo."
             formula="(ROIC − WACC) × Capital Investido"
             calc={evaCalc}
+          />
+          <Ind
+            label="Amortização do PL pelo Lucro"
+            v={
+              Number.isFinite(ind.amortizacaoPlPorLucro)
+                ? `${ind.amortizacaoPlPorLucro.toFixed(1)} anos`
+                : "—"
+            }
+            desc="Tempo (anos) para o lucro contábil acumulado igualar o Patrimônio Líquido. NÃO confundir com o Payback clássico — este indicador mede a velocidade de remuneração do capital próprio pelo lucro contábil."
+            formula="Patrimônio Líquido ÷ Lucro Líquido Anual"
+            calc={c.amortizacaoPlPorLucro}
           />
         </Group>
 
@@ -471,8 +499,24 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           />
         </Group>
 
-        {/* ───── Análises Individuais (extras) ───── */}
-        <Group title="Análises Individuais">
+        {/* ───── Análises de Fluxo de Caixa ───── */}
+        <Group title="Análises Fluxo de Caixa">
+          <Ind
+            label="FCO (Método Indireto)"
+            v={fmtBRL(fcoAnual)}
+            tone={fcoAnual >= 0 ? "pos" : "neg"}
+            desc="Fluxo de Caixa Operacional pelo método indireto (CPC 03 / IAS 7): parte do Lucro Líquido, soma itens não-caixa (D&A) e ajusta pela variação de NCG. É a base de tudo — mostra quanto caixa a operação de fato gera."
+            formula="Lucro Líquido + Depreciação/Amortização ± Δ NCG"
+            calc={fcoCalc}
+          />
+          <Ind
+            label="Margem de Caixa Operacional"
+            v={receitaLiquidaAnual > 0 ? fmtPct(margemCaixaOp / 100) : "—"}
+            tone={margemCaixaOp >= 0 ? "pos" : "neg"}
+            desc="Equivalente 'em caixa' da margem operacional: quantos centavos de caixa cada R$ 1,00 de Receita Líquida efetivamente converte. Comparar com a Margem EBITDA evidencia o quanto a NCG está 'comendo' a geração operacional."
+            formula="FCO ÷ Receita Líquida × 100"
+            calc={margemCaixaOpCalc}
+          />
           <Ind
             label="FCF estimado"
             v={fmtBRL(ind.fcf)}
@@ -480,28 +524,6 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             desc="Free Cash Flow operacional antes do CAPEX — geração de caixa após imposto operacional e variação de capital de giro."
             formula="NOPAT + D&A − Δ NCG"
             calc={c.fcf}
-          />
-          <Ind
-            label="Payback (CAPEX)"
-            v={
-              Number.isFinite(ind.paybackCapex) && ind.paybackCapex > 0
-                ? `${ind.paybackCapex.toFixed(1)} anos`
-                : "—"
-            }
-            desc="Payback CLÁSSICO (conceito bancário): tempo para a geração de caixa recuperar o CAPEX total do ano. '—' quando não há CAPEX informado ou quando FCF ≤ 0."
-            formula="CAPEX Anual ÷ FCF Operacional"
-            calc={c.paybackCapex}
-          />
-          <Ind
-            label="Amortização do PL pelo Lucro"
-            v={
-              Number.isFinite(ind.amortizacaoPlPorLucro)
-                ? `${ind.amortizacaoPlPorLucro.toFixed(1)} anos`
-                : "—"
-            }
-            desc="Tempo (anos) para o lucro contábil acumulado igualar o Patrimônio Líquido. NÃO confundir com o Payback clássico — este indicador mede a velocidade de remuneração do capital próprio pelo lucro contábil."
-            formula="Patrimônio Líquido ÷ Lucro Líquido Anual"
-            calc={c.amortizacaoPlPorLucro}
           />
         </Group>
       </div>
