@@ -348,13 +348,6 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
         {/* ───── Análise de Produtividade (Pessoas) ───── */}
         <Group title="Análise de Produtividade (Pessoas)">
           <Ind
-            label="Faturamento / Colaborador"
-            v={hasHeadcount ? fmtBRL(ind.faturamentoPorColaborador) : "—"}
-            desc="Receita BRUTA gerada por colaborador no ano — métrica clássica de benchmarking de produtividade. Ajuste o nº de colaboradores em Configurações Rápidas (sidebar)."
-            formula="Receita Bruta ÷ Nº de Colaboradores"
-            calc={c.faturamentoPorColaborador}
-          />
-          <Ind
             label="Receita Líq. / Colaborador"
             v={hasHeadcount ? fmtBRL(ind.receitaPorColaborador) : "—"}
             desc="Receita LÍQUIDA (após deduções e impostos sobre venda) por colaborador. Comparável entre regimes tributários."
