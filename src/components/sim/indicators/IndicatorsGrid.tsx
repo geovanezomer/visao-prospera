@@ -470,10 +470,6 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
     </div>
   );
 }
-      </div>
-    </div>
-  );
-}
 
 // Subseção visual: título sutil + grid de cards. Padroniza o agrupamento
 // por tipo de análise dentro do card "Indicadores financeiros".
