@@ -260,6 +260,17 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             formula="Passivo Total ÷ Ativo Total × 100"
             calc={c.endividamentoGeral}
           />
+          <Ind
+            label="Amortização do PL pelo Lucro"
+            v={
+              Number.isFinite(ind.amortizacaoPlPorLucro)
+                ? `${ind.amortizacaoPlPorLucro.toFixed(1)} anos`
+                : "—"
+            }
+            desc="Tempo (anos) para o lucro contábil acumulado igualar o Patrimônio Líquido. NÃO confundir com o Payback clássico — este indicador mede a velocidade de remuneração do capital próprio pelo lucro contábil."
+            formula="Patrimônio Líquido ÷ Lucro Líquido Anual"
+            calc={c.amortizacaoPlPorLucro}
+          />
 
           <Ind
             label="Capital Próprio"
