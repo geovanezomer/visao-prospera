@@ -40,6 +40,7 @@ import {
   SimulatorParams,
 } from "@/engines/finance/simulator";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import { NAV_ITEMS } from "@/components/layout/nav-config";
 import { BillingButton } from "@/components/billing/BillingButton";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Presentation, X, FileText, Printer } from "lucide-react";
