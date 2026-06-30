@@ -1,0 +1,137 @@
+// =====================================================================
+// KanitzCard — Termômetro de Insolvência (Kanitz, 1978).
+// Card visual reaproveitado em IndicatorsTab e DashboardTab.
+// Lê SOMENTE valores derivados (state + ind) — sem cálculo próprio.
+// =====================================================================
+import { useFinanceState } from "@/engines/finance/AppStateContext";
+import { useFinanceModel } from "@/engines/finance/useFinanceModel";
+import { calcKanitz, kanitzCalcMemo } from "@/engines/finance/kanitz";
+import { HelpTip } from "@/components/sim/shared/primitives";
+import { cn } from "@/lib/utils";
+
+// Escala visual: [-7, +7]. Faixas: <-3 vermelho, -3..0 âmbar, >0 verde.
+const MIN = -7;
+const MAX = 7;
+const RANGE = MAX - MIN;
+
+function pctFromFi(fi: number): number {
+  if (!Number.isFinite(fi)) return 50;
+  const clamped = Math.max(MIN, Math.min(MAX, fi));
+  return ((clamped - MIN) / RANGE) * 100;
+}
+
+export function KanitzCard({ compact = false }: { compact?: boolean }) {
+  const state = useFinanceState();
+  const { ind } = useFinanceModel(state);
+  const k = calcKanitz(state, ind);
+
+  const toneColor =
+    k.tone === "pos"
+      ? "var(--success)"
+      : k.tone === "warn"
+        ? "#F5B85B"
+        : k.tone === "neg"
+          ? "var(--destructive)"
+          : "var(--muted-foreground)";
+
+  const pos = pctFromFi(k.fi);
+  // Limites das faixas em % da escala (MIN..MAX).
+  const insolEnd = ((-3 - MIN) / RANGE) * 100;   // 0 → -3
+  const penumEnd = ((0 - MIN) / RANGE) * 100;    // -3 → 0
+
+  return (
+    <div className="rounded-lg border border-primary/30 bg-card/60 p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+            <span>Termômetro de Insolvência — Kanitz</span>
+            <HelpTip
+              text="Fator de Insolvência (FI) de Kanitz. Combina rentabilidade, liquidez e endividamento em um único índice calibrado para o mercado brasileiro. FI ≥ 0 = solvente; entre −3 e 0 = penumbra (atenção); abaixo de −3 = risco real de insolvência."
+              formula="FI = 0,05·X1 + 1,65·X2 + 3,55·X3 − 1,06·X4 − 0,33·X5"
+              calc={kanitzCalcMemo(k)}
+            />
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            X1 ROE · X2 Liq. Geral · X3 Liq. Seca · X4 Liq. Corrente · X5 Terceiros/PL
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="mono text-3xl font-bold" style={{ color: toneColor }}>
+            {k.baseInsuficiente ? "—" : k.fi.toFixed(2)}
+          </div>
+          <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: toneColor }}>
+            {k.label}
+          </div>
+        </div>
+      </div>
+
+      {/* Régua do termômetro */}
+      <div className="mt-5">
+        <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="absolute inset-y-0 left-0 bg-[var(--destructive)]/70"
+            style={{ width: `${insolEnd}%` }}
+          />
+          <div
+            className="absolute inset-y-0 bg-[#F5B85B]/70"
+            style={{ left: `${insolEnd}%`, width: `${penumEnd - insolEnd}%` }}
+          />
+          <div
+            className="absolute inset-y-0 bg-[var(--success)]/70"
+            style={{ left: `${penumEnd}%`, right: 0 }}
+          />
+          {!k.baseInsuficiente && (
+            <div
+              className="absolute top-1/2 h-5 w-1 -translate-x-1/2 -translate-y-1/2 rounded bg-foreground shadow"
+              style={{ left: `${pos}%` }}
+              aria-label={`Indicador na posição FI=${k.fi.toFixed(2)}`}
+            />
+          )}
+        </div>
+        <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+          <span>−7</span>
+          <span>−3</span>
+          <span>0</span>
+          <span>+7</span>
+        </div>
+      </div>
+
+      {!compact && !k.baseInsuficiente && (
+        <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-1 text-[11px] sm:grid-cols-5">
+          <KanitzCell label="X1 · LL/PL" v={k.x1} c={k.c1} fmt="frac" />
+          <KanitzCell label="X2 · Liq. Geral" v={k.x2} c={k.c2} fmt="x" />
+          <KanitzCell label="X3 · Liq. Seca" v={k.x3} c={k.c3} fmt="x" />
+          <KanitzCell label="X4 · Liq. Corr." v={k.x4} c={k.c4} fmt="x" />
+          <KanitzCell label="X5 · Terc./PL" v={k.x5} c={k.c5} fmt="x" />
+        </div>
+      )}
+
+      <p className={cn("mt-3 text-[11px] leading-relaxed text-muted-foreground", compact && "hidden")}>
+        Modelo discriminante de Stephen Kanitz (FEA-USP, 1978), calibrado em
+        empresas brasileiras. Excelente alerta precoce de descontinuidade —
+        deve ser lido junto com DSCR, geração de caixa e covenants.
+      </p>
+    </div>
+  );
+}
+
+function KanitzCell({
+  label,
+  v,
+  c,
+  fmt,
+}: { label: string; v: number; c: number; fmt: "frac" | "x" }) {
+  const f = (n: number) =>
+    n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+  return (
+    <div className="flex flex-col">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="mono font-semibold text-foreground">
+        {fmt === "frac" ? `${(v * 100).toFixed(1)}%` : `${f(v)}×`}
+      </span>
+      <span className="mono text-[10px] text-muted-foreground">
+        contrib.: {f(c)}
+      </span>
+    </div>
+  );
+}
