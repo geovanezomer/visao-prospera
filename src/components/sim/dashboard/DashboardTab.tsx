@@ -176,6 +176,37 @@ export function DashboardTab() {
     [dre],
   );
 
+  // Composição mensal de custos/despesas por função (stacked) + EBIT (linha)
+  const dreMensalFuncao = useMemo(() => {
+    const bucket = {
+      cpv: new Array(12).fill(0) as number[],
+      comerciais: new Array(12).fill(0) as number[],
+      administrativas: new Array(12).fill(0) as number[],
+      financeiras: new Array(12).fill(0) as number[],
+    };
+    for (const c of state.costs) {
+      const cat = c.category;
+      const target =
+        cat === "custo_vendas" || cat === "direto_venda"
+          ? bucket.cpv
+          : cat === "despesa_comercial" || cat === "variavel"
+          ? bucket.comerciais
+          : cat === "financeiro"
+          ? bucket.financeiras
+          : bucket.administrativas;
+      for (let i = 0; i < 12; i++) target[i] += c.values[i] ?? 0;
+    }
+    return MESES.map((m, i) => ({
+      mes: m,
+      "CPV/CMV/CSP": bucket.cpv[i],
+      "Comerciais": bucket.comerciais[i],
+      "Administrativas": bucket.administrativas[i],
+      "Financeiras": bucket.financeiras[i],
+      "EBIT": dre.ebit[i] ?? 0,
+    }));
+  }, [state.costs, dre.ebit]);
+
+
 
   return (
     <div className="space-y-6">
@@ -405,11 +436,43 @@ export function DashboardTab() {
       </div>
 
 
+
+      {/* Composição mensal de custos × EBIT (stacked + line) */}
+      <ChartCard title="Composição Mensal de Custos × EBIT (12m)">
+        <ResponsiveContainer width="100%" height={340}>
+          <ComposedChart data={dreMensalFuncao}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
+            <YAxis
+              yAxisId="left"
+              stroke="var(--muted-foreground)"
+              fontSize={10}
+              tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              stroke="var(--muted-foreground)"
+              fontSize={10}
+              tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+            />
+            <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => fmtBRL(v)} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Bar yAxisId="left" dataKey="CPV/CMV/CSP" stackId="custos" fill="#0F2C5C" radius={[0, 0, 0, 0]} />
+            <Bar yAxisId="left" dataKey="Administrativas" stackId="custos" fill="#1E5BB8" />
+            <Bar yAxisId="left" dataKey="Comerciais" stackId="custos" fill="#3FA9F5" />
+            <Bar yAxisId="left" dataKey="Financeiras" stackId="custos" fill="#5ED4A8" radius={[4, 4, 0, 0]} />
+            <Line yAxisId="right" type="monotone" dataKey="EBIT" stroke="var(--success)" strokeWidth={2.5} dot={{ r: 3 }} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
       {/* Termômetro de Valor — WACC × ROIC */}
       <WaccRoicMeter wacc={ind.wacc} roic={ind.roic} />
 
       {/* Termômetro de Insolvência (Kanitz) — alerta precoce de descontinuidade */}
       <KanitzCard />
+
 
     </div>
   );
