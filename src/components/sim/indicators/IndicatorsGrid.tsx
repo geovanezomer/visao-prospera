@@ -110,15 +110,6 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             formula="(Receita − Custos Variáveis) ÷ Receita × 100"
             calc={c.margemContribuicao}
           />
-
-          <Ind
-            label="EVA (Lucro Econômico)"
-            v={fmtBRL(eva)}
-            tone={eva >= 0 ? "pos" : "neg"}
-            desc="Economic Value Added — lucro que sobra DEPOIS de remunerar todo o capital (próprio + terceiros) ao custo do WACC. EVA > 0 ⇒ a empresa cria valor; EVA < 0 ⇒ destrói valor mesmo com lucro contábil positivo."
-            formula="(ROIC − WACC) × Capital Investido"
-            calc={evaCalc}
-          />
         </Group>
 
 
