@@ -233,10 +233,11 @@ function buildDCF(
     );
   }
 
-  // Auditoria bug #8: Gordon clássico = FCF_{T+1} / (WACC − g). `lastYearFCF` JÁ é
-  // o FCF do último ano projetado (período T), que internamente já cresceu. Aplicar
-  // (1+g) extra resulta em dupla contagem de um período de crescimento.
-  const terminalValue = spread >= 0.005 ? lastYearFCF / spread : lastYearFCF * 5; // fallback p/ WACC≈g (perpetuidade não converge)
+  // Gordon clássico: VT_T = FCF_{T+1} / (WACC − g) = FCF_T · (1+g) / (WACC − g).
+  // `lastYearFCF` é o FCF do último ano projetado (período T); aplicamos (1+g) para
+  // obter o fluxo do primeiro ano da perpetuidade (T+1), conforme convenção CFA/Damodaran.
+  const terminalValue =
+    spread >= 0.005 ? (lastYearFCF * (1 + g)) / spread : lastYearFCF * 5; // fallback p/ WACC≈g
   const npvTerminal = terminalValue / Math.pow(1 + waccMonthly, fcfProjected.length);
 
   return {
@@ -476,12 +477,12 @@ export function traceValuation(
           },
           {
             label: "Valor terminal (Gordon)",
-            formula: `FCL_LTM / (WACC − g) = ${dcf.fcfProjected
+            formula: `FCL_LTM · (1+g) / (WACC − g) = ${dcf.fcfProjected
               .slice(-12)
               .reduce((a, b) => a + b, 0)
-              .toFixed(0)} / ${(dcf.wacc / 100 - dcf.growthTerminal).toFixed(4)}`,
+              .toFixed(0)} · ${(1 + dcf.growthTerminal).toFixed(4)} / ${(dcf.wacc / 100 - dcf.growthTerminal).toFixed(4)}`,
             value: dcf.terminalValue,
-            note: "Auditoria #7: (1+g) removido — FCL_LTM já é período T.",
+            note: "Gordon clássico: numerador é FCF_{T+1} = FCF_T · (1+g).",
           },
           { label: "VP do terminal", formula: `VT / (1+wacc_m)^N`, value: dcf.npvTerminal },
           { label: "EV DCF (VPN+VP_terminal)", formula: "VPN_fluxos + VP_terminal", value: evDCF },
@@ -597,14 +598,14 @@ export function runValuationSelfTests(): { results: ValuationTestCase[]; allPass
     const fcl = 600_000,
       g = 0.02,
       wacc = 0.12;
-    const vt = fcl / (wacc - g);
-    add("Valor terminal Gordon (FCL=600k, g=2%, WACC=12%)", "FCL/(WACC−g)", 6_000_000, vt);
+    const vt = (fcl * (1 + g)) / (wacc - g);
+    add("Valor terminal Gordon (FCL=600k, g=2%, WACC=12%)", "FCL·(1+g)/(WACC−g)", 6_120_000, vt);
   }
   {
     const fcl = 600_000,
       g = 0.15,
       wacc = 0.1;
-    const vt = wacc - g >= 0.005 ? fcl / (wacc - g) : fcl * 5;
+    const vt = wacc - g >= 0.005 ? (fcl * (1 + g)) / (wacc - g) : fcl * 5;
     add("Fallback quando g≥WACC", "FCL × 5", 3_000_000, vt);
   }
   {
