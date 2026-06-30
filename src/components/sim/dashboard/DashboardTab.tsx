@@ -365,7 +365,39 @@ export function DashboardTab() {
       </div>
 
 
-{/* placeholder - replaced below */}
+      {/* Linha 5 — Despesas | Estrutura de Capital */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ChartCard title="Composição de Despesas">
+          <ResponsiveContainer width="100%" height={260}>
+            <PieChart>
+              <Pie data={despesasPie} dataKey="value" nameKey="name" cx="35%" outerRadius="85%">
+                {despesasPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+              </Pie>
+              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => fmtBRL(v)} />
+              <Legend
+                layout="vertical"
+                align="right"
+                verticalAlign="middle"
+                iconType="circle"
+                wrapperStyle={{ fontSize: 11, lineHeight: "18px", paddingLeft: 8 }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard title="Estrutura de Capital">
+          <ResponsiveContainer width="100%" height={260}>
+            <PieChart>
+              <Pie data={capitalPie} dataKey="value" nameKey="name" innerRadius="55%" outerRadius="85%" paddingAngle={2}>
+                {capitalPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+              </Pie>
+              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => fmtBRL(v)} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
 
       {/* Termômetro de Valor — WACC × ROIC */}
       <WaccRoicMeter wacc={ind.wacc} roic={ind.roic} />
