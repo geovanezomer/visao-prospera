@@ -371,8 +371,7 @@ export function buildCashFlow(
     dividendos,
     mutuosConcedidos,
     mutuosDevolvidos,
-    mutuosPassivosCaptados,
-    mutuosPassivosAmortizados,
+
   });
 
   // Permutas: somam direto à variação de caixa, fora de OP/INV/FIN.
