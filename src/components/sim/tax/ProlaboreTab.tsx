@@ -4,7 +4,6 @@
  */
 import { useEffect, useMemo } from "react";
 import { SociosCard } from "./SociosCard";
-import { MutuosSociosCard } from "./MutuosSociosCard";
 
 import { StatCard } from "@/components/sim/shared/primitives";
 import { useFinance, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
@@ -114,9 +113,8 @@ export function ProlaboreTab() {
       </div>
       <SociosCard />
 
-      {/* Empréstimos a sócios (mútuo PJ→PF) — cadastro de contratos com
-          alerta tributário fixo. Sincroniza com Fluxo de Caixa via SSOT. */}
-      <MutuosSociosCard />
+      {/* Empréstimos PJ→PF (mútuo ativo a sócios) foram movidos para a aba Receitas
+          — os juros do mútuo são receita financeira e o cadastro vive lá. */}
 
       {/* Mútuos PF→PJ (sócio empresta para a empresa / AFAC) foram
           unificados no card "O que a empresa deve" da aba Capital,
