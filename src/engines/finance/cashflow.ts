@@ -6,6 +6,7 @@ import type { MonthlyTax } from "./tax/shared";
 import { MESES, sum, zeros12 } from "./format";
 import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 import { getSplitPaymentAtivo } from "./taxDefaults";
+import { getDistribuicaoRealizadaMeses } from "./socios";
 
 export interface CashFlow {
   saldoInicial: number[];
