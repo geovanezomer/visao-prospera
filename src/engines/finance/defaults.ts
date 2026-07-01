@@ -528,6 +528,9 @@ export function migrateState(s: AppState): AppState {
     ...d,
     valores: coerceMonths(d.valores),
   }));
+  // [SSOT] Remove linha legada `id="prolabore"` (seed antigo) de states persistidos —
+  // pró-labore agora vem 100% de `state.socios` via syncSociosToCosts.
+  costs = costs.filter((c) => c.id !== "prolabore");
   costs = costs.map((c) => ({ ...c, values: coerceMonths(c.values) }));
   cashflow.aportes = coerceMonths(cashflow.aportes);
   cashflow.emprestimosCaptados = coerceMonths(cashflow.emprestimosCaptados);
