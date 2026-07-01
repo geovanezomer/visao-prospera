@@ -229,9 +229,8 @@ export function computeFluxos(args: {
       args.amortizacoes[i] -
       args.dividendos[i] -
       (mutCon[i] ?? 0) +
-      (mutDev[i] ?? 0) +
-      (mutPassCap[i] ?? 0) -
-      (mutPassAmort[i] ?? 0);
+      (mutDev[i] ?? 0);
+
     variacaoCaixa[i] = fluxoOperacional[i] + fluxoInvestimento[i] + fluxoFinanciamento[i];
   }
   return { fluxoOperacional, fluxoInvestimento, fluxoFinanciamento, variacaoCaixa };
