@@ -229,7 +229,7 @@ export function DebtContractsCard({
 
                       <Field
                         label="Tipo de credor"
-                        hint="Quem emprestou o dinheiro. Fomento (BNDES, FINEP, bancos de desenvolvimento) costuma ter taxa mais baixa. Sócio = empréstimo do dono à empresa (mútuo) — exige contrato formal."
+                        hint="Quem emprestou o dinheiro. Fomento (BNDES, FINEP, bancos de desenvolvimento) costuma ter taxa mais baixa. Empréstimos de sócios (mútuo PF→PJ / AFAC) devem ser lançados na aba 'Retiradas e Aportes' para evitar dupla contagem."
                       >
                         <select
                           value={c.tipoCredor ?? "banco"}
@@ -239,7 +239,6 @@ export function DebtContractsCard({
                           <option value="banco">Banco</option>
                           <option value="fomento">Fomento (BNDES, FINEP…)</option>
                           <option value="fornecedor">Fornecedor</option>
-                          <option value="socio">Sócio</option>
                           <option value="outro">Outro</option>
                         </select>
                       </Field>
