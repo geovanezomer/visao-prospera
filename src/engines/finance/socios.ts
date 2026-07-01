@@ -340,11 +340,13 @@ export function syncSociosToCosts(state: AppState, regime: TaxRegime): AppState 
     0,
   );
 
-  // Remove linhas system anteriores e quaisquer linhas legadas com os mesmos
-  // rótulos (defesa contra duplicatas vindas de estados antigos persistidos).
+  // Remove linhas system anteriores E linhas legadas com id="prolabore" ou label
+  // "Pró-labore (sócios)" (defesa contra seeds/duplicatas de states persistidos).
   const semSystem = state.costs.filter((c) => {
     if (c.id === SOCIOS_PROLABORE_LINE_ID || c.id === SOCIOS_PATRONAL_LINE_ID) return false;
-    if (c.system && (c.label === "Pró-labore (sócios)" || c.label === "INSS Patronal sócios")) {
+    // [SSOT] Seed legado — pró-labore agora vem SÓ de `state.socios`.
+    if (c.id === "prolabore") return false;
+    if (c.label === "Pró-labore (sócios)" || c.label === "INSS Patronal sócios") {
       return false;
     }
     return true;

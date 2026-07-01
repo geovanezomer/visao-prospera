@@ -6,6 +6,7 @@ import type { MonthlyTax } from "./tax/shared";
 import { MESES, sum, zeros12 } from "./format";
 import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 import { getSplitPaymentAtivo } from "./taxDefaults";
+import { getDistribuicaoRealizadaMeses } from "./socios";
 
 export interface CashFlow {
   saldoInicial: number[];
@@ -334,7 +335,12 @@ export function buildCashFlow(
   const aportes = cashflow.aportes.slice();
   const emprestimosCaptados = cashflow.emprestimosCaptados.slice();
   const amortizacoes = cashflow.amortizacoes.slice();
-  const dividendos = cashflow.dividendos.slice();
+  // [SSOT] Dividendos/distribuição saem SEMPRE de state.distribuicaoRealizada
+  // (fonte única cadastrada em Pró-labore). cashflow.dividendos permanece como
+  // fallback legado apenas se distribuicaoRealizada não existir.
+  const dividendos = state.distribuicaoRealizada
+    ? Array.from(getDistribuicaoRealizadaMeses(state))
+    : cashflow.dividendos.slice();
   const mutuosConcedidos = (cashflow.mutuosConcedidos ?? zeros12()).slice();
   const mutuosDevolvidos = (cashflow.mutuosDevolvidos ?? zeros12()).slice();
   // Mútuos PF→PJ (sócio→empresa) foram consolidados em capital.debtContracts

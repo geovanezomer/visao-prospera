@@ -2,19 +2,19 @@
  * ProlaboreTab — página dedicada ao card Pró-labore × Distribuição de Lucros.
  * Inclui 4 cards de KPI no topo, no mesmo padrão da página Fluxo de Caixa.
  */
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { SociosCard } from "./SociosCard";
 
 import { StatCard } from "@/components/sim/shared/primitives";
-import { useFinance, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { buildDRE } from "@/engines/finance/dre";
-import { syncSociosToCosts, getDistribuicaoRealizadaMeses } from "@/engines/finance/socios";
+import { syncSociosToCosts } from "@/engines/finance/socios";
 import { fmtBRL } from "@/engines/finance/format";
 
 export function ProlaboreTab() {
-  const { state, update } = useFinance();
-  const readOnly = useFinanceReadOnly();
+  const { state } = useFinance();
+
   const regime = resolveEffectiveRegime(state);
 
   const payoutPct = state.payoutPolicyPct ?? 100;
@@ -41,19 +41,10 @@ export function ProlaboreTab() {
     }
   }, [state, regime, payoutPct, reservaMin]);
 
-  // SSOT: Distribuição de dividendos no Fluxo de Caixa vem da
-  // Distribuição REALIZADA (decisão dos sócios), não mais da capacidade prevista.
-  // Isso permite à empresa "segurar caixa" sem distorcer DRE/Balanço.
-  useEffect(() => {
-    if (readOnly) return;
-    update((cur) => {
-      const realizada = getDistribuicaoRealizadaMeses(cur);
-      const atual = cur.cashflow.dividendos;
-      const igual = atual.length === 12 && atual.every((v, i) => Math.abs(v - realizada[i]) < 0.01);
-      if (igual) return cur;
-      return { ...cur, cashflow: { ...cur.cashflow, dividendos: realizada } };
-    });
-  }, [state.distribuicaoRealizada, state.cashflow.dividendos, readOnly, update]);
+  // [SSOT] Não há mais sincronização manual `distribuicaoRealizada → cashflow.dividendos`.
+  // O `buildCashFlow` deriva dividendos direto de `state.distribuicaoRealizada`.
+
+
 
 
   const pct = (v: number) =>

@@ -117,7 +117,9 @@ function costVendasFor(business: BusinessType): CostLine[] {
 function fixosFor(business: BusinessType): CostLine[] {
   const base: CostLine[] = [
     line("aluguel", "Aluguel", "fixo", 2500),
-    line("prolabore", "Pró-labore (sócios)", "fixo", 3000),
+    // [SSOT] Pró-labore NÃO tem seed manual em `costs`. Fonte única = `state.socios`
+    // sincronizado por `syncSociosToCosts` → linha system `__socios_prolabore__`.
+    // Seed antigo removido para eliminar duplicidade no DRE/EBITDA/Lucro Líquido.
     line("admin_clt", "Salários administrativos (CLT)", "fixo", 2800, undefined, {
       encargosAuto: true,
       encargosPct: 70,
@@ -526,6 +528,9 @@ export function migrateState(s: AppState): AppState {
     ...d,
     valores: coerceMonths(d.valores),
   }));
+  // [SSOT] Remove linha legada `id="prolabore"` (seed antigo) de states persistidos —
+  // pró-labore agora vem 100% de `state.socios` via syncSociosToCosts.
+  costs = costs.filter((c) => c.id !== "prolabore");
   costs = costs.map((c) => ({ ...c, values: coerceMonths(c.values) }));
   cashflow.aportes = coerceMonths(cashflow.aportes);
   cashflow.emprestimosCaptados = coerceMonths(cashflow.emprestimosCaptados);
