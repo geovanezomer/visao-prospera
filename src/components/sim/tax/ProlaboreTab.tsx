@@ -13,8 +13,8 @@ import { syncSociosToCosts } from "@/engines/finance/socios";
 import { fmtBRL } from "@/engines/finance/format";
 
 export function ProlaboreTab() {
-  const { state, update } = useFinance();
-  const readOnly = useFinanceReadOnly();
+  const { state, update: _update } = useFinance();
+  void _update;
   const regime = resolveEffectiveRegime(state);
 
   const payoutPct = state.payoutPolicyPct ?? 100;
@@ -41,19 +41,10 @@ export function ProlaboreTab() {
     }
   }, [state, regime, payoutPct, reservaMin]);
 
-  // SSOT: Distribuição de dividendos no Fluxo de Caixa vem da
-  // Distribuição REALIZADA (decisão dos sócios), não mais da capacidade prevista.
-  // Isso permite à empresa "segurar caixa" sem distorcer DRE/Balanço.
-  useEffect(() => {
-    if (readOnly) return;
-    update((cur) => {
-      const realizada = getDistribuicaoRealizadaMeses(cur);
-      const atual = cur.cashflow.dividendos;
-      const igual = atual.length === 12 && atual.every((v, i) => Math.abs(v - realizada[i]) < 0.01);
-      if (igual) return cur;
-      return { ...cur, cashflow: { ...cur.cashflow, dividendos: realizada } };
-    });
-  }, [state.distribuicaoRealizada, state.cashflow.dividendos, readOnly, update]);
+  // [SSOT] Não há mais sincronização manual `distribuicaoRealizada → cashflow.dividendos`.
+  // O `buildCashFlow` deriva dividendos direto de `state.distribuicaoRealizada`.
+
+
 
 
   const pct = (v: number) =>
