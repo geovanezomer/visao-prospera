@@ -200,10 +200,6 @@ export function computeFluxos(args: {
   mutuosConcedidos?: number[];
   /** Devolução de empréstimos pelos sócios (entrada). Opcional p/ retrocompat. */
   mutuosDevolvidos?: number[];
-  /** Mútuos PF→PJ captados de sócios (entrada). Opcional p/ retrocompat. */
-  mutuosPassivosCaptados?: number[];
-  /** Amortização de mútuos passivos (saída). Opcional p/ retrocompat. */
-  mutuosPassivosAmortizados?: number[];
 }): {
   fluxoOperacional: number[];
   fluxoInvestimento: number[];
@@ -216,8 +212,7 @@ export function computeFluxos(args: {
   const variacaoCaixa = zeros12();
   const mutCon = args.mutuosConcedidos ?? zeros12();
   const mutDev = args.mutuosDevolvidos ?? zeros12();
-  const mutPassCap = args.mutuosPassivosCaptados ?? zeros12();
-  const mutPassAmort = args.mutuosPassivosAmortizados ?? zeros12();
+
   for (let i = 0; i < 12; i++) {
     fluxoOperacional[i] =
       args.recebimentos[i] +
