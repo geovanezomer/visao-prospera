@@ -4,7 +4,6 @@
  */
 import { useEffect, useMemo } from "react";
 import { SociosCard } from "./SociosCard";
-import { MutuosSociosCard } from "./MutuosSociosCard";
 
 import { StatCard } from "@/components/sim/shared/primitives";
 import { useFinance, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
