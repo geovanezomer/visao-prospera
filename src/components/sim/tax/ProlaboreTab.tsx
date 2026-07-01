@@ -118,9 +118,9 @@ export function ProlaboreTab() {
           alerta tributário fixo. Sincroniza com Fluxo de Caixa via SSOT. */}
       <MutuosSociosCard />
 
-      {/* Mútuos PF→PJ — espelho simétrico: sócio empresta para a empresa.
-          Captação entra no caixa, devolução sai, juros viram Despesa Financeira. */}
-      <MutuosPassivosCard />
+      {/* Mútuos PF→PJ (sócio empresta para a empresa / AFAC) foram
+          unificados no card "O que a empresa deve" da aba Capital,
+          selecionando "Sócio (mútuo PF→PJ / AFAC)" como tipo de credor. */}
       {/* PermutasCard movido para o topo da aba Fluxo de Caixa. */}
 
 
