@@ -28,7 +28,7 @@ import { calcReal } from "./tax/real";
 import type { MonthlyTax } from "./tax/shared";
 
 // Regex compilada uma única vez (era recriada a cada chamada de classifyCosts).
-const LOAN_INTEREST_RE = /juros[^a-z]*(sobre)?[^a-z]*(empr[eé]stimo|contrato)/i;
+const LOAN_INTEREST_RE = /juros[^a-z]*(sobre)?[^a-z]*(empr[eé]stimo|contrato|m[uú]tuo|afac|s[oó]cio)/i;
 
 
 
