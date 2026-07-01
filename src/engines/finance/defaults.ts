@@ -310,8 +310,7 @@ export const DEFAULT_STATE: AppState = {
     amortizacoes: fill12(0),
     mutuosConcedidos: fill12(0),
     mutuosDevolvidos: fill12(0),
-    mutuosPassivosCaptados: fill12(0),
-    mutuosPassivosAmortizados: fill12(0),
+
     permutas: [
       {
         id: "perm-credito-default",
