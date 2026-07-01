@@ -514,6 +514,11 @@ export function RevenueTab() {
         </div>
       </SectionBlock>
 
+      {/* Empréstimos PJ→PF (mútuo ativo aos sócios) — receita financeira
+          de juros; cadastro dos contratos aqui, sincroniza com Fluxo de
+          Caixa e Balanço via SSOT. */}
+      <MutuosSociosCard />
+
       <PrazoTable
         title="Prazo Médio de Recebimento (PMR) — 12 meses"
         hint="Dias entre faturar e receber do cliente. A variação mensal é refletida no Fluxo de Caixa."
@@ -543,10 +548,6 @@ export function RevenueTab() {
         }
       />
 
-      {/* Empréstimos PJ→PF (mútuo ativo aos sócios) — receita financeira
-          de juros; cadastro dos contratos aqui, sincroniza com Fluxo de
-          Caixa e Balanço via SSOT. */}
-      <MutuosSociosCard />
     </div>
   );
 }
