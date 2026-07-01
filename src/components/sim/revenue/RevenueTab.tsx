@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { PrazoTable } from "@/components/sim/shared/PrazoTable";
 import { MonthlyCardList } from "@/components/sim/shared/MonthlyCardList";
+import { MutuosSociosCard } from "@/components/sim/tax/MutuosSociosCard";
 
 function fixedBase(values: number[]): number {
   if (!values?.length) return 0;
