@@ -204,20 +204,10 @@ export interface MutuoSocio {
   mesInicioDevolucao: number; // 1..12 (mês da 1ª parcela)
 }
 
-/** Contrato de mútuo PF→PJ (empréstimo do sócio para a empresa, AFAC remunerado).
- *  Espelho simétrico de MutuoSocio: entrada de caixa na captação,
- *  saídas mensais de amortização + juros pagos (Despesa Financeira).
- *  Saldo devedor remanescente é Passivo (Mútuos a Pagar). */
-export interface MutuoPassivo {
-  id: string;
-  socioId?: string;
-  nome: string;
-  valorCaptado: number; // R$ principal recebido pela empresa
-  mesCaptacao: number; // 1..12 (mês da entrada de caixa)
-  taxaMensalPct: number; // % a.m. paga ao sócio (≥ SELIC mensal recomendado)
-  prazoMeses: number;
-  mesInicioDevolucao: number;
-}
+// [SSOT] Mútuos PF→PJ (sócio empresta para a empresa) são cadastrados como
+// DebtContract com `tipoCredor="socio"` na aba Capital. Não há tipo separado
+// para evitar duplicidade contábil (DRE/DFC/BP).
+
 
 export interface CapitalStructure {
   proprio: number; // % capital próprio (E) — usado apenas como referência se dividaOnerosa/PL não preenchidos
@@ -544,11 +534,9 @@ export interface CashFlowConfig {
   mutuosConcedidos: Months;
   /** Devolução de empréstimos por sócios (amortização do principal) — entrada de caixa. */
   mutuosDevolvidos: Months;
-  /** Mútuos PF→PJ captados (sócio empresta para a PJ) — entrada de caixa.
-   *  Derivado de state.mutuosPassivos via aggregateMutuosPassivos (SSOT). */
-  mutuosPassivosCaptados: Months;
-  /** Devolução de principal ao sócio (mútuo passivo) — saída de caixa. */
-  mutuosPassivosAmortizados: Months;
+  // [SSOT] Mútuos PF→PJ foram consolidados em capital.debtContracts →
+  // emprestimosCaptados/amortizacoes. Sem arrays dedicados aqui.
+
   /** Permutas simples — operações sem juros, contrato ou amortização
    *  (serviço por serviço, cheques, recebíveis, materiais). Afetam apenas
    *  o caixa, NÃO impactam DRE nem geram passivos/ativos próprios. */
@@ -695,6 +683,7 @@ export interface AppState {
   /** Respostas qualitativas do módulo de Análise Estratégica (opcional). */
   strategic?: StrategicAnswers;
 
+
   /** Sócios retirantes — Pró-labore × Distribuição de Lucros. Sincronizado
    *  bidirecionalmente com linhas system em `costs` via syncSociosToCosts. */
   socios?: SocioRetirada[];
@@ -703,9 +692,10 @@ export interface AppState {
    *  com cashflow.mutuosConcedidos/Devolvidos via aggregateMutuos (SSOT). */
   mutuosSocios?: MutuoSocio[];
 
-  /** Mútuos PF→PJ (sócio empresta para a empresa, AFAC remunerado).
-   *  Sincronizado com cashflow.mutuosPassivos* via aggregateMutuosPassivos (SSOT). */
-  mutuosPassivos?: MutuoPassivo[];
+  // [SSOT] Mútuos PF→PJ (sócio→empresa) foram consolidados em
+  // `capital.debtContracts` (tipoCredor="socio"). Removido campo dedicado
+  // para eliminar duplicidade contábil.
+
 
   /** Distribuição de lucros REALIZADA (12 meses). Diferente da "Previsão"
    *  (capacidade teórica calculada a partir do lucro), esta é a decisão dos

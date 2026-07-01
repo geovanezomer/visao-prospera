@@ -7,7 +7,7 @@
 // IMPORTANTE: depreciação acumulada, amortização acumulada, PDD e ações em
 // tesouraria entram como POSITIVOS no input e são SUBTRAÍDAS aqui.
 import type { AppState, BalancoDetalhado, CostLine } from "./types";
-import { aggregateMutuosPassivos } from "./mutuosPassivos";
+import { aggregateMutuos } from "./mutuosSocios";
 import { safeNumber as n } from "./safeMath";
 
 const sumObj = (o: Record<string, number | undefined> | undefined): number =>
@@ -247,13 +247,12 @@ export function suggestBalancoFromState(
   const caixaOcioso = cap.caixaOcioso || 0;
   const caixaOper = Math.max(0, (cap.disponibilidades || 0) - caixaOcioso);
 
-  // Mútuos passivos (PF→PJ): saldo devedor remanescente ao fim do horizonte
-  // = ΣPV captado − Σamortizações dentro dos 12 meses simulados.
-  const mpAgg = aggregateMutuosPassivos(state.mutuosPassivos);
-  const mutuosPassivosSaldoDevedor = Math.max(
-    0,
-    mpAgg.totalCaptado - mpAgg.amortizacao.reduce((a, b) => a + b, 0),
-  );
+  // Mútuos ativos (PJ→PF, empresa emprestou ao sócio): saldo devedor
+  // remanescente ao fim do horizonte compõe o Realizável a Longo Prazo
+  // (créditos com partes relacionadas — CPC 05).
+  const msAgg = aggregateMutuos(state.mutuosSocios);
+  const mutuosAtivosSaldoAReceber = Math.max(0, msAgg.saldoFinal);
+
 
   // Provisões ~ 1 mês.
   const salariosPagar = folhaAnual > 0 ? folhaAnual / 12 : 0;
@@ -270,6 +269,11 @@ export function suggestBalancoFromState(
       estoques: cap.estoques || 0,
     },
     ativoNaoCirculante: {
+      realizavelLP: {
+        // Créditos com sócios (mútuos ativos PJ→PF) — saldo devedor
+        // remanescente ao fim de 12m. SSOT: aggregateMutuos(state.mutuosSocios).
+        creditosLP: mutuosAtivosSaldoAReceber,
+      },
       imobilizado: {
         outrosImobilizados: capexTotal,
         depreciacaoAcumulada: depAcum,
@@ -282,12 +286,12 @@ export function suggestBalancoFromState(
       salariosEncargos: salariosPagar,
     },
     passivoNaoCirculante: {
+      // Toda dívida onerosa (bancos + mútuos PF→PJ cadastrados como
+      // debtContracts com tipoCredor="socio") entra pelo split CP/LP a partir
+      // de `capital.dividaOnerosa`. SSOT único, sem duplicidade.
       emprestimosFinanciamentosLP: dividaLP,
-      // Mútuos passivos (PF→PJ) — saldo devedor remanescente ao fim do horizonte
-      // (PV captado − amortizações realizadas dentro de 12m). Compõe Passivo
-      // como "Mútuos a Pagar a Sócios" (obrigação não-onerosa de terceiros).
-      outrasObrigacoesLP: mutuosPassivosSaldoDevedor,
     },
+
     patrimonioLiquido: {
       resultadoExercicio: opts.dreLucroLiquido,
     },
