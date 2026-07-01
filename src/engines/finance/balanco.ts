@@ -269,6 +269,11 @@ export function suggestBalancoFromState(
       estoques: cap.estoques || 0,
     },
     ativoNaoCirculante: {
+      realizavelLP: {
+        // Créditos com sócios (mútuos ativos PJ→PF) — saldo devedor
+        // remanescente ao fim de 12m. SSOT: aggregateMutuos(state.mutuosSocios).
+        creditosLP: mutuosAtivosSaldoAReceber,
+      },
       imobilizado: {
         outrosImobilizados: capexTotal,
         depreciacaoAcumulada: depAcum,
@@ -281,12 +286,12 @@ export function suggestBalancoFromState(
       salariosEncargos: salariosPagar,
     },
     passivoNaoCirculante: {
+      // Toda dívida onerosa (bancos + mútuos PF→PJ cadastrados como
+      // debtContracts com tipoCredor="socio") entra pelo split CP/LP a partir
+      // de `capital.dividaOnerosa`. SSOT único, sem duplicidade.
       emprestimosFinanciamentosLP: dividaLP,
-      // Mútuos passivos (PF→PJ) — saldo devedor remanescente ao fim do horizonte
-      // (PV captado − amortizações realizadas dentro de 12m). Compõe Passivo
-      // como "Mútuos a Pagar a Sócios" (obrigação não-onerosa de terceiros).
-      outrasObrigacoesLP: mutuosPassivosSaldoDevedor,
     },
+
     patrimonioLiquido: {
       resultadoExercicio: opts.dreLucroLiquido,
     },
