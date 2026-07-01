@@ -2,14 +2,14 @@
  * ProlaboreTab — página dedicada ao card Pró-labore × Distribuição de Lucros.
  * Inclui 4 cards de KPI no topo, no mesmo padrão da página Fluxo de Caixa.
  */
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { SociosCard } from "./SociosCard";
 
 import { StatCard } from "@/components/sim/shared/primitives";
-import { useFinance, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
+import { useFinance } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { buildDRE } from "@/engines/finance/dre";
-import { syncSociosToCosts, getDistribuicaoRealizadaMeses } from "@/engines/finance/socios";
+import { syncSociosToCosts } from "@/engines/finance/socios";
 import { fmtBRL } from "@/engines/finance/format";
 
 export function ProlaboreTab() {
