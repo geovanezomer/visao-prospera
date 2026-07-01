@@ -7,7 +7,7 @@
 // IMPORTANTE: depreciação acumulada, amortização acumulada, PDD e ações em
 // tesouraria entram como POSITIVOS no input e são SUBTRAÍDAS aqui.
 import type { AppState, BalancoDetalhado, CostLine } from "./types";
-import { aggregateMutuosPassivos } from "./mutuosPassivos";
+import { aggregateMutuos } from "./mutuosSocios";
 import { safeNumber as n } from "./safeMath";
 
 const sumObj = (o: Record<string, number | undefined> | undefined): number =>
