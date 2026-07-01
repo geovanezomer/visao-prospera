@@ -534,8 +534,6 @@ export function migrateState(s: AppState): AppState {
   cashflow.amortizacoes = coerceMonths(cashflow.amortizacoes);
   cashflow.mutuosConcedidos = coerceMonths(cashflow.mutuosConcedidos ?? []);
   cashflow.mutuosDevolvidos = coerceMonths(cashflow.mutuosDevolvidos ?? []);
-  cashflow.mutuosPassivosCaptados = coerceMonths(cashflow.mutuosPassivosCaptados ?? []);
-  cashflow.mutuosPassivosAmortizados = coerceMonths(cashflow.mutuosPassivosAmortizados ?? []);
   // Permutas simples — coage cada linha; mantém defaults se array ausente.
   cashflow.permutas = (cashflow.permutas ?? []).map((p) => ({
     ...p,
