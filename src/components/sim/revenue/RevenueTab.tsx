@@ -542,6 +542,11 @@ export function RevenueTab() {
           })
         }
       />
+
+      {/* Empréstimos PJ→PF (mútuo ativo aos sócios) — receita financeira
+          de juros; cadastro dos contratos aqui, sincroniza com Fluxo de
+          Caixa e Balanço via SSOT. */}
+      <MutuosSociosCard />
     </div>
   );
 }
