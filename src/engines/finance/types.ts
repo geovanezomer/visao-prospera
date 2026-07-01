@@ -683,7 +683,7 @@ export interface AppState {
   cashflow: CashFlowConfig;
 
   /** Respostas qualitativas do módulo de Análise Estratégica (opcional). */
-  strategic?: StrategicAnswers;
+  // (comentário movido acima; mantém compat)
 
   /** Sócios retirantes — Pró-labore × Distribuição de Lucros. Sincronizado
    *  bidirecionalmente com linhas system em `costs` via syncSociosToCosts. */
@@ -693,9 +693,10 @@ export interface AppState {
    *  com cashflow.mutuosConcedidos/Devolvidos via aggregateMutuos (SSOT). */
   mutuosSocios?: MutuoSocio[];
 
-  /** Mútuos PF→PJ (sócio empresta para a empresa, AFAC remunerado).
-   *  Sincronizado com cashflow.mutuosPassivos* via aggregateMutuosPassivos (SSOT). */
-  mutuosPassivos?: MutuoPassivo[];
+  // [SSOT] Mútuos PF→PJ (sócio→empresa) foram consolidados em
+  // `capital.debtContracts` (tipoCredor="socio"). Removido campo dedicado
+  // para eliminar duplicidade contábil.
+
 
   /** Distribuição de lucros REALIZADA (12 meses). Diferente da "Previsão"
    *  (capacidade teórica calculada a partir do lucro), esta é a decisão dos
