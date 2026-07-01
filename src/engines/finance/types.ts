@@ -534,11 +534,9 @@ export interface CashFlowConfig {
   mutuosConcedidos: Months;
   /** Devolução de empréstimos por sócios (amortização do principal) — entrada de caixa. */
   mutuosDevolvidos: Months;
-  /** Mútuos PF→PJ captados (sócio empresta para a PJ) — entrada de caixa.
-   *  Derivado de state.mutuosPassivos via aggregateMutuosPassivos (SSOT). */
-  mutuosPassivosCaptados: Months;
-  /** Devolução de principal ao sócio (mútuo passivo) — saída de caixa. */
-  mutuosPassivosAmortizados: Months;
+  // [SSOT] Mútuos PF→PJ foram consolidados em capital.debtContracts →
+  // emprestimosCaptados/amortizacoes. Sem arrays dedicados aqui.
+
   /** Permutas simples — operações sem juros, contrato ou amortização
    *  (serviço por serviço, cheques, recebíveis, materiais). Afetam apenas
    *  o caixa, NÃO impactam DRE nem geram passivos/ativos próprios. */
