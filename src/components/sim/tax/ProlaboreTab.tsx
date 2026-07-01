@@ -13,8 +13,8 @@ import { syncSociosToCosts } from "@/engines/finance/socios";
 import { fmtBRL } from "@/engines/finance/format";
 
 export function ProlaboreTab() {
-  const { state, update: _update } = useFinance();
-  void _update;
+  const { state } = useFinance();
+
   const regime = resolveEffectiveRegime(state);
 
   const payoutPct = state.payoutPolicyPct ?? 100;
