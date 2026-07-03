@@ -2,9 +2,9 @@
 // Painel Administrativo v2 — visível apenas para ADMIN_EMAIL.
 // Abas: Usuários · Sistema · E-mails · Webhooks · Provider.
 // ============================================================================
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { ShieldCheck, ArrowLeft, Users, Settings, Mail, Webhook, CreditCard, LayoutDashboard, FileClock, Flag, Megaphone, Package, Activity, FileText } from "lucide-react";
+import { ShieldCheck, ArrowLeft, Users, Settings, Mail, Webhook, CreditCard, LayoutDashboard, FileClock, Flag, Megaphone, Package, Activity, FileText, Search } from "lucide-react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
