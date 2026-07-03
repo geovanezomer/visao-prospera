@@ -346,9 +346,12 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                               }}
                             >
                               {m.content}
-                            </ReactMarkdown>
+                          </ReactMarkdown>
                           </Suspense>
                         </div>
+                        {m.role === "assistant" && m.verification && (
+                          <VerificationFooter verification={m.verification} />
+                        )}
                       </div>
                     </div>
                   );
