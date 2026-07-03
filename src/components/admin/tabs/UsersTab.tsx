@@ -53,6 +53,19 @@ export function UsersTab() {
   const [detailFor, setDetailFor] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
+  // Command palette navega com ?user=<id>; abrimos o drawer ao montar/alterar.
+  const search_ = adminRouteApi.useSearch();
+  const navigate = adminRouteApi.useNavigate();
+  useEffect(() => {
+    const u = (search_ as { user?: string }).user;
+    if (u) {
+      setDetailFor(u);
+      // Limpa o param para não reabrir se o admin fechar o drawer manualmente.
+      navigate({ to: "/admin", search: (prev) => ({ ...prev, user: undefined }), replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(search_ as { user?: string }).user]);
+
   const load = async () => {
     setLoading(true);
     try {
