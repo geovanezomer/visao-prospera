@@ -225,8 +225,7 @@ const handlers: Record<string, ToolHandler> = {
     out.push(`| **Total** | **${brl(cargaMensalTotal)}** | — | **${brl(floatTotal)}** |`);
 
     // ===== 2. Impacto permanente em capital de giro =====
-    const cf = buildCashFlow(state, regime);
-    const ind = calcIndicators(state, buildDRE(state, regime).dre, cf);
+    const { cf, ind } = model;
     const ncgAtual = ind.ncg ?? 0;
     const ncgPos = ncgAtual + floatTotal; // PC tributário some → NCG sobe
     out.push(``, `### 2. Capital de giro & custo de carregamento`);
