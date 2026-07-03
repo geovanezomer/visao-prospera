@@ -125,8 +125,47 @@ export const Route = createFileRoute("/app")({
       },
     ],
   }),
-  component: SimulaPro,
+  component: SimulaProGated,
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// SubscriptionGate: bloqueia acesso ao app quando não há assinatura ativa
+// nem trial válido. Grace period de 7 dias para past_due antes do bloqueio.
+// ─────────────────────────────────────────────────────────────────────────
+function SimulaProGated() {
+  const { user, hydrated } = useAuth();
+  const navigate = useNavigate();
+  const access = useAccessStatus();
+
+  useEffect(() => {
+    if (hydrated && !user) navigate({ to: "/login" });
+  }, [hydrated, user, navigate]);
+
+  if (!hydrated || !user || access.kind === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+        Carregando…
+      </div>
+    );
+  }
+
+  // past_due: mantém acesso ao app por GRACE_DAYS_PAST_DUE após o vencimento;
+  // depois disso troca para o paywall.
+  if (access.kind === "past_due") {
+    const dias = daysSince(access.currentPeriodEnd);
+    if (dias > GRACE_DAYS_PAST_DUE) {
+      return <PaywallScreen status={access} />;
+    }
+    return <SimulaPro pastDueDaysLeft={GRACE_DAYS_PAST_DUE - dias} />;
+  }
+
+  if (access.kind === "trial_expired" || access.kind === "canceled" || access.kind === "none") {
+    return <PaywallScreen status={access} />;
+  }
+
+  // "active" ou "trial" → app normal.
+  return <SimulaPro />;
+}
 
 function SimulaPro() {
   const { user, hydrated } = useAuth();
