@@ -102,6 +102,24 @@ export function DiagnosticoExecutivoCard({ briefing }: Props) {
               cache
             </Badge>
           )}
+          {data?.usedPremium && (
+            <Badge
+              variant="outline"
+              className="gap-1 border-primary/40 bg-primary/10 text-[10px] text-primary"
+              title={`Gerado com modelo premium: ${data.provider}/${data.modelo}`}
+            >
+              Premium
+            </Badge>
+          )}
+          {data?.usedFallback && (
+            <Badge
+              variant="outline"
+              className="gap-1 border-[var(--warning)]/40 bg-[var(--warning)]/10 text-[10px] text-[var(--warning)]"
+              title="Premium configurado com dados incompletos — usando modelo base."
+            >
+              fallback base
+            </Badge>
+          )}
         </div>
         <Button
           size="sm"
