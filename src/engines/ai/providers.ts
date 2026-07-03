@@ -339,7 +339,22 @@ function sanitizeConfig(input: unknown): AIConfig {
       4,
       Math.min(6, Math.floor(finiteOr(raw.maxSuggestions, DEFAULT_CONFIG.maxSuggestions))),
     ),
+    premium: sanitizePremium(raw.premium),
   };
+}
+
+/** Aceita apenas premium com `model` não-vazio; caso contrário retorna undefined. */
+function sanitizePremium(input: unknown): AIConfigPremium | undefined {
+  if (!isRecord(input)) return undefined;
+  const provider = PROVIDERS.includes(input.provider as Provider)
+    ? (input.provider as Provider)
+    : undefined;
+  const model = typeof input.model === "string" ? input.model.trim() : "";
+  if (!provider || !model) return undefined;
+  const out: AIConfigPremium = { provider, model };
+  if (typeof input.apiKey === "string" && input.apiKey) out.apiKey = input.apiKey;
+  if (typeof input.baseUrl === "string" && input.baseUrl) out.baseUrl = input.baseUrl;
+  return out;
 }
 
 
