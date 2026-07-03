@@ -77,4 +77,29 @@ else
   fi
 fi
 
+# ------------------------------------------------------------------
+# Garante o papel 'admin' em public.user_roles.
+# Necessário porque a migration de seed roda ANTES do usuário existir
+# em auth.users no primeiro boot — o INSERT ... SELECT insere 0 linhas.
+# Idempotente via ON CONFLICT.
+# ------------------------------------------------------------------
+if [ -n "$SUPABASE_DB_URL" ] && command -v psql >/dev/null 2>&1; then
+  case "$SUPABASE_DB_URL" in
+    *YOUR_DB_PASSWORD*|*YOUR_REF*|*REPLACE_*|*your-project*) ;;
+    *)
+      echo "[admin-bootstrap] Garantindo papel admin em user_roles para $ADMIN_EMAIL..."
+      PGCONNECT_TIMEOUT=8 psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q <<SQL || \
+        echo "[admin-bootstrap] AVISO: falha ao gravar user_roles — verifique manualmente."
+INSERT INTO public.user_roles (user_id, role)
+SELECT u.id, 'admin'::public.app_role
+FROM auth.users u
+WHERE lower(u.email) = lower('$ADMIN_EMAIL')
+ON CONFLICT (user_id, role) DO NOTHING;
+SQL
+      ;;
+  esac
+else
+  echo "[admin-bootstrap] SUPABASE_DB_URL/psql ausentes — pulando grant de user_roles."
+fi
+
 exit 0
