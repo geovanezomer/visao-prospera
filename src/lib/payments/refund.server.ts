@@ -155,3 +155,175 @@ async function refundAsaas(input: RefundInput, apiKey: string, mode: "live" | "s
   };
 }
 
+// ============================================================================
+// refundAndRevoke — orquestração: estorno + (opcional) cancelamento imediato.
+//
+// Estornos manuais raramente disparam webhook de cancelamento; sem esta
+// orquestração a assinatura fica "active" no banco mesmo após devolvermos o
+// dinheiro. Cada etapa roda em try/catch independente para NÃO desfazer o
+// estorno já executado se o cancelamento falhar — o admin vê o resultado
+// composto e trata manualmente o que sobrou.
+// ============================================================================
+
+export type StepStatus =
+  | { ok: true; detail?: string }
+  | { ok: false; error: string };
+
+export type RefundAndRevokeResult = {
+  refund: StepStatus & { data?: RefundResult };
+  revoke: StepStatus;
+  dbUpdate: StepStatus;
+  audit: StepStatus;
+  email: StepStatus;
+};
+
+export type RefundAndRevokeInput = RefundInput & {
+  revoke: boolean;
+  userId: string;
+  actorId: string;
+};
+
+export async function refundAndRevoke(
+  input: RefundAndRevokeInput,
+): Promise<RefundAndRevokeResult> {
+  const result: RefundAndRevokeResult = {
+    refund: { ok: false, error: "not-run" },
+    revoke: { ok: true, detail: "skipped" },
+    dbUpdate: { ok: true, detail: "skipped" },
+    audit: { ok: true, detail: "skipped" },
+    email: { ok: true, detail: "skipped" },
+  };
+
+  // (a) refund — se falhar, aborta o resto (nada a revogar sem estorno)
+  try {
+    const refund = await refundLastPayment(input);
+    result.refund = { ok: true, data: refund };
+  } catch (e) {
+    result.refund = { ok: false, error: e instanceof Error ? e.message : String(e) };
+    return result;
+  }
+
+  if (!input.revoke) return result;
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  // (b1) cancelamento imediato no provedor
+  if (input.subscriptionId) {
+    try {
+      const { cancelSubscriptionNow } = await import("./cancelCore.server");
+      await cancelSubscriptionNow({
+        provider: input.provider,
+        subscriptionId: input.subscriptionId,
+      });
+      result.revoke = { ok: true };
+    } catch (e) {
+      result.revoke = { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  } else {
+    result.revoke = { ok: false, error: "subscriptionId ausente" };
+  }
+
+  // (b2) atualiza subscriptions no banco — INDEPENDENTE do sucesso do provider,
+  // pois estornamos o dinheiro; o acesso tem de cair mesmo se o provider
+  // rejeitar (ex.: assinatura já cancelada). O admin vê ambos os status.
+  try {
+    const patch: Record<string, unknown> = {
+      status: "canceled",
+      cancel_at_period_end: false,
+      updated_at: new Date().toISOString(),
+    };
+    const q = supabaseAdmin.from("subscriptions").update(patch).eq("user_id", input.userId);
+    const { error } = input.subscriptionId
+      ? await q.eq("stripe_subscription_id", input.subscriptionId)
+      : await q;
+    if (error) throw new Error(error.message);
+    result.dbUpdate = { ok: true };
+  } catch (e) {
+    result.dbUpdate = { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+
+  // (b3) evento sintético em webhook_events (trilha de auditoria)
+  try {
+    const refundData = "data" in result.refund ? result.refund.data : undefined;
+    const { error } = await supabaseAdmin.from("webhook_events").insert({
+      provider: "admin",
+      event_type: "admin.refund_revoke",
+      subscription_id: input.subscriptionId,
+      status: "processed",
+      payload: {
+        refundId: refundData?.refundId ?? null,
+        amount: refundData?.amount ?? null,
+        actorId: input.actorId,
+        userId: input.userId,
+        provider: input.provider,
+        reason: input.reason ?? null,
+        revokeStep: result.revoke,
+        dbUpdateStep: result.dbUpdate,
+      },
+    });
+    if (error) throw new Error(error.message);
+    result.audit = { ok: true };
+  } catch (e) {
+    result.audit = { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+
+  // (c) e-mail de estorno ao cliente (template "refund" já existente)
+  try {
+    const { data: sub } = await supabaseAdmin
+      .from("subscriptions")
+      .select("user_id, plan, stripe_subscription_id")
+      .eq("user_id", input.userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const { data: userRes } = await supabaseAdmin.auth.admin.getUserById(input.userId);
+    const email = userRes?.user?.email;
+    if (email) {
+      const {
+        getEmailConfig,
+        getTemplate,
+        renderTemplate,
+      } = await import("./lifecycleEmails.server");
+      const cfg = await getEmailConfig(supabaseAdmin);
+      const tpl = await getTemplate(supabaseAdmin, "refund");
+      if (cfg && tpl) {
+        const meta = (userRes?.user?.user_metadata ?? {}) as Record<string, unknown>;
+        const name =
+          (typeof meta.display_name === "string" && meta.display_name) ||
+          email.split("@")[0] || "Cliente";
+        const refundData = "data" in result.refund ? result.refund.data : undefined;
+        const vars: Record<string, string> = {
+          name,
+          plan: sub?.plan ?? "",
+          amount: refundData?.amount != null ? String(refundData.amount) : "",
+          reason: input.reason ?? "",
+        };
+        const res = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${cfg.apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: cfg.from,
+            to: email,
+            subject: renderTemplate(tpl.subject, vars),
+            html: renderTemplate(tpl.html, vars),
+          }),
+        });
+        if (!res.ok) throw new Error(`Resend ${res.status}`);
+        result.email = { ok: true };
+      } else {
+        result.email = { ok: false, error: cfg ? "template refund desabilitado" : "email não configurado" };
+      }
+    } else {
+      result.email = { ok: false, error: "usuário sem e-mail" };
+    }
+  } catch (e) {
+    result.email = { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+
+  return result;
+}
+
+
