@@ -43,14 +43,23 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     reforma.pisCofinsMult < 1 ||
     reforma.icmsIssMult < 1;
 
+  // Bases de crédito — DOIS acumuladores distintos:
+  // - cpvMonthly: ICMS antigo (não-cumulatividade FÍSICA, só CPV de mercadoria)
+  // - baseCreditoCbsIbsMonthly: CBS/IBS (não-cumulatividade AMPLA, LC 214/2025
+  //   arts. 47-56 — todo insumo exceto folha/financeiro/semCredito).
   const cpvMonthly = zeros12();
-  const temCpvCredito = icmsCredAliq > 0 || usaReforma;
-  if (temCpvCredito) {
+  const baseCreditoCbsIbsMonthly = zeros12();
+  const temCpvCredito = icmsCredAliq > 0;
+  const temCredAmplo = usaReforma;
+  if (temCpvCredito || temCredAmplo) {
     for (const c of state.costs) {
-      if (!isCpvCost(c)) continue;
-      if (c.semCredito) continue;
       const v = effectiveMonthValues(c);
-      for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
+      if (temCpvCredito && isCpvCost(c) && !c.semCredito) {
+        for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
+      }
+      if (temCredAmplo && isCreditoAmploCbsIbs(c)) {
+        for (let i = 0; i < 12; i++) baseCreditoCbsIbsMonthly[i] += v[i];
+      }
     }
   }
 
