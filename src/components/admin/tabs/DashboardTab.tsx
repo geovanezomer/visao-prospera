@@ -143,8 +143,10 @@ export function DashboardTab() {
 
   if (!m) {
     return (
-      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Carregando…</> : "Sem dados."}
+      <div className="space-y-6" aria-busy={loading}>
+        <CardSkeletonGrid count={4} />
+        <CardSkeletonGrid count={4} />
+        <CardSkeletonGrid count={4} />
       </div>
     );
   }
