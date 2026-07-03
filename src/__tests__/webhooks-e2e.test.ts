@@ -97,6 +97,16 @@ function makeClient() {
           if (table === "admin_audit_log") {
             return chain({ data: null, error: null });
           }
+          if (table === "user_emails") {
+            return {
+              eq: (_c: string, email: string) => ({
+                maybeSingle: async () => {
+                  const id = knownUsers.get(email.toLowerCase());
+                  return { data: id ? { user_id: id } : null, error: null };
+                },
+              }),
+            };
+          }
           return chain();
         },
         upsert: async (row: any, _opts?: any) => {

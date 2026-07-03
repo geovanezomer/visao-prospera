@@ -57,26 +57,38 @@ import {
   buildPortalUrl,
 } from "./lifecycleEmails.server";
 
+/**
+ * Resolve o `user_id` a partir do e-mail.
+ *
+ * Estratégia O(1) via tabela espelho `public.user_emails`, mantida por trigger
+ * em `auth.users` (INSERT/UPDATE de email, normalizada para lower()).
+ *
+ * NOTA: a versão instalada do @supabase/supabase-js (2.106) não expõe
+ * `admin.auth.admin.getUserByEmail`. Quando/se disponível em versão futura,
+ * o SDK direto pode substituir este SELECT.
+ *
+ * Fallback (comentado): paginação de `listUsers` — só necessário se a tabela
+ * espelho ficar dessincronizada; o trigger + backfill inicial cobrem os casos
+ * reais. Se um usuário existe em auth.users mas não em user_emails, o
+ * createUser abaixo falhará por e-mail duplicado — sinal claro para
+ * reexecutar o backfill.
+ */
 async function getOrCreateUserId(admin: AdminClient, email: string): Promise<string | null> {
   if (!email) return null;
   const target = email.toLowerCase();
-  // Pagina até encontrar o usuário (Supabase Auth lista até 200/página).
-  // Sem paginação, contas além de 200 usuários nunca seriam encontradas,
-  // gerando criação duplicada (createUser falha por email já existir) e
-  // ativação travada.
-  const PER_PAGE = 200;
-  const MAX_PAGES = 50; // 10k usuários — limite de sanidade
-  for (let page = 1; page <= MAX_PAGES; page++) {
-    const { data: list, error } = await admin.auth.admin.listUsers({ page, perPage: PER_PAGE });
-    if (error) {
-      console.error("[webhook] listUsers falhou:", error.message);
-      break;
-    }
-    const users = list?.users ?? [];
-    const found = users.find((u) => u.email?.toLowerCase() === target);
-    if (found) return found.id;
-    if (users.length < PER_PAGE) break; // última página
+
+  // 1) Lookup direto no espelho (service_role bypassa RLS).
+  const { data: row, error: selErr } = await admin
+    .from("user_emails")
+    .select("user_id")
+    .eq("email", target)
+    .maybeSingle();
+  if (selErr) {
+    console.error("[webhook] user_emails select falhou:", selErr.message);
   }
+  if (row?.user_id) return row.user_id as string;
+
+  // 2) Não achou → cria; o trigger em auth.users popula user_emails.
   const { data: created, error } = await admin.auth.admin.createUser({ email, email_confirm: true });
   if (error) {
     console.error("[webhook] createUser falhou:", error.message);
