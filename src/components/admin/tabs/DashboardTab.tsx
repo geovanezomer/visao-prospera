@@ -124,7 +124,7 @@ export function DashboardTab() {
   const [loading, setLoading] = useState(false);
 
   const setPeriod = (p: PeriodDays) => {
-    navigate({ to: "/admin", search: (prev) => ({ ...prev, period: p }), replace: true });
+    navigate({ to: "/admin", search: (prev: Record<string, unknown>) => ({ ...prev, period: p }), replace: true });
   };
 
   const load = async (p: PeriodDays) => {
