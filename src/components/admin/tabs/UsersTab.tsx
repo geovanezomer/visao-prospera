@@ -698,6 +698,20 @@ function RefundDialog({ user, onClose, onDone }: { user: AdminUserRow | null; on
               <input type="checkbox" checked={revoke} onChange={(e) => setRevoke(e.target.checked)} className="mt-0.5" />
               <span>Cancelar assinatura e revogar acesso (recomendado — devolve o dinheiro e derruba o acesso imediatamente).</span>
             </label>
+            {/* Type-to-confirm: digitar o e-mail do cliente para habilitar o estorno. */}
+            <div className="space-y-1 rounded-md border border-destructive/40 bg-destructive/5 p-2">
+              <Label className="text-xs">
+                Para confirmar, digite o e-mail do cliente:{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-[11px] font-mono">{user.email}</code>
+              </Label>
+              <Input
+                value={typedEmail}
+                onChange={(e) => setTypedEmail(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder={user.email}
+              />
+            </div>
           </div>
         ) : (
           <div className="space-y-2 py-2 rounded-md border border-border/60 bg-muted/20 p-3">
@@ -712,7 +726,11 @@ function RefundDialog({ user, onClose, onDone }: { user: AdminUserRow | null; on
           {!result ? (
             <>
               <Button variant="outline" onClick={onClose} disabled={busy}>Cancelar</Button>
-              <Button onClick={submit} disabled={busy} className="bg-red-600 hover:bg-red-700">
+              <Button
+                onClick={submit}
+                disabled={busy || typedEmail.trim().toLowerCase() !== user.email.toLowerCase()}
+                variant="destructive"
+              >
                 {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}Confirmar estorno
               </Button>
             </>
