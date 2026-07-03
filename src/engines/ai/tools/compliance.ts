@@ -4,12 +4,9 @@
 import { regimeComparisonToMarkdown, taxAuditToMarkdown } from "@/engines/compliance/tax";
 import { checklistToMarkdown } from "@/engines/compliance/checklist";
 import {
-  buildDRE,
   compareYearsForRegime,
   resolveEffectiveRegime,
 } from "@/engines/finance";
-import { buildCashFlow } from "@/engines/finance/cashflow";
-import { calcIndicators } from "@/engines/finance/indicators";
 import { getFinancialModelCached } from "@/engines/finance/financialModel";
 import {
   analyzeCovenants,
