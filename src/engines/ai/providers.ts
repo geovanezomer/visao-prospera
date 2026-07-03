@@ -397,6 +397,8 @@ export function loadConfig(): AIConfig {
     const cfg = sanitizeConfig(parsed);
     if (!cfg.persistKey) {
       cfg.apiKey = sessionStorage.getItem(SESSION_KEY_BAG) || "";
+      const premKey = sessionStorage.getItem(SESSION_KEY_BAG + "-premium") || "";
+      if (cfg.premium && premKey) cfg.premium = { ...cfg.premium, apiKey: premKey };
     }
     // Persiste a migração para que o usuário enxergue o SOUL/Skills novos
     // mesmo sem editar nada nas configurações.
