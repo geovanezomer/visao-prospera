@@ -69,6 +69,9 @@ export const createShareLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data, context }) => {
+    // Enforcement server-side: só assinantes ativos (ou trial válido) podem gerar links.
+    const { requireActiveSubscription } = await import("@/lib/requireActiveSubscription.server");
+    await requireActiveSubscription(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const shareId = generateShareId();
     const storagePath = `${context.userId}/${shareId}.finnance.json`;
