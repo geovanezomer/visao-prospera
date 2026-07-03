@@ -241,3 +241,86 @@ describe("Presumido — IRRF sobre rendimentos de aplicações (compensação)",
     expect(tax.monthlyLucro.every((v) => v >= 0)).toBe(true);
   });
 });
+
+// =====================================================================
+// Prejuízo fiscal acumulado de abertura — Lucro Real (Lei 9.065/95 art. 42)
+// =====================================================================
+import { calcReal } from "../tax/real";
+import { compareRegimes } from "../tax/compare";
+
+describe("prejuizoFiscalAcumuladoAbertura — Lucro Real", () => {
+  // LAIR mensal constante 50k/mês → 150k/trimestre. Sem receitas financeiras
+  // exclusivas, o baseSignedMonthly = LAIR. Trava 30% × 150k = 45k/tri.
+  const lairMensal = m12(50_000);
+
+  it("abertura=0 → comportamento idêntico ao anterior (sem regressão)", () => {
+    const s = createState({ tax: { regime: "real", prejuizoFiscalAcumuladoAbertura: 0 } });
+    const semCampo = createState({ tax: { regime: "real" } });
+    const a = calcReal(s, lairMensal);
+    const b = calcReal(semCampo, lairMensal);
+    expect(a.annualLucro).toBeCloseTo(b.annualLucro, 2);
+    expect(a.detail["(−) Compensação prejuízo fiscal (trava 30%)"]).toBeUndefined();
+  });
+
+  it("abertura relevante → compensa 30% do lucro trimestral e reduz IRPJ/CSLL", () => {
+    // Abertura 300k → cada trimestre compensa min(150k×0.3, saldo) = 45k
+    // (até esgotar o saldo). Em 4 trimestres, compensa 4×45k = 180k, saldo residual 120k.
+    const s = createState({
+      tax: { regime: "real", prejuizoFiscalAcumuladoAbertura: 300_000 },
+    });
+    const semCampo = createState({ tax: { regime: "real" } });
+    const comComp = calcReal(s, lairMensal);
+    const semComp = calcReal(semCampo, lairMensal);
+    // Com compensação, o lucro tributado é menor → menos IRPJ+CSLL → LL maior
+    expect(comComp.annualLucro).toBeLessThan(semComp.annualLucro);
+    // Detail expõe a compensação (sinal negativo, R$)
+    const usado = comComp.detail["(−) Compensação prejuízo fiscal (trava 30%)"];
+    expect(usado).toBeDefined();
+    expect(usado).toBeCloseTo(-180_000, 0);
+  });
+
+  it("prejuízo do PRÓPRIO ano soma ao saldo de abertura", () => {
+    // Q1 prejuízo de 90k (−30/mês), Q2..Q4 lucro 150k/tri.
+    // Sem abertura: trava Q2 = min(45k, 90k) = 45k → Q2 tributa 105k.
+    //               Q3 saldo restante 45k → compensa 45k → tributa 105k.
+    //               Q4 saldo 0 → tributa 150k.
+    // Com abertura 60k: Q1 prej vira 90k+60k=150k acum. Q2 compensa 45k (saldo→105k),
+    // Q3 compensa 45k (saldo→60k), Q4 compensa 45k (saldo→15k).
+    const lair = [
+      -30_000, -30_000, -30_000, // Q1: −90k
+      50_000, 50_000, 50_000,   // Q2
+      50_000, 50_000, 50_000,   // Q3
+      50_000, 50_000, 50_000,   // Q4
+    ];
+    const semAbertura = calcReal(
+      createState({ tax: { regime: "real", prejuizoFiscalAcumuladoAbertura: 0 } }),
+      lair,
+    );
+    const comAbertura = calcReal(
+      createState({ tax: { regime: "real", prejuizoFiscalAcumuladoAbertura: 60_000 } }),
+      lair,
+    );
+    const usadoSem = -1 * (semAbertura.detail["(−) Compensação prejuízo fiscal (trava 30%)"] ?? 0);
+    const usadoCom = -1 * (comAbertura.detail["(−) Compensação prejuízo fiscal (trava 30%)"] ?? 0);
+    // Com abertura, mais saldo → mais compensação usada
+    expect(usadoCom).toBeGreaterThan(usadoSem);
+    // Sem abertura: 45k+45k = 90k (Q4 zera saldo antes). Com 60k a mais: 45k×3 = 135k.
+    expect(usadoSem).toBeCloseTo(90_000, 0);
+    expect(usadoCom).toBeCloseTo(135_000, 0);
+  });
+
+  it("compareRegimes: LL do Real melhora com abertura relevante", () => {
+    const semAbertura = createState({
+      revenue: { bruta: m12(200_000) },
+      tax: { regime: "real", prejuizoFiscalAcumuladoAbertura: 0 },
+    });
+    const comAbertura = createState({
+      revenue: { bruta: m12(200_000) },
+      tax: { regime: "real", prejuizoFiscalAcumuladoAbertura: 500_000 },
+    });
+    const semCmp = compareRegimes(semAbertura);
+    const comCmp = compareRegimes(comAbertura);
+    expect(comCmp.llBy.real).toBeGreaterThan(semCmp.llBy.real);
+  });
+});
+
