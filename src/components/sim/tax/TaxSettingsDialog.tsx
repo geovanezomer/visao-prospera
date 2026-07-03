@@ -608,6 +608,17 @@ function StepReforma({
         </p>
       </Callout>
 
+      <Callout tone="ok" title="Crédito amplo (LC 214/2025, arts. 47-56)">
+        <p className="text-[13px]">
+          CBS/IBS geram <b>crédito sobre praticamente todos os insumos</b> —
+          aluguel, energia, frete, serviços tomados, marketing, TI, etc. — e não
+          apenas sobre o CPV. As exceções são <b>folha de pagamento</b> (art. 57),
+          despesas financeiras e linhas marcadas <b>"sem crédito"</b> (uso e
+          consumo pessoal). Isso reduz a carga efetiva especialmente para
+          empresas de <b>serviços</b> (CPV baixo, OpEx alto).
+        </p>
+      </Callout>
+
       <Section title="Alíquotas plenas CBS/IBS (após 2033)">
         <FriendlyRow
           label="CBS — alíquota plena"
