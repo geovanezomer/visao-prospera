@@ -49,9 +49,8 @@ export function calcSimples(state: AppState): MonthlyTax {
   // Ajuste ICMS/ISS "por fora" quando excedeuSublimite (LC 123/06 art. 13-A):
   //   das_sem_icmsIss[m] = das[m] × (1 − partilha)  (partilha = 6ª faixa do anexo)
   //   monthly[m]         = das_sem_icmsIss[m] + icmsIssForaMensal[m]
-  // Para ISS, o teto de 5% (LC 116/03) já está garantido pelo campo tax.issIcms
-  // via a validação (getters clamped em taxDefaults) — a partilha do Anexo III
-  // usa 32,15% da 6ª faixa, mas a alíquota efetiva do ISS por fora respeita o teto.
+  // O teto de ISS (5% LC 116/03) e o multiplicador da reforma (transição ICMS→IBS)
+  // são aplicados dentro de `computeIcmsIssNormal` — defesa em profundidade.
   let monthly = dasBruto.slice();
   let icmsIssForaAnual = 0;
   let dasSemIcmsIssAnual = 0;
