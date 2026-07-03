@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
 import {
@@ -13,6 +13,7 @@ import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
 import {
   compareErasForRegime,
   compareRegimes,
+  compareYearsForRegime,
   getReformaRates,
   simplesAliquotaEfetiva,
   resolveSimplesAnexo,
@@ -113,6 +114,7 @@ const ANEXO_BUSINESS_OK: Record<SimplesAnexo, BusinessType[]> = {
 export function TaxTab() {
   const { state } = useFinance();
   const set = usePatchTax();
+  const [showAnoAno, setShowAnoAno] = useState(false);
   const rbAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
 
   // ----- Engine: memoizada (B1) — recomputa só quando state muda -----
@@ -322,6 +324,63 @@ export function TaxTab() {
                   <div className="mt-0.5 text-[11px] text-muted-foreground">
                     {phases[activeIdx].desc}
                   </div>
+                  {era === "transicao" && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-primary/20 pt-2">
+                      <Badge variant="outline" className="border-amber-500/50 bg-amber-500/10 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                        Ponto médio 2027–2032
+                      </Badge>
+                      <span className="text-[10.5px] text-muted-foreground">
+                        Ponto médio do cronograma 2027–2032 — para o valor de um ano específico,
+                        use a projeção ano-a-ano.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowAnoAno((v) => !v)}
+                        className="ml-auto rounded border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10.5px] font-semibold text-primary hover:bg-primary/20"
+                      >
+                        {showAnoAno ? "Ocultar" : "Ver ano a ano"}
+                      </button>
+                    </div>
+                  )}
+                  {era === "transicao" && showAnoAno && (
+                    <div className="mt-3 overflow-x-auto rounded border border-border/50 bg-card p-2">
+                      {(() => {
+                        const anos = [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033];
+                        const rows = compareYearsForRegime(state, state.tax.regime, anos);
+                        return (
+                          <table className="w-full text-[11px]">
+                            <thead className="text-muted-foreground">
+                              <tr className="border-b border-border/50">
+                                <th className="px-2 py-1 text-left">Ano</th>
+                                <th className="px-2 py-1 text-right">CBS</th>
+                                <th className="px-2 py-1 text-right">IBS</th>
+                                <th className="px-2 py-1 text-right">PIS/COFINS</th>
+                                <th className="px-2 py-1 text-right">ICMS/ISS</th>
+                                <th className="px-2 py-1 text-right">Efetiva</th>
+                                <th className="px-2 py-1 text-right">Anual</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rows.map((r) => (
+                                <tr key={r.year} className="border-b border-border/30 last:border-0">
+                                  <td className="px-2 py-1 font-medium">{r.year}</td>
+                                  <td className="px-2 py-1 text-right num">{r.rates.cbsPct.toFixed(2)}%</td>
+                                  <td className="px-2 py-1 text-right num">{r.rates.ibsPct.toFixed(2)}%</td>
+                                  <td className="px-2 py-1 text-right num">{(r.rates.pisCofinsMult * 100).toFixed(0)}%</td>
+                                  <td className="px-2 py-1 text-right num">{(r.rates.icmsIssMult * 100).toFixed(0)}%</td>
+                                  <td className="px-2 py-1 text-right num">{r.effective.toFixed(2)}%</td>
+                                  <td className="px-2 py-1 text-right num">{fmtBRL(r.annual)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        );
+                      })()}
+                      <div className="mt-1 text-[10px] text-muted-foreground">
+                        Cronograma LC 214/2025 · regime <strong>{state.tax.regime}</strong> · mantém receita e custos constantes.
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             );
