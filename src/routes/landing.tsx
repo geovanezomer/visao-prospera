@@ -25,7 +25,7 @@ export const Route = createFileRoute("/landing")({
     });
     // loadLandingPlans nunca lança — em erro/vazio devolve PLANS_FALLBACK
     // e dispara notifyAdmin (dedupe 1h) para acordar o admin.
-    return await loadLandingPlans();
+    return await getLandingPlans();
   },
 
   staleTime: 60_000,
