@@ -2,7 +2,7 @@
 // UsersTab — listagem paginada com filtros e ordenação.
 // ============================================================================
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, KeyRound, Undo2, Search, Loader2, CheckCircle2, XCircle, ArrowUpDown, Mail, UserPlus, Copy } from "lucide-react";
+import { RefreshCw, KeyRound, Undo2, Search, Loader2, CheckCircle2, XCircle, ArrowUpDown, Mail, UserPlus, Copy, Users as UsersIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import { exportUsersCsv } from "@/lib/admin/export.functions";
 import { Download } from "lucide-react";
 import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
 import { getRouteApi } from "@tanstack/react-router";
+import { TableSkeleton, EmptyState } from "@/components/admin/ui-states";
 
 const adminRouteApi = getRouteApi("/admin");
 
