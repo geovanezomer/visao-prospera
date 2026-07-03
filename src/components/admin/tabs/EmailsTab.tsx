@@ -22,8 +22,12 @@ const KIND_LABEL: Record<TemplateKind, string> = {
   refund: "Estorno",
   welcome: "Boas-vindas",
   trial_magic_link: "Acesso de Teste (Trial)",
+  payment_failed: "Pagamento recusado (past_due)",
+  trial_ending: "Teste terminando em breve",
+  subscription_canceled: "Cancelamento de assinatura",
 };
-const VARS_HINT = "Variáveis: {{name}} {{link}} {{amount}} {{plan}} {{hours}} {{system_name}}";
+const VARS_HINT =
+  "Variáveis: {{name}} {{link}} {{amount}} {{plan}} {{hours}} {{system_name}} {{portal_url}} {{plans_url}} {{trial_end}} {{access_end}}";
 
 export function EmailsTab() {
   const [loading, setLoading] = useState(true);
