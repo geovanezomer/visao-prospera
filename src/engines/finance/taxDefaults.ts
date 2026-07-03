@@ -211,6 +211,8 @@ export interface TaxRatesOverride {
   presumidoBases?: Partial<Record<BusinessType, PresumidoBases>>;
   reformaTransicaoIbsMult?: number;
   reformaTransicaoIcmsIssMult?: number;
+  /** IRRF sobre rendimentos de aplicações financeiras (%) — Presumido. */
+  irrfAplicacoesPct?: number;
   /** Parâmetros de folha & sócios (Plano v3). */
   payroll?: PayrollOverride;
 }
