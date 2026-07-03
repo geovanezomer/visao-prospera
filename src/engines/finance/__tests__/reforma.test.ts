@@ -269,7 +269,7 @@ describe("isCreditoAmploCbsIbs — perímetro de exclusão (LC 214/2025)", () =>
 
   it("rejeita folha (encargosAuto=true) — art. 57", () => {
     expect(isCreditoAmploCbsIbs(mkCost({ label: "Salários", encargosAuto: true }))).toBe(false);
-    expect(isCreditoAmploCbsIbs(mkCost({ label: "Pró-labore sócios", encargosAuto: true }))).toBe(false);
+    expect(isCreditoAmploCbsIbs(mkCost({ label: "Pró-labore diretoria", encargosAuto: true }))).toBe(false);
   });
 
   it("rejeita folha por rótulo (sem encargosAuto)", () => {
