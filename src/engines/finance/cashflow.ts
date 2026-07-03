@@ -3,6 +3,11 @@ import { buildDRE, type DRE } from "./dre";
 import { resolveEffectiveRegime } from "./regime";
 import { splitReceitasFinanceiras, computeCapexMensal } from "./shared";
 import type { MonthlyTax } from "./tax/shared";
+import {
+  partitionMonthlyTaxByLag,
+  LAG_DIAS_PADRAO,
+  LAG_DIAS_SPLIT,
+} from "./tax/impostosLag";
 import { MESES, sum, zeros12 } from "./format";
 import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 import { getSplitPaymentAtivo } from "./taxDefaults";
@@ -144,19 +149,18 @@ export function computeFornecedores(
 }
 
 /**
- * Pagamentos de impostos = total mensal de tributos deslocado 30 dias (apuração + DARF).
+ * Pagamentos de impostos = total mensal deslocado pelos lags oficiais.
+ * A PARTIÇÃO (o que vai com lag 30 e o que vai com lag 0 no Split Payment)
+ * vive em `tax/impostosLag.ts` — SSOT compartilhado com balancoFechamento.ts.
  */
 export function computeImpostos(
   tax: MonthlyTax,
   splitPaymentAtivo = false,
 ): { inAno: number[]; transbordo: number } {
-  // Sem Split: tudo recolhido com lag de ~30 dias (mês seguinte).
-  if (!splitPaymentAtivo) return shiftByDaysSplit(tax.monthly, 30);
-  // Com Split (LC 214/2025): CBS+IBS retidos no ato (lag 0); demais tributos mantêm lag 30.
-  const cbsIbs = tax.monthlyCbsIbs ?? new Array(12).fill(0);
-  const restante = tax.monthly.map((m, i) => Math.max(0, m - (cbsIbs[i] ?? 0)));
-  const a = shiftByDaysSplit(restante, 30);
-  const b = shiftByDaysSplit(cbsIbs, 0);
+  const { restante, splitZero } = partitionMonthlyTaxByLag(tax, splitPaymentAtivo);
+  const a = shiftByDaysSplit(restante, LAG_DIAS_PADRAO);
+  if (!splitPaymentAtivo) return a;
+  const b = shiftByDaysSplit(splitZero, LAG_DIAS_SPLIT);
   return {
     inAno: a.inAno.map((v, i) => v + (b.inAno[i] ?? 0)),
     transbordo: a.transbordo + b.transbordo,
