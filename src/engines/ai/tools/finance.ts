@@ -169,8 +169,13 @@ const handlers: Record<string, ToolHandler> = {
       .filter(Boolean)
       .join("\n\n"),
   get_regime_tributario: (_a, { sec }) => sec.regime,
-  get_eras_reforma: (_a, { sec }) =>
-    sec.eras || "_Comparativo de eras indisponível (verifique a configuração tributária)._",
+  get_eras_reforma: (_a, { sec }) => {
+    const body = sec.eras || "_Comparativo de eras indisponível (verifique a configuração tributária)._";
+    return (
+      body +
+      "\n\n> ℹ️ Valores da transição representam o **PONTO MÉDIO** do cronograma (IBS ~50%, ICMS/ISS ~50%). Para um ano específico (ex: 2029), use a ferramenta `simular_transicao_reforma`."
+    );
+  },
 
   get_wacc: (_a, { state, sec }) => {
     // Drill-down do WACC. Unidades: ke/kd/wacc/roic já em PERCENT.
