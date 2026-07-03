@@ -426,11 +426,19 @@ export function saveConfig(cfg: AIConfig) {
     const persisted = { ...safe, soulVersion: SOUL_DEFAULTS_VERSION };
     if (safe.persistKey) {
       sessionStorage.removeItem(SESSION_KEY_BAG);
+      sessionStorage.removeItem(SESSION_KEY_BAG + "-premium");
       saveKeySync(CFG_KEY, persisted);
     } else {
+      // Espelha o comportamento da chave principal: quando persistKey=false,
+      // também mantém a chave premium fora do storage durável.
       sessionStorage.setItem(SESSION_KEY_BAG, safe.apiKey || "");
-      // grava sem a chave
-      saveKeySync(CFG_KEY, { ...persisted, apiKey: "" });
+      const premiumKey = safe.premium?.apiKey || "";
+      if (premiumKey) sessionStorage.setItem(SESSION_KEY_BAG + "-premium", premiumKey);
+      else sessionStorage.removeItem(SESSION_KEY_BAG + "-premium");
+      const strippedPremium = safe.premium
+        ? { ...safe.premium, apiKey: undefined }
+        : undefined;
+      saveKeySync(CFG_KEY, { ...persisted, apiKey: "", premium: strippedPremium });
     }
   } catch {
     // storage indisponível (modo privado / quota) — config segue só em memória
