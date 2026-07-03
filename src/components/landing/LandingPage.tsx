@@ -32,14 +32,8 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 // CPF/telefone agora são coletados na página do provedor de pagamento.
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { PlansSection, type RawPlan } from "@/components/landing/PlansSection";
+
 
 /* ============================================================
    HERO
