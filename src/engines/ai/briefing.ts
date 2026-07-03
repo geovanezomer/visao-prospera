@@ -6,14 +6,8 @@
 // computeHealth + benchmark do setor. Determinístico, instantâneo, sem custo.
 
 import type { AppState } from "@/engines/finance/types";
-import {
-  buildDRE,
-  calcIndicators,
-  resolveEffectiveRegime,
-  diagnose,
-} from "@/engines/finance";
-import { buildCashFlow } from "@/engines/finance/cashflow";
-import { computeHealth } from "@/engines/finance/health";
+import { diagnose } from "@/engines/finance";
+import { getFinancialModelCached } from "@/engines/finance/financialModel";
 import { resolveBenchmark } from "@/engines/benchmark/sectors";
 import type { SnapshotSections } from "./snapshot";
 
