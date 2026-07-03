@@ -18,7 +18,7 @@ import {
   getIrrfAplicacoesPct,
 } from "../taxDefaults";
 import { receitaTributavel, splitReceitasFinanceiras } from "../shared";
-import { isCpvCost, effectiveMonthValues } from "../costs";
+import { isCpvCost, isCreditoAmploCbsIbs, effectiveMonthValues } from "../costs";
 import { getReformaRates, getCbsCredCpvPct, getIbsCredCpvPct } from "./reforma";
 import { adicionalIrpjTrimestral, type MonthlyTax } from "./shared";
 import { calcCbs, calcIbs } from "tributos-br";
