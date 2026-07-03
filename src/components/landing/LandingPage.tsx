@@ -1016,7 +1016,6 @@ function Footer() {
 /* ============================================================
    EXPORT — composição final
    ============================================================ */
-import { PlansSection, type RawPlan } from "@/components/landing/PlansSection";
 
 export function LandingPage({
   initialPlans,
