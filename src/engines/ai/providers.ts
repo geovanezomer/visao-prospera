@@ -162,6 +162,16 @@ Seja brutalmente honesto. Use tabelas comparativas.`,
   },
 ];
 
+export interface AIConfigPremium {
+  provider: Provider;
+  /** Modelo obrigatório para ativar o premium. Sem isso, fallback silencioso. */
+  model: string;
+  /** Se omitido, herda `apiKey` da config base. */
+  apiKey?: string;
+  /** Se omitido, herda `baseUrl` da config base. */
+  baseUrl?: string;
+}
+
 export interface AIConfig {
   provider: Provider;
   baseUrl: string;
@@ -177,6 +187,53 @@ export interface AIConfig {
   extraSystemPrompt: string; // suplemento livre (compat legado)
   timeoutMs: number;
   maxSuggestions: number; // 4–6 sugestões dinâmicas na tela inicial
+  /** Config opcional para tarefas nobres (diagnóstico, 360°, relatório).
+   *  Ausente = todas as tarefas usam a config principal. */
+  premium?: AIConfigPremium;
+}
+
+/** Tarefas roteáveis. Chat e tools continuam sempre na config base. */
+export type AITask = "chat" | "tools" | "diagnostico" | "pipeline360" | "relatorio";
+
+const PREMIUM_TASKS: ReadonlySet<AITask> = new Set([
+  "diagnostico",
+  "pipeline360",
+  "relatorio",
+]);
+
+/** Providers que exigem apiKey para funcionar (LM Studio é local). */
+const providerRequiresKey = (p: Provider): boolean => p !== "lmstudio";
+
+/**
+ * Resolve a config efetiva para uma tarefa. Nunca lança.
+ * - Tarefas não-premium retornam a config base sem alterações.
+ * - Se `premium` estiver ausente ou inválido, cai silenciosamente para a base
+ *   e sinaliza via `usedFallback` para telemetria/UI.
+ */
+export function resolveConfigForTask(
+  cfg: AIConfig,
+  task: AITask,
+): { config: AIConfig; usedPremium: boolean; usedFallback: boolean } {
+  if (!PREMIUM_TASKS.has(task)) {
+    return { config: cfg, usedPremium: false, usedFallback: false };
+  }
+  const p = cfg.premium;
+  if (!p || !p.model?.trim()) {
+    // premium ausente/incompleto — cai na base sem alarde
+    return { config: cfg, usedPremium: false, usedFallback: !!p };
+  }
+  const apiKey = p.apiKey ?? cfg.apiKey;
+  if (providerRequiresKey(p.provider) && !apiKey) {
+    return { config: cfg, usedPremium: false, usedFallback: true };
+  }
+  const merged: AIConfig = {
+    ...cfg,
+    provider: p.provider,
+    model: p.model,
+    apiKey,
+    baseUrl: p.baseUrl ?? cfg.baseUrl,
+  };
+  return { config: merged, usedPremium: true, usedFallback: false };
 }
 
 export const PROVIDER_DEFAULTS: Record<Provider, Pick<AIConfig, "baseUrl" | "model">> = {
@@ -282,7 +339,22 @@ function sanitizeConfig(input: unknown): AIConfig {
       4,
       Math.min(6, Math.floor(finiteOr(raw.maxSuggestions, DEFAULT_CONFIG.maxSuggestions))),
     ),
+    premium: sanitizePremium(raw.premium),
   };
+}
+
+/** Aceita apenas premium com `model` não-vazio; caso contrário retorna undefined. */
+function sanitizePremium(input: unknown): AIConfigPremium | undefined {
+  if (!isRecord(input)) return undefined;
+  const provider = PROVIDERS.includes(input.provider as Provider)
+    ? (input.provider as Provider)
+    : undefined;
+  const model = typeof input.model === "string" ? input.model.trim() : "";
+  if (!provider || !model) return undefined;
+  const out: AIConfigPremium = { provider, model };
+  if (typeof input.apiKey === "string" && input.apiKey) out.apiKey = input.apiKey;
+  if (typeof input.baseUrl === "string" && input.baseUrl) out.baseUrl = input.baseUrl;
+  return out;
 }
 
 
@@ -325,6 +397,8 @@ export function loadConfig(): AIConfig {
     const cfg = sanitizeConfig(parsed);
     if (!cfg.persistKey) {
       cfg.apiKey = sessionStorage.getItem(SESSION_KEY_BAG) || "";
+      const premKey = sessionStorage.getItem(SESSION_KEY_BAG + "-premium") || "";
+      if (cfg.premium && premKey) cfg.premium = { ...cfg.premium, apiKey: premKey };
     }
     // Persiste a migração para que o usuário enxergue o SOUL/Skills novos
     // mesmo sem editar nada nas configurações.
@@ -354,11 +428,19 @@ export function saveConfig(cfg: AIConfig) {
     const persisted = { ...safe, soulVersion: SOUL_DEFAULTS_VERSION };
     if (safe.persistKey) {
       sessionStorage.removeItem(SESSION_KEY_BAG);
+      sessionStorage.removeItem(SESSION_KEY_BAG + "-premium");
       saveKeySync(CFG_KEY, persisted);
     } else {
+      // Espelha o comportamento da chave principal: quando persistKey=false,
+      // também mantém a chave premium fora do storage durável.
       sessionStorage.setItem(SESSION_KEY_BAG, safe.apiKey || "");
-      // grava sem a chave
-      saveKeySync(CFG_KEY, { ...persisted, apiKey: "" });
+      const premiumKey = safe.premium?.apiKey || "";
+      if (premiumKey) sessionStorage.setItem(SESSION_KEY_BAG + "-premium", premiumKey);
+      else sessionStorage.removeItem(SESSION_KEY_BAG + "-premium");
+      const strippedPremium = safe.premium
+        ? { ...safe.premium, apiKey: undefined }
+        : undefined;
+      saveKeySync(CFG_KEY, { ...persisted, apiKey: "", premium: strippedPremium });
     }
   } catch {
     // storage indisponível (modo privado / quota) — config segue só em memória
@@ -375,6 +457,7 @@ export function saveConfig(cfg: AIConfig) {
 export function resetAIStorage() {
   try {
     sessionStorage.removeItem(SESSION_KEY_BAG);
+    sessionStorage.removeItem(SESSION_KEY_BAG + "-premium");
     const prefixes = [CFG_KEY, "gz-finance-ai-threads-", "gz-finance-ai-chat-"];
     // Itera localStorage (espelho sync) e remove em ambas as camadas via removeKey.
     for (let i = localStorage.length - 1; i >= 0; i--) {

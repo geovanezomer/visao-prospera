@@ -6,7 +6,7 @@
 // =====================================================================
 
 import { streamChat, type LLMMessage } from "./client";
-import type { AIConfig } from "./providers";
+import { resolveConfigForTask, type AIConfig } from "./providers";
 import type { Briefing } from "@/engines/finance/briefing";
 import {
   buildSystemPrompt,
@@ -34,6 +34,10 @@ export interface DiagnosticoResult {
   provider: AIConfig["provider"];
   promptVersion: typeof PROMPT_VERSION;
   geradoEm: string;
+  /** true quando o modelo premium foi efetivamente usado. */
+  usedPremium: boolean;
+  /** true quando premium estava configurado mas caiu para a base. */
+  usedFallback: boolean;
 }
 
 /**
@@ -157,6 +161,9 @@ export async function gerarDiagnostico(
     throw new Error("IA não configurada.");
   }
 
+  // Roteia para modelo premium quando configurado (fallback silencioso p/ base).
+  const { config, usedPremium, usedFallback } = resolveConfigForTask(cfg, "diagnostico");
+
   const messages: LLMMessage[] = [
     { role: "system", content: buildSystemPrompt() },
     { role: "user", content: buildUserPrompt(briefing) },
@@ -165,7 +172,7 @@ export async function gerarDiagnostico(
   // Força JSON em provedores OpenAI-compatíveis (Anthropic ignora silenciosamente).
   // Reduz drasticamente falhas de parsing — extractJson continua como rede de segurança.
   let raw = "";
-  for await (const chunk of streamChat(cfg, messages, signal, {
+  for await (const chunk of streamChat(config, messages, signal, {
     responseFormat: { type: "json_object" },
   })) {
     raw += chunk;
@@ -178,9 +185,11 @@ export async function gerarDiagnostico(
 
   return {
     data,
-    modelo: cfg.model,
-    provider: cfg.provider,
+    modelo: config.model,
+    provider: config.provider,
     promptVersion: PROMPT_VERSION,
     geradoEm: new Date().toISOString(),
+    usedPremium,
+    usedFallback,
   };
 }

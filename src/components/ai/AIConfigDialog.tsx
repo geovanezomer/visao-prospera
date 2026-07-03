@@ -198,6 +198,126 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
           )}
         </div>
 
+        {/* ─── Modelo Premium (opcional) — roteado para Diagnóstico, 360° e relatórios ─── */}
+        <details className="rounded-md border border-border/40 p-2.5 open:pb-3">
+          <summary className="flex cursor-pointer items-center gap-2 text-xs font-medium">
+            <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
+            Modelo Premium (opcional)
+            {draft.premium?.model && (
+              <span className="ml-auto rounded bg-primary/15 px-1.5 py-0.5 text-[10px] text-primary">
+                {draft.premium.provider} · {draft.premium.model}
+              </span>
+            )}
+          </summary>
+          <div className="mt-3 space-y-2.5">
+            <p className="text-[11px] text-muted-foreground">
+              Usado apenas no <strong>Diagnóstico Executivo</strong>, <strong>Análise 360°</strong>{" "}
+              e <strong>relatórios</strong>. O chat e as ferramentas continuam no modelo principal
+              para preservar custo e latência. Vazio = tudo usa o modelo principal.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-[10px]">Provider</Label>
+                <Select
+                  value={draft.premium?.provider ?? "openai"}
+                  onValueChange={(v) =>
+                    setDraft({
+                      ...draft,
+                      premium: {
+                        provider: v as Provider,
+                        model: draft.premium?.model ?? "",
+                        apiKey: draft.premium?.apiKey,
+                        baseUrl: draft.premium?.baseUrl,
+                      },
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="anthropic">Anthropic</SelectItem>
+                    <SelectItem value="openai">OpenAI</SelectItem>
+                    <SelectItem value="lmstudio">LM Studio</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px]">Modelo</Label>
+                <Input
+                  className="h-8 text-xs"
+                  placeholder="gpt-5, claude-opus-4-...,"
+                  value={draft.premium?.model ?? ""}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      premium: {
+                        provider: draft.premium?.provider ?? "openai",
+                        model: e.target.value,
+                        apiKey: draft.premium?.apiKey,
+                        baseUrl: draft.premium?.baseUrl,
+                      },
+                    })
+                  }
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px]">API Key (opcional — herda da principal se vazio)</Label>
+              <Input
+                className="h-8 text-xs"
+                type="password"
+                placeholder="sk-..."
+                value={draft.premium?.apiKey ?? ""}
+                onChange={(e) =>
+                  setDraft({
+                    ...draft,
+                    premium: draft.premium
+                      ? { ...draft.premium, apiKey: e.target.value || undefined }
+                      : {
+                          provider: "openai",
+                          model: "",
+                          apiKey: e.target.value || undefined,
+                        },
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px]">Base URL (opcional)</Label>
+              <Input
+                className="h-8 text-xs"
+                placeholder="Herda da config principal"
+                value={draft.premium?.baseUrl ?? ""}
+                onChange={(e) =>
+                  setDraft({
+                    ...draft,
+                    premium: draft.premium
+                      ? { ...draft.premium, baseUrl: e.target.value || undefined }
+                      : {
+                          provider: "openai",
+                          model: "",
+                          baseUrl: e.target.value || undefined,
+                        },
+                  })
+                }
+              />
+            </div>
+            {draft.premium && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1.5 text-[11px] text-muted-foreground"
+                onClick={() => setDraft({ ...draft, premium: undefined })}
+              >
+                <Trash2 className="h-3 w-3" />
+                Remover configuração premium
+              </Button>
+            )}
+          </div>
+        </details>
+
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Temperatura: {draft.temperature.toFixed(2)}</Label>
