@@ -40,7 +40,9 @@ export const getSystemStatus = createServerFn({ method: "POST" })
     const checks = await Promise.all([
       check("Supabase", async () => {
         const { createClient } = await import("@supabase/supabase-js");
-        const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!);
+        const url = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
+        const key = process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const sb = createClient(url!, key!);
         const { error } = await sb.from("plans").select("id").limit(1);
         if (error) return { status: "degraded", message: error.message };
         return { status: "operational", message: "DB OK" };
