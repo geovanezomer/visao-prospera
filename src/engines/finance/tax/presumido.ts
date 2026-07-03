@@ -94,7 +94,8 @@ export function calcPresumido(state: AppState): MonthlyTax {
     cofinsTotal = 0,
     issTotal = 0,
     cbsTotal = 0,
-    ibsTotal = 0;
+    ibsTotal = 0,
+    irrfTotal = 0;
   let saldoCredorICMS = 0,
     saldoCBS = 0,
     saldoIBS = 0;
@@ -105,6 +106,11 @@ export function calcPresumido(state: AppState): MonthlyTax {
     const irpj = baseIRPJMensal[i] * irpjAliq;
     const adicional = adicionalMensal[i];
     const csll = baseCSLLMensal[i] * csllAliq;
+    // IRRF retido na fonte sobre rendimentos financeiros — antecipação do IRPJ.
+    // Compensa contra IRPJ + Adicional no próprio mês; piso zero (excesso não gera
+    // restituição automática neste modelo).
+    const irrfRetido = (rendFinTrib[i] || 0) * irrfAliq;
+    const irpjLiquido = Math.max(0, irpj + adicional - irrfRetido);
     const pis = r * pisAliq * reforma.pisCofinsMult;
     const cofins = r * cofinsAliq * reforma.pisCofinsMult;
     const issBase = Math.max(0, r - issDed);
@@ -127,15 +133,17 @@ export function calcPresumido(state: AppState): MonthlyTax {
       ibs = Math.max(0, dIbs - cIbs);
       saldoIBS = Math.max(0, cIbs - dIbs);
     }
-    irpjTotal += irpj + adicional;
+    irpjTotal += irpjLiquido;
     csllTotal += csll;
     pisTotal += pis;
     cofinsTotal += cofins;
     issTotal += issv;
     cbsTotal += cbs;
     ibsTotal += ibs;
+    // Compensação efetivamente utilizada (limitada pelo IRPJ+Adicional do mês).
+    irrfTotal += Math.min(irrfRetido, irpj + adicional);
     const vendas = pis + cofins + issv + cbs + ibs;
-    const lucro = irpj + adicional + csll;
+    const lucro = irpjLiquido + csll;
     monthlyVendas[i] = vendas;
     monthlyLucro[i] = lucro;
     monthlyCbsIbs[i] = cbs + ibs;
@@ -145,11 +153,15 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const annualVendas = sum(monthlyVendas);
   const annualLucro = sum(monthlyLucro);
   const rbAnual = sum(revenue.bruta);
+  // IRPJ bruto (sem compensação) para o detail — mantém rastreabilidade contábil.
+  const adicionalAnual = sum(adicionalMensal);
+  const irpjBrutoAnual = irpjTotal + irrfTotal; // reverte a compensação para o "bruto"
   const detail: Record<string, number> = {
-    IRPJ: irpjTotal - sum(adicionalMensal),
-    "Adicional IRPJ (10%)": sum(adicionalMensal),
+    IRPJ: irpjBrutoAnual - adicionalAnual,
+    "Adicional IRPJ (10%)": adicionalAnual,
     CSLL: csllTotal,
   };
+  if (irrfTotal > 0) detail["(−) IRRF s/ aplicações (compensado)"] = -irrfTotal;
   if (reforma.pisCofinsMult > 0) {
     detail.PIS = pisTotal;
     detail.COFINS = cofinsTotal;
