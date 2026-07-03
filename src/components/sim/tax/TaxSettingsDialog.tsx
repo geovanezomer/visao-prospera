@@ -31,6 +31,8 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { NumInput } from "@/components/sim/shared/primitives";
 import type { AppState, SimplesAnexo, BusinessType } from "@/engines/finance/types";
+import type { FaixaLegal } from "@/engines/finance/tax/validation";
+import { FAIXAS_TRIBUTARIAS } from "@/engines/finance/tax/validation";
 import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import {
   IRPJ_PCT,
@@ -362,6 +364,7 @@ function StepFederais({
           value={ov.irpj ?? IRPJ_PCT}
           onChange={(v) => patchOv({ irpj: v })}
           onReset={() => patchOv({ irpj: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.irpj}
         />
         <FriendlyRow
           label="Adicional de IRPJ"
@@ -371,6 +374,7 @@ function StepFederais({
           value={ov.irpjAdicional ?? IRPJ_ADICIONAL_PCT}
           onChange={(v) => patchOv({ irpjAdicional: v })}
           onReset={() => patchOv({ irpjAdicional: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.irpjAdicional}
         />
         <FriendlyRow
           label="Gatilho trimestral do Adicional"
@@ -389,6 +393,7 @@ function StepFederais({
           value={ov.csll ?? CSLL_PCT}
           onChange={(v) => patchOv({ csll: v })}
           onReset={() => patchOv({ csll: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.csll}
         />
       </Section>
 
@@ -414,6 +419,7 @@ function StepFederais({
           value={ov.pisCum ?? PIS_CUM_PCT}
           onChange={(v) => patchOv({ pisCum: v })}
           onReset={() => patchOv({ pisCum: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.pisCum}
         />
         <FriendlyRow
           label="COFINS cumulativo"
@@ -423,6 +429,7 @@ function StepFederais({
           value={ov.cofinsCum ?? COFINS_CUM_PCT}
           onChange={(v) => patchOv({ cofinsCum: v })}
           onReset={() => patchOv({ cofinsCum: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.cofinsCum}
         />
       </Section>
 
@@ -435,6 +442,7 @@ function StepFederais({
           value={ov.pisNaoCum ?? PIS_NAO_CUM_PCT}
           onChange={(v) => patchOv({ pisNaoCum: v })}
           onReset={() => patchOv({ pisNaoCum: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.pisNaoCum}
         />
         <FriendlyRow
           label="COFINS não-cumulativo"
@@ -444,6 +452,7 @@ function StepFederais({
           value={ov.cofinsNaoCum ?? COFINS_NAO_CUM_PCT}
           onChange={(v) => patchOv({ cofinsNaoCum: v })}
           onReset={() => patchOv({ cofinsNaoCum: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.cofinsNaoCum}
         />
       </Section>
 
@@ -497,6 +506,7 @@ function StepSimples({
           value={ov.fatorRMinimo ?? FATOR_R_MINIMO_PCT}
           onChange={(v) => patchOv({ fatorRMinimo: v })}
           onReset={() => patchOv({ fatorRMinimo: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.fatorRMinimo}
         />
       </Section>
 
@@ -599,6 +609,7 @@ function StepPresumido({
           value={state.tax.issIcms ?? 5}
           onChange={(v) => patchTax({ issIcms: v })}
           onReset={() => patchTax({ issIcms: 5 })}
+        faixa={FAIXAS_TRIBUTARIAS.iss}
         />
       </Section>
     </div>
@@ -646,6 +657,7 @@ function StepReforma({
           value={state.tax.cbsAliquota ?? CBS_ALIQUOTA_PLENA}
           onChange={(v) => patchTax({ cbsAliquota: v })}
           onReset={() => patchTax({ cbsAliquota: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.cbsAliquota}
         />
         <FriendlyRow
           label="IBS — alíquota de referência"
@@ -655,6 +667,7 @@ function StepReforma({
           value={state.tax.ibsAliquotaRef ?? IBS_ALIQUOTA_PLENA}
           onChange={(v) => patchTax({ ibsAliquotaRef: v })}
           onReset={() => patchTax({ ibsAliquotaRef: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.ibsAliquotaRef}
         />
         <FriendlyRow
           label="% do CPV vindo de fornecedor Simples Nacional"
@@ -893,6 +906,7 @@ function FriendlyRow({
   value,
   onChange,
   onReset,
+  faixa,
 }: {
   label: string;
   suffix: string;
@@ -901,8 +915,17 @@ function FriendlyRow({
   value: number;
   onChange: (n: number) => void;
   onReset: () => void;
+  faixa?: FaixaLegal;
 }) {
   const isDefault = value === defaultVal;
+  const resultado = faixa ? validarPelaFaixa(faixa, value) : { ok: true, nivel: "ok" as const, msg: undefined };
+  const guardedOnChange = (n: number) => {
+    if (faixa) {
+      const r = validarPelaFaixa(faixa, n);
+      if (r.nivel === "erro") return; // bloqueia patch
+    }
+    onChange(n);
+  };
   return (
     <div className="rounded-md border border-border/40 bg-background/40 p-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
@@ -929,7 +952,12 @@ function FriendlyRow({
         </div>
         <div className="flex items-center gap-1 sm:shrink-0">
           <div className="flex-1 sm:w-[110px] sm:flex-none">
-            <NumInput value={value} onChange={onChange} />
+            <NumInput
+              value={value}
+              onChange={guardedOnChange}
+              min={faixa?.min}
+              max={faixa?.max}
+            />
           </div>
           <span className="w-6 text-center text-[10px] text-muted-foreground">{suffix}</span>
           <Button
@@ -944,9 +972,57 @@ function FriendlyRow({
           </Button>
         </div>
       </div>
+      {resultado.msg && resultado.nivel !== "ok" ? (
+        <p
+          className={`mt-2 text-[11px] ${
+            resultado.nivel === "erro"
+              ? "text-[var(--destructive)]"
+              : "text-[var(--warning)]"
+          }`}
+          role={resultado.nivel === "erro" ? "alert" : undefined}
+        >
+          {resultado.nivel === "erro" ? "⛔ " : "⚠️ "}
+          {resultado.msg}
+        </p>
+      ) : null}
     </div>
   );
 }
+
+// Valida direto pela faixa (bypass da tabela por chave — útil quando o
+// FriendlyRow recebe a faixa explícita e não precisa lookup por string).
+function validarPelaFaixa(
+  faixa: FaixaLegal,
+  valor: number,
+): { ok: boolean; nivel: "erro" | "aviso" | "ok"; msg?: string } {
+  const fmt = (v: number) =>
+    Number.isInteger(v) ? v.toString() : v.toLocaleString("pt-BR", { maximumFractionDigits: 3 });
+  if (!Number.isFinite(valor)) {
+    return { ok: false, nivel: "erro", msg: `${faixa.label}: informe um número válido.` };
+  }
+  if (valor < faixa.min || valor > faixa.max) {
+    return {
+      ok: false,
+      nivel: "erro",
+      msg: `${faixa.label}: valor deve estar entre ${fmt(faixa.min)} e ${fmt(faixa.max)}.`,
+    };
+  }
+  const lo = faixa.legalMin;
+  const hi = faixa.legalMax;
+  if ((lo !== undefined && valor < lo) || (hi !== undefined && valor > hi)) {
+    const faixaTxt =
+      lo !== undefined && hi !== undefined && lo === hi
+        ? `${fmt(lo)}`
+        : `${fmt(lo ?? faixa.min)}–${fmt(hi ?? faixa.max)}`;
+    return {
+      ok: true,
+      nivel: "aviso",
+      msg: `${faixa.label}: fora da faixa legal usual (${faixaTxt}). Confirme a base normativa.`,
+    };
+  }
+  return { ok: true, nivel: "ok" };
+}
+
 
 function SimplesTableEditor({
   ov,
