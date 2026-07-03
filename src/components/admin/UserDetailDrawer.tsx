@@ -21,6 +21,7 @@ import {
 } from "@/lib/admin/userDetail.functions";
 import { UserNotesPanel } from "./UserNotesPanel";
 import { UserSessionsPanel } from "./UserSessionsPanel";
+import { UserTimelinePanel } from "./UserTimelinePanel";
 
 function fmt(iso: string | null | undefined) {
   if (!iso) return "—";
