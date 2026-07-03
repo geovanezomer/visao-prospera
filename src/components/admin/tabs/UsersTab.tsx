@@ -61,7 +61,7 @@ export function UsersTab() {
     if (u) {
       setDetailFor(u);
       // Limpa o param para não reabrir se o admin fechar o drawer manualmente.
-      navigate({ to: "/admin", search: (prev) => ({ ...prev, user: undefined }), replace: true });
+      navigate({ to: "/admin", search: (prev: Record<string, unknown>) => ({ ...prev, user: undefined }), replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [(search_ as { user?: string }).user]);
