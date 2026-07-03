@@ -290,9 +290,8 @@ const handlers: Record<string, ToolHandler> = {
     // Reusa cache numérico — diagnose() é caro e idempotente para o mesmo state.
     let alerts = sec.data?.alerts;
     if (!alerts) {
-      const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-      const ind = calcIndicators(state, dre);
-      alerts = diagnose(state, dre, ind);
+      const model = getFinancialModelCached(state);
+      alerts = diagnose(state, model.dre, model.ind);
     }
     const critical = alerts.filter((a) => a.level === "danger");
     const warning = alerts.filter((a) => a.level === "warn");
