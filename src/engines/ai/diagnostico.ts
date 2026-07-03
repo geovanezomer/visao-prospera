@@ -6,7 +6,7 @@
 // =====================================================================
 
 import { streamChat, type LLMMessage } from "./client";
-import type { AIConfig } from "./providers";
+import { resolveConfigForTask, type AIConfig } from "./providers";
 import type { Briefing } from "@/engines/finance/briefing";
 import {
   buildSystemPrompt,
