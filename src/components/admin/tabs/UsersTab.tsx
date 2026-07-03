@@ -24,6 +24,9 @@ import { z } from "zod";
 import { exportUsersCsv } from "@/lib/admin/export.functions";
 import { Download } from "lucide-react";
 import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
+import { getRouteApi } from "@tanstack/react-router";
+
+const adminRouteApi = getRouteApi("/admin");
 
 function fmt(iso: string | null | undefined) {
   if (!iso) return "—";
