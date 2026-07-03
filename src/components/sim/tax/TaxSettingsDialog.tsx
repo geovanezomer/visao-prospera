@@ -31,6 +31,8 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { NumInput } from "@/components/sim/shared/primitives";
 import type { AppState, SimplesAnexo, BusinessType } from "@/engines/finance/types";
+import type { FaixaLegal } from "@/engines/finance/tax/validation";
+import { FAIXAS_TRIBUTARIAS } from "@/engines/finance/tax/validation";
 import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import {
   IRPJ_PCT,
