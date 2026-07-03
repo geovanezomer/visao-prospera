@@ -93,12 +93,11 @@ export function buildDynamicSuggestions(state: AppState, max = 6): string[] {
   try {
     // Normaliza estado a partir do balanço detalhado (quando preenchido),
     // alinhando com o pipeline de useFinanceModel.
-    const ns = normalizeStateFromBalanco(state);
-    const regime = resolveEffectiveRegime(ns);
-    const { dre } = buildDRE(ns, regime);
-    const cf = buildCashFlow(ns, regime);
-    const ind = calcIndicators(ns, dre, cf);
-    const diag = diagnose(ns, dre, ind);
+    // SSOT: getFinancialModelCached já aplica normalizeStateFromBalanco internamente
+    // e memoiza por referência do state (WeakMap).
+    const model = getFinancialModelCached(state);
+    const { dre, ind, cf } = model;
+    const diag = diagnose(state, dre, ind);
 
     const out: string[] = [];
 
