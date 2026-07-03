@@ -13,6 +13,7 @@ import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
 import {
   compareErasForRegime,
   compareRegimes,
+  compareYearsForRegime,
   getReformaRates,
   simplesAliquotaEfetiva,
   resolveSimplesAnexo,
