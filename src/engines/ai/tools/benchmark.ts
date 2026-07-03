@@ -40,7 +40,7 @@ interface CompareItem {
 }
 
 function compareSectorMd(state: AppState, sector: SectorBenchmark): string {
-  const { dre, ind } = getFinancialModelCached(state);
+  const { ind } = getFinancialModelCached(state);
   const items: CompareItem[] = [
     { label: "Margem Bruta", v: ind.margemBruta, b: sector.margemBruta, hi: true, unit: "pp" },
     { label: "Margem EBITDA", v: ind.margemEbitda, b: sector.margemEbitda, hi: true, unit: "pp" },
