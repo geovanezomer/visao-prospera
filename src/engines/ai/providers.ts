@@ -485,6 +485,8 @@ export interface ChatMessage {
   ts: number;
   toolName?: string;
   attachments?: Array<{ name: string; type: "image" | "pdf"; size: number; error?: string }>;
+  /** Resposta Auditável — verificação determinística dos números citados. */
+  verification?: import("./verification").VerificationResult;
 }
 
 export interface ChatThread {
