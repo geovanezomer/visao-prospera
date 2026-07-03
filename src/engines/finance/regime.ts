@@ -29,11 +29,8 @@ import { effectiveMonthValues, isLaborLine } from "./costs";
 //     não folha de pessoal; em geral isenta de IR, sem encargos previdenciários).
 // Por isso o include cobre PLR genérico, e o exclude derruba qualquer linha
 // que mencione sócio/dividendo/distribuição (mesmo que case com o include).
-const LABOR_INCLUDE_RE =
-  /sal[áa]rio|folha|pr[óo]\s*-?\s*labore|prolabore|\bmod\b|m[ãa]o\s*de\s*obra|m\.o\.|\bclt\b|benef[íi]cio|\bplr\b|participa[çc][ãa]o.*lucro|terceiriz/i;
-const DISTRIBUICAO_SOCIO_RE =
-  /s[óo]ci[oa]s?|acionist|cotist|dividendo|distribui[çc][ãa]o.*(lucro|result)|lucro.*distribu/i;
-const LABOR_EXCLUDE_RE = /comiss[ãa]o|comiss[õo]es/i;
+// Regexes canônicos moram em ./costs.ts (SSOT). isLaborLine encapsula
+// include/exclude e o flag encargosAuto.
 
 export function folhaAnual(state: AppState): number {
   // SSOT: regime EFETIVO. Encargos do Simples são reduzidos automaticamente
@@ -41,9 +38,7 @@ export function folhaAnual(state: AppState): number {
   const regime = resolveEffectiveRegime(state);
   const laborCosts = state.costs.filter((c) => {
     if (c.category === "financeiro") return false;
-    if (LABOR_EXCLUDE_RE.test(c.label)) return false; // comissões nunca entram, mesmo com encargosAuto.
-    if (DISTRIBUICAO_SOCIO_RE.test(c.label)) return false; // distribuição a sócio nunca é folha.
-    return c.encargosAuto || LABOR_INCLUDE_RE.test(c.label);
+    return isLaborLine(c);
   });
   return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c, regime)), 0);
 }
