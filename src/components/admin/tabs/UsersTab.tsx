@@ -253,9 +253,24 @@ export function UsersTab() {
             </thead>
             <tbody>
               {loading && users.length === 0 ? (
-                <tr><td colSpan={8} className="p-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>
+                <tr><td colSpan={8} className="p-0"><TableSkeleton rows={8} cols={8} /></td></tr>
               ) : users.length === 0 ? (
-                <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Nenhum usuário.</td></tr>
+                <tr><td colSpan={8} className="p-0">
+                  <EmptyState
+                    icon={UsersIcon}
+                    title="Nenhum usuário encontrado com esses filtros"
+                    description="Ajuste ou limpe os filtros para ver mais resultados."
+                    action={
+                      <Button size="sm" variant="outline" onClick={() => {
+                        setSearch("");
+                        setFilters({ plan: "all", status: "all", provider: "all" });
+                        setPage(1);
+                      }}>
+                        Limpar filtros
+                      </Button>
+                    }
+                  />
+                </td></tr>
               ) : (
                 users.map((u) => (
                   <tr key={u.id} className="border-t border-border/40 hover:bg-muted/20">
