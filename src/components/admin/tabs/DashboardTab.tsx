@@ -21,6 +21,7 @@ import {
   type PeriodDays,
   type SeriesPoint,
 } from "@/lib/admin/dashboard.functions";
+import { CardSkeletonGrid } from "@/components/admin/ui-states";
 
 function brl(centavos: number): string {
   return (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
