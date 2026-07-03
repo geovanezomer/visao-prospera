@@ -210,7 +210,7 @@ export function useChatPipelines(params: UseChatPipelinesParams): UseChatPipelin
         setMessages(convo);
         const stageStart = Date.now();
         try {
-          for await (const delta of streamChat(config, llm, ac.signal)) {
+          for await (const delta of streamChat(routedConfig, llm, ac.signal)) {
             acc += delta;
             setMessages((prev) => {
               const copy = prev.slice();
@@ -233,8 +233,8 @@ export function useChatPipelines(params: UseChatPipelinesParams): UseChatPipelin
           recordChatTrail(companyName || "default", {
             threadId: activeId,
             mode: stage,
-            provider: config.provider,
-            model: config.model,
+            provider: routedConfig.provider,
+            model: routedConfig.model,
             userText: `[pipeline360 ${i + 1}/3] ${q}`,
             responseChars: body.length,
             tools: [],
@@ -253,8 +253,8 @@ export function useChatPipelines(params: UseChatPipelinesParams): UseChatPipelin
           recordChatTrail(companyName || "default", {
             threadId: activeId,
             mode: stage,
-            provider: config.provider,
-            model: config.model,
+            provider: routedConfig.provider,
+            model: routedConfig.model,
             userText: `[pipeline360 ${i + 1}/3] ${q}`,
             responseChars: acc.length - header.length,
             tools: [],
