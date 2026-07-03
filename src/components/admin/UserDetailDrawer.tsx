@@ -114,6 +114,13 @@ export function UserDetailDrawer({
               )}
             </TabsContent>
 
+            <TabsContent value="timeline" className="pt-3">
+              {/* Lazy: só monta (e chama getUserTimeline) quando a aba é aberta. */}
+              <UserTimelinePanel userId={detail.user.id} email={detail.user.email} />
+            </TabsContent>
+
+
+
             <TabsContent value="notas" className="pt-3">
               <UserNotesPanel userId={detail.user.id} />
             </TabsContent>
