@@ -8,10 +8,15 @@
 
 import { AppState, SimplesAnexo, TaxConfig } from "../types";
 import { sum, zeros12 } from "../format";
-import { getSimplesTable, getSimplesLimite, SIMPLES_SUBLIMITE_ESTADUAL } from "../taxDefaults";
+import {
+  getSimplesTable,
+  getSimplesLimite,
+  SIMPLES_SUBLIMITE_ESTADUAL,
+  SIMPLES_PARTILHA_ICMS_ISS_PCT,
+} from "../taxDefaults";
 import { receitaTributavel } from "../shared";
 import { resolveSimplesAnexo } from "../regime";
-import type { MonthlyTax } from "./shared";
+import { computeIcmsIssNormal, type MonthlyTax } from "./shared";
 
 /** Alíquota efetiva (%) do Simples para RBT12 + anexo, descontando a parcela a deduzir. */
 export function simplesAliquotaEfetiva(rbt12: number, anexo: SimplesAnexo, tax: TaxConfig): number {
@@ -35,21 +40,42 @@ export function calcSimples(state: AppState): MonthlyTax {
   // a receita tributável é correto (devoluções não geram DAS), mas a faixa é da bruta.
   const rbBrutaAnual = sum(revenue.bruta);
   const aliq = simplesAliquotaEfetiva(rbBrutaAnual, anexo, tax) / 100;
-  const monthly = trib.map((r) => r * aliq);
-  const annual = sum(monthly);
+  const dasBruto = trib.map((r) => r * aliq);
   const limite = getSimplesLimite(tax);
   const excedeu = rbBrutaAnual > limite;
   const sublimEstadual = SIMPLES_SUBLIMITE_ESTADUAL;
   const excedeuSublimite = rbBrutaAnual > sublimEstadual && rbBrutaAnual <= limite;
-  const detail: Record<string, number> = { [`DAS Simples (Anexo ${anexo})`]: annual };
+
+  // Ajuste ICMS/ISS "por fora" quando excedeuSublimite (LC 123/06 art. 13-A):
+  //   das_sem_icmsIss[m] = das[m] × (1 − partilha)  (partilha = 6ª faixa do anexo)
+  //   monthly[m]         = das_sem_icmsIss[m] + icmsIssForaMensal[m]
+  // Para ISS, o teto de 5% (LC 116/03) já está garantido pelo campo tax.issIcms
+  // via a validação (getters clamped em taxDefaults) — a partilha do Anexo III
+  // usa 32,15% da 6ª faixa, mas a alíquota efetiva do ISS por fora respeita o teto.
+  let monthly = dasBruto.slice();
+  let icmsIssForaAnual = 0;
+  let dasSemIcmsIssAnual = 0;
+  if (excedeuSublimite && !excedeu) {
+    const partilha = (SIMPLES_PARTILHA_ICMS_ISS_PCT[anexo] ?? 0) / 100;
+    const dasSemIcmsIss = dasBruto.map((v) => v * (1 - partilha));
+    const fora = computeIcmsIssNormal(state);
+    monthly = dasSemIcmsIss.map((v, i) => v + (fora.monthly[i] || 0));
+    icmsIssForaAnual = fora.annual;
+    dasSemIcmsIssAnual = dasSemIcmsIss.reduce((a, b) => a + b, 0);
+  }
+  const annual = sum(monthly);
+
+  const detail: Record<string, number> = {};
+  if (excedeuSublimite && !excedeu && icmsIssForaAnual >= 0) {
+    detail[`DAS Simples (Anexo ${anexo}, s/ ICMS-ISS)`] = dasSemIcmsIssAnual;
+    detail[`ICMS/ISS por fora (sublimite art. 13-A)`] = icmsIssForaAnual;
+    detail[`ℹ Acima do sublimite estadual (R$ 3,6M) — ICMS/ISS recolhidos pelo regime normal`] = 0;
+  } else {
+    detail[`DAS Simples (Anexo ${anexo})`] = annual;
+  }
   if (excedeu) {
     const limMi = (limite / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
     detail[`⚠ Excedeu limite Simples (R$ ${limMi}M) — desenquadramento obrigatório`] = 0;
-  } else if (excedeuSublimite) {
-    // [Auditoria Bloco 1] Sublimite estadual (LC 123/06 art. 13-A): de R$ 3,6M até R$ 4,8M,
-    // empresa permanece no Simples para tributos federais, mas ICMS/ISS saem do DAS e são
-    // recolhidos pelo regime normal (RPA). Sinaliza para o consultor revisar o recolhimento.
-    detail[`⚠ Acima do sublimite estadual (R$ 3,6M) — ICMS/ISS devem ser recolhidos por fora do DAS`] = 0;
   }
   return {
     monthly,
