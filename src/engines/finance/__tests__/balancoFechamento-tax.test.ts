@@ -118,4 +118,37 @@ describe("balancoFechamento — impostosPagar (regime + Split Payment)", () => {
         .toBeLessThanOrEqual(tol);
     }
   });
+
+  it("Guard: cbsIbsDez > vendasDez não gera passivo negativo", () => {
+    const tax = synthTax({
+      monthlyVendas: [...Array(11).fill(0), 100],
+      monthlyCbsIbs: [...Array(11).fill(0), 500], // impossível na prática, mas sintetizado
+      monthlyLucro: ZERO12(),
+    });
+    const st = createState({
+      tax: { regime: "real", era: "pleno", splitPaymentAtivo: true },
+    });
+    const regime = resolveEffectiveRegime(st);
+    const { dre } = buildDRE(st, regime);
+    const cf = buildCashFlow(st);
+    const r = deriveBalancoFechamento({ state: st, dre, cf, tax });
+    expect(r.balanco.passivoCirculante!.impostosPagar).toBeGreaterThanOrEqual(0);
+  });
+
+  it("Presumido + Split ativo: passivo = só Q4 de IRPJ/CSLL (CBS/IBS zerados)", () => {
+    const tax = synthTax({
+      monthlyVendas: [...Array(11).fill(0), 8_000],
+      monthlyCbsIbs: [...Array(11).fill(0), 8_000], // TODA a venda de dez é CBS/IBS
+      monthlyLucro: [0, 0, 0, 0, 0, 0, 0, 0, 0, 2_000, 2_000, 2_000], // Q4 = 6_000
+    });
+    const st = createState({
+      tax: { regime: "presumido", era: "pleno", splitPaymentAtivo: true },
+    });
+    const regime = resolveEffectiveRegime(st);
+    const { dre } = buildDRE(st, regime);
+    const cf = buildCashFlow(st);
+    const r = deriveBalancoFechamento({ state: st, dre, cf, tax });
+    // Vendas dez − CBS/IBS dez = 0; Lucro Q4 = 6.000; passivo = 6.000.
+    expect(r.balanco.passivoCirculante!.impostosPagar).toBeCloseTo(6_000, 0);
+  });
 });
