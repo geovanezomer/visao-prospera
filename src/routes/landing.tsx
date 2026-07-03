@@ -6,7 +6,7 @@ import { LandingPage } from "@/components/landing/LandingPage";
 import { isLandingEnabled } from "@/lib/featureFlags";
 import { faqPageJsonLd } from "@/lib/seo/faqs";
 import { getAppSettings } from "@/lib/admin/settings.functions";
-import { loadLandingPlans } from "@/components/landing/loadLandingPlans.server";
+import { getLandingPlans } from "@/components/landing/loadLandingPlans.functions";
 import { PLANS_FALLBACK } from "@/components/landing/plansFallback";
 
 const CANONICAL = "https://visao-prospera.lovable.app/landing";
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/landing")({
     });
     // loadLandingPlans nunca lança — em erro/vazio devolve PLANS_FALLBACK
     // e dispara notifyAdmin (dedupe 1h) para acordar o admin.
-    return await loadLandingPlans();
+    return await getLandingPlans();
   },
 
   staleTime: 60_000,
