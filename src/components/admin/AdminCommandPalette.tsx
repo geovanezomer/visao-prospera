@@ -80,7 +80,7 @@ export function AdminCommandPalette({
     debounceRef.current = setTimeout(async () => {
       try {
         const r = await listAdminUsers({ data: { search: query.trim(), perPage: 5, page: 1 } });
-        setResults((r.rows ?? []).slice(0, 5));
+        setResults((r.users ?? []).slice(0, 5));
       } catch (e) {
         console.warn("[palette] busca falhou:", e);
         setResults([]);
