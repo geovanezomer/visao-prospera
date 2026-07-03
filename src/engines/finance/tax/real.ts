@@ -169,7 +169,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     }
     if (reforma.ibsPct > 0) {
       const dIbs = ibsValor(r, reforma.ibsPct);
-      const cIbs = ibsValor(cpvMonthly[i], ibsCredPct) + saldoIBS;
+      const cIbs = ibsValor(baseCreditoCbsIbsMonthly[i], ibsCredPct) + saldoIBS;
       ibs = Math.max(0, dIbs - cIbs);
       saldoIBS = Math.max(0, cIbs - dIbs);
     }
