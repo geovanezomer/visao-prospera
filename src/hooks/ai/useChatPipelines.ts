@@ -182,6 +182,10 @@ export function useChatPipelines(params: UseChatPipelinesParams): UseChatPipelin
     let convo: ChatMessage[] = messages.slice();
     let aborted = false;
 
+    // Roteia o Pipeline 360° para modelo premium quando configurado.
+    // Fallback silencioso preserva o comportamento atual.
+    const { config: routedConfig } = resolveConfigForTask(config, "pipeline360");
+
     try {
       for (let i = startIdx; i < PIPELINE_360.length; i++) {
         if (ac.signal.aborted) {
