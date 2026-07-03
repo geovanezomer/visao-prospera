@@ -608,8 +608,11 @@ function KpiCard({ label, value, accent }: { label: string; value: number; accen
 
 function RefundDialog({ user, onClose, onDone }: { user: AdminUserRow | null; onClose: () => void; onDone: () => void }) {
   const [mode, setMode] = useState<"total" | "parcial">("total");
-  const [valor, setValor] = useState(""); const [reason, setReason] = useState(""); const [busy, setBusy] = useState(false);
-  useEffect(() => { if (user) { setMode("total"); setValor(""); setReason(""); } }, [user]);
+  const [valor, setValor] = useState(""); const [reason, setReason] = useState("");
+  const [revoke, setRevoke] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<Awaited<ReturnType<typeof refundPayment>> | null>(null);
+  useEffect(() => { if (user) { setMode("total"); setValor(""); setReason(""); setRevoke(true); setResult(null); } }, [user]);
   if (!user) return null;
   const isStripe = (user.provider ?? "stripe") === "stripe";
   const submit = async () => {
@@ -621,42 +624,71 @@ function RefundDialog({ user, onClose, onDone }: { user: AdminUserRow | null; on
         if (!Number.isFinite(num) || num <= 0) throw new Error("Valor inválido.");
         amount = isStripe ? Math.round(num * 100) : num;
       }
-      const r = await refundPayment({ data: { userId: user.id, amount, reason: reason || undefined } });
-      toast.success(`Estorno OK (${r.provider} · ${r.status}).`);
-      onDone();
+      const r = await refundPayment({ data: { userId: user.id, amount, reason: reason || undefined, revoke } });
+      setResult(r);
+      if (r.refund.ok) toast.success("Estorno executado."); else toast.error(`Falha no estorno: ${r.refund.error}`);
     } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
     finally { setBusy(false); }
   };
+  const StepLine = ({ label, s }: { label: string; s: { ok: boolean; error?: string; detail?: string } }) => (
+    <div className="flex items-center justify-between text-xs">
+      <span>{label}</span>
+      <span className={s.ok ? "text-emerald-600" : "text-red-600"}>
+        {s.ok ? (s.detail === "skipped" ? "ignorado" : "ok") : `falhou: ${s.error ?? "erro"}`}
+      </span>
+    </div>
+  );
   return (
-    <Dialog open={!!user} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={!!user} onOpenChange={(o) => !o && (result ? onDone() : onClose())}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Estornar pagamento</DialogTitle>
           <DialogDescription>Usuário: <strong>{user.email}</strong> · Provedor: <strong>{user.provider ?? "—"}</strong></DialogDescription>
         </DialogHeader>
-        <div className="space-y-3 py-2">
-          <div className="flex gap-2">
-            <Button variant={mode === "total" ? "default" : "outline"} size="sm" onClick={() => setMode("total")} className="flex-1">Total</Button>
-            <Button variant={mode === "parcial" ? "default" : "outline"} size="sm" onClick={() => setMode("parcial")} className="flex-1">Parcial</Button>
-          </div>
-          {mode === "parcial" && (
-            <div className="space-y-1">
-              <Label className="text-xs">Valor (R$)</Label>
-              <Input value={valor} onChange={(e) => setValor(e.target.value)} placeholder="49,90" inputMode="decimal" />
+        {!result ? (
+          <div className="space-y-3 py-2">
+            <div className="flex gap-2">
+              <Button variant={mode === "total" ? "default" : "outline"} size="sm" onClick={() => setMode("total")} className="flex-1">Total</Button>
+              <Button variant={mode === "parcial" ? "default" : "outline"} size="sm" onClick={() => setMode("parcial")} className="flex-1">Parcial</Button>
             </div>
-          )}
-          <div className="space-y-1">
-            <Label className="text-xs">Motivo (opcional)</Label>
-            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Solicitação do cliente" />
+            {mode === "parcial" && (
+              <div className="space-y-1">
+                <Label className="text-xs">Valor (R$)</Label>
+                <Input value={valor} onChange={(e) => setValor(e.target.value)} placeholder="49,90" inputMode="decimal" />
+              </div>
+            )}
+            <div className="space-y-1">
+              <Label className="text-xs">Motivo (opcional)</Label>
+              <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Solicitação do cliente" />
+            </div>
+            <label className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/30 p-2 text-xs cursor-pointer">
+              <input type="checkbox" checked={revoke} onChange={(e) => setRevoke(e.target.checked)} className="mt-0.5" />
+              <span>Cancelar assinatura e revogar acesso (recomendado — devolve o dinheiro e derruba o acesso imediatamente).</span>
+            </label>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-2 py-2 rounded-md border border-border/60 bg-muted/20 p-3">
+            <StepLine label="Estorno no provedor" s={result.refund} />
+            <StepLine label="Cancelamento no provedor" s={result.revoke} />
+            <StepLine label="Atualização do banco" s={result.dbUpdate} />
+            <StepLine label="Registro de auditoria" s={result.audit} />
+            <StepLine label="E-mail ao cliente" s={result.email} />
+          </div>
+        )}
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={busy}>Cancelar</Button>
-          <Button onClick={submit} disabled={busy} className="bg-red-600 hover:bg-red-700">
-            {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}Confirmar estorno
-          </Button>
+          {!result ? (
+            <>
+              <Button variant="outline" onClick={onClose} disabled={busy}>Cancelar</Button>
+              <Button onClick={submit} disabled={busy} className="bg-red-600 hover:bg-red-700">
+                {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}Confirmar estorno
+              </Button>
+            </>
+          ) : (
+            <Button onClick={onDone}>Fechar</Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+

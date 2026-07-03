@@ -342,12 +342,13 @@ export const revalidatePlan = createServerFn({ method: "POST" })
 // ----------------------------------------------------------------------------
 export const refundPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { userId: string; amount?: number; reason?: string }) =>
+  .validator((data: { userId: string; amount?: number; reason?: string; revoke?: boolean }) =>
     z
       .object({
         userId: z.string().uuid(),
         amount: z.number().positive().optional(),
         reason: z.string().max(500).optional(),
+        revoke: z.boolean().optional().default(true),
       })
       .parse(data),
   )
@@ -367,13 +368,16 @@ export const refundPayment = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!sub) throw new Error("Usuário sem assinatura.");
 
-    const { refundLastPayment } = await import("@/lib/payments/refund.server");
-    const result = await refundLastPayment({
+    const { refundAndRevoke } = await import("@/lib/payments/refund.server");
+    const result = await refundAndRevoke({
       provider: sub.provider ?? "stripe",
       subscriptionId: sub.stripe_subscription_id,
       customerId: sub.provider_customer_id ?? sub.stripe_customer_id,
       amount: data.amount,
       reason: data.reason,
+      revoke: data.revoke ?? true,
+      userId: data.userId,
+      actorId: context.userId,
     });
     const { logAudit } = await import("./audit.server");
     await logAudit({
@@ -382,10 +386,17 @@ export const refundPayment = createServerFn({ method: "POST" })
       action: "payment.refund",
       resource: "subscription",
       targetId: data.userId,
-      metadata: { amount: data.amount, reason: data.reason, provider: sub.provider },
+      metadata: {
+        amount: data.amount,
+        reason: data.reason,
+        provider: sub.provider,
+        revoke: data.revoke ?? true,
+        result,
+      },
     });
     return result;
   });
+
 
 // ----------------------------------------------------------------------------
 // resendMagicLink — gera novo magic link Supabase e envia via Resend (usando
