@@ -65,7 +65,11 @@ describe("computeImpostos — Split Payment (LC 214/2025)", () => {
   });
 
   it("monthlyCbsIbs ausente: trata como zero (sem quebrar)", () => {
-    const tax = { monthly: m12(1000) } as unknown as MonthlyTax;
+    const tax = {
+      monthly: m12(1000),
+      monthlyVendas: m12(1000),
+      monthlyLucro: m12(0),
+    } as unknown as MonthlyTax;
     const r = computeImpostos(tax, true);
     // Sem CBS/IBS conhecidos, tudo cai no lag 30
     expect(r.inAno[0]).toBe(0);
