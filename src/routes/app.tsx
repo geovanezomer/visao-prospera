@@ -169,7 +169,7 @@ function SimulaProGated() {
   return <SimulaPro />;
 }
 
-function SimulaPro() {
+function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
   const { user, hydrated } = useAuth();
   const navigate = useNavigate();
 
