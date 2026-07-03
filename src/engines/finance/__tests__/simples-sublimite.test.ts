@@ -82,4 +82,51 @@ describe("calcSimples — ICMS/ISS por fora acima do sublimite estadual", () => 
     expect(chaves.some((k) => k.includes("por fora"))).toBe(false);
     expect(chaves.some((k) => k.includes("s/ ICMS-ISS"))).toBe(false);
   });
+
+  it("Fronteira RBT12 = 3.600.000 → ainda no DAS puro (não é > sublimite)", () => {
+    const st = createState({
+      tax: { regime: "simples", simplesAnexo: "III", issIcms: 5 },
+      businessType: "servicos",
+      revenue: { bruta: m12(300_000) }, // 3,6M exato
+    });
+    const res = calcSimples(st);
+    expect(Object.keys(res.detail).some((k) => k.includes("por fora"))).toBe(false);
+  });
+
+  it("Fronteira RBT12 = 4.800.000 → excedeuSublimite (limite ainda respeitado)", () => {
+    const st = createState({
+      tax: { regime: "simples", simplesAnexo: "III", issIcms: 5 },
+      businessType: "servicos",
+      revenue: { bruta: m12(400_000) }, // 4,8M exato
+    });
+    const res = calcSimples(st);
+    expect(Object.keys(res.detail).some((k) => k.includes("por fora"))).toBe(true);
+    expect(Object.keys(res.detail).some((k) => k.includes("Excedeu limite Simples"))).toBe(false);
+  });
+
+  it("Anexo IV (44,75%): partilha reduz o DAS e ISS por fora respeita teto 5%", () => {
+    const st = createState({
+      tax: { regime: "simples", simplesAnexo: "IV", issIcms: 8 }, // acima do teto
+      businessType: "servicos",
+      revenue: { bruta: m12(350_000) },
+    });
+    const res = calcSimples(st);
+    const issFora = res.detail["ICMS/ISS por fora (sublimite art. 13-A)"] ?? 0;
+    // Teto ISS 5% → 350_000 × 12 × 0,05 = 210_000 (não usa 8%).
+    expect(issFora).toBeCloseTo(350_000 * 12 * 0.05, -3);
+  });
+
+  it("Anexo V (30,5%): partilha aplicada corretamente e detail explícito", () => {
+    const st = createState({
+      tax: { regime: "simples", simplesAnexo: "V", issIcms: 4 },
+      businessType: "servicos",
+      revenue: { bruta: m12(350_000) },
+    });
+    const res = calcSimples(st);
+    expect(res.detail["DAS Simples (Anexo V, s/ ICMS-ISS)"]).toBeGreaterThan(0);
+    expect(res.detail["ICMS/ISS por fora (sublimite art. 13-A)"]).toBeCloseTo(
+      350_000 * 12 * 0.04,
+      -3,
+    );
+  });
 });
