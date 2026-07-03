@@ -21,6 +21,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { AIConfigDialog } from "./AIConfigDialog";
+import { VerificationFooter } from "./VerificationFooter";
 import type { AppState } from "@/engines/finance/types";
 import type { SimulatorParams } from "@/engines/finance/simulator";
 import { toast } from "sonner";
@@ -345,9 +346,12 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                               }}
                             >
                               {m.content}
-                            </ReactMarkdown>
+                          </ReactMarkdown>
                           </Suspense>
                         </div>
+                        {m.role === "assistant" && m.verification && (
+                          <VerificationFooter verification={m.verification} />
+                        )}
                       </div>
                     </div>
                   );

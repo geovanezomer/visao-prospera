@@ -384,6 +384,9 @@ function sanitizeMessages(input: unknown): ChatMessage[] {
       attachments: Array.isArray(m.attachments)
         ? (m.attachments as ChatMessage["attachments"])
         : undefined,
+      verification: isRecord(m.verification)
+        ? (m.verification as unknown as ChatMessage["verification"])
+        : undefined,
     } satisfies ChatMessage;
   });
 }
@@ -485,6 +488,8 @@ export interface ChatMessage {
   ts: number;
   toolName?: string;
   attachments?: Array<{ name: string; type: "image" | "pdf"; size: number; error?: string }>;
+  /** Resposta Auditável — verificação determinística dos números citados. */
+  verification?: import("./verification").VerificationResult;
 }
 
 export interface ChatThread {
