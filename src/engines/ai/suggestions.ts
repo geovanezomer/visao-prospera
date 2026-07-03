@@ -3,14 +3,8 @@
 // como perguntas prontas que a IA pode responder com dados reais.
 
 import type { AppState } from "@/engines/finance/types";
-import {
-  buildDRE,
-  calcIndicators,
-  diagnose,
-  resolveEffectiveRegime,
-} from "@/engines/finance";
-import { buildCashFlow } from "@/engines/finance/cashflow";
-import { normalizeStateFromBalanco } from "@/engines/finance/balanco";
+import { diagnose } from "@/engines/finance";
+import { getFinancialModelCached } from "@/engines/finance/financialModel";
 
 const STATIC_FALLBACK = [
   "Qual o VPL do meu negócio e o que ele significa na prática?",
