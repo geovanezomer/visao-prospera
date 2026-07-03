@@ -2,8 +2,7 @@ import { useMemo } from "react";
 import { useFinance, usePatchRevenue } from "@/engines/finance/AppStateContext";
 import { AppState, RevenueDeducao } from "@/engines/finance/types";
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/engines/finance/format";
-import { buildDRE } from "@/engines/finance";
-import { resolveEffectiveRegime } from "@/engines/finance/regime";
+import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { MoneyInput, PctInput, StatCard, SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -51,6 +50,9 @@ export function RevenueTab() {
   const patchRevenue = usePatchRevenue();
   const r = state.revenue;
 
+  // SSOT: modelo financeiro memoizado (WeakMap por ref do state).
+  const { dre } = useFinanceModel(state);
+
   // -------- Derivados memoizados --------
   const derived = useMemo(() => {
     const inadimpBRL = r.bruta.map((b, i) => b * ((r.inadimplencia[i] || 0) / 100));
@@ -70,9 +72,8 @@ export function RevenueTab() {
     };
     const usaPDD = !!r.inadimplenciaComoPDD;
 
-    // VERDADE ABSOLUTA: deriva Receita Operacional da DRE central.
-    // Receita Operacional = Receita Líquida + Impostos sobre Venda (Receita antes da carga tributária).
-    const { dre } = buildDRE(state, resolveEffectiveRegime(state));
+    // VERDADE ABSOLUTA: Receita Operacional = Receita Líquida + Impostos sobre Venda
+    // (Receita antes da carga tributária), derivada da DRE central via useFinanceModel.
     const liquidas = dre.receitaLiquida.map((rl, i) => rl + (dre.impostosVendas[i] || 0));
 
     const brutaAnual = sum(r.bruta);
