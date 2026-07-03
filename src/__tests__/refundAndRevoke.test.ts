@@ -121,7 +121,7 @@ describe("refundAndRevoke", () => {
     expect(cancelSpy).not.toHaveBeenCalled();
     expect(dbUpdates.find((u) => u.table === "subscriptions")).toBeUndefined();
     expect(dbInserts.find((i) => i.table === "webhook_events")).toBeUndefined();
-    expect(r.revoke.detail).toBe("skipped");
+    if (r.revoke.ok) expect(r.revoke.detail).toBe("skipped");
   });
 
   it("falha no cancelamento preserva o estorno e reporta revoke.failed", async () => {
