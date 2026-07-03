@@ -58,22 +58,22 @@ describe("useAdminCommandShortcut (contrato)", () => {
     const toggle = vi.fn();
     const unmount = mountShortcut(toggle);
 
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
+    fakeWindow.dispatch({ key: "k", metaKey: true });
     expect(toggle).toHaveBeenCalledTimes(1);
 
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true }));
+    fakeWindow.dispatch({ key: "k", ctrlKey: true });
     expect(toggle).toHaveBeenCalledTimes(2);
 
     unmount();
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
+    fakeWindow.dispatch({ key: "k", metaKey: true });
     expect(toggle).toHaveBeenCalledTimes(2);
   });
 
   test("outras teclas não disparam", () => {
     const toggle = vi.fn();
     const unmount = mountShortcut(toggle);
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "j", metaKey: true }));
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "k" }));
+    fakeWindow.dispatch({ key: "j", metaKey: true });
+    fakeWindow.dispatch({ key: "k" });
     expect(toggle).not.toHaveBeenCalled();
     unmount();
   });
