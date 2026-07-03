@@ -53,6 +53,10 @@ function AdminPage() {
   const isAdmin = useIsAdmin();
   const navigate = useNavigate();
   const { tab } = Route.useSearch();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // Atalho ⌘K / Ctrl+K — ativo apenas enquanto /admin está montada.
+  useAdminCommandShortcut(() => setPaletteOpen((v) => !v));
 
   useEffect(() => {
     if (hydrated && !user) navigate({ to: "/login" });
@@ -67,6 +71,7 @@ function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <AdminCommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       <header className="sticky top-0 z-30 border-b border-border/40 bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
@@ -78,9 +83,22 @@ function AdminPage() {
               <h1 className="text-sm font-semibold">Administração</h1>
             </div>
           </div>
-          <Badge variant="outline" className="text-[10px]">{user.email}</Badge>
+          <div className="flex items-center gap-2">
+            {/* Descoberta do atalho: mesmo botão abre o palette. */}
+            <button
+              onClick={() => setPaletteOpen(true)}
+              className="hidden items-center gap-2 rounded-md border border-border/60 bg-muted/30 px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted sm:flex"
+              aria-label="Abrir command palette"
+            >
+              <Search className="h-3 w-3" />
+              <span>Buscar…</span>
+              <kbd className="rounded border border-border/60 bg-background px-1 text-[10px]">⌘K</kbd>
+            </button>
+            <Badge variant="outline" className="text-[10px]">{user.email}</Badge>
+          </div>
         </div>
       </header>
+
 
       <main className="mx-auto max-w-[1400px] p-4 sm:p-6">
         <Tabs value={tab} onValueChange={setTab}>
