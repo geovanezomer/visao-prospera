@@ -42,6 +42,22 @@ export const SIMPLES_LIMITE = 4_800_000;
 /** Sublimite estadual (LC 123/06 art. 13-A): acima deste valor ICMS/ISS saem do DAS
  *  e passam a ser recolhidos pelo regime normal estadual. SSOT-11. */
 export const SIMPLES_SUBLIMITE_ESTADUAL = 3_600_000;
+
+/**
+ * Partilha do DAS destinada a ICMS/ISS na ÚLTIMA FAIXA (6ª) de cada anexo.
+ * Fonte: LC 123/06, Anexos I a V. Usada para descontar do DAS a parcela de
+ * ICMS/ISS quando a empresa opera acima do sublimite estadual (art. 13-A) —
+ * nessa faixa esses tributos são recolhidos POR FORA, pelo regime normal.
+ * Observação Anexo III: a partilha oficial da faixa (32,15%) implicaria ISS
+ * efetivo acima do teto de 5% da LC 116/03; o cap é aplicado no consumo.
+ */
+export const SIMPLES_PARTILHA_ICMS_ISS_PCT: Record<SimplesAnexo, number> = {
+  I: 33.5,   // ICMS — comércio
+  II: 32.0,  // ICMS — indústria
+  III: 32.15, // ISS — serviços (respeitando teto 5% LC 116)
+  IV: 44.75, // ISS — serviços Anexo IV
+  V: 30.5,   // ISS — serviços Anexo V
+};
 /** Fator R — relação folha/RBT12 mínima para migrar Anexo V → III (%). */
 export const FATOR_R_MINIMO_PCT = 28;
 /** Encargos patronais padrão (CLT) para folha geral (%). */
