@@ -24,6 +24,9 @@ import { z } from "zod";
 import { exportUsersCsv } from "@/lib/admin/export.functions";
 import { Download } from "lucide-react";
 import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
+import { getRouteApi } from "@tanstack/react-router";
+
+const adminRouteApi = getRouteApi("/admin");
 
 function fmt(iso: string | null | undefined) {
   if (!iso) return "—";
@@ -49,6 +52,19 @@ export function UsersTab() {
   const [refundFor, setRefundFor] = useState<AdminUserRow | null>(null);
   const [detailFor, setDetailFor] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+
+  // Command palette navega com ?user=<id>; abrimos o drawer ao montar/alterar.
+  const search_ = adminRouteApi.useSearch();
+  const navigate = adminRouteApi.useNavigate();
+  useEffect(() => {
+    const u = (search_ as { user?: string }).user;
+    if (u) {
+      setDetailFor(u);
+      // Limpa o param para não reabrir se o admin fechar o drawer manualmente.
+      navigate({ to: "/admin", search: (prev: Record<string, unknown>) => ({ ...prev, user: undefined }), replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(search_ as { user?: string }).user]);
 
   const load = async () => {
     setLoading(true);

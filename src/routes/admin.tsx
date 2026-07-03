@@ -2,9 +2,9 @@
 // Painel Administrativo v2 — visível apenas para ADMIN_EMAIL.
 // Abas: Usuários · Sistema · E-mails · Webhooks · Provider.
 // ============================================================================
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { ShieldCheck, ArrowLeft, Users, Settings, Mail, Webhook, CreditCard, LayoutDashboard, FileClock, Flag, Megaphone, Package, Activity, FileText } from "lucide-react";
+import { ShieldCheck, ArrowLeft, Users, Settings, Mail, Webhook, CreditCard, LayoutDashboard, FileClock, Flag, Megaphone, Package, Activity, FileText, Search } from "lucide-react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import { lazyNamed } from "@/components/common/LazyTab";
+import { AdminCommandPalette, useAdminCommandShortcut } from "@/components/admin/AdminCommandPalette";
 
 // Abas do Admin carregadas sob demanda — ver src/components/common/LazyTab.tsx.
 // Cada aba vira chunk próprio; reduz o bundle do /admin de ~524KB para
@@ -37,6 +38,8 @@ const searchSchema = z.object({
   tab: fallback(z.enum(TAB_KEYS), "dashboard").default("dashboard"),
   // Período do DashboardTab (7 / 30 / 90 dias). Preservado na URL.
   period: fallback(z.union([z.literal(7), z.literal(30), z.literal(90)]), 30).default(30),
+  // ID de usuário para abrir o drawer via command palette (?user=<uuid>).
+  user: fallback(z.string().uuid().optional(), undefined).optional(),
 });
 
 export const Route = createFileRoute("/admin")({
@@ -50,6 +53,10 @@ function AdminPage() {
   const isAdmin = useIsAdmin();
   const navigate = useNavigate();
   const { tab } = Route.useSearch();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // Atalho ⌘K / Ctrl+K — ativo apenas enquanto /admin está montada.
+  useAdminCommandShortcut(() => setPaletteOpen((v) => !v));
 
   useEffect(() => {
     if (hydrated && !user) navigate({ to: "/login" });
@@ -64,6 +71,7 @@ function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <AdminCommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       <header className="sticky top-0 z-30 border-b border-border/40 bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
@@ -75,9 +83,22 @@ function AdminPage() {
               <h1 className="text-sm font-semibold">Administração</h1>
             </div>
           </div>
-          <Badge variant="outline" className="text-[10px]">{user.email}</Badge>
+          <div className="flex items-center gap-2">
+            {/* Descoberta do atalho: mesmo botão abre o palette. */}
+            <button
+              onClick={() => setPaletteOpen(true)}
+              className="hidden items-center gap-2 rounded-md border border-border/60 bg-muted/30 px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted sm:flex"
+              aria-label="Abrir command palette"
+            >
+              <Search className="h-3 w-3" />
+              <span>Buscar…</span>
+              <kbd className="rounded border border-border/60 bg-background px-1 text-[10px]">⌘K</kbd>
+            </button>
+            <Badge variant="outline" className="text-[10px]">{user.email}</Badge>
+          </div>
         </div>
       </header>
+
 
       <main className="mx-auto max-w-[1400px] p-4 sm:p-6">
         <Tabs value={tab} onValueChange={setTab}>
