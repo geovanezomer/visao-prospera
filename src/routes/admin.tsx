@@ -35,6 +35,8 @@ const LegalTab = lazyNamed(() => import("@/components/admin/tabs/LegalTab"), "Le
 const TAB_KEYS = ["dashboard", "usuarios", "planos", "sistema", "emails", "broadcasts", "webhooks", "provider", "flags", "status", "auditoria", "legal"] as const;
 const searchSchema = z.object({
   tab: fallback(z.enum(TAB_KEYS), "dashboard").default("dashboard"),
+  // Período do DashboardTab (7 / 30 / 90 dias). Preservado na URL.
+  period: fallback(z.union([z.literal(7), z.literal(30), z.literal(90)]), 30).default(30),
 });
 
 export const Route = createFileRoute("/admin")({

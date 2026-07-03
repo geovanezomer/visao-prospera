@@ -1,15 +1,15 @@
 // ============================================================================
-// Dashboard admin — KPIs do negócio: MRR, ARR, novos signups, trials,
-// past_due, churn (30d), conversão trial→paid, receita por provider,
-// webhook health 24h. Pure read, custo único por hit.
+// Dashboard admin — KPIs do negócio com janelas comparáveis
+// (atual vs período anterior imediatamente antes), série diária para
+// sparklines e funil de conversão (trials → checkouts → pagos).
+//
+// Pure read; custo único por hit. periodDays: 7 | 30 | 90 (default 30d).
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
 import { assertAdmin } from "./assertAdmin";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AuthClaims } from "./_types";
 
-
-// Preços fixos por price_id (centavos / mês). Mantemos local para evitar
+// Preços fixos por price_id (centavos/mês). Mantemos local para evitar
 // dependência de Stripe API aqui. Atualize se mudar o pricing.
 const PRICE_TABLE_BRL_MONTH: Record<string, number> = {
   starter_monthly: 4900,
@@ -23,51 +23,178 @@ function priceToMonthlyBRL(priceId: string | null | undefined, plan: string | nu
     const isYearly = /yearly|anual|year/i.test(priceId);
     return isYearly ? PRICE_TABLE_BRL_MONTH[priceId] / 12 : PRICE_TABLE_BRL_MONTH[priceId];
   }
-  // Fallback por plano.
   if (plan === "starter") return 4900;
   if (plan === "pro") return 9900;
   return 0;
 }
 
+// ── Tipos ────────────────────────────────────────────────────────────────────
+export type PeriodDays = 7 | 30 | 90;
+export type Delta = { current: number; previous: number };
+export type SeriesPoint = { day: string; mrrCents: number; signups: number; churn: number };
+export type Funnel = {
+  trialsRequested: number;
+  trialsActivated: number;
+  checkoutsStarted: number;
+  paid: number;
+};
+
 export type DashboardMetrics = {
-  mrr: number; // em centavos
-  arr: number;
-  activeSubs: number;
-  trialing: number;
-  pastDue: number;
-  canceled: number;
-  lifetime: number;
-  signups7d: number;
-  signups30d: number;
-  churnedLast30d: number;
-  churnRate30d: number; // 0..1
-  conversionTrialToPaid: number; // 0..1 (heurístico)
-  byProvider: { stripe: number; asaas: number };
-  byPlan: Record<string, number>;
-  webhook24h: { total: number; ok: number; failed: number };
-  // Funil de trial (Landing → magic link → conversão paga)
-  trialFunnel: {
-    requested: number;          // total de trial_requests
-    activated: number;          // trial_requests com user_id criado
-    converted: number;          // usuários que tinham trial e hoje têm assinatura ativa/lifetime
-    conversionRate: number;     // converted / requested (0..1)
-    activationRate: number;     // activated / requested (0..1)
-    avgTimeToConvertHours: number; // tempo médio entre trial_request.created_at e subscription.created_at
-    last30dRequested: number;
-    last30dConverted: number;
+  periodDays: PeriodDays;
+  windows: {
+    currentStart: string; currentEnd: string;
+    previousStart: string; previousEnd: string;
+  };
+  mrr: Delta;                // MRR reconstruído ao fim de cada janela
+  arr: Delta;
+  activeSubs: Delta;         // ativos ao fim de cada janela
+  signups: Delta;            // novos usuários na janela
+  churn: Delta;              // cancelamentos na janela
+  trials: Delta;             // trial_requests na janela
+  conversion: Delta;         // paid/trialsRequested na mesma janela (0..1)
+  series: SeriesPoint[];
+  funnel: Funnel;
+  // Snapshot atual (não janelado) — mantém compat com resto do painel.
+  snapshot: {
+    trialing: number;
+    pastDue: number;
+    canceled: number;
+    lifetime: number;
+    byProvider: { stripe: number; asaas: number };
+    byPlan: Record<string, number>;
+    webhook24h: { total: number; ok: number; failed: number };
   };
   generatedAt: string;
 };
 
+// ── Helpers de janela ────────────────────────────────────────────────────────
+/**
+ * Calcula duas janelas contíguas de mesmo tamanho (dias), sem sobreposição.
+ * currentEnd = `now`; previousEnd = currentStart.
+ * Exportado para teste unitário.
+ */
+export function computeWindows(now: Date, periodDays: PeriodDays) {
+  const ms = periodDays * 86400_000;
+  const currentEnd = now.getTime();
+  const currentStart = currentEnd - ms;
+  const previousEnd = currentStart;           // sem overlap
+  const previousStart = previousEnd - ms;
+  return {
+    currentStart: new Date(currentStart),
+    currentEnd: new Date(currentEnd),
+    previousStart: new Date(previousStart),
+    previousEnd: new Date(previousEnd),
+  };
+}
 
+function inWindow(ts: string | null | undefined, start: Date, end: Date): boolean {
+  if (!ts) return false;
+  const t = new Date(ts).getTime();
+  return t >= start.getTime() && t < end.getTime();
+}
+
+/**
+ * Reconstrói MRR ao fim de `atDate` a partir das linhas de subscriptions:
+ * conta ativo/trialing/past_due criado antes de `atDate` e que ainda não
+ * havia sido cancelado antes desse instante.
+ */
+export function mrrAt(subs: SubRow[], atDate: Date): number {
+  const cutoff = atDate.getTime();
+  let mrr = 0;
+  // Última linha por usuário (mais recente até `atDate`).
+  const latestByUser = new Map<string, SubRow>();
+  for (const s of subs) {
+    const created = s.created_at ? new Date(s.created_at).getTime() : 0;
+    if (created > cutoff) continue;
+    const cur = latestByUser.get(s.user_id);
+    if (!cur) latestByUser.set(s.user_id, s);
+    else {
+      const curT = cur.updated_at ? new Date(cur.updated_at).getTime() : 0;
+      const sT = s.updated_at ? new Date(s.updated_at).getTime() : 0;
+      if (sT > curT) latestByUser.set(s.user_id, s);
+    }
+  }
+  for (const s of latestByUser.values()) {
+    const status = s.status;
+    // Se cancelou depois de atDate, ainda estava ativo naquele instante.
+    const canceledBefore =
+      status === "canceled" && s.updated_at && new Date(s.updated_at).getTime() <= cutoff;
+    if (canceledBefore) continue;
+    if (status === "active" || status === "trialing" || status === "past_due") {
+      mrr += priceToMonthlyBRL(s.price_id, s.plan);
+    }
+  }
+  return Math.round(mrr);
+}
+
+/** Conta ativos (active+trialing+past_due) ao fim de `atDate`. */
+function activeAt(subs: SubRow[], atDate: Date): number {
+  const cutoff = atDate.getTime();
+  const latestByUser = new Map<string, SubRow>();
+  for (const s of subs) {
+    const created = s.created_at ? new Date(s.created_at).getTime() : 0;
+    if (created > cutoff) continue;
+    latestByUser.set(s.user_id, latestByUser.get(s.user_id) ?? s);
+  }
+  let n = 0;
+  for (const s of latestByUser.values()) {
+    if (s.status === "canceled" && s.updated_at && new Date(s.updated_at).getTime() <= cutoff) continue;
+    if (s.status === "active" || s.status === "trialing" || s.status === "past_due") n++;
+  }
+  return n;
+}
+
+type SubRow = {
+  user_id: string;
+  plan: string | null;
+  status: string;
+  price_id: string | null;
+  provider: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+type TrialRow = { user_id: string | null; created_at: string | null; consumed_at: string | null };
+type IntentRow = { status: string; created_at: string; confirmed_at: string | null; updated_at: string | null };
+
+/**
+ * Constrói o funil da janela (pure — separado para teste).
+ */
+export function buildFunnel(
+  trials: TrialRow[],
+  intents: IntentRow[],
+  start: Date,
+  end: Date,
+): Funnel {
+  const trialsRequested = trials.filter((t) => inWindow(t.created_at, start, end)).length;
+  const trialsActivated = trials.filter((t) => inWindow(t.consumed_at, start, end)).length;
+  const checkoutsStarted = intents.filter((i) => inWindow(i.created_at, start, end)).length;
+  const paid = intents.filter(
+    (i) => i.status === "paid" && inWindow(i.confirmed_at ?? i.updated_at, start, end),
+  ).length;
+  return { trialsRequested, trialsActivated, checkoutsStarted, paid };
+}
+
+// ── Server function ──────────────────────────────────────────────────────────
 export const getDashboardMetrics = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<DashboardMetrics> => {
+  .inputValidator((data: { periodDays?: PeriodDays } | undefined) => {
+    const p = data?.periodDays;
+    const periodDays: PeriodDays = p === 7 || p === 90 ? p : 30;
+    return { periodDays };
+  })
+  .handler(async ({ context, data }): Promise<DashboardMetrics> => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Carregar todas as subscriptions (cap pratico — projetos PME).
-    const { data: subs, error: subErr } = await supabaseAdmin
+    const { periodDays } = data;
+    const now = new Date();
+    const w = computeWindows(now, periodDays);
+
+    // ── Subscriptions (cap prático para PMEs) ────────────────────────────────
+    const { data: subsRaw, error: subErr } = await supabaseAdmin
       .from("subscriptions")
       .select(
         "user_id, plan, status, price_id, provider, current_period_end, cancel_at_period_end, created_at, updated_at",
@@ -75,172 +202,131 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(10000);
     if (subErr) throw new Error(subErr.message);
+    const subs = (subsRaw ?? []) as SubRow[];
 
-    // Última linha por usuário.
-    const latestByUser = new Map<string, any>();
-    for (const s of subs ?? []) {
-      if (!latestByUser.has(s.user_id)) latestByUser.set(s.user_id, s);
-    }
-
-    let mrr = 0;
-    let activeSubs = 0,
-      trialing = 0,
-      pastDue = 0,
-      canceled = 0,
-      lifetime = 0;
-    const byProvider = { stripe: 0, asaas: 0 } as { stripe: number; asaas: number };
+    // Snapshot atual (não janelado).
+    const latestByUser = new Map<string, SubRow>();
+    for (const s of subs) if (!latestByUser.has(s.user_id)) latestByUser.set(s.user_id, s);
+    let trialing = 0, pastDue = 0, canceled = 0, lifetime = 0;
+    const byProvider = { stripe: 0, asaas: 0 };
     const byPlan: Record<string, number> = {};
-
     for (const s of latestByUser.values()) {
-      const status = s.status as string;
-      const monthly = priceToMonthlyBRL(s.price_id, s.plan);
-      if (status === "active" || status === "trialing") {
-        mrr += monthly;
-        if (status === "active") activeSubs++;
-        else trialing++;
+      if (s.status === "trialing") trialing++;
+      else if (s.status === "past_due") pastDue++;
+      else if (s.status === "canceled") canceled++;
+      else if (s.status === "lifetime") lifetime++;
+      if (s.status === "active" || s.status === "trialing" || s.status === "past_due") {
         if (s.provider === "stripe") byProvider.stripe++;
         else if (s.provider === "asaas") byProvider.asaas++;
         byPlan[s.plan ?? "—"] = (byPlan[s.plan ?? "—"] ?? 0) + 1;
-      } else if (status === "past_due") {
-        pastDue++;
-        mrr += monthly; // ainda contabiliza enquanto Stripe tenta cobrar
-      } else if (status === "canceled") canceled++;
-      else if (status === "lifetime") lifetime++;
+      }
     }
 
-    // Signups via auth.admin.listUsers (paginação).
-    const now = Date.now();
-    const d7 = now - 7 * 86400_000;
-    const d30 = now - 30 * 86400_000;
-    let signups7d = 0,
-      signups30d = 0;
+    // MRR/ARR/Ativos ao fim de cada janela.
+    const mrrCurrent = mrrAt(subs, w.currentEnd);
+    const mrrPrevious = mrrAt(subs, w.previousEnd);
+    const activeCurrent = activeAt(subs, w.currentEnd);
+    const activePrevious = activeAt(subs, w.previousEnd);
+
+    // Churn por janela: cancelados cujo updated_at cai na janela.
+    const churnCurrent = subs.filter((s) => s.status === "canceled" && inWindow(s.updated_at, w.currentStart, w.currentEnd)).length;
+    const churnPrevious = subs.filter((s) => s.status === "canceled" && inWindow(s.updated_at, w.previousStart, w.previousEnd)).length;
+
+    // ── Signups por janela via auth.admin.listUsers (paginação até 25×200). ──
+    let signupsCurrent = 0, signupsPrevious = 0;
+    const allUsers: { created_at: string }[] = [];
     const MAX_PAGES = 25;
     for (let p = 1; p <= MAX_PAGES; p++) {
       const { data: u, error: ue } = await supabaseAdmin.auth.admin.listUsers({ page: p, perPage: 200 });
       if (ue) throw new Error(ue.message);
       const list = u.users ?? [];
       for (const usr of list) {
-        const t = new Date(usr.created_at).getTime();
-        if (t >= d30) signups30d++;
-        if (t >= d7) signups7d++;
+        allUsers.push({ created_at: usr.created_at });
+        if (inWindow(usr.created_at, w.currentStart, w.currentEnd)) signupsCurrent++;
+        else if (inWindow(usr.created_at, w.previousStart, w.previousEnd)) signupsPrevious++;
       }
       if (list.length < 200) break;
     }
 
-    // Churn 30d: assinaturas que saíram de active/trialing para canceled nos últimos 30d.
-    let churnedLast30d = 0;
-    for (const s of latestByUser.values()) {
-      if (
-        s.status === "canceled" &&
-        s.updated_at &&
-        new Date(s.updated_at).getTime() >= d30
-      ) {
-        churnedLast30d++;
-      }
-    }
-    const baseAtivos = activeSubs + trialing + pastDue;
-    const churnRate30d = baseAtivos + churnedLast30d > 0 ? churnedLast30d / (baseAtivos + churnedLast30d) : 0;
+    // ── Trials (server-side filtrado pela janela ampla p/ economia). ─────────
+    const sinceFar = w.previousStart.toISOString();
+    const { data: trialRows } = await supabaseAdmin
+      .from("trial_requests")
+      .select("user_id, created_at, consumed_at")
+      .gte("created_at", sinceFar)
+      .limit(50000);
+    const trials = (trialRows ?? []) as TrialRow[];
+    const trialsCurrent = trials.filter((t) => inWindow(t.created_at, w.currentStart, w.currentEnd)).length;
+    const trialsPrevious = trials.filter((t) => inWindow(t.created_at, w.previousStart, w.previousEnd)).length;
 
-    // Conversão trial→paid: usuarios que tiveram trial e hoje estão active.
-    // Heurístico: count distinct user_id com status=active cujo histórico
-    // contém uma linha trialing anterior.
-    const trialUsers = new Set<string>();
-    const paidAfterTrial = new Set<string>();
-    for (const s of subs ?? []) {
-      if (s.status === "trialing") trialUsers.add(s.user_id);
-    }
-    for (const s of subs ?? []) {
-      if ((s.status === "active" || s.status === "lifetime") && trialUsers.has(s.user_id)) {
-        paidAfterTrial.add(s.user_id);
-      }
-    }
-    const conversionTrialToPaid = trialUsers.size > 0 ? paidAfterTrial.size / trialUsers.size : 0;
+    // ── Checkout intents (para funil e conversão). ───────────────────────────
+    const { data: intentRows } = await supabaseAdmin
+      .from("checkout_intents")
+      .select("status, created_at, confirmed_at, updated_at")
+      .gte("created_at", sinceFar)
+      .limit(50000);
+    const intents = (intentRows ?? []) as IntentRow[];
 
-    // Webhook health 24h.
-    const since = new Date(now - 86400_000).toISOString();
+    const funnel = buildFunnel(trials, intents, w.currentStart, w.currentEnd);
+    const funnelPrev = buildFunnel(trials, intents, w.previousStart, w.previousEnd);
+
+    // Conversão = paid/trialsRequested por janela (0..1 em base 10k p/ int).
+    const convCurrent = funnel.trialsRequested > 0 ? funnel.paid / funnel.trialsRequested : 0;
+    const convPrevious = funnelPrev.trialsRequested > 0 ? funnelPrev.paid / funnelPrev.trialsRequested : 0;
+
+    // ── Webhooks 24h (snapshot). ─────────────────────────────────────────────
+    const since24 = new Date(now.getTime() - 86400_000).toISOString();
     const { data: hooks } = await supabaseAdmin
       .from("webhook_events")
       .select("status")
-      .gte("received_at", since);
-    let wOk = 0,
-      wFail = 0;
+      .gte("received_at", since24);
+    let wOk = 0, wFail = 0;
     for (const r of hooks ?? []) {
       if (r.status === "failed") wFail++;
       else if (r.status === "processed" || r.status === "replayed") wOk++;
     }
 
-    // ── Funil de trial: requested → activated → converted ────────────────────
-    const { data: trialRows } = await supabaseAdmin
-      .from("trial_requests")
-      .select("email, user_id, created_at, consumed_at")
-      .limit(50000);
-    const requested = trialRows?.length ?? 0;
-    const activated = (trialRows ?? []).filter((r) => !!r.consumed_at).length;
-    const last30dRequested = (trialRows ?? []).filter(
-      (r) => r.created_at && new Date(r.created_at).getTime() >= d30,
-    ).length;
-
-    // Conversão real: cruza trial_requests.user_id com subscriptions ativas/lifetime/past_due.
-    const trialUserIds = new Set(
-      (trialRows ?? []).map((r) => r.user_id).filter((x): x is string => !!x),
-    );
-    let converted = 0;
-    let last30dConverted = 0;
-    let convTimeSumHours = 0;
-    let convTimeCount = 0;
-    const trialCreatedByUser = new Map<string, string>();
-    for (const r of trialRows ?? []) {
-      if (r.user_id && r.created_at) trialCreatedByUser.set(r.user_id, r.created_at);
+    // ── Série diária (mrrCents / signups / churn por dia da janela atual). ──
+    const series: SeriesPoint[] = [];
+    const dayMs = 86400_000;
+    const startDay = new Date(w.currentStart);
+    startDay.setUTCHours(0, 0, 0, 0);
+    for (let d = startDay.getTime(); d < w.currentEnd.getTime(); d += dayMs) {
+      const dayEnd = new Date(d + dayMs);
+      const dayStart = new Date(d);
+      const signups = allUsers.filter((u) => inWindow(u.created_at, dayStart, dayEnd)).length;
+      const churn = subs.filter(
+        (s) => s.status === "canceled" && inWindow(s.updated_at, dayStart, dayEnd),
+      ).length;
+      series.push({
+        day: dayStart.toISOString().slice(0, 10),
+        mrrCents: mrrAt(subs, dayEnd),
+        signups,
+        churn,
+      });
     }
-    const seenConverted = new Set<string>();
-    for (const s of subs ?? []) {
-      if (!trialUserIds.has(s.user_id)) continue;
-      if (!(s.status === "active" || s.status === "lifetime" || s.status === "past_due")) continue;
-      if (seenConverted.has(s.user_id)) continue;
-      seenConverted.add(s.user_id);
-      converted++;
-      const tCreated = trialCreatedByUser.get(s.user_id);
-      if (s.created_at && tCreated) {
-        const subT = new Date(s.created_at).getTime();
-        const trT = new Date(tCreated).getTime();
-        if (subT >= trT) {
-          convTimeSumHours += (subT - trT) / 3_600_000;
-          convTimeCount++;
-        }
-        if (subT >= d30) last30dConverted++;
-      }
-    }
-    const conversionRate = requested > 0 ? converted / requested : 0;
-    const activationRate = requested > 0 ? activated / requested : 0;
-    const avgTimeToConvertHours = convTimeCount > 0 ? convTimeSumHours / convTimeCount : 0;
 
     return {
-      mrr: Math.round(mrr),
-      arr: Math.round(mrr * 12),
-      activeSubs,
-      trialing,
-      pastDue,
-      canceled,
-      lifetime,
-      signups7d,
-      signups30d,
-      churnedLast30d,
-      churnRate30d,
-      conversionTrialToPaid,
-      byProvider,
-      byPlan,
-      webhook24h: { total: hooks?.length ?? 0, ok: wOk, failed: wFail },
-      trialFunnel: {
-        requested,
-        activated,
-        converted,
-        conversionRate,
-        activationRate,
-        avgTimeToConvertHours,
-        last30dRequested,
-        last30dConverted,
+      periodDays,
+      windows: {
+        currentStart: w.currentStart.toISOString(),
+        currentEnd: w.currentEnd.toISOString(),
+        previousStart: w.previousStart.toISOString(),
+        previousEnd: w.previousEnd.toISOString(),
       },
-      generatedAt: new Date().toISOString(),
+      mrr: { current: mrrCurrent, previous: mrrPrevious },
+      arr: { current: mrrCurrent * 12, previous: mrrPrevious * 12 },
+      activeSubs: { current: activeCurrent, previous: activePrevious },
+      signups: { current: signupsCurrent, previous: signupsPrevious },
+      churn: { current: churnCurrent, previous: churnPrevious },
+      trials: { current: trialsCurrent, previous: trialsPrevious },
+      conversion: { current: convCurrent, previous: convPrevious },
+      series,
+      funnel,
+      snapshot: {
+        trialing, pastDue, canceled, lifetime, byProvider, byPlan,
+        webhook24h: { total: hooks?.length ?? 0, ok: wOk, failed: wFail },
+      },
+      generatedAt: now.toISOString(),
     };
-
   });
