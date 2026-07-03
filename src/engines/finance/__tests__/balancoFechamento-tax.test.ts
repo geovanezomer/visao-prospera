@@ -47,7 +47,7 @@ describe("balancoFechamento — impostosPagar (regime + Split Payment)", () => {
     const dezVendas = tax.monthlyVendas[11] ?? 0;
     // Regime efetivo pode ser presumido se estourar; garantir que testamos Simples.
     if (resolveEffectiveRegime(state) === "simples") {
-      expect(res.balanco.passivoCirculante.impostosPagar).toBeCloseTo(dezVendas, 0);
+      expect(res.balanco.passivoCirculante!.impostosPagar).toBeCloseTo(dezVendas, 0);
     }
   });
 
@@ -62,10 +62,10 @@ describe("balancoFechamento — impostosPagar (regime + Split Payment)", () => {
       (tax.monthlyLucro[9] ?? 0) +
       (tax.monthlyLucro[10] ?? 0) +
       (tax.monthlyLucro[11] ?? 0);
-    expect(res.balanco.passivoCirculante.impostosPagar).toBeCloseTo(esperado, 0);
+    expect(res.balanco.passivoCirculante!.impostosPagar).toBeCloseTo(esperado, 0);
     // No Presumido, quase sempre há IRPJ/CSLL trimestral quando lucro > 0.
     if ((tax.annualLucro ?? 0) > 0) {
-      expect(res.balanco.passivoCirculante.impostosPagar).toBeGreaterThan(tax.monthlyVendas[11] ?? 0);
+      expect(res.balanco.passivoCirculante!.impostosPagar).toBeGreaterThan(tax.monthlyVendas[11] ?? 0);
     }
   });
 
@@ -90,9 +90,9 @@ describe("balancoFechamento — impostosPagar (regime + Split Payment)", () => {
     const rSplit = deriveBalancoFechamento({ state: stateSplit, dre, cf, tax });
     const rNoSplit = deriveBalancoFechamento({ state: stateNoSplit, dre, cf, tax });
     // Split ativo → passivoVendas = 10k - 6k = 4k (sem lucro no synthTax).
-    expect(rSplit.balanco.passivoCirculante.impostosPagar).toBeCloseTo(4_000, 0);
+    expect(rSplit.balanco.passivoCirculante!.impostosPagar).toBeCloseTo(4_000, 0);
     // Sem Split → passivoVendas = 10k (CBS/IBS entram no lag 30).
-    expect(rNoSplit.balanco.passivoCirculante.impostosPagar).toBeCloseTo(10_000, 0);
+    expect(rNoSplit.balanco.passivoCirculante!.impostosPagar).toBeCloseTo(10_000, 0);
   });
 
   it("Identidade contábil Ativo = Passivo + PL continua fechando", () => {
