@@ -45,11 +45,9 @@ export function TrialBanner({ expiresAt }: { expiresAt: string }) {
     }
     if (!expiredRef.current && remaining <= 0) {
       expiredRef.current = true;
-      void (async () => {
-        toast.info("Seu teste gratuito terminou. Escolha um plano para continuar.", { duration: 6000 });
-        await supabase.auth.signOut();
-        navigate({ to: "/landing", hash: "planos" });
-      })();
+      // Não desloga: o SubscriptionGate detecta trial expirado via useAccessStatus
+      // e troca para a PaywallScreen na próxima renderização (mesmos dados, menos hostil).
+      toast.info("Seu teste gratuito terminou. Escolha um plano para continuar.", { duration: 6000 });
     }
   }, [now, target, navigate]);
 
