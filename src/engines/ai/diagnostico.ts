@@ -34,6 +34,10 @@ export interface DiagnosticoResult {
   provider: AIConfig["provider"];
   promptVersion: typeof PROMPT_VERSION;
   geradoEm: string;
+  /** true quando o modelo premium foi efetivamente usado. */
+  usedPremium: boolean;
+  /** true quando premium estava configurado mas caiu para a base. */
+  usedFallback: boolean;
 }
 
 /**
