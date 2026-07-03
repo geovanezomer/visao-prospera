@@ -227,12 +227,13 @@ export async function refundAndRevoke(
   // pois estornamos o dinheiro; o acesso tem de cair mesmo se o provider
   // rejeitar (ex.: assinatura já cancelada). O admin vê ambos os status.
   try {
-    const patch: Record<string, unknown> = {
-      status: "canceled",
+    const patch = {
+      status: "canceled" as const,
       cancel_at_period_end: false,
       updated_at: new Date().toISOString(),
     };
     const q = supabaseAdmin.from("subscriptions").update(patch).eq("user_id", input.userId);
+
     const { error } = input.subscriptionId
       ? await q.eq("stripe_subscription_id", input.subscriptionId)
       : await q;
