@@ -74,6 +74,8 @@ export function PlansTab() {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Editing>(empty);
   const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<PlanRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -123,13 +125,17 @@ export function PlansTab() {
     } finally { setSaving(false); }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Excluir plano? Esta ação é definitiva.")) return;
+  const confirmRemove = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
     try {
-      await deletePlan({ data: { id } });
-      toast.success("Excluído.");
+      await deletePlan({ data: { id: confirmDelete.id } });
+      toast.success("Plano excluído");
+      setConfirmDelete(null);
       await load();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Falha"); }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir");
+    } finally { setDeleting(false); }
   };
 
   return (
@@ -140,9 +146,13 @@ export function PlansTab() {
           <Button size="sm" variant="outline" onClick={() => setEditing(empty)}><Plus className="mr-1.5 h-3.5 w-3.5" />Novo</Button>
         </div>
         {loading ? (
-          <div className="flex h-32 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          <TableSkeleton rows={4} cols={3} />
         ) : plans.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Nenhum plano cadastrado.</p>
+          <EmptyState
+            icon={Package}
+            title="Nenhum plano cadastrado"
+            description="Cadastre um plano no formulário ao lado para começar."
+          />
         ) : (
           <div className="space-y-2">
             {plans.map((p) => (
@@ -156,7 +166,7 @@ export function PlansTab() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Button size="sm" variant="ghost" onClick={() => setEditing(rowToEditing(p))}>Editar</Button>
-                    <Button size="sm" variant="ghost" onClick={() => remove(p.id)}>
+                    <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(p)}>
                       <Trash2 className="h-3.5 w-3.5 text-destructive" />
                     </Button>
                   </div>
@@ -168,6 +178,22 @@ export function PlansTab() {
             ))}
           </div>
         )}
+
+        <TypedConfirmDialog
+          open={!!confirmDelete}
+          onOpenChange={(o) => !o && setConfirmDelete(null)}
+          expectedText={confirmDelete?.slug ?? ""}
+          title="Excluir plano definitivamente"
+          description={
+            <>
+              Esta ação é <strong>irreversível</strong>. O plano{" "}
+              <strong>{confirmDelete?.name}</strong> ({confirmDelete?.slug}) será removido.
+            </>
+          }
+          confirmLabel="Excluir plano"
+          busy={deleting}
+          onConfirm={confirmRemove}
+        />
       </div>
 
       <div className="space-y-3 rounded-md border border-border/60 p-3">
