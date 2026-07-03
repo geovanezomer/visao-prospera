@@ -61,7 +61,6 @@ export function adicionalIrpjTrimestral(baseMensal: number[], tax: TaxConfig): n
 import type { AppState } from "../types";
 import { receitaTributavel } from "../shared";
 import { isCpvCost, effectiveMonthValues } from "../costs";
-import { zeros12 } from "../format";
 
 /**
  * Calcula o ICMS (mercadoria) ou ISS (serviços) devido pelo regime normal,
