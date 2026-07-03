@@ -15,6 +15,42 @@ export function isCpvCost(c: CostLine): boolean {
   return c.category === "custo_vendas" || c.category === "direto_venda";
 }
 
+// =====================================================================
+// FOLHA / PESSOAL — regexes canônicos (SSOT). Reusados por regime.ts
+// (folhaAnual, Fator R) e por isCreditoAmploCbsIbs (LC 214/2025).
+// Mantidos AQUI para evitar ciclo de imports com regime.ts.
+// =====================================================================
+export const LABOR_INCLUDE_RE =
+  /sal[áa]rio|folha|pr[óo]\s*-?\s*labore|prolabore|\bmod\b|m[ãa]o\s*de\s*obra|m\.o\.|\bclt\b|benef[íi]cio|\bplr\b|participa[çc][ãa]o.*lucro|terceiriz/i;
+export const DISTRIBUICAO_SOCIO_RE =
+  /s[óo]ci[oa]s?|acionist|cotist|dividendo|distribui[çc][ãa]o.*(lucro|result)|lucro.*distribu/i;
+export const LABOR_EXCLUDE_RE = /comiss[ãa]o|comiss[õo]es/i;
+
+/** True se a linha representa gasto com PESSOAL (folha, pró-labore, benefícios,
+ *  MO terceirizada). NÃO entra em crédito de CBS/IBS (LC 214/2025 art. 57). */
+export function isLaborLine(c: CostLine): boolean {
+  if (LABOR_EXCLUDE_RE.test(c.label)) return false; // comissões nunca são folha
+  if (DISTRIBUICAO_SOCIO_RE.test(c.label)) return false; // distribuição a sócio ≠ folha
+  return !!c.encargosAuto || LABOR_INCLUDE_RE.test(c.label);
+}
+
+/**
+ * Base de crédito CBS/IBS (LC 214/2025 arts. 47-56 — não-cumulatividade AMPLA).
+ * INCLUI: praticamente todo insumo/despesa operacional (CPV, aluguel, energia,
+ * frete, serviços tomados, marketing, TI, etc.).
+ * EXCLUI:
+ *   (a) Folha/pessoal (art. 57) — salários, pró-labore, benefícios, MO terceirizada
+ *   (b) Despesas financeiras (juros de dívida não geram crédito)
+ *   (c) Linhas marcadas `semCredito` (uso e consumo pessoal, ICMS-ST embutido, etc.)
+ */
+export function isCreditoAmploCbsIbs(c: CostLine): boolean {
+  if (c.semCredito) return false;
+  if (c.category === "financeiro") return false;
+  if (isLaborLine(c)) return false;
+  return true;
+}
+
+
 /** Despesa Administrativa (função CPC 26). Aceita o alias legado `fixo`. */
 export function isAdminCost(c: CostLine): boolean {
   return c.category === "despesa_administrativa" || c.category === "fixo";
