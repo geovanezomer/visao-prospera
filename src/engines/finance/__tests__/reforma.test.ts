@@ -240,3 +240,148 @@ describe("getCbsCredCpvPct / getIbsCredCpvPct — créditos presumidos SN", () =
     expect(getCbsCredCpvPct(8.8, 200)).toBe(ALIQ_PRESUMIDA_CBS_SN); // tratado como 100
   });
 });
+
+// =====================================================================
+// Crédito AMPLO CBS/IBS (LC 214/2025 arts. 47-56) — testes de regressão
+// =====================================================================
+import { DEFAULT_STATE } from "../defaults";
+import { fill12 } from "../format";
+import { calcPresumido } from "../tax/presumido";
+import { isCreditoAmploCbsIbs } from "../costs";
+import type { AppState, CostLine } from "../types";
+
+const mkCost = (over: Partial<CostLine>): CostLine => ({
+  id: over.id || Math.random().toString(36).slice(2),
+  label: over.label || "linha",
+  category: over.category || "despesa_administrativa",
+  values: over.values || fill12(0),
+  fixed: over.fixed ?? true,
+  ...over,
+});
+
+describe("isCreditoAmploCbsIbs — perímetro de exclusão (LC 214/2025)", () => {
+  it("aceita aluguel/energia/serviços tomados (OpEx que não é folha)", () => {
+    expect(isCreditoAmploCbsIbs(mkCost({ label: "Aluguel matriz", category: "despesa_administrativa" }))).toBe(true);
+    expect(isCreditoAmploCbsIbs(mkCost({ label: "Energia elétrica", category: "despesa_administrativa" }))).toBe(true);
+    expect(isCreditoAmploCbsIbs(mkCost({ label: "Frete sobre vendas", category: "despesa_comercial" }))).toBe(true);
+    expect(isCreditoAmploCbsIbs(mkCost({ label: "Software SaaS", category: "custo_vendas" }))).toBe(true);
+  });
+
+  it("rejeita folha (encargosAuto=true) — art. 57", () => {
+    expect(isCreditoAmploCbsIbs(mkCost({ label: "Salários", encargosAuto: true }))).toBe(false);
+    expect(isCreditoAmploCbsIbs(mkCost({ label: "Pró-labore diretoria", encargosAuto: true }))).toBe(false);
+  });
+
+  it("rejeita folha por rótulo (sem encargosAuto)", () => {
+    expect(isCreditoAmploCbsIbs(mkCost({ label: "Folha CLT" }))).toBe(false);
+    expect(isCreditoAmploCbsIbs(mkCost({ label: "Benefícios (VR/VT)" }))).toBe(false);
+  });
+
+  it("rejeita despesa financeira (juros não geram crédito)", () => {
+    expect(isCreditoAmploCbsIbs(mkCost({ label: "Juros de empréstimo", category: "financeiro" }))).toBe(false);
+  });
+
+  it("rejeita linha marcada semCredito (ICMS-ST, uso/consumo pessoal)", () => {
+    expect(isCreditoAmploCbsIbs(mkCost({ label: "Compra c/ ICMS-ST", category: "custo_vendas", semCredito: true }))).toBe(false);
+  });
+});
+
+describe("Crédito amplo CBS/IBS na engine — Presumido, serviços, era pleno", () => {
+  // Empresa de serviços: CPV baixo (10k/mês) + aluguel alto (20k/mês).
+  // Sob crédito só-CPV, aluguel não gera crédito. Sob crédito amplo, gera.
+  const buildState = (): AppState => ({
+    ...DEFAULT_STATE,
+    businessType: "servicos",
+    revenue: { ...DEFAULT_STATE.revenue, bruta: fill12(100_000) },
+    costs: [
+      mkCost({ id: "cpv1", label: "Insumos técnicos", category: "custo_vendas", values: fill12(10_000) }),
+      mkCost({ id: "alu", label: "Aluguel escritório", category: "despesa_administrativa", values: fill12(20_000) }),
+      mkCost({ id: "folha", label: "Salários equipe", category: "custo_vendas", values: fill12(30_000), encargosAuto: true }),
+    ],
+    tax: { ...DEFAULT_STATE.tax, regime: "presumido", era: "pleno" },
+  });
+
+  it("aluguel entra na base de crédito CBS/IBS (não só CPV)", () => {
+    const res = calcPresumido(buildState());
+    // Sanity: existe carga CBS/IBS calculada
+    expect(res.monthlyCbsIbs.reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
+    // Comparação: mesmo cenário SEM aluguel → carga CBS/IBS deve ser MAIOR
+    // (menos base de crédito). Se o aluguel não estivesse creditando, remover
+    // não mudaria nada.
+    const semAluguel = buildState();
+    semAluguel.costs = semAluguel.costs.filter((c) => c.id !== "alu");
+    const resSem = calcPresumido(semAluguel);
+    const cargaComAluguel = res.monthlyCbsIbs.reduce((a, b) => a + b, 0);
+    const cargaSemAluguel = resSem.monthlyCbsIbs.reduce((a, b) => a + b, 0);
+    expect(cargaSemAluguel).toBeGreaterThan(cargaComAluguel);
+  });
+
+  it("folha NUNCA reduz carga CBS/IBS (não credita, art. 57)", () => {
+    const comFolha = calcPresumido(buildState());
+    const semFolha = buildState();
+    semFolha.costs = semFolha.costs.filter((c) => c.id !== "folha");
+    const resSemFolha = calcPresumido(semFolha);
+    // Remover a folha NÃO altera a carga CBS/IBS
+    const a = comFolha.monthlyCbsIbs.reduce((s, v) => s + v, 0);
+    const b = resSemFolha.monthlyCbsIbs.reduce((s, v) => s + v, 0);
+    expect(Math.abs(a - b)).toBeLessThan(0.01);
+  });
+
+  it("linha semCredito é excluída da base de crédito CBS/IBS", () => {
+    const base = buildState();
+    const comSemCredito: AppState = {
+      ...base,
+      costs: [
+        ...base.costs,
+        mkCost({ id: "st", label: "Compras c/ ICMS-ST", category: "custo_vendas", values: fill12(5_000), semCredito: true }),
+      ],
+    };
+    // Adicionar uma linha semCredito não deve reduzir a carga (não credita)
+    const resBase = calcPresumido(base);
+    const resComST = calcPresumido(comSemCredito);
+    const cargaBase = resBase.monthlyCbsIbs.reduce((s, v) => s + v, 0);
+    const cargaComST = resComST.monthlyCbsIbs.reduce((s, v) => s + v, 0);
+    expect(Math.abs(cargaBase - cargaComST)).toBeLessThan(0.01);
+  });
+
+  it("invariante: crédito amplo ≤ crédito só-CPV (carga menor ou igual)", () => {
+    // Comparamos a nova engine (amplo) com uma reconstrução restrita ao CPV:
+    // Se removermos todas as linhas fora do CPV, forçamos o comportamento antigo.
+    const state = buildState();
+    const soCpv: AppState = {
+      ...state,
+      costs: state.costs.filter((c) => c.category === "custo_vendas" && !c.encargosAuto),
+    };
+    const cargaAmplo = calcPresumido(state).monthlyCbsIbs.reduce((s, v) => s + v, 0);
+    const cargaSoCpv = calcPresumido(soCpv).monthlyCbsIbs.reduce((s, v) => s + v, 0);
+    // Amplo tem MAIS base de crédito → carga menor ou igual
+    expect(cargaAmplo).toBeLessThanOrEqual(cargaSoCpv + 0.01);
+  });
+});
+
+describe("Crédito ICMS antigo (era 'atual') — regressão: continua só sobre CPV", () => {
+  it("aluguel NÃO gera crédito ICMS (não-cumulatividade física)", () => {
+    const build = (): AppState => ({
+      ...DEFAULT_STATE,
+      businessType: "comercio",
+      revenue: { ...DEFAULT_STATE.revenue, bruta: fill12(100_000) },
+      costs: [
+        mkCost({ id: "cpv", label: "Mercadoria revenda", category: "custo_vendas", values: fill12(40_000) }),
+        mkCost({ id: "alu", label: "Aluguel loja", category: "despesa_administrativa", values: fill12(15_000) }),
+      ],
+      tax: {
+        ...DEFAULT_STATE.tax,
+        regime: "presumido",
+        era: "atual",
+        issIcms: 18,
+        aliquotaICMSCredito: 18,
+      },
+    });
+    const comAluguel = calcPresumido(build());
+    const semAluguel = calcPresumido({ ...build(), costs: build().costs.filter((c) => c.id !== "alu") });
+    // Se aluguel gerasse crédito ICMS, removê-lo aumentaria o ICMS a pagar.
+    // Como não gera (só CPV credita), o total anual de ISS/ICMS deve ser igual.
+    expect(Math.abs(comAluguel.annualVendas - semAluguel.annualVendas)).toBeLessThan(1);
+  });
+});
+

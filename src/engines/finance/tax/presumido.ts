@@ -18,7 +18,7 @@ import {
   getIrrfAplicacoesPct,
 } from "../taxDefaults";
 import { receitaTributavel, splitReceitasFinanceiras } from "../shared";
-import { isCpvCost, effectiveMonthValues } from "../costs";
+import { isCpvCost, isCreditoAmploCbsIbs, effectiveMonthValues } from "../costs";
 import { getReformaRates, getCbsCredCpvPct, getIbsCredCpvPct } from "./reforma";
 import { adicionalIrpjTrimestral, type MonthlyTax } from "./shared";
 import { calcCbs, calcIbs } from "tributos-br";
@@ -61,17 +61,23 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const pisAliq = getPisCumPct(tax) / 100;
   const cofinsAliq = getCofinsCumPct(tax) / 100;
 
-  // CPV mensal — base de crédito (ICMS antigo e também CBS/IBS amplo na reforma).
-  // EXCLUI linhas marcadas semCredito (ICMS-ST etc.). Pós-2033 ICMS-ST deixa de existir,
-  // mas o flag continua sinalizando "tributo embutido no preço, sem crédito" — respeitamos.
+  // Bases de crédito — DOIS acumuladores distintos:
+  // - cpvMonthly: ICMS antigo (não-cumulatividade FÍSICA, só mercadoria do CPV)
+  // - baseCreditoCbsIbsMonthly: CBS/IBS (não-cumulatividade AMPLA da LC 214/2025
+  //   arts. 47-56 — todo insumo exceto folha/financeiro/semCredito).
   const cpvMonthly = zeros12();
-  const temCpvCredito = icmsCredAliq > 0 || usaReforma;
-  if (temCpvCredito) {
+  const baseCreditoCbsIbsMonthly = zeros12();
+  const temCpvCredito = icmsCredAliq > 0;
+  const temCredAmplo = usaReforma;
+  if (temCpvCredito || temCredAmplo) {
     for (const c of state.costs) {
-      if (!isCpvCost(c)) continue;
-      if (c.semCredito) continue;
       const v = effectiveMonthValues(c);
-      for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
+      if (temCpvCredito && isCpvCost(c) && !c.semCredito) {
+        for (let i = 0; i < 12; i++) cpvMonthly[i] += v[i];
+      }
+      if (temCredAmplo && isCreditoAmploCbsIbs(c)) {
+        for (let i = 0; i < 12; i++) baseCreditoCbsIbsMonthly[i] += v[i];
+      }
     }
   }
 
@@ -123,13 +129,13 @@ export function calcPresumido(state: AppState): MonthlyTax {
       ibs = 0;
     if (reforma.cbsPct > 0) {
       const dCbs = cbsValor(r, reforma.cbsPct);
-      const cCbs = cbsValor(cpvMonthly[i], cbsCredPct) + saldoCBS;
+      const cCbs = cbsValor(baseCreditoCbsIbsMonthly[i], cbsCredPct) + saldoCBS;
       cbs = Math.max(0, dCbs - cCbs);
       saldoCBS = Math.max(0, cCbs - dCbs);
     }
     if (reforma.ibsPct > 0) {
       const dIbs = ibsValor(r, reforma.ibsPct);
-      const cIbs = ibsValor(cpvMonthly[i], ibsCredPct) + saldoIBS;
+      const cIbs = ibsValor(baseCreditoCbsIbsMonthly[i], ibsCredPct) + saldoIBS;
       ibs = Math.max(0, dIbs - cIbs);
       saldoIBS = Math.max(0, cIbs - dIbs);
     }
