@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   ChatMessage,
   touchThread,
+  resolveConfigForTask,
   type AIConfig,
 } from "@/engines/ai/providers";
 import { streamChat } from "@/engines/ai/client";
