@@ -33,11 +33,8 @@ describe("calcSimples — ICMS/ISS por fora acima do sublimite estadual", () => 
     expect(issFora).toBeGreaterThan(0);
     // Partilha aplicada corretamente e soma bate com o annual.
     expect(res.annual).toBeCloseTo(dasSemIcmsIss + issFora, 0);
-    // Carga total > carga se fosse SÓ o DAS reduzido pela partilha (i.e., ISS por
-    // fora adicionou carga real; sem essa correção o consultor veria o valor menor).
-    const dasPuroSemAjuste =
-      dasSemIcmsIss / (1 - (SIMPLES_PARTILHA_ICMS_ISS_PCT.III / 100));
-    expect(res.annual).toBeGreaterThan(dasPuroSemAjuste);
+    // ISS por fora ≈ receita tributável × 5% (alíquota municipal).
+    expect(issFora).toBeCloseTo(350_000 * 12 * 0.05, -3);
   });
 
   it("RBT12 = 4,2M comércio Anexo I: DAS reduzido + ICMS líquido de créditos por fora", () => {
