@@ -8,7 +8,17 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
 
-const TEMPLATE_KINDS = ["magic_link", "receipt", "password_reset", "refund", "welcome", "trial_magic_link"] as const;
+const TEMPLATE_KINDS = [
+  "magic_link",
+  "receipt",
+  "password_reset",
+  "refund",
+  "welcome",
+  "trial_magic_link",
+  "payment_failed",
+  "trial_ending",
+  "subscription_canceled",
+] as const;
 export type TemplateKind = (typeof TEMPLATE_KINDS)[number];
 
 function mask(v: string | null | undefined): string | null {

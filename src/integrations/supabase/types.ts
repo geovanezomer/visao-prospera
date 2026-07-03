@@ -191,6 +191,30 @@ export type Database = {
         }
         Relationships: []
       }
+      email_log: {
+        Row: {
+          id: string
+          kind: string
+          sent_at: string
+          sent_to_hash: string
+          subscription_id: string | null
+        }
+        Insert: {
+          id?: string
+          kind: string
+          sent_at?: string
+          sent_to_hash: string
+          subscription_id?: string | null
+        }
+        Update: {
+          id?: string
+          kind?: string
+          sent_at?: string
+          sent_to_hash?: string
+          subscription_id?: string | null
+        }
+        Relationships: []
+      }
       email_settings: {
         Row: {
           from_email: string | null

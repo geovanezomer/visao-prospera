@@ -46,23 +46,16 @@ function eventEmail(ev: NormalizedEvent): string | null {
   return "email" in ev ? ev.email : null;
 }
 
-function renderTemplate(tpl: string, vars: Record<string, string>): string {
-  return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
-}
-
-async function getEmailConfig(admin: AdminClient) {
-  const { data } = await admin.from("email_settings").select("*").limit(1).maybeSingle();
-  const apiKey = data?.resend_api_key || process.env.RESEND_API_KEY || null;
-  const fromEmail = data?.from_email || process.env.FEEDBACK_FROM || process.env.MAGICLINK_FROM || null;
-  const fromName = data?.from_name || "Finnance";
-  if (!apiKey || !fromEmail) return null;
-  return { apiKey, from: fromName ? `${fromName} <${fromEmail}>` : fromEmail };
-}
-
-async function getTemplate(admin: AdminClient, kind: string) {
-  const { data } = await admin.from("email_templates").select("*").eq("kind", kind).maybeSingle();
-  return data?.enabled ? data : null;
-}
+// Helpers de e-mail vivem em lifecycleEmails.server (SSOT) — importamos aqui
+// para manter a mesma renderização usada nos e-mails de ciclo de vida.
+import {
+  renderTemplate,
+  getEmailConfig,
+  getTemplate,
+  sendLifecycleEmail,
+  resolveSubscriberEmail,
+  buildPortalUrl,
+} from "./lifecycleEmails.server";
 
 async function getOrCreateUserId(admin: AdminClient, email: string): Promise<string | null> {
   if (!email) return null;
@@ -305,9 +298,12 @@ async function runEventLogic(
         .from("subscriptions")
         .update({ status: "canceled" })
         .eq("stripe_subscription_id", event.subscriptionId)
-        .select("id");
+        .select("id, current_period_end, plan");
       if (error) throw new Error(error.message);
-      if (!data || data.length === 0) {
+      const row = (data && data[0]) as
+        | { current_period_end?: string | null; plan?: string | null }
+        | undefined;
+      if (!row) {
         console.warn(`[webhook] canceled sem row prévia: ${event.subscriptionId}`);
       }
       const { notifyAdmin } = await import("@/lib/admin/notify.server");
@@ -317,6 +313,24 @@ async function runEventLogic(
         body: `Sub: ${event.subscriptionId}\nProvider: ${provider}`,
         dedupKey: `churn:${event.subscriptionId}`,
       });
+      // E-mail ao cliente confirmando o cancelamento e a data de fim de acesso.
+      try {
+        const sub = await resolveSubscriberEmail(admin, event.subscriptionId);
+        if (sub) {
+          const accessEnd = row?.current_period_end
+            ? new Date(row.current_period_end).toLocaleDateString("pt-BR")
+            : "o fim do ciclo atual";
+          await sendLifecycleEmail(
+            admin,
+            "subscription_canceled",
+            sub.email,
+            { name: sub.name, access_end: accessEnd, plan: row?.plan ?? "" },
+            event.subscriptionId,
+          );
+        }
+      } catch (e) {
+        console.warn("[webhook] lifecycle canceled falhou (ignorado):", e);
+      }
       return;
     }
     case "subscription.past_due": {
@@ -324,9 +338,16 @@ async function runEventLogic(
         .from("subscriptions")
         .update({ status: "past_due" })
         .eq("stripe_subscription_id", event.subscriptionId)
-        .select("id");
+        .select("id, plan, provider_customer_id, stripe_customer_id");
       if (error) throw new Error(error.message);
-      if (!data || data.length === 0) {
+      const row = (data && data[0]) as
+        | {
+            plan?: string | null;
+            provider_customer_id?: string | null;
+            stripe_customer_id?: string | null;
+          }
+        | undefined;
+      if (!row) {
         console.warn(`[webhook] past_due sem row prévia: ${event.subscriptionId}`);
       }
       const { notifyAdmin } = await import("@/lib/admin/notify.server");
@@ -336,10 +357,51 @@ async function runEventLogic(
         body: `Sub: ${event.subscriptionId}\nProvider: ${provider}`,
         dedupKey: `pd:${event.subscriptionId}`,
       });
+      // E-mail ao cliente com link do portal (gerado server-side) e prazo de 7 dias.
+      try {
+        const sub = await resolveSubscriberEmail(admin, event.subscriptionId);
+        if (sub) {
+          const customerId = row?.provider_customer_id ?? row?.stripe_customer_id ?? null;
+          const portalUrl = customerId ? await buildPortalUrl(provider, customerId) : null;
+          await sendLifecycleEmail(
+            admin,
+            "payment_failed",
+            sub.email,
+            {
+              name: sub.name,
+              plan: row?.plan ?? "",
+              portal_url: portalUrl ?? `${(process.env.APP_URL || "").replace(/\/$/, "")}/app`,
+            },
+            event.subscriptionId,
+          );
+        }
+      } catch (e) {
+        console.warn("[webhook] lifecycle past_due falhou (ignorado):", e);
+      }
       return;
     }
     case "subscription.trial_will_end": {
-      console.log(`[webhook] trial_will_end ${event.subscriptionId} em ${event.trialEnd ?? "?"}`);
+      try {
+        const sub = await resolveSubscriberEmail(admin, event.subscriptionId);
+        if (sub) {
+          const trialEnd = event.trialEnd
+            ? new Date(event.trialEnd).toLocaleDateString("pt-BR")
+            : "breve";
+          await sendLifecycleEmail(
+            admin,
+            "trial_ending",
+            sub.email,
+            { name: sub.name, trial_end: trialEnd },
+            event.subscriptionId,
+          );
+        } else {
+          console.log(
+            `[webhook] trial_will_end ${event.subscriptionId} — sem e-mail resolvível`,
+          );
+        }
+      } catch (e) {
+        console.warn("[webhook] lifecycle trial_will_end falhou (ignorado):", e);
+      }
       return;
     }
   }
