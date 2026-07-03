@@ -37,6 +37,8 @@ const searchSchema = z.object({
   tab: fallback(z.enum(TAB_KEYS), "dashboard").default("dashboard"),
   // Período do DashboardTab (7 / 30 / 90 dias). Preservado na URL.
   period: fallback(z.union([z.literal(7), z.literal(30), z.literal(90)]), 30).default(30),
+  // ID de usuário para abrir o drawer via command palette (?user=<uuid>).
+  user: fallback(z.string().uuid().optional(), undefined).optional(),
 });
 
 export const Route = createFileRoute("/admin")({
