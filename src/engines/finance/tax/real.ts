@@ -77,7 +77,9 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   // pagam IRPJ/CSLL sobre o bruto, sem compensação.
   const baseSignedMonthly = baseLairMonthly.map((l, i) => l - (rendFinExclusivo[i] || 0));
   const baseIRPJMensal = zeros12();
-  let prejAcum = 0;
+  // Saldo de abertura de prejuízo fiscal (Parte B do e-Lalur). Clamp em ≥0.
+  let prejAcum = Math.max(0, tax.prejuizoFiscalAcumuladoAbertura ?? 0);
+  let totalCompensado = 0;
   for (let q = 0; q < 4; q++) {
     const i0 = q * 3;
     const sumQ = baseSignedMonthly[i0] + baseSignedMonthly[i0 + 1] + baseSignedMonthly[i0 + 2];
@@ -87,6 +89,7 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     } else {
       const compensacao = Math.min(sumQ * 0.3, prejAcum);
       prejAcum -= compensacao;
+      totalCompensado += compensacao;
       const ajustado = sumQ - compensacao;
       // Distribui proporcionalmente aos meses positivos do trimestre.
       const posSum =
