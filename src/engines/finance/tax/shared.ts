@@ -61,26 +61,40 @@ export function adicionalIrpjTrimestral(baseMensal: number[], tax: TaxConfig): n
 import type { AppState } from "../types";
 import { receitaTributavel } from "../shared";
 import { isCpvCost, effectiveMonthValues } from "../costs";
+import { getReformaRates } from "./reforma";
+
+/** Teto de ISS estabelecido pela LC 116/03 art. 8º-A (2% mínimo, 5% máximo). */
+export const ISS_TETO_LC116 = 5;
 
 /**
  * Calcula o ICMS (mercadoria) ou ISS (serviços) devido pelo regime normal,
  * série mensal em R$. Reaproveita a lógica débito−crédito com carryforward
  * de saldo credor de ICMS, e o abatimento de `issDeducoes` no ISS.
  *
- * Retorna a série mensal + total anual. Não aplica multiplicadores da reforma
- * (uso previsto: Simples > sublimite recolhe ICMS/ISS pelo cronograma normal
- * do estado/município — a era da reforma incide no DAS residual, não aqui).
+ * Regras aplicadas:
+ *  • ISS respeita o TETO de 5% da LC 116/03 (defesa em profundidade — mesmo
+ *    que a UI/validação permita > 5%, o cálculo trava aqui).
+ *  • Se `respeitarReforma=true`, aplica `reforma.icmsIssMult` para refletir
+ *    a redução progressiva do ICMS/ISS estadual/municipal durante a transição
+ *    para IBS (EC 132/2023). Por padrão está LIGADO — cronograma oficial vale
+ *    tanto para RPA quanto para Simples > sublimite estadual.
  */
-export function computeIcmsIssNormal(state: AppState): {
-  monthly: number[];
-  annual: number;
-} {
+export function computeIcmsIssNormal(
+  state: AppState,
+  opts: { respeitarReforma?: boolean } = {},
+): { monthly: number[]; annual: number } {
+  const respeitarReforma = opts.respeitarReforma ?? true;
   const { tax, businessType } = state;
   const trib = receitaTributavel(state);
   const isMercadoria = businessType === "comercio" || businessType === "industria";
-  const iss = (tax.issIcms || 0) / 100;
+  // ISS: teto legal de 5% (LC 116/03 art. 8º-A). Não aplicável a mercadoria (ICMS).
+  const issRaw = (tax.issIcms || 0) / 100;
+  const issClamped = isMercadoria ? issRaw : Math.min(issRaw, ISS_TETO_LC116 / 100);
+  const iss = issClamped;
   const issDedMensal = (tax.issDeducoes ?? 0) / 12;
   const icmsCredAliq = isMercadoria ? (tax.aliquotaICMSCredito ?? 0) / 100 : 0;
+  const reforma = respeitarReforma ? getReformaRates(tax.era, tax) : null;
+  const mult = reforma ? reforma.icmsIssMult : 1;
 
   // CPV mensal — mesma regra de presumido.ts (só linhas de CPV, sem semCredito).
   const cpvMonthly = zeros12();
@@ -99,10 +113,10 @@ export function computeIcmsIssNormal(state: AppState): {
       const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
       const liq = Math.max(0, debito - creditoMes);
       saldoCredorICMS = Math.max(0, creditoMes - debito);
-      return liq;
+      return liq * mult;
     }
     const issBase = Math.max(0, r - issDedMensal);
-    return issBase * iss;
+    return issBase * iss * mult;
   });
   return { monthly, annual: monthly.reduce((a, b) => a + b, 0) };
 }
