@@ -17,6 +17,8 @@ import {
   aggregateContracts,
   DEBT_CONTRACTS_COST_ID,
 } from "@/engines/finance/debtContracts";
+import { assertDebtContracts } from "@/engines/finance/debtContracts.validation";
+import { toast } from "sonner";
 import { deriveAbertura } from "@/engines/finance/aberturaDerivada";
 import type { CostLine, DebtContract } from "@/engines/finance/types";
 
