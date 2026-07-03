@@ -139,6 +139,7 @@ function SimulaProGated() {
   const { user, hydrated } = useAuth();
   const navigate = useNavigate();
   const access = useAccessStatus();
+  const isAdmin = useIsAdmin();
 
   useEffect(() => {
     if (hydrated && !user) navigate({ to: "/login" });
@@ -150,6 +151,11 @@ function SimulaProGated() {
         Carregando…
       </div>
     );
+  }
+
+  // Admins têm acesso irrestrito e vitalício — nunca veem paywall.
+  if (isAdmin) {
+    return <SimulaPro />;
   }
 
   // past_due: mantém acesso ao app por GRACE_DAYS_PAST_DUE após o vencimento;
