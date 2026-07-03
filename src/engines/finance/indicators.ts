@@ -199,10 +199,14 @@ export interface Indicators {
 // ─── Thresholds publicados (SSOT) ───────────────────────────────────
 // Faixas usadas em banners/alertas/cards. Centralizadas aqui para que
 // UI nunca diverja: alterar a régua em UM lugar atualiza tudo.
+// Régua alinhada ao padrão bancário PME e ao systemPrompt da IA:
+// <1.0× = risco real, 1.0–1.25× = default, 1.25–1.5× = alerta, ≥1.5× = safe.
 export const DSCR_THRESHOLDS = {
-  /** Abaixo deste valor o DSCR sinaliza risco real de inadimplência. */
-  danger: 1.2,
-  /** Covenant típico de bancos. Abaixo disso = alerta. */
+  /** Abaixo deste valor o EBITDA NÃO cobre o serviço da dívida. */
+  danger: 1.0,
+  /** Piso bancário para renovar giro; abaixo disso vira alerta. */
+  warn: 1.25,
+  /** Covenant típico de bancos; ≥ este valor = zona confortável. */
   covenant: 1.5,
 } as const;
 

@@ -17,6 +17,8 @@ import {
   aggregateContracts,
   DEBT_CONTRACTS_COST_ID,
 } from "@/engines/finance/debtContracts";
+import { assertDebtContracts } from "@/engines/finance/debtContracts.validation";
+import { toast } from "sonner";
 import { deriveAbertura } from "@/engines/finance/aberturaDerivada";
 import type { CostLine, DebtContract } from "@/engines/finance/types";
 
@@ -192,7 +194,19 @@ export function CapitalTab() {
           debtContractsSlot={
             <DebtContractsCard
               contracts={contracts}
-              onChange={(next) => set({ debtContracts: next })}
+              onChange={(next) => {
+                // Valida antes de persistir; bloqueia salvamento inválido
+                // e exibe toast amigável apontando o primeiro erro.
+                try {
+                  assertDebtContracts(next);
+                } catch (err) {
+                  const msg = err instanceof Error ? err.message : String(err);
+                  const firstLine = msg.split("\n").slice(0, 2).join(" ");
+                  toast.error("Contrato de dívida inválido", { description: firstLine });
+                  return;
+                }
+                set({ debtContracts: next });
+              }}
             />
           }
           capexSlot={
