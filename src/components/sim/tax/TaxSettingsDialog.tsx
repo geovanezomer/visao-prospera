@@ -446,6 +446,18 @@ function StepFederais({
           onReset={() => patchOv({ cofinsNaoCum: undefined })}
         />
       </Section>
+
+      <Section title="Prejuízo fiscal acumulado — Lucro Real">
+        <FriendlyRow
+          label="Prejuízo fiscal acumulado (abertura)"
+          suffix="R$"
+          defaultVal={0}
+          help="Saldo de prejuízos fiscais de anos anteriores registrado na ECF (parte B do e-Lalur). Compensa até 30% do lucro de cada trimestre (Lei 9.065/95 art. 42). Base negativa de CSLL usa o mesmo saldo (simplificação)."
+          value={state.tax.prejuizoFiscalAcumuladoAbertura ?? 0}
+          onChange={(v) => patchTax({ prejuizoFiscalAcumuladoAbertura: Math.max(0, v) })}
+          onReset={() => patchTax({ prejuizoFiscalAcumuladoAbertura: 0 })}
+        />
+      </Section>
     </div>
   );
 }
