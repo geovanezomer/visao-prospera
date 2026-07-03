@@ -48,8 +48,10 @@ export function taxAuditToMarkdown(state: AppState): string {
 
   let md = `## Diagnóstico Tributário Detalhado\n\n`;
   md += `_Análise referente à era: **${era}** ${era !== "atual" ? "(Reforma Tributária)" : ""}_\n`;
-  if (era === "transicao")
+  if (era === "transicao") {
     md += `\n> ⚠️ Carga híbrida: CBS/IBS parciais + PIS/COFINS+ICMS/ISS em redução proporcional (cronograma LC 214/2025, 2027–2032).\n`;
+    md += `> Valores da transição representam o **PONTO MÉDIO** do cronograma (IBS ~50%, ICMS/ISS ~50%). Para um ano específico (ex: 2029), use a ferramenta \`simular_transicao_reforma\`.\n`;
+  }
   if (era === "pleno") md += `\n> ℹ️ Regime pleno CBS+IBS (2033+) — tributos legados extintos.\n`;
   md += `\n`;
   md += `- **Regime Atual:** ${currentRegime.toUpperCase()}\n`;
