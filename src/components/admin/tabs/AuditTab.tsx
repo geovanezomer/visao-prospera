@@ -104,8 +104,16 @@ export function AuditTab() {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
-              <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Sem registros.</td></tr>
+            {loading && rows.length === 0 ? (
+              <tr><td colSpan={6} className="p-0"><TableSkeleton rows={6} cols={6} /></td></tr>
+            ) : rows.length === 0 ? (
+              <tr><td colSpan={6} className="p-0">
+                <EmptyState
+                  icon={ScrollText}
+                  title="Sem registros de auditoria"
+                  description="Nenhuma ação administrativa foi registrada para os filtros atuais."
+                />
+              </td></tr>
             ) : rows.map((r) => (
               <tr key={r.id} className="border-t border-border/40">
                 <td className="px-3 py-2 whitespace-nowrap">{fmt(r.created_at)}</td>
