@@ -167,7 +167,7 @@ describe("Getters clampam override fora do range (snapshot corrompido)", () => {
   });
 
   it("valor plausível NÃO é clampado", () => {
-    const t = cfg({ ratesOverride: { irpj: 15, iss: 4 } });
+    const t = cfg({ ratesOverride: { irpj: 15 }, issIcms: 4 });
     expect(getIrpjPct(t)).toBe(15);
   });
 });
