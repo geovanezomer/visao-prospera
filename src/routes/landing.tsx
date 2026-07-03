@@ -5,14 +5,17 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { isLandingEnabled } from "@/lib/featureFlags";
 import { faqPageJsonLd } from "@/lib/seo/faqs";
-import { listPlansPublic } from "@/lib/admin/plans.functions";
 import { getAppSettings } from "@/lib/admin/settings.functions";
+import { loadLandingPlans } from "@/components/landing/loadLandingPlans.server";
+import { PLANS_FALLBACK } from "@/components/landing/plansFallback";
 
 const CANONICAL = "https://visao-prospera.lovable.app/landing";
 
 export const Route = createFileRoute("/landing")({
   loader: async ({ context }) => {
-    if (!isLandingEnabled()) return { plans: [] as any[] };
+    if (!isLandingEnabled()) {
+      return { plans: [] as typeof PLANS_FALLBACK, source: "db" as const };
+    }
     // ensureQueryData hidrata o cache do React Query no SSR e em SPA nav,
     // garantindo que useBranding() leia o valor real no 1º render.
     await context.queryClient.ensureQueryData({
@@ -20,12 +23,9 @@ export const Route = createFileRoute("/landing")({
       queryFn: () => getAppSettings(),
       staleTime: 60 * 60_000,
     });
-    try {
-      const { plans } = await listPlansPublic();
-      return { plans };
-    } catch {
-      return { plans: [] as any[] };
-    }
+    // loadLandingPlans nunca lança — em erro/vazio devolve PLANS_FALLBACK
+    // e dispara notifyAdmin (dedupe 1h) para acordar o admin.
+    return await loadLandingPlans();
   },
 
   staleTime: 60_000,
@@ -83,7 +83,9 @@ export const Route = createFileRoute("/landing")({
       },
     ],
   }),
-  errorComponent: () => <LandingPage initialPlans={[]} />,
+  errorComponent: () => (
+    <LandingPage initialPlans={PLANS_FALLBACK} plansSource="fallback" />
+  ),
   notFoundComponent: () => <Navigate to="/" />,
   component: LandingRoute,
 });
@@ -92,6 +94,7 @@ function LandingRoute() {
   if (!isLandingEnabled()) {
     return <Navigate to="/login" />;
   }
-  const { plans } = Route.useLoaderData();
-  return <LandingPage initialPlans={plans} />;
+  const { plans, source } = Route.useLoaderData();
+  return <LandingPage initialPlans={plans} plansSource={source} />;
 }
+
