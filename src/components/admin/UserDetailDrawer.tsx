@@ -65,9 +65,10 @@ export function UserDetailDrawer({
           <div className="flex h-64 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>
         ) : detail ? (
           <Tabs defaultValue="resumo" className="mt-4">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="resumo">Resumo</TabsTrigger>
               <TabsTrigger value="assinaturas">Assin.</TabsTrigger>
+              <TabsTrigger value="timeline">Timeline</TabsTrigger>
               <TabsTrigger value="notas">Notas</TabsTrigger>
               <TabsTrigger value="sessoes">Sessões</TabsTrigger>
               <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
