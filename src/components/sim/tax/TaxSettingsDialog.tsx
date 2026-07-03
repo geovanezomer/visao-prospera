@@ -196,7 +196,9 @@ export function TaxSettingsDialog() {
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 sm:max-h-[58vh]">
           {step.key === "intro" && <StepIntro customCount={customCount} />}
           {step.key === "empresa" && <StepEmpresa />}
-          {step.key === "federais" && <StepFederais ov={ov} patchOv={patchOv} />}
+          {step.key === "federais" && (
+            <StepFederais ov={ov} patchOv={patchOv} state={state} patchTax={patchTax} />
+          )}
           {step.key === "simples" && <StepSimples ov={ov} patchOv={patchOv} />}
           {step.key === "presumido" && (
             <StepPresumido ov={ov} patchOv={patchOv} state={state} patchTax={patchTax} />
