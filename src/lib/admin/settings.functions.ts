@@ -32,7 +32,9 @@ export const getAppSettings = createServerFn({ method: "GET" }).handler(async ()
   if (settingsInFlight) return settingsInFlight;
   settingsInFlight = (async () => {
     const { createClient } = await import("@supabase/supabase-js");
-    const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+    const url = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const sb = createClient(url!, key!, {
       auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
     });
     const { data } = await sb
