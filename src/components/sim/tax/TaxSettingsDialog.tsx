@@ -335,9 +335,13 @@ function StepEmpresa() {
 function StepFederais({
   ov,
   patchOv,
+  state,
+  patchTax,
 }: {
   ov: TaxRatesOverride;
   patchOv: (p: Partial<TaxRatesOverride>) => void;
+  state: AppState;
+  patchTax: ReturnType<typeof usePatchTax>;
 }) {
   return (
     <div className="space-y-4">
