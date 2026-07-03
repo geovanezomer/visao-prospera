@@ -115,7 +115,7 @@ export function AdminCommandPalette({
   const actExportCsv = async () => {
     onOpenChange(false);
     try {
-      const r = await exportUsersCsv({ data: {} });
+      const r = await exportUsersCsv();
       const blob = new Blob([r.csv ?? ""], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
