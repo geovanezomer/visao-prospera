@@ -211,6 +211,8 @@ export interface TaxRatesOverride {
   presumidoBases?: Partial<Record<BusinessType, PresumidoBases>>;
   reformaTransicaoIbsMult?: number;
   reformaTransicaoIcmsIssMult?: number;
+  /** IRRF sobre rendimentos de aplicações financeiras (%) — Presumido. */
+  irrfAplicacoesPct?: number;
   /** Parâmetros de folha & sócios (Plano v3). */
   payroll?: PayrollOverride;
 }
@@ -241,6 +243,12 @@ export const getReformaTransicaoIbsMult = (tax: TaxConfig): number =>
   pick(ov(tax)?.reformaTransicaoIbsMult, REFORMA_TRANSICAO_IBS_MULT);
 export const getReformaTransicaoIcmsIssMult = (tax: TaxConfig): number =>
   pick(ov(tax)?.reformaTransicaoIcmsIssMult, REFORMA_TRANSICAO_ICMS_ISS_MULT);
+
+/** IRRF sobre rendimentos de aplicações financeiras (%) — Presumido.
+ *  Default 15% (regra geral para aplicações > 720 dias). Override via
+ *  `tax.ratesOverride.irrfAplicacoesPct` ou `tax.irrfAplicacoesPct`. */
+export const getIrrfAplicacoesPct = (tax: TaxConfig): number =>
+  pick(ov(tax)?.irrfAplicacoesPct, pick(tax.irrfAplicacoesPct, 15));
 
 export function getSimplesTable(tax: TaxConfig, anexo: SimplesAnexo): SimplesFaixa[] {
   return ov(tax)?.simplesTables?.[anexo] ?? SIMPLES_TABLES_DEFAULT[anexo];

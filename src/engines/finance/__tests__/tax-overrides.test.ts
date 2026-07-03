@@ -187,3 +187,57 @@ describe("ratesOverride — não-regressão", () => {
     expect(tax.annualLucro).toBeGreaterThan(0);
   });
 });
+
+describe("Presumido — IRRF sobre rendimentos de aplicações (compensação)", () => {
+  it("IRRF 15% sobre R$120k/ano reduz IRPJ em ~R$18k (vs. sem compensação)", () => {
+    // Empresa Presumido com R$120k/ano (R$10k/mês) de rendimentos de aplicações
+    // financeiras (não-exclusiva na fonte → entra na base IRPJ/CSLL).
+    const rendMensal = 10_000;
+    const rf = {
+      id: "rend_aplic",
+      label: "Rendimentos de aplicações",
+      valores: m12(rendMensal),
+      tipo: "financeira" as const,
+      tributacaoExclusivaFonte: false,
+    };
+    const comCompensacao = createState({
+      revenue: { bruta: m12(80_000), receitasFinanceiras: [rf] },
+      tax: { regime: "presumido" }, // default irrfAplicacoesPct = 15
+    });
+    const semCompensacao = createState({
+      revenue: { bruta: m12(80_000), receitasFinanceiras: [rf] },
+      tax: { regime: "presumido", irrfAplicacoesPct: 0 }, // desliga IRRF
+    });
+    const a = buildDRE(comCompensacao, "presumido").tax;
+    const b = buildDRE(semCompensacao, "presumido").tax;
+    // 120k × 15% = 18k de IRRF compensável — reduz o IRPJ anual em 18k
+    // (o cenário Presumido tem IRPJ+Adicional muito acima disso, então a
+    // compensação flui integralmente sem piso zero).
+    expect(b.annualLucro - a.annualLucro).toBeCloseTo(18_000, 0);
+    // Detail expõe o crédito compensado (negativo).
+    expect(a.detail?.["(−) IRRF s/ aplicações (compensado)"]).toBeCloseTo(-18_000, 0);
+  });
+
+  it("IRPJ nunca fica negativo — IRRF excedente é limitado ao IRPJ+Adicional do mês", () => {
+    // Cenário extremo: receita baixa (IRPJ trimestral baixo) + rendimento
+    // financeiro altíssimo com IRRF hipoteticamente maior que o próprio IRPJ.
+    // Como base IRPJ inclui o próprio rendimento, para forçar o piso zero
+    // usamos alíquota IRRF 90% (irreal, apenas para validar o clamp).
+    const rf = {
+      id: "rend_aplic",
+      label: "Rendimentos de aplicações",
+      valores: m12(1_000),
+      tipo: "financeira" as const,
+      tributacaoExclusivaFonte: false,
+    };
+    const s = createState({
+      revenue: { bruta: m12(2_000), receitasFinanceiras: [rf] },
+      tax: { regime: "presumido", irrfAplicacoesPct: 90 },
+    });
+    const { tax } = buildDRE(s, "presumido");
+    // annualLucro inclui IRPJ+Adicional+CSLL líquidos (com clamp ≥ 0 por mês
+    // no IRPJ). Nunca negativo.
+    expect(tax.annualLucro).toBeGreaterThanOrEqual(0);
+    expect(tax.monthlyLucro.every((v) => v >= 0)).toBe(true);
+  });
+});
