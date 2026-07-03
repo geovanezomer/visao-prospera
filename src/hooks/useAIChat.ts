@@ -17,6 +17,7 @@ import { buildLlmMessages } from "@/engines/ai/historyUtils";
 import { buildSystemPromptParts, type AIMode } from "@/engines/ai/systemPrompt";
 import { loadAIMode, saveAIMode } from "@/engines/ai/modeStore";
 import { recordChatTrail } from "@/engines/ai/chatTrail";
+import { verifyResponse } from "@/engines/ai/verification";
 import { useMemories, memoriesToPromptBlock } from "@/engines/memory/store";
 import {
   buildPdfContext,
