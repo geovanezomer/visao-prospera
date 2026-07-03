@@ -341,7 +341,7 @@ export function buildCashFlow(
 
   const rec = computeRecebimentos(state, dre);
   const fornec = computeFornecedores(state, dre);
-  const imp = computeImpostos(tax, getSplitPaymentAtivo(state.tax));
+  const imp = computeImpostos(tax, getSplitPaymentAtivo(state.tax), regime);
   const op = computePagamentosOperacionais(dre);
   // B2: rendimentos de aplicações financeiras realizam-se em caixa no mês de competência
   const { financeiras: receitasFinanceiras } = splitReceitasFinanceiras(state);
