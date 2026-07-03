@@ -8,10 +8,15 @@
 
 import { AppState, SimplesAnexo, TaxConfig } from "../types";
 import { sum, zeros12 } from "../format";
-import { getSimplesTable, getSimplesLimite, SIMPLES_SUBLIMITE_ESTADUAL } from "../taxDefaults";
+import {
+  getSimplesTable,
+  getSimplesLimite,
+  SIMPLES_SUBLIMITE_ESTADUAL,
+  SIMPLES_PARTILHA_ICMS_ISS_PCT,
+} from "../taxDefaults";
 import { receitaTributavel } from "../shared";
 import { resolveSimplesAnexo } from "../regime";
-import type { MonthlyTax } from "./shared";
+import { computeIcmsIssNormal, type MonthlyTax } from "./shared";
 
 /** Alíquota efetiva (%) do Simples para RBT12 + anexo, descontando a parcela a deduzir. */
 export function simplesAliquotaEfetiva(rbt12: number, anexo: SimplesAnexo, tax: TaxConfig): number {
