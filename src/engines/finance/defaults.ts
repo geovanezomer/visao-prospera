@@ -297,6 +297,7 @@ export const DEFAULT_STATE: AppState = {
     pisCreditos: 0,
     cofinsCreditos: 0,
     issDeducoes: 0,
+    prejuizoFiscalAcumuladoAbertura: 0,
     era: "atual",
     cbsAliquota: CBS_ALIQUOTA_PLENA,
     ibsAliquotaRef: IBS_ALIQUOTA_PLENA,
