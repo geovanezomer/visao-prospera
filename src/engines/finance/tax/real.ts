@@ -199,6 +199,9 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     "Adicional IRPJ (10%)": sum(adicionalMensal),
     CSLL: csllTotal,
   };
+  if (totalCompensado > 0) {
+    detail["(−) Compensação prejuízo fiscal (trava 30%)"] = -totalCompensado;
+  }
   if (reforma.pisCofinsMult > 0) {
     detail["PIS (não-cum.)"] = pisTotal;
     detail["COFINS (não-cum.)"] = cofinsTotal;
