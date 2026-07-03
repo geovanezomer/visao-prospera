@@ -644,7 +644,8 @@ function RefundDialog({ user, onClose, onDone }: { user: AdminUserRow | null; on
   const [revoke, setRevoke] = useState(true);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Awaited<ReturnType<typeof refundPayment>> | null>(null);
-  useEffect(() => { if (user) { setMode("total"); setValor(""); setReason(""); setRevoke(true); setResult(null); } }, [user]);
+  const [typedEmail, setTypedEmail] = useState("");
+  useEffect(() => { if (user) { setMode("total"); setValor(""); setReason(""); setRevoke(true); setResult(null); setTypedEmail(""); } }, [user]);
   if (!user) return null;
   const isStripe = (user.provider ?? "stripe") === "stripe";
   const submit = async () => {
