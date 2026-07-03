@@ -352,6 +352,12 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
             },
           },
         );
+        // Resposta Auditável — verifica cifras da resposta final contra os
+        // payloads das tools deste turno. Anota, não altera a resposta.
+        const verification = verifyResponse(
+          out.finalText,
+          collected.map((c) => c.result ?? ""),
+        );
         setMessages([
           ...history,
           ...collected.map((c) => ({
@@ -360,7 +366,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
             toolName: c.name,
             ts: Date.now(),
           })),
-          { role: "assistant", content: out.finalText, ts: Date.now() },
+          { role: "assistant", content: out.finalText, ts: Date.now(), verification },
         ]);
         recordTrail("ok", out.finalText.length, collected.map((c) => c.name));
       } catch (e: unknown) {
