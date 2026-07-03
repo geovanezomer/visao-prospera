@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  Loader2, RefreshCw, TrendingUp, Users as UsersIcon, AlertTriangle,
+  RefreshCw, TrendingUp, Users as UsersIcon, AlertTriangle,
   Activity, Sparkles, ArrowUp, ArrowDown, Minus,
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
