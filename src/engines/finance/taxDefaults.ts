@@ -218,27 +218,37 @@ export interface TaxRatesOverride {
 }
 
 // =====================================================================
-// RESOLVERS — leem override ?? default. Sem `??` espalhado pelo cálculo.
+// RESOLVERS — leem override ?? default e CLAMPAM na faixa hard do campo.
+// A clampagem é defesa em profundidade: mesmo um snapshot .finnance
+// antigo/corrompido com alíquotas absurdas não injeta lixo na engine.
+// A validação com aviso/erro para a UI vive em tax/validation.ts.
 // =====================================================================
+import { clampCampo, type CampoTributario } from "./tax/validation";
 const ov = (tax: TaxConfig) => tax.ratesOverride;
 const pick = <T>(v: T | undefined, fallback: T): T => (v === undefined ? fallback : v);
+/** Clampa o resultado final na faixa hard do campo tributário. */
+const clamped = (campo: CampoTributario, v: number): number => clampCampo(campo, v);
 
-export const getIrpjPct = (tax: TaxConfig): number => pick(ov(tax)?.irpj, IRPJ_PCT);
+export const getIrpjPct = (tax: TaxConfig): number =>
+  clamped("irpj", pick(ov(tax)?.irpj, IRPJ_PCT));
 export const getIrpjAdicionalPct = (tax: TaxConfig): number =>
-  pick(ov(tax)?.irpjAdicional, IRPJ_ADICIONAL_PCT);
+  clamped("irpjAdicional", pick(ov(tax)?.irpjAdicional, IRPJ_ADICIONAL_PCT));
 export const getIrpjAdicionalGatilhoTri = (tax: TaxConfig): number =>
   pick(ov(tax)?.irpjAdicionalGatilhoTri, IRPJ_ADICIONAL_GATILHO_TRI);
-export const getCsllPct = (tax: TaxConfig): number => pick(ov(tax)?.csll, CSLL_PCT);
-export const getPisCumPct = (tax: TaxConfig): number => pick(ov(tax)?.pisCum, PIS_CUM_PCT);
-export const getCofinsCumPct = (tax: TaxConfig): number => pick(ov(tax)?.cofinsCum, COFINS_CUM_PCT);
+export const getCsllPct = (tax: TaxConfig): number =>
+  clamped("csll", pick(ov(tax)?.csll, CSLL_PCT));
+export const getPisCumPct = (tax: TaxConfig): number =>
+  clamped("pisCum", pick(ov(tax)?.pisCum, PIS_CUM_PCT));
+export const getCofinsCumPct = (tax: TaxConfig): number =>
+  clamped("cofinsCum", pick(ov(tax)?.cofinsCum, COFINS_CUM_PCT));
 export const getPisNaoCumPct = (tax: TaxConfig): number =>
-  pick(ov(tax)?.pisNaoCum, PIS_NAO_CUM_PCT);
+  clamped("pisNaoCum", pick(ov(tax)?.pisNaoCum, PIS_NAO_CUM_PCT));
 export const getCofinsNaoCumPct = (tax: TaxConfig): number =>
-  pick(ov(tax)?.cofinsNaoCum, COFINS_NAO_CUM_PCT);
+  clamped("cofinsNaoCum", pick(ov(tax)?.cofinsNaoCum, COFINS_NAO_CUM_PCT));
 export const getSimplesLimite = (tax: TaxConfig): number =>
   pick(ov(tax)?.simplesLimite, SIMPLES_LIMITE);
 export const getFatorRMinimoPct = (tax: TaxConfig): number =>
-  pick(ov(tax)?.fatorRMinimo, FATOR_R_MINIMO_PCT);
+  clamped("fatorRMinimo", pick(ov(tax)?.fatorRMinimo, FATOR_R_MINIMO_PCT));
 export const getReformaTransicaoIbsMult = (tax: TaxConfig): number =>
   pick(ov(tax)?.reformaTransicaoIbsMult, REFORMA_TRANSICAO_IBS_MULT);
 export const getReformaTransicaoIcmsIssMult = (tax: TaxConfig): number =>
@@ -255,16 +265,21 @@ export function getSimplesTable(tax: TaxConfig, anexo: SimplesAnexo): SimplesFai
 }
 
 export function getPresumidoBases(tax: TaxConfig, business: BusinessType): PresumidoBases {
-  return ov(tax)?.presumidoBases?.[business] ?? PRESUMIDO_BASES_DEFAULT[business];
+  const raw = ov(tax)?.presumidoBases?.[business] ?? PRESUMIDO_BASES_DEFAULT[business];
+  return {
+    irpj: clamped("presumidoBaseIRPJ", raw.irpj),
+    csll: clamped("presumidoBaseCSLL", raw.csll),
+  };
 }
 
 /** [CBS/IBS] Alíquota CBS plena (%) — lê `tax.cbsAliquota` ou cai no default oficial. */
 export const getCbsAliquota = (tax: TaxConfig): number =>
-  pick(tax.cbsAliquota, CBS_ALIQUOTA_PLENA);
+  clamped("cbsAliquota", pick(tax.cbsAliquota, CBS_ALIQUOTA_PLENA));
 
 /** [CBS/IBS] Alíquota IBS plena de referência (%) — lê `tax.ibsAliquotaRef` ou cai no default oficial. */
 export const getIbsAliquotaRef = (tax: TaxConfig): number =>
-  pick(tax.ibsAliquotaRef, IBS_ALIQUOTA_PLENA);
+  clamped("ibsAliquotaRef", pick(tax.ibsAliquotaRef, IBS_ALIQUOTA_PLENA));
+
 
 /** [Split Payment LC 214/2025] Default `true` — projeto Lovable trabalha com Split ativo. */
 export const SPLIT_PAYMENT_DEFAULT = true;
