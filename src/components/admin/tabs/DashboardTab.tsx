@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  Loader2, RefreshCw, TrendingUp, Users as UsersIcon, AlertTriangle,
+  RefreshCw, TrendingUp, Users as UsersIcon, AlertTriangle,
   Activity, Sparkles, ArrowUp, ArrowDown, Minus,
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
@@ -21,6 +21,7 @@ import {
   type PeriodDays,
   type SeriesPoint,
 } from "@/lib/admin/dashboard.functions";
+import { CardSkeletonGrid } from "@/components/admin/ui-states";
 
 function brl(centavos: number): string {
   return (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -142,8 +143,10 @@ export function DashboardTab() {
 
   if (!m) {
     return (
-      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Carregando…</> : "Sem dados."}
+      <div className="space-y-6" aria-busy={loading}>
+        <CardSkeletonGrid count={4} />
+        <CardSkeletonGrid count={4} />
+        <CardSkeletonGrid count={4} />
       </div>
     );
   }

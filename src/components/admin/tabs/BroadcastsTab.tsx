@@ -15,6 +15,7 @@ import {
 import {
   previewBroadcastAudience, sendBroadcast, listBroadcasts,
 } from "@/lib/admin/broadcast.functions";
+import { TableSkeleton, EmptyState } from "@/components/admin/ui-states";
 
 function fmt(iso: string | null | undefined) {
   if (!iso) return "—";
@@ -154,9 +155,21 @@ export function BroadcastsTab() {
           <h3 className="text-sm font-semibold">Histórico</h3>
         </div>
         {loadingHist ? (
-          <div className="p-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></div>
+          <div className="p-3"><TableSkeleton rows={4} cols={4} /></div>
         ) : history.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">Nenhum broadcast enviado.</div>
+          <EmptyState
+            icon={Megaphone}
+            title="Nenhum comunicado enviado ainda"
+            description="Crie seu primeiro broadcast segmentando por plano ou status."
+            action={
+              <Button
+                size="sm"
+                onClick={() => document.querySelector<HTMLInputElement>('input[aria-label], input')?.focus()}
+              >
+                <Send className="mr-1.5 h-3.5 w-3.5" />Criar broadcast
+              </Button>
+            }
+          />
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">

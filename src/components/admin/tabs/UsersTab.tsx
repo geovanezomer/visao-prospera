@@ -2,7 +2,7 @@
 // UsersTab — listagem paginada com filtros e ordenação.
 // ============================================================================
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, KeyRound, Undo2, Search, Loader2, CheckCircle2, XCircle, ArrowUpDown, Mail, UserPlus, Copy } from "lucide-react";
+import { RefreshCw, KeyRound, Undo2, Search, Loader2, CheckCircle2, XCircle, ArrowUpDown, Mail, UserPlus, Copy, Users as UsersIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import { exportUsersCsv } from "@/lib/admin/export.functions";
 import { Download } from "lucide-react";
 import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
 import { getRouteApi } from "@tanstack/react-router";
+import { TableSkeleton, EmptyState } from "@/components/admin/ui-states";
 
 const adminRouteApi = getRouteApi("/admin");
 
@@ -252,9 +253,24 @@ export function UsersTab() {
             </thead>
             <tbody>
               {loading && users.length === 0 ? (
-                <tr><td colSpan={8} className="p-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>
+                <tr><td colSpan={8} className="p-0"><TableSkeleton rows={8} cols={8} /></td></tr>
               ) : users.length === 0 ? (
-                <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Nenhum usuário.</td></tr>
+                <tr><td colSpan={8} className="p-0">
+                  <EmptyState
+                    icon={UsersIcon}
+                    title="Nenhum usuário encontrado com esses filtros"
+                    description="Ajuste ou limpe os filtros para ver mais resultados."
+                    action={
+                      <Button size="sm" variant="outline" onClick={() => {
+                        setSearch("");
+                        setFilters({ plan: "all", status: "all", provider: "all" });
+                        setPage(1);
+                      }}>
+                        Limpar filtros
+                      </Button>
+                    }
+                  />
+                </td></tr>
               ) : (
                 users.map((u) => (
                   <tr key={u.id} className="border-t border-border/40 hover:bg-muted/20">
@@ -628,7 +644,8 @@ function RefundDialog({ user, onClose, onDone }: { user: AdminUserRow | null; on
   const [revoke, setRevoke] = useState(true);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Awaited<ReturnType<typeof refundPayment>> | null>(null);
-  useEffect(() => { if (user) { setMode("total"); setValor(""); setReason(""); setRevoke(true); setResult(null); } }, [user]);
+  const [typedEmail, setTypedEmail] = useState("");
+  useEffect(() => { if (user) { setMode("total"); setValor(""); setReason(""); setRevoke(true); setResult(null); setTypedEmail(""); } }, [user]);
   if (!user) return null;
   const isStripe = (user.provider ?? "stripe") === "stripe";
   const submit = async () => {
@@ -681,6 +698,20 @@ function RefundDialog({ user, onClose, onDone }: { user: AdminUserRow | null; on
               <input type="checkbox" checked={revoke} onChange={(e) => setRevoke(e.target.checked)} className="mt-0.5" />
               <span>Cancelar assinatura e revogar acesso (recomendado — devolve o dinheiro e derruba o acesso imediatamente).</span>
             </label>
+            {/* Type-to-confirm: digitar o e-mail do cliente para habilitar o estorno. */}
+            <div className="space-y-1 rounded-md border border-destructive/40 bg-destructive/5 p-2">
+              <Label className="text-xs">
+                Para confirmar, digite o e-mail do cliente:{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-[11px] font-mono">{user.email}</code>
+              </Label>
+              <Input
+                value={typedEmail}
+                onChange={(e) => setTypedEmail(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder={user.email}
+              />
+            </div>
           </div>
         ) : (
           <div className="space-y-2 py-2 rounded-md border border-border/60 bg-muted/20 p-3">
@@ -695,7 +726,11 @@ function RefundDialog({ user, onClose, onDone }: { user: AdminUserRow | null; on
           {!result ? (
             <>
               <Button variant="outline" onClick={onClose} disabled={busy}>Cancelar</Button>
-              <Button onClick={submit} disabled={busy} className="bg-red-600 hover:bg-red-700">
+              <Button
+                onClick={submit}
+                disabled={busy || typedEmail.trim().toLowerCase() !== user.email.toLowerCase()}
+                variant="destructive"
+              >
                 {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}Confirmar estorno
               </Button>
             </>
