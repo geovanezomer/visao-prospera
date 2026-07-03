@@ -117,4 +117,3 @@ describe("balancoFechamento — impostosPagar (regime + Split Payment)", () => {
     }
   });
 });
-});
