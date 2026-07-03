@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { listPlansAdmin, upsertPlan, deletePlan, type PlanRow } from "@/lib/admin/plans.functions";
+import { TableSkeleton, EmptyState, TypedConfirmDialog } from "@/components/admin/ui-states";
 
 type Editing = {
   id?: string;
