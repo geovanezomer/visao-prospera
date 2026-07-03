@@ -719,7 +719,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
   const balancoLines: string[] = [];
   if (dre && cf) {
     const fech = tryRun(
-      () => deriveBalancoFechamento({ state, dre, cf }),
+      () => deriveBalancoFechamento({ state, dre, cf, tax: model?.tax ?? undefined }),
       null as ReturnType<typeof deriveBalancoFechamento> | null,
     );
     if (fech) {

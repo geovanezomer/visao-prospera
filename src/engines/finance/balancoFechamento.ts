@@ -27,10 +27,13 @@
 //   • Capital Social, Reservas de Capital
 //   • Terrenos, Edificações, Máquinas, Veículos, Móveis (valor histórico)
 //   • Marcas, Patentes, Goodwill
-import type { AppState, BalancoDetalhado, CostLine } from "./types";
+import type { AppState, BalancoDetalhado, CostLine, TaxRegime } from "./types";
 import type { FinancialModelCashflow, FinancialModelDRE } from "./financialModel";
+import type { MonthlyTax } from "./tax/shared";
 import { deriveAbertura } from "./aberturaDerivada";
 import { safeNumber as n } from "./safeMath";
+import { getSplitPaymentAtivo } from "./taxDefaults";
+import { resolveEffectiveRegime } from "./regime";
 
 
 const sumArr = (a: number[] | undefined): number =>
@@ -45,6 +48,42 @@ export interface DeriveOpts {
   state: AppState;
   dre: FinancialModelDRE;
   cf: FinancialModelCashflow;
+  /** Série mensal de impostos. Quando fornecida, o passivo tributário de
+   *  fechamento respeita regime (Simples/Presumido/Real) e Split Payment;
+   *  caso contrário, faz fallback conservador (impostosAnual/12). */
+  tax?: MonthlyTax;
+}
+
+/**
+ * Passivo tributário de fechamento (dezembro), alinhado ao `computeImpostos`
+ * do cashflow.ts:
+ *   • VENDAS (PIS/COFINS/ISS/ICMS ou DAS): lag ~30 dias → dez fica a pagar.
+ *   • CBS/IBS: se Split Payment ativo → retido no ato (lag 0), NÃO gera passivo;
+ *     senão, entra no lag 30 (dez). `monthlyVendas` já inclui CBS/IBS — quando
+ *     Split ativo, subtrai para não duplicar.
+ *   • LUCRO (IRPJ/CSLL): Simples já está no DAS (0); Presumido/Real são
+ *     TRIMESTRAIS — o Q4 inteiro (out+nov+dez) fica provisionado no fechamento
+ *     (DARF vence ao fim de janeiro).
+ * Motivação: consistência com computeImpostos do cashflow.ts (Split lag 0,
+ * demais lag 30) e apuração trimestral IRPJ/CSLL.
+ */
+function computeImpostosPagarFechamento(args: {
+  tax: MonthlyTax;
+  regime: TaxRegime;
+  splitAtivo: boolean;
+}): number {
+  const { tax, regime, splitAtivo } = args;
+  const vendas = tax.monthlyVendas ?? [];
+  const cbsIbs = tax.monthlyCbsIbs ?? [];
+  const lucro = tax.monthlyLucro ?? [];
+  const cbsIbsDez = cbsIbs[11] ?? 0;
+  let passivoVendas = vendas[11] ?? 0;
+  if (splitAtivo) passivoVendas = Math.max(0, passivoVendas - cbsIbsDez);
+  const passivoLucro =
+    regime === "simples"
+      ? 0
+      : (lucro[9] ?? 0) + (lucro[10] ?? 0) + (lucro[11] ?? 0);
+  return Math.max(0, passivoVendas + passivoLucro);
 }
 
 export interface BalancoFechamentoResult {
@@ -65,6 +104,7 @@ export function deriveBalancoFechamento({
   state,
   dre,
   cf,
+  tax,
 }: DeriveOpts): BalancoFechamentoResult {
   const cap = state.capital;
   // Saldos de abertura — fonte única em `aberturaSSOT` (abaixo).
@@ -148,7 +188,18 @@ export function deriveBalancoFechamento({
   const emprestimosLPFim = aberturaSSOT.emprestimosLP.value;
 
   // Impostos a pagar: ~ 1 mês de DARF (apuração + pagamento defasado).
-  const impostosPagarFim = impostosAnual > 0 ? impostosAnual / 12 : 0;
+  // Impostos a pagar: quando `tax` é fornecido, alinha com computeImpostos
+  // do cashflow (Split lag 0, demais lag 30) + apuração trimestral no Real/Presumido.
+  // Fallback (sem tax): 1 mês de DARF (aproximação legada).
+  const impostosPagarFim = tax
+    ? computeImpostosPagarFechamento({
+        tax,
+        regime: resolveEffectiveRegime(state),
+        splitAtivo: getSplitPaymentAtivo(state.tax),
+      })
+    : impostosAnual > 0
+      ? impostosAnual / 12
+      : 0;
 
   // Salários a pagar: ~ 1 mês de folha.
   const salariosPagarFim = folhaAnual > 0 ? folhaAnual / 12 : 0;
