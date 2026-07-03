@@ -457,6 +457,7 @@ export function saveConfig(cfg: AIConfig) {
 export function resetAIStorage() {
   try {
     sessionStorage.removeItem(SESSION_KEY_BAG);
+    sessionStorage.removeItem(SESSION_KEY_BAG + "-premium");
     const prefixes = [CFG_KEY, "gz-finance-ai-threads-", "gz-finance-ai-chat-"];
     // Itera localStorage (espelho sync) e remove em ambas as camadas via removeKey.
     for (let i = localStorage.length - 1; i >= 0; i--) {
