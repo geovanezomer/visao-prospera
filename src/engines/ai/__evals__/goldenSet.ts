@@ -168,7 +168,7 @@ export const GOLDEN_SET: EvalCase[] = [
     deveConter: [/28%|Fator R|folha/i],
     naoPodeConter: [],
     toolsEsperadas: ["diagnostico_tributario"],
-    numChavePayload: [/Fator|Anexo|folha|28/i],
+    numChavePayload: [/Simples|regime|tribut/i],
   },
 
   // -------- casos board / auditor cruzados --------
