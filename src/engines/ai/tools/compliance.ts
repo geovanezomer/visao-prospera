@@ -172,8 +172,9 @@ const handlers: Record<string, ToolHandler> = {
       { match: /^ICMS/i, dias: 10, key: "ICMS" },
       { match: /^IRPJ|^Adicional IRPJ|^CSLL/i, dias: 45, key: "IRPJ_CSLL" },
     ];
-    const regime = resolveEffectiveRegime(state);
-    const { tax } = buildDRE(state, regime);
+    const model = getFinancialModelCached(state);
+    const regime = model.regime;
+    const { tax } = model;
     const detail = tax.detail || {};
 
     // Float = Σ (carga_anual / 12) × (prazo_dias / 30)
