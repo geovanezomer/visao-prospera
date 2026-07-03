@@ -21,6 +21,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { AIConfigDialog } from "./AIConfigDialog";
+import { VerificationFooter } from "./VerificationFooter";
 import type { AppState } from "@/engines/finance/types";
 import type { SimulatorParams } from "@/engines/finance/simulator";
 import { toast } from "sonner";
