@@ -385,7 +385,7 @@ function sanitizeMessages(input: unknown): ChatMessage[] {
         ? (m.attachments as ChatMessage["attachments"])
         : undefined,
       verification: isRecord(m.verification)
-        ? (m.verification as ChatMessage["verification"])
+        ? (m.verification as unknown as ChatMessage["verification"])
         : undefined,
     } satisfies ChatMessage;
   });
