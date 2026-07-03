@@ -13,8 +13,10 @@ export function regimeComparisonToMarkdown(state: AppState): string {
 
   let md = `## Comparativo de Regimes Tributários (Anual)\n\n`;
   md += `_Análise referente à era: **${era}** ${era !== "atual" ? "(Reforma Tributária)" : ""}_\n`;
-  if (era === "transicao")
+  if (era === "transicao") {
     md += `\n> ⚠️ Valores incluem **CBS/IBS parciais** e PIS/COFINS+ICMS/ISS em redução proporcional conforme cronograma LC 214/2025 (2027–2032).\n`;
+    md += `> Valores da transição representam o **PONTO MÉDIO** do cronograma (IBS ~50%, ICMS/ISS ~50%). Para um ano específico (ex: 2029), use a ferramenta \`simular_transicao_reforma\`.\n`;
+  }
   if (era === "pleno")
     md += `\n> ℹ️ Valores refletem o regime **pleno CBS+IBS** (2033+), sem tributos legados.\n`;
   md += `\n`;
