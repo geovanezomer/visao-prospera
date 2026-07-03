@@ -12,7 +12,7 @@ import { AppState, TaxRegime } from "../types";
 import { sum, zeros12 } from "../format";
 import { getIrpjPct, getCsllPct, getPisNaoCumPct, getCofinsNaoCumPct } from "../taxDefaults";
 import { receitaTributavel, splitReceitasFinanceiras } from "../shared";
-import { isCpvCost, effectiveMonthValues } from "../costs";
+import { isCpvCost, isCreditoAmploCbsIbs, effectiveMonthValues } from "../costs";
 import { getReformaRates, getCbsCredCpvPct, getIbsCredCpvPct } from "./reforma";
 import { adicionalIrpjTrimestral, type MonthlyTax } from "./shared";
 
