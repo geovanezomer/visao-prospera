@@ -893,6 +893,7 @@ function FriendlyRow({
   value,
   onChange,
   onReset,
+  faixa,
 }: {
   label: string;
   suffix: string;
@@ -901,8 +902,22 @@ function FriendlyRow({
   value: number;
   onChange: (n: number) => void;
   onReset: () => void;
+  faixa?: FaixaLegal;
 }) {
   const isDefault = value === defaultVal;
+  // Chave de validação = label normalizado; passar `faixa` explícita é o caminho canônico.
+  const validacao = faixa
+    ? validateTaxOverride(faixa.label, value) // chave dummy; usamos a própria faixa abaixo
+    : { ok: true, nivel: "ok" as const, msg: undefined };
+  // validateTaxOverride precisa da chave — se a faixa foi passada direto, valida aqui.
+  const resultado = faixa ? validarPelaFaixa(faixa, value) : validacao;
+  const guardedOnChange = (n: number) => {
+    if (faixa) {
+      const r = validarPelaFaixa(faixa, n);
+      if (r.nivel === "erro") return; // bloqueia patch
+    }
+    onChange(n);
+  };
   return (
     <div className="rounded-md border border-border/40 bg-background/40 p-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
@@ -929,7 +944,12 @@ function FriendlyRow({
         </div>
         <div className="flex items-center gap-1 sm:shrink-0">
           <div className="flex-1 sm:w-[110px] sm:flex-none">
-            <NumInput value={value} onChange={onChange} />
+            <NumInput
+              value={value}
+              onChange={guardedOnChange}
+              min={faixa?.min}
+              max={faixa?.max}
+            />
           </div>
           <span className="w-6 text-center text-[10px] text-muted-foreground">{suffix}</span>
           <Button
@@ -944,9 +964,57 @@ function FriendlyRow({
           </Button>
         </div>
       </div>
+      {resultado.msg && resultado.nivel !== "ok" ? (
+        <p
+          className={`mt-2 text-[11px] ${
+            resultado.nivel === "erro"
+              ? "text-[var(--destructive)]"
+              : "text-[var(--warning)]"
+          }`}
+          role={resultado.nivel === "erro" ? "alert" : undefined}
+        >
+          {resultado.nivel === "erro" ? "⛔ " : "⚠️ "}
+          {resultado.msg}
+        </p>
+      ) : null}
     </div>
   );
 }
+
+// Valida direto pela faixa (bypass da tabela por chave — útil quando o
+// FriendlyRow recebe a faixa explícita e não precisa lookup por string).
+function validarPelaFaixa(
+  faixa: FaixaLegal,
+  valor: number,
+): { ok: boolean; nivel: "erro" | "aviso" | "ok"; msg?: string } {
+  const fmt = (v: number) =>
+    Number.isInteger(v) ? v.toString() : v.toLocaleString("pt-BR", { maximumFractionDigits: 3 });
+  if (!Number.isFinite(valor)) {
+    return { ok: false, nivel: "erro", msg: `${faixa.label}: informe um número válido.` };
+  }
+  if (valor < faixa.min || valor > faixa.max) {
+    return {
+      ok: false,
+      nivel: "erro",
+      msg: `${faixa.label}: valor deve estar entre ${fmt(faixa.min)} e ${fmt(faixa.max)}.`,
+    };
+  }
+  const lo = faixa.legalMin;
+  const hi = faixa.legalMax;
+  if ((lo !== undefined && valor < lo) || (hi !== undefined && valor > hi)) {
+    const faixaTxt =
+      lo !== undefined && hi !== undefined && lo === hi
+        ? `${fmt(lo)}`
+        : `${fmt(lo ?? faixa.min)}–${fmt(hi ?? faixa.max)}`;
+    return {
+      ok: true,
+      nivel: "aviso",
+      msg: `${faixa.label}: fora da faixa legal usual (${faixaTxt}). Confirme a base normativa.`,
+    };
+  }
+  return { ok: true, nivel: "ok" };
+}
+
 
 function SimplesTableEditor({
   ov,
