@@ -104,6 +104,7 @@ export function deriveBalancoFechamento({
   state,
   dre,
   cf,
+  tax,
 }: DeriveOpts): BalancoFechamentoResult {
   const cap = state.capital;
   // Saldos de abertura — fonte única em `aberturaSSOT` (abaixo).
