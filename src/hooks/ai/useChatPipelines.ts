@@ -32,6 +32,11 @@ export interface Pipeline360State {
   question?: string;
   /** Outputs já produzidos — passados ao próximo estágio no resume. */
   outputs?: Array<{ stage: Pipeline360Stage; output: string }>;
+  /** Roteamento efetivo — usado para exibir badge de modelo no cabeçalho. */
+  usedPremium?: boolean;
+  usedFallback?: boolean;
+  provider?: AIConfig["provider"];
+  model?: string;
 }
 
 export interface UseChatPipelinesParams {
