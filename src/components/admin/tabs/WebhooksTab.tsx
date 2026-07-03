@@ -153,9 +153,23 @@ export function WebhooksTab() {
             </thead>
             <tbody>
               {loading && rows.length === 0 ? (
-                <tr><td colSpan={8} className="p-8 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>
+                <tr><td colSpan={8} className="p-0"><TableSkeleton rows={6} cols={8} /></td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Nenhum evento.</td></tr>
+                <tr><td colSpan={8} className="p-0">
+                  {(status === "failed" || status === "dead_letter" || status === "pending_retry") ? (
+                    <EmptyState
+                      icon={CheckCircle2}
+                      title="Nenhum webhook com problema 🎉"
+                      description="Tudo processado."
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={Inbox}
+                      title="Nenhum evento encontrado"
+                      description="Ajuste os filtros ou aguarde o próximo webhook."
+                    />
+                  )}
+                </td></tr>
               ) : rows.map((r) => (
                 <tr key={r.id} onClick={() => openDetail(r.id)} className="cursor-pointer border-t border-border/40 hover:bg-muted/20">
                   <td className="p-2 text-muted-foreground">{fmt(r.received_at)}</td>
