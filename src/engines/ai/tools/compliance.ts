@@ -10,6 +10,7 @@ import {
 } from "@/engines/finance";
 import { buildCashFlow } from "@/engines/finance/cashflow";
 import { calcIndicators } from "@/engines/finance/indicators";
+import { getFinancialModelCached } from "@/engines/finance/financialModel";
 import {
   analyzeCovenants,
   covenantsToMarkdown,
