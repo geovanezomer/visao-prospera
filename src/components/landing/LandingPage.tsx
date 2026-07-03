@@ -1013,7 +1013,15 @@ function Footer() {
 /* ============================================================
    EXPORT — composição final
    ============================================================ */
-export function LandingPage({ initialPlans }: { initialPlans?: any[] | null } = {}) {
+import { PlansSection, type RawPlan } from "@/components/landing/PlansSection";
+
+export function LandingPage({
+  initialPlans,
+  plansSource,
+}: {
+  initialPlans?: RawPlan[] | null;
+  plansSource?: "db" | "fallback";
+} = {}) {
   const [trialOpen, setTrialOpen] = useState(false);
 
   return (
@@ -1027,7 +1035,7 @@ export function LandingPage({ initialPlans }: { initialPlans?: any[] | null } = 
         <FeatureGrid />
         <HowItWorks />
         <ComparisonTable />
-        <PricingSection initialPlans={initialPlans ?? null} />
+        <PlansSection initialPlans={initialPlans ?? null} initialSource={plansSource} />
         <AuthorityBlock />
         <SocialProof />
         <div id="faq">
@@ -1040,3 +1048,4 @@ export function LandingPage({ initialPlans }: { initialPlans?: any[] | null } = 
     </div>
   );
 }
+
