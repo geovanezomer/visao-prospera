@@ -3,6 +3,11 @@ import { buildDRE, type DRE } from "./dre";
 import { resolveEffectiveRegime } from "./regime";
 import { splitReceitasFinanceiras, computeCapexMensal } from "./shared";
 import type { MonthlyTax } from "./tax/shared";
+import {
+  partitionMonthlyTaxByLag,
+  LAG_DIAS_PADRAO,
+  LAG_DIAS_SPLIT,
+} from "./tax/impostosLag";
 import { MESES, sum, zeros12 } from "./format";
 import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 import { getSplitPaymentAtivo } from "./taxDefaults";
