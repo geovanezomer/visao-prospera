@@ -106,9 +106,15 @@ export function extractNumbersFromPayloads(toolResults: string[]): number[] {
       if (Number.isFinite(v)) values.push(v);
     }
     // Números crus (sem R$/%): capturam valores em tabelas/JSON dos payloads.
+    // Ambíguo: "487.320" pode ser milhar OU decimal. Empurramos as duas
+    // interpretações para o pool — a comparação com tolerância descarta a errada.
     for (const m of payload.matchAll(RE_RAW_NUMBER)) {
-      const v = parsePtBrNumber(m[0]);
-      if (Number.isFinite(v)) values.push(v);
+      const raw = m[0];
+      const asPtBr = parsePtBrNumber(raw);
+      if (Number.isFinite(asPtBr)) values.push(asPtBr);
+      // Interpretação alternativa: "." como separador decimal cru (ex.: JSON "0.182").
+      const asPlain = Number(raw.replace(/,/g, "."));
+      if (Number.isFinite(asPlain) && asPlain !== asPtBr) values.push(asPlain);
     }
   }
   return values;
