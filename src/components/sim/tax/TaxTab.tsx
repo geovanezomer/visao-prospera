@@ -114,6 +114,7 @@ const ANEXO_BUSINESS_OK: Record<SimplesAnexo, BusinessType[]> = {
 export function TaxTab() {
   const { state } = useFinance();
   const set = usePatchTax();
+  const [showAnoAno, setShowAnoAno] = useState(false);
   const rbAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
 
   // ----- Engine: memoizada (B1) — recomputa só quando state muda -----
