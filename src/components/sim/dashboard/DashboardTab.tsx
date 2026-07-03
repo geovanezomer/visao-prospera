@@ -247,7 +247,7 @@ export function DashboardTab() {
         <StatCard
           label="DSCR"
           value={ind.dscr >= 99 ? "∞" : `${ind.dscr.toFixed(2)}×`}
-          tone={ind.dscr >= 1.25 ? "pos" : ind.dscr >= 1.0 ? "default" : "neg"}
+          tone={ind.dscr >= DSCR_THRESHOLDS.warn ? "pos" : ind.dscr >= DSCR_THRESHOLDS.danger ? "default" : "neg"}
           sub="EBITDA ÷ Serviço da Dívida"
           hint={{
             description:
