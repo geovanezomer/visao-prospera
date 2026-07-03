@@ -32,6 +32,11 @@ export interface Pipeline360State {
   question?: string;
   /** Outputs já produzidos — passados ao próximo estágio no resume. */
   outputs?: Array<{ stage: Pipeline360Stage; output: string }>;
+  /** Roteamento efetivo — usado para exibir badge de modelo no cabeçalho. */
+  usedPremium?: boolean;
+  usedFallback?: boolean;
+  provider?: AIConfig["provider"];
+  model?: string;
 }
 
 export interface UseChatPipelinesParams {
@@ -184,7 +189,11 @@ export function useChatPipelines(params: UseChatPipelinesParams): UseChatPipelin
 
     // Roteia o Pipeline 360° para modelo premium quando configurado.
     // Fallback silencioso preserva o comportamento atual.
-    const { config: routedConfig } = resolveConfigForTask(config, "pipeline360");
+    const {
+      config: routedConfig,
+      usedPremium,
+      usedFallback,
+    } = resolveConfigForTask(config, "pipeline360");
 
     try {
       for (let i = startIdx; i < PIPELINE_360.length; i++) {
@@ -193,7 +202,15 @@ export function useChatPipelines(params: UseChatPipelinesParams): UseChatPipelin
           break;
         }
         const stage = PIPELINE_360[i];
-        setPipeline360((p) => ({ ...p, current: stage, active: true }));
+        setPipeline360((p) => ({
+          ...p,
+          current: stage,
+          active: true,
+          usedPremium,
+          usedFallback,
+          provider: routedConfig.provider,
+          model: routedConfig.model,
+        }));
         const stagePrompt = buildStagePrompt(stage, q, outputs);
         const sysPrompt = buildSysPrompt(stage);
         const header = stageHeader(stage, i);

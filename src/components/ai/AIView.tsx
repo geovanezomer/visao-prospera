@@ -25,6 +25,7 @@ import type { AppState } from "@/engines/finance/types";
 import type { SimulatorParams } from "@/engines/finance/simulator";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -410,6 +411,26 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                       </div>
                     );
                   })}
+                  {pipeline360.model && (
+                    <Badge
+                      variant="outline"
+                      className={`ml-1 text-[10px] ${
+                        pipeline360.usedPremium
+                          ? "border-primary/40 bg-primary/10 text-primary"
+                          : ""
+                      }`}
+                      title={
+                        pipeline360.usedFallback
+                          ? "Premium não configurado — usando modelo base."
+                          : pipeline360.usedPremium
+                            ? "Executado com modelo premium."
+                            : "Modelo base."
+                      }
+                    >
+                      {pipeline360.usedPremium ? "Premium · " : ""}
+                      {pipeline360.provider}/{pipeline360.model}
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5">
                   {pipeline360.active && (
