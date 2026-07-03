@@ -188,7 +188,18 @@ export function deriveBalancoFechamento({
   const emprestimosLPFim = aberturaSSOT.emprestimosLP.value;
 
   // Impostos a pagar: ~ 1 mês de DARF (apuração + pagamento defasado).
-  const impostosPagarFim = impostosAnual > 0 ? impostosAnual / 12 : 0;
+  // Impostos a pagar: quando `tax` é fornecido, alinha com computeImpostos
+  // do cashflow (Split lag 0, demais lag 30) + apuração trimestral no Real/Presumido.
+  // Fallback (sem tax): 1 mês de DARF (aproximação legada).
+  const impostosPagarFim = tax
+    ? computeImpostosPagarFechamento({
+        tax,
+        regime: resolveEffectiveRegime(state),
+        splitAtivo: getSplitPaymentAtivo(state.tax),
+      })
+    : impostosAnual > 0
+      ? impostosAnual / 12
+      : 0;
 
   // Salários a pagar: ~ 1 mês de folha.
   const salariosPagarFim = folhaAnual > 0 ? folhaAnual / 12 : 0;
