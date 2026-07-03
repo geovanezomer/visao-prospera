@@ -3,12 +3,14 @@ import { computeImpostos } from "../cashflow";
 import { m12 } from "./helpers";
 import type { MonthlyTax } from "../tax/shared";
 
-// Helper para criar MonthlyTax mínimo
+// Helper para criar MonthlyTax mínimo (todo o total tratado como VENDAS —
+// IRPJ/CSLL zerado para preservar o cenário dos testes de Split Payment).
 function buildTax(total: number[], cbsIbs: number[]): MonthlyTax {
   return {
     monthly: total.slice(),
+    monthlyVendas: total.slice(),
+    monthlyLucro: m12(0),
     monthlyCbsIbs: cbsIbs.slice(),
-    // Demais campos não são usados por computeImpostos:
     breakdown: {} as never,
     annualTotal: total.reduce((a, b) => a + b, 0),
   } as unknown as MonthlyTax;
@@ -63,7 +65,11 @@ describe("computeImpostos — Split Payment (LC 214/2025)", () => {
   });
 
   it("monthlyCbsIbs ausente: trata como zero (sem quebrar)", () => {
-    const tax = { monthly: m12(1000) } as unknown as MonthlyTax;
+    const tax = {
+      monthly: m12(1000),
+      monthlyVendas: m12(1000),
+      monthlyLucro: m12(0),
+    } as unknown as MonthlyTax;
     const r = computeImpostos(tax, true);
     // Sem CBS/IBS conhecidos, tudo cai no lag 30
     expect(r.inAno[0]).toBe(0);

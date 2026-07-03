@@ -150,20 +150,30 @@ export function computeFornecedores(
 
 /**
  * Pagamentos de impostos = total mensal deslocado pelos lags oficiais.
- * A PARTIÇÃO (o que vai com lag 30 e o que vai com lag 0 no Split Payment)
- * vive em `tax/impostosLag.ts` — SSOT compartilhado com balancoFechamento.ts.
+ * A PARTIÇÃO (Split lag 0 · vendas lag 30 · IRPJ/CSLL trimestral no fim do
+ * trimestre + lag 30) vive em `tax/impostosLag.ts` — SSOT compartilhado com
+ * balancoFechamento.ts.
  */
 export function computeImpostos(
   tax: MonthlyTax,
   splitPaymentAtivo = false,
+  regime: TaxRegime = "simples",
 ): { inAno: number[]; transbordo: number } {
-  const { restante, splitZero } = partitionMonthlyTaxByLag(tax, splitPaymentAtivo);
-  const a = shiftByDaysSplit(restante, LAG_DIAS_PADRAO);
-  if (!splitPaymentAtivo) return a;
+  const { vendasLag30, splitZero, lucroTri } = partitionMonthlyTaxByLag(
+    tax,
+    splitPaymentAtivo,
+    regime,
+  );
+  const a = shiftByDaysSplit(vendasLag30, LAG_DIAS_PADRAO);
   const b = shiftByDaysSplit(splitZero, LAG_DIAS_SPLIT);
+  // Lucro trimestral: já concentrado no mar/jun/set/dez; lag 30 → DARF em
+  // abr/jul/out/jan (o de janeiro vira transbordo).
+  const c = shiftByDaysSplit(lucroTri, LAG_DIAS_PADRAO);
   return {
-    inAno: a.inAno.map((v, i) => v + (b.inAno[i] ?? 0)),
-    transbordo: a.transbordo + b.transbordo,
+    inAno: a.inAno.map(
+      (v, i) => v + (b.inAno[i] ?? 0) + (c.inAno[i] ?? 0),
+    ),
+    transbordo: a.transbordo + b.transbordo + c.transbordo,
   };
 }
 
@@ -331,7 +341,7 @@ export function buildCashFlow(
 
   const rec = computeRecebimentos(state, dre);
   const fornec = computeFornecedores(state, dre);
-  const imp = computeImpostos(tax, getSplitPaymentAtivo(state.tax));
+  const imp = computeImpostos(tax, getSplitPaymentAtivo(state.tax), regime);
   const op = computePagamentosOperacionais(dre);
   // B2: rendimentos de aplicações financeiras realizam-se em caixa no mês de competência
   const { financeiras: receitasFinanceiras } = splitReceitasFinanceiras(state);

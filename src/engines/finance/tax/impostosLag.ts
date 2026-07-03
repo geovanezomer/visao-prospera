@@ -24,23 +24,48 @@ export const LAG_DIAS_PADRAO = 30;
 export const LAG_DIAS_SPLIT = 0;
 
 /**
- * Particiona o total mensal de tributos (`tax.monthly`) em duas séries que
- * consumidores podem deslocar com lags distintos:
- *   • `restante`  → recolhido com `LAG_DIAS_PADRAO` (mês seguinte).
- *   • `splitZero` → recolhido com `LAG_DIAS_SPLIT` (mesmo mês).
- * Sem Split ativo, `splitZero` é zero e `restante = tax.monthly`.
+ * Particiona o total mensal de tributos em três séries que consumidores
+ * podem deslocar com lags distintos, respeitando o regime:
+ *   • `vendasLag30`  → PIS/COFINS/ISS/ICMS/CBS não-split/DAS — lag 30 dias.
+ *   • `splitZero`    → CBS/IBS retidos no ato (Split Payment ativo) — lag 0.
+ *   • `lucroTri`     → IRPJ/CSLL agrupados por trimestre no ÚLTIMO mês (mar/
+ *      jun/set/dez) — o consumidor aplica lag 30 e o DARF cai em abr/jul/out/
+ *      jan. No Simples esta série é toda zero (IRPJ/CSLL já estão no DAS).
+ *
+ * `vendasLag30 + splitZero + lucroTri = tax.monthly` (invariante).
  */
 export function partitionMonthlyTaxByLag(
   tax: MonthlyTax,
   splitPaymentAtivo: boolean,
-): { restante: number[]; splitZero: number[] } {
-  const total = tax.monthly ?? [];
-  if (!splitPaymentAtivo) {
-    return { restante: total.slice(), splitZero: new Array(total.length).fill(0) };
+  regime: TaxRegime,
+): { vendasLag30: number[]; splitZero: number[]; lucroTri: number[] } {
+  const vendas = tax.monthlyVendas ?? [];
+  const cbsIbs = tax.monthlyCbsIbs ?? [];
+  const lucro = tax.monthlyLucro ?? [];
+  const N = Math.max(vendas.length, cbsIbs.length, lucro.length, 12);
+  const zeros = () => new Array(N).fill(0);
+
+  // Vendas ex-CBS/IBS (quando split ativo, CBS/IBS sai para lag 0).
+  const splitZero = splitPaymentAtivo ? cbsIbs.slice() : zeros();
+  const vendasLag30 = splitPaymentAtivo
+    ? vendas.map((v, i) => Math.max(0, v - (cbsIbs[i] ?? 0)))
+    : vendas.slice();
+
+  // Lucro trimestral: soma Q e coloca no último mês do trimestre.
+  // Simples: `monthlyLucro` já é zero (tributo está no DAS), então lucroTri = 0.
+  const lucroTri = zeros();
+  if (regime !== "simples") {
+    for (let q = 0; q < 4; q++) {
+      const m0 = q * 3;
+      lucroTri[m0 + 2] =
+        (lucro[m0] ?? 0) + (lucro[m0 + 1] ?? 0) + (lucro[m0 + 2] ?? 0);
+    }
+  } else {
+    // Fallback seguro: se por algum motivo o Simples tiver monthlyLucro > 0
+    // (regressão), trata como mensal (lag 30) para não perder o pagamento.
+    for (let i = 0; i < N; i++) lucroTri[i] = lucro[i] ?? 0;
   }
-  const cbsIbs = tax.monthlyCbsIbs ?? new Array(total.length).fill(0);
-  const restante = total.map((m, i) => Math.max(0, m - (cbsIbs[i] ?? 0)));
-  return { restante, splitZero: cbsIbs.slice() };
+  return { vendasLag30, splitZero, lucroTri };
 }
 
 /**
