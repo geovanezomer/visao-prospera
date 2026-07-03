@@ -8,7 +8,7 @@
 import { AppState, SimplesAnexo, TaxRegime } from "./types";
 import { sum } from "./format";
 import { getSimplesLimite, getFatorRMinimoPct } from "./taxDefaults";
-import { effectiveMonthValues } from "./costs";
+import { effectiveMonthValues, isLaborLine } from "./costs";
 
 // =====================================================================
 // Fator R automático: Anexo V vira III se folha/RBT12 ≥ 28%
