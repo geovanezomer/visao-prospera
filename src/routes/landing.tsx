@@ -6,7 +6,7 @@ import { LandingPage } from "@/components/landing/LandingPage";
 import { isLandingEnabled } from "@/lib/featureFlags";
 import { faqPageJsonLd } from "@/lib/seo/faqs";
 import { getAppSettings } from "@/lib/admin/settings.functions";
-import { loadLandingPlans } from "@/components/landing/loadLandingPlans.server";
+import { getLandingPlans } from "@/components/landing/loadLandingPlans.functions";
 import { PLANS_FALLBACK } from "@/components/landing/plansFallback";
 
 const CANONICAL = "https://visao-prospera.lovable.app/landing";
