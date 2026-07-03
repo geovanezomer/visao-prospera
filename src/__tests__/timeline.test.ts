@@ -34,29 +34,17 @@ function makeAdmin(opts: {
   } as Record<string, Row[] | null | undefined>;
 
   const chain = (table: string) => {
-    if (data[table] === null) {
-      // Simula erro de "tabela não existe"
-      const err = { message: `relation "${table}" does not exist` };
-      const q: any = {
-        select: () => q,
-        eq: () => q,
-        in: () => q,
-        or: () => q,
-        order: () => q,
-        limit: () => Promise.resolve({ data: null, error: err }),
-        then: (r: any) => Promise.resolve({ data: null, error: err }).then(r),
-      };
-      return q;
-    }
-    const rows = data[table] ?? [];
+    const rows = data[table] === null ? null : (data[table] ?? []);
+    const err = rows === null ? { message: `relation "${table}" does not exist` } : null;
+    const result = { data: rows, error: err };
     const q: any = {
       select: () => q,
       eq: () => q,
       in: () => q,
       or: () => q,
       order: () => q,
-      limit: () => Promise.resolve({ data: rows, error: null }),
-      then: (r: any) => Promise.resolve({ data: rows, error: null }).then(r),
+      limit: () => q,
+      then: (r: any) => Promise.resolve(result).then(r),
     };
     return q;
   };
