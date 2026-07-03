@@ -2,13 +2,10 @@
 // WACC, valuation, saúde, governança, prescritivo, resumo executivo, etc.
 
 import {
-  buildDRE,
-  calcIndicators,
   resolveEffectiveRegime,
   diagnose,
 } from "@/engines/finance";
-import { buildValuation, defaultValuationParams } from "@/engines/finance/valuation";
-import { computeHealth } from "@/engines/finance/health";
+import { getFinancialModelCached } from "@/engines/finance/financialModel";
 import { brl, pct, sum, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
 const defs: ToolDef[] = [
