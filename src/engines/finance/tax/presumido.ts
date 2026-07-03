@@ -83,6 +83,10 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const baseIRPJMensal = trib.map((r, i) => r * baseIRPJ + (rendFinTrib[i] || 0));
   const baseCSLLMensal = trib.map((r, i) => r * baseCSLL + (rendFinTrib[i] || 0));
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
+  // IRRF antecipação sobre rendimentos de aplicações — compensável com IRPJ.
+  // No modelo, aplicamos compensação MENSAL com piso zero (não gera restituição
+  // automática; excesso não retorna). Base = mesma rendFinTrib usada no IRPJ.
+  const irrfAliq = getIrrfAplicacoesPct(tax) / 100;
 
   let irpjTotal = 0,
     csllTotal = 0,
