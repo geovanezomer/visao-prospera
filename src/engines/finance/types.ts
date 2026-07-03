@@ -512,6 +512,10 @@ export interface TaxConfig {
    *  Default 0 (assume todos fornecedores no regime regular).
    *  Referência: LC 214/2025 + percentuais provisórios usados pelo mercado. */
   fornecedorSimplesNacionalPct?: number;
+  /** Alíquota média de IRRF retido na fonte sobre rendimentos de aplicações
+   * financeiras (%). Compensável com IRPJ no Presumido. Default 15
+   * (aplicações > 720 dias). */
+  irrfAplicacoesPct?: number;
   /** Overrides de alíquotas/tabelas oficiais (painel "Parâmetros tributários").
    *  Cada campo ausente = usa o padrão oficial em src/lib/finance/taxDefaults.ts. */
   ratesOverride?: import("./taxDefaults").TaxRatesOverride;
