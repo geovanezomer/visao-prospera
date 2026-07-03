@@ -20,15 +20,29 @@ import { useAdminCommandShortcut } from "@/components/admin/AdminCommandPalette"
 // Como useAdminCommandShortcut usa apenas useEffect + window listener,
 // simulamos manualmente o efeito.
 
+// Ambiente de teste = node; simulamos window mínimo para o listener.
+type Listener = (e: KeyboardEvent) => void;
+const listeners: Listener[] = [];
+const fakeWindow = {
+  addEventListener: (_: string, fn: Listener) => { listeners.push(fn); },
+  removeEventListener: (_: string, fn: Listener) => {
+    const i = listeners.indexOf(fn);
+    if (i >= 0) listeners.splice(i, 1);
+  },
+  dispatch: (e: Partial<KeyboardEvent>) => {
+    for (const fn of [...listeners]) fn({ preventDefault: () => {}, ...e } as KeyboardEvent);
+  },
+};
+
 function mountShortcut(cb: () => void): () => void {
-  const handler = (e: KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+  const handler: Listener = (e) => {
+    if ((e.metaKey || e.ctrlKey) && (e.key ?? "").toLowerCase() === "k") {
       e.preventDefault();
       cb();
     }
   };
-  window.addEventListener("keydown", handler);
-  return () => window.removeEventListener("keydown", handler);
+  fakeWindow.addEventListener("keydown", handler);
+  return () => fakeWindow.removeEventListener("keydown", handler);
 }
 
 beforeEach(() => vi.useFakeTimers());
