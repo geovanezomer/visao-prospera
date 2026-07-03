@@ -4,7 +4,8 @@
 
 import type { AppState } from "@/engines/finance/types";
 import { findSector, listSectors, rank, resolveBenchmark, type SectorBenchmark } from "@/engines/benchmark/sectors";
-import { buildDRE, calcIndicators, resolveEffectiveRegime } from "@/engines/finance";
+import { calcIndicators } from "@/engines/finance";
+import { getFinancialModelCached } from "@/engines/finance/financialModel";
 import { type ToolArgs, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
 // Recomendação acionável por indicador quando abaixo do P50.
@@ -39,8 +40,7 @@ interface CompareItem {
 }
 
 function compareSectorMd(state: AppState, sector: SectorBenchmark): string {
-  const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-  const ind = calcIndicators(state, dre);
+  const { ind } = getFinancialModelCached(state);
   const items: CompareItem[] = [
     { label: "Margem Bruta", v: ind.margemBruta, b: sector.margemBruta, hi: true, unit: "pp" },
     { label: "Margem EBITDA", v: ind.margemEbitda, b: sector.margemEbitda, hi: true, unit: "pp" },
@@ -227,8 +227,7 @@ function fmtDelta(delta: number, unit: "pp" | "x" | "d"): string {
 }
 
 function detailedBenchmarkMd(state: AppState, sector: SectorBenchmark, keys: string[]): string {
-  const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-  const ind = calcIndicators(state, dre);
+  const { ind } = getFinancialModelCached(state);
   const selected = keys
     .map((k) => METRICS.find((m) => m.key === k))
     .filter((m): m is MetricDef => !!m);

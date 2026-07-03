@@ -4,12 +4,10 @@
 import { regimeComparisonToMarkdown, taxAuditToMarkdown } from "@/engines/compliance/tax";
 import { checklistToMarkdown } from "@/engines/compliance/checklist";
 import {
-  buildDRE,
   compareYearsForRegime,
   resolveEffectiveRegime,
 } from "@/engines/finance";
-import { buildCashFlow } from "@/engines/finance/cashflow";
-import { calcIndicators } from "@/engines/finance/indicators";
+import { getFinancialModelCached } from "@/engines/finance/financialModel";
 import {
   analyzeCovenants,
   covenantsToMarkdown,
@@ -171,8 +169,9 @@ const handlers: Record<string, ToolHandler> = {
       { match: /^ICMS/i, dias: 10, key: "ICMS" },
       { match: /^IRPJ|^Adicional IRPJ|^CSLL/i, dias: 45, key: "IRPJ_CSLL" },
     ];
-    const regime = resolveEffectiveRegime(state);
-    const { tax } = buildDRE(state, regime);
+    const model = getFinancialModelCached(state);
+    const regime = model.regime;
+    const { tax } = model;
     const detail = tax.detail || {};
 
     // Float = Σ (carga_anual / 12) × (prazo_dias / 30)
@@ -223,8 +222,7 @@ const handlers: Record<string, ToolHandler> = {
     out.push(`| **Total** | **${brl(cargaMensalTotal)}** | — | **${brl(floatTotal)}** |`);
 
     // ===== 2. Impacto permanente em capital de giro =====
-    const cf = buildCashFlow(state, regime);
-    const ind = calcIndicators(state, buildDRE(state, regime).dre, cf);
+    const { cf, ind } = model;
     const ncgAtual = ind.ncg ?? 0;
     const ncgPos = ncgAtual + floatTotal; // PC tributário some → NCG sobe
     out.push(``, `### 2. Capital de giro & custo de carregamento`);

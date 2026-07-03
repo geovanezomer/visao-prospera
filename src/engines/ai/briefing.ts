@@ -6,14 +6,8 @@
 // computeHealth + benchmark do setor. Determinístico, instantâneo, sem custo.
 
 import type { AppState } from "@/engines/finance/types";
-import {
-  buildDRE,
-  calcIndicators,
-  resolveEffectiveRegime,
-  diagnose,
-} from "@/engines/finance";
-import { buildCashFlow } from "@/engines/finance/cashflow";
-import { computeHealth } from "@/engines/finance/health";
+import { diagnose } from "@/engines/finance";
+import { getFinancialModelCached } from "@/engines/finance/financialModel";
 import { resolveBenchmark } from "@/engines/benchmark/sectors";
 import type { SnapshotSections } from "./snapshot";
 
@@ -32,10 +26,11 @@ const brl = (n: number) =>
 export function buildOpeningBriefing(state: AppState, sections?: SnapshotSections): string | null {
   try {
     const company = state.companyName || "a empresa";
-    const dre = sections?.data?.dre ?? buildDRE(state, resolveEffectiveRegime(state)).dre;
-    const ind = sections?.data?.ind ?? calcIndicators(state, dre);
-    const cf = sections?.data?.cf ?? buildCashFlow(state);
-    const health = sections?.data?.health ?? computeHealth(state);
+    const model = getFinancialModelCached(state);
+    const dre = sections?.data?.dre ?? model.dre;
+    const ind = sections?.data?.ind ?? model.ind;
+    const cf = sections?.data?.cf ?? model.cf;
+    const health = sections?.data?.health ?? model.health;
     const alerts = sections?.data?.alerts ?? diagnose(state, dre, ind);
     const criticos = alerts.filter((a) => a.level === "danger");
     const atencao = alerts.filter((a) => a.level === "warn");

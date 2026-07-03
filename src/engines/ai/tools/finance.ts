@@ -2,13 +2,10 @@
 // WACC, valuation, saúde, governança, prescritivo, resumo executivo, etc.
 
 import {
-  buildDRE,
-  calcIndicators,
   resolveEffectiveRegime,
   diagnose,
 } from "@/engines/finance";
-import { buildValuation, defaultValuationParams } from "@/engines/finance/valuation";
-import { computeHealth } from "@/engines/finance/health";
+import { getFinancialModelCached } from "@/engines/finance/financialModel";
 import { brl, pct, sum, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
 const defs: ToolDef[] = [
@@ -244,12 +241,14 @@ const handlers: Record<string, ToolHandler> = {
     sec.comparativo ?? "Nenhum cenário simulado ativo — todas as alavancas estão em 0.",
 
   get_resumo_executivo: (_a, { state, sec }) => {
-    // Reusa cache numérico — evita refazer buildDRE/calcIndicators/buildValuation/computeHealth.
+    // Reusa cache numérico (sec.data) quando disponível; caso contrário deriva
+    // do modelo financeiro memoizado (WeakMap por ref do state — SSOT).
     const d = sec.data;
-    const dre = d?.dre ?? buildDRE(state, resolveEffectiveRegime(state)).dre;
-    const ind = d?.ind ?? calcIndicators(state, dre);
-    const val = d?.val ?? buildValuation(state, defaultValuationParams(state.businessType));
-    const health = d?.health ?? computeHealth(state);
+    const model = getFinancialModelCached(state);
+    const dre = d?.dre ?? model.dre;
+    const ind = d?.ind ?? model.ind;
+    const val = d?.val ?? model.val;
+    const health = d?.health ?? model.health;
     return [
       "## Resumo Executivo",
       `- Receita Bruta Anual: ${brl(sum(dre.receitaBruta))}`,
@@ -291,9 +290,8 @@ const handlers: Record<string, ToolHandler> = {
     // Reusa cache numérico — diagnose() é caro e idempotente para o mesmo state.
     let alerts = sec.data?.alerts;
     if (!alerts) {
-      const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-      const ind = calcIndicators(state, dre);
-      alerts = diagnose(state, dre, ind);
+      const model = getFinancialModelCached(state);
+      alerts = diagnose(state, model.dre, model.ind);
     }
     const critical = alerts.filter((a) => a.level === "danger");
     const warning = alerts.filter((a) => a.level === "warn");
