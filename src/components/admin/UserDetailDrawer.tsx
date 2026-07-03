@@ -21,6 +21,7 @@ import {
 } from "@/lib/admin/userDetail.functions";
 import { UserNotesPanel } from "./UserNotesPanel";
 import { UserSessionsPanel } from "./UserSessionsPanel";
+import { UserTimelinePanel } from "./UserTimelinePanel";
 
 function fmt(iso: string | null | undefined) {
   if (!iso) return "—";
@@ -64,9 +65,10 @@ export function UserDetailDrawer({
           <div className="flex h-64 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>
         ) : detail ? (
           <Tabs defaultValue="resumo" className="mt-4">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="resumo">Resumo</TabsTrigger>
               <TabsTrigger value="assinaturas">Assin.</TabsTrigger>
+              <TabsTrigger value="timeline">Timeline</TabsTrigger>
               <TabsTrigger value="notas">Notas</TabsTrigger>
               <TabsTrigger value="sessoes">Sessões</TabsTrigger>
               <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
@@ -111,6 +113,13 @@ export function UserDetailDrawer({
                 </div>
               )}
             </TabsContent>
+
+            <TabsContent value="timeline" className="pt-3">
+              {/* Lazy: só monta (e chama getUserTimeline) quando a aba é aberta. */}
+              <UserTimelinePanel userId={detail.user.id} email={detail.user.email} />
+            </TabsContent>
+
+
 
             <TabsContent value="notas" className="pt-3">
               <UserNotesPanel userId={detail.user.id} />
