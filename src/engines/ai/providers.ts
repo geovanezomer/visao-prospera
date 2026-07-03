@@ -162,6 +162,16 @@ Seja brutalmente honesto. Use tabelas comparativas.`,
   },
 ];
 
+export interface AIConfigPremium {
+  provider: Provider;
+  /** Modelo obrigatório para ativar o premium. Sem isso, fallback silencioso. */
+  model: string;
+  /** Se omitido, herda `apiKey` da config base. */
+  apiKey?: string;
+  /** Se omitido, herda `baseUrl` da config base. */
+  baseUrl?: string;
+}
+
 export interface AIConfig {
   provider: Provider;
   baseUrl: string;
@@ -177,6 +187,53 @@ export interface AIConfig {
   extraSystemPrompt: string; // suplemento livre (compat legado)
   timeoutMs: number;
   maxSuggestions: number; // 4–6 sugestões dinâmicas na tela inicial
+  /** Config opcional para tarefas nobres (diagnóstico, 360°, relatório).
+   *  Ausente = todas as tarefas usam a config principal. */
+  premium?: AIConfigPremium;
+}
+
+/** Tarefas roteáveis. Chat e tools continuam sempre na config base. */
+export type AITask = "chat" | "tools" | "diagnostico" | "pipeline360" | "relatorio";
+
+const PREMIUM_TASKS: ReadonlySet<AITask> = new Set([
+  "diagnostico",
+  "pipeline360",
+  "relatorio",
+]);
+
+/** Providers que exigem apiKey para funcionar (LM Studio é local). */
+const providerRequiresKey = (p: Provider): boolean => p !== "lmstudio";
+
+/**
+ * Resolve a config efetiva para uma tarefa. Nunca lança.
+ * - Tarefas não-premium retornam a config base sem alterações.
+ * - Se `premium` estiver ausente ou inválido, cai silenciosamente para a base
+ *   e sinaliza via `usedFallback` para telemetria/UI.
+ */
+export function resolveConfigForTask(
+  cfg: AIConfig,
+  task: AITask,
+): { config: AIConfig; usedPremium: boolean; usedFallback: boolean } {
+  if (!PREMIUM_TASKS.has(task)) {
+    return { config: cfg, usedPremium: false, usedFallback: false };
+  }
+  const p = cfg.premium;
+  if (!p || !p.model?.trim()) {
+    // premium ausente/incompleto — cai na base sem alarde
+    return { config: cfg, usedPremium: false, usedFallback: !!p };
+  }
+  const apiKey = p.apiKey ?? cfg.apiKey;
+  if (providerRequiresKey(p.provider) && !apiKey) {
+    return { config: cfg, usedPremium: false, usedFallback: true };
+  }
+  const merged: AIConfig = {
+    ...cfg,
+    provider: p.provider,
+    model: p.model,
+    apiKey,
+    baseUrl: p.baseUrl ?? cfg.baseUrl,
+  };
+  return { config: merged, usedPremium: true, usedFallback: false };
 }
 
 export const PROVIDER_DEFAULTS: Record<Provider, Pick<AIConfig, "baseUrl" | "model">> = {
