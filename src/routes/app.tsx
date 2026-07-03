@@ -57,6 +57,8 @@ import { OpenRestoreDialog } from "@/components/sim/shared/OpenRestoreDialog";
 import { FeedbackDialog } from "@/components/sim/shared/FeedbackDialog";
 import { SharedLinksDialog } from "@/components/sim/shared/SharedLinksDialog";
 import { TrialBanner } from "@/components/TrialBanner";
+import { PaywallScreen } from "@/components/PaywallScreen";
+import { useAccessStatus, daysSince, GRACE_DAYS_PAST_DUE } from "@/hooks/useAccessStatus";
 import { cn } from "@/lib/utils";
 
 // Renderiza o TrialBanner apenas se o usuário logado for um trial válido.
