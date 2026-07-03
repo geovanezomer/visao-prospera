@@ -57,7 +57,7 @@ async function collectSubscriptions(admin: AdminClient, userId: string): Promise
 }> {
   const { data } = await admin
     .from("subscriptions")
-    .select("id, plan, status, provider, stripe_subscription_id, created_at, updated_at, canceled_at, cancel_at_period_end")
+    .select("id, plan, status, provider, stripe_subscription_id, created_at, updated_at, cancel_at_period_end")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(50);
@@ -74,17 +74,8 @@ async function collectSubscriptions(admin: AdminClient, userId: string): Promise
       detail: `provider=${s.provider ?? "—"} status=${s.status ?? "—"}`,
       tone: s.status === "active" || s.status === "trialing" || s.status === "lifetime" ? "ok" : "neutral",
     });
-    // canceled_at pode não existir em schemas antigos; usa updated_at quando status=canceled
-    const canceledAt = (s as { canceled_at?: string | null }).canceled_at;
-    if (canceledAt) {
-      items.push({
-        id: `sub-canceled-${s.id}`,
-        at: canceledAt,
-        kind: "assinatura",
-        title: `Assinatura cancelada · ${s.plan ?? "—"}`,
-        tone: "warn",
-      });
-    } else if (s.status === "canceled") {
+    // Schema não tem canceled_at — usamos updated_at quando status=canceled.
+    if (s.status === "canceled") {
       items.push({
         id: `sub-canceled-${s.id}`,
         at: s.updated_at,
