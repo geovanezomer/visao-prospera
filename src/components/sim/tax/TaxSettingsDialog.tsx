@@ -364,6 +364,7 @@ function StepFederais({
           value={ov.irpj ?? IRPJ_PCT}
           onChange={(v) => patchOv({ irpj: v })}
           onReset={() => patchOv({ irpj: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.irpj}
         />
         <FriendlyRow
           label="Adicional de IRPJ"
@@ -373,6 +374,7 @@ function StepFederais({
           value={ov.irpjAdicional ?? IRPJ_ADICIONAL_PCT}
           onChange={(v) => patchOv({ irpjAdicional: v })}
           onReset={() => patchOv({ irpjAdicional: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.irpjAdicional}
         />
         <FriendlyRow
           label="Gatilho trimestral do Adicional"
@@ -391,6 +393,7 @@ function StepFederais({
           value={ov.csll ?? CSLL_PCT}
           onChange={(v) => patchOv({ csll: v })}
           onReset={() => patchOv({ csll: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.csll}
         />
       </Section>
 
@@ -416,6 +419,7 @@ function StepFederais({
           value={ov.pisCum ?? PIS_CUM_PCT}
           onChange={(v) => patchOv({ pisCum: v })}
           onReset={() => patchOv({ pisCum: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.pisCum}
         />
         <FriendlyRow
           label="COFINS cumulativo"
@@ -425,6 +429,7 @@ function StepFederais({
           value={ov.cofinsCum ?? COFINS_CUM_PCT}
           onChange={(v) => patchOv({ cofinsCum: v })}
           onReset={() => patchOv({ cofinsCum: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.cofinsCum}
         />
       </Section>
 
@@ -437,6 +442,7 @@ function StepFederais({
           value={ov.pisNaoCum ?? PIS_NAO_CUM_PCT}
           onChange={(v) => patchOv({ pisNaoCum: v })}
           onReset={() => patchOv({ pisNaoCum: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.pisNaoCum}
         />
         <FriendlyRow
           label="COFINS não-cumulativo"
@@ -446,6 +452,7 @@ function StepFederais({
           value={ov.cofinsNaoCum ?? COFINS_NAO_CUM_PCT}
           onChange={(v) => patchOv({ cofinsNaoCum: v })}
           onReset={() => patchOv({ cofinsNaoCum: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.cofinsNaoCum}
         />
       </Section>
 
@@ -499,6 +506,7 @@ function StepSimples({
           value={ov.fatorRMinimo ?? FATOR_R_MINIMO_PCT}
           onChange={(v) => patchOv({ fatorRMinimo: v })}
           onReset={() => patchOv({ fatorRMinimo: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.fatorRMinimo}
         />
       </Section>
 
@@ -601,6 +609,7 @@ function StepPresumido({
           value={state.tax.issIcms ?? 5}
           onChange={(v) => patchTax({ issIcms: v })}
           onReset={() => patchTax({ issIcms: 5 })}
+        faixa={FAIXAS_TRIBUTARIAS.iss}
         />
       </Section>
     </div>
@@ -648,6 +657,7 @@ function StepReforma({
           value={state.tax.cbsAliquota ?? CBS_ALIQUOTA_PLENA}
           onChange={(v) => patchTax({ cbsAliquota: v })}
           onReset={() => patchTax({ cbsAliquota: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.cbsAliquota}
         />
         <FriendlyRow
           label="IBS — alíquota de referência"
@@ -657,6 +667,7 @@ function StepReforma({
           value={state.tax.ibsAliquotaRef ?? IBS_ALIQUOTA_PLENA}
           onChange={(v) => patchTax({ ibsAliquotaRef: v })}
           onReset={() => patchTax({ ibsAliquotaRef: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.ibsAliquotaRef}
         />
         <FriendlyRow
           label="% do CPV vindo de fornecedor Simples Nacional"
