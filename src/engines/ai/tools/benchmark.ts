@@ -227,8 +227,7 @@ function fmtDelta(delta: number, unit: "pp" | "x" | "d"): string {
 }
 
 function detailedBenchmarkMd(state: AppState, sector: SectorBenchmark, keys: string[]): string {
-  const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-  const ind = calcIndicators(state, dre);
+  const { ind } = getFinancialModelCached(state);
   const selected = keys
     .map((k) => METRICS.find((m) => m.key === k))
     .filter((m): m is MetricDef => !!m);
