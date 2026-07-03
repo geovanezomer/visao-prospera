@@ -907,12 +907,7 @@ function FriendlyRow({
   faixa?: FaixaLegal;
 }) {
   const isDefault = value === defaultVal;
-  // Chave de validação = label normalizado; passar `faixa` explícita é o caminho canônico.
-  const validacao = faixa
-    ? validateTaxOverride(faixa.label, value) // chave dummy; usamos a própria faixa abaixo
-    : { ok: true, nivel: "ok" as const, msg: undefined };
-  // validateTaxOverride precisa da chave — se a faixa foi passada direto, valida aqui.
-  const resultado = faixa ? validarPelaFaixa(faixa, value) : validacao;
+  const resultado = faixa ? validarPelaFaixa(faixa, value) : { ok: true, nivel: "ok" as const, msg: undefined };
   const guardedOnChange = (n: number) => {
     if (faixa) {
       const r = validarPelaFaixa(faixa, n);
