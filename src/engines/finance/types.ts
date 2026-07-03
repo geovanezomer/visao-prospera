@@ -493,6 +493,11 @@ export interface TaxConfig {
   cofinsCreditos: number;
   /** Dedução de materiais/subempreitada para ISS (Lei 116/2003 art. 7º §2º). Anual em R$. */
   issDeducoes?: number;
+  /** Prejuízo fiscal acumulado de exercícios anteriores (R$, valor absoluto ≥ 0),
+   *  compensável no Lucro Real com trava de 30% do lucro trimestral
+   *  (Lei 9.065/95 art. 42). Base negativa de CSLL é tratada com o mesmo
+   *  saldo (simplificação — na prática são registros separados na ECF). */
+  prejuizoFiscalAcumuladoAbertura?: number;
   // ----- Reforma Tributária (CBS/IBS) — EC 132/2023 + LC 214/2025 -----
   /** Era do sistema tributário aplicado ao cálculo. Default "atual". */
   era?: TaxEra;
