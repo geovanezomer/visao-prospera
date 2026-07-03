@@ -8,6 +8,7 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 
 export type ActivePlan = {
   plan: string;
@@ -31,9 +32,15 @@ async function fetchActivePlan(): Promise<ActivePlan> {
 
 export function useSubscription() {
   const queryClient = useQueryClient();
-  const { data: plan = null, isLoading: loading, refetch } = useQuery({
-    queryKey: ["active_plan"],
+  const { user, hydrated } = useAuth();
+  const userId = user?.id ?? null;
+
+  // Chavear por userId evita reaproveitar cache de outra identidade
+  // (ex.: null anônimo pré-login virando resposta "sem plano" no dashboard).
+  const { data: plan = null, isLoading, isFetching, refetch } = useQuery({
+    queryKey: ["active_plan", userId],
     queryFn: fetchActivePlan,
+    enabled: !!userId,
     staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,
     refetchOnWindowFocus: false,
@@ -50,6 +57,12 @@ export function useSubscription() {
     });
     return () => sub.subscription.unsubscribe();
   }, [queryClient]);
+
+  // Enquanto auth ainda não hidratou, ou temos user mas ainda não há dado,
+  // reportamos loading — evita o flash de Paywall pós-login.
+  const loading =
+    !hydrated ||
+    (!!userId && (isLoading || isFetching || plan === undefined));
 
   return { plan, loading, isActive: !!plan, refetch };
 }
