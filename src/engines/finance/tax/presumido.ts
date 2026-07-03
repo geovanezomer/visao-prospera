@@ -15,6 +15,7 @@ import {
   getPisCumPct,
   getCofinsCumPct,
   getPresumidoBases,
+  getIrrfAplicacoesPct,
 } from "../taxDefaults";
 import { receitaTributavel, splitReceitasFinanceiras } from "../shared";
 import { isCpvCost, effectiveMonthValues } from "../costs";
