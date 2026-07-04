@@ -115,18 +115,11 @@ export function deriveAbertura({
   // ── Passivos derivados ──
   const fornVal = n(pc.fornecedores) || n(cap.fornecedores);
 
-  // Empréstimos por maturidade (fallback p/ split por % se sem contratos).
+  // Empréstimos por maturidade — SSOT: contratos cadastrados no Card 2.
+  // Sem contratos → CP = LP = 0 (empresa sem dívida).
   const split = splitDebtByMaturity(cap.debtContracts);
-  let cpVal = split.cp;
-  let lpVal = split.lp;
-  if (cpVal + lpVal === 0 && (cap.dividaOnerosa || 0) > 0) {
-    const cpPct =
-      typeof cap.dividaCurtoPrazoPct === "number"
-        ? cap.dividaCurtoPrazoPct
-        : 0.3;
-    cpVal = cap.dividaOnerosa * cpPct;
-    lpVal = cap.dividaOnerosa * (1 - cpPct);
-  }
+  const cpVal = split.cp;
+  const lpVal = split.lp;
 
   // Impostos a pagar: 1º mês de `dre.impostosTotal` (competência total do mês
   // 1 = vendas + lucro), casando com o kick da DFC que liquida esse valor.
