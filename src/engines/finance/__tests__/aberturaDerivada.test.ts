@@ -146,16 +146,19 @@ describe("deriveAbertura — passivos derivados de DRE/Despesas (1º mês)", () 
     expect(r.impostosPagar.origem).toMatch(/mês 1/i);
   });
 
-  it("usa folha[0] (fixo + variavel) do mês 1 para salariosEncargos", () => {
+  it("usa folha do mês 1 (isFolhaCost — SSOT) para salariosEncargos", () => {
+    // Regra atualizada: `isFolhaCost` reconhece linhas de folha via rótulo
+    // (Salários, pró-labore, etc.) ou flag `encargosAuto`. Comissões nunca
+    // são folha (LABOR_EXCLUDE_RE).
     const s = createState({
       costs: [
-        { id: "f1", label: "Salários", category: "fixo", fixed: true, values: [25_000, ...m12(0).slice(1)] },
-        { id: "v1", label: "Comissão", category: "variavel", fixed: false, values: [5_000, ...m12(0).slice(1)] },
+        { id: "f1", label: "Salários", category: "despesa_administrativa", fixed: true, values: [25_000, ...m12(0).slice(1)] },
+        { id: "v1", label: "Comissão", category: "despesa_comercial", fixed: false, values: [5_000, ...m12(0).slice(1)] },
         { id: "c1", label: "CPV", category: "custo_vendas", fixed: false, values: m12(10_000) },
       ],
     });
     const r = deriveAbertura({ state: s });
-    expect(r.salariosEncargos.value).toBe(30_000);
+    expect(r.salariosEncargos.value).toBe(25_000);
   });
 
   it("zero quando arrays vazios", () => {
