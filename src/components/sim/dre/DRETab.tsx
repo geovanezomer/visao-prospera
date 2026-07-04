@@ -422,12 +422,19 @@ export function DRETab() {
     [dre.despesasPorCategoria],
   );
 
+  // Waterfall — inclui Deduções (inadimplência + descontos + abatimentos) e
+  // Outras Receitas Operacionais para que a cadeia reconcilie até o Lucro Líq.
+  // (antes, faltavam essas duas rubricas e o Lucro Líq. não fechava).
+  const deducoesAnual =
+    sum(dre.deducoesInadimplencia) + sum(descIncond) + sum(abatimentos);
   const waterfall = [
     { name: "Receita Bruta", value: sum(dre.receitaBruta) },
+    { name: "− Deduções", value: -deducoesAnual },
     { name: "− Imp. Vendas", value: -sum(dre.impostosVendas) },
     { name: `− ${cvLabel.short}`, value: -sum(dre.cpv) },
     { name: "− Desp. Op.", value: -sum(dre.despesasOperacionais) },
     { name: "− D&A", value: -sum(dre.depreciacao) },
+    { name: "+ Outras Rec. Op.", value: sum(outrasReceitasOpMensal) },
     { name: "± Financ.", value: sum(dre.resultadoFinanceiro) },
     { name: "− IRPJ/CSLL", value: -sum(dre.impostos) },
     { name: "Lucro Líq.", value: ll },
