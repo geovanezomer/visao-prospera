@@ -222,15 +222,38 @@ export function DRETab() {
     },
     { kind: "linha", k: "(−) Descontos Incondicionais", v: descIncond.map((x) => -x), tone: "neg" },
     { kind: "linha", k: "(−) Abatimentos", v: abatimentos.map((x) => -x), tone: "neg" },
-    {
-      kind: "linha",
-      k:
-        regime === "simples"
-          ? "(−) DAS Simples Nacional"
-          : "(−) Tributos sobre Receita (PIS/COFINS/ICMS/ISS/CBS/IBS)",
-      v: dre.impostosVendas.map((x) => -x),
-      tone: "neg",
-    },
+    (() => {
+      // Detalhamento por tributo — extrai do `tax.detail` apenas as chaves
+      // de impostos sobre venda (PIS/COFINS/ICMS/ISS/CBS/IBS/DAS/…). O `detail`
+      // é anual; distribuímos proporcionalmente à série mensal de impostosVendas
+      // para preservar sazonalidade no accordion.
+      const isVendasKey = (k: string) =>
+        /^(PIS|COFINS|ICMS|ISS|CBS|IBS|DAS|ICMS\/ISS|ℹ|⚠)/i.test(k);
+      const totalVendasAno = sum(dre.impostosVendas);
+      const share = dre.impostosVendas.map((v) =>
+        totalVendasAno > 0 ? v / totalVendasAno : 1 / 12,
+      );
+      const lines = Object.entries(tax.detail)
+        .filter(([k, v]) => isVendasKey(k) && v !== 0)
+        .sort((a, b) => b[1] - a[1])
+        .map(([label, anual]) => ({
+          label,
+          values: share.map((s) => anual * s),
+        }));
+      return {
+        kind: "grupo" as const,
+        id: "trib_receita",
+        titulo:
+          regime === "simples"
+            ? "(−) DAS Simples Nacional"
+            : "(−) Tributos sobre Receita (PIS/COFINS/ICMS/ISS/CBS/IBS)",
+        v: dre.impostosVendas.map((x) => -x),
+        tone: "neg" as const,
+        lines,
+        emptyMsg: "Sem tributos sobre receita apurados no período.",
+      };
+    })(),
+
     { kind: "linha", k: "(=) Receita Operacional Líquida", v: dre.receitaLiquida, strong: true },
     { kind: "cpv" },
     {
