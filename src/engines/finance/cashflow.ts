@@ -26,6 +26,10 @@ export interface CashFlow {
   recebimentos: number[];
   /** Rendimentos de aplicações financeiras realizados em caixa (operacional). */
   receitasFinanceiras: number[];
+  /** Outras receitas operacionais (aluguéis recebidos, venda de ativos) —
+   *  entram no EBITDA e são recebidas no mês de competência (lag 0), como as
+   *  financeiras. SSOT: `splitReceitasFinanceiras(state).operacionais`. */
+  outrasReceitasOperacionais: number[];
   pagamentosFornecedores: number[];
   pagamentosFixos: number[];
   pagamentosVariaveis: number[];
@@ -59,6 +63,7 @@ export interface CashFlow {
   totais: {
     recebimentos: number;
     receitasFinanceiras: number;
+    outrasReceitasOperacionais: number;
     pagamentosTotais: number;
     fluxoOperacional: number;
     fluxoInvestimento: number;
@@ -68,6 +73,7 @@ export interface CashFlow {
     pioresMes: { mes: string; saldo: number } | null;
   };
 }
+
 
 // =====================================================================
 // Funções puras — cada uma testável isoladamente, sem efeito colateral.
