@@ -11,6 +11,7 @@
 //
 // Toda derivação vive em engines/finance/aberturaDerivada.ts (SSOT).
 import { useMemo } from "react";
+import { toast } from "sonner";
 import {
   AlertTriangle,
   CheckCircle2,
