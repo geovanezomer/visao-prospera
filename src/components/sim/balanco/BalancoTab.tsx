@@ -631,9 +631,11 @@ function SubtotalCells({
   total: number;
   totalAnt: number;
 }) {
-  const av = total > 0 ? (atual / total) * 100 : 0;
+  // AV (análise vertical): usa |total| como base para não zerar quando o
+  // total do grupo é negativo (ex.: PL com prejuízos acumulados > capital).
+  const av = Math.abs(total) > 0 ? (atual / Math.abs(total)) * 100 : 0;
   const ah = anterior !== 0 ? ((atual - anterior) / Math.abs(anterior)) * 100 : 0;
-  const avAnt = totalAnt > 0 ? (anterior / totalAnt) * 100 : 0;
+  const avAnt = Math.abs(totalAnt) > 0 ? (anterior / Math.abs(totalAnt)) * 100 : 0;
   return (
     <div className="flex items-baseline gap-3 tabular-nums">
       {showAnterior && (
