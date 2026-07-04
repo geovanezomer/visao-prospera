@@ -233,8 +233,8 @@ export interface CapitalStructure {
   estoques: number;
   disponibilidades: number;
   // ----- Fonte da verdade para ROIC, WACC e índices de liquidez -----
-  /** Dívida onerosa total (empréstimos, financiamentos, debêntures). NÃO inclui fornecedores nem impostos a pagar. */
-  dividaOnerosa: number;
+  // (removido: `dividaOnerosa` — agora vem exclusivamente dos
+  //  `debtContracts` via `totalDividaOnerosa(state)`)
   /** Ativo Circulante (caixa + CR + estoque + outros CP). Se 0, calculado a partir dos demais campos. */
   ativoCirculante: number;
   /** Passivo Circulante (fornecedores + impostos a pagar + empréstimos CP + salários a pagar). */
