@@ -483,8 +483,11 @@ export function buildCashFlow(
     recebimentos: recebimentosInAno,
     receitasFinanceiras,
     fornecedores: fornecedoresInAno,
-    fixos: op.fixos,
-    variaveis: op.variaveis,
+    // Folha entra combinada com "fixos" no cálculo do fluxo operacional
+    // (mesmo sinal, mesma equação). A separação de colunas é preservada no
+    // objeto de retorno (pagamentosFolha isolado).
+    fixos: fixosNet.map((v, i) => v + pagamentosFolha[i]),
+    variaveis: variaveisNet,
     financeiros: op.financeiros,
     impostos: impostosInAno,
     capex,
@@ -494,7 +497,6 @@ export function buildCashFlow(
     dividendos,
     mutuosConcedidos,
     mutuosDevolvidos,
-
   });
 
 
