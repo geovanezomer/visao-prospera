@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildCashFlow } from "../cashflow";
+import { buildFinancialModel } from "../financialModel";
 import { sum } from "../format";
 import { createState, m12 } from "./helpers";
 
@@ -39,6 +40,24 @@ describe("buildCashFlow — PMR e PMP", () => {
     for (let i = 0; i < 11; i++) {
       expect(cf.saldoInicial[i + 1]).toBeCloseTo(cf.saldoFinal[i], 6);
     }
+  });
+
+  it("usa Dinheiro em caixa e bancos como saldo inicial mesmo com balanço parcial", () => {
+    const s = createState({
+      capital: {
+        disponibilidades: 6000,
+        balanco: {
+          ativoNaoCirculante: {
+            imobilizado: { maquinasEquipamentos: 10000 },
+          },
+        },
+      },
+    });
+
+    const model = buildFinancialModel(s);
+
+    expect(model.cf.saldoInicial[0]).toBe(6000);
+    expect(model.cf.saldoInicial[0]).toBe(model.balancoFechamento.abertura.caixa);
   });
 
   it("Variação de caixa = fluxoOp + fluxoInv + fluxoFin (cada mês)", () => {
