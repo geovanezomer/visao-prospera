@@ -12,6 +12,8 @@ import { MESES, sum, zeros12 } from "./format";
 import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 import { getSplitPaymentAtivo } from "./taxDefaults";
 import { getDistribuicaoRealizadaMeses } from "./socios";
+import { deriveAbertura } from "./aberturaDerivada";
+
 
 export interface CashFlow {
   saldoInicial: number[];
@@ -114,25 +116,35 @@ function hasMonthlyVariation(arr: number[] | undefined): boolean {
 }
 
 /**
- * Recebimentos = (Receita Bruta − Inadimplência real) deslocados pelo PMR.
- * [Auditoria Bloco 6] Independente do modo (dedução ou PDD), a inadimplência REAL não vira
- * caixa — então sempre é abatida dos recebimentos. No modo PDD, `dre.deducoesInadimplencia=0`,
- * mas o cash flow precisa abater a perda subjacente (calculada de `revenue.bruta × inadimp%`).
- * Usa `pmrMensal` quando há sazonalidade real; caso contrário, escalar `pmr`.
+ * Recebível mensal (competência) — SSOT compartilhado com balancoFechamento.ts.
+ * Receita Bruta reconhecida (DRE) − Inadimplência REAL do mês.
+ * A inadimplência REAL (calculada de revenue.bruta × inadimp%) nunca vira
+ * caixa, independentemente do modo (dedução ou PDD).
+ */
+export function buildRecebivelMensal(state: AppState, dre: DRE): number[] {
+  const inadimpReal = state.revenue.bruta.map(
+    (b, i) => (b || 0) * ((state.revenue.inadimplencia[i] || 0) / 100),
+  );
+  return dre.receitaBruta.map((r, i) => r - inadimpReal[i]);
+}
+
+/**
+ * Recebimentos = Recebível deslocado pelo PMR (mensal quando há sazonalidade).
+ * [Auditoria Bloco 6] Independente do modo (dedução ou PDD), a inadimplência REAL
+ * é sempre abatida antes do shift — no modo PDD, `dre.deducoesInadimplencia=0`,
+ * mas o cash flow abate a perda subjacente (via buildRecebivelMensal).
  */
 export function computeRecebimentos(
   state: AppState,
   dre: DRE,
 ): { inAno: number[]; transbordo: number } {
-  const inadimpReal = state.revenue.bruta.map(
-    (b, i) => (b || 0) * ((state.revenue.inadimplencia[i] || 0) / 100),
-  );
-  const recebivelMensal = dre.receitaBruta.map((r, i) => r - inadimpReal[i]);
+  const recebivelMensal = buildRecebivelMensal(state, dre);
   if (hasMonthlyVariation(state.revenue.pmrMensal)) {
     return shiftByDaysSplitMonthly(recebivelMensal, state.revenue.pmrMensal!);
   }
   return shiftByDaysSplit(recebivelMensal, state.revenue.pmr);
 }
+
 
 
 /**
@@ -147,6 +159,38 @@ export function computeFornecedores(
   }
   return shiftByDaysSplit(dre.cpv, state.revenue.pmp);
 }
+
+/**
+ * Distribui a liquidação de um saldo de abertura ao longo dos primeiros meses,
+ * proporcional ao prazo médio (PMR, PMP ou similar). SSOT dos "kickstarts" da
+ * DFC — contrapartida da conservação de massa do balanço de fechamento:
+ * sem essa liquidação, o saldo de abertura nunca vira caixa e o CR/Fornec.
+ * de fechamento ficaria inflado indefinidamente.
+ *
+ * Regra:
+ *   • prazo ≤ 30d  → 100% no mês 1
+ *   • 31 ≤ prazo ≤ 60 → proporcional entre meses 1 e 2
+ *   • prazo > 60    → 1/3 em cada um dos meses 1, 2 e 3
+ */
+export function distributeByPrazo(saldo: number, prazoDias: number): number[] {
+  const out = zeros12();
+  if (!(saldo > 0)) return out;
+  const p = Math.max(0, prazoDias || 0);
+  if (p <= 30) {
+    out[0] = saldo;
+  } else if (p <= 60) {
+    // prazo=30 → tudo mês 1; prazo=60 → 50/50; interpolado linear.
+    const w2 = (p - 30) / 30; // 0..1
+    out[0] = saldo * (1 - w2);
+    out[1] = saldo * w2;
+  } else {
+    out[0] = saldo / 3;
+    out[1] = saldo / 3;
+    out[2] = saldo / 3;
+  }
+  return out;
+}
+
 
 /**
  * Pagamentos de impostos = total mensal deslocado pelos lags oficiais.
@@ -346,6 +390,31 @@ export function buildCashFlow(
   // B2: rendimentos de aplicações financeiras realizam-se em caixa no mês de competência
   const { financeiras: receitasFinanceiras } = splitReceitasFinanceiras(state);
 
+  // ─── Liquidação dos saldos de abertura ───
+  // Contrapartida da conservação de massa do balanço de fechamento: os saldos
+  // de abertura precisam virar caixa dentro do horizonte, senão CR/Fornec./
+  // Impostos_fim ficariam eternamente inflados. Distribui pelos primeiros meses
+  // segundo o prazo médio (PMR/PMP); impostos liquidam integralmente no mês 1.
+  const aberturaKick = deriveAbertura({
+    state,
+    impostosMensais: dre.impostosTotal,
+  });
+  const kickRecebimentos = distributeByPrazo(
+    aberturaKick.contasReceber.value,
+    state.revenue?.pmr || 0,
+  );
+  const kickFornecedores = distributeByPrazo(
+    aberturaKick.fornecedores.value,
+    state.revenue?.pmp || 0,
+  );
+  const kickImpostos = zeros12();
+  kickImpostos[0] = aberturaKick.impostosPagar.value;
+
+  const recebimentosInAno = rec.inAno.map((v, i) => v + kickRecebimentos[i]);
+  const fornecedoresInAno = fornec.inAno.map((v, i) => v + kickFornecedores[i]);
+  const impostosInAno = imp.inAno.map((v, i) => v + kickImpostos[i]);
+
+
   const aportes = cashflow.aportes.slice();
   const emprestimosCaptados = cashflow.emprestimosCaptados.slice();
   const amortizacoes = cashflow.amortizacoes.slice();
@@ -377,13 +446,13 @@ export function buildCashFlow(
   const permutasLiquido = permutasCredito.map((c, i) => c - permutasDebito[i]);
 
   const fluxos = computeFluxos({
-    recebimentos: rec.inAno,
+    recebimentos: recebimentosInAno,
     receitasFinanceiras,
-    fornecedores: fornec.inAno,
+    fornecedores: fornecedoresInAno,
     fixos: op.fixos,
     variaveis: op.variaveis,
     financeiros: op.financeiros,
-    impostos: imp.inAno,
+    impostos: impostosInAno,
     capex,
     aportes,
     emprestimosCaptados,
@@ -393,6 +462,7 @@ export function buildCashFlow(
     mutuosDevolvidos,
 
   });
+
 
   // Permutas: somam direto à variação de caixa, fora de OP/INV/FIN.
   const variacaoCaixa = fluxos.variacaoCaixa.map((v, i) => v + permutasLiquido[i]);
@@ -414,13 +484,13 @@ export function buildCashFlow(
 
   return {
     saldoInicial,
-    recebimentos: rec.inAno,
+    recebimentos: recebimentosInAno,
     receitasFinanceiras,
-    pagamentosFornecedores: fornec.inAno,
+    pagamentosFornecedores: fornecedoresInAno,
     pagamentosFixos: op.fixos,
     pagamentosVariaveis: op.variaveis,
     pagamentosFinanceiros: op.financeiros,
-    pagamentosImpostos: imp.inAno,
+    pagamentosImpostos: impostosInAno,
     fluxoOperacional: fluxos.fluxoOperacional,
     aportes,
     emprestimosCaptados,
@@ -431,6 +501,7 @@ export function buildCashFlow(
     fluxoInvestimento: fluxos.fluxoInvestimento,
     permutasCredito,
     permutasDebito,
+
     permutasLiquido,
     variacaoCaixa,
     saldoFinal,
@@ -439,14 +510,15 @@ export function buildCashFlow(
     fornecedoresAnoSeguinte: fornec.transbordo,
     impostosAnoSeguinte: imp.transbordo,
     totais: {
-      recebimentos: sum(rec.inAno),
+      recebimentos: sum(recebimentosInAno),
       receitasFinanceiras: sum(receitasFinanceiras),
       pagamentosTotais:
-        sum(fornec.inAno) +
+        sum(fornecedoresInAno) +
         sum(op.fixos) +
         sum(op.variaveis) +
         sum(op.financeiros) +
-        sum(imp.inAno),
+        sum(impostosInAno),
+
       fluxoOperacional: sum(fluxos.fluxoOperacional),
       fluxoInvestimento: sum(fluxos.fluxoInvestimento),
       fluxoFinanciamento: sum(fluxos.fluxoFinanciamento),
