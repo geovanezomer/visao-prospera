@@ -89,7 +89,10 @@ export function AberturaCard({
 }) {
   const ab: BalancoAbertura = capital.abertura ?? {};
   const { state } = useFinance();
+  const patchTax = usePatchTax();
+  const isReal = state.tax.regime === "real";
   const { model } = useFinanceModel(state);
+
   
 
   const derived: AberturaDerivada = useMemo(
