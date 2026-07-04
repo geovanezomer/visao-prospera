@@ -813,8 +813,14 @@ function DREPanel({
           </thead>
           <tbody>
             {rows.map((r) => {
-              const d = pctDelta(r.b, r.s);
-              const goodIsUp = (r.sign ?? 1) > 0; // se sign=-1, é despesa: cair é bom
+              // Para linhas de despesa (sign=-1), `r.b`/`r.s` já vêm negados
+              // para exibição contábil. O Δ% dessas linhas DEVE refletir a
+              // variação do gasto BRUTO (ex.: CPV subiu de 100 → 150 = +50%,
+              // não −50%). Sem isto, a coloração invertia: aumento de despesa
+              // aparecia como verde ("melhorou").
+              const isExpense = (r.sign ?? 1) < 0;
+              const d = isExpense ? pctDelta(Math.abs(r.b), Math.abs(r.s)) : pctDelta(r.b, r.s);
+              const goodIsUp = !isExpense; // despesa: cair é bom
               const tone =
                 Math.abs(d) < 0.05
                   ? ""
