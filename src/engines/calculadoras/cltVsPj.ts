@@ -219,6 +219,12 @@ export interface ResultadoPJ {
   inssProLaboreMensal: number;
   irrfProLaboreMensal: number;
   custosFixosMensal: number;
+  /** Sobra distribuída como dividendo ao sócio (antes da retenção Lei 15.270/25). */
+  distribuicaoDividendoMensal: number;
+  /** Retenção 10% (Lei 15.270/25) quando distribuição mensal > R$ 50 mil. */
+  retencaoDividendosMensal: number;
+  /** true quando distribuição anualizada > R$ 600 mil (potencial IRPFM). */
+  alertaIRPFM: boolean;
   liquidoMensal: number;
   liquidoAnual: number;
   acimaDoTetoRegime: boolean;
