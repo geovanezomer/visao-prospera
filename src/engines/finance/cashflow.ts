@@ -12,6 +12,8 @@ import { MESES, sum, zeros12 } from "./format";
 import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 import { getSplitPaymentAtivo } from "./taxDefaults";
 import { getDistribuicaoRealizadaMeses } from "./socios";
+import { deriveAbertura } from "./aberturaDerivada";
+
 
 export interface CashFlow {
   saldoInicial: number[];
