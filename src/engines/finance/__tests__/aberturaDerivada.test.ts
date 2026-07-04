@@ -97,8 +97,6 @@ describe("deriveAbertura — empréstimos CP/LP", () => {
           contrato({ saldoDevedor: 100_000, prazoMeses: 6 }),
           contrato({ saldoDevedor: 500_000, prazoMeses: 48 }),
         ],
-        dividaOnerosa: 999_999, // não deve ser usado quando há contratos
-        dividaCurtoPrazoPct: 0.5,
       },
     });
     const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
@@ -107,33 +105,19 @@ describe("deriveAbertura — empréstimos CP/LP", () => {
     expect(r.emprestimosCP.origem).toMatch(/Contratos.*≤ 12/);
   });
 
-  it("cai no split por % quando não há contratos", () => {
+  it("sem contratos → CP = LP = 0 (sem fallback agregado)", () => {
     const s = createState({
       capital: {
         debtContracts: [],
-        dividaOnerosa: 300_000,
-        dividaCurtoPrazoPct: 0.4,
       },
     });
     const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
-    expect(r.emprestimosCP.value).toBeCloseTo(120_000, 2);
-    expect(r.emprestimosLP.value).toBeCloseTo(180_000, 2);
-    expect(r.emprestimosCP.origem).toMatch(/fallback/i);
-  });
-
-  it("usa 30% como default de cpPct quando dividaCurtoPrazoPct é undefined", () => {
-    const s = createState({
-      capital: {
-        debtContracts: [],
-        dividaOnerosa: 1_000_000,
-        dividaCurtoPrazoPct: undefined,
-      },
-    });
-    const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
-    expect(r.emprestimosCP.value).toBeCloseTo(300_000, 2);
-    expect(r.emprestimosLP.value).toBeCloseTo(700_000, 2);
+    expect(r.emprestimosCP.value).toBe(0);
+    expect(r.emprestimosLP.value).toBe(0);
+    expect(r.emprestimosCP.origem).toMatch(/Sem contratos/i);
   });
 });
+
 
 describe("deriveAbertura — passivos derivados de DRE/Despesas (1º mês)", () => {
   it("usa impostos[0] do mês 1 para impostosPagar", () => {
