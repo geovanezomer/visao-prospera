@@ -30,15 +30,14 @@ import type { MonthlyTax } from "./tax/shared";
 import { deriveAbertura } from "./aberturaDerivada";
 import { safeNumber as n } from "./safeMath";
 import { buildRecebivelMensal } from "./cashflow";
+import { isFolhaCost, effectiveMonthValues } from "./costs";
+import { resolveEffectiveRegime } from "./regime";
 
 
 const sumArr = (a: number[] | undefined): number =>
   (a ?? []).reduce((x, y) => x + (y || 0), 0);
 
-const sumCostByCat = (lines: CostLine[] | undefined, cats: string[]): number =>
-  (lines ?? [])
-    .filter((l) => cats.includes(l.category))
-    .reduce((a, l) => a + sumArr(l.values), 0);
+// (sumCostByCat removido — folha agora sai de `isFolhaCost` via SSOT.)
 
 export interface DeriveOpts {
   state: AppState;
@@ -84,7 +83,15 @@ export function deriveBalancoFechamento({
   });
 
   // ─────────────────────────── Movimentos do período ───────────────────────────
-  const folhaAnual = sumCostByCat(state.costs, ["fixo", "variavel"]);
+  // Folha anual — SSOT `isFolhaCost` (mesma regra usada por Fator R e por
+  // aberturaDerivada). Usa `effectiveMonthValues` (com encargos) para casar
+  // com o que a DRE lançou em custosFixos/variáveis e com o desembolso da
+  // DFC (pagamentosFolha) — garantindo Sal_fim = Sal_ini + folhaAnual −
+  // folhaPaga_DFC por conservação.
+  const regime = resolveEffectiveRegime(state);
+  const folhaAnual = (state.costs ?? [])
+    .filter(isFolhaCost)
+    .reduce((acc: number, l: CostLine) => acc + sumArr(effectiveMonthValues(l, regime)), 0);
   const lucroLiquidoAnual = sumArr(dre.lucroLiquido);
 
   // CAPEX ativado no período (base para imobilizado bruto).
@@ -180,10 +187,17 @@ export function deriveBalancoFechamento({
       sumArr(cf.pagamentosImpostos),
   );
 
-  // Salários a pagar: ~ 1 mês de folha (provisão fim de período). A DFC paga
-  // toda a folha à vista, sem provisão de 1 mês → resíduo desprezível quando
-  // folha é uniforme; pequeno viés em cenários com folha muito sazonal.
-  const salariosPagarFim = folhaAnual > 0 ? folhaAnual / 12 : 0;
+  // Salários a pagar — CONSERVAÇÃO DE MASSA:
+  //   Sal_fim = Sal_ini + folhaAnual (competência) − folhaPaga_DFC
+  // A DFC agora aplica lag 30d na folha (`isFolhaCost`) e liquida `Sal_ini`
+  // no mês 1 — assim o resíduo em Sal_fim corresponde a ~1 mês da folha
+  // (o mês 12 vira transbordo, provisionado no passivo).
+  const salariosPagarFim = Math.max(
+    0,
+    aberturaSSOT.salariosEncargos.value +
+      folhaAnual -
+      sumArr(cf.pagamentosFolha),
+  );
 
   // ─────────────────────────────── PL ───────────────────────────────
   // Aportes do período somam ao capital social (contrapartida contábil).

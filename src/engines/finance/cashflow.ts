@@ -13,6 +13,7 @@ import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 import { getSplitPaymentAtivo } from "./taxDefaults";
 import { getDistribuicaoRealizadaMeses } from "./socios";
 import { deriveAbertura } from "./aberturaDerivada";
+import { isFolhaCost, effectiveMonthValues } from "./costs";
 
 
 export interface CashFlow {
@@ -23,6 +24,12 @@ export interface CashFlow {
   pagamentosFornecedores: number[];
   pagamentosFixos: number[];
   pagamentosVariaveis: number[];
+  /** Folha de pessoal desembolsada (SSOT `isFolhaCost`) com lag de 30 dias
+   *  (pagamento no 5º dia útil do mês seguinte) + liquidação do saldo de
+   *  abertura de salários no mês 1. Já é excluída de `pagamentosFixos` e
+   *  `pagamentosVariaveis` — some as três colunas para obter o desembolso
+   *  operacional (ex.: fornec + fixos + variáveis + folha + impostos). */
+  pagamentosFolha: number[];
   pagamentosFinanceiros: number[];
   pagamentosImpostos: number[];
   fluxoOperacional: number[];
@@ -410,6 +417,33 @@ export function buildCashFlow(
   const kickImpostos = zeros12();
   kickImpostos[0] = aberturaKick.impostosPagar.value;
 
+  // ─── Folha: lag 30 (pagamento no 5º dia útil do mês seguinte) ───
+  // Isola a folha (`isFolhaCost`) de fixos/variáveis, desloca por 30 dias e
+  // adiciona a liquidação do saldo de abertura de salários no mês 1. Demais
+  // despesas operacionais permanecem com lag 0 (competência = caixa).
+  const folhaFixosMes = zeros12();
+  const folhaVarMes = zeros12();
+  for (const c of state.costs ?? []) {
+    if (!isFolhaCost(c)) continue;
+    const v = effectiveMonthValues(c, regime);
+    const isCpv = c.category === "custo_vendas" || c.category === "direto_venda";
+    const isOpVar = c.category === "despesa_comercial" || c.category === "variavel";
+    const comportamento = c.comportamento ?? (isCpv || isOpVar ? "variavel" : "fixo");
+    for (let i = 0; i < 12; i++) {
+      if (comportamento === "variavel") folhaVarMes[i] += v[i] || 0;
+      else folhaFixosMes[i] += v[i] || 0;
+    }
+  }
+  const folhaMensalTotal = folhaFixosMes.map((v, i) => v + folhaVarMes[i]);
+  const folhaShifted = shiftByDaysSplit(folhaMensalTotal, 30);
+  const kickFolha = zeros12();
+  kickFolha[0] = aberturaKick.salariosEncargos.value;
+  const pagamentosFolha = folhaShifted.inAno.map((v, i) => v + kickFolha[i]);
+
+  // Net-out da folha em fixos/variáveis para não pagar duas vezes.
+  const fixosNet = op.fixos.map((v, i) => v - folhaFixosMes[i]);
+  const variaveisNet = op.variaveis.map((v, i) => v - folhaVarMes[i]);
+
   const recebimentosInAno = rec.inAno.map((v, i) => v + kickRecebimentos[i]);
   const fornecedoresInAno = fornec.inAno.map((v, i) => v + kickFornecedores[i]);
   const impostosInAno = imp.inAno.map((v, i) => v + kickImpostos[i]);
@@ -449,8 +483,11 @@ export function buildCashFlow(
     recebimentos: recebimentosInAno,
     receitasFinanceiras,
     fornecedores: fornecedoresInAno,
-    fixos: op.fixos,
-    variaveis: op.variaveis,
+    // Folha entra combinada com "fixos" no cálculo do fluxo operacional
+    // (mesmo sinal, mesma equação). A separação de colunas é preservada no
+    // objeto de retorno (pagamentosFolha isolado).
+    fixos: fixosNet.map((v, i) => v + pagamentosFolha[i]),
+    variaveis: variaveisNet,
     financeiros: op.financeiros,
     impostos: impostosInAno,
     capex,
@@ -460,7 +497,6 @@ export function buildCashFlow(
     dividendos,
     mutuosConcedidos,
     mutuosDevolvidos,
-
   });
 
 
@@ -487,8 +523,9 @@ export function buildCashFlow(
     recebimentos: recebimentosInAno,
     receitasFinanceiras,
     pagamentosFornecedores: fornecedoresInAno,
-    pagamentosFixos: op.fixos,
-    pagamentosVariaveis: op.variaveis,
+    pagamentosFixos: fixosNet,
+    pagamentosVariaveis: variaveisNet,
+    pagamentosFolha,
     pagamentosFinanceiros: op.financeiros,
     pagamentosImpostos: impostosInAno,
     fluxoOperacional: fluxos.fluxoOperacional,
@@ -514,8 +551,9 @@ export function buildCashFlow(
       receitasFinanceiras: sum(receitasFinanceiras),
       pagamentosTotais:
         sum(fornecedoresInAno) +
-        sum(op.fixos) +
-        sum(op.variaveis) +
+        sum(fixosNet) +
+        sum(variaveisNet) +
+        sum(pagamentosFolha) +
         sum(op.financeiros) +
         sum(impostosInAno),
 

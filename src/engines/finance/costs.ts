@@ -34,6 +34,14 @@ export function isLaborLine(c: CostLine): boolean {
   return !!c.encargosAuto || LABOR_INCLUDE_RE.test(c.label);
 }
 
+/** Linhas de folha (SSOT — reusado por Fator R, abertura e balanço de fechamento).
+ *  Combina o flag `encargosAuto` OU o rótulo canônico (folha/salário/pró-labore),
+ *  excluindo despesas financeiras. */
+export function isFolhaCost(c: CostLine): boolean {
+  if (c.category === "financeiro") return false;
+  return isLaborLine(c);
+}
+
 /**
  * Base de crédito CBS/IBS (LC 214/2025 arts. 47-56 — não-cumulatividade AMPLA).
  * INCLUI: praticamente todo insumo/despesa operacional (CPV, aluguel, energia,

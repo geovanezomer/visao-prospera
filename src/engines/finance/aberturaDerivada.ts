@@ -23,8 +23,9 @@
 //   amortizacaoAcum  ← (override manual em abertura, default 0)
 //   impostosRecuperar← capital.abertura.impostosRecuperar (editável)
 //   lucrosAcumulados ← capital.abertura.lucrosAcumulados (plug histórico)
-import type { AppState, CostLine, DebtContract } from "./types";
+import type { AppState, DebtContract } from "./types";
 import { safeNumber as n } from "./safeMath";
+import { isFolhaCost } from "./costs";
 
 
 const firstMonth = (a: number[] | undefined): number => n(a?.[0]);
@@ -121,12 +122,12 @@ export function deriveAbertura({
   // Impostos a pagar: 1º mês da DRE (proxy de competência → caixa).
   const impostosPagarVal = firstMonth(impostosMensais);
 
-  // Salários a pagar: folha do mês 1 (fixo + variável).
+  // Salários a pagar: folha do mês 1 (SSOT `isFolhaCost` — mesma regra usada
+  // pelo Fator R e por balancoFechamento). Usa `values[0]` cru: encargos
+  // reais são aplicados na DFC (via effectiveMonthValues) — aqui é apenas
+  // provisão de abertura no valor bruto de folha.
   const folhaMes1 = (state.costs ?? [])
-    .filter((l: CostLine) =>
-      l.category === "fixo" || l.category === "variavel" ||
-      l.category === "despesa_administrativa" || l.category === "despesa_comercial",
-    )
+    .filter(isFolhaCost)
     .reduce((s, l) => s + firstMonth(l.values), 0);
 
   // Overrides manuais (raros).
@@ -156,8 +157,14 @@ export function deriveAbertura({
   const passivo =
     fornVal + cpVal + lpVal + impostosPagarVal + folhaMes1;
 
+  // BUG-FIX: `reservasLucros` também compõe o PL de abertura (o fechamento
+  // já inclui). Sem isso, ao preencher reservas de lucros no Card do Balanço,
+  // a diferença abertura vs fechamento quebrava exatamente por esse valor.
   const plTotal =
-    n(pl.capitalSocial) + n(pl.reservasCapital) + lucrosAcumVal;
+    n(pl.capitalSocial) +
+    n(pl.reservasCapital) +
+    n(pl.reservasLucros) +
+    lucrosAcumVal;
 
   const diferenca = ativo - (passivo + plTotal);
   const tol = Math.max(100, ativo * 0.001);
