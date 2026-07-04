@@ -297,15 +297,10 @@ export function BalanceSheetCard({
                 onChange({ balanco: setBalancoAt(capital.balanco, "patrimonioLiquido.reservasCapital", n) })
               }
             />
-            <SimpleField
-              icon={<Wallet className="h-4 w-4" />}
-              label="Lucros / prejuízos acumulados"
-              hint="Resultados retidos de exercícios anteriores (não distribuídos). Pode ser negativo (prejuízo)."
-              value={getBalancoAt(capital.balanco, "patrimonioLiquido.lucrosPrejuizosAcumulados")}
-              onChange={(n) =>
-                onChange({ balanco: setBalancoAt(capital.balanco, "patrimonioLiquido.lucrosPrejuizosAcumulados", n) })
-              }
-            />
+            {/* "Lucros / prejuízos acumulados" REMOVIDO daqui — SSOT única em
+                Capital → Saldos de Abertura → Outras informações
+                (campo `abertura.lucrosAcumulados`). Evita duplicidade. */}
+
           </div>
 
           {/* CFO #2 — sugestão de PL agregado quando o detalhe está preenchido. */}
