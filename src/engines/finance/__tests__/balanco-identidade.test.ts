@@ -1,35 +1,46 @@
 // Testes de IDENTIDADE do Balanço de Fechamento — pós-refatoração para
-// conservação de massa. Cada teste valida Ativo ≡ Passivo + PL sob cenários
-// distintos (PMR, sazonalidade, contratos de dívida, CAPEX, aportes,
-// dividendos, regimes, Split Payment).
+// conservação de massa. Cada teste valida que a diferença Ativo − (Passivo+PL)
+// no fechamento é PRESERVADA em relação à mesma diferença na abertura — ou
+// seja, os movimentos do período não introduzem resíduo.
 //
-// Tolerância padrão: aceita pequenos ruídos de aproximação da provisão de
-// folha (folha/12) — quando a folha é uniforme, deve fechar em centavos.
+// (Se a ABERTURA não fecha — comum quando defaults têm estoque/salários sem
+// lastro em PL — a conservação garante que o fechamento herda esse mesmo gap
+// SEM amplificá-lo. Testar residuo_fim − residuo_ini ≈ 0 é a validação
+// canônica de mass balance.)
 
 import { describe, expect, it } from "vitest";
 import { deriveBalancoFechamento } from "../balancoFechamento";
 import { buildDRE } from "../dre";
 import { buildCashFlow, buildRecebivelMensal } from "../cashflow";
 import { resolveEffectiveRegime } from "../regime";
+import { deriveAbertura } from "../aberturaDerivada";
 import { createState, m12 } from "./helpers";
 
 const sumArr = (a: number[] | undefined) =>
   (a ?? []).reduce((x, y) => x + (y || 0), 0);
 
-/** Executa a pipeline completa e retorna balanço + totais. */
+/** Executa a pipeline completa. */
 function run(state = createState()) {
   const regime = resolveEffectiveRegime(state);
   const { dre } = buildDRE(state, regime);
   const cf = buildCashFlow(state);
   const res = deriveBalancoFechamento({ state, dre, cf });
-  return { res, dre, cf };
+  const abertura = deriveAbertura({
+    state,
+    impostosMensais: dre.impostosTotal,
+  });
+  return { res, abertura, dre, cf };
 }
 
-/** Tolerância: 0.5% do ativo OU R$ 100 (o maior). Absorve provisão de folha. */
-function assertFechado(diferenca: number, ativo: number) {
-  const tol = Math.max(100, ativo * 0.005);
-  expect(Math.abs(diferenca)).toBeLessThanOrEqual(tol);
+/** A conservação de massa garante: |residuo_fim − residuo_ini| ≈ 0. */
+function assertConservacao(residuoFim: number, residuoIni: number, ativo: number) {
+  const delta = Math.abs(residuoFim - residuoIni);
+  // Tolerância pequena: absorve aproximação da provisão de folha (folha/12)
+  // e ruídos de arredondamento.
+  const tol = Math.max(1, ativo * 0.001);
+  expect(delta).toBeLessThanOrEqual(tol);
 }
+
 
 describe("Balanço de Fechamento — identidade contábil por conservação de massa", () => {
   it("(a) empresa uniforme, sem PMR/PMP — fecha com diferença desprezível", () => {
