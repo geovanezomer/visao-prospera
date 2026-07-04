@@ -75,7 +75,7 @@ export function calcKanitz(state: AppState, ind: Indicators): KanitzResult {
   // X5 — Passivo de Terceiros / PL. Usa balanço quando informado;
   // senão, aproxima por (Dívida Onerosa + Passivos Não Onerosos) / PL.
   const pno = Math.max(0, capital.passivosNaoOnerosos ?? capital.fornecedores ?? 0);
-  const D = Math.max(0, capital.dividaOnerosa);
+  const D = Math.max(0, sumContractSaldos(capital.debtContracts));
   const passivoTerceiros =
     capital.ativoTotal > PL ? capital.ativoTotal - PL : D + pno;
   const x5 = safeDivide(passivoTerceiros, PL);
