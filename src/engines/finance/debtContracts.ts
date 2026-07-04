@@ -141,3 +141,10 @@ export function avgKdAnual(state: AppState): number {
   }
   return denom > 0 ? numer / denom : 0;
 }
+
+/** Overload — soma direta a partir de um array de contratos (sem `state`). */
+export function sumContractSaldos(contracts: DebtContract[] | undefined): number {
+  let total = 0;
+  for (const c of contracts ?? []) total += Math.max(0, c.saldoDevedor || 0);
+  return total;
+}
