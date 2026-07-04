@@ -51,9 +51,12 @@ export function calcAberturaTotals(capital: AppState["capital"]) {
 function DerivedRow({
   source,
   highlight,
+  hint,
 }: {
   source: AberturaDerivadaSource;
   highlight?: "asset" | "liability" | "pl";
+  /** Tooltip nativo — explicação + fórmula + memória de cálculo. */
+  hint?: string;
 }) {
   const tone =
     highlight === "asset"
@@ -66,8 +69,17 @@ function DerivedRow({
       className={`flex items-center justify-between gap-3 rounded-md border border-border/40 border-l-2 ${tone} bg-background/40 px-3 py-2`}
     >
       <div className="min-w-0">
-        <div className="text-[12px] font-medium leading-tight">
+        <div className="text-[12px] font-medium leading-tight inline-flex items-center gap-1">
           {source.label}
+          {hint && (
+            <span
+              title={hint}
+              aria-label="Ajuda"
+              className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-muted-foreground/40 text-[9px] leading-none text-muted-foreground cursor-help"
+            >
+              ?
+            </span>
+          )}
         </div>
         <div className="text-[10px] text-muted-foreground truncate">
           ← {source.origem}
@@ -79,6 +91,7 @@ function DerivedRow({
     </div>
   );
 }
+
 
 export function AberturaCard({
   capital,
