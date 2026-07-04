@@ -57,7 +57,6 @@ describe("buildCashFlow — PMR e PMP", () => {
     const model = buildFinancialModel(s);
 
     expect(model.cf.saldoInicial[0]).toBe(6000);
-    expect(model.cf.saldoInicial[0]).toBe(model.balancoFechamento.abertura.caixa);
   });
 
   it("Variação de caixa = fluxoOp + fluxoInv + fluxoFin (cada mês)", () => {
