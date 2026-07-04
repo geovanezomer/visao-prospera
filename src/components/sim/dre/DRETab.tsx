@@ -141,14 +141,21 @@ export function DRETab() {
   // evitar dupla contagem / divergência de cálculo.
   const { financeiras: receitasFinMensal } = splitReceitasFinanceiras(state);
   const outrasReceitasOpMensal = dre.outrasReceitasOperacionais;
+  // Classificação SSOT (idem `splitReceitasFinanceiras`): usa `tipo` explícito
+  // e cai para IDs legados apenas quando `tipo` é undefined. Filtrar por id
+  // aqui divergia da engine e duplicava linhas custom.
+  const OPERACIONAIS_IDS_LEGADO = new Set(["alugueis", "venda_ativos"]);
+  const isOperacionalRF = (rf: { id: string; tipo?: "operacional" | "financeira" }) =>
+    rf.tipo === "operacional" ||
+    (rf.tipo === undefined && OPERACIONAIS_IDS_LEGADO.has(rf.id));
   // Linhas detalhadas (somente genuinamente financeiras) p/ o accordion pós-EBIT.
   const linhasReceitasFin = (state.revenue.receitasFinanceiras ?? [])
-    .filter((rf) => rf.id !== "alugueis" && rf.id !== "venda_ativos")
+    .filter((rf) => !isOperacionalRF(rf))
     .map((rf) => ({ label: rf.label, values: rf.valores ?? zeros() }))
     .filter((x) => sum(x.values) > 0);
-  // Linhas detalhadas das receitas operacionais (aluguéis, venda de ativos) p/ o grupo "Outras Op.".
+  // Linhas detalhadas das receitas operacionais (aluguéis, venda de ativos, custom op) p/ o grupo "Outras Op.".
   const linhasOutrasReceitasOp = (state.revenue.receitasFinanceiras ?? [])
-    .filter((rf) => rf.id === "alugueis" || rf.id === "venda_ativos")
+    .filter((rf) => isOperacionalRF(rf))
     .map((rf) => ({ label: rf.label, values: rf.valores ?? zeros() }))
     .filter((x) => sum(x.values) > 0);
   // Ganho/Perda em alienação de ativos — sem input dedicado por enquanto
@@ -415,12 +422,19 @@ export function DRETab() {
     [dre.despesasPorCategoria],
   );
 
+  // Waterfall — inclui Deduções (inadimplência + descontos + abatimentos) e
+  // Outras Receitas Operacionais para que a cadeia reconcilie até o Lucro Líq.
+  // (antes, faltavam essas duas rubricas e o Lucro Líq. não fechava).
+  const deducoesAnual =
+    sum(dre.deducoesInadimplencia) + sum(descIncond) + sum(abatimentos);
   const waterfall = [
     { name: "Receita Bruta", value: sum(dre.receitaBruta) },
+    { name: "− Deduções", value: -deducoesAnual },
     { name: "− Imp. Vendas", value: -sum(dre.impostosVendas) },
     { name: `− ${cvLabel.short}`, value: -sum(dre.cpv) },
     { name: "− Desp. Op.", value: -sum(dre.despesasOperacionais) },
     { name: "− D&A", value: -sum(dre.depreciacao) },
+    { name: "+ Outras Rec. Op.", value: sum(outrasReceitasOpMensal) },
     { name: "± Financ.", value: sum(dre.resultadoFinanceiro) },
     { name: "− IRPJ/CSLL", value: -sum(dre.impostos) },
     { name: "Lucro Líq.", value: ll },

@@ -276,7 +276,10 @@ export function TaxTab() {
                 desc: "CBS + IBS (sem PIS/COFINS/ICMS/ISS)",
               },
             ];
-            const activeIdx = phases.findIndex((p) => p.era === era);
+            const rawIdx = phases.findIndex((p) => p.era === era);
+            // Clamp defensivo: `era` legada/desconhecida (undefined ou "atual2")
+            // retornaria -1 e quebraria a barra (`width: -50%`) + `phases[-1]` crash.
+            const activeIdx = rawIdx < 0 ? 0 : Math.min(rawIdx, phases.length - 1);
             return (
               <>
                 <div className="relative">
