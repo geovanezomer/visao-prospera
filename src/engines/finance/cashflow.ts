@@ -417,6 +417,33 @@ export function buildCashFlow(
   const kickImpostos = zeros12();
   kickImpostos[0] = aberturaKick.impostosPagar.value;
 
+  // ─── Folha: lag 30 (pagamento no 5º dia útil do mês seguinte) ───
+  // Isola a folha (`isFolhaCost`) de fixos/variáveis, desloca por 30 dias e
+  // adiciona a liquidação do saldo de abertura de salários no mês 1. Demais
+  // despesas operacionais permanecem com lag 0 (competência = caixa).
+  const folhaFixosMes = zeros12();
+  const folhaVarMes = zeros12();
+  for (const c of state.costs ?? []) {
+    if (!isFolhaCost(c)) continue;
+    const v = effectiveMonthValues(c, regime);
+    const isCpv = c.category === "custo_vendas" || c.category === "direto_venda";
+    const isOpVar = c.category === "despesa_comercial" || c.category === "variavel";
+    const comportamento = c.comportamento ?? (isCpv || isOpVar ? "variavel" : "fixo");
+    for (let i = 0; i < 12; i++) {
+      if (comportamento === "variavel") folhaVarMes[i] += v[i] || 0;
+      else folhaFixosMes[i] += v[i] || 0;
+    }
+  }
+  const folhaMensalTotal = folhaFixosMes.map((v, i) => v + folhaVarMes[i]);
+  const folhaShifted = shiftByDaysSplit(folhaMensalTotal, 30);
+  const kickFolha = zeros12();
+  kickFolha[0] = aberturaKick.salariosEncargos.value;
+  const pagamentosFolha = folhaShifted.inAno.map((v, i) => v + kickFolha[i]);
+
+  // Net-out da folha em fixos/variáveis para não pagar duas vezes.
+  const fixosNet = op.fixos.map((v, i) => v - folhaFixosMes[i]);
+  const variaveisNet = op.variaveis.map((v, i) => v - folhaVarMes[i]);
+
   const recebimentosInAno = rec.inAno.map((v, i) => v + kickRecebimentos[i]);
   const fornecedoresInAno = fornec.inAno.map((v, i) => v + kickFornecedores[i]);
   const impostosInAno = imp.inAno.map((v, i) => v + kickImpostos[i]);
