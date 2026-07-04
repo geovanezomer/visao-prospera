@@ -268,21 +268,57 @@ export function computeImpostos(
 }
 
 /**
- * Pagamentos operacionais não-fornecedor: fixos, variáveis (excluindo CPV), financeiros.
- * PDD é removida dos fixos pois é não-caixa (CPC 47/IFRS 9) — a perda já está nos recebimentos.
+ * Pagamentos operacionais não-fornecedor: fixos, variáveis, financeiros.
+ *
+ * Derivação POR LINHA (natureza × comportamento × isFolha) — única forma
+ * de a partição jamais ficar negativa. Regras:
+ *   • linhas financeiras   → bucket `financeiros`
+ *   • linhas de folha      → EXCLUÍDAS (vão para `pagamentosFolha` com lag 30)
+ *   • linhas de CPV/CMV    → EXCLUÍDAS (vão para `pagamentosFornecedores` com PMP)
+ *   • demais linhas OpEx   → `fixos` ou `variaveis` conforme `comportamento`
+ *
+ * PDD nunca entra aqui: vive apenas na DRE (dre.pdd) e é não-caixa (a perda
+ * já foi abatida em `buildRecebivelMensal` via inadimplência REAL).
  */
-export function computePagamentosOperacionais(dre: DRE): {
+export function computePagamentosOperacionais(
+  state: AppState,
+  regime?: TaxRegime,
+): {
   fixos: number[];
   variaveis: number[];
   financeiros: number[];
 } {
-  return {
-    fixos: dre.custosFixos.slice(),
-    // PDD agora é classificada em custosVariaveis (escala com receita). Continua removida do
-    // desembolso operacional pois é não-caixa (CPC 47/IFRS 9 — a perda já está nos recebimentos).
-    variaveis: dre.custosVariaveis.map((tot, i) => tot - dre.cpv[i] - (dre.pdd?.[i] ?? 0)),
-    financeiros: dre.custosFinanceirosTotal.slice(),
-  };
+  const reg = regime ?? resolveEffectiveRegime(state);
+  const fixos = zeros12();
+  const variaveis = zeros12();
+  const financeiros = zeros12();
+
+  for (const c of state.costs ?? []) {
+    const v = effectiveMonthValues(c, reg);
+    if (c.category === "financeiro") {
+      for (let i = 0; i < 12; i++) financeiros[i] += v[i] || 0;
+      continue;
+    }
+    if (isFolhaCost(c)) continue; // bucket folha
+    if (isCpvCost(c)) continue; // bucket fornecedores
+    const isOpVar = c.category === "despesa_comercial" || c.category === "variavel";
+    const comportamento = c.comportamento ?? (isOpVar ? "variavel" : "fixo");
+    if (comportamento === "variavel") {
+      for (let i = 0; i < 12; i++) variaveis[i] += v[i] || 0;
+    } else {
+      for (let i = 0; i < 12; i++) fixos[i] += v[i] || 0;
+    }
+  }
+
+  // Invariante — nunca deve ser negativo pela construção acima.
+  if (process.env.NODE_ENV !== "production") {
+    for (let i = 0; i < 12; i++) {
+      console.assert(variaveis[i] >= -0.01, `pagamentosVariaveis negativo mês ${i}: ${variaveis[i]}`);
+      console.assert(fixos[i] >= -0.01, `pagamentosFixos negativo mês ${i}: ${fixos[i]}`);
+    }
+  }
+
+  return { fixos, variaveis, financeiros };
 }
 
 /**
@@ -291,6 +327,7 @@ export function computePagamentosOperacionais(dre: DRE): {
 export function computeFluxos(args: {
   recebimentos: number[];
   receitasFinanceiras: number[];
+  outrasReceitasOperacionais: number[];
   fornecedores: number[];
   fixos: number[];
   variaveis: number[];
@@ -321,7 +358,8 @@ export function computeFluxos(args: {
   for (let i = 0; i < 12; i++) {
     fluxoOperacional[i] =
       args.recebimentos[i] +
-      args.receitasFinanceiras[i] -
+      args.receitasFinanceiras[i] +
+      (args.outrasReceitasOperacionais[i] ?? 0) -
       args.fornecedores[i] -
       args.fixos[i] -
       args.variaveis[i] -
@@ -338,6 +376,7 @@ export function computeFluxos(args: {
 
     variacaoCaixa[i] = fluxoOperacional[i] + fluxoInvestimento[i] + fluxoFinanciamento[i];
   }
+
   return { fluxoOperacional, fluxoInvestimento, fluxoFinanciamento, variacaoCaixa };
 }
 
