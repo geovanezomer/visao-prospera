@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { compararCltVsPj, regimePJLabel, type RegimePJ } from "@/engines/calculadoras/cltVsPj";
+import { ANO_VIGENTE } from "@/engines/calculadoras/tabelas";
 import { useAppState } from "@/engines/finance/store";
 import { getIrpjAdicionalPct, getIrpjAdicionalGatilhoTri } from "@/engines/finance/taxDefaults";
 import { fmtBRL } from "@/engines/finance/format";
@@ -581,7 +582,7 @@ export function CltVsPjCalc() {
               </div>
               <p className="pt-2 text-xs">
                 Bases: LC 123/2006 (Simples/MEI), Lei 9.249/95 (Lucro Presumido), Lei 8.212/91 (INSS
-                pró-labore), tabelas IRRF/INSS 2025. Estimativa — sempre confirme com seu contador.
+                pró-labore), tabelas IRRF/INSS {ANO_VIGENTE}. Estimativa — sempre confirme com seu contador.
               </p>
             </CardContent>
           </CollapsibleContent>

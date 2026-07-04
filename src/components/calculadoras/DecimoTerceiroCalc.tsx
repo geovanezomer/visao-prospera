@@ -30,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { calcularDecimoTerceiro } from "@/engines/calculadoras/decimoTerceiro";
+import { ANO_VIGENTE } from "@/engines/calculadoras/tabelas";
 import { fmtBRL, fmtPct } from "@/engines/finance/format";
 
 export function DecimoTerceiroCalc() {
@@ -316,7 +317,7 @@ export function DecimoTerceiroCalc() {
               <p className="text-xs text-muted-foreground">
                 O 13º salário é calculado com base nos meses efetivamente trabalhados no ano. Os
                 valores de INSS e IRRF são descontados integralmente na 2ª parcela. Tabelas de
-                referência: INSS e IRRF 2025.
+                referência: INSS e IRRF {ANO_VIGENTE}.
               </p>
             </CardContent>
           </Card>
@@ -410,7 +411,7 @@ export function DecimoTerceiroCalc() {
 
               <p className="pt-2 text-xs">
                 Bases: Lei 4.090/1962, Lei 4.749/1965, CF art. 7º VIII, IN RFB 1.500/2014, tabelas
-                INSS/IRRF 2025. Estimativa — valide com contador antes de uso oficial.
+                INSS/IRRF {ANO_VIGENTE}. Estimativa — valide com contador antes de uso oficial.
               </p>
             </CardContent>
           </CollapsibleContent>

@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { calcularFerias } from "@/engines/calculadoras/ferias";
+import { ANO_VIGENTE } from "@/engines/calculadoras/tabelas";
 import { fmtBRL } from "@/engines/finance/format";
 
 export function FeriasCltCalc() {
@@ -370,7 +371,7 @@ export function FeriasCltCalc() {
               </div>
 
               <p className="pt-2 text-xs">
-                Bases: CLT arts. 129–153; CF art. 7º, XVII; Lei 7.713/88; tabelas INSS/IRRF 2025.
+                Bases: CLT arts. 129–153; CF art. 7º, XVII; Lei 7.713/88; tabelas INSS/IRRF {ANO_VIGENTE}.
                 Estimativa — valide com contador antes de uso oficial.
               </p>
             </CardContent>
