@@ -336,15 +336,39 @@ export function DRETab() {
       strong: true,
       tone: sum(ebt) >= 0 ? "pos" : "neg",
     },
-    {
-      kind: "linha",
-      k:
-        dre.impostosLucroBase === "receita_presumida"
-          ? "(−) IR / CSLL (base presumida sobre receita)"
-          : "(−) IR / CSLL",
-      v: dre.impostos.map((x) => -x),
-      tone: "neg",
-    },
+    ...(() => {
+      // Decompõe IR/CSLL em linhas separadas: IRPJ, Adicional IRPJ (10%), CSLL
+      // e ajustes (compensação de prejuízo, IRRF s/ aplicações). Distribui a
+      // parte anual proporcionalmente à série mensal de `dre.impostos` para
+      // manter a sazonalidade nas colunas de mês/trimestre.
+      const isLucroKey = (k: string) =>
+        /^(IRPJ|CSLL|Adicional IRPJ|\(−\) Compensação|\(−\) IRRF)/i.test(k);
+      const totalLucroAno = sum(dre.impostos);
+      const share = dre.impostos.map((v) =>
+        totalLucroAno > 0 ? v / totalLucroAno : 1 / 12,
+      );
+      const baseNota =
+        dre.impostosLucroBase === "receita_presumida" ? " (base presumida)" : "";
+      const entries = Object.entries(tax.detail)
+        .filter(([k, v]) => isLucroKey(k) && v !== 0)
+        .sort((a, b) => b[1] - a[1]);
+      // Fallback: se detail vier vazio (defensivo), mostra linha agregada.
+      if (entries.length === 0) {
+        return [{
+          kind: "linha" as const,
+          k: `(−) IR / CSLL${baseNota}`,
+          v: dre.impostos.map((x) => -x),
+          tone: "neg" as const,
+        }];
+      }
+      return entries.map(([label, anual]) => ({
+        kind: "linha" as const,
+        k: `(−) ${label}${baseNota}`,
+        v: share.map((s) => -anual * s),
+        tone: "neg" as const,
+      }));
+    })(),
+
     {
       kind: "linha",
       k: "(=) LUCRO LÍQUIDO DO EXERCÍCIO",
