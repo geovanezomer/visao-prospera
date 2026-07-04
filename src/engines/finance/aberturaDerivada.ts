@@ -16,7 +16,7 @@
 //                       (fallback: capital.fornecedores)
 //   emprestimosCP    ← Σ saldoDevedor de contratos com prazoMeses ≤ 12
 //   emprestimosLP    ← Σ saldoDevedor de contratos com prazoMeses > 12
-//                       (fallback p/ ambos: dividaOnerosa × dividaCurtoPrazoPct)
+//                       (SEM fallback: sem contratos → CP = LP = 0)
 //   impostosPagar    ← dre.impostos[0]      (~1 mês de DARF em aberto)
 //   salariosEncargos ← folha[0]             (~1 mês de folha em aberto)
 //   depreciacaoAcum  ← (override manual em abertura, default 0)
