@@ -52,14 +52,22 @@ export function BalanceSheetCard({
   onChange,
   debtContractsSlot,
   capexSlot,
+  crEstimado,
 }: {
   capital: AppState["capital"];
   onChange: (patch: Partial<AppState["capital"]>) => void;
   debtContractsSlot?: React.ReactNode;
   capexSlot?: React.ReactNode;
+  /** Contas a Receber estimadas via PMR (calculado no parent com receita anual e PMR).
+   *  Necessário porque o card zera capital.contasReceber para forçar a engine a usar
+   *  PMR — sem esse valor derivado, ativoTotal ficaria subavaliado. */
+  crEstimado?: number;
 }) {
   const ativoCircCalc =
-    (capital.disponibilidades || 0) + (capital.estoques || 0) + (capital.contasReceber || 0);
+    (capital.disponibilidades || 0) +
+    (capital.estoques || 0) +
+    // capital.contasReceber é sempre 0 (ver useEffect abaixo); usamos a estimativa PMR.
+    (crEstimado ?? capital.contasReceber ?? 0);
 
   // CFO #5 — soma do imobilizado detalhado (líquido de depreciação acumulada)
   // + intangíveis. Permite derivar Ativo Total quando o detalhe está preenchido.
@@ -117,7 +125,9 @@ export function BalanceSheetCard({
       ? _dividaContratos + (capital.passivoCirculante || 0)
       : _dividaContratos + (capital.fornecedores || 0);
 
-  const plCalculado = (capital.ativoTotal || 0) - totalPassivos;
+  // Usa ativoTotalDerivado (mesmo render) — capital.ativoTotal é atualizado
+  // por useEffect e ficaria 1 render atrás, propagando PL/WACC/ROIC errados.
+  const plCalculado = ativoTotalDerivado - totalPassivos;
 
   // PL final: usa detalhe (Capital Social + Reservas + Lucros) se preenchido,
   // senão cai no cálculo Ativo − Dívidas.

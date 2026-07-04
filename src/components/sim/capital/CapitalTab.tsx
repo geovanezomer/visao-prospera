@@ -38,7 +38,7 @@ export function CapitalTab() {
   const { ind, model } = useFinanceModel(state);
   const aberturaTotals = useMemo(
     () => deriveAbertura({ state, impostosTotalMensais: model.dre.impostosTotal }).totals,
-    [state, model.dre.impostos],
+    [state, model.dre.impostosTotal],
   );
 
   const set = (patch: Partial<typeof c>) =>
@@ -194,6 +194,9 @@ export function CapitalTab() {
         <BalanceSheetCard
           capital={c}
           onChange={set}
+          // CR estimado via PMR — indicators.ts usa a mesma fórmula (linha 342).
+          // Mantém ativoTotal coerente entre BalanceSheetCard e indicadores.
+          crEstimado={(ind.receitaBrutaAnual / 360) * state.revenue.pmr}
           debtContractsSlot={
             <div id="debt-contracts-card">
               <DebtContractsCard
