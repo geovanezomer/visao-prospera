@@ -24,12 +24,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { calcularINSS, calcularIRRF } from "@/engines/calculadoras/rescisao";
+import { getTabelas, ANO_VIGENTE } from "@/engines/calculadoras/tabelas";
 import { fmtBRL, fmtPct } from "@/engines/finance/format";
 
 const DEP_DEDUCAO = 189.59;
-// Salário-família 2025 — Portaria Interministerial MPS/MF nº 6, de 10/01/2025
-const SALARIO_FAMILIA_TETO = 1906.04;
-const SALARIO_FAMILIA_VALOR = 65.0;
+// Salário-família e faixas INSS vêm de getTabelas() (SSOT anual — Portaria MPS/MF).
+const TABELA = getTabelas();
+const SALARIO_FAMILIA_TETO = TABELA.salarioFamiliaLimite;
+const SALARIO_FAMILIA_VALOR = TABELA.salarioFamiliaCota;
 
 export function SalarioLiquidoCalc() {
   const [salarioBruto, setSalarioBruto] = useState<number>(5000);
