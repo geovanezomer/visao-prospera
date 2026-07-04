@@ -217,13 +217,23 @@ function Matrix({
       </div>
       <div className="relative">
         <div className="grid grid-cols-2 gap-2">
+          {/*
+           * Layout do quadrante (eixo X = estratégico; eixo Y = financeiro).
+           * O ponto usa `left: x%` e `top: (100 − y)%` — portanto:
+           *   top-left   → estratégico BAIXO + financeiro ALTO → Frágil-rica
+           *   top-right  → estratégico ALTO  + financeiro ALTO → Robusta
+           *   bottom-left→ estratégico BAIXO + financeiro BAIXO→ Crítica
+           *   bottom-right → estratégico ALTO + financeiro BAIXO → Vulnerável
+           * (Antes: top-left estava rotulada "Vulnerável" e bottom-right
+           * "Frágil-rica", divergindo do ponto e da função `quadrant()`.)
+           */}
           <div
-            className={`flex h-28 items-center justify-center rounded border p-3 text-center text-xs ${quadStyle("vulneravel")}`}
+            className={`flex h-28 items-center justify-center rounded border p-3 text-center text-xs ${quadStyle("fragil_rica")}`}
           >
             <div>
-              <div className="font-semibold">Vulnerável</div>
+              <div className="font-semibold">Frágil-rica</div>
               <div className="mt-1 text-[10px] text-muted-foreground">
-                Fin. fraco / Estrat. sólido
+                Fin. forte / Estrat. frágil
               </div>
             </div>
           </div>
@@ -248,12 +258,12 @@ function Matrix({
             </div>
           </div>
           <div
-            className={`flex h-28 items-center justify-center rounded border p-3 text-center text-xs ${quadStyle("fragil_rica")}`}
+            className={`flex h-28 items-center justify-center rounded border p-3 text-center text-xs ${quadStyle("vulneravel")}`}
           >
             <div>
-              <div className="font-semibold">Frágil-rica</div>
+              <div className="font-semibold">Vulnerável</div>
               <div className="mt-1 text-[10px] text-muted-foreground">
-                Fin. forte / Estrat. frágil
+                Fin. fraco / Estrat. sólido
               </div>
             </div>
           </div>
