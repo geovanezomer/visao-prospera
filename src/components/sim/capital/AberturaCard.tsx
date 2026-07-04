@@ -113,9 +113,11 @@ export function AberturaCard({
     <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
 
 
-      {/* Outras informações de abertura — campos sem fonte derivável (vem ANTES dos derivados) */}
+      {/* Outras informações de abertura — só faz sentido para Lucro Real */}
+      {isReal && (
       <StepCard
         step={3}
+
         color="var(--primary)"
         title="Outras informações de abertura"
         subtitle="Lucros acumulados, créditos tributários e depreciação mensal"
@@ -178,15 +180,17 @@ export function AberturaCard({
           )}
         </div>
       </StepCard>
+      )}
 
 
       {/* Painel DERIVADO */}
       <StepCard
-        step={4}
+        step={isReal ? 4 : 3}
         color="var(--success)"
         title="Saldos derivados automaticamente"
         subtitle="Cada rubrica mostra a sua fonte única (SSOT)"
       >
+
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           <DerivedRow source={derived.caixa} highlight="asset" />
           <DerivedRow source={derived.contasReceber} highlight="asset" />
