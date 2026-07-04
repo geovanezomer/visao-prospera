@@ -180,7 +180,7 @@ export function normalizeStateFromBalanco(state: AppState): AppState {
       ativoTotal: t.ativoTotal,
       ativoCirculante: t.ativoCirculante,
       passivoCirculante: t.passivoCirculante,
-      dividaOnerosa: t.dividaOnerosa,
+      // (removido: dividaOnerosa — vem de debtContracts via totalDividaOnerosa)
       patrimonioLiquido: t.patrimonioLiquido,
       passivosNaoOnerosos: t.passivosNaoOnerosos,
       disponibilidades,
