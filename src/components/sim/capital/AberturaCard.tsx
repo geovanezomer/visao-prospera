@@ -22,12 +22,13 @@ import type { AppState, BalancoAbertura } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
 import { StepCard, SimpleField } from "@/components/sim/capital/parts";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { useFinance } from "@/engines/finance/AppStateContext";
+import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import {
   deriveAbertura,
   type AberturaDerivada,
   type AberturaDerivadaSource,
 } from "@/engines/finance/aberturaDerivada";
+
 
 const n = (v: number | undefined) =>
   typeof v === "number" && isFinite(v) ? v : 0;
@@ -88,7 +89,10 @@ export function AberturaCard({
 }) {
   const ab: BalancoAbertura = capital.abertura ?? {};
   const { state } = useFinance();
+  const patchTax = usePatchTax();
+  const isReal = state.tax.regime === "real";
   const { model } = useFinanceModel(state);
+
   
 
   const derived: AberturaDerivada = useMemo(
@@ -163,8 +167,18 @@ export function AberturaCard({
             value={n(ab.amortizacaoAcumulada)}
             onChange={(v) => set({ amortizacaoAcumulada: v })}
           />
+          {isReal && (
+            <SimpleField
+              icon={<Receipt className="h-4 w-4" />}
+              label="Prejuízo fiscal acumulado (abertura) — Lucro Real"
+              hint="Saldo da parte B do e-Lalur (ECF). É FISCAL — diferente de 'Lucros/prejuízos acumulados' (que é contábil/PL). Compensa até 30% do lucro tributável de cada trimestre (Lei 9.065/95 art. 42). A base negativa de CSLL usa o mesmo saldo. Só se aplica ao Lucro Real."
+              value={n(state.tax.prejuizoFiscalAcumuladoAbertura)}
+              onChange={(v) => patchTax({ prejuizoFiscalAcumuladoAbertura: Math.max(0, v) })}
+            />
+          )}
         </div>
       </StepCard>
+
 
       {/* Painel DERIVADO */}
       <StepCard
