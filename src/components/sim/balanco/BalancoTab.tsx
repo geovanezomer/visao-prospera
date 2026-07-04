@@ -446,7 +446,10 @@ function SnapshotCard({
   highlight?: boolean;
 }) {
   const diff = ativo - (passivo + pl);
-  const ok = Math.abs(diff) < Math.max(100, ativo * 0.005);
+  // Tolerância proporcional ao maior lado da equação (evita valor negativo
+  // quando `ativo` é negativo — caso degenerado — mantendo o piso de R$ 100).
+  const escala = Math.max(Math.abs(ativo), Math.abs(passivo + pl));
+  const ok = Math.abs(diff) < Math.max(100, escala * 0.005);
   return (
     <div
       className={`rounded-lg border p-3 ${
