@@ -39,14 +39,8 @@ export const regimePJLabel: Record<RegimePJ, string> = {
  */
 export const PARAMETROS_PJ = {
   // DAS MEI (serviços): INSS 5% × SM + ISS R$ 5,00 — valor do ano vigente
-  // vem de getTabelas().meiDasServicos (SSOT anual).
-  mei: {
-    aliquotaImpostos: 0,
-    get dasFixoMensal() {
-      return getTabelas().meiDasServicos;
-    },
-    tetoFaturamentoAnual: 81000,
-  },
+  // vem de getTabelas().meiDasServicos (SSOT anual em ./tabelas.ts).
+  mei: { aliquotaImpostos: 0, dasFixoMensal: getTabelas().meiDasServicos, tetoFaturamentoAnual: 81000 },
   // Simples: alíquota efetiva é CALCULADA por faixa (Anexo III) — ver aliquotaSimplesAnexoIII().
   // Mantemos um fallback informativo de ~9,3% para fins de tooltip apenas.
   simples: { aliquotaImpostos: 0.093, dasFixoMensal: 0, tetoFaturamentoAnual: 4_800_000 },
