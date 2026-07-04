@@ -551,8 +551,9 @@ export function buildCashFlow(
       receitasFinanceiras: sum(receitasFinanceiras),
       pagamentosTotais:
         sum(fornecedoresInAno) +
-        sum(op.fixos) +
-        sum(op.variaveis) +
+        sum(fixosNet) +
+        sum(variaveisNet) +
+        sum(pagamentosFolha) +
         sum(op.financeiros) +
         sum(impostosInAno),
 
