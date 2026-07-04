@@ -1,53 +1,66 @@
-## Análise (Opus 4.5)
+## Contexto — não são duplicatas, mas ficam lado a lado
 
-Verifiquei cada apontamento contra o código. Veredito:
+Depois de mapear o código, os dois campos têm **naturezas diferentes**, e é importante deixar isso claro antes de mexer:
 
-| # | Apontamento | Status | Decisão |
+| Campo | Onde vive hoje | Natureza | Usado por |
 |---|---|---|---|
-| SSOT-01 | RevenueTab usa `state.tax.regime` (linha 73) | ✅ Real | **Corrigir** — divergência numérica entre abas |
-| SSOT-02 | DRETab `monthValues(c, state.tax.regime)` (130, 176, 181) | ✅ Real, mas `monthValues` só usa o regime para filtros (`somenteSe`/Simples) | **Corrigir** — barato, elimina drift |
-| SSOT-03 | CashflowTab roda `buildCashFlow` próprio | ✅ Real | **Corrigir** — 1 linha, ganha cache WeakMap |
-| SSOT-04 | `prescriptive.ts` chama `calcIndicators(state, dre)` sem `cf` | ✅ Real (linhas 110 e 162) | **Corrigir** — passar `cf` evita 3ª construção |
-| CALC-01 | DRETab reconstrói `outrasOperacionais` | ✅ Real, mas a fórmula local soma D&A+PDD+outras e a engine só expõe `outrasReceitasOperacionais` separadamente. A linha agregada do display NÃO existe pronta na DRE. | **Não mexer** — refator cosmético com risco de quebrar o agrupamento visual; o número final já bate |
-| CALC-02 | `suggestions.ts` sem `normalizeStateFromBalanco` | ✅ Real | **Corrigir** — 2 linhas |
-| CALC-03 | AI tools sem `getFinancialModelCached` | ✅ Real, mas exige refator de assinatura em N tools | **Adiar** — ROI baixo, performance only |
+| `capital.abertura.lucrosAcumulados` | Card 3 do Capital | **Contábil (PL)** — resultado retido dos exercícios anteriores. Pode ser negativo. É o "plug" do Balanço de Abertura. | `deriveAbertura`, Balanço Patrimonial |
+| `tax.prejuizoFiscalAcumuladoAbertura` | Dialog Config Tributária → aba Federais | **Fiscal (parte B do e-Lalur)** — saldo compensável até 30 %/tri no IRPJ/CSLL. Só existe no Lucro Real. | `calcReal` (Lei 9.065/95 art. 42) |
 
-Bugs anteriores (BUG-01..11) confirmados como corrigidos. Cadeia SSOT principal (`buildFinancialModel` → `useFinanceModel`) está íntegra.
+Ou seja: um afeta o **Balanço**, o outro afeta o **imposto do Real**. Não podem ser fundidos numericamente — se somarmos, quebramos tanto o fechamento do balanço quanto os testes de `tax-overrides.test.ts` e a compensação trimestral em `calcReal`.
+
+O que o usuário pediu (e faz sentido) é **unificar a experiência**: os dois campos "de abertura" moram no mesmo lugar (Capital), e o fiscal só aparece quando o regime é Lucro Real. O nome da chave no `AppState` **permanece** para não quebrar cálculos, testes e snapshots.
 
 ---
 
-## Plano de execução
+## Plano
 
-Ordem por risco crescente. Cada etapa = um arquivo, fechada com `bunx vitest run`.
+### 1. Mover a UI do prejuízo fiscal para o Capital (sem renomear a chave)
 
-### Etapa 1 — SSOT-01 · RevenueTab
-`src/components/sim/revenue/RevenueTab.tsx`
-- Importar `resolveEffectiveRegime` de `@/engines/finance/regime`.
-- Linha 73: `buildDRE(state, resolveEffectiveRegime(state))`.
+Em `src/components/sim/capital/AberturaCard.tsx`, dentro do Card 3 "Outras informações de abertura":
 
-### Etapa 2 — SSOT-02 · DRETab
-`src/components/sim/dre/DRETab.tsx` (linhas 130, 176, 181)
-- Trocar `state.tax.regime` por `regime` (já desestruturado de `useFinanceModel` na linha 97).
+- Adicionar um bloco condicional `state.tax.regime === "real"` com **um único** `SimpleField`:
+  - **Label:** "Prejuízo fiscal acumulado (abertura) — Lucro Real"
+  - **Hint:** "Saldo da parte B do e-Lalur registrado na ECF. Diferente de 'Lucros/prejuízos acumulados' (que é contábil, do PL): este é fiscal e compensa até 30 % do lucro tributável de cada trimestre (Lei 9.065/95 art. 42). Base negativa de CSLL usa o mesmo saldo."
+  - Lê/escreve em `state.tax.prejuizoFiscalAcumuladoAbertura` via `setTax` do contexto (sem mudar a shape do estado).
+  - Clamp `Math.max(0, v)` no onChange, igual ao dialog atual.
+- Adicionar um `Callout`/info curto no topo do card explicando a diferença entre "lucros acumulados (contábil / PL)" e "prejuízo fiscal (tributário)" — evita a confusão que originou o pedido.
 
-### Etapa 3 — SSOT-03 · CashflowTab
-`src/components/sim/cashflow/CashflowTab.tsx`
-- Substituir `useMemo(() => buildCashFlow(state), [state])` por `const { cf } = useFinanceModel(state)`.
-- Remover import órfão `buildCashFlow` (manter se ainda usado em outro ponto).
+### 2. Remover a `Section` "Prejuízo fiscal acumulado — Lucro Real" do dialog
 
-### Etapa 4 — SSOT-04 · prescriptive
-`src/engines/finance/prescriptive.ts`
-- Nos dois blocos (linhas 108-111 e 161-163): inverter a ordem para `buildCashFlow` primeiro e chamar `calcIndicators(state, dre, cf)`.
+Em `src/components/sim/tax/TaxSettingsDialog.tsx` (linhas 459-469):
 
-### Etapa 5 — CALC-02 · suggestions
-`src/engines/ai/suggestions.ts`
-- Importar `normalizeStateFromBalanco` (já existe na engine).
-- Antes de `buildDRE`: `const ns = normalizeStateFromBalanco(state)` e usar `ns` em `buildDRE`/`buildCashFlow`.
+- Excluir a `Section` inteira.
+- Adicionar uma nota discreta acima do `Section` seguinte (ou no fim do `StepFederais` quando `regime==="real"`) do tipo: *"O prejuízo fiscal acumulado de abertura foi movido para **Capital → Saldos de Abertura**."* com link/botão que navega para a aba Capital. Zero mudança em cálculo.
 
-### Fora do escopo
-- CALC-01 (drift cosmético no DRETab) — manter como está.
-- CALC-03 (refator das AI tools) — adiar até termos sinal de performance ruim.
+### 3. Preservar a SSOT — nada muda no engine
 
-### Critério de pronto
-- 386+ testes verdes.
-- `tsgo` limpo.
-- Empresa Simples >R$4,8M anual: valores de tributo idênticos entre Receitas, DRE, Cashflow e Indicadores.
+- `tax.prejuizoFiscalAcumuladoAbertura` continua sendo a **única** fonte lida por `calcReal` (`src/engines/finance/tax/real.ts`).
+- `capital.abertura.lucrosAcumulados` continua sendo a **única** fonte lida por `deriveAbertura`.
+- **Não** somar, **não** derivar um do outro, **não** renomear.
+- Snapshot da IA (`engines/ai/snapshot.ts` e `tools/finance.ts`) já consome as duas chaves — sem mudança.
+
+### 4. Testes / não-regressão
+
+- `src/engines/finance/__tests__/tax-overrides.test.ts` (bloco "prejuizoFiscalAcumuladoAbertura") continua passando: lê a mesma chave.
+- `src/engines/finance/__tests__/aberturaDerivada.test.ts` inalterado.
+- Rodar `bunx vitest run` no fim para confirmar zero regressão.
+- Verificação visual: alternar regime no dialog Simples → Presumido → Real e confirmar que o campo aparece/desaparece no Capital.
+
+### 5. Ordem de execução (uma única passada de edições)
+
+1. Editar `AberturaCard.tsx` (adicionar campo condicional + callout de diferenciação).
+2. Editar `TaxSettingsDialog.tsx` (remover Section, adicionar nota de "movido para Capital").
+3. Rodar testes.
+
+---
+
+## Detalhes técnicos
+
+- **Sem migração de dados**: chave `tax.prejuizoFiscalAcumuladoAbertura` permanece no `TaxConfig`. Estados salvos em Zustand/localStorage continuam válidos.
+- **Sem mudança em `defaults.ts`**: já é `0`.
+- **Import novo em AberturaCard**: precisa de acesso ao `setTax` do `useFinance()` (já exportado no contexto — confirmar; se não, adicionar setter helper).
+- **Condicional**: `state.tax.regime === "real"` — mesma comparação usada em `calcReal` e em `compareRegimes`, então o gate é consistente com o motor.
+- **Copy visível** deixa explícito que os dois campos coexistem por razões contábeis/fiscais legítimas — evita que a próxima revisão volte a tratá-los como duplicata.
+
+Aprovando, aplico as duas edições e rodo os testes.
