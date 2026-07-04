@@ -16,6 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TrackingInjector } from "@/components/TrackingInjector";
 import { BrandingApplier } from "@/components/BrandingApplier";
 import { getAppSettings } from "@/lib/admin/settings.functions";
+import { getBaseUrl } from "@/lib/seo/baseUrl";
 
 // Heurística de contraste preto/branco para foreground sobre cor primária.
 // Mantida aqui (e não importada do BrandingApplier) para que o head() do
