@@ -6,7 +6,7 @@
  *  - Lei 12.506/2011: aviso prévio proporcional (30 + 3 dias/ano completo, máx 90).
  *  - Lei 8.036/90 art. 18: multa FGTS de 40% (sem justa) ou 20% (acordo art. 484-A).
  *  - CF art. 7º, XVII: férias + 1/3 constitucional.
- *  - Tabelas INSS e IRRF 2025 (vigentes desde mai/2025).
+ *  - Tabelas INSS e IRRF versionadas em ./tabelas.ts (SSOT anual — MPS/MF).
  *  - Isenções consolidadas: aviso prévio indenizado e férias indenizadas + 1/3 NÃO sofrem
  *    incidência de INSS nem IRRF (REsp 1.230.957, STJ; Tema 985 STF).
  *
