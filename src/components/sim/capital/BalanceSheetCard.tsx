@@ -1,17 +1,18 @@
 import { AppState, BalancoDetalhado } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
 
+import { useEffect } from "react";
 import {
   Banknote,
   Package,
   Users,
-  Coins,
   Wallet,
   AlertTriangle,
   Settings2,
   Building2,
   Landmark,
 } from "lucide-react";
+
 import { StepCard, SimpleField, MiniStat } from "@/components/sim/capital/parts";
 
 // Helper: seta valor em path aninhado dentro de capital.balanco (imutável).
