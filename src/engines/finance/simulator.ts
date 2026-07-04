@@ -7,6 +7,7 @@
  */
 
 import { AppState, CostLine, TaxRegime } from "./types";
+import { sumContractSaldos } from "./debtContracts";
 import { buildDRE, type DRE } from "./dre";
 import { calcIndicators, type Indicators } from "./indicators";
 import { monthValues } from "./costs";
@@ -276,8 +277,8 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
   // 10) Quitar dívida EXISTENTE (antes de captar)
   if (p.debtPaydownPct > 0) {
     const pct = p.debtPaydownPct / 100;
-    const pago = s.capital.dividaOnerosa * pct;
-    s.capital.dividaOnerosa = s.capital.dividaOnerosa * (1 - pct);
+    const pago = sumContractSaldos(s.capital.debtContracts) * pct;
+    s.capital = { ...s.capital, debtContracts: (s.capital.debtContracts ?? []).map(c => ({...c, saldoDevedor: Math.max(0, (c.saldoDevedor||0)*(1-pct))})) };
     s.costs = s.costs.map((c) =>
       isInterestLine(c) ? { ...c, values: c.values.map((v) => v * (1 - pct)) } : c,
     );
@@ -312,7 +313,7 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     }
     s.cashflow.emprestimosCaptados[0] = (s.cashflow.emprestimosCaptados[0] || 0) + p.loanPrincipal;
     s.cashflow.amortizacoes = amortArr;
-    s.capital.dividaOnerosa = s.capital.dividaOnerosa + p.loanPrincipal;
+    // (loan principal já entra via cashflow.emprestimosCaptados; a dívida é rastreada pelos contratos — o simulador não cria contrato sintético neste MVP)
     s.costs.push({
       id: "sim_loan_juros",
       label: `Juros novo empréstimo (${p.loanRatePctAm.toFixed(2)}% a.m.)`,

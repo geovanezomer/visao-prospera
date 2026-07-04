@@ -8,6 +8,7 @@
  * com Indicadores/Diagnóstico/Simulador (verdade absoluta única).
  */
 import { AppState, BusinessType, TaxRegime } from "./types";
+import { sumContractSaldos } from "./debtContracts";
 import { buildDRE } from "./dre";
 import { calcIndicators } from "./indicators";
 import { resolveEffectiveRegime } from "./regime";
@@ -271,7 +272,7 @@ function computeConfidence(
     issues.push("risco estratégico elevado");
   }
   const { capital } = state;
-  if (capital.dividaOnerosa <= 0 && capital.patrimonioLiquido <= 0) {
+  if (sumContractSaldos(capital.debtContracts) <= 0 && capital.patrimonioLiquido <= 0) {
     score -= 20;
     issues.push("estrutura de capital não informada");
   }
@@ -501,7 +502,7 @@ export function traceValuation(
     },
     {
       label: "Dívida líquida",
-      formula: `Dívida onerosa − Caixa = ${state.capital.dividaOnerosa.toFixed(2)} − ${(state.capital.caixaOcioso ?? 0).toFixed(2)}`,
+      formula: `Dívida onerosa − Caixa = ${sumContractSaldos(state.capital.debtContracts).toFixed(2)} − ${(state.capital.caixaOcioso ?? 0).toFixed(2)}`,
       value: nd,
       note: "V4: equity desconta dívida líquida, não bruta",
     },
@@ -517,7 +518,7 @@ export function traceValuation(
       ebitda: mults.ebitda,
       receita: mults.revenue,
       ll: mults.ll,
-      dividaOnerosa: state.capital.dividaOnerosa,
+      dividaOnerosa: sumContractSaldos(state.capital.debtContracts),
       caixaOcioso: state.capital.caixaOcioso ?? 0,
       dividaLiquida: nd,
       wacc: m.ind.wacc,

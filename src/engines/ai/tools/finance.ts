@@ -2,6 +2,7 @@
 // WACC, valuation, saúde, governança, prescritivo, resumo executivo, etc.
 
 import {
+import { sumContractSaldos } from "@/engines/finance/debtContracts";
   resolveEffectiveRegime,
   diagnose,
 } from "@/engines/finance";
@@ -182,7 +183,7 @@ const handlers: Record<string, ToolHandler> = {
     const ind = sec.data?.ind;
     const cap = state.capital;
     const PL = Math.max(0, cap.patrimonioLiquido);
-    const D = Math.max(0, cap.dividaOnerosa);
+    const D = Math.max(0, sumContractSaldos(cap.debtContracts));
     const V = PL + D;
     const wE = V > 0 ? PL / V : (cap.proprio ?? 0) / 100;
     const wD = V > 0 ? D / V : 1 - (cap.proprio ?? 0) / 100;

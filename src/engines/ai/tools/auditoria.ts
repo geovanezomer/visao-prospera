@@ -61,7 +61,7 @@ function scoreCapital(s: AppState): ModuleScore {
   const max = 5;
   if (c && c.patrimonioLiquido > 0) pts++;
   else missing.push("Patrimônio Líquido");
-  if (c && (c.dividaOnerosa >= 0)) pts++;
+  if (c) pts++;
   if (c && c.ke > 0) pts++;
   else missing.push("Ke (custo de capital próprio)");
   if (c && c.kd >= 0) pts++;

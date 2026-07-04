@@ -9,6 +9,7 @@
 //    derivados diretos de `dre`/`state` — NENHUM novo cálculo financeiro.
 //  - Formatação 100% pt-BR via helpers de `format.ts`.
 // =====================================================================
+import { sumContractSaldos } from "./debtContracts";
 import type { AppState } from "./types";
 import type { DRE } from "./dre";
 import type { Indicators } from "./indicators";
@@ -114,7 +115,7 @@ export function buildIndicatorCalcs(
 
   // --- Estoque, AC, PC etc. ---
   const PL = Math.max(0, capital.patrimonioLiquido);
-  const D = Math.max(0, capital.dividaOnerosa);
+  const D = Math.max(0, sumContractSaldos(capital.debtContracts));
   const PLab = Math.max(0, capital.patrimonioLiquidoAbertura ?? 0);
   const PLmedio = PLab > 0 ? (PLab + PL) / 2 : PL;
   const ATab = Math.max(0, capital.ativoTotalAbertura ?? 0);
