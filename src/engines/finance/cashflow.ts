@@ -161,6 +161,38 @@ export function computeFornecedores(
 }
 
 /**
+ * Distribui a liquidação de um saldo de abertura ao longo dos primeiros meses,
+ * proporcional ao prazo médio (PMR, PMP ou similar). SSOT dos "kickstarts" da
+ * DFC — contrapartida da conservação de massa do balanço de fechamento:
+ * sem essa liquidação, o saldo de abertura nunca vira caixa e o CR/Fornec.
+ * de fechamento ficaria inflado indefinidamente.
+ *
+ * Regra:
+ *   • prazo ≤ 30d  → 100% no mês 1
+ *   • 31 ≤ prazo ≤ 60 → proporcional entre meses 1 e 2
+ *   • prazo > 60    → 1/3 em cada um dos meses 1, 2 e 3
+ */
+export function distributeByPrazo(saldo: number, prazoDias: number): number[] {
+  const out = zeros12();
+  if (!(saldo > 0)) return out;
+  const p = Math.max(0, prazoDias || 0);
+  if (p <= 30) {
+    out[0] = saldo;
+  } else if (p <= 60) {
+    // prazo=30 → tudo mês 1; prazo=60 → 50/50; interpolado linear.
+    const w2 = (p - 30) / 30; // 0..1
+    out[0] = saldo * (1 - w2);
+    out[1] = saldo * w2;
+  } else {
+    out[0] = saldo / 3;
+    out[1] = saldo / 3;
+    out[2] = saldo / 3;
+  }
+  return out;
+}
+
+
+/**
  * Pagamentos de impostos = total mensal deslocado pelos lags oficiais.
  * A PARTIÇÃO (Split lag 0 · vendas lag 30 · IRPJ/CSLL trimestral no fim do
  * trimestre + lag 30) vive em `tax/impostosLag.ts` — SSOT compartilhado com
