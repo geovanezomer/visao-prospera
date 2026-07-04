@@ -52,6 +52,7 @@ export function BalanceSheetCard({
   onChange,
   debtContractsSlot,
   capexSlot,
+  crEstimado,
 }: {
   capital: AppState["capital"];
   onChange: (patch: Partial<AppState["capital"]>) => void;
