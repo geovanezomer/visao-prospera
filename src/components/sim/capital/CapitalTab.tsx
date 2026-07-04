@@ -87,7 +87,8 @@ export function CapitalTab() {
         ...s,
         capital: {
           ...s.capital,
-          dividaOnerosa: Math.round(agg.saldoTotal),
+          // (removido: dividaOnerosa — dívida vem exclusivamente dos contratos
+          //  via totalDividaOnerosa(state))
           kd: kdDerivado > 0 ? Number(kdDerivado.toFixed(2)) : s.capital.kd,
         },
         cashflow: { ...s.cashflow, amortizacoes: agg.amort, emprestimosCaptados: agg.captacao },
