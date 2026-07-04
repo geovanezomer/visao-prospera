@@ -34,7 +34,10 @@ export function CostsTab() {
     variavel: "despesa_comercial",
   };
   const byCat = (cat: CostCategory) =>
-    state.costs.filter((c) => c.category === cat || c.category === ALIAS[cat]);
+    state.costs.filter(
+      (c) => (c.category === cat || c.category === ALIAS[cat]) && !c.system,
+    );
+
 
   const updateLine = (id: string, patch: Partial<CostLine>) =>
     update((s) => ({ ...s, costs: s.costs.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
