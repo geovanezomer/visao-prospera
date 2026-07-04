@@ -47,15 +47,15 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
     const st = createState({
       revenue: { bruta: m12(50_000), pmr: 0, pmp: 0 },
     });
-    const { res } = run(st);
-    assertFechado(res.totals.diferenca, res.totals.ativo);
+    const { res, abertura } = run(st);
+    assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
   });
 
   it("(b) receita sazonal com PMR 45 — fecha (CR_fim ≠ ini, sem inflar)", () => {
     const bruta = [80_000, 40_000, 60_000, 100_000, 30_000, 70_000, 90_000, 55_000, 65_000, 45_000, 85_000, 75_000];
     const st = createState({ revenue: { bruta, pmr: 45, pmp: 30 } });
-    const { res } = run(st);
-    assertFechado(res.totals.diferenca, res.totals.ativo);
+    const { res, abertura } = run(st);
+    assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
   });
 
   it("(c) contratos de dívida com amortização → passivo cai junto do caixa", () => {
@@ -75,8 +75,8 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
         },
       },
     });
-    const { res } = run(st);
-    assertFechado(res.totals.diferenca, res.totals.ativo);
+    const { res, abertura } = run(st);
+    assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
   });
 
   it("(d) CAPEX ativado no meio do ano — imobilizado sobe, caixa cai", () => {
@@ -88,8 +88,8 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
         ],
       },
     });
-    const { res } = run(st);
-    assertFechado(res.totals.diferenca, res.totals.ativo);
+    const { res, abertura } = run(st);
+    assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
   });
 
   it("(e) aporte de capital — capital social sobe, caixa sobe", () => {
@@ -99,8 +99,8 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
       revenue: { bruta: m12(50_000) },
       cashflow: { aportes },
     });
-    const { res } = run(st);
-    assertFechado(res.totals.diferenca, res.totals.ativo);
+    const { res, abertura } = run(st);
+    assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
   });
 
   it("(f) dividendos pagos — PL cai (resultadoExercicio líquido), caixa cai", () => {
@@ -110,8 +110,8 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
       revenue: { bruta: m12(60_000) },
       cashflow: { dividendos },
     });
-    const { res } = run(st);
-    assertFechado(res.totals.diferenca, res.totals.ativo);
+    const { res, abertura } = run(st);
+    assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
   });
 
   it("(g) regime Simples fecha", () => {
@@ -119,8 +119,8 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
       tax: { regime: "simples", era: "atual" },
       revenue: { bruta: m12(40_000) },
     });
-    const { res } = run(st);
-    assertFechado(res.totals.diferenca, res.totals.ativo);
+    const { res, abertura } = run(st);
+    assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
   });
 
   it("(g) regime Presumido fecha", () => {
@@ -128,8 +128,8 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
       tax: { regime: "presumido", era: "atual" },
       revenue: { bruta: m12(80_000) },
     });
-    const { res } = run(st);
-    assertFechado(res.totals.diferenca, res.totals.ativo);
+    const { res, abertura } = run(st);
+    assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
   });
 
   it("(g) regime Real fecha", () => {
@@ -137,8 +137,8 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
       tax: { regime: "real", era: "atual" },
       revenue: { bruta: m12(150_000) },
     });
-    const { res } = run(st);
-    assertFechado(res.totals.diferenca, res.totals.ativo);
+    const { res, abertura } = run(st);
+    assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
   });
 
   it("(h) era plena com Split Payment ativo — fecha (CBS/IBS lag 0)", () => {
@@ -146,8 +146,8 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
       tax: { regime: "real", era: "pleno", splitPaymentAtivo: true },
       revenue: { bruta: m12(120_000) },
     });
-    const { res } = run(st);
-    assertFechado(res.totals.diferenca, res.totals.ativo);
+    const { res, abertura } = run(st);
+    assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
   });
 
   it("(i) consistência: ΔCR = Recebível − Recebimentos DFC", () => {
