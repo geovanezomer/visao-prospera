@@ -76,8 +76,8 @@ export function ProlaboreTab() {
           hint={{
             description:
               "Valor mensal que pode ser distribuído aos sócios, já descontada a Reserva de Capital mínima e aplicada a política de Payout configurada na empresa.",
-            formula: "Disponível = (Lucro Bruto − Reserva) × Payout%",
-            calc: `(${fmtBRL(lucroBruto)} − ${fmtBRL(reservaMin)}) × ${payoutPct}%\n= ${fmtBRL(disponivel)}`,
+            formula: "Disponível = max(0, Lucro Bruto − Reserva Mínima) × Payout%",
+            calc: `max(0, ${fmtBRL(lucroBruto)} − ${fmtBRL(reservaMin)}) × ${payoutPct}%\n= ${fmtBRL(disponivel)}`,
           }}
         />
         <StatCard
