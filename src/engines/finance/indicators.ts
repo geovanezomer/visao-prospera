@@ -364,10 +364,10 @@ export function calcIndicators(
     capital.ativoCirculante > 0
       ? capital.ativoCirculante
       : capital.disponibilidades + crEstimado + capital.estoques;
-  // Auditoria #10: a fração da dívida onerosa que vence em CP é configurável
-  // (`capital.dividaCurtoPrazoPct`, default 0.30). Estimativa só é usada quando
-  // o consultor não informou `passivoCirculante` real.
-  const dividaCpFrac = Math.min(1, Math.max(0, 0.3));
+  // Fração da dívida onerosa que vence em CP — hardcoded em 0.30 como
+  // heurística. Só é usada quando `passivoCirculante` não foi informado
+  // pelo consultor; para split preciso, usar `splitDebtCPLPFromContracts`.
+  const dividaCpFrac = 0.3;
   const passivoCirculante =
     capital.passivoCirculante > 0
       ? capital.passivoCirculante
