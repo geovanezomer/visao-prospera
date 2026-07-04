@@ -1,9 +1,15 @@
-// Cálculo de cronograma de contratos de dívida (Price e SAC).
-// Gera arrays mensais (12 meses) de juros e amortização para alimentar:
+// Cálculo de cronograma de contratos de dívida (Price e SAC) + SSOT da
+// DÍVIDA ONEROSA. Contratos cadastrados aqui são a ÚNICA fonte de dívida
+// do sistema — o campo agregado `capital.dividaOnerosa` foi removido.
+//
+// Alimenta:
 // - state.cashflow.amortizacoes (saída de caixa de principal)
-// - custo financeiro (juros) via linha de custo sintética em "financeiro"
-// - capital.dividaOnerosa (soma dos saldos)
-import type { DebtContract } from "./types";
+// - custo financeiro (juros) via linha sintética "financeiro"
+// - Empréstimos CP/LP na abertura (aberturaDerivada.splitDebtByMaturity)
+// - Dívida onerosa total (totalDividaOnerosa) p/ WACC/ROIC/covenants
+// - Kd anual ponderado por saldo (avgKdAnual) p/ WACC/valuation
+import type { AppState, DebtContract } from "./types";
+
 
 export const DEBT_CONTRACTS_COST_ID = "__debt_contracts_juros";
 
