@@ -5,6 +5,7 @@
 // score de risco 0–10 e estima dias até default a partir do fluxo de caixa
 // mensal (primeiro mês em que o saldo final cruza zero).
 
+import { totalDividaOnerosa } from "./debtContracts";
 import type { AppState } from "./types";
 import { buildDRE } from "./dre";
 import { calcIndicators } from "./indicators";

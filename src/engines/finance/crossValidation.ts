@@ -10,6 +10,7 @@
 // SSOT: função pura sobre AppState + DRE/Indicators já calculados quando
 // disponíveis (evita recomputar engine no DiagnosisTab que já tem o model).
 // ============================================================================
+import { totalDividaOnerosa } from "./debtContracts";
 import type { AppState } from "./types";
 import { buildDRE, type DRE } from "./dre";
 import { calcIndicators, type Indicators } from "./indicators";

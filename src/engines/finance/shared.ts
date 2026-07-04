@@ -4,6 +4,7 @@
 // Mantido em arquivo neutro para evitar ciclos: tax/* importam daqui.
 // =====================================================================
 
+import { totalDividaOnerosa } from "./debtContracts";
 import { AppState } from "./types";
 import { zeros12 } from "./format";
 
