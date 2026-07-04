@@ -180,15 +180,17 @@ export function AberturaCard({
           )}
         </div>
       </StepCard>
+      )}
 
 
       {/* Painel DERIVADO */}
       <StepCard
-        step={4}
+        step={isReal ? 4 : 3}
         color="var(--success)"
         title="Saldos derivados automaticamente"
         subtitle="Cada rubrica mostra a sua fonte única (SSOT)"
       >
+
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           <DerivedRow source={derived.caixa} highlight="asset" />
           <DerivedRow source={derived.contasReceber} highlight="asset" />
