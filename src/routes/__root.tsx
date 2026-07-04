@@ -155,12 +155,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
               {
                 "@type": "Organization",
                 name: "GZ Consultoria Financeira & Investimentos",
-                url: "https://visao-prospera.lovable.app",
+                url: getBaseUrl(),
               },
               {
                 "@type": "WebSite",
                 name: "FinnancePRO",
-                url: "https://visao-prospera.lovable.app",
+                url: getBaseUrl(),
                 publisher: {
                   "@type": "Organization",
                   name: "GZ Consultoria Financeira & Investimentos",

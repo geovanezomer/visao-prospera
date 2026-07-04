@@ -8,8 +8,9 @@ import { faqPageJsonLd } from "@/lib/seo/faqs";
 import { getAppSettings } from "@/lib/admin/settings.functions";
 import { getLandingPlans } from "@/components/landing/loadLandingPlans.functions";
 import { PLANS_FALLBACK } from "@/components/landing/plansFallback";
+import { getBaseUrl } from "@/lib/seo/baseUrl";
 
-const CANONICAL = "https://visao-prospera.lovable.app/landing";
+const CANONICAL = `${getBaseUrl()}/landing`;
 
 export const Route = createFileRoute("/landing")({
   loader: async ({ context }) => {

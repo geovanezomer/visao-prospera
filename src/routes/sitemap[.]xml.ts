@@ -2,8 +2,9 @@
 // Inclui apenas rotas públicas e indexáveis (sem áreas autenticadas).
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
+import { getBaseUrl } from "@/lib/seo/baseUrl";
 
-const BASE_URL = "https://visao-prospera.lovable.app";
+const BASE_URL = getBaseUrl();
 
 interface SitemapEntry {
   path: string;
