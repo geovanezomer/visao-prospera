@@ -81,14 +81,23 @@ export interface AberturaDerivada {
 
 export interface DeriveAberturaOpts {
   state: AppState;
-  /** Impostos mensais da DRE (já calculados). */
-  impostosMensais?: number[];
+  /**
+   * Série mensal de `dre.impostosTotal` (impostos sobre vendas + sobre lucro).
+   *
+   * OBRIGATÓRIA e nomeada `impostosTotalMensais` para eliminar a violação de
+   * SSOT anterior: com o nome genérico `impostosMensais`, chamadores da UI
+   * passavam `dre.impostos` (só IRPJ/CSLL), enquanto o balanço/DFC usavam
+   * `dre.impostosTotal`. A divergência aparecia como resíduo de exatamente
+   * 1 mês de tributos sobre vendas no plug de Lucros Acumulados — o típico
+   * "balanço não fecha por pouco". Passe SEMPRE `dre.impostosTotal`.
+   */
+  impostosTotalMensais: number[];
 }
 
 /** Deriva todos os saldos de abertura a partir das fontes únicas. */
 export function deriveAbertura({
   state,
-  impostosMensais,
+  impostosTotalMensais,
 }: DeriveAberturaOpts): AberturaDerivada {
   const cap = state.capital;
   const ab = cap.abertura ?? {};
@@ -119,8 +128,9 @@ export function deriveAbertura({
     lpVal = cap.dividaOnerosa * (1 - cpPct);
   }
 
-  // Impostos a pagar: 1º mês da DRE (proxy de competência → caixa).
-  const impostosPagarVal = firstMonth(impostosMensais);
+  // Impostos a pagar: 1º mês de `dre.impostosTotal` (competência total do mês
+  // 1 = vendas + lucro), casando com o kick da DFC que liquida esse valor.
+  const impostosPagarVal = firstMonth(impostosTotalMensais);
 
   // Salários a pagar: folha do mês 1 (SSOT `isFolhaCost` — mesma regra usada
   // pelo Fator R e por balancoFechamento). Usa `values[0]` cru: encargos

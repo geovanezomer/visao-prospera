@@ -404,7 +404,7 @@ export function buildCashFlow(
   // segundo o prazo médio (PMR/PMP); impostos liquidam integralmente no mês 1.
   const aberturaKick = deriveAbertura({
     state,
-    impostosMensais: dre.impostosTotal,
+    impostosTotalMensais: dre.impostosTotal,
   });
   const kickRecebimentos = distributeByPrazo(
     aberturaKick.contasReceber.value,

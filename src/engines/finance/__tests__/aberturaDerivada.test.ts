@@ -64,7 +64,7 @@ describe("deriveAbertura — fontes primárias (Card 1 do Balanço)", () => {
         fornecedores: 999_999,
       },
     });
-    const r = deriveAbertura({ state: s });
+    const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
     expect(r.caixa.value).toBe(500_000);
     expect(r.contasReceber.value).toBe(200_000);
     expect(r.estoques.value).toBe(80_000);
@@ -81,7 +81,7 @@ describe("deriveAbertura — fontes primárias (Card 1 do Balanço)", () => {
         fornecedores: 15_000,
       },
     });
-    const r = deriveAbertura({ state: s });
+    const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
     expect(r.caixa.value).toBe(100_000);
     expect(r.contasReceber.value).toBe(40_000);
     expect(r.estoques.value).toBe(20_000);
@@ -101,7 +101,7 @@ describe("deriveAbertura — empréstimos CP/LP", () => {
         dividaCurtoPrazoPct: 0.5,
       },
     });
-    const r = deriveAbertura({ state: s });
+    const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
     expect(r.emprestimosCP.value).toBe(100_000);
     expect(r.emprestimosLP.value).toBe(500_000);
     expect(r.emprestimosCP.origem).toMatch(/Contratos.*≤ 12/);
@@ -115,7 +115,7 @@ describe("deriveAbertura — empréstimos CP/LP", () => {
         dividaCurtoPrazoPct: 0.4,
       },
     });
-    const r = deriveAbertura({ state: s });
+    const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
     expect(r.emprestimosCP.value).toBeCloseTo(120_000, 2);
     expect(r.emprestimosLP.value).toBeCloseTo(180_000, 2);
     expect(r.emprestimosCP.origem).toMatch(/fallback/i);
@@ -129,7 +129,7 @@ describe("deriveAbertura — empréstimos CP/LP", () => {
         dividaCurtoPrazoPct: undefined,
       },
     });
-    const r = deriveAbertura({ state: s });
+    const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
     expect(r.emprestimosCP.value).toBeCloseTo(300_000, 2);
     expect(r.emprestimosLP.value).toBeCloseTo(700_000, 2);
   });
@@ -140,7 +140,7 @@ describe("deriveAbertura — passivos derivados de DRE/Despesas (1º mês)", () 
     const s = createState();
     const r = deriveAbertura({
       state: s,
-      impostosMensais: [12_000, 11_500, 10_800, ...m12(0).slice(3)],
+      impostosTotalMensais: [12_000, 11_500, 10_800, ...m12(0).slice(3)],
     });
     expect(r.impostosPagar.value).toBe(12_000);
     expect(r.impostosPagar.origem).toMatch(/mês 1/i);
@@ -157,13 +157,13 @@ describe("deriveAbertura — passivos derivados de DRE/Despesas (1º mês)", () 
         { id: "c1", label: "CPV", category: "custo_vendas", fixed: false, values: m12(10_000) },
       ],
     });
-    const r = deriveAbertura({ state: s });
+    const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
     expect(r.salariosEncargos.value).toBe(25_000);
   });
 
   it("zero quando arrays vazios", () => {
     const s = createState({ costs: [] });
-    const r = deriveAbertura({ state: s });
+    const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
     expect(r.salariosEncargos.value).toBe(0);
     expect(r.impostosPagar.value).toBe(0);
   });
@@ -181,7 +181,7 @@ describe("deriveAbertura — overrides manuais editáveis", () => {
         },
       },
     });
-    const r = deriveAbertura({ state: s });
+    const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
     expect(r.lucrosAcumulados.value).toBe(1_500_000);
     expect(r.lucrosAcumulados.editavel).toBe(true);
     expect(r.impostosRecuperar.value).toBe(25_000);
@@ -214,7 +214,7 @@ describe("deriveAbertura — totais Ativo = Passivo + PL", () => {
         dividaOnerosa: 0,
       },
     });
-    const r = deriveAbertura({ state: s });
+    const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
     // Ativo = 180k; Passivo = 20k; PL = 160k → diferença = 0 → fechado
     expect(r.totals.ativo).toBe(180_000);
     expect(r.totals.passivo).toBe(20_000);
@@ -234,7 +234,7 @@ describe("deriveAbertura — totais Ativo = Passivo + PL", () => {
         dividaOnerosa: 0,
       },
     });
-    const r = deriveAbertura({ state: s });
+    const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
     expect(r.totals.fechado).toBe(false);
     expect(r.totals.diferenca).toBeGreaterThan(1000);
   });
@@ -254,7 +254,7 @@ describe("deriveAbertura — plug assistido de Lucros Acumulados", () => {
         dividaOnerosa: 0,
       },
     });
-    const before = deriveAbertura({ state: s });
+    const before = deriveAbertura({ state: s, impostosTotalMensais: [] });
     expect(before.totals.fechado).toBe(false);
     expect(before.totals.diferenca).toBeGreaterThan(0);
 
@@ -263,7 +263,7 @@ describe("deriveAbertura — plug assistido de Lucros Acumulados", () => {
       ...(s.capital.abertura ?? {}),
       lucrosAcumulados: (s.capital.abertura?.lucrosAcumulados ?? 0) + before.totals.diferenca,
     };
-    const after = deriveAbertura({ state: s });
+    const after = deriveAbertura({ state: s, impostosTotalMensais: [] });
     expect(after.totals.fechado).toBe(true);
     expect(Math.abs(after.totals.diferenca)).toBeLessThan(1);
   });
@@ -281,7 +281,7 @@ describe("deriveAbertura — plug assistido de Lucros Acumulados", () => {
         dividaOnerosa: 0,
       },
     });
-    const before = deriveAbertura({ state: s });
+    const before = deriveAbertura({ state: s, impostosTotalMensais: [] });
     expect(before.totals.fechado).toBe(false);
     expect(before.totals.diferenca).toBeLessThan(0);
 
@@ -289,7 +289,7 @@ describe("deriveAbertura — plug assistido de Lucros Acumulados", () => {
       ...(s.capital.abertura ?? {}),
       lucrosAcumulados: (s.capital.abertura?.lucrosAcumulados ?? 0) + before.totals.diferenca,
     };
-    const after = deriveAbertura({ state: s });
+    const after = deriveAbertura({ state: s, impostosTotalMensais: [] });
     expect(after.totals.fechado).toBe(true);
     expect(after.lucrosAcumulados.value).toBeLessThan(0);
   });

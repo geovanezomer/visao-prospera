@@ -34,11 +34,14 @@ import {
 const n = (v: number | undefined) =>
   typeof v === "number" && isFinite(v) ? v : 0;
 
-/** Mantido para compat: usado por outros componentes (briefing, auditoria etc.). */
-export function calcAberturaTotals(capital: AppState["capital"]) {
-  // Fallback simples — usa o derivador sem DRE/impostos (impostosPagar = 0).
-  const fakeState = { capital } as AppState;
-  const d = deriveAbertura({ state: fakeState });
+/** Mantido para compat: usado por outros componentes (briefing, auditoria etc.).
+ *  Recebe a série `dre.impostosTotal` explicitamente para evitar a violação de
+ *  SSOT anterior (fake state sem DRE → impostosPagar = 0). */
+export function calcAberturaTotals(
+  state: AppState,
+  impostosTotalMensais: number[],
+) {
+  const d = deriveAbertura({ state, impostosTotalMensais });
   return {
     ativoIni: d.totals.ativo,
     passivoIni: d.totals.passivo,
@@ -111,7 +114,7 @@ export function AberturaCard({
 
   const derived: AberturaDerivada = useMemo(
     () =>
-      deriveAbertura({ state, impostosMensais: model.dre.impostos }),
+      deriveAbertura({ state, impostosTotalMensais: model.dre.impostosTotal }),
     [state, model.dre.impostos],
   );
 
