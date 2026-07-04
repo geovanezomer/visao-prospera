@@ -292,4 +292,43 @@ describe("Balanço — invariante contábil sobre 50 estados aleatórios", () =>
       expect(impFim - impIni).toBeCloseTo(impComp - impPag, 1);
     },
   );
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Regressão: replica o fluxo do botão "Ajustar Lucros Acumulados" da UI
+  // (AberturaCard.tsx). Antes da correção da SSOT, o card passava
+  // `dre.impostos` (só IRPJ+CSLL) enquanto engine/DFC usavam `impostosTotal`
+  // — o plug era menor que o real em ~1 mês de tributos sobre vendas e o
+  // fechamento não zerava. Este teste teria capturado o bug.
+  // ─────────────────────────────────────────────────────────────────────
+  it.each([1, 7, 13, 21, 33, 42])(
+    "seed %i — plug calculado como o AberturaCard fecha o balanço",
+    (seed) => {
+      // Estado SEM aplicar o plug internamente (`randomState` já aplica);
+      // reproduzimos aqui a sequência exata do card: modelo → deriveAbertura
+      // com `model.dre.impostosTotal` → soma incremental em lucrosAcumulados.
+      const base = randomState(seed);
+      base.capital.abertura = {
+        ...(base.capital.abertura ?? {}),
+        lucrosAcumulados: 0,
+      };
+
+      // Passo 1 — mesma chamada que o AberturaCard faz.
+      const model1 = buildFinancialModel(base);
+      const ab1 = deriveAbertura({
+        state: base,
+        impostosTotalMensais: model1.dre.impostosTotal,
+      });
+
+      // Passo 2 — clique do botão: SOMA a diferença ao valor atual.
+      base.capital.abertura = {
+        ...(base.capital.abertura ?? {}),
+        lucrosAcumulados:
+          (base.capital.abertura?.lucrosAcumulados ?? 0) + ab1.totals.diferenca,
+      };
+
+      // Passo 3 — reconstrói e valida fechamento < R$ 1.
+      const model2 = buildFinancialModel(base);
+      expect(Math.abs(model2.balancoFechamento.totals.diferenca)).toBeLessThan(1);
+    },
+  );
 });
