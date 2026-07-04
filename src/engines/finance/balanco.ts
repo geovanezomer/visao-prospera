@@ -9,6 +9,7 @@
 import type { AppState, BalancoDetalhado, CostLine } from "./types";
 import { aggregateMutuos } from "./mutuosSocios";
 import { safeNumber as n } from "./safeMath";
+import { splitDebtCPLPFromContracts } from "./debtContracts";
 
 const sumObj = (o: Record<string, number | undefined> | undefined): number =>
   o ? Object.values(o).reduce<number>((a, b) => a + n(b), 0) : 0;
