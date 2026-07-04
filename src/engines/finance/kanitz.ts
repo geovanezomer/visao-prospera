@@ -18,6 +18,7 @@
 import type { AppState } from "./types";
 import type { Indicators } from "./indicators";
 import { safeDivide } from "./safeMath";
+import { sumContractSaldos } from "./debtContracts";
 
 export type KanitzStatus = "solvencia" | "penumbra" | "insolvencia" | "indisponivel";
 
