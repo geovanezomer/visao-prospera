@@ -281,7 +281,7 @@ describe("Balanço — invariante contábil sobre 50 estados aleatórios", () =>
 
       const fornIni = ab.fornecedores.value;
       const fornFim = fx.balanco.passivoCirculante?.fornecedores ?? 0;
-      const compras = sumArr(dre.cpv);
+      const compras = sumArr(buildComprasMensal(norm, reg));
       const pagFornec = sumArr(cf.pagamentosFornecedores);
       expect(fornFim - fornIni).toBeCloseTo(compras - pagFornec, 1);
 
