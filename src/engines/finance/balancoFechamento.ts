@@ -152,10 +152,28 @@ export function deriveBalancoFechamento({
   const fornecedoresFim =
     pmp > 0 ? (cpvAnual * pmp) / 360 : aberturaSSOT.fornecedores.value;
 
-  // Empréstimos: derivados por maturidade dos contratos (≤12m = CP, >12m = LP).
-  // Fallback: split por dividaCurtoPrazoPct quando não houver contratos.
-  const emprestimosCPFim = aberturaSSOT.emprestimosCP.value;
-  const emprestimosLPFim = aberturaSSOT.emprestimosLP.value;
+  // Empréstimos: saldo de abertura ± movimentos do período (DFC).
+  //   fim = ini + captações − amortizações de principal
+  // Sem esse ajuste, a redução de caixa via amortizações (linha FIN da DFC)
+  // não teria contrapartida no passivo e geraria diferença residual =
+  // Σ (captações − amortizações) no fechamento do balanço.
+  const emprestimosIniTotal =
+    aberturaSSOT.emprestimosCP.value + aberturaSSOT.emprestimosLP.value;
+  const captacoesPeriodo = sumArr(cf.emprestimosCaptados);
+  const amortizacoesPeriodo = sumArr(cf.amortizacoes);
+  const emprestimosFimTotal = Math.max(
+    0,
+    emprestimosIniTotal + captacoesPeriodo - amortizacoesPeriodo,
+  );
+  // Preserva a proporção CP/LP da abertura (heurística — sem re-classificar
+  // contratos por maturidade a cada mês).
+  const cpShare =
+    emprestimosIniTotal > 0
+      ? aberturaSSOT.emprestimosCP.value / emprestimosIniTotal
+      : 0.3;
+  const emprestimosCPFim = emprestimosFimTotal * cpShare;
+  const emprestimosLPFim = emprestimosFimTotal * (1 - cpShare);
+
 
   // Impostos a pagar: ~ 1 mês de DARF (apuração + pagamento defasado).
   // Impostos a pagar: quando `tax` é fornecido, alinha com computeImpostos
