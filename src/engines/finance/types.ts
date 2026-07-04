@@ -258,13 +258,14 @@ export interface CapitalStructure {
   /** NCG de abertura (R$). Quando informada, ΔNCG = NCG_atual − NCG_abertura
    *  no cálculo do FCF (auditoria #3). Default usa `capitalGiroDisponivel`. */
   ncgAbertura?: number;
-  /** Fração da dívida onerosa que vence em CP (0..1). Default 0.30.
-   *  Usado apenas quando `passivoCirculante` não foi informado pelo consultor (auditoria #10). */
-  dividaCurtoPrazoPct?: number;
+  // (removido: `dividaCurtoPrazoPct` — CP/LP vêm dos `debtContracts` por
+  //  maturidade real, sem fallback percentual)
   /** Contratos de dívida onerosa (empréstimos, financiamentos, debêntures).
-   *  Quando preenchidos, agregam-se em `dividaOnerosa`, alimentam o serviço da dívida
-   *  (juros mensais como custo financeiro + amortizações em cashflow.amortizacoes)
-   *  e atualizam DSCR, ROIC, WACC e cobertura de juros automaticamente. */
+   *  SSOT ÚNICO da dívida do sistema: alimenta o serviço da dívida (juros
+   *  mensais como custo financeiro + amortizações em cashflow.amortizacoes),
+   *  a dívida onerosa total (`totalDividaOnerosa`), o Kd médio ponderado
+   *  (`avgKdAnual`), o split CP/LP na abertura e todos os indicadores
+   *  (DSCR, ROIC, WACC, cobertura de juros). Sem contratos = sem dívida. */
   debtContracts?: DebtContract[];
 
   /**
