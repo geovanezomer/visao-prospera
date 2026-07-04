@@ -108,18 +108,22 @@ export function CashflowTab() {
     [cf.saldoFinal, state.cashflow.caixaMinimo, criticalByMes],
   );
 
+  // CR: usa `ind.crEstimado` (fallback PMR × Receita Bruta / 360) porque
+  // `capital.contasReceber` é frequentemente forçado a 0 no state — o valor
+  // realista vem do engine (mesma regra usada em Balanço e Indicadores).
+  const recebiveisEfetivo = ind?.crEstimado ?? state.capital.contasReceber ?? 0;
   const burnRunway = useMemo(() => {
     const burnMensal = cf.fluxoOperacional.map((v) => -v);
     const burnMedio12 = burnMensal.reduce((a, b) => a + b, 0) / 12;
     const burnMedio3 = burnMensal.slice(-3).reduce((a, b) => a + b, 0) / 3;
-    const colchao = state.capital.disponibilidades + (state.capital.contasReceber || 0);
+    const colchao = state.capital.disponibilidades + recebiveisEfetivo;
     const queimando = burnMedio3 > 0;
     const runwayMeses = queimando ? colchao / burnMedio3 : Infinity;
     return { burnMedio12, burnMedio3, runwayMeses, queimando };
-  }, [cf.fluxoOperacional, state.capital.disponibilidades, state.capital.contasReceber]);
+  }, [cf.fluxoOperacional, state.capital.disponibilidades, recebiveisEfetivo]);
 
   const caixaAtual = state.capital.disponibilidades;
-  const recebiveis = state.capital.contasReceber || 0;
+  const recebiveis = recebiveisEfetivo;
   const runwayLabel = !burnRunway.queimando
     ? "∞ (operação gera caixa)"
     : burnRunway.runwayMeses >= 24
