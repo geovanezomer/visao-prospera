@@ -93,10 +93,13 @@ export function MiniStat({
   label,
   value,
   highlight,
+  hint,
 }: {
   label: string;
   value: string;
   highlight?: boolean;
+  /** Tooltip nativo (title) — usado para explicar memória de cálculo. */
+  hint?: string;
 }) {
   return (
     <div
@@ -104,9 +107,21 @@ export function MiniStat({
         "border-r border-border/40 px-2 py-1.5 last:border-r-0",
         highlight && "bg-primary/10",
       )}
+      title={hint}
     >
-      <div className="text-muted-foreground">{label}</div>
+      <div className="text-muted-foreground inline-flex items-center gap-1">
+        {label}
+        {hint && (
+          <span
+            aria-label="Ajuda"
+            className="inline-flex h-3 w-3 items-center justify-center rounded-full border border-muted-foreground/40 text-[8px] leading-none text-muted-foreground cursor-help"
+          >
+            ?
+          </span>
+        )}
+      </div>
       <div className="num font-semibold text-foreground">{value}</div>
     </div>
   );
 }
+
