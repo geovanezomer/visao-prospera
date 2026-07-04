@@ -456,10 +456,7 @@ function StepFederais({
         />
       </Section>
 
-      <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-[12px] text-muted-foreground">
-        <strong className="text-foreground">Prejuízo fiscal acumulado (Lucro Real)</strong> foi movido para{" "}
-        <em>Capital → Saldos de Abertura → Outras informações</em>. Ele aparece automaticamente quando o regime é Lucro Real.
-      </div>
+
 
     </div>
   );
