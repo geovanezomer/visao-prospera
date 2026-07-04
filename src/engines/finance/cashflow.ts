@@ -390,6 +390,31 @@ export function buildCashFlow(
   // B2: rendimentos de aplicações financeiras realizam-se em caixa no mês de competência
   const { financeiras: receitasFinanceiras } = splitReceitasFinanceiras(state);
 
+  // ─── Liquidação dos saldos de abertura ───
+  // Contrapartida da conservação de massa do balanço de fechamento: os saldos
+  // de abertura precisam virar caixa dentro do horizonte, senão CR/Fornec./
+  // Impostos_fim ficariam eternamente inflados. Distribui pelos primeiros meses
+  // segundo o prazo médio (PMR/PMP); impostos liquidam integralmente no mês 1.
+  const aberturaKick = deriveAbertura({
+    state,
+    impostosMensais: dre.impostosTotal,
+  });
+  const kickRecebimentos = distributeByPrazo(
+    aberturaKick.contasReceber.value,
+    state.revenue?.pmr || 0,
+  );
+  const kickFornecedores = distributeByPrazo(
+    aberturaKick.fornecedores.value,
+    state.revenue?.pmp || 0,
+  );
+  const kickImpostos = zeros12();
+  kickImpostos[0] = aberturaKick.impostosPagar.value;
+
+  const recebimentosInAno = rec.inAno.map((v, i) => v + kickRecebimentos[i]);
+  const fornecedoresInAno = fornec.inAno.map((v, i) => v + kickFornecedores[i]);
+  const impostosInAno = imp.inAno.map((v, i) => v + kickImpostos[i]);
+
+
   const aportes = cashflow.aportes.slice();
   const emprestimosCaptados = cashflow.emprestimosCaptados.slice();
   const amortizacoes = cashflow.amortizacoes.slice();
