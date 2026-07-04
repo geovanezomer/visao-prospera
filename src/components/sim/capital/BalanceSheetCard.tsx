@@ -1,17 +1,18 @@
 import { AppState, BalancoDetalhado } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
 
+import { useEffect } from "react";
 import {
   Banknote,
   Package,
   Users,
-  Coins,
   Wallet,
   AlertTriangle,
   Settings2,
   Building2,
   Landmark,
 } from "lucide-react";
+
 import { StepCard, SimpleField, MiniStat } from "@/components/sim/capital/parts";
 
 // Helper: seta valor em path aninhado dentro de capital.balanco (imutável).
@@ -81,7 +82,18 @@ export function BalanceSheetCard({
     (intang?.amortizacaoAcumulada || 0);
   const ativoNaoCircCalc = Math.max(0, imobLiquido) + Math.max(0, intangLiquido);
   const ativoTotalDerivado = ativoCircCalc + ativoNaoCircCalc;
-  const temImobilizadoDetalhado = imobBruto > 0 || intangLiquido > 0;
+  
+
+  // Ativo Total agora é SEMPRE derivado (soma automática de circulante +
+  // imobilizado líq. + intangível líq.). Sincroniza silenciosamente no state
+  // para preservar compatibilidade com cálculos que ainda leem capital.ativoTotal.
+  useEffect(() => {
+    if (Math.abs((capital.ativoTotal || 0) - ativoTotalDerivado) > 0.5) {
+      onChange({ ativoTotal: ativoTotalDerivado });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ativoTotalDerivado]);
+
 
   // CFO #2 — soma do PL detalhado. Quando preenchido, vira a fonte derivada.
   const plDet = capital.balanco?.patrimonioLiquido;
@@ -153,74 +165,15 @@ export function BalanceSheetCard({
             onChange={(n) => onChange({ contasReceber: n })}
             placeholder="0 = calculado pelo prazo médio"
           />
-          <SimpleField
-            icon={<Coins className="h-4 w-4" />}
-            label="Total de ativos da empresa"
-            hint="Soma de TUDO que a empresa possui: caixa, estoques, máquinas, imóveis, veículos, contas a receber etc."
-            value={capital.ativoTotal}
-            onChange={(n) => onChange({ ativoTotal: n })}
-          />
         </div>
-
-        {/* CFO #5 — sugestão de Ativo Total derivado do imobilizado detalhado. */}
-        {temImobilizadoDetalhado && Math.abs((capital.ativoTotal || 0) - ativoTotalDerivado) > Math.max(100, ativoTotalDerivado * 0.02) && (
-          <div className="mt-2 flex flex-col gap-2 rounded-md border border-primary/30 bg-primary/5 p-2 text-[11px]">
-            <span className="text-muted-foreground">
-              Ativo Total <strong className="text-foreground">derivado</strong> do imobilizado detalhado +
-              circulante = <strong className="text-primary">{fmtBRL(ativoTotalDerivado)}</strong>{" "}
-              <span className="opacity-70">(Circulante {fmtBRL(ativoCircCalc)} + Imobilizado líq. {fmtBRL(Math.max(0, imobLiquido))} + Intangível líq. {fmtBRL(Math.max(0, intangLiquido))}).</span>
-            </span>
-            <button
-              onClick={() => onChange({ ativoTotal: ativoTotalDerivado })}
-              className="self-start rounded bg-primary/20 px-2 py-1 text-[10px] font-bold uppercase text-primary hover:bg-primary/30 transition-colors"
-            >
-              Usar valor derivado: {fmtBRL(ativoTotalDerivado)}
-            </button>
-          </div>
-        )}
-
 
         <div className="mt-3 grid grid-cols-4 overflow-hidden rounded-md border border-border/40 text-center text-[10px]">
           <MiniStat label="Caixa/bancos" value={fmtBRL(capital.disponibilidades)} />
           <MiniStat label="Estoque" value={fmtBRL(capital.estoques)} />
           <MiniStat label="A receber" value={fmtBRL(capital.contasReceber)} />
-          <MiniStat label="Ativo circulante" value={fmtBRL(ativoCircCalc)} highlight />
+          <MiniStat label="Total de ativos" value={fmtBRL(ativoTotalDerivado)} highlight />
         </div>
 
-        {/* Reconciliação Total de Ativos vs. soma dos componentes circulantes.
-            Evita "Balanço consistente" silencioso quando o consultor digita um
-            Total que não bate com Caixa+Estoque+Clientes (gap = imobilizado/
-            outros ativos não detalhados, ou erro de digitação). */}
-        {capital.ativoTotal > 0 && (() => {
-          const gap = capital.ativoTotal - ativoCircCalc;
-          if (gap < -1) {
-            return (
-              <div className="mt-2 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span>
-                  Total de ativos (<strong>{fmtBRL(capital.ativoTotal)}</strong>) é{" "}
-                  <strong>menor</strong> que a soma de Caixa + Estoque + Clientes
-                  (<strong>{fmtBRL(ativoCircCalc)}</strong>). Revise os valores —
-                  Total de Ativos deve incluir, no mínimo, todo o ativo circulante.
-                </span>
-              </div>
-            );
-          }
-          if (gap > 1) {
-            return (
-              <div className="mt-2 rounded-md border border-border/40 bg-muted/20 p-2 text-[11px] text-muted-foreground">
-                Imobilizado e outros ativos (implícito):{" "}
-                <strong className="text-foreground">{fmtBRL(gap)}</strong>{" "}
-                <span className="opacity-70">
-                  = Total de Ativos − (Caixa + Estoque + Clientes). Se este valor
-                  não corresponde a máquinas/imóveis/veículos da empresa, revise
-                  o Total de Ativos.
-                </span>
-              </div>
-            );
-          }
-          return null;
-        })()}
 
         {/* Detalhes patrimoniais (antes era StepCard separado — agora unificado aqui) */}
         <div className="mt-5 border-t border-border/40 pt-4">
