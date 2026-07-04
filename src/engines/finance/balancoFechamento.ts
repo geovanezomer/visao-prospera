@@ -37,12 +37,7 @@ import { resolveEffectiveRegime } from "./regime";
 const sumArr = (a: number[] | undefined): number =>
   (a ?? []).reduce((x, y) => x + (y || 0), 0);
 
-const sumCostByCat = (lines: CostLine[] | undefined, cats: string[]): number =>
-  (lines ?? [])
-    .filter((l) => cats.includes(l.category))
-    .reduce((a, l) => a + sumArr(l.values), 0);
-
-export interface DeriveOpts {
+// (sumCostByCat removido — folha agora sai de `isFolhaCost` via SSOT.)
   state: AppState;
   dre: FinancialModelDRE;
   cf: FinancialModelCashflow;
