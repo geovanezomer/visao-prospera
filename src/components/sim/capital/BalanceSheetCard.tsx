@@ -82,7 +82,7 @@ export function BalanceSheetCard({
     (intang?.amortizacaoAcumulada || 0);
   const ativoNaoCircCalc = Math.max(0, imobLiquido) + Math.max(0, intangLiquido);
   const ativoTotalDerivado = ativoCircCalc + ativoNaoCircCalc;
-  const temImobilizadoDetalhado = imobBruto > 0 || intangLiquido > 0;
+  
 
   // Ativo Total agora é SEMPRE derivado (soma automática de circulante +
   // imobilizado líq. + intangível líq.). Sincroniza silenciosamente no state
