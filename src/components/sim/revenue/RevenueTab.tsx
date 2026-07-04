@@ -164,6 +164,9 @@ export function RevenueTab() {
 
   if (usaPDD) {
     const pddRec = r.pddReversaoMensal ?? fill12(0);
+    // Deriva o estado "Fixo" a partir da uniformidade dos valores — não há
+    // flag persistida para pddReversaoMensal (é um number[] plano no state).
+    const pddFixedDerived = pddRec.every((v) => v === pddRec[0]);
     rows.push({
       id: "row_pdd_rec",
       kind: "deducao",
@@ -172,7 +175,7 @@ export function RevenueTab() {
       label: "Recuperação de Inadimplência (+)",
       values: pddRec,
       brlValues: pddRec,
-      fixed: false,
+      fixed: pddFixedDerived,
       tone: "pos",
     });
   }
