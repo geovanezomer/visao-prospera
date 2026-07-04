@@ -121,6 +121,9 @@ export function AberturaCard({
   const ajustarLucros = () => {
     const novoLucros = n(ab.lucrosAcumulados) + derived.totals.diferenca;
     set({ lucrosAcumulados: novoLucros });
+    toast.success("Lucros acumulados ajustados para equilibrar a abertura", {
+      description: `Novo saldo: ${fmtBRL(novoLucros)} (ajuste de ${fmtBRL(derived.totals.diferenca)}).`,
+    });
   };
 
   return (
