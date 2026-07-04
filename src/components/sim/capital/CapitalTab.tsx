@@ -211,7 +211,8 @@ export function CapitalTab() {
                 }
                 set({ debtContracts: next });
               }}
-            />
+              />
+            </div>
           }
           capexSlot={
             <CapexAtivacaoSection
