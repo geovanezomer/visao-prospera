@@ -16,6 +16,7 @@ import { DebtContractsCard } from "@/components/sim/capital/DebtContractsCard";
 import {
   aggregateContracts,
   DEBT_CONTRACTS_COST_ID,
+  totalDividaOnerosa,
 } from "@/engines/finance/debtContracts";
 import { assertDebtContracts } from "@/engines/finance/debtContracts.validation";
 import { toast } from "sonner";
