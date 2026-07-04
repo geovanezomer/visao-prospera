@@ -167,8 +167,18 @@ export function AberturaCard({
             value={n(ab.amortizacaoAcumulada)}
             onChange={(v) => set({ amortizacaoAcumulada: v })}
           />
+          {isReal && (
+            <SimpleField
+              icon={<Receipt className="h-4 w-4" />}
+              label="Prejuízo fiscal acumulado (abertura) — Lucro Real"
+              hint="Saldo da parte B do e-Lalur (ECF). É FISCAL — diferente de 'Lucros/prejuízos acumulados' (que é contábil/PL). Compensa até 30% do lucro tributável de cada trimestre (Lei 9.065/95 art. 42). A base negativa de CSLL usa o mesmo saldo. Só se aplica ao Lucro Real."
+              value={n(state.tax.prejuizoFiscalAcumuladoAbertura)}
+              onChange={(v) => patchTax({ prejuizoFiscalAcumuladoAbertura: Math.max(0, v) })}
+            />
+          )}
         </div>
       </StepCard>
+
 
       {/* Painel DERIVADO */}
       <StepCard
