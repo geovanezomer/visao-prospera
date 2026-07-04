@@ -1,5 +1,6 @@
 import { AppState, BalancoDetalhado } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
+import { totalDividaOnerosa } from "@/engines/finance/debtContracts";
 
 import { useEffect } from "react";
 import {
