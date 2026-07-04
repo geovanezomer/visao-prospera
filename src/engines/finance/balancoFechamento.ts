@@ -83,11 +83,15 @@ export function deriveBalancoFechamento({
   });
 
   // ─────────────────────────── Movimentos do período ───────────────────────────
-  // Folha anual — SSOT `isFolhaCost` (mesma regra em aberturaDerivada).
-  // Usa `values` cru (sem encargos), simétrico à provisão de abertura.
+  // Folha anual — SSOT `isFolhaCost` (mesma regra usada por Fator R e por
+  // aberturaDerivada). Usa `effectiveMonthValues` (com encargos) para casar
+  // com o que a DRE lançou em custosFixos/variáveis e com o desembolso da
+  // DFC (pagamentosFolha) — garantindo Sal_fim = Sal_ini + folhaAnual −
+  // folhaPaga_DFC por conservação.
+  const regime = resolveEffectiveRegime(state);
   const folhaAnual = (state.costs ?? [])
     .filter(isFolhaCost)
-    .reduce((acc: number, l: CostLine) => acc + sumArr(l.values), 0);
+    .reduce((acc: number, l: CostLine) => acc + sumArr(effectiveMonthValues(l, regime)), 0);
   const lucroLiquidoAnual = sumArr(dre.lucroLiquido);
 
   // CAPEX ativado no período (base para imobilizado bruto).
