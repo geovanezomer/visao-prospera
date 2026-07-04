@@ -113,8 +113,8 @@ export function BalanceSheetCard({
   // inclui fornecedores e parcela CP da dívida).
   const totalPassivos =
     (capital.passivoCirculante || 0) > 0
-      ? (capital.dividaOnerosa || 0) + (capital.passivoCirculante || 0)
-      : (capital.dividaOnerosa || 0) + (capital.fornecedores || 0);
+      ? totalDividaOnerosa(state) + (capital.passivoCirculante || 0)
+      : totalDividaOnerosa(state) + (capital.fornecedores || 0);
 
   const plCalculado = (capital.ativoTotal || 0) - totalPassivos;
 

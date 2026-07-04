@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { totalDividaOnerosa } from "@/engines/finance/debtContracts";
 import { AppState } from "@/engines/finance/types";
 import {
   buildValuation,
@@ -336,7 +337,7 @@ export function ValuationTab({
                   {fmtBRLCompact(valuation.netDebt)}
                 </div>
                 <div className="text-[9px] text-muted-foreground mt-0.5">
-                  Dív. {fmtBRLCompact(source.capital.dividaOnerosa)} − Caixa{" "}
+                  Dív. {fmtBRLCompact(totalDividaOnerosa(source))} − Caixa{" "}
                   {fmtBRLCompact(source.capital.caixaOcioso ?? 0)}
                 </div>
               </div>
