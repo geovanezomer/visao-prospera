@@ -108,10 +108,15 @@ export function CashflowTab() {
     [cf.saldoFinal, state.cashflow.caixaMinimo, criticalByMes],
   );
 
-  // CR: usa `ind.crEstimado` (fallback PMR × Receita Bruta / 360) porque
-  // `capital.contasReceber` é frequentemente forçado a 0 no state — o valor
-  // realista vem do engine (mesma regra usada em Balanço e Indicadores).
-  const recebiveisEfetivo = ind?.crEstimado ?? state.capital.contasReceber ?? 0;
+  // CR: aplica o mesmo fallback do engine (`indicators.ts:341`) — quando
+  // `capital.contasReceber` está zerado, deriva por PMR × Receita Bruta / 360.
+  // Sem isso, o runway ignora o giro de recebíveis em curso e subestima o colchão.
+  const recebiveisEfetivo = useMemo(() => {
+    if ((state.capital.contasReceber || 0) > 0) return state.capital.contasReceber;
+    const receitaBrutaAnual = state.revenue.bruta.reduce((a, b) => a + (b || 0), 0);
+    const pmr = state.revenue.pmr || 0;
+    return (receitaBrutaAnual / 360) * pmr;
+  }, [state.capital.contasReceber, state.revenue.bruta, state.revenue.pmr]);
   const burnRunway = useMemo(() => {
     const burnMensal = cf.fluxoOperacional.map((v) => -v);
     const burnMedio12 = burnMensal.reduce((a, b) => a + b, 0) / 12;
