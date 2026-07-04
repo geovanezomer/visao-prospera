@@ -321,6 +321,13 @@ export function CltVsPjCalc() {
                             tone="destructive"
                           />
                         )}
+                        {p.retencaoDividendosMensal > 0 && (
+                          <Row
+                            label="Retenção IR dividendos 10% (Lei 15.270/25)"
+                            value={`−${fmtBRL(p.retencaoDividendosMensal)}`}
+                            tone="destructive"
+                          />
+                        )}
                       </div>
                       <div
                         className={`mt-2 rounded-md p-2 text-center text-xs font-medium ${diff >= 0 ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-destructive/10 text-destructive"}`}
@@ -328,6 +335,16 @@ export function CltVsPjCalc() {
                         {diff >= 0 ? "+" : "−"}
                         {fmtBRL(Math.abs(diff))}/ano vs CLT
                       </div>
+                      {p.alertaIRPFM && (
+                        <p
+                          className="text-[10px] text-amber-600 dark:text-amber-500"
+                          title="Retenção na fonte sobre distribuições acima de R$ 50 mil/mês da mesma PJ à mesma PF; antecipação do IRPF Mínimo anual."
+                        >
+                          ⚠ Renda anual do sócio acima de R$ 600 mil — sujeita ao IRPF Mínimo
+                          (até 10%). Simulação não calcula o IRPFM, que depende da renda global
+                          da PF.
+                        </p>
+                      )}
                       {p.acimaDoTetoRegime && (
                         <p className="text-[10px] text-amber-600 dark:text-amber-500">
                           ⚠ Faturamento acima do teto deste regime.

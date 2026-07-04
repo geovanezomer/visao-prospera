@@ -252,6 +252,35 @@ export function SociosCard() {
             </tfoot>
           </table>
 
+          {/* Retenção Lei 15.270/25 + alerta IRPFM (por sócio) */}
+          {resultadosFolha.some((r) => r.retencaoDividendosMensal > 0 || r.alertaIRPFM) && (
+            <div className="mt-3 space-y-2 rounded-md border border-[var(--warning)]/40 bg-[var(--warning)]/5 px-3 py-2 text-[12px]">
+              {resultadosFolha.map((r, i) =>
+                r.retencaoDividendosMensal > 0 || r.alertaIRPFM ? (
+                  <div key={r.socioId} className="space-y-1">
+                    <div className="font-medium">{socios[i]?.nome ?? r.socioId}</div>
+                    {r.retencaoDividendosMensal > 0 && (
+                      <div
+                        className="text-foreground/90"
+                        title="Retenção na fonte sobre distribuições acima de R$ 50 mil/mês da mesma PJ à mesma PF; antecipação do IRPF Mínimo anual."
+                      >
+                        (−) Retenção IR dividendos 10% (Lei 15.270/25):{" "}
+                        <b>{fmtBRL(r.retencaoDividendosMensal)}</b>/mês
+                      </div>
+                    )}
+                    {r.alertaIRPFM && (
+                      <div className="text-[var(--warning)]">
+                        ⚠ Renda anual do sócio acima de R$ 600 mil — sujeita ao IRPF Mínimo
+                        (até 10%). Simulação não calcula o IRPFM, que depende da renda global
+                        da PF.
+                      </div>
+                    )}
+                  </div>
+                ) : null,
+              )}
+            </div>
+          )}
+
           {!partOk && (
             <div className="mt-3 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/5 px-3 py-2 text-[12px] text-[var(--warning)]">
               ⚠️ A soma das participações é <b>{somaPartic.toFixed(2)}%</b> e precisa fechar{" "}

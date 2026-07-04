@@ -219,6 +219,12 @@ export interface ResultadoPJ {
   inssProLaboreMensal: number;
   irrfProLaboreMensal: number;
   custosFixosMensal: number;
+  /** Sobra distribuída como dividendo ao sócio (antes da retenção Lei 15.270/25). */
+  distribuicaoDividendoMensal: number;
+  /** Retenção 10% (Lei 15.270/25) quando distribuição mensal > R$ 50 mil. */
+  retencaoDividendosMensal: number;
+  /** true quando distribuição anualizada > R$ 600 mil (potencial IRPFM). */
+  alertaIRPFM: boolean;
   liquidoMensal: number;
   liquidoAnual: number;
   acimaDoTetoRegime: boolean;
@@ -269,8 +275,19 @@ export function calcularPJ(regime: RegimePJ, i: CltVsPjInputParsed): ResultadoPJ
 
   const custosFixos = i.contabilidadeMensal + i.planoSaudeMensal;
 
-  const liquidoMensal =
+  // Sobra distribuída como dividendo ao sócio (antes da retenção Lei 15.270/25).
+  const distribuicaoDividendoMensal =
     Math.round((fat - impostosMensal - inssProLabore - irrfProLabore - custosFixos) * 100) / 100;
+
+  // Retenção 10% sobre TOTAL quando dividendo mensal > R$ 50k (Lei 15.270/2025).
+  const retencaoDividendosMensal =
+    distribuicaoDividendoMensal > 50_000
+      ? Math.round(distribuicaoDividendoMensal * 0.1 * 100) / 100
+      : 0;
+  const alertaIRPFM = distribuicaoDividendoMensal * 12 > 600_000;
+
+  const liquidoMensal =
+    Math.round((distribuicaoDividendoMensal - retencaoDividendosMensal) * 100) / 100;
 
   return {
     regime,
@@ -281,6 +298,9 @@ export function calcularPJ(regime: RegimePJ, i: CltVsPjInputParsed): ResultadoPJ
     inssProLaboreMensal: inssProLabore,
     irrfProLaboreMensal: irrfProLabore,
     custosFixosMensal: custosFixos,
+    distribuicaoDividendoMensal,
+    retencaoDividendosMensal,
+    alertaIRPFM,
     liquidoMensal,
     liquidoAnual: Math.round(liquidoMensal * 12 * 100) / 100,
     acimaDoTetoRegime: fat * 12 > params.tetoFaturamentoAnual,
