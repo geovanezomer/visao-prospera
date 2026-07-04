@@ -154,12 +154,12 @@ export function DashboardTab() {
       MESES.map((m, i) => ({
         mes: m,
         Receitas: dre.receitaLiquida[i] ?? 0,
-        // Inclui despesas financeiras — sem elas, empresa alavancada com prejuízo
+        // Inclui custos financeiros — sem eles, empresa alavancada com prejuízo
         // aparecia com receita > despesa (falso positivo de saúde financeira).
         Despesas:
           (dre.cpv[i] ?? 0) +
           (dre.despesasOperacionais[i] ?? 0) +
-          (dre.despesasFinanceiras?.[i] ?? 0),
+          (dre.custosFinanceirosTotal?.[i] ?? 0),
       })),
     [dre],
   );
