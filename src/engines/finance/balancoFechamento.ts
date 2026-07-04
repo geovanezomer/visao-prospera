@@ -187,10 +187,17 @@ export function deriveBalancoFechamento({
       sumArr(cf.pagamentosImpostos),
   );
 
-  // Salários a pagar: ~ 1 mês de folha (provisão fim de período). A DFC paga
-  // toda a folha à vista, sem provisão de 1 mês → resíduo desprezível quando
-  // folha é uniforme; pequeno viés em cenários com folha muito sazonal.
-  const salariosPagarFim = folhaAnual > 0 ? folhaAnual / 12 : 0;
+  // Salários a pagar — CONSERVAÇÃO DE MASSA:
+  //   Sal_fim = Sal_ini + folhaAnual (competência) − folhaPaga_DFC
+  // A DFC agora aplica lag 30d na folha (`isFolhaCost`) e liquida `Sal_ini`
+  // no mês 1 — assim o resíduo em Sal_fim corresponde a ~1 mês da folha
+  // (o mês 12 vira transbordo, provisionado no passivo).
+  const salariosPagarFim = Math.max(
+    0,
+    aberturaSSOT.salariosEncargos.value +
+      folhaAnual -
+      sumArr(cf.pagamentosFolha),
+  );
 
   // ─────────────────────────────── PL ───────────────────────────────
   // Aportes do período somam ao capital social (contrapartida contábil).
