@@ -135,15 +135,21 @@ function hasMonthlyVariation(arr: number[] | undefined): boolean {
 
 /**
  * Recebível mensal (competência) — SSOT compartilhado com balancoFechamento.ts.
- * Receita Bruta reconhecida (DRE) − Inadimplência REAL do mês.
+ * Receita Bruta reconhecida (DRE) − Inadimplência REAL do mês − outras
+ * Deduções de venda (devoluções, descontos incondicionais, abatimentos etc.).
  * A inadimplência REAL (calculada de revenue.bruta × inadimp%) nunca vira
- * caixa, independentemente do modo (dedução ou PDD).
+ * caixa, independentemente do modo (dedução ou PDD). As deduções também
+ * NUNCA viram caixa — precisam ser abatidas aqui para preservar a identidade
+ * DRE ≡ DFC (Receita Líquida = Receita Bruta − deduções − inadimp).
  */
 export function buildRecebivelMensal(state: AppState, dre: DRE): number[] {
   const inadimpReal = state.revenue.bruta.map(
     (b, i) => (b || 0) * ((state.revenue.inadimplencia[i] || 0) / 100),
   );
-  return dre.receitaBruta.map((r, i) => r - inadimpReal[i]);
+  const deducoes = outrasDeducoesMensal(state);
+  return dre.receitaBruta.map((r, i) =>
+    Math.max(0, r - inadimpReal[i] - (deducoes[i] || 0)),
+  );
 }
 
 /**
@@ -166,17 +172,39 @@ export function computeRecebimentos(
 
 
 /**
- * Pagamentos a fornecedores = CPV/CMV/CSP deslocados pelo PMP (mensal quando há sazonalidade).
+ * Compras (base de fornecedores) — SSOT compartilhado com balancoFechamento.
+ * Soma mensal de CPV/CMV/CSP EXCLUINDO linhas de folha (`isFolhaCost`) — folha
+ * é paga pela regra dedicada (lag 30d) e nunca transita por "fornecedores".
+ * Garante conservação: Fornec_fim = Fornec_ini + Compras − PagFornec sem
+ * dupla contagem de folha embutida em CPV (ex.: MOD produção).
+ */
+export function buildComprasMensal(state: AppState, regime?: TaxRegime): number[] {
+  const out = zeros12();
+  const reg = regime ?? resolveEffectiveRegime(state);
+  for (const c of state.costs ?? []) {
+    if (!isCpvCost(c)) continue;
+    if (isFolhaCost(c)) continue;
+    const v = effectiveMonthValues(c, reg);
+    for (let i = 0; i < 12; i++) out[i] += v[i] || 0;
+  }
+  return out;
+}
+
+/**
+ * Pagamentos a fornecedores = CPV-NÃO-FOLHA deslocado pelo PMP.
+ * (Folha embutida em CPV vai para o bucket `pagamentosFolha` com lag 30d.)
  */
 export function computeFornecedores(
   state: AppState,
-  dre: DRE,
+  _dre?: DRE,
 ): { inAno: number[]; transbordo: number } {
+  const compras = buildComprasMensal(state);
   if (hasMonthlyVariation(state.revenue.pmpMensal)) {
-    return shiftByDaysSplitMonthly(dre.cpv, state.revenue.pmpMensal!);
+    return shiftByDaysSplitMonthly(compras, state.revenue.pmpMensal!);
   }
-  return shiftByDaysSplit(dre.cpv, state.revenue.pmp);
+  return shiftByDaysSplit(compras, state.revenue.pmp);
 }
+
 
 /**
  * Distribui a liquidação de um saldo de abertura ao longo dos primeiros meses,
