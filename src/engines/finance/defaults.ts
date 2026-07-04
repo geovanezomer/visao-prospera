@@ -279,7 +279,7 @@ export const DEFAULT_STATE: AppState = {
     ativoTotal: 0,
     estoques: 0,
     disponibilidades: 0,
-    dividaOnerosa: 0,
+    // (removido: `dividaOnerosa` — dívida vem exclusivamente de `debtContracts`)
     ativoCirculante: 0, // 0 = autocalcular
     passivoCirculante: 0, // 0 = autocalcular
     contasReceber: 0, // 0 = autocalcular via PMR
