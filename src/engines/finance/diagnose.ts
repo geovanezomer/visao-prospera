@@ -174,5 +174,22 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
       message: `Liquidez corrente ${ind.liquidezCorrente.toFixed(2)}.`,
     });
 
+  // Balanço de abertura desequilibrado — causa raiz do fechamento não fechar.
+  // Emite alerta warn com o valor do plug para o consultor aplicar em Capital.
+  try {
+    const ab = deriveAbertura({ state, impostosMensais: dre.impostos });
+    if (!ab.totals.fechado) {
+      out.push({
+        level: "warn",
+        title: "Balanço de abertura não fecha",
+        message:
+          `Ativo ${fmtBRL(ab.totals.ativo)} ≠ Passivo + PL ${fmtBRL(ab.totals.passivo + ab.totals.pl)} — ` +
+          `diferença de ${fmtBRL(ab.totals.diferenca)}. Ajuste em Capital → botão ` +
+          `"Ajustar Lucros Acumulados (plug: ${fmtBRL(ab.totals.diferenca)})"; ` +
+          `isso soma o valor a capital.abertura.lucrosAcumulados e equilibra a abertura.`,
+      });
+    }
+  } catch { /* no-op */ }
+
   return out;
 }
