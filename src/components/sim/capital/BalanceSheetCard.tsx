@@ -260,10 +260,8 @@ export function BalanceSheetCard({
           {/* Sugestão de PL removida — PL agora é sempre derivado via useEffect. */}
 
 
-          <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-2 text-[11px] text-muted-foreground">
-            Esses valores aparecem <strong className="text-primary">automaticamente</strong> na aba{" "}
-            <strong className="text-foreground">Balanço</strong>.
-          </div>
+
+
 
         {/* Régua de resumo — rodapé do Card 1. Total de ativos com memória de cálculo. */}
         <div className="mt-5 grid grid-cols-4 overflow-hidden rounded-md border border-border/40 text-center text-[10px]">
