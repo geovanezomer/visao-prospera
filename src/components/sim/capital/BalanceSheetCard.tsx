@@ -5,13 +5,11 @@ import { useEffect } from "react";
 import {
   Banknote,
   Package,
-  Users,
-  Wallet,
-  AlertTriangle,
   Settings2,
   Building2,
   Landmark,
 } from "lucide-react";
+
 
 import { StepCard, SimpleField, MiniStat } from "@/components/sim/capital/parts";
 
