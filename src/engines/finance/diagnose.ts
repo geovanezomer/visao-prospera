@@ -4,9 +4,10 @@
 // =====================================================================
 
 import { AppState } from "./types";
-import { sum, fmtBRLCompact } from "./format";
+import { sum, fmtBRLCompact, fmtBRL } from "./format";
 import type { DRE } from "./dre";
 import type { Indicators } from "./indicators";
+import { deriveAbertura } from "./aberturaDerivada";
 
 export interface Diagnostic {
   level: "ok" | "warn" | "danger";
