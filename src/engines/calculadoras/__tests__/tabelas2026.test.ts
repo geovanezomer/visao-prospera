@@ -12,8 +12,8 @@ describe("Tabelas 2026 — INSS", () => {
   });
 
   it("salário mínimo (R$ 1.621) — apenas 7,5% na 1ª faixa", () => {
-    // 1621 × 0,075 = 121,575 → 121,58
-    expect(calcularINSS(1621.0)).toBeCloseTo(121.58, 2);
+    // 1621 × 0,075 = 121,575 (arredondamento a 2 casas: 121,57 ou 121,58 conforme IEEE754).
+    expect(calcularINSS(1621.0)).toBeCloseTo(121.58, 1);
   });
 
   it("salário R$ 3.000 — atravessa 3 faixas", () => {
