@@ -15,7 +15,7 @@ import { zeros12 } from "./format";
  * Retorna valor RAW (pode ser negativo quando caixa > dívida).
  */
 export function computeNetDebt(state: AppState): number {
-  const D = Math.max(0, state.capital.dividaOnerosa ?? 0);
+  const D = Math.max(0, totalDividaOnerosa(state));
   // [Auditoria Bloco 4] Dívida Líquida (Damodaran/CVM/IFRS) = Dívida Onerosa − Caixa e Equivalentes TOTAL.
   // O conceito de "caixa ocioso" pertence ao ROIC (subtrair do Capital Investido), NÃO à Dívida Líquida.
   // Antes: usava `caixaOcioso ?? disponibilidades` — inconsistente e subestimava o caixa abatedor.

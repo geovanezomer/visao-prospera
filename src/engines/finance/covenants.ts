@@ -91,7 +91,7 @@ export function analyzeCovenants(
   const ind = calcIndicators(state, dre);
   const cf = buildCashFlow(state);
 
-  const dividaOnerosa = Math.max(0, state.capital.dividaOnerosa);
+  const dividaOnerosa = Math.max(0, totalDividaOnerosa(state));
   const pl = Math.max(0, state.capital.patrimonioLiquido);
   const dPl = pl > 0 ? dividaOnerosa / pl : dividaOnerosa > 0 ? 99 : 0;
 

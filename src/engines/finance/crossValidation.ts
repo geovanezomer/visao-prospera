@@ -154,7 +154,7 @@ function checkTier1Estrutural(state: AppState, dre: DRE, ind: Indicators): Valid
   // Não conseguimos validar Ativo = Passivo + PL com igualdade (faltam campos de PNC operacional no schema),
   // mas o lado direito JAMAIS pode exceder o Ativo Total em >5% (tolerância p/ campos parciais).
   const plCap = Math.max(0, state.capital.patrimonioLiquido || 0);
-  const divOn = Math.max(0, state.capital.dividaOnerosa || 0);
+  const divOn = Math.max(0, totalDividaOnerosa(state));
   const pCirc = Math.max(0, state.capital.passivoCirculante || 0);
   if (at > 0) {
     const ladoDireito = plCap + divOn + pCirc;
