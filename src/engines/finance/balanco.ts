@@ -246,11 +246,10 @@ export function suggestBalancoFromState(
   }, 0);
   const depAcum = (cap.depreciacaoMensal || 0) * 12 + depAcumCapex;
 
-  // Split dívida onerosa CP/LP (default 30/70).
-  const cpPct =
-    typeof cap.dividaCurtoPrazoPct === "number" ? cap.dividaCurtoPrazoPct : 0.3;
-  const dividaCP = (cap.dividaOnerosa || 0) * cpPct;
-  const dividaLP = (cap.dividaOnerosa || 0) * (1 - cpPct);
+  // Split dívida onerosa CP/LP — SSOT: contratos por maturidade.
+  const _split = splitDebtCPLPFromContracts(state);
+  const dividaCP = _split.cp;
+  const dividaLP = _split.lp;
 
   // Caixa: separa ocioso (≈ aplicações CP) do operacional.
   const caixaOcioso = cap.caixaOcioso || 0;
