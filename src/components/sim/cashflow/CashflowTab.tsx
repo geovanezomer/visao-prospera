@@ -41,7 +41,7 @@ export function CashflowTab() {
   // de edição e o gráfico de projeção para focar no resumo.
   const readOnly = useFinanceReadOnly();
   // SSOT: reusa o cf do FinancialModel (cacheado por WeakMap), evita 2ª passada.
-  const { cf, ind } = useFinanceModel(state);
+  const { cf } = useFinanceModel(state);
   
 
   const setCaixaMin = (v: number) => patchCashflow({ caixaMinimo: v });
