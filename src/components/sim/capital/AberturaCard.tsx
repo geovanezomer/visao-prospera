@@ -356,7 +356,7 @@ export function AberturaCard({
                 "(pode ser positivo — lucros retidos — ou negativo — prejuízos acumulados). " +
                 "Este ajuste absorve a diferença sem alterar rubricas operacionais."
               }
-              className="self-start rounded bg-warning px-2 py-1 text-[10px] font-bold uppercase text-warning-foreground hover:bg-warning/90 transition-colors"
+              className="self-start rounded bg-destructive px-2 py-1 text-[10px] font-bold uppercase text-destructive-foreground hover:bg-destructive/90 transition-colors"
             >
               Ajustar Lucros Acumulados (plug: {fmtBRL(derived.totals.diferenca)})
             </button>
