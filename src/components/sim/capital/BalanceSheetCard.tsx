@@ -84,6 +84,17 @@ export function BalanceSheetCard({
   const ativoTotalDerivado = ativoCircCalc + ativoNaoCircCalc;
   const temImobilizadoDetalhado = imobBruto > 0 || intangLiquido > 0;
 
+  // Ativo Total agora é SEMPRE derivado (soma automática de circulante +
+  // imobilizado líq. + intangível líq.). Sincroniza silenciosamente no state
+  // para preservar compatibilidade com cálculos que ainda leem capital.ativoTotal.
+  useEffect(() => {
+    if (Math.abs((capital.ativoTotal || 0) - ativoTotalDerivado) > 0.5) {
+      onChange({ ativoTotal: ativoTotalDerivado });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ativoTotalDerivado]);
+
+
   // CFO #2 — soma do PL detalhado. Quando preenchido, vira a fonte derivada.
   const plDet = capital.balanco?.patrimonioLiquido;
   const plDetalhado =
