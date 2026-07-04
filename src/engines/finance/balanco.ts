@@ -296,8 +296,8 @@ export function suggestBalancoFromState(
     },
     passivoNaoCirculante: {
       // Toda dívida onerosa (bancos + mútuos PF→PJ cadastrados como
-      // debtContracts com tipoCredor="socio") entra pelo split CP/LP a partir
-      // de `capital.dividaOnerosa`. SSOT único, sem duplicidade.
+      // debtContracts com tipoCredor="socio") entra pelo split CP/LP
+      // derivado dos próprios contratos. SSOT único, sem duplicidade.
       emprestimosFinanciamentosLP: dividaLP,
     },
 
