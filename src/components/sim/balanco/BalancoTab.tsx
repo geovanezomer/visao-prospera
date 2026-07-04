@@ -305,13 +305,33 @@ export function BalancoTab() {
               {fmtBRL(fechamento.totals.diferenca)}.
             </span>
           </>
-        ) : (
+        ) : totalsAbertura.fechado ? (
           <>
             <AlertTriangle className="h-4 w-4" />
             <span>
               Diferença residual de <strong>{fmtBRL(fechamento.totals.diferenca)}</strong> —
-              normalmente indica abertura incompleta. Revise a aba{" "}
-              <strong>Capital → Saldos de abertura</strong>.
+              a abertura está equilibrada, o resíduo é técnico (arredondamentos ou
+              rubricas de período). Investigue com <strong>Auditoria</strong> acima.
+            </span>
+          </>
+        ) : (
+          <>
+            <AlertTriangle className="h-4 w-4" />
+            <span>
+              A diferença origina-se na <strong>ABERTURA</strong> (
+              {fmtBRL(totalsAbertura.diferenca)}). Ajuste na aba{" "}
+              <button
+                type="button"
+                className="underline font-semibold hover:text-warning/80"
+                onClick={() =>
+                  window.dispatchEvent(
+                    new CustomEvent("gz-set-tab", { detail: "capital" }),
+                  )
+                }
+              >
+                Capital
+              </button>{" "}
+              antes de analisar o fechamento.
             </span>
           </>
         )}

@@ -239,3 +239,58 @@ describe("deriveAbertura — totais Ativo = Passivo + PL", () => {
     expect(r.totals.diferenca).toBeGreaterThan(1000);
   });
 });
+
+describe("deriveAbertura — plug assistido de Lucros Acumulados", () => {
+  it("aplicar o plug (lucros += diferenca) equilibra a abertura — sinal positivo", () => {
+    // Ativo > Passivo+PL → diferenca > 0 → plug positivo (lucros retidos).
+    const s = createState({
+      capital: {
+        balanco: {
+          ativoCirculante: { caixaEquivalentes: 500_000 },
+          patrimonioLiquido: { capitalSocial: 100_000 },
+        },
+        abertura: { lucrosAcumulados: 0 },
+        debtContracts: [],
+        dividaOnerosa: 0,
+      },
+    });
+    const before = deriveAbertura({ state: s });
+    expect(before.totals.fechado).toBe(false);
+    expect(before.totals.diferenca).toBeGreaterThan(0);
+
+    // Aplica o plug (mesma fórmula do botão "Ajustar Lucros Acumulados").
+    s.capital.abertura = {
+      ...(s.capital.abertura ?? {}),
+      lucrosAcumulados: (s.capital.abertura?.lucrosAcumulados ?? 0) + before.totals.diferenca,
+    };
+    const after = deriveAbertura({ state: s });
+    expect(after.totals.fechado).toBe(true);
+    expect(Math.abs(after.totals.diferenca)).toBeLessThan(1);
+  });
+
+  it("aplicar o plug equilibra a abertura — sinal negativo (prejuízo acumulado)", () => {
+    // Passivo+PL > Ativo → diferenca < 0 → plug negativo (prejuízo acumulado).
+    const s = createState({
+      capital: {
+        balanco: {
+          ativoCirculante: { caixaEquivalentes: 50_000 },
+          patrimonioLiquido: { capitalSocial: 500_000 },
+        },
+        abertura: { lucrosAcumulados: 0 },
+        debtContracts: [],
+        dividaOnerosa: 0,
+      },
+    });
+    const before = deriveAbertura({ state: s });
+    expect(before.totals.fechado).toBe(false);
+    expect(before.totals.diferenca).toBeLessThan(0);
+
+    s.capital.abertura = {
+      ...(s.capital.abertura ?? {}),
+      lucrosAcumulados: (s.capital.abertura?.lucrosAcumulados ?? 0) + before.totals.diferenca,
+    };
+    const after = deriveAbertura({ state: s });
+    expect(after.totals.fechado).toBe(true);
+    expect(after.lucrosAcumulados.value).toBeLessThan(0);
+  });
+});

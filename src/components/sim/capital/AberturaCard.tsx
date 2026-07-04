@@ -11,6 +11,7 @@
 //
 // Toda derivação vive em engines/finance/aberturaDerivada.ts (SSOT).
 import { useMemo } from "react";
+import { toast } from "sonner";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -120,6 +121,9 @@ export function AberturaCard({
   const ajustarLucros = () => {
     const novoLucros = n(ab.lucrosAcumulados) + derived.totals.diferenca;
     set({ lucrosAcumulados: novoLucros });
+    toast.success("Lucros acumulados ajustados para equilibrar a abertura", {
+      description: `Novo saldo: ${fmtBRL(novoLucros)} (ajuste de ${fmtBRL(derived.totals.diferenca)}).`,
+    });
   };
 
   return (
@@ -304,9 +308,9 @@ export function AberturaCard({
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4" />
             <span>
-              <strong>Abertura fechada</strong> — Ativo (
-              {fmtBRL(derived.totals.ativo)}) = Passivo + PL (
-              {fmtBRL(derived.totals.passivo + derived.totals.pl)}). O Balanço
+              <strong>✓ Abertura equilibrada</strong> — Ativo{" "}
+              {fmtBRL(derived.totals.ativo)} = Passivo + PL{" "}
+              {fmtBRL(derived.totals.passivo + derived.totals.pl)}. O Balanço
               de fechamento será derivado por construção.
             </span>
           </div>
@@ -315,23 +319,26 @@ export function AberturaCard({
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
-                Diferença de{" "}
-                <strong>{fmtBRL(derived.totals.diferenca)}</strong> entre Ativo
-                ({fmtBRL(derived.totals.ativo)}) e Passivo + PL (
-                {fmtBRL(derived.totals.passivo + derived.totals.pl)}).
-                {derived.totals.diferenca > 0
-                  ? " Ativos > Passivos+PL — falta PL ou passivo."
-                  : " Passivos+PL > Ativos — falta ativo ou sobra PL."}
+                <strong>
+                  Abertura desequilibrada em {fmtBRL(derived.totals.diferenca)}.
+                </strong>{" "}
+                Ativo {fmtBRL(derived.totals.ativo)} · Passivo{" "}
+                {fmtBRL(derived.totals.passivo)} · PL{" "}
+                {fmtBRL(derived.totals.pl)}.
               </span>
             </div>
             <button
               type="button"
               onClick={ajustarLucros}
-              className="self-start rounded bg-destructive px-2 py-1 text-[10px] font-bold uppercase text-destructive-foreground hover:bg-destructive/90 transition-colors"
+              title={
+                "Lucros/Prejuízos Acumulados é a conta de fechamento histórico do PL. " +
+                "O plug representa os resultados de exercícios anteriores não distribuídos " +
+                "(pode ser positivo — lucros retidos — ou negativo — prejuízos acumulados). " +
+                "Este ajuste absorve a diferença sem alterar rubricas operacionais."
+              }
+              className="self-start rounded bg-warning px-2 py-1 text-[10px] font-bold uppercase text-warning-foreground hover:bg-warning/90 transition-colors"
             >
-              Ajustar Lucros Acumulados (
-              {derived.totals.diferenca > 0 ? "+" : ""}
-              {fmtBRL(derived.totals.diferenca)}) para fechar
+              Ajustar Lucros Acumulados (plug: {fmtBRL(derived.totals.diferenca)})
             </button>
             <span className="text-[10px] opacity-80">
               O ajuste vai para Lucros/Prejuízos Acumulados — único plug

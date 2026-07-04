@@ -253,6 +253,18 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
     return () => window.removeEventListener("gz-apply-simulator-params", onApply);
   }, []);
 
+  // Navegação entre abas via evento (usado por outras tabs para deep-link).
+  useEffect(() => {
+    const onSetTab = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (typeof detail === "string") {
+        setActiveTab(detail as TabKey | "ai" | "calculadoras");
+      }
+    };
+    window.addEventListener("gz-set-tab", onSetTab);
+    return () => window.removeEventListener("gz-set-tab", onSetTab);
+  }, []);
+
 
   if (!hydrated || !user) {
     return (
