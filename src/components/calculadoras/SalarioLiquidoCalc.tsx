@@ -3,7 +3,7 @@
  * Aplica INSS progressivo + IRRF progressivo (com deduções por dependente,
  * pensão alimentícia e outros descontos) sobre o salário bruto.
  *
- * Bases: Lei 8.212/91, Lei 9.250/95 (IRRF), tabelas INSS/IRRF 2025.
+ * Bases: Lei 8.212/91, Lei 9.250/95 (IRRF), tabelas INSS/IRRF versionadas em engines/calculadoras/tabelas.ts.
  */
 import { useMemo, useState } from "react";
 import { Download, Info, RotateCcw, Wallet } from "lucide-react";
