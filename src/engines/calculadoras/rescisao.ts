@@ -127,9 +127,21 @@ function irrfTabela(base: number): number {
 /**
  * Calcula IRRF mensal com dedução tradicional × simplificado (escolhe o menor),
  * aplicando em seguida o redutor da Lei 15.270/2025 sobre o rendimento bruto.
+ *
+ * `pensao` (Lei 9.250/95 art. 4º, II): dedução legal aplicada APENAS no ramo
+ * tradicional. O desconto simplificado da Lei 14.848/24 substitui todas as
+ * deduções — pensão inclusive — logo NÃO entra na base simplificada. E o
+ * redutor da Lei 15.270/25 se refere ao *rendimento tributável bruto do mês*,
+ * de modo que `baseComINSS` (bruto, antes de dedução de pensão) é o valor
+ * correto a passar ao redutor.
  */
-export function calcularIRRF(baseComINSS: number, inss: number, dependentes: number): number {
-  const baseTrad = Math.max(0, baseComINSS - inss - dependentes * DEP_DEDUCAO);
+export function calcularIRRF(
+  baseComINSS: number,
+  inss: number,
+  dependentes: number,
+  pensao: number = 0,
+): number {
+  const baseTrad = Math.max(0, baseComINSS - inss - dependentes * DEP_DEDUCAO - pensao);
   const baseSimp = Math.max(0, baseComINSS - DESCONTO_SIMPLIFICADO);
   const irTrad = irrfTabela(baseTrad);
   const irSimp = irrfTabela(baseSimp);
