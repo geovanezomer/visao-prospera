@@ -253,7 +253,7 @@ export function AberturaCard({
             highlight="liability"
             hint={
               "Empréstimos e financiamentos de curto prazo (vencimento ≤ 12 meses).\n\n" +
-              "Fórmula: soma dos saldos dos Contratos de Dívida com prazo remanescente ≤ 12 meses; fallback: capital.dividaOnerosa × dividaCurtoPrazoPct (default 30%).\n\n" +
+              "Fórmula: soma dos saldos dos Contratos de Dívida (Card 2) com prazo remanescente ≤ 12 meses. Sem contratos = R$ 0,00.\n\n" +
               `Memória: valor = ${fmtBRL(derived.emprestimosCP.value)}\nFonte: ${derived.emprestimosCP.origem}`
             }
           />
@@ -262,7 +262,7 @@ export function AberturaCard({
             highlight="liability"
             hint={
               "Empréstimos e financiamentos de longo prazo (vencimento > 12 meses).\n\n" +
-              "Fórmula: soma dos saldos dos Contratos de Dívida com prazo remanescente > 12 meses; fallback: capital.dividaOnerosa × (1 − dividaCurtoPrazoPct).\n\n" +
+              "Fórmula: soma dos saldos dos Contratos de Dívida (Card 2) com prazo remanescente > 12 meses. Sem contratos = R$ 0,00.\n\n" +
               `Memória: valor = ${fmtBRL(derived.emprestimosLP.value)}\nFonte: ${derived.emprestimosLP.origem}`
             }
           />

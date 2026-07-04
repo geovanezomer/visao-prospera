@@ -125,7 +125,7 @@ export function adjustRevenue(state: AppState, factor: number): AppState {
 /**
  * Adiciona empréstimo via tabela PRICE REAL:
  *  juros_t = saldo_{t-1} × i ; amort_t = PMT − juros_t ; saldo_t = saldo_{t-1} − amort_t.
- * Atualiza: capital.dividaOnerosa (+principal), cashflow (captação + amortização)
+ * Atualiza: cashflow (captação + amortização)
  *           e a linha "juros sobre empréstimos" do DRE com os juros do mês.
  */
 export function addLoan(
