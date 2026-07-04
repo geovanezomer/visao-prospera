@@ -28,6 +28,7 @@ export const FinnanceFileSchema = z.object({
     .object({
       actions: z.array(z.record(z.string(), z.unknown())).optional(),
       simScenarios: z.array(z.record(z.string(), z.unknown())).optional(),
+      memories: z.array(z.record(z.string(), z.unknown())).optional(),
     })
     .optional(),
   meta: z

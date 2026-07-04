@@ -285,6 +285,7 @@ export function useFinnanceFile({
       applyExtras(nextState.companyName, {
         actions: (extras.actions ?? []) as never,
         simScenarios: (extras.simScenarios ?? []) as never,
+        memories: (extras.memories ?? []) as never,
       });
       setCurrentFileName(filename);
       // Snapshot do novo conteúdo evita marcar dirty logo após abrir.

@@ -30,7 +30,7 @@ export { MIGRATIONS, runMigrations } from "./migrations";
 export function serialize(
   state: AppState,
   scenarios: Scenario[],
-  extras?: { actions?: unknown[]; simScenarios?: unknown[] },
+  extras?: { actions?: unknown[]; simScenarios?: unknown[]; memories?: unknown[] },
 ): FinnanceFile {
   return {
     type: FINNANCE_FILE_TYPE,
@@ -44,6 +44,7 @@ export function serialize(
       ? ({
           actions: extras.actions ?? [],
           simScenarios: extras.simScenarios ?? [],
+          memories: extras.memories ?? [],
         } as FinnanceFile["extras"])
       : undefined,
     meta: {
@@ -64,6 +65,7 @@ export function serialize(
         "governanca",
         "acoes",
         "cenarios-simulador",
+        "memorias",
       ],
     },
   };
@@ -73,7 +75,7 @@ export function serialize(
 export interface OpenedFile {
   state: AppState;
   scenarios: Scenario[];
-  extras: { actions: unknown[]; simScenarios: unknown[] };
+  extras: { actions: unknown[]; simScenarios: unknown[]; memories: unknown[] };
   file: FinnanceFile;
   /** Versão original do arquivo lido do disco (antes de migrar). */
   originalVersion: number;
@@ -108,6 +110,7 @@ export function parseFinnanceFile(raw: unknown): OpenedFile {
   const extras = {
     actions: parsed.extras?.actions ?? [],
     simScenarios: parsed.extras?.simScenarios ?? [],
+    memories: parsed.extras?.memories ?? [],
   };
   return {
     state,
