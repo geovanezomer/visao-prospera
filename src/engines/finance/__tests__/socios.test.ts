@@ -67,8 +67,10 @@ describe("socios — IRPF mensal (auto tradicional × simplificado)", () => {
     expect(valor).toBe(0);
   });
   it("escolhe o menor entre tradicional e simplificado", () => {
+    // Nota: sob Lei 15.270/2025, rendimento ≤ R$ 5.000 tem IR zerado pelo redutor.
+    // Este teste garante apenas que a escolha do modo seja válida.
     const { valor, modo } = calcIrpfMensal(5000, 550, 0, 0, DEFAULT_STATE.tax);
-    expect(valor).toBeGreaterThan(0);
+    expect(valor).toBeGreaterThanOrEqual(0);
     expect(["tradicional", "simplificado"]).toContain(modo);
   });
   it("dependentes reduzem IRPF tradicional", () => {
