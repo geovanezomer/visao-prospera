@@ -164,6 +164,9 @@ export function RevenueTab() {
 
   if (usaPDD) {
     const pddRec = r.pddReversaoMensal ?? fill12(0);
+    // Deriva o estado "Fixo" a partir da uniformidade dos valores — não há
+    // flag persistida para pddReversaoMensal (é um number[] plano no state).
+    const pddFixedDerived = pddRec.every((v) => v === pddRec[0]);
     rows.push({
       id: "row_pdd_rec",
       kind: "deducao",
@@ -172,7 +175,7 @@ export function RevenueTab() {
       label: "Recuperação de Inadimplência (+)",
       values: pddRec,
       brlValues: pddRec,
-      fixed: false,
+      fixed: pddFixedDerived,
       tone: "pos",
     });
   }
@@ -335,8 +338,16 @@ export function RevenueTab() {
       });
     } else if (row.kind === "deducao" && row.dedId) {
       if (row.dedId === "pdd_rec") {
-        const base = fixed ? fixedBase(row.values) : row.values[0] || 0;
-        patchRevenue({ pddReversaoMensal: fill12(base) });
+        // Fixo: achata para o primeiro valor não-zero. Mensal: preserva os
+        // valores atuais (não sobrescreve o que o usuário digitou por mês).
+        patchRevenue((rev) => {
+          const cur = rev.pddReversaoMensal ?? fill12(0);
+          if (fixed) {
+            const base = fixedBase(cur);
+            return { pddReversaoMensal: fill12(base) };
+          }
+          return { pddReversaoMensal: cur };
+        });
       } else {
         updateDed(row.dedId, row.label, (d) => {
           const base = fixed ? fixedBase(d.valores) : d.valores[0] || 0;
@@ -376,8 +387,12 @@ export function RevenueTab() {
           tone="neg"
           sub={fmtPct(pctRec(deducoesAnual)) + " da receita"}
           hint={{
-            description: "Devoluções, cancelamentos, descontos incondicionais e abatimentos.",
-            formula: "Devoluções + Descontos Incondicionais + Abatimentos",
+            description: usaPDD
+              ? "Descontos incondicionais e abatimentos (a inadimplência esperada está classificada como PDD em Despesas Operacionais, conforme CPC 47/IFRS 9)."
+              : "Inadimplência esperada, descontos incondicionais e abatimentos deduzidos diretamente da Receita Bruta.",
+            formula: usaPDD
+              ? "Descontos Incondicionais + Abatimentos"
+              : "Inadimplência + Descontos Incondicionais + Abatimentos",
             calc: `${fmtBRL(deducoesAnual)} ÷ ${fmtBRL(brutaAnual)} × 100 = ${fmtPct(pctRec(deducoesAnual))}`,
           }}
         />
