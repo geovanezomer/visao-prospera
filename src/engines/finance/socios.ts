@@ -40,6 +40,7 @@ import {
 } from "./taxDefaults";
 import { sum } from "./format";
 import { coerceMonths } from "./safeMath";
+import { redutorLei15270 } from "@/engines/calculadoras/rescisao";
 
 // IDs reservados para linhas sintéticas em state.costs.
 export const SOCIOS_PROLABORE_LINE_ID = "__socios_prolabore__";
