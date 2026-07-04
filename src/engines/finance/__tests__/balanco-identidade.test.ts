@@ -177,4 +177,78 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
     const { res } = run(st);
     expect(res.balanco.ativoCirculante!.contasReceberClientes!).toBeCloseTo(0, 0);
   });
+
+  // ─────────── Novos testes: BUG 1 · BUG 2 · BUG 3 · combinado ───────────
+
+  it("(k) BUG 1 — deduções de venda abatem o recebível; identidade fecha", () => {
+    // Deduções 5k/mês → 60k/ano nunca viram caixa.
+    const st = createState({
+      revenue: {
+        bruta: m12(50_000),
+        pmr: 0,
+        deducoes: [
+          { id: "desc_incond", label: "Descontos", valores: m12(5_000), fixed: true },
+        ],
+      },
+    });
+    const { res, abertura, cf, dre } = run(st);
+    const recebido = sumArr(cf.recebimentos);
+    const brutoAnual = sumArr(dre.receitaBruta);
+    // Recebido ≈ Bruto − deduções (60k) − inadimp; margem de 1% p/ inadimp.
+    expect(brutoAnual - recebido).toBeGreaterThanOrEqual(60_000 - 1);
+    assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
+  });
+
+  it("(l) BUG 2 — aluguel operacional entra na DFC e a identidade fecha", () => {
+    const st = createState({
+      revenue: {
+        bruta: m12(60_000),
+        receitasFinanceiras: [
+          { id: "alugueis", label: "Aluguéis Recebidos", valores: m12(3_000), fixed: true, tipo: "operacional" },
+        ],
+      },
+    });
+    const { res, abertura, cf } = run(st);
+    expect(sumArr(cf.outrasReceitasOperacionais)).toBeCloseTo(36_000, 0);
+    assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
+  });
+
+  it("(m) BUG 3 — linha CPV rotulada CLT NÃO gera pagamentosVariaveis negativos", () => {
+    const st = createState({
+      businessType: "industria",
+      revenue: { bruta: m12(100_000), pmp: 0 },
+    });
+    // Ativa linha MOD produção (CPV variável com encargosAuto = folha).
+    for (const c of st.costs) {
+      if (c.id === "mod_prod") c.values = m12(15_000);
+    }
+    const { res, abertura, cf } = run(st);
+    for (let i = 0; i < 12; i++) {
+      expect(cf.pagamentosVariaveis[i]).toBeGreaterThanOrEqual(-0.01);
+    }
+    assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
+  });
+
+  it("(n) combinado — deduções + aluguel + CPV-folha simultâneos: identidade fecha", () => {
+    const st = createState({
+      businessType: "industria",
+      revenue: {
+        bruta: m12(120_000),
+        pmr: 30,
+        pmp: 30,
+        deducoes: [
+          { id: "desc_incond", label: "Descontos", valores: m12(4_000), fixed: true },
+        ],
+        receitasFinanceiras: [
+          { id: "alugueis", label: "Aluguéis Recebidos", valores: m12(2_500), fixed: true, tipo: "operacional" },
+        ],
+      },
+    });
+    for (const c of st.costs) {
+      if (c.id === "mod_prod") c.values = m12(10_000);
+    }
+    const { res, abertura } = run(st);
+    assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
+  });
 });
+
