@@ -113,9 +113,11 @@ export function AberturaCard({
     <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
 
 
-      {/* Outras informações de abertura — campos sem fonte derivável (vem ANTES dos derivados) */}
+      {/* Outras informações de abertura — só faz sentido para Lucro Real */}
+      {isReal && (
       <StepCard
         step={3}
+
         color="var(--primary)"
         title="Outras informações de abertura"
         subtitle="Lucros acumulados, créditos tributários e depreciação mensal"
