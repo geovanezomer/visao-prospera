@@ -271,7 +271,12 @@ export function BalanceSheetCard({
         <div className="mt-5 grid grid-cols-4 overflow-hidden rounded-md border border-border/40 text-center text-[10px]">
           <MiniStat label="Caixa/bancos" value={fmtBRL(capital.disponibilidades)} />
           <MiniStat label="Estoque" value={fmtBRL(capital.estoques)} />
-          <MiniStat label="A receber" value={fmtBRL(capital.contasReceber)} />
+          <MiniStat
+            label="A receber"
+            value="auto (PMR)"
+            hint="Calculado automaticamente pela engine: Receita Bruta × PMR / 360. Configure o PMR na aba Receitas."
+          />
+
           <MiniStat
             label="Total de ativos"
             value={fmtBRL(ativoTotalDerivado)}
