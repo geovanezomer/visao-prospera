@@ -471,9 +471,14 @@ export function buildCashFlow(
   const rec = computeRecebimentos(state, dre);
   const fornec = computeFornecedores(state, dre);
   const imp = computeImpostos(tax, getSplitPaymentAtivo(state.tax), regime);
-  const op = computePagamentosOperacionais(dre);
-  // B2: rendimentos de aplicações financeiras realizam-se em caixa no mês de competência
-  const { financeiras: receitasFinanceiras } = splitReceitasFinanceiras(state);
+  const op = computePagamentosOperacionais(state, regime);
+  // B2: rendimentos de aplicações financeiras realizam-se em caixa no mês de
+  // competência. `operacionais` (aluguéis, venda de ativos) idem — entram no
+  // EBITDA (DRE) e agora também no fluxo operacional (BUG 2).
+  const {
+    financeiras: receitasFinanceiras,
+    operacionais: outrasReceitasOperacionais,
+  } = splitReceitasFinanceiras(state);
 
   // ─── Liquidação dos saldos de abertura ───
   // Contrapartida da conservação de massa do balanço de fechamento: os saldos
@@ -496,31 +501,18 @@ export function buildCashFlow(
   kickImpostos[0] = aberturaKick.impostosPagar.value;
 
   // ─── Folha: lag 30 (pagamento no 5º dia útil do mês seguinte) ───
-  // Isola a folha (`isFolhaCost`) de fixos/variáveis, desloca por 30 dias e
-  // adiciona a liquidação do saldo de abertura de salários no mês 1. Demais
-  // despesas operacionais permanecem com lag 0 (competência = caixa).
-  const folhaFixosMes = zeros12();
-  const folhaVarMes = zeros12();
+  // `computePagamentosOperacionais` já EXCLUI folha de fixos/variáveis (bucket
+  // dedicado). Aqui só somamos a folha desembolsada, sem net-out.
+  const folhaMensalTotal = zeros12();
   for (const c of state.costs ?? []) {
     if (!isFolhaCost(c)) continue;
     const v = effectiveMonthValues(c, regime);
-    const isCpv = c.category === "custo_vendas" || c.category === "direto_venda";
-    const isOpVar = c.category === "despesa_comercial" || c.category === "variavel";
-    const comportamento = c.comportamento ?? (isCpv || isOpVar ? "variavel" : "fixo");
-    for (let i = 0; i < 12; i++) {
-      if (comportamento === "variavel") folhaVarMes[i] += v[i] || 0;
-      else folhaFixosMes[i] += v[i] || 0;
-    }
+    for (let i = 0; i < 12; i++) folhaMensalTotal[i] += v[i] || 0;
   }
-  const folhaMensalTotal = folhaFixosMes.map((v, i) => v + folhaVarMes[i]);
   const folhaShifted = shiftByDaysSplit(folhaMensalTotal, 30);
   const kickFolha = zeros12();
   kickFolha[0] = aberturaKick.salariosEncargos.value;
   const pagamentosFolha = folhaShifted.inAno.map((v, i) => v + kickFolha[i]);
-
-  // Net-out da folha em fixos/variáveis para não pagar duas vezes.
-  const fixosNet = op.fixos.map((v, i) => v - folhaFixosMes[i]);
-  const variaveisNet = op.variaveis.map((v, i) => v - folhaVarMes[i]);
 
   const recebimentosInAno = rec.inAno.map((v, i) => v + kickRecebimentos[i]);
   const fornecedoresInAno = fornec.inAno.map((v, i) => v + kickFornecedores[i]);
@@ -560,12 +552,13 @@ export function buildCashFlow(
   const fluxos = computeFluxos({
     recebimentos: recebimentosInAno,
     receitasFinanceiras,
+    outrasReceitasOperacionais,
     fornecedores: fornecedoresInAno,
     // Folha entra combinada com "fixos" no cálculo do fluxo operacional
     // (mesmo sinal, mesma equação). A separação de colunas é preservada no
     // objeto de retorno (pagamentosFolha isolado).
-    fixos: fixosNet.map((v, i) => v + pagamentosFolha[i]),
-    variaveis: variaveisNet,
+    fixos: op.fixos.map((v, i) => v + pagamentosFolha[i]),
+    variaveis: op.variaveis,
     financeiros: op.financeiros,
     impostos: impostosInAno,
     capex,
@@ -576,6 +569,7 @@ export function buildCashFlow(
     mutuosConcedidos,
     mutuosDevolvidos,
   });
+
 
 
   // Permutas: somam direto à variação de caixa, fora de OP/INV/FIN.
