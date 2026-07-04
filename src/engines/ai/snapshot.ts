@@ -674,7 +674,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
   // ----- Balanço de ABERTURA derivado (SSOT) -----
   const aberturaLines: string[] = [];
   const abertura = tryRun(
-    () => deriveAbertura({ state, impostosTotalMensais: dre?.impostosTotal }),
+    () => deriveAbertura({ state, impostosTotalMensais: dre?.impostosTotal ?? [] }),
     null as ReturnType<typeof deriveAbertura> | null,
   );
   if (abertura) {
