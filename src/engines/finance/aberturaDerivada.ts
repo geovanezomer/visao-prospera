@@ -158,8 +158,14 @@ export function deriveAbertura({
   const passivo =
     fornVal + cpVal + lpVal + impostosPagarVal + folhaMes1;
 
+  // BUG-FIX: `reservasLucros` também compõe o PL de abertura (o fechamento
+  // já inclui). Sem isso, ao preencher reservas de lucros no Card do Balanço,
+  // a diferença abertura vs fechamento quebrava exatamente por esse valor.
   const plTotal =
-    n(pl.capitalSocial) + n(pl.reservasCapital) + lucrosAcumVal;
+    n(pl.capitalSocial) +
+    n(pl.reservasCapital) +
+    n(pl.reservasLucros) +
+    lucrosAcumVal;
 
   const diferenca = ativo - (passivo + plTotal);
   const tol = Math.max(100, ativo * 0.001);
