@@ -158,10 +158,19 @@ export function normalizeStateFromBalanco(state: AppState): AppState {
   const ac = b!.ativoCirculante ?? {};
   const pc = b!.passivoCirculante ?? {};
 
-  const disponibilidades = nn(ac.caixaEquivalentes) + nn(ac.aplicacoesFinanceirasCP);
-  const contasReceber = Math.max(0, nn(ac.contasReceberClientes) - nn(ac.pdd));
-  const estoques = nn(ac.estoques);
-  const fornecedores = nn(pc.fornecedores);
+  // Campos do Card 1 continuam válidos quando o balanço detalhado está só
+  // parcialmente preenchido. Antes, qualquer rubrica em `balanco` acionava a
+  // normalização e zerava caixa/CR/estoques/fornecedores não detalhados,
+  // fazendo o DFC perder o saldo inicial digitado em "Dinheiro em caixa e bancos".
+  const disponibilidadeDetalhada = nn(ac.caixaEquivalentes) + nn(ac.aplicacoesFinanceirasCP);
+  const contasReceberDetalhado = Math.max(0, nn(ac.contasReceberClientes) - nn(ac.pdd));
+  const estoquesDetalhado = nn(ac.estoques);
+  const fornecedoresDetalhado = nn(pc.fornecedores);
+
+  const disponibilidades = disponibilidadeDetalhada || nn(state.capital.disponibilidades);
+  const contasReceber = contasReceberDetalhado || nn(state.capital.contasReceber);
+  const estoques = estoquesDetalhado || nn(state.capital.estoques);
+  const fornecedores = fornecedoresDetalhado || nn(state.capital.fornecedores);
 
   return {
     ...state,
