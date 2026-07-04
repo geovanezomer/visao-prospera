@@ -42,9 +42,11 @@ export function SalarioLiquidoCalc() {
 
   const r = useMemo(() => {
     const inss = calcularINSS(salarioBruto);
-    // Base IRRF = bruto − INSS − (dependentes × 189,59) − pensão alimentícia
+    // Base IRRF (tradicional) = bruto − INSS − (dependentes × 189,59) − pensão alimentícia.
+    // A pensão é passada como parâmetro para NÃO contaminar o cálculo simplificado
+    // (Lei 14.848/24) nem o redutor da Lei 15.270/25, que usam o rendimento bruto.
     const baseIRBruta = Math.max(0, salarioBruto - inss - dependentes * DEP_DEDUCAO - pensao);
-    const irrf = calcularIRRF(salarioBruto - pensao, inss, dependentes);
+    const irrf = calcularIRRF(salarioBruto, inss, dependentes, pensao);
     const salarioFamilia =
       salarioBruto <= SALARIO_FAMILIA_TETO ? filhosSalarioFamilia * SALARIO_FAMILIA_VALOR : 0;
     const liquido =
