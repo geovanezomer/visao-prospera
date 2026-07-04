@@ -217,7 +217,7 @@ export function deriveAbertura({
       origem:
         split.cp + split.lp > 0
           ? "Contratos · prazo ≤ 12 meses"
-          : "Dívida onerosa × % CP (fallback)",
+          : "Sem contratos cadastrados",
       value: cpVal,
     },
     emprestimosLP: {
@@ -225,7 +225,7 @@ export function deriveAbertura({
       origem:
         split.cp + split.lp > 0
           ? "Contratos · prazo > 12 meses"
-          : "Dívida onerosa × (1 − % CP)",
+          : "Sem contratos cadastrados",
       value: lpVal,
     },
     impostosPagar: {
