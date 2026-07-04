@@ -594,9 +594,10 @@ export function buildCashFlow(
     saldoInicial,
     recebimentos: recebimentosInAno,
     receitasFinanceiras,
+    outrasReceitasOperacionais,
     pagamentosFornecedores: fornecedoresInAno,
-    pagamentosFixos: fixosNet,
-    pagamentosVariaveis: variaveisNet,
+    pagamentosFixos: op.fixos,
+    pagamentosVariaveis: op.variaveis,
     pagamentosFolha,
     pagamentosFinanceiros: op.financeiros,
     pagamentosImpostos: impostosInAno,
@@ -621,10 +622,11 @@ export function buildCashFlow(
     totais: {
       recebimentos: sum(recebimentosInAno),
       receitasFinanceiras: sum(receitasFinanceiras),
+      outrasReceitasOperacionais: sum(outrasReceitasOperacionais),
       pagamentosTotais:
         sum(fornecedoresInAno) +
-        sum(fixosNet) +
-        sum(variaveisNet) +
+        sum(op.fixos) +
+        sum(op.variaveis) +
         sum(pagamentosFolha) +
         sum(op.financeiros) +
         sum(impostosInAno),
@@ -638,3 +640,4 @@ export function buildCashFlow(
     },
   };
 }
+
