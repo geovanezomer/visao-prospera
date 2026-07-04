@@ -86,7 +86,12 @@ export function deriveBalancoFechamento({
   });
 
   // ─────────────────────────── Movimentos do período ───────────────────────────
-  const folhaAnual = sumCostByCat(state.costs, ["fixo", "variavel"]);
+  // Folha anual — SSOT `isFolhaCost` (mesma regra em aberturaDerivada).
+  // Aplica encargosAuto via effectiveMonthValues.
+  const regime = resolveEffectiveRegime(state);
+  const folhaAnual = (state.costs ?? [])
+    .filter(isFolhaCost)
+    .reduce((acc: number, l: CostLine) => acc + sumArr(effectiveMonthValues(l, regime)), 0);
   const lucroLiquidoAnual = sumArr(dre.lucroLiquido);
 
   // CAPEX ativado no período (base para imobilizado bruto).
