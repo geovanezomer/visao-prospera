@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { getAppSettings, updateAppSetting } from "@/lib/admin/settings.functions";
 import { DEFAULT_PRIVACY_HTML, DEFAULT_TERMS_HTML } from "@/lib/admin/legalDefaults";
+import { sanitizeLegalHtml } from "@/lib/security/sanitizeHtml";
 
 export function LegalTab() {
   const qc = useQueryClient();
@@ -35,9 +36,10 @@ export function LegalTab() {
     const set = which === "terms" ? setSavingTerms : setSavingPrivacy;
     set(true);
     try {
-      const value = which === "terms"
-        ? { terms_html: terms, privacy_html: privacy }
-        : { terms_html: terms, privacy_html: privacy };
+      // Defesa em profundidade: sanitiza no SAVE também, não só no render.
+      const cleanTerms = sanitizeLegalHtml(terms);
+      const cleanPrivacy = sanitizeLegalHtml(privacy);
+      const value = { terms_html: cleanTerms, privacy_html: cleanPrivacy };
       await updateAppSetting({ data: { key: "legal", value } });
       await qc.invalidateQueries({ queryKey: ["app_settings"] });
       toast.success(which === "terms" ? "Termos atualizados." : "Política atualizada.");

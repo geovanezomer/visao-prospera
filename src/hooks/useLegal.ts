@@ -5,9 +5,9 @@
 // ============================================================================
 import { useQuery } from "@tanstack/react-query";
 import { getAppSettings } from "@/lib/admin/settings.functions";
-import { DEFAULT_PRIVACY_HTML, DEFAULT_TERMS_HTML } from "@/lib/admin/legalDefaults";
 
 export type LegalContent = {
+  /** HTML bruto do banco (pode ser string vazia). Sanitização ocorre no consumidor. */
   termsHtml: string;
   privacyHtml: string;
 };
@@ -26,8 +26,8 @@ export function useLegal() {
     isLoading,
     isReady: isFetched || data !== undefined,
     legal: {
-      termsHtml: ((data?.legal as unknown as { terms_html?: string } | undefined)?.terms_html) || DEFAULT_TERMS_HTML,
-      privacyHtml: ((data?.legal as unknown as { privacy_html?: string } | undefined)?.privacy_html) || DEFAULT_PRIVACY_HTML,
+      termsHtml: ((data?.legal as unknown as { terms_html?: string } | undefined)?.terms_html) ?? "",
+      privacyHtml: ((data?.legal as unknown as { privacy_html?: string } | undefined)?.privacy_html) ?? "",
     } as LegalContent,
   };
 }
