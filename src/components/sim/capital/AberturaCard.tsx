@@ -22,12 +22,13 @@ import type { AppState, BalancoAbertura } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
 import { StepCard, SimpleField } from "@/components/sim/capital/parts";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { useFinance } from "@/engines/finance/AppStateContext";
+import { useFinance, usePatchTax } from "@/engines/finance/AppStateContext";
 import {
   deriveAbertura,
   type AberturaDerivada,
   type AberturaDerivadaSource,
 } from "@/engines/finance/aberturaDerivada";
+
 
 const n = (v: number | undefined) =>
   typeof v === "number" && isFinite(v) ? v : 0;
