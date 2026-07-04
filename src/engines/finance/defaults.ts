@@ -275,7 +275,7 @@ export const DEFAULT_STATE: AppState = {
     ativoTotal: 100000,
     estoques: 5000,
     disponibilidades: 18000,
-    dividaOnerosa: 30000,
+    dividaOnerosa: 0, // sem dívida por padrão — só aparece se o usuário cadastrar contrato no Card 2 ou preencher o agregado manualmente
     ativoCirculante: 0, // 0 = autocalcular
     passivoCirculante: 0, // 0 = autocalcular
     contasReceber: 0, // 0 = autocalcular via PMR
