@@ -259,24 +259,8 @@ export function BalanceSheetCard({
 
           </div>
 
-          {/* CFO #2 — sugestão de PL agregado quando o detalhe está preenchido. */}
-          {temPlDetalhado && Math.abs(plInformado - plDetalhado) > Math.max(100, Math.abs(plDetalhado) * 0.02) && (
-            <div className="mt-3 flex flex-col gap-2 rounded-md border border-primary/30 bg-primary/5 p-2 text-[11px]">
-              <span className="text-muted-foreground">
-                PL <strong className="text-foreground">derivado</strong> do detalhe (Capital Social + Reservas + Lucros){" "}
-                = <strong className="text-primary">{fmtBRL(plDetalhado)}</strong>.
-                {plInformado !== 0 && (
-                  <> Divergência vs. PL agregado: <strong>{fmtBRL(Math.abs(plInformado - plDetalhado))}</strong>.</>
-                )}
-              </span>
-              <button
-                onClick={() => onChange({ patrimonioLiquido: plDetalhado })}
-                className="self-start rounded bg-primary/20 px-2 py-1 text-[10px] font-bold uppercase text-primary hover:bg-primary/30 transition-colors"
-              >
-                Usar PL derivado: {fmtBRL(plDetalhado)}
-              </button>
-            </div>
-          )}
+          {/* Sugestão de PL removida — PL agora é sempre derivado via useEffect. */}
+
 
           <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-2 text-[11px] text-muted-foreground">
             Esses valores aparecem <strong className="text-primary">automaticamente</strong> na aba{" "}
