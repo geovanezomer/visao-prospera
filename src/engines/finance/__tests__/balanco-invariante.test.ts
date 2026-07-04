@@ -205,7 +205,7 @@ function randomState(seed: number): AppState {
   const norm = normalizeStateFromBalanco(st);
   const reg = resolveEffectiveRegime(norm);
   const { dre } = buildDRE(norm, reg);
-  const ab = deriveAbertura({ state: norm, impostosMensais: dre.impostosTotal });
+  const ab = deriveAbertura({ state: norm, impostosTotalMensais: dre.impostosTotal });
   const plug = ab.totals.diferenca; // Ativo − (Passivo+PL)
   st.capital.abertura = { ...(st.capital.abertura ?? {}), lucrosAcumulados: plug };
 
@@ -219,7 +219,7 @@ function printReconciliation(seed: number, state: AppState): string {
   const { dre } = buildDRE(norm, reg);
   const cf = buildCashFlow(norm);
   const fx = deriveBalancoFechamento({ state: norm, dre, cf });
-  const ab = deriveAbertura({ state: norm, impostosMensais: dre.impostosTotal });
+  const ab = deriveAbertura({ state: norm, impostosTotalMensais: dre.impostosTotal });
 
   const recebivel = sumArr(buildRecebivelMensal(norm, dre));
   const recebido = sumArr(cf.recebimentos);
@@ -269,7 +269,7 @@ describe("Balanço — invariante contábil sobre 50 estados aleatórios", () =>
       const fx = deriveBalancoFechamento({ state: norm, dre, cf });
       const ab = deriveAbertura({
         state: norm,
-        impostosMensais: dre.impostosTotal,
+        impostosTotalMensais: dre.impostosTotal,
       });
 
       const crIni = ab.contasReceber.value;

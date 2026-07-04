@@ -36,7 +36,7 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
 
   const linhas: LinhaAuditoria[] = useMemo(() => {
     // SSOT — todos os saldos de abertura vêm daqui, com `origem` declarando a fonte real.
-    const ssot = deriveAbertura({ state, impostosMensais: dre.impostos });
+    const ssot = deriveAbertura({ state, impostosTotalMensais: dre.impostosTotal });
 
     const receitaBruta = sum(state.revenue?.bruta);
     const cpv = (state.costs ?? [])

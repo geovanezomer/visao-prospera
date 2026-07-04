@@ -79,7 +79,7 @@ export function deriveBalancoFechamento({
   // Usa `dre.impostosTotal` (vendas + lucro) para alinhar com o kick da DFC.
   const aberturaSSOT = deriveAbertura({
     state,
-    impostosMensais: dre.impostosTotal,
+    impostosTotalMensais: dre.impostosTotal,
   });
 
   // ─────────────────────────── Movimentos do período ───────────────────────────

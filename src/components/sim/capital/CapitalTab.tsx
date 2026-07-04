@@ -36,7 +36,7 @@ export function CapitalTab() {
   // fonte da aba Indicadores. Garante que WACC/ROIC/margens nunca divirjam.
   const { ind, model } = useFinanceModel(state);
   const aberturaTotals = useMemo(
-    () => deriveAbertura({ state, impostosMensais: model.dre.impostos }).totals,
+    () => deriveAbertura({ state, impostosTotalMensais: model.dre.impostosTotal }).totals,
     [state, model.dre.impostos],
   );
 

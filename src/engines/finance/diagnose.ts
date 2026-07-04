@@ -177,7 +177,7 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
   // Balanço de abertura desequilibrado — causa raiz do fechamento não fechar.
   // Emite alerta warn com o valor do plug para o consultor aplicar em Capital.
   try {
-    const ab = deriveAbertura({ state, impostosMensais: dre.impostos });
+    const ab = deriveAbertura({ state, impostosTotalMensais: dre.impostosTotal });
     if (!ab.totals.fechado) {
       out.push({
         level: "warn",

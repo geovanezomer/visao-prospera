@@ -27,7 +27,7 @@ function conservationCheck(state = createState()) {
   const res = deriveBalancoFechamento({ state, dre, cf });
   const abertura = deriveAbertura({
     state,
-    impostosMensais: dre.impostosTotal,
+    impostosTotalMensais: dre.impostosTotal,
   });
   const esperado = Math.max(
     0,
@@ -111,7 +111,7 @@ describe("balancoFechamento — impostosPagar (conservação de massa)", () => {
       const res = deriveBalancoFechamento({ state: st, dre, cf });
       const abertura = deriveAbertura({
         state: st,
-        impostosMensais: dre.impostosTotal,
+        impostosTotalMensais: dre.impostosTotal,
       });
       // Conservação: fechamento herda o gap da abertura SEM amplificar.
       const delta = Math.abs(res.totals.diferenca - abertura.totals.diferenca);

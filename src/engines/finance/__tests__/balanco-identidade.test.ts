@@ -29,7 +29,7 @@ function run(rawState = createState()) {
   const res = deriveBalancoFechamento({ state, dre, cf });
   const abertura = deriveAbertura({
     state,
-    impostosMensais: dre.impostosTotal,
+    impostosTotalMensais: dre.impostosTotal,
   });
   return { res, abertura, dre, cf };
 }
