@@ -25,7 +25,7 @@ import type {
 } from "../types";
 import { deriveBalancoFechamento } from "../balancoFechamento";
 import { buildDRE } from "../dre";
-import { buildCashFlow, buildRecebivelMensal } from "../cashflow";
+import { buildCashFlow, buildRecebivelMensal, buildComprasMensal } from "../cashflow";
 import { resolveEffectiveRegime } from "../regime";
 import { deriveAbertura } from "../aberturaDerivada";
 import { normalizeStateFromBalanco } from "../balanco";
