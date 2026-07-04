@@ -157,14 +157,9 @@ export function BalanceSheetCard({
             value={capital.estoques}
             onChange={(n) => onChange({ estoques: n })}
           />
-          <SimpleField
-            icon={<Users className="h-4 w-4" />}
-            label="Clientes que te devem"
-            hint="Saldo médio a receber de clientes. Deixe 0 para calcular automaticamente pelo prazo médio (PMR)."
-            value={capital.contasReceber}
-            onChange={(n) => onChange({ contasReceber: n })}
-            placeholder="0 = calculado pelo prazo médio"
-          />
+          {/* "Clientes que te devem" (contasReceber) escondido — sempre derivado
+              via PMR na engine (fallback: Receita × PMR/360). */}
+
         </div>
 
 
