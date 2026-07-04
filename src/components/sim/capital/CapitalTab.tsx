@@ -195,8 +195,9 @@ export function CapitalTab() {
           capital={c}
           onChange={set}
           debtContractsSlot={
-            <DebtContractsCard
-              contracts={contracts}
+            <div id="debt-contracts-card">
+              <DebtContractsCard
+                contracts={contracts}
               onChange={(next) => {
                 // Valida antes de persistir; bloqueia salvamento inválido
                 // e exibe toast amigável apontando o primeiro erro.
