@@ -25,7 +25,7 @@ import type {
 } from "../types";
 import { deriveBalancoFechamento } from "../balancoFechamento";
 import { buildDRE } from "../dre";
-import { buildCashFlow, buildRecebivelMensal } from "../cashflow";
+import { buildCashFlow, buildRecebivelMensal, buildComprasMensal } from "../cashflow";
 import { resolveEffectiveRegime } from "../regime";
 import { deriveAbertura } from "../aberturaDerivada";
 import { normalizeStateFromBalanco } from "../balanco";
@@ -223,7 +223,7 @@ function printReconciliation(seed: number, state: AppState): string {
 
   const recebivel = sumArr(buildRecebivelMensal(norm, dre));
   const recebido = sumArr(cf.recebimentos);
-  const compras = sumArr(dre.cpv);
+  const compras = sumArr(buildComprasMensal(norm, reg));
   const pagFornec = sumArr(cf.pagamentosFornecedores);
   const impComp = sumArr(dre.impostosTotal);
   const impPag = sumArr(cf.pagamentosImpostos);
@@ -281,7 +281,7 @@ describe("Balanço — invariante contábil sobre 50 estados aleatórios", () =>
 
       const fornIni = ab.fornecedores.value;
       const fornFim = fx.balanco.passivoCirculante?.fornecedores ?? 0;
-      const compras = sumArr(dre.cpv);
+      const compras = sumArr(buildComprasMensal(norm, reg));
       const pagFornec = sumArr(cf.pagamentosFornecedores);
       expect(fornFim - fornIni).toBeCloseTo(compras - pagFornec, 1);
 

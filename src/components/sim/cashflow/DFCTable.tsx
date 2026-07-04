@@ -97,6 +97,12 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
               rawTotal={sum(cf.receitasFinanceiras)}
             />
             <Row
+              label="(+) Outras receitas operacionais (aluguéis, venda de ativos)"
+              values={aggregate(cf.outrasReceitasOperacionais, period, "sum")}
+              tone="pos"
+              rawTotal={sum(cf.outrasReceitasOperacionais)}
+            />
+            <Row
               label="(−) Pagamentos a fornecedores (CPV)"
               values={aggregate(
                 cf.pagamentosFornecedores.map((v) => -v),

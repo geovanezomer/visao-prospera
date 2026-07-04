@@ -29,7 +29,7 @@ import type { FinancialModelCashflow, FinancialModelDRE } from "./financialModel
 import type { MonthlyTax } from "./tax/shared";
 import { deriveAbertura } from "./aberturaDerivada";
 import { safeNumber as n } from "./safeMath";
-import { buildRecebivelMensal } from "./cashflow";
+import { buildRecebivelMensal, buildComprasMensal } from "./cashflow";
 import { isFolhaCost, effectiveMonthValues } from "./costs";
 import { resolveEffectiveRegime } from "./regime";
 
@@ -149,8 +149,11 @@ export function deriveBalancoFechamento({
 
   // ─────────────────────────────── Passivo ───────────────────────────────
   // Fornecedores final — CONSERVAÇÃO DE MASSA:
-  //   Fornec_fim = Fornec_ini + Compras (CPV) − PagFornecedores DFC
-  const comprasAnual = sumArr(dre.cpv);
+  //   Fornec_fim = Fornec_ini + Compras (CPV NÃO-folha) − PagFornecedores DFC
+  // SSOT: `buildComprasMensal` — a MESMA série que a DFC desloca por PMP para
+  // gerar `pagamentosFornecedores`. Excluir folha embutida em CPV evita
+  // inflar Fornec_fim (folha vai para `pagamentosFolha` com lag 30d).
+  const comprasAnual = sumArr(buildComprasMensal(state, regime));
   const fornecedoresFim = Math.max(
     0,
     aberturaSSOT.fornecedores.value +
