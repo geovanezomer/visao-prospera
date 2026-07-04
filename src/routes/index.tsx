@@ -6,8 +6,9 @@ import { isLandingEnabled } from "@/lib/featureFlags";
 import { faqPageJsonLd } from "@/lib/seo/faqs";
 import { listPlansPublic } from "@/lib/admin/plans.functions";
 import { getAppSettings } from "@/lib/admin/settings.functions";
+import { getBaseUrl } from "@/lib/seo/baseUrl";
 
-const CANONICAL = "https://visao-prospera.lovable.app/";
+const CANONICAL = `${getBaseUrl()}/`;
 
 export const Route = createFileRoute("/")({
   // Prefetch dos planos + branding no SSR — evita "flash" de logo/skeleton no cliente.

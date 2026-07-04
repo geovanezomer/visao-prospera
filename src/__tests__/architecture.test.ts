@@ -123,4 +123,18 @@ describe("arquitetura de pastas", () => {
       `pdfExport.ts não pode importar runtime de lógica de domínio:\n${offenders.join("\n")}`,
     ).toEqual([]);
   });
+
+  it("nenhum arquivo em src/ referencia o domínio antigo 'lovable.app' (usar getBaseUrl())", () => {
+    const offenders: string[] = [];
+    for (const file of walk(join(ROOT, "src"))) {
+      // Ignora o próprio teste (cita a string por motivo de asserção).
+      if (file.endsWith("architecture.test.ts")) continue;
+      const src = readFileSync(file, "utf8");
+      if (src.includes("lovable.app")) offenders.push(relative(ROOT, file));
+    }
+    expect(
+      offenders,
+      `Domínio hardcoded encontrado — use getBaseUrl() em @/lib/seo/baseUrl:\n${offenders.join("\n")}`,
+    ).toEqual([]);
+  });
 });
