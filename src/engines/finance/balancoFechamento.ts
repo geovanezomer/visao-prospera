@@ -30,7 +30,8 @@ import type { MonthlyTax } from "./tax/shared";
 import { deriveAbertura } from "./aberturaDerivada";
 import { safeNumber as n } from "./safeMath";
 import { buildRecebivelMensal } from "./cashflow";
-import { isFolhaCost } from "./costs";
+import { isFolhaCost, effectiveMonthValues } from "./costs";
+import { resolveEffectiveRegime } from "./regime";
 
 
 const sumArr = (a: number[] | undefined): number =>
