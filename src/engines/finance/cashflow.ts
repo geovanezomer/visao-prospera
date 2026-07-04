@@ -116,25 +116,35 @@ function hasMonthlyVariation(arr: number[] | undefined): boolean {
 }
 
 /**
- * Recebimentos = (Receita Bruta − Inadimplência real) deslocados pelo PMR.
- * [Auditoria Bloco 6] Independente do modo (dedução ou PDD), a inadimplência REAL não vira
- * caixa — então sempre é abatida dos recebimentos. No modo PDD, `dre.deducoesInadimplencia=0`,
- * mas o cash flow precisa abater a perda subjacente (calculada de `revenue.bruta × inadimp%`).
- * Usa `pmrMensal` quando há sazonalidade real; caso contrário, escalar `pmr`.
+ * Recebível mensal (competência) — SSOT compartilhado com balancoFechamento.ts.
+ * Receita Bruta reconhecida (DRE) − Inadimplência REAL do mês.
+ * A inadimplência REAL (calculada de revenue.bruta × inadimp%) nunca vira
+ * caixa, independentemente do modo (dedução ou PDD).
+ */
+export function buildRecebivelMensal(state: AppState, dre: DRE): number[] {
+  const inadimpReal = state.revenue.bruta.map(
+    (b, i) => (b || 0) * ((state.revenue.inadimplencia[i] || 0) / 100),
+  );
+  return dre.receitaBruta.map((r, i) => r - inadimpReal[i]);
+}
+
+/**
+ * Recebimentos = Recebível deslocado pelo PMR (mensal quando há sazonalidade).
+ * [Auditoria Bloco 6] Independente do modo (dedução ou PDD), a inadimplência REAL
+ * é sempre abatida antes do shift — no modo PDD, `dre.deducoesInadimplencia=0`,
+ * mas o cash flow abate a perda subjacente (via buildRecebivelMensal).
  */
 export function computeRecebimentos(
   state: AppState,
   dre: DRE,
 ): { inAno: number[]; transbordo: number } {
-  const inadimpReal = state.revenue.bruta.map(
-    (b, i) => (b || 0) * ((state.revenue.inadimplencia[i] || 0) / 100),
-  );
-  const recebivelMensal = dre.receitaBruta.map((r, i) => r - inadimpReal[i]);
+  const recebivelMensal = buildRecebivelMensal(state, dre);
   if (hasMonthlyVariation(state.revenue.pmrMensal)) {
     return shiftByDaysSplitMonthly(recebivelMensal, state.revenue.pmrMensal!);
   }
   return shiftByDaysSplit(recebivelMensal, state.revenue.pmr);
 }
+
 
 
 /**
