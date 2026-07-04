@@ -55,8 +55,11 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
   const fcoAnual = sum(cf.fluxoOperacional);
   const llAnualFco = sum(dre.lucroLiquido);
   const daAnual = sum(dre.depreciacao);
-  const deltaNcgAnual = fcoAnual - llAnualFco - daAnual; // derivado por identidade
-  const fcoCalc = `${fmtBRL(llAnualFco)} + ${fmtBRL(daAnual)} ± ${fmtBRL(deltaNcgAnual)} = ${fmtBRL(fcoAnual)}`;
+  // ΔNCG conforme CPC 03/IAS 7 (método indireto): positivo = NCG cresceu
+  // e CONSUMIU caixa; negativo = NCG diminuiu e LIBEROU caixa.
+  // Identidade: FCO = LL + D&A − ΔNCG  →  ΔNCG = LL + D&A − FCO.
+  const deltaNcgAnual = llAnualFco + daAnual - fcoAnual;
+  const fcoCalc = `${fmtBRL(llAnualFco)} + ${fmtBRL(daAnual)} − ${fmtBRL(deltaNcgAnual)} = ${fmtBRL(fcoAnual)}`;
 
   const receitaLiquidaAnual = sum(dre.receitaLiquida);
   const margemCaixaOp = receitaLiquidaAnual > 0 ? (fcoAnual / receitaLiquidaAnual) * 100 : 0;
