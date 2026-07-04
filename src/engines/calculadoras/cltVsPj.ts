@@ -9,7 +9,7 @@
  * Engine pura. Para uso pedagógico/consultivo — não substitui contador.
  *
  * Bases:
- *  - INSS 2025 (faixas progressivas) e IRRF 2025
+ *  - Tabelas INSS/IRRF versionadas em ./tabelas.ts (SSOT anual — MPS/MF)
  *  - INSS Pró-labore: 11% (até o teto INSS)
  *  - MEI: DAS R$ ~76 (comércio/indústria) ou R$ ~80 (serviços) — default serviços
  *  - Lucro Presumido serviços: IRPJ 15% × 32% + CSLL 9% × 32% + PIS 0,65% + COFINS 3% + ISS ~5% ≈ 16,33%
