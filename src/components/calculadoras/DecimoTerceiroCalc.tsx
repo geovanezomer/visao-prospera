@@ -411,7 +411,7 @@ export function DecimoTerceiroCalc() {
 
               <p className="pt-2 text-xs">
                 Bases: Lei 4.090/1962, Lei 4.749/1965, CF art. 7º VIII, IN RFB 1.500/2014, tabelas
-                INSS/IRRF {ANO_VIGENTE}. Estimativa — valide com contador antes de uso oficial.
+                INSS/IRRF {ANO_VIGENTE}. IRRF conforme Lei nº 15.270/2025 (redutor até R$ 7.350). Estimativa — valide com contador antes de uso oficial.
               </p>
             </CardContent>
           </CollapsibleContent>

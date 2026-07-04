@@ -40,6 +40,7 @@ import {
 } from "./taxDefaults";
 import { sum } from "./format";
 import { coerceMonths } from "./safeMath";
+import { redutorLei15270 } from "@/engines/calculadoras/rescisao";
 
 // IDs reservados para linhas sintéticas em state.costs.
 export const SOCIOS_PROLABORE_LINE_ID = "__socios_prolabore__";
@@ -122,7 +123,14 @@ export function calcIrpfMensal(
     prolaboreMensal - inssSocio - dependentes * deducaoDep - outrasDeducoes;
   const irpfTrad = irpfPorTabela(Math.max(0, baseTrad), tax);
 
-  if (!getIrpfSimplificadoAuto(tax)) return { valor: irpfTrad, modo: "tradicional" };
+  // Redutor Lei 15.270/2025 — aplica-se sobre o rendimento tributável bruto
+  // do mês (pró-labore); nunca gera IR negativo.
+  const aplicarRedutor = (ir: number): number =>
+    Math.max(0, ir - redutorLei15270(prolaboreMensal, ir));
+
+  if (!getIrpfSimplificadoAuto(tax)) {
+    return { valor: aplicarRedutor(irpfTrad), modo: "tradicional" };
+  }
 
   // Simplificado (Lei 14.973/2024): prolab − desconto único (sem outras deduções).
   const descSimp = getIrpfDescontoSimplificado(tax);
@@ -130,8 +138,8 @@ export function calcIrpfMensal(
   const irpfSimp = irpfPorTabela(Math.max(0, baseSimp), tax);
 
   return irpfSimp < irpfTrad
-    ? { valor: irpfSimp, modo: "simplificado" }
-    : { valor: irpfTrad, modo: "tradicional" };
+    ? { valor: aplicarRedutor(irpfSimp), modo: "simplificado" }
+    : { valor: aplicarRedutor(irpfTrad), modo: "tradicional" };
 }
 
 // =====================================================================

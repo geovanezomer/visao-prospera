@@ -65,9 +65,6 @@ const IRRF_FAIXAS = [
   { ate: Infinity, aliquota: 0.275, deduzir: 908.73 },
 ] as const;
 
-/** Dedução por dependente (IRRF). */
-const DEP_DEDUCAO = 189.59;
-
 /**
  * Calcula INSS progressivo (cap no teto), usando as faixas do ano informado.
  * Padrão: ano vigente (SSOT em ./tabelas.ts).
@@ -87,16 +84,59 @@ export function calcularINSS(base: number, ano: number = ANO_VIGENTE): number {
   return Math.round(total * 100) / 100;
 }
 
-/** Calcula IRRF mensal com dedução de INSS e dependentes. */
-export function calcularIRRF(baseComINSS: number, inss: number, dependentes: number): number {
-  const base = Math.max(0, baseComINSS - inss - dependentes * DEP_DEDUCAO);
+/** Dedução por dependente (IRRF). */
+const DEP_DEDUCAO = 189.59;
+/**
+ * Desconto simplificado mensal (Lei 14.848/2024, art. 5º) — R$ 607,20.
+ * Substitui todas as deduções legais (INSS + dependentes + pensão etc.) quando
+ * for MAIS vantajoso ao contribuinte. `calcularIRRF` escolhe automaticamente.
+ */
+const DESCONTO_SIMPLIFICADO = 607.2;
+
+/**
+ * Redutor do IRRF mensal — Lei nº 15.270/2025 (vigência 01/01/2026).
+ *
+ * A tabela progressiva NÃO mudou; após apurar o imposto pela tabela, aplica-se
+ * um REDUTOR em função do rendimento tributável bruto do mês:
+ *   • ≤ R$ 5.000,00 → redutor = imposto (IR final = 0)
+ *   • R$ 5.000,01 a R$ 7.350,00 → redutor = 978,62 − 0,133145 × rendimento
+ *   • > R$ 7.350,00 → sem redutor
+ * O redutor é limitado ao imposto apurado (nunca gera IR negativo).
+ */
+export function redutorLei15270(rendimentoBrutoMensal: number, irApurado: number): number {
+  if (irApurado <= 0) return 0;
+  if (rendimentoBrutoMensal <= 5000) return irApurado;
+  if (rendimentoBrutoMensal <= 7350) {
+    const r = 978.62 - 0.133145 * rendimentoBrutoMensal;
+    return Math.min(Math.max(r, 0), irApurado);
+  }
+  return 0;
+}
+
+/** Aplica a tabela progressiva do IRRF a uma base já líquida de deduções. */
+function irrfTabela(base: number): number {
+  if (base <= 0) return 0;
   for (const f of IRRF_FAIXAS) {
     if (base <= f.ate) {
-      const ir = Math.max(0, base * f.aliquota - f.deduzir);
-      return Math.round(ir * 100) / 100;
+      return Math.max(0, base * f.aliquota - f.deduzir);
     }
   }
   return 0;
+}
+
+/**
+ * Calcula IRRF mensal com dedução tradicional × simplificado (escolhe o menor),
+ * aplicando em seguida o redutor da Lei 15.270/2025 sobre o rendimento bruto.
+ */
+export function calcularIRRF(baseComINSS: number, inss: number, dependentes: number): number {
+  const baseTrad = Math.max(0, baseComINSS - inss - dependentes * DEP_DEDUCAO);
+  const baseSimp = Math.max(0, baseComINSS - DESCONTO_SIMPLIFICADO);
+  const irTrad = irrfTabela(baseTrad);
+  const irSimp = irrfTabela(baseSimp);
+  const irApurado = Math.min(irTrad, irSimp);
+  const redutor = redutorLei15270(baseComINSS, irApurado);
+  const irFinal = Math.max(0, irApurado - redutor);
+  return Math.round(irFinal * 100) / 100;
 }
 
 // ============================================================================
