@@ -102,8 +102,9 @@ export function irrfPlr(plrAnual: number): number {
   return Math.max(0, Math.round(imposto * 100) / 100);
 }
 
-export const TETO_INSS_2025 = 8157.41;
-export const SALARIO_MINIMO_2025 = 1518.0;
+/** Teto/mínimo do ano vigente — leem de `getTabelas()` (SSOT anual). */
+export const TETO_INSS = getTabelas().inssTeto;
+export const SALARIO_MINIMO = getTabelas().salarioMinimo;
 export const PRO_LABORE_PCT_DEFAULT = 0.28;
 
 // ============================================================================
