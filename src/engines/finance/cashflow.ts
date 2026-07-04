@@ -484,13 +484,13 @@ export function buildCashFlow(
 
   return {
     saldoInicial,
-    recebimentos: rec.inAno,
+    recebimentos: recebimentosInAno,
     receitasFinanceiras,
-    pagamentosFornecedores: fornec.inAno,
+    pagamentosFornecedores: fornecedoresInAno,
     pagamentosFixos: op.fixos,
     pagamentosVariaveis: op.variaveis,
     pagamentosFinanceiros: op.financeiros,
-    pagamentosImpostos: imp.inAno,
+    pagamentosImpostos: impostosInAno,
     fluxoOperacional: fluxos.fluxoOperacional,
     aportes,
     emprestimosCaptados,
@@ -501,6 +501,7 @@ export function buildCashFlow(
     fluxoInvestimento: fluxos.fluxoInvestimento,
     permutasCredito,
     permutasDebito,
+
     permutasLiquido,
     variacaoCaixa,
     saldoFinal,
