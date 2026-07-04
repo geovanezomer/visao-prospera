@@ -1,7 +1,11 @@
 import { AppState, TaxRegime } from "./types";
 import { buildDRE, type DRE } from "./dre";
 import { resolveEffectiveRegime } from "./regime";
-import { splitReceitasFinanceiras, computeCapexMensal } from "./shared";
+import {
+  splitReceitasFinanceiras,
+  computeCapexMensal,
+  outrasDeducoesMensal,
+} from "./shared";
 import type { MonthlyTax } from "./tax/shared";
 import {
   partitionMonthlyTaxByLag,
@@ -13,7 +17,8 @@ import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 import { getSplitPaymentAtivo } from "./taxDefaults";
 import { getDistribuicaoRealizadaMeses } from "./socios";
 import { deriveAbertura } from "./aberturaDerivada";
-import { isFolhaCost, effectiveMonthValues } from "./costs";
+import { isFolhaCost, isCpvCost, effectiveMonthValues } from "./costs";
+
 
 
 export interface CashFlow {
