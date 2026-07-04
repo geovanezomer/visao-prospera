@@ -110,6 +110,7 @@ export function parseFinnanceFile(raw: unknown): OpenedFile {
   const extras = {
     actions: parsed.extras?.actions ?? [],
     simScenarios: parsed.extras?.simScenarios ?? [],
+    memories: parsed.extras?.memories ?? [],
   };
   return {
     state,
