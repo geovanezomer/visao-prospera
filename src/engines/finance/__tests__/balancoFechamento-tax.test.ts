@@ -80,9 +80,10 @@ describe("balancoFechamento — impostosPagar (conservação de massa)", () => {
     );
     // Split ativo faz CBS/IBS liquidarem no mesmo mês (lag 0), então o
     // passivo tributário de fechamento é MENOR do que sem Split (lag 30).
-    expect(rSplit.res.balanco.passivoCirculante!.impostosPagar).toBeLessThan(
-      rNoSplit.res.balanco.passivoCirculante!.impostosPagar,
+    expect(rSplit.res.balanco.passivoCirculante!.impostosPagar!).toBeLessThan(
+      rNoSplit.res.balanco.passivoCirculante!.impostosPagar!,
     );
+
   });
 
   it("Passivo nunca é negativo (guard)", () => {
