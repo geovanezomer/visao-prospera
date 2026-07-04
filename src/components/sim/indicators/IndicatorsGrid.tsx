@@ -55,8 +55,11 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
   const fcoAnual = sum(cf.fluxoOperacional);
   const llAnualFco = sum(dre.lucroLiquido);
   const daAnual = sum(dre.depreciacao);
-  const deltaNcgAnual = fcoAnual - llAnualFco - daAnual; // derivado por identidade
-  const fcoCalc = `${fmtBRL(llAnualFco)} + ${fmtBRL(daAnual)} ± ${fmtBRL(deltaNcgAnual)} = ${fmtBRL(fcoAnual)}`;
+  // ΔNCG conforme CPC 03/IAS 7 (método indireto): positivo = NCG cresceu
+  // e CONSUMIU caixa; negativo = NCG diminuiu e LIBEROU caixa.
+  // Identidade: FCO = LL + D&A − ΔNCG  →  ΔNCG = LL + D&A − FCO.
+  const deltaNcgAnual = llAnualFco + daAnual - fcoAnual;
+  const fcoCalc = `${fmtBRL(llAnualFco)} + ${fmtBRL(daAnual)} − ${fmtBRL(deltaNcgAnual)} = ${fmtBRL(fcoAnual)}`;
 
   const receitaLiquidaAnual = sum(dre.receitaLiquida);
   const margemCaixaOp = receitaLiquidaAnual > 0 ? (fcoAnual / receitaLiquidaAnual) * 100 : 0;
@@ -139,7 +142,9 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           <Ind
             label="Qualidade do Lucro"
             v={ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}×` : "—"}
-            tone={ind.qualidadeLucro >= 1 ? "pos" : "neg"}
+            // Só aplica cor quando existe valor — evita pintar "—" de vermelho
+            // quando LL ≤ 0 (indicador indisponível, não "ruim").
+            tone={ind.qualidadeLucro === 0 ? undefined : ind.qualidadeLucro >= 1 ? "pos" : "neg"}
             desc="O lucro contábil está virando caixa? ≥1 saudável; <1 indica lucro 'no papel' (preso em NCG, inadimplência ou estoques)."
             formula="Fluxo de Caixa Operacional ÷ Lucro Líquido"
             calc={c.qualidadeLucro}
