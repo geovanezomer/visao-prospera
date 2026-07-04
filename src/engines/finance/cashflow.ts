@@ -446,13 +446,13 @@ export function buildCashFlow(
   const permutasLiquido = permutasCredito.map((c, i) => c - permutasDebito[i]);
 
   const fluxos = computeFluxos({
-    recebimentos: rec.inAno,
+    recebimentos: recebimentosInAno,
     receitasFinanceiras,
-    fornecedores: fornec.inAno,
+    fornecedores: fornecedoresInAno,
     fixos: op.fixos,
     variaveis: op.variaveis,
     financeiros: op.financeiros,
-    impostos: imp.inAno,
+    impostos: impostosInAno,
     capex,
     aportes,
     emprestimosCaptados,
@@ -462,6 +462,7 @@ export function buildCashFlow(
     mutuosDevolvidos,
 
   });
+
 
   // Permutas: somam direto à variação de caixa, fora de OP/INV/FIN.
   const variacaoCaixa = fluxos.variacaoCaixa.map((v, i) => v + permutasLiquido[i]);
