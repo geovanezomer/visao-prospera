@@ -205,15 +205,80 @@ export function AberturaCard({
       >
 
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          <DerivedRow source={derived.caixa} highlight="asset" />
-          <DerivedRow source={derived.contasReceber} highlight="asset" />
-          <DerivedRow source={derived.estoques} highlight="asset" />
-          <DerivedRow source={derived.fornecedores} highlight="liability" />
-          <DerivedRow source={derived.emprestimosCP} highlight="liability" />
-          <DerivedRow source={derived.emprestimosLP} highlight="liability" />
-          <DerivedRow source={derived.impostosPagar} highlight="liability" />
-          <DerivedRow source={derived.salariosEncargos} highlight="liability" />
+          <DerivedRow
+            source={derived.caixa}
+            highlight="asset"
+            hint={
+              "Caixa e equivalentes de abertura — saldo em conta corrente + aplicações de liquidez imediata no dia 1.\n\n" +
+              "Fórmula: Card 1 (Balanço) → ativoCirculante.caixaEquivalentes + aplicacoesFinanceirasCP; se vazio, cai para capital.disponibilidades.\n\n" +
+              `Memória: valor = ${fmtBRL(derived.caixa.value)}\nFonte: ${derived.caixa.origem}`
+            }
+          />
+          <DerivedRow
+            source={derived.contasReceber}
+            highlight="asset"
+            hint={
+              "Contas a receber de clientes na abertura — vendas a prazo ainda não recebidas.\n\n" +
+              "Fórmula: Card 1 → ativoCirculante.contasReceberClientes (líquido de PDD); fallback: capital.contasReceber ou Receita × PMR / 360.\n\n" +
+              `Memória: valor = ${fmtBRL(derived.contasReceber.value)}\nFonte: ${derived.contasReceber.origem}`
+            }
+          />
+          <DerivedRow
+            source={derived.estoques}
+            highlight="asset"
+            hint={
+              "Estoques de abertura — mercadorias, matéria-prima e produtos acabados no dia 1.\n\n" +
+              "Fórmula: Card 1 → ativoCirculante.estoques; fallback: capital.estoques.\n\n" +
+              `Memória: valor = ${fmtBRL(derived.estoques.value)}\nFonte: ${derived.estoques.origem}`
+            }
+          />
+          <DerivedRow
+            source={derived.fornecedores}
+            highlight="liability"
+            hint={
+              "Fornecedores a pagar na abertura — compras a prazo ainda não liquidadas.\n\n" +
+              "Fórmula: Card 1 → passivoCirculante.fornecedores; fallback: capital.fornecedores ou CPV × PMP / 360.\n\n" +
+              `Memória: valor = ${fmtBRL(derived.fornecedores.value)}\nFonte: ${derived.fornecedores.origem}`
+            }
+          />
+          <DerivedRow
+            source={derived.emprestimosCP}
+            highlight="liability"
+            hint={
+              "Empréstimos e financiamentos de curto prazo (vencimento ≤ 12 meses).\n\n" +
+              "Fórmula: soma dos saldos dos Contratos de Dívida com prazo remanescente ≤ 12 meses; fallback: capital.dividaOnerosa × dividaCurtoPrazoPct (default 30%).\n\n" +
+              `Memória: valor = ${fmtBRL(derived.emprestimosCP.value)}\nFonte: ${derived.emprestimosCP.origem}`
+            }
+          />
+          <DerivedRow
+            source={derived.emprestimosLP}
+            highlight="liability"
+            hint={
+              "Empréstimos e financiamentos de longo prazo (vencimento > 12 meses).\n\n" +
+              "Fórmula: soma dos saldos dos Contratos de Dívida com prazo remanescente > 12 meses; fallback: capital.dividaOnerosa × (1 − dividaCurtoPrazoPct).\n\n" +
+              `Memória: valor = ${fmtBRL(derived.emprestimosLP.value)}\nFonte: ${derived.emprestimosLP.origem}`
+            }
+          />
+          <DerivedRow
+            source={derived.impostosPagar}
+            highlight="liability"
+            hint={
+              "Impostos a pagar na abertura — aproximação de 1 mês de DARF em aberto (mês 1 da série de impostos do DRE).\n\n" +
+              "Fórmula: dre.impostos[0] (primeiro mês da série mensal de tributos sobre receita + lucro).\n\n" +
+              `Memória: valor = ${fmtBRL(derived.impostosPagar.value)}\nFonte: ${derived.impostosPagar.origem}`
+            }
+          />
+          <DerivedRow
+            source={derived.salariosEncargos}
+            highlight="liability"
+            hint={
+              "Salários e encargos a pagar na abertura — aproximadamente 1 mês de folha (fixa + variável).\n\n" +
+              "Fórmula: soma dos costs mês 1 nas categorias 'fixo' + 'variavel' (folha, comissões, INSS, FGTS).\n\n" +
+              `Memória: valor = ${fmtBRL(derived.salariosEncargos.value)}\nFonte: ${derived.salariosEncargos.origem}`
+            }
+          />
         </div>
+
         <div className="mt-3 flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 p-2.5 text-[10.5px] text-muted-foreground">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
           <span>
