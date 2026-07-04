@@ -265,17 +265,21 @@ export const DEFAULT_STATE: AppState = {
   },
   costs: defaultCostsFor("servicos"),
   capital: {
-    proprio: 60,
-    ke: 15,
-    kd: 18,
-    capitalGiroDisponivel: 15000,
-    depreciacaoMensal: 400,
+    // Sem valores hardcoded no Card Capital: todos os R$ vêm de entrada
+    // do usuário ou são autocalculados (aberturaDerivada, balancoFechamento,
+    // debtContracts, PMR/PMP). Percentuais (proprio/ke/kd) são referências
+    // editáveis, não valores monetários.
+    proprio: 100, // 100% capital próprio até o usuário informar dívida
+    ke: 15,       // custo do equity — referência editável
+    kd: 0,        // custo da dívida — 0 até haver dívida cadastrada
+    capitalGiroDisponivel: 0,
+    depreciacaoMensal: 0,
 
-    patrimonioLiquido: 60000,
-    ativoTotal: 100000,
-    estoques: 5000,
-    disponibilidades: 18000,
-    dividaOnerosa: 0, // sem dívida por padrão — só aparece se o usuário cadastrar contrato no Card 2 ou preencher o agregado manualmente
+    patrimonioLiquido: 0,
+    ativoTotal: 0,
+    estoques: 0,
+    disponibilidades: 0,
+    dividaOnerosa: 0,
     ativoCirculante: 0, // 0 = autocalcular
     passivoCirculante: 0, // 0 = autocalcular
     contasReceber: 0, // 0 = autocalcular via PMR
