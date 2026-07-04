@@ -464,19 +464,20 @@ export function SalarioLiquidoCalc() {
                     12% da renda bruta anual na declaração completa.
                   </li>
                   <li>
-                    <strong>Cheque o Salário-Família:</strong> se seu bruto for até R$ 1.906,04,
-                    você tem direito a R$ 65,00 por filho menor de 14 anos — basta apresentar
-                    certidão de nascimento ao RH.
+                    <strong>Cheque o Salário-Família:</strong> se seu bruto for até {fmtBRL(SALARIO_FAMILIA_TETO)},
+                    você tem direito a {fmtBRL(SALARIO_FAMILIA_VALOR)} por filho menor de 14 anos — basta
+                    apresentar certidão de nascimento ao RH.
                   </li>
                   <li>
-                    <strong>Desconto marginal:</strong> entre R$ 4.190 e R$ 8.157 o INSS adicional é
-                    14% — para cada R$ 1.000 a mais no bruto, R$ 140 vão para o INSS antes do IR.
+                    <strong>Desconto marginal:</strong> entre {fmtBRL(TABELA.inssFaixas[2].ate)} e{" "}
+                    {fmtBRL(TABELA.inssTeto)} o INSS adicional é 14% — para cada R$ 1.000 a mais no
+                    bruto, R$ 140 vão para o INSS antes do IR.
                   </li>
                 </ul>
               </div>
               <p className="pt-2 text-xs">
                 Bases: Lei 8.212/91 (custeio previdenciário), Lei 9.250/95 (IRRF), tabelas INSS/IRRF
-                vigentes 2025.
+                vigentes {ANO_VIGENTE}.
               </p>
             </CardContent>
           </CollapsibleContent>
