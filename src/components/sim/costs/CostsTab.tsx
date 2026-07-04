@@ -85,8 +85,14 @@ export function CostsTab() {
       costs: s.costs.map((c) => {
         if (c.id !== id) return c;
         const values = c.values.length === 12 ? c.values : fill12(c.values[0] || 0);
-        const base = c.fixed ? fixedCostBase(values) : values[0] || 0;
-        return { ...c, fixed, values: fixed || c.fixed ? fill12(base) : values };
+        if (!fixed) {
+          // Mensal: preserva os valores atuais (não achatar Fixo→Mensal).
+          return { ...c, fixed: false, values };
+        }
+        // Mensal→Fixo: usa o primeiro valor não-zero como referência
+        // (fixedCostBase é robusto a séries com meses iniciais zerados).
+        const base = fixedCostBase(values);
+        return { ...c, fixed: true, values: fill12(base) };
       }),
     }));
 
