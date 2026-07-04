@@ -5,13 +5,11 @@ import { useEffect } from "react";
 import {
   Banknote,
   Package,
-  Users,
-  Wallet,
-  AlertTriangle,
   Settings2,
   Building2,
   Landmark,
 } from "lucide-react";
+
 
 import { StepCard, SimpleField, MiniStat } from "@/components/sim/capital/parts";
 
@@ -118,16 +116,28 @@ export function BalanceSheetCard({
       : (capital.dividaOnerosa || 0) + (capital.fornecedores || 0);
 
   const plCalculado = (capital.ativoTotal || 0) - totalPassivos;
-  const plInformado = capital.patrimonioLiquido || 0;
-  const diff = Math.abs(plInformado - plCalculado);
-  const hasInconsistencia =
-    capital.ativoTotal > 0 && diff > Math.max(100, capital.ativoTotal * 0.02);
+
+  // PL final: usa detalhe (Capital Social + Reservas + Lucros) se preenchido,
+  // senão cai no cálculo Ativo − Dívidas.
+  const plFinal = temPlDetalhado ? plDetalhado : plCalculado;
+
+  // Sincroniza PL, fornecedores e contas a receber com os valores derivados —
+  // todos os três inputs foram escondidos e agora são sempre calculados:
+  //   • contasReceber → 0 (força engine a usar PMR)
+  //   • fornecedores  → 0 (força engine a usar PMP)
+  //   • patrimonioLiquido → plFinal (Ativo − Dívidas ou detalhado)
+  useEffect(() => {
+    const patch: Partial<AppState["capital"]> = {};
+    if ((capital.contasReceber || 0) !== 0) patch.contasReceber = 0;
+    if ((capital.fornecedores || 0) !== 0) patch.fornecedores = 0;
+    if (Math.abs((capital.patrimonioLiquido || 0) - plFinal) > 0.5) {
+      patch.patrimonioLiquido = plFinal;
+    }
+    if (Object.keys(patch).length > 0) onChange(patch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plFinal, capital.contasReceber, capital.fornecedores]);
 
 
-
-  // Sugestão de PL: cálculo on-demand (não auto-aplica). O usuário escolhe
-  // explicitamente via botão "Usar PL calculado" ou "Ajustar PL para X".
-  // Removido useEffect que sobrescrevia silenciosamente (causa race conditions).
 
 
 
@@ -157,14 +167,9 @@ export function BalanceSheetCard({
             value={capital.estoques}
             onChange={(n) => onChange({ estoques: n })}
           />
-          <SimpleField
-            icon={<Users className="h-4 w-4" />}
-            label="Clientes que te devem"
-            hint="Saldo médio a receber de clientes. Deixe 0 para calcular automaticamente pelo prazo médio (PMR)."
-            value={capital.contasReceber}
-            onChange={(n) => onChange({ contasReceber: n })}
-            placeholder="0 = calculado pelo prazo médio"
-          />
+          {/* "Clientes que te devem" (contasReceber) escondido — sempre derivado
+              via PMR na engine (fallback: Receita × PMR/360). */}
+
         </div>
 
 
@@ -252,24 +257,8 @@ export function BalanceSheetCard({
 
           </div>
 
-          {/* CFO #2 — sugestão de PL agregado quando o detalhe está preenchido. */}
-          {temPlDetalhado && Math.abs(plInformado - plDetalhado) > Math.max(100, Math.abs(plDetalhado) * 0.02) && (
-            <div className="mt-3 flex flex-col gap-2 rounded-md border border-primary/30 bg-primary/5 p-2 text-[11px]">
-              <span className="text-muted-foreground">
-                PL <strong className="text-foreground">derivado</strong> do detalhe (Capital Social + Reservas + Lucros){" "}
-                = <strong className="text-primary">{fmtBRL(plDetalhado)}</strong>.
-                {plInformado !== 0 && (
-                  <> Divergência vs. PL agregado: <strong>{fmtBRL(Math.abs(plInformado - plDetalhado))}</strong>.</>
-                )}
-              </span>
-              <button
-                onClick={() => onChange({ patrimonioLiquido: plDetalhado })}
-                className="self-start rounded bg-primary/20 px-2 py-1 text-[10px] font-bold uppercase text-primary hover:bg-primary/30 transition-colors"
-              >
-                Usar PL derivado: {fmtBRL(plDetalhado)}
-              </button>
-            </div>
-          )}
+          {/* Sugestão de PL removida — PL agora é sempre derivado via useEffect. */}
+
 
           <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-2 text-[11px] text-muted-foreground">
             Esses valores aparecem <strong className="text-primary">automaticamente</strong> na aba{" "}
@@ -280,7 +269,12 @@ export function BalanceSheetCard({
         <div className="mt-5 grid grid-cols-4 overflow-hidden rounded-md border border-border/40 text-center text-[10px]">
           <MiniStat label="Caixa/bancos" value={fmtBRL(capital.disponibilidades)} />
           <MiniStat label="Estoque" value={fmtBRL(capital.estoques)} />
-          <MiniStat label="A receber" value={fmtBRL(capital.contasReceber)} />
+          <MiniStat
+            label="A receber"
+            value="auto (PMR)"
+            hint="Calculado automaticamente pela engine: Receita Bruta × PMR / 360. Configure o PMR na aba Receitas."
+          />
+
           <MiniStat
             label="Total de ativos"
             value={fmtBRL(ativoTotalDerivado)}
@@ -316,52 +310,11 @@ export function BalanceSheetCard({
       >
         {debtContractsSlot}
 
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <SimpleField
-            icon={<Users className="h-4 w-4" />}
-            label="Fornecedores a pagar"
-            hint="Saldo médio que a empresa deve a fornecedores. Deixe 0 para calcular pelo prazo médio (PMP)."
-            value={capital.fornecedores}
-            onChange={(n) => onChange({ fornecedores: n })}
-            placeholder="0 = calculado pelo prazo médio"
-          />
-          <SimpleField
-            icon={<Wallet className="h-4 w-4" />}
-            label="Patrimônio líquido dos sócios"
-            hint="Calculado automaticamente: Ativo Total − Dívidas (empréstimos + fornecedores). Você pode sobrescrever se tiver o valor contábil exato."
-            value={capital.patrimonioLiquido}
-            onChange={(n) => onChange({ patrimonioLiquido: n })}
-            emphasis
-          />
-        </div>
+        {/* "Fornecedores a pagar" e "Patrimônio líquido dos sócios" escondidos —
+            ambos são sempre derivados:
+              • fornecedores  = CPV × PMP/360 (engine, fallback quando input = 0)
+              • patrimonioLiq = Ativo Total − Dívidas (sincronizado via useEffect) */}
 
-        {capital.ativoTotal > 0 && plInformado === 0 && (
-          <button
-            onClick={() => onChange({ patrimonioLiquido: plCalculado })}
-            className="mt-2 inline-flex items-center gap-1 rounded bg-primary/15 px-2 py-1 text-[10px] font-bold uppercase text-primary hover:bg-primary/25 transition-colors"
-          >
-            Usar PL calculado: {fmtBRL(plCalculado)}
-          </button>
-        )}
-
-        {hasInconsistencia && plInformado !== 0 && (
-          <div className="mt-3 flex flex-col gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-[11px] text-warning">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>
-                PL informado (<strong>{fmtBRL(plInformado)}</strong>) diverge do PL calculado
-                (Ativos − Dívidas = <strong>{fmtBRL(plCalculado)}</strong>). Diferença:{" "}
-                <strong>{fmtBRL(diff)}</strong>.
-              </span>
-            </div>
-            <button
-              onClick={() => onChange({ patrimonioLiquido: plCalculado })}
-              className="self-start rounded bg-warning/20 px-2 py-1 text-[10px] font-bold uppercase hover:bg-warning/30 transition-colors"
-            >
-              Ajustar PL para {fmtBRL(plCalculado)}
-            </button>
-          </div>
-        )}
 
       </StepCard>
 
