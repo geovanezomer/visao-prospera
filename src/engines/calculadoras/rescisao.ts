@@ -65,6 +65,25 @@ const IRRF_FAIXAS = [
   { ate: Infinity, aliquota: 0.275, deduzir: 908.73 },
 ] as const;
 
+/**
+ * Calcula INSS progressivo (cap no teto), usando as faixas do ano informado.
+ * Padrão: ano vigente (SSOT em ./tabelas.ts).
+ */
+export function calcularINSS(base: number, ano: number = ANO_VIGENTE): number {
+  if (base <= 0) return 0;
+  const faixas = getTabelas(ano).inssFaixas;
+  const restante = Math.min(base, faixas[faixas.length - 1].ate);
+  let anterior = 0;
+  let total = 0;
+  for (const f of faixas) {
+    const faixa = Math.max(0, Math.min(restante, f.ate) - anterior);
+    total += faixa * f.aliquota;
+    anterior = f.ate;
+    if (restante <= f.ate) break;
+  }
+  return Math.round(total * 100) / 100;
+}
+
 /** Dedução por dependente (IRRF). */
 const DEP_DEDUCAO = 189.59;
 /**
