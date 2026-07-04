@@ -38,9 +38,15 @@ export const regimePJLabel: Record<RegimePJ, string> = {
  * decisões judiciais que afastem o adicional para determinados segmentos.
  */
 export const PARAMETROS_PJ = {
-  // DAS MEI 2025 (serviços): INSS 5% × SM (R$ 75,90) + ISS R$ 5,00 = R$ 80,90.
-  // Comércio/Indústria usaria R$ 76,90 (INSS + ICMS R$ 1,00).
-  mei: { aliquotaImpostos: 0, dasFixoMensal: 80.9, tetoFaturamentoAnual: 81000 },
+  // DAS MEI (serviços): INSS 5% × SM + ISS R$ 5,00 — valor do ano vigente
+  // vem de getTabelas().meiDasServicos (SSOT anual).
+  mei: {
+    aliquotaImpostos: 0,
+    get dasFixoMensal() {
+      return getTabelas().meiDasServicos;
+    },
+    tetoFaturamentoAnual: 81000,
+  },
   // Simples: alíquota efetiva é CALCULADA por faixa (Anexo III) — ver aliquotaSimplesAnexoIII().
   // Mantemos um fallback informativo de ~9,3% para fins de tooltip apenas.
   simples: { aliquotaImpostos: 0.093, dasFixoMensal: 0, tetoFaturamentoAnual: 4_800_000 },
