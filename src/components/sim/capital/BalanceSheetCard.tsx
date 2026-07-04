@@ -276,8 +276,34 @@ export function BalanceSheetCard({
             <strong className="text-foreground">Balanço</strong>.
           </div>
 
+        {/* Régua de resumo — rodapé do Card 1. Total de ativos com memória de cálculo. */}
+        <div className="mt-5 grid grid-cols-4 overflow-hidden rounded-md border border-border/40 text-center text-[10px]">
+          <MiniStat label="Caixa/bancos" value={fmtBRL(capital.disponibilidades)} />
+          <MiniStat label="Estoque" value={fmtBRL(capital.estoques)} />
+          <MiniStat label="A receber" value={fmtBRL(capital.contasReceber)} />
+          <MiniStat
+            label="Total de ativos"
+            value={fmtBRL(ativoTotalDerivado)}
+            highlight
+            hint={
+              "Soma automática de tudo que a empresa possui.\n\n" +
+              "Fórmula: Ativo Circulante + Imobilizado líq. + Intangível líq.\n\n" +
+              `Memória de cálculo:\n` +
+              `• Caixa/bancos: ${fmtBRL(capital.disponibilidades)}\n` +
+              `• Estoque: ${fmtBRL(capital.estoques)}\n` +
+              `• Contas a receber: ${fmtBRL(capital.contasReceber)}\n` +
+              `  = Ativo Circulante: ${fmtBRL(ativoCircCalc)}\n\n` +
+              `• Imobilizado bruto: ${fmtBRL(imobBruto)}\n` +
+              `  (−) Depreciação acum.: ${fmtBRL(imob?.depreciacaoAcumulada || 0)}\n` +
+              `  = Imobilizado líq.: ${fmtBRL(Math.max(0, imobLiquido))}\n\n` +
+              `• Intangível líq.: ${fmtBRL(Math.max(0, intangLiquido))}\n\n` +
+              `TOTAL: ${fmtBRL(ativoTotalDerivado)}`
+            }
+          />
+        </div>
         </div>
       </StepCard>
+
 
       {capexSlot}
 
