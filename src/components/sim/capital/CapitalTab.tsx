@@ -111,9 +111,10 @@ export function CapitalTab() {
 
   // Validações de inconsistência patrimonial.
   const warnings: string[] = [];
-  if (c.dividaOnerosa > c.ativoTotal && c.ativoTotal > 0) {
+  const _dividaOnerosaTotal = totalDividaOnerosa(state);
+  if (_dividaOnerosaTotal > c.ativoTotal && c.ativoTotal > 0) {
     warnings.push(
-      `Dívida onerosa (${fmtBRL(c.dividaOnerosa)}) maior que o Ativo Total (${fmtBRL(c.ativoTotal)}) — situação de insolvência técnica. WACC e ROIC perdem significado neste cenário.`,
+      `Dívida onerosa (${fmtBRL(_dividaOnerosaTotal)}) maior que o Ativo Total (${fmtBRL(c.ativoTotal)}) — situação de insolvência técnica. WACC e ROIC perdem significado neste cenário.`,
     );
   }
   if (c.patrimonioLiquido < 0) {
