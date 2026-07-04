@@ -108,18 +108,27 @@ export function CashflowTab() {
     [cf.saldoFinal, state.cashflow.caixaMinimo, criticalByMes],
   );
 
+  // CR: aplica o mesmo fallback do engine (`indicators.ts:341`) — quando
+  // `capital.contasReceber` está zerado, deriva por PMR × Receita Bruta / 360.
+  // Sem isso, o runway ignora o giro de recebíveis em curso e subestima o colchão.
+  const recebiveisEfetivo = useMemo(() => {
+    if ((state.capital.contasReceber || 0) > 0) return state.capital.contasReceber;
+    const receitaBrutaAnual = state.revenue.bruta.reduce((a, b) => a + (b || 0), 0);
+    const pmr = state.revenue.pmr || 0;
+    return (receitaBrutaAnual / 360) * pmr;
+  }, [state.capital.contasReceber, state.revenue.bruta, state.revenue.pmr]);
   const burnRunway = useMemo(() => {
     const burnMensal = cf.fluxoOperacional.map((v) => -v);
     const burnMedio12 = burnMensal.reduce((a, b) => a + b, 0) / 12;
     const burnMedio3 = burnMensal.slice(-3).reduce((a, b) => a + b, 0) / 3;
-    const colchao = state.capital.disponibilidades + (state.capital.contasReceber || 0);
+    const colchao = state.capital.disponibilidades + recebiveisEfetivo;
     const queimando = burnMedio3 > 0;
     const runwayMeses = queimando ? colchao / burnMedio3 : Infinity;
     return { burnMedio12, burnMedio3, runwayMeses, queimando };
-  }, [cf.fluxoOperacional, state.capital.disponibilidades, state.capital.contasReceber]);
+  }, [cf.fluxoOperacional, state.capital.disponibilidades, recebiveisEfetivo]);
 
   const caixaAtual = state.capital.disponibilidades;
-  const recebiveis = state.capital.contasReceber || 0;
+  const recebiveis = recebiveisEfetivo;
   const runwayLabel = !burnRunway.queimando
     ? "∞ (operação gera caixa)"
     : burnRunway.runwayMeses >= 24
