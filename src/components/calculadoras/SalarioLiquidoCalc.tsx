@@ -170,7 +170,7 @@ export function SalarioLiquidoCalc() {
             </Field>
             <Field
               label="Filhos menores de 14 anos"
-              hint="Usado para salário-família (renda ≤ R$ 1.906,04)."
+              hint={`Usado para salário-família (renda ≤ ${fmtBRL(SALARIO_FAMILIA_TETO)}).`}
             >
               <Input
                 type="number"
