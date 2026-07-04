@@ -39,7 +39,7 @@ describe("Indicadores — WACC", () => {
 
   it("WACC finito mesmo com PL=0 e Dívida=0 (safeMath)", () => {
     const s = createState({
-      capital: { ke: 15, kd: 10, patrimonioLiquido: 0, dividaOnerosa: 0, proprio: 100 },
+      capital: { ke: 15, kd: 10, patrimonioLiquido: 0,  proprio: 100 },
     });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
@@ -69,7 +69,7 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
       capital: {
         ativoTotal: 0,
         patrimonioLiquido: 0,
-        dividaOnerosa: 0,
+        
         passivosNaoOnerosos: 0,
         caixaOcioso: 0,
       },
@@ -129,7 +129,7 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
       capital: {
         ativoTotal: 0,
         patrimonioLiquido: 0,
-        dividaOnerosa: 0,
+        
         passivosNaoOnerosos: 0,
         fornecedores: 0,
       },
@@ -194,7 +194,7 @@ describe("Indicadores — NCG e FCF", () => {
       capital: {
         ativoTotal: 1_000_000,
         patrimonioLiquido: 800_000,
-        dividaOnerosa: 0,
+        
         contasReceber: 0,
         estoques: 0,
         fornecedores: 0,

@@ -89,7 +89,7 @@ describe("buildBriefing (integração com engine real)", () => {
   it("detecta padrão 'destruicao_valor' quando ROIC < WACC", () => {
     // Forçamos cenário ruim: dívida alta + EBIT baixo → ROIC despencará abaixo do WACC.
     const state = createState({
-      capital: { dividaOnerosa: 5_000_000, patrimonioLiquido: 100_000, kd: 15, ke: 12 },
+      capital: { debtContracts: [{ id: "sim", credor: "Banco Teste", saldoDevedor: 5_000_000, taxaAA: 18, sistema: "price", prazoMeses: 24 }], patrimonioLiquido: 100_000, kd: 15, ke: 12 },
     });
     const dre = buildDRE(state, resolveEffectiveRegime(state)).dre;
     const ind = calcIndicators(state, dre);

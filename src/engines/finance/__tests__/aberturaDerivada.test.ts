@@ -195,7 +195,7 @@ describe("deriveAbertura — totais Ativo = Passivo + PL", () => {
           lucrosAcumulados: 60_000, // plug para fechar
         },
         debtContracts: [],
-        dividaOnerosa: 0,
+        
       },
     });
     const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
@@ -215,7 +215,7 @@ describe("deriveAbertura — totais Ativo = Passivo + PL", () => {
         },
         abertura: { lucrosAcumulados: 0 },
         debtContracts: [],
-        dividaOnerosa: 0,
+        
       },
     });
     const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
@@ -235,7 +235,7 @@ describe("deriveAbertura — plug assistido de Lucros Acumulados", () => {
         },
         abertura: { lucrosAcumulados: 0 },
         debtContracts: [],
-        dividaOnerosa: 0,
+        
       },
     });
     const before = deriveAbertura({ state: s, impostosTotalMensais: [] });
@@ -262,7 +262,7 @@ describe("deriveAbertura — plug assistido de Lucros Acumulados", () => {
         },
         abertura: { lucrosAcumulados: 0 },
         debtContracts: [],
-        dividaOnerosa: 0,
+        
       },
     });
     const before = deriveAbertura({ state: s, impostosTotalMensais: [] });

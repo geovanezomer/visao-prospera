@@ -61,7 +61,7 @@ describe("Unidades — Ke/Kd/WACC nunca duplicam ×100", () => {
         ke: 12,
         kd: 9,
         patrimonioLiquido: 800_000,
-        dividaOnerosa: 200_000,
+        debtContracts: [{ id: "sim", credor: "Banco Teste", saldoDevedor: 200_000, taxaAA: 18, sistema: "price", prazoMeses: 24 }],
         ativoTotal: 1_500_000,
       },
     });
