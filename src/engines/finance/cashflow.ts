@@ -397,10 +397,18 @@ export function buildCashFlow(
   // Permutas: somam direto à variação de caixa, fora de OP/INV/FIN.
   const variacaoCaixa = fluxos.variacaoCaixa.map((v, i) => v + permutasLiquido[i]);
 
+  // SSOT do saldo de abertura: mesma prioridade usada por deriveAbertura
+  // (Balanço). Prefere `balanco.ativoCirculante.caixaEquivalentes`; se vazio,
+  // cai para o campo agregado `capital.disponibilidades` editado no Card 1.
+  const caixaAbertura =
+    Number(capital.balanco?.ativoCirculante?.caixaEquivalentes) ||
+    Number(capital.disponibilidades) ||
+    0;
   const { saldoInicial, saldoFinal } = computeSaldos(
-    capital.disponibilidades,
+    caixaAbertura,
     variacaoCaixa,
   );
+
   const alertas = computeAlertas(saldoFinal, cashflow.caixaMinimo);
   const pior = computePiorMes(saldoFinal);
 
