@@ -6,7 +6,7 @@
  *  - Lei 12.506/2011: aviso prévio proporcional (30 + 3 dias/ano completo, máx 90).
  *  - Lei 8.036/90 art. 18: multa FGTS de 40% (sem justa) ou 20% (acordo art. 484-A).
  *  - CF art. 7º, XVII: férias + 1/3 constitucional.
- *  - Tabelas INSS e IRRF 2025 (vigentes desde mai/2025).
+ *  - Tabelas INSS e IRRF versionadas em ./tabelas.ts (SSOT anual — MPS/MF).
  *  - Isenções consolidadas: aviso prévio indenizado e férias indenizadas + 1/3 NÃO sofrem
  *    incidência de INSS nem IRRF (REsp 1.230.957, STJ; Tema 985 STF).
  *
@@ -51,18 +51,12 @@ export const motivoDescricao: Record<MotivoRescisao, string> = {
 };
 
 // ============================================================================
-// Tabelas 2025 (INSS / IRRF)
+// Tabelas INSS / IRRF — versionadas em ./tabelas.ts (SSOT anual)
 // ============================================================================
 
-/** Faixas progressivas do INSS — vigentes mai/2025. */
-const INSS_FAIXAS = [
-  { ate: 1518.0, aliquota: 0.075 },
-  { ate: 2793.88, aliquota: 0.09 },
-  { ate: 4190.83, aliquota: 0.12 },
-  { ate: 8157.41, aliquota: 0.14 }, // teto
-] as const;
+import { getTabelas, ANO_VIGENTE } from "./tabelas";
 
-/** Faixas IRRF mensais 2025 (após dedução simplificada opcional). */
+/** Faixas IRRF mensais (após dedução simplificada opcional). Vigente desde mai/2024. */
 const IRRF_FAIXAS = [
   { ate: 2428.8, aliquota: 0.0, deduzir: 0 },
   { ate: 2826.65, aliquota: 0.075, deduzir: 182.16 },
@@ -71,16 +65,20 @@ const IRRF_FAIXAS = [
   { ate: Infinity, aliquota: 0.275, deduzir: 908.73 },
 ] as const;
 
-/** Dedução por dependente (IRRF 2025). */
+/** Dedução por dependente (IRRF). */
 const DEP_DEDUCAO = 189.59;
 
-/** Calcula INSS progressivo (cap no teto). */
-export function calcularINSS(base: number): number {
+/**
+ * Calcula INSS progressivo (cap no teto), usando as faixas do ano informado.
+ * Padrão: ano vigente (SSOT em ./tabelas.ts).
+ */
+export function calcularINSS(base: number, ano: number = ANO_VIGENTE): number {
   if (base <= 0) return 0;
-  const restante = Math.min(base, INSS_FAIXAS[INSS_FAIXAS.length - 1].ate);
+  const faixas = getTabelas(ano).inssFaixas;
+  const restante = Math.min(base, faixas[faixas.length - 1].ate);
   let anterior = 0;
   let total = 0;
-  for (const f of INSS_FAIXAS) {
+  for (const f of faixas) {
     const faixa = Math.max(0, Math.min(restante, f.ate) - anterior);
     total += faixa * f.aliquota;
     anterior = f.ate;

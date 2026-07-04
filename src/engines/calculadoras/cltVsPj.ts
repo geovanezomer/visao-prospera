@@ -9,7 +9,7 @@
  * Engine pura. Para uso pedagógico/consultivo — não substitui contador.
  *
  * Bases:
- *  - INSS 2025 (faixas progressivas) e IRRF 2025
+ *  - Tabelas INSS/IRRF versionadas em ./tabelas.ts (SSOT anual — MPS/MF)
  *  - INSS Pró-labore: 11% (até o teto INSS)
  *  - MEI: DAS R$ ~76 (comércio/indústria) ou R$ ~80 (serviços) — default serviços
  *  - Lucro Presumido serviços: IRPJ 15% × 32% + CSLL 9% × 32% + PIS 0,65% + COFINS 3% + ISS ~5% ≈ 16,33%
@@ -17,6 +17,7 @@
  */
 import { z } from "zod";
 import { calcularINSS, calcularIRRF } from "./rescisao";
+import { getTabelas } from "./tabelas";
 
 export type RegimePJ = "mei" | "simples" | "presumido";
 
@@ -37,9 +38,9 @@ export const regimePJLabel: Record<RegimePJ, string> = {
  * decisões judiciais que afastem o adicional para determinados segmentos.
  */
 export const PARAMETROS_PJ = {
-  // DAS MEI 2025 (serviços): INSS 5% × SM (R$ 75,90) + ISS R$ 5,00 = R$ 80,90.
-  // Comércio/Indústria usaria R$ 76,90 (INSS + ICMS R$ 1,00).
-  mei: { aliquotaImpostos: 0, dasFixoMensal: 80.9, tetoFaturamentoAnual: 81000 },
+  // DAS MEI (serviços): INSS 5% × SM + ISS R$ 5,00 — valor do ano vigente
+  // vem de getTabelas().meiDasServicos (SSOT anual em ./tabelas.ts).
+  mei: { aliquotaImpostos: 0, dasFixoMensal: getTabelas().meiDasServicos, tetoFaturamentoAnual: 81000 },
   // Simples: alíquota efetiva é CALCULADA por faixa (Anexo III) — ver aliquotaSimplesAnexoIII().
   // Mantemos um fallback informativo de ~9,3% para fins de tooltip apenas.
   simples: { aliquotaImpostos: 0.093, dasFixoMensal: 0, tetoFaturamentoAnual: 4_800_000 },
@@ -101,8 +102,9 @@ export function irrfPlr(plrAnual: number): number {
   return Math.max(0, Math.round(imposto * 100) / 100);
 }
 
-export const TETO_INSS_2025 = 8157.41;
-export const SALARIO_MINIMO_2025 = 1518.0;
+/** Teto/mínimo do ano vigente — leem de `getTabelas()` (SSOT anual). */
+export const TETO_INSS = getTabelas().inssTeto;
+export const SALARIO_MINIMO = getTabelas().salarioMinimo;
 export const PRO_LABORE_PCT_DEFAULT = 0.28;
 
 // ============================================================================
@@ -254,11 +256,11 @@ export function calcularPJ(regime: RegimePJ, i: CltVsPjInputParsed): ResultadoPJ
 
   // Pró-labore: 28% do faturamento, mínimo 1 salário-mínimo (no MEI o pró-labore é opcional —
   // se faturamento ≤ teto, manter mínimo para fins previdenciários é boa prática).
-  const proLabore = Math.max(SALARIO_MINIMO_2025, fat * i.proLaborePct);
+  const proLabore = Math.max(SALARIO_MINIMO, fat * i.proLaborePct);
   // INSS pró-labore: 11% até o teto.
   // ATENÇÃO: o MEI já recolhe a contribuição previdenciária (5% do salário mínimo)
   // embutida no DAS fixo, logo NÃO se aplica 11% adicional sobre o pró-labore.
-  const baseInss = Math.min(proLabore, TETO_INSS_2025);
+  const baseInss = Math.min(proLabore, TETO_INSS);
   const inssProLabore = regime === "mei" ? 0 : Math.round(baseInss * 0.11 * 100) / 100;
   // IRRF sobre (pró-labore − INSS) — sem dependentes (apuração simplificada).
   // MEI: como não há pró-labore formal nem retenção de INSS de contribuinte

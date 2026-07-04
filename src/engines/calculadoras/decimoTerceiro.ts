@@ -5,7 +5,7 @@
  *  - Lei 4.090/1962 e Lei 4.749/1965: instituição e regulamentação.
  *  - CF art. 7º, VIII: direito ao 13º.
  *  - IN RFB 1.500/2014 art. 14: tributação em separado do salário mensal.
- *  - Tabelas INSS/IRRF 2025 (vigentes desde mai/2025).
+ *  - Tabelas INSS/IRRF versionadas em ./tabelas.ts (SSOT anual).
  *
  * Regras consolidadas:
  *  - 13º proporcional = (salário bruto ÷ 12) × meses trabalhados.

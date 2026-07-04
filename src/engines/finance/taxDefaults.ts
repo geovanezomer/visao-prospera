@@ -177,11 +177,11 @@ export const ALIQ_PRESUMIDA_IBS_SN = 1.2;
 // (Plano v3 — todos editáveis via lightbox "Folha & Sócios")
 // =====================================================================
 /** Salário mínimo nacional vigente (R$/mês) — piso para pró-labore de sócio operacional. */
-export const SALARIO_MINIMO_DEFAULT = 1518;
+export const SALARIO_MINIMO_DEFAULT = 1621;
 /** INSS sócio (contribuinte individual) — plano simplificado, Lei 9.876/99. */
 export const INSS_SOCIO_ALIQ_DEFAULT = 11;
-/** Teto contributivo do INSS (R$/mês) — Portaria MPS 2025. */
-export const INSS_TETO_DEFAULT = 8157.41;
+/** Teto contributivo do INSS (R$/mês) — Portaria Interministerial MPS/MF nº 13/2026. */
+export const INSS_TETO_DEFAULT = 8475.55;
 /** Cota patronal de INSS sobre pró-labore (Lucro Presumido/Real). */
 export const INSS_PATRONAL_ALIQ_DEFAULT = 20;
 /** Faixa do IRPF mensal: [até R$, alíquota %, parcela a deduzir R$]. */

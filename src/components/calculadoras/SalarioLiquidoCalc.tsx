@@ -3,7 +3,7 @@
  * Aplica INSS progressivo + IRRF progressivo (com deduções por dependente,
  * pensão alimentícia e outros descontos) sobre o salário bruto.
  *
- * Bases: Lei 8.212/91, Lei 9.250/95 (IRRF), tabelas INSS/IRRF 2025.
+ * Bases: Lei 8.212/91, Lei 9.250/95 (IRRF), tabelas INSS/IRRF versionadas em engines/calculadoras/tabelas.ts.
  */
 import { useMemo, useState } from "react";
 import { Download, Info, RotateCcw, Wallet } from "lucide-react";
@@ -24,12 +24,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { calcularINSS, calcularIRRF } from "@/engines/calculadoras/rescisao";
+import { getTabelas, ANO_VIGENTE } from "@/engines/calculadoras/tabelas";
 import { fmtBRL, fmtPct } from "@/engines/finance/format";
 
 const DEP_DEDUCAO = 189.59;
-// Salário-família 2025 — Portaria Interministerial MPS/MF nº 6, de 10/01/2025
-const SALARIO_FAMILIA_TETO = 1906.04;
-const SALARIO_FAMILIA_VALOR = 65.0;
+// Salário-família e faixas INSS vêm de getTabelas() (SSOT anual — Portaria MPS/MF).
+const TABELA = getTabelas();
+const SALARIO_FAMILIA_TETO = TABELA.salarioFamiliaLimite;
+const SALARIO_FAMILIA_VALOR = TABELA.salarioFamiliaCota;
 
 export function SalarioLiquidoCalc() {
   const [salarioBruto, setSalarioBruto] = useState<number>(5000);
@@ -168,7 +170,7 @@ export function SalarioLiquidoCalc() {
             </Field>
             <Field
               label="Filhos menores de 14 anos"
-              hint="Usado para salário-família (renda ≤ R$ 1.906,04)."
+              hint={`Usado para salário-família (renda ≤ ${fmtBRL(SALARIO_FAMILIA_TETO)}).`}
             >
               <Input
                 type="number"
@@ -412,8 +414,8 @@ export function SalarioLiquidoCalc() {
                 O cálculo segue uma ordem específica: primeiro desconta-se o INSS, pois a base do
                 IRRF já considera o INSS como dedução. Em seguida aplica-se a tabela do IR sobre a
                 base resultante. Cada dependente reduz a base do IR em <strong>R$ 189,59</strong>.
-                Beneficiários do Salário-Família (renda bruta até R$ 1.906,04) recebem acréscimo de
-                R$ 65,00 por filho menor de 14 anos.
+                Beneficiários do Salário-Família (renda bruta até {fmtBRL(SALARIO_FAMILIA_TETO)}) recebem
+                acréscimo de {fmtBRL(SALARIO_FAMILIA_VALOR)} por filho menor de 14 anos.
               </p>
               <div className="rounded-md bg-muted/40 p-3 font-mono text-xs">
                 Base IRRF = Salário Bruto − INSS − (Dependentes × R$ 189,59) − Pensão
@@ -421,7 +423,7 @@ export function SalarioLiquidoCalc() {
                 Salário Líquido = Salário Bruto − INSS − IRRF − Pensão − Outros + Salário-Família
               </div>
 
-              <p className="pt-2 font-medium text-foreground">Tabela INSS 2025</p>
+              <p className="pt-2 font-medium text-foreground">Tabela INSS {ANO_VIGENTE}</p>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -431,26 +433,22 @@ export function SalarioLiquidoCalc() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell className="text-xs">Até R$ 1.518,00</TableCell>
-                    <TableCell className="text-xs">7,5%</TableCell>
-                    <TableCell className="text-xs">R$ 113,85</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="text-xs">R$ 1.518,01 a R$ 2.793,88</TableCell>
-                    <TableCell className="text-xs">9%</TableCell>
-                    <TableCell className="text-xs">R$ 114,83</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="text-xs">R$ 2.793,89 a R$ 4.190,83</TableCell>
-                    <TableCell className="text-xs">12%</TableCell>
-                    <TableCell className="text-xs">R$ 167,63</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="text-xs">R$ 4.190,84 a R$ 8.157,41</TableCell>
-                    <TableCell className="text-xs">14%</TableCell>
-                    <TableCell className="text-xs">R$ 555,32</TableCell>
-                  </TableRow>
+                  {TABELA.inssFaixas.map((f, idx) => {
+                    const prev = idx === 0 ? 0 : TABELA.inssFaixas[idx - 1].ate;
+                    const larguraFaixa = f.ate - prev;
+                    const descontoMax = larguraFaixa * f.aliquota;
+                    const faixaLabel =
+                      idx === 0
+                        ? `Até ${fmtBRL(f.ate)}`
+                        : `${fmtBRL(prev + 0.01)} a ${fmtBRL(f.ate)}`;
+                    return (
+                      <TableRow key={f.ate}>
+                        <TableCell className="text-xs">{faixaLabel}</TableCell>
+                        <TableCell className="text-xs">{fmtPct(f.aliquota)}</TableCell>
+                        <TableCell className="text-xs">{fmtBRL(descontoMax)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
 
@@ -466,19 +464,20 @@ export function SalarioLiquidoCalc() {
                     12% da renda bruta anual na declaração completa.
                   </li>
                   <li>
-                    <strong>Cheque o Salário-Família:</strong> se seu bruto for até R$ 1.906,04,
-                    você tem direito a R$ 65,00 por filho menor de 14 anos — basta apresentar
-                    certidão de nascimento ao RH.
+                    <strong>Cheque o Salário-Família:</strong> se seu bruto for até {fmtBRL(SALARIO_FAMILIA_TETO)},
+                    você tem direito a {fmtBRL(SALARIO_FAMILIA_VALOR)} por filho menor de 14 anos — basta
+                    apresentar certidão de nascimento ao RH.
                   </li>
                   <li>
-                    <strong>Desconto marginal:</strong> entre R$ 4.190 e R$ 8.157 o INSS adicional é
-                    14% — para cada R$ 1.000 a mais no bruto, R$ 140 vão para o INSS antes do IR.
+                    <strong>Desconto marginal:</strong> entre {fmtBRL(TABELA.inssFaixas[2].ate)} e{" "}
+                    {fmtBRL(TABELA.inssTeto)} o INSS adicional é 14% — para cada R$ 1.000 a mais no
+                    bruto, R$ 140 vão para o INSS antes do IR.
                   </li>
                 </ul>
               </div>
               <p className="pt-2 text-xs">
                 Bases: Lei 8.212/91 (custeio previdenciário), Lei 9.250/95 (IRRF), tabelas INSS/IRRF
-                vigentes 2025.
+                vigentes {ANO_VIGENTE}.
               </p>
             </CardContent>
           </CollapsibleContent>

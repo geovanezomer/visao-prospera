@@ -36,6 +36,7 @@ import {
   type MotivoRescisao,
 } from "@/engines/calculadoras/rescisao";
 import { fmtBRL } from "@/engines/finance/format";
+import { ANO_VIGENTE } from "@/engines/calculadoras/tabelas";
 
 
 export function RescisaoCltCalc() {
@@ -527,7 +528,7 @@ export function RescisaoCltCalc() {
               </div>
               <p className="pt-2 text-xs">
                 Bases: CLT arts. 477, 482, 484-A, 487; Lei 12.506/2011; Lei 8.036/90; tabelas
-                INSS/IRRF 2025. Estimativa — valide com contador antes de uso oficial.
+                INSS/IRRF {ANO_VIGENTE}. Estimativa — valide com contador antes de uso oficial.
               </p>
             </CardContent>
           </CollapsibleContent>
