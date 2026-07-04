@@ -57,8 +57,7 @@ function mkSocio(overrides: Partial<SocioRetirada> = {}): SocioRetirada {
   };
 }
 
-// (chaves duplicadas removidas pelo TS — mantidas para clareza)
-if (false) {
+
 
 
 describe("Lei 15.270/2025 — integração com sócio", () => {
