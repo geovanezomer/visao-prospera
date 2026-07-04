@@ -23,6 +23,12 @@ export interface CashFlow {
   pagamentosFornecedores: number[];
   pagamentosFixos: number[];
   pagamentosVariaveis: number[];
+  /** Folha de pessoal desembolsada (SSOT `isFolhaCost`) com lag de 30 dias
+   *  (pagamento no 5º dia útil do mês seguinte) + liquidação do saldo de
+   *  abertura de salários no mês 1. Já é excluída de `pagamentosFixos` e
+   *  `pagamentosVariaveis` — some as três colunas para obter o desembolso
+   *  operacional (ex.: fornec + fixos + variáveis + folha + impostos). */
+  pagamentosFolha: number[];
   pagamentosFinanceiros: number[];
   pagamentosImpostos: number[];
   fluxoOperacional: number[];
