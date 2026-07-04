@@ -27,13 +27,16 @@ export function ProlaboreTab() {
       const semSocios = syncSociosToCosts({ ...state, socios: [] }, regime);
       const { dre } = buildDRE(semSocios, regime);
       const lucroAno = dre.lucroLiquido.reduce((a, b) => a + b, 0);
-      const bruto = Math.max(0, lucroAno / 12);
-      const aposReserva = Math.max(0, bruto - reservaMin);
+      // Preserva o sinal — prejuízo precisa aparecer como negativo na UI,
+      // não zerado (bug pré-existente que escondia cenários deficitários).
+      const bruto = lucroAno / 12;
+      const brutoPos = Math.max(0, bruto);
+      const aposReserva = Math.max(0, brutoPos - reservaMin);
       const disp = (aposReserva * payoutPct) / 100;
       return {
         lucroBruto: bruto,
         disponivel: disp,
-        reserva: Math.min(reservaMin, bruto),
+        reserva: Math.min(reservaMin, brutoPos),
         payoutRS: disp,
       };
     } catch {
