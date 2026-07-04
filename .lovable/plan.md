@@ -1,66 +1,80 @@
-## Contexto — não são duplicatas, mas ficam lado a lado
+## Diagnóstico
 
-Depois de mapear o código, os dois campos têm **naturezas diferentes**, e é importante deixar isso claro antes de mexer:
+As duas linhas na página **Despesas → Despesas Administrativas** —
+`Pró-labore (sócios)` e `INSS Patronal sócios` — não são seeds antigos. Elas são
+**linhas system geradas pela SSOT** em `src/engines/finance/socios.ts`
+(`syncSociosToCosts`), que insere/atualiza em `state.costs`:
 
-| Campo | Onde vive hoje | Natureza | Usado por |
-|---|---|---|---|
-| `capital.abertura.lucrosAcumulados` | Card 3 do Capital | **Contábil (PL)** — resultado retido dos exercícios anteriores. Pode ser negativo. É o "plug" do Balanço de Abertura. | `deriveAbertura`, Balanço Patrimonial |
-| `tax.prejuizoFiscalAcumuladoAbertura` | Dialog Config Tributária → aba Federais | **Fiscal (parte B do e-Lalur)** — saldo compensável até 30 %/tri no IRPJ/CSLL. Só existe no Lucro Real. | `calcReal` (Lei 9.065/95 art. 42) |
+- `id = SOCIOS_PROLABORE_LINE_ID` (`__socios_prolabore__`) — flag `system: true`
+- `id = SOCIOS_PATRONAL_LINE_ID` (`__socios_inss_patronal__`) — flag `system: true`
 
-Ou seja: um afeta o **Balanço**, o outro afeta o **imposto do Real**. Não podem ser fundidos numericamente — se somarmos, quebramos tanto o fechamento do balanço quanto os testes de `tax-overrides.test.ts` e a compensação trimestral em `calcReal`.
+Esse mecanismo é intencional e **não pode ser removido**: DRE, Balanço, Fluxo
+de Caixa, Simulador, Sensitivity, Monte Carlo e Forecast leem custos por
+`state.costs`. Se pararmos de sincronizar as linhas, o pró-labore some dos
+resultados. Ou seja, o problema é **apenas de UI**: a lista `CostsTab` não
+filtra as linhas `system` e o usuário vê como se fossem editáveis.
 
-O que o usuário pediu (e faz sentido) é **unificar a experiência**: os dois campos "de abertura" moram no mesmo lugar (Capital), e o fiscal só aparece quando o regime é Lucro Real. O nome da chave no `AppState` **permanece** para não quebrar cálculos, testes e snapshots.
+## Objetivo
 
----
+- Manter SSOT em `state.socios` → `syncSociosToCosts` → `state.costs` (não
+  mexer no engine, testes e integrações).
+- **Esconder** as linhas com `system: true` da UI de Despesas, para que a
+  edição aconteça apenas em **Configurações → Sócios** (ProlaboreTab).
+- Adicionar uma nota discreta no bloco "Despesas Administrativas"
+  informando que pró-labore/INSS patronal são geridos na ProlaboreTab, com
+  link/atalho para lá.
 
 ## Plano
 
-### 1. Mover a UI do prejuízo fiscal para o Capital (sem renomear a chave)
+### 1. Filtrar linhas `system` na `CostsTab`
 
-Em `src/components/sim/capital/AberturaCard.tsx`, dentro do Card 3 "Outras informações de abertura":
+Arquivo: `src/components/sim/costs/CostsTab.tsx`
 
-- Adicionar um bloco condicional `state.tax.regime === "real"` com **um único** `SimpleField`:
-  - **Label:** "Prejuízo fiscal acumulado (abertura) — Lucro Real"
-  - **Hint:** "Saldo da parte B do e-Lalur registrado na ECF. Diferente de 'Lucros/prejuízos acumulados' (que é contábil, do PL): este é fiscal e compensa até 30 % do lucro tributável de cada trimestre (Lei 9.065/95 art. 42). Base negativa de CSLL usa o mesmo saldo."
-  - Lê/escreve em `state.tax.prejuizoFiscalAcumuladoAbertura` via `setTax` do contexto (sem mudar a shape do estado).
-  - Clamp `Math.max(0, v)` no onChange, igual ao dialog atual.
-- Adicionar um `Callout`/info curto no topo do card explicando a diferença entre "lucros acumulados (contábil / PL)" e "prejuízo fiscal (tributário)" — evita a confusão que originou o pedido.
+- Alterar o helper `byCat`:
+  ```ts
+  const byCat = (cat: CostCategory) =>
+    state.costs.filter(
+      (c) => (c.category === cat || c.category === ALIAS[cat]) && !c.system,
+    );
+  ```
+  Isso remove `Pró-labore (sócios)` e `INSS Patronal sócios` de todas as
+  seções (aparecem em "Despesas Administrativas" hoje) sem mudar o cálculo.
+- Nenhuma mudança em `addLine`, `removeLine`, `setMonth` etc. — todas
+  operam por `id` e nunca serão chamadas para IDs system porque as linhas
+  não aparecem mais na tabela.
 
-### 2. Remover a `Section` "Prejuízo fiscal acumulado — Lucro Real" do dialog
+### 2. Nota informativa em "Despesas Administrativas"
 
-Em `src/components/sim/tax/TaxSettingsDialog.tsx` (linhas 459-469):
+Ainda em `CostsTab.tsx`, dentro da `SectionBlock` "Despesas Administrativas"
+(linha 265), adicionar uma faixa discreta acima da `CostTable` **apenas
+quando existir pelo menos um sócio com pró-labore > 0** (checando
+`state.socios?.some((s) => s.prolaboreMensal > 0)`):
 
-- Excluir a `Section` inteira.
-- Adicionar uma nota discreta acima do `Section` seguinte (ou no fim do `StepFederais` quando `regime==="real"`) do tipo: *"O prejuízo fiscal acumulado de abertura foi movido para **Capital → Saldos de Abertura**."* com link/botão que navega para a aba Capital. Zero mudança em cálculo.
+> "Pró-labore e INSS Patronal dos sócios são geridos em **Configurações →
+> Sócios / Pró-labore**. Os valores entram automaticamente no DRE, Balanço
+> e Fluxo de Caixa."
 
-### 3. Preservar a SSOT — nada muda no engine
+Sem botão de navegação (a página Configurações já tem entrypoint global);
+apenas o texto para tirar a confusão.
 
-- `tax.prejuizoFiscalAcumuladoAbertura` continua sendo a **única** fonte lida por `calcReal` (`src/engines/finance/tax/real.ts`).
-- `capital.abertura.lucrosAcumulados` continua sendo a **única** fonte lida por `deriveAbertura`.
-- **Não** somar, **não** derivar um do outro, **não** renomear.
-- Snapshot da IA (`engines/ai/snapshot.ts` e `tools/finance.ts`) já consome as duas chaves — sem mudança.
+### 3. Não mexer no engine (nada muda em cálculo)
 
-### 4. Testes / não-regressão
+- `syncSociosToCosts` continua criando/atualizando as duas linhas system —
+  intocado.
+- `defaults.ts` continua filtrando o seed legado `id="prolabore"` — intocado.
+- Testes em `src/engines/finance/__tests__/socios.test.ts` continuam
+  válidos (validam presença das linhas em `state.costs`, não a UI).
 
-- `src/engines/finance/__tests__/tax-overrides.test.ts` (bloco "prejuizoFiscalAcumuladoAbertura") continua passando: lê a mesma chave.
-- `src/engines/finance/__tests__/aberturaDerivada.test.ts` inalterado.
-- Rodar `bunx vitest run` no fim para confirmar zero regressão.
-- Verificação visual: alternar regime no dialog Simples → Presumido → Real e confirmar que o campo aparece/desaparece no Capital.
+### 4. Verificação
 
-### 5. Ordem de execução (uma única passada de edições)
+- Rodar `bunx vitest run src/engines/finance/__tests__/socios.test.ts` para
+  garantir zero regressão no engine.
+- Conferir visualmente: (a) as duas linhas somem de Despesas; (b) DRE,
+  Fluxo de Caixa e Simulador continuam mostrando o pró-labore no total de
+  despesas administrativas; (c) editar valor em ProlaboreTab atualiza os
+  totais (mas nada aparece em Despesas).
 
-1. Editar `AberturaCard.tsx` (adicionar campo condicional + callout de diferenciação).
-2. Editar `TaxSettingsDialog.tsx` (remover Section, adicionar nota de "movido para Capital").
-3. Rodar testes.
+## Ordem de execução
 
----
-
-## Detalhes técnicos
-
-- **Sem migração de dados**: chave `tax.prejuizoFiscalAcumuladoAbertura` permanece no `TaxConfig`. Estados salvos em Zustand/localStorage continuam válidos.
-- **Sem mudança em `defaults.ts`**: já é `0`.
-- **Import novo em AberturaCard**: precisa de acesso ao `setTax` do `useFinance()` (já exportado no contexto — confirmar; se não, adicionar setter helper).
-- **Condicional**: `state.tax.regime === "real"` — mesma comparação usada em `calcReal` e em `compareRegimes`, então o gate é consistente com o motor.
-- **Copy visível** deixa explícito que os dois campos coexistem por razões contábeis/fiscais legítimas — evita que a próxima revisão volte a tratá-los como duplicata.
-
-Aprovando, aplico as duas edições e rodo os testes.
+Uma única passada: editar `CostsTab.tsx` (2 mudanças pequenas) → rodar
+testes. Nenhum outro arquivo precisa ser alterado.

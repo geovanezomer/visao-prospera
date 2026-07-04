@@ -34,7 +34,10 @@ export function CostsTab() {
     variavel: "despesa_comercial",
   };
   const byCat = (cat: CostCategory) =>
-    state.costs.filter((c) => c.category === cat || c.category === ALIAS[cat]);
+    state.costs.filter(
+      (c) => (c.category === cat || c.category === ALIAS[cat]) && !c.system,
+    );
+
 
   const updateLine = (id: string, patch: Partial<CostLine>) =>
     update((s) => ({ ...s, costs: s.costs.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
@@ -268,6 +271,16 @@ export function CostsTab() {
         accentClass="border-l-[color:var(--warning)]"
         onAdd={() => addLine("despesa_administrativa")}
       >
+        {state.socios?.some((s) => (s.prolaboreMensal ?? 0) > 0) && (
+
+          <div className="mb-3 rounded-md border border-primary/20 bg-primary/5 p-2.5 text-[11px] text-muted-foreground">
+            <strong className="text-foreground">Pró-labore</strong> e{" "}
+            <strong className="text-foreground">INSS Patronal</strong> dos sócios são geridos em{" "}
+            <em>Configurações → Sócios / Pró-labore</em>. Os valores entram automaticamente
+            no DRE, Balanço e Fluxo de Caixa.
+          </div>
+        )}
+
         <CostTable
           lines={byCat("fixo")}
           receitaBrutaAnual={receitaBrutaAnual}
