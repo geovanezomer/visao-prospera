@@ -2,10 +2,10 @@
 // WACC, valuation, saúde, governança, prescritivo, resumo executivo, etc.
 
 import {
-import { sumContractSaldos } from "@/engines/finance/debtContracts";
   resolveEffectiveRegime,
   diagnose,
 } from "@/engines/finance";
+import { sumContractSaldos } from "@/engines/finance/debtContracts";
 import { getFinancialModelCached } from "@/engines/finance/financialModel";
 import { brl, pct, sum, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
 
