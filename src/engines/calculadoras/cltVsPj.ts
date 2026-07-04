@@ -17,6 +17,7 @@
  */
 import { z } from "zod";
 import { calcularINSS, calcularIRRF } from "./rescisao";
+import { getTabelas } from "./tabelas";
 
 export type RegimePJ = "mei" | "simples" | "presumido";
 
