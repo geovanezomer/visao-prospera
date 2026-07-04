@@ -167,12 +167,8 @@ export function BalanceSheetCard({
           />
         </div>
 
-        <div className="mt-3 grid grid-cols-4 overflow-hidden rounded-md border border-border/40 text-center text-[10px]">
-          <MiniStat label="Caixa/bancos" value={fmtBRL(capital.disponibilidades)} />
-          <MiniStat label="Estoque" value={fmtBRL(capital.estoques)} />
-          <MiniStat label="A receber" value={fmtBRL(capital.contasReceber)} />
-          <MiniStat label="Total de ativos" value={fmtBRL(ativoTotalDerivado)} highlight />
-        </div>
+
+
 
 
         {/* Detalhes patrimoniais (antes era StepCard separado — agora unificado aqui) */}
