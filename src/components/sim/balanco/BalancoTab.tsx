@@ -175,7 +175,10 @@ export function BalancoTab() {
 
   const totalsAtual = useMemo(() => calcBalancoTotals(balanco), [balanco]);
   const totalsAnterior = useMemo(() => calcBalancoTotals(anterior), [anterior]);
-  const totalsAbertura = useMemo(() => calcAberturaTotals(state.capital), [state.capital]);
+  const totalsAbertura = useMemo(
+    () => calcAberturaTotals(state, model.model.dre.impostosTotal),
+    [state, model.model.dre.impostosTotal],
+  );
 
   // Snapshot N-1: congela o fechamento atual em capital.balanco.anterior.
   const salvarComoNm1 = () => {
