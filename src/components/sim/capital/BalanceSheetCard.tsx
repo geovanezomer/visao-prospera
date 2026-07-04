@@ -118,16 +118,28 @@ export function BalanceSheetCard({
       : (capital.dividaOnerosa || 0) + (capital.fornecedores || 0);
 
   const plCalculado = (capital.ativoTotal || 0) - totalPassivos;
-  const plInformado = capital.patrimonioLiquido || 0;
-  const diff = Math.abs(plInformado - plCalculado);
-  const hasInconsistencia =
-    capital.ativoTotal > 0 && diff > Math.max(100, capital.ativoTotal * 0.02);
+
+  // PL final: usa detalhe (Capital Social + Reservas + Lucros) se preenchido,
+  // senão cai no cálculo Ativo − Dívidas.
+  const plFinal = temPlDetalhado ? plDetalhado : plCalculado;
+
+  // Sincroniza PL, fornecedores e contas a receber com os valores derivados —
+  // todos os três inputs foram escondidos e agora são sempre calculados:
+  //   • contasReceber → 0 (força engine a usar PMR)
+  //   • fornecedores  → 0 (força engine a usar PMP)
+  //   • patrimonioLiquido → plFinal (Ativo − Dívidas ou detalhado)
+  useEffect(() => {
+    const patch: Partial<AppState["capital"]> = {};
+    if ((capital.contasReceber || 0) !== 0) patch.contasReceber = 0;
+    if ((capital.fornecedores || 0) !== 0) patch.fornecedores = 0;
+    if (Math.abs((capital.patrimonioLiquido || 0) - plFinal) > 0.5) {
+      patch.patrimonioLiquido = plFinal;
+    }
+    if (Object.keys(patch).length > 0) onChange(patch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plFinal, capital.contasReceber, capital.fornecedores]);
 
 
-
-  // Sugestão de PL: cálculo on-demand (não auto-aplica). O usuário escolhe
-  // explicitamente via botão "Usar PL calculado" ou "Ajustar PL para X".
-  // Removido useEffect que sobrescrevia silenciosamente (causa race conditions).
 
 
 
