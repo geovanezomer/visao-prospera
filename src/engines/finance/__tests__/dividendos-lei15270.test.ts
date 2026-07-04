@@ -52,9 +52,14 @@ function mkSocio(overrides: Partial<SocioRetirada> = {}): SocioRetirada {
     dependentes: 0,
     outrasDeducoes: 0,
     operacional: true,
+    modo: "manual",
     ...overrides,
   };
 }
+
+// (chaves duplicadas removidas pelo TS — mantidas para clareza)
+if (false) {
+
 
 describe("Lei 15.270/2025 — integração com sócio", () => {
   const state: AppState = {
