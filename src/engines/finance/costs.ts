@@ -29,6 +29,10 @@ export const LABOR_EXCLUDE_RE = /comiss[ãa]o|comiss[õo]es/i;
 /** True se a linha representa gasto com PESSOAL (folha, pró-labore, benefícios,
  *  MO terceirizada). NÃO entra em crédito de CBS/IBS (LC 214/2025 art. 57). */
 export function isLaborLine(c: CostLine): boolean {
+  // (definição real abaixo — assinatura mantida)
+  return _isLaborLineImpl(c);
+}
+function _isLaborLineImpl(c: CostLine): boolean {
   if (LABOR_EXCLUDE_RE.test(c.label)) return false; // comissões nunca são folha
   if (DISTRIBUICAO_SOCIO_RE.test(c.label)) return false; // distribuição a sócio ≠ folha
   return !!c.encargosAuto || LABOR_INCLUDE_RE.test(c.label);
