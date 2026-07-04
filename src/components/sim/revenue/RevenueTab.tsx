@@ -387,8 +387,12 @@ export function RevenueTab() {
           tone="neg"
           sub={fmtPct(pctRec(deducoesAnual)) + " da receita"}
           hint={{
-            description: "Devoluções, cancelamentos, descontos incondicionais e abatimentos.",
-            formula: "Devoluções + Descontos Incondicionais + Abatimentos",
+            description: usaPDD
+              ? "Descontos incondicionais e abatimentos (a inadimplência esperada está classificada como PDD em Despesas Operacionais, conforme CPC 47/IFRS 9)."
+              : "Inadimplência esperada, descontos incondicionais e abatimentos deduzidos diretamente da Receita Bruta.",
+            formula: usaPDD
+              ? "Descontos Incondicionais + Abatimentos"
+              : "Inadimplência + Descontos Incondicionais + Abatimentos",
             calc: `${fmtBRL(deducoesAnual)} ÷ ${fmtBRL(brutaAnual)} × 100 = ${fmtPct(pctRec(deducoesAnual))}`,
           }}
         />
