@@ -13,6 +13,7 @@ import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 import { getSplitPaymentAtivo } from "./taxDefaults";
 import { getDistribuicaoRealizadaMeses } from "./socios";
 import { deriveAbertura } from "./aberturaDerivada";
+import { isFolhaCost, effectiveMonthValues } from "./costs";
 
 
 export interface CashFlow {
