@@ -285,8 +285,19 @@ export function calcRetiradaSocio(
   const aliqTopo = tabela[tabela.length - 1][1] / 100;
   const irpfDistExcedente = distExcedente * aliqTopo;
 
+  // Retenção Lei 15.270/2025 — 10% sobre TOTAL (isento + tributável) do mês
+  // quando a soma > R$ 50k. É antecipação do IRPFM anual da PF.
+  const distTotalMensal = distIsenta + distExcedente;
+  const retencaoDividendosMensal = calcRetencaoDividendosMensal(distTotalMensal);
+  const alertaIRPFM = distTotalMensal * 12 > IRPFM_ALERTA_RENDA_ANUAL;
+
   const liquidoSocio =
-    prolab - inssSocio - irpfMensal + distIsenta + (distExcedente - irpfDistExcedente);
+    prolab -
+    inssSocio -
+    irpfMensal +
+    distIsenta +
+    (distExcedente - irpfDistExcedente) -
+    retencaoDividendosMensal;
   const custoTotalPJ = prolab + inssPatronal;
 
   return {
@@ -298,6 +309,8 @@ export function calcRetiradaSocio(
     irpfModo,
     distribuicaoIsentaMensal: distIsenta,
     distribuicaoTributavelMensal: distExcedente,
+    retencaoDividendosMensal,
+    alertaIRPFM,
     liquidoSocio,
     custoTotalPJ,
   };
