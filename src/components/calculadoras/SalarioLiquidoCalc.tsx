@@ -423,7 +423,7 @@ export function SalarioLiquidoCalc() {
                 Salário Líquido = Salário Bruto − INSS − IRRF − Pensão − Outros + Salário-Família
               </div>
 
-              <p className="pt-2 font-medium text-foreground">Tabela INSS 2025</p>
+              <p className="pt-2 font-medium text-foreground">Tabela INSS {ANO_VIGENTE}</p>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -433,26 +433,22 @@ export function SalarioLiquidoCalc() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell className="text-xs">Até R$ 1.518,00</TableCell>
-                    <TableCell className="text-xs">7,5%</TableCell>
-                    <TableCell className="text-xs">R$ 113,85</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="text-xs">R$ 1.518,01 a R$ 2.793,88</TableCell>
-                    <TableCell className="text-xs">9%</TableCell>
-                    <TableCell className="text-xs">R$ 114,83</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="text-xs">R$ 2.793,89 a R$ 4.190,83</TableCell>
-                    <TableCell className="text-xs">12%</TableCell>
-                    <TableCell className="text-xs">R$ 167,63</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="text-xs">R$ 4.190,84 a R$ 8.157,41</TableCell>
-                    <TableCell className="text-xs">14%</TableCell>
-                    <TableCell className="text-xs">R$ 555,32</TableCell>
-                  </TableRow>
+                  {TABELA.inssFaixas.map((f, idx) => {
+                    const prev = idx === 0 ? 0 : TABELA.inssFaixas[idx - 1].ate;
+                    const larguraFaixa = f.ate - prev;
+                    const descontoMax = larguraFaixa * f.aliquota;
+                    const faixaLabel =
+                      idx === 0
+                        ? `Até ${fmtBRL(f.ate)}`
+                        : `${fmtBRL(prev + 0.01)} a ${fmtBRL(f.ate)}`;
+                    return (
+                      <TableRow key={f.ate}>
+                        <TableCell className="text-xs">{faixaLabel}</TableCell>
+                        <TableCell className="text-xs">{fmtPct(f.aliquota)}</TableCell>
+                        <TableCell className="text-xs">{fmtBRL(descontoMax)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
 
