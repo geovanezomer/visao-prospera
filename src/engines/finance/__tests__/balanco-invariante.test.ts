@@ -223,7 +223,7 @@ function printReconciliation(seed: number, state: AppState): string {
 
   const recebivel = sumArr(buildRecebivelMensal(norm, dre));
   const recebido = sumArr(cf.recebimentos);
-  const compras = sumArr(dre.cpv);
+  const compras = sumArr(buildComprasMensal(norm, reg));
   const pagFornec = sumArr(cf.pagamentosFornecedores);
   const impComp = sumArr(dre.impostosTotal);
   const impPag = sumArr(cf.pagamentosImpostos);
