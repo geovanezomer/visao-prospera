@@ -38,7 +38,7 @@ export function CapitalTab() {
   const { ind, model } = useFinanceModel(state);
   const aberturaTotals = useMemo(
     () => deriveAbertura({ state, impostosTotalMensais: model.dre.impostosTotal }).totals,
-    [state, model.dre.impostos],
+    [state, model.dre.impostosTotal],
   );
 
   const set = (patch: Partial<typeof c>) =>

@@ -115,7 +115,7 @@ export function AberturaCard({
   const derived: AberturaDerivada = useMemo(
     () =>
       deriveAbertura({ state, impostosTotalMensais: model.dre.impostosTotal }),
-    [state, model.dre.impostos],
+    [state, model.dre.impostosTotal],
   );
 
   const set = (patch: Partial<BalancoAbertura>) =>

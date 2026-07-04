@@ -43,7 +43,9 @@ export function NCGExplanationCard({
             Impacto CFO
           </div>
           <div className="text-lg font-bold leading-tight">
-            Seu desencaixe operacional é de {pmr - pmp} dias.
+            {pmr >= pmp
+              ? `Seu desencaixe operacional é de ${pmr - pmp} dias.`
+              : `Você tem um encaixe operacional de ${pmp - pmr} dias (paga fornecedores depois de receber).`}
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground leading-snug">
             Cada dia a mais que o cliente demora a pagar (PMR) te custa{" "}
