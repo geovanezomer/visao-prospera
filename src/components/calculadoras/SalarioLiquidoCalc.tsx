@@ -477,7 +477,7 @@ export function SalarioLiquidoCalc() {
               </div>
               <p className="pt-2 text-xs">
                 Bases: Lei 8.212/91 (custeio previdenciário), Lei 9.250/95 (IRRF), tabelas INSS/IRRF
-                vigentes {ANO_VIGENTE}.
+                vigentes {ANO_VIGENTE}. IRRF conforme Lei nº 15.270/2025 (redutor até R$ 7.350).
               </p>
             </CardContent>
           </CollapsibleContent>

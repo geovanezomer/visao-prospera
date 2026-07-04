@@ -371,7 +371,7 @@ export function FeriasCltCalc() {
               </div>
 
               <p className="pt-2 text-xs">
-                Bases: CLT arts. 129–153; CF art. 7º, XVII; Lei 7.713/88; tabelas INSS/IRRF {ANO_VIGENTE}.
+                Bases: CLT arts. 129–153; CF art. 7º, XVII; Lei 7.713/88; tabelas INSS/IRRF {ANO_VIGENTE}. IRRF conforme Lei nº 15.270/2025 (redutor até R$ 7.350).
                 Estimativa — valide com contador antes de uso oficial.
               </p>
             </CardContent>

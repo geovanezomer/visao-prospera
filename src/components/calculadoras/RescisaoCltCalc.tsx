@@ -528,7 +528,7 @@ export function RescisaoCltCalc() {
               </div>
               <p className="pt-2 text-xs">
                 Bases: CLT arts. 477, 482, 484-A, 487; Lei 12.506/2011; Lei 8.036/90; tabelas
-                INSS/IRRF {ANO_VIGENTE}. Estimativa — valide com contador antes de uso oficial.
+                INSS/IRRF {ANO_VIGENTE}. IRRF conforme Lei nº 15.270/2025 (redutor até R$ 7.350). Estimativa — valide com contador antes de uso oficial.
               </p>
             </CardContent>
           </CollapsibleContent>

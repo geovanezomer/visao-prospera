@@ -582,7 +582,7 @@ export function CltVsPjCalc() {
               </div>
               <p className="pt-2 text-xs">
                 Bases: LC 123/2006 (Simples/MEI), Lei 9.249/95 (Lucro Presumido), Lei 8.212/91 (INSS
-                pró-labore), tabelas IRRF/INSS {ANO_VIGENTE}. Estimativa — sempre confirme com seu contador.
+                pró-labore), tabelas IRRF/INSS {ANO_VIGENTE}. IRRF conforme Lei nº 15.270/2025 (redutor até R$ 7.350). Estimativa — sempre confirme com seu contador.
               </p>
             </CardContent>
           </CollapsibleContent>
