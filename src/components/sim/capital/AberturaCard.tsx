@@ -262,35 +262,8 @@ export function AberturaCard({
           </div>
         )}
       </div>
-
-      {/* Barra fixa no rodapé — mantém o botão de ajuste sempre acessível
-          enquanto o balanço de abertura não fecha. Permite reclicar sem
-          rolar até o final do card após cada correção. */}
-      {!derived.totals.fechado && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-warning/40 bg-background/95 px-3 py-2 shadow-[0_-4px_12px_rgba(0,0,0,0.15)] backdrop-blur">
-          <div className="mx-auto flex max-w-5xl flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-2 text-[11px] text-warning">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>
-                Balanço de abertura não fecha — diferença de{" "}
-                <strong>{fmtBRL(derived.totals.diferenca)}</strong>.
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={ajustarLucros}
-              className="shrink-0 rounded bg-destructive px-3 py-1.5 text-[11px] font-bold uppercase text-destructive-foreground hover:bg-destructive/90 transition-colors"
-            >
-              Ajustar Lucros Acumulados (
-              {derived.totals.diferenca > 0 ? "+" : ""}
-              {fmtBRL(derived.totals.diferenca)})
-            </button>
-          </div>
-        </div>
-      )}
-      {/* Espaçador para o conteúdo não ficar coberto pela barra fixa. */}
-      {!derived.totals.fechado && <div aria-hidden className="h-16" />}
     </div>
   );
 }
+
 
