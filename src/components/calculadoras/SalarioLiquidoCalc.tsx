@@ -414,8 +414,8 @@ export function SalarioLiquidoCalc() {
                 O cálculo segue uma ordem específica: primeiro desconta-se o INSS, pois a base do
                 IRRF já considera o INSS como dedução. Em seguida aplica-se a tabela do IR sobre a
                 base resultante. Cada dependente reduz a base do IR em <strong>R$ 189,59</strong>.
-                Beneficiários do Salário-Família (renda bruta até R$ 1.906,04) recebem acréscimo de
-                R$ 65,00 por filho menor de 14 anos.
+                Beneficiários do Salário-Família (renda bruta até {fmtBRL(SALARIO_FAMILIA_TETO)}) recebem
+                acréscimo de {fmtBRL(SALARIO_FAMILIA_VALOR)} por filho menor de 14 anos.
               </p>
               <div className="rounded-md bg-muted/40 p-3 font-mono text-xs">
                 Base IRRF = Salário Bruto − INSS − (Dependentes × R$ 189,59) − Pensão
