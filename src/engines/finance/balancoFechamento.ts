@@ -1,41 +1,35 @@
-// Fase 2 — Derivação do Balanço de Fechamento POR CONSTRUÇÃO.
+// Balanço de Fechamento POR CONSERVAÇÃO DE MASSA (SSOT).
 //
-// Função pura que parte dos saldos de ABERTURA + itens patrimoniais constantes
-// + movimentos do período (DRE + DFC + PMR/PMP/PME) e produz o Balanço de
-// FECHAMENTO obedecendo à identidade contábil Ativo = Passivo + PL por
-// CONSTRUÇÃO — sem ajustes manuais.
+// Refatoração (2026-07-04): substituídas as fórmulas paralelas de "regime
+// permanente" (CR = Receita×PMR/360, Forn. = CPV×PMP/360, Impostos = rotina
+// própria) pela identidade fundamental:
 //
-// Fórmula geral aplicada em cada rubrica:
+//     saldoFim = saldoAbertura + competência_período − caixa_período
 //
-//     saldoFim = saldoAbertura + movimentoPeríodo
+// Assim o balanço herda os efeitos de PMR/PMP/lag tributário DIRETAMENTE da
+// DFC, garantindo Ativo ≡ Passivo + PL por construção mesmo em cenários com
+// sazonalidade, contratos de dívida, Split Payment, aportes e dividendos.
 //
 // Detalhamento por rubrica:
-//   Caixa_fim          = Caixa_ini + ΔCaixa (saldoFinal[11] da DFC)
-//   CR_fim             = ReceitaBruta_anual × PMR/360
-//   Estoques_fim       = Estoques_ini + Compras − CPV (aprox: capital.estoques se preenchido)
-//   Fornecedores_fim   = CPV_anual × PMP/360
-//   Imobilizado_bruto  = Bruto_ini + Σ CAPEX ativado
-//   Depreciação_acum   = DeprecAcum_ini + Depreciação_período (mensal × 12 + ativações)
-//   Empréstimos        = saldo dos contratos de dívida (já agregado em dividaOnerosa)
-//   Impostos_pagar     = impostos_anuais / 12 (≈ 1 mês de DARF não-pago)
-//   Salários_a_pagar   = folha_anual / 12
-//   Resultado_exerc    = Lucro Líquido DRE − Dividendos distribuídos
-//   Lucros_acum_fim    = Lucros_acum_ini (constante; resultado vai p/ resultado_exerc)
+//   Caixa_fim          = saldoFinal[11] da DFC (fluxo real)
+//   CR_fim             = CR_ini      + Recebível          − Recebimentos DFC
+//   Estoques_fim       = Estoques_ini (compras ≈ CPV → estoque steady-state)
+//   Fornecedores_fim   = Forn_ini    + Compras (dre.cpv)  − PagFornec DFC
+//   ImpostosPagar_fim  = ImpPagar_ini + dre.impostosTotal  − PagImpostos DFC
+//   Empréstimos_fim    = Emprést_ini + Captações           − Amortizações DFC
+//   Depreciação_acum   = DepAcum_ini + Σ dre.depreciacao (SSOT da DRE)
+//   Capital_social_fim = Cap_ini + Σ cf.aportes
+//   Resultado_exerc    = Lucro Líquido − Dividendos
 //
-// Itens patrimoniais CONSTANTES (não mudam dentro do exercício) são
-// preservados de `capital.balanco`:
-//   • Capital Social, Reservas de Capital
-//   • Terrenos, Edificações, Máquinas, Veículos, Móveis (valor histórico)
-//   • Marcas, Patentes, Goodwill
+// A DFC (cashflow.ts) faz a contrapartida: liquida os saldos de abertura de
+// CR/Fornec/Impostos nos primeiros meses via `distributeByPrazo`, senão os
+// saldos ficariam eternamente inflados no fechamento.
 import type { AppState, BalancoDetalhado, CostLine } from "./types";
 import type { FinancialModelCashflow, FinancialModelDRE } from "./financialModel";
 import type { MonthlyTax } from "./tax/shared";
 import { deriveAbertura } from "./aberturaDerivada";
 import { safeNumber as n } from "./safeMath";
-import { getSplitPaymentAtivo } from "./taxDefaults";
-import { resolveEffectiveRegime } from "./regime";
-// SSOT das regras de lag tributário — compartilhado com cashflow.ts.
-import { computeImpostosPagarFechamento } from "./tax/impostosLag";
+import { buildRecebivelMensal } from "./cashflow";
 
 
 const sumArr = (a: number[] | undefined): number =>
@@ -50,9 +44,9 @@ export interface DeriveOpts {
   state: AppState;
   dre: FinancialModelDRE;
   cf: FinancialModelCashflow;
-  /** Série mensal de impostos. Quando fornecida, o passivo tributário de
-   *  fechamento respeita regime (Simples/Presumido/Real) e Split Payment;
-   *  caso contrário, faz fallback conservador (impostosAnual/12). */
+  /** Mantido por retro-compatibilidade — não é mais consumido diretamente.
+   *  A conservação de massa via `cf.pagamentosImpostos` já respeita o regime
+   *  (Simples/Presumido/Real) e Split Payment automaticamente. */
   tax?: MonthlyTax;
 }
 
@@ -74,7 +68,6 @@ export function deriveBalancoFechamento({
   state,
   dre,
   cf,
-  tax,
 }: DeriveOpts): BalancoFechamentoResult {
   const cap = state.capital;
   // Saldos de abertura — fonte única em `aberturaSSOT` (abaixo).
@@ -84,45 +77,47 @@ export function deriveBalancoFechamento({
   const plConst = balConst.patrimonioLiquido ?? {};
 
   // SSOT — saldos de abertura derivados (sem duplicar inputs do usuário).
-  const aberturaSSOT = deriveAbertura({ state, impostosMensais: dre.impostos });
+  // Usa `dre.impostosTotal` (vendas + lucro) para alinhar com o kick da DFC.
+  const aberturaSSOT = deriveAbertura({
+    state,
+    impostosMensais: dre.impostosTotal,
+  });
 
   // ─────────────────────────── Movimentos do período ───────────────────────────
-  const receitaBrutaAnual = sumArr(state.revenue?.bruta);
-  const cpvAnual = sumCostByCat(state.costs, ["custo_vendas", "direto_venda"]);
   const folhaAnual = sumCostByCat(state.costs, ["fixo", "variavel"]);
   const lucroLiquidoAnual = sumArr(dre.lucroLiquido);
-  const impostosAnual = sumArr(dre.impostos);
 
-  // CAPEX do período (ativações com mês conhecido + soma manual em cashflow.capex).
+  // CAPEX ativado no período (base para imobilizado bruto).
   const capexAtivado = (cap.capexAtivacao ?? []).reduce(
     (a, c) => a + (c.valor || 0),
     0,
   );
 
-  // Depreciação do período: depMensal × 12 + depreciação das ativações até dez.
-  // Cada ativação no mês `mes` deprecia (valor/vidaUtilMeses) × (13 − mes) meses.
-  const depAtivacoes = (cap.capexAtivacao ?? []).reduce((a, c) => {
-    if (!c || !(c.valor > 0)) return a;
-    const meses = Math.max(0, 13 - (c.mes || 1));
-    const vu = c.vidaUtilMeses > 0 ? c.vidaUtilMeses : 60;
-    return a + (c.valor / vu) * meses;
-  }, 0);
-  const depPeriodo = (cap.depreciacaoMensal || 0) * 12 + depAtivacoes;
+  // Depreciação do período: SSOT único = dre.depreciacao (removido recálculo
+  // local). Se a DRE mudar a regra de depreciação, o balanço acompanha.
+  const depPeriodo = sumArr(dre.depreciacao);
 
-  // Dividendos pagos no período.
+  // Dividendos pagos e aportes recebidos no período (DFC — SSOT).
   const dividendosPagos = sumArr(cf.dividendos);
+  const aportesPeriodo = sumArr(cf.aportes);
 
   // ─────────────────────────────── Ativo ───────────────────────────────
-  // Caixa final: saldo de dez da DFC (já vem do simulator)
+  // Caixa final: saldo de dez da DFC (fluxo real, considerando kick de abertura).
   const caixaFim = n(cf.saldoFinal?.[11]);
 
-  // CR final: regime permanente — ReceitaBruta × PMR/360. Mais robusto que
-  // CR_ini + Receita − Recebimentos (que exige modelar PMR mensalmente).
-  const pmr = state.revenue?.pmr || 0;
-  const crFim =
-    pmr > 0 ? (receitaBrutaAnual * pmr) / 360 : aberturaSSOT.contasReceber.value;
+  // CR final — CONSERVAÇÃO DE MASSA:
+  //   CR_fim = CR_ini + Recebível_período − Recebimentos DFC
+  // Como a DFC recebeu no início o kick de CR_ini (via distributeByPrazo), o
+  // resultado converge para o "transbordo" natural do PMR — sem inflar CR.
+  const recebivelAnual = sumArr(buildRecebivelMensal(state, dre));
+  const crFim = Math.max(
+    0,
+    aberturaSSOT.contasReceber.value +
+      recebivelAnual -
+      sumArr(cf.recebimentos),
+  );
 
-  // Estoques: usa capital.estoques (saldo final declarado) ou abertura derivada.
+  // Estoques: compras ≈ CPV → estoque em steady-state = abertura.
   const estoquesFim =
     cap.estoques > 0 ? cap.estoques : aberturaSSOT.estoques.value;
 
@@ -137,26 +132,26 @@ export function deriveBalancoFechamento({
     n(imoConst.veiculos) +
     n(imoConst.moveisUtensilios) +
     n(imoConst.outrosImobilizados);
-  // CAPEX entra como "outrosImobilizados" no fechamento (sem detalhar tipo).
   const outrosImobFim = n(imoConst.outrosImobilizados) + capexAtivado;
 
-  // Depreciação acumulada = abertura + período.
+  // Depreciação acumulada = abertura + período (SSOT da DRE).
   const depAcumFim = aberturaSSOT.depreciacaoAcumulada.value + depPeriodo;
 
   // Amortização acumulada: sem fluxo modelado — mantém abertura.
   const amortAcumFim = aberturaSSOT.amortizacaoAcumulada.value;
 
   // ─────────────────────────────── Passivo ───────────────────────────────
-  // Fornecedores final: regime permanente — CPV × PMP/360.
-  const pmp = state.revenue?.pmp || 0;
-  const fornecedoresFim =
-    pmp > 0 ? (cpvAnual * pmp) / 360 : aberturaSSOT.fornecedores.value;
+  // Fornecedores final — CONSERVAÇÃO DE MASSA:
+  //   Fornec_fim = Fornec_ini + Compras (CPV) − PagFornecedores DFC
+  const comprasAnual = sumArr(dre.cpv);
+  const fornecedoresFim = Math.max(
+    0,
+    aberturaSSOT.fornecedores.value +
+      comprasAnual -
+      sumArr(cf.pagamentosFornecedores),
+  );
 
   // Empréstimos: saldo de abertura ± movimentos do período (DFC).
-  //   fim = ini + captações − amortizações de principal
-  // Sem esse ajuste, a redução de caixa via amortizações (linha FIN da DFC)
-  // não teria contrapartida no passivo e geraria diferença residual =
-  // Σ (captações − amortizações) no fechamento do balanço.
   const emprestimosIniTotal =
     aberturaSSOT.emprestimosCP.value + aberturaSSOT.emprestimosLP.value;
   const captacoesPeriodo = sumArr(cf.emprestimosCaptados);
@@ -165,8 +160,6 @@ export function deriveBalancoFechamento({
     0,
     emprestimosIniTotal + captacoesPeriodo - amortizacoesPeriodo,
   );
-  // Preserva a proporção CP/LP da abertura (heurística — sem re-classificar
-  // contratos por maturidade a cada mês).
   const cpShare =
     emprestimosIniTotal > 0
       ? aberturaSSOT.emprestimosCP.value / emprestimosIniTotal
@@ -174,27 +167,27 @@ export function deriveBalancoFechamento({
   const emprestimosCPFim = emprestimosFimTotal * cpShare;
   const emprestimosLPFim = emprestimosFimTotal * (1 - cpShare);
 
+  // Impostos a pagar — CONSERVAÇÃO DE MASSA:
+  //   ImpPagar_fim = ImpPagar_ini + Competência − Pagamentos DFC
+  // A rotina paralela `computeImpostosPagarFechamento` foi removida daqui —
+  // o efeito do regime + Split Payment é herdado automaticamente via
+  // `cf.pagamentosImpostos` (que já respeita `partitionMonthlyTaxByLag`).
+  const impostosCompetencia = sumArr(dre.impostosTotal);
+  const impostosPagarFim = Math.max(
+    0,
+    aberturaSSOT.impostosPagar.value +
+      impostosCompetencia -
+      sumArr(cf.pagamentosImpostos),
+  );
 
-  // Impostos a pagar: ~ 1 mês de DARF (apuração + pagamento defasado).
-  // Impostos a pagar: quando `tax` é fornecido, alinha com computeImpostos
-  // do cashflow (Split lag 0, demais lag 30) + apuração trimestral no Real/Presumido.
-  // Fallback (sem tax): 1 mês de DARF (aproximação legada).
-  const impostosPagarFim = tax
-    ? computeImpostosPagarFechamento({
-        tax,
-        regime: resolveEffectiveRegime(state),
-        splitAtivo: getSplitPaymentAtivo(state.tax),
-      })
-    : impostosAnual > 0
-      ? impostosAnual / 12
-      : 0;
-
-  // Salários a pagar: ~ 1 mês de folha.
+  // Salários a pagar: ~ 1 mês de folha (provisão fim de período). A DFC paga
+  // toda a folha à vista, sem provisão de 1 mês → resíduo desprezível quando
+  // folha é uniforme; pequeno viés em cenários com folha muito sazonal.
   const salariosPagarFim = folhaAnual > 0 ? folhaAnual / 12 : 0;
 
   // ─────────────────────────────── PL ───────────────────────────────
-  // Constantes do balanço de capital + lucros acumulados de abertura.
-  const capitalSocial = n(plConst.capitalSocial);
+  // Aportes do período somam ao capital social (contrapartida contábil).
+  const capitalSocial = n(plConst.capitalSocial) + aportesPeriodo;
   const reservasCapital = n(plConst.reservasCapital);
   const reservasLucros = n(plConst.reservasLucros);
   const lucrosAcumIni = aberturaSSOT.lucrosAcumulados.value;
