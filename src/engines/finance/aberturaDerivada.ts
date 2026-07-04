@@ -23,8 +23,10 @@
 //   amortizacaoAcum  ← (override manual em abertura, default 0)
 //   impostosRecuperar← capital.abertura.impostosRecuperar (editável)
 //   lucrosAcumulados ← capital.abertura.lucrosAcumulados (plug histórico)
-import type { AppState, CostLine, DebtContract } from "./types";
+import type { AppState, DebtContract } from "./types";
 import { safeNumber as n } from "./safeMath";
+import { isFolhaCost, effectiveMonthValues } from "./costs";
+import { resolveEffectiveRegime } from "./regime";
 
 
 const firstMonth = (a: number[] | undefined): number => n(a?.[0]);
