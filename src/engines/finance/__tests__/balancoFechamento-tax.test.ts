@@ -97,7 +97,7 @@ describe("balancoFechamento — impostosPagar (conservação de massa)", () => {
     }
   });
 
-  it("Identidade contábil aproximada — Ativo ≈ Passivo + PL em todos os regimes", () => {
+  it("Conservação de massa preservada — |Δresíduo| ≈ 0 em todos os regimes", () => {
     const cases = [
       createState({ tax: { regime: "simples", era: "atual" } }),
       createState({ tax: { regime: "presumido", era: "atual" } }),
@@ -105,11 +105,19 @@ describe("balancoFechamento — impostosPagar (conservação de massa)", () => {
       createState({ tax: { regime: "real", era: "pleno", splitPaymentAtivo: false } }),
     ];
     for (const st of cases) {
-      const { res } = conservationCheck(st);
-      // Tolerância: pequenos ruídos de arredondamento e aproximação da
-      // provisão de folha (folha/12) — não deve explodir.
-      const tol = Math.max(10_000, res.totals.ativo * 0.02);
-      expect(Math.abs(res.totals.diferenca)).toBeLessThanOrEqual(tol);
+      const regime = resolveEffectiveRegime(st);
+      const { dre } = buildDRE(st, regime);
+      const cf = buildCashFlow(st);
+      const res = deriveBalancoFechamento({ state: st, dre, cf });
+      const abertura = deriveAbertura({
+        state: st,
+        impostosMensais: dre.impostosTotal,
+      });
+      // Conservação: fechamento herda o gap da abertura SEM amplificar.
+      const delta = Math.abs(res.totals.diferenca - abertura.totals.diferenca);
+      const tol = Math.max(1, res.totals.ativo * 0.001);
+      expect(delta).toBeLessThanOrEqual(tol);
     }
   });
+
 });
