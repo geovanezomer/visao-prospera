@@ -46,6 +46,26 @@ import { redutorLei15270 } from "@/engines/calculadoras/rescisao";
 export const SOCIOS_PROLABORE_LINE_ID = "__socios_prolabore__";
 export const SOCIOS_PATRONAL_LINE_ID = "__socios_inss_patronal__";
 
+// =====================================================================
+// Retenção de dividendos — Lei 15.270/2025, vigente 2026+
+// =====================================================================
+/** Limite mensal: distribuição da MESMA PJ à MESMA PF sem retenção. */
+export const DIVIDENDO_RETENCAO_LIMITE_MENSAL = 50_000;
+/** Alíquota de retenção sobre o TOTAL distribuído no mês quando excede o limite. */
+export const DIVIDENDO_RETENCAO_ALIQ = 0.1;
+/** Renda anual do sócio a partir da qual o IRPF Mínimo (IRPFM) pode incidir. */
+export const IRPFM_ALERTA_RENDA_ANUAL = 600_000;
+
+/**
+ * Retenção de 10% sobre o TOTAL distribuído no mês quando ultrapassa
+ * R$ 50 mil (não incide apenas sobre o excedente).
+ * Antecipação do IRPF Mínimo anual — Lei 15.270/2025, vigente 2026+.
+ */
+export function calcRetencaoDividendosMensal(totalDistribuidoMensal: number): number {
+  if (totalDistribuidoMensal <= DIVIDENDO_RETENCAO_LIMITE_MENSAL) return 0;
+  return totalDistribuidoMensal * DIVIDENDO_RETENCAO_ALIQ;
+}
+
 export interface SocioCalcResult {
   socioId: string;
   prolaboreMensal: number;
@@ -61,7 +81,11 @@ export interface SocioCalcResult {
   distribuicaoIsentaMensal: number;
   /** Distribuição além do limite (tributável como rendimento comum no sócio). */
   distribuicaoTributavelMensal: number;
-  /** Líquido mensal ao sócio: (prolab − INSS − IRPF) + distribuição isenta + tributável líquido. */
+  /** Retenção 10% (Lei 15.270/25) sobre o total distribuído no mês quando > R$ 50k. */
+  retencaoDividendosMensal: number;
+  /** true quando distribuição anualizada > R$ 600k (potencial IRPFM). */
+  alertaIRPFM: boolean;
+  /** Líquido mensal ao sócio: (prolab − INSS − IRPF) + distribuição isenta + tributável líquido − retenção. */
   liquidoSocio: number;
   /** Custo total para a PJ no mês: prolab + INSS patronal. */
   custoTotalPJ: number;
