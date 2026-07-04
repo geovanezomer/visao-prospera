@@ -38,6 +38,8 @@ const sumArr = (a: number[] | undefined): number =>
   (a ?? []).reduce((x, y) => x + (y || 0), 0);
 
 // (sumCostByCat removido — folha agora sai de `isFolhaCost` via SSOT.)
+
+export interface DeriveOpts {
   state: AppState;
   dre: FinancialModelDRE;
   cf: FinancialModelCashflow;
