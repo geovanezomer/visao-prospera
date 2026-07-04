@@ -14,13 +14,15 @@ import { buildDRE } from "../dre";
 import { buildCashFlow, buildRecebivelMensal } from "../cashflow";
 import { resolveEffectiveRegime } from "../regime";
 import { deriveAbertura } from "../aberturaDerivada";
+import { normalizeStateFromBalanco } from "../balanco";
 import { createState, m12 } from "./helpers";
 
 const sumArr = (a: number[] | undefined) =>
   (a ?? []).reduce((x, y) => x + (y || 0), 0);
 
-/** Executa a pipeline completa. */
-function run(state = createState()) {
+/** Executa a pipeline completa — mesma ordem de `buildFinancialModel`. */
+function run(rawState = createState()) {
+  const state = normalizeStateFromBalanco(rawState);
   const regime = resolveEffectiveRegime(state);
   const { dre } = buildDRE(state, regime);
   const cf = buildCashFlow(state);
@@ -31,6 +33,7 @@ function run(state = createState()) {
   });
   return { res, abertura, dre, cf };
 }
+
 
 /** A conservação de massa garante: |residuo_fim − residuo_ini| ≈ 0. */
 function assertConservacao(residuoFim: number, residuoIni: number, ativo: number) {
