@@ -123,13 +123,13 @@ export function deriveAbertura({
   // Impostos a pagar: 1º mês da DRE (proxy de competência → caixa).
   const impostosPagarVal = firstMonth(impostosMensais);
 
-  // Salários a pagar: folha do mês 1 (fixo + variável).
+  // Salários a pagar: folha do mês 1 (SSOT `isFolhaCost` — mesma regra usada
+  // pelo Fator R e por balancoFechamento). Aplica encargosAuto corretamente
+  // via `effectiveMonthValues`.
+  const regime = resolveEffectiveRegime(state);
   const folhaMes1 = (state.costs ?? [])
-    .filter((l: CostLine) =>
-      l.category === "fixo" || l.category === "variavel" ||
-      l.category === "despesa_administrativa" || l.category === "despesa_comercial",
-    )
-    .reduce((s, l) => s + firstMonth(l.values), 0);
+    .filter(isFolhaCost)
+    .reduce((s, l) => s + (effectiveMonthValues(l, regime)[0] || 0), 0);
 
   // Overrides manuais (raros).
   const impostosRecVal = n(ab.impostosRecuperar);
