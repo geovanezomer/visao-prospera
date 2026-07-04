@@ -510,14 +510,15 @@ export function buildCashFlow(
     fornecedoresAnoSeguinte: fornec.transbordo,
     impostosAnoSeguinte: imp.transbordo,
     totais: {
-      recebimentos: sum(rec.inAno),
+      recebimentos: sum(recebimentosInAno),
       receitasFinanceiras: sum(receitasFinanceiras),
       pagamentosTotais:
-        sum(fornec.inAno) +
+        sum(fornecedoresInAno) +
         sum(op.fixos) +
         sum(op.variaveis) +
         sum(op.financeiros) +
-        sum(imp.inAno),
+        sum(impostosInAno),
+
       fluxoOperacional: sum(fluxos.fluxoOperacional),
       fluxoInvestimento: sum(fluxos.fluxoInvestimento),
       fluxoFinanciamento: sum(fluxos.fluxoFinanciamento),
