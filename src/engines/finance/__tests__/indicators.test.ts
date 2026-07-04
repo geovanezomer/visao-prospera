@@ -17,7 +17,7 @@ describe("Indicadores — WACC", () => {
   it("WACC = wE·Ke + wD·Kd·(1−T) no Lucro Real (T=34%)", () => {
     const s = createState({
       tax: { regime: "real" },
-      capital: { ke: 15, kd: 10, patrimonioLiquido: 600_000, dividaOnerosa: 400_000 },
+      capital: { ke: 15, kd: 10, patrimonioLiquido: 600_000, debtContracts: [{ id: "sim", credor: "Banco", saldoDevedor: 400_000, taxaAA: 18, sistema: "price" as const, prazoMeses: 24 }]},
     });
     const { dre } = buildDRE(s, "real");
     const ind = calcIndicators(s, dre);
@@ -29,7 +29,7 @@ describe("Indicadores — WACC", () => {
     expect(irShieldForRegime("simples")).toBe(0);
     const s = createState({
       tax: { regime: "simples" },
-      capital: { ke: 15, kd: 10, patrimonioLiquido: 500_000, dividaOnerosa: 500_000 },
+      capital: { ke: 15, kd: 10, patrimonioLiquido: 500_000, debtContracts: [{ id: "sim", credor: "Banco", saldoDevedor: 500_000, taxaAA: 18, sistema: "price" as const, prazoMeses: 24 }]},
     });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
@@ -39,7 +39,7 @@ describe("Indicadores — WACC", () => {
 
   it("WACC finito mesmo com PL=0 e Dívida=0 (safeMath)", () => {
     const s = createState({
-      capital: { ke: 15, kd: 10, patrimonioLiquido: 0, dividaOnerosa: 0, proprio: 100 },
+      capital: { ke: 15, kd: 10, patrimonioLiquido: 0,  proprio: 100 },
     });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
@@ -52,7 +52,7 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
     const s = createState({
       revenue: { bruta: m12(10_000), inadimplencia: m12(0) },
       costs: [{ id: "cf", label: "Custo fixo", category: "fixo", values: m12(30_000), fixed: true }],
-      capital: { ativoTotal: 1_000_000, patrimonioLiquido: 700_000, dividaOnerosa: 0 },
+      capital: { ativoTotal: 1_000_000, patrimonioLiquido: 700_000, },
     });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
@@ -69,7 +69,7 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
       capital: {
         ativoTotal: 0,
         patrimonioLiquido: 0,
-        dividaOnerosa: 0,
+        
         passivosNaoOnerosos: 0,
         caixaOcioso: 0,
       },
@@ -86,7 +86,7 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
       tax: { regime: "real" },
       revenue: { bruta: m12(100_000), inadimplencia: m12(0) },
       costs: [{ id: "cv", label: "CV", category: "variavel", values: m12(40_000), fixed: false }],
-      capital: { ativoTotal: 2_000_000, patrimonioLiquido: 1_500_000, dividaOnerosa: 0 },
+      capital: { ativoTotal: 2_000_000, patrimonioLiquido: 1_500_000, },
     });
     const { dre } = buildDRE(s, "real");
     const ind = calcIndicators(s, dre);
@@ -129,7 +129,7 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
       capital: {
         ativoTotal: 0,
         patrimonioLiquido: 0,
-        dividaOnerosa: 0,
+        
         passivosNaoOnerosos: 0,
         fornecedores: 0,
       },
@@ -194,7 +194,7 @@ describe("Indicadores — NCG e FCF", () => {
       capital: {
         ativoTotal: 1_000_000,
         patrimonioLiquido: 800_000,
-        dividaOnerosa: 0,
+        
         contasReceber: 0,
         estoques: 0,
         fornecedores: 0,

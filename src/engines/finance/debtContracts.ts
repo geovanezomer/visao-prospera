@@ -1,9 +1,15 @@
-// Cálculo de cronograma de contratos de dívida (Price e SAC).
-// Gera arrays mensais (12 meses) de juros e amortização para alimentar:
+// Cálculo de cronograma de contratos de dívida (Price e SAC) + SSOT da
+// DÍVIDA ONEROSA. Contratos cadastrados aqui são a ÚNICA fonte de dívida
+// do sistema — o campo agregado `capital.dividaOnerosa` foi removido.
+//
+// Alimenta:
 // - state.cashflow.amortizacoes (saída de caixa de principal)
-// - custo financeiro (juros) via linha de custo sintética em "financeiro"
-// - capital.dividaOnerosa (soma dos saldos)
-import type { DebtContract } from "./types";
+// - custo financeiro (juros) via linha sintética "financeiro"
+// - Empréstimos CP/LP na abertura (aberturaDerivada.splitDebtByMaturity)
+// - Dívida onerosa total (totalDividaOnerosa) p/ WACC/ROIC/covenants
+// - Kd anual ponderado por saldo (avgKdAnual) p/ WACC/valuation
+import type { AppState, DebtContract } from "./types";
+
 
 export const DEBT_CONTRACTS_COST_ID = "__debt_contracts_juros";
 
@@ -90,4 +96,55 @@ export function vencimentoLabel(prazoMeses: number, from = new Date()): string {
   const d = new Date(from.getFullYear(), from.getMonth() + Math.max(0, prazoMeses), 1);
   const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
   return `${meses[d.getMonth()]}/${d.getFullYear()}`;
+}
+
+/** SSOT — dívida onerosa total = Σ saldoDevedor de todos os contratos ativos.
+ *  Substitui o antigo campo agregado `capital.dividaOnerosa`. Sem contratos
+ *  cadastrados → 0 (empresa sem dívida). */
+export function totalDividaOnerosa(state: AppState): number {
+  const contracts = state.capital?.debtContracts ?? [];
+  let total = 0;
+  for (const c of contracts) total += Math.max(0, c.saldoDevedor || 0);
+  return total;
+}
+
+/** SSOT — split CP/LP a partir dos contratos (≤12m vs >12m).
+ *  Alias do `splitDebtByMaturity` em aberturaDerivada, exportado aqui p/
+ *  chamadores que só têm `state` em escopo. */
+export function splitDebtCPLPFromContracts(state: AppState): {
+  cp: number;
+  lp: number;
+} {
+  let cp = 0;
+  let lp = 0;
+  for (const c of state.capital?.debtContracts ?? []) {
+    const saldo = Math.max(0, c.saldoDevedor || 0);
+    if (saldo <= 0) continue;
+    const prazo = Math.max(0, Math.floor(c.prazoMeses || 0));
+    if (prazo <= 12) cp += saldo;
+    else lp += saldo;
+  }
+  return { cp, lp };
+}
+
+/** Kd anual efetivo ponderado por saldoDevedor. Sem contratos → 0. */
+export function avgKdAnual(state: AppState): number {
+  const contracts = state.capital?.debtContracts ?? [];
+  let numer = 0;
+  let denom = 0;
+  for (const c of contracts) {
+    const saldo = Math.max(0, c.saldoDevedor || 0);
+    const taxa = Math.max(0, c.taxaAA || 0);
+    if (saldo <= 0) continue;
+    numer += taxa * saldo;
+    denom += saldo;
+  }
+  return denom > 0 ? numer / denom : 0;
+}
+
+/** Overload — soma direta a partir de um array de contratos (sem `state`). */
+export function sumContractSaldos(contracts: DebtContract[] | undefined): number {
+  let total = 0;
+  for (const c of contracts ?? []) total += Math.max(0, c.saldoDevedor || 0);
+  return total;
 }

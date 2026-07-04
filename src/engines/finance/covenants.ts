@@ -5,6 +5,7 @@
 // score de risco 0–10 e estima dias até default a partir do fluxo de caixa
 // mensal (primeiro mês em que o saldo final cruza zero).
 
+import { totalDividaOnerosa } from "./debtContracts";
 import type { AppState } from "./types";
 import { buildDRE } from "./dre";
 import { calcIndicators } from "./indicators";
@@ -90,7 +91,7 @@ export function analyzeCovenants(
   const ind = calcIndicators(state, dre);
   const cf = buildCashFlow(state);
 
-  const dividaOnerosa = Math.max(0, state.capital.dividaOnerosa);
+  const dividaOnerosa = Math.max(0, totalDividaOnerosa(state));
   const pl = Math.max(0, state.capital.patrimonioLiquido);
   const dPl = pl > 0 ? dividaOnerosa / pl : dividaOnerosa > 0 ? 99 : 0;
 

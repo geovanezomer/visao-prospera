@@ -37,7 +37,7 @@ describe("buildValuation — cenário lucrativo", () => {
   it("Equity = max(0, EV − Dívida Líquida) [Damodaran]", () => {
     const s = createState({
       revenue: { bruta: m12(80000), inadimplencia: m12(1) },
-      capital: { dividaOnerosa: 30000 },
+      capital: { debtContracts: [{ id: "sim", credor: "Banco", saldoDevedor: 30000, taxaAA: 18, sistema: "price" as const, prazoMeses: 24 }]},
     });
     const v = buildValuation(s, defaultValuationParams(s.businessType));
     const nd = Math.max(0, computeNetDebt(s));
@@ -69,11 +69,11 @@ describe("buildValuation — cenário lucrativo", () => {
   it("Múltiplos P/L: EV implícito inclui Dívida Líquida (sem dupla dedução)", () => {
     const s = createState({
       revenue: { bruta: m12(80000), inadimplencia: m12(1) },
-      capital: { dividaOnerosa: 50000 },
+      capital: { debtContracts: [{ id: "sim", credor: "Banco", saldoDevedor: 50000, taxaAA: 18, sistema: "price" as const, prazoMeses: 24 }]},
     });
     const sNoD = createState({
       revenue: { bruta: m12(80000), inadimplencia: m12(1) },
-      capital: { dividaOnerosa: 0 },
+      capital: { },
     });
     const vCom = buildValuation(s, { ...defaultValuationParams(s.businessType), method: "multiples" });
     const vSem = buildValuation(sNoD, { ...defaultValuationParams(sNoD.businessType), method: "multiples" });

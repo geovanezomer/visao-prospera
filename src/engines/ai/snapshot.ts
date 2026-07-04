@@ -1,5 +1,6 @@
 // Snapshot em camadas + estimativa de tokens + sanitização + cache por referência.
 import type { AppState } from "@/engines/finance/types";
+import { sumContractSaldos } from "@/engines/finance/debtContracts";
 import {
   buildDRE,
   calcIndicators,
@@ -124,7 +125,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
     `- **Era tributária:** ${state.tax.era ?? "atual"}`,
     // C-1 fix: state.capital.ke / kd já estão em % (ex.: 15 = 15%). Não multiplicar por 100.
     `- **Ke ${pct(state.capital.ke, 2)} | Kd ${pct(state.capital.kd, 2)}**`,
-    `- **PL:** ${brl(state.capital.patrimonioLiquido)} | **Dívida onerosa:** ${brl(state.capital.dividaOnerosa)} | **Ativo total:** ${brl(state.capital.ativoTotal)}`,
+    `- **PL:** ${brl(state.capital.patrimonioLiquido)} | **Dívida onerosa:** ${brl(sumContractSaldos(state.capital.debtContracts))} | **Ativo total:** ${brl(state.capital.ativoTotal)}`,
     `- **PMR ${state.revenue.pmr}d · PMP ${state.revenue.pmp}d**`,
     `- **Caixa mínimo:** ${brl(state.cashflow.caixaMinimo)}`,
   ];
@@ -597,7 +598,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
         ["Campo", "Valor"],
         [
           ["Patrimônio Líquido", brl(c.patrimonioLiquido)],
-          ["Dívida Onerosa", brl(c.dividaOnerosa)],
+          ["Dívida Onerosa", brl(sumContractSaldos(c.debtContracts))],
           ["Ativo Total", brl(c.ativoTotal)],
           ["Ativo Circulante", brl(c.ativoCirculante)],
           ["Passivo Circulante", brl(c.passivoCirculante)],
@@ -831,10 +832,10 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
       dividasLines.push(
         `\n_A engine gera automaticamente: linha "Juros sobre contratos de dívida" em Despesas, parcela de amortização do principal em DFC, e split CP/LP no Balanço._`,
       );
-    } else if ((state.capital?.dividaOnerosa ?? 0) > 0) {
+    } else if (sumContractSaldos(state.capital?.debtContracts) > 0) {
       dividasLines.push(`## Contratos de Dívida`);
       dividasLines.push(
-        `_Sem contratos detalhados. Dívida Onerosa agregada: ${brl(state.capital.dividaOnerosa)} · Kd: ${pct(state.capital.kd ?? 0, 2)} · Split CP/LP estimado por % (default 30% CP)._`,
+        `_Sem contratos detalhados. Dívida Onerosa agregada: ${brl(sumContractSaldos(state.capital.debtContracts))} · Kd: ${pct(state.capital.kd ?? 0, 2)} · Split CP/LP estimado por % (default 30% CP)._`,
       );
     }
   }

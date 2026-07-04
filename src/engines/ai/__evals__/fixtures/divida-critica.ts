@@ -14,7 +14,6 @@ export const fixtureDividaCritica: AppState = {
   },
   capital: {
     ...DEFAULT_STATE.capital,
-    dividaOnerosa: 900_000,
     kd: 22,
     patrimonioLiquido: 200_000,
     ativoTotal: 1_100_000,

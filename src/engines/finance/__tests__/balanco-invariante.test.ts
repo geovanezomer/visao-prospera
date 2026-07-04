@@ -171,7 +171,6 @@ function randomState(seed: number): AppState {
     costs,
     capital: {
       depreciacaoMensal: depMensal,
-      dividaOnerosa: dividaTotal,
       debtContracts,
       capexAtivacao,
       balanco: {

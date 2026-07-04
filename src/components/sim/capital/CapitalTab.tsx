@@ -16,6 +16,7 @@ import { DebtContractsCard } from "@/components/sim/capital/DebtContractsCard";
 import {
   aggregateContracts,
   DEBT_CONTRACTS_COST_ID,
+  totalDividaOnerosa,
 } from "@/engines/finance/debtContracts";
 import { assertDebtContracts } from "@/engines/finance/debtContracts.validation";
 import { toast } from "sonner";
@@ -86,7 +87,8 @@ export function CapitalTab() {
         ...s,
         capital: {
           ...s.capital,
-          dividaOnerosa: Math.round(agg.saldoTotal),
+          // (removido: dividaOnerosa — dívida vem exclusivamente dos contratos
+          //  via totalDividaOnerosa(state))
           kd: kdDerivado > 0 ? Number(kdDerivado.toFixed(2)) : s.capital.kd,
         },
         cashflow: { ...s.cashflow, amortizacoes: agg.amort, emprestimosCaptados: agg.captacao },
@@ -110,9 +112,10 @@ export function CapitalTab() {
 
   // Validações de inconsistência patrimonial.
   const warnings: string[] = [];
-  if (c.dividaOnerosa > c.ativoTotal && c.ativoTotal > 0) {
+  const _dividaOnerosaTotal = totalDividaOnerosa(state);
+  if (_dividaOnerosaTotal > c.ativoTotal && c.ativoTotal > 0) {
     warnings.push(
-      `Dívida onerosa (${fmtBRL(c.dividaOnerosa)}) maior que o Ativo Total (${fmtBRL(c.ativoTotal)}) — situação de insolvência técnica. WACC e ROIC perdem significado neste cenário.`,
+      `Dívida onerosa (${fmtBRL(_dividaOnerosaTotal)}) maior que o Ativo Total (${fmtBRL(c.ativoTotal)}) — situação de insolvência técnica. WACC e ROIC perdem significado neste cenário.`,
     );
   }
   if (c.patrimonioLiquido < 0) {
@@ -192,8 +195,9 @@ export function CapitalTab() {
           capital={c}
           onChange={set}
           debtContractsSlot={
-            <DebtContractsCard
-              contracts={contracts}
+            <div id="debt-contracts-card">
+              <DebtContractsCard
+                contracts={contracts}
               onChange={(next) => {
                 // Valida antes de persistir; bloqueia salvamento inválido
                 // e exibe toast amigável apontando o primeiro erro.
@@ -207,7 +211,8 @@ export function CapitalTab() {
                 }
                 set({ debtContracts: next });
               }}
-            />
+              />
+            </div>
           }
           capexSlot={
             <CapexAtivacaoSection

@@ -185,7 +185,7 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         inputs: [
           { label: "Empréstimos CP (SSOT)", origem: ssot.emprestimosCP.origem, valor: ssot.emprestimosCP.value },
         ],
-        formula: "EmprCP = Σ contratos com prazo ≤ 12m (fallback: dividaOnerosa × cpPct)",
+        formula: "EmprCP = Σ contratos com prazo ≤ 12m (sem contratos = 0)",
         resultado: ssot.emprestimosCP.value,
       },
       {
@@ -215,7 +215,7 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         inputs: [
           { label: "Empréstimos LP (SSOT)", origem: ssot.emprestimosLP.origem, valor: ssot.emprestimosLP.value },
         ],
-        formula: "EmprLP = Σ contratos com prazo > 12m (fallback: dividaOnerosa × (1 − cpPct))",
+        formula: "EmprLP = Σ contratos com prazo > 12m (sem contratos = 0)",
         resultado: ssot.emprestimosLP.value,
       },
       // PL

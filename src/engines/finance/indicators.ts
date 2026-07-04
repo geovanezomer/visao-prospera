@@ -5,6 +5,7 @@
 // =====================================================================
 
 import { AppState } from "./types";
+import { sumContractSaldos } from "./debtContracts";
 import { sum } from "./format";
 import { safeDivide, safePct, safeNumber } from "./safeMath";
 import { computeNetDebt, computeCapexMensal } from "./shared";
@@ -271,7 +272,7 @@ export function calcIndicators(
 
   // ---- Estrutura de capital baseada em campos REAIS ----
   const PL = Math.max(0, capital.patrimonioLiquido);
-  const D = Math.max(0, capital.dividaOnerosa);
+  const D = Math.max(0, sumContractSaldos(capital.debtContracts));
   const V = PL + D;
   // CONTRATO: `capital.proprio` é PERCENTUAL no intervalo [0, 100], NÃO fração.
   // Validado em Zod no schema do capital. Se mudar para fração, ajustar aqui também.
@@ -363,10 +364,10 @@ export function calcIndicators(
     capital.ativoCirculante > 0
       ? capital.ativoCirculante
       : capital.disponibilidades + crEstimado + capital.estoques;
-  // Auditoria #10: a fração da dívida onerosa que vence em CP é configurável
-  // (`capital.dividaCurtoPrazoPct`, default 0.30). Estimativa só é usada quando
-  // o consultor não informou `passivoCirculante` real.
-  const dividaCpFrac = Math.min(1, Math.max(0, capital.dividaCurtoPrazoPct ?? 0.3));
+  // Fração da dívida onerosa que vence em CP — hardcoded em 0.30 como
+  // heurística. Só é usada quando `passivoCirculante` não foi informado
+  // pelo consultor; para split preciso, usar `splitDebtCPLPFromContracts`.
+  const dividaCpFrac = 0.3;
   const passivoCirculante =
     capital.passivoCirculante > 0
       ? capital.passivoCirculante

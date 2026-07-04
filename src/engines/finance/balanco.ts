@@ -9,6 +9,7 @@
 import type { AppState, BalancoDetalhado, CostLine } from "./types";
 import { aggregateMutuos } from "./mutuosSocios";
 import { safeNumber as n } from "./safeMath";
+import { splitDebtCPLPFromContracts } from "./debtContracts";
 
 const sumObj = (o: Record<string, number | undefined> | undefined): number =>
   o ? Object.values(o).reduce<number>((a, b) => a + n(b), 0) : 0;
@@ -179,7 +180,7 @@ export function normalizeStateFromBalanco(state: AppState): AppState {
       ativoTotal: t.ativoTotal,
       ativoCirculante: t.ativoCirculante,
       passivoCirculante: t.passivoCirculante,
-      dividaOnerosa: t.dividaOnerosa,
+      // (removido: dividaOnerosa — vem de debtContracts via totalDividaOnerosa)
       patrimonioLiquido: t.patrimonioLiquido,
       passivosNaoOnerosos: t.passivosNaoOnerosos,
       disponibilidades,
@@ -246,11 +247,10 @@ export function suggestBalancoFromState(
   }, 0);
   const depAcum = (cap.depreciacaoMensal || 0) * 12 + depAcumCapex;
 
-  // Split dívida onerosa CP/LP (default 30/70).
-  const cpPct =
-    typeof cap.dividaCurtoPrazoPct === "number" ? cap.dividaCurtoPrazoPct : 0.3;
-  const dividaCP = (cap.dividaOnerosa || 0) * cpPct;
-  const dividaLP = (cap.dividaOnerosa || 0) * (1 - cpPct);
+  // Split dívida onerosa CP/LP — SSOT: contratos por maturidade.
+  const _split = splitDebtCPLPFromContracts(state);
+  const dividaCP = _split.cp;
+  const dividaLP = _split.lp;
 
   // Caixa: separa ocioso (≈ aplicações CP) do operacional.
   const caixaOcioso = cap.caixaOcioso || 0;
@@ -296,8 +296,8 @@ export function suggestBalancoFromState(
     },
     passivoNaoCirculante: {
       // Toda dívida onerosa (bancos + mútuos PF→PJ cadastrados como
-      // debtContracts com tipoCredor="socio") entra pelo split CP/LP a partir
-      // de `capital.dividaOnerosa`. SSOT único, sem duplicidade.
+      // debtContracts com tipoCredor="socio") entra pelo split CP/LP
+      // derivado dos próprios contratos. SSOT único, sem duplicidade.
       emprestimosFinanciamentosLP: dividaLP,
     },
 

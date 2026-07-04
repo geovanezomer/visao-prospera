@@ -72,8 +72,19 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
         ],
       },
       capital: {
+        // SSOT: dívida vem exclusivamente de debtContracts (não mais do
+        // agregado `dividaOnerosa`). Saldo LP = 240k / prazo > 12m.
+        debtContracts: [
+          {
+            id: "c1",
+            credor: "Banco",
+            saldoDevedor: 240_000,
+            taxaAA: 12,
+            sistema: "price",
+            prazoMeses: 24,
+          },
+        ],
         balanco: {
-          passivoNaoCirculante: { emprestimosFinanciamentosLP: 240_000 },
           patrimonioLiquido: { capitalSocial: 100_000 },
         },
       },

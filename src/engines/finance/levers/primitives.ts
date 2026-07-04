@@ -11,6 +11,7 @@
 // primitiva chamar e com quais params. O cálculo é determinístico.
 // =====================================================================
 import { z } from "zod";
+import { sumContractSaldos } from "../debtContracts";
 import type { AppState, CostLine } from "../types";
 import { sum, genId } from "../format";
 import { monthValues } from "../costs";
@@ -124,7 +125,7 @@ export function adjustRevenue(state: AppState, factor: number): AppState {
 /**
  * Adiciona empréstimo via tabela PRICE REAL:
  *  juros_t = saldo_{t-1} × i ; amort_t = PMT − juros_t ; saldo_t = saldo_{t-1} − amort_t.
- * Atualiza: capital.dividaOnerosa (+principal), cashflow (captação + amortização)
+ * Atualiza: cashflow (captação + amortização)
  *           e a linha "juros sobre empréstimos" do DRE com os juros do mês.
  */
 export function addLoan(
@@ -172,15 +173,15 @@ export function addLoan(
     saldo -= amort;
   }
 
-  const capital = { ...state.capital, dividaOnerosa: state.capital.dividaOnerosa + principal };
+  const capital = { ...state.capital };
   return { ...state, costs, cashflow, capital };
 }
 
 /** Quita parte do principal usando caixa: reduz dívida + juros futuros proporcionalmente. */
 export function payDownDebt(state: AppState, pct: number): AppState {
   const safePct = Math.min(Math.max(pct, 0), 1);
-  const originalDivida = state.capital.dividaOnerosa;
-  const capital = { ...state.capital, dividaOnerosa: originalDivida * (1 - safePct) };
+  const originalDivida = sumContractSaldos(state.capital.debtContracts);
+  const capital = { ...state.capital, debtContracts: (state.capital.debtContracts ?? []).map(c => ({...c, saldoDevedor: Math.max(0,(c.saldoDevedor||0)*(1-safePct))})) };
   const costs = cloneCosts(state.costs).map((c) =>
     c.category === "financeiro" && /juros/i.test(c.label)
       ? { ...c, values: c.values.map((v) => v * (1 - safePct)) }

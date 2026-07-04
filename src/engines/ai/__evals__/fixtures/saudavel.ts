@@ -17,7 +17,6 @@ export const fixtureSaudavel: AppState = {
   },
   capital: {
     ...DEFAULT_STATE.capital,
-    dividaOnerosa: 50_000,
     patrimonioLiquido: 800_000,
     ativoTotal: 1_000_000,
     disponibilidades: 250_000,

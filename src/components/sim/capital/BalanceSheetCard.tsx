@@ -1,5 +1,6 @@
 import { AppState, BalancoDetalhado } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
+import { sumContractSaldos } from "@/engines/finance/debtContracts";
 
 import { useEffect } from "react";
 import {
@@ -110,10 +111,11 @@ export function BalanceSheetCard({
 
   // Total de Passivos: evita dupla contagem (passivoCirculante explícito já
   // inclui fornecedores e parcela CP da dívida).
+  const _dividaContratos = sumContractSaldos(capital.debtContracts);
   const totalPassivos =
     (capital.passivoCirculante || 0) > 0
-      ? (capital.dividaOnerosa || 0) + (capital.passivoCirculante || 0)
-      : (capital.dividaOnerosa || 0) + (capital.fornecedores || 0);
+      ? _dividaContratos + (capital.passivoCirculante || 0)
+      : _dividaContratos + (capital.fornecedores || 0);
 
   const plCalculado = (capital.ativoTotal || 0) - totalPassivos;
 
