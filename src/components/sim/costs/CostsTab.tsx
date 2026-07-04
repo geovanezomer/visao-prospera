@@ -119,6 +119,12 @@ export function CostsTab() {
       vr = 0,
       fn = 0,
       cpv = 0;
+    // Deduplicação (idêntica à do DRE em classifyCosts): quando existe a linha
+    // sintética de juros de contratos de dívida (vinda do módulo Capital),
+    // ignora linhas MANUAIS cujo label indique juros de empréstimo/contrato/
+    // mútuo/sócio, para evitar dupla contagem.
+    const LOAN_INTEREST_RE = /juros[^a-z]*(sobre)?[^a-z]*(empr[eé]stimo|contrato|m[uú]tuo|afac|s[óo]cio)/i;
+    const hasSyntheticDebt = state.costs.some((c) => c.id === DEBT_CONTRACTS_COST_ID);
     for (const c of state.costs) {
       const v = sum(monthValues(c, effectiveRegime));
       if (c.category === "custo_vendas") {
@@ -128,7 +134,11 @@ export function CostsTab() {
         cpv += v;
       } else if (c.category === "despesa_administrativa" || c.category === "fixo") fix += v;
       else if (c.category === "despesa_comercial" || c.category === "variavel") vr += v;
-      else if (c.category === "financeiro") fn += v;
+      else if (c.category === "financeiro") {
+        if (hasSyntheticDebt && c.id !== DEBT_CONTRACTS_COST_ID && LOAN_INTEREST_RE.test(c.label))
+          continue;
+        fn += v;
+      }
     }
     return {
       totCV: cv,
@@ -139,6 +149,7 @@ export function CostsTab() {
       totGeral: cpv + fix + vr + fn,
     };
   }, [state.costs, effectiveRegime]);
+
 
   const pctRec = useCallback(
     (v: number) => (receitaBrutaAnual > 0 ? v / receitaBrutaAnual : 0),
