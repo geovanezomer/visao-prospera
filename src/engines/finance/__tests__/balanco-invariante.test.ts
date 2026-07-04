@@ -171,7 +171,7 @@ function randomState(seed: number): AppState {
     costs,
     capital: {
       depreciacaoMensal: depMensal,
-      dividaOnerosa: dividaTotal,
+      debtContracts: [{ id: "sim", credor: "Banco", saldoDevedor: dividaTotal, taxaAA: 18, sistema: "price" as const, prazoMeses: 24 }],
       debtContracts,
       capexAtivacao,
       balanco: {
