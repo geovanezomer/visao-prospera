@@ -210,7 +210,7 @@ export interface MutuoSocio {
 
 
 export interface CapitalStructure {
-  proprio: number; // % capital próprio (E) — usado apenas como referência se dividaOnerosa/PL não preenchidos
+  proprio: number; // % capital próprio (E) — referência editável quando PL não preenchido
   ke: number;
   kd: number;
   capitalGiroDisponivel: number;
