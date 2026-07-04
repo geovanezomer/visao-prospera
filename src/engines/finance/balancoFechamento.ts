@@ -29,7 +29,7 @@ import type { FinancialModelCashflow, FinancialModelDRE } from "./financialModel
 import type { MonthlyTax } from "./tax/shared";
 import { deriveAbertura } from "./aberturaDerivada";
 import { safeNumber as n } from "./safeMath";
-import { buildRecebivelMensal } from "./cashflow";
+import { buildRecebivelMensal, buildComprasMensal } from "./cashflow";
 import { isFolhaCost, effectiveMonthValues } from "./costs";
 import { resolveEffectiveRegime } from "./regime";
 
