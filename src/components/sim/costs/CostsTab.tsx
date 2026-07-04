@@ -270,7 +270,15 @@ export function CostsTab() {
         hint="Não variam com o volume vendido. Compõem a estrutura mínima de operação."
         accentClass="border-l-[color:var(--warning)]"
         onAdd={() => addLine("despesa_administrativa")}
-      >
+        {state.socios?.some((s) => (s.prolaboreMensal ?? 0) > 0) && (
+          <div className="mb-3 rounded-md border border-primary/20 bg-primary/5 p-2.5 text-[11px] text-muted-foreground">
+            <strong className="text-foreground">Pró-labore</strong> e{" "}
+            <strong className="text-foreground">INSS Patronal</strong> dos sócios são geridos em{" "}
+            <em>Configurações → Sócios / Pró-labore</em>. Os valores entram automaticamente
+            no DRE, Balanço e Fluxo de Caixa.
+          </div>
+        )}
+
         <CostTable
           lines={byCat("fixo")}
           receitaBrutaAnual={receitaBrutaAnual}
