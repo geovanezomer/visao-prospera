@@ -5,7 +5,7 @@
  *  - CLT arts. 129 a 153 (direito a férias após período aquisitivo de 12 meses).
  *  - CF art. 7º, XVII: adicional de 1/3 sobre a remuneração das férias.
  *  - CLT art. 143: abono pecuniário — venda de até 1/3 das férias (10 dias).
- *  - Tabelas INSS/IRRF 2025 (mesmas usadas em folha).
+ *  - Tabelas INSS/IRRF versionadas em ./tabelas.ts (SSOT anual).
  *
  * Regras fiscais consolidadas:
  *  - Férias gozadas + 1/3 constitucional: incidem INSS e IRRF.
