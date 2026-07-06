@@ -85,9 +85,6 @@ export function crossValidate(state: AppState, model?: CrossValidateModel): Vali
     dre = model.dre;
     ind = model.ind;
   } else {
-    // Import dinâmico evita ciclo com `financialModel` (que reexporta este módulo via `finance/index`).
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getFinancialModelCached } = require("./financialModel") as typeof import("./financialModel");
     const m = getFinancialModelCached(state);
     dre = model?.dre ?? m.dre;
     ind = model?.ind ?? m.ind;
