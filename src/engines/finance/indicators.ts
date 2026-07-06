@@ -14,6 +14,7 @@ import { irShieldForRegime } from "./tax/real";
 import type { DRE } from "./dre";
 import { buildCashFlow } from "./cashflow";
 import { mesesPreenchidos, anualizar } from "./periodUtils";
+import { deriveAbertura } from "./aberturaDerivada";
 
 export interface Indicators {
   /** Lucro Bruto ÷ Receita Líquida × 100 */
@@ -41,8 +42,8 @@ export interface Indicators {
    * Receita mínima para cobrir os desembolsos OPERACIONAIS.
    */
   pontoEquilibrioFinanceiro: number;
-  /** Lucro Líquido ÷ Patrimônio Líquido × 100 */
-  roe: number;
+  /** Lucro Líquido ÷ PL MÉDIO (abertura + fim)/2 × 100. `null` quando PL médio ≤ 0. */
+  roe: number | null;
   /** Lucro Líquido ÷ Ativo Total MÉDIO × 100 (médio quando `ativoTotalAbertura` informado; senão ponto final). */
   roa: number;
 
@@ -315,12 +316,19 @@ export function calcIndicators(
   const capitalInvestido = ciAtivo > 0 ? ciAtivo : ciFinanciamento;
   const roic = capitalInvestido > 0 ? safePct(nopat, capitalInvestido) : 0;
 
-  // [Auditoria Bloco 5] ROE e ROA com BASES MÉDIAS (CFA/Damodaran). Numerador é fluxo
-  // (LL anual); denominador deve ser estoque MÉDIO do período para consistência matemática.
-  // Fallback para ponto final quando abertura não informada.
-  const plAbertura = Math.max(0, capital.patrimonioLiquidoAbertura ?? 0);
+  // [Auditoria Bloco 5 · Prompt ROE] PL de abertura via SSOT `deriveAbertura` — soma
+  // capitalSocial + reservasCapital + reservasLucros + lucrosAcumulados. Nunca usa apenas
+  // capitalSocial (bug histórico: ROE > 400% em empresa com estrutura sem dívida).
+  // Padrão CFA/Damodaran: PL MÉDIO entre abertura e fechamento. Quando PL médio ≤ 0
+  // (empresa com passivo a descoberto) retorna null — a UI deve mostrar "N/A — PL negativo".
+  const plAberturaSSOT = deriveAbertura({
+    state,
+    impostosTotalMensais: dre.impostosTotal,
+  }).totals.pl;
+  const plAberturaCapital = Math.max(0, capital.patrimonioLiquidoAbertura ?? 0);
+  const plAbertura = plAberturaSSOT > 0 ? plAberturaSSOT : plAberturaCapital;
   const plMedio = plAbertura > 0 ? (plAbertura + PL) / 2 : PL;
-  const roe = plMedio > 0 ? safePct(llAnual, plMedio) : 0;
+  const roe: number | null = plMedio > 0 ? safePct(llAnual, plMedio) : null;
   const atAbertura = Math.max(0, capital.ativoTotalAbertura ?? 0);
   const atMedio = atAbertura > 0 && capital.ativoTotal > 0
     ? (atAbertura + capital.ativoTotal) / 2

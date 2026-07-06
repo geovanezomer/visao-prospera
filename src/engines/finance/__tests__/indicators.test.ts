@@ -103,17 +103,39 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
     });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
-    expect(ind.roe).toBeCloseTo(s.revenue.bruta.reduce((a, b) => a + b, 0) > 0 ? ind.roe : 0, 1);
-    // estrutural: roe finito e proporcional a 1/PL
-    expect(Number.isFinite(ind.roe)).toBe(true);
+    // ROE deve ser um número finito (não-null quando PL médio > 0).
+    expect(ind.roe).not.toBeNull();
+    expect(Number.isFinite(ind.roe as number)).toBe(true);
   });
 
-  it("ROE = 0 quando PL = 0 (sem Infinity)", () => {
+  it("ROE = null quando PL = 0 (padrão CFA: métrica sem significado)", () => {
     const s = createState({ capital: { patrimonioLiquido: 0 } });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
-    expect(ind.roe).toBe(0);
-    expect(Number.isFinite(ind.roe)).toBe(true);
+    expect(ind.roe).toBeNull();
+  });
+
+  /**
+   * Corolário DuPont: sem alavancagem financeira (net debt ≤ 0), ROE ≈ ROIC.
+   * Diferença > 5 p.p. sinaliza que ROE ou ROIC está com denominador errado —
+   * classicamente ROE usando apenas Capital Social em vez do PL completo.
+   */
+  it("ROE ≈ ROIC quando não há dívida líquida (DuPont sem alavancagem)", () => {
+    // Sem dívida, sem juros, sem ativoTotal informado (CI cai em PL+D=PL) e
+    // Simples com t=0 → NOPAT=EBIT=LL. ROE deve bater com ROIC.
+    const s = createState({
+      revenue: { bruta: m12(200_000) },
+      capital: {
+        ke: 15,
+        kd: 0,
+        patrimonioLiquido: 1_000_000,
+        debtContracts: [],
+      },
+    });
+    const { dre } = buildDRE(s, "simples");
+    const ind = calcIndicators(s, dre);
+    expect(ind.roe).not.toBeNull();
+    expect(Math.abs((ind.roe as number) - ind.roic)).toBeLessThan(5);
   });
 
   it("ROA = 0 quando Ativo Total = 0 (sem Infinity)", () => {

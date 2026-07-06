@@ -194,8 +194,11 @@ function SemaforoPanel({ state }: { state: AppState }) {
     },
     {
       nome: "ROE (Retorno do Sócio)",
-      status: ind.roe >= 15 ? "ok" : ind.roe >= 8 ? "warn" : "bad",
-      descricao: `${ind.roe.toFixed(1)}% — retorno sobre o capital investido pelos sócios`,
+      // ROE pode vir null quando PL médio ≤ 0 (empresa com passivo a descoberto) — semáforo neutro.
+      status: ind.roe == null ? "warn" : ind.roe >= 15 ? "ok" : ind.roe >= 8 ? "warn" : "bad",
+      descricao: ind.roe == null
+        ? "N/A — PL médio ≤ 0 (passivo a descoberto). ROE perdeu significado."
+        : `${ind.roe.toFixed(1)}% — retorno sobre o capital investido pelos sócios`,
     },
     {
       nome: "Ciclo Financeiro",
@@ -296,7 +299,7 @@ function ScoreSaude({ state }: { state: AppState }) {
       Math.min(100, Math.max(0, (100 - ind.endividamentoGeral))),       // menor = melhor
       Math.min(100, Math.max(0, ind.margemLiquida * 5)),                // 20% = 100
       Math.min(100, Math.max(0, ind.coberturaJuros * 20)),              // 5x = 100
-      Math.min(100, Math.max(0, ind.roe * 5)),                          // 20% = 100
+      Math.min(100, Math.max(0, (ind.roe ?? 0) * 5)),                  // 20% = 100 (null → neutro 0)
       Math.min(100, Math.max(0, ind.conversaoEbitdaCaixa)),             // 100%
       Math.min(100, Math.max(0, 100 - ind.dividaLiqEbitda * 25)),       // 4x = 0
     ];

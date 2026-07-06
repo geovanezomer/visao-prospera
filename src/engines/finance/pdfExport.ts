@@ -737,7 +737,7 @@ function computeGuardianScore(ind: FinancialModel["ind"]): {
     Math.min(100, Math.max(0, 100 - ind.endividamentoGeral)),
     Math.min(100, Math.max(0, ind.margemLiquida * 5)),
     Math.min(100, Math.max(0, ind.coberturaJuros * 20)),
-    Math.min(100, Math.max(0, ind.roe * 5)),
+    Math.min(100, Math.max(0, (ind.roe ?? 0) * 5)),
     Math.min(100, Math.max(0, ind.conversaoEbitdaCaixa)),
     Math.min(100, Math.max(0, 100 - ind.dividaLiqEbitda * 25)),
   ];
@@ -1292,7 +1292,7 @@ function buildHealthDimensions(ind: FinancialModel["ind"], state: AppState): Hea
       label: "Rentabilidade",
       score: clamp(ind.margemLiquida * 5),
       tone: ind.margemLiquida >= 8 ? "ok" : ind.margemLiquida >= 3 ? "warn" : "bad",
-      comment: `Margem líquida ${ind.margemLiquida.toFixed(1)}% · EBITDA ${ind.margemEbitda.toFixed(1)}% · ROE ${ind.roe.toFixed(1)}% · ROIC ${ind.roic.toFixed(1)}%.`,
+      comment: `Margem líquida ${ind.margemLiquida.toFixed(1)}% · EBITDA ${ind.margemEbitda.toFixed(1)}% · ROE ${ind.roe == null ? "N/A" : `${ind.roe.toFixed(1)}%`} · ROIC ${ind.roic.toFixed(1)}%.`,
     },
     {
       label: "Endividamento",
@@ -1831,7 +1831,7 @@ function renderIndicadoresGrouped(
     { nome: "Margem Bruta", mede: "Quanto sobra da receita após o custo direto.", valor: fmtPct(ind.margemBruta / 100) },
     { nome: "Margem EBITDA", mede: "Geração de caixa operacional antes de juros, impostos e depreciação.", valor: fmtPct(ind.margemEbitda / 100) },
     { nome: "Margem Líquida", mede: "Lucro que sobra para os sócios após tudo pago.", valor: fmtPct(ind.margemLiquida / 100) },
-    { nome: "ROE", mede: "Retorno sobre o patrimônio dos sócios.", valor: fmtPct(ind.roe / 100) },
+    { nome: "ROE", mede: "Retorno sobre o patrimônio dos sócios.", valor: ind.roe == null ? "N/A — PL ≤ 0" : fmtPct(ind.roe / 100) },
     { nome: "ROIC", mede: "Retorno sobre o capital investido na operação.", valor: fmtPct(ind.roic / 100) },
     { nome: "WACC", mede: "Custo médio ponderado do capital — meta mínima do ROIC.", valor: fmtPct(ind.wacc / 100) },
     { nome: "Liquidez Corrente", mede: "Capacidade de pagar dívidas de curto prazo.", valor: `${ind.liquidezCorrente.toFixed(2)}x` },

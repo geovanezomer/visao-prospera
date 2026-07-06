@@ -250,7 +250,7 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
           ["Ponto Equilíbrio (fin.)", brl(ind.pontoEquilibrioFinanceiro)],
           ["GAO (alavancagem op.)", fmtNum(safe(ind.gao), 2) + "x"],
           ["GAF (alavancagem fin.)", fmtNum(safe(ind.gaf), 2) + "x"],
-          ["ROE", pct(ind.roe)],
+          ["ROE", ind.roe == null ? "N/A (PL ≤ 0)" : pct(ind.roe)],
           ["ROA", pct(ind.roa)],
           ["ROIC", pct(ind.roic)],
           ["WACC", pct(ind.wacc, 2)],

@@ -64,8 +64,8 @@ export function calcKanitz(state: AppState, ind: Indicators): KanitzResult {
     };
   }
 
-  // X1 — ROE em FRAÇÃO (ind.roe já vem em %).
-  const x1 = ind.roe / 100;
+  // X1 — ROE em FRAÇÃO (ind.roe já vem em %). Null (PL ≤ 0) → 0 para não quebrar o score.
+  const x1 = (ind.roe ?? 0) / 100;
 
   // X2/X3/X4 — já calculados na engine, em "× vezes" (ratio puro).
   const x2 = ind.liquidezGeral;
