@@ -38,6 +38,13 @@ export function CostsTab() {
     state.costs.filter(
       (c) => (c.category === cat || c.category === ALIAS[cat]) && !c.system,
     );
+  // Linhas system (sócios: pró-labore, INSS patronal) — exibidas somente-leitura
+  // dentro de "Despesas Administrativas" para que a tabela some ao total do card.
+  const systemAdminLines = state.costs.filter(
+    (c) =>
+      !!c.system &&
+      (c.category === "despesa_administrativa" || c.category === "fixo"),
+  );
 
 
   const updateLine = (id: string, patch: Partial<CostLine>) =>
