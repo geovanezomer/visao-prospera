@@ -93,15 +93,16 @@ export function MoneyInput({
   value,
   onChange,
   className,
+  readOnly,
 }: {
   value: number;
   onChange: (n: number) => void;
   className?: string;
+  readOnly?: boolean;
 }) {
   const [text, setText] = useState<string>(() => numToText(value));
   const focusedRef = useRef(false);
 
-  // Sync external changes when input is not focused
   useEffect(() => {
     if (!focusedRef.current && parseLoose(text) !== value) {
       setText(numToText(value));
@@ -113,25 +114,25 @@ export function MoneyInput({
       type="text"
       inputMode="decimal"
       value={text}
+      readOnly={readOnly}
+      tabIndex={readOnly ? -1 : undefined}
       onFocus={() => {
         focusedRef.current = true;
       }}
       onBlur={() => {
         focusedRef.current = false;
-        // Normaliza apenas a apresentação a partir do que foi digitado —
-        // NÃO sobrescreve com a prop `value`, pois ela pode estar defasada
-        // se o setState do onChange ainda não foi commitado pelo React
-        // antes do blur (ex.: Tab → blur antes do re-render).
         const n = parseLoose(text);
         setText(numToText(n));
       }}
       onChange={(e) => {
+        if (readOnly) return;
         const raw = e.target.value.replace(/[^0-9.,-]/g, "");
         setText(raw);
         onChange(parseLoose(raw));
       }}
       className={cn(
         "num w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm text-foreground outline-none transition focus:border-primary focus:bg-input/70",
+        readOnly && "cursor-not-allowed opacity-60 focus:border-border/60 focus:bg-input/40",
         className,
       )}
     />
