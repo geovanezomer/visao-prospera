@@ -299,7 +299,7 @@ function ScoreSaude({ state }: { state: AppState }) {
       Math.min(100, Math.max(0, (100 - ind.endividamentoGeral))),       // menor = melhor
       Math.min(100, Math.max(0, ind.margemLiquida * 5)),                // 20% = 100
       Math.min(100, Math.max(0, ind.coberturaJuros * 20)),              // 5x = 100
-      Math.min(100, Math.max(0, ind.roe * 5)),                          // 20% = 100
+      Math.min(100, Math.max(0, (ind.roe ?? 0) * 5)),                  // 20% = 100 (null → neutro 0)
       Math.min(100, Math.max(0, ind.conversaoEbitdaCaixa)),             // 100%
       Math.min(100, Math.max(0, 100 - ind.dividaLiqEbitda * 25)),       // 4x = 0
     ];
