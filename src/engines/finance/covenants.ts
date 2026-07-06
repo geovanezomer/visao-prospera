@@ -90,9 +90,23 @@ export function analyzeCovenants(
   cenario: "base" | "simulado" = "base",
 ): CovenantsResult {
   const c = { ...DEFAULT_COVENANTS, ...spec };
-  const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-  const ind = calcIndicators(state, dre);
-  const cf = buildCashFlow(state);
+  // Perf: para cenário "base", reusa o modelo memoizado (evita 2×
+  // buildDRE/calcIndicators/buildCashFlow/deriveBalancoFechamento). Para
+  // cenário "simulado" o state pode diferir do base — computa uma única
+  // vez cf e passa a calcIndicators para eliminar recomputação interna.
+  let dre: ReturnType<typeof buildDRE>["dre"];
+  let ind: ReturnType<typeof calcIndicators>;
+  let cf: ReturnType<typeof buildCashFlow>;
+  if (cenario === "base") {
+    const model = getFinancialModelCached(state);
+    dre = model.dre;
+    ind = model.ind;
+    cf = model.cf;
+  } else {
+    dre = buildDRE(state, resolveEffectiveRegime(state)).dre;
+    cf = buildCashFlow(state);
+    ind = calcIndicators(state, dre, cf);
+  }
 
   const dividaOnerosa = Math.max(0, totalDividaOnerosa(state));
   const pl = Math.max(0, state.capital.patrimonioLiquido);
