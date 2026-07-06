@@ -108,7 +108,9 @@ export function buildIndicatorCalcs(
   const LL = ind.lucroLiquidoAnual;
   const LB = sum(dre.lucroBruto);
   const cv = sum(dre.custosVariaveis);
-  const juros = sum(dre.custosFinanceirosTotal);
+  // `juros` para DSCR / Cobertura de Juros = juros de CONTRATOS de dívida (SSOT com indicators.ts).
+  // NÃO usa `custosFinanceirosTotal` da DRE (que inclui tarifas, IOF, cheque especial etc.).
+  const juros = aggregateContracts(capital.debtContracts ?? []).totalJurosAno;
   const impVendas = sum(dre.impostosVendas);
   const impLucro = sum(dre.impostos);
   const cf = sum(dre.custosFixos);
