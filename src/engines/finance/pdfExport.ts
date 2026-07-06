@@ -898,7 +898,7 @@ export async function exportFinancePDF({
     "Indicadores-chave de performance do período analisado.");
 
   const caixaAtual = state.capital.disponibilidades ?? 0;
-  const dscrFmt = ind.dscr !== 0 ? `${ind.dscr.toFixed(2)}x` : "—";
+  const dscrFmt = ind.dscr == null ? "N/A" : ind.dscr !== 0 ? `${ind.dscr.toFixed(2)}x` : "—";
   const kpiCards: KpiCard[] = [
     { label: "Receita Líquida", value: fmtBRL(ind.receitaLiquidaAnual), sub: "Últimos 12 meses" },
     { label: "EBITDA", value: fmtBRL(ind.ebitdaAnual),
