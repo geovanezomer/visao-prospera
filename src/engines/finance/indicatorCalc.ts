@@ -333,11 +333,11 @@ export function buildIndicatorCalcs(
       )
     : NA;
   const dscr = (() => {
-    const amort = sum(state.cashflow.amortizacoes);
+    const amort = sum(state.cashflow.amortizacoes ?? []);
     const serv = juros + amort;
     return serv > 1
       ? line(`${fmtBRL(EBITDA)} ÷ (${fmtBRL(juros)} + ${fmtBRL(amort)})`, `${fmtRatio(EBITDA / serv)}×`)
-      : "Sem serviço da dívida no período";
+      : "Sem serviço da dívida no período — indicador não aplicável (N/A)";
   })();
 
   // ----- Fiscal -----
