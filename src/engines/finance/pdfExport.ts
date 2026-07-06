@@ -734,7 +734,7 @@ function computeGuardianScore(ind: FinancialModel["ind"]): {
 } {
   const parts = [
     Math.min(100, Math.max(0, (ind.liquidezCorrente / 2) * 100)),
-    Math.min(100, Math.max(0, 100 - ind.endividamentoGeral)),
+    Math.min(100, Math.max(0, 100 - ind.endividamentoOneroso * 1.5)),
     Math.min(100, Math.max(0, ind.margemLiquida * 5)),
     Math.min(100, Math.max(0, ind.coberturaJuros * 20)),
     Math.min(100, Math.max(0, (ind.roe ?? 0) * 5)),
