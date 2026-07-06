@@ -99,8 +99,9 @@ function Gauge({
         </ResponsiveContainer>
         <div className="absolute inset-0 flex items-end justify-center pb-2">
           <span className="mono text-2xl font-bold text-foreground">
-            {value.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}
-            <span className="text-sm text-muted-foreground">{suffix}</span>
+            {isNA
+              ? <span title="Indicador não aplicável — verifique o denominador (ex.: PL ≤ 0).">N/A</span>
+              : <>{numeric.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}<span className="text-sm text-muted-foreground">{suffix}</span></>}
           </span>
         </div>
       </div>
