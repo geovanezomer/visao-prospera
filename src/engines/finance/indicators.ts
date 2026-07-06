@@ -307,8 +307,32 @@ export function calcIndicators(
   const pontoEquilibrioFinanceiro =
     margemContribuicao > 0 ? safeDivide(custosFixosOperacionaisSemDep, mcFrac) : 0;
 
+  // ─── SSOT: Balanço de Fechamento reconciliado ─────────────────────────
+  // Derivado ANTES de PL/ROIC/ROA/Giro/WACC — assim TODOS os indicadores
+  // que dependem de Patrimônio Líquido ou Ativo Total usam a MESMA base
+  // que o PDF imprime, eliminando divergências entre "número do relatório"
+  // e "número derivado do balanço".
+  const cfLocal = cfPre ?? buildCashFlow(state);
+  const balFech = balancoPre ?? deriveBalancoFechamento({ state, dre, cf: cfLocal });
+  const ativoTotalBal = safeNumber(balFech.totals.ativo);
+  const ativoTotalFim = ativoTotalBal > 0 ? ativoTotalBal : Math.max(0, capital.ativoTotal);
+
+  // PL de fechamento — SSOT: soma das rubricas do PL no balanço reconciliado.
+  // Fallback só quando o balanço vem vazio (retrocompat). Bug histórico corrigido:
+  // `capital.patrimonioLiquido` podia ficar em 0 (apenas capital social) enquanto
+  // o balanço acumulava lucros/reservas > 0 — gerando ROE inflado (PL médio pequeno)
+  // e `Dívida Líq./PL` batendo no clamp ±99 (denominador ≈ 0).
+  const balPL = balFech.balanco.patrimonioLiquido ?? {};
+  const plBalSSOT =
+    safeNumber(balPL.capitalSocial) +
+    safeNumber(balPL.reservasCapital) +
+    safeNumber(balPL.reservasLucros) +
+    safeNumber(balPL.lucrosPrejuizosAcumulados) +
+    safeNumber(balPL.resultadoExercicio) -
+    safeNumber(balPL.acoesEmTesouraria);
+
   // ---- Estrutura de capital baseada em campos REAIS ----
-  const PL = Math.max(0, capital.patrimonioLiquido);
+  const PL = plBalSSOT > 0 ? plBalSSOT : Math.max(0, capital.patrimonioLiquido);
   const D = Math.max(0, sumContractSaldos(capital.debtContracts));
   const V = PL + D;
   // CONTRATO: `capital.proprio` é PERCENTUAL no intervalo [0, 100], NÃO fração.
@@ -322,16 +346,6 @@ export function calcIndicators(
   const irShield = irShieldForRegime(regimeEfetivo, lairAnual);
   const keSeguro = capital.ke > 0 ? capital.ke : 8;
   const wacc = wE * keSeguro + wD * capital.kd * (1 - irShield);
-
-  // ─── SSOT: Balanço de Fechamento reconciliado ─────────────────────────
-  // Precisamos do Ativo Total do balanço ANTES do ROIC/ROA/Giro — assim
-  // esses indicadores usam a mesma base que o PDF imprime, em vez do campo
-  // agregado `capital.ativoTotal` (que fica estaticamente igual ao imobilizado
-  // de abertura em muitos estados, gerando ROA = LL/imob-abertura).
-  const cfLocal = cfPre ?? buildCashFlow(state);
-  const balFech = balancoPre ?? deriveBalancoFechamento({ state, dre, cf: cfLocal });
-  const ativoTotalBal = safeNumber(balFech.totals.ativo);
-  const ativoTotalFim = ativoTotalBal > 0 ? ativoTotalBal : Math.max(0, capital.ativoTotal);
 
   // ---- NOPAT e ROIC (auditoria CFO) ----
   // NOPAT deve partir do EBIT e preservar prejuízo operacional. O código anterior fazia
