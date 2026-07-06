@@ -1704,6 +1704,7 @@ function renderBalanco(
       { label: "Capital social", v: pl.capitalSocial ?? 0 },
       { label: "Reservas de capital", v: pl.reservasCapital ?? 0 },
       { label: "Lucros/prejuízos acumulados (abertura)", v: pl.lucrosPrejuizosAcumulados ?? 0 },
+      { label: "(−) Dividendos pagos no período", v: pl.dividendosPagosPeriodo ?? 0, redutora: true },
       { label: "Resultado do exercício (DRE)", v: pl.resultadoExercicio ?? 0 },
     ]},
   ];

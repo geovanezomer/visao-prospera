@@ -8,7 +8,7 @@
  * Bloco inferior (REALIZADA): decisão dos sócios sobre quanto efetivamente
  * distribuir mês-a-mês. Esta é a fonte de verdade que alimenta:
  *  - Fluxo de Caixa (Atividades de Financiamento → Dividendos)
- *  - Balanço (Lucros Acumulados = Lucro Líquido − Distribuído realizado)
+ *  - Balanço (Resultado do exercício = Lucro Líquido; dividendos reduzem o PL em rubrica própria)
  *  - IRPF do excedente (parcela tributável calculada sobre o REALIZADO)
  *
  * O Adicional IRPJ de 10% (Lei 9.249/95) continua incidindo sobre o LUCRO
@@ -50,7 +50,7 @@ const SEPARATOR_HINT = {
   description:
     "A PREVISÃO (acima) mostra quanto a empresa PODERIA distribuir sem violar limites legais. A REALIZADA (abaixo) é o que de fato saiu do caixa para os sócios. Apenas a Realizada alimenta Fluxo de Caixa e Balanço; na DRE, dividendos não são despesa.",
   formula:
-    "Resultado do exercício (Balanço) = Σ Lucro Líquido − Σ Distribuição Realizada\nDFC Financiamento (Dividendos) = Distribuição Realizada (mês a mês)",
+    "Resultado do exercício (Balanço) = Σ Lucro Líquido\nDividendos pagos no período = −Σ Distribuição Realizada\nDFC Financiamento (Dividendos) = Distribuição Realizada (mês a mês)",
 };
 
 export function SociosCard() {

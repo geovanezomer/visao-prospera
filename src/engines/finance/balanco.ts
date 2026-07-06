@@ -89,7 +89,15 @@ export function calcDividaOnerosa(b?: BalancoDetalhado): number {
 export function calcPatrimonioLiquido(b?: BalancoDetalhado): number {
   const pl = b?.patrimonioLiquido;
   if (!pl) return 0;
-  return sumObj({ ...pl, acoesEmTesouraria: undefined }) - n(pl.acoesEmTesouraria);
+  return (
+    sumObj({
+      ...pl,
+      dividendosPagosPeriodo: undefined,
+      acoesEmTesouraria: undefined,
+    }) -
+    n(pl.dividendosPagosPeriodo) -
+    n(pl.acoesEmTesouraria)
+  );
 }
 
 /** Calcula todos os totais e checa fechamento Ativo = Passivo + PL. */

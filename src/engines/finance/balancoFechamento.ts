@@ -19,7 +19,8 @@
 //   Empréstimos_fim    = Emprést_ini + Captações           − Amortizações DFC
 //   Depreciação_acum   = DepAcum_ini + Σ dre.depreciacao (SSOT da DRE)
 //   Capital_social_fim = Cap_ini + Σ cf.aportes
-//   Resultado_exerc    = Lucro Líquido − Dividendos
+//   Resultado_exerc    = Lucro Líquido (SSOT DRE)
+//   Dividendos pagos   = Destinação do resultado, redutora separada no PL
 //
 // A DFC (cashflow.ts) faz a contrapartida: liquida os saldos de abertura de
 // CR/Fornec/Impostos nos primeiros meses via `distributeByPrazo`, senão os
@@ -207,13 +208,12 @@ export function deriveBalancoFechamento({
   const capitalSocial = n(plConst.capitalSocial) + aportesPeriodo;
   const reservasCapital = n(plConst.reservasCapital);
   const reservasLucros = n(plConst.reservasLucros);
-  // Resultado do Exercício = Lucro Líquido do período (SSOT da DRE).
-  // Dividendos são DESTINAÇÃO do resultado (reduzem Lucros Acumulados),
-  // não compõem o resultado do exercício — misturar as duas coisas
-  // fazia o Balanço reportar "prejuízo" enquanto a DRE reportava lucro.
-  // Deduzir dividendos de `lucrosAcumulados` preserva A = P + PL
-  // (o caixa cai pelo mesmo montante via DFC).
-  const lucrosAcumIni = aberturaSSOT.lucrosAcumulados.value - dividendosPagos;
+  // Resultado do Exercício = Lucro Líquido do período (SSOT da DRE), sem
+  // deduções, recálculos ou destinações. Dividendos são DESTINAÇÃO do resultado:
+  // reduzem o PL em rubrica própria, preservando a rastreabilidade
+  // PL_fim = PL_ini + LL − Dividendos + Aportes.
+  const lucrosAcumIni = aberturaSSOT.lucrosAcumulados.value;
+  const dividendosPagosPeriodo = dividendosPagos;
   const resultadoExercicio = lucroLiquidoAnual;
 
   // ─────────────────────────── Monta BalancoDetalhado ───────────────────────────
@@ -255,6 +255,7 @@ export function deriveBalancoFechamento({
       reservasCapital,
       reservasLucros,
       lucrosPrejuizosAcumulados: lucrosAcumIni,
+      dividendosPagosPeriodo,
       resultadoExercicio,
     },
     // Preserva snapshot N-1 se já existia (não-destrutivo).
@@ -283,7 +284,8 @@ export function deriveBalancoFechamento({
     reservasCapital +
     reservasLucros +
     lucrosAcumIni +
-    resultadoExercicio;
+    resultadoExercicio -
+    dividendosPagosPeriodo;
 
   const diferenca = ativo - (passivo + pl);
   const fechado = Math.abs(diferenca) < Math.max(100, ativo * 0.005);
