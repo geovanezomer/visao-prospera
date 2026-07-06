@@ -1831,7 +1831,7 @@ function renderIndicadoresGrouped(
     { nome: "Margem Bruta", mede: "Quanto sobra da receita após o custo direto.", valor: fmtPct(ind.margemBruta / 100) },
     { nome: "Margem EBITDA", mede: "Geração de caixa operacional antes de juros, impostos e depreciação.", valor: fmtPct(ind.margemEbitda / 100) },
     { nome: "Margem Líquida", mede: "Lucro que sobra para os sócios após tudo pago.", valor: fmtPct(ind.margemLiquida / 100) },
-    { nome: "ROE", mede: "Retorno sobre o patrimônio dos sócios.", valor: fmtPct(ind.roe / 100) },
+    { nome: "ROE", mede: "Retorno sobre o patrimônio dos sócios.", valor: ind.roe == null ? "N/A — PL ≤ 0" : fmtPct(ind.roe / 100) },
     { nome: "ROIC", mede: "Retorno sobre o capital investido na operação.", valor: fmtPct(ind.roic / 100) },
     { nome: "WACC", mede: "Custo médio ponderado do capital — meta mínima do ROIC.", valor: fmtPct(ind.wacc / 100) },
     { nome: "Liquidez Corrente", mede: "Capacidade de pagar dívidas de curto prazo.", valor: `${ind.liquidezCorrente.toFixed(2)}x` },
