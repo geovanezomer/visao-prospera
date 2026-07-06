@@ -105,11 +105,12 @@ export interface PrescriptivePrecomputed {
 
 export function snapshot(state: AppState, pre?: PrescriptivePrecomputed): MetricSnapshot {
   // Usa regime efetivo (Simples pode ter excedido limite).
-  const built = pre ?? (() => {
-    const { dre, tax } = buildDRE(state, resolveEffectiveRegime(state));
-    const cf = buildCashFlow(state);
-    const ind = calcIndicators(state, dre, cf);
-    return { dre, tax, ind, cf };
+  // Perf: quando o chamador não passa `pre`, usa modelo memoizado — evita
+  // recomputação em cascata de buildDRE + buildCashFlow + calcIndicators
+  // (que por sua vez chamaria buildCashFlow + deriveBalancoFechamento).
+  const built: PrescriptivePrecomputed = pre ?? (() => {
+    const m = getFinancialModelCached(state);
+    return { dre: m.dre, tax: m.tax, ind: m.ind, cf: m.cf };
   })();
   const { dre, tax, ind, cf } = built;
   return {
