@@ -241,8 +241,9 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     });
   }
 
-  // VPL via WACC
-  const ind = calcIndicators(state, dre);
+  // VPL via WACC — state é o base do modelo, então reusa o cache memoizado
+  // (evita buildCashFlow + deriveBalancoFechamento redundantes).
+  const ind = getFinancialModelCached(state).ind;
   const waccA = Math.max(0.5, ind.wacc) / 100;
   const i_m = Math.pow(1 + waccA, 1 / 12) - 1;
   const flows: number[] = [-cfg.capexInicial, ...meses.map((m) => m.fcl)];
