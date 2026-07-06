@@ -11,6 +11,7 @@ import { buildDRE } from "./dre";
 import { calcIndicators } from "./indicators";
 import { buildCashFlow } from "./cashflow";
 import { resolveEffectiveRegime } from "./regime";
+import { getFinancialModelCached } from "./financialModel";
 
 export interface CovenantSpec {
   /** DSCR mínimo (>=). Default 1.25. */
