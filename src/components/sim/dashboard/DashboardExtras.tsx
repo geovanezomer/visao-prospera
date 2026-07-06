@@ -168,9 +168,11 @@ function SemaforoPanel({ state }: { state: AppState }) {
       descricao: `${ind.liquidezCorrente.toFixed(2)}x — capacidade de honrar dívidas de curto prazo`,
     },
     {
-      nome: "Endividamento Geral",
-      status: ind.endividamentoGeral <= 50 ? "ok" : ind.endividamentoGeral <= 70 ? "warn" : "bad",
-      descricao: `${ind.endividamentoGeral.toFixed(1)}% — quanto do ativo é financiado por dívida`,
+      nome: "Endividamento (Oneroso)",
+      // Semáforo usa dívida ONEROSA (bancos/financiamentos). Passivo operacional
+      // não deve pintar a empresa de vermelho sozinho — vira sub-alerta de ciclo.
+      status: ind.endividamentoOneroso <= 40 ? "ok" : ind.endividamentoOneroso <= 60 ? "warn" : "bad",
+      descricao: `${ind.endividamentoOneroso.toFixed(1)}% oneroso · ${ind.endividamentoGeral.toFixed(1)}% total (com passivo operacional)`,
     },
     {
       nome: "Margem Líquida",
@@ -296,7 +298,7 @@ function ScoreSaude({ state }: { state: AppState }) {
   const score = useMemo(() => {
     const norms = [
       Math.min(100, Math.max(0, ind.liquidezCorrente / 2 * 100)),       // 2x = 100
-      Math.min(100, Math.max(0, (100 - ind.endividamentoGeral))),       // menor = melhor
+      Math.min(100, Math.max(0, 100 - ind.endividamentoOneroso * 1.5)),  // dívida onerosa: 66% → 0
       Math.min(100, Math.max(0, ind.margemLiquida * 5)),                // 20% = 100
       Math.min(100, Math.max(0, ind.coberturaJuros * 20)),              // 5x = 100
       Math.min(100, Math.max(0, (ind.roe ?? 0) * 5)),                  // 20% = 100 (null → neutro 0)

@@ -15,6 +15,7 @@ import type { DRE } from "./dre";
 import { buildCashFlow } from "./cashflow";
 import { mesesPreenchidos, anualizar } from "./periodUtils";
 import { deriveAbertura } from "./aberturaDerivada";
+import { calcPassivoCirculante, calcPassivoNaoCirculante } from "./balanco";
 
 export interface Indicators {
   /** Lucro Bruto ÷ Receita Líquida × 100 */
@@ -69,14 +70,19 @@ export interface Indicators {
   /** (Ativo Total − Permanente) ÷ Passivo Total. Aproximação: (AT − (AT−AC)) / (AT − PL) = AC / (AT − PL). */
   liquidezGeral: number;
 
-  /** Passivo Total ÷ Ativo Total × 100. Quando `endividamentoGeralDadosCompletos=false`, é estimativa de fallback. */
+  /** Passivo Total (operacional + oneroso) ÷ Ativo Total × 100. */
   endividamentoGeral: number;
   /**
-   * true quando Ativo Total foi informado pelo consultor — `endividamentoGeral` é valor real.
-   * false quando faltou Ativo Total: a engine usa fallback (Dívida Onerosa + PNO) ÷ proxy de
-   * Ativo (PL + D + PNO), evitando exibir "0%" silenciosamente como se fosse "sem dívida".
+   * true quando o Passivo Total vem do Balanço Detalhado (soma dos subcampos).
+   * false quando a engine usou fallback por proxy (`Ativo Total − PL` ou (D+PNO)).
    */
   endividamentoGeralDadosCompletos: boolean;
+  /**
+   * Dívida ONEROSA (bancos, financiamentos, debêntures) ÷ Ativo Total × 100.
+   * Exclui passivo operacional (fornecedores, impostos a pagar, folha) — é o número
+   * que banco/investidor pergunta. Empresa sem dívida financeira = 0%.
+   */
+  endividamentoOneroso: number;
   /** Dívida Onerosa ÷ Patrimônio Líquido × 100 */
   grauEndividamento: number;
   /** EBIT ÷ Despesas Financeiras */
@@ -400,16 +406,38 @@ export function calcIndicators(
 
 
   // ---- Endividamento ----
-  const endividamentoGeralDadosCompletos = capital.ativoTotal > 0;
+  // [Correção auditoria] Passivo Total vem do Balanço Detalhado (soma dos subcampos
+  // de PC + PNC), NÃO do proxy `ativoTotal − PL`. O proxy inflava o passivo quando
+  // o PL estava subestimado por qualquer razão (rota gerava "endividamento 95%"
+  // para empresa SEM dívida onerosa). Fallback para o proxy só quando não há
+  // Balanço detalhado E não há debtContracts (info mínima insuficiente).
+  const passivoBalPC = calcPassivoCirculante(capital.balanco);
+  const passivoBalPNC = calcPassivoNaoCirculante(capital.balanco);
+  const passivoBalTotal = passivoBalPC + passivoBalPNC;
+  const temBalancoPassivo = passivoBalTotal > 0;
+  const passivoAgregadoLegado =
+    Math.max(0, capital.passivoCirculante ?? 0) + D + Math.max(0, capital.passivosNaoOnerosos ?? 0);
   let endividamentoGeral = 0;
-  if (endividamentoGeralDadosCompletos) {
+  let endividamentoGeralDadosCompletos = false;
+  if (capital.ativoTotal > 0 && temBalancoPassivo) {
+    endividamentoGeral = (passivoBalTotal / capital.ativoTotal) * 100;
+    endividamentoGeralDadosCompletos = true;
+  } else if (capital.ativoTotal > 0 && passivoAgregadoLegado > 0) {
+    endividamentoGeral = (passivoAgregadoLegado / capital.ativoTotal) * 100;
+    endividamentoGeralDadosCompletos = true;
+  } else if (capital.ativoTotal > 0) {
+    // Último recurso: proxy contábil `AT − PL` — marca como incompleto.
     const passivoTotalEstim = Math.max(0, capital.ativoTotal - PL);
     endividamentoGeral = (passivoTotalEstim / capital.ativoTotal) * 100;
+    endividamentoGeralDadosCompletos = false;
   } else {
     const passivoConhecido = D + pno;
     const ativoProxy = PL + D + pno;
     endividamentoGeral = ativoProxy > 0 ? (passivoConhecido / ativoProxy) * 100 : 0;
+    endividamentoGeralDadosCompletos = false;
   }
+  // Endividamento ONEROSO — só dívida financeira. É o que o banco pergunta.
+  const endividamentoOneroso = capital.ativoTotal > 0 ? (D / capital.ativoTotal) * 100 : 0;
   const grauEndividamento = PL > 0 ? (D / PL) * 100 : 0;
   const CAP_COB = 999;
   const CAP_DL_EBITDA = 99;
@@ -562,6 +590,7 @@ export function calcIndicators(
 
     endividamentoGeral,
     endividamentoGeralDadosCompletos,
+    endividamentoOneroso,
     grauEndividamento,
     coberturaJuros,
     giroAtivo,

@@ -734,7 +734,7 @@ function computeGuardianScore(ind: FinancialModel["ind"]): {
 } {
   const parts = [
     Math.min(100, Math.max(0, (ind.liquidezCorrente / 2) * 100)),
-    Math.min(100, Math.max(0, 100 - ind.endividamentoGeral)),
+    Math.min(100, Math.max(0, 100 - ind.endividamentoOneroso * 1.5)),
     Math.min(100, Math.max(0, ind.margemLiquida * 5)),
     Math.min(100, Math.max(0, ind.coberturaJuros * 20)),
     Math.min(100, Math.max(0, (ind.roe ?? 0) * 5)),
@@ -1265,7 +1265,7 @@ function buildExecutiveInsights(
   let prio = "Manter monitoramento mensal dos indicadores e revisão trimestral do plano.";
   if (burn > 0) prio = `Operação queima ${fmtBRL(burn)}/mês em média no último trimestre — prioridade imediata é estancar o burn.`;
   else if (ind.dscr < 1.25) prio = "Renegociar prazos e taxas com credores — DSCR abaixo de 1,25× compromete acesso a novas linhas.";
-  else if (ind.endividamentoGeral > 70) prio = "Alavancagem elevada — priorizar amortização e revisão do mix de capital.";
+  else if (ind.endividamentoOneroso > 60) prio = "Alavancagem financeira elevada — priorizar amortização e revisão do mix de capital.";
   else if (sum(dre.lucroLiquido) < 0) prio = "Resultado negativo — revisão de precificação, mix e estrutura de custos é a prioridade #1.";
   insights.push({
     title: `Prioridade #1: ${prio.split(" — ")[0]}`,
@@ -1296,9 +1296,12 @@ function buildHealthDimensions(ind: FinancialModel["ind"], state: AppState): Hea
     },
     {
       label: "Endividamento",
-      score: clamp(100 - ind.endividamentoGeral),
-      tone: ind.endividamentoGeral <= 50 ? "ok" : ind.endividamentoGeral <= 70 ? "warn" : "bad",
-      comment: `Endividamento geral ${ind.endividamentoGeral.toFixed(1)}% · cobertura de juros ${ind.coberturaJuros.toFixed(2)}x · Dívida Líq./EBITDA ${ind.dividaLiqEbitda.toFixed(2)}x.`,
+      // [Correção auditoria] Score e tone baseados em dívida ONEROSA (financeira),
+      // não no passivo total. Passivo operacional saudável (fornecedores/impostos/folha)
+      // não deve rebaixar a dimensão endividamento — só dívida bancária.
+      score: clamp(100 - ind.endividamentoOneroso * 1.5),
+      tone: ind.endividamentoOneroso <= 40 ? "ok" : ind.endividamentoOneroso <= 60 ? "warn" : "bad",
+      comment: `Endividamento oneroso ${ind.endividamentoOneroso.toFixed(1)}% (geral ${ind.endividamentoGeral.toFixed(1)}%) · cobertura de juros ${ind.coberturaJuros.toFixed(2)}x · Dívida Líq./EBITDA ${ind.dividaLiqEbitda.toFixed(2)}x.`,
     },
     {
       label: "Capital de Giro",
