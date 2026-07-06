@@ -65,11 +65,14 @@ export function buildFinancialModel(rawState: AppState): FinancialModel {
   // Otimização: `cf` computado UMA vez e passado a `calcIndicators` para evitar
   // a 2ª chamada interna de `buildCashFlow(state)` que existia em indicators.ts.
   const cf = buildCashFlow(state);
-  const ind = calcIndicators(state, dre, cf);
+  // Balanço de fechamento antes dos indicadores: NCG/CDG passam a ser DERIVADOS
+  // do balanço reconciliado (SSOT único — elimina divergência com a fórmula
+  // estática PMR/360 que existia antes).
+  const balancoFechamento = deriveBalancoFechamento({ state, dre, cf, tax });
+  const ind = calcIndicators(state, dre, cf, balancoFechamento);
   const val = buildValuation(state, defaultValuationParams(state.businessType));
   const health = computeHealth(state);
   const cagrReceitas12m = cagr12m(dre.receitaLiquida);
-  const balancoFechamento = deriveBalancoFechamento({ state, dre, cf, tax });
   return { regime, dre, tax, ind, cf, val, health, cagrReceitas12m, balancoFechamento };
 }
 
