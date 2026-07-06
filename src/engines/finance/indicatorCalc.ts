@@ -128,7 +128,7 @@ export function buildIndicatorCalcs(
   const ATmedio = ATab > 0 && AT > 0 ? (ATab + AT) / 2 : AT;
   const AC = ind.ativoCirculante;
   const PC = ind.passivoCirculante;
-  const disp = capital.disponibilidades;
+  const disp = ind.caixaLiquidez; // SSOT: caixa do balanço; pode ser negativo (descoberto).
   const estoques = capital.estoques;
   const dl = ind.dividaLiquida;
   const headcount = Math.max(0, state.numColaboradores ?? 0);
