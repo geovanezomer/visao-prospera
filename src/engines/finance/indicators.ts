@@ -402,8 +402,6 @@ export function calcIndicators(
   // divergência agora aparece na única fonte — não há mais dois números
   // brigando na mesma página. Modelo Fleuriet: passivo operacional inclui
   // fornecedores + salários/encargos + impostos a pagar.
-  const cfLocal = cfPre ?? buildCashFlow(state);
-  const balFech = balancoPre ?? deriveBalancoFechamento({ state, dre, cf: cfLocal });
   const bal = balFech.balanco;
   const bAc = bal.ativoCirculante ?? {};
   const bPc = bal.passivoCirculante ?? {};
