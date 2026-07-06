@@ -255,7 +255,6 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
 
   // M4: juros de mútuos PJ→PF entram no Resultado Financeiro (Receita Financeira).
   // SSOT: aggregateMutuos — mesma série que já flui pela DFC.
-  const { aggregateMutuos } = await import("./mutuosSocios");
   const mutuosAgg = aggregateMutuos(state.mutuosSocios);
   // Resultado Financeiro = rendimentos aplicações + juros mútuos − custos financeiros
   const resultadoFinanceiro = ebit.map(
