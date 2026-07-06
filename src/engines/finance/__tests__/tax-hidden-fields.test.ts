@@ -44,35 +44,24 @@ describe("Auditoria TaxSettingsDialog — campos expostos", () => {
   });
 
   it("aliquotaICMSCredito reduz ICMS efetivo (Presumido, comércio)", () => {
+    const cpvLinha = {
+      id: "cpv",
+      label: "Mercadoria",
+      category: "custo_vendas" as const,
+      values: m12(60_000),
+      fixed: false,
+    };
     const base = createState({
       businessType: "comercio",
       revenue: { bruta: m12(100_000) },
       tax: { regime: "presumido", issIcms: 18 },
-      costs: [
-        {
-          id: "cpv",
-          nome: "Mercadoria",
-          categoria: "CMV",
-          tipo: "variavel_receita",
-          percentualReceita: 60,
-          months: m12(0),
-        } as any,
-      ],
+      costs: [cpvLinha as any],
     });
     const com = createState({
       businessType: "comercio",
       revenue: { bruta: m12(100_000) },
       tax: { regime: "presumido", issIcms: 18, aliquotaICMSCredito: 12 },
-      costs: [
-        {
-          id: "cpv",
-          nome: "Mercadoria",
-          categoria: "CMV",
-          tipo: "variavel_receita",
-          percentualReceita: 60,
-          months: m12(0),
-        } as any,
-      ],
+      costs: [cpvLinha as any],
     });
     const a = buildDRE(base, "presumido").tax.annualVendas;
     const b = buildDRE(com, "presumido").tax.annualVendas;
