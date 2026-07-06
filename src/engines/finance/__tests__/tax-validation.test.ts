@@ -16,6 +16,7 @@ import {
 import {
   getIrpjPct,
   getIrpjAdicionalPct,
+  getIrpjAdicionalGatilhoTri,
   getCsllPct,
   getPisCumPct,
   getCofinsCumPct,
