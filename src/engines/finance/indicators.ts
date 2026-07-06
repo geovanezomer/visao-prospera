@@ -242,6 +242,8 @@ export function calcIndicators(
   // recomputar `buildCashFlow(state)` (chamado em ~todo render). Quando omitido,
   // computa internamente para preservar a API antiga.
   cfPre?: ReturnType<typeof buildCashFlow>,
+  /** Balanço de fechamento pré-computado (evita 2ª chamada em buildFinancialModel). */
+  balancoPre?: BalancoFechamentoResult,
 ): Indicators {
   const { capital, revenue } = state;
   // ─── Janela efetiva preenchida (Fase 1) ──────────────────────────────
