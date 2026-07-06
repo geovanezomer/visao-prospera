@@ -117,7 +117,9 @@ export function buildIndicatorCalcs(
   // --- Estoque, AC, PC etc. ---
   const PL = Math.max(0, capital.patrimonioLiquido);
   const D = Math.max(0, sumContractSaldos(capital.debtContracts));
-  const PLab = Math.max(0, capital.patrimonioLiquidoAbertura ?? 0);
+  // SSOT do PL de abertura (mesma fonte que `indicators.ts`): soma completa do PL, não capital social sozinho.
+  const PLabSSOT = deriveAbertura({ state, impostosTotalMensais: dre.impostosTotal }).totals.pl;
+  const PLab = PLabSSOT > 0 ? PLabSSOT : Math.max(0, capital.patrimonioLiquidoAbertura ?? 0);
   const PLmedio = PLab > 0 ? (PLab + PL) / 2 : PL;
   const ATab = Math.max(0, capital.ativoTotalAbertura ?? 0);
   const AT = capital.ativoTotal;
