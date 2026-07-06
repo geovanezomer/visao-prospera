@@ -323,6 +323,16 @@ export function calcIndicators(
   const keSeguro = capital.ke > 0 ? capital.ke : 8;
   const wacc = wE * keSeguro + wD * capital.kd * (1 - irShield);
 
+  // ─── SSOT: Balanço de Fechamento reconciliado ─────────────────────────
+  // Precisamos do Ativo Total do balanço ANTES do ROIC/ROA/Giro — assim
+  // esses indicadores usam a mesma base que o PDF imprime, em vez do campo
+  // agregado `capital.ativoTotal` (que fica estaticamente igual ao imobilizado
+  // de abertura em muitos estados, gerando ROA = LL/imob-abertura).
+  const cfLocal = cfPre ?? buildCashFlow(state);
+  const balFech = balancoPre ?? deriveBalancoFechamento({ state, dre, cf: cfLocal });
+  const ativoTotalBal = safeNumber(balFech.totals.ativo);
+  const ativoTotalFim = ativoTotalBal > 0 ? ativoTotalBal : Math.max(0, capital.ativoTotal);
+
   // ---- NOPAT e ROIC (auditoria CFO) ----
   // NOPAT deve partir do EBIT e preservar prejuízo operacional. O código anterior fazia
   // `Math.max(0, EBIT × (1 − t))`, escondendo ROIC negativo quando a operação dava prejuízo.
@@ -341,13 +351,13 @@ export function calcIndicators(
   }
   const nopat = ebitAnual > 1 ? ebitAnual * (1 - aliquotaNopatFrac) : ebitAnual;
 
-  // Capital Investido — se Ativo Total foi informado, usa lado operacional do balanço:
+  // Capital Investido — SSOT: Ativo Total vem do Balanço reconciliado.
   // Ativo Total − Passivos Não Onerosos − Caixa Ocioso. Caso contrário, usa financiamento:
   // PL + Dívida Onerosa − Caixa Ocioso. Nunca usa denominador artificial = 1, pois isso
   // produz ROIC absurdo quando o balanço está incompleto.
   const pno = Math.max(0, capital.passivosNaoOnerosos ?? capital.fornecedores ?? 0);
   const caixaOcioso = Math.max(0, capital.caixaOcioso ?? 0);
-  const ciAtivo = capital.ativoTotal > 0 ? Math.max(0, capital.ativoTotal - pno - caixaOcioso) : 0;
+  const ciAtivo = ativoTotalFim > 0 ? Math.max(0, ativoTotalFim - pno - caixaOcioso) : 0;
   const ciFinanciamento = Math.max(0, PL + D - caixaOcioso);
   const capitalInvestido = ciAtivo > 0 ? ciAtivo : ciFinanciamento;
   const roic = capitalInvestido > 0 ? safePct(nopat, capitalInvestido) : 0;
@@ -365,10 +375,13 @@ export function calcIndicators(
   const plAbertura = plAberturaSSOT > 0 ? plAberturaSSOT : plAberturaCapital;
   const plMedio = plAbertura > 0 ? (plAbertura + PL) / 2 : PL;
   const roe: number | null = plMedio > 0 ? safePct(llAnual, plMedio) : null;
+  // ROA/Giro: Ativo MÉDIO = (abertura + fechamento do BALANÇO)/2. Fechamento
+  // vem do balanço reconciliado (não de `capital.ativoTotal`), consistente com
+  // o Ativo Total impresso no PDF.
   const atAbertura = Math.max(0, capital.ativoTotalAbertura ?? 0);
-  const atMedio = atAbertura > 0 && capital.ativoTotal > 0
-    ? (atAbertura + capital.ativoTotal) / 2
-    : capital.ativoTotal;
+  const atMedio = atAbertura > 0 && ativoTotalFim > 0
+    ? (atAbertura + ativoTotalFim) / 2
+    : ativoTotalFim;
   const roa = atMedio > 0 ? safePct(llAnual, atMedio) : 0;
 
 
@@ -389,8 +402,6 @@ export function calcIndicators(
   // divergência agora aparece na única fonte — não há mais dois números
   // brigando na mesma página. Modelo Fleuriet: passivo operacional inclui
   // fornecedores + salários/encargos + impostos a pagar.
-  const cfLocal = cfPre ?? buildCashFlow(state);
-  const balFech = balancoPre ?? deriveBalancoFechamento({ state, dre, cf: cfLocal });
   const bal = balFech.balanco;
   const bAc = bal.ativoCirculante ?? {};
   const bPc = bal.passivoCirculante ?? {};
@@ -506,7 +517,7 @@ export function calcIndicators(
     passivoCirculante > 1 ? capUp(caixaLiq / passivoCirculante) : caixaLiq < 0 ? -CAP_LIQ : CAP_LIQ;
   // [Auditoria Bloco 4] Liquidez Geral = (AC + Realizável LP) / (PC + PNC). Sem RLP/PNC isolados
   // no schema, aproximamos por AC / (AT − PL) — passivo total ≈ AT − PL pela equação patrimonial.
-  const passivoTotalAprox = capital.ativoTotal > PL ? capital.ativoTotal - PL : 0;
+  const passivoTotalAprox = ativoTotalFim > PL ? ativoTotalFim - PL : 0;
   const liquidezGeral =
     passivoTotalAprox > 1 ? capUp(ativoCirculante / passivoTotalAprox) : CAP_LIQ;
 
@@ -526,16 +537,16 @@ export function calcIndicators(
     Math.max(0, capital.passivoCirculante ?? 0) + D + Math.max(0, capital.passivosNaoOnerosos ?? 0);
   let endividamentoGeral = 0;
   let endividamentoGeralDadosCompletos = false;
-  if (capital.ativoTotal > 0 && temBalancoPassivo) {
-    endividamentoGeral = (passivoBalTotal / capital.ativoTotal) * 100;
+  if (ativoTotalFim > 0 && temBalancoPassivo) {
+    endividamentoGeral = (passivoBalTotal / ativoTotalFim) * 100;
     endividamentoGeralDadosCompletos = true;
-  } else if (capital.ativoTotal > 0 && passivoAgregadoLegado > 0) {
-    endividamentoGeral = (passivoAgregadoLegado / capital.ativoTotal) * 100;
+  } else if (ativoTotalFim > 0 && passivoAgregadoLegado > 0) {
+    endividamentoGeral = (passivoAgregadoLegado / ativoTotalFim) * 100;
     endividamentoGeralDadosCompletos = true;
-  } else if (capital.ativoTotal > 0) {
+  } else if (ativoTotalFim > 0) {
     // Último recurso: proxy contábil `AT − PL` — marca como incompleto.
-    const passivoTotalEstim = Math.max(0, capital.ativoTotal - PL);
-    endividamentoGeral = (passivoTotalEstim / capital.ativoTotal) * 100;
+    const passivoTotalEstim = Math.max(0, ativoTotalFim - PL);
+    endividamentoGeral = (passivoTotalEstim / ativoTotalFim) * 100;
     endividamentoGeralDadosCompletos = false;
   } else {
     const passivoConhecido = D + pno;
@@ -544,7 +555,7 @@ export function calcIndicators(
     endividamentoGeralDadosCompletos = false;
   }
   // Endividamento ONEROSO — só dívida financeira. É o que o banco pergunta.
-  const endividamentoOneroso = capital.ativoTotal > 0 ? (D / capital.ativoTotal) * 100 : 0;
+  const endividamentoOneroso = ativoTotalFim > 0 ? (D / ativoTotalFim) * 100 : 0;
   const grauEndividamento = PL > 0 ? (D / PL) * 100 : 0;
   // [Auditoria Bloco 4] Cobertura de Juros = EBIT ÷ Juros de CONTRATOS DE DÍVIDA.
   // Denominador = juros oriundos de debtContracts (financiamentos/empréstimos/debêntures).
