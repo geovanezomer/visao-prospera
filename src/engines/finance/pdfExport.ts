@@ -1265,7 +1265,7 @@ function buildExecutiveInsights(
   let prio = "Manter monitoramento mensal dos indicadores e revisão trimestral do plano.";
   if (burn > 0) prio = `Operação queima ${fmtBRL(burn)}/mês em média no último trimestre — prioridade imediata é estancar o burn.`;
   else if (ind.dscr < 1.25) prio = "Renegociar prazos e taxas com credores — DSCR abaixo de 1,25× compromete acesso a novas linhas.";
-  else if (ind.endividamentoGeral > 70) prio = "Alavancagem elevada — priorizar amortização e revisão do mix de capital.";
+  else if (ind.endividamentoOneroso > 60) prio = "Alavancagem financeira elevada — priorizar amortização e revisão do mix de capital.";
   else if (sum(dre.lucroLiquido) < 0) prio = "Resultado negativo — revisão de precificação, mix e estrutura de custos é a prioridade #1.";
   insights.push({
     title: `Prioridade #1: ${prio.split(" — ")[0]}`,
