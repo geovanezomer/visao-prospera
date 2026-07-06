@@ -9,7 +9,7 @@
 //    derivados diretos de `dre`/`state` — NENHUM novo cálculo financeiro.
 //  - Formatação 100% pt-BR via helpers de `format.ts`.
 // =====================================================================
-import { sumContractSaldos } from "./debtContracts";
+import { sumContractSaldos, aggregateContracts } from "./debtContracts";
 import type { AppState } from "./types";
 import type { DRE } from "./dre";
 import type { Indicators } from "./indicators";
