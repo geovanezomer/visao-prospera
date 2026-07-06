@@ -1345,7 +1345,7 @@ function buildTopRisks(
       return { title: d.title, impact, probability, recommendation, severity: sev };
     })
     .concat(
-      ind.dscr > 0 && ind.dscr < 1.25 ? [{
+      ind.dscr != null && ind.dscr > 0 && ind.dscr < 1.25 ? [{
         title: "DSCR abaixo do mínimo bancário",
         impact: `DSCR ${ind.dscr.toFixed(2)}x compromete acesso a novas linhas de crédito`,
         probability: "Alta",
