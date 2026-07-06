@@ -1849,7 +1849,7 @@ function renderIndicadoresGrouped(
     { nome: "Liquidez Seca", mede: "Liquidez corrente sem estoques.", valor: `${ind.liquidezSeca.toFixed(2)}x` },
     { nome: "Liquidez Imediata", mede: "Capacidade de pagar dívidas só com caixa.", valor: `${ind.liquidezImediata.toFixed(2)}x` },
     { nome: "Liquidez Geral", mede: "Honra todas as dívidas (curto + longo).", valor: `${ind.liquidezGeral.toFixed(2)}x` },
-    { nome: "Cobertura de Juros", mede: "Quantas vezes o EBIT cobre os juros.", valor: `${ind.coberturaJuros.toFixed(2)}x` },
+    { nome: "Cobertura de Juros", mede: "Quantas vezes o EBIT cobre os juros.", valor: ind.coberturaJuros == null ? "N/A" : `${ind.coberturaJuros.toFixed(2)}x` },
     { nome: "Ciclo Operacional", mede: "Dias entre comprar e receber.", valor: `${ind.cicloOperacional.toFixed(0)} dias` },
     { nome: "Ciclo Financeiro", mede: "Dias em que a empresa financia a operação.", valor: `${ind.cicloFinanceiro.toFixed(0)} dias` },
     { nome: "NCG", mede: "Necessidade de Capital de Giro.", valor: fmtBRL(ind.ncg) },
