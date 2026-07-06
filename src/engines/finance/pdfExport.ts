@@ -917,7 +917,7 @@ export async function exportFinancePDF({
       sub: `Classificação: ${conceito}`, tone },
     { label: "DSCR", value: dscrFmt,
       sub: "Cobertura do serviço da dívida",
-      tone: ind.dscr >= 1.5 ? "ok" : ind.dscr >= 1.25 ? "warn" : "bad" },
+      tone: ind.dscr == null ? "ok" : ind.dscr >= 1.5 ? "ok" : ind.dscr >= 1.25 ? "warn" : "bad" },
     { label: "Margem Líquida", value: `${ind.margemLiquida.toFixed(1)}%`,
       sub: "Lucro / Receita Bruta",
       tone: ind.margemLiquida >= 8 ? "ok" : ind.margemLiquida >= 3 ? "warn" : "bad" },
