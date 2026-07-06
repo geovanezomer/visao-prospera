@@ -26,6 +26,7 @@ import { calcSimples } from "./tax/simples";
 import { calcPresumido } from "./tax/presumido";
 import { calcReal } from "./tax/real";
 import type { MonthlyTax } from "./tax/shared";
+import { aggregateMutuos } from "./mutuosSocios";
 
 // Regex compilada uma única vez (era recriada a cada chamada de classifyCosts).
 const LOAN_INTEREST_RE = /juros[^a-z]*(sobre)?[^a-z]*(empr[eé]stimo|contrato|m[uú]tuo|afac|s[oó]cio)/i;
