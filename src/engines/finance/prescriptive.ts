@@ -300,7 +300,7 @@ export function buildPrescriptiveCards(
   }
 
   // ===== 4. Cobertura de juros baixa =====
-  if (Number.isFinite(ind.coberturaJuros) && ind.coberturaJuros < 2) {
+  if (ind.coberturaJuros != null && Number.isFinite(ind.coberturaJuros) && ind.coberturaJuros < 2) {
     cards.push({
       id: "cobertura_juros",
       severity: "danger",
