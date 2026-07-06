@@ -35,6 +35,7 @@ export interface ResultadoValidacao {
 export const FAIXAS_TRIBUTARIAS = {
   irpj:              { min: 0, max: 40,  legalMin: 15,   legalMax: 15,   label: "IRPJ" },
   irpjAdicional:     { min: 0, max: 20,  legalMin: 10,   legalMax: 10,   label: "Adicional IRPJ" },
+  irpjAdicionalGatilhoTri: { min: 0, max: 1_000_000, legalMin: 60_000, legalMax: 60_000, label: "Gatilho trimestral do Adicional IRPJ" },
   csll:              { min: 0, max: 20,  legalMin: 9,    legalMax: 9,    label: "CSLL" },
   pisCum:            { min: 0, max: 5,   legalMin: 0.65, legalMax: 0.65, label: "PIS cumulativo" },
   cofinsCum:         { min: 0, max: 10,  legalMin: 3,    legalMax: 3,    label: "COFINS cumulativo" },
