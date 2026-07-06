@@ -499,7 +499,7 @@ function CostTable({
             const anual = sum(vals);
             const pct = receitaBrutaAnual > 0 ? anual / receitaBrutaAnual : 0;
             return (
-              <tr key={c.id} className="border-t border-border/40 align-middle">
+              <tr key={c.id} className={`border-t border-border/40 align-middle ${c.system ? "bg-muted/20" : ""}`}>
                 <td className="px-3 py-2">
                   {c.custom ? (
                     <input
@@ -508,27 +508,46 @@ function CostTable({
                       className="w-full rounded-md border border-border/40 bg-input/40 px-2 py-1 text-xs outline-none focus:border-primary"
                     />
                   ) : (
-                    <span className="text-xs">{c.label}</span>
+                    <span className="text-xs">
+                      {c.label}
+                      {c.system && (
+                        <span
+                          className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-primary"
+                          title="Gerido em Configurações → Sócios / Pró-labore"
+                        >
+                          Auto
+                        </span>
+                      )}
+                    </span>
                   )}
                 </td>
 
                 <td className="px-2 py-2">
-                  <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
-                    <span>Fixo</span>
-                    <Switch checked={!c.fixed} onCheckedChange={(v) => onFixed(c.id, !v)} />
-                    <span>Mensal</span>
-                  </div>
+                  {c.system ? (
+                    <div className="text-center text-[10px] italic text-muted-foreground">
+                      —
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
+                      <span>Fixo</span>
+                      <Switch checked={!c.fixed} onCheckedChange={(v) => onFixed(c.id, !v)} />
+                      <span>Mensal</span>
+                    </div>
+                  )}
                 </td>
                 {c.fixed ? (
                   <td className="px-1 py-1" colSpan={12}>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] uppercase text-muted-foreground">
-                        Valor aplicado em todos os meses:
+                        {c.system
+                          ? "Valor mensal (gerido em Configurações → Sócios):"
+                          : "Valor aplicado em todos os meses:"}
                       </span>
                       <div className="w-36">
                         <MoneyInput
                           value={fixedCostBase(c.values)}
                           onChange={(n) => onAllMonths(c.id, n)}
+                          readOnly={!!c.system}
                         />
                       </div>
                     </div>
@@ -536,7 +555,11 @@ function CostTable({
                 ) : (
                   c.values.map((v, i) => (
                     <td key={i} className="px-1 py-1">
-                      <MoneyInput value={v} onChange={(n) => onMonth(c.id, i, n)} />
+                      <MoneyInput
+                        value={v}
+                        onChange={(n) => onMonth(c.id, i, n)}
+                        readOnly={!!c.system}
+                      />
                     </td>
                   ))
                 )}
@@ -546,7 +569,7 @@ function CostTable({
                   {fmtPct(pct)}
                 </td>
                 <td className="px-1 py-2 text-center">
-                  {c.custom && (
+                  {c.custom && !c.system && (
                     <button
                       onClick={() => onRemove(c.id)}
                       title="Remover linha"
