@@ -227,8 +227,15 @@ export function buildIndicatorCalcs(
   // ----- Estrutura -----
   const endividamentoGeral = (() => {
     if (AT > 0) {
-      const passivo = Math.max(0, AT - PL);
-      return line(`${fmtBRL(passivo)} ÷ ${fmtBRL(AT)} × 100`, fmtPct(passivo / AT));
+      // Passivo total agora vem da engine (soma real do Balanço Detalhado quando
+      // disponível — vide `indicators.ts`). Mostra o percentual conforme calculado
+      // e destaca o pedaço ONEROSO (dívida financeira), o número que o banco lê.
+      const passivo = (ind.endividamentoGeral / 100) * AT;
+      const oneroso = (ind.endividamentoOneroso / 100) * AT;
+      return line(
+        `${fmtBRL(passivo)} ÷ ${fmtBRL(AT)} × 100  (oneroso: ${fmtBRL(oneroso)} = ${fmtPct(ind.endividamentoOneroso / 100)})`,
+        fmtPct(ind.endividamentoGeral / 100),
+      );
     }
     return NA;
   })();
