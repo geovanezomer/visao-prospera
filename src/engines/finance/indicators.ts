@@ -86,6 +86,8 @@ export interface Indicators {
    * "descoberto" em vez de mostrar um número aparentemente OK.
    */
   caixaNegativo: boolean;
+  /** Caixa efetivo usado no numerador da Liquidez Imediata (SSOT: balanço quando disponível). */
+  caixaLiquidez: number;
 
   /** Passivo Total (operacional + oneroso) ÷ Ativo Total × 100. */
   endividamentoGeral: number;
