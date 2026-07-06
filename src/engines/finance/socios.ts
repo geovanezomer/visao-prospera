@@ -279,11 +279,13 @@ export function calcRetiradaSocio(
   const distSocio = Math.max(0, distribuicaoMensalDisponivel);
   const distIsenta = Math.min(distSocio, limiteIsento);
   const distExcedente = Math.max(0, distSocio - distIsenta);
-  // IRPF sobre excedente — alíquota máxima (27,5%) por simplificação; o sócio
-  // somaria à renda anual. Para refinamento futuro: usar tabela anual.
-  const tabela = getIrpfTable(tax);
-  const aliqTopo = tabela[tabela.length - 1][1] / 100;
-  const irpfDistExcedente = distExcedente * aliqTopo;
+  // M3: IRPF sobre excedente pela tabela PROGRESSIVA (marginal), não flat 27,5%.
+  // O excedente soma ao pró-labore no mês → IR = IR(prolab+exc) − IR(prolab).
+  // Reflete a realidade fiscal do sócio PF sem penalizar excedentes pequenos.
+  const baseProlabParaIr = Math.max(0, prolab - inssSocio);
+  const irBase = irpfPorTabela(baseProlabParaIr, tax);
+  const irComExc = irpfPorTabela(baseProlabParaIr + distExcedente, tax);
+  const irpfDistExcedente = Math.max(0, irComExc - irBase);
 
   // Retenção Lei 15.270/2025 — 10% sobre TOTAL (isento + tributável) do mês
   // quando a soma > R$ 50k. É antecipação do IRPFM anual da PF.

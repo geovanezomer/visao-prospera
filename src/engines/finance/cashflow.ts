@@ -31,6 +31,9 @@ export interface CashFlow {
    *  financeiras. SSOT: `splitReceitasFinanceiras(state).operacionais`. */
   outrasReceitasOperacionais: number[];
   pagamentosFornecedores: number[];
+  /** Custos/despesas fixos operacionais **exceto folha** — a folha vive em
+   *  `pagamentosFolha` (lag 30d). Para desembolso operacional total some
+   *  fornec + fixos + variáveis + folha + impostos. */
   pagamentosFixos: number[];
   pagamentosVariaveis: number[];
   /** Folha de pessoal desembolsada (SSOT `isFolhaCost`) com lag de 30 dias

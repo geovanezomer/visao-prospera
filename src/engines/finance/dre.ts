@@ -26,6 +26,7 @@ import { calcSimples } from "./tax/simples";
 import { calcPresumido } from "./tax/presumido";
 import { calcReal } from "./tax/real";
 import type { MonthlyTax } from "./tax/shared";
+import { aggregateMutuos } from "./mutuosSocios";
 
 // Regex compilada uma única vez (era recriada a cada chamada de classifyCosts).
 const LOAN_INTEREST_RE = /juros[^a-z]*(sobre)?[^a-z]*(empr[eé]stimo|contrato|m[uú]tuo|afac|s[oó]cio)/i;
@@ -252,9 +253,12 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   const depreciacao = computeDepreciacao(state);
   const ebit = ebitda.map((e, i) => e - depreciacao[i]);
 
-  // Resultado Financeiro = rendimentos − custos financeiros
+  // M4: juros de mútuos PJ→PF entram no Resultado Financeiro (Receita Financeira).
+  // SSOT: aggregateMutuos — mesma série que já flui pela DFC.
+  const mutuosAgg = aggregateMutuos(state.mutuosSocios);
+  // Resultado Financeiro = rendimentos aplicações + juros mútuos − custos financeiros
   const resultadoFinanceiro = ebit.map(
-    (_, i) => rendimentosFinanceiros[i] - buckets.custosFinanceirosTotal[i],
+    (_, i) => rendimentosFinanceiros[i] + (mutuosAgg.juros[i] || 0) - buckets.custosFinanceirosTotal[i],
   );
   const lair = ebit.map((e, i) => e + resultadoFinanceiro[i]);
 

@@ -206,8 +206,11 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     const ebitda = lucroBruto - despesasOp;
     const ebit = ebitda - depMensal;
     const resultadoFinanceiro = receita * resultadoFinanceiroRatioBase; // negativo para empresas alavancadas
-    const impostosLucro = Math.max(0, ebit) * taxLucroRatio;
-    const lucroLiquido = ebit + resultadoFinanceiro - impostosLucro;
+    // A2: IRPJ/CSLL incidem sobre o LAIR (EBIT + Resultado Financeiro), não sobre EBIT puro.
+    // Para empresas alavancadas isso reduz a carga tributária (juros dedutíveis).
+    const lair = ebit + resultadoFinanceiro;
+    const impostosLucro = Math.max(0, lair) * taxLucroRatio;
+    const lucroLiquido = lair - impostosLucro;
 
     // NCG do mês: anualiza receita e CPV do mês para PMR/PMP
     const estoqueT = cpvAnoBase > 0 ? estoqueBase0 * (cpv / (cpvAnoBase / 12)) : estoqueBase0;
