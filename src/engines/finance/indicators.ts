@@ -66,10 +66,28 @@ export interface Indicators {
   liquidezCorrente: number;
   /** (Ativo Circulante − Estoques) ÷ Passivo Circulante */
   liquidezSeca: number;
-  /** Disponibilidades ÷ Passivo Circulante */
+  /**
+   * Disponibilidades (caixa + equivalentes) ÷ Passivo Circulante.
+   * PODE SER NEGATIVA quando o caixa projetado fura (descoberto bancário).
+   * NUNCA aplicar Math.abs — o sinal negativo é o alerta.
+   */
   liquidezImediata: number;
   /** (Ativo Total − Permanente) ÷ Passivo Total. Aproximação: (AT − (AT−AC)) / (AT − PL) = AC / (AT − PL). */
   liquidezGeral: number;
+  /**
+   * true quando AC/PC vieram de ESTIMATIVA (fallback PMR/PMP + 30% de dívida)
+   * porque nem o Balanço Detalhado nem os agregados `capital.ativoCirculante`/
+   * `passivoCirculante` estavam preenchidos. UI/PDF devem exibir badge de aviso.
+   */
+  liquidezEstimada: boolean;
+  /**
+   * true quando o caixa no Balanço de Fechamento é negativo (descoberto).
+   * UI/PDF devem pintar Liquidez Imediata em vermelho e rotular como
+   * "descoberto" em vez de mostrar um número aparentemente OK.
+   */
+  caixaNegativo: boolean;
+  /** Caixa efetivo usado no numerador da Liquidez Imediata (SSOT: balanço quando disponível). */
+  caixaLiquidez: number;
 
   /** Passivo Total (operacional + oneroso) ÷ Ativo Total × 100. */
   endividamentoGeral: number;
@@ -426,36 +444,72 @@ export function calcIndicators(
   const fornecEstimado =
     capital.fornecedores > 0 ? capital.fornecedores : (cpvAnual / 360) * revenue.pmp;
 
-  // ---- Liquidez ----
-  const ativoCirculante =
-    capital.ativoCirculante > 0
-      ? capital.ativoCirculante
-      : capital.disponibilidades + crEstimado + capital.estoques;
-  // Fração da dívida onerosa que vence em CP — hardcoded em 0.30 como
-  // heurística. Só é usada quando `passivoCirculante` não foi informado
-  // pelo consultor; para split preciso, usar `splitDebtCPLPFromContracts`.
-  const dividaCpFrac = 0.3;
-  const passivoCirculante =
-    capital.passivoCirculante > 0
-      ? capital.passivoCirculante
-      : Math.max(0, fornecEstimado + D * dividaCpFrac);
+  // ---- Liquidez (SSOT via Balanço de Fechamento) ----
+  // Deriva AC/PC dos mesmos subcampos que o PDF imprime no Apêndice B,
+  // eliminando divergência histórica entre "indicador" e "balanço".
+  // caixaBal PODE SER NEGATIVO (descoberto bancário projetado) — o sinal
+  // é preservado para que Liquidez Imediata sinalize o risco real.
+  const caixaBal = safeNumber(bAc.caixaEquivalentes) + safeNumber((bAc as { aplicacoesFinanceirasCP?: number }).aplicacoesFinanceirasCP);
+  const impRecBal = safeNumber(bAc.impostosRecuperar);
+  const acBal = caixaBal + crBal + estBal + impRecBal;
+  const emprestCPBal = safeNumber((bPc as { emprestimosFinanciamentosCP?: number }).emprestimosFinanciamentosCP);
+  const pcBal = fornBal + salBal + impBal + emprestCPBal;
+  const temBalancoAC = Math.abs(acBal) > 0 || crBal !== 0 || estBal !== 0 || caixaBal !== 0;
+  const temBalancoPC = pcBal > 0;
+
+  // Fallback em cascata: 1º balanço, 2º agregados capital.*, 3º estimativa PMR/PMP.
+  let ativoCirculante: number;
+  let passivoCirculante: number;
+  let caixaLiq: number;
+  let estoqueLiq: number;
+  let liquidezEstimada = false;
+  if (temBalancoAC && temBalancoPC) {
+    ativoCirculante = acBal;
+    passivoCirculante = pcBal;
+    caixaLiq = caixaBal;
+    estoqueLiq = estBal;
+  } else if (capital.ativoCirculante > 0 && capital.passivoCirculante > 0) {
+    ativoCirculante = capital.ativoCirculante;
+    passivoCirculante = capital.passivoCirculante;
+    caixaLiq = capital.disponibilidades;
+    estoqueLiq = capital.estoques;
+  } else {
+    // Estimativa legada — só como último recurso; UI deve avisar.
+    liquidezEstimada = true;
+    const dividaCpFrac = 0.3;
+    ativoCirculante =
+      capital.ativoCirculante > 0
+        ? capital.ativoCirculante
+        : capital.disponibilidades + crEstimado + capital.estoques;
+    passivoCirculante =
+      capital.passivoCirculante > 0
+        ? capital.passivoCirculante
+        : Math.max(0, fornecEstimado + D * dividaCpFrac);
+    caixaLiq = capital.disponibilidades;
+    estoqueLiq = capital.estoques;
+  }
+  const caixaNegativo = caixaLiq < 0;
 
   const CAP_LIQ = 99;
+  // Cap SUPERIOR apenas — para caixa negativo o valor negativo é preservado
+  // (deixar Math.min sem Math.max inferior). Ratio positivo é limitado.
+  const capUp = (v: number) => (v > CAP_LIQ ? CAP_LIQ : v);
   const liquidezCorrente =
-    passivoCirculante > 1 ? Math.min(CAP_LIQ, ativoCirculante / passivoCirculante) : CAP_LIQ;
+    passivoCirculante > 1 ? capUp(ativoCirculante / passivoCirculante) : CAP_LIQ;
   const liquidezSeca =
     passivoCirculante > 1
-      ? Math.min(CAP_LIQ, (ativoCirculante - estoqueMedio) / passivoCirculante)
+      ? capUp((ativoCirculante - estoqueLiq) / passivoCirculante)
       : CAP_LIQ;
+  // Liquidez Imediata: sem clamp inferior — caixa negativo → ratio negativo.
+  // Cap superior mantido só para evitar Infinity quando PC ≈ 0.
   const liquidezImediata =
-    passivoCirculante > 1
-      ? Math.min(CAP_LIQ, capital.disponibilidades / passivoCirculante)
-      : CAP_LIQ;
+    passivoCirculante > 1 ? capUp(caixaLiq / passivoCirculante) : caixaLiq < 0 ? -CAP_LIQ : CAP_LIQ;
   // [Auditoria Bloco 4] Liquidez Geral = (AC + Realizável LP) / (PC + PNC). Sem RLP/PNC isolados
   // no schema, aproximamos por AC / (AT − PL) — passivo total ≈ AT − PL pela equação patrimonial.
   const passivoTotalAprox = capital.ativoTotal > PL ? capital.ativoTotal - PL : 0;
   const liquidezGeral =
-    passivoTotalAprox > 1 ? Math.min(CAP_LIQ, ativoCirculante / passivoTotalAprox) : CAP_LIQ;
+    passivoTotalAprox > 1 ? capUp(ativoCirculante / passivoTotalAprox) : CAP_LIQ;
+
 
 
   // ---- Endividamento ----
@@ -642,6 +696,9 @@ export function calcIndicators(
     liquidezSeca,
     liquidezImediata,
     liquidezGeral,
+    liquidezEstimada,
+    caixaNegativo,
+    caixaLiquidez: caixaLiq,
 
     endividamentoGeral,
     endividamentoGeralDadosCompletos,

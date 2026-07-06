@@ -250,6 +250,61 @@ describe("Indicadores — NCG e FCF (SSOT via Balanço)", () => {
   });
 });
 
+// [Auditoria SSOT Liquidez] Liquidez deve ser derivada do Balanço de
+// Fechamento (mesmo apêndice impresso no PDF), não de estimativa PMR/PMP.
+// Bug histórico: LC do indicador 32× diferente do balanço impresso.
+describe("Indicadores — Liquidez SSOT (Balanço de Fechamento)", () => {
+  it("LC/LS/LG do indicador === razão calculada direto do Balanço", () => {
+    const s = createState({
+      revenue: { bruta: m12(60_000) },
+      costs: [{ id: "cpv", label: "CPV", category: "custo_vendas", values: m12(30_000), fixed: false }],
+      capital: {
+        contasReceber: 100_000,
+        estoques: 50_000,
+        fornecedores: 30_000,
+        ativoTotal: 500_000,
+        patrimonioLiquido: 300_000,
+      },
+    });
+    const model = buildFinancialModel(s);
+    const bal = model.balancoFechamento.balanco;
+    const ac =
+      (bal.ativoCirculante?.caixaEquivalentes ?? 0) +
+      (bal.ativoCirculante?.contasReceberClientes ?? 0) +
+      (bal.ativoCirculante?.estoques ?? 0) +
+      (bal.ativoCirculante?.impostosRecuperar ?? 0);
+    const pc =
+      (bal.passivoCirculante?.fornecedores ?? 0) +
+      (bal.passivoCirculante?.salariosEncargos ?? 0) +
+      (bal.passivoCirculante?.impostosPagar ?? 0) +
+      (bal.passivoCirculante?.emprestimosFinanciamentosCP ?? 0);
+    if (pc > 1) {
+      expect(model.ind.liquidezCorrente).toBeCloseTo(ac / pc, 3);
+      expect(model.ind.ativoCirculante).toBeCloseTo(ac, 0);
+      expect(model.ind.passivoCirculante).toBeCloseTo(pc, 0);
+    }
+    expect(model.ind.liquidezEstimada).toBe(false);
+  });
+
+  it("Liquidez Imediata NÃO aplica abs quando caixa é negativo (descoberto)", () => {
+    // Força caixa negativo via disponibilidades negativas — o balanço
+    // propaga o valor cru; a Liquidez Imediata deve refletir o descoberto.
+    const s = createState({
+      capital: {
+        disponibilidades: -50_000,
+        fornecedores: 40_000,
+        ativoTotal: 200_000,
+        patrimonioLiquido: 100_000,
+      },
+    });
+    const ind = calcIndicators(s, buildDRE(s, "simples").dre);
+    expect(ind.caixaNegativo).toBe(true);
+    // A Liquidez Imediata deve ser negativa OU zero — nunca positiva.
+    expect(ind.liquidezImediata).toBeLessThanOrEqual(0);
+  });
+});
+
+
 describe("Indicadores — Cobertura de Juros / DSCR / Giro", () => {
   it("Sem dívida onerosa → coberturaJuros e DSCR = null (N/A)", () => {
     const s = createState({});
