@@ -464,6 +464,10 @@ function CostTable({
             tone: "neg",
             editableLabel: !!c.custom,
             removable: !!c.custom,
+            readOnly: !!c.system,
+            readOnlyHint: c.system
+              ? "Gerido em Configurações → Sócios / Pró-labore"
+              : undefined,
           };
         })}
         receitaAnual={receitaBrutaAnual}
