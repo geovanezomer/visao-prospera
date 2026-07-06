@@ -249,7 +249,7 @@ export function buildIndicatorCalcs(
   })();
   const coberturaJuros = juros > 1
     ? line(`${fmtBRL(EBIT)} ÷ ${fmtBRL(juros)}`, `${fmtRatio(EBIT / juros)}×`)
-    : "Sem despesas financeiras no período";
+    : "Sem dívida onerosa — indicador não aplicável (N/A)";
   const giroAtivo = ATmedio > 0
     ? line(`${fmtBRL(RL)} ÷ ${fmtBRL(ATmedio)}`, `${fmtRatio(RL / ATmedio)}×`)
     : NA;
