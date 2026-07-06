@@ -390,9 +390,9 @@ export function calcIndicators(
     safeNumber(bal.patrimonioLiquido?.capitalSocial) +
     safeNumber(bal.patrimonioLiquido?.reservasCapital) +
     safeNumber(bal.patrimonioLiquido?.reservasLucros) +
-    safeNumber(bal.patrimonioLiquido?.lucrosAcumulados) +
+    safeNumber(bal.patrimonioLiquido?.lucrosPrejuizosAcumulados) +
     safeNumber(bal.patrimonioLiquido?.resultadoExercicio) -
-    safeNumber(bal.patrimonioLiquido?.acoesTesouraria);
+    safeNumber(bal.patrimonioLiquido?.acoesEmTesouraria);
   const pncTotal =
     safeNumber(bPnc.emprestimosFinanciamentosLP) +
     safeNumber(bPnc.impostosParcelados) +
