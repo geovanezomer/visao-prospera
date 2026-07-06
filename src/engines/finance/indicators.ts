@@ -42,8 +42,8 @@ export interface Indicators {
    * Receita mínima para cobrir os desembolsos OPERACIONAIS.
    */
   pontoEquilibrioFinanceiro: number;
-  /** Lucro Líquido ÷ Patrimônio Líquido × 100 */
-  roe: number;
+  /** Lucro Líquido ÷ PL MÉDIO (abertura + fim)/2 × 100. `null` quando PL médio ≤ 0. */
+  roe: number | null;
   /** Lucro Líquido ÷ Ativo Total MÉDIO × 100 (médio quando `ativoTotalAbertura` informado; senão ponto final). */
   roa: number;
 
