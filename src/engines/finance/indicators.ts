@@ -517,7 +517,7 @@ export function calcIndicators(
     passivoCirculante > 1 ? capUp(caixaLiq / passivoCirculante) : caixaLiq < 0 ? -CAP_LIQ : CAP_LIQ;
   // [Auditoria Bloco 4] Liquidez Geral = (AC + Realizável LP) / (PC + PNC). Sem RLP/PNC isolados
   // no schema, aproximamos por AC / (AT − PL) — passivo total ≈ AT − PL pela equação patrimonial.
-  const passivoTotalAprox = capital.ativoTotal > PL ? capital.ativoTotal - PL : 0;
+  const passivoTotalAprox = ativoTotalFim > PL ? ativoTotalFim - PL : 0;
   const liquidezGeral =
     passivoTotalAprox > 1 ? capUp(ativoCirculante / passivoTotalAprox) : CAP_LIQ;
 
@@ -537,16 +537,16 @@ export function calcIndicators(
     Math.max(0, capital.passivoCirculante ?? 0) + D + Math.max(0, capital.passivosNaoOnerosos ?? 0);
   let endividamentoGeral = 0;
   let endividamentoGeralDadosCompletos = false;
-  if (capital.ativoTotal > 0 && temBalancoPassivo) {
-    endividamentoGeral = (passivoBalTotal / capital.ativoTotal) * 100;
+  if (ativoTotalFim > 0 && temBalancoPassivo) {
+    endividamentoGeral = (passivoBalTotal / ativoTotalFim) * 100;
     endividamentoGeralDadosCompletos = true;
-  } else if (capital.ativoTotal > 0 && passivoAgregadoLegado > 0) {
-    endividamentoGeral = (passivoAgregadoLegado / capital.ativoTotal) * 100;
+  } else if (ativoTotalFim > 0 && passivoAgregadoLegado > 0) {
+    endividamentoGeral = (passivoAgregadoLegado / ativoTotalFim) * 100;
     endividamentoGeralDadosCompletos = true;
-  } else if (capital.ativoTotal > 0) {
+  } else if (ativoTotalFim > 0) {
     // Último recurso: proxy contábil `AT − PL` — marca como incompleto.
-    const passivoTotalEstim = Math.max(0, capital.ativoTotal - PL);
-    endividamentoGeral = (passivoTotalEstim / capital.ativoTotal) * 100;
+    const passivoTotalEstim = Math.max(0, ativoTotalFim - PL);
+    endividamentoGeral = (passivoTotalEstim / ativoTotalFim) * 100;
     endividamentoGeralDadosCompletos = false;
   } else {
     const passivoConhecido = D + pno;
@@ -555,7 +555,7 @@ export function calcIndicators(
     endividamentoGeralDadosCompletos = false;
   }
   // Endividamento ONEROSO — só dívida financeira. É o que o banco pergunta.
-  const endividamentoOneroso = capital.ativoTotal > 0 ? (D / capital.ativoTotal) * 100 : 0;
+  const endividamentoOneroso = ativoTotalFim > 0 ? (D / ativoTotalFim) * 100 : 0;
   const grauEndividamento = PL > 0 ? (D / PL) * 100 : 0;
   // [Auditoria Bloco 4] Cobertura de Juros = EBIT ÷ Juros de CONTRATOS DE DÍVIDA.
   // Denominador = juros oriundos de debtContracts (financiamentos/empréstimos/debêntures).
