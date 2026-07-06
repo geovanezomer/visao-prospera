@@ -386,8 +386,10 @@ describe("Indicadores — ROA / Giro com Ativo Médio (CFA/Damodaran)", () => {
       const roaEsperado = (model.ind.lucroLiquidoAnual / model.balancoFechamento.totals.ativo) * 100;
       expect(model.ind.roa).toBeCloseTo(roaEsperado, 1);
     }
+  });
 
   it("PL fechamento é SSOT do balanço: ROE e Dívida Líq./PL não colapsam quando capital.patrimonioLiquido=0 mas o balanço tem PL>0", () => {
+
     // Cenário do bug histórico: `capital.patrimonioLiquido = 0` (só capital social zero)
     // enquanto o balanço reconciliado acumula lucros/reservas. Antes: PL=0 →
     // ROE inflado (plMedio pequeno) e dividaLiqPl saturava no clamp ±99.
