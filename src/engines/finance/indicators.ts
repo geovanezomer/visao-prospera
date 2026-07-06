@@ -14,6 +14,7 @@ import { irShieldForRegime } from "./tax/real";
 import type { DRE } from "./dre";
 import { buildCashFlow } from "./cashflow";
 import { mesesPreenchidos, anualizar } from "./periodUtils";
+import { deriveAbertura } from "./aberturaDerivada";
 
 export interface Indicators {
   /** Lucro Bruto ÷ Receita Líquida × 100 */
