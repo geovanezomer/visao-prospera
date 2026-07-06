@@ -66,10 +66,26 @@ export interface Indicators {
   liquidezCorrente: number;
   /** (Ativo Circulante − Estoques) ÷ Passivo Circulante */
   liquidezSeca: number;
-  /** Disponibilidades ÷ Passivo Circulante */
+  /**
+   * Disponibilidades (caixa + equivalentes) ÷ Passivo Circulante.
+   * PODE SER NEGATIVA quando o caixa projetado fura (descoberto bancário).
+   * NUNCA aplicar Math.abs — o sinal negativo é o alerta.
+   */
   liquidezImediata: number;
   /** (Ativo Total − Permanente) ÷ Passivo Total. Aproximação: (AT − (AT−AC)) / (AT − PL) = AC / (AT − PL). */
   liquidezGeral: number;
+  /**
+   * true quando AC/PC vieram de ESTIMATIVA (fallback PMR/PMP + 30% de dívida)
+   * porque nem o Balanço Detalhado nem os agregados `capital.ativoCirculante`/
+   * `passivoCirculante` estavam preenchidos. UI/PDF devem exibir badge de aviso.
+   */
+  liquidezEstimada: boolean;
+  /**
+   * true quando o caixa no Balanço de Fechamento é negativo (descoberto).
+   * UI/PDF devem pintar Liquidez Imediata em vermelho e rotular como
+   * "descoberto" em vez de mostrar um número aparentemente OK.
+   */
+  caixaNegativo: boolean;
 
   /** Passivo Total (operacional + oneroso) ÷ Ativo Total × 100. */
   endividamentoGeral: number;
