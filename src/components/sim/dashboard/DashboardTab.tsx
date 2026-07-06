@@ -57,16 +57,20 @@ function Gauge({
   hint,
 }: {
   label: string;
-  value: number;
+  /** Aceita `null` para exibir "N/A" quando o indicador não é aplicável (ex.: ROE com PL ≤ 0). */
+  value: number | null;
   max: number;
   suffix?: string;
   good?: "high" | "low";
   hint?: { description: string; formula?: string; calc?: string };
 }) {
-  const clamped = Math.max(0, Math.min(value, max));
+  const isNA = value === null || !Number.isFinite(value);
+  const numeric = isNA ? 0 : (value as number);
+  const clamped = Math.max(0, Math.min(numeric, max));
   const ratio = max > 0 ? clamped / max : 0;
-  const tone = good === "high" ? (ratio > 0.66 ? "var(--success)" : ratio > 0.33 ? "#F5B85B" : "var(--destructive)")
-                                : (ratio < 0.33 ? "var(--success)" : ratio < 0.66 ? "#F5B85B" : "var(--destructive)");
+  const tone = isNA ? "var(--muted)"
+    : good === "high" ? (ratio > 0.66 ? "var(--success)" : ratio > 0.33 ? "#F5B85B" : "var(--destructive)")
+                     : (ratio < 0.33 ? "var(--success)" : ratio < 0.66 ? "#F5B85B" : "var(--destructive)");
   const data = [
     { name: "v", value: clamped, fill: tone },
     { name: "r", value: Math.max(0, max - clamped), fill: "var(--muted)" },
