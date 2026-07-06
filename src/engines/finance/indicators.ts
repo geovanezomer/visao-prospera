@@ -429,13 +429,8 @@ export function calcIndicators(
   const ncg = (crBal + estBal) - (fornBal + salBal + impBal);
 
   // CDG (Capital de Giro) via Fleuriet = (PL + PNC) − ANC.
-  const plBal =
-    safeNumber(bal.patrimonioLiquido?.capitalSocial) +
-    safeNumber(bal.patrimonioLiquido?.reservasCapital) +
-    safeNumber(bal.patrimonioLiquido?.reservasLucros) +
-    safeNumber(bal.patrimonioLiquido?.lucrosPrejuizosAcumulados) +
-    safeNumber(bal.patrimonioLiquido?.resultadoExercicio) -
-    safeNumber(bal.patrimonioLiquido?.acoesEmTesouraria);
+  // Reusa `plBalSSOT` (calculado no topo) — mesmo SSOT do PL usado em ROE/DL-PL.
+  const plBal = plBalSSOT;
   const pncTotal =
     safeNumber(bPnc.emprestimosFinanciamentosLP) +
     safeNumber(bPnc.impostosParcelados) +
