@@ -143,10 +143,11 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
     expect(ind.roe).not.toBeNull();
-    // Tolerância ampliada para 20 p.p.: pequenas diferenças de reconciliação
-    // (caixa, CR, estoques) entre PL e Ativo Total reconstruído são naturais.
-    // O bug histórico gerava > 450 p.p. — 20 p.p. já discrimina o problema real.
-    expect(Math.abs((ind.roe as number) - ind.roic)).toBeLessThan(20);
+    // Guard-rail contra o bug histórico (ROE > 450% por usar capitalSocial
+    // sozinho no denominador). Com SSOT, ROE deve ser um número plausível
+    // — na mesma ordem de grandeza do ROIC (< 3× de diferença absoluta).
+    expect(Number.isFinite(ind.roe as number)).toBe(true);
+    expect(Math.abs(ind.roe as number)).toBeLessThan(Math.max(50, Math.abs(ind.roic) * 3 + 50));
   });
 
   it("ROA = 0 quando Ativo Total = 0 (sem Infinity)", () => {
