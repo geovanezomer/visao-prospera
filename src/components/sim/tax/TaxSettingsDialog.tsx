@@ -384,6 +384,7 @@ function StepFederais({
           value={ov.irpjAdicionalGatilhoTri ?? IRPJ_ADICIONAL_GATILHO_TRI}
           onChange={(v) => patchOv({ irpjAdicionalGatilhoTri: v })}
           onReset={() => patchOv({ irpjAdicionalGatilhoTri: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.irpjAdicionalGatilhoTri}
         />
         <FriendlyRow
           label="CSLL"
@@ -456,7 +457,44 @@ function StepFederais({
         />
       </Section>
 
+      <Callout tone="info" title="Lucro Real — créditos anuais e prejuízo fiscal">
+        <p className="text-[13px]">
+          Empresas no Lucro Real podem <b>abater créditos de PIS/COFINS</b> apurados
+          sobre insumos e <b>compensar prejuízo fiscal</b> de exercícios anteriores
+          (Lei 9.065/95 — trava de 30% do lucro trimestral). Estes campos ficavam
+          apenas na aba de Tributos; agora estão consolidados aqui.
+        </p>
+      </Callout>
 
+      <Section title="Lucro Real — créditos & prejuízo fiscal">
+        <FriendlyRow
+          label="Prejuízo fiscal acumulado (abertura)"
+          suffix="R$"
+          defaultVal={0}
+          help="Saldo de prejuízo fiscal de exercícios anteriores (Parte B do e-Lalur). Compensável até 30% do lucro tributável de cada trimestre (Lei 9.065/95 art. 42)."
+          value={state.tax.prejuizoFiscalAcumuladoAbertura ?? 0}
+          onChange={(v) => patchTax({ prejuizoFiscalAcumuladoAbertura: Math.max(0, v) })}
+          onReset={() => patchTax({ prejuizoFiscalAcumuladoAbertura: 0 })}
+        />
+        <FriendlyRow
+          label="Créditos anuais de PIS (não-cumulativo)"
+          suffix="R$"
+          defaultVal={0}
+          help="Valor total ANUAL de créditos de PIS apurados sobre insumos, energia, aluguel e demais itens permitidos. É rateado mensalmente e abatido do débito de PIS. Excedente vira saldo credor rolado."
+          value={state.tax.pisCreditos ?? 0}
+          onChange={(v) => patchTax({ pisCreditos: Math.max(0, v) })}
+          onReset={() => patchTax({ pisCreditos: 0 })}
+        />
+        <FriendlyRow
+          label="Créditos anuais de COFINS (não-cumulativo)"
+          suffix="R$"
+          defaultVal={0}
+          help="Valor total ANUAL de créditos de COFINS. Mesma regra do PIS: rateado por 12, abatido do débito, excedente rola como saldo credor."
+          value={state.tax.cofinsCreditos ?? 0}
+          onChange={(v) => patchTax({ cofinsCreditos: Math.max(0, v) })}
+          onReset={() => patchTax({ cofinsCreditos: 0 })}
+        />
+      </Section>
 
     </div>
   );
@@ -601,6 +639,33 @@ function StepPresumido({
           onChange={(v) => patchTax({ issIcms: v })}
           onReset={() => patchTax({ issIcms: 5 })}
         faixa={FAIXAS_TRIBUTARIAS.iss}
+        />
+        <FriendlyRow
+          label="Deduções anuais de ISS (materiais/subempreitada)"
+          suffix="R$"
+          defaultVal={0}
+          help="Total ANUAL de materiais e subempreitadas dedutíveis da base do ISS (LC 116/2003 art. 7º §2º — construção civil e afins). Rateado por 12 e abatido mensalmente da base de cálculo."
+          value={state.tax.issDeducoes ?? 0}
+          onChange={(v) => patchTax({ issDeducoes: Math.max(0, v) })}
+          onReset={() => patchTax({ issDeducoes: 0 })}
+        />
+        <FriendlyRow
+          label="Alíquota de crédito de ICMS (entradas)"
+          suffix="%"
+          defaultVal={0}
+          help="Alíquota média de crédito de ICMS sobre o CPV (comércio/indústria). ICMS efetivo = max(0, débito − crédito). Ignorado quando a atividade é serviços."
+          value={state.tax.aliquotaICMSCredito ?? 0}
+          onChange={(v) => patchTax({ aliquotaICMSCredito: Math.max(0, v) })}
+          onReset={() => patchTax({ aliquotaICMSCredito: 0 })}
+        />
+        <FriendlyRow
+          label="IRRF sobre aplicações financeiras"
+          suffix="%"
+          defaultVal={15}
+          help="Alíquota média de IRRF retido sobre rendimentos de aplicações (regra geral 15% para prazos > 720 dias). No Lucro Presumido, é compensável com o IRPJ apurado sobre a mesma base — reduz o IRPJ devido no mês, sem gerar restituição automática."
+          value={state.tax.irrfAplicacoesPct ?? 15}
+          onChange={(v) => patchTax({ irrfAplicacoesPct: Math.max(0, Math.min(100, v)) })}
+          onReset={() => patchTax({ irrfAplicacoesPct: 15 })}
         />
       </Section>
     </div>

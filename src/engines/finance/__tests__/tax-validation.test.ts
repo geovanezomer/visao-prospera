@@ -16,6 +16,7 @@ import {
 import {
   getIrpjPct,
   getIrpjAdicionalPct,
+  getIrpjAdicionalGatilhoTri,
   getCsllPct,
   getPisCumPct,
   getCofinsCumPct,
@@ -177,6 +178,7 @@ describe("Cobertura: cada campo de FAIXAS_TRIBUTARIAS tem getter/uso associado",
   const GETTERS: Record<CampoTributario, (t: TaxConfig) => number> = {
     irpj:              (t) => getIrpjPct(t),
     irpjAdicional:     (t) => getIrpjAdicionalPct(t),
+    irpjAdicionalGatilhoTri: (t) => getIrpjAdicionalGatilhoTri(t),
     csll:              (t) => getCsllPct(t),
     pisCum:            (t) => getPisCumPct(t),
     cofinsCum:         (t) => getCofinsCumPct(t),
