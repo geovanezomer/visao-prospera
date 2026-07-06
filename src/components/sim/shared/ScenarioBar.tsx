@@ -73,7 +73,7 @@ export function ScenarioBar() {
       m.set(h.id, {
         faturamento: ind.receitaBrutaAnual,
         ebitda: ind.ebitdaAnual,
-        roe: ind.roe,
+        roe: ind.roe ?? 0,
         margemLiquida: ind.margemLiquida,
         lucroLiquido: ind.lucroLiquidoAnual,
       });
