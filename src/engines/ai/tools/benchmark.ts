@@ -155,7 +155,7 @@ const METRICS: MetricDef[] = [
   { key: "folha_pct", label: "Folha / Receita", unit: "pp", higherIsBetter: false,
     band: () => PME_BASELINES.folha_pct, read: (i) => i.custoPessoalSobreReceita },
   { key: "roe", label: "ROE", unit: "pp", higherIsBetter: true,
-    band: () => PME_BASELINES.roe, read: (i) => i.roe },
+    band: () => PME_BASELINES.roe, read: (i) => i.roe ?? 0 },
   { key: "roic", label: "ROIC", unit: "pp", higherIsBetter: true,
     band: () => PME_BASELINES.roic, read: (i) => i.roic },
   { key: "dscr", label: "DSCR", unit: "x", higherIsBetter: true,
