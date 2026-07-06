@@ -1296,9 +1296,12 @@ function buildHealthDimensions(ind: FinancialModel["ind"], state: AppState): Hea
     },
     {
       label: "Endividamento",
-      score: clamp(100 - ind.endividamentoGeral),
-      tone: ind.endividamentoGeral <= 50 ? "ok" : ind.endividamentoGeral <= 70 ? "warn" : "bad",
-      comment: `Endividamento geral ${ind.endividamentoGeral.toFixed(1)}% · cobertura de juros ${ind.coberturaJuros.toFixed(2)}x · Dívida Líq./EBITDA ${ind.dividaLiqEbitda.toFixed(2)}x.`,
+      // [Correção auditoria] Score e tone baseados em dívida ONEROSA (financeira),
+      // não no passivo total. Passivo operacional saudável (fornecedores/impostos/folha)
+      // não deve rebaixar a dimensão endividamento — só dívida bancária.
+      score: clamp(100 - ind.endividamentoOneroso * 1.5),
+      tone: ind.endividamentoOneroso <= 40 ? "ok" : ind.endividamentoOneroso <= 60 ? "warn" : "bad",
+      comment: `Endividamento oneroso ${ind.endividamentoOneroso.toFixed(1)}% (geral ${ind.endividamentoGeral.toFixed(1)}%) · cobertura de juros ${ind.coberturaJuros.toFixed(2)}x · Dívida Líq./EBITDA ${ind.dividaLiqEbitda.toFixed(2)}x.`,
     },
     {
       label: "Capital de Giro",
