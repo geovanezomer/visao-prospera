@@ -115,6 +115,29 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
     expect(ind.roe).toBeNull();
   });
 
+  /**
+   * Corolário DuPont: sem alavancagem financeira (net debt ≤ 0), ROE ≈ ROIC.
+   * Diferença > 5 p.p. sinaliza que ROE ou ROIC está com denominador errado —
+   * classicamente ROE usando apenas Capital Social em vez do PL completo.
+   */
+  it("ROE ≈ ROIC quando não há dívida líquida (DuPont sem alavancagem)", () => {
+    const s = createState({
+      revenue: { bruta: m12(200_000) },
+      capital: {
+        ke: 15,
+        kd: 0,
+        patrimonioLiquido: 1_000_000,
+        ativoTotal: 1_200_000,
+        disponibilidades: 200_000, // caixa > 0
+        debtContracts: [], // sem dívida onerosa
+      },
+    });
+    const { dre } = buildDRE(s, "simples");
+    const ind = calcIndicators(s, dre);
+    expect(ind.roe).not.toBeNull();
+    expect(Math.abs((ind.roe as number) - ind.roic)).toBeLessThan(5);
+  });
+
   it("ROA = 0 quando Ativo Total = 0 (sem Infinity)", () => {
     const s = createState({ capital: { ativoTotal: 0 } });
     const { dre } = buildDRE(s, "simples");
