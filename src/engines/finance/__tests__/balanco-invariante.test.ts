@@ -301,7 +301,7 @@ describe("Balanço — invariante contábil sobre 50 estados aleatórios", () =>
       const fx = model.balancoFechamento;
 
       expect(
-        fx.balanco.patrimonioLiquido.resultadoExercicio ?? 0,
+        fx.balanco.patrimonioLiquido?.resultadoExercicio ?? 0,
       ).toBeCloseTo(sumArr(model.dre.lucroLiquido), 2);
     },
   );
