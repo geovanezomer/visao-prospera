@@ -457,7 +457,44 @@ function StepFederais({
         />
       </Section>
 
+      <Callout tone="info" title="Lucro Real — créditos anuais e prejuízo fiscal">
+        <p className="text-[13px]">
+          Empresas no Lucro Real podem <b>abater créditos de PIS/COFINS</b> apurados
+          sobre insumos e <b>compensar prejuízo fiscal</b> de exercícios anteriores
+          (Lei 9.065/95 — trava de 30% do lucro trimestral). Estes campos ficavam
+          apenas na aba de Tributos; agora estão consolidados aqui.
+        </p>
+      </Callout>
 
+      <Section title="Lucro Real — créditos & prejuízo fiscal">
+        <FriendlyRow
+          label="Prejuízo fiscal acumulado (abertura)"
+          suffix="R$"
+          defaultVal={0}
+          help="Saldo de prejuízo fiscal de exercícios anteriores (Parte B do e-Lalur). Compensável até 30% do lucro tributável de cada trimestre (Lei 9.065/95 art. 42)."
+          value={state.tax.prejuizoFiscalAcumuladoAbertura ?? 0}
+          onChange={(v) => patchTax({ prejuizoFiscalAcumuladoAbertura: Math.max(0, v) })}
+          onReset={() => patchTax({ prejuizoFiscalAcumuladoAbertura: 0 })}
+        />
+        <FriendlyRow
+          label="Créditos anuais de PIS (não-cumulativo)"
+          suffix="R$"
+          defaultVal={0}
+          help="Valor total ANUAL de créditos de PIS apurados sobre insumos, energia, aluguel e demais itens permitidos. É rateado mensalmente e abatido do débito de PIS. Excedente vira saldo credor rolado."
+          value={state.tax.pisCreditos ?? 0}
+          onChange={(v) => patchTax({ pisCreditos: Math.max(0, v) })}
+          onReset={() => patchTax({ pisCreditos: 0 })}
+        />
+        <FriendlyRow
+          label="Créditos anuais de COFINS (não-cumulativo)"
+          suffix="R$"
+          defaultVal={0}
+          help="Valor total ANUAL de créditos de COFINS. Mesma regra do PIS: rateado por 12, abatido do débito, excedente rola como saldo credor."
+          value={state.tax.cofinsCreditos ?? 0}
+          onChange={(v) => patchTax({ cofinsCreditos: Math.max(0, v) })}
+          onReset={() => patchTax({ cofinsCreditos: 0 })}
+        />
+      </Section>
 
     </div>
   );
