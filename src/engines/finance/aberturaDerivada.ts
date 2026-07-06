@@ -121,9 +121,16 @@ export function deriveAbertura({
   const cpVal = split.cp;
   const lpVal = split.lp;
 
-  // Impostos a pagar: 1º mês de `dre.impostosTotal` (competência total do mês
-  // 1 = vendas + lucro), casando com o kick da DFC que liquida esse valor.
-  const impostosPagarVal = firstMonth(impostosTotalMensais);
+  // Impostos a pagar (abertura): M8 — usa a MÉDIA do 1º trimestre em vez de
+  // apenas mês[0] para não subestimar/superestimar em cenários sazonais ou
+  // trimestrais (IRPJ/CSLL do Presumido/Real). Aproxima a competência
+  // provisionada que estaria em aberto na virada do ano.
+  const impostosPagarVal = (() => {
+    const arr = impostosTotalMensais ?? [];
+    if (!arr.length) return 0;
+    const janela = arr.slice(0, Math.min(3, arr.length));
+    return janela.reduce((s, v) => s + n(v), 0) / janela.length;
+  })();
 
   // Salários a pagar: folha do mês 1 (SSOT `isFolhaCost` — mesma regra usada
   // pelo Fator R e por balancoFechamento). Usa `values[0]` cru: encargos
