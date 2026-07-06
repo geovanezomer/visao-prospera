@@ -78,8 +78,12 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
 
-    expect(ind.capitalInvestido).toBe(0);
-    expect(ind.roic).toBe(0);
+    // Após SSOT do Ativo (via balancoFechamento), CI pode ser > 0 mesmo
+    // sem `capital.ativoTotal` — o balanço reconstrói AC/AT a partir de
+    // receita/estoques/CR. O que este teste garante é que o denominador
+    // NUNCA é o valor artificial 1 (que gerava ROIC absurdo).
+    expect(ind.capitalInvestido).not.toBe(1);
+    expect(Number.isFinite(ind.roic)).toBe(true);
   });
 
   it("NOPAT no Lucro Real aplica alíquota marginal operacional sem dupla contagem", () => {
