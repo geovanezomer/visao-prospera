@@ -64,13 +64,14 @@ function metricaDo(state: AppState, restricao: RestricaoBreakEven): number {
   if (restricao === "ebitda_positivo") {
     return dre.ebitda.reduce((s, v) => s + (Number.isFinite(v) ? v : 0), 0);
   }
+  // Compute cf uma única vez e reaproveita em calcIndicators (DSCR) para
+  // evitar 2ª chamada interna a buildCashFlow no loop de bisecção.
+  const cf = buildCashFlow(state);
   if (restricao === "dscr") {
-    const ind = calcIndicators(state, dre);
-    // Sem dívida a servir → considera "satisfeito" com folga máxima (999).
+    const ind = calcIndicators(state, dre, cf);
     return ind.dscr ?? 999;
   }
   // caixa_min: pior saldo final do ano
-  const cf = buildCashFlow(state);
   let pior = Infinity;
   for (const v of cf.saldoFinal) if (Number.isFinite(v) && v < pior) pior = v;
   return pior === Infinity ? 0 : pior;
