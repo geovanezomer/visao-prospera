@@ -7,8 +7,7 @@
  *  2. Reforma Tributária — comparação Real entre eras "atual" e "pleno" (2033+).
  */
 import { describe, it, expect } from "vitest";
-import { calcIndicators } from "../indicators";
-import { buildDRE } from "../dre";
+import { buildFinancialModel } from "../financialModel";
 import { compareErasForRegime } from "../tax/compare";
 import { createState, m12 } from "./helpers";
 import type { CostLine } from "../types";
@@ -23,60 +22,64 @@ const cpvLine: CostLine = {
 
 const baseRevenue = { bruta: m12(10_000), pmr: 30, pmp: 30 };
 
-// PME esperado: estoqueMedio / (cpvAnual/360) = 30k / (60k/360) = 30k / 166.67 ≈ 180 dias
-// cicloOperacional = pmr(30) + pme(180) = 210 dias
+// PME esperado: estoqueMedio / (cpvAnual/360). Ciclo operacional continua
+// vindo da fórmula estática (métrica de DIAS — complementar).
 const PME_ESPERADO = 180;
 const CICLO_OP_ESPERADO = 30 + PME_ESPERADO;
 
-describe("NCG — branches de estoqueMedio (indicators.ts:312)", () => {
-  it("branch (a): ei>0 && ef>0 → média aritmética", () => {
+// Helper: NCG implícita nos saldos do balanço de fechamento (SSOT único).
+function ncgFromBalanco(model: ReturnType<typeof buildFinancialModel>): number {
+  const bal = model.balancoFechamento.balanco;
+  const ac = bal.ativoCirculante ?? {};
+  const pc = bal.passivoCirculante ?? {};
+  const cr = (ac.contasReceberClientes ?? 0) - (ac.pdd ?? 0);
+  return (cr + (ac.estoques ?? 0)) -
+    ((pc.fornecedores ?? 0) + (pc.salariosEncargos ?? 0) + (pc.impostosPagar ?? 0));
+}
+
+describe("NCG — SSOT derivado do Balanço (branches de estoqueMedio para PME)", () => {
+  it("branch (a): ei>0 && ef>0 → PME usa média; NCG === identidade do balanço", () => {
     const s = createState({
       revenue: baseRevenue,
       costs: [cpvLine],
       capital: { estoqueInicial: 20_000, estoqueFinal: 40_000, estoques: 99_999 },
     });
-    const { dre } = buildDRE(s, s.tax.regime);
-    const ind = calcIndicators(s, dre);
-    // estoqueMedio = (20k+40k)/2 = 30k → ignora capital.estoques
-    expect(ind.cicloOperacional).toBeCloseTo(CICLO_OP_ESPERADO, 0);
-    expect(ind.ncg).toBeCloseTo(10_000 + 30_000 - 5_000, -2);
+    const model = buildFinancialModel(s);
+    expect(model.ind.cicloOperacional).toBeCloseTo(CICLO_OP_ESPERADO, 0);
+    expect(model.ind.ncg).toBeCloseTo(ncgFromBalanco(model), 0);
   });
 
-  it("branch (b): ei=0 && ef>0 → usa ef puro", () => {
+  it("branch (b): ei=0 && ef>0 → PME usa ef; NCG === identidade do balanço", () => {
     const s = createState({
       revenue: baseRevenue,
       costs: [cpvLine],
       capital: { estoqueInicial: 0, estoqueFinal: 30_000, estoques: 99_999 },
     });
-    const { dre } = buildDRE(s, s.tax.regime);
-    const ind = calcIndicators(s, dre);
-    expect(ind.cicloOperacional).toBeCloseTo(CICLO_OP_ESPERADO, 0);
-    expect(ind.ncg).toBeCloseTo(10_000 + 30_000 - 5_000, -2);
+    const model = buildFinancialModel(s);
+    expect(model.ind.cicloOperacional).toBeCloseTo(CICLO_OP_ESPERADO, 0);
+    expect(model.ind.ncg).toBeCloseTo(ncgFromBalanco(model), 0);
   });
 
-  it("branch (c): ei=0 && ef=0 → fallback capital.estoques", () => {
+  it("branch (c): ei=0 && ef=0 → fallback capital.estoques; NCG === balanço", () => {
     const s = createState({
       revenue: baseRevenue,
       costs: [cpvLine],
       capital: { estoqueInicial: 0, estoqueFinal: 0, estoques: 30_000 },
     });
-    const { dre } = buildDRE(s, s.tax.regime);
-    const ind = calcIndicators(s, dre);
-    expect(ind.cicloOperacional).toBeCloseTo(CICLO_OP_ESPERADO, 0);
-    expect(ind.ncg).toBeCloseTo(10_000 + 30_000 - 5_000, -2);
+    const model = buildFinancialModel(s);
+    expect(model.ind.cicloOperacional).toBeCloseTo(CICLO_OP_ESPERADO, 0);
+    expect(model.ind.ncg).toBeCloseTo(ncgFromBalanco(model), 0);
   });
 
-  it("sem estoque algum: PME=0 e NCG = CR − Fornecedores", () => {
+  it("sem estoque algum: PME=0 e NCG continua batendo com o balanço", () => {
     const s = createState({
       revenue: baseRevenue,
       costs: [cpvLine],
       capital: { estoqueInicial: 0, estoqueFinal: 0, estoques: 0 },
     });
-    const { dre } = buildDRE(s, s.tax.regime);
-    const ind = calcIndicators(s, dre);
-    // PME=0 → cicloOperacional = pmr = 30
-    expect(ind.cicloOperacional).toBeCloseTo(30, 0);
-    expect(ind.ncg).toBeCloseTo(10_000 - 5_000, -2);
+    const model = buildFinancialModel(s);
+    expect(model.ind.cicloOperacional).toBeCloseTo(30, 0);
+    expect(model.ind.ncg).toBeCloseTo(ncgFromBalanco(model), 0);
   });
 });
 
