@@ -24,6 +24,10 @@ export type MonthlyCardRow = {
   editableLabel?: boolean;
   /** Permite remover (linhas custom de custo) */
   removable?: boolean;
+  /** Linha somente-leitura (ex.: lançamentos system geridos em outra tela) */
+  readOnly?: boolean;
+  /** Texto explicativo exibido em linhas read-only */
+  readOnlyHint?: string;
 };
 
 export function MonthlyCardList({
