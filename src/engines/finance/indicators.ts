@@ -698,6 +698,7 @@ export function calcIndicators(
     liquidezGeral,
     liquidezEstimada,
     caixaNegativo,
+    caixaLiquidez: caixaLiq,
 
     endividamentoGeral,
     endividamentoGeralDadosCompletos,
