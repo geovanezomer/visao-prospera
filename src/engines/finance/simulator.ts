@@ -388,7 +388,7 @@ export interface SimDREView {
   gapCapitalGiro: number;
   saldoCaixaFinal: number;
   piorMesCaixa: number;
-  coberturaJuros: number;
+  coberturaJuros: number | null;
   enterpriseValue: number;
   equityValue: number;
 }
