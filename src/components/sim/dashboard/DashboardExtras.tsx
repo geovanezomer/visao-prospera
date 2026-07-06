@@ -168,9 +168,11 @@ function SemaforoPanel({ state }: { state: AppState }) {
       descricao: `${ind.liquidezCorrente.toFixed(2)}x — capacidade de honrar dívidas de curto prazo`,
     },
     {
-      nome: "Endividamento Geral",
-      status: ind.endividamentoGeral <= 50 ? "ok" : ind.endividamentoGeral <= 70 ? "warn" : "bad",
-      descricao: `${ind.endividamentoGeral.toFixed(1)}% — quanto do ativo é financiado por dívida`,
+      nome: "Endividamento (Oneroso)",
+      // Semáforo usa dívida ONEROSA (bancos/financiamentos). Passivo operacional
+      // não deve pintar a empresa de vermelho sozinho — vira sub-alerta de ciclo.
+      status: ind.endividamentoOneroso <= 40 ? "ok" : ind.endividamentoOneroso <= 60 ? "warn" : "bad",
+      descricao: `${ind.endividamentoOneroso.toFixed(1)}% oneroso · ${ind.endividamentoGeral.toFixed(1)}% total (com passivo operacional)`,
     },
     {
       nome: "Margem Líquida",
