@@ -165,6 +165,7 @@ function projectScenario(
     const pagamentos =
       cf.pagamentosFornecedores[b] * rFator +
       cf.pagamentosFixos[b] * fFator +
+      cf.pagamentosFolha[b] * fFator + // C1: folha estava ausente da projeção multi-ano
       cf.pagamentosVariaveis[b] * rFator +
       cf.pagamentosFinanceiros[b] +
       debtDelta.deltaJuros[i] +
