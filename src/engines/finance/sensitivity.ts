@@ -76,8 +76,11 @@ export function readOutput(state: AppState, output: OutputKey): number {
   const { dre } = buildDRE(state, resolveEffectiveRegime(state));
   if (output === "ebitda") return sum(dre.ebitda);
   if (output === "lucroLiquido") return sum(dre.lucroLiquido);
-  if (output === "roic") return calcIndicators(state, dre).roic;
-  return buildCashFlow(state).totais.saldoFinal;
+  // Compute cf uma única vez e reaproveita — evita 2ª chamada interna a
+  // buildCashFlow dentro de calcIndicators no loop de sensibilidade.
+  const cf = buildCashFlow(state);
+  if (output === "roic") return calcIndicators(state, dre, cf).roic;
+  return cf.totais.saldoFinal;
 }
 
 const DEFAULT_DELTAS = [-15, -10, -5, 5, 10, 15];
