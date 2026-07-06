@@ -45,7 +45,7 @@ export function buildOpeningBriefing(state: AppState, sections?: SnapshotSection
     }
 
     // 2) DSCR abaixo de 1,5x
-    if (Number.isFinite(ind.dscr) && ind.dscr < 1.5) {
+    if (ind.dscr != null && Number.isFinite(ind.dscr) && ind.dscr < 1.5) {
       pontos.push(
         `DSCR em **${ind.dscr.toFixed(2)}x** ${ind.dscr < 1 ? "(não cobre o serviço da dívida)" : "(risco de covenant)"}`,
       );
@@ -70,7 +70,7 @@ export function buildOpeningBriefing(state: AppState, sections?: SnapshotSection
     }
 
     // 5) Cobertura de juros
-    if (pontos.length < 3 && Number.isFinite(ind.coberturaJuros) && ind.coberturaJuros < 2) {
+    if (pontos.length < 3 && ind.coberturaJuros != null && Number.isFinite(ind.coberturaJuros) && ind.coberturaJuros < 2) {
       pontos.push(
         `cobertura de juros em **${ind.coberturaJuros.toFixed(1)}x** (EBIT mal cobre os juros)`,
       );
@@ -149,7 +149,7 @@ export function buildOpeningBriefing(state: AppState, sections?: SnapshotSection
     // Sugestões de partida baseadas nos pontos detectados
     const opcoes: string[] = [];
     if (pior && pior.saldo < 0) opcoes.push("**fluxo de caixa** (entender o gap)");
-    if (Number.isFinite(ind.dscr) && ind.dscr < 1.5)
+    if (ind.dscr != null && Number.isFinite(ind.dscr) && ind.dscr < 1.5)
       opcoes.push("**estrutura da dívida** (renegociação)");
     if (sector && ind.margemEbitda < sector.margemEbitda.p50 - 2)
       opcoes.push("**alavancas de margem** (onde cortar)");

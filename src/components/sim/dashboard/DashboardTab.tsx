@@ -256,13 +256,14 @@ export function DashboardTab() {
         />
         <StatCard
           label="DSCR"
-          value={ind.dscr >= 99 ? "∞" : `${ind.dscr.toFixed(2)}×`}
-          tone={ind.dscr >= DSCR_THRESHOLDS.warn ? "pos" : ind.dscr >= DSCR_THRESHOLDS.danger ? "default" : "neg"}
-          sub="EBITDA ÷ Serviço da Dívida"
+          value={ind.dscr == null ? "N/A" : ind.dscr >= 99 ? "∞" : `${ind.dscr.toFixed(2)}×`}
+          tone={ind.dscr == null ? "default" : ind.dscr >= DSCR_THRESHOLDS.warn ? "pos" : ind.dscr >= DSCR_THRESHOLDS.danger ? "default" : "neg"}
+          sub={ind.dscr == null ? "Sem dívida a servir" : "EBITDA ÷ Serviço da Dívida"}
           hint={{
-            description:
-              "Debt Service Coverage Ratio — capacidade do EBITDA cobrir o serviço da dívida (juros + amortização do principal). ≥1.25× é saudável; <1.0× sinaliza risco real de inadimplência.",
-            formula: "EBITDA Anual ÷ (Juros + Amortizações Anuais)",
+            description: ind.dscr == null
+              ? "N/A — a empresa não tem dívida onerosa (contratos + amortizações). O indicador não se aplica."
+              : "Debt Service Coverage Ratio — capacidade do EBITDA cobrir o serviço da dívida (juros de contratos + amortização do principal). ≥1.25× é saudável; <1.0× sinaliza risco real de inadimplência.",
+            formula: "EBITDA Anual ÷ (Juros de contratos + Amortizações Anuais)",
             calc: c.dscr,
           }}
         />

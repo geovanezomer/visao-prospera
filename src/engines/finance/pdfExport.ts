@@ -736,7 +736,7 @@ function computeGuardianScore(ind: FinancialModel["ind"]): {
     Math.min(100, Math.max(0, (ind.liquidezCorrente / 2) * 100)),
     Math.min(100, Math.max(0, 100 - ind.endividamentoOneroso * 1.5)),
     Math.min(100, Math.max(0, ind.margemLiquida * 5)),
-    Math.min(100, Math.max(0, ind.coberturaJuros * 20)),
+    Math.min(100, Math.max(0, (ind.coberturaJuros ?? 5) * 20)),
     Math.min(100, Math.max(0, (ind.roe ?? 0) * 5)),
     Math.min(100, Math.max(0, ind.conversaoEbitdaCaixa)),
     Math.min(100, Math.max(0, 100 - ind.dividaLiqEbitda * 25)),
@@ -898,7 +898,7 @@ export async function exportFinancePDF({
     "Indicadores-chave de performance do período analisado.");
 
   const caixaAtual = state.capital.disponibilidades ?? 0;
-  const dscrFmt = ind.dscr !== 0 ? `${ind.dscr.toFixed(2)}x` : "—";
+  const dscrFmt = ind.dscr == null ? "N/A" : ind.dscr !== 0 ? `${ind.dscr.toFixed(2)}x` : "—";
   const kpiCards: KpiCard[] = [
     { label: "Receita Líquida", value: fmtBRL(ind.receitaLiquidaAnual), sub: "Últimos 12 meses" },
     { label: "EBITDA", value: fmtBRL(ind.ebitdaAnual),
@@ -917,7 +917,7 @@ export async function exportFinancePDF({
       sub: `Classificação: ${conceito}`, tone },
     { label: "DSCR", value: dscrFmt,
       sub: "Cobertura do serviço da dívida",
-      tone: ind.dscr >= 1.5 ? "ok" : ind.dscr >= 1.25 ? "warn" : "bad" },
+      tone: ind.dscr == null ? "ok" : ind.dscr >= 1.5 ? "ok" : ind.dscr >= 1.25 ? "warn" : "bad" },
     { label: "Margem Líquida", value: `${ind.margemLiquida.toFixed(1)}%`,
       sub: "Lucro / Receita Bruta",
       tone: ind.margemLiquida >= 8 ? "ok" : ind.margemLiquida >= 3 ? "warn" : "bad" },
@@ -1264,7 +1264,7 @@ function buildExecutiveInsights(
   const burn = -(ult3.reduce((a, b) => a + b, 0) / Math.max(1, ult3.length));
   let prio = "Manter monitoramento mensal dos indicadores e revisão trimestral do plano.";
   if (burn > 0) prio = `Operação queima ${fmtBRL(burn)}/mês em média no último trimestre — prioridade imediata é estancar o burn.`;
-  else if (ind.dscr < 1.25) prio = "Renegociar prazos e taxas com credores — DSCR abaixo de 1,25× compromete acesso a novas linhas.";
+  else if (ind.dscr != null && ind.dscr < 1.25) prio = "Renegociar prazos e taxas com credores — DSCR abaixo de 1,25× compromete acesso a novas linhas.";
   else if (ind.endividamentoOneroso > 60) prio = "Alavancagem financeira elevada — priorizar amortização e revisão do mix de capital.";
   else if (sum(dre.lucroLiquido) < 0) prio = "Resultado negativo — revisão de precificação, mix e estrutura de custos é a prioridade #1.";
   insights.push({
@@ -1301,7 +1301,7 @@ function buildHealthDimensions(ind: FinancialModel["ind"], state: AppState): Hea
       // não deve rebaixar a dimensão endividamento — só dívida bancária.
       score: clamp(100 - ind.endividamentoOneroso * 1.5),
       tone: ind.endividamentoOneroso <= 40 ? "ok" : ind.endividamentoOneroso <= 60 ? "warn" : "bad",
-      comment: `Endividamento oneroso ${ind.endividamentoOneroso.toFixed(1)}% (geral ${ind.endividamentoGeral.toFixed(1)}%) · cobertura de juros ${ind.coberturaJuros.toFixed(2)}x · Dívida Líq./EBITDA ${ind.dividaLiqEbitda.toFixed(2)}x.`,
+      comment: `Endividamento oneroso ${ind.endividamentoOneroso.toFixed(1)}% (geral ${ind.endividamentoGeral.toFixed(1)}%) · cobertura de juros ${ind.coberturaJuros == null ? "N/A" : `${ind.coberturaJuros.toFixed(2)}x`} · Dívida Líq./EBITDA ${ind.dividaLiqEbitda.toFixed(2)}x.`,
     },
     {
       label: "Capital de Giro",
@@ -1345,7 +1345,7 @@ function buildTopRisks(
       return { title: d.title, impact, probability, recommendation, severity: sev };
     })
     .concat(
-      ind.dscr > 0 && ind.dscr < 1.25 ? [{
+      ind.dscr != null && ind.dscr > 0 && ind.dscr < 1.25 ? [{
         title: "DSCR abaixo do mínimo bancário",
         impact: `DSCR ${ind.dscr.toFixed(2)}x compromete acesso a novas linhas de crédito`,
         probability: "Alta",
@@ -1840,7 +1840,7 @@ function renderIndicadoresGrouped(
     { nome: "Liquidez Corrente", mede: "Capacidade de pagar dívidas de curto prazo.", valor: `${ind.liquidezCorrente.toFixed(2)}x` },
     { nome: "Endividamento Geral", mede: "% do ativo financiado por dívida.", valor: fmtPct(ind.endividamentoGeral / 100) },
     { nome: "Dívida Líq./EBITDA", mede: "Anos de EBITDA para quitar a dívida.", valor: `${ind.dividaLiqEbitda.toFixed(2)}x` },
-    { nome: "DSCR", mede: "Cobertura do serviço da dívida — bancos exigem ≥ 1,25×.", valor: ind.dscr !== 0 ? `${ind.dscr.toFixed(2)}x` : "—" },
+    { nome: "DSCR", mede: "Cobertura do serviço da dívida — bancos exigem ≥ 1,25×.", valor: ind.dscr == null ? "N/A" : ind.dscr !== 0 ? `${ind.dscr.toFixed(2)}x` : "—" },
   ];
   const avancados: Row[] = [
     { nome: "Margem EBIT", mede: "Lucro operacional após depreciação.", valor: fmtPct(ind.margemEbit / 100) },
@@ -1849,7 +1849,7 @@ function renderIndicadoresGrouped(
     { nome: "Liquidez Seca", mede: "Liquidez corrente sem estoques.", valor: `${ind.liquidezSeca.toFixed(2)}x` },
     { nome: "Liquidez Imediata", mede: "Capacidade de pagar dívidas só com caixa.", valor: `${ind.liquidezImediata.toFixed(2)}x` },
     { nome: "Liquidez Geral", mede: "Honra todas as dívidas (curto + longo).", valor: `${ind.liquidezGeral.toFixed(2)}x` },
-    { nome: "Cobertura de Juros", mede: "Quantas vezes o EBIT cobre os juros.", valor: `${ind.coberturaJuros.toFixed(2)}x` },
+    { nome: "Cobertura de Juros", mede: "Quantas vezes o EBIT cobre os juros.", valor: ind.coberturaJuros == null ? "N/A" : `${ind.coberturaJuros.toFixed(2)}x` },
     { nome: "Ciclo Operacional", mede: "Dias entre comprar e receber.", valor: `${ind.cicloOperacional.toFixed(0)} dias` },
     { nome: "Ciclo Financeiro", mede: "Dias em que a empresa financia a operação.", valor: `${ind.cicloFinanceiro.toFixed(0)} dias` },
     { nome: "NCG", mede: "Necessidade de Capital de Giro.", valor: fmtBRL(ind.ncg) },

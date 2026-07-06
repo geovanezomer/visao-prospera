@@ -9,7 +9,7 @@
 //    derivados diretos de `dre`/`state` — NENHUM novo cálculo financeiro.
 //  - Formatação 100% pt-BR via helpers de `format.ts`.
 // =====================================================================
-import { sumContractSaldos } from "./debtContracts";
+import { sumContractSaldos, aggregateContracts } from "./debtContracts";
 import type { AppState } from "./types";
 import type { DRE } from "./dre";
 import type { Indicators } from "./indicators";
@@ -108,7 +108,9 @@ export function buildIndicatorCalcs(
   const LL = ind.lucroLiquidoAnual;
   const LB = sum(dre.lucroBruto);
   const cv = sum(dre.custosVariaveis);
-  const juros = sum(dre.custosFinanceirosTotal);
+  // `juros` para DSCR / Cobertura de Juros = juros de CONTRATOS de dívida (SSOT com indicators.ts).
+  // NÃO usa `custosFinanceirosTotal` da DRE (que inclui tarifas, IOF, cheque especial etc.).
+  const juros = aggregateContracts(capital.debtContracts ?? []).totalJurosAno;
   const impVendas = sum(dre.impostosVendas);
   const impLucro = sum(dre.impostos);
   const cf = sum(dre.custosFixos);
@@ -247,7 +249,7 @@ export function buildIndicatorCalcs(
   })();
   const coberturaJuros = juros > 1
     ? line(`${fmtBRL(EBIT)} ÷ ${fmtBRL(juros)}`, `${fmtRatio(EBIT / juros)}×`)
-    : "Sem despesas financeiras no período";
+    : "Sem dívida onerosa — indicador não aplicável (N/A)";
   const giroAtivo = ATmedio > 0
     ? line(`${fmtBRL(RL)} ÷ ${fmtBRL(ATmedio)}`, `${fmtRatio(RL / ATmedio)}×`)
     : NA;
@@ -331,11 +333,11 @@ export function buildIndicatorCalcs(
       )
     : NA;
   const dscr = (() => {
-    const amort = sum(state.cashflow.amortizacoes);
+    const amort = sum(state.cashflow.amortizacoes ?? []);
     const serv = juros + amort;
     return serv > 1
       ? line(`${fmtBRL(EBITDA)} ÷ (${fmtBRL(juros)} + ${fmtBRL(amort)})`, `${fmtRatio(EBITDA / serv)}×`)
-      : "Sem serviço da dívida no período";
+      : "Sem serviço da dívida no período — indicador não aplicável (N/A)";
   })();
 
   // ----- Fiscal -----

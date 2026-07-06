@@ -45,8 +45,8 @@ export const fmtNum = (n: number, d = 2) =>
  * caso degenerado de denominador ≤ 0 (sem base de comparação).
  * SSOT — antes duplicado em IndicatorsTab/IndicatorsCard.
  */
-export const fmtTimes = (v: number, base: number, decimals = 1): string =>
-  base <= 0 ? "—" : `${v.toFixed(decimals)}×`;
+export const fmtTimes = (v: number | null, base: number, decimals = 1): string =>
+  v == null ? "N/A" : base <= 0 ? "—" : `${v.toFixed(decimals)}×`;
 
 /** Razão sem unidade — ex.: liquidez 4,44. */
 export const fmtRatio = (n: number, d = 2) =>

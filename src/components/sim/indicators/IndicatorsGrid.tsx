@@ -295,10 +295,12 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           />
           <Ind
             label="Cobertura de Juros"
-            v={fmtTimes(ind.coberturaJuros, ebitAnual)}
-            tone={ind.coberturaJuros >= 2 ? "pos" : "neg"}
-            desc="Quantas vezes o lucro operacional cobre as despesas de juros. Abaixo de 2× é zona de risco."
-            formula="EBIT ÷ Despesas Financeiras"
+            v={ind.coberturaJuros == null ? "N/A" : fmtTimes(ind.coberturaJuros, ebitAnual)}
+            tone={ind.coberturaJuros == null ? "pos" : ind.coberturaJuros >= 2 ? "pos" : "neg"}
+            desc={ind.coberturaJuros == null
+              ? "Sem dívida onerosa a servir — indicador não aplicável."
+              : "Quantas vezes o lucro operacional cobre os juros de contratos de dívida. Abaixo de 2× é zona de risco. Exclui tarifas, IOF e juros de cheque especial (custos operacionais)."}
+            formula="EBIT ÷ Juros de contratos de dívida"
             calc={c.coberturaJuros}
           />
           {(() => {
@@ -342,13 +344,23 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           <Ind
             label="DSCR (Serviço da Dívida)"
             v={
-              ind.dscr !== 0
-                ? `${ind.dscr.toFixed(2)}×${!ind.dscrAmortizacoesInformadas && ind.dividaOnerosa > 0 ? " ⚠️" : ""}`
-                : "—"
+              ind.dscr == null
+                ? "N/A"
+                : `${ind.dscr.toFixed(2)}×${!ind.dscrAmortizacoesInformadas && ind.dividaOnerosa > 0 ? " ⚠️" : ""}`
             }
-            tone={ind.dscr >= DSCR_THRESHOLDS.covenant ? "pos" : ind.dscr >= DSCR_THRESHOLDS.warn ? "warn" : "neg"}
-            desc={`Quantas vezes o EBITDA cobre o serviço total da dívida (juros + amortização do principal). Bancos exigem ≥1,25× para renovar giro; ≥1,50× destrava melhores linhas.${!ind.dscrAmortizacoesInformadas && ind.dividaOnerosa > 0 ? " ⚠️ Amortizações de principal não informadas no Fluxo de Caixa — DSCR exibido equivale à Cobertura de Juros e pode estar SUPERESTIMADO." : ""}`}
-            formula="EBITDA ÷ (Juros + Amortizações de Principal)"
+            tone={
+              ind.dscr == null
+                ? "pos"
+                : ind.dscr >= DSCR_THRESHOLDS.covenant
+                  ? "pos"
+                  : ind.dscr >= DSCR_THRESHOLDS.warn
+                    ? "warn"
+                    : "neg"
+            }
+            desc={ind.dscr == null
+              ? "Sem dívida a servir (nem contratos, nem amortizações informadas). O indicador não se aplica — a empresa não tem serviço de dívida a cobrir."
+              : `Quantas vezes o EBITDA cobre o serviço total da dívida (juros de contratos + amortização do principal). Bancos exigem ≥1,25× para renovar giro; ≥1,50× destrava melhores linhas.${!ind.dscrAmortizacoesInformadas && ind.dividaOnerosa > 0 ? " ⚠️ Amortizações de principal não informadas no Fluxo de Caixa — DSCR exibido equivale à Cobertura de Juros e pode estar SUPERESTIMADO." : ""}`}
+            formula="EBITDA ÷ (Juros de contratos + Amortizações de Principal)"
             calc={c.dscr}
           />
         </Group>

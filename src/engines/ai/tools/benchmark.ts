@@ -159,7 +159,7 @@ const METRICS: MetricDef[] = [
   { key: "roic", label: "ROIC", unit: "pp", higherIsBetter: true,
     band: () => PME_BASELINES.roic, read: (i) => i.roic },
   { key: "dscr", label: "DSCR", unit: "x", higherIsBetter: true,
-    band: () => PME_BASELINES.dscr, read: (i) => i.dscr },
+    band: () => PME_BASELINES.dscr, read: (i) => i.dscr ?? 0 },
   { key: "d_ebitda", label: "Dívida Líq. / EBITDA", unit: "x", higherIsBetter: false,
     band: () => PME_BASELINES.d_ebitda, read: (i) => i.dividaLiqEbitda },
   { key: "liq_corr", label: "Liquidez Corrente", unit: "x", higherIsBetter: true,

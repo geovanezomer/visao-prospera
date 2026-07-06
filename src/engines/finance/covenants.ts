@@ -28,7 +28,7 @@ export type CovenantStatus = "GREEN" | "YELLOW" | "RED";
 export interface CovenantCheck {
   covenant: string;
   metrica: string;
-  valor: number;
+  valor: number | null;
   limite: number;
   /** Tipo de comparação: ">=" (valor deve ser ≥ limite) ou "<=". */
   direcao: ">=" | "<=";
@@ -58,10 +58,13 @@ const DEFAULT_COVENANTS: Required<CovenantSpec> = {
 
 /** Avalia um covenant e devolve status (RED/YELLOW/GREEN) + folga %. */
 function evaluate(
-  valor: number,
+  valor: number | null,
   limite: number,
   direcao: ">=" | "<=",
 ): { status: CovenantStatus; folgaPct: number } {
+  // Sem métrica aplicável (ex.: DSCR sem dívida) → GREEN por definição — não há
+  // covenant a violar quando não existe dívida. Folga = 100% (folga máxima).
+  if (valor == null) return { status: "GREEN", folgaPct: 100 };
   // folga relativa positiva = OK; negativa = breach. Banda amarela: ±10%.
   const folga =
     direcao === ">="
@@ -163,7 +166,8 @@ export function analyzeCovenants(
 export function covenantsToMarkdown(r: CovenantsResult): string {
   const icon = (s: CovenantStatus) =>
     s === "GREEN" ? "🟢" : s === "YELLOW" ? "🟡" : "🔴";
-  const fmtVal = (m: string, v: number) => {
+  const fmtVal = (m: string, v: number | null) => {
+    if (v == null) return "N/A";
     if (m.includes("DSCR") || m.includes("/EBITDA") || m.includes("D/PL")) return `${v.toFixed(2)}x`;
     if (m.includes("Liq")) return v.toFixed(2);
     return v.toFixed(2);

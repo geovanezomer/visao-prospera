@@ -381,7 +381,15 @@ export function buildBriefing(state: AppState, dre: DRE, ind: Indicators): Brief
 
   // Classifica indicadores. `roicVsWacc` é derivado.
   const classificacoes: ClassificacaoIndicador[] = INDICADORES_PRINCIPAIS.map((key) => {
-    const valor = key === "roicVsWacc" ? ind.roic - ind.wacc : (ind[key as keyof Indicators] as number);
+    let valor: number;
+    if (key === "roicVsWacc") valor = ind.roic - ind.wacc;
+    else {
+      const raw = ind[key as keyof Indicators];
+      // dscr/coberturaJuros null (sem dívida) → não é "atencao"; substitui por sentinela
+      // ampla que cai em "excelente" (maior_melhor: valor >> excelente).
+      if (raw == null && (key === "dscr" || key === "coberturaJuros")) valor = 999;
+      else valor = raw as number;
+    }
     return classify(key, valor, setor);
   });
 

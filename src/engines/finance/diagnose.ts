@@ -128,7 +128,7 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
       message: `Margem líquida em ${ind.margemLiquida.toFixed(1)}% (EBITDA ${ind.margemEbitda.toFixed(1)}%).`,
     });
 
-  if (ind.coberturaJuros < 2 && Number.isFinite(ind.coberturaJuros))
+  if (ind.coberturaJuros != null && Number.isFinite(ind.coberturaJuros) && ind.coberturaJuros < 2)
     out.push({
       level: "danger",
       title: "Cobertura de juros perigosa",

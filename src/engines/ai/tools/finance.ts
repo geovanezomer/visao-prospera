@@ -260,7 +260,7 @@ const handlers: Record<string, ToolHandler> = {
       `- Receita Bruta Anual: ${brl(sum(dre.receitaBruta))}`,
       `- EBITDA: ${brl(sum(dre.ebitda))} (${pct(ind.margemEbitda)})`,
       `- Lucro Líquido: ${brl(sum(dre.lucroLiquido))} (${pct(ind.margemLiquida)})`,
-      `- DSCR: ${ind.dscr.toFixed(2)}x ${ind.dscr < 1.5 ? "⚠️ abaixo de 1,5x" : "✅"}`,
+      `- DSCR: ${ind.dscr == null ? "N/A (sem dívida a servir)" : `${ind.dscr.toFixed(2)}x ${ind.dscr < 1.5 ? "⚠️ abaixo de 1,5x" : "✅"}`}`,
       `- NCG: ${brl(ind.ncg)} | Gap Capital de Giro: ${brl(ind.gapCapitalGiro)}`,
       `- EV (base): ${brl(val.enterpriseValue.base)}`,
       `- Score de Saúde: ${health.total.toFixed(0)}/100 — ${health.grade} (${health.status})`,

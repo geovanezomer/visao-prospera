@@ -5,7 +5,7 @@
 // =====================================================================
 
 import { AppState } from "./types";
-import { sumContractSaldos } from "./debtContracts";
+import { sumContractSaldos, aggregateContracts } from "./debtContracts";
 import { sum } from "./format";
 import { safeDivide, safePct, safeNumber } from "./safeMath";
 import { computeNetDebt, computeCapexMensal } from "./shared";
@@ -85,8 +85,13 @@ export interface Indicators {
   endividamentoOneroso: number;
   /** Dívida Onerosa ÷ Patrimônio Líquido × 100 */
   grauEndividamento: number;
-  /** EBIT ÷ Despesas Financeiras */
-  coberturaJuros: number;
+  /**
+   * EBIT ÷ Juros de contratos de dívida (financiamentos, empréstimos, debêntures).
+   * NÃO inclui tarifas bancárias, IOF, juros de cheque especial ou taxas de antecipação
+   * — esses são custos financeiros OPERACIONAIS, não serviço de dívida.
+   * `null` quando a empresa não tem dívida onerosa (nada a cobrir → N/A, não infinito).
+   */
+  coberturaJuros: number | null;
   /** Receita Líquida ÷ Ativo Total MÉDIO (consistente com ROA). */
   giroAtivo: number;
 
@@ -152,12 +157,16 @@ export interface Indicators {
    * incluir juros mistura risco financeiro com risco operacional.
    */
   margemSeguranca: number;
-  /** EBITDA ÷ (Juros + Amortizações de Principal) — métrica bancária de cobertura do serviço da dívida. */
-  dscr: number;
+  /**
+   * EBITDA ÷ (Juros de contratos + Amortizações de principal).
+   * Juros vem dos `debtContracts` (não de `custosFinanceirosTotal` da DRE, que inclui
+   * tarifas, IOF, cheque especial e antecipações — custos operacionais, não serviço de dívida).
+   * `null` quando não há serviço de dívida (sem contratos e sem amortizações) → N/A.
+   */
+  dscr: number | null;
   /**
    * true quando `state.cashflow.amortizacoes` traz algum valor > 0 no ano.
-   * Se false, o DSCR colapsa para a Cobertura de Juros (EBITDA ÷ Juros) — o consultor
-   * precisa saber que o resultado pode estar superestimado por falta do cronograma.
+   * Se false E há contratos de dívida, o DSCR pode estar SUPERESTIMADO (só juros no denominador).
    */
   dscrAmortizacoesInformadas: boolean;
   dividaOnerosa: number;
@@ -439,17 +448,19 @@ export function calcIndicators(
   // Endividamento ONEROSO — só dívida financeira. É o que o banco pergunta.
   const endividamentoOneroso = capital.ativoTotal > 0 ? (D / capital.ativoTotal) * 100 : 0;
   const grauEndividamento = PL > 0 ? (D / PL) * 100 : 0;
+  // [Auditoria Bloco 4] Cobertura de Juros = EBIT ÷ Juros de CONTRATOS DE DÍVIDA.
+  // Denominador = juros oriundos de debtContracts (financiamentos/empréstimos/debêntures).
+  // NÃO usa `custosFinanceirosTotal` da DRE (que inclui tarifas, IOF, cheque especial,
+  // antecipações) — esses são custos financeiros OPERACIONAIS. Sem dívida → null (N/A).
+  const contratosAgg = aggregateContracts(capital.debtContracts ?? []);
+  const jurosDivida = contratosAgg.totalJurosAno; // já anual (12 meses de cronograma)
   const CAP_COB = 999;
   const CAP_DL_EBITDA = 99;
   const CAP_PAYBACK = 99;
-  // [Auditoria Bloco 4] Cobertura de Juros = EBIT/Juros.
-  // Quando juros ≈ 0, sentinela = +CAP_COB se EBIT≥0 (sem alavancagem), −CAP_COB se EBIT<0 (prejuízo operacional sem dívida).
-  const coberturaJuros =
-    jurosAnual > 1
-      ? Math.max(-CAP_COB, Math.min(CAP_COB, safeDivide(ebitAnual, jurosAnual, CAP_COB)))
-      : ebitAnual < 0
-        ? -CAP_COB
-        : CAP_COB;
+  const coberturaJuros: number | null =
+    jurosDivida > 1
+      ? Math.max(-CAP_COB, Math.min(CAP_COB, safeDivide(ebitAnual, jurosDivida, CAP_COB)))
+      : null;
 
   // [Auditoria Bloco 5] Giro do Ativo (DuPont) também usa ATIVO MÉDIO quando abertura disponível.
   const giroAtivo = atMedio > 0 ? safeDivide(receitaLiqAnual, atMedio) : 0;
@@ -554,16 +565,16 @@ export function calcIndicators(
         )
       : 0;
 
-  const amortizPrincipalAnual = an(sum(state.cashflow.amortizacoes));
+  const amortizPrincipalAnual = an(sum(state.cashflow.amortizacoes ?? []));
   const dscrAmortizacoesInformadas = amortizPrincipalAnual > 0;
-  const servicoDivida = jurosAnual + amortizPrincipalAnual;
+  // Serviço da dívida = juros de contratos + amortizações de principal.
+  // Custos financeiros operacionais (tarifas, IOF, cheque especial) NÃO entram aqui.
+  const servicoDivida = jurosDivida + amortizPrincipalAnual;
   const CAP_DSCR = 99;
-  const dscr =
+  const dscr: number | null =
     servicoDivida > 1
       ? Math.max(-CAP_DSCR, Math.min(CAP_DSCR, ebitdaAnual / servicoDivida))
-      : ebitdaAnual <= 0
-        ? 0
-        : CAP_DSCR;
+      : null;
 
   return {
     margemBruta: safePct(lucroBrutoAnual, receitaLiqAnual),
@@ -633,7 +644,7 @@ export function calcIndicators(
     nopat: safeNumber(nopat),
     capitalInvestido: safeNumber(capitalInvestido),
     aliquotaNopat: aliquotaNopatFrac * 100,
-    servicoDividaMensal: (jurosAnual + amortizPrincipalAnual) / 12,
+    servicoDividaMensal: (jurosDivida + amortizPrincipalAnual) / 12,
     proprioPercent: V > 0 ? (PL / V) * 100 : Math.max(0, Math.min(100, capital.proprio)),
     eva: safeNumber(((roic - safeNumber(wacc)) / 100) * capitalInvestido),
     dividaPlBruto: PL > 0 ? D / PL : 0,

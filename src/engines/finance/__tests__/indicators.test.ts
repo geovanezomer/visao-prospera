@@ -261,12 +261,13 @@ describe("Indicadores — NCG e FCF", () => {
   });
 });
 
-describe("Indicadores — Cobertura de Juros e Giro", () => {
-  it("Cobertura de Juros = CAP quando juros ≈ 0 (sem Infinity)", () => {
+describe("Indicadores — Cobertura de Juros / DSCR / Giro", () => {
+  it("Sem dívida onerosa → coberturaJuros e DSCR = null (N/A)", () => {
     const s = createState({});
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
-    expect(Number.isFinite(ind.coberturaJuros)).toBe(true);
+    expect(ind.coberturaJuros).toBeNull();
+    expect(ind.dscr).toBeNull();
   });
 
   it("Giro do Ativo = 0 quando Ativo Total = 0", () => {
