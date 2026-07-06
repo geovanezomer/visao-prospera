@@ -241,9 +241,11 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     });
   }
 
-  // VPL via WACC — state é o base do modelo, então reusa o cache memoizado
-  // (evita buildCashFlow + deriveBalancoFechamento redundantes).
-  const ind = getFinancialModelCached(state).ind;
+  // VPL via WACC — só precisamos de ind.wacc. Não usa cache aqui para
+  // evitar ciclo forecast → financialModel → valuation → forecast.
+  // Passa cf/balanco não-precomputados: essa chamada acontece 1× por
+  // buildValuation e é dominada por outros custos do forecast.
+  const ind = calcIndicators(state, dre);
   const waccA = Math.max(0.5, ind.wacc) / 100;
   const i_m = Math.pow(1 + waccA, 1 / 12) - 1;
   const flows: number[] = [-cfg.capexInicial, ...meses.map((m) => m.fcl)];
