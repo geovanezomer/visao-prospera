@@ -252,9 +252,13 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   const depreciacao = computeDepreciacao(state);
   const ebit = ebitda.map((e, i) => e - depreciacao[i]);
 
-  // Resultado Financeiro = rendimentos − custos financeiros
+  // M4: juros de mútuos PJ→PF entram no Resultado Financeiro (Receita Financeira).
+  // SSOT: aggregateMutuos — mesma série que já flui pela DFC.
+  const { aggregateMutuos } = await import("./mutuosSocios");
+  const mutuosAgg = aggregateMutuos(state.mutuosSocios);
+  // Resultado Financeiro = rendimentos aplicações + juros mútuos − custos financeiros
   const resultadoFinanceiro = ebit.map(
-    (_, i) => rendimentosFinanceiros[i] - buckets.custosFinanceirosTotal[i],
+    (_, i) => rendimentosFinanceiros[i] + (mutuosAgg.juros[i] || 0) - buckets.custosFinanceirosTotal[i],
   );
   const lair = ebit.map((e, i) => e + resultadoFinanceiro[i]);
 
