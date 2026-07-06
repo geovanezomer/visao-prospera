@@ -306,6 +306,21 @@ describe("Balanço — invariante contábil sobre 50 estados aleatórios", () =>
     },
   );
 
+  // SSOT NCG: o indicador `ind.ncg` deve reproduzir exatamente a identidade
+  // do balanço de fechamento — não pode existir divergência entre os dois
+  // (bug pré-refactor mostrava R$ 47.625 no indicador vs R$ 29.000 no balanço).
+  it.each(SEEDS)("seed %i — NCG do indicador === NCG implícita no Balanço", (seed) => {
+    const state = randomState(seed);
+    const model = buildFinancialModel(state);
+    const bal = model.balancoFechamento.balanco;
+    const ac = bal.ativoCirculante ?? {};
+    const pc = bal.passivoCirculante ?? {};
+    const cr = (ac.contasReceberClientes ?? 0) - (ac.pdd ?? 0);
+    const ncgBal = (cr + (ac.estoques ?? 0)) -
+      ((pc.fornecedores ?? 0) + (pc.salariosEncargos ?? 0) + (pc.impostosPagar ?? 0));
+    expect(Math.abs(model.ind.ncg - ncgBal)).toBeLessThan(1);
+  });
+
   it("regressão — R$ 120 mil em dividendos não reduz Resultado do Exercício", () => {
     const state = createState({
       distribuicaoRealizada: { values: Array.from({ length: 12 }, () => 10_000), fixed: true },
