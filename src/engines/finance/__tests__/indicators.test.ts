@@ -387,5 +387,67 @@ describe("Indicadores — ROA / Giro com Ativo Médio (CFA/Damodaran)", () => {
       expect(model.ind.roa).toBeCloseTo(roaEsperado, 1);
     }
   });
+
+  it("PL fechamento é SSOT do balanço: ROE e Dívida Líq./PL não colapsam quando capital.patrimonioLiquido=0 mas o balanço tem PL>0", () => {
+
+    // Cenário do bug histórico: `capital.patrimonioLiquido = 0` (só capital social zero)
+    // enquanto o balanço reconciliado acumula lucros/reservas. Antes: PL=0 →
+    // ROE inflado (plMedio pequeno) e dividaLiqPl saturava no clamp ±99.
+    const s = createState({
+      revenue: { bruta: m12(80_000) },
+      capital: {
+        patrimonioLiquido: 0, // ← zerado de propósito
+        ativoTotal: 0,
+        contasReceber: 60_000,
+        estoques: 40_000,
+        fornecedores: 20_000,
+        debtContracts: [],
+      },
+    });
+    const model = buildFinancialModel(s);
+    const balPL = model.balancoFechamento.balanco.patrimonioLiquido ?? {};
+    const plBal =
+      (balPL.capitalSocial ?? 0) +
+      (balPL.reservasCapital ?? 0) +
+      (balPL.reservasLucros ?? 0) +
+      (balPL.lucrosPrejuizosAcumulados ?? 0) +
+      (balPL.resultadoExercicio ?? 0) -
+      (balPL.acoesEmTesouraria ?? 0);
+    // Se o balanço acumulou PL > 0, o indicador NÃO pode saturar em ±99.
+    if (plBal > 1) {
+      expect(Math.abs(model.ind.dividaLiqPl)).toBeLessThan(99);
+      // ROE precisa ser finito (não NaN, não Infinity, não null quando plBal>0).
+      if (model.ind.roe !== null) {
+        expect(Number.isFinite(model.ind.roe)).toBe(true);
+      }
+    }
+  });
+
+  it("Sem dívida onerosa: ROE não excede ROIC de forma implausível (consistência DuPont)", () => {
+    // Alavancagem financeira positiva exige dívida. Sem dívida onerosa, ROE
+    // deveria convergir para ROIC (líquido de impostos). Bug histórico: ROE
+    // saía muito acima do ROIC porque o denominador do ROE (PL) estava errado.
+    const s = createState({
+      revenue: { bruta: m12(150_000) },
+      capital: {
+        ke: 12,
+        kd: 0,
+        patrimonioLiquido: 800_000,
+        ativoTotal: 800_000,
+        debtContracts: [], // sem dívida onerosa
+      },
+    });
+    const { dre } = buildDRE(s, "simples");
+    const ind = calcIndicators(s, dre);
+    expect(ind.dividaOnerosa).toBe(0);
+    if (ind.roe !== null && Math.abs(ind.roic) > 0.1) {
+      // Tolerância: ROE ≤ ROIC + 5pp (arredondamentos e diferença ativo vs. PL).
+      // Guard-rail: rejeita o bug histórico (ROE ≥ 2× ROIC sem dívida).
+      expect(ind.roe).toBeLessThanOrEqual(Math.abs(ind.roic) + 5);
+    }
+  });
 });
+
+
+
 
