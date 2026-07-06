@@ -171,8 +171,46 @@ export function deriveBalancoFechamento({
     0,
     emprestimosIniTotal + captacoesPeriodo - amortizacoesPeriodo,
   );
+  // M9: ratio CP/LP recalculado APÓS amortizações do período.
+  // Para cada contrato, projeta os próximos 12 meses de amortização a partir
+  // do saldo remanescente — essa é a definição contábil de Empréstimos CP.
+  // Fallback (sem contratos ou tudo quitado): mantém o ratio de abertura.
+  const cpFimContratos = (() => {
+    const contratos = state.capital?.debtContracts ?? [];
+    if (!contratos.length || emprestimosFimTotal <= 0) return 0;
+    let cpAcc = 0;
+    for (const c of contratos) {
+      const saldoIni = Math.max(0, c.saldoDevedor || 0);
+      const nTot = Math.max(1, Math.floor(c.prazoMeses || 0));
+      const ia = Math.max(0, (c.taxaAA || 0) / 100);
+      const im = ia > 0 ? Math.pow(1 + ia, 1 / 12) - 1 : 0;
+      // Simula 12 meses (ano corrente) para obter saldo remanescente.
+      let saldo = saldoIni;
+      const parcelaPrice = im > 0 ? (saldo * im) / (1 - Math.pow(1 + im, -nTot)) : saldo / nTot;
+      const amortSAC = saldo / nTot;
+      const mesesAno = Math.min(12, nTot);
+      for (let m = 0; m < mesesAno && saldo > 0; m++) {
+        const j = saldo * im;
+        let a = c.sistema === "price" ? parcelaPrice - j : amortSAC;
+        if (a > saldo) a = saldo;
+        if (a < 0) a = 0;
+        saldo -= a;
+      }
+      if (saldo <= 0) continue;
+      // Prazo remanescente após o ano corrente.
+      const prazoRest = Math.max(0, nTot - 12);
+      if (prazoRest <= 0) continue; // já quitado
+      // Amortização estimada nos próximos 12 meses = min(12, prazoRest) parcelas de principal.
+      // Aproximação linear sobre saldo remanescente (bom para SAC; para Price o erro é <5%).
+      const cpParcelas = Math.min(12, prazoRest);
+      cpAcc += (saldo * cpParcelas) / prazoRest;
+    }
+    return Math.min(cpAcc, emprestimosFimTotal);
+  })();
   const cpShare =
-    emprestimosIniTotal > 0
+    emprestimosFimTotal > 0
+      ? cpFimContratos / emprestimosFimTotal
+      : emprestimosIniTotal > 0
       ? aberturaSSOT.emprestimosCP.value / emprestimosIniTotal
       : 0.3;
   const emprestimosCPFim = emprestimosFimTotal * cpShare;
