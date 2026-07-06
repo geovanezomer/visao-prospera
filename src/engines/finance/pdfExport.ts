@@ -736,7 +736,7 @@ function computeGuardianScore(ind: FinancialModel["ind"]): {
     Math.min(100, Math.max(0, (ind.liquidezCorrente / 2) * 100)),
     Math.min(100, Math.max(0, 100 - ind.endividamentoOneroso * 1.5)),
     Math.min(100, Math.max(0, ind.margemLiquida * 5)),
-    Math.min(100, Math.max(0, ind.coberturaJuros * 20)),
+    Math.min(100, Math.max(0, (ind.coberturaJuros ?? 5) * 20)),
     Math.min(100, Math.max(0, (ind.roe ?? 0) * 5)),
     Math.min(100, Math.max(0, ind.conversaoEbitdaCaixa)),
     Math.min(100, Math.max(0, 100 - ind.dividaLiqEbitda * 25)),
