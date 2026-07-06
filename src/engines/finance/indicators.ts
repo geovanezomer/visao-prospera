@@ -317,19 +317,18 @@ export function calcIndicators(
   const ativoTotalBal = safeNumber(balFech.totals.ativo);
   const ativoTotalFim = ativoTotalBal > 0 ? ativoTotalBal : Math.max(0, capital.ativoTotal);
 
-  // PL de fechamento — SSOT: soma das rubricas do PL no balanço reconciliado.
-  // Fallback só quando o balanço vem vazio (retrocompat). Bug histórico corrigido:
-  // `capital.patrimonioLiquido` podia ficar em 0 (apenas capital social) enquanto
-  // o balanço acumulava lucros/reservas > 0 — gerando ROE inflado (PL médio pequeno)
-  // e `Dívida Líq./PL` batendo no clamp ±99 (denominador ≈ 0).
-  const balPL = balFech.balanco.patrimonioLiquido ?? {};
-  const plBalSSOT =
-    safeNumber(balPL.capitalSocial) +
-    safeNumber(balPL.reservasCapital) +
-    safeNumber(balPL.reservasLucros) +
-    safeNumber(balPL.lucrosPrejuizosAcumulados) +
-    safeNumber(balPL.resultadoExercicio) -
-    safeNumber(balPL.acoesEmTesouraria);
+  // PL de fechamento — SSOT: total oficial já reconciliado pelo balanço
+  // (`balFech.totals.pl`), que aplica a identidade contábil completa:
+  //   PL = capitalSocial + reservasCapital + reservasLucros
+  //      + lucrosAcumuladosAbertura + resultadoExercicio − dividendosPagosPeriodo
+  // Fallback só quando o balanço vem vazio (retrocompat). Bug histórico
+  // corrigido: `capital.patrimonioLiquido` podia ficar em 0 (apenas capital
+  // social) enquanto o balanço acumulava lucros/reservas > 0 — gerando ROE
+  // inflado (PL médio pequeno) e `Dívida Líq./PL` no clamp ±99.
+  // Bug de regressão corrigido: a versão anterior deste SSOT recalculava o
+  // PL a partir das rubricas SEM subtrair `dividendosPagosPeriodo`,
+  // superestimando o PL de fechamento em relação ao balanço impresso.
+  const plBalSSOT = safeNumber(balFech.totals.pl);
 
   // ---- Estrutura de capital baseada em campos REAIS ----
   const PL = plBalSSOT > 0 ? plBalSSOT : Math.max(0, capital.patrimonioLiquido);
