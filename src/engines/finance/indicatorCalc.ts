@@ -13,6 +13,7 @@ import { sumContractSaldos } from "./debtContracts";
 import type { AppState } from "./types";
 import type { DRE } from "./dre";
 import type { Indicators } from "./indicators";
+import { deriveAbertura } from "./aberturaDerivada";
 import {
   fmtBRL,
   fmtPct,
