@@ -1840,7 +1840,7 @@ function renderIndicadoresGrouped(
     { nome: "Liquidez Corrente", mede: "Capacidade de pagar dívidas de curto prazo.", valor: `${ind.liquidezCorrente.toFixed(2)}x` },
     { nome: "Endividamento Geral", mede: "% do ativo financiado por dívida.", valor: fmtPct(ind.endividamentoGeral / 100) },
     { nome: "Dívida Líq./EBITDA", mede: "Anos de EBITDA para quitar a dívida.", valor: `${ind.dividaLiqEbitda.toFixed(2)}x` },
-    { nome: "DSCR", mede: "Cobertura do serviço da dívida — bancos exigem ≥ 1,25×.", valor: ind.dscr !== 0 ? `${ind.dscr.toFixed(2)}x` : "—" },
+    { nome: "DSCR", mede: "Cobertura do serviço da dívida — bancos exigem ≥ 1,25×.", valor: ind.dscr == null ? "N/A" : ind.dscr !== 0 ? `${ind.dscr.toFixed(2)}x` : "—" },
   ];
   const avancados: Row[] = [
     { nome: "Margem EBIT", mede: "Lucro operacional após depreciação.", valor: fmtPct(ind.margemEbit / 100) },
