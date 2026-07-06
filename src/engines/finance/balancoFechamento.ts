@@ -207,9 +207,14 @@ export function deriveBalancoFechamento({
   const capitalSocial = n(plConst.capitalSocial) + aportesPeriodo;
   const reservasCapital = n(plConst.reservasCapital);
   const reservasLucros = n(plConst.reservasLucros);
-  const lucrosAcumIni = aberturaSSOT.lucrosAcumulados.value;
-  // Resultado do exercício = Lucro Líquido − Dividendos distribuídos.
-  const resultadoExercicio = lucroLiquidoAnual - dividendosPagos;
+  // Resultado do Exercício = Lucro Líquido do período (SSOT da DRE).
+  // Dividendos são DESTINAÇÃO do resultado (reduzem Lucros Acumulados),
+  // não compõem o resultado do exercício — misturar as duas coisas
+  // fazia o Balanço reportar "prejuízo" enquanto a DRE reportava lucro.
+  // Deduzir dividendos de `lucrosAcumulados` preserva A = P + PL
+  // (o caixa cai pelo mesmo montante via DFC).
+  const lucrosAcumIni = aberturaSSOT.lucrosAcumulados.value - dividendosPagos;
+  const resultadoExercicio = lucroLiquidoAnual;
 
   // ─────────────────────────── Monta BalancoDetalhado ───────────────────────────
   const balanco: BalancoDetalhado = {
