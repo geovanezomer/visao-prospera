@@ -15,6 +15,7 @@ import type { DRE } from "./dre";
 import { buildCashFlow } from "./cashflow";
 import { mesesPreenchidos, anualizar } from "./periodUtils";
 import { deriveAbertura } from "./aberturaDerivada";
+import { calcPassivoCirculante, calcPassivoNaoCirculante } from "./balanco";
 
 export interface Indicators {
   /** Lucro Bruto ÷ Receita Líquida × 100 */
