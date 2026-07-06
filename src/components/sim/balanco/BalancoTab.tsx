@@ -123,6 +123,7 @@ const PASSIVO_PL: Grupo[] = [
       { path: "patrimonioLiquido.reservasCapital", label: "Reservas de capital", modo: "padrao" },
       { path: "patrimonioLiquido.reservasLucros", label: "Reservas de lucros", modo: "completo" },
       { path: "patrimonioLiquido.lucrosPrejuizosAcumulados", label: "Lucros/prejuízos acumulados (abertura)", modo: "padrao" },
+      { path: "patrimonioLiquido.dividendosPagosPeriodo", label: "(−) Dividendos pagos no período", modo: "padrao", redutora: true },
       { path: "patrimonioLiquido.resultadoExercicio", label: "Resultado do exercício (DRE)", modo: "padrao" },
     ],
   },

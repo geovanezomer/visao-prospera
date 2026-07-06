@@ -5,6 +5,7 @@
 //   2. ΔCR = Recebível − Recebimentos DFC          (conservação individual)
 //   3. ΔFornecedores = Compras − Pagamentos DFC    (conservação individual)
 //   4. ΔImpostosAPagar = Competência − Pagos DFC   (conservação individual)
+//   5. Resultado do exercício = Σ Lucro Líquido DRE (SSOT sem destinações)
 //
 // A abertura é sempre equilibrada com o plug de `lucrosAcumulados` — mesma
 // operação que o botão "Ajustar Lucros Acumulados" da UI faz.
@@ -289,6 +290,19 @@ describe("Balanço — invariante contábil sobre 50 estados aleatórios", () =>
       const impComp = sumArr(dre.impostosTotal);
       const impPag = sumArr(cf.pagamentosImpostos);
       expect(impFim - impIni).toBeCloseTo(impComp - impPag, 1);
+    },
+  );
+
+  it.each(SEEDS)(
+    "seed %i — Resultado do Exercício do Balanço = Lucro Líquido da DRE",
+    (seed) => {
+      const state = randomState(seed);
+      const model = buildFinancialModel(state);
+      const fx = model.balancoFechamento;
+
+      expect(
+        fx.balanco.patrimonioLiquido.resultadoExercicio ?? 0,
+      ).toBeCloseTo(sumArr(model.dre.lucroLiquido), 2);
     },
   );
 

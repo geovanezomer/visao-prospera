@@ -402,6 +402,8 @@ export interface BalancoDetalhado {
     reservasCapital?: number;
     reservasLucros?: number;
     lucrosPrejuizosAcumulados?: number;
+    /** Dividendos pagos no período — valor POSITIVO; engine subtrai do PL. */
+    dividendosPagosPeriodo?: number;
     /** Resultado do exercício — idealmente vem do DRE (auto-preenchido). */
     resultadoExercicio?: number;
     ajustesAvaliacaoPatrimonial?: number;

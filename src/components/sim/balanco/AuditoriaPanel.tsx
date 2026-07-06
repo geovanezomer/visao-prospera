@@ -236,18 +236,26 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         inputs: [
           { label: "Lucros acumulados (SSOT)", origem: ssot.lucrosAcumulados.origem, valor: ssot.lucrosAcumulados.value },
         ],
-        formula: "Lucros_acum_fim = abertura (resultado do exercício vai em rubrica separada)",
+        formula: "Lucros_acum_fim = abertura (resultado e dividendos vão em rubricas separadas)",
         resultado: ssot.lucrosAcumulados.value,
+      },
+      {
+        grupo: "Patrimônio Líquido",
+        rubrica: "(−) Dividendos pagos no período",
+        inputs: [
+          { label: "Dividendos pagos", origem: "DFC", valor: dividendos },
+        ],
+        formula: "Redutora separada do PL = −Σ Dividendos pagos",
+        resultado: -dividendos,
       },
       {
         grupo: "Patrimônio Líquido",
         rubrica: "Resultado do exercício",
         inputs: [
           { label: "Lucro Líquido anual", origem: "DRE", valor: lucroLiq },
-          { label: "Dividendos pagos", origem: "DFC", valor: dividendos },
         ],
-        formula: "Resultado = LucroLíquido − Dividendos",
-        resultado: lucroLiq - dividendos,
+        formula: "Resultado = Σ Lucro Líquido da DRE (sem dividendos)",
+        resultado: lucroLiq,
       },
     ];
   }, [state, dre, cf, cap, balConst, imo, intg, pl]);
