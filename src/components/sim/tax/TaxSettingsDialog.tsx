@@ -384,6 +384,7 @@ function StepFederais({
           value={ov.irpjAdicionalGatilhoTri ?? IRPJ_ADICIONAL_GATILHO_TRI}
           onChange={(v) => patchOv({ irpjAdicionalGatilhoTri: v })}
           onReset={() => patchOv({ irpjAdicionalGatilhoTri: undefined })}
+        faixa={FAIXAS_TRIBUTARIAS.irpjAdicionalGatilhoTri}
         />
         <FriendlyRow
           label="CSLL"
