@@ -86,7 +86,7 @@ export interface MetricSnapshot {
   roic: number;
   wacc: number;
   dividaLiqEbitda: number;
-  coberturaJuros: number;
+  coberturaJuros: number | null;
   pontoEquilibrio: number;
   saldoCaixaFinal: number;
   piorMesCaixa: number;

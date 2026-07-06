@@ -66,7 +66,8 @@ function metricaDo(state: AppState, restricao: RestricaoBreakEven): number {
   }
   if (restricao === "dscr") {
     const ind = calcIndicators(state, dre);
-    return ind.dscr;
+    // Sem dívida a servir → considera "satisfeito" com folga máxima (999).
+    return ind.dscr ?? 999;
   }
   // caixa_min: pior saldo final do ano
   const cf = buildCashFlow(state);

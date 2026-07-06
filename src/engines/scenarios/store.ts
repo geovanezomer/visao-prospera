@@ -89,7 +89,7 @@ export interface ScenarioRecord {
     ev?: number;
     saldoFinalCaixa?: number;
     receita?: number;
-    dscr?: number;
+    dscr?: number | null;
   };
   /** Tipo do cenário:
    *  - "whatif" (default): simulação de alavanca, comparado contra base.
