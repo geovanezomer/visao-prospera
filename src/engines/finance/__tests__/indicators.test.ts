@@ -160,6 +160,35 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
     const ind = calcIndicators(s, dre);
     expect(Number.isFinite(ind.roic)).toBe(true);
   });
+
+  /**
+   * [Auditoria] Empresa SEM dívida onerosa (só passivo operacional) não pode
+   * disparar "endividamento crítico". `endividamentoOneroso` deve ser 0 e
+   * `endividamentoGeral` deve refletir só o passivo operacional real —
+   * NÃO o proxy `AT − PL` que inflava o número.
+   */
+  it("Sem dívida onerosa: endividamentoOneroso=0, geral < 40% (não crítico)", () => {
+    const s = createState({
+      capital: {
+        ativoTotal: 221_916,
+        patrimonioLiquido: 145_460, // AT − passivo operacional
+        debtContracts: [],
+        // Balanço detalhado com passivo só operacional (fornecedores/impostos/folha)
+        balanco: {
+          passivoCirculante: {
+            fornecedores: 40_000,
+            impostosPagar: 20_456,
+            salariosEncargos: 16_000,
+          },
+        },
+      },
+    });
+    const { dre } = buildDRE(s, "simples");
+    const ind = calcIndicators(s, dre);
+    expect(ind.endividamentoOneroso).toBe(0);
+    expect(ind.endividamentoGeral).toBeLessThan(40);
+    expect(ind.endividamentoGeralDadosCompletos).toBe(true);
+  });
 });
 
 describe("Indicadores — Ponto de Equilíbrio", () => {
