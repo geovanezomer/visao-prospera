@@ -640,6 +640,33 @@ function StepPresumido({
           onReset={() => patchTax({ issIcms: 5 })}
         faixa={FAIXAS_TRIBUTARIAS.iss}
         />
+        <FriendlyRow
+          label="Deduções anuais de ISS (materiais/subempreitada)"
+          suffix="R$"
+          defaultVal={0}
+          help="Total ANUAL de materiais e subempreitadas dedutíveis da base do ISS (LC 116/2003 art. 7º §2º — construção civil e afins). Rateado por 12 e abatido mensalmente da base de cálculo."
+          value={state.tax.issDeducoes ?? 0}
+          onChange={(v) => patchTax({ issDeducoes: Math.max(0, v) })}
+          onReset={() => patchTax({ issDeducoes: 0 })}
+        />
+        <FriendlyRow
+          label="Alíquota de crédito de ICMS (entradas)"
+          suffix="%"
+          defaultVal={0}
+          help="Alíquota média de crédito de ICMS sobre o CPV (comércio/indústria). ICMS efetivo = max(0, débito − crédito). Ignorado quando a atividade é serviços."
+          value={state.tax.aliquotaICMSCredito ?? 0}
+          onChange={(v) => patchTax({ aliquotaICMSCredito: Math.max(0, v) })}
+          onReset={() => patchTax({ aliquotaICMSCredito: 0 })}
+        />
+        <FriendlyRow
+          label="IRRF sobre aplicações financeiras"
+          suffix="%"
+          defaultVal={15}
+          help="Alíquota média de IRRF retido sobre rendimentos de aplicações (regra geral 15% para prazos > 720 dias). No Lucro Presumido, é compensável com o IRPJ apurado sobre a mesma base — reduz o IRPJ devido no mês, sem gerar restituição automática."
+          value={state.tax.irrfAplicacoesPct ?? 15}
+          onChange={(v) => patchTax({ irrfAplicacoesPct: Math.max(0, Math.min(100, v)) })}
+          onReset={() => patchTax({ irrfAplicacoesPct: 15 })}
+        />
       </Section>
     </div>
   );
