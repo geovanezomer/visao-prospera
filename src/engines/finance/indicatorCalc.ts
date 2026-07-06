@@ -283,7 +283,10 @@ export function buildIndicatorCalcs(
   const gaoStr = Math.abs(EBIT) > 1
     ? line(`${fmtBRL(RL - cv)} ÷ ${fmtBRL(EBIT)}`, `${fmtRatio(ind.gao)}×`)
     : NA;
-  const LAIR = EBIT - juros;
+  // M2: LAIR usado na fórmula do GAF deve ser o LAIR da DRE (EBIT − juros +
+  // receitas financeiras + outras), não apenas EBIT − juros. Isso mantém o
+  // tooltip alinhado ao cálculo de `indicators.ts` (que usa sum(dre.lair)).
+  const LAIR = sum(dre.lair);
   const gafStr = Math.abs(EBIT) > 1 && LAIR > 1
     ? line(`${fmtBRL(EBIT)} ÷ ${fmtBRL(LAIR)}`, `${fmtRatio(ind.gaf)}×`)
     : NA;
