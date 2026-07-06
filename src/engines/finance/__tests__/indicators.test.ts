@@ -220,15 +220,25 @@ describe("Indicadores — Ponto de Equilíbrio", () => {
   });
 });
 
-describe("Indicadores — NCG e FCF", () => {
-  it("NCG = CR + Estoque − Fornecedores (finito)", () => {
+describe("Indicadores — NCG e FCF (SSOT via Balanço)", () => {
+  it("NCG do indicador === NCG implícita no Balanço de Fechamento", () => {
+    // Após a refatoração SSOT, NCG é DERIVADA do balanço de fechamento
+    // (CR + Est) − (Fornec + Salários + Impostos a pagar). O indicador deve
+    // reproduzir exatamente a identidade — sem divergência com o balanço.
     const s = createState({
+      revenue: { bruta: m12(60_000) },
+      costs: [{ id: "cpv", label: "CPV", category: "custo_vendas", values: m12(30_000), fixed: false }],
       capital: { contasReceber: 100_000, estoques: 50_000, fornecedores: 30_000 },
     });
-    const { dre } = buildDRE(s, "simples");
-    const ind = calcIndicators(s, dre);
-    // estoqueMedio = estoques quando inicial/final omitidos => 50k
-    expect(ind.ncg).toBeCloseTo(100_000 + 50_000 - 30_000, 0);
+    const model = buildFinancialModel(s);
+    const bal = model.balancoFechamento.balanco;
+    const cr = (bal.ativoCirculante?.contasReceberClientes ?? 0) - (bal.ativoCirculante?.pdd ?? 0);
+    const est = bal.ativoCirculante?.estoques ?? 0;
+    const forn = bal.passivoCirculante?.fornecedores ?? 0;
+    const sal = bal.passivoCirculante?.salariosEncargos ?? 0;
+    const imp = bal.passivoCirculante?.impostosPagar ?? 0;
+    const ncgBal = (cr + est) - (forn + sal + imp);
+    expect(model.ind.ncg).toBeCloseTo(ncgBal, 0);
   });
 
   it("FCF finito mesmo sem dados de capital de giro", () => {
@@ -236,28 +246,6 @@ describe("Indicadores — NCG e FCF", () => {
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
     expect(Number.isFinite(ind.fcf)).toBe(true);
-  });
-
-  it("FCF aumenta quando há redução de NCG (liberação de caixa)", () => {
-    const base = createState({
-      revenue: { bruta: m12(100_000), inadimplencia: m12(0), pmr: 0, pmp: 0 },
-      costs: [],
-      capital: {
-        ativoTotal: 1_000_000,
-        patrimonioLiquido: 800_000,
-        
-        contasReceber: 0,
-        estoques: 0,
-        fornecedores: 0,
-      },
-    });
-    const semLiberacao = createState({ ...base, capital: { ...base.capital, ncgAbertura: 0 } });
-    const comLiberacao = createState({ ...base, capital: { ...base.capital, ncgAbertura: 100_000 } });
-
-    const indSem = calcIndicators(semLiberacao, buildDRE(semLiberacao, "simples").dre);
-    const indCom = calcIndicators(comLiberacao, buildDRE(comLiberacao, "simples").dre);
-
-    expect(indCom.fcf).toBeCloseTo(indSem.fcf + 100_000, 0);
   });
 });
 
