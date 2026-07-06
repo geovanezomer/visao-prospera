@@ -692,8 +692,12 @@ export function calcIndicators(
     gapCapitalGiro,
     liquidezCorrente,
     liquidezSeca,
+    liquidezCorrente,
+    liquidezSeca,
     liquidezImediata,
     liquidezGeral,
+    liquidezEstimada,
+    caixaNegativo,
 
     endividamentoGeral,
     endividamentoGeralDadosCompletos,
