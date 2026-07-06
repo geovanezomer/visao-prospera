@@ -189,8 +189,8 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
         <Group title="Análise de Retorno sobre Capital">
           <Ind
             label="ROE"
-            v={fmtPct(ind.roe / 100)}
-            desc="Retorno sobre o Patrimônio Líquido. Usa PL MÉDIO ((abertura + final)/2, CFA/Damodaran) quando o PL de abertura é informado em Capital; caso contrário, usa PL fim de período (pode subestimar ROE em empresas em crescimento e superestimar em empresas com prejuízo acumulado)."
+            v={ind.roe == null ? "N/A — PL negativo" : fmtPct(ind.roe / 100)}
+            desc="Retorno sobre o Patrimônio Líquido. Usa PL MÉDIO ((abertura + final)/2, CFA/Damodaran) com o PL de abertura completo (Capital Social + Reservas + Lucros Acumulados) obtido do SSOT da abertura. Quando PL médio ≤ 0 (passivo a descoberto), exibe N/A — a métrica perde significado."
             formula="Lucro Líquido ÷ PL Médio × 100"
             calc={c.roe}
           />
