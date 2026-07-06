@@ -445,5 +445,7 @@ describe("Indicadores — ROA / Giro com Ativo Médio (CFA/Damodaran)", () => {
     }
   });
 });
+});
+
 
 
