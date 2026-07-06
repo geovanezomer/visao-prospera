@@ -261,10 +261,17 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
                 : "Endividamento Geral (estim.)"
             }
             v={`${fmtPct(ind.endividamentoGeral / 100)}${!ind.endividamentoGeralDadosCompletos ? " ⚠️" : ""}`}
-            tone={ind.endividamentoGeral <= 60 ? "pos" : "neg"}
-            desc={`Percentual do ativo financiado por dívidas (terceiros). Acima de 60% costuma indicar alto risco financeiro.${!ind.endividamentoGeralDadosCompletos ? " ⚠️ Ativo Total não informado em Capital — valor é ESTIMATIVA com base em (Dívida + PNO) ÷ (PL + Dívida + PNO). Preencha Ativo Total para o cálculo real." : ""}`}
+            tone={ind.endividamentoOneroso <= 60 ? "pos" : "neg"}
+            desc={`Percentual do ativo financiado por passivo total (operacional + oneroso). O gatilho de risco usa a fatia ONEROSA — ${fmtPct(ind.endividamentoOneroso / 100)} de dívida financeira. Empresa sem dívida bancária pode ter passivo operacional saudável (fornecedores, impostos, folha) sem que isso configure alavancagem financeira.${!ind.endividamentoGeralDadosCompletos ? " ⚠️ Balanço detalhado ausente — valor é ESTIMATIVA. Preencha o Balanço para o cálculo real." : ""}`}
             formula="Passivo Total ÷ Ativo Total × 100"
             calc={c.endividamentoGeral}
+          />
+          <Ind
+            label="Endividamento Oneroso"
+            v={fmtPct(ind.endividamentoOneroso / 100)}
+            tone={ind.endividamentoOneroso <= 40 ? "pos" : ind.endividamentoOneroso <= 60 ? "warn" : "neg"}
+            desc="Só dívida FINANCEIRA (bancos, financiamentos, debêntures) sobre o ativo total. Métrica que banco/investidor lê para julgar alavancagem — 0% = empresa sem dívida onerosa."
+            formula="Dívida Onerosa ÷ Ativo Total × 100"
           />
           <Ind
             label="Amortização do PL pelo Lucro"
