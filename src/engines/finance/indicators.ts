@@ -69,14 +69,19 @@ export interface Indicators {
   /** (Ativo Total − Permanente) ÷ Passivo Total. Aproximação: (AT − (AT−AC)) / (AT − PL) = AC / (AT − PL). */
   liquidezGeral: number;
 
-  /** Passivo Total ÷ Ativo Total × 100. Quando `endividamentoGeralDadosCompletos=false`, é estimativa de fallback. */
+  /** Passivo Total (operacional + oneroso) ÷ Ativo Total × 100. */
   endividamentoGeral: number;
   /**
-   * true quando Ativo Total foi informado pelo consultor — `endividamentoGeral` é valor real.
-   * false quando faltou Ativo Total: a engine usa fallback (Dívida Onerosa + PNO) ÷ proxy de
-   * Ativo (PL + D + PNO), evitando exibir "0%" silenciosamente como se fosse "sem dívida".
+   * true quando o Passivo Total vem do Balanço Detalhado (soma dos subcampos).
+   * false quando a engine usou fallback por proxy (`Ativo Total − PL` ou (D+PNO)).
    */
   endividamentoGeralDadosCompletos: boolean;
+  /**
+   * Dívida ONEROSA (bancos, financiamentos, debêntures) ÷ Ativo Total × 100.
+   * Exclui passivo operacional (fornecedores, impostos a pagar, folha) — é o número
+   * que banco/investidor pergunta. Empresa sem dívida financeira = 0%.
+   */
+  endividamentoOneroso: number;
   /** Dívida Onerosa ÷ Patrimônio Líquido × 100 */
   grauEndividamento: number;
   /** EBIT ÷ Despesas Financeiras */
