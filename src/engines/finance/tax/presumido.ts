@@ -40,8 +40,12 @@ export function calcPresumido(state: AppState): MonthlyTax {
   const { revenue, tax, businessType } = state;
   const trib = receitaTributavel(state);
   const bases = getPresumidoBases(tax, businessType);
-  const baseIRPJ = (tax.presumidoBaseIRPJ || bases.irpj) / 100;
-  const baseCSLL = (tax.presumidoBaseCSLL || bases.csll) / 100;
+  // Precedência: override em ratesOverride.presumidoBases[business] SEMPRE vence
+  // (postura "consultor edita com responsabilidade" — MODO A). Só cai no campo
+  // avulso `tax.presumidoBaseIRPJ/CSLL` quando não há override específico da atividade.
+  const hasOverride = !!tax.ratesOverride?.presumidoBases?.[businessType];
+  const baseIRPJ = (hasOverride ? bases.irpj : (tax.presumidoBaseIRPJ || bases.irpj)) / 100;
+  const baseCSLL = (hasOverride ? bases.csll : (tax.presumidoBaseCSLL || bases.csll)) / 100;
   const iss = tax.issIcms / 100;
   const issDed = (tax.issDeducoes ?? 0) / 12;
   const isMercadoria = businessType === "comercio" || businessType === "industria";

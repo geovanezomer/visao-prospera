@@ -130,6 +130,25 @@ describe("ratesOverride — Lucro Presumido", () => {
     const b = buildDRE(reduzida, "presumido").tax.annualLucro;
     expect(b).toBeLessThan(a);
   });
+
+  it("Override presumidoBases vence mesmo com presumidoBaseIRPJ/CSLL default (32/32)", () => {
+    // Bug-guard: antes, tax.presumidoBaseIRPJ (default 32) tinha precedência
+    // sobre ratesOverride.presumidoBases, silenciosamente ignorando o override.
+    // Agora override específico da atividade SEMPRE vence (MODO A).
+    const s = createState({
+      businessType: "servicos",
+      revenue: { bruta: m12(70_000) }, // 840.000/ano
+      tax: {
+        regime: "presumido",
+        ratesOverride: { presumidoBases: { servicos: { irpj: 8, csll: 12 } } },
+      },
+    });
+    const { tax } = buildDRE(s, "presumido");
+    // IRPJ = 15% × (8% × 840.000) = 10.080 | CSLL = 9% × (12% × 840.000) = 9.072
+    // Total IR+CSLL ~ 19.152 (sem adicional, base trimestral 16.800 < 60.000)
+    expect(tax.annualLucro).toBeGreaterThan(18_000);
+    expect(tax.annualLucro).toBeLessThan(21_000);
+  });
 });
 
 describe("ratesOverride — Reforma tributária", () => {
