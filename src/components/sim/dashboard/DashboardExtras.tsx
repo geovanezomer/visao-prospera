@@ -194,8 +194,11 @@ function SemaforoPanel({ state }: { state: AppState }) {
     },
     {
       nome: "ROE (Retorno do Sócio)",
-      status: ind.roe >= 15 ? "ok" : ind.roe >= 8 ? "warn" : "bad",
-      descricao: `${ind.roe.toFixed(1)}% — retorno sobre o capital investido pelos sócios`,
+      // ROE pode vir null quando PL médio ≤ 0 (empresa com passivo a descoberto) — semáforo neutro.
+      status: ind.roe == null ? "warn" : ind.roe >= 15 ? "ok" : ind.roe >= 8 ? "warn" : "bad",
+      descricao: ind.roe == null
+        ? "N/A — PL médio ≤ 0 (passivo a descoberto). ROE perdeu significado."
+        : `${ind.roe.toFixed(1)}% — retorno sobre o capital investido pelos sócios`,
     },
     {
       nome: "Ciclo Financeiro",
