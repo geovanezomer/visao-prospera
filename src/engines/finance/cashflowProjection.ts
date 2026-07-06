@@ -17,7 +17,10 @@ function scheduleContractFull(c: DebtContract, meses: number): { juros: number[]
   const amort = new Array(meses).fill(0);
   const saldoIni = Math.max(0, c.saldoDevedor || 0);
   const n = Math.max(1, Math.floor(c.prazoMeses || 0));
-  const im = Math.max(0, (c.taxaAA || 0) / 100) / 12;
+  // Juros mensal equivalente composto (mesma convenção do SSOT em cashflow.ts):
+  // im = (1 + i_a)^(1/12) - 1, evita subestimar juros ao usar taxa nominal /12.
+  const iA = Math.max(0, (c.taxaAA || 0) / 100);
+  const im = iA > 0 ? Math.pow(1 + iA, 1 / 12) - 1 : 0;
   if (saldoIni <= 0) return { juros, amort };
 
   let saldo = saldoIni;
