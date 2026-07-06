@@ -81,11 +81,22 @@ export interface MCResult {
   correlationFellBackToIdentity?: boolean;
 }
 
-// Box-Muller para amostragem normal padrão N(0,1)
+// Box-Muller para amostragem normal padrão N(0,1).
+// M10: aproveita o par (cos, sin) — cada 2 chamadas usam apenas 2 randoms
+// (antes: 2 chamadas × 2 randoms = 4). Cache do valor spare entre chamadas.
+let __randnSpare: number | null = null;
 function randn(): number {
+  if (__randnSpare !== null) {
+    const v = __randnSpare;
+    __randnSpare = null;
+    return v;
+  }
   const u = Math.max(1e-9, Math.random());
   const v = Math.random();
-  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  const r = Math.sqrt(-2 * Math.log(u));
+  const theta = 2 * Math.PI * v;
+  __randnSpare = r * Math.sin(theta);
+  return r * Math.cos(theta);
 }
 
 /**
