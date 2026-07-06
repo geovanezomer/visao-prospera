@@ -351,5 +351,30 @@ describe("Indicadores — ROA / Giro com Ativo Médio (CFA/Damodaran)", () => {
     expect(ind.giroAtivo).toBeGreaterThan(0);
     expect(Number.isFinite(ind.giroAtivo)).toBe(true);
   });
+
+  // [Auditoria SSOT ROA] Bug histórico: quando `capital.ativoTotal` está
+  // subestimado (típico: usuário só preenche imobilizado bruto de abertura),
+  // ROA divergia do LL/Ativo Total do Balanço. Deve usar o Ativo do balanço
+  // reconciliado como fonte primária.
+  it("ROA usa Ativo Total do BALANÇO reconciliado, não capital.ativoTotal", () => {
+    // capital.ativoTotal deliberadamente ZERADO — força a engine a usar o balanço.
+    const s = createState({
+      revenue: { bruta: m12(60_000) },
+      capital: {
+        ativoTotal: 0,
+        contasReceber: 80_000,
+        estoques: 40_000,
+        patrimonioLiquido: 100_000,
+        fornecedores: 20_000,
+      },
+    });
+    const model = buildFinancialModel(s);
+    // Ativo do balanço > 0 → ROA deve ser finito e usar esse denominador.
+    expect(model.balancoFechamento.totals.ativo).toBeGreaterThan(0);
+    if (Math.abs(model.ind.lucroLiquidoAnual) > 1) {
+      const roaEsperado = (model.ind.lucroLiquidoAnual / model.balancoFechamento.totals.ativo) * 100;
+      expect(model.ind.roa).toBeCloseTo(roaEsperado, 1);
+    }
+  });
 });
 
