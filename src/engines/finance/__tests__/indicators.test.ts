@@ -121,15 +121,15 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
    * classicamente ROE usando apenas Capital Social em vez do PL completo.
    */
   it("ROE ≈ ROIC quando não há dívida líquida (DuPont sem alavancagem)", () => {
+    // Sem dívida, sem juros, sem ativoTotal informado (CI cai em PL+D=PL) e
+    // Simples com t=0 → NOPAT=EBIT=LL. ROE deve bater com ROIC.
     const s = createState({
       revenue: { bruta: m12(200_000) },
       capital: {
         ke: 15,
         kd: 0,
         patrimonioLiquido: 1_000_000,
-        ativoTotal: 1_200_000,
-        disponibilidades: 200_000, // caixa > 0
-        debtContracts: [], // sem dívida onerosa
+        debtContracts: [],
       },
     });
     const { dre } = buildDRE(s, "simples");
