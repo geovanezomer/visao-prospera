@@ -253,12 +253,17 @@ export const KE_DEFAULT_BY_SECTOR: Record<string, number> = {
   industria: 16,
 };
 
+/**
+ * IMPORTANTE (performance): prefira sempre passar `cfPre` e `balancoPre` já
+ * calculados — o padrão de consumo é via `buildFinancialModel` /
+ * `getFinancialModelCached`, que injeta ambos. Chamar `calcIndicators` sem
+ * esses parâmetros dispara recálculo COMPLETO do DFC (`buildCashFlow`) e do
+ * balanço de fechamento (`deriveBalancoFechamento`) — só justificado em
+ * testes ou cálculos isolados fora do modelo memoizado.
+ */
 export function calcIndicators(
   state: AppState,
   dre: DRE,
-  // Otimização: aceita o `cf` já computado por `buildFinancialModel` para evitar
-  // recomputar `buildCashFlow(state)` (chamado em ~todo render). Quando omitido,
-  // computa internamente para preservar a API antiga.
   cfPre?: ReturnType<typeof buildCashFlow>,
   /** Balanço de fechamento pré-computado (evita 2ª chamada em buildFinancialModel). */
   balancoPre?: BalancoFechamentoResult,

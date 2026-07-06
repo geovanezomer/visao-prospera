@@ -15,6 +15,7 @@ import { compareRegimes } from "./tax/compare";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
 import { fmtBRL } from "./format";
 import { buildCashFlow } from "./cashflow";
+import { getFinancialModelCached } from "./financialModel";
 import { sum } from "./format";
 import { resolveBenchmark } from "@/engines/benchmark/sectors";
 import type { SimulatorParams } from "./simulator";
@@ -105,11 +106,12 @@ export interface PrescriptivePrecomputed {
 
 export function snapshot(state: AppState, pre?: PrescriptivePrecomputed): MetricSnapshot {
   // Usa regime efetivo (Simples pode ter excedido limite).
-  const built = pre ?? (() => {
-    const { dre, tax } = buildDRE(state, resolveEffectiveRegime(state));
-    const cf = buildCashFlow(state);
-    const ind = calcIndicators(state, dre, cf);
-    return { dre, tax, ind, cf };
+  // Perf: quando o chamador não passa `pre`, usa modelo memoizado — evita
+  // recomputação em cascata de buildDRE + buildCashFlow + calcIndicators
+  // (que por sua vez chamaria buildCashFlow + deriveBalancoFechamento).
+  const built: PrescriptivePrecomputed = pre ?? (() => {
+    const m = getFinancialModelCached(state);
+    return { dre: m.dre, tax: m.tax, ind: m.ind, cf: m.cf };
   })();
   const { dre, tax, ind, cf } = built;
   return {
@@ -158,10 +160,8 @@ export function buildPrescriptiveCards(
   // Otimização: reusa o modelo já computado (DiagnosisTab/PDF) — evita 3
   // passagens completas pela engine por render.
   const built = pre ?? (() => {
-    const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-    const cf = buildCashFlow(state);
-    const ind = calcIndicators(state, dre, cf);
-    return { dre, tax: null as never, ind, cf };
+    const m = getFinancialModelCached(state);
+    return { dre: m.dre, tax: null as never, ind: m.ind, cf: m.cf };
   })();
   const { dre, ind, cf } = built;
   const receitaLiqAnual = sum(dre.receitaLiquida);

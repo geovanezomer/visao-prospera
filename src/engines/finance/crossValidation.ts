@@ -15,6 +15,7 @@ import type { AppState } from "./types";
 import { buildDRE, type DRE } from "./dre";
 import { calcIndicators, type Indicators } from "./indicators";
 import { folhaAnual, resolveEffectiveRegime } from "./regime";
+import { getFinancialModelCached } from "./financialModel";
 import { getSimplesLimite, getFatorRMinimoPct } from "./taxDefaults";
 import { sum } from "./format";
 import { mediaMensal, mesesPreenchidos } from "./periodUtils";
@@ -75,9 +76,19 @@ const LIMITS = {
  * Ordenada por severidade (error → warn → info), depois por categoria.
  */
 export function crossValidate(state: AppState, model?: CrossValidateModel): ValidationWarning[] {
-  const regime = resolveEffectiveRegime(state);
-  const dre = model?.dre ?? buildDRE(state, regime).dre;
-  const ind = model?.ind ?? calcIndicators(state, dre);
+  // Perf: quando o consumidor não injeta o modelo, usa o cache memoizado —
+  // evita rodada extra completa da engine (buildDRE + calcIndicators, que
+  // por sua vez faria buildCashFlow + deriveBalancoFechamento).
+  let dre: DRE;
+  let ind: Indicators;
+  if (model?.dre && model?.ind) {
+    dre = model.dre;
+    ind = model.ind;
+  } else {
+    const m = getFinancialModelCached(state);
+    dre = model?.dre ?? m.dre;
+    ind = model?.ind ?? m.ind;
+  }
 
   const out: ValidationWarning[] = [];
   out.push(...checkTier1Estrutural(state, dre, ind));
