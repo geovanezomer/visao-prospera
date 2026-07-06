@@ -590,6 +590,7 @@ export function calcIndicators(
 
     endividamentoGeral,
     endividamentoGeralDadosCompletos,
+    endividamentoOneroso,
     grauEndividamento,
     coberturaJuros,
     giroAtivo,
