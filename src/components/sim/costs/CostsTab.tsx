@@ -307,7 +307,7 @@ export function CostsTab() {
         )}
 
         <CostTable
-          lines={byCat("fixo")}
+          lines={[...byCat("fixo"), ...systemAdminLines]}
           receitaBrutaAnual={receitaBrutaAnual}
           regime={effectiveRegime}
           onMonth={setMonth}
