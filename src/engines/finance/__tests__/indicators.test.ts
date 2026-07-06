@@ -103,17 +103,16 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
     });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
-    expect(ind.roe).toBeCloseTo(s.revenue.bruta.reduce((a, b) => a + b, 0) > 0 ? ind.roe : 0, 1);
-    // estrutural: roe finito e proporcional a 1/PL
-    expect(Number.isFinite(ind.roe)).toBe(true);
+    // ROE deve ser um número finito (não-null quando PL médio > 0).
+    expect(ind.roe).not.toBeNull();
+    expect(Number.isFinite(ind.roe as number)).toBe(true);
   });
 
-  it("ROE = 0 quando PL = 0 (sem Infinity)", () => {
+  it("ROE = null quando PL = 0 (padrão CFA: métrica sem significado)", () => {
     const s = createState({ capital: { patrimonioLiquido: 0 } });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
-    expect(ind.roe).toBe(0);
-    expect(Number.isFinite(ind.roe)).toBe(true);
+    expect(ind.roe).toBeNull();
   });
 
   it("ROA = 0 quando Ativo Total = 0 (sem Infinity)", () => {
