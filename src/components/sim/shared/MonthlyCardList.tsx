@@ -24,6 +24,10 @@ export type MonthlyCardRow = {
   editableLabel?: boolean;
   /** Permite remover (linhas custom de custo) */
   removable?: boolean;
+  /** Linha somente-leitura (ex.: lançamentos system geridos em outra tela) */
+  readOnly?: boolean;
+  /** Texto explicativo exibido em linhas read-only */
+  readOnlyHint?: string;
 };
 
 export function MonthlyCardList({
@@ -109,7 +113,7 @@ function MonthlyCard({
     <div className="rounded-md border border-border/40 bg-background/40 p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          {onLabel ? (
+          {onLabel && !row.readOnly ? (
             <input
               value={row.label}
               onChange={(e) => onLabel(e.target.value)}
@@ -123,8 +127,13 @@ function MonthlyCard({
             <span>•</span>
             <span>{fmtPct(pct)} rec.</span>
           </div>
+          {row.readOnly && row.readOnlyHint && (
+            <div className="mt-1 text-[10px] italic text-muted-foreground">
+              {row.readOnlyHint}
+            </div>
+          )}
         </div>
-        {onRemove && (
+        {onRemove && !row.readOnly && (
           <button
             onClick={onRemove}
             className="shrink-0 text-muted-foreground hover:text-neg"
@@ -135,24 +144,26 @@ function MonthlyCard({
         )}
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          <span>Fixo</span>
-          <Switch checked={!row.fixed} onCheckedChange={(v) => onFixed(!v)} />
-          <span>Mensal</span>
-        </label>
-        {!row.fixed && (
-          <button
-            onClick={() => setOpen((o) => !o)}
-            className="flex items-center gap-1 text-[11px] text-primary"
-          >
-            {open ? "Recolher" : "Editar 12 meses"}
-            <ChevronDown
-              className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
-            />
-          </button>
-        )}
-      </div>
+      {!row.readOnly && (
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <span>Fixo</span>
+            <Switch checked={!row.fixed} onCheckedChange={(v) => onFixed(!v)} />
+            <span>Mensal</span>
+          </label>
+          {!row.fixed && (
+            <button
+              onClick={() => setOpen((o) => !o)}
+              className="flex items-center gap-1 text-[11px] text-primary"
+            >
+              {open ? "Recolher" : "Editar 12 meses"}
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
+              />
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="mt-3">
         {row.fixed ? (
@@ -164,12 +175,12 @@ function MonthlyCard({
               {unit === "pct" ? (
                 <PctInput value={baseFixo} onChange={onAllMonths} />
               ) : (
-                <MoneyInput value={baseFixo} onChange={onAllMonths} />
+                <MoneyInput value={baseFixo} onChange={onAllMonths} readOnly={row.readOnly} />
               )}
             </div>
           </div>
         ) : (
-          open && (
+          open && !row.readOnly && (
             <div className="grid grid-cols-3 gap-2">
               {row.values.map((v, i) => (
                 <label key={i} className="space-y-1">
