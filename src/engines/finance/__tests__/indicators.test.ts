@@ -8,6 +8,7 @@
 import { describe, it, expect } from "vitest";
 import { buildDRE } from "../dre";
 import { calcIndicators } from "../indicators";
+import { buildFinancialModel } from "../financialModel";
 import { irShieldForRegime } from "../tax/real";
 import { createState, m12 } from "./helpers";
 
