@@ -306,6 +306,19 @@ describe("Balanço — invariante contábil sobre 50 estados aleatórios", () =>
     },
   );
 
+  it("regressão — R$ 120 mil em dividendos não reduz Resultado do Exercício", () => {
+    const state = createState({
+      distribuicaoRealizada: { values: Array.from({ length: 12 }, () => 10_000), fixed: true },
+      cashflow: { dividendos: Array.from({ length: 12 }, () => 10_000) },
+    });
+    const model = buildFinancialModel(state);
+    const pl = model.balancoFechamento.balanco.patrimonioLiquido;
+    const lucroLiquidoDRE = sumArr(model.dre.lucroLiquido);
+
+    expect(pl?.resultadoExercicio ?? 0).toBeCloseTo(lucroLiquidoDRE, 2);
+    expect(pl?.dividendosPagosPeriodo ?? 0).toBeCloseTo(120_000, 2);
+  });
+
   // ─────────────────────────────────────────────────────────────────────
   // Regressão: replica o fluxo do botão "Ajustar Lucros Acumulados" da UI
   // (AberturaCard.tsx). Antes da correção da SSOT, o card passava
