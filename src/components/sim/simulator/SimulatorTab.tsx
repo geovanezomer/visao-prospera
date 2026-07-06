@@ -111,8 +111,8 @@ export function SimulatorTab({
   if (simView.lucroLiquido < 0) inconsistencies.push("Lucro líquido negativo no cenário simulado");
   if (simView.saldoCaixaFinal < 0)
     inconsistencies.push("Caixa final negativo — operação inviável sem captação");
-  // S5: coberturaJuros é capada em CAP_COB (999) — sempre finita. Sem Number.isFinite.
-  if (simView.coberturaJuros < 1)
+  // Cobertura de juros null (sem dívida) → não é inconsistência.
+  if (simView.coberturaJuros != null && simView.coberturaJuros < 1)
     inconsistencies.push(`Cobertura de juros < 1× (${simView.coberturaJuros.toFixed(1)}×)`);
 
   const applyToBase = () => {
