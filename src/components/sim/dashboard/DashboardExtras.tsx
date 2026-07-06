@@ -298,7 +298,7 @@ function ScoreSaude({ state }: { state: AppState }) {
   const score = useMemo(() => {
     const norms = [
       Math.min(100, Math.max(0, ind.liquidezCorrente / 2 * 100)),       // 2x = 100
-      Math.min(100, Math.max(0, (100 - ind.endividamentoGeral))),       // menor = melhor
+      Math.min(100, Math.max(0, 100 - ind.endividamentoOneroso * 1.5)),  // dívida onerosa: 66% → 0
       Math.min(100, Math.max(0, ind.margemLiquida * 5)),                // 20% = 100
       Math.min(100, Math.max(0, ind.coberturaJuros * 20)),              // 5x = 100
       Math.min(100, Math.max(0, (ind.roe ?? 0) * 5)),                  // 20% = 100 (null → neutro 0)
