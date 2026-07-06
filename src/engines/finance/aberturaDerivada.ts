@@ -237,7 +237,7 @@ export function deriveAbertura({
     },
     impostosPagar: {
       label: "Impostos a pagar",
-      origem: "DRE · impostos do mês 1",
+      origem: "DRE · média do 1º trimestre (M8)",
       value: impostosPagarVal,
     },
     salariosEncargos: {
