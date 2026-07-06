@@ -94,13 +94,18 @@ describe("Auditoria TaxSettingsDialog — campos expostos", () => {
   });
 
   it("irrfAplicacoesPct compensa IRPJ no Presumido quando há rendimento financeiro", () => {
-    const rend = m12(10_000); // 120k/ano de rendimento financeiro
+    const rendLinha = {
+      id: "rend_aplic",
+      label: "Rendimentos aplicações",
+      valores: m12(10_000),
+      tipo: "financeira" as const,
+    };
     const base = createState({
-      revenue: { bruta: m12(50_000), financeiras: rend },
+      revenue: { bruta: m12(50_000), receitasFinanceiras: [rendLinha] },
       tax: { regime: "presumido", irrfAplicacoesPct: 0 },
     });
     const com = createState({
-      revenue: { bruta: m12(50_000), financeiras: rend },
+      revenue: { bruta: m12(50_000), receitasFinanceiras: [rendLinha] },
       tax: { regime: "presumido", irrfAplicacoesPct: 15 },
     });
     const a = buildDRE(base, "presumido").tax.annualLucro;
