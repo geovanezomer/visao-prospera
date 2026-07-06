@@ -1292,7 +1292,7 @@ function buildHealthDimensions(ind: FinancialModel["ind"], state: AppState): Hea
       label: "Rentabilidade",
       score: clamp(ind.margemLiquida * 5),
       tone: ind.margemLiquida >= 8 ? "ok" : ind.margemLiquida >= 3 ? "warn" : "bad",
-      comment: `Margem líquida ${ind.margemLiquida.toFixed(1)}% · EBITDA ${ind.margemEbitda.toFixed(1)}% · ROE ${ind.roe.toFixed(1)}% · ROIC ${ind.roic.toFixed(1)}%.`,
+      comment: `Margem líquida ${ind.margemLiquida.toFixed(1)}% · EBITDA ${ind.margemEbitda.toFixed(1)}% · ROE ${ind.roe == null ? "N/A" : `${ind.roe.toFixed(1)}%`} · ROIC ${ind.roic.toFixed(1)}%.`,
     },
     {
       label: "Endividamento",
