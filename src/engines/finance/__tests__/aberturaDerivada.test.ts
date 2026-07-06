@@ -120,14 +120,15 @@ describe("deriveAbertura — empréstimos CP/LP", () => {
 
 
 describe("deriveAbertura — passivos derivados de DRE/Despesas (1º mês)", () => {
-  it("usa impostos[0] do mês 1 para impostosPagar", () => {
+  it("usa média do 1º trimestre para impostosPagar (M8 — evita viés sazonal)", () => {
     const s = createState();
     const r = deriveAbertura({
       state: s,
       impostosTotalMensais: [12_000, 11_500, 10_800, ...m12(0).slice(3)],
     });
-    expect(r.impostosPagar.value).toBe(12_000);
-    expect(r.impostosPagar.origem).toMatch(/mês 1/i);
+    // Média do 1º trimestre = (12000 + 11500 + 10800) / 3 = 11433.33
+    expect(r.impostosPagar.value).toBeCloseTo(11_433.33, 1);
+    expect(r.impostosPagar.origem).toMatch(/trimestre|mês/i);
   });
 
   it("usa folha do mês 1 (isFolhaCost — SSOT) para salariosEncargos", () => {
