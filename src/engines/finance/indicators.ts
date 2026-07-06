@@ -355,6 +355,8 @@ export function calcIndicators(
 
 
   // ---- Ciclo / NCG / Gap ----
+  // PMR/PME/PMP continuam vindo da fórmula estática (métrica de DIAS,
+  // complementar à NCG monetária). NÃO alimentam mais a NCG.
   const ei = Math.max(0, capital.estoqueInicial ?? 0);
   const ef = Math.max(0, capital.estoqueFinal ?? 0);
   const estoqueMedio = ei > 0 && ef > 0 ? (ei + ef) / 2 : ef > 0 ? ef : capital.estoques;
@@ -362,28 +364,67 @@ export function calcIndicators(
   const pme = estoqueMedio > 0 && cpvDiario > 0 ? safeDivide(estoqueMedio, cpvDiario) : 0;
   const cicloOperacional = revenue.pmr + pme;
   const cicloFinanceiro = cicloOperacional - revenue.pmp;
-  // [Auditoria Bloco 3] PMR aplica-se sobre vendas BRUTAS a prazo (faturamento total),
-  // não sobre receita líquida — corrigido para evitar subestimar Contas a Receber.
+
+  // ─── NCG e CDG derivados do BALANÇO DE FECHAMENTO (SSOT único) ───
+  // Substitui a fórmula estática (Receita×PMR/360 + Estoque − CPV×PMP/360)
+  // pela leitura direta das rubricas do balanço reconciliado. Qualquer
+  // divergência agora aparece na única fonte — não há mais dois números
+  // brigando na mesma página. Modelo Fleuriet: passivo operacional inclui
+  // fornecedores + salários/encargos + impostos a pagar.
+  const cfLocal = cfPre ?? buildCashFlow(state);
+  const balFech = balancoPre ?? deriveBalancoFechamento({ state, dre, cf: cfLocal });
+  const bal = balFech.balanco;
+  const bAc = bal.ativoCirculante ?? {};
+  const bPc = bal.passivoCirculante ?? {};
+  const bAnc = bal.ativoNaoCirculante ?? {};
+  const bPnc = bal.passivoNaoCirculante ?? {};
+  const crBal = safeNumber(bAc.contasReceberClientes) - safeNumber(bAc.pdd);
+  const estBal = safeNumber(bAc.estoques);
+  const fornBal = safeNumber(bPc.fornecedores);
+  const salBal = safeNumber(bPc.salariosEncargos);
+  const impBal = safeNumber(bPc.impostosPagar);
+  const ncg = (crBal + estBal) - (fornBal + salBal + impBal);
+
+  // CDG (Capital de Giro) via Fleuriet = (PL + PNC) − ANC.
+  const plBal =
+    safeNumber(bal.patrimonioLiquido?.capitalSocial) +
+    safeNumber(bal.patrimonioLiquido?.reservasCapital) +
+    safeNumber(bal.patrimonioLiquido?.reservasLucros) +
+    safeNumber(bal.patrimonioLiquido?.lucrosAcumulados) +
+    safeNumber(bal.patrimonioLiquido?.resultadoExercicio) -
+    safeNumber(bal.patrimonioLiquido?.acoesTesouraria);
+  const pncTotal =
+    safeNumber(bPnc.emprestimosFinanciamentosLP) +
+    safeNumber(bPnc.impostosParcelados) +
+    safeNumber(bPnc.debentures) +
+    safeNumber(bPnc.provisoesLP) +
+    safeNumber((bPnc as { outrosPassivosNC?: number }).outrosPassivosNC);
+  const ancTotal =
+    safeNumber(bAnc.investimentos) +
+    safeNumber(bAnc.imobilizado?.terrenos) +
+    safeNumber(bAnc.imobilizado?.edificacoes) +
+    safeNumber(bAnc.imobilizado?.maquinasEquipamentos) +
+    safeNumber(bAnc.imobilizado?.veiculos) +
+    safeNumber(bAnc.imobilizado?.moveisUtensilios) +
+    safeNumber(bAnc.imobilizado?.outrosImobilizados) -
+    safeNumber(bAnc.imobilizado?.depreciacaoAcumulada) +
+    safeNumber(bAnc.intangivel?.software) +
+    safeNumber(bAnc.intangivel?.marcasPatentes) +
+    safeNumber(bAnc.intangivel?.goodwill) +
+    safeNumber(bAnc.intangivel?.outrosIntangiveis) -
+    safeNumber(bAnc.intangivel?.amortizacaoAcumulada) +
+    safeNumber(bAnc.realizavelLP?.creditosLP) +
+    safeNumber(bAnc.realizavelLP?.depositosJudiciais) +
+    safeNumber(bAnc.realizavelLP?.impostosDiferidos) +
+    safeNumber(bAnc.realizavelLP?.outros);
+  const cdg = (plBal + pncTotal) - ancTotal;
+  const gapCapitalGiro = ncg - cdg;
+
+  // Estimativas legadas mantidas para consumidores de liquidez/PMR abaixo.
   const crEstimado =
     capital.contasReceber > 0 ? capital.contasReceber : (receitaBrutaAnual / 360) * revenue.pmr;
   const fornecEstimado =
     capital.fornecedores > 0 ? capital.fornecedores : (cpvAnual / 360) * revenue.pmp;
-  const ncg = crEstimado + estoqueMedio - fornecEstimado;
-
-  // Gap de Capital de Giro = NCG − CDG (Fleuriet/Modelo Dinâmico).
-  // CDG (Capital de Giro) = AC − PC = recursos de longo prazo aplicados no giro.
-  // Quando NCG > CDG, falta financiamento permanente para o ciclo operacional
-  // (Saldo de Tesouraria negativo = gap > 0).
-  const acParaCdg =
-    capital.ativoCirculante > 0
-      ? capital.ativoCirculante
-      : capital.disponibilidades + crEstimado + estoqueMedio;
-  const pcParaCdg =
-    capital.passivoCirculante > 0
-      ? capital.passivoCirculante
-      : fornecEstimado;
-  const cdg = acParaCdg - pcParaCdg;
-  const gapCapitalGiro = ncg - cdg;
 
   // ---- Liquidez ----
   const ativoCirculante =
