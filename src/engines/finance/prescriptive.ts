@@ -160,10 +160,8 @@ export function buildPrescriptiveCards(
   // Otimização: reusa o modelo já computado (DiagnosisTab/PDF) — evita 3
   // passagens completas pela engine por render.
   const built = pre ?? (() => {
-    const { dre } = buildDRE(state, resolveEffectiveRegime(state));
-    const cf = buildCashFlow(state);
-    const ind = calcIndicators(state, dre, cf);
-    return { dre, tax: null as never, ind, cf };
+    const m = getFinancialModelCached(state);
+    return { dre: m.dre, tax: null as never, ind: m.ind, cf: m.cf };
   })();
   const { dre, ind, cf } = built;
   const receitaLiqAnual = sum(dre.receitaLiquida);
