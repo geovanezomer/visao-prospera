@@ -401,13 +401,10 @@ export function SociosCard() {
           />
         </div>
 
-        {acimaIsento && (
-          <div className="mt-3 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/5 px-3 py-2 text-[12px] text-[var(--warning)]">
-            ⚠️ A distribuição realizada excede o limite isento em <b>{fmtBRL(excedenteAno)}</b> no ano.
-            Estimativa de IRPF sobre o excedente: <b>{fmtBRL(irpfExcedenteAno)}</b> ({aliqTopoPct.toFixed(1)}%).
-            Considere adotar escrituração contábil completa para eliminar o limite (RIR/2018 art. 238).
-          </div>
-        )}
+        {/* Alerta de excedente ao limite isento removido — substituído pelo
+            alerta "Distribuição sem lastro no lucro" renderizado no rodapé da
+            aba Pró-labore (ProlaboreTab), que trata o mesmo risco fiscal
+            (RIR/2018 art. 238) com base no Lucro Líquido do exercício. */}
         {retencaoForte && !acimaIsento && (
           <div className="mt-3 rounded border border-border/60 bg-muted/30 px-3 py-2 text-[12px] text-muted-foreground">
             💡 Empresa está retendo <b>{fmtBRL(retidoAno)}</b> ({((retidoAno / previsaoTotalAno) * 100).toFixed(0)}%) do disponível.
