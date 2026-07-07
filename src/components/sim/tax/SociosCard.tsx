@@ -93,6 +93,19 @@ export function SociosCard() {
   const previsaoTotalAno = lucroMensalDisponivel * 12;
   const retidoAno = Math.max(0, previsaoTotalAno - realizadaTotalAno);
 
+  // Lucro Líquido real do exercício (COM impacto dos sócios) — base para o
+  // alerta "sem lastro no lucro" (RIR/2018 art. 238, Lei 6.404/76 art. 201).
+  const llAnualReal = useMemo(() => {
+    try {
+      const { dre } = buildDRE(state, regime);
+      return dre.lucroLiquido.reduce((a, b) => a + b, 0);
+    } catch {
+      return 0;
+    }
+  }, [state, regime]);
+  const alertaSemLastro =
+    realizadaTotalAno > 0 && (llAnualReal < 0 || realizadaTotalAno > llAnualReal * 1.2);
+
   const limiteIsentoMensal = calcDistribuicaoIsentaLimite(state, regime);
   const breakdown = calcDistribuicaoIsentaBreakdown(state, regime);
   const tabela = getIrpfTable(state.tax);
