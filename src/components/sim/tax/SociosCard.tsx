@@ -425,6 +425,25 @@ export function SociosCard() {
           </div>
         )}
 
+        {alertaSemLastro && (
+          <div className="mt-3 rounded border border-destructive/50 bg-destructive/10 px-3 py-2 text-[12px] text-foreground/90">
+            <div className="font-semibold text-destructive mb-1">
+              ⚠️ Distribuição sem lastro no lucro do exercício
+            </div>
+            <p className="leading-relaxed">
+              Distribuição anual planejada: <b>{fmtBRL(realizadaTotalAno)}</b> · Lucro Líquido
+              do exercício: <b>{fmtBRL(llAnualReal)}</b>.
+            </p>
+            <p className="leading-relaxed mt-1">
+              Sem lucro suficiente no ano, a Receita pode reclassificar o excedente como{" "}
+              <b>devolução de capital</b> (potencial ganho de capital 15–22,5% para o sócio)
+              ou <b>rendimento tributável</b> (IRPF até 27,5%) — RIR/2018 art. 238. Só
+              distribua acima do LL se houver <b>reserva de lucros de exercícios anteriores</b>{" "}
+              devidamente registrada em balanço (Lei 6.404/76 art. 201).
+            </p>
+          </div>
+        )}
+
         {realizadaTotalAno > 0 && (
           <div className="mt-3 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/5 px-3 py-2 text-[12px] text-foreground/90">
             <div className="font-semibold text-[var(--warning)] mb-1">⚖️ Atenção — Requisitos legais para distribuir lucros</div>
