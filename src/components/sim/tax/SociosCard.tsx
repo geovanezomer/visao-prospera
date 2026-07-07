@@ -93,6 +93,19 @@ export function SociosCard() {
   const previsaoTotalAno = lucroMensalDisponivel * 12;
   const retidoAno = Math.max(0, previsaoTotalAno - realizadaTotalAno);
 
+  // Lucro Líquido real do exercício (COM impacto dos sócios) — base para o
+  // alerta "sem lastro no lucro" (RIR/2018 art. 238, Lei 6.404/76 art. 201).
+  const llAnualReal = useMemo(() => {
+    try {
+      const { dre } = buildDRE(state, regime);
+      return dre.lucroLiquido.reduce((a, b) => a + b, 0);
+    } catch {
+      return 0;
+    }
+  }, [state, regime]);
+  const alertaSemLastro =
+    realizadaTotalAno > 0 && (llAnualReal < 0 || realizadaTotalAno > llAnualReal * 1.2);
+
   const limiteIsentoMensal = calcDistribuicaoIsentaLimite(state, regime);
   const breakdown = calcDistribuicaoIsentaBreakdown(state, regime);
   const tabela = getIrpfTable(state.tax);
@@ -409,6 +422,25 @@ export function SociosCard() {
           <div className="mt-3 rounded border border-border/60 bg-muted/30 px-3 py-2 text-[12px] text-muted-foreground">
             💡 Empresa está retendo <b>{fmtBRL(retidoAno)}</b> ({((retidoAno / previsaoTotalAno) * 100).toFixed(0)}%) do disponível.
             O caixa preservado aparece como aumento de <b>Lucros Acumulados</b> no Balanço.
+          </div>
+        )}
+
+        {alertaSemLastro && (
+          <div className="mt-3 rounded border border-destructive/50 bg-destructive/10 px-3 py-2 text-[12px] text-foreground/90">
+            <div className="font-semibold text-destructive mb-1">
+              ⚠️ Distribuição sem lastro no lucro do exercício
+            </div>
+            <p className="leading-relaxed">
+              Distribuição anual planejada: <b>{fmtBRL(realizadaTotalAno)}</b> · Lucro Líquido
+              do exercício: <b>{fmtBRL(llAnualReal)}</b>.
+            </p>
+            <p className="leading-relaxed mt-1">
+              Sem lucro suficiente no ano, a Receita pode reclassificar o excedente como{" "}
+              <b>devolução de capital</b> (potencial ganho de capital 15–22,5% para o sócio)
+              ou <b>rendimento tributável</b> (IRPF até 27,5%) — RIR/2018 art. 238. Só
+              distribua acima do LL se houver <b>reserva de lucros de exercícios anteriores</b>{" "}
+              devidamente registrada em balanço (Lei 6.404/76 art. 201).
+            </p>
           </div>
         )}
 

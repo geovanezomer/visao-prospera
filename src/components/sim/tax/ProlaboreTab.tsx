@@ -3,10 +3,9 @@
  * Inclui 4 cards de KPI no topo, no mesmo padrão da página Fluxo de Caixa.
  */
 import { useMemo } from "react";
-import { AlertTriangle } from "lucide-react";
 import { SociosCard } from "./SociosCard";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 import { StatCard } from "@/components/sim/shared/primitives";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
@@ -48,40 +47,7 @@ export function ProlaboreTab() {
 
   // [SSOT] Não há mais sincronização manual `distribuicaoRealizada → cashflow.dividendos`.
   // O `buildCashFlow` deriva dividendos direto de `state.distribuicaoRealizada`.
-
-  // Alerta de distribuição sem lastro no lucro do exercício.
-  // Base legal: Lei 6.404/76 art. 201, CPC 26, RIR/2018 art. 238.
-  // Distribuição além do LL + reservas pode ser reclassificada pela Receita como
-  // devolução de capital (ganho de capital 15–22,5%) ou rendimento tributável (IRPF).
-  const alertaDistribuicao = useMemo(() => {
-    const distribAnual = (state.distribuicaoRealizada?.values ?? []).reduce(
-      (a, b) => a + (Number(b) || 0),
-      0,
-    );
-    // Lucro líquido do exercício COM o impacto real dos sócios (pró-labore já deduzido).
-    let llAnual = 0;
-    try {
-      const { dre } = buildDRE(state, regime);
-      llAnual = dre.lucroLiquido.reduce((a, b) => a + b, 0);
-    } catch {
-      /* ignora */
-    }
-    if (distribAnual <= 0) return null;
-    if (llAnual < 0) {
-      return {
-        level: "danger" as const,
-        distribAnual,
-        llAnual,
-      };
-    }
-    if (distribAnual > llAnual * 1.2) {
-      return { level: "danger" as const, distribAnual, llAnual };
-    }
-    if (distribAnual > llAnual) {
-      return { level: "warn" as const, distribAnual, llAnual };
-    }
-    return null;
-  }, [state, regime]);
+  // Alerta "Distribuição sem lastro no lucro" vive dentro do SociosCard.
 
   const pct = (v: number) =>
     lucroBruto > 0 ? `${((v / lucroBruto) * 100).toFixed(1)}% do Lucro Bruto` : "—";
@@ -139,27 +105,8 @@ export function ProlaboreTab() {
         />
       </div>
       <SociosCard />
-      {alertaDistribuicao && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Distribuição sem lastro no lucro do exercício</AlertTitle>
-          <AlertDescription className="space-y-1 text-sm">
-            <p>
-              Distribuição anual planejada:{" "}
-              <strong>{fmtBRL(alertaDistribuicao.distribAnual)}</strong> · Lucro Líquido do
-              exercício: <strong>{fmtBRL(alertaDistribuicao.llAnual)}</strong>.
-            </p>
-            <p>
-              Sem lucro suficiente no ano, a Receita pode reclassificar o excedente como
-              <strong> devolução de capital</strong> (potencial ganho de capital 15–22,5%
-              para o sócio) ou <strong>rendimento tributável</strong> (IRPF até 27,5%) —
-              RIR/2018 art. 238. Só distribua acima do LL se houver{" "}
-              <strong>reserva de lucros de exercícios anteriores</strong> devidamente
-              registrada em balanço (Lei 6.404/76 art. 201).
-            </p>
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Alerta "Distribuição sem lastro no lucro" foi movido para dentro do
+          SociosCard, antes do bloco de requisitos legais. */}
 
       {/* Empréstimos PJ→PF (mútuo ativo a sócios) foram movidos para a aba Receitas
           — os juros do mútuo são receita financeira e o cadastro vive lá. */}
