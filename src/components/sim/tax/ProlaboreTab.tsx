@@ -3,8 +3,10 @@
  * Inclui 4 cards de KPI no topo, no mesmo padrão da página Fluxo de Caixa.
  */
 import { useMemo } from "react";
+import { AlertTriangle, Info } from "lucide-react";
 import { SociosCard } from "./SociosCard";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { StatCard } from "@/components/sim/shared/primitives";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
