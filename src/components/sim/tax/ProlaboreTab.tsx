@@ -49,8 +49,39 @@ export function ProlaboreTab() {
   // [SSOT] Não há mais sincronização manual `distribuicaoRealizada → cashflow.dividendos`.
   // O `buildCashFlow` deriva dividendos direto de `state.distribuicaoRealizada`.
 
-
-
+  // Alerta de distribuição sem lastro no lucro do exercício.
+  // Base legal: Lei 6.404/76 art. 201, CPC 26, RIR/2018 art. 238.
+  // Distribuição além do LL + reservas pode ser reclassificada pela Receita como
+  // devolução de capital (ganho de capital 15–22,5%) ou rendimento tributável (IRPF).
+  const alertaDistribuicao = useMemo(() => {
+    const distribAnual = (state.distribuicaoRealizada?.values ?? []).reduce(
+      (a, b) => a + (Number(b) || 0),
+      0,
+    );
+    // Lucro líquido do exercício COM o impacto real dos sócios (pró-labore já deduzido).
+    let llAnual = 0;
+    try {
+      const { dre } = buildDRE(state, regime);
+      llAnual = dre.lucroLiquido.reduce((a, b) => a + b, 0);
+    } catch {
+      /* ignora */
+    }
+    if (distribAnual <= 0) return null;
+    if (llAnual < 0) {
+      return {
+        level: "danger" as const,
+        distribAnual,
+        llAnual,
+      };
+    }
+    if (distribAnual > llAnual * 1.2) {
+      return { level: "danger" as const, distribAnual, llAnual };
+    }
+    if (distribAnual > llAnual) {
+      return { level: "warn" as const, distribAnual, llAnual };
+    }
+    return null;
+  }, [state, regime]);
 
   const pct = (v: number) =>
     lucroBruto > 0 ? `${((v / lucroBruto) * 100).toFixed(1)}% do Lucro Bruto` : "—";
