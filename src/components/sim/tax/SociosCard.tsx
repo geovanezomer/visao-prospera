@@ -425,24 +425,43 @@ export function SociosCard() {
           </div>
         )}
 
-        {alertaSemLastro && (
-          <div className="mt-3 rounded border border-destructive/50 bg-destructive/10 px-3 py-2 text-[12px] text-foreground/90">
-            <div className="font-semibold text-destructive mb-1">
-              ⚠️ Distribuição sem lastro no lucro do exercício
+        {alertaSemLastro && (() => {
+          // Excedente sem lastro = distribuição anual acima do LL positivo do exercício.
+          // Se LL ≤ 0, todo o valor distribuído fica sem lastro no ano.
+          const excedenteSemLastro = Math.max(
+            0,
+            realizadaTotalAno - Math.max(0, llAnualReal),
+          );
+          // Estimativas de tributação adicional sobre o excedente:
+          //  - Piso: ganho de capital (15%) se reclassificado como devolução de capital.
+          //  - Teto: IRPF (27,5%) se reclassificado como rendimento tributável do sócio.
+          const irpfMin = excedenteSemLastro * 0.15;
+          const irpfMax = excedenteSemLastro * 0.275;
+          return (
+            <div className="mt-3 rounded border border-destructive/50 bg-destructive/10 px-3 py-2 text-[12px] text-foreground/90">
+              <div className="font-semibold text-destructive mb-1">
+                ⚠️ Distribuição sem lastro no lucro do exercício
+              </div>
+              <p className="leading-relaxed">
+                Distribuição anual planejada: <b>{fmtBRL(realizadaTotalAno)}</b> · Lucro Líquido
+                do exercício: <b>{fmtBRL(llAnualReal)}</b>.
+              </p>
+              <p className="leading-relaxed mt-1">
+                Sem lucro suficiente no ano, a Receita pode reclassificar o excedente como{" "}
+                <b>devolução de capital</b> (potencial ganho de capital 15–22,5% para o sócio)
+                ou <b>rendimento tributável</b> (IRPF até 27,5%) — RIR/2018 art. 238. Só
+                distribua acima do LL se houver <b>reserva de lucros de exercícios anteriores</b>{" "}
+                devidamente registrada em balanço (Lei 6.404/76 art. 201).
+              </p>
+              <p className="leading-relaxed mt-2">
+                <b>Estimativa de tributação adicional</b> sobre o excedente sem lastro
+                de <b>{fmtBRL(excedenteSemLastro)}</b>: entre <b>{fmtBRL(irpfMin)}</b>{" "}
+                (ganho de capital 15%) e <b>{fmtBRL(irpfMax)}</b> (IRPF 27,5%),
+                a depender do enquadramento pela Receita.
+              </p>
             </div>
-            <p className="leading-relaxed">
-              Distribuição anual planejada: <b>{fmtBRL(realizadaTotalAno)}</b> · Lucro Líquido
-              do exercício: <b>{fmtBRL(llAnualReal)}</b>.
-            </p>
-            <p className="leading-relaxed mt-1">
-              Sem lucro suficiente no ano, a Receita pode reclassificar o excedente como{" "}
-              <b>devolução de capital</b> (potencial ganho de capital 15–22,5% para o sócio)
-              ou <b>rendimento tributável</b> (IRPF até 27,5%) — RIR/2018 art. 238. Só
-              distribua acima do LL se houver <b>reserva de lucros de exercícios anteriores</b>{" "}
-              devidamente registrada em balanço (Lei 6.404/76 art. 201).
-            </p>
-          </div>
-        )}
+          );
+        })()}
 
         {realizadaTotalAno > 0 && (
           <div className="mt-3 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/5 px-3 py-2 text-[12px] text-foreground/90">
