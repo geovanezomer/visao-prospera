@@ -138,44 +138,28 @@ export function ProlaboreTab() {
           }}
         />
       </div>
+      <SociosCard />
       {alertaDistribuicao && (
-        <Alert variant={alertaDistribuicao.level === "danger" ? "destructive" : "default"}>
-          {alertaDistribuicao.level === "danger" ? (
-            <AlertTriangle className="h-4 w-4" />
-          ) : (
-            <Info className="h-4 w-4" />
-          )}
-          <AlertTitle>
-            {alertaDistribuicao.level === "danger"
-              ? "Distribuição sem lastro no lucro do exercício"
-              : "Distribuição excede o lucro do exercício"}
-          </AlertTitle>
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Distribuição sem lastro no lucro do exercício</AlertTitle>
           <AlertDescription className="space-y-1 text-sm">
             <p>
               Distribuição anual planejada:{" "}
               <strong>{fmtBRL(alertaDistribuicao.distribAnual)}</strong> · Lucro Líquido do
               exercício: <strong>{fmtBRL(alertaDistribuicao.llAnual)}</strong>.
             </p>
-            {alertaDistribuicao.level === "danger" ? (
-              <p>
-                Sem lucro suficiente no ano, a Receita pode reclassificar o excedente como
-                <strong> devolução de capital</strong> (potencial ganho de capital 15–22,5%
-                para o sócio) ou <strong>rendimento tributável</strong> (IRPF até 27,5%) —
-                RIR/2018 art. 238. Só distribua acima do LL se houver{" "}
-                <strong>reserva de lucros de exercícios anteriores</strong> devidamente
-                registrada em balanço (Lei 6.404/76 art. 201).
-              </p>
-            ) : (
-              <p>
-                Confirme se existe <strong>reserva de lucros acumulada</strong> em
-                exercícios anteriores suficiente para cobrir o excedente. Caso contrário,
-                risco de reclassificação fiscal (RIR/2018 art. 238).
-              </p>
-            )}
+            <p>
+              Sem lucro suficiente no ano, a Receita pode reclassificar o excedente como
+              <strong> devolução de capital</strong> (potencial ganho de capital 15–22,5%
+              para o sócio) ou <strong>rendimento tributável</strong> (IRPF até 27,5%) —
+              RIR/2018 art. 238. Só distribua acima do LL se houver{" "}
+              <strong>reserva de lucros de exercícios anteriores</strong> devidamente
+              registrada em balanço (Lei 6.404/76 art. 201).
+            </p>
           </AlertDescription>
         </Alert>
       )}
-      <SociosCard />
 
       {/* Empréstimos PJ→PF (mútuo ativo a sócios) foram movidos para a aba Receitas
           — os juros do mútuo são receita financeira e o cadastro vive lá. */}
