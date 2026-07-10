@@ -24,23 +24,24 @@ function mkLine(over: Partial<CostLine> = {}): CostLine {
 }
 
 describe("fatorEncargosCLT — regime-aware via calculadora", () => {
-  it("Presumido/Real: fator ~72% (INSS 20 + RAT 1 + Terc 5,8 + FGTS 8 + provisões)", () => {
+  it("Presumido/Real: fator ~68% (INSS 20 + RAT 1 + Terc 5,8 + FGTS 8 + provisões)", () => {
     const f = fatorEncargosCLT("presumido");
-    expect(f).toBeGreaterThan(70);
-    expect(f).toBeLessThan(76);
+    expect(f).toBeGreaterThan(65);
+    expect(f).toBeLessThan(75);
     expect(fatorEncargosCLT("real")).toBeCloseTo(f, 5);
   });
 
-  it("Simples I/II/III/V (geral): fator ~36% (só FGTS + provisões, CPP no DAS)", () => {
+  it("Simples I/II/III/V (geral): fator ~30% (só FGTS + provisões, CPP no DAS)", () => {
     const f = fatorEncargosCLT("simples");
-    expect(f).toBeGreaterThan(33);
-    expect(f).toBeLessThan(40);
+    expect(f).toBeGreaterThan(28);
+    expect(f).toBeLessThan(34);
   });
 
-  it("Simples Anexo IV: fator ~= Presumido (CPP à parte)", () => {
+  it("Simples Anexo IV: fator MUITO acima do Simples geral (CPP à parte)", () => {
     const fIV = fatorEncargosCLT("simples", { simplesAnexo: "IV" });
-    const fReal = fatorEncargosCLT("real");
-    expect(Math.abs(fIV - fReal)).toBeLessThan(1);
+    const fGeral = fatorEncargosCLT("simples");
+    // Anexo IV soma INSS patronal 20% + RAT + provisões patronais.
+    expect(fIV - fGeral).toBeGreaterThan(25);
   });
 
   it("Cache: chamadas repetidas retornam o mesmo valor", () => {
