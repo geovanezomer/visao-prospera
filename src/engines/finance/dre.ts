@@ -124,8 +124,9 @@ function classifyCosts(
   const hasSyntheticDebt = costs.some((c) => c.id === DEBT_CONTRACTS_COST_ID);
   const isManualLoanInterest = (label: string) => LOAN_INTEREST_RE.test(label);
 
+  const encargosOpts = { simplesAnexo: state.tax?.simplesAnexo };
   for (const c of costs) {
-    const v = effectiveMonthValues(c, regime);
+    const v = effectiveMonthValues(c, regime, encargosOpts);
     if (c.category === "financeiro") {
       if (hasSyntheticDebt && c.id !== DEBT_CONTRACTS_COST_ID && isManualLoanInterest(c.label)) {
         continue; // já contabilizado pela linha sintética dos contratos
