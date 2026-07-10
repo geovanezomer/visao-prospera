@@ -8,6 +8,10 @@
 import { CostLine, TaxRegime, DEFAULT_ENCARGOS_PCT } from "./types";
 import { fill12 } from "./format";
 import { DEFAULT_ENCARGOS_PCT_SIMPLES } from "./taxDefaults";
+import {
+  calcularCustoFuncionario,
+  type GrauRAT,
+} from "@/engines/calculadoras/custoFuncionario";
 
 /** Classificação canônica: linhas que compõem o CPV/CMV/CSP (geram crédito tributário
  *  e escalam com receita no forecast). Usado em buildDRE, calcReal e forecast. */
