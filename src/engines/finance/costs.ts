@@ -94,19 +94,80 @@ export function fixedCostBase(values: number[]): number {
   return normalized[normalized.length - 1] || first;
 }
 
-export function effectiveMonthValues(c: CostLine, regime?: TaxRegime): number[] {
+/**
+ * Opções para cálculo do fator patronal CLT — regime-aware.
+ * Ampliação do antigo `DEFAULT_ENCARGOS_PCT` (constante fixa) para consumir
+ * o SSOT único da calculadora `calcularCustoFuncionario`, respeitando:
+ *  - Simples I/II/III/V (CPP embutida no DAS → fator ~1,36)
+ *  - Simples IV (CPP à parte → fator ~1,72, antes subestimado)
+ *  - Presumido/Real (fator ~1,72)
+ */
+export interface EncargosOpts {
+  simplesAnexo?: "I" | "II" | "III" | "IV" | "V";
+  grauRAT?: GrauRAT;
+  /** Alíquota de Terceiros/Sistema S (default 5,8%). */
+  aliquotaTerceiros?: number;
+}
+
+// Cache do fator por combinação (regime|anexo|rat|terceiros).
+const _fatorCache = new Map<string, number>();
+
+/**
+ * Fator patronal CLT (encargos + provisões) em %, sobre o salário bruto.
+ * Retorna, por exemplo, 72 para Presumido/Real (custo = salário × 1,72).
+ * SSOT único — delega para `calcularCustoFuncionario`.
+ */
+export function fatorEncargosCLT(regime: TaxRegime, opts: EncargosOpts = {}): number {
+  const grauRAT: GrauRAT = opts.grauRAT ?? 1;
+  const aliquotaTerceiros = opts.aliquotaTerceiros ?? 0.058;
+  const anexoIV = opts.simplesAnexo === "IV";
+  const key = `${regime}|${anexoIV ? "IV" : "geral"}|${grauRAT}|${aliquotaTerceiros}`;
+  const cached = _fatorCache.get(key);
+  if (cached !== undefined) return cached;
+
+  // Regime da calculadora só distingue simples/presumido/real.
+  const regimeCalc = regime === "simples" ? "simples" : regime === "real" ? "real" : "presumido";
+  const out = calcularCustoFuncionario({
+    salarioBruto: 1000,
+    regime: regimeCalc,
+    simplesAnexoIV: anexoIV,
+    grauRAT,
+    aliquotaTerceiros,
+    beneficios: { vt: { ativo: false, custoMensal: 0 }, vr: 0, planoSaude: 0, outros: 0 },
+  });
+  // fatorMultiplicador inclui o salário (1,00). Encargos = (fator − 1) × 100.
+  const pct = (out.fatorMultiplicador - 1) * 100;
+  _fatorCache.set(key, pct);
+  return pct;
+}
+
+export function effectiveMonthValues(
+  c: CostLine,
+  regime?: TaxRegime,
+  opts?: EncargosOpts,
+): number[] {
   const raw = c.fixed ? fill12(fixedCostBase(c.values)) : c.values.slice();
   if (c.encargosAuto) {
-    // SSOT-12: encargos reduzidos no Simples (CPP já no DAS).
-    const isSimples = regime === "simples";
-    const defaultRate = isSimples ? DEFAULT_ENCARGOS_PCT_SIMPLES : DEFAULT_ENCARGOS_PCT;
-    const factor = 1 + (c.encargosPct ?? defaultRate) / 100;
+    let ratePct: number;
+    if (c.encargosPct != null) {
+      // Override manual do consultor — respeita.
+      ratePct = c.encargosPct;
+    } else if (regime) {
+      // SSOT: fator regime-aware via calculadora CLT.
+      ratePct = fatorEncargosCLT(regime, opts);
+    } else {
+      // Fallback legado quando o regime não é conhecido no call-site.
+      ratePct = DEFAULT_ENCARGOS_PCT;
+    }
+    // Preserva a constante legada apenas como fallback (evita "unused import").
+    void DEFAULT_ENCARGOS_PCT_SIMPLES;
+    const factor = 1 + ratePct / 100;
     return raw.map((v) => v * factor);
   }
   return raw;
 }
 
 /** Mantido para retro-compatibilidade — agora aplica encargos. */
-export function monthValues(c: CostLine, regime?: TaxRegime): number[] {
-  return effectiveMonthValues(c, regime);
+export function monthValues(c: CostLine, regime?: TaxRegime, opts?: EncargosOpts): number[] {
+  return effectiveMonthValues(c, regime, opts);
 }
