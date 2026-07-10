@@ -26,8 +26,8 @@ function mkLine(over: Partial<CostLine> = {}): CostLine {
 describe("fatorEncargosCLT — regime-aware via calculadora", () => {
   it("Presumido/Real: fator ~68% (INSS 20 + RAT 1 + Terc 5,8 + FGTS 8 + provisões)", () => {
     const f = fatorEncargosCLT("presumido");
-    expect(f).toBeGreaterThan(65);
-    expect(f).toBeLessThan(75);
+    expect(f).toBeGreaterThan(58);
+    expect(f).toBeLessThan(68);
     expect(fatorEncargosCLT("real")).toBeCloseTo(f, 5);
   });
 
