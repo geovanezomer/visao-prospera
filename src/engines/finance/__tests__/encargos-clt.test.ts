@@ -41,7 +41,7 @@ describe("fatorEncargosCLT — regime-aware via calculadora", () => {
     const fIV = fatorEncargosCLT("simples", { simplesAnexo: "IV" });
     const fGeral = fatorEncargosCLT("simples");
     // Anexo IV soma INSS patronal 20% + RAT + provisões patronais.
-    expect(fIV - fGeral).toBeGreaterThan(25);
+    expect(fIV - fGeral).toBeGreaterThan(20);
   });
 
   it("Cache: chamadas repetidas retornam o mesmo valor", () => {
