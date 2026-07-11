@@ -186,7 +186,29 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
 
   const { state, update, reset, setState, hydrated: stateHydrated, autosaveStatus } = useAppState();
   const { scenarios, save, remove, replaceAll: replaceScenarios } = useScenarios();
-  const [activeTab, setActiveTab] = useState<TabKey | "ai" | "calculadoras">("dre");
+  // Persistimos a aba ativa em sessionStorage para sobreviver a qualquer
+  // remontagem transitória do SimulaPro (ex.: o SubscriptionGate voltar a
+  // "loading" por um instante quando o navegador reativa a aba após ficar
+  // muito tempo em background). Sem isso, ao voltar de outra aba do
+  // navegador o usuário era jogado de volta para "dre" e via "Carregando…".
+  const TAB_KEY = "finnance:activeTab";
+  const [activeTab, setActiveTabState] = useState<TabKey | "ai" | "calculadoras">(() => {
+    if (typeof window === "undefined") return "dre";
+    try {
+      const v = window.sessionStorage.getItem(TAB_KEY);
+      return (v as TabKey | "ai" | "calculadoras") || "dre";
+    } catch {
+      return "dre";
+    }
+  });
+  const setActiveTab = (t: TabKey | "ai" | "calculadoras") => {
+    setActiveTabState(t);
+    try {
+      window.sessionStorage.setItem(TAB_KEY, t);
+    } catch {
+      /* storage cheio / modo privado — ignora */
+    }
+  };
   // Parâmetros do Simulador persistidos por usuário (IndexedDB + fallback localStorage).
   const [simParams, setSimParams] = usePersistedSimParams(user?.id ?? "guest");
   const [meetingMode, setMeetingMode] = useState(false);
