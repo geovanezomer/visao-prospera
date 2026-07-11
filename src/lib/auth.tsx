@@ -126,25 +126,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  // Guarda o access_token atual para deduplicar eventos do Supabase
+  // (TOKEN_REFRESHED / INITIAL_SESSION disparados ao voltar de outra aba).
+  // Sem isso, cada retorno de foco cria novos objetos user/session,
+  // muda a identidade do contexto e força re-render em cascata — o
+  // usuário percebe como "recarregar tudo" ao trocar de aba.
+  const lastTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const applySession = (newSession: Session | null) => {
+      const token = newSession?.access_token ?? null;
+      if (token === lastTokenRef.current) return; // sem mudança real → no-op
+      lastTokenRef.current = token;
+      const uid = newSession?.user?.id ?? null;
+      void purgeLocalStateIfUserChanged(uid);
+      setSession(newSession);
+      setUser(toAuthUser(newSession?.user));
+    };
+
     // Listener FIRST so we don't miss events.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      const uid = newSession?.user?.id ?? null;
-      // P4-04: detecta troca de usuário e purga storage do anterior.
-      void purgeLocalStateIfUserChanged(uid);
-      setSession(newSession);
-      setUser(toAuthUser(newSession?.user));
+      applySession(newSession);
     });
 
     // Then hydrate from existing session.
-    supabase.auth.getSession().then(async ({ data }) => {
-      const uid = data.session?.user?.id ?? null;
-      await purgeLocalStateIfUserChanged(uid);
-      setSession(data.session);
-      setUser(toAuthUser(data.session?.user));
+    supabase.auth.getSession().then(({ data }) => {
+      applySession(data.session);
       setHydrated(true);
     });
 
