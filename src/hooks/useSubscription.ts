@@ -59,10 +59,13 @@ export function useSubscription() {
   }, [queryClient]);
 
   // Enquanto auth ainda não hidratou, ou temos user mas ainda não há dado,
-  // reportamos loading — evita o flash de Paywall pós-login.
+  // reportamos loading — evita o flash de Paywall pós-login. Importante:
+  // NÃO consideramos `isFetching` (background refetch) como loading, senão
+  // qualquer revalidação silenciosa desmontaria o app inteiro (o
+  // SubscriptionGate voltaria a "Carregando…" e perderia estado de UI).
   const loading =
     !hydrated ||
-    (!!userId && (isLoading || isFetching || plan === undefined));
+    (!!userId && (isLoading || plan === undefined));
 
   return { plan, loading, isActive: !!plan, refetch };
 }
