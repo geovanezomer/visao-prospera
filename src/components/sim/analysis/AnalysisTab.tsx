@@ -336,8 +336,8 @@ export function ScenarioCompareCard({
       </header>
       {scenarios.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          Nenhum cenário salvo ainda. Use a barra inferior ou a aba "Diagnóstico & Decisões" para
-          simular ações e salvar variações. Você poderá compará-las lado a lado aqui.
+          Nenhum cenário salvo ainda. No Simulador, use "Simulações salvas" para guardar variações;
+          você poderá compará-las lado a lado aqui.
         </p>
       ) : (
         <div className="scrollbar-thin overflow-x-auto rounded-md border border-border/40">

@@ -80,7 +80,10 @@ export function ProximosPassos({ state }: { state: AppState }) {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-2 text-sm font-semibold">
                     {c.severity === "danger" && (
-                      <AlertTriangle className="h-3.5 w-3.5 text-neg" aria-label="Urgente" />
+                      <>
+                        <AlertTriangle className="h-3.5 w-3.5 text-neg" aria-hidden="true" />
+                        <span className="sr-only">Urgente:</span>
+                      </>
                     )}
                     {c.problem}
                     <span className="text-xs font-normal text-muted-foreground">

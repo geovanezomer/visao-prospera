@@ -101,7 +101,8 @@ for (const perfil of PERFIS) {
         browser,
         perfil,
         "/app",
-        "main .num",
+        // Dashboard: primeiro número do painel (cartões usam .mono; tabelas, .num).
+        "main .num, main .mono",
         "test-results/.auth/admin.json",
       );
       console.log(

@@ -76,7 +76,7 @@ if (typeof window !== "undefined") {
   }
 }
 
-import { ScenarioBar } from "@/components/sim/shared/ScenarioBar";
+import { AnosArquivadosDialogs } from "@/components/sim/shared/ScenarioBar";
 import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
 import { TabKey } from "@/engines/finance/types";
 import {
@@ -89,8 +89,8 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { NAV_ITEMS } from "@/components/layout/nav-config";
 import { BillingButton } from "@/components/billing/BillingButton";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Presentation, X, FileText, Printer } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { FileText, Printer } from "lucide-react";
+import { MaisMenu } from "@/components/layout/MaisMenu";
 import { FirstStepsGuide, GuideButton } from "@/components/onboarding/FirstStepsGuide";
 import { EmptyResultsNotice } from "@/components/onboarding/EmptyResultsNotice";
 import { blankState, isExampleState } from "@/engines/finance/defaults";
@@ -397,6 +397,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [openRestoreOpen, setOpenRestoreOpen] = useState(false);
   const [saveShareOpen, setSaveShareOpen] = useState(false);
+  const [anosDialog, setAnosDialog] = useState<"arquivar" | "lista" | null>(null);
   const fileApi = useFinnanceFile({
     state,
     scenarios,
@@ -581,26 +582,8 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                     <TaxSettingsDialog />
                     <Button
                       size="sm"
-                      variant={meetingMode ? "default" : "ghost"}
-                      onClick={() => setMeetingMode((v) => !v)}
-                      className="h-8 w-8 p-0"
-                      title={
-                        meetingMode
-                          ? "Sair do Modo Reunião"
-                          : "Modo Reunião: oculta menus, amplia fontes e destaca KPIs"
-                      }
-                      aria-label={meetingMode ? "Sair do Modo Reunião" : "Modo Reunião"}
-                    >
-                      {meetingMode ? (
-                        <X className="h-3.5 w-3.5" />
-                      ) : (
-                        <Presentation className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
                       variant="ghost"
-                      className="h-8 w-8 p-0"
+                      className="h-8 gap-1.5 px-2"
                       onClick={async () => {
                         try {
                           toast.loading("Gerando PDF…", { id: "pdf-export" });
@@ -676,27 +659,22 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                       title="Exportar relatório em PDF"
                       aria-label="Exportar PDF"
                     >
-                      <Printer className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0"
-                      onClick={() => void fileApi.resetWithConfirm()}
-                      title={
-                        cockpit.active
-                          ? "Restaurar premissas desta empresa (os dados do Odoo não mudam)"
-                          : "Restaurar dados (Ctrl+Shift+R)"
-                      }
-                      aria-label="Reset"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
+                      <Printer className="h-3.5 w-3.5" aria-hidden="true" />
+                      <span className="hidden text-xs sm:inline">PDF</span>
                     </Button>
                     <GuideButton />
-                    <ThemeToggle />
                     <SharedLinksDialog />
                     <BillingButton />
                     <FeedbackDialog />
+                    <MaisMenu
+                      onModoReuniao={() => setMeetingMode(true)}
+                      onRestaurar={() => void fileApi.resetWithConfirm()}
+                      restaurarLabel={
+                        cockpit.active
+                          ? "Restaurar premissas desta empresa"
+                          : "Restaurar dados de exemplo"
+                      }
+                    />
                   </div>
                 </div>
               </header>
@@ -798,7 +776,9 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
             </SidebarInset>
 
             {/* Arquivar "ano"/cenários não se aplica ao realizado do ERP. */}
-            {!cockpit.active && <ScenarioBar />}
+            {!cockpit.active && (
+              <AnosArquivadosDialogs aberto={anosDialog} onFechar={() => setAnosDialog(null)} />
+            )}
             {user && !cockpit.loading && (
               <FirstStepsGuide
                 userId={user.id}
@@ -836,6 +816,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
               onOpenDisk={fileApi.open}
               onOpenCloud={user && isBackupEnabled() ? () => setRestoreOpen(true) : undefined}
               canUseCloud={!!user && isBackupEnabled()}
+              onAnosArquivados={cockpit.active ? undefined : () => setAnosDialog("lista")}
             />
             <SaveShareDialog
               open={saveShareOpen}
@@ -845,6 +826,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
               state={state}
               scenarios={scenarios}
               canUseCloud={!!user && isBackupEnabled()}
+              onArquivarAno={cockpit.active ? undefined : () => setAnosDialog("arquivar")}
             />
             {/* AI FAB REMOVIDO POR SOLICITAÇÃO DO USUÁRIO */}
           </div>

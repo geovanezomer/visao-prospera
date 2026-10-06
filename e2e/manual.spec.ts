@@ -87,11 +87,13 @@ test("DRE trimestral e mensal: períodos somam o total anual", async ({ page }) 
 
 test("tema claro: alterna, persiste ao recarregar e volta ao escuro", async ({ page }) => {
   await page.goto("/app");
-  await page.getByRole("button", { name: "Usar tema claro" }).click();
+  await page.getByRole("button", { name: "Mais opções" }).click();
+  await page.getByRole("menuitem", { name: "Usar tema claro" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await page.getByRole("button", { name: "Usar tema escuro" }).click();
+  await page.getByRole("button", { name: "Mais opções" }).click();
+  await page.getByRole("menuitem", { name: "Usar tema escuro" }).click();
   await expect(page.locator("html")).not.toHaveAttribute("data-theme", "light");
 });
 
@@ -132,7 +134,7 @@ test("relatório em PDF baixa com a página de insights estratégicos", async ({
 
 test("guia de primeiros passos reabre pelo botão de ajuda e leva à tela", async ({ page }) => {
   await page.goto("/app");
-  await page.getByRole("button", { name: "Guia de primeiros passos" }).click();
+  await page.getByRole("button", { name: "Ajuda", exact: true }).click();
   await expect(page.getByRole("dialog", { name: /Bem-vindo ao FinnancePRO/ })).toBeVisible();
   await page.getByRole("button", { name: /Próximo/ }).click();
   await page.getByRole("button", { name: /Próximo/ }).click();
@@ -143,7 +145,7 @@ test("guia de primeiros passos reabre pelo botão de ajuda e leva à tela", asyn
 
 test("empresa em branco: aviso nas telas de resultado e volta ao exemplo", async ({ page }) => {
   await page.goto("/app");
-  await page.getByRole("button", { name: "Guia de primeiros passos" }).click();
+  await page.getByRole("button", { name: "Ajuda", exact: true }).click();
   await page.getByRole("button", { name: "Começar em branco" }).click();
   await expect(page.getByRole("dialog", { name: /Empresa e regime/ })).toBeVisible();
   await page.getByRole("button", { name: "Pular guia" }).click();
@@ -158,7 +160,8 @@ test("empresa em branco: aviso nas telas de resultado e volta ao exemplo", async
   await expect(aviso).toHaveCount(0);
 
   // Restaura os dados de exemplo (os demais testes dependem deles).
-  await page.getByRole("button", { name: "Reset" }).click();
+  await page.getByRole("button", { name: "Mais opções" }).click();
+  await page.getByRole("menuitem", { name: "Restaurar dados de exemplo" }).click();
   await page.getByRole("button", { name: "Restaurar", exact: true }).click();
   await sidebar.getByRole("button", { name: "Dashboard", exact: true }).click();
   await expect(aviso).toHaveCount(0);

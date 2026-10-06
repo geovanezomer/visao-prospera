@@ -1,10 +1,12 @@
 // ============================================================================
-// ScenarioBar — Botões flutuantes "Salvar ANO" e "ANO".
+// Anos e previsões arquivados — dois diálogos abertos a partir de "Salvar /
+// Compartilhar" (arquivar) e "Abrir / Restaurar" (lista). Antes eram botões
+// flutuantes que cobriam valores da tela e competiam com o salvar da barra
+// lateral.
 //
-// Salvar ANO  → arquiva o AppState corrente como snapshot histórico do ano
-//               escolhido (select 2010–2040). Nome do snapshot = "Ano YYYY".
-// ANO         → lista os snapshots históricos já salvos; permite carregar
-//               (substitui o AppState atual) ou excluir.
+// Arquivar → guarda o AppState corrente como snapshot do ano escolhido
+//            (2010–2040), realizado ou previsão (budget).
+// Lista    → anos e previsões já arquivados; carregar ou excluir.
 //
 // Usa exclusivamente a store de scenarios (engines/scenarios/store), mesmo
 // canal das pills de período no cabeçalho dos cards.
@@ -16,7 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -26,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Save, CalendarDays, Trash2, Download } from "lucide-react";
+import { Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { archiveYearAsHistorical, switchToYear, deleteScenario } from "@/engines/scenarios/store";
@@ -47,7 +48,14 @@ type MetricasAno = {
 
 const HISTORICAL_SNAPSHOT_OPTS = { kind: "historical" as const, sortByYear: true };
 
-export function ScenarioBar() {
+export function AnosArquivadosDialogs({
+  aberto,
+  onFechar,
+}: {
+  /** Qual diálogo está aberto. */
+  aberto: "arquivar" | "lista" | null;
+  onFechar: () => void;
+}) {
   const { state, update } = useFinance();
   const company = state.companyName || "default";
   const allHistoricals = useCompanySnapshots(HISTORICAL_SNAPSHOT_OPTS);
@@ -100,8 +108,10 @@ export function ScenarioBar() {
   const [year, setYear] = useState<number>(YEARS.includes(defaultYear) ? defaultYear : 2025);
   const [subKind, setSubKind] = useState<"realizado" | "previsao">("realizado");
   const [previsaoName, setPrevisaoName] = useState<string>("");
-  const [saveOpen, setSaveOpen] = useState(false);
-  const [listOpen, setListOpen] = useState(false);
+  const saveOpen = aberto === "arquivar";
+  const listOpen = aberto === "lista";
+  const setSaveOpen = (v: boolean) => !v && onFechar();
+  const setListOpen = (v: boolean) => !v && onFechar();
 
   const handleSave = () => {
     const name = subKind === "previsao" ? previsaoName.trim() || `Previsão ${year}` : undefined;
@@ -136,14 +146,9 @@ export function ScenarioBar() {
   );
 
   return (
-    <div data-meeting-hide="true" className="fixed bottom-6 right-6 z-40 flex gap-2">
-      {/* Salvar ANO */}
+    <>
+      {/* Arquivar ano / previsão */}
       <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
-        <DialogTrigger asChild>
-          <Button className="shadow-lg shadow-primary/30">
-            <Save className="mr-2 h-4 w-4" /> Salvar ANO / Previsão
-          </Button>
-        </DialogTrigger>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Arquivar ano / previsão</DialogTitle>
@@ -240,19 +245,14 @@ export function ScenarioBar() {
 
       {/* Lista de anos */}
       <Dialog open={listOpen} onOpenChange={setListOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline">
-            <CalendarDays className="mr-2 h-4 w-4" /> Cenários ({historicals.length})
-          </Button>
-        </DialogTrigger>
         <DialogContent className="max-w-5xl w-[95vw]">
           <DialogHeader>
-            <DialogTitle>Cenários arquivados (anos e previsões)</DialogTitle>
+            <DialogTitle>Anos e previsões arquivados</DialogTitle>
           </DialogHeader>
           {historicals.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nenhum cenário arquivado ainda. Use <strong>Salvar ANO / Previsão</strong> para
-              arquivar o exercício atual ou uma projeção (budget).
+              Nada arquivado ainda. Em <strong>Salvar / Compartilhar</strong>, use{" "}
+              <strong>Arquivar ano</strong> para guardar o exercício atual ou uma previsão (budget).
             </p>
           ) : (
             <div className="scrollbar-thin max-h-[60vh] overflow-y-auto">
@@ -331,6 +331,6 @@ export function ScenarioBar() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

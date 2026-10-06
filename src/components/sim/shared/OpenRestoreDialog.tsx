@@ -9,7 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { HardDrive, Cloud, Loader2 } from "lucide-react";
+import { CalendarDays, HardDrive, Cloud, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -21,6 +21,8 @@ interface Props {
   onOpenCloud?: () => void;
   /** Indica se o card de nuvem deve aparecer. */
   canUseCloud: boolean;
+  /** Abre a lista de anos e previsões arquivados (modo manual). */
+  onAnosArquivados?: () => void;
 }
 
 type CardKey = "disk" | "cloud";
@@ -31,6 +33,7 @@ export function OpenRestoreDialog({
   onOpenDisk,
   onOpenCloud,
   canUseCloud,
+  onAnosArquivados,
 }: Props) {
   const [busy, setBusy] = useState<CardKey | null>(null);
 
@@ -84,6 +87,24 @@ export function OpenRestoreDialog({
             />
           )}
         </div>
+        {onAnosArquivados && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/30 p-3">
+            <p className="text-xs text-muted-foreground">
+              Anos fechados e previsões (budget) que você arquivou nesta empresa.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false);
+                onAnosArquivados();
+              }}
+            >
+              <CalendarDays className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+              Anos arquivados
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

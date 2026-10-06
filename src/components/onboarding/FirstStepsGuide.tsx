@@ -248,12 +248,13 @@ export function GuideButton() {
     <Button
       size="sm"
       variant="ghost"
-      className="h-8 w-8 p-0"
+      className="h-8 gap-1.5 px-2"
       title="Guia de primeiros passos"
-      aria-label="Guia de primeiros passos"
       onClick={() => window.dispatchEvent(new Event("gz-open-guide"))}
     >
-      <HelpCircle className="h-3.5 w-3.5" />
+      <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
+      <span className="hidden text-xs sm:inline">Ajuda</span>
+      <span className="sr-only sm:hidden">Ajuda</span>
     </Button>
   );
 }

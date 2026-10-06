@@ -98,7 +98,8 @@ export function KanitzCard({
             <div
               className="absolute top-1/2 h-5 w-1 -translate-x-1/2 -translate-y-1/2 rounded bg-foreground shadow"
               style={{ left: `${pos}%` }}
-              aria-label={`Indicador na posição FI=${k.fi.toFixed(2)}`}
+              role="img"
+              aria-label={`Indicador na posição FI = ${k.fi.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}`}
             />
           )}
         </div>

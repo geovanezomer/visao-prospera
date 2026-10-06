@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { HardDrive, Cloud, Link2, Loader2, Copy, Check } from "lucide-react";
+import { CalendarDays, HardDrive, Cloud, Link2, Loader2, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createShareLink } from "@/lib/api/sharedReports.functions";
 import { collectExtras } from "@/engines/finance/fileExtras";
@@ -31,6 +31,8 @@ interface Props {
   scenarios: Scenario[];
   /** Quando false, oculta o card "Salvar na nuvem". */
   canUseCloud: boolean;
+  /** Abre "arquivar ano / previsão" (modo manual). */
+  onArquivarAno?: () => void;
 }
 
 type CardKey = "disk" | "cloud" | "share";
@@ -43,6 +45,7 @@ export function SaveShareDialog({
   state,
   scenarios,
   canUseCloud,
+  onArquivarAno,
 }: Props) {
   const [busy, setBusy] = useState<CardKey | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -154,6 +157,25 @@ export function SaveShareDialog({
             disabledHint={!canUseCloud ? "Faça login para compartilhar" : undefined}
           />
         </div>
+
+        {onArquivarAno && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/30 p-3">
+            <p className="text-xs text-muted-foreground">
+              Guarde o ano atual, ou uma previsão (budget), para comparar depois.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false);
+                onArquivarAno();
+              }}
+            >
+              <CalendarDays className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+              Arquivar ano
+            </Button>
+          </div>
+        )}
 
         {shareUrl && (
           <div className="mt-4 space-y-2 rounded-lg border border-border bg-muted/40 p-3">
