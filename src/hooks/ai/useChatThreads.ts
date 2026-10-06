@@ -3,7 +3,7 @@
 // injeção de briefing inicial e operações CRUD de thread.
 // Extraído de useAIChat para isolar persistência local de chat de outras concerns.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ChatMessage,
   ChatThread,
@@ -43,6 +43,11 @@ export function useChatThreads({
     return ts[0]?.id ?? "";
   });
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // A quem pertencem as mensagens em memória ("empresa|thread"). Ao trocar de
+  // empresa, o efeito de persistência roda antes do bootstrap com as mensagens
+  // antigas — sem esta marca elas seriam gravadas sob a empresa nova.
+  const carregadoPara = useRef("");
+  const marca = (company: string, id: string) => `${company}|${id}`;
 
   // Injeta briefing inicial estilo CFO em conversa nova/vazia.
   const injectBriefingIfEmpty = (company: string, threadId: string, currentMsgs: ChatMessage[]) => {
@@ -62,12 +67,14 @@ export function useChatThreads({
       const t = createThread(companyName, "Conversa principal");
       setThreads([t]);
       setActiveId(t.id);
+      carregadoPara.current = marca(companyName, t.id);
       setMessages(injectBriefingIfEmpty(companyName, t.id, []));
     } else {
       setThreads(ts);
       const cur = ts.find((t) => t.id === activeId) ?? ts[0];
       setActiveId(cur.id);
       const loaded = loadMessages(companyName, cur.id);
+      carregadoPara.current = marca(companyName, cur.id);
       setMessages(injectBriefingIfEmpty(companyName, cur.id, loaded));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,6 +84,7 @@ export function useChatThreads({
   useEffect(() => {
     if (activeId) {
       const loaded = loadMessages(companyName, activeId);
+      carregadoPara.current = marca(companyName, activeId);
       setMessages(injectBriefingIfEmpty(companyName, activeId, loaded));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,7 +94,8 @@ export function useChatThreads({
   // Não salva array vazio: no primeiro render o efeito dispara antes do bootstrap
   // carregar as mensagens do storage, e gravar [] apagaria o histórico salvo.
   useEffect(() => {
-    if (activeId && messages.length > 0) saveMessages(companyName, activeId, messages);
+    if (activeId && messages.length > 0 && carregadoPara.current === marca(companyName, activeId))
+      saveMessages(companyName, activeId, messages);
   }, [messages, companyName, activeId]);
 
   const handleNewThread = () => {
@@ -95,6 +104,7 @@ export function useChatThreads({
     setThreads(next);
     saveThreads(companyName, next);
     setActiveId(t.id);
+    carregadoPara.current = marca(companyName, t.id);
     setMessages(injectBriefingIfEmpty(companyName, t.id, []));
   };
 
@@ -109,6 +119,7 @@ export function useChatThreads({
         saveThreads(companyName, [fallback]);
       }
       setActiveId(fallback.id);
+      carregadoPara.current = marca(companyName, fallback.id);
       setMessages(
         injectBriefingIfEmpty(companyName, fallback.id, loadMessages(companyName, fallback.id)),
       );

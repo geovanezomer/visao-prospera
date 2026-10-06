@@ -9,7 +9,7 @@
 // Usa exclusivamente a store de scenarios (engines/scenarios/store), mesmo
 // canal das pills de período no cabeçalho dos cards.
 // ============================================================================
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +37,14 @@ import { useCompanySnapshots } from "@/hooks/useCompanySnapshots";
 
 // Lista de anos disponíveis no select (inclusivo).
 const YEARS: number[] = Array.from({ length: 2040 - 2010 + 1 }, (_, i) => 2010 + i);
+type MetricasAno = {
+  faturamento: number;
+  ebitda: number;
+  roe: number;
+  margemLiquida: number;
+  lucroLiquido: number;
+};
+
 const HISTORICAL_SNAPSHOT_OPTS = { kind: "historical" as const, sortByYear: true };
 
 export function ScenarioBar() {
@@ -50,6 +58,9 @@ export function ScenarioBar() {
   );
 
   // Recalcula indicadores anuais consistentes a partir do AppState arquivado.
+  // Cache por id+updatedAt: o autosave relê os arquivos (objetos novos) a cada
+  // pausa na digitação; só o ano que mudou é recalculado.
+  const cacheMetricas = useRef(new Map<string, MetricasAno>());
   const metrics = useMemo(() => {
     const m = new Map<
       string,
@@ -61,17 +72,27 @@ export function ScenarioBar() {
         lucroLiquido: number;
       }
     >();
+    const cache = cacheMetricas.current;
+    const vivos = new Set<string>();
     for (const h of historicals) {
       if (!h.state) continue;
-      const { ind } = buildFinancialModel(h.state);
-      m.set(h.id, {
-        faturamento: ind.receitaBrutaAnual,
-        ebitda: ind.ebitdaAnual,
-        roe: ind.roe ?? 0,
-        margemLiquida: ind.margemLiquida,
-        lucroLiquido: ind.lucroLiquidoAnual,
-      });
+      const chave = `${h.id}:${h.updatedAt}`;
+      vivos.add(chave);
+      let met = cache.get(chave);
+      if (!met) {
+        const { ind } = buildFinancialModel(h.state);
+        met = {
+          faturamento: ind.receitaBrutaAnual,
+          ebitda: ind.ebitdaAnual,
+          roe: ind.roe ?? 0,
+          margemLiquida: ind.margemLiquida,
+          lucroLiquido: ind.lucroLiquidoAnual,
+        };
+        cache.set(chave, met);
+      }
+      m.set(h.id, met);
     }
+    for (const k of cache.keys()) if (!vivos.has(k)) cache.delete(k);
     return m;
   }, [historicals]);
 

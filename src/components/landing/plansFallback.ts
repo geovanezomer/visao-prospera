@@ -15,9 +15,9 @@ export const PLANS_FALLBACK: PlanRow[] = [
     slug: "starter",
     name: "Mensal",
     description: "Acesso completo ao FinnancePRO mês a mês.",
-    priceCents: 500,
+    priceCents: 9700,
     currency: "BRL",
-    interval: "one_time",
+    interval: "month",
     features: [
       "DRE, Balanço e Fluxo de Caixa",
       "Simulador CBS/IBS",

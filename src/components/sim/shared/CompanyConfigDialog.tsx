@@ -38,6 +38,7 @@ import { archiveYearAsHistorical, listHistoricals } from "@/engines/scenarios/st
 import { applySociosChange } from "@/engines/finance/socios";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { toast } from "sonner";
+import { renomearEmpresaArmazenada } from "@/engines/scenarios/store";
 
 const MESES_FISCAIS = [
   "Janeiro",
@@ -229,7 +230,16 @@ export function CompanyConfigForm({
             <Input
               id="companyName"
               value={form.companyName}
-              onChange={(e) => commit({ ...form, companyName: e.target.value })}
+              // Grava ao sair do campo: o nome identifica o arquivo da empresa
+              // (anos arquivados, plano de ação); gravar a cada letra criava uma
+              // cópia por trecho digitado ("A", "Ac", "Acm"…).
+              onChange={(e) => setForm({ ...form, companyName: e.target.value })}
+              onBlur={() => {
+                const antigo = state.companyName;
+                commit(form);
+                const novo = form.companyName.trim();
+                if (novo && novo !== antigo) renomearEmpresaArmazenada(antigo, novo);
+              }}
               maxLength={120}
               placeholder="Minha Empresa LTDA"
             />

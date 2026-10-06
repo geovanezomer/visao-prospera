@@ -122,6 +122,47 @@ export interface ScenarioRecord {
 
 const KEY = (company: string) => `gz-finance-scenarios-${company || "default"}`;
 
+/**
+ * Renomear a empresa leva junto o que é guardado pelo nome (anos arquivados,
+ * plano de ação, conversas do consultor IA) e descarta o rascunho do nome
+ * antigo. Não sobrescreve dados que já existam sob o nome novo.
+ */
+export function renomearEmpresaArmazenada(antigo: string, novo: string): void {
+  if (!antigo || !novo || antigo === novo) return;
+  try {
+    const mover2 = (de: string, para: string) => {
+      const v = localStorage.getItem(de);
+      if (v == null || localStorage.getItem(para) != null) return;
+      localStorage.setItem(para, v);
+      localStorage.removeItem(de);
+    };
+    const mover = (prefixo: string) => mover2(`${prefixo}${antigo}`, `${prefixo}${novo}`);
+    mover("gz-finance-scenarios-");
+    mover("gz-finance-actions-");
+    // Conversas do consultor IA: lista de threads e as mensagens de cada uma.
+    let ids: string[] = [];
+    try {
+      const ts = JSON.parse(localStorage.getItem(`gz-finance-ai-threads-${antigo}`) ?? "[]");
+      ids = Array.isArray(ts) ? ts.map((t: { id?: unknown }) => String(t?.id ?? "")) : [];
+    } catch {
+      ids = [];
+    }
+    if (localStorage.getItem(`gz-finance-ai-threads-${novo}`) == null) {
+      mover("gz-finance-ai-threads-");
+      for (const id of ids.filter(Boolean))
+        mover2(`gz-finance-ai-chat-${antigo}-${id}`, `gz-finance-ai-chat-${novo}-${id}`);
+    }
+    const rascunho = `:${antigo.trim().toLowerCase()}`;
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k?.startsWith("finnance:draft:") && k.endsWith(rascunho)) localStorage.removeItem(k);
+    }
+    emit();
+  } catch {
+    // Sem armazenamento (modo privado): nada a mover.
+  }
+}
+
 function readRaw(company: string): ScenarioRecord[] {
   try {
     const raw = localStorage.getItem(KEY(company));

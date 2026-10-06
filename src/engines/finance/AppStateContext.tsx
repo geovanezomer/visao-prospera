@@ -20,6 +20,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useSyncExternalStore,
@@ -58,8 +59,11 @@ export function FinanceProvider({
   const readOnlyRef = useRef(readOnly);
   const listenersRef = useRef<Set<() => void>>(new Set());
 
-  useEffect(() => {
-    stateRef.current = state;
+  // Atualiza o snapshot já no render (as abas leem o estado novo nesta mesma
+  // passada) e só avisa os assinantes depois do commit — antes, cada edição
+  // renderizava a árvore duas vezes, a primeira com o estado velho.
+  stateRef.current = state;
+  useLayoutEffect(() => {
     listenersRef.current.forEach((l) => l());
   }, [state]);
 
@@ -229,6 +233,9 @@ interface BoundaryState {
   error: Error | null;
 }
 
+const CHUNK_ERROR_RE =
+  /dynamically imported module|Importing a module script failed|error loading dynamically|ChunkLoadError|Loading chunk|Unable to preload CSS/i;
+
 export class FinanceErrorBoundary extends Component<BoundaryProps, BoundaryState> {
   state: BoundaryState = { error: null };
 
@@ -249,15 +256,36 @@ export class FinanceErrorBoundary extends Component<BoundaryProps, BoundaryState
     const { error } = this.state;
     if (!error) return this.props.children;
     if (this.props.fallback) return this.props.fallback(error, this.reset);
+    // Depois de uma atualização do sistema, a aba aberta pede arquivos que não
+    // existem mais: a saída é recarregar, não uma mensagem técnica.
+    if (CHUNK_ERROR_RE.test(`${error.name} ${error.message}`))
+      return (
+        <div className="m-4 rounded-lg border border-primary/30 bg-primary/5 p-6 text-sm">
+          <h2 className="mb-2 text-base font-semibold">Há uma versão nova do sistema</h2>
+          <p className="mb-3 text-muted-foreground">
+            Recarregue a página para continuar. Seus dados estão salvos.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Recarregar
+          </button>
+        </div>
+      );
     return (
       <div className="m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-sm">
         <h2 className="mb-2 text-base font-semibold text-destructive">
           Erro ao renderizar este painel
         </h2>
-        <p className="mb-3 text-muted-foreground">
-          {error.message ||
-            "Ocorreu um erro inesperado. Seus dados estão salvos — você pode tentar novamente ou recarregar a página."}
+        <p className="mb-1 text-muted-foreground">
+          Ocorreu um erro inesperado neste painel. Seus dados estão salvos — tente de novo ou abra
+          outra aba.
         </p>
+        {error.message && (
+          <p className="mb-3 text-[11px] text-muted-foreground/80">Detalhe: {error.message}</p>
+        )}
         <div className="flex gap-2">
           <button
             type="button"

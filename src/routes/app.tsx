@@ -713,7 +713,8 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                   {/* Boundary garante que crash em uma aba não derruba o app inteiro
                   e que componentes consumidos fora do FinanceProvider exibam
                   fallback amigável em vez de tela branca. */}
-                  <FinanceErrorBoundary>
+                  {/* key: trocar de aba limpa o erro da anterior. */}
+                  <FinanceErrorBoundary key={activeTab}>
                     <Suspense fallback={<TabLoading />}>
                       {activeTab === "ai" ? (
                         <AIView

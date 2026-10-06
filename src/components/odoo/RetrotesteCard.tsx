@@ -32,9 +32,18 @@ export function RetrotesteCard() {
     } catch {
       return null;
     }
-    // O estado entra só pelas premissas (regime, setor); o realizado vem do retrato.
+    // O estado entra só pelas premissas (regime, setor, anexo); o realizado vem
+    // do retrato. Trocar o regime refaz o retroteste.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cockpit?.snapshot, cockpit?.entity, cockpit?.entityReady, cockpit?.endMonth]);
+  }, [
+    cockpit?.snapshot,
+    cockpit?.entity,
+    cockpit?.entityReady,
+    cockpit?.endMonth,
+    state.tax.regime,
+    state.tax.simplesAnexo,
+    state.businessType,
+  ]);
   if (!r) return null;
 
   return (
