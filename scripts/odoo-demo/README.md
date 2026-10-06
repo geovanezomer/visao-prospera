@@ -101,3 +101,23 @@ docker compose down -v     # apaga tudo
   empresas do seed, as Duplicatas a Receber (`1.01.02.02.01/03`) passam a ser recebíveis.
 - A validação do CNPJ fica no módulo `base`. O CNPJ pedido para a Beta tem dígito
   verificador inválido e foi gravado com `no_vat_validation`.
+
+## Teste de carga da sincronização (opcional)
+
+`perf-sync.ts` mede o tempo da sincronização completa. O conector agrega no
+servidor do Odoo (`formatted_read_group` por conta e mês), então o tempo cresce
+com o número de contas × meses, não com o número de lançamentos.
+
+Medição em 06/10/2026 (Odoo 20, 6 empresas, 120 contas, 24 meses), multiplicando
+as linhas postadas por SQL numa cópia descartável do laboratório:
+
+| Linhas de lançamento | Tempo da sincronização |
+| -------------------- | ---------------------- |
+| 1.859                | 1,5 s                  |
+| 503.789              | 4,0 s                  |
+
+```sh
+ODOO_URL=http://127.0.0.1:8069 ODOO_DB=lab20 ODOO_KEY=<chave> \
+DATABASE_URL=postgres://usuario:senha@127.0.0.1:5432/financepro \
+  bun scripts/odoo-demo/perf-sync.ts
+```
