@@ -129,6 +129,30 @@ export type OdooSnapshot = {
   perCompany: Record<string, OdooCompanySnapshot>;
   /** Última reclassificação manual aplicada a este retrato (ISO). */
   revisedAt?: string;
+  /**
+   * Conversão para BRL de empresas em outra moeda (CPC 02), aplicada na
+   * sincronização: os valores de `perCompany` já estão em reais.
+   */
+  fx?: OdooFxInfo;
+};
+
+/** Cotações em BRL por 1 unidade da moeda, alinhadas com `months`. */
+export type OdooFxRates = {
+  /** Média do mês (resultado). */
+  avg: number[];
+  /** Último dia do mês (balanço). */
+  end: number[];
+  /** Fim do mês anterior ao primeiro da janela (saldos de abertura). */
+  opening: number;
+};
+
+export type OdooFxInfo = {
+  base: "BRL";
+  rates: Record<string, OdooFxRates>;
+  /** Empresas convertidas (id → moeda original). */
+  converted: Record<string, string>;
+  /** Empresas em outra moeda sem cotação no Odoo para a janela (somadas sem conversão). */
+  missing: Record<string, string>;
 };
 
 /** Ajuste manual de classificação, por código de conta. */

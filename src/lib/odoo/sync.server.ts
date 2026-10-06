@@ -7,6 +7,7 @@
 // restritos a parceiros que são empresas do grupo. Nenhum lançamento é
 // baixado linha a linha.
 // ============================================================================
+import { buildFxRates, convertSnapshotToBrl, type FxRateRecord } from "@/engines/odoo/fx";
 import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
 import { db, queryRows, schema } from "@/db/client.server";
 import { classifyAccount } from "@/engines/odoo/mapping";
@@ -16,6 +17,7 @@ import type {
   OdooCompanyInfo,
   OdooCompanySnapshot,
   OdooIntercompanyLine,
+  OdooFxRates,
   OdooProductLine,
   OdooSnapshot,
 } from "@/engines/odoo/types";
@@ -448,6 +450,50 @@ export async function loadOverrides(): Promise<Map<string, AccountOverride["targ
 
 const SYNC_DEADLINE_MS = 15 * 60_000;
 
+/**
+ * Cotações do Odoo (reais por 1 unidade) das moedas estrangeiras do grupo,
+ * até o fim da janela. Só valem registros cuja moeda da empresa é o real.
+ */
+async function fetchFxRates(
+  cfg: OdooConnectionConfig,
+  currencies: string[],
+  months: string[],
+): Promise<Record<string, OdooFxRates | null>> {
+  if (!currencies.length) return {};
+  const [y, m] = months[months.length - 1].split("-").map(Number);
+  const fim = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+  const rows = await odooCall<Array<Record<string, unknown>>>(
+    cfg,
+    "res.currency.rate",
+    "search_read",
+    {
+      domain: [
+        ["currency_id.name", "in", currencies],
+        ["name", "<=", fim],
+      ],
+      fields: ["name", "currency_id", "company_currency_id", "inverse_company_rate"],
+      order: "name asc",
+      limit: 50_000,
+    },
+  );
+  const recs: FxRateRecord[] = rows
+    .filter((r) => !Array.isArray(r.company_currency_id) || r.company_currency_id[1] === "BRL")
+    .map((r) => ({
+      currency: Array.isArray(r.currency_id) ? String(r.currency_id[1]) : "",
+      date: String(r.name),
+      brlPerUnit: Number(r.inverse_company_rate) || 0,
+    }));
+  return Object.fromEntries(
+    currencies.map((c) => [
+      c,
+      buildFxRates(
+        recs.filter((r) => r.currency === c),
+        months,
+      ),
+    ]),
+  );
+}
+
 /** Monta o retrato completo (não grava). */
 export async function buildSnapshot(
   cfg: OdooConnectionConfig,
@@ -486,7 +532,7 @@ export async function buildSnapshot(
       throw new Error(`${c.name}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
-  return {
+  const snapshot: OdooSnapshot = {
     version: 1,
     syncedAt: new Date().toISOString(),
     serverVersion,
@@ -494,6 +540,12 @@ export async function buildSnapshot(
     companies: chosen,
     perCompany,
   };
+  // Empresas em outra moeda: converte para reais pelas cotações do Odoo (CPC 02).
+  const foreign = [
+    ...new Set(chosen.map((c) => (c.currency || "BRL").toUpperCase()).filter((c) => c !== "BRL")),
+  ];
+  if (!foreign.length) return snapshot;
+  return convertSnapshotToBrl(snapshot, await fetchFxRates(cfg, foreign, months));
 }
 
 export async function readConnection() {

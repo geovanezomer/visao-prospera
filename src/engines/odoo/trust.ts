@@ -195,15 +195,26 @@ export function computeTrust(
         : `Todos os meses da janela estão bloqueados no Odoo (até ${closed}).`,
   });
 
-  // 9) Moeda.
+  // 9) Moeda: convertida pelas cotações do Odoo (aviso) ou somada sem conversão (erro).
   const foreign = companies.filter((c) => c.currency && c.currency !== "BRL");
   if (foreign.length) {
-    checks.push({
-      id: "currency",
-      level: "error",
-      title: "Moeda",
-      detail: `${foreign.map((c) => `${c.name} (${c.currency})`).join(", ")} não está em BRL — valores somados sem conversão.`,
-    });
+    const conv = snapshot.fx?.converted ?? {};
+    const semCotacao = foreign.filter((c) => !conv[String(c.id)]);
+    const convertidas = foreign.filter((c) => conv[String(c.id)]);
+    if (semCotacao.length)
+      checks.push({
+        id: "currency",
+        level: "error",
+        title: "Moeda",
+        detail: `${semCotacao.map((c) => `${c.name} (${c.currency})`).join(", ")} não está em BRL e o Odoo não tem cotação para a janela — valores somados sem conversão. Cadastre as cotações no Odoo e sincronize.`,
+      });
+    else
+      checks.push({
+        id: "currency",
+        level: "warn",
+        title: "Moeda",
+        detail: `${convertidas.map((c) => `${c.name} (${c.currency})`).join(", ")} convertida(s) para reais pelas cotações do Odoo: resultado pela média do mês, balanço pelo fim do mês e a variação cambial em "Ajuste acumulado de conversão" no PL (CPC 02).`,
+      });
   }
 
   const level: TrustLevel = checks.some((c) => c.level === "error")
