@@ -94,3 +94,24 @@ test("tema claro: alterna, persiste ao recarregar e volta ao escuro", async ({ p
   await page.getByRole("button", { name: "Usar tema escuro" }).click();
   await expect(page.locator("html")).not.toHaveAttribute("data-theme", "light");
 });
+
+test("simulações salvas: salvar, aplicar e apagar", async ({ page }) => {
+  const nome = `Teste e2e ${Date.now()}`;
+  await page.goto("/app");
+  await page
+    .locator("[data-sidebar='sidebar']")
+    .getByRole("button", { name: "Simulador", exact: true })
+    .click();
+  await page.getByRole("button", { name: /^Simulações salvas/ }).click();
+  await page.getByLabel("Nome da simulação").fill(nome);
+  await page.getByRole("button", { name: "Salvar simulação" }).click();
+  const item = page.getByRole("button", { name: nome, exact: true });
+  await expect(item).toBeVisible();
+  await item.click();
+  await expect(page.getByText(`Simulação "${nome}" aplicada.`)).toBeVisible();
+  // O menu fecha ao aplicar; espera terminar antes de reabrir.
+  await expect(page.getByLabel("Nome da simulação")).toHaveCount(0);
+  await page.getByRole("button", { name: /^Simulações salvas/ }).click();
+  await page.getByRole("button", { name: `Apagar simulação ${nome}` }).click();
+  await expect(page.getByRole("button", { name: nome, exact: true })).toHaveCount(0);
+});

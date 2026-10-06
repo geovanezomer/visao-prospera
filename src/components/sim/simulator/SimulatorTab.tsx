@@ -1,3 +1,4 @@
+import { ScenariosMenu } from "./ScenariosMenu";
 import { memo, useEffect, useId, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AppState, TaxRegime } from "@/engines/finance/types";
@@ -54,11 +55,14 @@ export function SimulatorTab({
   apply,
   params,
   setParams,
+  scenarioNamespace,
 }: {
   state: AppState;
   apply: Updater;
   params?: SimulatorParams;
   setParams?: (p: SimulatorParams) => void;
+  /** Empresa dos cenários salvos ("manual" ou a entidade do Odoo). */
+  scenarioNamespace?: string;
 }) {
   const [localP, setLocalP] = useState<SimulatorParams>(DEFAULT_SIM);
   const p = params ?? localP;
@@ -134,6 +138,12 @@ export function SimulatorTab({
         // Modo Odoo: o realizado vem do ERP — "aplicar" gravaria só parte do cenário.
         canApply={!state.realizado}
       />
+
+      {scenarioNamespace && (
+        <div className="flex justify-end">
+          <ScenariosMenu namespace={scenarioNamespace} params={p} onLoad={(x) => setP(x)} />
+        </div>
+      )}
 
       {/* KPIs em tempo real — refletem o cenário simulado */}
       <KpiCardsRow base={baseView} sim={simView} />

@@ -651,3 +651,22 @@ export const legalAcceptances = pgTable(
   },
   (t) => [uniqueIndex("legal_acceptances_user_version_idx").on(t.userId, t.version)],
 );
+
+// ---------------------------------------------------------------------------
+// Cenários do simulador salvos pelo usuário, por empresa (namespace).
+// ---------------------------------------------------------------------------
+export const simScenarios = pgTable(
+  "sim_scenarios",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    /** "manual" ou "odoo:<instância>:<entidade>". */
+    namespace: text("namespace").notNull(),
+    name: text("name").notNull(),
+    params: jsonb("params").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("sim_scenarios_user_ns_idx").on(t.userId, t.namespace)],
+);

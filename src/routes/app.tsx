@@ -342,7 +342,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
     }
   };
   // Parâmetros do Simulador persistidos por usuário (IndexedDB + fallback localStorage).
-  const [simParams, setSimParams] = usePersistedSimParams(user?.id ?? "guest");
+  const [simParams, setSimParams] = usePersistedSimParams(user?.id ?? "guest", namespace);
   const [meetingMode, setMeetingMode] = useState(false);
   // Ticker que força re-render a cada 30s para atualizar o "salvo há X" do breadcrumb.
   const [, setTick] = useState(0);
@@ -720,6 +720,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                               apply={update}
                               params={simParams}
                               setParams={setSimParams}
+                              scenarioNamespace={namespace ?? "manual"}
                             />
                           )}
                           {activeTab === "valuation" && (
