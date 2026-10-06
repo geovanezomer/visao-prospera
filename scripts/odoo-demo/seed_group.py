@@ -22,7 +22,7 @@ O que o script cria (idempotente: rodar de novo não duplica nada):
         parceiro = partner da outra empresa.
       - Beta <-> Alfa (CNPJs distintos): diário "INTC" + refs "IC-...",
         parceiro = partner da empresa contraparte.
-  * Data de bloqueio global (fiscalyear_lock_date) = 2026-08-31 na matriz e na Beta.
+  * Data de bloqueio global (fiscalyear_lock_date) = 2026-09-30 na matriz e na Beta.
   * Acesso do usuário de integração somente-leitura às 3 empresas novas.
 
 Detecção de duplicidade: empresas pelo nome; lançamentos pelo par (empresa, ref).
@@ -41,7 +41,7 @@ VAT_MATRIZ = "11222333000181"
 VAT_FILIAL = "11222333000262"
 VAT_BETA = "44555666000199"  # conforme solicitado (o DV "correto" seria 0001-81)
 
-LOCK_DATE = date(2026, 8, 31)
+LOCK_DATE = date(2026, 9, 30)
 
 # CMV como % da receita bruta (matriz e filial). Com ICMS de 18% sobre a receita
 # bruta + CMV de 52% (parâmetros pedidos), a matriz opera com prejuízo; ajuste aqui

@@ -1,55 +1,81 @@
-# Seed de grupo econômico no Odoo 20 (lab)
+# Laboratório Odoo 20 para testar o modo Odoo
 
-Cria um grupo de teste para validar o conector Odoo do Visão Próspera:
+Sobe um Odoo 20 descartável com um grupo econômico fictício, para testar o conector
+do FinnancePRO sem tocar no ERP de nenhum cliente.
 
-| Empresa                              | Tipo                                                 | CNPJ               |
-| ------------------------------------ | ---------------------------------------------------- | ------------------ |
-| Grupo Alfa Comércio Ltda             | matriz, plano `br` (l10n_br)                         | 11.222.333/0001-81 |
-| Grupo Alfa Comércio Ltda - Filial SP | branch (`parent_id` = matriz, usa o plano da matriz) | 11.222.333/0002-62 |
-| Beta Serviços Ltda                   | empresa independente, plano `br` próprio             | 44.555.666/0001-99 |
+| Empresa                              | Tipo                                          | CNPJ               |
+| ------------------------------------ | --------------------------------------------- | ------------------ |
+| Grupo Alfa Comércio Ltda             | matriz, plano `br` (l10n_br), Lucro Presumido | 11.222.333/0001-81 |
+| Grupo Alfa Comércio Ltda - Filial SP | filial (branch da matriz, usa o plano dela)   | 11.222.333/0002-62 |
+| Beta Serviços Ltda                   | coligada com CNPJ próprio, Lucro Presumido    | 44.555.666/0001-99 |
 
-Lançamentos `entry` postados de 2025-10 a 2026-09, mais a abertura em 2025-09-30.
-Data de bloqueio global (`fiscalyear_lock_date`) = 2026-08-31 na matriz e na Beta (a
-filial herda a da matriz). O usuário `visao-prospera-ro` ganha acesso às 3 empresas.
+São 463 lançamentos postados: abertura em 30/09/2025 e movimento de out/2025 a set/2026
+(vendas, ICMS/PIS/COFINS/ISS, CMV, folha e encargos, aluguel, energia, depreciação,
+empréstimo bancário, IRPJ/CSLL trimestral). Data de bloqueio: **30/09/2026**.
 
-Pré-requisito: banco com os módulos `account` e `l10n_br` instalados.
+Operações entre empresas do grupo, para testar as eliminações:
 
-## Rodar o seed
+- matriz ↔ filial: transferência de mercadorias a custo e repasse de caixa
+  (diário `TRF`, contas `1.01.02.09.97` / `2.01.01.17.97`);
+- Beta → Alfa: R$ 15 mil/mês de serviços (diário `INTC`);
+- Alfa → Beta: mútuo de R$ 200 mil em jan/2026 com juros de R$ 2 mil/mês.
 
-```sh
-docker cp seed_group.py lab-odoo:/tmp/seed_group.py
-docker exec lab-odoo sh -c "odoo shell -d lab20 --db_host=lab-pg \
-  --db_user=odoo --db_password=odoo --no-http < /tmp/seed_group.py"
-```
+Com os parâmetros escolhidos (ICMS de 18% e CMV de 52%), a matriz fecha os 12 meses com
+prejuízo e a Beta com lucro, um cenário útil para o diagnóstico.
 
-O script é idempotente: empresas são localizadas pelo nome e lançamentos pelo par
-(empresa, `ref`). Ao final ele imprime o balancete de cada empresa (diferença deve ser 0).
+## Subir (≈ 5 minutos)
 
-Para mudar valores (ex.: `CMV_PCT`), edite as constantes no topo, defina `RESET = True`
-(apaga os lançamentos do seed: refs `SEED-`, `TRF-`, `IC-`) e rode de novo.
-
-## Gerar o `expected.json`
-
-Lê os números do próprio Odoo pela API JSON-2 (`formatted_read_group`):
+Rode a partir desta pasta (`scripts/odoo-demo`):
 
 ```sh
-ODOO_URL=http://127.0.0.1:8069 ODOO_DB=lab20 ODOO_KEY=<api key rpc> \
-  python3 build_expected.py > expected.json
+# 1) banco + instalação de Contabilidade e da localização Brasil
+docker compose up -d odoo-db
+docker compose run --rm odoo odoo -d lab20 -i account,l10n_br --stop-after-init
+
+# 2) Odoo no ar em http://127.0.0.1:8069 (porta mudável com ODOO_PORT=…)
+docker compose up -d odoo
+
+# 3) grupo de teste e usuário de integração somente leitura
+DB="--db_host=odoo-db --db_user=odoo --db_password=odoo"
+docker compose exec -T odoo odoo shell -d lab20 $DB --no-http < seed_group.py
+docker compose exec -T odoo odoo shell -d lab20 $DB --no-http < setup_ro_user.py
 ```
 
-## Como identificar o intercompany
+O último comando imprime `APIKEY=...`. Essa é a chave de API (escopo `rpc`) do usuário
+`visao-prospera-ro`, que tem só o perfil _Contabilidade – somente leitura_. Ela aparece
+uma vez só; para gerar outra, rode o script de novo.
 
-- **Matriz ↔ Filial (mesmo CNPJ raiz):** diário `TRF`, refs `TRF-MATRIZ-FILIAL-AAAA-MM`
-  (mercadorias, a custo) e `TRF-CAIXA-FILIAL-MATRIZ-AAAA-MM` (repasse de caixa), parceiro =
-  partner da outra empresa. Contas `1.01.02.09.97` (matriz) e `2.01.01.17.97` (filial).
-- **Alfa ↔ Beta (CNPJs distintos):** diário `INTC`, refs `IC-BETA-ALFA-SERV-*`,
-  `IC-BETA-ALFA-PGTO-*`, `IC-MUTUO-ALFA-BETA-2026-01` e `IC-MUTUO-JUROS-*`, parceiro =
-  partner da empresa contraparte.
+O seed é idempotente: rodar de novo não duplica nada. Para mudar valores (ex.: `CMV_PCT`),
+edite as constantes no topo, ponha `RESET = True` e rode de novo.
 
-## Observações
+## Conferir o conector (opcional)
 
-- O IRPJ/CSLL (Lucro Presumido, trimestral) do CNPJ Alfa é apurado na matriz e inclui a receita da filial.
-- As contas `1.01.02.02.01/03` (Duplicatas a Receber) passam a ter o tipo `asset_receivable`
-  nas empresas novas, porque o l10n_br do Odoo 20 só traz "Cash in Transit" com esse tipo.
-- Com os parâmetros pedidos (ICMS de 18% sobre a receita bruta e CMV de 52%), a matriz Alfa
-  fecha os 12 meses com prejuízo. A Beta dá lucro.
+O script lê o Odoo pelo próprio conector do app e compara com `expected.json`: DRE por
+empresa, balanço fechando, receita do grupo sem os serviços internos, mútuo eliminado.
+
+```sh
+# na raiz do repositório
+ODOO_URL=http://127.0.0.1:8069 ODOO_DB=lab20 ODOO_KEY=<chave> \
+DATABASE_URL=postgres://usuario:senha@127.0.0.1:5432/financepro \
+  bun scripts/odoo-demo/validate-connector.ts
+```
+
+`build_expected.py` regenera o `expected.json` a partir do Odoo, via API JSON-2.
+
+## Desligar
+
+```sh
+docker compose down        # mantém os dados
+docker compose down -v     # apaga tudo
+```
+
+## Particularidades do Odoo 20 encontradas
+
+- O servidor escuta só em `127.0.0.1` por padrão. Em contêiner é preciso
+  `--http-interface=0.0.0.0`, e o compose já faz isso.
+- O código da conta (`account.account.code`) depende da empresa ativa. O conector
+  consulta uma empresa por vez.
+- A localização Brasil só traz "Cash in Transit" como conta `asset_receivable`. Nas
+  empresas do seed, as Duplicatas a Receber (`1.01.02.02.01/03`) passam a ser recebíveis.
+- A validação do CNPJ fica no módulo `base`. O CNPJ pedido para a Beta tem dígito
+  verificador inválido e foi gravado com `no_vat_validation`.

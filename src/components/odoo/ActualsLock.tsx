@@ -13,8 +13,8 @@ export function ActualsLock({ what, children }: { what: string; children: ReactN
       <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">
         <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
         <p>
-          <strong>{what} vêm do Odoo</strong> ({cockpit.entity?.label}) e não podem ser editados
-          aqui — lance ou corrija no ERP e sincronize. Para testar hipóteses, use o{" "}
+          <strong>{what} vêm do Odoo</strong> ({cockpit.entity?.label}) — edição bloqueada aqui;
+          lance ou corrija no ERP e sincronize. Para testar hipóteses, use o{" "}
           <strong>Simulador</strong> ou a visão <strong>Simulação livre</strong>.
         </p>
       </div>

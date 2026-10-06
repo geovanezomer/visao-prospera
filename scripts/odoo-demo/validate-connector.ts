@@ -2,7 +2,7 @@
 //   ODOO_URL=http://127.0.0.1:8069 ODOO_DB=lab20 ODOO_KEY=... DATABASE_URL=... \
 //     bun scripts/odoo-demo/validate-connector.ts
 import { readFileSync } from "node:fs";
-import { buildSnapshot } from "@/lib/odoo/sync.server";
+import { buildSnapshot, fetchCompanies } from "@/lib/odoo/sync.server";
 import { buildEntityData, listEntities } from "@/engines/odoo/toAppState";
 
 const cfg = {
@@ -11,8 +11,13 @@ const cfg = {
   apiKey: process.env.ODOO_KEY!,
 };
 const expected = JSON.parse(readFileSync(new URL("./expected.json", import.meta.url), "utf8"));
+// Seleciona as empresas do grupo pelo nome (os ids variam de banco para banco).
+const all = await fetchCompanies(cfg);
+const roots = all.filter(
+  (c) => !c.parentId && expected.empresas.some((e: { name: string }) => e.name === c.name),
+);
 const snap = await buildSnapshot(cfg, {
-  companyIds: [12, 14],
+  companyIds: roots.map((c) => c.id),
   historyMonths: 24,
   ref: new Date("2026-10-15"),
 });
@@ -114,8 +119,9 @@ const rev = (key: string) => {
   const d = buildEntityData(snap, entities.find((e) => e.key === key)!, "2026-09");
   return { d, receita: sum(d.actuals.pl.receita_bruta) };
 };
-const alfa = rev("e:12");
-const beta = rev("e:14");
+const idOf = (name: string) => snap.companies.find((c) => c.name === name)!.id;
+const alfa = rev(`e:${idOf("Grupo Alfa Comércio Ltda")}`);
+const beta = rev(`e:${idOf("Beta Serviços Ltda")}`);
 const grupo = rev("group");
 console.log("\n# Consolidado");
 // Serviços Beta → Alfa (R$ 15 mil/mês) saem da receita do grupo.

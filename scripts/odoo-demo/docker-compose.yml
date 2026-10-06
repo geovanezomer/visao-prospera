@@ -1,0 +1,38 @@
+# Odoo 20 de laboratório para testar o modo Odoo do FinnancePRO.
+# Uso: veja scripts/odoo-demo/README.md. Não é para produção.
+name: finnancepro-odoo-lab
+
+services:
+  odoo-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+      POSTGRES_DB: postgres
+    volumes:
+      - odoo-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo"]
+      interval: 5s
+      retries: 20
+
+  odoo:
+    image: odoo:20
+    depends_on:
+      odoo-db:
+        condition: service_healthy
+    environment:
+      HOST: odoo-db
+      USER: odoo
+      PASSWORD: odoo
+    # O Odoo 20 escuta só em 127.0.0.1 por padrão — dentro do contêiner isso
+    # impede o acesso pela porta publicada.
+    command: ["odoo", "-d", "lab20", "--db-filter=^lab20$", "--http-interface=0.0.0.0"]
+    ports:
+      - "127.0.0.1:${ODOO_PORT:-8069}:8069"
+    volumes:
+      - odoo-data:/var/lib/odoo
+
+volumes:
+  odoo-db:
+  odoo-data:

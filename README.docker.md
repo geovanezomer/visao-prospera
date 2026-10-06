@@ -64,6 +64,20 @@ Reset de senha e links de acesso saem por **SMTP** (`SMTP_HOST` etc.) — pode
 ser o mesmo servidor de e-mail configurado no Odoo. Resend é opcional. Sem
 nenhum dos dois, o e-mail não é enviado e o aviso aparece no log.
 
+## Modo Odoo
+
+O cockpit trabalha em dois modos, escolhidos em **Administração › Odoo**:
+
+- **Manual** — análises e simulações com dados digitados (consultoria).
+- **Odoo** — o realizado (receitas, despesas, balanço, dívidas) vem do Odoo 19/20
+  desta empresa e fica somente leitura; premissas continuam editáveis. Cada usuário
+  ainda pode alternar para **Simulação livre** sem afetar os dados do ERP.
+
+Passos: no Odoo, crie um usuário com o perfil _Contabilidade – somente leitura_ e uma
+chave de API com escopo `rpc`; no painel, informe URL, banco e chave, teste, marque as
+empresas, salve, sincronize e ligue a chave **Odoo**. A sincronização repete sozinha a
+cada hora (`JOBS_ENABLED=ON`). Detalhes e laboratório de teste: `TESTE.md`.
+
 ## Produção
 
 ```bash

@@ -15,8 +15,8 @@
       "vat": "11222333000181",
       "parent_id": null,
       "partner_id": 60,
-      "fiscalyear_lock_date": "2026-08-31",
-      "lock_date_efetiva": "2026-08-31"
+      "fiscalyear_lock_date": "2026-09-30",
+      "lock_date_efetiva": "2026-09-30"
     },
     {
       "id": 13,
@@ -25,7 +25,7 @@
       "parent_id": 12,
       "partner_id": 61,
       "fiscalyear_lock_date": null,
-      "lock_date_efetiva": "2026-08-31"
+      "lock_date_efetiva": "2026-09-30"
     },
     {
       "id": 14,
@@ -33,8 +33,8 @@
       "vat": "44555666000199",
       "parent_id": null,
       "partner_id": 62,
-      "fiscalyear_lock_date": "2026-08-31",
-      "lock_date_efetiva": "2026-08-31"
+      "fiscalyear_lock_date": "2026-09-30",
+      "lock_date_efetiva": "2026-09-30"
     }
   ],
   "dre_mensal": {
