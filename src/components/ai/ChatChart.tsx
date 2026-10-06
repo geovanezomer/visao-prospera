@@ -27,18 +27,19 @@ import {
   YAxis,
 } from "recharts";
 import type { ChartSpec, FormatKind } from "./chartSpec";
+import { fmtNum } from "@/engines/finance/format";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--muted-foreground))", "#22c55e", "#ef4444"];
 
 function fmt(v: number, kind: FormatKind = "currency"): string {
   if (!isFinite(v)) return "—";
-  if (kind === "percent") return `${v.toFixed(1)}%`;
+  if (kind === "percent") return `${fmtNum(v, 1)}%`;
   if (kind === "number") return v.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
   // currency (R$ k/M abreviado p/ caber no tooltip do chat)
   const abs = Math.abs(v);
-  if (abs >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(2)}M`;
-  if (abs >= 1_000) return `R$ ${(v / 1_000).toFixed(1)}k`;
-  return `R$ ${v.toFixed(0)}`;
+  if (abs >= 1_000_000) return `R$ ${fmtNum(v / 1_000_000, 2)}M`;
+  if (abs >= 1_000) return `R$ ${fmtNum(v / 1_000, 1)}k`;
+  return `R$ ${fmtNum(v, 0)}`;
 }
 
 export function ChatChart({ spec }: { spec: ChartSpec }) {

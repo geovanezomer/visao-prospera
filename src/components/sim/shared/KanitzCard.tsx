@@ -10,6 +10,7 @@ import { assessCrisisStage, type CrisisTone } from "@/engines/finance/crisisStag
 import { HelpTip } from "@/components/sim/shared/primitives";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, CheckCircle2, ShieldAlert, Skull, TrendingDown } from "lucide-react";
+import { fmtNum } from "@/engines/finance/format";
 
 // Escala visual: [-7, +7]. Faixas: <-3 vermelho, -3..0 âmbar, >0 verde.
 const MIN = -7;
@@ -297,7 +298,7 @@ function KanitzCell({
     <div className="flex flex-col">
       <span className="text-muted-foreground">{label}</span>
       <span className="mono font-semibold text-foreground">
-        {fmt === "frac" ? `${(v * 100).toFixed(1)}%` : `${f(v)}×`}
+        {fmt === "frac" ? `${fmtNum(v * 100, 1)}%` : `${f(v)}×`}
       </span>
       <span className="mono text-[10px] text-muted-foreground">contrib.: {f(c)}</span>
     </div>

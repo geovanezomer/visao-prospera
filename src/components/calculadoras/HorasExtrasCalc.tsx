@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, fmtNum } from "@/engines/finance/format";
 
 const fmtPct = (n: number) => `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 
@@ -108,7 +108,7 @@ export function HorasExtrasCalc() {
         {
           label: "Total a receber",
           value: fmtBRL(r.totalExtras),
-          sub: `+${(r.pctAcrescimo * 100).toFixed(1)}% sobre o salário`,
+          sub: `+${fmtNum(r.pctAcrescimo * 100, 1)}% sobre o salário`,
           tone: "ok",
         },
         {

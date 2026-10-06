@@ -14,7 +14,7 @@ import type { AppState } from "@/engines/finance/types";
 import { buildFinancialModel } from "@/engines/finance/financialModel";
 import type { buildDRE } from "@/engines/finance/dre";
 import type { buildCashFlow } from "@/engines/finance/cashflow";
-import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
+import { fmtBRL, fmtPct, sum, fmtNum } from "@/engines/finance/format";
 import { mesesPreenchidos, anualizar } from "@/engines/finance/periodUtils";
 import { safePct } from "@/engines/finance/safeMath";
 import { cn } from "@/lib/utils";
@@ -91,7 +91,7 @@ function VariationBadge({ pct, invert = false }: { pct: number; invert?: boolean
     <span className={cn("inline-flex items-center gap-1 text-xs font-medium", color)}>
       <Icon className="h-3 w-3" />
       {pct > 0 ? "+" : ""}
-      {pct.toFixed(1)}%
+      {fmtNum(pct, 1)}%
     </span>
   );
 }
@@ -101,9 +101,9 @@ function fmtDeltaBRL(v: number): string {
   if (!Number.isFinite(v) || v === 0) return "R$ 0";
   const sign = v > 0 ? "+" : "−";
   const abs = Math.abs(v);
-  if (abs >= 1_000_000) return `${sign}R$ ${(abs / 1_000_000).toFixed(2)}M`;
-  if (abs >= 1_000) return `${sign}R$ ${(abs / 1_000).toFixed(1)}k`;
-  return `${sign}R$ ${abs.toFixed(0)}`;
+  if (abs >= 1_000_000) return `${sign}R$ ${fmtNum(abs / 1_000_000, 2)}M`;
+  if (abs >= 1_000) return `${sign}R$ ${fmtNum(abs / 1_000, 1)}k`;
+  return `${sign}R$ ${fmtNum(abs, 0)}`;
 }
 
 // ─── Tabela genérica ──────────────────────────────────────────────────

@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 import { Lightbulb, ShieldAlert, Target, TrendingUp } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { fmtBRL, fmtBRLCompact } from "@/engines/finance/format";
+import { fmtBRL, fmtBRLCompact, fmtNum } from "@/engines/finance/format";
 import type { AppState } from "@/engines/finance/types";
 import type { SimulatorParams } from "@/engines/finance/simulator";
 import { marketShare } from "@/engines/finance/simulator";
@@ -158,10 +158,9 @@ export function StrategicInsights({
         {/* Preço × volume */}
         <TabsContent value="preco" className="pt-3">
           <p className="mb-2 text-xs text-muted-foreground">
-            Margem de contribuição atual: <strong>{(pv.margem * 100).toFixed(1)}%</strong> da
-            receita líquida. A tabela mostra quanto o volume precisa variar para a contribuição
-            total ficar igual, e a elasticidade-preço a partir da qual a mudança passa a perder
-            dinheiro.
+            Margem de contribuição atual: <strong>{fmtNum(pv.margem * 100, 1)}%</strong> da receita
+            líquida. A tabela mostra quanto o volume precisa variar para a contribuição total ficar
+            igual, e a elasticidade-preço a partir da qual a mudança passa a perder dinheiro.
           </p>
           <table className="w-full text-xs">
             <thead>
@@ -181,16 +180,16 @@ export function StrategicInsights({
                   </td>
                   <td className="p-2">
                     {Number.isFinite(pt.volumeEquilibrio)
-                      ? `${pt.volumeEquilibrio > 0 ? "+" : ""}${(pt.volumeEquilibrio * 100).toFixed(1)}%`
+                      ? `${pt.volumeEquilibrio > 0 ? "+" : ""}${fmtNum(pt.volumeEquilibrio * 100, 1)}%`
                       : "impossível"}
                   </td>
                   <td className="p-2">{pt.elasticidadeLimite?.toFixed(2) ?? "—"}</td>
                   <td className="p-2 text-left text-muted-foreground">
                     {pt.precoPct < 0
                       ? Number.isFinite(pt.volumeEquilibrio)
-                        ? `Só compensa se as vendas subirem mais de ${(pt.volumeEquilibrio * 100).toFixed(0)}%.`
+                        ? `Só compensa se as vendas subirem mais de ${fmtNum(pt.volumeEquilibrio * 100, 0)}%.`
                         : "O desconto consome toda a margem."
-                      : `Compensa enquanto a perda de vendas for menor que ${Math.abs(pt.volumeEquilibrio * 100).toFixed(0)}%.`}
+                      : `Compensa enquanto a perda de vendas for menor que ${fmtNum(Math.abs(pt.volumeEquilibrio * 100), 0)}%.`}
                   </td>
                 </tr>
               ))}
@@ -273,18 +272,18 @@ export function StrategicInsights({
                 />
                 <ValueRow
                   label="ROIC"
-                  b={`${value.base.roic.toFixed(1)}%`}
-                  s={`${value.simulado.roic.toFixed(1)}%`}
+                  b={`${fmtNum(value.base.roic, 1)}%`}
+                  s={`${fmtNum(value.simulado.roic, 1)}%`}
                 />
                 <ValueRow
                   label="WACC (custo de capital)"
-                  b={`${value.base.wacc.toFixed(1)}%`}
-                  s={`${value.simulado.wacc.toFixed(1)}%`}
+                  b={`${fmtNum(value.base.wacc, 1)}%`}
+                  s={`${fmtNum(value.simulado.wacc, 1)}%`}
                 />
                 <ValueRow
                   label="Spread ROIC − WACC"
-                  b={`${value.base.spread.toFixed(1)} p.p.`}
-                  s={`${value.simulado.spread.toFixed(1)} p.p.`}
+                  b={`${fmtNum(value.base.spread, 1)} p.p.`}
+                  s={`${fmtNum(value.simulado.spread, 1)} p.p.`}
                   strong
                 />
                 <ValueRow
@@ -306,31 +305,31 @@ export function StrategicInsights({
               <tbody className="tabular-nums">
                 <ValueRow
                   label="Alavancagem operacional (GAO)"
-                  b={`${value.base.gao.toFixed(2)}×`}
-                  s={`${value.simulado.gao.toFixed(2)}×`}
+                  b={`${fmtNum(value.base.gao, 2)}×`}
+                  s={`${fmtNum(value.simulado.gao, 2)}×`}
                 />
                 <ValueRow
                   label="Alavancagem financeira (GAF)"
-                  b={`${value.base.gaf.toFixed(2)}×`}
-                  s={`${value.simulado.gaf.toFixed(2)}×`}
+                  b={`${fmtNum(value.base.gaf, 2)}×`}
+                  s={`${fmtNum(value.simulado.gaf, 2)}×`}
                 />
                 <ValueRow
                   label="Alavancagem total (GAT)"
-                  b={`${value.base.gat.toFixed(2)}×`}
-                  s={`${value.simulado.gat.toFixed(2)}×`}
+                  b={`${fmtNum(value.base.gat, 2)}×`}
+                  s={`${fmtNum(value.simulado.gat, 2)}×`}
                 />
                 <ValueRow
                   label="Margem de segurança"
-                  b={`${value.base.margemSeguranca.toFixed(1)}%`}
-                  s={`${value.simulado.margemSeguranca.toFixed(1)}%`}
+                  b={`${fmtNum(value.base.margemSeguranca, 1)}%`}
+                  s={`${fmtNum(value.simulado.margemSeguranca, 1)}%`}
                 />
                 <ValueRow
                   label="DSCR (cobertura da dívida)"
-                  b={value.base.dscr === null ? "sem dívida" : `${value.base.dscr.toFixed(2)}×`}
+                  b={value.base.dscr === null ? "sem dívida" : `${fmtNum(value.base.dscr, 2)}×`}
                   s={
                     value.simulado.dscr === null
                       ? "sem dívida"
-                      : `${value.simulado.dscr.toFixed(2)}×`
+                      : `${fmtNum(value.simulado.dscr, 2)}×`
                   }
                 />
                 <ValueRow
@@ -372,7 +371,7 @@ export function StrategicInsights({
                   <tr key={r.ano} className="border-b border-border/20 text-right tabular-nums">
                     <td className="p-2 text-left font-medium">{r.ano}</td>
                     <td className="p-2 text-left text-muted-foreground">{r.fase}</td>
-                    <td className="p-2">{r.cargaPct.toFixed(1)}%</td>
+                    <td className="p-2">{fmtNum(r.cargaPct, 1)}%</td>
                     <td className={cn("p-2", r.lucroLiquido < 0 && "text-destructive")}>
                       {fmtBRLCompact(r.lucroLiquido)}
                     </td>
@@ -390,7 +389,7 @@ export function StrategicInsights({
                         ? "—"
                         : r.repassePct === null
                           ? "fora do alcance"
-                          : `${r.repassePct > 0 ? "+" : ""}${r.repassePct.toFixed(1)}%`}
+                          : `${r.repassePct > 0 ? "+" : ""}${fmtNum(r.repassePct, 1)}%`}
                     </td>
                   </tr>
                 ))}
@@ -404,9 +403,9 @@ export function StrategicInsights({
           <TabsContent value="mix" className="pt-3">
             <p className="mb-2 text-xs text-muted-foreground">
               Margem de contribuição por produto (receita − tributos e deduções sobre vendas de{" "}
-              {mix.aliquotaVendas.toFixed(1)}% − custo do produto), do Odoo.{" "}
+              {fmtNum(mix.aliquotaVendas, 1)}% − custo do produto), do Odoo.{" "}
               <strong>
-                {mix.pareto.produtos} produto(s) fazem {mix.pareto.pctMargem.toFixed(0)}% da margem.
+                {mix.pareto.produtos} produto(s) fazem {fmtNum(mix.pareto.pctMargem, 0)}% da margem.
               </strong>
             </p>
             <div className="overflow-x-auto">
@@ -441,13 +440,13 @@ export function StrategicInsights({
                         )}
                       </td>
                       <td className="p-2">{fmtBRLCompact(it.receita)}</td>
-                      <td className="p-2">{it.participacaoReceita.toFixed(1)}%</td>
+                      <td className="p-2">{fmtNum(it.participacaoReceita, 1)}%</td>
                       <td className="p-2">{fmtBRLCompact(it.cmv)}</td>
                       <td className={cn("p-2", it.margem < 0 && "text-destructive")}>
                         {fmtBRLCompact(it.margem)}
                       </td>
-                      <td className="p-2">{it.margemPct.toFixed(1)}%</td>
-                      <td className="p-2">{it.participacaoMargem.toFixed(1)}%</td>
+                      <td className="p-2">{fmtNum(it.margemPct, 1)}%</td>
+                      <td className="p-2">{fmtNum(it.participacaoMargem, 1)}%</td>
                     </tr>
                   ))}
                 </tbody>
@@ -497,11 +496,11 @@ export function MarketMacroCard({
         {share && (
           <>
             {" "}
-            Participação de mercado implícita: <strong>{(share.base * 100).toFixed(1)}%</strong>
+            Participação de mercado implícita: <strong>{fmtNum(share.base * 100, 1)}%</strong>
             {share.simulada !== share.base && (
               <>
                 {" "}
-                → <strong>{(share.simulada * 100).toFixed(1)}%</strong>
+                → <strong>{fmtNum(share.simulada * 100, 1)}%</strong>
               </>
             )}
             .
@@ -747,7 +746,7 @@ function GoalSeekPanel({
                 {spec.label}:{" "}
                 <strong>
                   {res.valor > 0 ? "+" : ""}
-                  {res.valor.toFixed(1)}
+                  {fmtNum(res.valor, 1)}
                   {spec.unidade}
                 </strong>{" "}
                 leva {METRIC_LABELS[metric].toLowerCase()} a <strong>{fmtBRL(res.atingido)}</strong>
@@ -767,7 +766,7 @@ function GoalSeekPanel({
           ) : (
             <span>
               {res.motivo} O mais próximo: {spec.label.toLowerCase()} em{" "}
-              {res.melhorValor.toFixed(1)}
+              {fmtNum(res.melhorValor, 1)}
               {spec.unidade}, que leva a {fmtBRL(res.melhorResultado)}.
             </span>
           )}

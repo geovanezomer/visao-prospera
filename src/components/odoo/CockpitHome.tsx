@@ -26,6 +26,7 @@ import {
   fmtLiquidez,
   fmtTimes,
   indicadorValido,
+  fmtNum,
 } from "@/engines/finance/format";
 import { buildEntityData } from "@/engines/odoo/toAppState";
 import { computeTrust } from "@/engines/odoo/trust";
@@ -234,7 +235,7 @@ export function CockpitHome() {
           />
           <Line
             label="Fôlego (ritmo dos últimos 3 meses)"
-            value={Number.isFinite(runway) ? `${runway.toFixed(1)} meses` : "operação gera caixa"}
+            value={Number.isFinite(runway) ? `${fmtNum(runway, 1)} meses` : "operação gera caixa"}
             tone={Number.isFinite(runway) && runway < 6 ? "neg" : "pos"}
           />
         </Instrument>
@@ -377,7 +378,7 @@ export function CockpitHome() {
           />
           <Line
             label="DSCR"
-            value={ind.dscr === null ? "sem serviço de dívida" : `${ind.dscr.toFixed(2)}×`}
+            value={ind.dscr === null ? "sem serviço de dívida" : `${fmtNum(ind.dscr, 2)}×`}
             tone={ind.dscr !== null && ind.dscr < 1.25 ? "neg" : undefined}
           />
         </Instrument>

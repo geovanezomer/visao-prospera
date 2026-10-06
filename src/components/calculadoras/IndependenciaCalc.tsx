@@ -38,10 +38,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fmtBRL, fmtBRLCompact, fmtPct } from "@/engines/finance/format";
+import { fmtBRL, fmtBRLCompact, fmtPct, fmtNum } from "@/engines/finance/format";
 
 const fmtBRLShort = (n: number) => {
-  if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(n) >= 1_000_000) return `${fmtNum(n / 1_000_000, 1)}M`;
   if (Math.abs(n) >= 1_000) return `${Math.round(n / 1_000)}k`;
   return Math.round(n).toString();
 };
@@ -194,7 +194,7 @@ export function IndependenciaCalc() {
 
   async function exportar() {
     const idadeFireStr =
-      sim.idadeFire !== null ? `${sim.idadeFire.toFixed(1)} anos` : "Não atinge em 80 anos";
+      sim.idadeFire !== null ? `${fmtNum(sim.idadeFire, 1)} anos` : "Não atinge em 80 anos";
     const linhasAnuais = sim.linhas.filter((_, i) => i % 5 === 0 || i === sim.linhas.length - 1);
     await exportCalculadoraPDF({
       title: "Independência Financeira (FIRE)",
@@ -224,7 +224,7 @@ export function IndependenciaCalc() {
         {
           label: "Renda na idade-alvo",
           value: `${fmtBRLCompact(sim.rendaMensalAlvo)}/mês`,
-          sub: `${(sim.pctFire * 100).toFixed(0)}% do FIRE`,
+          sub: `${fmtNum(sim.pctFire * 100, 0)}% do FIRE`,
           tone: sim.pctFire >= 1 ? "ok" : "warn",
         },
       ],

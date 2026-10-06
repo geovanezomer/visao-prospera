@@ -8,6 +8,7 @@ import {
   fmtTimes,
   indicadorValido,
   sum,
+  fmtNum,
 } from "@/engines/finance/format";
 import { HelpTip, SectionTitle } from "@/components/sim/shared/primitives";
 import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
@@ -142,7 +143,7 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           />
           <Ind
             label="Qualidade do Lucro"
-            v={ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}×` : "—"}
+            v={ind.qualidadeLucro !== 0 ? `${fmtNum(ind.qualidadeLucro, 2)}×` : "—"}
             // Só aplica cor quando existe valor — evita pintar "—" de vermelho
             // quando LL ≤ 0 (indicador indisponível, não "ruim").
             tone={ind.qualidadeLucro === 0 ? undefined : ind.qualidadeLucro >= 1 ? "pos" : "neg"}
@@ -302,7 +303,7 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
 
           <Ind
             label="Capital Próprio"
-            v={`${ind.proprioPercent.toFixed(1)}%`}
+            v={`${fmtNum(ind.proprioPercent, 1)}%`}
             tone={ind.proprioPercent >= 50 ? "pos" : ind.proprioPercent >= 30 ? "warn" : "neg"}
             desc="Participação do PL no financiamento total da empresa."
             formula="PL ÷ (PL + Dívida Onerosa) × 100"
@@ -384,7 +385,7 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             v={
               ind.dscr == null
                 ? "N/A"
-                : `${ind.dscr.toFixed(2)}×${!ind.dscrAmortizacoesInformadas && ind.dividaOnerosa > 0 ? " ⚠️" : ""}`
+                : `${fmtNum(ind.dscr, 2)}×${!ind.dscrAmortizacoesInformadas && ind.dividaOnerosa > 0 ? " ⚠️" : ""}`
             }
             tone={
               ind.dscr == null
@@ -419,14 +420,14 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           />
           <Ind
             label="Giro do Ativo"
-            v={`${ind.giroAtivo.toFixed(2)}×`}
+            v={`${fmtNum(ind.giroAtivo, 2)}×`}
             desc="Quantas vezes o ativo total 'gira' em vendas no ano. Usa Ativo Total MÉDIO (consistente com ROA) quando o valor de abertura é informado em Capital."
             formula="Receita Líquida ÷ Ativo Total Médio"
             calc={c.giroAtivo}
           />
           <Ind
             label="GAO"
-            v={ind.gao !== 0 ? `${ind.gao.toFixed(2)}×` : "—"}
+            v={ind.gao !== 0 ? `${fmtNum(ind.gao, 2)}×` : "—"}
             tone={ind.gao > 3 ? "warn" : ind.gao > 0 ? "pos" : undefined}
             desc="Grau de Alavancagem Operacional. Se a receita variar 1%, o EBIT varia GAO%. Quanto maior, mais sensível o lucro ao volume — bom em alta, perigoso em queda."
             formula="Margem de Contribuição (R$) ÷ EBIT"
@@ -434,7 +435,7 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           />
           <Ind
             label="GAF"
-            v={ind.gaf !== 0 ? `${ind.gaf.toFixed(2)}×` : "—"}
+            v={ind.gaf !== 0 ? `${fmtNum(ind.gaf, 2)}×` : "—"}
             tone={ind.gaf > 2 ? "warn" : ind.gaf > 0 ? "pos" : undefined}
             desc="Grau de Alavancagem Financeira. Mede o efeito da dívida sobre o lucro líquido: se o EBIT variar 1%, o lucro varia GAF%. GAF=1 → sem alavancagem; >1 → dívida amplifica o resultado (bom em alta, perigoso em queda); indefinido quando os juros consomem todo o EBIT (LAIR ≤ 0)."
             formula="EBIT ÷ LAIR  (LAIR = EBIT − Despesas Financeiras)"

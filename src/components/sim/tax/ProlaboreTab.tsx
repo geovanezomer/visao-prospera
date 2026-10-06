@@ -10,7 +10,7 @@ import { useFinance } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { buildDRE } from "@/engines/finance/dre";
 import { syncSociosToCosts } from "@/engines/finance/socios";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, fmtNum } from "@/engines/finance/format";
 
 export function ProlaboreTab() {
   const { state } = useFinance();
@@ -49,7 +49,7 @@ export function ProlaboreTab() {
   // Alerta "Distribuição sem lastro no lucro" vive dentro do SociosCard.
 
   const pct = (v: number) =>
-    lucroBruto > 0 ? `${((v / lucroBruto) * 100).toFixed(1)}% do Lucro Bruto` : "—";
+    lucroBruto > 0 ? `${fmtNum((v / lucroBruto) * 100, 1)}% do Lucro Bruto` : "—";
 
   return (
     <div className="space-y-4">

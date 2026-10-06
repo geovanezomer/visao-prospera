@@ -11,7 +11,7 @@ import {
   logValuationTrace,
 } from "@/engines/finance/valuation";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { fmtBRLCompact, sum } from "@/engines/finance/format";
+import { fmtBRLCompact, sum, fmtNum } from "@/engines/finance/format";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { StatCard, SectionTitle } from "@/components/sim/shared/primitives";
@@ -186,12 +186,12 @@ export function ValuationTab({
           />
           <StatCard
             label="Múltiplo implícito"
-            value={`${valuation.impliedMultiple.evEbitda.toFixed(2)}x EBITDA`}
-            sub={`${valuation.impliedMultiple.evRevenue.toFixed(2)}x receita`}
+            value={`${fmtNum(valuation.impliedMultiple.evEbitda, 2)}x EBITDA`}
+            sub={`${fmtNum(valuation.impliedMultiple.evRevenue, 2)}x receita`}
             hint={{
               description: "Múltiplos derivados do EV Base sobre EBITDA e Receita Líquida.",
               formula: "EV ÷ EBITDA  ·  EV ÷ Receita Líquida",
-              calc: `EV/EBITDA = ${valuation.impliedMultiple.evEbitda.toFixed(2)}×\nEV/Receita = ${valuation.impliedMultiple.evRevenue.toFixed(2)}×`,
+              calc: `EV/EBITDA = ${fmtNum(valuation.impliedMultiple.evEbitda, 2)}×\nEV/Receita = ${fmtNum(valuation.impliedMultiple.evRevenue, 2)}×`,
             }}
           />
         </div>
@@ -386,7 +386,7 @@ export function ValuationTab({
                 </div>
                 <div className="mt-2 rounded-md border border-border/60 bg-background/40 p-3 text-center">
                   <div className="mono text-xl font-semibold text-foreground">
-                    {ind.wacc.toFixed(2)}%
+                    {fmtNum(ind.wacc, 2)}%
                   </div>
                   <div className="text-[10px] text-muted-foreground">
                     {ind.wacc > 20 ? "⚠ elevado" : ind.wacc > 12 ? "moderado" : "baixo"} · vem da

@@ -1,6 +1,6 @@
 import { AppState } from "@/engines/finance/types";
 import { buildValuation } from "@/engines/finance/valuation";
-import { fmtBRLCompact } from "@/engines/finance/format";
+import { fmtBRLCompact, fmtNum } from "@/engines/finance/format";
 import { ShieldAlert, TrendingDown, CheckCircle2 } from "lucide-react";
 import { SectionTitle } from "@/components/sim/shared/primitives";
 import { RangeCard, Reco } from "@/components/sim/valuation/parts";
@@ -47,7 +47,7 @@ export function RiskPanel({
         <div className="mt-4">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Índice de Risco Estratégico</span>
-            <span className="mono font-semibold text-foreground">{s.index.toFixed(0)} / 100</span>
+            <span className="mono font-semibold text-foreground">{fmtNum(s.index, 0)} / 100</span>
           </div>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted/40">
             <div
@@ -114,7 +114,7 @@ export function RiskPanel({
           <div className="mt-3 flex items-center justify-between">
             <span className="text-sm text-foreground">Redução de valor por risco estratégico</span>
             <span className="mono text-2xl font-bold text-[var(--warning)]">
-              −{(haircut * 100).toFixed(1)}%
+              −{fmtNum(haircut * 100, 1)}%
             </span>
           </div>
           <div className="mt-3 grid gap-3 border-t border-[var(--warning)]/30 pt-3 md:grid-cols-2">
@@ -208,7 +208,7 @@ export function RiskPanel({
             <Reco
               icon="💰"
               title="Cada melhoria estratégica vira valor"
-              text={`No nível atual de haircut (${(haircut * 100).toFixed(0)}%), reduzir 10pp no risco libera ~${fmtBRLCompact(ev.base * (haircut / 4))} de valor.`}
+              text={`No nível atual de haircut (${fmtNum(haircut * 100, 0)}%), reduzir 10pp no risco libera ~${fmtBRLCompact(ev.base * (haircut / 4))} de valor.`}
             />
           )}
           <Reco

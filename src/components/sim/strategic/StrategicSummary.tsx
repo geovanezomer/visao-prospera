@@ -8,6 +8,7 @@ import { computeStrategic, quadrant, type SubScore } from "@/engines/finance/str
 import { computeHealth } from "@/engines/finance/health";
 import { SectionTitle, StatCard } from "@/components/sim/shared/primitives";
 import { AlertTriangle, CheckCircle2, ChevronRight, HelpCircle, TriangleAlert } from "lucide-react";
+import { fmtNum } from "@/engines/finance/format";
 
 export function StrategicSummary({ state }: { state: AppState }) {
   const strategic = computeStrategic(state);
@@ -49,15 +50,15 @@ export function StrategicSummary({ state }: { state: AppState }) {
         />
         <StatCard
           label="Haircut aplicado"
-          value={`${(strategic.haircut * 100).toFixed(0)}%`}
+          value={`${fmtNum(strategic.haircut * 100, 0)}%`}
           tone={strategic.haircut === 0 ? "pos" : strategic.haircut > 0.2 ? "neg" : "warn"}
           sub="reduz o health financeiro"
         />
         <div className="col-span-2 md:col-span-1">
           <StatCard
             label="Health ajustado"
-            value={`${health.total.toFixed(0)}/100`}
-            sub={`Financeiro puro: ${health.financial.toFixed(0)}`}
+            value={`${fmtNum(health.total, 0)}/100`}
+            sub={`Financeiro puro: ${fmtNum(health.financial, 0)}`}
           />
         </div>
       </div>
@@ -126,7 +127,7 @@ function ResilienciaCard({
   const highlights: string[] = [];
   if (strategic.haircut > 0.2)
     highlights.push(
-      `Haircut estratégico ${(strategic.haircut * 100).toFixed(0)}% sobre o financeiro`,
+      `Haircut estratégico ${fmtNum(strategic.haircut * 100, 0)}% sobre o financeiro`,
     );
   if (health.financial < 50)
     highlights.push("Financeiro fraco — pouca margem para absorver choques");
@@ -135,7 +136,7 @@ function ResilienciaCard({
   if (highlights.length === 0)
     highlights.push("Combinação saudável entre solidez financeira e estratégica");
   highlights.push(
-    `Financeiro ${health.financial.toFixed(0)} · Estratégico ${strategic.index} · ajustado ${score}`,
+    `Financeiro ${fmtNum(health.financial, 0)} · Estratégico ${strategic.index} · ajustado ${score}`,
   );
   return (
     <div className="rounded-lg border border-border/60 bg-card/60 p-4">
@@ -143,7 +144,7 @@ function ResilienciaCard({
         <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
           {tone.icon} Resiliência Combinada
         </div>
-        <div className="mono text-sm font-semibold">{score.toFixed(0)}</div>
+        <div className="mono text-sm font-semibold">{fmtNum(score, 0)}</div>
       </div>
       <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/30">
         <div className={`h-full ${tone.bar}`} style={{ width: `${score}%` }} />
@@ -176,7 +177,7 @@ function SubscoreCard({ sub }: { sub: SubScore }) {
         <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
           {tone.icon} {sub.label}
         </div>
-        <div className="mono text-sm font-semibold">{sub.score.toFixed(0)}</div>
+        <div className="mono text-sm font-semibold">{fmtNum(sub.score, 0)}</div>
       </div>
       <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/30">
         <div className={`h-full ${tone.bar}`} style={{ width: `${sub.score}%` }} />
@@ -271,7 +272,7 @@ function Matrix({
         <div
           className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background bg-primary shadow-lg ring-2 ring-primary/40"
           style={{ left: `${x}%`, top: `${100 - y}%` }}
-          title={`Fin: ${y.toFixed(0)} · Estrat: ${x.toFixed(0)}`}
+          title={`Fin: ${fmtNum(y, 0)} · Estrat: ${fmtNum(x, 0)}`}
         />
       </div>
       <p className="mt-3 text-xs text-muted-foreground">{quad.description}</p>

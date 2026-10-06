@@ -1,4 +1,5 @@
 import { SectionTitle } from "@/components/sim/shared/primitives";
+import { fmtNum } from "@/engines/finance/format";
 
 // Matriz de sensibilidade WACC × g terminal — normalizada para base = 100.
 export function SensitivityMatrix({
@@ -31,7 +32,7 @@ export function SensitivityMatrix({
                   key={gg}
                   className="bg-muted/50 px-2 py-1.5 text-center font-semibold text-muted-foreground"
                 >
-                  {gg.toFixed(1)}%
+                  {fmtNum(gg, 1)}%
                 </th>
               ))}
             </tr>
@@ -40,7 +41,7 @@ export function SensitivityMatrix({
             {waccs.map((w) => (
               <tr key={w} className="border-t border-border/30">
                 <td className="bg-muted/30 px-2 py-1.5 font-semibold text-foreground">
-                  {w.toFixed(1)}%
+                  {fmtNum(w, 1)}%
                 </td>
                 {gs.map((gg) => {
                   const v = w / 100 > gg / 100 ? fcfBase / (w / 100 - gg / 100) : 0;

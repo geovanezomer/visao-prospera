@@ -85,7 +85,7 @@ function RunwayCard({ state }: { state: AppState }) {
     ? "—"
     : !Number.isFinite(runwayMeses)
       ? "∞ (gerando caixa)"
-      : `${runwayMeses.toFixed(1)} meses`;
+      : `${fmtNum(runwayMeses, 1)} meses`;
 
   const tone =
     !Number.isFinite(runwayMeses) || runwayMeses > 12
@@ -154,7 +154,7 @@ function RunwayCard({ state }: { state: AppState }) {
               <YAxis
                 stroke="var(--muted-foreground)"
                 fontSize={10}
-                tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+                tickFormatter={(v) => `R$${fmtNum(v / 1000, 0)}k`}
               />
               <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => fmtBRL(v)} />
               <ReferenceLine
@@ -254,7 +254,7 @@ function SemaforoPanel({ state }: { state: AppState }) {
       nome: "Conversão de Caixa",
       status:
         ind.conversaoEbitdaCaixa >= 70 ? "ok" : ind.conversaoEbitdaCaixa >= 40 ? "warn" : "bad",
-      descricao: `${ind.conversaoEbitdaCaixa.toFixed(0)}% — quanto do EBITDA vira caixa de fato`,
+      descricao: `${fmtNum(ind.conversaoEbitdaCaixa, 0)}% — quanto do EBITDA vira caixa de fato`,
     },
     {
       nome: "ROE (Retorno do Sócio)",
@@ -263,12 +263,12 @@ function SemaforoPanel({ state }: { state: AppState }) {
       descricao:
         ind.roe == null
           ? "N/A — PL médio ≤ 0 (passivo a descoberto). ROE perdeu significado."
-          : `${ind.roe.toFixed(1)}% — retorno sobre o capital investido pelos sócios`,
+          : `${fmtNum(ind.roe, 1)}% — retorno sobre o capital investido pelos sócios`,
     },
     {
       nome: "Ciclo Financeiro",
       status: ind.cicloFinanceiro <= 30 ? "ok" : ind.cicloFinanceiro <= 60 ? "warn" : "bad",
-      descricao: `${ind.cicloFinanceiro.toFixed(0)} dias entre pagar fornecedor e receber do cliente`,
+      descricao: `${fmtNum(ind.cicloFinanceiro, 0)} dias entre pagar fornecedor e receber do cliente`,
     },
   ];
 
@@ -357,7 +357,7 @@ function CronogramaDividas({ state }: { state: AppState }) {
           <YAxis
             stroke="var(--muted-foreground)"
             fontSize={10}
-            tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+            tickFormatter={(v) => `R$${fmtNum(v / 1000, 0)}k`}
           />
           <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => fmtBRL(v)} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
@@ -408,7 +408,7 @@ export function Top5Despesas({ state }: { state: AppState }) {
                   {i + 1}. {d.name}
                 </span>
                 <span className="mono ml-2 shrink-0 text-muted-foreground">
-                  {fmtBRL(d.value)} <span className="text-[10px]">({pct.toFixed(0)}%)</span>
+                  {fmtBRL(d.value)} <span className="text-[10px]">({fmtNum(pct, 0)}%)</span>
                 </span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-muted">

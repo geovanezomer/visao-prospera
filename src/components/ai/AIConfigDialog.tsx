@@ -32,6 +32,7 @@ import {
   Skill,
 } from "@/engines/ai/providers";
 import { listModels, testConnection } from "@/engines/ai/client";
+import { fmtNum } from "@/engines/finance/format";
 
 interface Props {
   open: boolean;
@@ -323,7 +324,7 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label className="text-xs">Temperatura: {draft.temperature.toFixed(2)}</Label>
+            <Label className="text-xs">Temperatura: {fmtNum(draft.temperature, 2)}</Label>
             <Slider
               value={[draft.temperature]}
               min={0}

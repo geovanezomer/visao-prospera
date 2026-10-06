@@ -1,7 +1,7 @@
 // Subcomponentes pequenos reutilizados pelo ValuationTab.
 import { Slider } from "@/components/ui/slider";
 import { MoneyInput } from "@/components/sim/shared/primitives";
-import { fmtBRLCompact } from "@/engines/finance/format";
+import { fmtBRLCompact, fmtNum } from "@/engines/finance/format";
 
 export function MultRow({
   label,
@@ -19,7 +19,7 @@ export function MultRow({
   return (
     <tr className="border-b border-border/40">
       <td className="py-2.5 text-foreground">{label}</td>
-      <td className="py-2.5 text-right text-muted-foreground">{base.toFixed(2)}x</td>
+      <td className="py-2.5 text-right text-muted-foreground">{fmtNum(base, 2)}x</td>
       <td className="py-2.5">
         <div className="ml-auto w-24">
           <MoneyInput value={value} onChange={onChange} />
@@ -54,7 +54,7 @@ export function SliderField({
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">{label}</span>
         <span className="mono font-semibold text-foreground">
-          {value.toFixed(step < 1 ? 2 : 0)}
+          {fmtNum(value, step < 1 ? 2 : 0)}
           {suffix}
         </span>
       </div>
@@ -118,7 +118,7 @@ export function RangeCard({
       <div className="mt-1 text-[10px] text-muted-foreground">
         {value === base
           ? "referência (100%)"
-          : `${delta >= 0 ? "+" : ""}${delta.toFixed(0)}% vs base`}
+          : `${delta >= 0 ? "+" : ""}${fmtNum(delta, 0)}% vs base`}
       </div>
     </div>
   );
@@ -148,7 +148,7 @@ export function KV({
   extra?: string;
 }) {
   const txt =
-    fmt === "money" ? fmtBRLCompact(v) : fmt === "pct" ? `${v.toFixed(2)}%` : v.toString();
+    fmt === "money" ? fmtBRLCompact(v) : fmt === "pct" ? `${fmtNum(v, 2)}%` : v.toString();
   return (
     <div className="rounded border border-border/40 bg-background/40 px-2 py-1.5">
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{k}</div>

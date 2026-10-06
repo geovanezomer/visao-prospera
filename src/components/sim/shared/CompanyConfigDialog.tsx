@@ -39,6 +39,7 @@ import { applySociosChange } from "@/engines/finance/socios";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { toast } from "sonner";
 import { renomearEmpresaArmazenada } from "@/engines/scenarios/store";
+import { fmtNum } from "@/engines/finance/format";
 
 const MESES_FISCAIS = [
   "Janeiro",
@@ -851,7 +852,7 @@ function SociosSection() {
                     partOk ? "text-foreground" : "text-[var(--warning)]"
                   }`}
                 >
-                  {somaPartic.toFixed(2)}%
+                  {fmtNum(somaPartic, 2)}%
                 </td>
                 <td colSpan={4}></td>
               </tr>

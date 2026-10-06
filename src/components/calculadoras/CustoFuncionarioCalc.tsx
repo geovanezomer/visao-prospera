@@ -37,7 +37,7 @@ import {
   type GrauRAT,
   type RegimeEmpresa,
 } from "@/engines/calculadoras/custoFuncionario";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, fmtNum } from "@/engines/finance/format";
 
 const fmtPct = (n: number) => `${(n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 
@@ -117,7 +117,7 @@ export function CustoFuncionarioCalc() {
         { label: "Salário bruto", value: fmtBRL(salarioBruto) },
         { label: "Regime", value: regime.toUpperCase() },
         { label: "Grau RAT", value: String(grauRAT) },
-        { label: "Alíquota Terceiros", value: `${aliquotaTerceiros.toFixed(2)}%` },
+        { label: "Alíquota Terceiros", value: `${fmtNum(aliquotaTerceiros, 2)}%` },
         { label: "VT (custo empresa)", value: vtAtivo ? fmtBRL(vtCusto) : "—" },
         {
           label: "VR / Plano Saúde / Outros",

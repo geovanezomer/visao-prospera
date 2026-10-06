@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { HelpTip } from "@/components/sim/shared/primitives";
+import { fmtNum } from "@/engines/finance/format";
 
 // Termômetro WACC × ROIC — visualiza se a empresa cria ou destrói valor.
 // `memo`: props são números primitivos → comparação shallow é eficaz e evita
@@ -44,13 +45,13 @@ function WaccRoicMeterImpl({ wacc, roic }: { wacc: number; roic: number }) {
             {creating ? (
               <>
                 Cada R$ investido rende{" "}
-                <strong className="text-pos">+{delta.toFixed(2)} p.p.</strong> acima do custo do
+                <strong className="text-pos">+{fmtNum(delta, 2)} p.p.</strong> acima do custo do
                 capital. Mantenha o ritmo e reinvista nas alavancas que sustentam esse spread.
               </>
             ) : (
               <>
                 Cada R$ investido rende{" "}
-                <strong className="text-neg">{delta.toFixed(2)} p.p.</strong> abaixo do custo do
+                <strong className="text-neg">{fmtNum(delta, 2)} p.p.</strong> abaixo do custo do
                 capital. Para corrigir: melhore margem, gire mais o capital ou reduza o custo da
                 dívida.
               </>
@@ -61,7 +62,7 @@ function WaccRoicMeterImpl({ wacc, roic }: { wacc: number; roic: number }) {
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Spread</div>
           <div className={`mono text-3xl font-bold ${creating ? "text-pos" : "text-neg"}`}>
             {delta >= 0 ? "+" : ""}
-            {delta.toFixed(2)}
+            {fmtNum(delta, 2)}
             <span className="ml-1 text-sm font-normal text-muted-foreground">p.p.</span>
           </div>
         </div>
@@ -108,7 +109,7 @@ function MeterBar({
           <span className="ml-1.5 text-[10px] text-muted-foreground">{subLabel}</span>
         </span>
         <span className="mono font-semibold" style={{ color }}>
-          {value.toFixed(2)}%
+          {fmtNum(value, 2)}%
         </span>
       </div>
       <div className="h-3 w-full overflow-hidden rounded-full bg-border/30">

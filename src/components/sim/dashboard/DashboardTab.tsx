@@ -7,7 +7,7 @@ import { lazy, Suspense } from "react";
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { DSCR_THRESHOLDS } from "@/engines/finance/indicators";
-import { fmtBRL, fmtPct } from "@/engines/finance/format";
+import { fmtBRL, fmtPct, fmtNum } from "@/engines/finance/format";
 import { StatCard } from "@/components/sim/shared/primitives";
 import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 import { ProximosPassos } from "./ProximosPassos";
@@ -98,7 +98,7 @@ export function DashboardTab() {
         />
         <StatCard
           label="DSCR"
-          value={ind.dscr == null ? "N/A" : ind.dscr >= 99 ? "∞" : `${ind.dscr.toFixed(2)}×`}
+          value={ind.dscr == null ? "N/A" : ind.dscr >= 99 ? "∞" : `${fmtNum(ind.dscr, 2)}×`}
           tone={
             ind.dscr == null
               ? "default"

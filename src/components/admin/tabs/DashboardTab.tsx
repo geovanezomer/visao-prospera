@@ -29,6 +29,7 @@ import {
   type SeriesPoint,
 } from "@/lib/admin/dashboard.functions";
 import { CardSkeletonGrid } from "@/components/admin/ui-states";
+import { fmtNum } from "@/engines/finance/format";
 
 function brl(centavos: number): string {
   return (centavos / 100).toLocaleString("pt-BR", {
@@ -68,7 +69,7 @@ function DeltaBadge({ d, higherIsBetter = true }: { d: Delta; higherIsBetter?: b
   return (
     <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${cls}`}>
       <Icon className="h-3 w-3" />
-      {(Math.abs(ratio) * 100).toFixed(1)}%
+      {fmtNum(Math.abs(ratio) * 100, 1)}%
     </span>
   );
 }
@@ -187,7 +188,7 @@ export function DashboardTab() {
 
   // Taxas do funil (cada etapa em relação à anterior).
   const f = m.funnel;
-  const rate = (num: number, den: number) => (den > 0 ? `${((num / den) * 100).toFixed(0)}%` : "—");
+  const rate = (num: number, den: number) => (den > 0 ? `${fmtNum((num / den) * 100, 0)}%` : "—");
 
   return (
     <div className="space-y-6">

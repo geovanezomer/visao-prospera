@@ -5,7 +5,7 @@ import { runSensitivity, OUTPUT_OPTIONS, OutputKey } from "@/engines/finance/sen
 import { buildForecast, DEFAULT_FORECAST_CFG, ForecastConfig } from "@/engines/finance/forecast";
 import { DEFAULT_MC, MCConfig, MCResult, histogram } from "@/engines/finance/montecarlo";
 import { snapshot } from "@/engines/finance/prescriptive";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, fmtNum } from "@/engines/finance/format";
 import { crescimentoObservado } from "@/engines/odoo/growth";
 import { useOdooCockpitContext } from "@/components/odoo/cockpit";
 import {
@@ -124,7 +124,7 @@ export function HealthScoreCard({
           </svg>
           <div className="-mt-[100px] flex flex-col items-center">
             <div className="text-3xl font-bold" style={{ color: ringColor }}>
-              {h.total.toFixed(0)}
+              {fmtNum(h.total, 0)}
             </div>
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground">/ 100</div>
           </div>
@@ -165,7 +165,7 @@ function DimRow({ d }: { d: HealthDimension }) {
         <div className="flex items-center gap-3">
           <span className="mono text-xs text-muted-foreground">{d.value}</span>
           <span className="mono text-xs font-semibold" style={{ color }}>
-            {d.score.toFixed(0)}
+            {fmtNum(d.score, 0)}
           </span>
         </div>
       </div>
@@ -186,7 +186,7 @@ export function SensitivityCard({ state }: { state: AppState }) {
   // Difere o estado pesado para não bloquear teclado/sliders durante 36× buildDRE
   const deferredState = useDeferredValue(state);
   const result = useMemo(() => runSensitivity(deferredState, output), [deferredState, output]);
-  const fmt = (n: number) => (output === "roic" ? `${n.toFixed(1)}%` : fmtBRL(n));
+  const fmt = (n: number) => (output === "roic" ? `${fmtNum(n, 1)}%` : fmtBRL(n));
 
   return (
     <section className="rounded-lg border border-border/60 bg-card/40 p-5">
@@ -250,7 +250,7 @@ export function SensitivityCard({ state }: { state: AppState }) {
                     >
                       <div className="text-[11px] font-semibold">
                         {c.pctChange > 0 ? "+" : ""}
-                        {c.pctChange.toFixed(1)}%
+                        {fmtNum(c.pctChange, 1)}%
                       </div>
                       <div className="text-[9.5px] text-muted-foreground">{fmt(c.value)}</div>
                     </td>
@@ -258,7 +258,7 @@ export function SensitivityCard({ state }: { state: AppState }) {
                 })}
                 <td className="num px-3 py-1.5 text-right font-semibold mono">
                   {row.elasticity > 0 ? "+" : ""}
-                  {row.elasticity.toFixed(2)}×
+                  {fmtNum(row.elasticity, 2)}×
                 </td>
               </tr>
             ))}
@@ -303,7 +303,7 @@ export function ScenarioCompareCard({
     {
       key: "margemEbitda",
       label: "Margem EBITDA",
-      fmt: (n) => `${n.toFixed(1)}%`,
+      fmt: (n) => `${fmtNum(n, 1)}%`,
       higherBetter: true,
       unit: "pct",
     },
@@ -311,15 +311,15 @@ export function ScenarioCompareCard({
     {
       key: "margemLiquida",
       label: "Margem Líquida",
-      fmt: (n) => `${n.toFixed(1)}%`,
+      fmt: (n) => `${fmtNum(n, 1)}%`,
       higherBetter: true,
       unit: "pct",
     },
-    { key: "roic", label: "ROIC", fmt: (n) => `${n.toFixed(1)}%`, higherBetter: true, unit: "pct" },
+    { key: "roic", label: "ROIC", fmt: (n) => `${fmtNum(n, 1)}%`, higherBetter: true, unit: "pct" },
     {
       key: "dividaLiqEbitda",
       label: "D.Líq/EBITDA",
-      fmt: (n) => (Number.isFinite(n) ? `${n.toFixed(1)}×` : "∞"),
+      fmt: (n) => (Number.isFinite(n) ? `${fmtNum(n, 1)}×` : "∞"),
       higherBetter: false,
       unit: "x",
     },
@@ -399,9 +399,9 @@ export function ScenarioCompareCard({
                           {!same && (
                             <div className="text-[9.5px] opacity-80">
                               {m.unit === "pct"
-                                ? `${delta > 0 ? "+" : ""}${delta.toFixed(1)}pp`
+                                ? `${delta > 0 ? "+" : ""}${fmtNum(delta, 1)}pp`
                                 : m.unit === "x"
-                                  ? `${delta > 0 ? "+" : ""}${delta.toFixed(2)}×`
+                                  ? `${delta > 0 ? "+" : ""}${fmtNum(delta, 2)}×`
                                   : `${delta > 0 ? "+" : ""}${fmtBRL(delta)}`}
                             </div>
                           )}
@@ -542,7 +542,7 @@ export function ForecastCard({ state }: { state: AppState }) {
             Taxa de desconto (WACC)
           </span>
           <span className="mono text-sm font-semibold">
-            {result.taxaDescontoMensal.toFixed(2)}% a.m.
+            {fmtNum(result.taxaDescontoMensal, 2)}% a.m.
           </span>
         </div>
       </div>
@@ -556,12 +556,12 @@ export function ForecastCard({ state }: { state: AppState }) {
         />
         <KPI
           label="TIR (a.m.)"
-          value={result.tir == null ? "—" : `${result.tir.toFixed(2)}%`}
+          value={result.tir == null ? "—" : `${fmtNum(result.tir, 2)}%`}
           status={result.tir != null && result.tir > result.taxaDescontoMensal ? "ok" : "warn"}
           sub={
             result.tir == null
               ? (result.tirError ?? "Sem inversão de sinal")
-              : `vs custo ${result.taxaDescontoMensal.toFixed(2)}%`
+              : `vs custo ${fmtNum(result.taxaDescontoMensal, 2)}%`
           }
         />
         <KPI
@@ -605,7 +605,7 @@ export function ForecastCard({ state }: { state: AppState }) {
             <YAxis
               tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
               stroke="var(--muted-foreground)"
-              tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+              tickFormatter={(v) => `${fmtNum(v / 1000, 0)}k`}
             />
             <Tooltip
               contentStyle={chartTooltipStyle}
@@ -759,7 +759,7 @@ export function MonteCarloCard({ state }: { state: AppState }) {
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <KPI
               label="Prob. de Prejuízo"
-              value={`${(result.probPrejuizo * 100).toFixed(1)}%`}
+              value={`${fmtNum(result.probPrejuizo * 100, 1)}%`}
               status={
                 result.probPrejuizo > 0.25 ? "danger" : result.probPrejuizo > 0.1 ? "warn" : "ok"
               }
@@ -767,7 +767,7 @@ export function MonteCarloCard({ state }: { state: AppState }) {
             />
             <KPI
               label="Prob. Caixa < mínimo"
-              value={`${(result.probCaixaNegativo * 100).toFixed(1)}%`}
+              value={`${fmtNum(result.probCaixaNegativo * 100, 1)}%`}
               status={
                 result.probCaixaNegativo > 0.25
                   ? "danger"
@@ -780,7 +780,7 @@ export function MonteCarloCard({ state }: { state: AppState }) {
             {result.probCaixaNegativoAlgumMes !== undefined && (
               <KPI
                 label="Prob. de caixa negativo"
-                value={`${(result.probCaixaNegativoAlgumMes * 100).toFixed(1)}%`}
+                value={`${fmtNum(result.probCaixaNegativoAlgumMes * 100, 1)}%`}
                 status={
                   result.probCaixaNegativoAlgumMes > 0.1
                     ? "danger"
@@ -820,7 +820,7 @@ export function MonteCarloCard({ state }: { state: AppState }) {
                   comoLer: `Em metade dos cenários simulados o EBITDA fica próximo de ${fmtBRL(dist.median)}. Em 90% dos casos cai entre ${fmtBRL(dist.p5)} (pessimista) e ${fmtBRL(dist.p95)} (otimista).`,
                   alerta:
                     probNeg > 0.1
-                      ? `Atenção: em ${(probNeg * 100).toFixed(1)}% dos cenários o EBITDA fica negativo — operação não se paga.`
+                      ? `Atenção: em ${fmtNum(probNeg * 100, 1)}% dos cenários o EBITDA fica negativo — operação não se paga.`
                       : undefined,
                 },
                 "Lucro Líquido": {
@@ -829,7 +829,7 @@ export function MonteCarloCard({ state }: { state: AppState }) {
                   comoLer: `O resultado mais provável gira em torno de ${fmtBRL(dist.median)}. Em 90% das simulações o lucro fica entre ${fmtBRL(dist.p5)} e ${fmtBRL(dist.p95)}.`,
                   alerta:
                     probNeg > 0.1
-                      ? `Risco relevante: ${(probNeg * 100).toFixed(1)}% dos cenários terminam em prejuízo.`
+                      ? `Risco relevante: ${fmtNum(probNeg * 100, 1)}% dos cenários terminam em prejuízo.`
                       : undefined,
                 },
                 "Saldo de Caixa (Dez)": {
@@ -838,7 +838,7 @@ export function MonteCarloCard({ state }: { state: AppState }) {
                   comoLer: `O saldo mediano projetado é ${fmtBRL(dist.median)}. Em 90% dos cenários o caixa final fica entre ${fmtBRL(dist.p5)} e ${fmtBRL(dist.p95)}.`,
                   alerta:
                     probNeg > 0.1
-                      ? `Alerta de liquidez: em ${(probNeg * 100).toFixed(1)}% dos cenários a empresa termina com caixa negativo (precisaria de empréstimo).`
+                      ? `Alerta de liquidez: em ${fmtNum(probNeg * 100, 1)}% dos cenários a empresa termina com caixa negativo (precisaria de empréstimo).`
                       : undefined,
                 },
               };
@@ -869,7 +869,7 @@ export function MonteCarloCard({ state }: { state: AppState }) {
                         dataKey="x"
                         tick={{ fontSize: 9, fill: "var(--muted-foreground)" }}
                         stroke="var(--muted-foreground)"
-                        tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`}
+                        tickFormatter={(v: number) => `${fmtNum(v / 1000, 0)}k`}
                       />
                       <YAxis
                         tick={{ fontSize: 9, fill: "var(--muted-foreground)" }}

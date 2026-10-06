@@ -12,7 +12,7 @@ import {
 } from "@/engines/finance/types";
 
 type RatesOverride = NonNullable<TaxConfig["ratesOverride"]>;
-import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
+import { fmtBRL, fmtPct, sum, fmtNum } from "@/engines/finance/format";
 import {
   compareErasForRegime,
   compareRegimes,
@@ -188,7 +188,7 @@ export function TaxTab() {
       const fatorRMin = getFatorRMinimoPct(state.tax) / 100;
       if (rbAnual > 0 && folha / rbAnual >= fatorRMin) {
         w.push(
-          `Fator R = ${((folha / rbAnual) * 100).toFixed(1)}% (≥ ${(fatorRMin * 100).toFixed(0)}%) — Anexo V será automaticamente migrado para Anexo III (alíquotas menores).`,
+          `Fator R = ${fmtNum((folha / rbAnual) * 100, 1)}% (≥ ${fmtNum(fatorRMin * 100, 0)}%) — Anexo V será automaticamente migrado para Anexo III (alíquotas menores).`,
         );
       }
     }
@@ -373,19 +373,19 @@ export function TaxTab() {
                                 >
                                   <td className="px-2 py-1 font-medium">{r.year}</td>
                                   <td className="px-2 py-1 text-right num">
-                                    {r.rates.cbsPct.toFixed(2)}%
+                                    {fmtNum(r.rates.cbsPct, 2)}%
                                   </td>
                                   <td className="px-2 py-1 text-right num">
-                                    {r.rates.ibsPct.toFixed(2)}%
+                                    {fmtNum(r.rates.ibsPct, 2)}%
                                   </td>
                                   <td className="px-2 py-1 text-right num">
-                                    {(r.rates.pisCofinsMult * 100).toFixed(0)}%
+                                    {fmtNum(r.rates.pisCofinsMult * 100, 0)}%
                                   </td>
                                   <td className="px-2 py-1 text-right num">
-                                    {(r.rates.icmsIssMult * 100).toFixed(0)}%
+                                    {fmtNum(r.rates.icmsIssMult * 100, 0)}%
                                   </td>
                                   <td className="px-2 py-1 text-right num">
-                                    {r.effective.toFixed(2)}%
+                                    {fmtNum(r.effective, 2)}%
                                   </td>
                                   <td className="px-2 py-1 text-right num">{fmtBRL(r.annual)}</td>
                                 </tr>
@@ -651,7 +651,7 @@ export function TaxTab() {
               key={"v" + p.era}
               className={`bg-card p-3 num text-sm ${p.era === era ? "text-primary font-semibold" : ""}`}
             >
-              {p.effective.toFixed(2)}%
+              {fmtNum(p.effective, 2)}%
             </div>
           ))}
           <div className="bg-card p-3 text-left text-xs text-muted-foreground">Tributos (ano)</div>
@@ -673,7 +673,7 @@ export function TaxTab() {
               <div key={"d" + p.era} className={`bg-card p-3 num text-sm ${tone}`}>
                 {p.era === "atual"
                   ? "—"
-                  : `${delta >= 0 ? "+" : ""}${fmtBRL(delta)} (${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%)`}
+                  : `${delta >= 0 ? "+" : ""}${fmtBRL(delta)} (${pct >= 0 ? "+" : ""}${fmtNum(pct, 1)}%)`}
               </div>
             );
           })}

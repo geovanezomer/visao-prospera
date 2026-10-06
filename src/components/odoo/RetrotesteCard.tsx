@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { History } from "lucide-react";
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { DEFAULT_FORECAST_CFG } from "@/engines/finance/forecast";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, fmtNum } from "@/engines/finance/format";
 import { backtest } from "@/engines/odoo/backtest";
 import { useOdooCockpitContext } from "./cockpit";
 import { cn } from "@/lib/utils";
@@ -85,7 +85,7 @@ export function RetrotesteCard() {
                   >
                     {m.erroPct === null
                       ? "—"
-                      : `${m.erroPct > 0 ? "+" : ""}${m.erroPct.toFixed(1)}%`}
+                      : `${m.erroPct > 0 ? "+" : ""}${fmtNum(m.erroPct, 1)}%`}
                   </td>
                 </tr>
               ))}
@@ -94,11 +94,11 @@ export function RetrotesteCard() {
           <div className="space-y-2 text-xs">
             <div className="flex items-center justify-between rounded-md border border-border/50 px-3 py-2">
               <span>Erro médio mensal da receita — premissas</span>
-              <span className="num font-semibold">{r.mapeReceita.toFixed(1)}%</span>
+              <span className="num font-semibold">{fmtNum(r.mapeReceita, 1)}%</span>
             </div>
             <div className="flex items-center justify-between rounded-md border border-border/50 px-3 py-2">
               <span>Erro médio mensal — repetir o ano anterior</span>
-              <span className="num">{r.mapeIngenuo.toFixed(1)}%</span>
+              <span className="num">{fmtNum(r.mapeIngenuo, 1)}%</span>
             </div>
             <p className="text-[11px] text-muted-foreground">
               {r.mapeReceita <= r.mapeIngenuo

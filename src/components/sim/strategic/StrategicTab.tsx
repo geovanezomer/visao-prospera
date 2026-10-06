@@ -27,6 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { RotateCcw, ShieldAlert } from "lucide-react";
+import { fmtNum } from "@/engines/finance/format";
 
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
@@ -420,7 +421,7 @@ function PctSlider({
           className="flex-1"
         />
         <div className="mono w-16 rounded border border-border/60 bg-input/40 px-2 py-1 text-right text-sm">
-          {v.toFixed(0)}%
+          {fmtNum(v, 0)}%
         </div>
       </div>
       {!filled && (

@@ -5,7 +5,7 @@
 // via a sincronização feita no parent (CapitalTab).
 import { useState } from "react";
 import { Plus, Trash2, ChevronDown, ChevronUp, Landmark } from "lucide-react";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, fmtNum } from "@/engines/finance/format";
 import { MoneyInput, HelpTip, type HelpHint } from "@/components/sim/shared/primitives";
 import type { DebtContract, DebtSystem } from "@/engines/finance/types";
 import {
@@ -109,7 +109,7 @@ export function DebtContractsCard({
                       </div>
                     </div>
                     <div className="text-right num font-semibold">{fmtBRL(c.saldoDevedor)}</div>
-                    <div className="text-right num">{c.taxaAA.toFixed(1)}% a.a.</div>
+                    <div className="text-right num">{fmtNum(c.taxaAA, 1)}% a.a.</div>
                     <div className="text-center">
                       <span
                         className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${

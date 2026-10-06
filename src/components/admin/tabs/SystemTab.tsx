@@ -23,6 +23,7 @@ import {
   writeSettingsCache,
 } from "@/lib/admin/settingsCache";
 import { BrandedLogo } from "@/components/BrandedLogo";
+import { fmtNum } from "@/engines/finance/format";
 
 // Paletas pré-definidas (cor primária). O sistema deriva foreground/ring automaticamente.
 const COLOR_PRESETS: { label: string; primary: string; accent?: string }[] = [
@@ -134,7 +135,7 @@ function readImageAsDataUrl(file: File, rule: ImageRule): Promise<string> {
         if (rule.maxAspect !== undefined && aspect > rule.maxAspect + 0.01) {
           reject(
             new Error(
-              `${rule.label}: proporção inválida (${w}×${h} ≈ ${aspect.toFixed(2)}:1). Largura não pode passar de ${rule.maxAspect}× a altura.`,
+              `${rule.label}: proporção inválida (${w}×${h} ≈ ${fmtNum(aspect, 2)}:1). Largura não pode passar de ${rule.maxAspect}× a altura.`,
             ),
           );
           return;

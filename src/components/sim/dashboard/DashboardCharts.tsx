@@ -21,7 +21,7 @@ import {
 } from "recharts";
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { fmtBRL, sum } from "@/engines/finance/format";
+import { fmtBRL, sum, fmtNum } from "@/engines/finance/format";
 
 import { DashboardExtras, Top5Despesas } from "./DashboardExtras";
 
@@ -148,7 +148,7 @@ export function DashboardCharts() {
               <YAxis
                 stroke="var(--muted-foreground)"
                 fontSize={10}
-                tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+                tickFormatter={(v) => `R$${fmtNum(v / 1000, 0)}k`}
               />
               <Tooltip
                 contentStyle={TOOLTIP_STYLE}
@@ -189,20 +189,20 @@ export function DashboardCharts() {
                 yAxisId="left"
                 stroke="var(--muted-foreground)"
                 fontSize={10}
-                tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+                tickFormatter={(v) => `R$${fmtNum(v / 1000, 0)}k`}
               />
               <YAxis
                 yAxisId="right"
                 orientation="right"
                 stroke="var(--muted-foreground)"
                 fontSize={10}
-                tickFormatter={(v) => `${v.toFixed(0)}%`}
+                tickFormatter={(v) => `${fmtNum(v, 0)}%`}
               />
               <Tooltip
                 contentStyle={TOOLTIP_STYLE}
                 labelStyle={TOOLTIP_LABEL_STYLE}
                 itemStyle={TOOLTIP_ITEM_STYLE}
-                formatter={(v: number, n) => (n === "Margem %" ? `${v.toFixed(1)}%` : fmtBRL(v))}
+                formatter={(v: number, n) => (n === "Margem %" ? `${fmtNum(v, 1)}%` : fmtBRL(v))}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar yAxisId="left" dataKey="Receita" fill="var(--primary)" radius={[4, 4, 0, 0]} />
@@ -232,7 +232,7 @@ export function DashboardCharts() {
               <YAxis
                 stroke="var(--muted-foreground)"
                 fontSize={10}
-                tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+                tickFormatter={(v) => `R$${fmtNum(v / 1000, 0)}k`}
               />
               <Tooltip
                 contentStyle={TOOLTIP_STYLE}
@@ -262,14 +262,14 @@ export function DashboardCharts() {
               yAxisId="left"
               stroke="var(--muted-foreground)"
               fontSize={10}
-              tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+              tickFormatter={(v) => `R$${fmtNum(v / 1000, 0)}k`}
             />
             <YAxis
               yAxisId="right"
               orientation="right"
               stroke="var(--muted-foreground)"
               fontSize={10}
-              tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+              tickFormatter={(v) => `R$${fmtNum(v / 1000, 0)}k`}
             />
             <Tooltip
               contentStyle={TOOLTIP_STYLE}

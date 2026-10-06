@@ -26,6 +26,7 @@ import {
   type PlanInterval,
 } from "@/lib/admin/plans.functions";
 import { TableSkeleton, EmptyState, TypedConfirmDialog } from "@/components/admin/ui-states";
+import { fmtNum } from "@/engines/finance/format";
 
 type Editing = {
   id?: string;
@@ -219,7 +220,7 @@ export function PlansTab() {
                   </div>
                 </div>
                 <div className="mt-1 text-xs text-muted-foreground">
-                  R$ {(p.priceCents / 100).toFixed(2)} / {p.interval} · {p.features.length} features
+                  R$ {fmtNum(p.priceCents / 100, 2)} / {p.interval} · {p.features.length} features
                 </div>
               </div>
             ))}

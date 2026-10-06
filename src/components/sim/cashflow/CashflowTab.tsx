@@ -6,7 +6,7 @@ import {
   useFinanceReadOnly,
 } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, fmtNum } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { MoneyInput, SectionTitle, StatCard } from "@/components/sim/shared/primitives";
 import { Badge } from "@/components/ui/badge";
@@ -133,7 +133,7 @@ export function CashflowTab() {
     ? "∞ (operação gera caixa)"
     : burnRunway.runwayMeses >= 24
       ? "24+ meses"
-      : `${burnRunway.runwayMeses.toFixed(1)} meses`;
+      : `${fmtNum(burnRunway.runwayMeses, 1)} meses`;
   const runwayTone: "pos" | "neg" | "warn" = !burnRunway.queimando
     ? "pos"
     : burnRunway.runwayMeses >= 12
@@ -404,7 +404,7 @@ export function CashflowTab() {
               <YAxis
                 stroke="var(--muted-foreground)"
                 fontSize={10}
-                tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+                tickFormatter={(v) => `R$${fmtNum(v / 1000, 0)}k`}
               />
               <Tooltip
                 contentStyle={TOOLTIP_STYLE}

@@ -24,6 +24,7 @@ import {
 import type { OdooCompanyInfo } from "@/engines/odoo/types";
 import { BS_BUCKET_LABELS, PL_LINE_LABELS } from "@/engines/odoo/mapping";
 import { cn } from "@/lib/utils";
+import { fmtNum } from "@/engines/finance/format";
 
 const TARGET_LABELS: Record<string, string> = {
   ...Object.fromEntries(Object.entries(PL_LINE_LABELS).map(([k, v]) => [k, `DRE · ${v}`])),
@@ -105,7 +106,7 @@ export function OdooTab() {
       const r = await syncOdooNow();
       if (r.ok)
         toast.success(
-          `Sincronizado: ${r.companies} empresa(s) em ${(r.durationMs / 1000).toFixed(1)}s.`,
+          `Sincronizado: ${r.companies} empresa(s) em ${fmtNum(r.durationMs / 1000, 1)}s.`,
         );
       else toast.error(r.error ?? "Falha na sincronização.");
       await load();

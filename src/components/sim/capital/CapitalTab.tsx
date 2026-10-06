@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useFinance } from "@/engines/finance/AppStateContext";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, fmtNum } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { KE_DEFAULT_BY_SECTOR } from "@/engines/finance/indicators";
 import { StatCard } from "@/components/sim/shared/primitives";
@@ -121,7 +121,7 @@ export function CapitalTab() {
   }
   if (ind.dividaPlBruto > 5) {
     warnings.push(
-      `Endividamento muito elevado: D/PL = ${ind.dividaPlBruto.toFixed(1)}× (saudável ≤ 2×). Risco financeiro relevante.`,
+      `Endividamento muito elevado: D/PL = ${fmtNum(ind.dividaPlBruto, 1)}× (saudável ≤ 2×). Risco financeiro relevante.`,
     );
   }
   if (c.ativoCirculante > 0 && c.ativoTotal > 0 && c.ativoCirculante > c.ativoTotal) {

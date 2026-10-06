@@ -12,7 +12,7 @@ import {
   SimulatorParams,
 } from "@/engines/finance/simulator";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { fmtBRL, fmtBRLCompact, fmtPct } from "@/engines/finance/format";
+import { fmtBRL, fmtBRLCompact, fmtPct, fmtNum } from "@/engines/finance/format";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import {
@@ -119,7 +119,7 @@ export function SimulatorTab({
     inconsistencies.push("Caixa final negativo — operação inviável sem captação");
   // Cobertura de juros null (sem dívida) → não é inconsistência.
   if (simView.coberturaJuros != null && simView.coberturaJuros < 1)
-    inconsistencies.push(`Cobertura de juros < 1× (${simView.coberturaJuros.toFixed(1)}×)`);
+    inconsistencies.push(`Cobertura de juros < 1× (${fmtNum(simView.coberturaJuros, 1)}×)`);
 
   const applyToBase = () => {
     apply(() => simState);
@@ -219,7 +219,7 @@ export function SimulatorTab({
                 suffix=""
                 current={
                   p.priceDeltaPct !== 0 && p.priceElasticity > 0
-                    ? `Volume induzido: ${(-p.priceElasticity * p.priceDeltaPct).toFixed(1)}%`
+                    ? `Volume induzido: ${fmtNum(-p.priceElasticity * p.priceDeltaPct, 1)}%`
                     : "Desligada"
                 }
               />
@@ -381,7 +381,7 @@ export function SimulatorTab({
                 suffix="%"
               />
               <SliderRow
-                label={`Variar kd (atual ${state.capital.kd.toFixed(1)}% a.a.)`}
+                label={`Variar kd (atual ${fmtNum(state.capital.kd, 1)}% a.a.)`}
                 hint="Selic sobe/cai: ajusta custo da dívida e proporcionalmente as despesas de juros."
                 min={-5}
                 max={5}
@@ -534,7 +534,7 @@ function Delta({
         {!highlight && <Icon className="h-3 w-3" />}
         {currency
           ? fmtBRLCompact(value)
-          : `${value >= 0 ? "+" : ""}${value.toFixed(1)}${suffix ?? ""}`}
+          : `${value >= 0 ? "+" : ""}${fmtNum(value, 1)}${suffix ?? ""}`}
       </span>
     </span>
   );
@@ -566,7 +566,7 @@ const SliderRow = memo(function SliderRow({
   signed?: boolean;
 }) {
   const display =
-    signed && value > 0 ? `+${value.toFixed(step < 1 ? 2 : 0)}` : value.toFixed(step < 1 ? 2 : 0);
+    signed && value > 0 ? `+${fmtNum(value, step < 1 ? 2 : 0)}` : value.toFixed(step < 1 ? 2 : 0);
   return (
     <div className="space-y-1.5 rounded-md border border-border/40 bg-background/20 px-3 py-2">
       <div className="flex items-center justify-between gap-2">
@@ -879,7 +879,7 @@ function DREPanel({
                     {fmtBRLCompact(r.s)}
                   </td>
                   <td className={`py-1.5 pl-2 text-right mono ${tone}`}>
-                    {Math.abs(d) < 0.05 ? "—" : `${d >= 0 ? "+" : ""}${d.toFixed(1)}%`}
+                    {Math.abs(d) < 0.05 ? "—" : `${d >= 0 ? "+" : ""}${fmtNum(d, 1)}%`}
                   </td>
                 </tr>
               );
@@ -891,14 +891,14 @@ function DREPanel({
       <div className="grid grid-cols-2 gap-2 border-t border-border/40 pt-3 text-xs">
         <Kpi
           label="Margem Líquida"
-          base={`${base.margemLiquida.toFixed(1)}%`}
-          sim={`${sim.margemLiquida.toFixed(1)}%`}
+          base={`${fmtNum(base.margemLiquida, 1)}%`}
+          sim={`${fmtNum(sim.margemLiquida, 1)}%`}
           better={sim.margemLiquida >= base.margemLiquida}
         />
         <Kpi
           label="Margem EBITDA"
-          base={`${base.margemEbitda.toFixed(1)}%`}
-          sim={`${sim.margemEbitda.toFixed(1)}%`}
+          base={`${fmtNum(base.margemEbitda, 1)}%`}
+          sim={`${fmtNum(sim.margemEbitda, 1)}%`}
           better={sim.margemEbitda >= base.margemEbitda}
         />
         <Kpi
@@ -1082,7 +1082,7 @@ const KpiCardsRow = memo(function KpiCardsRow({
                 className={cn("inline-flex items-center gap-0.5 text-[10px] font-semibold", tone)}
               >
                 <Icon className="h-3 w-3" />
-                {flat ? "—" : `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%`}
+                {flat ? "—" : `${delta >= 0 ? "+" : ""}${fmtNum(delta, 1)}%`}
               </span>
             </div>
           </div>

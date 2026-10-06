@@ -18,7 +18,7 @@ import {
   usePatchCashflow,
   useFinanceReadOnly,
 } from "@/engines/finance/AppStateContext";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, fmtNum } from "@/engines/finance/format";
 import { aggregateMutuos, SELIC_MENSAL_REFERENCIA } from "@/engines/finance/mutuosSocios";
 import type { MutuoSocio } from "@/engines/finance/types";
 import { SectionTitle, MoneyInput } from "@/components/sim/shared/primitives";
@@ -174,7 +174,7 @@ export function MutuosSociosCard() {
               {algumJurosBaixo && (
                 <p className="font-semibold">
                   ⚠ Há contrato com taxa abaixo da SELIC mensal de referência (
-                  {SELIC_MENSAL_REFERENCIA.toFixed(2)}%/mês) — risco de autuação.
+                  {fmtNum(SELIC_MENSAL_REFERENCIA, 2)}%/mês) — risco de autuação.
                 </p>
               )}
             </AlertDescription>

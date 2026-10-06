@@ -45,10 +45,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, fmtNum } from "@/engines/finance/format";
 
 const fmtBRLShort = (n: number) => {
-  if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(n) >= 1_000_000) return `${fmtNum(n / 1_000_000, 1)}M`;
   if (Math.abs(n) >= 1_000) return `${Math.round(n / 1_000)}k`;
   return Math.round(n).toString();
 };
@@ -140,7 +140,7 @@ export function JurosCompostosCalc() {
         {
           label: "Valor final",
           value: fmtBRL(sim.totalFinal),
-          sub: `${sim.multiplicador.toFixed(1)}× o investido`,
+          sub: `${fmtNum(sim.multiplicador, 1)}× o investido`,
           tone: "ok",
         },
         {
@@ -376,7 +376,7 @@ export function JurosCompostosCalc() {
                   </svg>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {sim.multiplicador.toFixed(1)}x o investido
+                  {fmtNum(sim.multiplicador, 1)}x o investido
                 </p>
               </CardContent>
             </Card>

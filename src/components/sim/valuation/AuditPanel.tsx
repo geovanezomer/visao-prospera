@@ -4,7 +4,7 @@ import {
   runValuationSelfTests,
   ValuationTestCase,
 } from "@/engines/finance/valuation";
-import { fmtBRLCompact } from "@/engines/finance/format";
+import { fmtBRLCompact, fmtNum } from "@/engines/finance/format";
 import { Button } from "@/components/ui/button";
 import { Calculator, FlaskConical } from "lucide-react";
 import { SectionTitle } from "@/components/sim/shared/primitives";
@@ -48,7 +48,7 @@ export function AuditPanel({
             k="Ke / Kd (%a.a.)"
             v={trace.inputs.ke}
             fmt="pct"
-            extra={`${trace.inputs.kd.toFixed(2)}%`}
+            extra={`${fmtNum(trace.inputs.kd, 2)}%`}
           />
           <KV k="m EV/EBITDA" v={trace.inputs.multEbitda} fmt="raw" />
           <KV k="m EV/Receita" v={trace.inputs.multReceita} fmt="raw" />
@@ -126,7 +126,7 @@ export function AuditPanel({
                         {r.actual.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}
                       </td>
                       <td className="py-1.5 text-right text-muted-foreground">
-                        {r.delta.toFixed(4)}
+                        {fmtNum(r.delta, 4)}
                       </td>
                       <td
                         className={`py-1.5 text-center font-semibold ${r.pass ? "text-pos" : "text-neg"}`}

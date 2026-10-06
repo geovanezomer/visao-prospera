@@ -25,7 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { useFinance, useFinanceUpdate } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { buildDRE } from "@/engines/finance/dre";
-import { fmtBRL, sum } from "@/engines/finance/format";
+import { fmtBRL, sum, fmtNum } from "@/engines/finance/format";
 import {
   calcRetiradaSocio,
   syncSociosToCosts,
@@ -226,7 +226,7 @@ export function SociosCard() {
                 return (
                   <tr key={s.id} className="border-b border-border/40 hover:bg-muted/20">
                     <td className="px-2 py-1.5 font-medium">{s.nome}</td>
-                    <td className="num px-2 py-1.5 text-right">{s.participacaoPct.toFixed(2)}%</td>
+                    <td className="num px-2 py-1.5 text-right">{fmtNum(s.participacaoPct, 2)}%</td>
                     <td
                       className={`num px-2 py-1.5 text-right ${
                         abaixoDoPiso ? "text-[var(--warning)]" : ""
@@ -266,7 +266,7 @@ export function SociosCard() {
                     partOk ? "text-foreground" : "text-[var(--warning)]"
                   }`}
                 >
-                  {somaPartic.toFixed(2)}%
+                  {fmtNum(somaPartic, 2)}%
                 </td>
                 <td className="num px-2 py-2 text-right">{fmtBRL(totaisAno.prolab)}</td>
                 <td className="num px-2 py-2 text-right">{fmtBRL(totaisAno.inssSocio)}</td>
@@ -310,7 +310,7 @@ export function SociosCard() {
 
           {!partOk && (
             <div className="mt-3 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/5 px-3 py-2 text-[12px] text-[var(--warning)]">
-              ⚠️ A soma das participações é <b>{somaPartic.toFixed(2)}%</b> e precisa fechar{" "}
+              ⚠️ A soma das participações é <b>{fmtNum(somaPartic, 2)}%</b> e precisa fechar{" "}
               <b>100%</b>. Ajuste em <b>Configurações → Empresa → Sócios</b>.
             </div>
           )}
@@ -420,7 +420,7 @@ export function SociosCard() {
             tone={retidoAno > 0 ? "warn" : "default"}
             sub={
               previsaoTotalAno > 0
-                ? `${((retidoAno / previsaoTotalAno) * 100).toFixed(1)}% do disponível`
+                ? `${fmtNum((retidoAno / previsaoTotalAno) * 100, 1)}% do disponível`
                 : undefined
             }
           />
@@ -441,7 +441,7 @@ export function SociosCard() {
         {retencaoForte && !acimaIsento && (
           <div className="mt-3 rounded border border-border/60 bg-muted/30 px-3 py-2 text-[12px] text-muted-foreground">
             💡 Empresa está retendo <b>{fmtBRL(retidoAno)}</b> (
-            {((retidoAno / previsaoTotalAno) * 100).toFixed(0)}%) do disponível. O caixa preservado
+            {fmtNum((retidoAno / previsaoTotalAno) * 100, 0)}%) do disponível. O caixa preservado
             aparece como aumento de <b>Lucros Acumulados</b> no Balanço.
           </div>
         )}

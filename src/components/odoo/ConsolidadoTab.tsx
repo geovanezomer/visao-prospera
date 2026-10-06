@@ -18,7 +18,7 @@ import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { buildFinancialModel } from "@/engines/finance/financialModel";
 import { DEFAULT_STATE, validateAndMigrate } from "@/engines/finance/defaults";
 import { loadKey } from "@/engines/finance/persistence";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, fmtNum } from "@/engines/finance/format";
 import type { AppState } from "@/engines/finance/types";
 import {
   anchorOdooState,
@@ -365,7 +365,7 @@ export function ConsolidadoTab() {
                           Math.abs(pct) > 0.05 ? "text-amber-600 font-medium" : "text-emerald-600",
                         )}
                       >
-                        {fmtBRL(diff)} ({(pct * 100).toFixed(1)}%)
+                        {fmtBRL(diff)} ({fmtNum(pct * 100, 1)}%)
                       </td>
                     </tr>
                   );
@@ -425,7 +425,7 @@ function BranchesSection({
               <td className="p-2">{fmtBRL(r.lucroBruto)}</td>
               <td className="p-2">{fmtBRL(r.ebitda)}</td>
               <td className="p-2">
-                {r.receitaBruta ? `${((r.ebitda / r.receitaBruta) * 100).toFixed(1)}%` : "—"}
+                {r.receitaBruta ? `${fmtNum((r.ebitda / r.receitaBruta) * 100, 1)}%` : "—"}
               </td>
             </tr>
           ))}

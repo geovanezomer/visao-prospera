@@ -13,7 +13,7 @@ import {
 } from "@/engines/finance/types";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
-import { fmtBRL, fmtBRLCompact, fmtPct, sum } from "@/engines/finance/format";
+import { fmtBRL, fmtBRLCompact, fmtPct, sum, fmtNum } from "@/engines/finance/format";
 import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 import { monthValues } from "@/engines/finance";
 import { splitReceitasFinanceiras } from "@/engines/finance/shared";
@@ -533,7 +533,7 @@ export function DRETab() {
         <StatCard
           label="EBITDA"
           value={fmtBRL(sum(dre.ebitda))}
-          sub={`${ind.margemEbitda.toFixed(1)}%`}
+          sub={`${fmtNum(ind.margemEbitda, 1)}%`}
           tone={sum(dre.ebitda) >= 0 ? "pos" : "neg"}
           hint={{
             description:
@@ -546,7 +546,7 @@ export function DRETab() {
         <StatCard
           label="EBIT"
           value={fmtBRL(sum(dre.ebit))}
-          sub={`${ind.margemEbit.toFixed(1)}%`}
+          sub={`${fmtNum(ind.margemEbit, 1)}%`}
           tone={sum(dre.ebit) >= 0 ? "pos" : "neg"}
           hint={{
             description: "Resultado operacional após depreciação/amortização (LAJIR).",
@@ -557,7 +557,7 @@ export function DRETab() {
         <StatCard
           label="Lucro Líq."
           value={fmtBRL(ll)}
-          sub={`${ind.margemLiquida.toFixed(1)}%`}
+          sub={`${fmtNum(ind.margemLiquida, 1)}%`}
           tone={ll >= 0 ? "pos" : "neg"}
           hint={{
             description: "Resultado final.",
@@ -845,7 +845,7 @@ export function DRETab() {
                           {fmtBRL(total)}
                           {row.margin !== undefined && (
                             <div className="text-[10px] font-normal text-muted-foreground">
-                              Margem {row.margin.toFixed(1)}%
+                              Margem {fmtNum(row.margin, 1)}%
                             </div>
                           )}
                         </td>

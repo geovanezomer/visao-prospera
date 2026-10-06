@@ -18,7 +18,7 @@ import { useFinance, useFinanceReadOnly } from "@/engines/finance/AppStateContex
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { calcBalancoTotals, snapshotAnterior } from "@/engines/finance/balanco";
 import { calcAberturaTotals } from "@/engines/finance/aberturaDerivada";
-import { fmtBRL } from "@/engines/finance/format";
+import { fmtBRL, fmtNum } from "@/engines/finance/format";
 import type { BalancoDetalhado } from "@/engines/finance/types";
 import { GitCompare, CheckCircle2, AlertTriangle, Camera, ArrowRight, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -299,7 +299,7 @@ export function BalancoTab() {
         />
         <StatCard
           label="D/PL"
-          value={`${(totalsAtual.patrimonioLiquido > 0 ? totalsAtual.dividaOnerosa / totalsAtual.patrimonioLiquido : 0).toFixed(2)}×`}
+          value={`${fmtNum(totalsAtual.patrimonioLiquido > 0 ? totalsAtual.dividaOnerosa / totalsAtual.patrimonioLiquido : 0, 2)}×`}
           tone={
             totalsAtual.patrimonioLiquido > 0 &&
             totalsAtual.dividaOnerosa / totalsAtual.patrimonioLiquido > 1
@@ -312,7 +312,7 @@ export function BalancoTab() {
             formula: "Dívida Onerosa ÷ Patrimônio Líquido",
             calc:
               totalsAtual.patrimonioLiquido > 0
-                ? `${fmtBRL(totalsAtual.dividaOnerosa)} ÷ ${fmtBRL(totalsAtual.patrimonioLiquido)}\n= ${(totalsAtual.dividaOnerosa / totalsAtual.patrimonioLiquido).toFixed(2)}×`
+                ? `${fmtBRL(totalsAtual.dividaOnerosa)} ÷ ${fmtBRL(totalsAtual.patrimonioLiquido)}\n= ${fmtNum(totalsAtual.dividaOnerosa / totalsAtual.patrimonioLiquido, 2)}×`
                 : "Patrimônio Líquido ≤ 0 — cálculo indisponível",
           }}
         />
@@ -738,19 +738,19 @@ function SubtotalCells({
         <>
           <span className="w-24 text-right text-muted-foreground">{fmtBRL(anterior)}</span>
           <span className="w-10 text-right text-[10px] text-muted-foreground">
-            {avAnt.toFixed(0)}%
+            {fmtNum(avAnt, 0)}%
           </span>
         </>
       )}
       <span className="w-28 text-right">{fmtBRL(atual)}</span>
-      <span className="w-10 text-right text-[10px] text-muted-foreground">{av.toFixed(0)}%</span>
+      <span className="w-10 text-right text-[10px] text-muted-foreground">{fmtNum(av, 0)}%</span>
       {showAnterior && (
         <span
           className={`w-14 text-right text-[10px] font-medium ${
             ah > 0 ? "text-pos" : ah < 0 ? "text-neg" : "text-muted-foreground"
           }`}
         >
-          {anterior !== 0 ? `${ah > 0 ? "+" : ""}${ah.toFixed(0)}%` : "—"}
+          {anterior !== 0 ? `${ah > 0 ? "+" : ""}${fmtNum(ah, 0)}%` : "—"}
         </span>
       )}
     </div>
