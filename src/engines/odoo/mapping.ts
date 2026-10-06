@@ -29,10 +29,14 @@ const PL_LINES = new Set<string>([
   "ir_csll",
 ]);
 
-const TAX_ON_SALES_RE =
-  /\b(icms|pis|pasep|cofins|iss|ipi|cbs|ibs|simples nacional|das)\b|impostos? (e contribui[çc][õo]es )?s(obre|\/) (as )?vendas|taxes? (and contributions )?on sales/i;
+const TAX_ON_SALES_CI =
+  /\b(icms|pis|pasep|cofins|iss|ipi|cbs|ibs|simples nacional)\b|impostos? (e contribui[çc][õo]es )?s(obre|\/) (as )?vendas|taxes? (and contributions )?on sales/i;
+/** "DAS" só como sigla (maiúsculas): em minúsculas é a preposição ("aluguel das lojas"). */
+const DAS_RE = /\bDAS\b/;
+const TAX_ON_SALES_RE = { test: (name: string) => TAX_ON_SALES_CI.test(name) || DAS_RE.test(name) };
+/** "Terceiros" só como contribuição social (Sistema S); "serviços de terceiros" é despesa. */
 const ENCARGOS_RE =
-  /inss|fgts|encargo|social charges|contribui[çc][ãa]o (previdenci|social)|rat\b|terceiros/i;
+  /inss|fgts|encargo|social charges|contribui[çc][ãa]o (previdenci|social)|rat\b|contribui[çc][õo]es? (a|de|para) terceiros|outras entidades|sistema s\b/i;
 const COMERCIAL_RE =
   /venda|comerci|propaganda|publicidade|marketing|comiss|frete s(obre|\/) vendas|selling|advertis|commission/i;
 const DEPRECIATION_RE = /deprecia|amortiza|depreciation|amortization/i;

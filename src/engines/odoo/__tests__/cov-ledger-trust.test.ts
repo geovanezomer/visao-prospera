@@ -202,11 +202,22 @@ describe("computeTrust — idade, classificação, moeda, encerramento, rascunho
     const r2 = computeTrust(s, e, buildEntityData(s, e, "2025-12"), { lastError: null, now: NOW });
     expect(check(r2, "open-months")).toMatchObject({ level: "warn" });
     expect(check(r2, "open-months")?.detail).toContain("fechado só até 2025-09");
-    // Com a janela padrão (termina no bloqueio) todos os meses estão fechados
-    expect(check(r, "open-months")).toMatchObject({ level: "ok" });
+    // Janela padrão: o bloqueio deixaria menos de 12 meses, então é ignorado —
+    // 12 meses completos, com o aviso de meses ainda abertos (e nada de janela curta).
+    expect(check(r, "open-months")).toMatchObject({ level: "warn" });
+    expect(check(r, "short-window")).toBeUndefined();
 
     s.companies[0].lockDate = null;
     expect(check(run(s), "open-months")?.detail).toContain("Sem data de bloqueio");
+  });
+
+  it("janela com menos de 12 meses (mês final escolhido cedo) → erro explicando", () => {
+    const s = snap();
+    const e = listEntities(s)[0];
+    const r = computeTrust(s, e, buildEntityData(s, e, MONTHS[4]), { lastError: null, now: NOW });
+    expect(check(r, "short-window")).toMatchObject({ level: "error" });
+    expect(check(r, "short-window")?.detail).toContain("só 5 meses");
+    expect(r.level).toBe("error");
   });
 
   it("consolidado do grupo (sem matriz) usa o bloqueio de todas as empresas", () => {

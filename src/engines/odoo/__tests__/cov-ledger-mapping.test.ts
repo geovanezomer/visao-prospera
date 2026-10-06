@@ -147,3 +147,33 @@ describe("sinais de apresentação", () => {
     expect(Object.keys(PL_LINE_LABELS)).toHaveLength(15);
   });
 });
+
+describe("nomes comuns que não são tributo nem encargo", () => {
+  it.each([
+    ["Manutenção das instalações", "despesa_administrativa"],
+    ["Aluguel das lojas", "despesa_administrativa"],
+    ["Taxas das maquininhas", "despesa_administrativa"],
+    ["Serviços de terceiros", "despesa_administrativa"],
+    ["Serviços de terceiros - PJ", "despesa_administrativa"],
+    ["DAS - Simples Nacional", "impostos_vendas"],
+    ["Simples Nacional a recolher", "impostos_vendas"],
+    ["ISS sobre serviços", "impostos_vendas"],
+    ["INSS terceiros", "pessoal_encargos"],
+    ["Contribuições a terceiros (Sistema S)", "pessoal_encargos"],
+  ])("%s → %s", (name, esperado) => {
+    expect(classifyAccount({ code: "6.1.10", name, type: "expense" })).toEqual({
+      kind: "pl",
+      line: esperado,
+    });
+  });
+
+  it("devolução das vendas na ECD é dedução, não tributo", () => {
+    expect(
+      classifyAccount({
+        code: "3.01.01.01.02.09",
+        name: "(-) Devoluções das vendas",
+        type: "income",
+      }),
+    ).toEqual({ kind: "pl", line: "deducoes" });
+  });
+});

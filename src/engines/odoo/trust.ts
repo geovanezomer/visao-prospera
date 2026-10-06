@@ -195,6 +195,15 @@ export function computeTrust(
         : `Todos os meses da janela estão bloqueados no Odoo (até ${closed}).`,
   });
 
+  // 8b) Janela curta: meses faltantes entram como zero nos totais anuais.
+  if (data.months.length < 12)
+    checks.push({
+      id: "short-window",
+      level: "error",
+      title: "Menos de 12 meses na janela",
+      detail: `A janela tem só ${data.months.length} ${data.months.length === 1 ? "mês" : "meses"}: receita anual, Simples (RBT12), EBITDA e prazos médios ficam subestimados. Escolha um mês final mais recente ou aumente o histórico na sincronização.`,
+    });
+
   // 9) Moeda: convertida pelas cotações do Odoo (aviso) ou somada sem conversão (erro).
   const foreign = companies.filter((c) => c.currency && c.currency !== "BRL");
   if (foreign.length) {

@@ -37,8 +37,16 @@ export function useAppState(namespace?: string, initialState?: AppState) {
   // Estado inicial de um espaço novo (ex.: premissas sugeridas pelo Odoo).
   const initialRef = useRef(initialState);
   initialRef.current = initialState;
-  // Suprime salvamento quando o estado foi recebido via broadcast de outra aba.
+  // Suprime salvamento quando o estado foi recebido via broadcast de outra aba
+  // ou acabou de ser lido do armazenamento (regravar e avisar as outras abas
+  // descartaria o que elas estão digitando).
   const suppressSave = useRef(false);
+  // Edição agendada e ainda não gravada (debounce): gravada na hora ao trocar
+  // de espaço ou sair; uma mudança vinda de outra aba não a sobrescreve.
+  const pending = useRef<{ key: string; state: AppState } | null>(null);
+  // Espaço novo nomeado (entidade do Odoo) só hidrata quando as premissas
+  // iniciais estiverem prontas — senão gravaria o estado padrão nele.
+  const initialReady = !namespace || initialState !== undefined;
 
   // Geração da hidratação: uma leitura lenta de um espaço anterior (troca
   // rápida de entidade/modo) não pode sobrescrever o espaço atual.
@@ -51,9 +59,12 @@ export function useAppState(namespace?: string, initialState?: AppState) {
     try {
       const stored = await loadKey<unknown>(stateKey(username));
       const fromLegacy = stored ?? (namespace ? null : await readFirstAsync<unknown>(LEGACY_STATE));
+      if (gen !== hydrateGen.current) return;
+      if (!fromLegacy && !initialReady) return; // espera as premissas iniciais
       // validateAndMigrate: Zod no shape de topo + migrateState (sanitiza
       // Months[12], normaliza NaN/Infinity, garante invariantes). Se o
       // JSON estiver corrompido ou manipulado, cai em DEFAULT_STATE.
+      suppressSave.current = !!fromLegacy;
       setState(fromLegacy ? validateAndMigrate(fromLegacy) : (initialRef.current ?? DEFAULT_STATE));
     } catch {
       if (gen !== hydrateGen.current) return;
@@ -62,7 +73,7 @@ export function useAppState(namespace?: string, initialState?: AppState) {
     if (gen !== hydrateGen.current) return;
     hydratedFor.current = username;
     setHydrated(true);
-  }, [username, namespace]);
+  }, [username, namespace, initialReady]);
 
   useEffect(() => {
     void hydrate();
@@ -79,8 +90,10 @@ export function useAppState(namespace?: string, initialState?: AppState) {
       return;
     }
     setAutosaveStatus("saving");
+    pending.current = { key: stateKey(username), state };
     const t = setTimeout(async () => {
       try {
+        pending.current = null;
         await saveKey(stateKey(username), state);
         broadcastChange(stateKey(username));
         // Auto-arquiva o AppState do ano corrente no store de cenários
@@ -104,6 +117,22 @@ export function useAppState(namespace?: string, initialState?: AppState) {
     return () => clearTimeout(t);
   }, [state, hydrated, username, namespace]);
 
+  // Troca de espaço (empresa/entidade/usuário) ou saída: grava na hora a edição
+  // ainda no debounce, na chave do espaço que está sendo deixado.
+  useEffect(() => {
+    const flush = () => {
+      const p = pending.current;
+      if (!p) return;
+      pending.current = null;
+      void saveKey(p.key, p.state).then(() => broadcastChange(p.key));
+    };
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, [username]);
+
   // Após "saved", volta a "idle" depois de 2s — evita poluir o header.
   useEffect(() => {
     if (autosaveStatus !== "saved") return;
@@ -115,8 +144,10 @@ export function useAppState(namespace?: string, initialState?: AppState) {
   useEffect(() => {
     return onRemoteChange(async (key) => {
       if (key !== stateKey(username)) return;
+      // Edição local ainda não gravada: ela vence (será gravada em instantes).
+      if (pending.current?.key === key) return;
       const fresh = await loadKey<unknown>(key);
-      if (fresh) {
+      if (fresh && !pending.current) {
         suppressSave.current = true;
         setState(validateAndMigrate(fresh));
       }

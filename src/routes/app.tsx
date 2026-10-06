@@ -135,7 +135,9 @@ function suggestFor(
   data: Cockpit["data"],
   endMonth: Cockpit["endMonth"],
 ) {
-  if (!snapshot || !entity || !data) return undefined;
+  // Enquanto a entidade nova carrega, `data` ainda é da anterior: sugerir com
+  // ela gravaria regime/setor da empresa errada no espaço da nova.
+  if (!snapshot || !entity || !data || data.entity.key !== entity.key) return undefined;
   let ref = entity;
   if (entity.kind === "branch") {
     ref = entities.find((e) => e.kind === "entity" && e.rootId === entity.rootId) ?? entity;

@@ -252,8 +252,10 @@ export function resolveWindow(
     const fechado =
       next.getUTCDate() === 1 ? lockDate.slice(0, 7) : prevMonth(lockDate.slice(0, 7));
     const idx = months.indexOf(fechado);
-    // Só usa o bloqueio se ele estiver dentro do retrato e antes do mês corrente.
-    if (idx >= 0 && idx <= lastComplete) end = idx;
+    // Só usa o bloqueio se ele estiver dentro do retrato, antes do mês corrente
+    // e deixar 12 meses para trás — bloqueio antigo não encolhe a janela (os
+    // meses faltantes virariam zero na receita anual, no Simples e no PMR).
+    if (idx >= 11 && idx <= lastComplete) end = idx;
   }
   return { start: Math.max(0, end - 11), end };
 }

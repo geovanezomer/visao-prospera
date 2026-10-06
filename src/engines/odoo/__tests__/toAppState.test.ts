@@ -298,8 +298,16 @@ describe("resolveWindow — meses fechados", () => {
     expect(MONTHS[w.end]).toBe("2026-07");
   });
   it("bloqueio no meio do mês fecha só o mês anterior", () => {
-    const w = resolveWindow(snapshot(), null, "2026-06-15");
-    expect(MONTHS[w.end]).toBe("2026-05");
+    const w = resolveWindow(snapshot(), null, "2026-07-15");
+    expect(MONTHS[w.end]).toBe("2026-06");
+    expect(w.end - w.start + 1).toBe(12);
+  });
+  it("bloqueio que deixaria menos de 12 meses é ignorado (janela não encolhe)", () => {
+    const s = snapshot();
+    s.syncedAt = "2026-08-15T12:00:00Z";
+    const w = resolveWindow(s, null, "2026-05-31"); // fecharia em 2026-05: só 11 meses
+    expect(MONTHS[w.end]).toBe("2026-07");
+    expect(w.end - w.start + 1).toBe(12);
   });
 });
 

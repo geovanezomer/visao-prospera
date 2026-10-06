@@ -462,20 +462,39 @@ async function fetchFxRates(
   if (!currencies.length) return {};
   const [y, m] = months[months.length - 1].split("-").map(Number);
   const fim = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
-  const rows = await odooCall<Array<Record<string, unknown>>>(
+  const inicio = `${months[0]}-01`;
+  const fields = ["name", "currency_id", "company_currency_id", "inverse_company_rate"];
+  // Cotações da janela (mais recentes primeiro: um teto de linhas nunca corta o
+  // fim da janela) + a última anterior ao início de cada moeda (vale até a próxima).
+  const janela = await odooCall<Array<Record<string, unknown>>>(
     cfg,
     "res.currency.rate",
     "search_read",
     {
       domain: [
         ["currency_id.name", "in", currencies],
+        ["name", ">=", inicio],
         ["name", "<=", fim],
       ],
-      fields: ["name", "currency_id", "company_currency_id", "inverse_company_rate"],
-      order: "name asc",
+      fields,
+      order: "name desc",
       limit: 50_000,
     },
   );
+  const anteriores = await Promise.all(
+    currencies.map((c) =>
+      odooCall<Array<Record<string, unknown>>>(cfg, "res.currency.rate", "search_read", {
+        domain: [
+          ["currency_id.name", "=", c],
+          ["name", "<", inicio],
+        ],
+        fields,
+        order: "name desc",
+        limit: 20, // uma por empresa do grupo
+      }),
+    ),
+  );
+  const rows = [...janela, ...anteriores.flat()];
   const recs: FxRateRecord[] = rows
     .filter((r) => !Array.isArray(r.company_currency_id) || r.company_currency_id[1] === "BRL")
     .map((r) => ({
@@ -517,7 +536,8 @@ export async function buildSnapshot(
     ? all.filter((c) => opts.companyIds.includes(c.id) || opts.companyIds.includes(rootOf(c)))
     : all;
   if (!chosen.length) throw new Error("Nenhuma empresa do Odoo selecionada.");
-  const months = monthRange(Math.min(Math.max(opts.historyMonths, 12), 60), opts.ref);
+  // +1: o mês corrente (em andamento) não conta — sempre 12+ meses completos.
+  const months = monthRange(Math.min(Math.max(opts.historyMonths, 12), 60) + 1, opts.ref);
   const partnerToCompany = new Map(
     chosen.filter((c) => c.partnerId).map((c) => [c.partnerId as number, c.id]),
   );
