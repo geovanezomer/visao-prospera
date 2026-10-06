@@ -10,120 +10,82 @@
 //      minuto (429 com Retry-After), intent não paga (409), happy path.
 //   4. Endpoint /checkout: payload inválido (400), token assinado na URL.
 //
-// Mockamos Supabase (admin client) e o resolver de provider para que o
-// teste rode 100% offline e determinístico. O HMAC é real — usamos a
-// var de ambiente CHECKOUT_INTENT_HMAC_SECRET injetada no setup.
+// Banco real em memória (PGlite). Mockamos só o magic link, o mailer, o
+// fetch do provedor e — quando o teste precisa forçar 429 — o rate limit.
+// O HMAC é real (CHECKOUT_INTENT_HMAC_SECRET injetada no setup).
 // ============================================================================
 
-import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { createTestDb } from "./helpers/testDb";
+import { schema } from "@/db/client.server";
 
-// ─── Setup global: secret HMAC + APP_URL + Supabase envs ────────────────────
+// ─── Setup global: secret HMAC + APP_URL ────────────────────────────────────
 process.env.CHECKOUT_INTENT_HMAC_SECRET ??= "test-secret-do-nao-use-em-prod-32+chars";
-process.env.SUPABASE_URL ??= "https://example.supabase.co";
-process.env.SUPABASE_SERVICE_ROLE_KEY ??= "service-role-key-stub";
 process.env.APP_URL ??= "https://app.example.com";
 
-// ─── Mock de @supabase/supabase-js ──────────────────────────────────────────
-// Tabela em memória + RPC controlável via `mockState` que os testes ajustam
-// turno a turno (intents, allowed do rate-limit, email_settings, etc.).
-type RlOutcome = { allowed: boolean; remaining: number; retry_after_seconds: number };
-const mockState = {
-  intents: new Map<string, any>(),
-  rlOutcomes: [] as RlOutcome[],
-  rlDefaultAllowed: true,
-  emailSettings: null as any,
-  generateLinkResult: {
-    data: { properties: { action_link: "https://magic.example.com/xyz" } },
-    error: null as { message: string } | null,
-  },
-  // Captura chamadas para asserts
-  generateLinkCalls: [] as Array<{ type: string; email: string }>,
-  resendFetchCalls: 0,
-};
-
-function makeClient() {
-  const from = (table: string) => ({
-    select: (_cols?: string) => ({
-      eq: (_col: string, val: string) => ({
-        maybeSingle: async () => {
-          if (table === "checkout_intents") {
-            const row = mockState.intents.get(val);
-            return { data: row ?? null, error: null };
-          }
-          if (table === "email_settings") {
-            return { data: mockState.emailSettings, error: null };
-          }
-          return { data: null, error: null };
-        },
-      }),
-      limit: (_n: number) => ({
-        maybeSingle: async () => ({ data: mockState.emailSettings, error: null }),
-      }),
-    }),
-    update: (_patch: any) => ({
-      eq: async (_c: string, _v: string) => ({ data: null, error: null }),
-    }),
-    insert: async (_row: any) => ({ data: null, error: null }),
-  });
-
+// ─── Rate limit controlável (o real usa o banco; aqui forçamos negações) ────
+type RlOutcome = { allowed: boolean; remaining: number; retryAfter: number };
+const rlQueue: RlOutcome[] = [];
+vi.mock("@/lib/rateLimit.server", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/rateLimit.server")>();
   return {
-    from,
-    rpc: async (name: string, _args: any) => {
-      if (name === "rl_consume") {
-        const next = mockState.rlOutcomes.shift();
-        const out =
-          next ??
-          (mockState.rlDefaultAllowed
-            ? { allowed: true, remaining: 99, retry_after_seconds: 0 }
-            : { allowed: false, remaining: 0, retry_after_seconds: 30 });
-        return { data: [out], error: null };
-      }
-      return { data: null, error: null };
-    },
-    auth: {
-      admin: {
-        generateLink: async (args: { type: string; email: string }) => {
-          mockState.generateLinkCalls.push({ type: args.type, email: args.email });
-          return mockState.generateLinkResult;
-        },
-      },
-    },
+    ...real,
+    rlConsume: async (...args: Parameters<typeof real.rlConsume>) =>
+      rlQueue.shift() ?? real.rlConsume(...args),
   };
-}
+});
 
-vi.mock("@supabase/supabase-js", () => ({
-  createClient: () => makeClient(),
+// ─── Magic link + mailer ────────────────────────────────────────────────────
+const mockState = {
+  magicLinkCalls: [] as Array<{ email: string; callbackPath?: string }>,
+  magicLinkFails: false,
+  mailCalls: [] as Array<{ to: string; html: string }>,
+  mailResult: { sent: true, via: "smtp" } as { sent: boolean; via: string },
+};
+vi.mock("@/lib/magicLink.server", () => ({
+  generateMagicLink: async (email: string, callbackPath?: string) => {
+    if (mockState.magicLinkFails) throw new Error("falhou");
+    mockState.magicLinkCalls.push({ email, callbackPath });
+    return "https://app.example.com/api/auth/magic-link/verify?token=xyz";
+  },
+}));
+vi.mock("@/lib/mailer.server", () => ({
+  sendMail: async (m: { to: string; html: string }) => {
+    mockState.mailCalls.push(m);
+    return mockState.mailResult;
+  },
+  isMailConfigured: () => mockState.mailResult.via !== "none",
 }));
 
-// Mock global fetch para Resend (não dispara rede real).
-const realFetch = globalThis.fetch;
-beforeAll(() => {
-  globalThis.fetch = (async (...args: any[]) => {
-    const url = String(args[0] ?? "");
-    if (url.includes("api.resend.com")) {
-      mockState.resendFetchCalls++;
-      return new Response(JSON.stringify({ id: "em_stub" }), { status: 200 });
-    }
-    return realFetch(...(args as Parameters<typeof realFetch>));
-  }) as typeof fetch;
+let t: Awaited<ReturnType<typeof createTestDb>>;
+beforeAll(async () => {
+  t = await createTestDb();
+});
+afterAll(async () => t.close());
+
+beforeEach(async () => {
+  await t.client.exec(
+    'TRUNCATE "checkout_intents", "rate_limit_buckets", "plans", "provider_credentials", "app_settings" CASCADE',
+  );
+  rlQueue.length = 0;
+  mockState.magicLinkCalls = [];
+  mockState.magicLinkFails = false;
+  mockState.mailCalls = [];
+  mockState.mailResult = { sent: true, via: "smtp" };
 });
 
-beforeEach(() => {
-  mockState.intents.clear();
-  mockState.rlOutcomes = [];
-  mockState.rlDefaultAllowed = true;
-  mockState.emailSettings = null;
-  mockState.generateLinkResult = {
-    data: { properties: { action_link: "https://magic.example.com/xyz" } },
-    error: null,
-  };
-  mockState.generateLinkCalls = [];
-  mockState.resendFetchCalls = 0;
-});
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
+type IntentSeed = Partial<typeof schema.checkoutIntents.$inferInsert> & {
+  idempotencyKey: string;
+  email: string;
+};
+async function seedIntent(i: IntentSeed) {
+  await t.db.insert(schema.checkoutIntents).values({
+    planSlug: "starter",
+    provider: "stripe",
+    status: "created",
+    ...i,
+  });
+}
 
 // ─── Utilitários ────────────────────────────────────────────────────────────
 async function loadHandler(modPath: string, method: "GET" | "POST") {
@@ -197,7 +159,7 @@ describe("GET /intent-status", () => {
     const { signIntentKey } = await import("@/lib/intentToken.server");
     const k = "abcdef0123456789abcdef0123456789";
     const t = await signIntentKey(k);
-    mockState.rlOutcomes = [{ allowed: false, remaining: 0, retry_after_seconds: 42 }];
+    rlQueue.push({ allowed: false, remaining: 0, retryAfter: 42 });
     const h = await loadHandler("@/routes/api/public/payments/intent-status", "GET");
     const r = await h({ request: req(`https://x.test/?i=${encodeURIComponent(t)}`) });
     expect(r.status).toBe(429);
@@ -216,17 +178,14 @@ describe("GET /intent-status", () => {
   test("happy path: paid + email mascarado", async () => {
     const { signIntentKey } = await import("@/lib/intentToken.server");
     const k = "abcdef0123456789abcdef0123456789";
-    mockState.intents.set(k, {
+    await seedIntent({
+      idempotencyKey: k,
       status: "paid",
-      plan_slug: "starter",
-      with_upsell: false,
+      planSlug: "starter",
       currency: "BRL",
-      plan_amount_cents: 9900,
-      upsell_amount_cents: null,
+      planAmountCents: 9900,
       provider: "stripe",
-      confirmed_at: "2026-06-25T10:00:00Z",
-      updated_at: "2026-06-25T10:00:00Z",
-      last_error: null,
+      confirmedAt: "2026-06-25T10:00:00Z",
       email: "geovane@exemplo.com",
     });
     const t = await signIntentKey(k);
@@ -236,6 +195,7 @@ describe("GET /intent-status", () => {
     const body = await r.json();
     expect(body.status).toBe("paid");
     expect(body.planAmountCents).toBe(9900);
+    expect(body.confirmedAt).toBe("2026-06-25T10:00:00.000Z");
     // Email original NÃO deve aparecer (mascarado).
     expect(body.emailMasked).toMatch(/^g\*\*\*e@exemplo\.com$/);
     expect(JSON.stringify(body)).not.toContain("geovane@exemplo.com");
@@ -244,17 +204,14 @@ describe("GET /intent-status", () => {
   test("failed → expõe last_error", async () => {
     const { signIntentKey } = await import("@/lib/intentToken.server");
     const k = "1111111111111111aaaaaaaaaaaaaaaa";
-    mockState.intents.set(k, {
+    await seedIntent({
+      idempotencyKey: k,
       status: "failed",
-      plan_slug: "pro",
-      with_upsell: false,
+      planSlug: "pro",
       currency: "BRL",
-      plan_amount_cents: 0,
-      upsell_amount_cents: null,
+      planAmountCents: 0,
       provider: "asaas",
-      confirmed_at: null,
-      updated_at: "2026-06-25T10:00:00Z",
-      last_error: "auto-reconciled (janela: asaas 72h)",
+      lastError: "auto-reconciled (janela: asaas 72h)",
       email: "u@x.com",
     });
     const t = await signIntentKey(k);
@@ -290,7 +247,7 @@ describe("POST /resend-magic-link", () => {
   test("rate-limit por minuto → 429 com Retry-After", async () => {
     const { signIntentKey } = await import("@/lib/intentToken.server");
     const t = await signIntentKey("abcdef0123456789abcdef0123456789");
-    mockState.rlOutcomes = [{ allowed: false, remaining: 0, retry_after_seconds: 30 }];
+    rlQueue.push({ allowed: false, remaining: 0, retryAfter: 30 });
     const r = await call({ i: t });
     expect(r.status).toBe(429);
     expect(r.headers.get("Retry-After")).toBe("30");
@@ -300,7 +257,7 @@ describe("POST /resend-magic-link", () => {
   test("intent não paga → 409", async () => {
     const { signIntentKey } = await import("@/lib/intentToken.server");
     const k = "2222222222222222bbbbbbbbbbbbbbbb";
-    mockState.intents.set(k, { email: "u@x.com", status: "created", plan_slug: "starter" });
+    await seedIntent({ idempotencyKey: k, email: "u@x.com", status: "created" });
     const t = await signIntentKey(k);
     const r = await call({ i: t });
     expect(r.status).toBe(409);
@@ -314,38 +271,52 @@ describe("POST /resend-magic-link", () => {
     expect(r.status).toBe(404);
   });
 
-  test("happy path: gera link + chama Resend quando configurado", async () => {
+  test("happy path: gera link e envia pelo mailer", async () => {
     const { signIntentKey } = await import("@/lib/intentToken.server");
     const k = "4444444444444444dddddddddddddddd";
-    mockState.intents.set(k, { email: "alice@exemplo.com", status: "paid", plan_slug: "pro" });
-    mockState.emailSettings = {
-      resend_api_key: "re_stub",
-      from_email: "no-reply@exemplo.com",
-      from_name: "Finnance",
-    };
-    const t = await signIntentKey(k);
-    const r = await call({ i: t });
+    await seedIntent({ idempotencyKey: k, email: "alice@exemplo.com", status: "paid" });
+    const t2 = await signIntentKey(k);
+    const r = await call({ i: t2 });
     expect(r.status).toBe(200);
     expect(await r.json()).toMatchObject({ ok: true, sent: true });
-    expect(mockState.generateLinkCalls).toHaveLength(1);
-    expect(mockState.generateLinkCalls[0]).toMatchObject({
-      type: "magiclink",
-      email: "alice@exemplo.com",
-    });
-    expect(mockState.resendFetchCalls).toBe(1);
+    expect(mockState.magicLinkCalls).toEqual([
+      { email: "alice@exemplo.com", callbackPath: "/app" },
+    ]);
+    expect(mockState.mailCalls).toHaveLength(1);
+    expect(mockState.mailCalls[0].to).toBe("alice@exemplo.com");
+    expect(mockState.mailCalls[0].html).toContain("magic-link/verify");
   });
 
-  test("happy path sem config Resend → ok:true, sent:false", async () => {
+  test("sem envio configurado → ok:true, sent:false", async () => {
     const { signIntentKey } = await import("@/lib/intentToken.server");
     const k = "5555555555555555eeeeeeeeeeeeeeee";
-    mockState.intents.set(k, { email: "bob@x.com", status: "paid", plan_slug: "starter" });
-    // emailSettings = null e nenhum RESEND_API_KEY no env → degrada bem.
-    delete process.env.RESEND_API_KEY;
-    const t = await signIntentKey(k);
-    const r = await call({ i: t });
+    await seedIntent({ idempotencyKey: k, email: "bob@x.com", status: "paid" });
+    mockState.mailResult = { sent: false, via: "none" };
+    const r = await call({ i: await signIntentKey(k) });
     expect(r.status).toBe(200);
     expect(await r.json()).toMatchObject({ ok: true, sent: false });
-    expect(mockState.resendFetchCalls).toBe(0);
+  });
+
+  test("falha ao gerar link → 500 link_failed", async () => {
+    const { signIntentKey } = await import("@/lib/intentToken.server");
+    const k = "6666666666666666ffffffffffffffff";
+    await seedIntent({ idempotencyKey: k, email: "c@x.com", status: "paid" });
+    mockState.magicLinkFails = true;
+    const r = await call({ i: await signIntentKey(k) });
+    expect(r.status).toBe(500);
+    expect(await r.json()).toMatchObject({ error: "link_failed" });
+    expect(mockState.mailCalls).toHaveLength(0);
+  });
+
+  test("limite real por minuto (banco): segundo reenvio → 429", async () => {
+    const { signIntentKey } = await import("@/lib/intentToken.server");
+    const k = "7777777777777777aaaaaaaaaaaaaaaa";
+    await seedIntent({ idempotencyKey: k, email: "d@x.com", status: "paid" });
+    const tok = await signIntentKey(k);
+    expect((await call({ i: tok })).status).toBe(200);
+    const second = await call({ i: tok });
+    expect(second.status).toBe(429);
+    expect(Number(second.headers.get("Retry-After"))).toBeGreaterThan(0);
   });
 });
 
@@ -379,7 +350,7 @@ describe("POST /checkout (guardas)", () => {
   });
 
   test("rate-limit por IP excedido → 429", async () => {
-    mockState.rlOutcomes = [{ allowed: false, remaining: 0, retry_after_seconds: 60 }];
+    rlQueue.push({ allowed: false, remaining: 0, retryAfter: 60 });
     const h = await loadHandler("@/routes/api/public/payments/checkout", "POST");
     const r = await h({
       request: req("https://x.test/", {
@@ -390,5 +361,109 @@ describe("POST /checkout (guardas)", () => {
     });
     expect(r.status).toBe(429);
     expect(r.headers.get("Retry-After")).toBeTruthy();
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// 5. /api/public/payments/checkout — fluxo completo com o banco
+// ════════════════════════════════════════════════════════════════════════════
+describe("POST /checkout (intenção persistida)", () => {
+  const realFetch = globalThis.fetch;
+  let stripeCalls = 0;
+  let stripeFails = false;
+
+  beforeEach(async () => {
+    stripeCalls = 0;
+    stripeFails = false;
+    const { invalidateProviderCache } = await import("@/lib/payments");
+    invalidateProviderCache();
+    await t.db.insert(schema.appSettings).values({
+      key: "active_provider",
+      value: { provider: "stripe" },
+    });
+    await t.db.insert(schema.providerCredentials).values({
+      provider: "stripe",
+      apiKey: "sk_test_x",
+      isActive: true,
+    });
+    await t.db.insert(schema.plans).values({
+      slug: "starter",
+      name: "Starter",
+      priceCents: 4990,
+      currency: "brl",
+      interval: "month",
+      stripePriceId: "price_starter",
+    });
+    globalThis.fetch = (async (...args: Parameters<typeof fetch>) => {
+      const url = String(args[0] ?? "");
+      if (url.startsWith("https://api.stripe.com/v1/checkout/sessions")) {
+        stripeCalls++;
+        if (stripeFails) {
+          return new Response(JSON.stringify({ error: { message: "cartão recusado" } }), {
+            status: 400,
+          });
+        }
+        return new Response(
+          JSON.stringify({ id: "cs_1", url: "https://checkout.stripe.com/c/cs_1", customer: null }),
+          { status: 200 },
+        );
+      }
+      throw new Error(`fetch inesperado: ${url}`);
+    }) as typeof fetch;
+  });
+
+  afterAll(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  async function checkout(body: Record<string, unknown>) {
+    const h = await loadHandler("@/routes/api/public/payments/checkout", "POST");
+    return h({
+      request: req("https://x.test/", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+    });
+  }
+
+  test("cria intenção redirected com token assinado na success_url; reenvio reutiliza", async () => {
+    const r = await checkout({ plan: "starter", email: "Novo@X.com", name: "Fulano Silva" });
+    expect(r.status).toBe(200);
+    expect(await r.json()).toMatchObject({
+      url: "https://checkout.stripe.com/c/cs_1",
+      provider: "stripe",
+    });
+    const [intent] = await t.db.select().from(schema.checkoutIntents);
+    expect(intent).toMatchObject({
+      email: "novo@x.com",
+      planSlug: "starter",
+      status: "redirected",
+      checkoutUrl: "https://checkout.stripe.com/c/cs_1",
+      providerSessionId: "cs_1",
+      planAmountCents: 4990,
+      currency: "BRL",
+    });
+    expect(intent.idempotencyKey).toMatch(/^[a-f0-9]{32}$/);
+
+    const again = await checkout({ plan: "starter", email: "novo@x.com", name: "Fulano Silva" });
+    expect(await again.json()).toMatchObject({ reused: true });
+    expect(stripeCalls).toBe(1);
+    expect(await t.db.select().from(schema.checkoutIntents)).toHaveLength(1);
+  });
+
+  test("provedor recusa → 422 e intenção registrada como failed", async () => {
+    stripeFails = true;
+    const r = await checkout({ plan: "starter", email: "f@x.com", name: "Fulano Silva" });
+    expect(r.status).toBe(422);
+    expect(await r.json()).toMatchObject({ code: "provider_error" });
+    const [intent] = await t.db.select().from(schema.checkoutIntents);
+    expect(intent.status).toBe("failed");
+    expect(intent.lastError).toContain("cartão recusado");
+  });
+
+  test("plano inexistente → 404", async () => {
+    const r = await checkout({ plan: "nao_existe", email: "f@x.com", name: "Fulano Silva" });
+    expect(r.status).toBe(404);
   });
 });

@@ -8,7 +8,7 @@
 //   3. Nenhum configurado: registra no log e devolve `sent: false`. Útil em
 //      desenvolvimento, onde o link aparece no console.
 // ============================================================================
-import nodemailer from "nodemailer";
+import nodemailer, { type Transporter } from "nodemailer";
 
 export type MailMessage = {
   to: string;
@@ -21,9 +21,9 @@ export type MailMessage = {
 
 export type MailResult = { sent: boolean; via: "smtp" | "resend" | "none"; error?: string };
 
-let transport: nodemailer.Transporter | null = null;
+let transport: Transporter | null = null;
 
-function smtpTransport(): nodemailer.Transporter | null {
+function smtpTransport(): Transporter | null {
   const host = process.env.SMTP_HOST;
   if (!host) return null;
   if (!transport) {

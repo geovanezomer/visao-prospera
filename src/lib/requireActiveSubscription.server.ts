@@ -1,11 +1,11 @@
 // ============================================================================
 // requireActiveSubscription — enforcement server-side de assinatura ativa.
 //
-// Consulta subscriptions + auth.users.app_metadata via supabaseAdmin e lança
+// Consulta subscriptions (Drizzle) + flags de trial da tabela `user` e lança
 // Error("402: ...") quando não há acesso válido. Cache em memória por userId
 // (TTL 60s) para não bater no banco em cada chamada.
 //
-// Uso dentro de um createServerFn com requireSupabaseAuth:
+// Uso dentro de um createServerFn com requireAuth:
 //     await requireActiveSubscription(context.userId);
 //
 // NÃO usar em rotas públicas de checkout/webhook/trial.
@@ -56,25 +56,25 @@ export async function requireActiveSubscription(userId: string): Promise<void> {
     throw new Error("402: Assinatura inativa. Reative um plano para usar este recurso.");
   }
 
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { db, schema } = await import("@/db/client.server");
+  const { desc, eq } = await import("drizzle-orm");
+  const { getAppUser } = await import("@/lib/users.server");
+  const subs = schema.subscriptions;
 
-  const [subRes, userRes] = await Promise.all([
-    supabaseAdmin
-      .from("subscriptions")
-      .select("status, current_period_end")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabaseAdmin.auth.admin.getUserById(userId),
+  const [subRows, user] = await Promise.all([
+    db()
+      .select({ status: subs.status, currentPeriodEnd: subs.currentPeriodEnd })
+      .from(subs)
+      .where(eq(subs.userId, userId))
+      .orderBy(desc(subs.createdAt))
+      .limit(1),
+    getAppUser(userId),
   ]);
-
-  const { isTrial, trialExpiresAt } = readTrialFlags(userRes.data.user);
+  const sub = subRows[0] ?? null;
+  const { isTrial, trialExpiresAt } = readTrialFlags(user);
 
   const ok = isAccessGranted({
-    subscription: subRes.data
-      ? { status: subRes.data.status, current_period_end: subRes.data.current_period_end }
-      : null,
+    subscription: sub ? { status: sub.status, current_period_end: sub.currentPeriodEnd } : null,
     isTrial,
     trialExpiresAt,
     now,

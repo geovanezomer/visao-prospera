@@ -34,8 +34,6 @@ export function trialEndPatch(converted?: { plan: string | null }) {
   return {
     isTrial: false,
     trialExpiresAt: null,
-    ...(converted
-      ? { trialConvertedAt: new Date(), trialConvertedPlan: converted.plan }
-      : {}),
+    ...(converted ? { trialConvertedAt: new Date(), trialConvertedPlan: converted.plan } : {}),
   };
 }

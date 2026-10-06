@@ -25,6 +25,23 @@ function fmt(ms: number): string {
 export function TrialBanner({ expiresAt }: { expiresAt: string }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Funil: marca o trial como ativado (consumed_at) no primeiro acesso.
+  // O magic link leva direto ao /app, então a chamada sai daqui — uma vez
+  // por sessão do navegador. Falha é silenciosa (não afeta o acesso).
+  useEffect(() => {
+    if (!user?.isTrial) return;
+    const key = `trial-activated:${user.id}`;
+    try {
+      if (window.sessionStorage.getItem(key)) return;
+      window.sessionStorage.setItem(key, "1");
+    } catch {
+      /* storage indisponível — tenta mesmo assim */
+    }
+    fetch("/api/public/trial/activate", { method: "POST", credentials: "include" }).catch(
+      () => undefined,
+    );
+  }, [user?.id, user?.isTrial]);
   const target = useMemo(() => new Date(expiresAt).getTime(), [expiresAt]);
   const [now, setNow] = useState(() => Date.now());
   const [upgrading, setUpgrading] = useState(false);

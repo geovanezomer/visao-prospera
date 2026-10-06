@@ -23,7 +23,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SharedShareIdRouteImport } from './routes/shared.$shareId'
 import { Route as CheckoutSucessoRouteImport } from './routes/checkout.sucesso'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiFeedbackRouteImport } from './routes/api/feedback'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiPublicTrialRequestRouteImport } from './routes/api/public/trial/request'
 import { Route as ApiPublicTrialActivateRouteImport } from './routes/api/public/trial/activate'
 import { Route as ApiPublicPaymentsResendMagicLinkRouteImport } from './routes/api/public/payments/resend-magic-link'
@@ -105,9 +107,19 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiFeedbackRoute = ApiFeedbackRouteImport.update({
   id: '/api/feedback',
   path: '/api/feedback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicTrialRequestRoute = ApiPublicTrialRequestRouteImport.update({
@@ -182,9 +194,11 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/termos': typeof TermosRoute
   '/api/feedback': typeof ApiFeedbackRoute
+  '/api/health': typeof ApiHealthRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/checkout/sucesso': typeof CheckoutSucessoRoute
   '/shared/$shareId': typeof SharedShareIdRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/public/hooks/reconcile-checkout-intents': typeof ApiPublicHooksReconcileCheckoutIntentsRoute
   '/api/public/hooks/trial-cleanup': typeof ApiPublicHooksTrialCleanupRoute
   '/api/public/hooks/webhook-retry': typeof ApiPublicHooksWebhookRetryRoute
@@ -209,9 +223,11 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/termos': typeof TermosRoute
   '/api/feedback': typeof ApiFeedbackRoute
+  '/api/health': typeof ApiHealthRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/checkout/sucesso': typeof CheckoutSucessoRoute
   '/shared/$shareId': typeof SharedShareIdRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/public/hooks/reconcile-checkout-intents': typeof ApiPublicHooksReconcileCheckoutIntentsRoute
   '/api/public/hooks/trial-cleanup': typeof ApiPublicHooksTrialCleanupRoute
   '/api/public/hooks/webhook-retry': typeof ApiPublicHooksWebhookRetryRoute
@@ -237,9 +253,11 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/termos': typeof TermosRoute
   '/api/feedback': typeof ApiFeedbackRoute
+  '/api/health': typeof ApiHealthRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/checkout/sucesso': typeof CheckoutSucessoRoute
   '/shared/$shareId': typeof SharedShareIdRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/public/hooks/reconcile-checkout-intents': typeof ApiPublicHooksReconcileCheckoutIntentsRoute
   '/api/public/hooks/trial-cleanup': typeof ApiPublicHooksTrialCleanupRoute
   '/api/public/hooks/webhook-retry': typeof ApiPublicHooksWebhookRetryRoute
@@ -266,9 +284,11 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/termos'
     | '/api/feedback'
+    | '/api/health'
     | '/auth/callback'
     | '/checkout/sucesso'
     | '/shared/$shareId'
+    | '/api/auth/$'
     | '/api/public/hooks/reconcile-checkout-intents'
     | '/api/public/hooks/trial-cleanup'
     | '/api/public/hooks/webhook-retry'
@@ -293,9 +313,11 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/termos'
     | '/api/feedback'
+    | '/api/health'
     | '/auth/callback'
     | '/checkout/sucesso'
     | '/shared/$shareId'
+    | '/api/auth/$'
     | '/api/public/hooks/reconcile-checkout-intents'
     | '/api/public/hooks/trial-cleanup'
     | '/api/public/hooks/webhook-retry'
@@ -320,9 +342,11 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/termos'
     | '/api/feedback'
+    | '/api/health'
     | '/auth/callback'
     | '/checkout/sucesso'
     | '/shared/$shareId'
+    | '/api/auth/$'
     | '/api/public/hooks/reconcile-checkout-intents'
     | '/api/public/hooks/trial-cleanup'
     | '/api/public/hooks/webhook-retry'
@@ -348,9 +372,11 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermosRoute: typeof TermosRoute
   ApiFeedbackRoute: typeof ApiFeedbackRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   CheckoutSucessoRoute: typeof CheckoutSucessoRoute
   SharedShareIdRoute: typeof SharedShareIdRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiPublicHooksReconcileCheckoutIntentsRoute: typeof ApiPublicHooksReconcileCheckoutIntentsRoute
   ApiPublicHooksTrialCleanupRoute: typeof ApiPublicHooksTrialCleanupRoute
   ApiPublicHooksWebhookRetryRoute: typeof ApiPublicHooksWebhookRetryRoute
@@ -463,11 +489,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/feedback': {
       id: '/api/feedback'
       path: '/api/feedback'
       fullPath: '/api/feedback'
       preLoaderRoute: typeof ApiFeedbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/trial/request': {
@@ -556,9 +596,11 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermosRoute: TermosRoute,
   ApiFeedbackRoute: ApiFeedbackRoute,
+  ApiHealthRoute: ApiHealthRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   CheckoutSucessoRoute: CheckoutSucessoRoute,
   SharedShareIdRoute: SharedShareIdRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiPublicHooksReconcileCheckoutIntentsRoute:
     ApiPublicHooksReconcileCheckoutIntentsRoute,
   ApiPublicHooksTrialCleanupRoute: ApiPublicHooksTrialCleanupRoute,

@@ -209,7 +209,9 @@ export async function refundAndRevoke(input: RefundAndRevokeInput): Promise<Refu
 
   if (!input.revoke) return result;
 
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { db, schema } = await import("@/db/client.server");
+  const { and, desc, eq } = await import("drizzle-orm");
+  const subs = schema.subscriptions;
 
   // (b1) cancelamento imediato no provedor
   if (input.subscriptionId) {
@@ -231,17 +233,16 @@ export async function refundAndRevoke(input: RefundAndRevokeInput): Promise<Refu
   // pois estornamos o dinheiro; o acesso tem de cair mesmo se o provider
   // rejeitar (ex.: assinatura já cancelada). O admin vê ambos os status.
   try {
-    const patch = {
-      status: "canceled" as const,
-      cancel_at_period_end: false,
-      updated_at: new Date().toISOString(),
-    };
-    const q = supabaseAdmin.from("subscriptions").update(patch).eq("user_id", input.userId);
-
-    const { error } = input.subscriptionId
-      ? await q.eq("stripe_subscription_id", input.subscriptionId)
-      : await q;
-    if (error) throw new Error(error.message);
+    await db()
+      .update(subs)
+      .set({ status: "canceled", cancelAtPeriodEnd: false, updatedAt: new Date().toISOString() })
+      .where(
+        input.subscriptionId
+          ? and(eq(subs.userId, input.userId), eq(subs.stripeSubscriptionId, input.subscriptionId))
+          : eq(subs.userId, input.userId),
+      );
+    const { invalidateSubscriptionCache } = await import("@/lib/requireActiveSubscription.server");
+    invalidateSubscriptionCache(input.userId);
     result.dbUpdate = { ok: true };
   } catch (e) {
     result.dbUpdate = { ok: false, error: e instanceof Error ? e.message : String(e) };
@@ -250,50 +251,45 @@ export async function refundAndRevoke(input: RefundAndRevokeInput): Promise<Refu
   // (b3) evento sintético em webhook_events (trilha de auditoria)
   try {
     const refundData = "data" in result.refund ? result.refund.data : undefined;
-    const { error } = await supabaseAdmin.from("webhook_events").insert({
-      provider: "admin",
-      event_type: "admin.refund_revoke",
-      subscription_id: input.subscriptionId,
-      status: "processed",
-      payload: {
-        refundId: refundData?.refundId ?? null,
-        amount: refundData?.amount ?? null,
-        actorId: input.actorId,
-        userId: input.userId,
-        provider: input.provider,
-        reason: input.reason ?? null,
-        revokeStep: result.revoke,
-        dbUpdateStep: result.dbUpdate,
-      },
-    });
-    if (error) throw new Error(error.message);
+    await db()
+      .insert(schema.webhookEvents)
+      .values({
+        provider: "admin",
+        eventType: "admin.refund_revoke",
+        subscriptionId: input.subscriptionId,
+        status: "processed",
+        payload: {
+          refundId: refundData?.refundId ?? null,
+          amount: refundData?.amount ?? null,
+          actorId: input.actorId,
+          userId: input.userId,
+          provider: input.provider,
+          reason: input.reason ?? null,
+          revokeStep: result.revoke,
+          dbUpdateStep: result.dbUpdate,
+        },
+      });
     result.audit = { ok: true };
   } catch (e) {
     result.audit = { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 
-  // (c) e-mail de estorno ao cliente (template "refund" já existente)
+  // (c) e-mail de estorno ao cliente (template "refund" do painel)
   try {
-    const { data: sub } = await supabaseAdmin
-      .from("subscriptions")
-      .select("user_id, plan, stripe_subscription_id")
-      .eq("user_id", input.userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const { data: userRes } = await supabaseAdmin.auth.admin.getUserById(input.userId);
-    const email = userRes?.user?.email;
+    const [sub] = await db()
+      .select({ plan: subs.plan })
+      .from(subs)
+      .where(eq(subs.userId, input.userId))
+      .orderBy(desc(subs.createdAt))
+      .limit(1);
+    const { getAppUser } = await import("@/lib/users.server");
+    const user = await getAppUser(input.userId);
+    const email = user?.email;
     if (email) {
-      const { getEmailConfig, getTemplate, renderTemplate } =
-        await import("./lifecycleEmails.server");
-      const cfg = await getEmailConfig(supabaseAdmin);
-      const tpl = await getTemplate(supabaseAdmin, "refund");
-      if (cfg && tpl) {
-        const meta = (userRes?.user?.user_metadata ?? {}) as Record<string, unknown>;
-        const name =
-          (typeof meta.display_name === "string" && meta.display_name) ||
-          email.split("@")[0] ||
-          "Cliente";
+      const { getTemplate, renderTemplate } = await import("./lifecycleEmails.server");
+      const tpl = await getTemplate("refund");
+      if (tpl) {
+        const name = user.name?.trim() || email.split("@")[0] || "Cliente";
         const refundData = "data" in result.refund ? result.refund.data : undefined;
         const vars: Record<string, string> = {
           name,
@@ -301,26 +297,17 @@ export async function refundAndRevoke(input: RefundAndRevokeInput): Promise<Refu
           amount: refundData?.amount != null ? String(refundData.amount) : "",
           reason: input.reason ?? "",
         };
-        const res = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${cfg.apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: cfg.from,
-            to: email,
-            subject: renderTemplate(tpl.subject, vars),
-            html: renderTemplate(tpl.html, vars),
-          }),
+        const { sendMail } = await import("@/lib/mailer.server");
+        const res = await sendMail({
+          to: email,
+          subject: renderTemplate(tpl.subject, vars),
+          html: renderTemplate(tpl.html, vars),
         });
-        if (!res.ok) throw new Error(`Resend ${res.status}`);
-        result.email = { ok: true };
+        if (res.sent) result.email = { ok: true };
+        else if (res.via === "none") result.email = { ok: false, error: "email não configurado" };
+        else throw new Error(`envio (${res.via}) falhou: ${res.error ?? "?"}`);
       } else {
-        result.email = {
-          ok: false,
-          error: cfg ? "template refund desabilitado" : "email não configurado",
-        };
+        result.email = { ok: false, error: "template refund desabilitado" };
       }
     } else {
       result.email = { ok: false, error: "usuário sem e-mail" };

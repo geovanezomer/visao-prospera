@@ -1,404 +1,383 @@
 // ============================================================================
-// Trial flow E2E (server-side)
+// Trial flow E2E (server-side), com PostgreSQL real em memória (PGlite).
 //
 // Cobre:
 //  1. POST /api/public/trial/request — feliz, honeypot, descartável, desativado,
-//     já-usado, falha de envio (rollback de auth.users + trial_requests), falha
-//     de configuração de e-mail.
-//  2. POST /api/public/trial/activate — marca consumed_at para usuário is_trial.
-//  3. Garantia de redirectTo /auth/callback no magic link (evita cair em /login).
-//
-// Toda a infraestrutura é mockada em memória.
+//     já-usado (inclusive maiúsculas), falha de envio (rollback do usuário +
+//     trial_requests), envio não configurado.
+//  2. POST /api/public/trial/activate — marca consumed_at para usuário em trial
+//     (sessão por cookie).
+//  3. Flags de trial: só o servidor grava (colunas do `user`); o leitor ignora
+//     qualquer coisa fora delas.
+//  4. POST /api/public/hooks/trial-cleanup — remove trial vencido sem
+//     assinatura, mantém o lock de 1 teste por e-mail, protege convertidos.
 // ============================================================================
-import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { eq } from "drizzle-orm";
+import { createTestDb } from "./helpers/testDb";
+import { schema } from "@/db/client.server";
 
-process.env.SUPABASE_URL ??= "https://example.supabase.co";
-process.env.SUPABASE_SERVICE_ROLE_KEY ??= "service-role-stub";
-process.env.SUPABASE_PUBLISHABLE_KEY ??= "anon-stub";
+process.env.BETTER_AUTH_SECRET ??= "better-auth-secret-de-teste-com-mais-de-32-chars";
 process.env.APP_URL ??= "https://app.example.com";
 
-// ─── Estado mockado ─────────────────────────────────────────────────────────
-type Row = Record<string, any>;
-const db: {
-  trial_requests: Row[];
-  app_settings: Record<string, any>;
-  email_settings: Row | null;
-  email_templates: Row[];
-  users: Map<string, Row>;
-} = {
-  trial_requests: [],
-  app_settings: {
-    trial: { enabled: true, duration_hours: 2 },
-    branding: { system_name: "Finnance" },
-  },
-  email_settings: {
-    resend_api_key: "re_test",
-    from_email: "no-reply@x.com",
-    from_name: "Finnance",
-  },
-  email_templates: [
-    {
-      kind: "trial_magic_link",
-      subject: "Olá {{name}}",
-      html: "{{link}}",
-      text: "{{link}}",
-      enabled: true,
-    },
-  ],
-  users: new Map(),
-};
-
+// ─── Mocks ──────────────────────────────────────────────────────────────────
 const cap = {
-  generateLinkCalls: [] as Array<{ email: string; redirectTo?: string }>,
-  resendCalls: [] as Array<{ to: string }>,
+  magicLinks: [] as Array<{ email: string; callbackPath?: string }>,
+  mails: [] as Array<{ to: string; subject: string; html: string }>,
+};
+let mailResult: { sent: boolean; via: "smtp" | "resend" | "none"; error?: string } = {
+  sent: true,
+  via: "smtp",
 };
 
-function reset() {
-  db.trial_requests.length = 0;
-  db.app_settings = {
-    trial: { enabled: true, duration_hours: 2 },
-    branding: { system_name: "Finnance" },
-  };
-  db.email_settings = {
-    resend_api_key: "re_test",
-    from_email: "no-reply@x.com",
-    from_name: "Finnance",
-  };
-  db.email_templates = [
-    {
-      kind: "trial_magic_link",
-      subject: "Olá {{name}}",
-      html: "{{link}}",
-      text: "{{link}}",
-      enabled: true,
-    },
-  ];
-  db.users.clear();
-  cap.generateLinkCalls.length = 0;
-  cap.resendCalls.length = 0;
-}
-
-// ─── Mock do supabase-js ────────────────────────────────────────────────────
-function makeClient(_token?: string) {
-  const userFromToken = _token ? db.users.get(_token) : null;
-  return {
-    from(table: string) {
-      const api: any = {
-        _table: table,
-        _filters: [] as Array<{ k: string; v: any; op: string }>,
-        select() {
-          return this;
-        },
-        eq(k: string, v: any) {
-          this._filters.push({ k, v, op: "eq" });
-          return this;
-        },
-        is(k: string, v: any) {
-          this._filters.push({ k, v, op: "is" });
-          return this;
-        },
-        limit() {
-          return this;
-        },
-        async maybeSingle() {
-          if (table === "trial_requests") {
-            const row = db.trial_requests.find((r) =>
-              this._filters.every((f: { k: string; v: any }) => r[f.k] === f.v),
-            );
-            return { data: row ?? null, error: null };
-          }
-          if (table === "app_settings") {
-            const f = this._filters.find((x: { k: string }) => x.k === "key");
-            const value = f ? db.app_settings[f.v] : null;
-            return { data: value ? { value } : null, error: null };
-          }
-          if (table === "email_settings") return { data: db.email_settings, error: null };
-          if (table === "email_templates") {
-            const f = this._filters.find((x: { k: string }) => x.k === "kind");
-            const row = db.email_templates.find((t) => t.kind === f?.v) ?? null;
-            return { data: row, error: null };
-          }
-          return { data: null, error: null };
-        },
-        async insert(row: any) {
-          if (table === "trial_requests") {
-            if (db.trial_requests.some((r) => r.email === row.email)) {
-              return { error: { message: "duplicate key" } };
-            }
-            db.trial_requests.push({ ...row, consumed_at: null });
-            return { error: null };
-          }
-          return { error: null };
-        },
-        delete() {
-          const filters: Array<{ k: string; v: any }> = [];
-          const chain: any = {
-            eq(k: string, v: any) {
-              filters.push({ k, v });
-              return chain;
-            },
-            then(resolve: any) {
-              if (table === "trial_requests") {
-                db.trial_requests = db.trial_requests.filter(
-                  (r) => !filters.every((f) => r[f.k] === f.v),
-                );
-              }
-              resolve({ error: null });
-            },
-          };
-          return chain;
-        },
-        update(patch: any) {
-          return {
-            eq: (k: string, v: any) => ({
-              is: async (_k2: string, _v2: any) => {
-                if (table === "trial_requests") {
-                  for (const r of db.trial_requests) {
-                    if (r[k] === v && r.consumed_at == null) Object.assign(r, patch);
-                  }
-                }
-                return { error: null };
-              },
-            }),
-          };
-        },
-      };
-      return api;
-    },
-
-    rpc: async () => ({
-      data: [{ allowed: true, remaining: 100, retry_after_seconds: 0 }],
-      error: null,
-    }),
-    auth: {
-      async getUser(token: string) {
-        const u = db.users.get(token);
-        return u
-          ? { data: { user: u }, error: null }
-          : { data: { user: null }, error: { message: "no" } };
-      },
-      admin: {
-        async createUser({ email, user_metadata, app_metadata }: any) {
-          if ([...db.users.values()].some((u) => u.email === email)) {
-            return { data: null, error: { message: "User already registered" } };
-          }
-          const id = `usr_${db.users.size + 1}`;
-          const token = `tok_${id}`;
-          db.users.set(token, { id, email, user_metadata, app_metadata });
-          return { data: { user: { id, email, user_metadata, app_metadata } }, error: null };
-        },
-        async deleteUser(id: string) {
-          for (const [k, v] of db.users) if (v.id === id) db.users.delete(k);
-          return { error: null };
-        },
-        async generateLink({ email, options }: any) {
-          cap.generateLinkCalls.push({ email, redirectTo: options?.redirectTo });
-          return { data: { properties: { action_link: "https://magic.example/ok" } }, error: null };
-        },
-      },
-    },
-  };
-}
-
-vi.mock("@supabase/supabase-js", () => ({
-  createClient: (_url: string, _key: string, opts?: any) => {
-    const token = opts?.global?.headers?.Authorization?.replace(/^Bearer\s+/i, "");
-    return makeClient(token);
+vi.mock("@/lib/magicLink.server", () => ({
+  generateMagicLink: async (email: string, callbackPath?: string) => {
+    cap.magicLinks.push({ email, callbackPath });
+    return "https://app.example.com/api/auth/magic-link/verify?token=stub";
   },
 }));
 
-// fetch — Resend
-const realFetch = globalThis.fetch;
-let resendStatus = 200;
-beforeAll(() => {
-  globalThis.fetch = (async (...args: any[]) => {
-    const url = String(args[0] ?? "");
-    if (url.includes("api.resend.com")) {
-      const body = JSON.parse((args[1]?.body as string) ?? "{}");
-      cap.resendCalls.push({ to: body.to });
-      return new Response(JSON.stringify({ id: "em_1" }), { status: resendStatus });
-    }
-    return realFetch(...(args as Parameters<typeof realFetch>));
-  }) as typeof fetch;
+vi.mock("@/lib/mailer.server", () => ({
+  sendMail: async (m: { to: string; subject: string; html: string }) => {
+    cap.mails.push(m);
+    return mailResult;
+  },
+  isMailConfigured: () => mailResult.via !== "none",
+}));
+
+// Sessão: o resto do auth.server é real (createAppUser usa o adapter interno).
+let sessionUserId: string | null = null;
+vi.mock("@/lib/auth.server", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/auth.server")>();
+  return {
+    ...real,
+    getSessionFromHeaders: async () =>
+      sessionUserId ? { user: { id: sessionUserId }, session: { id: "s1" } } : null,
+  };
 });
 
-beforeEach(() => {
-  reset();
-  resendStatus = 200;
+let t: Awaited<ReturnType<typeof createTestDb>>;
+beforeAll(async () => {
+  t = await createTestDb();
 });
-afterEach(() => {
-  vi.restoreAllMocks();
+afterAll(async () => t.close());
+
+async function resetDb() {
+  const res = await t.client.query<{ tablename: string }>(
+    "select tablename from pg_tables where schemaname = 'public'",
+  );
+  const names = res.rows.map((r) => `"${r.tablename}"`).join(", ");
+  if (names) await t.client.exec(`TRUNCATE ${names} CASCADE`);
+}
+
+beforeEach(async () => {
+  await resetDb();
+  cap.magicLinks.length = 0;
+  cap.mails.length = 0;
+  mailResult = { sent: true, via: "smtp" };
+  sessionUserId = null;
+  await t.db.insert(schema.appSettings).values([
+    { key: "trial", value: { enabled: true, duration_hours: 2 } },
+    { key: "branding", value: { system_name: "Finnance" } },
+  ]);
+  await t.db.insert(schema.emailTemplates).values({
+    kind: "trial_magic_link",
+    subject: "Olá {{name}} — {{system_name}}",
+    html: "{{link}} ({{hours}}h)",
+    text: "{{link}}",
+    enabled: true,
+  });
 });
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-async function loadPost(modPath: string) {
-  const mod: any = await import(modPath);
-  return mod.Route.options.server.handlers.POST as (ctx: { request: Request }) => Promise<Response>;
+type Handler = (ctx: { request: Request }) => Promise<Response>;
+async function loadPost(modPath: string): Promise<Handler> {
+  const mod = (await import(modPath)) as {
+    Route: { options: { server: { handlers: { POST: Handler } } } };
+  };
+  return mod.Route.options.server.handlers.POST;
 }
 
 const POST_REQUEST = () => loadPost("../routes/api/public/trial/request");
 const POST_ACTIVATE = () => loadPost("../routes/api/public/trial/activate");
+const POST_CLEANUP = () => loadPost("../routes/api/public/hooks/trial-cleanup");
 
-function jsonReq(url: string, body: any, headers: Record<string, string> = {}) {
-  return new Request(url, {
+function jsonReq(body: unknown) {
+  return new Request("https://app.example.com/api/public/trial/request", {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...headers },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 }
+const activateReq = () => new Request("https://x/api/public/trial/activate", { method: "POST" });
+
+const users = () => t.db.select().from(schema.user);
+const trialRequests = () => t.db.select().from(schema.trialRequests);
 
 // ─── Testes ─────────────────────────────────────────────────────────────────
 describe("POST /api/public/trial/request", () => {
-  test("feliz: cria usuário, registra trial, envia magic link com redirect /auth/callback", async () => {
+  test("feliz: cria usuário em trial, registra o lock e envia o magic link", async () => {
     const handler = await POST_REQUEST();
-    const res = await handler({
-      request: jsonReq("https://app.example.com/api/public/trial/request", { email: "a@b.com" }),
-    });
+    const res = await handler({ request: jsonReq({ email: "A@B.com" }) });
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body).toMatchObject({ ok: true, sent: true, hours: 2 });
-    expect(db.trial_requests).toHaveLength(1);
-    expect(db.users.size).toBe(1);
-    expect(cap.generateLinkCalls[0].redirectTo).toBe("https://app.example.com/auth/callback");
-    expect(cap.resendCalls[0].to).toBe("a@b.com");
+    expect(await res.json()).toMatchObject({ ok: true, sent: true, hours: 2 });
+
+    const [u] = await users();
+    expect(u.email).toBe("a@b.com");
+    expect(u.isTrial).toBe(true);
+    const ms = u.trialExpiresAt!.getTime() - Date.now();
+    expect(ms).toBeGreaterThan(1.9 * 3600_000);
+    expect(ms).toBeLessThanOrEqual(2 * 3600_000);
+
+    const [tr] = await trialRequests();
+    expect(tr).toMatchObject({ email: "a@b.com", userId: u.id, consumedAt: null });
+
+    // Conta só por magic link: nenhuma senha cadastrada.
+    expect(await t.db.select().from(schema.account)).toHaveLength(0);
+
+    expect(cap.magicLinks).toEqual([{ email: "a@b.com", callbackPath: "/app" }]);
+    expect(cap.mails).toHaveLength(1);
+    expect(cap.mails[0].to).toBe("a@b.com");
+    expect(cap.mails[0].subject).toBe("Olá a — Finnance");
+    expect(cap.mails[0].html).toContain("magic-link/verify");
+    expect(cap.mails[0].html).toContain("(2h)");
   });
 
   test("honeypot retorna ok sem efeito colateral", async () => {
     const handler = await POST_REQUEST();
-    const res = await handler({
-      request: jsonReq("https://x/", { email: "a@b.com", website: "spam" }),
-    });
+    const res = await handler({ request: jsonReq({ email: "a@b.com", website: "spam" }) });
     expect(res.status).toBe(200);
-    expect(db.trial_requests).toHaveLength(0);
-    expect(db.users.size).toBe(0);
+    expect(await trialRequests()).toHaveLength(0);
+    expect(await users()).toHaveLength(0);
   });
 
   test("e-mail descartável bloqueado", async () => {
     const handler = await POST_REQUEST();
-    const res = await handler({ request: jsonReq("https://x/", { email: "x@mailinator.com" }) });
+    const res = await handler({ request: jsonReq({ email: "x@mailinator.com" }) });
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("disposable_email");
   });
 
   test("trial desativado → 403", async () => {
-    db.app_settings.trial = { enabled: false };
+    await t.db
+      .update(schema.appSettings)
+      .set({ value: { enabled: false } })
+      .where(eq(schema.appSettings.key, "trial"));
     const handler = await POST_REQUEST();
-    const res = await handler({ request: jsonReq("https://x/", { email: "a@b.com" }) });
+    const res = await handler({ request: jsonReq({ email: "a@b.com" }) });
     expect(res.status).toBe(403);
     expect((await res.json()).error).toBe("trial_disabled");
   });
 
-  test("já testou (lock permanente) → 409 e não cria nada", async () => {
-    db.trial_requests.push({ email: "a@b.com", user_id: "usr_old" });
+  test("já testou (lock permanente, sem diferenciar maiúsculas) → 409 e não cria nada", async () => {
+    await t.db.insert(schema.trialRequests).values({
+      email: "A@B.com",
+      expiresAt: new Date().toISOString(),
+    });
     const handler = await POST_REQUEST();
-    const res = await handler({ request: jsonReq("https://x/", { email: "a@b.com" }) });
+    const res = await handler({ request: jsonReq({ email: "a@b.com" }) });
     expect(res.status).toBe(409);
-    expect(db.users.size).toBe(0);
+    expect((await res.json()).error).toBe("already_used");
+    expect(await users()).toHaveLength(0);
   });
 
-  test("falha de envio do Resend → rollback (auth + trial_requests)", async () => {
-    resendStatus = 500;
+  test("segundo pedido do mesmo e-mail → 409 (UNIQUE em lower(email))", async () => {
     const handler = await POST_REQUEST();
-    const res = await handler({ request: jsonReq("https://x/", { email: "a@b.com" }) });
+    expect((await handler({ request: jsonReq({ email: "x@y.com" }) })).status).toBe(200);
+    expect((await handler({ request: jsonReq({ email: "X@Y.com" }) })).status).toBe(409);
+    expect(await users()).toHaveLength(1);
+    expect(await trialRequests()).toHaveLength(1);
+  });
+
+  test("e-mail que já tem conta → 409 e não deixa lock", async () => {
+    const { createAppUser } = await import("@/lib/users.server");
+    await createAppUser({ email: "cliente@b.com" });
+    const handler = await POST_REQUEST();
+    const res = await handler({ request: jsonReq({ email: "cliente@b.com" }) });
+    expect(res.status).toBe(409);
+    expect(await trialRequests()).toHaveLength(0);
+    const [u] = await users();
+    expect(u.isTrial).toBe(false);
+  });
+
+  test("falha de envio → 502 e rollback (usuário + trial_requests)", async () => {
+    mailResult = { sent: false, via: "smtp", error: "550 recusado" };
+    const handler = await POST_REQUEST();
+    const res = await handler({ request: jsonReq({ email: "a@b.com" }) });
     expect(res.status).toBe(502);
     expect((await res.json()).error).toBe("email_send_failed");
-    expect(db.trial_requests).toHaveLength(0);
-    expect(db.users.size).toBe(0);
+    expect(await trialRequests()).toHaveLength(0);
+    expect(await users()).toHaveLength(0);
   });
 
-  test("configuração de e-mail ausente → 500 e rollback", async () => {
-    db.email_settings = null;
+  test("envio de e-mail não configurado → 500 e rollback", async () => {
+    mailResult = { sent: false, via: "none" };
     const handler = await POST_REQUEST();
-    const res = await handler({ request: jsonReq("https://x/", { email: "a@b.com" }) });
+    const res = await handler({ request: jsonReq({ email: "a@b.com" }) });
     expect(res.status).toBe(500);
     expect((await res.json()).error).toBe("email_config_missing");
-    expect(db.trial_requests).toHaveLength(0);
-    expect(db.users.size).toBe(0);
+    expect(await trialRequests()).toHaveLength(0);
+    expect(await users()).toHaveLength(0);
+  });
+
+  test("template de trial desativado → 500 sem criar nada", async () => {
+    await t.db
+      .update(schema.emailTemplates)
+      .set({ enabled: false })
+      .where(eq(schema.emailTemplates.kind, "trial_magic_link"));
+    const handler = await POST_REQUEST();
+    const res = await handler({ request: jsonReq({ email: "a@b.com" }) });
+    expect(res.status).toBe(500);
+    expect((await res.json()).error).toBe("email_config_missing");
+    expect(await users()).toHaveLength(0);
+    expect(cap.mails).toHaveLength(0);
   });
 });
 
 describe("POST /api/public/trial/activate", () => {
   test("marca consumed_at quando usuário é trial", async () => {
-    // Seed: cria usuário trial + trial_requests pendente
-    const token = "tok_usr_1";
-    db.users.set(token, {
-      id: "usr_1",
-      email: "a@b.com",
-      app_metadata: { is_trial: true },
-    });
-    db.trial_requests.push({ email: "a@b.com", user_id: "usr_1", consumed_at: null });
+    const handler = await POST_REQUEST();
+    await handler({ request: jsonReq({ email: "a@b.com" }) });
+    const [u] = await users();
+    sessionUserId = u.id;
 
-    const handler = await POST_ACTIVATE();
-    const res = await handler({
-      request: new Request("https://x/api/public/trial/activate", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      }),
-    });
+    const res = await (await POST_ACTIVATE())({ request: activateReq() });
     expect(res.status).toBe(200);
-    expect(db.trial_requests[0].consumed_at).not.toBeNull();
+    expect(await res.json()).toMatchObject({ ok: true, activated: true });
+    const [tr] = await trialRequests();
+    expect(tr.consumedAt).not.toBeNull();
   });
 
-  test("sem token → 401", async () => {
-    const handler = await POST_ACTIVATE();
-    const res = await handler({ request: new Request("https://x/", { method: "POST" }) });
+  test("sem sessão → 401", async () => {
+    const res = await (await POST_ACTIVATE())({ request: activateReq() });
     expect(res.status).toBe(401);
   });
 
   test("usuário não-trial → ok mas activated=false e não altera nada", async () => {
-    const token = "tok_usr_9";
-    db.users.set(token, { id: "usr_9", email: "z@b.com", user_metadata: {} });
-    const handler = await POST_ACTIVATE();
-    const res = await handler({
-      request: new Request("https://x/", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      }),
+    const { createAppUser } = await import("@/lib/users.server");
+    const u = await createAppUser({ email: "z@b.com" });
+    await t.db.insert(schema.trialRequests).values({
+      email: "z@b.com",
+      userId: u.id,
+      expiresAt: new Date().toISOString(),
     });
+    sessionUserId = u.id;
+    const res = await (await POST_ACTIVATE())({ request: activateReq() });
     expect(res.status).toBe(200);
     expect((await res.json()).activated).toBe(false);
+    const [tr] = await trialRequests();
+    expect(tr.consumedAt).toBeNull();
   });
 });
 
-describe("flags de trial vêm só de app_metadata", () => {
-  test("is_trial forjado em user_metadata não ativa o trial", async () => {
-    // user_metadata é editável pelo próprio usuário (auth.updateUser).
-    const token = "tok_usr_7";
-    db.users.set(token, {
-      id: "usr_7",
-      email: "forjado@b.com",
+describe("flags de trial só vêm das colunas do servidor", () => {
+  test("readTrialFlags ignora qualquer campo fora de isTrial/trialExpiresAt", async () => {
+    const { readTrialFlags } = await import("@/lib/trialFlags");
+    // Formatos antigos (user_metadata/app_metadata do Supabase) e campos forjados não contam.
+    const forged = {
       user_metadata: { is_trial: true, trial_expires_at: "2099-01-01T00:00:00Z" },
-    });
-    db.trial_requests.push({ email: "forjado@b.com", user_id: "usr_7", consumed_at: null });
-    const handler = await POST_ACTIVATE();
-    const res = await handler({
-      request: new Request("https://x/", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      }),
-    });
-    expect((await res.json()).activated).toBe(false);
-    expect(db.trial_requests[0].consumed_at).toBeNull();
+      app_metadata: { is_trial: true },
+      is_trial: true,
+      isTrial: "true",
+    } as unknown as Parameters<typeof readTrialFlags>[0];
+    expect(readTrialFlags(forged)).toEqual({ isTrial: false, trialExpiresAt: null });
+    expect(
+      readTrialFlags({ isTrial: true, trialExpiresAt: new Date("2099-01-01T00:00:00Z") }),
+    ).toEqual({ isTrial: true, trialExpiresAt: "2099-01-01T00:00:00.000Z" });
   });
 
-  test("request grava o trial em app_metadata, não em user_metadata", async () => {
-    const handler = await POST_REQUEST();
-    await handler({
-      request: jsonReq("https://x/api/public/trial/request", { email: "meta@ex.com" }),
+  test("Better Auth não aceita isTrial vindo do cliente (campo input:false)", async () => {
+    const { auth } = await import("@/lib/auth.server");
+    const opts = auth().options as {
+      user?: { additionalFields?: Record<string, { input?: boolean }> };
+    };
+    expect(opts.user?.additionalFields?.isTrial?.input).toBe(false);
+    expect(opts.user?.additionalFields?.trialExpiresAt?.input).toBe(false);
+  });
+
+  test("activate de usuário comum (flags não gravadas pelo servidor) não ativa", async () => {
+    const { createAppUser } = await import("@/lib/users.server");
+    const u = await createAppUser({ email: "forjado@b.com", name: "is_trial=true" });
+    await t.db.insert(schema.trialRequests).values({
+      email: "forjado@b.com",
+      userId: u.id,
+      expiresAt: new Date().toISOString(),
     });
-    const u = [...db.users.values()].find((x) => x.email === "meta@ex.com");
-    expect(u?.app_metadata?.is_trial).toBe(true);
-    expect(typeof u?.app_metadata?.trial_expires_at).toBe("string");
-    expect(u?.user_metadata?.is_trial).toBeUndefined();
+    sessionUserId = u.id;
+    const res = await (await POST_ACTIVATE())({ request: activateReq() });
+    expect((await res.json()).activated).toBe(false);
+    const [tr] = await trialRequests();
+    expect(tr.consumedAt).toBeNull();
+  });
+
+  test("request grava o trial nas colunas do usuário (servidor)", async () => {
+    await (
+      await POST_REQUEST()
+    )({ request: jsonReq({ email: "meta@ex.com" }) });
+    const [u] = await t.db.select().from(schema.user).where(eq(schema.user.email, "meta@ex.com"));
+    expect(u.isTrial).toBe(true);
+    expect(u.trialExpiresAt).toBeInstanceOf(Date);
   });
 });
 
-describe("magic link aponta para /auth/callback (evita /login)", () => {
-  test("redirectTo termina em /auth/callback", async () => {
-    const handler = await POST_REQUEST();
-    await handler({
-      request: jsonReq("https://meusite.com/api/public/trial/request", { email: "novo@ex.com" }),
+describe("POST /api/public/hooks/trial-cleanup", () => {
+  const SECRET = "c".repeat(40);
+  const cronReq = () =>
+    new Request("https://x/api/public/hooks/trial-cleanup", {
+      method: "POST",
+      headers: { authorization: `Bearer ${SECRET}` },
     });
-    expect(cap.generateLinkCalls[0].redirectTo).toMatch(/\/auth\/callback$/);
+
+  test("sem CRON_SECRET válido → nega", async () => {
+    delete process.env.CRON_SECRET;
+    const res = await (await POST_CLEANUP())({ request: cronReq() });
+    expect(res.status).toBe(503);
+  });
+
+  test("remove trial vencido, preserva lock, protege convertido e trial vigente", async () => {
+    process.env.CRON_SECRET = SECRET;
+    const { createAppUser } = await import("@/lib/users.server");
+    const past = new Date(Date.now() - 3600_000);
+    const expired = await createAppUser({
+      email: "old@x.com",
+      isTrial: true,
+      trialExpiresAt: past,
+    });
+    await t.db.insert(schema.trialRequests).values({
+      email: "old@x.com",
+      userId: expired.id,
+      expiresAt: past.toISOString(),
+    });
+    const converted = await createAppUser({
+      email: "paid@x.com",
+      isTrial: true,
+      trialExpiresAt: past,
+    });
+    await t.db.insert(schema.subscriptions).values({
+      userId: converted.id,
+      provider: "stripe",
+      stripeSubscriptionId: "sub_paid",
+      priceId: "pro",
+      plan: "pro",
+      status: "active",
+    });
+    const live = await createAppUser({
+      email: "live@x.com",
+      isTrial: true,
+      trialExpiresAt: new Date(Date.now() + 3600_000),
+    });
+
+    const res = await (await POST_CLEANUP())({ request: cronReq() });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ ok: true, deleted: 1, skippedConverted: 1 });
+
+    const ids = (await users()).map((u) => u.id).sort();
+    expect(ids).toEqual([converted.id, live.id].sort());
+    const [conv] = await t.db.select().from(schema.user).where(eq(schema.user.id, converted.id));
+    expect(conv.isTrial).toBe(false);
+    // Lock de 1 teste por e-mail continua.
+    const [tr] = await trialRequests();
+    expect(tr).toMatchObject({ email: "old@x.com", userId: null });
+    delete process.env.CRON_SECRET;
   });
 });

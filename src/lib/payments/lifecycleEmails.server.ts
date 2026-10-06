@@ -2,11 +2,11 @@
 // lifecycleEmails — e-mails de ciclo de vida da assinatura (past_due,
 // trial_ending, subscription_canceled) enviados ao próprio cliente.
 //
-// Reusa os helpers `getEmailConfig`, `getTemplate` e `renderTemplate` do
-// webhook-handler (movidos para cá para evitar duplicação — o handler agora
-// re-exporta a mesma implementação).
+// Envio pelo mailer central (SMTP próprio ou Resend — ver mailer.server).
+// `getTemplate` e `renderTemplate` vivem aqui e são reusados pelo
+// webhook-handler e pelo refund.
 //
-// Dedupe: (kind, subscriptionId) em janela de 24h via public.email_log —
+// Dedupe: (kind, subscriptionId) em janela de 24h via email_log —
 // evita reenvio quando o Stripe reencaminha `invoice.payment_failed` várias
 // vezes durante o ciclo de retry de cobrança.
 //
@@ -14,7 +14,9 @@
 // e-mail que caiu; caller sempre chama dentro de try/catch e loga.
 // ============================================================================
 
-import type { AdminClient } from "@/lib/admin/_types";
+import { and, eq, gte } from "drizzle-orm";
+import { db, schema } from "@/db/client.server";
+import { sendMail } from "@/lib/mailer.server";
 import type { ProviderName } from "./types";
 
 // ─── Helpers de e-mail (SSOT — o webhook-handler importa daqui) ─────────────
@@ -23,24 +25,21 @@ export function renderTemplate(tpl: string, vars: Record<string, string>): strin
   return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
 }
 
-export async function getEmailConfig(
-  admin: AdminClient,
-): Promise<{ apiKey: string; from: string } | null> {
-  const { data } = await admin.from("email_settings").select("*").limit(1).maybeSingle();
-  const apiKey = data?.resend_api_key || process.env.RESEND_API_KEY || null;
-  const fromEmail =
-    data?.from_email || process.env.FEEDBACK_FROM || process.env.MAGICLINK_FROM || null;
-  const fromName = data?.from_name || "Finnance";
-  if (!apiKey || !fromEmail) return null;
-  return { apiKey, from: fromName ? `${fromName} <${fromEmail}>` : fromEmail };
-}
-
+/** Template do painel (email_templates), só se estiver habilitado. */
 export async function getTemplate(
-  admin: AdminClient,
   kind: string,
-): Promise<{ subject: string; html: string; enabled?: boolean } | null> {
-  const { data } = await admin.from("email_templates").select("*").eq("kind", kind).maybeSingle();
-  return data?.enabled ? data : null;
+): Promise<{ subject: string; html: string; text: string | null; enabled: boolean } | null> {
+  const [row] = await db()
+    .select({
+      subject: schema.emailTemplates.subject,
+      html: schema.emailTemplates.html,
+      text: schema.emailTemplates.text,
+      enabled: schema.emailTemplates.enabled,
+    })
+    .from(schema.emailTemplates)
+    .where(eq(schema.emailTemplates.kind, kind))
+    .limit(1);
+  return row?.enabled ? row : null;
 }
 
 // ─── Lifecycle ──────────────────────────────────────────────────────────────
@@ -67,35 +66,36 @@ async function hashEmail(email: string): Promise<string> {
 }
 
 async function alreadySentRecently(
-  admin: AdminClient,
   kind: LifecycleKind,
   subscriptionId: string | null,
 ): Promise<boolean> {
   if (!subscriptionId) return false;
   const since = new Date(Date.now() - DEDUPE_WINDOW_MS).toISOString();
-  const { data } = await admin
-    .from("email_log")
-    .select("id")
-    .eq("kind", kind)
-    .eq("subscription_id", subscriptionId)
-    .gte("sent_at", since)
-    .limit(1)
-    .maybeSingle();
-  return !!data;
+  const [row] = await db()
+    .select({ id: schema.emailLog.id })
+    .from(schema.emailLog)
+    .where(
+      and(
+        eq(schema.emailLog.kind, kind),
+        eq(schema.emailLog.subscriptionId, subscriptionId),
+        gte(schema.emailLog.sentAt, since),
+      ),
+    )
+    .limit(1);
+  return !!row;
 }
 
 async function recordSent(
-  admin: AdminClient,
   kind: LifecycleKind,
   subscriptionId: string | null,
   toHash: string,
 ): Promise<void> {
   try {
-    await admin.from("email_log").insert({
+    await db().insert(schema.emailLog).values({
       kind,
-      subscription_id: subscriptionId,
-      sent_to_hash: toHash,
-      sent_at: new Date().toISOString(),
+      subscriptionId,
+      sentToHash: toHash,
+      sentAt: new Date().toISOString(),
     });
   } catch (e) {
     console.warn("[lifecycleEmail] recordSent falhou (ignorado):", e);
@@ -127,30 +127,22 @@ function fallbackTemplate(kind: LifecycleKind): { subject: string; html: string 
 }
 
 /**
- * Resolve o e-mail do assinante a partir de subscriptionId → user_id → auth.
+ * Resolve o e-mail do assinante a partir de subscriptionId → user_id → user.
  * Retorna null se qualquer etapa falhar (sem lançar).
  */
 export async function resolveSubscriberEmail(
-  admin: AdminClient,
   subscriptionId: string,
 ): Promise<{ email: string; name: string; userId: string } | null> {
   try {
-    const { data: sub } = await admin
-      .from("subscriptions")
-      .select("user_id")
-      .eq("stripe_subscription_id", subscriptionId)
-      .maybeSingle();
-    const userId = (sub?.user_id as string | undefined) ?? null;
-    if (!userId) return null;
-    const { data: u } = await admin.auth.admin.getUserById(userId);
-    const email = u?.user?.email ?? null;
-    if (!email) return null;
-    const meta = (u?.user?.user_metadata ?? {}) as Record<string, unknown>;
-    const name =
-      (typeof meta.display_name === "string" && meta.display_name) ||
-      email.split("@")[0] ||
-      "Cliente";
-    return { email, name, userId };
+    const [row] = await db()
+      .select({ userId: schema.user.id, email: schema.user.email, name: schema.user.name })
+      .from(schema.subscriptions)
+      .innerJoin(schema.user, eq(schema.user.id, schema.subscriptions.userId))
+      .where(eq(schema.subscriptions.stripeSubscriptionId, subscriptionId))
+      .limit(1);
+    if (!row?.email) return null;
+    const name = row.name?.trim() || row.email.split("@")[0] || "Cliente";
+    return { email: row.email, name, userId: row.userId };
   } catch (e) {
     console.warn("[lifecycleEmail] resolveSubscriberEmail falhou:", e);
     return null;
@@ -183,7 +175,6 @@ export async function buildPortalUrl(
  * Nunca lança — todas as falhas são logadas.
  */
 export async function sendLifecycleEmail(
-  admin: AdminClient,
   kind: LifecycleKind,
   to: string,
   vars: LifecycleVars,
@@ -191,11 +182,9 @@ export async function sendLifecycleEmail(
 ): Promise<{ sent: boolean; reason?: string }> {
   if (!to) return { sent: false, reason: "no-recipient" };
   try {
-    if (await alreadySentRecently(admin, kind, subscriptionId)) {
+    if (await alreadySentRecently(kind, subscriptionId)) {
       return { sent: false, reason: "deduped" };
     }
-    const cfg = await getEmailConfig(admin);
-    if (!cfg) return { sent: false, reason: "no-config" };
 
     const merged: Record<string, string> = {
       name: vars.name ?? to.split("@")[0],
@@ -208,25 +197,18 @@ export async function sendLifecycleEmail(
       access_end: vars.access_end ?? "",
     };
 
-    const tpl = await getTemplate(admin, kind);
+    const tpl = await getTemplate(kind);
     const fb = fallbackTemplate(kind);
     const subject = renderTemplate(tpl?.subject ?? fb.subject, merged);
     const html = renderTemplate(tpl?.html ?? fb.html, merged);
 
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${cfg.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ from: cfg.from, to, subject, html }),
-    });
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      console.warn(`[lifecycleEmail] Resend ${res.status}: ${body}`);
-      return { sent: false, reason: `resend-${res.status}` };
+    const res = await sendMail({ to, subject, html });
+    if (!res.sent) {
+      if (res.via === "none") return { sent: false, reason: "no-config" };
+      console.warn(`[lifecycleEmail] envio via ${res.via} falhou: ${res.error ?? "?"}`);
+      return { sent: false, reason: `${res.via}-failed` };
     }
-    await recordSent(admin, kind, subscriptionId, await hashEmail(to));
+    await recordSent(kind, subscriptionId, await hashEmail(to));
     return { sent: true };
   } catch (e) {
     console.warn(`[lifecycleEmail] ${kind} falhou:`, e);

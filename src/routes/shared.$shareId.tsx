@@ -1,7 +1,7 @@
 // Rota pública /shared/$shareId — renderiza o sistema inteiro em modo
 // somente leitura a partir de um link gerado por SaveShareDialog.
 //
-// Carrega o payload via server fn (RLS bypass com supabaseAdmin), monta
+// Carrega o payload via server fn (lido do banco no servidor), monta
 // FinanceProvider com readOnly=true. O `update` global vira no-op,
 // bloqueando qualquer mutação sem precisar tocar nos componentes.
 

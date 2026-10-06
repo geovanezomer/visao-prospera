@@ -265,7 +265,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
   const simActive = countActiveLevers(simParams);
 
   const { confirm, dialog: confirmDialog } = useConfirm();
-  // Status do backup automático no Supabase Storage (header indicator).
+  // Status do backup automático na nuvem (header indicator).
   const [backupStatus, setBackupStatus] = useState<BackupStatus>("idle");
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [openRestoreOpen, setOpenRestoreOpen] = useState(false);
@@ -312,7 +312,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
     };
     window.addEventListener("gz-apply-simulator-params", onApply);
     return () => window.removeEventListener("gz-apply-simulator-params", onApply);
-  }, []);
+  }, [setSimParams]); // setter estável (useCallback em usePersistedSimParams)
 
   // Navegação entre abas via evento (usado por outras tabs para deep-link).
   useEffect(() => {

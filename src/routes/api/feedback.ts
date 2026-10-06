@@ -1,18 +1,16 @@
 // ============================================================================
-// POST /api/feedback — envia sugestões/feedback via Resend API.
+// POST /api/feedback — envia sugestões/feedback pelo mailer central
+// (SMTP próprio ou Resend — ver lib/mailer.server.ts).
 //
 // Configuração (lida do ambiente do servidor — .env do VPS/Docker):
-//   - RESEND_API_KEY     → API key gerada em https://resend.com/api-keys
-//   - FEEDBACK_FROM      → remetente verificado (ex.: "App <no-reply@dom.com>")
-//   - FEEDBACK_TO        → destinatário das sugestões
-//
-// Chamada via fetch direto à API REST do Resend (sem SDK) — funciona no
-// runtime Worker/Edge e em Node sem dependências extras.
+//   - FEEDBACK_TO        → destinatário das sugestões (obrigatório)
+//   - FEEDBACK_FROM      → remetente (opcional; padrão: remetente do mailer)
 // ============================================================================
 
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { clientIp, rlConsume, tooManyRequests } from "@/lib/rateLimit.server";
+import { sendMail } from "@/lib/mailer.server";
 
 const PayloadSchema = z.object({
   topic: z.string().min(1).max(120),
@@ -37,19 +35,18 @@ export const Route = createFileRoute("/api/feedback")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = process.env.RESEND_API_KEY;
-        const from = process.env.FEEDBACK_FROM;
+        const from = process.env.FEEDBACK_FROM || undefined;
         const to = process.env.FEEDBACK_TO;
-
-        if (!apiKey || !from || !to) {
-          return Response.json(
+        const notConfigured = () =>
+          Response.json(
             {
               error:
-                "Servidor de e-mail não configurado. Defina RESEND_API_KEY, FEEDBACK_FROM e FEEDBACK_TO no .env.",
+                "Servidor de e-mail não configurado. Defina FEEDBACK_TO e o envio (SMTP_HOST ou RESEND_API_KEY) no .env.",
             },
             { status: 503 },
           );
-        }
+
+        if (!to) return notConfigured();
 
         // Endpoint público que dispara e-mail: limita por IP contra spam e
         // consumo da cota do Resend.
@@ -96,34 +93,23 @@ export const Route = createFileRoute("/api/feedback")({
           appVersion ? `\nVersão: ${appVersion}` : ""
         }${userAgent ? `\nUA: ${userAgent}` : ""}`;
 
-        const resendRes = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from,
-            to: [to],
-            subject: `[Sugestão] ${subject}`,
-            html,
-            text,
-            reply_to: to,
-          }),
+        const res = await sendMail({
+          to,
+          from,
+          subject: `[Sugestão] ${subject}`,
+          html,
+          text,
+          replyTo: to,
         });
 
-        if (!resendRes.ok) {
-          const errText = await resendRes.text();
-          // Não vaza o corpo bruto do Resend ao cliente — apenas status.
-          console.error("[feedback] Resend error:", resendRes.status, errText);
-          return Response.json(
-            { error: `Falha ao enviar e-mail (Resend ${resendRes.status}).` },
-            { status: 502 },
-          );
+        if (!res.sent) {
+          if (res.via === "none") return notConfigured();
+          // Não vaza o erro bruto do provedor ao cliente — apenas o canal.
+          console.error("[feedback] envio falhou:", res.via, res.error);
+          return Response.json({ error: `Falha ao enviar e-mail (${res.via}).` }, { status: 502 });
         }
 
-        const data = (await resendRes.json()) as { id?: string };
-        return Response.json({ ok: true, id: data.id });
+        return Response.json({ ok: true });
       },
     },
   },

@@ -19,17 +19,15 @@ const TTL_MS = 60_000;
 
 async function resolveFromDb(): Promise<{ provider: ProviderName } | null> {
   try {
-    const { createClient } = await import("@supabase/supabase-js");
-    const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    });
-    const { data: active } = await sb
-      .from("app_settings")
-      .select("value")
-      .eq("key", "active_provider")
-      .maybeSingle();
+    const { db, schema } = await import("@/db/client.server");
+    const { eq } = await import("drizzle-orm");
+    const [active] = await db()
+      .select({ value: schema.appSettings.value })
+      .from(schema.appSettings)
+      .where(eq(schema.appSettings.key, "active_provider"))
+      .limit(1);
     const chosen = (active?.value as { provider?: ProviderName } | null)?.provider;
-    if (!chosen) return null;
+    if (chosen !== "stripe" && chosen !== "asaas") return null;
     return { provider: chosen };
   } catch {
     return null;
@@ -62,20 +60,30 @@ function pickFromEnv(): ProviderName | null {
  */
 export async function loadProviderConfig(provider: ProviderName): Promise<ProviderConfig | null> {
   try {
-    const { createClient } = await import("@supabase/supabase-js");
-    const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    });
-    const { data: cred } = await sb
-      .from("provider_credentials")
-      .select("api_key, webhook_secret, mode")
-      .eq("provider", provider)
-      .maybeSingle();
-    if (!cred?.api_key) return null;
+    const { db, schema } = await import("@/db/client.server");
+    const { eq } = await import("drizzle-orm");
+    const [cred] = await db()
+      .select({
+        apiKey: schema.providerCredentials.apiKey,
+        webhookSecret: schema.providerCredentials.webhookSecret,
+        mode: schema.providerCredentials.mode,
+      })
+      .from(schema.providerCredentials)
+      .where(eq(schema.providerCredentials.provider, provider))
+      .limit(1);
+    if (!cred?.apiKey) return null;
     return {
-      apiKey: cred.api_key as string,
-      webhookSecret: (cred.webhook_secret as string | null) ?? null,
-      mode: cred.mode === "live" ? "live" : cred.mode === "sandbox" ? "sandbox" : null,
+      apiKey: cred.apiKey,
+      webhookSecret: cred.webhookSecret ?? null,
+      // O banco grava "test" | "live" (provider_credentials_mode_check); "test"
+      // precisa virar sandbox — antes caía em null e o Asaas usava a API de
+      // produção com credencial de teste.
+      mode:
+        cred.mode === "live"
+          ? "live"
+          : cred.mode === "test" || cred.mode === "sandbox"
+            ? "sandbox"
+            : null,
     };
   } catch {
     return null;

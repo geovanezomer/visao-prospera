@@ -136,7 +136,7 @@ const planSchema = z.object({
   currency: z.string().min(3).max(3),
   interval: z.enum(PLAN_INTERVALS),
   features: z.array(z.string().max(200)).max(40),
-  limits: z.record(z.any()).default({}),
+  limits: z.record(z.string(), z.any()).default({}),
   stripePriceId: z.string().nullable().optional(),
   asaasPlanRef: z.string().nullable().optional(),
   active: z.boolean(),

@@ -74,7 +74,7 @@ const formSchema = z.object({
   ramoAtuacao: z.string().trim().max(60).optional().or(z.literal("")),
   benchmarkCustom: benchmarkCustomSchema,
   numColaboradores: z
-    .number({ invalid_type_error: "Informe um número" })
+    .number({ error: "Informe um número" })
     .int("Use um número inteiro")
     .min(0, "Não pode ser negativo")
     .max(100000, "Valor irreal"),
@@ -568,7 +568,7 @@ export function CompanyConfigForm({
 }
 
 /** Deriva a faixa de headcount a partir do número exato (para benchmarks). */
-export function rangeFromNumber(n: number): "1-9" | "10-49" | "50-99" | "100+" {
+function rangeFromNumber(n: number): "1-9" | "10-49" | "50-99" | "100+" {
   const v = Math.max(0, Math.floor(n || 0));
   if (v < 10) return "1-9";
   if (v < 50) return "10-49";

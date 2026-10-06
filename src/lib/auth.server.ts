@@ -46,6 +46,10 @@ function createAuth() {
     },
     emailAndPassword: {
       enabled: true,
+      // Cadastro público fechado: contas nascem pelo admin, pelo checkout ou
+      // pelo teste grátis (todos no servidor). A tela /signup já dizia
+      // "cadastro desativado", mas a API aceitava qualquer um.
+      disableSignUp: true,
       minPasswordLength: 8,
       sendResetPassword: async ({ user, url }) => {
         await sendMail({

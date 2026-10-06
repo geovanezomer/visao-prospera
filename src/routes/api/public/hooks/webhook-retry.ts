@@ -1,5 +1,6 @@
 // ============================================================================
-// Endpoint público chamado pelo pg_cron para reprocessar webhooks pendentes.
+// Disparo manual do reprocessamento de webhooks pendentes. A rotina roda
+// sozinha pelo agendador interno (lib/scheduler.server.ts).
 // Autenticação: `Authorization: Bearer <CRON_SECRET>` (ver lib/cronAuth.server.ts).
 // ============================================================================
 import { createFileRoute } from "@tanstack/react-router";
@@ -19,8 +20,8 @@ export const Route = createFileRoute("/api/public/hooks/webhook-retry")({
         } catch {
           /* corpo opcional */
         }
-        const { runRetryBatch } = await import("@/lib/payments/webhook-handler.server");
-        const result = await runRetryBatch(limit);
+        const { runWebhookRetry } = await import("@/lib/jobs.server");
+        const result = await runWebhookRetry(limit);
         return Response.json({ ...result });
       },
     },

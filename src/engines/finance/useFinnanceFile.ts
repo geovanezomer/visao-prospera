@@ -27,7 +27,7 @@ interface Args {
   hydrated: boolean;
   /** Confirm programático (padronizado via AlertDialog). Fallback: window.confirm. */
   confirm?: ConfirmFn;
-  /** ID do usuário autenticado — habilita backup silencioso no Supabase Storage. */
+  /** ID do usuário autenticado — habilita backup silencioso na nuvem (banco do servidor). */
   userId?: string;
   /** Callback opcional notificado a cada transição de status do backup em nuvem. */
   onBackupStatus?: (status: BackupStatus) => void;
@@ -182,7 +182,7 @@ export function useFinnanceFile({
     }
   }, [buildPayload, markSaved]);
 
-  // Faz upload imediato (sem debounce) no Supabase Storage.
+  // Faz upload imediato (sem debounce) na nuvem.
   // Retorna Promise para o caller poder aguardar feedback.
   const saveToCloud = useCallback(async (): Promise<void> => {
     if (!userId) {

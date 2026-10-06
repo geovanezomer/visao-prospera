@@ -1,47 +1,42 @@
 // ============================================================================
 // POST /api/public/trial/activate
-// Marca o teste como ativado quando o usuário clica no magic link e a sessão
-// já foi hidratada no navegador. Não cria acesso; apenas registra funil.
+// Marca o teste como ativado quando o usuário já entrou pelo magic link
+// (sessão em cookie). Não cria acesso; apenas registra funil.
+// As flags vêm das colunas do `user` (gravadas só pelo servidor).
 // ============================================================================
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
+import { and, eq, isNull, sql } from "drizzle-orm";
+import { db, schema } from "@/db/client.server";
+import { getSessionFromHeaders } from "@/lib/auth.server";
 import { readTrialFlags } from "@/lib/trialFlags";
+import { getAppUser } from "@/lib/users.server";
 
 export const Route = createFileRoute("/api/public/trial/activate")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const auth = request.headers.get("authorization") ?? "";
-        const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
-        if (!token) return new Response("Unauthorized", { status: 401 });
+        const session = await getSessionFromHeaders(request.headers).catch(() => null);
+        if (!session?.user?.id) return new Response("Unauthorized", { status: 401 });
 
-        const url = process.env.SUPABASE_URL!;
-        const anon = process.env.SUPABASE_PUBLISHABLE_KEY!;
-        const service = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+        // Relê do banco: a sessão pode estar em cache (cookie cache do Better Auth).
+        const user = await getAppUser(session.user.id);
+        if (!user?.email) return new Response("Unauthorized", { status: 401 });
 
-        const userClient = createClient(url, anon, {
-          global: { headers: { Authorization: `Bearer ${token}` } },
-          auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-        });
-        const { data: authData, error: authError } = await userClient.auth.getUser(token);
-        if (authError || !authData.user?.id || !authData.user.email) {
-          return new Response("Unauthorized", { status: 401 });
-        }
+        if (!readTrialFlags(user).isTrial) return Response.json({ ok: true, activated: false });
 
-        if (!readTrialFlags(authData.user).isTrial)
-          return Response.json({ ok: true, activated: false });
-
-        const admin = createClient(url, service, {
-          auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-        });
-
-        const { error } = await admin
-          .from("trial_requests")
-          .update({ consumed_at: new Date().toISOString() })
-          .eq("email", authData.user.email.toLowerCase())
-          .is("consumed_at", null);
-        if (error) {
-          console.error("[trial-activate] falha ao marcar ativação:", error.message);
+        try {
+          const tr = schema.trialRequests;
+          await db()
+            .update(tr)
+            .set({ consumedAt: new Date().toISOString() })
+            .where(
+              and(eq(sql`lower(${tr.email})`, user.email.toLowerCase()), isNull(tr.consumedAt)),
+            );
+        } catch (e) {
+          console.error(
+            "[trial-activate] falha ao marcar ativação:",
+            e instanceof Error ? e.message : e,
+          );
           return Response.json({ error: "activate_failed" }, { status: 500 });
         }
 

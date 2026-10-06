@@ -109,13 +109,16 @@ export async function createAppUser(input: {
   if (await findAppUserByEmail(email)) throw new Error("USER_EXISTS");
   const { auth } = await import("@/lib/auth.server");
   const ctx = await auth().$context;
-  const created = await ctx.internalAdapter.createUser({
-    email,
-    name: input.name?.trim() || email.split("@")[0],
-    emailVerified: input.emailVerified ?? true,
-    isTrial: input.isTrial ?? false,
-    trialExpiresAt: input.trialExpiresAt ?? null,
-  });
+  const created = await ctx.internalAdapter.createUser(
+    {
+      email,
+      name: input.name?.trim() || email.split("@")[0],
+      emailVerified: input.emailVerified ?? true,
+      isTrial: input.isTrial ?? false,
+      trialExpiresAt: input.trialExpiresAt ?? null,
+    },
+    { method: "admin" },
+  );
   if (input.password) {
     await ctx.internalAdapter.linkAccount({
       userId: created.id,

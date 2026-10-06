@@ -8,7 +8,7 @@ type ServerEntry = {
 };
 
 // Headers de segurança em todas as respostas. A CSP aqui não restringe
-// script-src (GA/Pixel configuráveis no admin, Supabase, provedores de IA):
+// script-src (GA/Pixel configuráveis no admin, provedores de IA):
 // bloqueia só o que nenhuma página usa — ser embutido em iframe de outro
 // domínio (clickjacking), <object>/<embed> e troca do <base>.
 export const SECURITY_HEADERS: Record<string, string> = {
@@ -72,6 +72,8 @@ export default {
       // Migrations + admin inicial, uma vez por processo (falha alta).
       const { ensureDatabaseReady } = await import("./db/bootstrap.server");
       await ensureDatabaseReady();
+      const { startScheduler } = await import("./lib/scheduler.server");
+      startScheduler();
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));

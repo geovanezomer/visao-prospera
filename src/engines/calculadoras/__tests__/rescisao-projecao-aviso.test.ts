@@ -3,7 +3,11 @@
  * (CLT art. 487 §1º; OJ 82 SDI-1).
  */
 import { describe, expect, it } from "vitest";
-import { avosProjecaoAviso, calcularRescisao } from "../rescisao";
+import { avosProjecaoAviso, calcularRescisao as calcular, rescisaoInputSchema } from "../rescisao";
+
+// Aceita a entrada parcial (com defaults do schema), como a UI envia.
+const calcularRescisao = (i: Parameters<typeof rescisaoInputSchema.parse>[0]) =>
+  calcular(rescisaoInputSchema.parse(i));
 
 const base = {
   salarioBruto: 3_000,

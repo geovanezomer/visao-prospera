@@ -1,7 +1,14 @@
-// Testes: resolveAccessStatus + isAccessGranted (gate client + gate server).
-import { describe, it, expect } from "vitest";
+// Testes: resolveAccessStatus + isAccessGranted (gate client + gate server)
+// e requireActiveSubscription contra o banco real em memória (PGlite).
+import { afterAll, beforeAll, beforeEach, describe, it, expect } from "vitest";
+import { createTestDb } from "./helpers/testDb";
+import { schema } from "@/db/client.server";
 import { resolveAccessStatus } from "@/hooks/useAccessStatus";
-import { isAccessGranted } from "@/lib/requireActiveSubscription.server";
+import {
+  invalidateSubscriptionCache,
+  isAccessGranted,
+  requireActiveSubscription,
+} from "@/lib/requireActiveSubscription.server";
 
 const NOW = new Date("2026-07-03T12:00:00Z").getTime();
 const future = (h: number) => new Date(NOW + h * 3_600_000).toISOString();
@@ -190,5 +197,63 @@ describe("isAccessGranted (server)", () => {
         now: NOW,
       }),
     ).toBe(false);
+  });
+});
+
+describe("requireActiveSubscription (banco)", () => {
+  let t: Awaited<ReturnType<typeof createTestDb>>;
+  beforeAll(async () => {
+    t = await createTestDb();
+  });
+  afterAll(async () => t.close());
+  beforeEach(async () => {
+    await t.client.exec('TRUNCATE "user", "subscriptions" CASCADE');
+    invalidateSubscriptionCache();
+  });
+
+  async function user(patch: Partial<typeof schema.user.$inferInsert> = {}) {
+    const [u] = await t.db
+      .insert(schema.user)
+      .values({ email: `${crypto.randomUUID()}@x.com`, name: "u", ...patch })
+      .returning();
+    return u.id;
+  }
+
+  it("assinatura ativa (a mais recente) libera", async () => {
+    const id = await user();
+    await t.db.insert(schema.subscriptions).values([
+      {
+        userId: id,
+        priceId: "p",
+        plan: "p",
+        status: "canceled",
+        createdAt: new Date(Date.now() - 86_400_000).toISOString(),
+      },
+      { userId: id, priceId: "p", plan: "p", status: "active" },
+    ]);
+    await expect(requireActiveSubscription(id)).resolves.toBeUndefined();
+  });
+
+  it("sem assinatura nem trial → 402", async () => {
+    const id = await user();
+    await expect(requireActiveSubscription(id)).rejects.toThrow(/^402/);
+  });
+
+  it("trial vigente (colunas do user) libera; vencido bloqueia", async () => {
+    const live = await user({ isTrial: true, trialExpiresAt: new Date(Date.now() + 3600_000) });
+    const dead = await user({ isTrial: true, trialExpiresAt: new Date(Date.now() - 3600_000) });
+    await expect(requireActiveSubscription(live)).resolves.toBeUndefined();
+    await expect(requireActiveSubscription(dead)).rejects.toThrow(/^402/);
+  });
+
+  it("resultado fica em cache até invalidar", async () => {
+    const id = await user();
+    await expect(requireActiveSubscription(id)).rejects.toThrow(/^402/);
+    await t.db
+      .insert(schema.subscriptions)
+      .values({ userId: id, priceId: "p", plan: "p", status: "active" });
+    await expect(requireActiveSubscription(id)).rejects.toThrow(/^402/);
+    invalidateSubscriptionCache(id);
+    await expect(requireActiveSubscription(id)).resolves.toBeUndefined();
   });
 });

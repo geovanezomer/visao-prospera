@@ -1,4 +1,4 @@
-// Dialog para listar e restaurar backups salvos na nuvem (Supabase Storage).
+// Dialog para listar e restaurar backups salvos na nuvem (banco do servidor).
 // Substitui o estado atual do editor pelo conteúdo do arquivo escolhido.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";

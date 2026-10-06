@@ -3,20 +3,23 @@
 //
 // Fluxo:
 //   - createShareLink (autenticada): recebe o payload .finnance serializado,
-//     gera shareId aleatório, faz upload no bucket `shared-reports` e insere
-//     a linha em public.shared_reports.
-//   - getSharedReport (pública): valida revoked/expires, baixa o JSON e
-//     devolve o payload para a rota /shared/$shareId renderizar read-only.
+//     gera shareId aleatório e grava a linha em shared_reports (payload jsonb).
+//   - getSharedReport (pública): valida revoked/expires e devolve o payload
+//     para a rota /shared/$shareId renderizar read-only.
 //   - revokeShareLink (autenticada): marca revoked_at = now() no próprio link.
 //
-// `supabaseAdmin` é importado dinamicamente dentro do handler para evitar
-// vazamento no bundle do cliente (regra tanstack-supabase-import-graph).
+// O banco é importado dinamicamente dentro dos handlers para não vazar
+// código de servidor no bundle do cliente.
 
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAuth } from "@/lib/requireAuth";
 import { z } from "zod";
 
-const BUCKET = "shared-reports";
+async function dbx() {
+  const { db, schema } = await import("@/db/client.server");
+  const orm = await import("drizzle-orm");
+  return { db: db(), t: schema.sharedReports, orm };
+}
 
 /** Gera um shareId curto, URL-safe (12 chars base36). */
 function generateShareId(): string {
@@ -47,14 +50,14 @@ const createSchema = z
       const bytes = new TextEncoder().encode(JSON.stringify(d.payload)).length;
       if (bytes > MAX_PAYLOAD_BYTES) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: ["payload"],
           message: `payload excede o limite de ${Math.round(MAX_PAYLOAD_BYTES / 1024)} KiB (recebido: ${Math.round(bytes / 1024)} KiB).`,
         });
       }
     } catch {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["payload"],
         message: "payload não-serializável",
       });
@@ -65,36 +68,25 @@ const createSchema = z
 const DEFAULT_TTL_MS = 48 * 60 * 60 * 1000;
 
 export const createShareLink = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data, context }) => {
     // Enforcement server-side: só assinantes ativos (ou trial válido) podem gerar links.
     const { requireActiveSubscription } = await import("@/lib/requireActiveSubscription.server");
     await requireActiveSubscription(context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db, t } = await dbx();
     const shareId = generateShareId();
-    const storagePath = `${context.userId}/${shareId}.finnance.json`;
-    const json = JSON.stringify(data.payload, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
-
-    const { error: upErr } = await supabaseAdmin.storage
-      .from(BUCKET)
-      .upload(storagePath, blob, { upsert: false, contentType: "application/json" });
-    if (upErr) throw new Error(`Falha ao subir arquivo: ${upErr.message}`);
-
     const expiresAt = new Date(Date.now() + DEFAULT_TTL_MS).toISOString();
-
-    const { error: dbErr } = await supabaseAdmin.from("shared_reports").insert({
-      share_id: shareId,
-      owner_id: context.userId,
-      storage_path: storagePath,
-      company_name: data.companyName,
-      expires_at: expiresAt,
-    });
-    if (dbErr) {
-      // rollback do upload se a linha falhar
-      await supabaseAdmin.storage.from(BUCKET).remove([storagePath]);
-      throw new Error(`Falha ao registrar link: ${dbErr.message}`);
+    try {
+      await db.insert(t).values({
+        shareId,
+        ownerId: context.userId,
+        companyName: data.companyName,
+        payload: data.payload as object,
+        expiresAt,
+      });
+    } catch (e) {
+      throw new Error(`Falha ao registrar link: ${e instanceof Error ? e.message : String(e)}`);
     }
 
     return { shareId, expiresAt };
@@ -105,44 +97,41 @@ const getSchema = z.object({ shareId: z.string().min(4).max(64) });
 export const getSharedReport = createServerFn({ method: "GET" })
   .validator((d: unknown) => getSchema.parse(d))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: row, error } = await supabaseAdmin
-      .from("shared_reports")
-      .select("storage_path, company_name, expires_at, revoked_at")
-      .eq("share_id", data.shareId)
-      .maybeSingle();
-    if (error) throw new Error(`Falha ao consultar link: ${error.message}`);
+    const { db, t, orm } = await dbx();
+    const [row] = await db
+      .select({
+        payload: t.payload,
+        companyName: t.companyName,
+        expiresAt: t.expiresAt,
+        revokedAt: t.revokedAt,
+      })
+      .from(t)
+      .where(orm.eq(t.shareId, data.shareId))
+      .limit(1);
     if (!row) throw new Error("LINK_NOT_FOUND");
-    if (row.revoked_at) throw new Error("LINK_REVOKED");
-    if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) {
+    if (row.revokedAt) throw new Error("LINK_REVOKED");
+    if (row.expiresAt && new Date(row.expiresAt).getTime() < Date.now()) {
       throw new Error("LINK_EXPIRED");
     }
 
-    const { data: file, error: dlErr } = await supabaseAdmin.storage
-      .from(BUCKET)
-      .download(row.storage_path);
-    if (dlErr || !file) throw new Error(`Falha ao baixar relatório: ${dlErr?.message ?? "?"}`);
-    const text = await file.text();
-    const payload = JSON.parse(text);
-
     return {
-      payload,
-      companyName: row.company_name as string,
-      expiresAt: (row.expires_at as string | null) ?? null,
+      // jsonb volta como objeto; o formato é validado por parseFinnanceFile na rota.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      payload: row.payload as any,
+      companyName: row.companyName,
+      expiresAt: row.expiresAt ?? null,
     };
   });
 
 export const revokeShareLink = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((d: unknown) => getSchema.parse(d))
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("shared_reports")
-      .update({ revoked_at: new Date().toISOString() })
-      .eq("share_id", data.shareId)
-      .eq("owner_id", context.userId);
-    if (error) throw new Error(`Falha ao revogar: ${error.message}`);
+    const { db, t, orm } = await dbx();
+    await db
+      .update(t)
+      .set({ revokedAt: new Date().toISOString() })
+      .where(orm.and(orm.eq(t.shareId, data.shareId), orm.eq(t.ownerId, context.userId)));
     return { ok: true };
   });
 
@@ -152,23 +141,31 @@ export const revokeShareLink = createServerFn({ method: "POST" })
  * para abrir o gerenciador de links compartilhados.
  */
 export const listShareLinks = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db, t, orm } = await dbx();
     const nowIso = new Date().toISOString();
-    const { data, error } = await supabaseAdmin
-      .from("shared_reports")
-      .select("share_id, company_name, created_at, expires_at")
-      .eq("owner_id", context.userId)
-      .is("revoked_at", null)
-      .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
-      .order("created_at", { ascending: false });
-    if (error) throw new Error(`Falha ao listar links: ${error.message}`);
-    return (data ?? []).map((r) => ({
-      shareId: r.share_id as string,
-      companyName: r.company_name as string,
-      createdAt: r.created_at as string,
-      expiresAt: (r.expires_at as string | null) ?? null,
+    const rows = await db
+      .select({
+        shareId: t.shareId,
+        companyName: t.companyName,
+        createdAt: t.createdAt,
+        expiresAt: t.expiresAt,
+      })
+      .from(t)
+      .where(
+        orm.and(
+          orm.eq(t.ownerId, context.userId),
+          orm.isNull(t.revokedAt),
+          orm.or(orm.isNull(t.expiresAt), orm.gt(t.expiresAt, nowIso)),
+        ),
+      )
+      .orderBy(orm.desc(t.createdAt));
+    return rows.map((r) => ({
+      shareId: r.shareId,
+      companyName: r.companyName,
+      createdAt: r.createdAt,
+      expiresAt: r.expiresAt ?? null,
     }));
   });
 
@@ -182,18 +179,16 @@ const updateExpirationSchema = z.object({
 });
 
 export const updateShareExpiration = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((d: unknown) => updateExpirationSchema.parse(d))
   .handler(async ({ data, context }) => {
     if (data.expiresAt && new Date(data.expiresAt).getTime() <= Date.now()) {
       throw new Error("A nova expiração deve estar no futuro");
     }
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("shared_reports")
-      .update({ expires_at: data.expiresAt })
-      .eq("share_id", data.shareId)
-      .eq("owner_id", context.userId);
-    if (error) throw new Error(`Falha ao atualizar expiração: ${error.message}`);
+    const { db, t, orm } = await dbx();
+    await db
+      .update(t)
+      .set({ expiresAt: data.expiresAt })
+      .where(orm.and(orm.eq(t.shareId, data.shareId), orm.eq(t.ownerId, context.userId)));
     return { ok: true, expiresAt: data.expiresAt };
   });

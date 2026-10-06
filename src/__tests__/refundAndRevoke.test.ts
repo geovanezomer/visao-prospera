@@ -1,79 +1,26 @@
 // ============================================================================
-// Testes: refundAndRevoke — estorno + revogar acesso.
+// Testes: refundAndRevoke — estorno + revogar acesso (banco real em memória).
 // ============================================================================
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
+import { eq } from "drizzle-orm";
+import { createTestDb } from "./helpers/testDb";
+import { schema } from "@/db/client.server";
 
-// Mocks módulos importados dinamicamente por refund.server.ts
 const cancelSpy = vi.fn();
 vi.mock("@/lib/payments/cancelCore.server", () => ({
   cancelSubscriptionNow: (...args: unknown[]) => cancelSpy(...args),
 }));
 
-const loadCfg = vi.fn().mockResolvedValue({ apiKey: "sk_test", mode: "sandbox" });
-vi.mock("@/lib/payments/index", () => ({
-  loadProviderConfig: (...a: unknown[]) => loadCfg(...a),
-}));
-
-const emailCfg = vi.fn().mockResolvedValue(null);
-const getTpl = vi.fn().mockResolvedValue(null);
-vi.mock("@/lib/payments/lifecycleEmails.server", () => ({
-  getEmailConfig: (...a: unknown[]) => emailCfg(...a),
-  getTemplate: (...a: unknown[]) => getTpl(...a),
-  renderTemplate: (s: string) => s,
-}));
-
-// Admin client mock — capturamos updates e inserts.
-const dbUpdates: Array<Record<string, unknown>> = [];
-const dbInserts: Array<{ table: string; row: Record<string, unknown> }> = [];
-
-function makeQuery(table: string) {
-  const chain = {
-    update(patch: Record<string, unknown>) {
-      dbUpdates.push({ table, patch });
-      return chain;
-    },
-    insert(row: Record<string, unknown>) {
-      dbInserts.push({ table, row });
-      return Promise.resolve({ error: null });
-    },
-    eq() {
-      return chain;
-    },
-    select() {
-      return chain;
-    },
-    order() {
-      return chain;
-    },
-    limit() {
-      return chain;
-    },
-    maybeSingle() {
-      return Promise.resolve({
-        data: { user_id: "u1", plan: "pro", stripe_subscription_id: "sub_1" },
-      });
-    },
-    then(fn: (v: unknown) => unknown) {
-      return Promise.resolve({ error: null }).then(fn);
-    },
-  };
-  return chain;
-}
-
-vi.mock("@/integrations/supabase/client.server", () => ({
-  supabaseAdmin: {
-    from: (t: string) => makeQuery(t),
-    auth: {
-      admin: {
-        getUserById: vi.fn().mockResolvedValue({
-          data: { user: { email: "c@x.com", user_metadata: {} } },
-        }),
-      },
-    },
+const mails: Array<{ to: string; subject: string; html: string }> = [];
+vi.mock("@/lib/mailer.server", () => ({
+  sendMail: async (m: { to: string; subject: string; html: string }) => {
+    mails.push(m);
+    return { sent: true, via: "smtp" };
   },
+  isMailConfigured: () => true,
 }));
 
-// Mock global fetch — refundStripe faz GET /subscriptions e /invoices e POST /refunds
+// Stripe: GET /subscriptions e /invoices e POST /refunds
 const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
   const u = String(url);
   if (u.includes("/subscriptions/sub_1") && (!init || init.method === undefined)) {
@@ -87,12 +34,37 @@ const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       status: 200,
     });
   }
-  return new Response("{}", { status: 200 });
+  return new Response("{}", { status: 404 });
 });
 
-beforeEach(() => {
-  dbUpdates.length = 0;
-  dbInserts.length = 0;
+let t: Awaited<ReturnType<typeof createTestDb>>;
+let userId: string;
+
+beforeAll(async () => {
+  t = await createTestDb();
+});
+afterAll(async () => t.close());
+
+beforeEach(async () => {
+  await t.client.exec(
+    'TRUNCATE "user", "subscriptions", "webhook_events", "email_templates", "provider_credentials" CASCADE',
+  );
+  mails.length = 0;
+  const [u] = await t.db
+    .insert(schema.user)
+    .values({ email: "c@x.com", name: "Carla" })
+    .returning();
+  userId = u.id;
+  await t.db.insert(schema.subscriptions).values({
+    userId,
+    provider: "stripe",
+    stripeSubscriptionId: "sub_1",
+    priceId: "pro",
+    plan: "pro",
+    status: "active",
+    cancelAtPeriodEnd: true,
+  });
+  await t.db.insert(schema.providerCredentials).values({ provider: "stripe", apiKey: "sk_test" });
   cancelSpy.mockReset();
   cancelSpy.mockResolvedValue({
     ok: true,
@@ -100,58 +72,93 @@ beforeEach(() => {
     subscriptionId: "sub_1",
     providerStatus: "canceled",
   });
+  fetchMock.mockClear();
   vi.stubGlobal("fetch", fetchMock);
 });
 afterEach(() => vi.unstubAllGlobals());
 
-describe("refundAndRevoke", () => {
-  const baseInput = {
-    provider: "stripe",
-    subscriptionId: "sub_1",
-    customerId: "cus_1",
-    userId: "u1",
-    actorId: "admin1",
-  };
+const baseInput = () => ({
+  provider: "stripe",
+  subscriptionId: "sub_1",
+  customerId: "cus_1",
+  userId,
+  actorId: "admin1",
+});
 
+async function sub() {
+  const [row] = await t.db
+    .select()
+    .from(schema.subscriptions)
+    .where(eq(schema.subscriptions.stripeSubscriptionId, "sub_1"));
+  return row;
+}
+
+describe("refundAndRevoke", () => {
   it("revoke=true: cancela no provedor, atualiza banco e loga evento sintético", async () => {
     const { refundAndRevoke } = await import("../lib/payments/refund.server");
-    const r = await refundAndRevoke({ ...baseInput, revoke: true });
+    const r = await refundAndRevoke({ ...baseInput(), revoke: true });
     expect(r.refund.ok).toBe(true);
     expect(r.revoke.ok).toBe(true);
     expect(r.dbUpdate.ok).toBe(true);
+    expect(r.audit.ok).toBe(true);
     expect(cancelSpy).toHaveBeenCalledOnce();
-    // banco: update em subscriptions com status=canceled
-    const subUpd = dbUpdates.find((u) => u.table === "subscriptions");
-    expect(subUpd).toBeDefined();
-    expect((subUpd?.patch as Record<string, unknown>).status).toBe("canceled");
-    // evento sintético
-    const ev = dbInserts.find((i) => i.table === "webhook_events");
-    expect(ev).toBeDefined();
-    expect(ev?.row.provider).toBe("admin");
-    expect(ev?.row.event_type).toBe("admin.refund_revoke");
-    expect((ev?.row.payload as Record<string, unknown>).actorId).toBe("admin1");
-    expect((ev?.row.payload as Record<string, unknown>).refundId).toBe("re_1");
+    // Usou a chave do banco (provider_credentials) no Stripe.
+    const auth = (fetchMock.mock.calls[0][1]?.headers as Record<string, string>).Authorization;
+    expect(auth).toBe("Bearer sk_test");
+
+    expect(await sub()).toMatchObject({ status: "canceled", cancelAtPeriodEnd: false });
+
+    const [ev] = await t.db.select().from(schema.webhookEvents);
+    expect(ev).toMatchObject({
+      provider: "admin",
+      eventType: "admin.refund_revoke",
+      subscriptionId: "sub_1",
+      status: "processed",
+    });
+    expect(ev.payload).toMatchObject({ actorId: "admin1", refundId: "re_1", amount: 4990 });
   });
 
   it("revoke=false: apenas estorna, NÃO cancela nem atualiza banco", async () => {
     const { refundAndRevoke } = await import("../lib/payments/refund.server");
-    const r = await refundAndRevoke({ ...baseInput, revoke: false });
+    const r = await refundAndRevoke({ ...baseInput(), revoke: false });
     expect(r.refund.ok).toBe(true);
     expect(cancelSpy).not.toHaveBeenCalled();
-    expect(dbUpdates.find((u) => u.table === "subscriptions")).toBeUndefined();
-    expect(dbInserts.find((i) => i.table === "webhook_events")).toBeUndefined();
+    expect((await sub()).status).toBe("active");
+    expect(await t.db.select().from(schema.webhookEvents)).toHaveLength(0);
     if (r.revoke.ok) expect(r.revoke.detail).toBe("skipped");
   });
 
   it("falha no cancelamento preserva o estorno e reporta revoke.failed", async () => {
     cancelSpy.mockRejectedValueOnce(new Error("provider down"));
     const { refundAndRevoke } = await import("../lib/payments/refund.server");
-    const r = await refundAndRevoke({ ...baseInput, revoke: true });
+    const r = await refundAndRevoke({ ...baseInput(), revoke: true });
     expect(r.refund.ok).toBe(true); // estorno preservado
     expect(r.revoke.ok).toBe(false);
     if (!r.revoke.ok) expect(r.revoke.error).toContain("provider down");
     // ainda assim: banco atualizado + evento gravado (admin vê o quadro completo)
-    expect(dbUpdates.find((u) => u.table === "subscriptions")).toBeDefined();
-    expect(dbInserts.find((i) => i.table === "webhook_events")).toBeDefined();
+    expect((await sub()).status).toBe("canceled");
+    expect(await t.db.select().from(schema.webhookEvents)).toHaveLength(1);
+  });
+
+  it("e-mail de estorno usa o template 'refund' do painel", async () => {
+    await t.db.insert(schema.emailTemplates).values({
+      kind: "refund",
+      subject: "Estorno {{plan}}",
+      html: "Olá {{name}}, devolvemos {{amount}}.",
+      enabled: true,
+    });
+    const { refundAndRevoke } = await import("../lib/payments/refund.server");
+    const r = await refundAndRevoke({ ...baseInput(), revoke: true });
+    expect(r.email.ok).toBe(true);
+    expect(mails).toEqual([
+      { to: "c@x.com", subject: "Estorno pro", html: "Olá Carla, devolvemos 4990." },
+    ]);
+  });
+
+  it("sem template 'refund' → e-mail não enviado e reportado", async () => {
+    const { refundAndRevoke } = await import("../lib/payments/refund.server");
+    const r = await refundAndRevoke({ ...baseInput(), revoke: true });
+    expect(r.email.ok).toBe(false);
+    expect(mails).toHaveLength(0);
   });
 });

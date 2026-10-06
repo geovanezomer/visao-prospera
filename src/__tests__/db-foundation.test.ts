@@ -18,7 +18,10 @@ describe("fundação do banco", () => {
     const [admin] = await t.db.select().from(schema.user).where(eq(schema.user.username, "admin"));
     expect(admin.role).toBe("admin");
     expect(admin.mustChangePassword).toBe(true);
-    const accs = await t.db.select().from(schema.account).where(eq(schema.account.userId, admin.id));
+    const accs = await t.db
+      .select()
+      .from(schema.account)
+      .where(eq(schema.account.userId, admin.id));
     expect(accs[0].password).toBeTruthy();
     expect(accs[0].password).not.toBe("admin");
   });

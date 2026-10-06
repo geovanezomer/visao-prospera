@@ -2,7 +2,9 @@
 // Identificação pela mesma idempotency_key da URL de sucesso (?i=...),
 // validada via HMAC para impedir reuso/forja.
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
+import { eq } from "drizzle-orm";
+import { db, schema } from "@/db/client.server";
+import { sendMail } from "@/lib/mailer.server";
 import { verifyIntentToken } from "@/lib/intentToken.server";
 import { clientIp, rlConsume, tooManyRequests } from "@/lib/rateLimit.server";
 
@@ -39,59 +41,44 @@ export const Route = createFileRoute("/api/public/payments/resend-magic-link")({
           );
         }
 
-        const admin = createClient(
-          process.env.SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-          { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-        );
-
-        const { data: intent } = await admin
-          .from("checkout_intents")
-          .select("email,status,plan_slug")
-          .eq("idempotency_key", intentKey)
-          .maybeSingle();
+        const ci = schema.checkoutIntents;
+        const [intent] = await db()
+          .select({ email: ci.email, status: ci.status, planSlug: ci.planSlug })
+          .from(ci)
+          .where(eq(ci.idempotencyKey, intentKey))
+          .limit(1);
 
         if (!intent?.email) return Response.json({ error: "not_found" }, { status: 404 });
         if (intent.status !== "paid") {
           return Response.json({ error: "not_paid", status: intent.status }, { status: 409 });
         }
 
-        const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
-        const redirectTo = appUrl ? `${appUrl}/app` : undefined;
-        const { data: linkRes, error: linkErr } = await admin.auth.admin.generateLink({
-          type: "magiclink",
-          email: intent.email as string,
-          options: redirectTo ? { redirectTo } : undefined,
+        let actionLink: string;
+        try {
+          const { generateMagicLink } = await import("@/lib/magicLink.server");
+          actionLink = await generateMagicLink(intent.email, "/app");
+        } catch (e) {
+          const detail = e instanceof Error ? e.message : String(e);
+          return Response.json({ error: "link_failed", detail }, { status: 500 });
+        }
+
+        const name = intent.email.split("@")[0];
+        const res = await sendMail({
+          to: intent.email,
+          subject: "Seu link de acesso ao Finnance",
+          html: `<p>Olá ${name}, acesse <a href="${actionLink}">aqui</a> para entrar no Finnance.</p>`,
+        }).catch((e) => {
+          console.error("[resend-magic] envio falhou:", e);
+          return { sent: false, via: "error" as const };
         });
-        if (linkErr)
-          return Response.json({ error: "link_failed", detail: linkErr.message }, { status: 500 });
-
-        const actionLink = linkRes?.properties?.action_link;
-        if (!actionLink) return Response.json({ error: "no_link" }, { status: 500 });
-
-        const { data: cfg } = await admin.from("email_settings").select("*").limit(1).maybeSingle();
-        const apiKey = cfg?.resend_api_key || process.env.RESEND_API_KEY;
-        const fromEmail = cfg?.from_email || process.env.MAGICLINK_FROM;
-        const fromName = cfg?.from_name || "Finnance";
-        if (!apiKey || !fromEmail) {
-          // F-06: nunca logar action_link (token de auth). Mascarar email.
+        if (!res.sent && res.via === "none") {
+          // F-06: nunca logar o link (token de auth). Mascarar email.
           console.log(
             "[resend-magic] sem envio (config faltando) para:",
-            String(intent.email).replace(/(.{2}).+(@.+)/, "$1***$2"),
+            intent.email.replace(/(.{2}).+(@.+)/, "$1***$2"),
           );
           return Response.json({ ok: true, sent: false });
         }
-        const name = (intent.email as string).split("@")[0];
-        await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            from: `${fromName} <${fromEmail}>`,
-            to: intent.email,
-            subject: "Seu link de acesso ao Finnance",
-            html: `<p>Olá ${name}, acesse <a href="${actionLink}">aqui</a> para entrar no Finnance.</p>`,
-          }),
-        }).catch((e) => console.error("[resend-magic] envio falhou:", e));
 
         return Response.json({ ok: true, sent: true });
       },

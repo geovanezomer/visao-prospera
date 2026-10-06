@@ -1,28 +1,18 @@
 // ============================================================================
 // Handler comum dos webhooks de pagamento.
 //
-// - Persiste o evento em public.webhook_events (auditoria/replay).
-// - Persiste estado em public.subscriptions via supabaseAdmin (bypass RLS).
-// - Na primeira ativação, gera magic link Supabase e envia via Resend
-//   (preferindo email_settings/email_templates do banco; fallback env).
+// - Persiste o evento em webhook_events (auditoria/replay/retry).
+// - Persiste estado em subscriptions (Drizzle, servidor).
+// - Na primeira ativação, cria o usuário (se preciso), gera magic link e
+//   envia pelo mailer central (template "magic_link" do painel, se houver).
 // ============================================================================
 
-import type { NormalizedEvent, ProviderName, PlanId } from "./types";
-import type { AdminClient } from "@/lib/admin/_types";
-import { readTrialFlags, trialEndMetadata } from "@/lib/trialFlags";
-
-type DbRow = {
-  user_id: string;
-  stripe_subscription_id: string | null;
-  stripe_customer_id: string | null;
-  provider: ProviderName;
-  provider_customer_id: string | null;
-  plan: PlanId;
-  price_id: string;
-  status: string;
-  current_period_end: string | null;
-  cancel_at_period_end: boolean;
-};
+import { and, asc, desc, eq, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { db, schema } from "@/db/client.server";
+import type { NormalizedEvent, ProviderName } from "./types";
+import { readTrialFlags, trialEndPatch } from "@/lib/trialFlags";
+import { createAppUser, findAppUserByEmail, getAppUser, updateAppUser } from "@/lib/users.server";
+import { sendMail } from "@/lib/mailer.server";
 
 /**
  * Narrowing seguro do payload persistido em `webhook_events.payload`
@@ -51,93 +41,69 @@ function eventEmail(ev: NormalizedEvent): string | null {
 // para manter a mesma renderização usada nos e-mails de ciclo de vida.
 import {
   renderTemplate,
-  getEmailConfig,
   getTemplate,
   sendLifecycleEmail,
   resolveSubscriberEmail,
   buildPortalUrl,
 } from "./lifecycleEmails.server";
 
-/**
- * Resolve o `user_id` a partir do e-mail.
- *
- * Estratégia O(1) via tabela espelho `public.user_emails`, mantida por trigger
- * em `auth.users` (INSERT/UPDATE de email, normalizada para lower()).
- *
- * NOTA: a versão instalada do @supabase/supabase-js (2.106) não expõe
- * `admin.auth.admin.getUserByEmail`. Quando/se disponível em versão futura,
- * o SDK direto pode substituir este SELECT.
- *
- * Fallback (comentado): paginação de `listUsers` — só necessário se a tabela
- * espelho ficar dessincronizada; o trigger + backfill inicial cobrem os casos
- * reais. Se um usuário existe em auth.users mas não em user_emails, o
- * createUser abaixo falhará por e-mail duplicado — sinal claro para
- * reexecutar o backfill.
- */
-async function getOrCreateUserId(admin: AdminClient, email: string): Promise<string | null> {
-  if (!email) return null;
-  const target = email.toLowerCase();
-
-  // 1) Lookup direto no espelho (service_role bypassa RLS).
-  const { data: row, error: selErr } = await admin
-    .from("user_emails")
-    .select("user_id")
-    .eq("email", target)
-    .maybeSingle();
-  if (selErr) {
-    console.error("[webhook] user_emails select falhou:", selErr.message);
-  }
-  if (row?.user_id) return row.user_id as string;
-
-  // 2) Não achou → cria; o trigger em auth.users popula user_emails.
-  const { data: created, error } = await admin.auth.admin.createUser({
-    email,
-    email_confirm: true,
-  });
-  if (error) {
-    console.error("[webhook] createUser falhou:", error.message);
-    return null;
-  }
-  return created.user?.id ?? null;
+/** Violação de UNIQUE (23505) — postgres-js expõe em `.code`; Drizzle/PGlite às vezes em `.cause.code`. */
+export function isUniqueViolation(e: unknown): boolean {
+  const err = e as { code?: unknown; cause?: { code?: unknown } } | null;
+  return err?.code === "23505" || err?.cause?.code === "23505";
 }
 
-async function sendMagicLink(admin: AdminClient, email: string, plan?: string): Promise<void> {
-  if (!email) return;
-  const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
-  const redirectTo = appUrl ? `${appUrl}/app` : undefined;
-  const { data, error } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email,
-    options: redirectTo ? { redirectTo } : undefined,
-  });
-  if (error) {
-    console.error("[webhook] generateLink falhou:", error.message);
-    return;
-  }
-  const actionLink = data?.properties?.action_link;
-  if (!actionLink) return;
+function maskEmail(email: string): string {
+  return email.replace(/(.{2}).+(@.+)/, "$1***$2");
+}
 
-  const cfg = await getEmailConfig(admin);
-  if (!cfg) {
-    // Etapa 1 P1 / F-06: nunca logar o action_link (contém token de auth).
-    console.log(
-      "[webhook] magic link gerado (sem envio) para:",
-      email.replace(/(.{2}).+(@.+)/, "$1***$2"),
-    );
+/** Resolve o `user.id` a partir do e-mail; cria a conta (só magic link) se não existir. */
+async function getOrCreateUserId(email: string): Promise<string | null> {
+  if (!email) return null;
+  const existing = await findAppUserByEmail(email);
+  if (existing) return existing.id;
+  try {
+    const created = await createAppUser({ email });
+    return created.id;
+  } catch (e) {
+    // Corrida: outra entrega criou o mesmo usuário entre o SELECT e o INSERT.
+    if ((e instanceof Error && e.message === "USER_EXISTS") || isUniqueViolation(e)) {
+      return (await findAppUserByEmail(email))?.id ?? null;
+    }
+    console.error("[webhook] createUser falhou:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+async function sendMagicLink(email: string, plan?: string): Promise<void> {
+  if (!email) return;
+  let actionLink: string;
+  try {
+    const { generateMagicLink } = await import("@/lib/magicLink.server");
+    actionLink = await generateMagicLink(email, "/app");
+  } catch (e) {
+    console.error("[webhook] gerar magic link falhou:", e instanceof Error ? e.message : e);
     return;
   }
-  const tpl = await getTemplate(admin, "magic_link");
+
+  const tpl = await getTemplate("magic_link");
   const name = email.split("@")[0];
   const vars = { name, link: actionLink, plan: plan ?? "" };
   const subject = tpl ? renderTemplate(tpl.subject, vars) : "Acesso ao Finnance";
   const html = tpl
     ? renderTemplate(tpl.html, vars)
     : `<p>Olá ${name}, acesse <a href="${actionLink}">aqui</a>.</p>`;
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${cfg.apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: cfg.from, to: email, subject, html }),
-  }).catch((err) => console.error("[webhook] envio Resend falhou:", err));
+  const res = await sendMail({ to: email, subject, html }).catch((err) => {
+    console.error("[webhook] envio do magic link falhou:", err);
+    return null;
+  });
+  if (res && !res.sent) {
+    // Etapa 1 P1 / F-06: nunca logar o link (contém token de auth).
+    console.log(
+      `[webhook] magic link gerado (sem envio${res.error ? `: ${res.error}` : ""}) para:`,
+      maskEmail(email),
+    );
+  }
 }
 
 // Backoff exponencial: 1m → 5m → 30m → 2h → 12h (depois → dead_letter)
@@ -150,7 +116,6 @@ function nextDelaySeconds(attempts: number): number | null {
 }
 
 async function insertEvent(
-  admin: AdminClient,
   provider: ProviderName | "admin",
   event: NormalizedEvent,
   status: "processed" | "failed" | "skipped" | "pending_retry",
@@ -166,27 +131,27 @@ async function insertEvent(
       attempt: attempts,
       error: error ?? null,
     };
-    const { data } = await admin
-      .from("webhook_events")
-      .insert({
+    const [row] = await db()
+      .insert(schema.webhookEvents)
+      .values({
         provider,
-        provider_event_id: providerEventId,
-        event_type: eventType(event),
-        subscription_id: eventSubscriptionId(event),
-        customer_email: eventEmail(event),
+        providerEventId,
+        eventType: eventType(event),
+        subscriptionId: eventSubscriptionId(event),
+        customerEmail: eventEmail(event),
         status,
         payload: event,
         error,
         attempts,
-        last_attempt_at: new Date().toISOString(),
-        next_attempt_at: nextAttemptAt,
-        attempt_history: [historyEntry],
+        lastAttemptAt: new Date().toISOString(),
+        nextAttemptAt,
+        attemptHistory: [historyEntry],
       })
-      .select("id")
-      .maybeSingle();
-    return data?.id ?? null;
+      .returning({ id: schema.webhookEvents.id });
+    return row?.id ?? null;
   } catch (e) {
-    console.error("[webhook] insertEvent falhou:", e);
+    // Duplicado de evento ignorado (mesmo provider_event_id) — nada a fazer.
+    if (!isUniqueViolation(e)) console.error("[webhook] insertEvent falhou:", e);
     return null;
   }
 }
@@ -198,20 +163,22 @@ async function insertEvent(
  * UNIQUE INDEX `webhook_events_provider_event_unique`).
  */
 async function isDuplicateEvent(
-  admin: AdminClient,
   provider: ProviderName | "admin",
   providerEventId: string | null,
 ): Promise<boolean> {
   if (!providerEventId) return false;
-  const { data } = await admin
-    .from("webhook_events")
-    .select("id,status")
-    .eq("provider", provider)
-    .eq("provider_event_id", providerEventId)
-    .in("status", ["processed", "replayed"])
-    .limit(1)
-    .maybeSingle();
-  return !!data;
+  const [row] = await db()
+    .select({ id: schema.webhookEvents.id })
+    .from(schema.webhookEvents)
+    .where(
+      and(
+        eq(schema.webhookEvents.provider, provider),
+        eq(schema.webhookEvents.providerEventId, providerEventId),
+        inArray(schema.webhookEvents.status, ["processed", "replayed"]),
+      ),
+    )
+    .limit(1);
+  return !!row;
 }
 
 /** Janela após a qual um claim travado (processo caiu) volta para o worker de retry. */
@@ -229,102 +196,102 @@ const CLAIM_LEASE_MS = 2 * 60 * 1000;
  * Retorna o id da linha, ou null se outro processamento já é dono do evento.
  */
 async function claimEvent(
-  admin: AdminClient,
   provider: ProviderName,
   event: NormalizedEvent,
   providerEventId: string,
 ): Promise<string | null> {
   const now = new Date();
-  const { data, error } = await admin
-    .from("webhook_events")
-    .insert({
-      provider,
-      provider_event_id: providerEventId,
-      event_type: eventType(event),
-      subscription_id: eventSubscriptionId(event),
-      customer_email: eventEmail(event),
-      status: "pending_retry",
-      payload: event,
-      attempts: 0,
-      locked_at: now.toISOString(),
-      next_attempt_at: new Date(now.getTime() + CLAIM_LEASE_MS).toISOString(),
-      attempt_history: [],
-    })
-    .select("id")
-    .maybeSingle();
-  if (error) {
-    if (error.code === "23505") return null;
-    throw new Error(`claim do evento falhou: ${error.message}`);
+  try {
+    const [row] = await db()
+      .insert(schema.webhookEvents)
+      .values({
+        provider,
+        providerEventId,
+        eventType: eventType(event),
+        subscriptionId: eventSubscriptionId(event),
+        customerEmail: eventEmail(event),
+        status: "pending_retry",
+        payload: event,
+        attempts: 0,
+        lockedAt: now.toISOString(),
+        nextAttemptAt: new Date(now.getTime() + CLAIM_LEASE_MS).toISOString(),
+        attemptHistory: [],
+      })
+      .returning({ id: schema.webhookEvents.id });
+    if (!row?.id) throw new Error("claim do evento não retornou id");
+    return row.id;
+  } catch (e) {
+    if (isUniqueViolation(e)) return null;
+    throw new Error(`claim do evento falhou: ${e instanceof Error ? e.message : String(e)}`);
   }
-  if (!data?.id) throw new Error("claim do evento não retornou id");
-  return data.id;
 }
 
 /** Fecha um evento reivindicado com o resultado da primeira tentativa. */
 async function finalizeClaim(
-  admin: AdminClient,
   id: string,
   status: "processed" | "failed" | "pending_retry",
   error: string | null,
   nextAttemptAt: string | null,
 ): Promise<void> {
   const at = new Date().toISOString();
-  const { error: updErr } = await admin
-    .from("webhook_events")
-    .update({
-      status,
-      error,
-      attempts: 1,
-      last_attempt_at: at,
-      next_attempt_at: nextAttemptAt,
-      locked_at: null,
-      attempt_history: [{ at, status, attempt: 1, error }],
-    })
-    .eq("id", id);
-  if (updErr) console.error("[webhook] finalizeClaim falhou:", updErr.message);
+  try {
+    await db()
+      .update(schema.webhookEvents)
+      .set({
+        status,
+        error,
+        attempts: 1,
+        lastAttemptAt: at,
+        nextAttemptAt,
+        lockedAt: null,
+        attemptHistory: [{ at, status, attempt: 1, error }],
+      })
+      .where(eq(schema.webhookEvents.id, id));
+  } catch (e) {
+    console.error("[webhook] finalizeClaim falhou:", e instanceof Error ? e.message : e);
+  }
 }
 
 /**
  * Executa apenas a lógica de negócio para um evento normalizado.
  * Não escreve em webhook_events — o caller cuida da persistência/retry.
  */
-async function runEventLogic(
-  admin: AdminClient,
-  provider: ProviderName,
-  event: NormalizedEvent,
-): Promise<void> {
+async function runEventLogic(provider: ProviderName, event: NormalizedEvent): Promise<void> {
   if (event.type === "ignored") return;
+  const subs = schema.subscriptions;
+  const nowIso = () => new Date().toISOString();
   switch (event.type) {
     case "subscription.activated": {
-      const userId = await getOrCreateUserId(admin, event.email);
+      const userId = await getOrCreateUserId(event.email);
       if (!userId) throw new Error(`sem userId para ${event.email}`);
-      const row: Partial<DbRow> = {
-        user_id: userId,
+      const row = {
+        userId,
         provider,
-        provider_customer_id: event.customerId,
-        stripe_customer_id: provider === "stripe" ? event.customerId : null,
-        stripe_subscription_id: event.subscriptionId,
+        providerCustomerId: event.customerId,
+        stripeCustomerId: provider === "stripe" ? event.customerId : null,
+        stripeSubscriptionId: event.subscriptionId,
         plan: event.plan,
-        price_id: event.plan,
+        priceId: event.plan,
         status: "active",
-        current_period_end: event.currentPeriodEnd,
-        cancel_at_period_end: false,
+        currentPeriodEnd: event.currentPeriodEnd,
+        cancelAtPeriodEnd: false,
       };
-      const { error } = await admin
-        .from("subscriptions")
-        .upsert(row as DbRow, { onConflict: "stripe_subscription_id" });
-      if (error) throw new Error(error.message);
+      await db()
+        .insert(subs)
+        .values(row)
+        .onConflictDoUpdate({
+          target: subs.stripeSubscriptionId,
+          set: { ...row, updatedAt: nowIso() },
+        });
+      const { invalidateSubscriptionCache } =
+        await import("@/lib/requireActiveSubscription.server");
+      invalidateSubscriptionCache(userId);
 
       // ── Conversão de trial → pago: limpa flags de trial e registra timestamp.
       try {
-        const { data: u } = await admin.auth.admin.getUserById(userId);
-        if (readTrialFlags(u?.user).isTrial) {
-          await admin.auth.admin.updateUserById(userId, {
-            app_metadata: trialEndMetadata({
-              trial_converted_at: new Date().toISOString(),
-              trial_converted_plan: event.plan,
-            }),
-          });
+        const u = await getAppUser(userId);
+        if (readTrialFlags(u).isTrial) {
+          await updateAppUser(userId, trialEndPatch({ plan: event.plan }));
         }
       } catch (e) {
         console.warn("[webhook] limpar flags trial falhou (ignorado):", e);
@@ -333,24 +300,36 @@ async function runEventLogic(
       // Vincula a intenção de compra (a mais recente do mesmo email/provider
       // ainda não confirmada) ao customer/subscription do provedor.
       try {
-        await admin
-          .from("checkout_intents")
-          .update({
-            status: "paid",
-            provider_customer_id: event.customerId,
-            provider_subscription_id: event.subscriptionId,
-            confirmed_at: new Date().toISOString(),
-          })
-          .eq("provider", provider)
-          .eq("email", (event.email || "").toLowerCase())
-          .in("status", ["created", "redirected"])
-          .order("created_at", { ascending: false })
+        const ci = schema.checkoutIntents;
+        const [intent] = await db()
+          .select({ id: ci.id })
+          .from(ci)
+          .where(
+            and(
+              eq(ci.provider, provider),
+              eq(sql`lower(${ci.email})`, (event.email || "").toLowerCase()),
+              inArray(ci.status, ["created", "redirected"]),
+            ),
+          )
+          .orderBy(desc(ci.createdAt))
           .limit(1);
+        if (intent) {
+          await db()
+            .update(ci)
+            .set({
+              status: "paid",
+              providerCustomerId: event.customerId,
+              providerSubscriptionId: event.subscriptionId,
+              confirmedAt: nowIso(),
+              updatedAt: nowIso(),
+            })
+            .where(eq(ci.id, intent.id));
+        }
       } catch (e) {
         console.warn("[webhook] vincular intent falhou (ignorado):", e);
       }
 
-      await sendMagicLink(admin, event.email, event.plan);
+      await sendMagicLink(event.email, event.plan);
       const { notifyAdmin } = await import("@/lib/admin/notify.server");
       await notifyAdmin({
         event: "signup",
@@ -362,35 +341,39 @@ async function runEventLogic(
     }
 
     case "subscription.updated": {
-      const { data, error } = await admin
-        .from("subscriptions")
-        .update({
+      const rows = await db()
+        .update(subs)
+        .set({
           plan: event.plan,
-          price_id: event.plan,
+          priceId: event.plan,
           status: event.status,
-          current_period_end: event.currentPeriodEnd,
+          currentPeriodEnd: event.currentPeriodEnd,
+          updatedAt: nowIso(),
         })
-        .eq("stripe_subscription_id", event.subscriptionId)
-        .select("id");
-      if (error) throw new Error(error.message);
-      if (!data || data.length === 0) {
+        .where(eq(subs.stripeSubscriptionId, event.subscriptionId))
+        .returning({ id: subs.id, userId: subs.userId });
+      if (rows.length === 0) {
         console.warn(`[webhook] updated sem row prévia: ${event.subscriptionId} (ignorado)`);
       }
+      await invalidateCacheFor(rows);
       return;
     }
     case "subscription.canceled": {
-      const { data, error } = await admin
-        .from("subscriptions")
-        .update({ status: "canceled" })
-        .eq("stripe_subscription_id", event.subscriptionId)
-        .select("id, current_period_end, plan");
-      if (error) throw new Error(error.message);
-      const row = (data && data[0]) as
-        | { current_period_end?: string | null; plan?: string | null }
-        | undefined;
+      const rows = await db()
+        .update(subs)
+        .set({ status: "canceled", updatedAt: nowIso() })
+        .where(eq(subs.stripeSubscriptionId, event.subscriptionId))
+        .returning({
+          id: subs.id,
+          userId: subs.userId,
+          currentPeriodEnd: subs.currentPeriodEnd,
+          plan: subs.plan,
+        });
+      const row = rows[0];
       if (!row) {
         console.warn(`[webhook] canceled sem row prévia: ${event.subscriptionId}`);
       }
+      await invalidateCacheFor(rows);
       const { notifyAdmin } = await import("@/lib/admin/notify.server");
       await notifyAdmin({
         event: "churn",
@@ -400,13 +383,12 @@ async function runEventLogic(
       });
       // E-mail ao cliente confirmando o cancelamento e a data de fim de acesso.
       try {
-        const sub = await resolveSubscriberEmail(admin, event.subscriptionId);
+        const sub = await resolveSubscriberEmail(event.subscriptionId);
         if (sub) {
-          const accessEnd = row?.current_period_end
-            ? new Date(row.current_period_end).toLocaleDateString("pt-BR")
+          const accessEnd = row?.currentPeriodEnd
+            ? new Date(row.currentPeriodEnd).toLocaleDateString("pt-BR")
             : "o fim do ciclo atual";
           await sendLifecycleEmail(
-            admin,
             "subscription_canceled",
             sub.email,
             { name: sub.name, access_end: accessEnd, plan: row?.plan ?? "" },
@@ -419,22 +401,22 @@ async function runEventLogic(
       return;
     }
     case "subscription.past_due": {
-      const { data, error } = await admin
-        .from("subscriptions")
-        .update({ status: "past_due" })
-        .eq("stripe_subscription_id", event.subscriptionId)
-        .select("id, plan, provider_customer_id, stripe_customer_id");
-      if (error) throw new Error(error.message);
-      const row = (data && data[0]) as
-        | {
-            plan?: string | null;
-            provider_customer_id?: string | null;
-            stripe_customer_id?: string | null;
-          }
-        | undefined;
+      const rows = await db()
+        .update(subs)
+        .set({ status: "past_due", updatedAt: nowIso() })
+        .where(eq(subs.stripeSubscriptionId, event.subscriptionId))
+        .returning({
+          id: subs.id,
+          userId: subs.userId,
+          plan: subs.plan,
+          providerCustomerId: subs.providerCustomerId,
+          stripeCustomerId: subs.stripeCustomerId,
+        });
+      const row = rows[0];
       if (!row) {
         console.warn(`[webhook] past_due sem row prévia: ${event.subscriptionId}`);
       }
+      await invalidateCacheFor(rows);
       const { notifyAdmin } = await import("@/lib/admin/notify.server");
       await notifyAdmin({
         event: "past_due",
@@ -444,12 +426,11 @@ async function runEventLogic(
       });
       // E-mail ao cliente com link do portal (gerado server-side) e prazo de 7 dias.
       try {
-        const sub = await resolveSubscriberEmail(admin, event.subscriptionId);
+        const sub = await resolveSubscriberEmail(event.subscriptionId);
         if (sub) {
-          const customerId = row?.provider_customer_id ?? row?.stripe_customer_id ?? null;
+          const customerId = row?.providerCustomerId ?? row?.stripeCustomerId ?? null;
           const portalUrl = customerId ? await buildPortalUrl(provider, customerId) : null;
           await sendLifecycleEmail(
-            admin,
             "payment_failed",
             sub.email,
             {
@@ -467,13 +448,12 @@ async function runEventLogic(
     }
     case "subscription.trial_will_end": {
       try {
-        const sub = await resolveSubscriberEmail(admin, event.subscriptionId);
+        const sub = await resolveSubscriberEmail(event.subscriptionId);
         if (sub) {
           const trialEnd = event.trialEnd
             ? new Date(event.trialEnd).toLocaleDateString("pt-BR")
             : "breve";
           await sendLifecycleEmail(
-            admin,
             "trial_ending",
             sub.email,
             { name: sub.name, trial_end: trialEnd },
@@ -490,6 +470,13 @@ async function runEventLogic(
   }
 }
 
+/** Mudança de status vale na hora para o gate do servidor (cache de 60s). */
+async function invalidateCacheFor(rows: Array<{ userId: string }>): Promise<void> {
+  if (rows.length === 0) return;
+  const { invalidateSubscriptionCache } = await import("@/lib/requireActiveSubscription.server");
+  for (const r of rows) invalidateSubscriptionCache(r.userId);
+}
+
 /**
  * Caminho de chegada do webhook. Em falha transitória, agenda retry
  * com backoff exponencial; após esgotar tentativas vai a dead_letter
@@ -500,20 +487,9 @@ export async function handleNormalizedEvent(
   event: NormalizedEvent,
   providerEventId: string | null = null,
 ): Promise<void> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
   if (event.type === "ignored") {
-    if (await isDuplicateEvent(supabaseAdmin, provider, providerEventId)) return;
-    await insertEvent(
-      supabaseAdmin,
-      provider,
-      event,
-      "skipped",
-      event.reason,
-      0,
-      null,
-      providerEventId,
-    );
+    if (await isDuplicateEvent(provider, providerEventId)) return;
+    await insertEvent(provider, event, "skipped", event.reason, 0, null, providerEventId);
     return;
   }
 
@@ -522,7 +498,7 @@ export async function handleNormalizedEvent(
   // deduplicar — processa e registra.
   let claimId: string | null = null;
   if (providerEventId) {
-    claimId = await claimEvent(supabaseAdmin, provider, event, providerEventId);
+    claimId = await claimEvent(provider, event, providerEventId);
     if (!claimId) {
       console.log(`[webhook] evento ${provider}/${providerEventId} já reivindicado — ignorado`);
       return;
@@ -530,16 +506,16 @@ export async function handleNormalizedEvent(
   }
 
   try {
-    await runEventLogic(supabaseAdmin, provider, event);
-    if (claimId) await finalizeClaim(supabaseAdmin, claimId, "processed", null, null);
-    else await insertEvent(supabaseAdmin, provider, event, "processed", null, 1, null, null);
+    await runEventLogic(provider, event);
+    if (claimId) await finalizeClaim(claimId, "processed", null, null);
+    else await insertEvent(provider, event, "processed", null, 1, null, null);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "erro";
     const delay = nextDelaySeconds(1);
     const next = delay ? new Date(Date.now() + delay * 1000).toISOString() : null;
     const status = delay ? "pending_retry" : "failed";
-    if (claimId) await finalizeClaim(supabaseAdmin, claimId, status, msg, next);
-    else await insertEvent(supabaseAdmin, provider, event, status, msg, 1, next, null);
+    if (claimId) await finalizeClaim(claimId, status, msg, next);
+    else await insertEvent(provider, event, status, msg, 1, next, null);
     if (!delay) {
       try {
         const { notifyAdmin } = await import("@/lib/admin/notify.server");
@@ -558,6 +534,14 @@ export async function handleNormalizedEvent(
   }
 }
 
+type AttemptEntry = {
+  at: string;
+  status: string;
+  attempt: number;
+  error: string | null;
+  manual?: boolean;
+};
+
 /**
  * Reprocessa um evento já persistido (worker de retry ou replay manual).
  * Faz lock leve via `locked_at` para evitar processamento concorrente.
@@ -569,34 +553,28 @@ export async function reprocessWebhookEventRow(
     actorId?: string | null;
   },
 ): Promise<{ ok: boolean; status: string; error?: string }> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-  // Lock leve: só claima se locked_at IS NULL ou expirado (>2min).
-  const lockCutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-  const { data: claimed, error: lockErr } = await supabaseAdmin
-    .from("webhook_events")
-    .update({ locked_at: new Date().toISOString() })
-    .eq("id", eventId)
-    .or(`locked_at.is.null,locked_at.lt.${lockCutoff}`)
-    .select("*")
-    .maybeSingle();
-  if (lockErr) throw new Error(lockErr.message);
-  if (!claimed)
+  const we = schema.webhookEvents;
+  // Lock leve (atômico): só claima se locked_at IS NULL ou expirado (>2min).
+  const lockCutoff = new Date(Date.now() - CLAIM_LEASE_MS).toISOString();
+  const [ev] = await db()
+    .update(we)
+    .set({ lockedAt: new Date().toISOString() })
+    .where(and(eq(we.id, eventId), or(isNull(we.lockedAt), lt(we.lockedAt, lockCutoff))))
+    .returning();
+  if (!ev)
     return { ok: false, status: "locked", error: "Evento em processamento por outra rotina." };
 
-  // `claimed` é uma linha de webhook_events tipada pelo schema gerado.
-  // Os campos `provider`, `payload`, `attempts` etc. existem no schema;
-  // só precisamos narrowar `payload` (jsonb) para `NormalizedEvent`.
-  const ev = claimed;
   const provider = ev.provider as ProviderName;
   const payload = ev.payload as NormalizedEvent;
   const newAttempts = (ev.attempts ?? 0) + 1;
   const startedAt = new Date().toISOString();
+  const history: AttemptEntry[] = Array.isArray(ev.attemptHistory)
+    ? (ev.attemptHistory as AttemptEntry[])
+    : [];
 
   try {
-    await runEventLogic(supabaseAdmin, provider, payload);
+    await runEventLogic(provider, payload);
     const finalStatus = opts?.manual ? "replayed" : "processed";
-    const history = Array.isArray(ev.attempt_history) ? ev.attempt_history : [];
     history.push({
       at: startedAt,
       status: finalStatus,
@@ -604,27 +582,26 @@ export async function reprocessWebhookEventRow(
       error: null,
       manual: !!opts?.manual,
     });
-    await supabaseAdmin
-      .from("webhook_events")
-      .update({
+    await db()
+      .update(we)
+      .set({
         status: finalStatus,
         error: null,
         attempts: newAttempts,
-        last_attempt_at: startedAt,
-        next_attempt_at: null,
-        locked_at: null,
-        attempt_history: history,
-        replayed_at: opts?.manual ? startedAt : ev.replayed_at,
-        replayed_by: opts?.manual ? (opts?.actorId ?? null) : ev.replayed_by,
+        lastAttemptAt: startedAt,
+        nextAttemptAt: null,
+        lockedAt: null,
+        attemptHistory: history,
+        replayedAt: opts?.manual ? startedAt : ev.replayedAt,
+        replayedBy: opts?.manual ? (opts?.actorId ?? null) : ev.replayedBy,
       })
-      .eq("id", eventId);
+      .where(eq(we.id, eventId));
     return { ok: true, status: finalStatus };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "erro";
     const delay = nextDelaySeconds(newAttempts);
     const next = delay ? new Date(Date.now() + delay * 1000).toISOString() : null;
     const finalStatus = delay ? "pending_retry" : "dead_letter";
-    const history = Array.isArray(ev.attempt_history) ? ev.attempt_history : [];
     history.push({
       at: startedAt,
       status: finalStatus,
@@ -632,25 +609,25 @@ export async function reprocessWebhookEventRow(
       error: msg,
       manual: !!opts?.manual,
     });
-    await supabaseAdmin
-      .from("webhook_events")
-      .update({
+    await db()
+      .update(we)
+      .set({
         status: finalStatus,
         error: msg,
         attempts: newAttempts,
-        last_attempt_at: startedAt,
-        next_attempt_at: next,
-        locked_at: null,
-        attempt_history: history,
+        lastAttemptAt: startedAt,
+        nextAttemptAt: next,
+        lockedAt: null,
+        attemptHistory: history,
       })
-      .eq("id", eventId);
+      .where(eq(we.id, eventId));
     if (finalStatus === "dead_letter") {
       try {
         const { notifyAdmin } = await import("@/lib/admin/notify.server");
         await notifyAdmin({
           event: "webhook_failure",
           title: `Webhook em dead-letter (${provider})`,
-          body: `Tipo: ${ev.event_type}\nTentativas: ${newAttempts}\nÚltimo erro: ${msg}`,
+          body: `Tipo: ${ev.eventType}\nTentativas: ${newAttempts}\nÚltimo erro: ${msg}`,
           dedupKey: `whdl:${eventId}`,
         });
       } catch {
@@ -670,17 +647,16 @@ export async function runRetryBatch(limit = 25): Promise<{
   failed: number;
   deadLetter: number;
 }> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const we = schema.webhookEvents;
   const nowIso = new Date().toISOString();
-  const { data: due } = await supabaseAdmin
-    .from("webhook_events")
-    .select("id")
-    .eq("status", "pending_retry")
-    .lte("next_attempt_at", nowIso)
-    .order("next_attempt_at", { ascending: true })
+  const due = await db()
+    .select({ id: we.id })
+    .from(we)
+    .where(and(eq(we.status, "pending_retry"), lte(we.nextAttemptAt, nowIso)))
+    .orderBy(asc(we.nextAttemptAt))
     .limit(limit);
 
-  const ids = (due ?? []).map((r) => r.id);
+  const ids = due.map((r) => r.id);
   let ok = 0,
     failed = 0,
     deadLetter = 0;

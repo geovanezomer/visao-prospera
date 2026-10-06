@@ -24,7 +24,7 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   /** Salva no computador (download local). */
   onSaveDisk: () => void;
-  /** Salva backup imediato na nuvem (Supabase). undefined ⇒ usuário deslogado. */
+  /** Salva backup imediato na nuvem (banco do servidor). undefined ⇒ usuário deslogado. */
   onSaveCloud?: () => Promise<void> | void;
   /** Estado/cenários atuais — usados para gerar payload do link público. */
   state: AppState;

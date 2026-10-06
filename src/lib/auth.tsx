@@ -74,13 +74,17 @@ function toAuthUser(u: SessionUser | null | undefined): AuthUser | null {
 
 function friendlyError(message: string | undefined): string {
   const m = (message ?? "").toLowerCase();
-  if (m.includes("invalid") && (m.includes("password") || m.includes("email") || m.includes("username")))
+  if (
+    m.includes("invalid") &&
+    (m.includes("password") || m.includes("email") || m.includes("username"))
+  )
     return "Usuário, e-mail ou senha inválidos.";
   if (m.includes("already exists") || m.includes("already registered"))
     return "Este e-mail já está cadastrado. Faça login ou recupere sua senha.";
   if (m.includes("too short")) return "A senha precisa ter pelo menos 8 caracteres.";
   if (m.includes("banned")) return "Acesso suspenso. Fale com o administrador.";
-  if (m.includes("too many") || m.includes("rate")) return "Muitas tentativas. Aguarde alguns minutos.";
+  if (m.includes("too many") || m.includes("rate"))
+    return "Muitas tentativas. Aguarde alguns minutos.";
   return message || "Não foi possível concluir. Tente novamente.";
 }
 

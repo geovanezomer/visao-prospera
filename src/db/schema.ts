@@ -41,8 +41,14 @@ const isoTimestamp = customType<{ data: string; driverData: string | Date }>({
   toDriver: (v) => v,
 });
 const ts = (name: string) => isoTimestamp(name);
-const createdAt = () => ts("created_at").notNull().default(sql`now()`);
-const updatedAt = () => ts("updated_at").notNull().default(sql`now()`);
+const createdAt = () =>
+  ts("created_at")
+    .notNull()
+    .default(sql`now()`);
+const updatedAt = () =>
+  ts("updated_at")
+    .notNull()
+    .default(sql`now()`);
 
 // ---------------------------------------------------------------------------
 // Login (Better Auth). Nomes de coluna em snake_case; o adapter mapeia.
@@ -181,7 +187,11 @@ export const plans = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("idx_plans_active_sort").on(t.sortOrder).where(sql`${t.active} = true`)],
+  (t) => [
+    index("idx_plans_active_sort")
+      .on(t.sortOrder)
+      .where(sql`${t.active} = true`),
+  ],
 );
 
 export const checkoutIntents = pgTable(
@@ -265,7 +275,9 @@ export const webhookEvents = pgTable(
     replayedAt: ts("replayed_at"),
     replayedBy: uuid("replayed_by"),
     lockedAt: ts("locked_at"),
-    receivedAt: ts("received_at").notNull().default(sql`now()`),
+    receivedAt: ts("received_at")
+      .notNull()
+      .default(sql`now()`),
   },
   (t) => [
     check("webhook_events_provider_check", sql`${t.provider} in ('stripe','asaas','admin')`),
@@ -318,8 +330,14 @@ export const featureFlags = pgTable(
     description: text("description"),
     enabled: boolean("enabled").notNull().default(false),
     rolloutPercent: integer("rollout_percent").notNull().default(0),
-    allowedEmails: text("allowed_emails").array().notNull().default(sql`'{}'::text[]`),
-    allowedPlans: text("allowed_plans").array().notNull().default(sql`'{}'::text[]`),
+    allowedEmails: text("allowed_emails")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    allowedPlans: text("allowed_plans")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
     updatedBy: uuid("updated_by"),
@@ -443,7 +461,9 @@ export const emailLog = pgTable(
     kind: text("kind").notNull(),
     subscriptionId: text("subscription_id"),
     sentToHash: text("sent_to_hash").notNull(),
-    sentAt: ts("sent_at").notNull().default(sql`now()`),
+    sentAt: ts("sent_at")
+      .notNull()
+      .default(sql`now()`),
   },
   (t) => [index("email_log_kind_sub_sent_idx").on(t.kind, t.subscriptionId, t.sentAt.desc())],
 );

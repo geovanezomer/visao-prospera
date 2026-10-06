@@ -13,22 +13,23 @@ import { visualizer } from "rollup-plugin-visualizer";
 // com o treemap dos chunks (não afeta o build normal).
 const ANALYZE = process.env.ANALYZE === "1";
 
-// Lê SUPABASE_BACKUP do .env (sem prefixo VITE_, conforme spec) e expõe ao bundle
-// via `define` — o wrapper @lovable.dev só injeta automaticamente vars com prefixo VITE_*.
-function readSupabaseBackupFlag(): string {
+// Lê CLOUD_BACKUP do .env (sem prefixo VITE_) e expõe ao bundle via `define` —
+// o wrapper @lovable.dev só injeta automaticamente vars com prefixo VITE_*.
+// SUPABASE_BACKUP é o nome antigo, aceito como alternativa.
+function readCloudBackupFlag(): string {
   for (const file of [".env.local", ".env"]) {
     try {
       const txt = fs.readFileSync(path.resolve(process.cwd(), file), "utf8");
-      const m = txt.match(/^\s*SUPABASE_BACKUP\s*=\s*"?([^"\n\r]+)"?\s*$/m);
+      const m = txt.match(/^\s*(?:CLOUD_BACKUP|SUPABASE_BACKUP)\s*=\s*"?([^"\n\r]+)"?\s*$/m);
       if (m) return m[1].trim();
     } catch {
       /* arquivo ausente — ignora */
     }
   }
-  return process.env.SUPABASE_BACKUP ?? "ON";
+  return process.env.CLOUD_BACKUP ?? process.env.SUPABASE_BACKUP ?? "ON";
 }
 
-const SUPABASE_BACKUP = readSupabaseBackupFlag();
+const CLOUD_BACKUP = readCloudBackupFlag();
 
 export default defineConfig({
   tanstackStart: {
@@ -38,7 +39,7 @@ export default defineConfig({
   },
   vite: {
     define: {
-      "import.meta.env.SUPABASE_BACKUP": JSON.stringify(SUPABASE_BACKUP),
+      "import.meta.env.CLOUD_BACKUP": JSON.stringify(CLOUD_BACKUP),
     },
     plugins: ANALYZE
       ? [

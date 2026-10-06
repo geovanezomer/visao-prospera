@@ -7,7 +7,8 @@
 //     impedindo que a URL seja adulterada para consultar intents de terceiros.
 //   - Rate limit distribuído por IP+token, para impedir polling abusivo.
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
+import { eq } from "drizzle-orm";
+import { db, schema } from "@/db/client.server";
 import { verifyIntentToken } from "@/lib/intentToken.server";
 import { clientIp, rlConsume, tooManyRequests } from "@/lib/rateLimit.server";
 
@@ -28,19 +29,27 @@ export const Route = createFileRoute("/api/public/payments/intent-status")({
         const rl = await rlConsume(`intent-status:${ip}:${intentKey}`, 60, 60);
         if (!rl.allowed) return tooManyRequests(rl.retryAfter);
 
-        const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-          auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-        });
+        const ci = schema.checkoutIntents;
+        const [data] = await db()
+          .select({
+            status: ci.status,
+            planSlug: ci.planSlug,
+            withUpsell: ci.withUpsell,
+            currency: ci.currency,
+            planAmountCents: ci.planAmountCents,
+            upsellAmountCents: ci.upsellAmountCents,
+            provider: ci.provider,
+            confirmedAt: ci.confirmedAt,
+            updatedAt: ci.updatedAt,
+            lastError: ci.lastError,
+            email: ci.email,
+          })
+          .from(ci)
+          .where(eq(ci.idempotencyKey, intentKey))
+          .limit(1)
+          .catch(() => []);
 
-        const { data, error } = await sb
-          .from("checkout_intents")
-          .select(
-            "status,plan_slug,with_upsell,currency,plan_amount_cents,upsell_amount_cents,provider,confirmed_at,updated_at,last_error,email",
-          )
-          .eq("idempotency_key", intentKey)
-          .maybeSingle();
-
-        if (error || !data) {
+        if (!data) {
           return Response.json({ status: "unknown" }, { status: 404 });
         }
 
@@ -55,16 +64,16 @@ export const Route = createFileRoute("/api/public/payments/intent-status")({
 
         return Response.json({
           status: data.status,
-          plan: data.plan_slug,
-          withUpsell: data.with_upsell,
+          plan: data.planSlug,
+          withUpsell: data.withUpsell,
           currency: data.currency,
-          planAmountCents: data.plan_amount_cents,
-          upsellAmountCents: data.upsell_amount_cents,
+          planAmountCents: data.planAmountCents,
+          upsellAmountCents: data.upsellAmountCents,
           provider: data.provider,
-          confirmedAt: data.confirmed_at,
-          updatedAt: data.updated_at,
-          emailMasked: maskEmail(data.email as string | null),
-          lastError: data.status === "failed" ? data.last_error : null,
+          confirmedAt: data.confirmedAt,
+          updatedAt: data.updatedAt,
+          emailMasked: maskEmail(data.email),
+          lastError: data.status === "failed" ? data.lastError : null,
         });
       },
     },

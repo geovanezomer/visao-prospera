@@ -12,7 +12,9 @@
 // ============================================================================
 
 import { createFileRoute } from "@tanstack/react-router";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { z } from "zod";
+import { db, schema } from "@/db/client.server";
 import { resolveProvider } from "@/lib/payments";
 import { signIntentKey } from "@/lib/intentToken.server";
 import { clientIp, rlConsume, tooManyRequests } from "@/lib/rateLimit.server";
@@ -81,18 +83,24 @@ function err(status: number, code: string, message: string, field?: string) {
 }
 
 async function loadPlanRow(slug: string): Promise<PlanRow | null> {
-  const { createClient } = await import("@supabase/supabase-js");
-  const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-  });
-  const { data } = await sb
-    .from("plans")
-    .select(
-      "name,price_cents,currency,interval,stripe_price_id,asaas_plan_ref,active,upsell_enabled,upsell_name,upsell_price_cents,upsell_stripe_price_id,upsell_asaas_ref",
-    )
-    .eq("slug", slug)
-    .eq("active", true)
-    .maybeSingle();
+  const p = schema.plans;
+  const [data] = await db()
+    .select({
+      name: p.name,
+      price_cents: p.priceCents,
+      currency: p.currency,
+      interval: p.interval,
+      stripe_price_id: p.stripePriceId,
+      asaas_plan_ref: p.asaasPlanRef,
+      upsell_enabled: p.upsellEnabled,
+      upsell_name: p.upsellName,
+      upsell_price_cents: p.upsellPriceCents,
+      upsell_stripe_price_id: p.upsellStripePriceId,
+      upsell_asaas_ref: p.upsellAsaasRef,
+    })
+    .from(p)
+    .where(and(eq(p.slug, slug), eq(p.active, true)))
+    .limit(1);
   if (!data) return null;
   const parsed = PlanRowSchema.safeParse(data);
   if (!parsed.success) {
@@ -100,6 +108,22 @@ async function loadPlanRow(slug: string): Promise<PlanRow | null> {
     return null;
   }
   return parsed.data;
+}
+
+type IntentValues = typeof schema.checkoutIntents.$inferInsert;
+
+/** Grava a intenção por idempotency_key (insere ou atualiza a existente). */
+async function upsertIntent(values: IntentValues): Promise<void> {
+  const ci = schema.checkoutIntents;
+  const { idempotencyKey: _k, ...rest } = values;
+  await db()
+    .insert(ci)
+    .values(values)
+    .onConflictDoUpdate({
+      target: ci.idempotencyKey,
+      targetWhere: isNotNull(ci.idempotencyKey),
+      set: { ...rest, updatedAt: new Date().toISOString() },
+    });
 }
 
 // ─── Handler ────────────────────────────────────────────────────────────────
@@ -240,30 +264,21 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
             .map((b) => b.toString(16).padStart(2, "0"))
             .join("");
 
-          const { createClient } = await import("@supabase/supabase-js");
-          const sb = createClient(
-            process.env.SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
-            { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-          );
+          const ci = schema.checkoutIntents;
 
           // 6a) Se já existe intent com mesma chave e URL viva, reutiliza.
-          const { data: existing } = await sb
-            .from("checkout_intents")
-            .select("id,checkout_url,status")
-            .eq("idempotency_key", idempotencyKey)
-            .maybeSingle();
-          if (
-            existing?.checkout_url &&
-            existing.status !== "paid" &&
-            existing.status !== "failed"
-          ) {
-            await sb
-              .from("checkout_intents")
-              .update({ status: "redirected" })
-              .eq("id", existing.id);
+          const [existing] = await db()
+            .select({ id: ci.id, checkoutUrl: ci.checkoutUrl, status: ci.status })
+            .from(ci)
+            .where(eq(ci.idempotencyKey, idempotencyKey))
+            .limit(1);
+          if (existing?.checkoutUrl && existing.status !== "paid" && existing.status !== "failed") {
+            await db()
+              .update(ci)
+              .set({ status: "redirected", updatedAt: new Date().toISOString() })
+              .where(eq(ci.id, existing.id));
             return Response.json({
-              url: existing.checkout_url,
+              url: existing.checkoutUrl,
               provider: provider.name,
               reused: true,
             });
@@ -302,23 +317,20 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
           } catch (provErr) {
             const msg = provErr instanceof Error ? provErr.message : "Erro desconhecido";
             // Registra a falha no intent para auditoria/admin.
-            await sb.from("checkout_intents").upsert(
-              {
-                plan_slug: parsed.plan,
-                email: parsed.email.toLowerCase(),
-                with_upsell: parsed.withUpsell,
-                provider: provider.name,
-                plan_amount_cents: plan.price_cents,
-                upsell_amount_cents: upsellPayload?.priceCents ?? null,
-                currency: plan.currency,
-                ip,
-                user_agent: request.headers.get("user-agent")?.slice(0, 500) ?? null,
-                idempotency_key: idempotencyKey,
-                status: "failed",
-                last_error: msg.slice(0, 1000),
-              },
-              { onConflict: "idempotency_key" },
-            );
+            await upsertIntent({
+              planSlug: parsed.plan,
+              email: parsed.email.toLowerCase(),
+              withUpsell: parsed.withUpsell,
+              provider: provider.name,
+              planAmountCents: plan.price_cents,
+              upsellAmountCents: upsellPayload?.priceCents ?? null,
+              currency: plan.currency,
+              ip,
+              userAgent: request.headers.get("user-agent")?.slice(0, 500) ?? null,
+              idempotencyKey,
+              status: "failed",
+              lastError: msg.slice(0, 1000),
+            }).catch((logErr) => console.error("[checkout] log de falha (ignorado):", logErr));
             console.error("[checkout] provedor recusou checkout:", msg);
             return err(
               422,
@@ -330,26 +342,23 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
           // 7) Persiste intenção (status='redirected') com providerIds para
           //    o webhook conseguir correlacionar de volta.
           try {
-            await sb.from("checkout_intents").upsert(
-              {
-                plan_slug: parsed.plan,
-                email: parsed.email.toLowerCase(),
-                with_upsell: parsed.withUpsell,
-                provider: provider.name,
-                plan_amount_cents: plan.price_cents,
-                upsell_amount_cents: upsellPayload?.priceCents ?? null,
-                currency: plan.currency,
-                ip,
-                user_agent: request.headers.get("user-agent")?.slice(0, 500) ?? null,
-                idempotency_key: idempotencyKey,
-                status: "redirected",
-                checkout_url: providerResult.url,
-                provider_session_id: providerResult.providerSessionId ?? null,
-                provider_customer_id: providerResult.providerCustomerId ?? null,
-                last_error: null,
-              },
-              { onConflict: "idempotency_key" },
-            );
+            await upsertIntent({
+              planSlug: parsed.plan,
+              email: parsed.email.toLowerCase(),
+              withUpsell: parsed.withUpsell,
+              provider: provider.name,
+              planAmountCents: plan.price_cents,
+              upsellAmountCents: upsellPayload?.priceCents ?? null,
+              currency: plan.currency,
+              ip,
+              userAgent: request.headers.get("user-agent")?.slice(0, 500) ?? null,
+              idempotencyKey,
+              status: "redirected",
+              checkoutUrl: providerResult.url,
+              providerSessionId: providerResult.providerSessionId ?? null,
+              providerCustomerId: providerResult.providerCustomerId ?? null,
+              lastError: null,
+            });
           } catch (logErr) {
             console.error("[checkout] log de intenção falhou (ignorado):", logErr);
           }

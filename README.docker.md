@@ -7,12 +7,12 @@ terceiros obrigatórios e sem custo de backend: tudo sobe com um
 
 ## Arquivos
 
-| Arquivo              | Função                                                   |
-| -------------------- | -------------------------------------------------------- |
-| `Dockerfile`         | Build de produção multi-stage (servidor Node 22)         |
-| `Dockerfile.dev`     | Container de desenvolvimento com hot reload              |
-| `docker-compose.yml` | Serviços `db` (Postgres 17), `app` (prod), `app-dev`     |
-| `db/migrations/`     | Esquema do banco (Drizzle), aplicado pelo app na subida  |
+| Arquivo              | Função                                                  |
+| -------------------- | ------------------------------------------------------- |
+| `Dockerfile`         | Build de produção multi-stage (servidor Node 22)        |
+| `Dockerfile.dev`     | Container de desenvolvimento com hot reload             |
+| `docker-compose.yml` | Serviços `db` (Postgres 17), `app` (prod), `app-dev`    |
+| `db/migrations/`     | Esquema do banco (Drizzle), aplicado pelo app na subida |
 
 ## Primeira subida
 
@@ -35,10 +35,10 @@ Na subida, o app:
 
 ## Variáveis de ambiente
 
-| Prefixo               | Quando é lida         | Exemplos                                              |
-| --------------------- | --------------------- | ----------------------------------------------------- |
-| `VITE_*`              | **Build** (bundle)    | `VITE_LANDING_PAGE`, `VITE_PAYMENTS_ENABLED`          |
-| Sem prefixo (runtime) | **Runtime** (servidor)| `DATABASE_URL`, `BETTER_AUTH_SECRET`, `SMTP_*`, `STRIPE_*` |
+| Prefixo               | Quando é lida          | Exemplos                                                   |
+| --------------------- | ---------------------- | ---------------------------------------------------------- |
+| `VITE_*`              | **Build** (bundle)     | `VITE_LANDING_PAGE`, `VITE_PAYMENTS_ENABLED`               |
+| Sem prefixo (runtime) | **Runtime** (servidor) | `DATABASE_URL`, `BETTER_AUTH_SECRET`, `SMTP_*`, `STRIPE_*` |
 
 O `.env` é usado só no estágio de build (para as `VITE_*`). A imagem final
 não contém o `.env`: as variáveis de runtime entram por `env_file` no compose

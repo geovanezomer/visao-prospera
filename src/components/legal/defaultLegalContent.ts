@@ -43,7 +43,7 @@ ${MINUTA_BANNER}
 
 <h2>6. Operadores e suborganizações</h2>
 <ul>
-  <li><strong>Supabase</strong> — hospedagem do banco de dados e autenticação.</li>
+  <li><strong>Servidor próprio</strong> — banco de dados e autenticação hospedados na infraestrutura contratada pelo controlador, sem repasse a terceiros.</li>
   <li><strong>Stripe / Asaas</strong> — processamento de pagamentos.</li>
   <li><strong>Resend</strong> — envio de e-mail transacional.</li>
 </ul>
