@@ -273,6 +273,16 @@ const REGRAS: Record<MotivoRescisao, RegrasMotivo> = {
 
 import { round2 } from "./utils";
 
+/**
+ * Avos de 13º/férias gerados pela projeção do aviso prévio indenizado
+ * (CLT art. 487 §1º; OJ 82 SDI-1). Fração de 15 dias ou mais conta como mês
+ * (Lei 4.090/62 art. 1º §2º; CLT art. 146, parágrafo único).
+ */
+export function avosProjecaoAviso(diasAviso: number): number {
+  if (diasAviso <= 0) return 0;
+  return Math.floor(diasAviso / 30) + (diasAviso % 30 >= 15 ? 1 : 0);
+}
+
 /** Aviso prévio proporcional (Lei 12.506/2011): 30 + 3 dias por ano completo (máx 90). */
 export function diasAvisoProporcional(anos: number): number {
   const adicional = Math.floor(Math.max(0, anos)) * 3;
@@ -317,26 +327,38 @@ export function calcularRescisao(inputBruto: RescisaoInput): RescisaoOutput {
     });
   }
 
+  // --- Projeção do aviso indenizado ---
+  // O período do aviso indenizado integra o tempo de serviço e gera avos de
+  // 13º e férias. Só no aviso integral: no acordo do art. 484-A (aviso pela
+  // metade) a projeção é controvertida e não é aplicada.
+  const avosAviso =
+    valorAviso > 0 && i.avisoPrevio !== "trabalhado" && regras.avisoFator === 1
+      ? avosProjecaoAviso(diasAviso)
+      : 0;
+  const notaAviso = avosAviso > 0 ? ` + ${avosAviso}/12 da projeção do aviso` : "";
+
   // --- 13º proporcional ---
-  if (regras.decimoProporcional && i.mesesDecimoProporcional > 0) {
-    const v = round2((i.salarioBruto / 12) * i.mesesDecimoProporcional);
+  const mesesDecimo = Math.min(12, i.mesesDecimoProporcional + avosAviso);
+  if (regras.decimoProporcional && mesesDecimo > 0) {
+    const v = round2((i.salarioBruto / 12) * mesesDecimo);
     verbas.push({
-      rotulo: `13º proporcional (${i.mesesDecimoProporcional}/12)`,
+      rotulo: `13º proporcional (${mesesDecimo}/12${notaAviso})`,
       valor: v,
-      base: `${i.mesesDecimoProporcional}/12 × R$ ${i.salarioBruto.toFixed(2)}`,
+      base: `${mesesDecimo}/12 × R$ ${i.salarioBruto.toFixed(2)}`,
       incideINSS: true,
       incideIRRF: true,
     });
   }
 
   // --- Férias proporcionais + 1/3 (indenizadas — isentas) ---
-  if (regras.feriasProporcionais && i.mesesFeriasProporcionais > 0) {
-    const ferias = round2((i.salarioBruto / 12) * i.mesesFeriasProporcionais);
+  const mesesFerias = Math.min(12, i.mesesFeriasProporcionais + avosAviso);
+  if (regras.feriasProporcionais && mesesFerias > 0) {
+    const ferias = round2((i.salarioBruto / 12) * mesesFerias);
     const tercoFerias = round2(ferias / 3);
     verbas.push({
-      rotulo: `Férias proporcionais (${i.mesesFeriasProporcionais}/12)`,
+      rotulo: `Férias proporcionais (${mesesFerias}/12${notaAviso})`,
       valor: ferias,
-      base: `${i.mesesFeriasProporcionais}/12 × R$ ${i.salarioBruto.toFixed(2)}`,
+      base: `${mesesFerias}/12 × R$ ${i.salarioBruto.toFixed(2)}`,
       incideINSS: false,
       incideIRRF: false,
     });
