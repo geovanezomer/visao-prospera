@@ -26,20 +26,6 @@ import {
 
 const n = (v: number | undefined) => (typeof v === "number" && isFinite(v) ? v : 0);
 
-/** Mantido para compat: usado por outros componentes (briefing, auditoria etc.).
- *  Recebe a série `dre.impostosTotal` explicitamente para evitar a violação de
- *  SSOT anterior (fake state sem DRE → impostosPagar = 0). */
-export function calcAberturaTotals(state: AppState, impostosTotalMensais: number[]) {
-  const d = deriveAbertura({ state, impostosTotalMensais });
-  return {
-    ativoIni: d.totals.ativo,
-    passivoIni: d.totals.passivo,
-    plIni: d.totals.pl,
-    diferenca: d.totals.diferenca,
-    fechado: d.totals.fechado,
-  };
-}
-
 /** Linha read-only do painel "derivado de…". */
 function DerivedRow({
   source,

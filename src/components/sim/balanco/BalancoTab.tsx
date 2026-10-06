@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { useFinance, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { calcBalancoTotals, snapshotAnterior } from "@/engines/finance/balanco";
-import { calcAberturaTotals } from "@/components/sim/capital/AberturaCard";
+import { calcAberturaTotals } from "@/engines/finance/aberturaDerivada";
 import { fmtBRL } from "@/engines/finance/format";
 import type { BalancoDetalhado } from "@/engines/finance/types";
 import { GitCompare, CheckCircle2, AlertTriangle, Camera, ArrowRight, Search } from "lucide-react";

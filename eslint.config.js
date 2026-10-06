@@ -71,6 +71,13 @@ export default tseslint.config(
       ],
     },
   },
+  // Fast refresh é só dica de desenvolvimento. Componentes de UI gerados pelo
+  // shadcn (exportam variantes junto) e o módulo de contexto (provider + hooks)
+  // seguem o padrão idiomático do React; o restante do código cumpre a regra.
+  {
+    files: ["src/components/ui/**/*.tsx", "src/engines/finance/AppStateContext.tsx"],
+    rules: { "react-refresh/only-export-components": "off" },
+  },
   // Testes usam mocks parciais e monkey-patch de módulos: `any` e
   // `@ts-ignore` são aceitos aqui, nunca no código de produção.
   {

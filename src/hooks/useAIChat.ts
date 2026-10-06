@@ -144,7 +144,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
         cenarioAtivo: describeSim(),
       };
     }
-  }, [state.companyName, state.tax, simHasChanges, simParams]);
+  }, [state, simHasChanges, simParams]);
 
   // Sugestões dinâmicas baseadas no diagnose().
   const suggestions = useMemo(

@@ -32,10 +32,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import { lazyNamed } from "@/components/common/LazyTab";
-import {
-  AdminCommandPalette,
-  useAdminCommandShortcut,
-} from "@/components/admin/AdminCommandPalette";
+import { AdminCommandPalette } from "@/components/admin/AdminCommandPalette";
+import { useAdminCommandShortcut } from "@/components/admin/useAdminCommandShortcut";
 
 // Abas do Admin carregadas sob demanda — ver src/components/common/LazyTab.tsx.
 // Cada aba vira chunk próprio; reduz o bundle do /admin de ~524KB para

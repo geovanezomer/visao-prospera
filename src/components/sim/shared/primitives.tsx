@@ -61,7 +61,7 @@ export function HelpTip({
   );
 }
 
-export function renderHint(hint: HelpHint | undefined) {
+export function HintTip({ hint }: { hint: HelpHint | undefined }) {
   if (!hint) return null;
   if (typeof hint === "string") return <HelpTip text={hint} />;
   return (
@@ -271,7 +271,7 @@ export function StatCard({
     <div className="flex flex-col gap-0.5 rounded-lg border border-border/60 bg-card/60 p-2.5 transition-colors hover:border-border/80">
       <div className="flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[10px]">
         {label}
-        {renderHint(hint)}
+        <HintTip hint={hint} />
       </div>
       <div
         className={cn(
@@ -290,7 +290,7 @@ export function SectionTitle({ children, hint }: { children: ReactNode; hint?: H
   return (
     <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
       {children}
-      {renderHint(hint)}
+      <HintTip hint={hint} />
     </h3>
   );
 }

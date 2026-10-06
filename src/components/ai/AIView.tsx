@@ -36,8 +36,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AuditReport, isAuditReport } from "./AuditReport";
-import { ChatChart, parseChartSpec } from "./ChatChart";
+import { AuditReport } from "./AuditReport";
+import { isAuditReport } from "./auditReportFormat";
+import { ChatChart } from "./ChatChart";
+import { parseChartSpec } from "./chartSpec";
 import { ScenarioBar } from "./ScenarioBar";
 import { useAIChat } from "@/hooks/useAIChat";
 import { resetAIStorage } from "@/engines/ai/providers";

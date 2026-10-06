@@ -17,16 +17,9 @@ import {
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AUDIT_CLOSE, AUDIT_OPEN } from "./auditReportFormat";
 
 const ReactMarkdown = lazy(() => import("react-markdown"));
-
-export const AUDIT_OPEN = "<!--AUDIT-REPORT-->";
-export const AUDIT_CLOSE = "<!--/AUDIT-REPORT-->";
-
-/** Detecta se uma mensagem do assistente é um relatório do auditor. */
-export function isAuditReport(content: string): boolean {
-  return content.includes(AUDIT_OPEN);
-}
 
 /** Extrai apenas o miolo entre os marcadores (ou tudo, se streaming ainda em curso). */
 function extractBody(content: string): string {

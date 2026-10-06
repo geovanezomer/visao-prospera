@@ -67,8 +67,9 @@ interface Props {
 export function DiagnosticoExecutivoCard({ briefing }: Props) {
   const { enabled, data, loading, error, cached, regenerate } = useDiagnosticoIA(briefing);
   const [showLog, setShowLog] = useState(false);
-  // Releitura on-demand do log (não precisa de reatividade fina).
-  const log = useMemo(() => (showLog ? readTelemetry() : []), [showLog, data, loading]);
+  // Releitura on-demand do log a cada render com o painel aberto (leitura
+  // local e barata; acompanha novas gerações sem dependências artificiais).
+  const log = showLog ? readTelemetry() : [];
 
   // Mapa de classificações p/ enriquecer os chips dos indicadores referenciados.
   const classMap = useMemo(() => {

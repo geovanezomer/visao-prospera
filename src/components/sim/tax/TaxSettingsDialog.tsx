@@ -106,7 +106,7 @@ export function TaxSettingsDialog() {
   const patchTax = usePatchTax();
   const [open, setOpen] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
-  const ov = state.tax.ratesOverride ?? {};
+  const ov = useMemo(() => state.tax.ratesOverride ?? {}, [state.tax.ratesOverride]);
 
   const patchOv = (patch: Partial<TaxRatesOverride>) =>
     patchTax((cur) => ({ ratesOverride: { ...(cur.ratesOverride ?? {}), ...patch } }));

@@ -27,12 +27,12 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
   const cf = model.cf;
   const cap = state.capital;
   // `capital.abertura` é consumido via `deriveAbertura` (SSOT) abaixo.
-  const balConst = cap.balanco ?? {};
-  const imo = balConst.ativoNaoCirculante?.imobilizado ?? {};
-  const intg = balConst.ativoNaoCirculante?.intangivel ?? {};
-  const pl = balConst.patrimonioLiquido ?? {};
 
   const linhas: LinhaAuditoria[] = useMemo(() => {
+    const balConst = cap.balanco ?? {};
+    const imo = balConst.ativoNaoCirculante?.imobilizado ?? {};
+    const intg = balConst.ativoNaoCirculante?.intangivel ?? {};
+    const pl = balConst.patrimonioLiquido ?? {};
     // SSOT — todos os saldos de abertura vêm daqui, com `origem` declarando a fonte real.
     const ssot = deriveAbertura({ state, impostosTotalMensais: dre.impostosTotal });
 
@@ -313,7 +313,7 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         resultado: lucroLiq,
       },
     ];
-  }, [state, dre, cf, cap, balConst, imo, intg, pl]);
+  }, [state, dre, cf, cap]);
 
   // Agrupa por grupo
   const grupos = useMemo(() => {

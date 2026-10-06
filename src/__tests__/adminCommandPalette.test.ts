@@ -13,7 +13,7 @@
 // que não está instalado — os fluxos de UI são cobertos manualmente.
 // ============================================================================
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { useAdminCommandShortcut } from "@/components/admin/AdminCommandPalette";
+import { useAdminCommandShortcut } from "@/components/admin/useAdminCommandShortcut";
 
 // Mini test-renderer manual para hooks: monta um "componente" imperativamente
 // executando o hook fora de React — cobre apenas hooks sem estado interno.

@@ -7,17 +7,7 @@
 // React.lazy + Suspense que carrega o chunk apenas quando a aba é ativada.
 // ============================================================================
 import { lazy, Suspense, type ComponentType } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
-
-function TabSkeleton() {
-  return (
-    <div className="space-y-3 p-4">
-      <Skeleton className="h-6 w-48" />
-      <Skeleton className="h-32 w-full" />
-      <Skeleton className="h-24 w-full" />
-    </div>
-  );
-}
+import { TabSkeleton } from "./TabSkeleton";
 
 /**
  * Cria um componente lazy a partir de um import dinâmico de export nomeado.

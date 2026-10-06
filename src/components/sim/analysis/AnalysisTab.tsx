@@ -36,12 +36,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { ConfirmDialog } from "@/components/sim/shared/ConfirmDialog";
 import {
-  ConfirmDialog,
   chartTooltipStyle,
   chartTooltipItemStyle,
   chartTooltipLabelStyle,
-} from "@/components/sim/shared/ConfirmDialog";
+} from "@/components/sim/shared/chartStyles";
 import { NumInput } from "@/components/sim/shared/primitives";
 
 export function AnalysisTab({

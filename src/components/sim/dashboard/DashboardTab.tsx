@@ -26,7 +26,7 @@ import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { DSCR_THRESHOLDS } from "@/engines/finance/indicators";
 import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
-import { StatCard, renderHint } from "@/components/sim/shared/primitives";
+import { StatCard, HintTip } from "@/components/sim/shared/primitives";
 import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 
 import { DashboardExtras, Top5Despesas } from "./DashboardExtras";
@@ -97,7 +97,7 @@ function Gauge({
     <div className="rounded-lg border border-border/40 bg-card p-4">
       <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
         {label}
-        {hint && renderHint(hint)}
+        {hint && <HintTip hint={hint} />}
       </div>
       <div className="relative h-32">
         <ResponsiveContainer width="100%" height="100%">
