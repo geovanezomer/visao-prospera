@@ -233,7 +233,7 @@ export function UsersTab() {
           <Select
             value={filters.plan}
             onValueChange={(v) => {
-              setFilters((f) => ({ ...f, plan: v as any }));
+              setFilters((f) => ({ ...f, plan: v as AdminUserFilters["plan"] }));
               setPage(1);
             }}
           >
@@ -254,7 +254,7 @@ export function UsersTab() {
           <Select
             value={filters.status}
             onValueChange={(v) => {
-              setFilters((f) => ({ ...f, status: v as any }));
+              setFilters((f) => ({ ...f, status: v as AdminUserFilters["status"] }));
               setPage(1);
             }}
           >
@@ -276,7 +276,7 @@ export function UsersTab() {
           <Select
             value={filters.provider}
             onValueChange={(v) => {
-              setFilters((f) => ({ ...f, provider: v as any }));
+              setFilters((f) => ({ ...f, provider: v as AdminUserFilters["provider"] }));
               setPage(1);
             }}
           >
@@ -699,7 +699,8 @@ function CreateUserDialog({
       open={open}
       onOpenChange={(o) => {
         if (!o) {
-          resultLink ? onDone() : onClose();
+          if (resultLink) onDone();
+          else onClose();
         }
       }}
     >
@@ -854,7 +855,7 @@ function CreateUserDialog({
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div className="space-y-1">
                     <Label className="text-xs">Plano</Label>
-                    <Select value={plan} onValueChange={(v) => setPlan(v as any)}>
+                    <Select value={plan} onValueChange={(v) => setPlan(v as typeof plan)}>
                       <SelectTrigger className="h-9">
                         <SelectValue />
                       </SelectTrigger>
@@ -867,7 +868,7 @@ function CreateUserDialog({
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Modo</Label>
-                    <Select value={mode} onValueChange={(v) => setMode(v as any)}>
+                    <Select value={mode} onValueChange={(v) => setMode(v as typeof mode)}>
                       <SelectTrigger className="h-9">
                         <SelectValue />
                       </SelectTrigger>

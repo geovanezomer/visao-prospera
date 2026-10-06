@@ -162,7 +162,7 @@ async function resolveAudience(
   const status = seg.status && seg.status !== "all" ? seg.status : null;
 
   // Se filtra por plano/status, precisamos das subscriptions.
-  let subByUser = new Map<string, any>();
+  const subByUser = new Map<string, { user_id: string; plan: string | null; status: string }>();
   if (plan || status) {
     const ids = all.map((u) => u.id);
     const { data: subs } = await supabaseAdmin

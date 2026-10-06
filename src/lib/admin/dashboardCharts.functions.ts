@@ -81,7 +81,8 @@ export const getDashboardCharts = createServerFn({ method: "POST" })
     if (subErr) throw new Error(subErr.message);
 
     // Última linha por usuário (para distribuição por plano e funil).
-    const latestByUser = new Map<string, any>();
+    type SubRow = NonNullable<typeof subs>[number];
+    const latestByUser = new Map<string, SubRow>();
     for (const s of [...(subs ?? [])].reverse()) {
       if (!latestByUser.has(s.user_id)) latestByUser.set(s.user_id, s);
     }
@@ -134,7 +135,7 @@ export const getDashboardCharts = createServerFn({ method: "POST" })
       }
 
       // Para MRR/active no fim do mês: usar última linha de cada usuário com created_at < endMs.
-      const lastByUserUpToMonth = new Map<string, any>();
+      const lastByUserUpToMonth = new Map<string, NonNullable<typeof subs>[number]>();
       for (const s of subs ?? []) {
         const c = new Date(s.created_at).getTime();
         if (c < endMs) lastByUserUpToMonth.set(s.user_id, s);

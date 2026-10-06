@@ -88,9 +88,9 @@ export const Route = createFileRoute("/landing")({
 });
 
 function LandingRoute() {
+  const { plans, source } = Route.useLoaderData();
   if (!isLandingEnabled()) {
     return <Navigate to="/login" />;
   }
-  const { plans, source } = Route.useLoaderData();
   return <LandingPage initialPlans={plans} plansSource={source} />;
 }

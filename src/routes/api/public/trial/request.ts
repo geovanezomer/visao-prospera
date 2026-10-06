@@ -6,6 +6,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import type { Database } from "@/integrations/supabase/types";
 import { clientIp, rlConsume } from "@/lib/rateLimit.server";
 
 const Body = z.object({
@@ -26,7 +27,7 @@ const DISPOSABLE = new Set([
   "discard.email",
 ]);
 
-type AdminClient = SupabaseClient<any, "public", any>;
+type AdminClient = SupabaseClient<Database>;
 
 function appOrigin(request: Request): string {
   const configured = (process.env.APP_URL || process.env.SITE_URL || "").replace(/\/$/, "");
@@ -68,7 +69,7 @@ export const Route = createFileRoute("/api/public/trial/request")({
           );
         }
 
-        const admin = createClient(
+        const admin = createClient<Database>(
           process.env.SUPABASE_URL!,
           process.env.SUPABASE_SERVICE_ROLE_KEY!,
           { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },

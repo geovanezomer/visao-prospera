@@ -8,12 +8,14 @@ import { listPlansPublic } from "@/lib/admin/plans.functions";
 import { getAppSettings } from "@/lib/admin/settings.functions";
 import { getBaseUrl } from "@/lib/seo/baseUrl";
 
+type PublicPlan = Awaited<ReturnType<typeof listPlansPublic>>["plans"][number];
+
 const CANONICAL = `${getBaseUrl()}/`;
 
 export const Route = createFileRoute("/")({
   // Prefetch dos planos + branding no SSR — evita "flash" de logo/skeleton no cliente.
   loader: async ({ context }) => {
-    if (!isLandingEnabled()) return { plans: [] as any[] };
+    if (!isLandingEnabled()) return { plans: [] as PublicPlan[] };
     // ensureQueryData garante que o cache do React Query seja populado
     // tanto no SSR (dehydrated → hydrate no client) quanto em navegação SPA,
     // eliminando o "flash" do branding default antes do real ser carregado.
@@ -26,7 +28,7 @@ export const Route = createFileRoute("/")({
       const { plans } = await listPlansPublic();
       return { plans };
     } catch {
-      return { plans: [] as any[] };
+      return { plans: [] as PublicPlan[] };
     }
   },
 
@@ -87,9 +89,9 @@ export const Route = createFileRoute("/")({
 });
 
 function IndexRoute() {
+  const { plans } = Route.useLoaderData();
   if (!isLandingEnabled()) {
     return <Navigate to="/app" />;
   }
-  const { plans } = Route.useLoaderData();
   return <LandingPage initialPlans={plans} />;
 }

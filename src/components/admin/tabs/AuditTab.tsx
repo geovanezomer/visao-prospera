@@ -44,7 +44,7 @@ const RESOURCES = [
 ];
 
 export function AuditTab() {
-  const [rows, setRows] = useState<any[]>([]);
+  const [rows, setRows] = useState<Awaited<ReturnType<typeof listAuditLog>>["rows"]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [perPage] = useState(50);

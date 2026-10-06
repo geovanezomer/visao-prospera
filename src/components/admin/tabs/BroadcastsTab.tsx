@@ -42,7 +42,9 @@ export function BroadcastsTab() {
   const [html, setHtml] = useState("");
   const [preview, setPreview] = useState<{ total: number; sample: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<Awaited<ReturnType<typeof listBroadcasts>>["broadcasts"]>(
+    [],
+  );
   const [loadingHist, setLoadingHist] = useState(false);
 
   const segment = () => ({
@@ -120,7 +122,7 @@ export function BroadcastsTab() {
             <Select
               value={plan}
               onValueChange={(v) => {
-                setPlan(v as any);
+                setPlan(v as typeof plan);
                 setPreview(null);
               }}
             >
@@ -141,7 +143,7 @@ export function BroadcastsTab() {
             <Select
               value={status}
               onValueChange={(v) => {
-                setStatus(v as any);
+                setStatus(v as typeof status);
                 setPreview(null);
               }}
             >

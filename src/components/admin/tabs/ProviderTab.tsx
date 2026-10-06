@@ -93,7 +93,8 @@ export function ProviderTab() {
     setBusy(p);
     try {
       const r = await testProviderConnection({ data: { provider: p } });
-      r.ok ? toast.success(r.message) : toast.error(r.message);
+      if (r.ok) toast.success(r.message);
+      else toast.error(r.message);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Falha.");
     } finally {

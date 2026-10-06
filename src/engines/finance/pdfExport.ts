@@ -912,7 +912,7 @@ export async function exportFinancePDF({
       .replace(/[\u201C\u201D\u201E\u201F]/g, '"') // aspas curvas duplas
       .replace(/\u00A0/g, " ")
       // fallback: remove qualquer caractere fora do WinAnsi (evita medição quebrada)
-      .replace(/[^\x00-\xFF]/g, "");
+      .replace(/[\u0100-\uFFFF]/g, "");
 
   // monkey-patch doc.text e splitTextToSize
   const _origText = doc.text.bind(doc);

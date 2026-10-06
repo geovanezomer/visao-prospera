@@ -21,7 +21,7 @@ export type ActivePlan = {
 async function fetchActivePlan(): Promise<ActivePlan> {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return null;
-  const { data, error } = await (supabase.rpc as any)("get_active_plan");
+  const { data, error } = await supabase.rpc("get_active_plan");
   if (error) {
     console.warn("[useSubscription]", error.message);
     return null;

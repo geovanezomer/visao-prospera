@@ -6,7 +6,7 @@
 // ============================================================================
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getAppSettings } from "@/lib/admin/settings.functions";
+import { getAppSettings, type TrackingSetting } from "@/lib/admin/settings.functions";
 
 type Slot = "head" | "body_start" | "body_end";
 
@@ -53,9 +53,7 @@ export function TrackingInjector() {
   });
 
   useEffect(() => {
-    const tracking = (data as any)?.tracking as
-      | { head?: string; body_start?: string; body_end?: string }
-      | undefined;
+    const tracking = data?.tracking as TrackingSetting | undefined;
     if (!tracking) return;
     injectHTML(tracking.head ?? "", "head", "head");
     injectHTML(tracking.body_start ?? "", "body_start", "body_start");

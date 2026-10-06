@@ -17,7 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { listPlansAdmin, upsertPlan, deletePlan, type PlanRow } from "@/lib/admin/plans.functions";
+import {
+  listPlansAdmin,
+  upsertPlan,
+  deletePlan,
+  type PlanRow,
+  type PlanInterval,
+} from "@/lib/admin/plans.functions";
 import { TableSkeleton, EmptyState, TypedConfirmDialog } from "@/components/admin/ui-states";
 
 type Editing = {
@@ -126,7 +132,7 @@ export function PlansTab() {
           description: editing.description || null,
           priceCents: cents,
           currency: editing.currency,
-          interval: editing.interval as any,
+          interval: editing.interval as PlanInterval,
           features: editing.features
             .split("\n")
             .map((s) => s.trim())

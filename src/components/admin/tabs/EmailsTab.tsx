@@ -47,7 +47,9 @@ export function EmailsTab() {
   const [testTo, setTestTo] = useState("");
   const [busyTest, setBusyTest] = useState(false);
 
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<
+    Awaited<ReturnType<typeof listEmailTemplates>>["templates"]
+  >([]);
   const [activeKind, setActiveKind] = useState<TemplateKind>("magic_link");
   const active = templates.find((t) => t.kind === activeKind);
   const [edit, setEdit] = useState({ subject: "", html: "", text: "", enabled: true });

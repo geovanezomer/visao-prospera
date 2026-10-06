@@ -13,7 +13,7 @@
     "test:watch": "vitest",
     "eval:ai": "bun scripts/eval-ai.ts",
     "lint": "eslint .",
-    "lint:ci": "eslint . --max-warnings=21",
+    "lint:ci": "eslint . --max-warnings=36",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

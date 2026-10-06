@@ -277,7 +277,7 @@ function GrantPlanForm({ userId, onDone }: { userId: string; onDone: () => void 
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label className="text-xs">Plano</Label>
-          <Select value={plan} onValueChange={(v) => setPlan(v as any)}>
+          <Select value={plan} onValueChange={(v) => setPlan(v as typeof plan)}>
             <SelectTrigger className="h-9">
               <SelectValue />
             </SelectTrigger>
@@ -290,7 +290,7 @@ function GrantPlanForm({ userId, onDone }: { userId: string; onDone: () => void 
         </div>
         <div>
           <Label className="text-xs">Modo</Label>
-          <Select value={mode} onValueChange={(v) => setMode(v as any)}>
+          <Select value={mode} onValueChange={(v) => setMode(v as typeof mode)}>
             <SelectTrigger className="h-9">
               <SelectValue />
             </SelectTrigger>

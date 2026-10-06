@@ -40,6 +40,15 @@ const SETTINGS_TTL_MS = 60_000;
 let settingsCache: { at: number; data: Partial<Record<SettingKey, Json>> } | null = null;
 let settingsInFlight: Promise<Partial<Record<SettingKey, Json>>> | null = null;
 
+/** Formato do JSON gravado em app_settings.branding. */
+export type BrandingSetting = {
+  favicon_url?: string;
+  colors?: { primary?: string; accent?: string };
+};
+
+/** Formato do JSON gravado em app_settings.tracking. */
+export type TrackingSetting = { head?: string; body_start?: string; body_end?: string };
+
 export const getAppSettings = createServerFn({ method: "GET" }).handler(async () => {
   const now = Date.now();
   if (settingsCache && now - settingsCache.at < SETTINGS_TTL_MS) {
@@ -76,17 +85,15 @@ export const updateAppSetting = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("app_settings")
-      .upsert(
-        {
-          key: data.key,
-          value: data.value,
-          updated_by: context.userId,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "key" },
-      );
+    const { error } = await supabaseAdmin.from("app_settings").upsert(
+      {
+        key: data.key,
+        value: data.value,
+        updated_by: context.userId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" },
+    );
     if (error) throw new Error(error.message);
     // Invalida cache em memória para refletir mudança imediatamente.
     settingsCache = null;

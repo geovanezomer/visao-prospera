@@ -14,6 +14,7 @@
 //                                usado para encurtar a janela do Pix.
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 type Window = { minutes: number; label: string };
 
@@ -51,9 +52,13 @@ export const Route = createFileRoute("/api/public/hooks/reconcile-checkout-inten
           }
         }
 
-        const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-          auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-        });
+        const sb = createClient<Database>(
+          process.env.SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          {
+            auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+          },
+        );
 
         // Busca candidatos antigos o suficiente para sequer caberem na
         // menor das janelas (2h). Filtramos por janela específica em JS,
@@ -75,7 +80,7 @@ export const Route = createFileRoute("/api/public/hooks/reconcile-checkout-inten
         const now = Date.now();
         const toFail: { id: string; label: string }[] = [];
         for (const c of candidates ?? []) {
-          const w = windowFor(c.provider as string | null, (c as any).payment_method ?? null);
+          const w = windowFor(c.provider as string | null, c.payment_method);
           const ageMin = (now - new Date(c.updated_at as string).getTime()) / 60000;
           if (ageMin >= w.minutes) toFail.push({ id: c.id as string, label: w.label });
         }

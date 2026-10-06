@@ -342,7 +342,11 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                               remarkPlugins={[remarkGfm]}
                               components={{
                                 // Intercepta ```finance-chart {json}``` e renderiza gráfico interativo.
-                                code({ className, children, ...props }: any) {
+                                code({
+                                  className,
+                                  children,
+                                  ...props
+                                }: React.ComponentProps<"code">) {
                                   const lang = /language-(\w+)/.exec(className || "")?.[1];
                                   if (lang === "finance-chart") {
                                     const spec = parseChartSpec(String(children).trim());

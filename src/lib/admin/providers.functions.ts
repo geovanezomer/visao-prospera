@@ -126,17 +126,15 @@ export const setActiveProvider = createServerFn({ method: "POST" })
       .eq("provider", data.provider);
     if (error) throw new Error(error.message);
     // Espelha em app_settings.active_provider (para resolução rápida sem service-role).
-    await supabaseAdmin
-      .from("app_settings")
-      .upsert(
-        {
-          key: "active_provider",
-          value: { provider: data.provider },
-          updated_by: context.userId,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "key" },
-      );
+    await supabaseAdmin.from("app_settings").upsert(
+      {
+        key: "active_provider",
+        value: { provider: data.provider },
+        updated_by: context.userId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" },
+    );
     // Invalida cache do seletor de provider (evita janela de 60s servindo o antigo).
     const { invalidateProviderCache } = await import("@/lib/payments");
     invalidateProviderCache();

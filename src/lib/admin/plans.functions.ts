@@ -135,6 +135,9 @@ export function invalidatePublicPlansCache() {
   plansCache = null;
 }
 
+export const PLAN_INTERVALS = ["month", "year", "week", "day", "lifetime", "one_time"] as const;
+export type PlanInterval = (typeof PLAN_INTERVALS)[number];
+
 const planSchema = z.object({
   id: z.string().uuid().optional(),
   slug: z
@@ -146,7 +149,7 @@ const planSchema = z.object({
   description: z.string().max(500).nullable().optional(),
   priceCents: z.number().int().min(0),
   currency: z.string().min(3).max(3),
-  interval: z.enum(["month", "year", "week", "day", "lifetime", "one_time"]),
+  interval: z.enum(PLAN_INTERVALS),
   features: z.array(z.string().max(200)).max(40),
   limits: z.record(z.any()).default({}),
   stripePriceId: z.string().nullable().optional(),

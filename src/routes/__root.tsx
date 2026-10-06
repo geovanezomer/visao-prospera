@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { TrackingInjector } from "@/components/TrackingInjector";
 import { BrandingApplier } from "@/components/BrandingApplier";
-import { getAppSettings } from "@/lib/admin/settings.functions";
+import { getAppSettings, type BrandingSetting } from "@/lib/admin/settings.functions";
 import { getBaseUrl } from "@/lib/seo/baseUrl";
 
 // Heurística de contraste preto/branco para foreground sobre cor primária.
@@ -108,7 +108,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         queryFn: () => getAppSettings(),
         staleTime: 60 * 60_000,
       });
-      const branding = (settings as any)?.branding ?? {};
+      const branding = (settings?.branding ?? {}) as BrandingSetting;
       return {
         colors: (branding.colors ?? null) as { primary?: string; accent?: string } | null,
         faviconUrl: (branding.favicon_url ?? null) as string | null,

@@ -71,5 +71,14 @@ export default tseslint.config(
       ],
     },
   },
+  // Testes usam mocks parciais e monkey-patch de módulos: `any` e
+  // `@ts-ignore` são aceitos aqui, nunca no código de produção.
+  {
+    files: ["**/__tests__/**/*.{ts,tsx}", "**/*.test.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/ban-ts-comment": "off",
+    },
+  },
   eslintPluginPrettier,
 );

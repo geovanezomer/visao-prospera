@@ -20,7 +20,7 @@ export function useIsAdmin(): boolean {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!user?.id) return false;
-      const { data, error } = await (supabase.rpc as any)("has_role", {
+      const { data, error } = await supabase.rpc("has_role", {
         _user_id: user.id,
         _role: "admin",
       });

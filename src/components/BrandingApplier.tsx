@@ -9,7 +9,7 @@
 // ============================================================================
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getAppSettings } from "@/lib/admin/settings.functions";
+import { getAppSettings, type BrandingSetting } from "@/lib/admin/settings.functions";
 import {
   readSettingsCache,
   writeSettingsCache,
@@ -85,7 +85,7 @@ export function BrandingApplier() {
   // 'Node': The node to be removed is not a child of this node" na próxima
   // reconciliação do head (erro reportado em produção no VPS).
   useEffect(() => {
-    const url = (data?.branding as any)?.favicon_url as string | undefined;
+    const url = (data?.branding as BrandingSetting | undefined)?.favicon_url;
     if (!url) return;
     const link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
     if (link && link.href !== url) link.href = url;
@@ -95,9 +95,7 @@ export function BrandingApplier() {
   // emitido no SSR. Mesmo motivo do favicon: nunca remover/criar o nó.
   // Quando não há cor custom, esvaziamos o conteúdo (volta ao tema padrão).
   useEffect(() => {
-    const colors = (data?.branding as any)?.colors as
-      | { primary?: string; accent?: string }
-      | undefined;
+    const colors = (data?.branding as BrandingSetting | undefined)?.colors;
     const existing = document.getElementById("branding-colors") as HTMLStyleElement | null;
     if (!existing) return; // SSR garante a presença; se faltar, não forçamos.
 

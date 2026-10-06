@@ -112,7 +112,7 @@ function AdminPage() {
   }
 
   const setTab = (t: string) =>
-    navigate({ to: "/admin", search: { tab: t as any }, replace: true });
+    navigate({ to: "/admin", search: { tab: t as (typeof TAB_KEYS)[number] }, replace: true });
 
   return (
     <div className="min-h-screen bg-background text-foreground">
