@@ -142,7 +142,12 @@ export function computeTrust(
         : "Todas as contas com saldo estão classificadas.",
   });
 
-  // 6) Lançamento de encerramento (zera o resultado no mês) — distorce a DRE mensal.
+  // 6) Lançamentos de encerramento: excluídos na sincronização; avisa se ainda
+  //    houver indício (receita negativa no mês) — ex.: encerramento por outro critério.
+  const excluded = companies.reduce(
+    (s, c) => s + (snapshot.perCompany[String(c.id)]?.closingMovesExcluded ?? 0),
+    0,
+  );
   const rb = data.actuals.pl.receita_bruta;
   const monthsNeg = data.months.filter(
     (_, i) => (rb[rb.length - data.months.length + i] ?? 0) < -TOL,
@@ -152,8 +157,10 @@ export function computeTrust(
     level: monthsNeg.length ? "warn" : "ok",
     title: "Lançamentos de encerramento",
     detail: monthsNeg.length
-      ? `Receita negativa em ${monthsNeg.join(", ")}: provável lançamento de encerramento/apuração do resultado. A DRE desses meses fica distorcida — exclua esses lançamentos do retrato (diário próprio) ou reclassifique.`
-      : "Nenhum indício de lançamento de encerramento na janela.",
+      ? `Receita negativa em ${monthsNeg.join(", ")}: provável lançamento de encerramento não reconhecido automaticamente. Use uma conta de "apuração do resultado" ou reclassifique.`
+      : excluded > 0
+        ? `${excluded} lançamento(s) de encerramento/apuração do resultado desconsiderado(s) — a DRE mensal mostra a operação real.`
+        : "Nenhum lançamento de encerramento no período.",
   });
 
   // 7) Rascunhos (não entram nos números).

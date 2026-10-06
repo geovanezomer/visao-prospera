@@ -62,6 +62,17 @@ DATABASE_URL=postgres://usuario:senha@127.0.0.1:5432/financepro \
 
 `build_expected.py` regenera o `expected.json` a partir do Odoo, via API JSON-2.
 
+## Testar a exclusão dos lançamentos de encerramento (opcional)
+
+`add_closing_entries.py` lança encerramentos do exercício em 31/12/2025, como um
+contador faria para a ECD: direto na Beta (resultado → lucros acumulados) e em duas
+etapas na Alfa (resultado → "Apuração do Resultado do Exercício" → lucros acumulados).
+O conector os desconsidera, e a conferência acima continua batendo.
+
+```sh
+docker compose exec -T odoo odoo shell -d lab20 $DB --no-http < add_closing_entries.py
+```
+
 ## Desligar
 
 ```sh

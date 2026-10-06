@@ -374,7 +374,14 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
 
   // 12) Regime — primitiva switchRegime.
   if (p.regimeOverride !== "base") {
+    const regimeBase = resolveEffectiveRegime(base);
     s.tax = p_switchRegime(s, p.regimeOverride).tax;
+    // CPP patronal lançada em linha própria (ex.: Odoo): ao MIGRAR para o
+    // Simples (fora do Anexo IV) ela passa a estar dentro do DAS. Só na
+    // simulação — no estado-base o realizado contábil prevalece.
+    if (p.regimeOverride === "simples" && regimeBase !== "simples" && s.tax.simplesAnexo !== "IV") {
+      s.costs = s.costs.map((c) => (c.cppPatronal ? { ...c, values: c.values.map(() => 0) } : c));
+    }
   }
 
   return s;

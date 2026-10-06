@@ -154,8 +154,8 @@ describe("simulador — precisão", () => {
     expect(m13.financiamento).toBeLessThan(50_000);
   });
 
-  it("B12: CPP patronal lançada à parte zera no Simples (exceto Anexo IV)", () => {
-    const linha = {
+  it("B12: CPP patronal lançada à parte zera ao migrar para o Simples (exceto Anexo IV)", () => {
+    const inss = {
       id: "inss",
       label: "INSS patronal",
       category: "despesa_administrativa" as const,
@@ -163,9 +163,19 @@ describe("simulador — precisão", () => {
       fixed: false,
       cppPatronal: true,
     };
-    expect(sum(effectiveMonthValues(linha, "simples", { simplesAnexo: "III" }))).toBe(0);
-    expect(sum(effectiveMonthValues(linha, "simples", { simplesAnexo: "IV" }))).toBe(48_000);
-    expect(sum(effectiveMonthValues(linha, "presumido"))).toBe(48_000);
+    const s = base({ costs: [...base().costs, inss] } as never);
+    const total = (st: AppState) => sum(st.costs.find((c) => c.id === "inss")!.values);
+    expect(total(applySimulator(s, { ...DEFAULT_SIM, regimeOverride: "simples" }))).toBe(0);
+    expect(total(applySimulator(s, { ...DEFAULT_SIM, regimeOverride: "real" }))).toBe(48_000);
+    // Estado-base nunca é alterado (realizado prevalece).
+    expect(sum(effectiveMonthValues(inss, "simples"))).toBe(48_000);
+    const anexoIV = base({
+      costs: [...base().costs, inss],
+      tax: { ...base().tax, simplesAnexo: "IV" },
+    } as never);
+    expect(total(applySimulator(anexoIV, { ...DEFAULT_SIM, regimeOverride: "simples" }))).toBe(
+      48_000,
+    );
   });
 
   it("B14: despesas financeiras da visão do simulador = DRE", () => {

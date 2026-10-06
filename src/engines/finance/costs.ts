@@ -170,10 +170,6 @@ export function effectiveMonthValues(
   opts?: EncargosOpts,
 ): number[] {
   const raw = c.fixed ? fill12(fixedCostBase(c.values)) : c.values.slice();
-  // CPP patronal lançada em separado: no Simples (fora do Anexo IV) está no DAS.
-  if (c.cppPatronal && regime === "simples" && opts?.simplesAnexo !== "IV") {
-    return raw.map(() => 0);
-  }
   if (c.encargosAuto) {
     let ratePct: number;
     if (c.encargosPct != null) {

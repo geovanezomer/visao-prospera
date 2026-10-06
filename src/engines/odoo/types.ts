@@ -104,6 +104,8 @@ export type OdooCompanySnapshot = {
   intercompany: OdooIntercompany;
   /** Lançamentos em rascunho na janela (não entram nos números). */
   draftCount?: number;
+  /** Lançamentos de encerramento/apuração do resultado excluídos do retrato. */
+  closingMovesExcluded?: number;
 };
 
 export type OdooSnapshot = {

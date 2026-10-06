@@ -73,14 +73,98 @@ export async function fetchCompanies(cfg: OdooConnectionConfig): Promise<OdooCom
   });
 }
 
+const PL_TYPES = [
+  "income",
+  "income_other",
+  "expense",
+  "expense_depreciation",
+  "expense_direct_cost",
+];
+const EQUITY_TYPES = ["equity", "equity_unaffected"];
+const CLOSING_NAME_RE = /apura[çc][ãa]o (do )?resultado|resultado do exerc[íi]cio|encerramento/i;
+
+/**
+ * Lançamentos de encerramento/apuração do resultado (ECD exige; muitos
+ * contadores lançam no Odoo). Zeram receitas e despesas contra o PL — ou
+ * contra uma conta de "apuração do resultado" — e distorcem a DRE do mês.
+ * Detecta: (a) lançamentos que tocam resultado E patrimônio líquido;
+ * (b) lançamentos que tocam contas de apuração/encerramento pelo nome.
+ */
+async function findClosingMoves(cfg: OdooConnectionConfig, companyId: number): Promise<number[]> {
+  const ctx = { allowed_company_ids: [companyId] };
+  const base = [
+    ["company_id", "=", companyId],
+    ["parent_state", "=", "posted"],
+  ];
+  const ids = (rows: Array<{ move_id?: unknown }>) => [
+    ...new Set(rows.map((r) => m2oId(r.move_id)).filter((x): x is number => !!x)),
+  ];
+
+  // (a) lançamentos com linha no PL que também têm linha de resultado.
+  const eqMoves = ids(
+    await odooCall<Array<{ move_id: unknown }>>(cfg, "account.move.line", "search_read", {
+      domain: [...base, ["account_id.account_type", "in", EQUITY_TYPES]],
+      fields: ["move_id"],
+      context: ctx,
+    }),
+  );
+  let closing: number[] = [];
+  if (eqMoves.length) {
+    const g = await odooCall<Group[]>(cfg, "account.move.line", "formatted_read_group", {
+      domain: [...base, ["move_id", "in", eqMoves], ["account_id.account_type", "in", PL_TYPES]],
+      groupby: ["move_id"],
+      aggregates: ["balance:sum"],
+      context: ctx,
+    });
+    closing = g.map((x) => m2oId(x.move_id)).filter((x): x is number => !!x);
+  }
+
+  // (b) contas de apuração do resultado (encerramento em duas etapas).
+  const accs = await odooCall<Array<{ id: number; name: string }>>(
+    cfg,
+    "account.account",
+    "search_read",
+    {
+      domain: [
+        "|",
+        "|",
+        ["name", "ilike", "apura"],
+        ["name", "ilike", "encerramento"],
+        ["name", "ilike", "resultado do exerc"],
+      ],
+      fields: ["id", "name"],
+      context: ctx,
+    },
+  );
+  const closingAccs = accs.filter((a) => CLOSING_NAME_RE.test(a.name)).map((a) => a.id);
+  if (closingAccs.length) {
+    closing.push(
+      ...ids(
+        await odooCall<Array<{ move_id: unknown }>>(cfg, "account.move.line", "search_read", {
+          domain: [...base, ["account_id", "in", closingAccs]],
+          fields: ["move_id"],
+          context: ctx,
+        }),
+      ),
+    );
+  }
+  return [...new Set(closing)];
+}
+
 async function groups(
   cfg: OdooConnectionConfig,
   companyId: number,
   domain: unknown[],
   groupby: string[],
+  exclude: number[] = [],
 ): Promise<Group[]> {
   return odooCall<Group[]>(cfg, "account.move.line", "formatted_read_group", {
-    domain: [["company_id", "=", companyId], ["parent_state", "=", "posted"], ...domain],
+    domain: [
+      ["company_id", "=", companyId],
+      ["parent_state", "=", "posted"],
+      ...(exclude.length ? [["move_id", "not in", exclude]] : []),
+      ...domain,
+    ],
     groupby,
     aggregates: ["balance:sum"],
     context: { allowed_company_ids: [companyId] },
@@ -102,8 +186,10 @@ async function snapshotCompany(
     return Array.isArray(v) ? idx.get(String(v[0]).slice(0, 7)) : undefined;
   };
 
+  // Encerramento do exercício fica fora: a DRE mensal mostra a operação real.
+  const closingMoves = await findClosingMoves(cfg, company.id);
   const [openingG, movesG] = await Promise.all([
-    groups(cfg, company.id, [["date", "<", start]], ["account_id"]),
+    groups(cfg, company.id, [["date", "<", start]], ["account_id"], closingMoves),
     groups(
       cfg,
       company.id,
@@ -112,6 +198,7 @@ async function snapshotCompany(
         ["date", "<=", end],
       ],
       ["account_id", "date:month"],
+      closingMoves,
     ),
   ]);
 
@@ -145,12 +232,14 @@ async function snapshotCompany(
         company.id,
         [...pDomain, ["date", "<", start]],
         ["partner_id.commercial_partner_id", "account_id"],
+        closingMoves,
       ),
       groups(
         cfg,
         company.id,
         [...pDomain, ["date", ">=", start], ["date", "<=", end]],
         ["partner_id.commercial_partner_id", "account_id", "date:month"],
+        closingMoves,
       ),
     ]);
     const icMap = new Map<string, OdooIntercompanyLine & { accountId: number }>();
@@ -256,7 +345,12 @@ async function snapshotCompany(
     draftCount = -1;
   }
 
-  return { accounts: out, intercompany: { lines }, draftCount };
+  return {
+    accounts: out,
+    intercompany: { lines },
+    draftCount,
+    closingMovesExcluded: closingMoves.length,
+  };
 }
 
 export async function loadOverrides(): Promise<Map<string, AccountOverride["target"]>> {
