@@ -84,3 +84,13 @@ test("DRE trimestral e mensal: períodos somam o total anual", async ({ page }) 
   }
   await abrirDre(page, "Anual");
 });
+
+test("tema claro: alterna, persiste ao recarregar e volta ao escuro", async ({ page }) => {
+  await page.goto("/app");
+  await page.getByRole("button", { name: "Usar tema claro" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.getByRole("button", { name: "Usar tema escuro" }).click();
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme", "light");
+});

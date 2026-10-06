@@ -50,11 +50,22 @@ export function fingerprintOf(source: ErrorSource, message: string, stack?: stri
     .slice(0, 32);
 }
 
+/** Cliente fechou a conexão no meio da resposta (aba fechada, navegação): não é falha. */
+export function isClientAbort(err: unknown): boolean {
+  for (let e = err, i = 0; e && typeof e === "object" && i < 4; i++) {
+    const x = e as { code?: string; message?: string; name?: string; cause?: unknown };
+    if (x.code === "ECONNRESET" || x.name === "AbortError" || x.message === "aborted") return true;
+    e = x.cause;
+  }
+  return false;
+}
+
 export async function recordError(
   source: ErrorSource,
   err: unknown,
   opts: { path?: string; stack?: string } = {},
 ): Promise<void> {
+  if (isClientAbort(err)) return;
   try {
     const n = normalizeError(err);
     const stack = opts.stack ? redact(opts.stack).slice(0, MAX_STACK) : n.stack;

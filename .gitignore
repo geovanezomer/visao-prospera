@@ -45,3 +45,6 @@ dist-ssr
 # Playwright
 /test-results/
 /playwright-report/
+
+# Cobertura de testes (vitest --coverage)
+/coverage/

@@ -50,6 +50,7 @@
 
 /* Force dark fintech terminal palette regardless of system preference */
 :root {
+  color-scheme: dark;
   --radius: 0.5rem;
   --background: oklch(0.18 0.015 250);
   --foreground: oklch(0.96 0.005 250);
@@ -86,6 +87,46 @@
   --sidebar-accent-foreground: oklch(0.96 0.005 250);
   --sidebar-border: oklch(0.3 0.02 250 / 60%);
   --sidebar-ring: oklch(0.82 0.18 165);
+}
+
+/* Tema claro (alternância no cabeçalho; ver lib/theme.ts). Contraste AA para texto. */
+html[data-theme="light"] {
+  color-scheme: light;
+  --background: oklch(0.985 0.003 250);
+  --foreground: oklch(0.22 0.02 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.02 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.02 250);
+  --primary: oklch(0.52 0.14 165);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.95 0.006 250);
+  --secondary-foreground: oklch(0.25 0.02 250);
+  --muted: oklch(0.955 0.005 250);
+  --muted-foreground: oklch(0.46 0.02 250);
+  --accent: oklch(0.93 0.01 250);
+  --accent-foreground: oklch(0.22 0.02 250);
+  --destructive: oklch(0.53 0.21 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.5 0.13 160);
+  --warning: oklch(0.56 0.14 65);
+  --info: oklch(0.5 0.15 245);
+  --border: oklch(0.88 0.008 250);
+  --input: oklch(0.9 0.008 250);
+  --ring: oklch(0.52 0.14 165);
+  --chart-1: oklch(0.55 0.14 165);
+  --chart-2: oklch(0.52 0.15 245);
+  --chart-3: oklch(0.62 0.17 50);
+  --chart-4: oklch(0.52 0.2 320);
+  --chart-5: oklch(0.55 0.21 25);
+  --sidebar: oklch(0.97 0.004 250);
+  --sidebar-foreground: oklch(0.22 0.02 250);
+  --sidebar-primary: oklch(0.52 0.14 165);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.93 0.01 250);
+  --sidebar-accent-foreground: oklch(0.22 0.02 250);
+  --sidebar-border: oklch(0.88 0.008 250);
+  --sidebar-ring: oklch(0.52 0.14 165);
 }
 
 @layer base {

@@ -61,6 +61,7 @@ async function captureServerError(err: unknown, path?: string): Promise<void> {
 async function normalizeCatastrophicSsrResponse(
   response: Response,
   path?: string,
+  aborted = false,
 ): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
@@ -71,9 +72,11 @@ async function normalizeCatastrophicSsrResponse(
     return response;
   }
 
-  const err = consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`);
+  const captured = consumeLastCapturedError();
+  const err = captured ?? new Error(`h3 swallowed SSR error: ${body}`);
   console.error(err);
-  await captureServerError(err, path);
+  // Requisição cancelada pelo navegador: o 500 é efeito da desconexão, não falha.
+  if (!aborted) await captureServerError(err, path);
   return new Response(renderErrorPage(), {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
@@ -91,7 +94,9 @@ export default {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       const path = new URL(request.url).pathname;
-      return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response, path));
+      return withSecurityHeaders(
+        await normalizeCatastrophicSsrResponse(response, path, request.signal.aborted),
+      );
     } catch (error) {
       console.error(error);
       await captureServerError(error, new URL(request.url).pathname);

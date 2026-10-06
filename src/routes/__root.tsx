@@ -18,6 +18,7 @@ import { BrandingApplier } from "@/components/BrandingApplier";
 import { getAppSettings, type BrandingSetting } from "@/lib/admin/settings.functions";
 import { buildBrandingCss } from "@/lib/brandingCss";
 import { getBaseUrl } from "@/lib/seo/baseUrl";
+import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import { installClientErrorReporter, reportClientError } from "@/lib/clientErrorReporter";
 
 function NotFoundComponent() {
@@ -125,6 +126,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // chega ANTES do React montar, eliminando o flash do tema padrão.
       styles: css ? [{ id: "branding-colors", children: css }] : [],
       scripts: [
+        { children: THEME_BOOT_SCRIPT },
         {
           type: "application/ld+json",
           children: JSON.stringify({
@@ -197,7 +199,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

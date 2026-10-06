@@ -80,6 +80,7 @@ import { NAV_ITEMS } from "@/components/layout/nav-config";
 import { BillingButton } from "@/components/billing/BillingButton";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Presentation, X, FileText, Printer } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 // pdfExport e buildFinancialModel são carregados via dynamic import dentro
 // do handler de export — economiza ~850 KB no bundle inicial (jsPDF + autotable).
 import { toast } from "sonner";
@@ -635,6 +636,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                     </Button>
+                    <ThemeToggle />
                     <SharedLinksDialog />
                     <BillingButton />
                     <FeedbackDialog />

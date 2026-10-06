@@ -161,3 +161,13 @@ describe("planAlerts", () => {
     expect(r.messages).toHaveLength(0);
   });
 });
+
+describe("isClientAbort", () => {
+  it("reconhece desconexão do cliente, inclusive embrulhada em cause", async () => {
+    const { isClientAbort } = await import("@/lib/ops/errors.server");
+    const abort = Object.assign(new Error("aborted"), { code: "ECONNRESET" });
+    expect(isClientAbort(abort)).toBe(true);
+    expect(isClientAbort(Object.assign(new Error("HTTPError"), { cause: abort }))).toBe(true);
+    expect(isClientAbort(new Error("relation does not exist"))).toBe(false);
+  });
+});
