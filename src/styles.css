@@ -106,6 +106,11 @@
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
   }
+  /* Valores em tabela nunca quebram entre o sinal e o número. */
+  td.num,
+  th.num {
+    white-space: nowrap;
+  }
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;

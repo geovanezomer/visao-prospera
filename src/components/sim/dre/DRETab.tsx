@@ -762,12 +762,12 @@ export function DRETab() {
                                   key={i}
                                   className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "" : ""} text-neg`}
                                 >
-                                  {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
+                                  {v === 0 ? "—" : fmtBRLCompact(-v)}
                                 </td>
                               ))}
 
                             <td className="num px-4 py-2 text-right font-semibold text-neg">
-                              − {fmtBRL(total)}
+                              {fmtBRL(total ? -total : 0)}
                             </td>
                             <td className="num px-3 py-2 text-right text-xs text-muted-foreground">
                               {fmtPct(pct)}
@@ -787,12 +787,12 @@ export function DRETab() {
                                         key={i}
                                         className="num px-2 py-1.5 text-right text-xs text-muted-foreground"
                                       >
-                                        {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
+                                        {v === 0 ? "—" : fmtBRLCompact(-v)}
                                       </td>
                                     ))}
 
                                   <td className="num px-4 py-1.5 text-right text-xs text-neg">
-                                    − {fmtBRL(lTotal)}
+                                    {fmtBRL(lTotal ? -lTotal : 0)}
                                   </td>
                                   <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">
                                     {fmtPct(rb > 0 ? lTotal / rb : 0)}

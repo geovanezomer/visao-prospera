@@ -41,3 +41,7 @@ dist-ssr
 
 # Backups do banco gerados pelo serviço `backup` do docker compose
 /backups/
+
+# Playwright
+/test-results/
+/playwright-report/

@@ -1,0 +1,115 @@
+name: Odoo de laboratório
+
+# Sobe o Odoo 20 de laboratório (scripts/odoo-demo), confere o conector contra
+# o expected.json (inclusive com lançamentos de encerramento) e roda os testes
+# de navegador do modo Odoo. Leva cerca de 10 minutos.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/lib/odoo/**"
+      - "src/engines/odoo/**"
+      - "src/engines/finance/**"
+      - "src/components/odoo/**"
+      - "scripts/odoo-demo/**"
+      - "e2e/odoo.spec.ts"
+      - ".github/workflows/odoo-lab.yml"
+  schedule:
+    - cron: "17 9 * * 1"
+  workflow_dispatch:
+
+jobs:
+  odoo-lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: financepro
+          POSTGRES_PASSWORD: e2e
+          POSTGRES_DB: financepro
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U financepro"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://financepro:e2e@127.0.0.1:5432/financepro
+      NITRO_PRESET: node-server
+      ODOO_PORT: "8069"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Odoo 20 com Contabilidade e localização Brasil
+        working-directory: scripts/odoo-demo
+        run: |
+          docker compose up -d odoo-db
+          docker compose run --rm odoo odoo -d lab20 -i account,l10n_br --stop-after-init
+          docker compose up -d odoo
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8069/web/login >/dev/null && break; sleep 2; done
+
+      - name: Grupo de teste e usuário somente leitura
+        working-directory: scripts/odoo-demo
+        run: |
+          DB="--db_host=odoo-db --db_user=odoo --db_password=odoo"
+          docker compose exec -T odoo odoo shell -d lab20 $DB --no-http < seed_group.py | tail -5
+          KEY=$(docker compose exec -T odoo odoo shell -d lab20 $DB --no-http < setup_ro_user.py | sed -n 's/^APIKEY=//p' | tail -1)
+          test -n "$KEY"
+          echo "::add-mask::$KEY"
+          echo "ODOO_E2E_KEY=$KEY" >> "$GITHUB_ENV"
+
+      - name: Migrations do banco do app
+        run: bun run db:migrate
+
+      - name: Conferência do conector
+        run: |
+          ODOO_URL=http://127.0.0.1:8069 ODOO_DB=lab20 ODOO_KEY="$ODOO_E2E_KEY" \
+            bun scripts/odoo-demo/validate-connector.ts
+
+      - name: Conferência com lançamentos de encerramento
+        run: |
+          cd scripts/odoo-demo
+          docker compose exec -T odoo odoo shell -d lab20 --db_host=odoo-db --db_user=odoo --db_password=odoo --no-http < add_closing_entries.py | tail -3
+          cd ../..
+          ODOO_URL=http://127.0.0.1:8069 ODOO_DB=lab20 ODOO_KEY="$ODOO_E2E_KEY" \
+            bun scripts/odoo-demo/validate-connector.ts
+
+      - name: Build (Node)
+        run: bun run build
+
+      - name: Chromium do Playwright
+        run: bunx playwright install --with-deps chromium
+
+      - name: Testes de navegador do modo Odoo
+        env:
+          ODOO_E2E_URL: http://127.0.0.1:8069
+          ODOO_E2E_DB: lab20
+        run: bunx playwright test e2e/odoo.spec.ts
+
+      - name: Relatório
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: odoo-lab-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+
+      - name: Logs do Odoo
+        if: failure()
+        working-directory: scripts/odoo-demo
+        run: docker compose logs --tail=200 odoo
