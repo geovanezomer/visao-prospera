@@ -6,6 +6,8 @@ import { buildForecast, DEFAULT_FORECAST_CFG, ForecastConfig } from "@/engines/f
 import { DEFAULT_MC, MCConfig, MCResult, histogram } from "@/engines/finance/montecarlo";
 import { snapshot } from "@/engines/finance/prescriptive";
 import { fmtBRL } from "@/engines/finance/format";
+import { crescimentoObservado } from "@/engines/odoo/growth";
+import { useOdooCockpitContext } from "@/components/odoo/cockpit";
 import {
   Select,
   SelectContent,
@@ -419,7 +421,34 @@ export function ScenarioCompareCard({
 
 // ============== Forecast 36 meses + VPL/TIR ==============
 export function ForecastCard({ state }: { state: AppState }) {
-  const [cfg, setCfg] = useState<ForecastConfig>(DEFAULT_FORECAST_CFG);
+  const cockpit = useOdooCockpitContext();
+  const modoOdoo = !!state.realizado;
+  // Modo Odoo: a premissa nasce do crescimento observado (12m vs 12m anteriores);
+  // sem 24 meses de histórico, 0%. Vale até o usuário editar o campo.
+  const sugestao = useMemo(() => {
+    if (!modoOdoo || !cockpit?.snapshot || !cockpit.entity || !cockpit.entityReady) return null;
+    try {
+      return crescimentoObservado(cockpit.snapshot, cockpit.entity, cockpit.endMonth);
+    } catch {
+      return null;
+    }
+  }, [modoOdoo, cockpit?.snapshot, cockpit?.entity, cockpit?.entityReady, cockpit?.endMonth]);
+  const crescAuto = modoOdoo
+    ? sugestao?.disponivel
+      ? sugestao.pctMensal
+      : 0
+    : DEFAULT_FORECAST_CFG.crescimentoMensalPct;
+  const [crescEditado, setCrescEditado] = useState<number | null>(null);
+  const [cfgBase, setCfg] = useState<ForecastConfig>(DEFAULT_FORECAST_CFG);
+  const anoBase = useMemo(() => new Date().getFullYear(), []);
+  const cfg = useMemo<ForecastConfig>(
+    () => ({
+      ...cfgBase,
+      crescimentoMensalPct: crescEditado ?? crescAuto,
+      anoBase: modoOdoo ? undefined : anoBase,
+    }),
+    [cfgBase, crescEditado, crescAuto, modoOdoo, anoBase],
+  );
   const result = useMemo(() => buildForecast(state, cfg), [state, cfg]);
   const set = (patch: Partial<ForecastConfig>) => setCfg((c) => ({ ...c, ...patch }));
 
@@ -437,7 +466,7 @@ export function ForecastCard({ state }: { state: AppState }) {
           label="Cresc. receita (% a.m.)"
           value={cfg.crescimentoMensalPct}
           step={0.1}
-          onChange={(v) => set({ crescimentoMensalPct: v })}
+          onChange={(v) => setCrescEditado(v)}
         />
         <NumberInput
           label="Inflação fixos (% a.a.)"
@@ -458,6 +487,37 @@ export function ForecastCard({ state }: { state: AppState }) {
           onChange={(v) => set({ horizonteMeses: Math.max(6, Math.min(120, Math.round(v))) })}
         />
       </div>
+      <p className="mb-3 text-[11px] text-muted-foreground" data-testid="forecast-premissas">
+        {modoOdoo ? (
+          sugestao?.disponivel ? (
+            <>
+              Crescimento observado no Odoo: receita dos últimos 12 meses{" "}
+              {sugestao.variacaoAnualPct >= 0 ? "+" : ""}
+              {sugestao.variacaoAnualPct.toFixed(1).replace(".", ",")}% sobre os 12 anteriores ≈{" "}
+              {sugestao.pctMensal.toFixed(2).replace(".", ",")}% a.m.
+              {crescEditado != null && crescEditado !== sugestao.pctMensal && (
+                <>
+                  {" "}
+                  <button
+                    type="button"
+                    className="underline underline-offset-2 hover:text-foreground"
+                    onClick={() => setCrescEditado(null)}
+                  >
+                    Usar sugestão
+                  </button>
+                </>
+              )}
+            </>
+          ) : (
+            "Menos de 24 meses de histórico no Odoo: a premissa de crescimento começa em 0%."
+          )
+        ) : null}{" "}
+        {modoOdoo
+          ? "Cada mês projetado parte do mesmo mês do ano realizado (preserva a sazonalidade)."
+          : `Ano-base ${anoBase}.`}{" "}
+        {(state.tax.era ?? "atual") === "atual" &&
+          "Tributos sobre vendas seguem o cronograma da Reforma (CBS/IBS) ano a ano."}
+      </p>
       <div className="mb-4 grid gap-3 sm:grid-cols-4">
         <NumberInput
           label="Step receita p/ folha (%)"

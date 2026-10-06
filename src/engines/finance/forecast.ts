@@ -6,14 +6,20 @@ import { resolveEffectiveRegime } from "./regime";
 import { sum } from "./format";
 import { vplClassico } from "./external";
 import { computeCapexMensal } from "./shared";
+import { stateForReformYear } from "./tax/compare";
+import { eraForYear } from "./tax/reforma";
 
 export interface ForecastMonth {
   idx: number; // 0..N-1
   ano: number; // 1..
   mes: number; // 1..12
-  label: string; // "Y1 Jan"
+  label: string; // "Y1 Jan" (modo Odoo: "Out/2026")
+  /** Ano-calendário do mês, quando conhecido (modo Odoo ou `anoBase`). */
+  anoCalendario: number | null;
   receita: number;
   ebitda: number;
+  /** Tributos sobre vendas do mês (inclui IRPJ/CSLL fora do Lucro Real). */
+  impostosReceita: number;
   lucroLiquido: number;
   /** Necessidade de Capital de Giro estimada no fim do mês. */
   ncg: number;
@@ -39,6 +45,10 @@ export interface ForecastConfig {
   horizonteMeses: number;
   /** Investimento inicial no t=0 (R$). */
   capexInicial: number;
+  /** Ano-calendário dos 12 meses informados (modo manual). Quando presente, os
+   *  tributos sobre vendas seguem o cronograma da Reforma ano a ano. No modo
+   *  Odoo o ano vem da janela do razão e este campo é ignorado. */
+  anoBase?: number;
 }
 
 export const DEFAULT_FORECAST_CFG: ForecastConfig = {
@@ -65,6 +75,8 @@ export interface ForecastResult {
   taxaDescontoMensal: number;
 }
 
+const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
 const LABOR_RE = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra|m\.o\.|clt/i;
 
 /**
@@ -74,7 +86,13 @@ const LABOR_RE = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra|m\.o\
  *   • Folha (CPV + fixos com encargosAuto ou label de folha): saltos discretos quando receita acumulada ultrapassa o step.
  *   • Demais fixos: inflação anual, NÃO escalam com receita.
  *   • Depreciação: constante.
- *   • Impostos: alíquota efetiva do ano-base aplicada à receita projetada (aproximação).
+ *   • Impostos sobre vendas: alíquota efetiva do ano-base, corrigida ano a ano pelo
+ *     cronograma da Reforma (CBS/IBS) quando o ano-calendário é conhecido.
+ *     IRPJ/CSLL: proporção do ano-base (Real sobre o LAIR; demais sobre a receita).
+ *   • Tempo: no modo manual, crescimento e inflação correm mês a mês desde o
+ *     ano-base. No modo Odoo, cada mês projetado é o MESMO mês do ano-base
+ *     acrescido de N anos (Y1 = +12 meses de crescimento, +1 ano de inflação),
+ *     preservando a sazonalidade sem atrasar a tendência em um ano.
  *   • NCG: recalculada mês a mês (CR via PMR + estoque proporcional ao CPV − fornecedores via PMP).
  *   • FCL/FCFF = NOPAT + D&A − CAPEX − ΔNCG, sem resultado financeiro.
  */
@@ -100,8 +118,8 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   // Presumido/Simples têm tributos majoritariamente sobre receita; Lucro Real separa
   // IRPJ/CSLL sobre lucro. Isso evita o bug de dividir imposto por LAIR negativo/baixo,
   // que fazia a projeção multiplicar impostos por milhares de vezes.
-  const taxReceitaRatio =
-    (impostosVendasAnoBase + (regime === "real" ? 0 : impostosLucroAnoBase)) / receitaAnoBase;
+  const vendasRatioBase = impostosVendasAnoBase / receitaAnoBase;
+  const lucroSobreReceitaRatio = regime === "real" ? 0 : impostosLucroAnoBase / receitaAnoBase;
   const ebitAnoBase = sum(dre.ebit);
   const taxLucroRatio =
     regime === "real" && ebitAnoBase > 1
@@ -152,12 +170,51 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   const ncg0 = crBase0 + estoqueBase0 - fornecBase0;
 
   const g = cfg.crescimentoMensalPct / 100;
-  // Auditoria: aplica fatores ANUAIS elevados à fração do ano para evitar erro composto mensal.
-  // Auditoria #15: convenção contínua proporcional ao tempo (não saltos anuais discretos).
-  // Para o usuário, "5% a.a." traduz-se em ~0,407% a.m. composto, não em salto anual.
-  const inflacaoFator = (i: number) => Math.pow(1 + cfg.inflacaoFixosAA / 100, i / 12);
-  const escalaCpvFator = (i: number) => Math.pow(1 - cfg.ganhoEscalaCpvAA / 100, i / 12);
+  // Tempo decorrido (anos) entre o mês-base que serve de molde e o mês projetado.
+  // Manual: convenção contínua (auditoria #15) — "5% a.a." ≈ 0,407% a.m. composto.
+  // Odoo: a janela do razão é o ano realizado; o mês i projeta o mesmo mês do
+  // ano-base (i % 12) com floor(i/12)+1 anos decorridos.
+  const janela = state.realizado?.meses;
+  const modoOdoo = janela?.length === 12 && janela.every((m) => /^\d{4}-\d{2}$/.test(m));
+  const tempoAnos = (i: number) => (modoOdoo ? Math.floor(i / 12) + 1 : i / 12);
+  const inflacaoFator = (i: number) => Math.pow(1 + cfg.inflacaoFixosAA / 100, tempoAnos(i));
+  const escalaCpvFator = (i: number) => Math.pow(1 - cfg.ganhoEscalaCpvAA / 100, tempoAnos(i));
   const horizon = cfg.horizonteMeses;
+
+  // Ano-calendário do molde (mês-base) e do mês projetado.
+  const anoMolde = (i: number): number | null =>
+    modoOdoo ? Number(janela![i % 12].slice(0, 4)) : (cfg.anoBase ?? null);
+  const anoProjetado = (i: number): number | null => {
+    const a = anoMolde(i);
+    return a == null ? null : a + (modoOdoo ? Math.floor(i / 12) + 1 : Math.floor(i / 12));
+  };
+  // Reforma: fator = carga-modelo do ano projetado ÷ carga-modelo do ano do molde,
+  // aplicado à carga EFETIVA do ano-base (preserva a calibração do razão). Só vale
+  // quando a era do estado é a do ano-base — uma era escolhida à mão é simulação
+  // "e se" e mantém a carga constante.
+  const eraDoAno = (y: number) => (y === 2026 ? "atual" : eraForYear(y));
+  const anoRef = modoOdoo ? Number(janela![11].slice(0, 4)) : cfg.anoBase;
+  const aplicaReforma = anoRef != null && (state.tax.era ?? "atual") === eraDoAno(anoRef);
+  const cargaModelo = new Map<number, number>();
+  const cargaVendasModelo = (y: number) => {
+    let r = cargaModelo.get(y);
+    if (r === undefined) {
+      const s = stateForReformYear({ ...state, realizado: undefined }, y).state;
+      const d = buildDRE(s, regime);
+      const rb = sum(d.dre.receitaBruta);
+      r = rb > 0 ? sum(d.tax.monthlyVendas ?? []) / rb : 0;
+      cargaModelo.set(y, r);
+    }
+    return r;
+  };
+  const fatorReforma = (i: number) => {
+    if (!aplicaReforma) return 1;
+    const molde = anoMolde(i)!;
+    const alvo = anoProjetado(i)!;
+    if (alvo === molde) return 1;
+    const base = cargaVendasModelo(molde);
+    return base > 1e-9 ? cargaVendasModelo(alvo) / base : 1;
+  };
 
   const meses: ForecastMonth[] = [];
   let saldo = capital.disponibilidades - cfg.capexInicial;
@@ -169,9 +226,11 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   for (let i = 0; i < horizon; i++) {
     const ano = Math.floor(i / 12) + 1;
     const mes = i % 12;
-    const label = `Y${ano} ${["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"][mes]}`;
+    const anoCalendario = anoProjetado(i);
+    const mesCalendario = modoOdoo ? Number(janela![mes].slice(5, 7)) - 1 : mes;
+    const label = modoOdoo ? `${MESES[mesCalendario]}/${anoCalendario}` : `Y${ano} ${MESES[mes]}`;
 
-    const fatorReceita = Math.pow(1 + g, i);
+    const fatorReceita = Math.pow(1 + g, 12 * tempoAnos(i));
     const receita = receitaBase[mes] * fatorReceita;
 
     // CPV unitário melhora/piora com escala (fator anual aplicado à fração do ano)
@@ -200,7 +259,7 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     // Auditoria A1/F-01: EBITDA segue CPC 26 / DRE legal brasileira.
     // Receita Líquida = Receita Bruta − Impostos sobre Vendas (PIS/COFINS/ICMS/ISS/CBS/IBS).
     // Antes, EBITDA era calculado sobre receita BRUTA, inflando margem.
-    const impostosReceita = receita * taxReceitaRatio;
+    const impostosReceita = receita * (vendasRatioBase * fatorReforma(i) + lucroSobreReceitaRatio);
     const receitaLiquida = receita - impostosReceita;
     const lucroBruto = receitaLiquida - cpv;
     const ebitda = lucroBruto - despesasOp;
@@ -232,10 +291,12 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     meses.push({
       idx: i,
       ano,
-      mes: mes + 1,
+      mes: mesCalendario + 1,
       label,
+      anoCalendario,
       receita: safe(receita),
       ebitda: safe(ebitda),
+      impostosReceita: safe(impostosReceita),
       lucroLiquido: safe(lucroLiquido),
       ncg: safe(ncgT),
       deltaNcg: safe(deltaNcg),

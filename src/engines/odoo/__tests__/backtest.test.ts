@@ -102,12 +102,19 @@ describe("backtest", () => {
     // Realizado no mês j do 2º ano: R0·1,01^(12+j). Ingênuo (mesmo mês do ano
     // anterior): R0·1,01^j → erro 1 − 1,01^−12 em todos os meses.
     expect(r.mapeIngenuo).toBeCloseTo((1 - Math.pow(1.01, -12)) * 100, 1);
-    // O motor projeta base[j]·1,01^j = R0·1,01^(2j) → erro 1 − 1,01^(j−12).
-    const esperado =
-      (Array.from({ length: 12 }, (_, j) => 1 - Math.pow(1.01, j - 12)).reduce((a, b) => a + b) /
-        12) *
-      100;
+    // Modo Odoo: o mês j projeta o mesmo mês do ano-base com 12 meses de
+    // crescimento — R0·1,01^j·1,01^12 = realizado → erro zero.
+    expect(r.mapeReceita).toBeCloseTo(0, 6);
+    expect(r.meses[0].previsto).toBeCloseTo(100_000 * Math.pow(1.01, 12), 0);
+  });
+
+  it("receita crescendo 2% a.m. com premissa de 1%: erro constante calculado à mão", () => {
+    const r = run(0.02, 1);
+    if (!r.disponivel) throw new Error(r.motivo);
+    // Previsto R0·1,02^j·1,01^12; realizado R0·1,02^(12+j) → erro 1 − (1,01/1,02)^12.
+    const esperado = (1 - Math.pow(1.01 / 1.02, 12)) * 100;
     expect(r.mapeReceita).toBeCloseTo(esperado, 1);
+    expect(r.mapeIngenuo).toBeCloseTo((1 - Math.pow(1.02, -12)) * 100, 1);
     expect(r.mapeReceita).toBeLessThan(r.mapeIngenuo);
   });
 
