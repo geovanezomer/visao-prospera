@@ -87,6 +87,7 @@ import { OpenRestoreDialog } from "@/components/sim/shared/OpenRestoreDialog";
 import { FeedbackDialog } from "@/components/sim/shared/FeedbackDialog";
 import { SharedLinksDialog } from "@/components/sim/shared/SharedLinksDialog";
 import { TrialBanner } from "@/components/TrialBanner";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 import { PaywallScreen } from "@/components/PaywallScreen";
 import { useAccessStatus, daysSince, GRACE_DAYS_PAST_DUE } from "@/hooks/useAccessStatus";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -178,6 +179,15 @@ function SimulaProGated() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
         Carregando…
+      </div>
+    );
+  }
+
+  // Senha provisória (ex.: admin/admin): troca obrigatória antes de liberar o app.
+  if (user.mustChangePassword) {
+    return (
+      <div className="min-h-screen bg-background">
+        <ChangePasswordDialog open forced />
       </div>
     );
   }

@@ -1,79 +1,87 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
-import { revokeOtherSessions } from "@/lib/session.functions";
-import { readTrialFlags } from "@/lib/trialFlags";
+import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from "react";
+import { authClient } from "@/lib/auth-client";
 
 export type AuthUser = {
   id: string;
   email: string;
   displayName: string;
   emailConfirmed: boolean;
+  /** "admin" | "user". A checagem que vale é a do servidor (assertAdmin). */
+  role: string;
   /** Acesso ao Consultor IA. Default = true; admin pode desativar via painel. */
   aiEnabled: boolean;
   /** Marca usuário como teste gratuito (auto-logout ao expirar). */
   isTrial: boolean;
   /** ISO timestamp do fim do trial; null quando não-trial. */
   trialExpiresAt: string | null;
+  /** Senha provisória (ex.: admin/admin do primeiro acesso) — troca exigida. */
+  mustChangePassword: boolean;
 };
+
+export type AuthSessionInfo = { id: string; expiresAt: string };
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
 
 type AuthCtx = {
   user: AuthUser | null;
-  session: Session | null;
+  session: AuthSessionInfo | null;
   hydrated: boolean;
-  login: (email: string, password: string) => Promise<AuthResult>;
+  /** `identifier` aceita e-mail ou nome de usuário (ex.: "admin"). */
+  login: (identifier: string, password: string) => Promise<AuthResult>;
   signup: (
     email: string,
     password: string,
     displayName: string,
   ) => Promise<AuthResult & { needsConfirmation?: boolean }>;
   requestPasswordReset: (email: string) => Promise<AuthResult>;
-  updatePassword: (newPassword: string) => Promise<AuthResult>;
+  /** Conclui a redefinição com o token do link enviado por e-mail. */
+  resetPassword: (token: string, newPassword: string) => Promise<AuthResult>;
+  /** Troca de senha logado (exige a atual); limpa `mustChangePassword`. */
+  changePassword: (currentPassword: string, newPassword: string) => Promise<AuthResult>;
   logout: () => Promise<void>;
+  refresh: () => Promise<void>;
 };
 
 const Ctx = createContext<AuthCtx | null>(null);
 
-function toAuthUser(u: User | null | undefined): AuthUser | null {
+type SessionUser = {
+  id: string;
+  email: string;
+  name?: string | null;
+  emailVerified?: boolean;
+  role?: string | null;
+  aiEnabled?: boolean | null;
+  isTrial?: boolean | null;
+  trialExpiresAt?: Date | string | null;
+  mustChangePassword?: boolean | null;
+};
+
+function toAuthUser(u: SessionUser | null | undefined): AuthUser | null {
   if (!u) return null;
-  const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
-  const displayName =
-    (typeof meta.display_name === "string" && meta.display_name) ||
-    (typeof meta.full_name === "string" && meta.full_name) ||
-    (u.email ? u.email.split("@")[0] : "Usuário");
+  const exp = u.trialExpiresAt ? new Date(u.trialExpiresAt) : null;
   return {
     id: u.id,
     email: u.email ?? "",
-    displayName,
-    emailConfirmed: Boolean(u.email_confirmed_at),
-    aiEnabled: meta.ai_enabled !== false,
-    ...readTrialFlags(u),
+    displayName: u.name || (u.email ? u.email.split("@")[0] : "Usuário"),
+    emailConfirmed: Boolean(u.emailVerified),
+    role: u.role ?? "user",
+    aiEnabled: u.aiEnabled !== false,
+    isTrial: u.isTrial === true,
+    trialExpiresAt: exp && !Number.isNaN(exp.getTime()) ? exp.toISOString() : null,
+    mustChangePassword: u.mustChangePassword === true,
   };
 }
 
-function friendlyError(message: string): string {
-  const m = message.toLowerCase();
-  if (m.includes("invalid login")) return "E-mail ou senha inválidos.";
-  if (m.includes("email not confirmed"))
-    return "Confirme seu e-mail antes de entrar. Veja sua caixa de entrada.";
-  if (m.includes("user already registered"))
+function friendlyError(message: string | undefined): string {
+  const m = (message ?? "").toLowerCase();
+  if (m.includes("invalid") && (m.includes("password") || m.includes("email") || m.includes("username")))
+    return "Usuário, e-mail ou senha inválidos.";
+  if (m.includes("already exists") || m.includes("already registered"))
     return "Este e-mail já está cadastrado. Faça login ou recupere sua senha.";
-  if (m.includes("password should be at least"))
-    return "A senha precisa ter pelo menos 8 caracteres.";
-  if (m.includes("password is known to be weak") || m.includes("pwned"))
-    return "Esta senha já vazou em incidentes públicos. Escolha outra.";
-  if (m.includes("rate limit")) return "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
-  return message;
+  if (m.includes("too short")) return "A senha precisa ter pelo menos 8 caracteres.";
+  if (m.includes("banned")) return "Acesso suspenso. Fale com o administrador.";
+  if (m.includes("too many") || m.includes("rate")) return "Muitas tentativas. Aguarde alguns minutos.";
+  return message || "Não foi possível concluir. Tente novamente.";
 }
 
 const LAST_USER_KEY = "gz-finance-last-user-id";
@@ -131,90 +139,73 @@ async function purgeLocalStateIfUserChanged(currentUserId: string | null) {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [hydrated, setHydrated] = useState(false);
-  // Guarda o access_token atual para deduplicar eventos do Supabase
-  // (TOKEN_REFRESHED / INITIAL_SESSION disparados ao voltar de outra aba).
-  // Sem isso, cada retorno de foco cria novos objetos user/session,
-  // muda a identidade do contexto e força re-render em cascata — o
-  // usuário percebe como "recarregar tudo" ao trocar de aba.
-  const lastTokenRef = useRef<string | null>(null);
+  const { data, isPending, refetch } = authClient.useSession();
+  const user = useMemo(() => toAuthUser(data?.user as SessionUser | undefined), [data?.user]);
+  const session = useMemo<AuthSessionInfo | null>(
+    () =>
+      data?.session
+        ? { id: data.session.id, expiresAt: new Date(data.session.expiresAt).toISOString() }
+        : null,
+    [data?.session],
+  );
+  const hydrated = !isPending;
 
   useEffect(() => {
-    const applySession = (newSession: Session | null) => {
-      const token = newSession?.access_token ?? null;
-      if (token === lastTokenRef.current) return; // sem mudança real → no-op
-      lastTokenRef.current = token;
-      const uid = newSession?.user?.id ?? null;
-      void purgeLocalStateIfUserChanged(uid);
-      setSession(newSession);
-      setUser(toAuthUser(newSession?.user));
-    };
+    if (hydrated) void purgeLocalStateIfUserChanged(user?.id ?? null);
+  }, [hydrated, user?.id]);
 
-    // Listener FIRST so we don't miss events.
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      applySession(newSession);
-    });
-
-    // Then hydrate from existing session.
-    supabase.auth.getSession().then(({ data }) => {
-      applySession(data.session);
-      setHydrated(true);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const login = useCallback(async (email: string, password: string): Promise<AuthResult> => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
-    if (error) return { ok: false, error: friendlyError(error.message) };
-    // Sessão única: revoga outros dispositivos em background (não bloqueia o login).
-    revokeOtherSessions().catch((e) => {
-      console.warn("[auth] revokeOtherSessions falhou:", e);
-    });
+  const login = useCallback(async (identifier: string, password: string): Promise<AuthResult> => {
+    const id = identifier.trim();
+    const res = id.includes("@")
+      ? await authClient.signIn.email({ email: id.toLowerCase(), password })
+      : await authClient.signIn.username({ username: id.toLowerCase(), password });
+    if (res.error) return { ok: false, error: friendlyError(res.error.message) };
+    // Uma sessão ativa por usuário: derruba as de outros dispositivos.
+    authClient.revokeOtherSessions().catch((e) => console.warn("[auth] revokeOtherSessions:", e));
     return { ok: true };
   }, []);
 
   const signup = useCallback(async (email: string, password: string, displayName: string) => {
-    const redirectTo = `${window.location.origin}/auth/callback`;
-    const { data, error } = await supabase.auth.signUp({
+    const res = await authClient.signUp.email({
       email: email.trim().toLowerCase(),
       password,
-      options: {
-        emailRedirectTo: redirectTo,
-        data: { display_name: displayName.trim() },
-      },
+      name: displayName.trim() || email.split("@")[0],
     });
-    if (error) return { ok: false as const, error: friendlyError(error.message) };
-    const needsConfirmation = !data.session;
-    return { ok: true as const, needsConfirmation };
+    if (res.error) return { ok: false as const, error: friendlyError(res.error.message) };
+    return { ok: true as const, needsConfirmation: false };
   }, []);
 
   const requestPasswordReset = useCallback(async (email: string): Promise<AuthResult> => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+    const res = await authClient.requestPasswordReset({
+      email: email.trim().toLowerCase(),
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    if (error) return { ok: false, error: friendlyError(error.message) };
+    if (res.error) return { ok: false, error: friendlyError(res.error.message) };
     return { ok: true };
   }, []);
 
-  const updatePassword = useCallback(async (newPassword: string): Promise<AuthResult> => {
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) return { ok: false, error: friendlyError(error.message) };
-    return { ok: true };
+  const resetPassword = useCallback(async (token: string, newPassword: string) => {
+    const res = await authClient.resetPassword({ token, newPassword });
+    if (res.error) return { ok: false as const, error: friendlyError(res.error.message) };
+    return { ok: true as const };
   }, []);
+
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string): Promise<AuthResult> => {
+      const { changeOwnPassword } = await import("@/lib/account.functions");
+      try {
+        await changeOwnPassword({ data: { currentPassword, newPassword } });
+      } catch (e) {
+        return { ok: false, error: friendlyError(e instanceof Error ? e.message : String(e)) };
+      }
+      await refetch();
+      return { ok: true };
+    },
+    [refetch],
+  );
 
   const logout = useCallback(async () => {
-    await supabase.auth.signOut();
-    // P4-09 / P4-04: limpa qualquer estado financeiro local (cenários,
-    // configs por empresa, drafts), evitando vazamento cross-user em
-    // máquinas compartilhadas.
+    await authClient.signOut();
     try {
       if (typeof window !== "undefined") {
         const keysToRemove: string[] = [];
@@ -252,6 +243,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const refresh = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
+
   return (
     <Ctx.Provider
       value={{
@@ -261,8 +256,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         signup,
         requestPasswordReset,
-        updatePassword,
+        resetPassword,
+        changePassword,
         logout,
+        refresh,
       }}
     >
       {children}

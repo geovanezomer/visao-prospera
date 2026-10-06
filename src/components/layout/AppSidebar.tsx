@@ -11,9 +11,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-import { LogOut, Share2, FolderOpen, Calculator } from "lucide-react";
+import { LogOut, Share2, FolderOpen, Calculator, KeyRound } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { BrandedLogo } from "@/components/BrandedLogo";
 import { useBranding } from "@/hooks/useBranding";
@@ -23,6 +23,7 @@ import { TabKey } from "@/engines/finance/types";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { AdminSidebarButton } from "@/components/admin/AdminSidebarButton";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 
 import { cn } from "@/lib/utils";
 
@@ -46,6 +47,7 @@ export function AppSidebar({
   const { user, logout } = useAuth();
   const { setOpenMobile } = useSidebar();
   const { branding, isReady } = useBranding();
+  const [changePwdOpen, setChangePwdOpen] = useState(false);
 
   useEffect(() => {
     const handleClose = () => setOpenMobile(false);
@@ -197,6 +199,18 @@ export function AppSidebar({
               </div>
             </div>
           )}
+          {user && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tooltip="Trocar senha"
+                className="h-8 w-full justify-start gap-3 text-xs"
+                onClick={() => setChangePwdOpen(true)}
+              >
+                <KeyRound className="h-4 w-4" />
+                <span>Trocar senha</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem className="group-data-[collapsible=icon]:block hidden">
             <SidebarMenuButton
               tooltip="Sair"
@@ -209,6 +223,7 @@ export function AppSidebar({
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+      <ChangePasswordDialog open={changePwdOpen} onOpenChange={setChangePwdOpen} />
     </Sidebar>
   );
 }

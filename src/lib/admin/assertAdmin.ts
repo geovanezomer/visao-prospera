@@ -1,29 +1,18 @@
 // ============================================================================
-// assertAdmin — RBAC server-side via has_role('admin') no banco.
+// assertAdmin — checagem de papel no servidor.
 //
-// Substitui a checagem antiga por e-mail (env var) por consulta ao
-// public.user_roles, executada via função SECURITY DEFINER `public.has_role`.
+// Lê o papel direto do banco (não confia só no que veio na sessão), para que
+// rebaixar um admin tenha efeito imediato.
 //
-// Uso (dentro de qualquer server fn admin*):
+// Uso (dentro de qualquer server fn admin*, após o middleware requireAuth):
 //   await assertAdmin(context);
-//
-// Lança Error("Acesso negado.") quando o usuário não possui o papel admin.
 // ============================================================================
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
-
-type AdminCtx = {
-  supabase: SupabaseClient<Database>;
-  userId: string;
-};
+type AdminCtx = { userId: string };
 
 export async function assertAdmin(context: AdminCtx): Promise<void> {
-  const { data, error } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "admin",
-  });
-  if (error || data !== true) {
+  const { isAdminUser } = await import("@/lib/users.server");
+  if (!(await isAdminUser(context.userId))) {
     throw new Error("Acesso negado.");
   }
 }

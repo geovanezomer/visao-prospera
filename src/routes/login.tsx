@@ -59,7 +59,7 @@ function LoginPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const res = await login(email, password);
+    const res = await login(email.trim(), password);
     setLoading(false);
     if (!res.ok) {
       setError(res.error);
@@ -110,16 +110,20 @@ function LoginPage() {
 
           <form onSubmit={onSubmit} className="mt-6 space-y-4" autoComplete="on">
             <div className="space-y-1.5">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email">E-mail ou usuário</Label>
               <div className="relative">
                 <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  name="username"
+                  type="text"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  autoComplete="username"
                   className="pl-9"
-                  placeholder="voce@empresa.com"
+                  placeholder="voce@empresa.com ou usuário"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

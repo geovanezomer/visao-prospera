@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { getAppSettings } from "@/lib/admin/settings.functions";
 
 type State =
   | { kind: "idle" }
@@ -40,20 +40,19 @@ export function TrialRequestDialog({
   const [cfgHours, setCfgHours] = useState<number>(2);
 
   // Lê duração configurada em Admin → Sistema (app_settings.trial.duration_hours).
-  // Policy pública permite SELECT do key='trial' para anon.
+  // `trial` é chave pública em getAppSettings (sem login).
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    void supabase
-      .from("app_settings")
-      .select("value")
-      .eq("key", "trial")
-      .maybeSingle()
-      .then(({ data }) => {
-        if (cancelled || !data?.value) return;
-        const v = data.value as { duration_hours?: number };
+    void getAppSettings()
+      .then((settings) => {
+        const v = settings?.trial as { duration_hours?: number } | null | undefined;
+        if (cancelled || !v) return;
         const h = Number(v.duration_hours);
         if (Number.isFinite(h) && h > 0) setCfgHours(Math.min(Math.max(h, 1), 72));
+      })
+      .catch(() => {
+        /* mantém o padrão */
       });
     return () => {
       cancelled = true;

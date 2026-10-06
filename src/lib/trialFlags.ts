@@ -1,10 +1,9 @@
 // ============================================================================
-// Flags do teste gratuito — fonte única de leitura e escrita.
+// Flags do teste gratuito — fonte única de leitura.
 //
-// Moram em `app_metadata`, que só o service role grava. NUNCA ler de
-// `user_metadata`: o próprio usuário edita esse campo via
-// `supabase.auth.updateUser({ data })` ou no `signUp`, e poderia se dar
-// um teste "até 2099".
+// Moram em colunas da tabela `user` (is_trial, trial_expires_at), gravadas
+// só pelo servidor: no Better Auth são campos com `input: false`, então o
+// usuário não consegue defini-los no cadastro nem ao editar o perfil.
 // ============================================================================
 
 export type TrialFlags = {
@@ -12,22 +11,31 @@ export type TrialFlags = {
   trialExpiresAt: string | null;
 };
 
-type UserLike = { app_metadata?: Record<string, unknown> | null } | null | undefined;
+type UserLike =
+  | { isTrial?: boolean | null; trialExpiresAt?: Date | string | null }
+  | null
+  | undefined;
 
 export function readTrialFlags(user: UserLike): TrialFlags {
-  const meta = (user?.app_metadata ?? {}) as Record<string, unknown>;
+  const exp = user?.trialExpiresAt ? new Date(user.trialExpiresAt) : null;
   return {
-    isTrial: meta.is_trial === true,
-    trialExpiresAt: typeof meta.trial_expires_at === "string" ? meta.trial_expires_at : null,
+    isTrial: user?.isTrial === true,
+    trialExpiresAt: exp && !Number.isNaN(exp.getTime()) ? exp.toISOString() : null,
   };
 }
 
-/** Payload de `app_metadata` para iniciar um teste (uso exclusivo do servidor). */
-export function trialStartMetadata(expiresAt: string) {
-  return { is_trial: true, trial_expires_at: expiresAt };
+/** Patch de usuário para iniciar um teste (uso exclusivo do servidor). */
+export function trialStartPatch(expiresAt: string | Date) {
+  return { isTrial: true, trialExpiresAt: new Date(expiresAt) };
 }
 
-/** Payload de `app_metadata` para encerrar o teste (expirado ou convertido). */
-export function trialEndMetadata(extra: Record<string, unknown> = {}) {
-  return { is_trial: false, trial_expires_at: null, ...extra };
+/** Patch para encerrar o teste (expirado ou convertido). */
+export function trialEndPatch(converted?: { plan: string | null }) {
+  return {
+    isTrial: false,
+    trialExpiresAt: null,
+    ...(converted
+      ? { trialConvertedAt: new Date(), trialConvertedPlan: converted.plan }
+      : {}),
+  };
 }

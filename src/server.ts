@@ -69,6 +69,9 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // Migrations + admin inicial, uma vez por processo (falha alta).
+      const { ensureDatabaseReady } = await import("./db/bootstrap.server");
+      await ensureDatabaseReady();
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));

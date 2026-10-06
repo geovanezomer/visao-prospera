@@ -1,6 +1,6 @@
 // ============================================================================
-// Rate limit distribuído — usa Postgres (rl_consume) para compartilhar
-// contadores entre todos os workers/instâncias da edge.
+// Rate limit distribuído — contadores no Postgres (tabela rate_limit_buckets),
+// compartilhados entre todos os processos.
 //
 // Uso:
 //   const r = await rlConsume("checkout:ip:1.2.3.4", 10, 60);
@@ -9,43 +9,39 @@
 // Falha aberta: se o banco estiver indisponível, libera a requisição em vez
 // de derrubar a aplicação inteira (degradação graciosa).
 // ============================================================================
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { sql } from "drizzle-orm";
 import { getRequestIP } from "@tanstack/react-start/server";
-
-let _admin: SupabaseClient | null = null;
-function admin(): SupabaseClient {
-  if (_admin) return _admin;
-  _admin = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-  });
-  return _admin;
-}
+import { queryRows } from "@/db/client.server";
 
 export type RlResult = { allowed: boolean; remaining: number; retryAfter: number };
 
+/** Janela fixa por chave, numa única instrução atômica (sem corrida entre processos). */
 export async function rlConsume(
   key: string,
   limit: number,
   windowSeconds: number,
 ): Promise<RlResult> {
   try {
-    const { data, error } = await admin().rpc("rl_consume", {
-      _key: key,
-      _limit: limit,
-      _window_seconds: windowSeconds,
-    });
-    if (error || !data) {
-      console.warn("[rateLimit] rpc falhou — fail-open:", error?.message);
-      return { allowed: true, remaining: limit, retryAfter: 0 };
-    }
-    const row = Array.isArray(data) ? data[0] : data;
+    const rows = await queryRows<{ count: number; retry_after: number }>(sql`
+      insert into rate_limit_buckets (bucket_key, count, reset_at)
+      values (${key}, 1, now() + make_interval(secs => ${windowSeconds}))
+      on conflict (bucket_key) do update set
+        count = case when rate_limit_buckets.reset_at < now() then 1
+                     else rate_limit_buckets.count + 1 end,
+        reset_at = case when rate_limit_buckets.reset_at < now()
+                        then now() + make_interval(secs => ${windowSeconds})
+                        else rate_limit_buckets.reset_at end
+      returning count, greatest(extract(epoch from (reset_at - now()))::int, 0) as retry_after
+    `);
+    const row = rows[0];
+    const count = Number(row?.count ?? 0);
     return {
-      allowed: Boolean(row?.allowed),
-      remaining: Number(row?.remaining ?? 0),
-      retryAfter: Number(row?.retry_after_seconds ?? 0),
+      allowed: count <= limit,
+      remaining: Math.max(limit - count, 0),
+      retryAfter: Number(row?.retry_after ?? 0),
     };
   } catch (e) {
-    console.warn("[rateLimit] exceção — fail-open:", e);
+    console.warn("[rateLimit] falha no banco — fail-open:", e);
     return { allowed: true, remaining: limit, retryAfter: 0 };
   }
 }

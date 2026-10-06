@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { AlertTriangle, Clock, CreditCard, Download, Loader2, Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 import type { AccessStatus } from "@/hooks/useAccessStatus";
 
 type Plan = {
@@ -37,6 +37,7 @@ function formatPrice(cents: number, currency: string): string {
 }
 
 export function PaywallScreen({ status, onExportFinnance }: PaywallScreenProps) {
+  const { user, logout } = useAuth();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [checkoutBusy, setCheckoutBusy] = useState<string | null>(null);
@@ -60,10 +61,8 @@ export function PaywallScreen({ status, onExportFinnance }: PaywallScreenProps) 
     if (checkoutBusy) return;
     setCheckoutBusy(planSlug);
     try {
-      const { data } = await supabase.auth.getUser();
-      const email = data.user?.email ?? "";
-      const meta = (data.user?.user_metadata ?? {}) as Record<string, unknown>;
-      const name = (meta.display_name as string) || email.split("@")[0] || "Usuário";
+      const email = user?.email ?? "";
+      const name = user?.displayName || email.split("@")[0] || "Usuário";
       const res = await fetch("/api/public/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -212,7 +211,7 @@ export function PaywallScreen({ status, onExportFinnance }: PaywallScreenProps) 
           )}
           <button
             className="mt-2 text-[11px] underline-offset-2 hover:underline"
-            onClick={() => supabase.auth.signOut()}
+            onClick={() => void logout()}
           >
             Sair da conta
           </button>

@@ -1,14 +1,14 @@
 // ============================================================================
-// Hook useSubscription — consulta o plano ativo do usuário via RPC
-// get_active_plan() (SECURITY DEFINER que filtra por auth.uid()).
+// Hook useSubscription — consulta o plano ativo do usuário via server fn
+// getMyActivePlan (sessão por cookie; o servidor filtra pelo usuário logado).
 // Usa React Query com cache de 5 min — evita refetch em cada navegação
 // e em cada componente que consome o hook (dedupe automático por queryKey).
 // ============================================================================
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { getMyActivePlan } from "@/lib/subscription.functions";
 
 export type ActivePlan = {
   plan: string;
@@ -19,15 +19,12 @@ export type ActivePlan = {
 } | null;
 
 async function fetchActivePlan(): Promise<ActivePlan> {
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return null;
-  const { data, error } = await supabase.rpc("get_active_plan");
-  if (error) {
-    console.warn("[useSubscription]", error.message);
+  try {
+    return (await getMyActivePlan()) ?? null;
+  } catch (e) {
+    console.warn("[useSubscription]", e instanceof Error ? e.message : e);
     return null;
   }
-  const row = Array.isArray(data) ? data[0] : data;
-  return (row ?? null) as ActivePlan;
 }
 
 export function useSubscription() {
@@ -52,15 +49,15 @@ export function useSubscription() {
     refetchOnReconnect: false,
   });
 
-  // Re-fetch apenas em transições de identidade — não em token refresh.
+  // Re-fetch apenas em transições de identidade (login/logout/troca de usuário).
+  const prevUserRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
-        queryClient.invalidateQueries({ queryKey: ["active_plan"] });
-      }
-    });
-    return () => sub.subscription.unsubscribe();
-  }, [queryClient]);
+    if (!hydrated) return;
+    if (prevUserRef.current !== undefined && prevUserRef.current !== userId) {
+      queryClient.invalidateQueries({ queryKey: ["active_plan"] });
+    }
+    prevUserRef.current = userId;
+  }, [hydrated, userId, queryClient]);
 
   // Enquanto auth ainda não hidratou, ou temos user mas ainda não há dado,
   // reportamos loading — evita o flash de Paywall pós-login. Importante:

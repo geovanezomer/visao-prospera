@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import {
   Outlet,
@@ -10,8 +10,7 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
-import { AuthProvider } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { AuthProvider, useAuth } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
 import { TrackingInjector } from "@/components/TrackingInjector";
 import { BrandingApplier } from "@/components/BrandingApplier";
@@ -224,19 +223,21 @@ function RootComponent() {
   );
 }
 
+/** Revalida rotas e caches quando a identidade muda (login, logout, troca de usuário). */
 function AuthCacheInvalidator() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { user, hydrated } = useAuth();
+  const userId = user?.id ?? null;
+  // undefined = ainda não registramos a identidade da primeira hidratação.
+  const prevUserIdRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
-        router.invalidate();
-        queryClient.invalidateQueries();
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [router, queryClient]);
+    if (!hydrated) return;
+    const prev = prevUserIdRef.current;
+    prevUserIdRef.current = userId;
+    if (prev === undefined || prev === userId) return;
+    void router.invalidate();
+    void queryClient.invalidateQueries();
+  }, [hydrated, userId, router, queryClient]);
   return null;
 }

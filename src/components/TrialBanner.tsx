@@ -1,5 +1,5 @@
 // ============================================================================
-// TrialBanner — exibido no topo do app quando user.user_metadata.is_trial.
+// TrialBanner — exibido no topo do app quando user.isTrial.
 // • Mostra countdown até trial_expires_at.
 // • Toast aos 10 min restantes.
 // • signOut + redirect para /landing#planos ao expirar.
@@ -10,7 +10,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Clock, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 
 function fmt(ms: number): string {
   if (ms <= 0) return "0:00";
@@ -24,6 +24,7 @@ function fmt(ms: number): string {
 
 export function TrialBanner({ expiresAt }: { expiresAt: string }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const target = useMemo(() => new Date(expiresAt).getTime(), [expiresAt]);
   const [now, setNow] = useState(() => Date.now());
   const [upgrading, setUpgrading] = useState(false);
@@ -58,14 +59,12 @@ export function TrialBanner({ expiresAt }: { expiresAt: string }) {
     if (upgrading) return;
     setUpgrading(true);
     try {
-      const { data } = await supabase.auth.getUser();
-      const email = data.user?.email ?? "";
+      const email = user?.email ?? "";
       if (!email) {
         toast.error("Sessão expirada. Faça login novamente.");
         return;
       }
-      const meta = (data.user?.user_metadata ?? {}) as Record<string, unknown>;
-      const name = (meta.display_name as string) || email.split("@")[0];
+      const name = user?.displayName || email.split("@")[0];
 
       const res = await fetch("/api/public/payments/checkout", {
         method: "POST",
