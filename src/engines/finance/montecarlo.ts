@@ -13,6 +13,8 @@ import { sum } from "./format";
 export type CorrelationMatrix = number[][];
 
 export interface MCConfig {
+  /** Semente do gerador aleatório (resultados reprodutíveis). */
+  seed?: number;
   iterations: number;
   precoSigmaPct: number; // desvio-padrão em pp do crescimento de preço (ex 5 → ±5%)
   volumeSigmaPct: number;
@@ -76,7 +78,14 @@ export interface MCResult {
   lucroLiquido: MCDist;
   saldoCaixaFinal: MCDist;
   probPrejuizo: number;
+  /** Probabilidade de o caixa ficar abaixo do mínimo de segurança em ALGUM mês. */
   probCaixaNegativo: number;
+  /** Probabilidade de o caixa ficar negativo em algum mês. */
+  probCaixaNegativoAlgumMes?: number;
+  /** Pior saldo mensal (distribuição entre as simulações). */
+  piorSaldoMensal?: MCDist;
+  /** Média dos 5% piores lucros (CVaR 95%). */
+  cvar5Lucro?: number;
   /** True se a matriz informada não passou no teste de positiva semidefinida
    *  (Cholesky falhou) e o motor caiu para choques independentes. */
   correlationFellBackToIdentity?: boolean;
@@ -86,14 +95,28 @@ export interface MCResult {
 // M10: aproveita o par (cos, sin) — cada 2 chamadas usam apenas 2 randoms
 // (antes: 2 chamadas × 2 randoms = 4). Cache do valor spare entre chamadas.
 let __randnSpare: number | null = null;
+// Gerador determinístico (mulberry32) reiniciado a cada simulação: o mesmo
+// cenário dá sempre o mesmo resultado — comparável entre reuniões e no PDF.
+let __rng: () => number = Math.random;
+function seedRng(seed: number) {
+  let a = seed >>> 0;
+  __rng = () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  __randnSpare = null;
+}
 function randn(): number {
   if (__randnSpare !== null) {
     const v = __randnSpare;
     __randnSpare = null;
     return v;
   }
-  const u = Math.max(1e-9, Math.random());
-  const v = Math.random();
+  const u = Math.max(1e-9, __rng());
+  const v = __rng();
   const r = Math.sqrt(-2 * Math.log(u));
   const theta = 2 * Math.PI * v;
   __randnSpare = r * Math.sin(theta);
@@ -165,7 +188,7 @@ function shockState(s: AppState, cfg: MCConfig, shocks: number[]): AppState {
   const revenue = { ...s.revenue, bruta: s.revenue.bruta.map((v) => v * fReceita) };
   const costs = s.costs.map((c) => {
     const isLabor = isLaborLine(c); // SSOT costs.ts
-    if (c.category === "custo_vendas") {
+    if (c.category === "custo_vendas" || c.category === "direto_venda") {
       // CPV total = volume × CPV unitário (ambos shocados).
       return { ...c, values: c.values.map((v) => v * fVol * fCpv) };
     }
@@ -215,6 +238,8 @@ export function runMonteCarlo(state: AppState, cfg: MCConfig = DEFAULT_MC): MCRe
   const fellBack = L === null;
   if (!L) L = choleskyDecompose(IDENTITY_CORRELATIONS)!;
 
+  seedRng(cfg.seed ?? 20_260_101);
+  const piorArr: number[] = [];
   for (let it = 0; it < cfg.iterations; it++) {
     const shocks = correlatedNormals(L);
     const shocked = shockState(state, cfg, shocks);
@@ -225,7 +250,10 @@ export function runMonteCarlo(state: AppState, cfg: MCConfig = DEFAULT_MC): MCRe
     ebitdaArr.push(sum(dre.ebitda));
     llArr.push(sum(dre.lucroLiquido));
     saldoArr.push(cf.totais.saldoFinal);
+    piorArr.push(Math.min(...cf.saldoFinal));
   }
+  const llSorted = llArr.slice().sort((a, b) => a - b);
+  const nTail = Math.max(1, Math.floor(llSorted.length * 0.05));
 
   return {
     iterations: cfg.iterations,
@@ -233,8 +261,12 @@ export function runMonteCarlo(state: AppState, cfg: MCConfig = DEFAULT_MC): MCRe
     lucroLiquido: distFrom(llArr, "Lucro Líquido"),
     saldoCaixaFinal: distFrom(saldoArr, "Saldo de Caixa (Dez)"),
     probPrejuizo: llArr.filter((v) => v < 0).length / llArr.length,
+    // Pior mês, não só dezembro: um vale no meio do ano também quebra a empresa.
     probCaixaNegativo:
-      saldoArr.filter((v) => v < state.cashflow.caixaMinimo).length / saldoArr.length,
+      piorArr.filter((v) => v < state.cashflow.caixaMinimo).length / piorArr.length,
+    probCaixaNegativoAlgumMes: piorArr.filter((v) => v < 0).length / piorArr.length,
+    piorSaldoMensal: distFrom(piorArr, "Pior saldo mensal"),
+    cvar5Lucro: sum(llSorted.slice(0, nTail)) / nTail,
     correlationFellBackToIdentity: fellBack || undefined,
   };
 }

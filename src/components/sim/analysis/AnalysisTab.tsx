@@ -696,7 +696,7 @@ export function MonteCarloCard({ state }: { state: AppState }) {
         </p>
       ) : (
         <div className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <KPI
               label="Prob. de Prejuízo"
               value={`${(result.probPrejuizo * 100).toFixed(1)}%`}
@@ -715,8 +715,34 @@ export function MonteCarloCard({ state }: { state: AppState }) {
                     ? "warn"
                     : "ok"
               }
-              sub="Risco de iliquidez"
+              sub="Em algum mês do período (não só no fim)"
             />
+            {result.probCaixaNegativoAlgumMes !== undefined && (
+              <KPI
+                label="Prob. de caixa negativo"
+                value={`${(result.probCaixaNegativoAlgumMes * 100).toFixed(1)}%`}
+                status={
+                  result.probCaixaNegativoAlgumMes > 0.1
+                    ? "danger"
+                    : result.probCaixaNegativoAlgumMes > 0.02
+                      ? "warn"
+                      : "ok"
+                }
+                sub={
+                  result.piorSaldoMensal
+                    ? `Pior mês, cenário pessimista (P5): ${fmtBRL(result.piorSaldoMensal.p5)}`
+                    : "Em algum mês do período"
+                }
+              />
+            )}
+            {result.cvar5Lucro !== undefined && (
+              <KPI
+                label="Lucro nos 5% piores cenários"
+                value={fmtBRL(result.cvar5Lucro)}
+                status={result.cvar5Lucro < 0 ? "danger" : "ok"}
+                sub="Média da cauda (CVaR 95%) — quanto se perde quando dá errado"
+              />
+            )}
           </div>
 
           {[result.ebitda, result.lucroLiquido, result.saldoCaixaFinal].map((dist) => {

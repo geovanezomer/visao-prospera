@@ -130,3 +130,17 @@ describe("Simulador estratégico 2.0", () => {
     expect(ins.length).toBeGreaterThan(0);
   });
 });
+
+describe("Monte Carlo 2.0", () => {
+  it("reprodutível (semente) e mede o pior mês e a cauda do lucro", async () => {
+    const { runMonteCarlo, DEFAULT_MC } = await import("../montecarlo");
+    const cfg = { ...DEFAULT_MC, iterations: 60 };
+    const a = runMonteCarlo(base(), cfg);
+    const b = runMonteCarlo(base(), cfg);
+    expect(a.lucroLiquido.mean).toBe(b.lucroLiquido.mean);
+    expect(a.piorSaldoMensal!.p5).toBeLessThanOrEqual(a.saldoCaixaFinal.p5);
+    expect(a.cvar5Lucro!).toBeLessThanOrEqual(a.lucroLiquido.p5);
+    const c = runMonteCarlo(base(), { ...cfg, seed: 7 });
+    expect(c.lucroLiquido.mean).not.toBe(a.lucroLiquido.mean);
+  });
+});
