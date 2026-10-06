@@ -168,9 +168,9 @@ export function buildPrescriptiveCards(
     })();
   const { dre, ind, cf } = built;
   const receitaLiqAnual = sum(dre.receitaLiquida);
-  const { totalMensal: folhaMensal } = laborCltLinesTotal(state);
   // Reusa fonte canônica do engine — evita divergência com IndicatorsCard ("Folha/Receita").
   const folhaAnoCanon = folhaAnual(state);
+  const folhaMensal = folhaAnoCanon / 12;
   const folhaPct = receitaLiqAnual > 0 ? (folhaAnoCanon / receitaLiqAnual) * 100 : 0;
   const [folhaMin, folhaMax] = BENCHMARK_FOLHA_RECEITA[state.businessType];
   // Benchmark setorial resolvido (respeita ramoAtuacao + benchmarkCustom).
@@ -179,7 +179,10 @@ export function buildPrescriptiveCards(
 
   // ===== 1. Folha alta =====
   if (folhaPct > folhaMax) {
-    const custoMedio = folhaMensal / Math.max(1, laborCltLinesTotal(state).lines.length);
+    // Custo médio de uma posição CLT (com encargos) e salário médio (base da rescisão).
+    const clt = laborCltLinesTotal(state);
+    const custoMedio = clt.totalMensal / Math.max(1, clt.posicoes);
+    const salarioMedio = clt.baseMensal / Math.max(1, clt.posicoes);
     cards.push({
       id: "folha_alta",
       severity: folhaPct > folhaMax * 1.5 ? "danger" : "warn",
@@ -187,13 +190,13 @@ export function buildPrescriptiveCards(
       metricLabel: "Folha / Receita Líquida",
       metricValue: `${folhaPct.toFixed(1)}%`,
       benchmark: `${sectorLabel}: ${folhaMin}–${folhaMax}% (faixa saudável)`,
-      cause: `Folha mensal de ${fmtBRL(folhaMensal)}. Quadro pode estar dimensionado para um faturamento maior que o atual.`,
+      cause: `Folha mensal de ${fmtBRL(folhaMensal)} (com encargos). Quadro pode estar dimensionado para um faturamento maior que o atual.`,
       actions: [
         {
           id: "dismiss_2_severance",
           title: "Demitir 2 posições (com custo rescisório real)",
-          detail: `Aviso + 13º + férias + 1/3 + multa FGTS 40% ≈ ${fmtBRL(severanceCostPerPosition(custoMedio / 1.7) * 2)} de saída de caixa one-shot (Mês 1), redução estrutural da folha a partir do mês 2.`,
-          apply: (s) => dismissWithSeverance(s, 2, custoMedio / 1.7, 0),
+          detail: `Aviso + 13º + férias + 1/3 + multa FGTS 40% ≈ ${fmtBRL(severanceCostPerPosition(salarioMedio) * 2)} de saída de caixa one-shot (Mês 1), redução estrutural da folha a partir do mês 2.`,
+          apply: (s) => dismissWithSeverance(s, 2, salarioMedio, 0),
         },
         {
           id: "reduce_clt_2",
@@ -261,9 +264,9 @@ export function buildPrescriptiveCards(
   // ===== 3. Caixa negativo / abaixo do mínimo =====
   if (cf.alertas.length > 0) {
     const pior = cf.totais.pioresMes;
-    const principal =
-      Math.ceil(Math.abs(Math.min(pior?.saldo ?? 0, 0) + state.cashflow.caixaMinimo) / 1000) *
-        1000 || 30000;
+    // Quanto falta para o pior mês voltar ao caixa mínimo (arredondado a R$ 1 mil).
+    const falta = pior ? Math.max(0, state.cashflow.caixaMinimo - pior.saldo) : 0;
+    const principal = Math.ceil(falta / 1000) * 1000 || 30000;
     cards.push({
       id: "caixa_negativo",
       severity: cf.alertas.some((a) => a.tipo === "negativo") ? "danger" : "warn",

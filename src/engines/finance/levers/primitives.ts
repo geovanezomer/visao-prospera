@@ -14,7 +14,14 @@ import { z } from "zod";
 import { sumContractSaldos } from "../debtContracts";
 import type { AppState, CostLine } from "../types";
 import { sum, genId } from "../format";
-import { monthValues } from "../costs";
+import {
+  PROLABORE_RE,
+  TERCEIRIZACAO_RE,
+  effectiveMonthValues,
+  isFolhaCost,
+  monthValues,
+} from "../costs";
+import { resolveEffectiveRegime } from "../regime";
 
 // --------------------------------------------------------------------
 // Helpers de baixo nível (não fazem parte do registry — uso interno).
@@ -34,18 +41,37 @@ export function topNFixedLines(state: AppState, n: number): CostLine[] {
     .map((x) => x.c);
 }
 
-/** Identifica linhas de folha CLT e calcula o total mensal equivalente. */
+/**
+ * Posições CLT: linhas de folha do motor (`isFolhaCost`), sem pró-labore (sócio
+ * não é desligado) nem terceirização por PJ (contrato, não emprego).
+ * `totalMensal` inclui os encargos automáticos, como a DRE; `baseMensal` é a
+ * soma dos salários lançados; `posicoes` conta as linhas com valor.
+ */
 export function laborCltLinesTotal(state: AppState): {
   lines: CostLine[];
   totalMensal: number;
+  baseMensal: number;
+  posicoes: number;
 } {
-  const re = /sal[áa]rio|folha|clt|mod|mão de obra/i;
-  const lines = state.costs.filter((c) => c.category !== "financeiro" && re.test(c.label));
-  const totalMensal = lines.reduce(
-    (acc, c) => acc + (c.fixed ? c.values[0] : sum(c.values) / 12),
-    0,
+  const regime = resolveEffectiveRegime(state);
+  const opts = { simplesAnexo: state.tax?.simplesAnexo };
+  const lines = state.costs.filter(
+    (c) =>
+      isFolhaCost(c) &&
+      !PROLABORE_RE.test(c.label) &&
+      !(TERCEIRIZACAO_RE.test(c.label) && !c.encargosAuto),
   );
-  return { lines, totalMensal };
+  let totalMensal = 0;
+  let baseMensal = 0;
+  let posicoes = 0;
+  for (const c of lines) {
+    const efetivo = sum(effectiveMonthValues(c, regime, opts)) / 12;
+    const base = sum(effectiveMonthValues({ ...c, encargosAuto: false }, regime, opts)) / 12;
+    totalMensal += efetivo;
+    baseMensal += base;
+    if (efetivo > 0) posicoes += 1;
+  }
+  return { lines, totalMensal, baseMensal, posicoes };
 }
 
 /**
@@ -229,7 +255,10 @@ export function dismissWithSeverance(
 ): AppState {
   const severance = severanceCostPerPosition(salarioBase) * positions;
   if (severance <= 0 || positions <= 0) return state;
-  const novo = reduceLaborByPositions(state, positions, salarioBase);
+  // A folha deixa de pagar o salário E os encargos de cada posição desligada.
+  const { totalMensal, baseMensal } = laborCltLinesTotal(state);
+  const fatorEncargos = baseMensal > 0 ? totalMensal / baseMensal : 1;
+  const novo = reduceLaborByPositions(state, positions, salarioBase * fatorEncargos);
   const values = Array<number>(12).fill(0);
   const idx = Math.max(0, Math.min(11, monthIdx));
   values[idx] = severance;
