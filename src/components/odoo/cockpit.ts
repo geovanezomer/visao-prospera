@@ -41,6 +41,10 @@ export type OdooCockpit = {
   setView: (v: CockpitView) => void;
   snapshot: OdooSnapshot | null;
   syncedAt: string | null;
+  /** Último erro de sincronização (o retrato exibido pode estar desatualizado). */
+  lastError: string | null;
+  /** Servidor + banco do Odoo (separa premissas entre instâncias). */
+  instanceKey: string | null;
   entities: OdooEntity[];
   entity: OdooEntity | null;
   setEntityKey: (key: string) => void;
@@ -80,9 +84,10 @@ export function useOdooCockpit(): OdooCockpit {
   });
   const available = config.data?.dataSource === "odoo";
   const snap = useQuery({
-    queryKey: ["odoo", "snapshot", config.data?.syncedAt ?? null],
+    // Chave = retrato em uso: falhas de sincronização não forçam novo download.
+    queryKey: ["odoo", "snapshot", config.data?.snapshotKey ?? null],
     queryFn: () => getOdooSnapshot(),
-    enabled: available,
+    enabled: available && !!config.data?.snapshotKey,
     staleTime: Infinity,
   });
 
@@ -122,11 +127,13 @@ export function useOdooCockpit(): OdooCockpit {
   return {
     available,
     active,
-    loading: config.isLoading || (available && snap.isLoading),
+    loading: config.isLoading || (available && !!config.data?.snapshotKey && snap.isLoading),
     view,
     setView,
     snapshot,
     syncedAt: snap.data?.syncedAt ?? null,
+    lastError: config.data?.lastError ?? null,
+    instanceKey: config.data?.instanceKey ?? null,
     entities,
     entity,
     setEntityKey,

@@ -236,7 +236,10 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
   // Modo Odoo: o realizado vem do ERP e as premissas ficam num espaço próprio
   // por entidade; a "Simulação livre" usa o espaço manual de sempre.
   const cockpit = useOdooCockpit();
-  const namespace = cockpit.active && cockpit.entity ? `odoo:${cockpit.entity.key}` : undefined;
+  const namespace =
+    cockpit.active && cockpit.entity
+      ? `odoo:${cockpit.instanceKey ?? "x"}:${cockpit.entity.key}`
+      : undefined;
   const initialPremissas = useMemo(
     () => (cockpit.data ? suggestPremissas(DEFAULT_STATE, cockpit.data) : undefined),
     [cockpit.data],
@@ -306,7 +309,9 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
     setState,
     replaceScenarios,
     resetState: reset,
-    hydrated: stateHydrated,
+    // Modo Odoo: sem rascunho de recuperação, arquivo ou backup — os números
+    // são do ERP e importar/restaurar gravaria o realizado como premissa.
+    hydrated: stateHydrated && !cockpit.active,
     confirm,
     userId: user?.id,
     onBackupStatus: setBackupStatus,
@@ -383,6 +388,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
               currentFileName={fileApi.currentFileName}
               dirty={fileApi.dirty}
               showConsolidado={cockpit.active}
+              fileActions={!cockpit.active}
             />
 
             <SidebarInset className="flex flex-col">

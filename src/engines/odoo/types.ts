@@ -112,6 +112,8 @@ export type OdooSnapshot = {
   months: string[];
   companies: OdooCompanyInfo[];
   perCompany: Record<string, OdooCompanySnapshot>;
+  /** Última reclassificação manual aplicada a este retrato (ISO). */
+  revisedAt?: string;
 };
 
 /** Ajuste manual de classificação, por código de conta. */

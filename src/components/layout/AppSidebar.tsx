@@ -34,6 +34,8 @@ interface AppSidebarProps {
   setActiveTab: (tab: SidebarTab) => void;
   /** Modo Odoo: mostra o atalho para o consolidado do grupo. */
   showConsolidado?: boolean;
+  /** Salvar/abrir arquivo .finnance (oculto no modo Odoo). */
+  fileActions?: boolean;
   onSave: () => void;
   onOpenRestore: () => void;
   currentFileName: string | null;
@@ -48,6 +50,7 @@ export function AppSidebar({
   currentFileName,
   dirty,
   showConsolidado = false,
+  fileActions = true,
 }: AppSidebarProps) {
   const { user, logout } = useAuth();
   const { setOpenMobile } = useSidebar();
@@ -175,28 +178,32 @@ export function AppSidebar({
             <SidebarMenu className="gap-0.5">
               <li className="my-1 border-t border-sidebar-border/50" aria-hidden="true" />
               <AdminSidebarButton />
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={onSave}
-                  tooltip="Salvar / Compartilhar"
-                  className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-                  data-meeting-hide="true"
-                >
-                  <Share2 className="h-4 w-4" />
-                  <span>Salvar / Compartilhar{dirty ? " ●" : ""}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={onOpenRestore}
-                  tooltip="Abrir / Restaurar"
-                  className="h-8 border border-sidebar-border"
-                  data-meeting-hide="true"
-                >
-                  <FolderOpen className="h-4 w-4" />
-                  <span>Abrir / Restaurar</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {fileActions && (
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={onSave}
+                      tooltip="Salvar / Compartilhar"
+                      className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                      data-meeting-hide="true"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      <span>Salvar / Compartilhar{dirty ? " ●" : ""}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={onOpenRestore}
+                      tooltip="Abrir / Restaurar"
+                      className="h-8 border border-sidebar-border"
+                      data-meeting-hide="true"
+                    >
+                      <FolderOpen className="h-4 w-4" />
+                      <span>Abrir / Restaurar</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

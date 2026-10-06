@@ -43,8 +43,8 @@ function snapshot(state: AppState, scenarios: Scenario[]): string {
 }
 
 // Chave do draft por empresa (auto-save de recuperação F5).
-const draftKey = (company: string) =>
-  `finnance:draft:${(company || "sem-empresa").trim().toLowerCase()}`;
+const draftKey = (company: string, userId?: string) =>
+  `finnance:draft:${userId ?? "guest"}:${(company || "sem-empresa").trim().toLowerCase()}`;
 
 interface DraftEnvelope {
   ts: number;
@@ -103,13 +103,13 @@ export function useFinnanceFile({
     const t = setTimeout(() => {
       try {
         const env: DraftEnvelope = { ts: Date.now(), state, scenarios };
-        saveKeySync(draftKey(state.companyName), env);
+        saveKeySync(draftKey(state.companyName, userId), env);
       } catch {
         /* quota / privacy mode — ignora */
       }
     }, 800);
     return () => clearTimeout(t);
-  }, [state, scenarios, hydrated, dirty]);
+  }, [state, scenarios, hydrated, dirty, userId]);
 
   // Recuperação de rascunho na primeira hidratação. Se houver draft mais
   // recente que o estado atual para a mesma empresa, oferece recuperar.
@@ -121,7 +121,7 @@ export function useFinnanceFile({
     // Ler apenas LS perderia silenciosamente esses rascunhos.
     (async () => {
       try {
-        const env = await loadKey<DraftEnvelope>(draftKey(state.companyName));
+        const env = await loadKey<DraftEnvelope>(draftKey(state.companyName, userId));
         if (!env) return;
         const currentSnap = snapshot(state, scenarios);
         const draftSnap = snapshot(env.state, env.scenarios ?? []);
@@ -142,7 +142,7 @@ export function useFinnanceFile({
         /* draft corrompido — ignora */
       }
     })();
-  }, [hydrated, state, scenarios, setState, replaceScenarios]);
+  }, [hydrated, state, scenarios, setState, replaceScenarios, userId]);
 
   // Constrói o payload + nome canônico do arquivo atual.
   const buildPayload = useCallback(() => {
@@ -160,12 +160,12 @@ export function useFinnanceFile({
       setDirty(false);
       setLastModified(Date.now());
       try {
-        removeKey(draftKey(state.companyName));
+        removeKey(draftKey(state.companyName, userId));
       } catch {
         /* ignora */
       }
     },
-    [state, scenarios],
+    [state, scenarios, userId],
   );
 
   // Salva APENAS no computador (download local).

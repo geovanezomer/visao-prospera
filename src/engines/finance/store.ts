@@ -40,7 +40,12 @@ export function useAppState(namespace?: string, initialState?: AppState) {
   // Suprime salvamento quando o estado foi recebido via broadcast de outra aba.
   const suppressSave = useRef(false);
 
+  // Geração da hidratação: uma leitura lenta de um espaço anterior (troca
+  // rápida de entidade/modo) não pode sobrescrever o espaço atual.
+  const hydrateGen = useRef(0);
+
   const hydrate = useCallback(async () => {
+    const gen = ++hydrateGen.current;
     setHydrated(false);
     hydratedFor.current = null;
     try {
@@ -51,8 +56,10 @@ export function useAppState(namespace?: string, initialState?: AppState) {
       // JSON estiver corrompido ou manipulado, cai em DEFAULT_STATE.
       setState(fromLegacy ? validateAndMigrate(fromLegacy) : (initialRef.current ?? DEFAULT_STATE));
     } catch {
+      if (gen !== hydrateGen.current) return;
       setState(DEFAULT_STATE);
     }
+    if (gen !== hydrateGen.current) return;
     hydratedFor.current = username;
     setHydrated(true);
   }, [username, namespace]);

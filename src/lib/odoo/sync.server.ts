@@ -7,8 +7,8 @@
 // restritos a parceiros que são empresas do grupo. Nenhum lançamento é
 // baixado linha a linha.
 // ============================================================================
-import { desc, eq, lt } from "drizzle-orm";
-import { db, schema } from "@/db/client.server";
+import { and, desc, eq, lt, sql } from "drizzle-orm";
+import { db, queryRows, schema } from "@/db/client.server";
 import { classifyAccount } from "@/engines/odoo/mapping";
 import type {
   AccountOverride,
@@ -137,14 +137,20 @@ async function snapshotCompany(
     .map(([pid]) => pid);
   const icLines: OdooIntercompanyLine[] = [];
   if (groupPartners.length) {
-    const pDomain = [["partner_id", "in", groupPartners]];
+    // Contatos filhos (endereços, pessoas) contam pela empresa-mãe do contato.
+    const pDomain = [["partner_id.commercial_partner_id", "in", groupPartners]];
     const [icOpen, icMoves] = await Promise.all([
-      groups(cfg, company.id, [...pDomain, ["date", "<", start]], ["partner_id", "account_id"]),
+      groups(
+        cfg,
+        company.id,
+        [...pDomain, ["date", "<", start]],
+        ["partner_id.commercial_partner_id", "account_id"],
+      ),
       groups(
         cfg,
         company.id,
         [...pDomain, ["date", ">=", start], ["date", "<=", end]],
-        ["partner_id", "account_id", "date:month"],
+        ["partner_id.commercial_partner_id", "account_id", "date:month"],
       ),
     ]);
     const icMap = new Map<string, OdooIntercompanyLine & { accountId: number }>();
@@ -164,12 +170,12 @@ async function snapshotCompany(
       return s;
     };
     for (const g of icOpen) {
-      const pid = m2oId(g.partner_id);
+      const pid = m2oId(g["partner_id.commercial_partner_id"]);
       const aid = m2oId(g.account_id);
       if (pid && aid) icSlot(pid, aid).opening += Number(g["balance:sum"] ?? 0);
     }
     for (const g of icMoves) {
-      const pid = m2oId(g.partner_id);
+      const pid = m2oId(g["partner_id.commercial_partner_id"]);
       const aid = m2oId(g.account_id);
       const i = monthOf(g);
       if (pid && aid && i !== undefined)
@@ -238,8 +244,21 @@ async function snapshotCompany(
 
 export async function loadOverrides(): Promise<Map<string, AccountOverride["target"]>> {
   const rows = await db().select().from(schema.odooAccountOverrides);
-  return new Map(rows.map((r) => [r.code, r.target as AccountOverride["target"]]));
+  const { BS_BUCKET_LABELS, PL_LINE_LABELS } = await import("@/engines/odoo/mapping");
+  const valid = new Set([
+    "ignore",
+    ...Object.keys(PL_LINE_LABELS),
+    ...Object.keys(BS_BUCKET_LABELS),
+  ]);
+  // Valores antigos/inválidos são ignorados (a conta volta à classificação automática).
+  return new Map(
+    rows
+      .filter((r) => valid.has(r.target))
+      .map((r) => [r.code, r.target as AccountOverride["target"]]),
+  );
 }
+
+const SYNC_DEADLINE_MS = 15 * 60_000;
 
 /** Monta o retrato completo (não grava). */
 export async function buildSnapshot(
@@ -248,11 +267,18 @@ export async function buildSnapshot(
 ): Promise<OdooSnapshot> {
   const all = await fetchCompanies(cfg);
   // Seleção: as empresas escolhidas e as filiais delas. Vazio = todas.
+  // Sobe a árvore de parent_id: filiais de filiais também acompanham a matriz.
+  const rootOf = (c: OdooCompanyInfo): number => {
+    let cur = c;
+    for (let guard = 0; cur.parentId && guard < 20; guard++) {
+      const p = all.find((x) => x.id === cur.parentId);
+      if (!p) break;
+      cur = p;
+    }
+    return cur.id;
+  };
   const chosen = opts.companyIds.length
-    ? all.filter(
-        (c) =>
-          opts.companyIds.includes(c.id) || (c.parentId && opts.companyIds.includes(c.parentId)),
-      )
+    ? all.filter((c) => opts.companyIds.includes(c.id) || opts.companyIds.includes(rootOf(c)))
     : all;
   if (!chosen.length) throw new Error("Nenhuma empresa do Odoo selecionada.");
   const months = monthRange(Math.min(Math.max(opts.historyMonths, 12), 60), opts.ref);
@@ -261,8 +287,14 @@ export async function buildSnapshot(
   );
   const overrides = await loadOverrides();
   const perCompany: OdooSnapshot["perCompany"] = {};
+  const deadline = Date.now() + SYNC_DEADLINE_MS;
   for (const c of chosen) {
-    perCompany[String(c.id)] = await snapshotCompany(cfg, c, months, partnerToCompany, overrides);
+    if (Date.now() > deadline) throw new Error("Sincronização excedeu o tempo máximo (15 min).");
+    try {
+      perCompany[String(c.id)] = await snapshotCompany(cfg, c, months, partnerToCompany, overrides);
+    } catch (e) {
+      throw new Error(`${c.name}: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
   return {
     version: 1,
@@ -290,6 +322,34 @@ export async function connectionConfig(): Promise<OdooConnectionConfig> {
 }
 
 let running: Promise<SyncResult> | null = null;
+
+const LOCK_KEY = 0x0d00_5ec7; // pg_advisory_lock global da sincronização do Odoo
+
+/** Trava consultiva do Postgres numa conexão reservada (null = já travada). */
+async function tryLock(): Promise<{ release: () => Promise<void> } | null> {
+  const { reserveConnection } = await import("@/db/client.server");
+  const conn = await reserveConnection();
+  if (!conn) return { release: async () => {} }; // ambiente de teste (PGlite): processo único
+  try {
+    const [r] = await conn`select pg_try_advisory_lock(${LOCK_KEY}) as ok`;
+    if (!r?.ok) {
+      conn.release();
+      return null;
+    }
+  } catch (e) {
+    conn.release();
+    throw e;
+  }
+  return {
+    release: async () => {
+      try {
+        await conn`select pg_advisory_unlock(${LOCK_KEY})`;
+      } finally {
+        conn.release();
+      }
+    },
+  };
+}
 export type SyncResult = {
   ok: boolean;
   syncedAt: string;
@@ -304,6 +364,17 @@ export function syncOdoo(): Promise<SyncResult> {
   running = (async () => {
     const t0 = Date.now();
     const now = new Date().toISOString();
+    // Trava entre processos/réplicas: só uma sincronização por vez no banco.
+    const lock = await tryLock();
+    if (!lock) {
+      return {
+        ok: false,
+        syncedAt: now,
+        durationMs: 0,
+        companies: 0,
+        error: "Já existe uma sincronização em andamento.",
+      };
+    }
     try {
       const row = await readConnection();
       const cfg = await connectionConfig();
@@ -331,7 +402,10 @@ export function syncOdoo(): Promise<SyncResult> {
         .update(schema.odooConnection)
         .set({ lastSyncAt: now, lastSyncStatus: "error", lastError: message })
         .where(eq(schema.odooConnection.id, 1));
+      await pruneSnapshots();
       return { ok: false, syncedAt: now, durationMs, companies: 0, error: message };
+    } finally {
+      await lock.release();
     }
   })().finally(() => {
     running = null;
@@ -339,29 +413,61 @@ export function syncOdoo(): Promise<SyncResult> {
   return running;
 }
 
-/** Mantém os 30 retratos mais recentes. */
+/** Mantém os 10 retratos válidos mais recentes e os erros dos últimos 7 dias. */
 async function pruneSnapshots(): Promise<void> {
   const keep = await db()
     .select({ syncedAt: schema.odooSnapshots.syncedAt })
     .from(schema.odooSnapshots)
+    .where(eq(schema.odooSnapshots.status, "ok"))
     .orderBy(desc(schema.odooSnapshots.syncedAt))
-    .limit(30);
+    .limit(10);
   const cutoff = keep.at(-1)?.syncedAt;
-  if (keep.length === 30 && cutoff) {
-    await db().delete(schema.odooSnapshots).where(lt(schema.odooSnapshots.syncedAt, cutoff));
+  if (keep.length === 10 && cutoff) {
+    await db()
+      .delete(schema.odooSnapshots)
+      .where(and(eq(schema.odooSnapshots.status, "ok"), lt(schema.odooSnapshots.syncedAt, cutoff)));
   }
+  const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  await db()
+    .delete(schema.odooSnapshots)
+    .where(
+      and(eq(schema.odooSnapshots.status, "error"), lt(schema.odooSnapshots.syncedAt, weekAgo)),
+    );
 }
 
 /** Retrato mais recente com sucesso (ou null). */
 export async function latestSnapshot(): Promise<{
+  id: number;
   syncedAt: string;
   payload: OdooSnapshot;
 } | null> {
   const [row] = await db()
-    .select({ syncedAt: schema.odooSnapshots.syncedAt, payload: schema.odooSnapshots.payload })
+    .select({
+      id: schema.odooSnapshots.id,
+      syncedAt: schema.odooSnapshots.syncedAt,
+      payload: schema.odooSnapshots.payload,
+    })
     .from(schema.odooSnapshots)
     .where(eq(schema.odooSnapshots.status, "ok"))
     .orderBy(desc(schema.odooSnapshots.syncedAt))
     .limit(1);
-  return row?.payload ? { syncedAt: row.syncedAt, payload: row.payload as OdooSnapshot } : null;
+  return row?.payload
+    ? { id: Number(row.id), syncedAt: row.syncedAt, payload: row.payload as OdooSnapshot }
+    : null;
+}
+
+/** Id e revisão do retrato em uso, sem carregar o payload inteiro. */
+export async function latestSnapshotMeta(): Promise<{
+  id: number;
+  syncedAt: string;
+  revision: string;
+} | null> {
+  const rows = await queryRows<{ id: number; synced_at: string | Date; revision: string | null }>(
+    sql`select id, synced_at, payload->>'revisedAt' as revision from odoo_snapshots
+        where status = 'ok' order by synced_at desc limit 1`,
+  );
+  const r = rows[0];
+  if (!r) return null;
+  const syncedAt = r.synced_at instanceof Date ? r.synced_at.toISOString() : String(r.synced_at);
+  return { id: Number(r.id), syncedAt, revision: r.revision ?? "0" };
 }

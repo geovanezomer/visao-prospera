@@ -58,7 +58,16 @@ export function listEntities(snapshot: OdooSnapshot): OdooEntity[] {
   const roots = companies.filter((c) => !c.parentId || !companies.some((p) => p.id === c.parentId));
   const out: OdooEntity[] = [];
   for (const r of roots) {
-    const branches = companies.filter((c) => c.parentId === r.id);
+    // Todas as filiais da árvore (filial de filial também é do mesmo CNPJ raiz).
+    const branches: OdooCompanyInfo[] = [];
+    const walk = (pid: number, depth: number) => {
+      if (depth > 20) return;
+      for (const c of companies.filter((x) => x.parentId === pid)) {
+        branches.push(c);
+        walk(c.id, depth + 1);
+      }
+    };
+    walk(r.id, 0);
     out.push({
       key: `e:${r.id}`,
       kind: "entity",

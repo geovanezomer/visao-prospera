@@ -13,12 +13,13 @@ import * as schema from "./schema";
 export type Db = PostgresJsDatabase<typeof schema>;
 
 let _db: Db | null = null;
+let _client: postgres.Sql | null = null;
 
 function createDb(): Db {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL não configurada.");
-  const client = postgres(url, { max: Number(process.env.DATABASE_POOL_MAX ?? 10) });
-  return drizzle(client, { schema });
+  _client = postgres(url, { max: Number(process.env.DATABASE_POOL_MAX ?? 10) });
+  return drizzle(_client, { schema });
 }
 
 /** Banco da aplicação (criado na primeira chamada). */
@@ -30,6 +31,16 @@ export function db(): Db {
 /** Só para testes: substitui a conexão (ex.: PGlite em memória). */
 export function setDbForTests(instance: unknown): void {
   _db = instance as Db;
+  _client = null;
+}
+
+/**
+ * Conexão dedicada do pool (para travas de sessão, como pg_advisory_lock).
+ * null quando não há cliente postgres-js (testes com PGlite).
+ */
+export async function reserveConnection(): Promise<postgres.ReservedSql | null> {
+  db();
+  return _client ? _client.reserve() : null;
 }
 
 /**

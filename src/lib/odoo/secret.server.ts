@@ -15,21 +15,27 @@ function masterKey(): Buffer {
   return createHash("sha256").update(`financepro:odoo:${raw}`).digest();
 }
 
-/** Formato: v1.<iv>.<tag>.<cifra> (base64url). */
+/** Dado associado: amarra o texto cifrado ao seu uso (não serve em outro campo). */
+const AAD = Buffer.from("financepro:odoo_connection.api_key");
+
+/** Formato: v2.<iv>.<tag>.<cifra> (base64url). v1 (sem AAD) ainda é lido. */
 export function encryptSecret(plain: string): string {
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", masterKey(), iv);
+  cipher.setAAD(AAD);
   const enc = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
-  return ["v1", iv, tag, enc]
+  return ["v2", iv, tag, enc]
     .map((p) => (typeof p === "string" ? p : p.toString("base64url")))
     .join(".");
 }
 
 export function decryptSecret(token: string): string {
   const [v, iv, tag, enc] = token.split(".");
-  if (v !== "v1" || !iv || !tag || !enc) throw new Error("Chave do Odoo em formato inválido.");
+  if ((v !== "v1" && v !== "v2") || !iv || !tag || !enc)
+    throw new Error("Chave do Odoo em formato inválido.");
   const decipher = createDecipheriv("aes-256-gcm", masterKey(), Buffer.from(iv, "base64url"));
+  if (v === "v2") decipher.setAAD(AAD);
   decipher.setAuthTag(Buffer.from(tag, "base64url"));
   try {
     return Buffer.concat([

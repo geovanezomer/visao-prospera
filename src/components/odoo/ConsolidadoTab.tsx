@@ -159,7 +159,9 @@ export function ConsolidadoTab() {
     void (async () => {
       const out: Record<string, AppState> = {};
       for (const e of fiscal) {
-        const raw = await loadKey<unknown>(`finnance:state:${user?.id ?? "guest"}:odoo:${e.key}`);
+        const raw = await loadKey<unknown>(
+          `finnance:state:${user?.id ?? "guest"}:odoo:${cockpit?.instanceKey ?? "x"}:${e.key}`,
+        );
         out[e.key] = raw
           ? validateAndMigrate(raw)
           : suggestPremissas(DEFAULT_STATE, buildEntityData(snapshot, e, null));
@@ -169,7 +171,7 @@ export function ConsolidadoTab() {
     return () => {
       alive = false;
     };
-  }, [fiscal, user?.id, snapshot]);
+  }, [fiscal, user?.id, snapshot, cockpit?.instanceKey]);
 
   const endMonth = cockpit?.endMonth ?? null;
   const result = useMemo(() => {

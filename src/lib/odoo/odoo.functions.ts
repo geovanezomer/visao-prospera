@@ -12,6 +12,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireAuth } from "@/lib/requireAuth";
 import type { AccountOverride, OdooCompanyInfo, OdooSnapshot } from "@/engines/odoo/types";
+import { BS_BUCKET_LABELS, PL_LINE_LABELS } from "@/engines/odoo/mapping";
 
 async function admin(context: { userId: string }) {
   const { assertAdmin } = await import("@/lib/admin/assertAdmin");
@@ -93,11 +94,20 @@ export const saveOdooSettings = createServerFn({ method: "POST" })
     const { encryptSecret } = await import("./secret.server");
     const { normalizeOdooUrl } = await import("./client.server");
     const { readConnection } = await import("./sync.server");
+    const { assertSafeOdooUrl } = await import("./client.server");
+    await assertSafeOdooUrl(data.url);
     const current = await readConnection();
-    const apiKeyEnc = data.apiKey ? encryptSecret(data.apiKey) : (current?.apiKeyEnc ?? null);
+    const url = normalizeOdooUrl(data.url);
+    // Mudou servidor ou banco sem informar chave nova → descarta a chave antiga.
+    const sameTarget = current?.url === url && current?.database === data.database;
+    const apiKeyEnc = data.apiKey
+      ? encryptSecret(data.apiKey)
+      : sameTarget
+        ? (current?.apiKeyEnc ?? null)
+        : null;
     const values = {
       id: 1,
-      url: normalizeOdooUrl(data.url),
+      url,
       database: data.database,
       apiKeyEnc,
       companyIds: data.companyIds,
@@ -136,12 +146,19 @@ export const testOdooConnection = createServerFn({ method: "POST" })
     await admin(context);
     const { readConnection, fetchCompanies } = await import("./sync.server");
     const { decryptSecret } = await import("./secret.server");
-    const { odooServerVersion } = await import("./client.server");
+    const { odooServerVersion, normalizeOdooUrl } = await import("./client.server");
     try {
       const row = await readConnection();
       const url = data.url || row?.url;
       const database = data.database || row?.database;
-      const apiKey = data.apiKey || (row?.apiKeyEnc ? decryptSecret(row.apiKeyEnc) : "");
+      // A chave salva só é reaproveitada para o MESMO servidor e banco — senão
+      // bastaria trocar a URL para enviá-la a outro host.
+      const sameTarget =
+        !!url && !!row?.url && normalizeOdooUrl(url) === row.url && database === row.database;
+      const apiKey =
+        data.apiKey || (sameTarget && row?.apiKeyEnc ? decryptSecret(row.apiKeyEnc) : "");
+      if (!data.apiKey && !sameTarget && url && database)
+        return { ok: false, error: "Servidor ou banco mudou: informe a chave de API de novo." };
       if (!url || !database || !apiKey)
         return { ok: false, error: "Preencha URL, banco e chave de API." };
       const cfg = { url, database, apiKey };
@@ -231,10 +248,15 @@ export const listAccountClassifications = createServerFn({ method: "GET" })
     return [...rows.values()].sort((x, y) => x.code.localeCompare(y.code));
   });
 
+const OVERRIDE_TARGETS = [
+  "ignore",
+  ...Object.keys(PL_LINE_LABELS),
+  ...Object.keys(BS_BUCKET_LABELS),
+] as [string, ...string[]];
 const overrideSchema = z.object({
   code: z.string().trim().min(1).max(64),
   /** null remove o ajuste (volta à classificação automática). */
-  target: z.string().trim().max(40).nullable(),
+  target: z.enum(OVERRIDE_TARGETS).nullable(),
 });
 
 export const setAccountOverride = createServerFn({ method: "POST" })
@@ -276,24 +298,52 @@ export type CockpitConfig = {
   dataSource: "manual" | "odoo";
   syncedAt: string | null;
   lastSyncStatus: string | null;
+  /** Mensagem do último erro de sincronização (dados podem estar desatualizados). */
+  lastError: string | null;
+  /** Identifica o retrato em uso (muda a cada sincronização OK ou reclassificação). */
+  snapshotKey: string | null;
+  /** Identifica servidor + banco: premissas de um Odoo não vazam para outro. */
+  instanceKey: string | null;
 };
+
+/** Dados do ERP só para admin ou para quem tem assinatura/trial válido. */
+async function assertCanSeeErp(userId: string) {
+  const { isAdminUser } = await import("@/lib/users.server");
+  if (await isAdminUser(userId)) return;
+  const { requireActiveSubscription } = await import("@/lib/requireActiveSubscription.server");
+  await requireActiveSubscription(userId);
+}
 
 export const getCockpitConfig = createServerFn({ method: "GET" })
   .middleware([requireAuth])
-  .handler(async (): Promise<CockpitConfig> => {
-    const { readConnection } = await import("./sync.server");
+  .handler(async ({ context }): Promise<CockpitConfig> => {
+    await assertCanSeeErp(context.userId);
+    const { readConnection, latestSnapshotMeta } = await import("./sync.server");
     const row = await readConnection();
+    const dataSource = (row?.dataSource as "manual" | "odoo") ?? "manual";
+    const meta = dataSource === "odoo" ? await latestSnapshotMeta() : null;
+    const { createHash } = await import("node:crypto");
     return {
-      dataSource: (row?.dataSource as "manual" | "odoo") ?? "manual",
-      syncedAt: row?.lastSyncAt ?? null,
+      dataSource,
+      syncedAt: meta?.syncedAt ?? null,
       lastSyncStatus: row?.lastSyncStatus ?? null,
+      lastError: row?.lastSyncStatus === "error" ? (row.lastError ?? null) : null,
+      snapshotKey: meta ? `${meta.id}:${meta.revision}` : null,
+      instanceKey:
+        row?.url && row.database
+          ? createHash("sha256").update(`${row.url}|${row.database}`).digest("hex").slice(0, 10)
+          : null,
     };
   });
 
 export const getOdooSnapshot = createServerFn({ method: "GET" })
   .middleware([requireAuth])
-  .handler(async (): Promise<{ syncedAt: string; snapshot: OdooSnapshot } | null> => {
-    const { latestSnapshot } = await import("./sync.server");
+  .handler(async ({ context }): Promise<{ syncedAt: string; snapshot: OdooSnapshot } | null> => {
+    await assertCanSeeErp(context.userId);
+    const { latestSnapshot, readConnection } = await import("./sync.server");
+    const row = await readConnection();
+    // Fora do modo Odoo o retrato não é servido (só o admin o vê, pelo painel).
+    if (row?.dataSource !== "odoo") return null;
     const snap = await latestSnapshot();
     return snap ? { syncedAt: snap.syncedAt, snapshot: snap.payload } : null;
   });
