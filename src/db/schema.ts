@@ -531,3 +531,57 @@ export const rateLimitBuckets = pgTable(
   },
   (t) => [index("idx_rl_reset").on(t.resetAt)],
 );
+
+// ---------------------------------------------------------------------------
+// Conector Odoo (modo "Odoo" do cockpit)
+// ---------------------------------------------------------------------------
+
+/** Configuração única da conexão. A chave de API fica cifrada (AES-256-GCM). */
+export const odooConnection = pgTable(
+  "odoo_connection",
+  {
+    id: integer("id").primaryKey().default(1),
+    /** Chave seletora do cockpit: "manual" | "odoo". */
+    dataSource: text("data_source").notNull().default("manual"),
+    url: text("url"),
+    database: text("database"),
+    apiKeyEnc: text("api_key_enc"),
+    /** Empresas do Odoo incluídas na análise (ids). Vazio = todas. */
+    companyIds: jsonb("company_ids").notNull().default([]),
+    /** Meses de histórico buscados a cada sincronização. */
+    historyMonths: integer("history_months").notNull().default(24),
+    lastSyncAt: ts("last_sync_at"),
+    lastSyncStatus: text("last_sync_status"),
+    lastError: text("last_error"),
+    updatedAt: updatedAt(),
+    updatedBy: uuid("updated_by").references(() => user.id, { onDelete: "set null" }),
+  },
+  (t) => [
+    check("odoo_connection_singleton", sql`${t.id} = 1`),
+    check("odoo_connection_source_check", sql`${t.dataSource} in ('manual','odoo')`),
+  ],
+);
+
+/** Retratos sincronizados (o cockpit lê o mais recente com status ok). */
+export const odooSnapshots = pgTable(
+  "odoo_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    syncedAt: ts("synced_at")
+      .notNull()
+      .default(sql`now()`),
+    status: text("status").notNull(),
+    durationMs: integer("duration_ms"),
+    payload: jsonb("payload"),
+    error: text("error"),
+  },
+  (t) => [index("odoo_snapshots_synced_idx").on(t.syncedAt.desc())],
+);
+
+/** Ajustes manuais de classificação de contas (por código). */
+export const odooAccountOverrides = pgTable("odoo_account_overrides", {
+  code: text("code").primaryKey(),
+  target: text("target").notNull(),
+  updatedAt: updatedAt(),
+  updatedBy: uuid("updated_by").references(() => user.id, { onDelete: "set null" }),
+});

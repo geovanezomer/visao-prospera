@@ -45,5 +45,20 @@ export function startScheduler(): void {
     opts,
     run("reconcile-checkout", async () => (await jobs()).runCheckoutReconcile()),
   );
-  console.log("[scheduler] rotinas agendadas: webhook-retry, trial-cleanup, reconcile-checkout.");
+  // Odoo: atualiza o retrato a cada hora, só quando o modo Odoo está ligado.
+  new Cron(
+    "17 * * * *",
+    opts,
+    run("odoo-sync", async () => {
+      const { readConnection, syncOdoo } = await import("@/lib/odoo/sync.server");
+      const row = await readConnection();
+      if (row?.dataSource !== "odoo" || !row.url || !row.apiKeyEnc)
+        return { skipped: "modo manual" };
+      const r = await syncOdoo();
+      return { ok: r.ok, companies: r.companies, durationMs: r.durationMs, error: r.error };
+    }),
+  );
+  console.log(
+    "[scheduler] rotinas agendadas: webhook-retry, trial-cleanup, reconcile-checkout, odoo-sync.",
+  );
 }
