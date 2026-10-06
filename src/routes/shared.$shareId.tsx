@@ -145,7 +145,6 @@ function SharedReport() {
       const blocked =
         k === "s" ||
         k === "o" ||
-        k === "p" ||
         k === "u" ||
         (e.shiftKey && (k === "r" || k === "i" || k === "j"));
 
@@ -160,13 +159,10 @@ function SharedReport() {
     return () => window.removeEventListener("keydown", onKey, true);
   }, []);
 
-  // Bloqueia menu de contexto e ações de copiar/recortar nesta rota,
+  // Bloqueia recortar/colar nesta rota (imprimir e o menu do botão direito
+  // ficam liberados: o cliente pode querer guardar o relatório),
   // reforçando a percepção de conteúdo somente leitura.
   useEffect(() => {
-    const onContext = (e: MouseEvent) => {
-      e.preventDefault();
-      toast.info("Menu de contexto desabilitado nesta visualização");
-    };
     const onClipboard = (e: ClipboardEvent) => {
       // Permite copiar texto selecionado naturalmente; bloqueia recorte/colagem.
       if (e.type === "cut" || e.type === "paste") {
@@ -174,11 +170,9 @@ function SharedReport() {
         toast.info("Ação desabilitada em modo somente leitura");
       }
     };
-    document.addEventListener("contextmenu", onContext);
     document.addEventListener("cut", onClipboard);
     document.addEventListener("paste", onClipboard);
     return () => {
-      document.removeEventListener("contextmenu", onContext);
       document.removeEventListener("cut", onClipboard);
       document.removeEventListener("paste", onClipboard);
     };

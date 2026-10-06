@@ -64,8 +64,8 @@ const createSchema = z
     }
   });
 
-/** Padrão: 48h de validade do link público (em ms). */
-const DEFAULT_TTL_MS = 48 * 60 * 60 * 1000;
+/** Padrão: 30 dias de validade do link público (revogável a qualquer momento). */
+const DEFAULT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export const createShareLink = createServerFn({ method: "POST" })
   .middleware([requireAuth])
