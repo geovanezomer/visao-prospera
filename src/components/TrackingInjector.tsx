@@ -1,12 +1,21 @@
 // ============================================================================
 // TrackingInjector — injeta snippets configurados no admin (GA, GTM, Meta
-// Pixel) em todas as páginas. Lê o cache compartilhado de app_settings
-// (queryKey ["app_settings"]) para NÃO fazer fetch adicional ao DB —
-// BrandingApplier já hidrata esse cache no SSR.
+// Pixel). Lê o cache compartilhado de app_settings (queryKey
+// ["app_settings"]) para NÃO fazer fetch adicional ao DB — BrandingApplier
+// já hidrata esse cache no SSR.
+//
+// Só injeta quando as duas condições valem:
+//   1. Página de marketing (TRACKED_PATHS). Script de terceiro roda com o
+//      mesmo acesso da página: no /app leria os dados financeiros e o token
+//      de sessão; no /login, a senha.
+//   2. Visitante aceitou cookies de análise (LGPD) — ver CookieConsent.
 // ============================================================================
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useRouterState } from "@tanstack/react-router";
 import { getAppSettings, type TrackingSetting } from "@/lib/admin/settings.functions";
+import { CookieConsentBanner } from "@/components/CookieConsent";
+import { isTrackedPath, useAnalyticsConsent } from "@/lib/analyticsConsent";
 
 type Slot = "head" | "body_start" | "body_end";
 
@@ -52,13 +61,22 @@ export function TrackingInjector() {
     refetchOnReconnect: false,
   });
 
+  const pathname = useRouterState({ select: (st) => st.location.pathname });
+  const consent = useAnalyticsConsent();
+  const tracking = data?.tracking as TrackingSetting | undefined;
+  const hasTracking = Boolean(
+    tracking?.head?.trim() || tracking?.body_start?.trim() || tracking?.body_end?.trim(),
+  );
+  const onTrackedPage = isTrackedPath(pathname);
+  const allowed = consent === "accepted" && onTrackedPage;
+
   useEffect(() => {
-    const tracking = data?.tracking as TrackingSetting | undefined;
-    if (!tracking) return;
+    if (!allowed || !tracking) return;
     injectHTML(tracking.head ?? "", "head", "head");
     injectHTML(tracking.body_start ?? "", "body_start", "body_start");
     injectHTML(tracking.body_end ?? "", "body_end", "body_end");
-  }, [data]);
+  }, [tracking, allowed]);
 
-  return null;
+  // Sem scripts configurados não há cookie de terceiro a consentir.
+  return <CookieConsentBanner visible={hasTracking && onTrackedPage} />;
 }

@@ -131,15 +131,13 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
         const rlEmail = await rlConsume(`checkout:email:${parsed.email.toLowerCase()}`, 5, 60);
         if (!rlEmail.allowed) return tooManyRequests(rlEmail.retryAfter);
 
-        // 3) Config base — usa APP_URL se configurado, senão deriva do request.
+        // 3) Config base — usa APP_URL se configurado, senão a origem do request.
+        // Nunca X-Forwarded-Host: é controlado pelo cliente e viraria o
+        // success_url do provedor (redirecionamento para domínio falso).
         let appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
         if (!appUrl) {
           try {
-            const u = new URL(request.url);
-            const proto = request.headers.get("x-forwarded-proto") || u.protocol.replace(":", "");
-            const host =
-              request.headers.get("x-forwarded-host") || request.headers.get("host") || u.host;
-            appUrl = `${proto}://${host}`;
+            appUrl = new URL(request.url).origin;
           } catch {
             return err(
               500,

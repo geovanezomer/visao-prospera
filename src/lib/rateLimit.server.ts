@@ -10,6 +10,7 @@
 // de derrubar a aplicação inteira (degradação graciosa).
 // ============================================================================
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { getRequestIP } from "@tanstack/react-start/server";
 
 let _admin: SupabaseClient | null = null;
 function admin(): SupabaseClient {
@@ -49,14 +50,36 @@ export async function rlConsume(
   }
 }
 
-/** Extrai IP do request — Cloudflare/proxy aware. */
+/**
+ * IP do cliente para rate limit.
+ *
+ * Headers como X-Forwarded-For são enviados pelo próprio cliente e só valem
+ * quando um proxy confiável os sobrescreve. Por isso o header é escolhido
+ * explicitamente em TRUST_PROXY_HEADER, conforme a infraestrutura:
+ *   - "cf-connecting-ip"  → atrás da Cloudflare
+ *   - "x-real-ip"         → atrás de nginx com `proxy_set_header X-Real-IP $remote_addr`
+ *   - "x-forwarded-for"   → usa a entrada MAIS À DIREITA (a adicionada pelo proxy)
+ *   - vazio (padrão)      → IP do socket TCP; nenhum header é confiado
+ */
 export function clientIp(req: Request): string {
-  return (
-    req.headers.get("cf-connecting-ip") ||
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown"
-  );
+  const trusted = (process.env.TRUST_PROXY_HEADER ?? "").trim().toLowerCase();
+  if (trusted) {
+    const raw = req.headers.get(trusted);
+    if (raw) {
+      const ip = trusted === "x-forwarded-for" ? raw.split(",").at(-1) : raw;
+      if (ip?.trim()) return ip.trim();
+    }
+  }
+  return socketIp() ?? "unknown";
+}
+
+function socketIp(): string | undefined {
+  try {
+    return getRequestIP();
+  } catch {
+    // Fora de um request do servidor (ex.: testes unitários).
+    return undefined;
+  }
 }
 
 /** Resposta padronizada de 429. */

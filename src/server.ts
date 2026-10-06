@@ -7,6 +7,35 @@ type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
+// Headers de segurança em todas as respostas. A CSP aqui não restringe
+// script-src (GA/Pixel configuráveis no admin, Supabase, provedores de IA):
+// bloqueia só o que nenhuma página usa — ser embutido em iframe de outro
+// domínio (clickjacking), <object>/<embed> e troca do <base>.
+export const SECURITY_HEADERS: Record<string, string> = {
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+  "Content-Security-Policy": "frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+};
+
+export function withSecurityHeaders(response: Response): Response {
+  // Respostas com headers imutáveis (ex.: Response.redirect) precisam de cópia.
+  let res = response;
+  try {
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+      if (!res.headers.has(k)) res.headers.set(k, v);
+    }
+  } catch {
+    res = new Response(response.body, response);
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+      if (!res.headers.has(k)) res.headers.set(k, v);
+    }
+  }
+  return res;
+}
+
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 async function getServerEntry(): Promise<ServerEntry> {
@@ -42,13 +71,15 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
-      return new Response(renderErrorPage(), {
-        status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
-      });
+      return withSecurityHeaders(
+        new Response(renderErrorPage(), {
+          status: 500,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        }),
+      );
     }
   },
 };

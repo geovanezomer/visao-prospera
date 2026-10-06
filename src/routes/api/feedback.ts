@@ -12,6 +12,7 @@
 
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { clientIp, rlConsume, tooManyRequests } from "@/lib/rateLimit.server";
 
 const PayloadSchema = z.object({
   topic: z.string().min(1).max(120),
@@ -49,6 +50,11 @@ export const Route = createFileRoute("/api/feedback")({
             { status: 503 },
           );
         }
+
+        // Endpoint público que dispara e-mail: limita por IP contra spam e
+        // consumo da cota do Resend.
+        const rl = await rlConsume(`feedback:ip:${clientIp(request)}`, 5, 3600);
+        if (!rl.allowed) return tooManyRequests(rl.retryAfter);
 
         let body: unknown;
         try {

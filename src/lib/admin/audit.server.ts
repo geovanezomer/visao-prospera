@@ -3,7 +3,8 @@
 // Usado pelas server fns admin para registrar ações sensíveis.
 // Nunca lança — falhas de log não devem bloquear a ação principal.
 // ============================================================================
-import { getRequestHeader } from "@tanstack/react-start/server";
+import { getRequest, getRequestHeader } from "@tanstack/react-start/server";
+import { clientIp } from "@/lib/rateLimit.server";
 import type { Json } from "@/integrations/supabase/types";
 
 export type AuditEntry = {
@@ -22,10 +23,8 @@ export async function logAudit(entry: AuditEntry): Promise<void> {
     let ip: string | null = null;
     let userAgent: string | null = null;
     try {
-      ip =
-        getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ||
-        getRequestHeader("cf-connecting-ip") ||
-        null;
+      const ipRaw = clientIp(getRequest());
+      ip = ipRaw === "unknown" ? null : ipRaw;
       userAgent = getRequestHeader("user-agent") ?? null;
     } catch {
       /* contexto não-HTTP (test, etc.) */
