@@ -104,10 +104,12 @@ describe("assessCrisisStage — estágios", () => {
     expect(r.triggers[1]).toMatch(/^EBITDA R\$\s?0 ≤ 0$/);
   });
 
-  it("estado sem capital é tratado como PL = 0", () => {
+  it("PL não informado (0 ou sem capital) não é insolvência", () => {
     const base = createState();
     const s = { ...base, capital: undefined } as unknown as AppState;
-    expect(assessCrisisStage(s, ind({ ebitdaAnual: -1 })).stage).toBe(4);
+    expect(assessCrisisStage(s, ind({ ebitdaAnual: -1 })).stage).toBeLessThan(3);
+    expect(assessCrisisStage(st(0), ind({ ebitdaAnual: -1 })).stage).toBeLessThan(3);
+    expect(assessCrisisStage(st(-1), ind({ ebitdaAnual: -1 })).stage).toBe(4);
   });
 
   it("cada estágio retorna cópia nova dos gatilhos (função pura)", () => {

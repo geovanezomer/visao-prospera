@@ -103,15 +103,17 @@ export function assessCrisisStage(state: AppState, ind: Indicators): CrisisAsses
 
   const triggers: string[] = [];
 
+  // PL zerado é "não informado" (padrão do cadastro), não insolvência:
+  // só PL negativo aciona os estágios 3 e 4 (mesma regra do Kanitz).
   // Estágio 4 — Insolvência Jurídica
-  if (PL <= 0 && ebitda <= 0) {
-    triggers.push(`PL ${fmtBRL(PL)} ≤ 0`);
+  if (PL < 0 && ebitda <= 0) {
+    triggers.push(`PL ${fmtBRL(PL)} < 0`);
     triggers.push(`EBITDA ${fmtBRL(ebitda)} ≤ 0`);
     return { ...DEFS[4], triggers };
   }
 
   // Estágio 3 — Insolvência Técnica
-  if (PL <= 0) {
+  if (PL < 0) {
     triggers.push(`Patrimônio Líquido negativo (${fmtBRL(PL)})`);
     return { ...DEFS[3], triggers };
   }
