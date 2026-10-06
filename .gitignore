@@ -30,3 +30,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Variáveis de ambiente — segredos nunca vão para o git.
+# Copie .env.example para .env e preencha localmente.
+# (.env.development/.env.production só têm chaves publicáveis.)
+.env
+.env.local
+.env.*.local

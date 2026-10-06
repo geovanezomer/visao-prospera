@@ -17,7 +17,7 @@ $seed$::jsonb) ON CONFLICT DO NOTHING;
 
 -- ---- email_settings ----
 INSERT INTO public.email_settings SELECT * FROM jsonb_populate_recordset(null::public.email_settings, $seed$
-[{"id": "ad57eea3-ee7a-4dbd-9a7e-ca6c84dfd03d", "reply_to": "contato@geovanezomer.com.br", "from_name": "FinnancePRO", "from_email": "contato@geovanezomer.com.br", "updated_at": "2026-06-28T14:00:41.276+00:00", "updated_by": "c77ae98a-6277-43d3-9154-8924a55603d7", "resend_api_key": "re_QQh5HRd3_4UwF8w9b7u9P66QXqA27gxtv"}]
+[{"id": "ad57eea3-ee7a-4dbd-9a7e-ca6c84dfd03d", "reply_to": "contato@geovanezomer.com.br", "from_name": "FinnancePRO", "from_email": "contato@geovanezomer.com.br", "updated_at": "2026-06-28T14:00:41.276+00:00", "updated_by": "c77ae98a-6277-43d3-9154-8924a55603d7", "resend_api_key": null}]
 $seed$::jsonb) ON CONFLICT DO NOTHING;
 
 -- ---- email_templates ----
@@ -36,9 +36,7 @@ INSERT INTO public.plans SELECT * FROM jsonb_populate_recordset(null::public.pla
 $seed$::jsonb) ON CONFLICT DO NOTHING;
 
 -- ---- provider_credentials ----
-INSERT INTO public.provider_credentials SELECT * FROM jsonb_populate_recordset(null::public.provider_credentials, $seed$
-[{"id": "bfa823b8-944a-4c67-9c7e-588b014664c4", "mode": "live", "api_key": "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", "provider": "stripe", "is_active": true, "created_at": "2026-06-25T15:38:56.328905+00:00", "updated_at": "2026-06-25T23:38:09.64+00:00", "updated_by": "c77ae98a-6277-43d3-9154-8924a55603d7", "webhook_secret": "whsec_GiYgsDCIz7V3JW5YmjRiBJAlY3-qnr2OytDPEa74eVo"}, {"id": "de773722-713c-444d-9e50-7560c1c1a34d", "mode": "live", "api_key": "$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OjMxZjlhODRmLWZjYzctNDM3Ni04ZjU1LTBlODU0YjY2ZTNkZjo6JGFhY2hfNDM1YWY5Y2MtOWVkYS00NDdlLTkxMmYtZjc5MWYyMThiY2Y2", "provider": "asaas", "is_active": false, "created_at": "2026-06-25T15:38:16.335389+00:00", "updated_at": "2026-06-25T22:56:23.073+00:00", "updated_by": "c77ae98a-6277-43d3-9154-8924a55603d7", "webhook_secret": "whsec_ApMy0gOFpreUvt4gxcwNOHck8fVVD-BTdTYw-R-8rlM"}]
-$seed$::jsonb) ON CONFLICT DO NOTHING;
+-- (não semeado: credenciais são configuradas pelo painel admin)
 
 -- ---- broadcasts ----
 -- (vazio)

@@ -38,9 +38,13 @@ Dois grupos lidos a partir do mesmo `.env`:
 | `VITE_*`              | **Build-time** (bundlada no JS do client) | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`          |
 | Sem prefixo (runtime) | **Runtime SSR** (`process.env`)           | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_*`, etc. |
 
-O Dockerfile **copia o `.env` no estágio de build E no runtime**, então a
-imagem roda standalone (`docker run`). O `docker-compose.yml` também usa
-`env_file: .env` no runtime — manter ambos é redundância segura.
+O Dockerfile usa o `.env` **só no estágio de build** (para as `VITE_*`).
+A imagem final não contém o `.env`: as variáveis de runtime entram por
+`env_file: .env` no `docker-compose.yml` ou por `docker run --env-file .env`.
+Assim nenhum segredo fica gravado nas camadas da imagem.
+
+> O `.env` não é versionado (está no `.gitignore`). Mantenha a cópia do
+> VPS fora do git e use `.env.example` como modelo.
 
 > Mudou uma `VITE_*`? Rebuilde a imagem (`--build`). Mudou só uma var de
 > runtime? Basta reiniciar o container.
@@ -73,7 +77,7 @@ docker compose down
    copia `.env` para que o Vite leia as `VITE_*`, define
    `NITRO_PRESET=node-server` (o template default é Cloudflare Workers, aqui
    forçamos Node) e roda `bun run build`. Saída: `.output/server/index.mjs`.
-2. **Stage `runner`** (`node:22-alpine`) — copia `.output/` + `.env`.
+2. **Stage `runner`** (`node:22-alpine`) — copia só `.output/` (sem `.env`).
    Sem `node_modules` extra. Imagem final ~150 MB.
 
 ---

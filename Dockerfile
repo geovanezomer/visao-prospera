@@ -45,11 +45,11 @@ RUN apk add --no-cache postgresql-client wget curl
 # Copia apenas o output do Nitro (auto-contido)
 COPY --from=builder /app/.output ./.output
 
-# Copia o .env para o runtime — o SSR lê variáveis sem prefixo
-# (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, STRIPE_*, RESEND_*, etc.)
-# em process.env. O docker-compose também monta via env_file:
-# manter ambos garante que a imagem rode standalone (docker run).
-COPY --from=builder /app/.env ./.env
+# O .env NÃO é copiado para a imagem final: segredos gravados numa
+# camada ficam legíveis para quem tiver a imagem. As variáveis de
+# runtime (SUPABASE_SERVICE_ROLE_KEY, STRIPE_*, RESEND_*, etc.) chegam
+# por process.env — via `env_file` no docker-compose ou
+# `docker run --env-file .env`.
 
 # Migrations + scripts de bootstrap (rodam no entrypoint)
 COPY --from=builder /app/supabase/migrations ./supabase/migrations
