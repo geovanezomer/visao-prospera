@@ -31,6 +31,9 @@ jobs:
 
       - name: Testes e cobertura dos motores (mín. 95% das linhas)
         run: bun run test:coverage
+        env:
+          # Invariantes do motor em 10 mil estados aleatórios (critério de aceite).
+          INVARIANTES_N: "10000"
 
       - name: Build
         run: bun run build
