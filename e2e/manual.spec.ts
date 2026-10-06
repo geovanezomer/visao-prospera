@@ -129,3 +129,14 @@ test("relatório em PDF baixa com a página de insights estratégicos", async ({
   expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
   await download.saveAs("test-results/relatorio.pdf");
 });
+
+test("guia de primeiros passos reabre pelo botão de ajuda e leva à tela", async ({ page }) => {
+  await page.goto("/app");
+  await page.getByRole("button", { name: "Guia de primeiros passos" }).click();
+  await expect(page.getByRole("dialog", { name: /Bem-vindo ao FinnancePRO/ })).toBeVisible();
+  await page.getByRole("button", { name: /Próximo/ }).click();
+  await page.getByRole("button", { name: /Próximo/ }).click();
+  await page.getByRole("button", { name: "Abrir Receitas" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator("header").getByText("Receitas", { exact: true }).first()).toBeVisible();
+});

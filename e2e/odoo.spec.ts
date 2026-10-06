@@ -23,6 +23,20 @@ const brl = (t: string | null) => {
   return (m[1] ? -1 : 1) * Number(m[2].replace(/\./g, "").replace(",", "."));
 };
 
+/** Fecha o guia do modo Odoo, que abre sozinho na primeira vez. */
+async function fecharGuia(page: Page) {
+  // Abre depois que o retrato do Odoo carrega: espera um pouco por ele.
+  const pular = page.getByRole("button", { name: "Pular guia" });
+  const apareceu = await pular
+    .waitFor({ state: "visible", timeout: 15_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (apareceu) {
+    await pular.click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  }
+}
+
 async function modo(page: Page, m: "Manual" | "Odoo") {
   await page.goto("/admin?tab=odoo");
   const radio = page.getByRole("radio", { name: m, exact: true });
@@ -55,6 +69,7 @@ test("conecta, sincroniza e liga o modo Odoo", async ({ page }) => {
 test("cockpit: DRE da Beta igual ao razão do Odoo", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto("/app");
+  await fecharGuia(page);
   const empresa = page.locator('select[aria-label="Empresa"]');
   await expect(empresa).toBeVisible({ timeout: 30_000 });
   await empresa.selectOption({ label: "Beta Serviços Ltda" });
@@ -90,6 +105,7 @@ test("cockpit: DRE da Beta igual ao razão do Odoo", async ({ page }) => {
 
 test("conferências do cockpit e consolidado do grupo abrem", async ({ page }) => {
   await page.goto("/app");
+  await fecharGuia(page);
   await expect(page.locator('select[aria-label="Empresa"]')).toBeVisible({ timeout: 30_000 });
   await page
     .getByRole("button", { name: /ver conferências/ })
@@ -107,6 +123,7 @@ test("conferências do cockpit e consolidado do grupo abrem", async ({ page }) =
 
 test("conciliação: sem diferenças em cada entidade e CSV conta a conta", async ({ page }) => {
   await page.goto("/app");
+  await fecharGuia(page);
   const empresa = page.locator('select[aria-label="Empresa"]');
   await expect(empresa).toBeVisible({ timeout: 30_000 });
   await page.locator('select[aria-label="Mês final da análise"]').selectOption("2026-09");

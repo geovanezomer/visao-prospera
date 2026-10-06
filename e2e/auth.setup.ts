@@ -41,5 +41,14 @@ setup("primeiro login do admin e troca obrigatória de senha", async ({ page }) 
     await aceitar.click();
   }
   await expect(sidebar).toBeVisible({ timeout: 30_000 });
+
+  // Guia de primeiros passos: abre sozinho no primeiro acesso.
+  const guia = page.getByRole("dialog", { name: /Bem-vindo ao FinnancePRO/ });
+  if (await guia.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await page.getByRole("button", { name: /Próximo/ }).click();
+    await expect(page.getByRole("dialog", { name: /Empresa e regime/ })).toBeVisible();
+    await page.getByRole("button", { name: "Pular guia" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  }
   await page.context().storageState({ path: "test-results/.auth/admin.json" });
 });

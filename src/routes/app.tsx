@@ -91,6 +91,7 @@ import { BillingButton } from "@/components/billing/BillingButton";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Presentation, X, FileText, Printer } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { FirstStepsGuide, GuideButton } from "@/components/onboarding/FirstStepsGuide";
 import { useQuery } from "@tanstack/react-query";
 import { getCockpitConfig } from "@/lib/odoo/odoo.functions";
 import { LegalAcceptGate } from "@/components/LegalAcceptGate";
@@ -674,6 +675,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                     </Button>
+                    <GuideButton />
                     <ThemeToggle />
                     <SharedLinksDialog />
                     <BillingButton />
@@ -774,6 +776,14 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
 
             {/* Arquivar "ano"/cenários não se aplica ao realizado do ERP. */}
             {!cockpit.active && <ScenarioBar />}
+            {user && !cockpit.loading && (
+              <FirstStepsGuide
+                userId={user.id}
+                modo={cockpit.active ? "odoo" : "manual"}
+                isAdmin={user.role === "admin"}
+                onIrPara={(aba) => setActiveTab(aba as AppTab)}
+              />
+            )}
             {confirmDialog}
             {user && (
               <RestoreBackupDialog
