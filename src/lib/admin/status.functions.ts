@@ -3,8 +3,7 @@
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
 import { assertAdmin } from "./assertAdmin";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AuthClaims } from "./_types";
+import { requireAuth } from "@/lib/requireAuth";
 
 export type ServiceStatus = {
   name: string;
@@ -35,19 +34,15 @@ async function check(
 }
 
 export const getSystemStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
 
     const checks = await Promise.all([
-      check("Supabase", async () => {
-        const { createClient } = await import("@supabase/supabase-js");
-        const url = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
-        const key =
-          process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        const sb = createClient(url!, key!);
-        const { error } = await sb.from("plans").select("id").limit(1);
-        if (error) return { status: "degraded", message: error.message };
+      check("PostgreSQL", async () => {
+        const { queryRows } = await import("@/db/client.server");
+        const { sql } = await import("drizzle-orm");
+        await queryRows(sql`select 1`);
         return { status: "operational", message: "DB OK" };
       }),
       check("Stripe", async () => {
@@ -61,9 +56,12 @@ export const getSystemStatus = createServerFn({ method: "POST" })
           return { status: "degraded", message: desc ?? "Minor issues" };
         return { status: "down", message: desc ?? "Outage" };
       }),
-      check("Resend", async () => {
+      check("E-mail", async () => {
+        if (process.env.SMTP_HOST) {
+          return { status: "operational", message: `SMTP ${process.env.SMTP_HOST}` };
+        }
         const key = process.env.RESEND_API_KEY;
-        if (!key) return { status: "unknown", message: "RESEND_API_KEY ausente" };
+        if (!key) return { status: "unknown", message: "SMTP_HOST / RESEND_API_KEY ausentes" };
         const r = await fetch("https://api.resend.com/domains", {
           headers: { Authorization: `Bearer ${key}` },
         });

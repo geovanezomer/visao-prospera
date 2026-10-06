@@ -7,7 +7,8 @@
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
 import { assertAdmin } from "./assertAdmin";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { gte } from "drizzle-orm";
+import { requireAuth } from "@/lib/requireAuth";
 
 // Preços fixos por price_id (centavos/mês). Mantemos local para evitar
 // dependência de Stripe API aqui. Atualize se mudar o pricing.
@@ -150,7 +151,7 @@ function activeAt(subs: SubRow[], atDate: Date): number {
   return n;
 }
 
-type SubRow = {
+export type SubRow = {
   user_id: string;
   plan: string | null;
   status: string;
@@ -190,7 +191,7 @@ export function buildFunnel(
 
 // ── Server function ──────────────────────────────────────────────────────────
 export const getDashboardMetrics = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .inputValidator((data: { periodDays?: PeriodDays } | undefined) => {
     const p = data?.periodDays;
     const periodDays: PeriodDays = p === 7 || p === 90 ? p : 30;
@@ -198,22 +199,15 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
   })
   .handler(async ({ context, data }): Promise<DashboardMetrics> => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db, schema } = await import("@/db/client.server");
+    const { loadSubRows } = await import("./dashboardData.server");
 
     const { periodDays } = data;
     const now = new Date();
     const w = computeWindows(now, periodDays);
 
     // ── Subscriptions (cap prático para PMEs) ────────────────────────────────
-    const { data: subsRaw, error: subErr } = await supabaseAdmin
-      .from("subscriptions")
-      .select(
-        "user_id, plan, status, price_id, provider, current_period_end, cancel_at_period_end, created_at, updated_at",
-      )
-      .order("created_at", { ascending: false })
-      .limit(10000);
-    if (subErr) throw new Error(subErr.message);
-    const subs = (subsRaw ?? []) as SubRow[];
+    const subs: SubRow[] = await loadSubRows("desc");
 
     // Snapshot atual (não janelado).
     const latestByUser = new Map<string, SubRow>();
@@ -250,34 +244,25 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
       (s) => s.status === "canceled" && inWindow(s.updated_at, w.previousStart, w.previousEnd),
     ).length;
 
-    // ── Signups por janela via auth.admin.listUsers (paginação até 25×200). ──
+    // ── Signups por janela (tabela user). ────────────────────────────────────
     let signupsCurrent = 0,
       signupsPrevious = 0;
-    const allUsers: { created_at: string }[] = [];
-    const MAX_PAGES = 25;
-    for (let p = 1; p <= MAX_PAGES; p++) {
-      const { data: u, error: ue } = await supabaseAdmin.auth.admin.listUsers({
-        page: p,
-        perPage: 200,
-      });
-      if (ue) throw new Error(ue.message);
-      const list = u.users ?? [];
-      for (const usr of list) {
-        allUsers.push({ created_at: usr.created_at });
-        if (inWindow(usr.created_at, w.currentStart, w.currentEnd)) signupsCurrent++;
-        else if (inWindow(usr.created_at, w.previousStart, w.previousEnd)) signupsPrevious++;
-      }
-      if (list.length < 200) break;
+    const allUsers = (
+      await db().select({ createdAt: schema.user.createdAt }).from(schema.user)
+    ).map((u) => ({ created_at: u.createdAt.toISOString() }));
+    for (const usr of allUsers) {
+      if (inWindow(usr.created_at, w.currentStart, w.currentEnd)) signupsCurrent++;
+      else if (inWindow(usr.created_at, w.previousStart, w.previousEnd)) signupsPrevious++;
     }
 
     // ── Trials (server-side filtrado pela janela ampla p/ economia). ─────────
     const sinceFar = w.previousStart.toISOString();
-    const { data: trialRows } = await supabaseAdmin
-      .from("trial_requests")
-      .select("user_id, created_at, consumed_at")
-      .gte("created_at", sinceFar)
+    const tr = schema.trialRequests;
+    const trials: TrialRow[] = await db()
+      .select({ user_id: tr.userId, created_at: tr.createdAt, consumed_at: tr.consumedAt })
+      .from(tr)
+      .where(gte(tr.createdAt, sinceFar))
       .limit(50000);
-    const trials = (trialRows ?? []) as TrialRow[];
     const trialsCurrent = trials.filter((t) =>
       inWindow(t.created_at, w.currentStart, w.currentEnd),
     ).length;
@@ -286,12 +271,17 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
     ).length;
 
     // ── Checkout intents (para funil e conversão). ───────────────────────────
-    const { data: intentRows } = await supabaseAdmin
-      .from("checkout_intents")
-      .select("status, created_at, confirmed_at, updated_at")
-      .gte("created_at", sinceFar)
+    const ci = schema.checkoutIntents;
+    const intents: IntentRow[] = await db()
+      .select({
+        status: ci.status,
+        created_at: ci.createdAt,
+        confirmed_at: ci.confirmedAt,
+        updated_at: ci.updatedAt,
+      })
+      .from(ci)
+      .where(gte(ci.createdAt, sinceFar))
       .limit(50000);
-    const intents = (intentRows ?? []) as IntentRow[];
 
     const funnel = buildFunnel(trials, intents, w.currentStart, w.currentEnd);
     const funnelPrev = buildFunnel(trials, intents, w.previousStart, w.previousEnd);
@@ -303,13 +293,13 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
 
     // ── Webhooks 24h (snapshot). ─────────────────────────────────────────────
     const since24 = new Date(now.getTime() - 86400_000).toISOString();
-    const { data: hooks } = await supabaseAdmin
-      .from("webhook_events")
-      .select("status")
-      .gte("received_at", since24);
+    const hooks = await db()
+      .select({ status: schema.webhookEvents.status })
+      .from(schema.webhookEvents)
+      .where(gte(schema.webhookEvents.receivedAt, since24));
     let wOk = 0,
       wFail = 0;
-    for (const r of hooks ?? []) {
+    for (const r of hooks) {
       if (r.status === "failed") wFail++;
       else if (r.status === "processed" || r.status === "replayed") wOk++;
     }
@@ -358,7 +348,7 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
         lifetime,
         byProvider,
         byPlan,
-        webhook24h: { total: hooks?.length ?? 0, ok: wOk, failed: wFail },
+        webhook24h: { total: hooks.length, ok: wOk, failed: wFail },
       },
       generatedAt: now.toISOString(),
     };

@@ -5,8 +5,7 @@
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
 import { assertAdmin } from "./assertAdmin";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AuthClaims } from "./_types";
+import { requireAuth } from "@/lib/requireAuth";
 
 // Tabela de preços local (centavos / mês). Manter em sincronia com dashboard.functions.ts.
 const PRICE_TABLE_BRL_MONTH: Record<string, number> = {
@@ -52,13 +51,14 @@ function monthLabel(d: Date): string {
 }
 
 export const getDashboardCharts = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((input: { months?: number } | undefined) => ({
     months: Math.max(1, Math.min(36, Number(input?.months ?? 12))),
   }))
   .handler(async ({ data, context }): Promise<DashboardCharts> => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db, schema } = await import("@/db/client.server");
+    const { loadSubRows } = await import("./dashboardData.server");
 
     // Janela: últimos N meses (inclusivo do mês corrente).
     const N = data.months;
@@ -71,19 +71,12 @@ export const getDashboardCharts = createServerFn({ method: "POST" })
     }
 
     // Subscriptions completas (cap 10k linhas).
-    const { data: subs, error: subErr } = await supabaseAdmin
-      .from("subscriptions")
-      .select(
-        "user_id, plan, status, price_id, provider, current_period_end, cancel_at_period_end, created_at, updated_at",
-      )
-      .order("created_at", { ascending: true })
-      .limit(10000);
-    if (subErr) throw new Error(subErr.message);
+    const subs = await loadSubRows("asc");
 
     // Última linha por usuário (para distribuição por plano e funil).
-    type SubRow = NonNullable<typeof subs>[number];
+    type SubRow = (typeof subs)[number];
     const latestByUser = new Map<string, SubRow>();
-    for (const s of [...(subs ?? [])].reverse()) {
+    for (const s of [...subs].reverse()) {
       if (!latestByUser.has(s.user_id)) latestByUser.set(s.user_id, s);
     }
 
@@ -105,19 +98,12 @@ export const getDashboardCharts = createServerFn({ method: "POST" })
       .map(([plan, value]) => ({ plan, value }))
       .sort((a, b) => b.value - a.value);
 
-    // Signups por usuário a partir do auth (paginado).
+    // Signups por usuário (tabela user).
     const userCreatedAt = new Map<string, number>();
-    const MAX_PAGES = 25;
-    for (let p = 1; p <= MAX_PAGES; p++) {
-      const { data: u, error: ue } = await supabaseAdmin.auth.admin.listUsers({
-        page: p,
-        perPage: 200,
-      });
-      if (ue) throw new Error(ue.message);
-      const list = u.users ?? [];
-      for (const usr of list) userCreatedAt.set(usr.id, new Date(usr.created_at).getTime());
-      if (list.length < 200) break;
-    }
+    const userRows = await db()
+      .select({ id: schema.user.id, createdAt: schema.user.createdAt })
+      .from(schema.user);
+    for (const usr of userRows) userCreatedAt.set(usr.id, usr.createdAt.getTime());
     const totalSignups = userCreatedAt.size;
 
     // Construir séries mensais.
@@ -135,17 +121,15 @@ export const getDashboardCharts = createServerFn({ method: "POST" })
       }
 
       // Para MRR/active no fim do mês: usar última linha de cada usuário com created_at < endMs.
-      const lastByUserUpToMonth = new Map<string, NonNullable<typeof subs>[number]>();
-      for (const s of subs ?? []) {
-        const c = new Date(s.created_at).getTime();
+      const lastByUserUpToMonth = new Map<string, SubRow>();
+      for (const s of subs) {
+        const c = s.created_at ? new Date(s.created_at).getTime() : 0;
         if (c < endMs) lastByUserUpToMonth.set(s.user_id, s);
       }
       for (const s of lastByUserUpToMonth.values()) {
         const monthlyPrice = priceToMonthlyBRL(s.price_id, s.plan);
         const status = s.status as string;
-        const upd = s.updated_at
-          ? new Date(s.updated_at).getTime()
-          : new Date(s.created_at).getTime();
+        const upd = new Date(s.updated_at ?? s.created_at ?? 0).getTime();
         // Considera ativo no fim do mês se status atual é ativo/trialing/past_due/lifetime
         // E updated_at < endMs (estado vigente).
         const isActiveLike =
@@ -171,8 +155,8 @@ export const getDashboardCharts = createServerFn({ method: "POST" })
     // Funil de conversão (totais agregados).
     const trialUsers = new Set<string>();
     const paidAfterTrial = new Set<string>();
-    for (const s of subs ?? []) if (s.status === "trialing") trialUsers.add(s.user_id);
-    for (const s of subs ?? []) {
+    for (const s of subs) if (s.status === "trialing") trialUsers.add(s.user_id);
+    for (const s of subs) {
       if ((s.status === "active" || s.status === "lifetime") && trialUsers.has(s.user_id)) {
         paidAfterTrial.add(s.user_id);
       }

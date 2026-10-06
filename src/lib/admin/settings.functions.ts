@@ -1,13 +1,13 @@
 // ============================================================================
 // Server fns: app_settings (branding, login_texts, footer, active_provider)
-// Leitura é pública (anon); escrita exige admin.
+// Leitura é pública (só PUBLIC_KEYS); escrita exige admin.
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
 import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AuthClaims } from "./_types";
-import type { Json } from "@/integrations/supabase/types";
+import { requireAuth } from "@/lib/requireAuth";
+import { inArray } from "drizzle-orm";
+import type { Json } from "./_types";
 
 const KEYS = [
   "branding",
@@ -56,19 +56,13 @@ export const getAppSettings = createServerFn({ method: "GET" }).handler(async ()
   }
   if (settingsInFlight) return settingsInFlight;
   settingsInFlight = (async () => {
-    const { createClient } = await import("@supabase/supabase-js");
-    const url = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
-    const key =
-      process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    const sb = createClient(url!, key!, {
-      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    });
-    const { data } = await sb
-      .from("app_settings")
-      .select("key, value")
-      .in("key", PUBLIC_KEYS as unknown as string[]);
+    const { db, schema } = await import("@/db/client.server");
+    const rows = await db()
+      .select({ key: schema.appSettings.key, value: schema.appSettings.value })
+      .from(schema.appSettings)
+      .where(inArray(schema.appSettings.key, [...PUBLIC_KEYS]));
     const out: Partial<Record<SettingKey, Json>> = {};
-    for (const row of data ?? []) out[row.key as SettingKey] = row.value as Json;
+    for (const row of rows) out[row.key as SettingKey] = row.value as Json;
     settingsCache = { at: Date.now(), data: out };
     return out;
   })().finally(() => {
@@ -78,23 +72,22 @@ export const getAppSettings = createServerFn({ method: "GET" }).handler(async ()
 });
 
 export const updateAppSetting = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((data: { key: SettingKey; value: unknown }) =>
     z.object({ key: z.enum(KEYS), value: z.any() }).parse(data),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("app_settings").upsert(
-      {
-        key: data.key,
-        value: data.value,
-        updated_by: context.userId,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "key" },
-    );
-    if (error) throw new Error(error.message);
+    const { db, schema } = await import("@/db/client.server");
+    const row = {
+      value: (data.value ?? {}) as Json,
+      updatedBy: context.userId,
+      updatedAt: new Date().toISOString(),
+    };
+    await db()
+      .insert(schema.appSettings)
+      .values({ key: data.key, ...row })
+      .onConflictDoUpdate({ target: schema.appSettings.key, set: row });
     // Invalida cache em memória para refletir mudança imediatamente.
     settingsCache = null;
     return { ok: true };

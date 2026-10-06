@@ -1,33 +1,42 @@
 // ============================================================================
-// Tipos compartilhados pela camada admin (server-side).
+// Tipos e helpers puros compartilhados pela camada admin.
 //
-// Substituem os `any` históricos em helpers internos que passavam o cliente
-// admin do Supabase e os claims do JWT entre módulos. Concentrar aqui mantém
-// o resto do código declarativo e dá narrowing real em quem consome.
+// Sem dependências de servidor em runtime (o import do banco é só de tipo):
+// pode ser importado por código do navegador sem arrastar o driver.
 // ============================================================================
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Db } from "@/db/client.server";
 
 /**
- * Cliente admin do Supabase (service_role) já tipado com o schema gerado.
- * Use em assinaturas internas: `function foo(admin: AdminClient)`.
+ * Banco da aplicação (Drizzle). Substitui o antigo cliente admin do Supabase
+ * em assinaturas internas: `function foo(admin: AdminClient)`.
  */
-export type AdminClient = SupabaseClient<Database>;
+export type AdminClient = Db;
 
-/**
- * Claims do JWT extraídos pelo `requireSupabaseAuth`. Espelha o subset que
- * o app efetivamente consome (sub, email, app_metadata.role). Mantemos
- * permissivo (`Record<string, unknown>` no resto) para não engessar.
- */
-export type AuthClaims = {
-  sub: string;
-  email?: string;
-  role?: string;
-  app_metadata?: {
-    role?: string;
-    provider?: string;
-    [k: string]: unknown;
-  };
-  user_metadata?: Record<string, unknown>;
-  [k: string]: unknown;
+/** Valor JSON serializável (colunas jsonb devolvidas ao painel). */
+export type Json = string | number | boolean | null | { [k: string]: Json } | Json[];
+
+/** Contexto mínimo que as server fns admin recebem do `requireAuth`. */
+export type AdminContext = {
+  userId: string;
+  user?: { email?: string | null } | null;
 };
+
+/** E-mail do admin que está agindo (para o log de auditoria). */
+export function actorEmail(context: AdminContext): string | null {
+  return context.user?.email ?? null;
+}
+
+type CamelToSnake<S extends string> = S extends `${infer H}${infer T}`
+  ? `${H extends Lowercase<H> ? H : `_${Lowercase<H>}`}${CamelToSnake<T>}`
+  : S;
+
+/** Mesmo objeto com as chaves em snake_case (formato que a UI já consome). */
+export type Snake<T> = { [K in keyof T as K extends string ? CamelToSnake<K> : K]: T[K] };
+
+export function toSnake<T extends Record<string, unknown>>(row: T): Snake<T> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(row)) {
+    out[k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)] = v;
+  }
+  return out as Snake<T>;
+}

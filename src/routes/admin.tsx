@@ -1,5 +1,5 @@
 // ============================================================================
-// Painel Administrativo v2 — visível apenas para ADMIN_EMAIL.
+// Painel Administrativo v2 — visível apenas para usuários com papel admin.
 // Abas: Usuários · Sistema · E-mails · Webhooks · Provider.
 // ============================================================================
 import { useEffect, useState } from "react";

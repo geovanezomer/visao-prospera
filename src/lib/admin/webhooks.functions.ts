@@ -4,11 +4,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AuthClaims } from "./_types";
+import { requireAuth } from "@/lib/requireAuth";
+import { and, count, desc, eq, gte, ilike, or } from "drizzle-orm";
+import { actorEmail, toSnake, type Json } from "./_types";
 
 export const listWebhookEvents = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator(
     (d: {
       page?: number;
@@ -46,76 +47,97 @@ export const listWebhookEvents = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db, schema } = await import("@/db/client.server");
+    const t = schema.webhookEvents;
     const page = data.page ?? 1;
     const perPage = data.perPage ?? 50;
-    const from = (page - 1) * perPage;
-    const to = from + perPage - 1;
-    let q = supabaseAdmin
-      .from("webhook_events")
-      .select(
-        "id, provider, event_type, subscription_id, customer_email, status, error, received_at, attempts, last_attempt_at, next_attempt_at, replayed_at",
-        { count: "exact" },
-      )
-      .order("received_at", { ascending: false })
-      .range(from, to);
-    if (data.provider && data.provider !== "all") q = q.eq("provider", data.provider);
-    if (data.status && data.status !== "all") q = q.eq("status", data.status);
-    if (data.search) {
-      const s = data.search.trim();
-      q = q.or(`customer_email.ilike.%${s}%,subscription_id.ilike.%${s}%,event_type.ilike.%${s}%`);
+
+    const conds = [];
+    if (data.provider && data.provider !== "all") conds.push(eq(t.provider, data.provider));
+    if (data.status && data.status !== "all") conds.push(eq(t.status, data.status));
+    if (data.search?.trim()) {
+      const like = `%${data.search.trim()}%`;
+      conds.push(
+        or(ilike(t.customerEmail, like), ilike(t.subscriptionId, like), ilike(t.eventType, like)),
+      );
     }
-    const { data: rows, error, count } = await q;
-    if (error) throw new Error(error.message);
+    const where = conds.length ? and(...conds) : undefined;
 
     // KPIs últimas 24h
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: kpiRows } = await supabaseAdmin
-      .from("webhook_events")
-      .select("status", { count: "exact", head: false })
-      .gte("received_at", since);
-    const k = { total: kpiRows?.length ?? 0, ok: 0, failed: 0, pending: 0, dead: 0 };
-    for (const r of kpiRows ?? []) {
+    const [rows, [{ total }], kpiRows] = await Promise.all([
+      db()
+        .select({
+          id: t.id,
+          provider: t.provider,
+          eventType: t.eventType,
+          subscriptionId: t.subscriptionId,
+          customerEmail: t.customerEmail,
+          status: t.status,
+          error: t.error,
+          receivedAt: t.receivedAt,
+          attempts: t.attempts,
+          lastAttemptAt: t.lastAttemptAt,
+          nextAttemptAt: t.nextAttemptAt,
+          replayedAt: t.replayedAt,
+        })
+        .from(t)
+        .where(where)
+        .orderBy(desc(t.receivedAt))
+        .limit(perPage)
+        .offset((page - 1) * perPage),
+      db().select({ total: count() }).from(t).where(where),
+      db().select({ status: t.status }).from(t).where(gte(t.receivedAt, since)),
+    ]);
+    const k = { total: kpiRows.length, ok: 0, failed: 0, pending: 0, dead: 0 };
+    for (const r of kpiRows) {
       if (r.status === "failed") k.failed++;
       else if (r.status === "dead_letter") k.dead++;
       else if (r.status === "pending_retry") k.pending++;
       else if (r.status === "processed" || r.status === "replayed") k.ok++;
     }
-    return { rows: rows ?? [], total: count ?? 0, page, perPage, kpi24h: k };
+    return { rows: rows.map(toSnake), total: Number(total), page, perPage, kpi24h: k };
   });
 
 export const getWebhookEvent = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: ev, error } = await supabaseAdmin
-      .from("webhook_events")
-      .select("*")
-      .eq("id", data.id)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    return { event: ev };
+    const { db, schema } = await import("@/db/client.server");
+    const [ev] = await db()
+      .select()
+      .from(schema.webhookEvents)
+      .where(eq(schema.webhookEvents.id, data.id))
+      .limit(1);
+    return {
+      event: ev
+        ? toSnake({
+            ...ev,
+            payload: ev.payload as Json,
+            attemptHistory: ev.attemptHistory as Json,
+          })
+        : null,
+    };
   });
 
 export const replayWebhookEvent = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((d: { id: string; force?: boolean }) =>
     z.object({ id: z.string().uuid(), force: z.boolean().optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db, schema } = await import("@/db/client.server");
     const { reprocessWebhookEventRow } = await import("@/lib/payments/webhook-handler.server");
     const { logAudit } = await import("./audit.server");
 
     // Em "force": destrava lock e zera next_attempt_at para reentrada imediata.
     if (data.force) {
-      await supabaseAdmin
-        .from("webhook_events")
-        .update({ locked_at: null, next_attempt_at: new Date(0).toISOString() })
-        .eq("id", data.id);
+      await db()
+        .update(schema.webhookEvents)
+        .set({ lockedAt: null, nextAttemptAt: new Date(0).toISOString() })
+        .where(eq(schema.webhookEvents.id, data.id));
     }
 
     const result = await reprocessWebhookEventRow(data.id, {
@@ -124,7 +146,7 @@ export const replayWebhookEvent = createServerFn({ method: "POST" })
     });
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as AuthClaims | undefined)?.email,
+      actorEmail: actorEmail(context),
       action: result.ok ? "webhook.replay.ok" : "webhook.replay.fail",
       resource: "webhook_event",
       targetId: data.id,
@@ -139,7 +161,7 @@ export const replayWebhookEvent = createServerFn({ method: "POST" })
  * Disparo manual do worker de retry (útil para testar fora do cron).
  */
 export const runWebhookRetryNow = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((d: { limit?: number }) =>
     z.object({ limit: z.number().int().min(1).max(100).optional() }).parse(d ?? {}),
   )
@@ -150,7 +172,7 @@ export const runWebhookRetryNow = createServerFn({ method: "POST" })
     const r = await runRetryBatch(data.limit ?? 25);
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as AuthClaims | undefined)?.email,
+      actorEmail: actorEmail(context),
       action: "webhook.retry.batch",
       resource: "webhook_event",
       metadata: r,

@@ -1,10 +1,19 @@
 // ============================================================================
 // UserDetailDrawer — painel lateral com o perfil completo de um usuário.
 // Abas: Resumo · Assinaturas · Webhooks · Auditoria · Ações.
-// "Ações" inclui conceder plano manual (trial/ativo/lifetime) e impersonar.
+// "Ações" inclui conceder plano manual (trial/ativo/lifetime), papel admin
+// e impersonar.
 // ============================================================================
 import { useEffect, useState } from "react";
-import { Loader2, Copy, ExternalLink, Gift, UserCog, AlertTriangle } from "lucide-react";
+import {
+  Loader2,
+  Copy,
+  ExternalLink,
+  Gift,
+  UserCog,
+  AlertTriangle,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -31,6 +40,7 @@ import {
   impersonateUser,
   type UserDetail,
 } from "@/lib/admin/userDetail.functions";
+import { setUserAdminRole } from "@/lib/admin/rbac.functions";
 import { UserNotesPanel } from "./UserNotesPanel";
 import { UserSessionsPanel } from "./UserSessionsPanel";
 import { UserTimelinePanel } from "./UserTimelinePanel";
@@ -104,16 +114,18 @@ export function UserDetailDrawer({
             <TabsContent value="resumo" className="space-y-2 pt-3 text-sm">
               <Row label="ID">{detail.user.id}</Row>
               <Row label="E-mail">{detail.user.email}</Row>
-              <Row label="Telefone">{detail.user.phone ?? "—"}</Row>
-              <Row label="Provider login">{detail.user.provider ?? "email"}</Row>
-              <Row label="E-mail confirmado">
-                {detail.user.emailConfirmedAt
-                  ? "Sim · " + fmt(detail.user.emailConfirmedAt)
-                  : "Não"}
-              </Row>
+              <Row label="Papel">{detail.user.role === "admin" ? "Administrador" : "Usuário"}</Row>
+              <Row label="Login">{detail.user.provider ?? "magic link"}</Row>
+              <Row label="E-mail confirmado">{detail.user.emailVerified ? "Sim" : "Não"}</Row>
               <Row label="Criado em">{fmt(detail.user.createdAt)}</Row>
               <Row label="Último login">{fmt(detail.user.lastSignInAt)}</Row>
-              <Row label="Banido até">{fmt(detail.user.bannedUntil)}</Row>
+              <Row label="Bloqueado">
+                {detail.user.banned
+                  ? detail.user.bannedUntil
+                    ? "Até " + fmt(detail.user.bannedUntil)
+                    : "Sim (sem prazo)"
+                  : "Não"}
+              </Row>
             </TabsContent>
 
             <TabsContent value="assinaturas" className="pt-3">
@@ -210,6 +222,14 @@ export function UserDetailDrawer({
             <TabsContent value="acoes" className="space-y-4 pt-3">
               <GrantPlanForm
                 userId={detail.user.id}
+                onDone={() => {
+                  void load();
+                  onChanged?.();
+                }}
+              />
+              <AdminRoleForm
+                userId={detail.user.id}
+                isAdmin={detail.user.role === "admin"}
                 onDone={() => {
                   void load();
                   onChanged?.();
@@ -331,6 +351,61 @@ function GrantPlanForm({ userId, onDone }: { userId: string; onDone: () => void 
 }
 
 // ----------------------------------------------------------------------------
+// Papel admin (conceder / revogar)
+// ----------------------------------------------------------------------------
+function AdminRoleForm({
+  userId,
+  isAdmin,
+  onDone,
+}: {
+  userId: string;
+  isAdmin: boolean;
+  onDone: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    const msg = isAdmin
+      ? "Remover o papel de administrador deste usuário?"
+      : "Conceder papel de administrador? Ele terá acesso total ao painel.";
+    if (!confirm(msg)) return;
+    setBusy(true);
+    try {
+      await setUserAdminRole({ data: { userId, admin: !isAdmin } });
+      toast.success(isAdmin ? "Papel admin removido." : "Papel admin concedido.");
+      onDone();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-border/60 p-3">
+      <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+        <ShieldCheck className="h-4 w-4 text-primary" /> Papel de administrador
+      </div>
+      <p className="mb-2 text-xs text-muted-foreground">
+        {isAdmin
+          ? "Este usuário é administrador. O último administrador não pode ser removido."
+          : "Este usuário não tem acesso ao painel administrativo."}
+      </p>
+      <Button
+        onClick={submit}
+        disabled={busy}
+        variant={isAdmin ? "destructive" : "outline"}
+        className="w-full"
+        size="sm"
+      >
+        {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+        {isAdmin ? "Remover papel admin" : "Tornar administrador"}
+      </Button>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
 // Impersonar (gera magic link de uso único)
 // ----------------------------------------------------------------------------
 function ImpersonateForm({ userId }: { userId: string }) {
@@ -375,7 +450,7 @@ function ImpersonateForm({ userId }: { userId: string }) {
       {link && (
         <div className="mt-2 space-y-1">
           <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Link (10 min)
+            Link (válido por 1 h)
           </Label>
           <div className="flex gap-1">
             <Input readOnly value={link} className="h-8 font-mono text-[10px]" />

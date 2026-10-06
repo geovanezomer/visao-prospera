@@ -1,5 +1,5 @@
 {
-  "id": "85ca6e00-a5e5-45e9-b82d-ba90eccf0952",
+  "id": "02316744-3019-49e5-b875-a475cddd02f3",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1840,7 +1840,7 @@
       "checkConstraints": {
         "subscriptions_provider_check": {
           "name": "subscriptions_provider_check",
-          "value": "\"subscriptions\".\"provider\" in ('stripe','asaas')"
+          "value": "\"subscriptions\".\"provider\" in ('stripe','asaas','manual')"
         }
       },
       "isRLSEnabled": false

@@ -1,7 +1,7 @@
 // ============================================================================
 // Server fns do "drill-down" de usuário no painel Admin.
 //
-// - getUserDetail: agrega auth.user + profile + histórico de subscriptions
+// - getUserDetail: agrega usuário + histórico de subscriptions
 //   + últimos webhook_events do cliente + entradas de auditoria onde o usuário
 //   é alvo.
 // - grantManualPlan: concede plano manual (trial, ativo ou lifetime) inserindo
@@ -12,25 +12,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AdminClient, AuthClaims } from "./_types";
+import { requireAuth } from "@/lib/requireAuth";
+import { and, desc, eq, inArray, or, type SQL } from "drizzle-orm";
+import { actorEmail, type Json } from "./_types";
 
-// Procura usuário por e-mail paginando auth.admin.listUsers (até 5k usuários).
-async function findUserByEmail(supabaseAdmin: AdminClient, email: string) {
-  const target = email.toLowerCase();
-  const perPage = 200;
-  for (let page = 1; page <= 25; page++) {
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
-    if (error) throw new Error(error.message);
-    const users = data?.users ?? [];
-    const hit = users.find((u) => (u.email ?? "").toLowerCase() === target);
-    if (hit) return hit;
-    if (users.length < perPage) break;
-  }
-  return null;
+/** Status/fim de período de uma concessão manual de plano. */
+function manualGrant(mode: "trial" | "ativo" | "lifetime", durationDays?: number) {
+  const days = mode === "lifetime" ? null : (durationDays ?? (mode === "trial" ? 14 : 30));
+  const periodEnd = days ? new Date(Date.now() + days * 86400_000).toISOString() : null;
+  const status = mode === "lifetime" ? "lifetime" : mode === "trial" ? "trialing" : "active";
+  return { days, periodEnd, status };
 }
-
-type Json = string | number | boolean | null | { [k: string]: Json } | Json[];
 
 // ---------------------------------------------------------------------------
 // getUserDetail
@@ -43,9 +35,13 @@ export type UserDetail = {
     displayName: string | null;
     createdAt: string;
     lastSignInAt: string | null;
+    /** Bloqueio ativo (com ou sem prazo). */
+    banned: boolean;
     bannedUntil: string | null;
-    emailConfirmedAt: string | null;
+    emailVerified: boolean;
+    /** "senha" (conta credential) ou "magic link". */
     provider: string | null;
+    role: string;
     metadata: Json;
   };
   subscriptions: Array<{
@@ -80,109 +76,104 @@ export type UserDetail = {
 };
 
 export const getUserDetail = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((d: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<UserDetail> => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { getAppUser } = await import("@/lib/users.server");
+    const { db, schema } = await import("@/db/client.server");
 
-    const { data: u, error: uerr } = await supabaseAdmin.auth.admin.getUserById(data.userId);
-    if (uerr || !u?.user) throw new Error(uerr?.message ?? "Usuário não encontrado.");
-    const au = u.user;
+    const au = await getAppUser(data.userId);
+    if (!au) throw new Error("Usuário não encontrado.");
 
-    const { data: prof } = await supabaseAdmin
-      .from("profiles")
-      .select("display_name")
-      .eq("id", data.userId)
-      .maybeSingle();
+    const [cred] = await db()
+      .select({ id: schema.account.id })
+      .from(schema.account)
+      .where(
+        and(eq(schema.account.userId, data.userId), eq(schema.account.providerId, "credential")),
+      )
+      .limit(1);
 
-    const meta = (au.user_metadata ?? {}) as Record<string, unknown>;
-    const displayName =
-      (typeof meta.display_name === "string" && meta.display_name) ||
-      (typeof meta.full_name === "string" && meta.full_name) ||
-      prof?.display_name ||
-      (au.email ? au.email.split("@")[0] : null);
-
-    const { data: subs } = await supabaseAdmin
-      .from("subscriptions")
-      .select("*")
-      .eq("user_id", data.userId)
-      .order("created_at", { ascending: false })
+    const subs = await db()
+      .select()
+      .from(schema.subscriptions)
+      .where(eq(schema.subscriptions.userId, data.userId))
+      .orderBy(desc(schema.subscriptions.createdAt))
       .limit(50);
 
     // webhook_events não tem user_id; cruzamos por customer_email + subscription_id.
-    const subIds = (subs ?? [])
-      .map((s) => s.stripe_subscription_id)
-      .filter((v): v is string => !!v);
-    let whQuery = supabaseAdmin
-      .from("webhook_events")
-      .select("id, provider, event_type, status, subscription_id, received_at, error")
-      .order("received_at", { ascending: false })
-      .limit(30);
-    if (au.email && subIds.length > 0) {
-      const ors = [
-        `customer_email.eq.${au.email}`,
-        ...subIds.map((id) => `subscription_id.eq.${id}`),
-      ].join(",");
-      whQuery = whQuery.or(ors);
-    } else if (au.email) {
-      whQuery = whQuery.eq("customer_email", au.email);
-    } else if (subIds.length > 0) {
-      whQuery = whQuery.in("subscription_id", subIds);
-    } else {
-      whQuery = whQuery.eq("id", "00000000-0000-0000-0000-000000000000");
-    }
-    const { data: wh } = await whQuery;
+    const wt = schema.webhookEvents;
+    const subIds = subs.map((s) => s.stripeSubscriptionId).filter((v): v is string => !!v);
+    const whConds: SQL[] = [];
+    if (au.email) whConds.push(eq(wt.customerEmail, au.email));
+    if (subIds.length > 0) whConds.push(inArray(wt.subscriptionId, subIds));
+    const wh = whConds.length
+      ? await db()
+          .select({
+            id: wt.id,
+            provider: wt.provider,
+            eventType: wt.eventType,
+            status: wt.status,
+            subscriptionId: wt.subscriptionId,
+            receivedAt: wt.receivedAt,
+            error: wt.error,
+          })
+          .from(wt)
+          .where(or(...whConds))
+          .orderBy(desc(wt.receivedAt))
+          .limit(30)
+      : [];
 
-    const { data: audit } = await supabaseAdmin
-      .from("admin_audit_log")
-      .select("id, action, resource, actor_email, created_at, metadata")
-      .eq("target_id", data.userId)
-      .order("created_at", { ascending: false })
+    const at = schema.adminAuditLog;
+    const audit = await db()
+      .select({
+        id: at.id,
+        action: at.action,
+        resource: at.resource,
+        actorEmail: at.actorEmail,
+        createdAt: at.createdAt,
+        metadata: at.metadata,
+      })
+      .from(at)
+      .where(eq(at.targetId, data.userId))
+      .orderBy(desc(at.createdAt))
       .limit(30);
 
     return {
       user: {
         id: au.id,
-        email: au.email ?? null,
-        phone: au.phone ?? null,
-        displayName,
-        createdAt: au.created_at,
-        lastSignInAt: au.last_sign_in_at ?? null,
-        bannedUntil: (au as { banned_until?: string | null }).banned_until ?? null,
-        emailConfirmedAt: au.email_confirmed_at ?? null,
-        provider: (au.app_metadata as { provider?: string } | undefined)?.provider ?? null,
-        metadata: meta as Json,
+        email: au.email,
+        phone: null,
+        displayName: au.name || au.email.split("@")[0] || null,
+        createdAt: au.createdAt,
+        lastSignInAt: au.lastSignInAt,
+        banned: au.banned,
+        bannedUntil: au.bannedUntil,
+        emailVerified: au.emailVerified,
+        provider: cred ? "senha" : "magic link",
+        role: au.role,
+        metadata: {
+          username: au.username,
+          aiEnabled: au.aiEnabled,
+          isTrial: au.isTrial,
+          trialExpiresAt: au.trialExpiresAt,
+          mustChangePassword: au.mustChangePassword,
+        },
       },
-      subscriptions: (subs ?? []).map((s) => ({
+      subscriptions: subs.map((s) => ({
         id: s.id,
         plan: s.plan,
         status: s.status,
         provider: s.provider,
-        currentPeriodEnd: s.current_period_end,
-        cancelAtPeriodEnd: s.cancel_at_period_end,
-        stripeSubscriptionId: s.stripe_subscription_id,
-        customerId: s.provider_customer_id ?? s.stripe_customer_id ?? null,
-        createdAt: s.created_at,
-        updatedAt: s.updated_at,
+        currentPeriodEnd: s.currentPeriodEnd,
+        cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+        stripeSubscriptionId: s.stripeSubscriptionId,
+        customerId: s.providerCustomerId ?? s.stripeCustomerId ?? null,
+        createdAt: s.createdAt,
+        updatedAt: s.updatedAt,
       })),
-      webhookEvents: (wh ?? []).map((e) => ({
-        id: e.id,
-        provider: e.provider,
-        eventType: e.event_type,
-        status: e.status,
-        subscriptionId: e.subscription_id,
-        receivedAt: e.received_at,
-        error: e.error,
-      })),
-      auditEntries: (audit ?? []).map((a) => ({
-        id: a.id,
-        action: a.action,
-        resource: a.resource,
-        actorEmail: a.actor_email,
-        createdAt: a.created_at,
-        metadata: a.metadata as Json | null,
-      })),
+      webhookEvents: wh,
+      auditEntries: audit.map((a) => ({ ...a, metadata: (a.metadata ?? null) as Json | null })),
     };
   });
 
@@ -191,7 +182,7 @@ export const getUserDetail = createServerFn({ method: "POST" })
 // Útil para cortesia, parceria, beta-testers, reativações pontuais.
 // ---------------------------------------------------------------------------
 export const grantManualPlan = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator(
     (d: {
       userId: string;
@@ -212,29 +203,25 @@ export const grantManualPlan = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db, schema } = await import("@/db/client.server");
+    const { days, periodEnd, status } = manualGrant(data.mode, data.durationDays);
 
-    const days =
-      data.mode === "lifetime" ? null : (data.durationDays ?? (data.mode === "trial" ? 14 : 30));
-    const periodEnd = days ? new Date(Date.now() + days * 86400_000).toISOString() : null;
-    const status =
-      data.mode === "lifetime" ? "lifetime" : data.mode === "trial" ? "trialing" : "active";
-
-    const { error } = await supabaseAdmin.from("subscriptions").insert({
-      user_id: data.userId,
-      plan: data.plan,
-      price_id: `manual_${data.plan}`,
-      status,
-      provider: "manual",
-      current_period_end: periodEnd,
-      cancel_at_period_end: false,
-    });
-    if (error) throw new Error(error.message);
+    await db()
+      .insert(schema.subscriptions)
+      .values({
+        userId: data.userId,
+        plan: data.plan,
+        priceId: `manual_${data.plan}`,
+        status,
+        provider: "manual",
+        currentPeriodEnd: periodEnd,
+        cancelAtPeriodEnd: false,
+      });
 
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as AuthClaims | undefined)?.email,
+      actorEmail: actorEmail(context),
       action: "plan.grant_manual",
       resource: "subscription",
       targetId: data.userId,
@@ -253,38 +240,30 @@ export const grantManualPlan = createServerFn({ method: "POST" })
 // abrir em aba anônima e navegar como o usuário. Tudo fica registrado.
 // ---------------------------------------------------------------------------
 export const impersonateUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((d: { userId: string; reason?: string }) =>
     z.object({ userId: z.string().uuid(), reason: z.string().max(500).optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { getAppUser } = await import("@/lib/users.server");
+    const u = await getAppUser(data.userId);
+    if (!u?.email) throw new Error("Usuário sem e-mail.");
 
-    const { data: u, error } = await supabaseAdmin.auth.admin.getUserById(data.userId);
-    if (error || !u?.user?.email) throw new Error(error?.message ?? "Usuário sem e-mail.");
-
-    const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
-    const { data: link, error: lerr } = await supabaseAdmin.auth.admin.generateLink({
-      type: "magiclink",
-      email: u.user.email,
-      options: appUrl ? { redirectTo: `${appUrl}/app` } : undefined,
-    });
-    if (lerr) throw new Error(lerr.message);
-    const actionLink = link?.properties?.action_link as string | undefined;
-    if (!actionLink) throw new Error("Falha ao gerar link.");
+    const { generateMagicLink } = await import("@/lib/magicLink.server");
+    const actionLink = await generateMagicLink(u.email, "/app");
 
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as AuthClaims | undefined)?.email,
+      actorEmail: actorEmail(context),
       action: "user.impersonate",
       resource: "user",
       targetId: data.userId,
-      targetLabel: u.user.email,
+      targetLabel: u.email,
       metadata: { reason: data.reason ?? null },
     });
-    return { ok: true, email: u.user.email, link: actionLink };
+    return { ok: true, email: u.email, link: actionLink };
   });
 
 // ---------------------------------------------------------------------------
@@ -294,7 +273,7 @@ export const impersonateUser = createServerFn({ method: "POST" })
 // dispara magic link para o convidado definir senha / entrar.
 // ---------------------------------------------------------------------------
 export const createManualUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator(
     (d: {
       email: string;
@@ -325,76 +304,64 @@ export const createManualUser = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { createAppUser, findAppUserByEmail } = await import("@/lib/users.server");
+    const { db, schema } = await import("@/db/client.server");
 
-    // 1) Verifica duplicidade paginando todos os usuários (listUsers não filtra por email).
-    const dup = await findUserByEmail(supabaseAdmin, data.email);
+    // 1) Verifica duplicidade.
+    const dup = await findAppUserByEmail(data.email);
     if (dup) {
       throw new Error(
         `Já existe um usuário com este e-mail (id ${dup.id}). Use o drawer para conceder plano.`,
       );
     }
 
-    // 2) Cria usuário (e-mail já confirmado para evitar bloqueio).
-    const { data: created, error: cerr } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
-      email_confirm: true,
-      user_metadata: data.displayName ? { display_name: data.displayName } : undefined,
-    });
-    if (cerr || !created?.user) {
-      throw new Error(cerr?.message ?? "Falha ao criar usuário.");
-    }
-    const newUserId = created.user.id;
-
-    // 3) Garante linha em profiles (o trigger handle_new_user normalmente cuida,
-    //    mas reforçamos de forma idempotente).
-    if (data.displayName) {
-      await supabaseAdmin
-        .from("profiles")
-        .upsert({ id: newUserId, display_name: data.displayName }, { onConflict: "id" });
+    // 2) Cria usuário (e-mail já confirmado; entra por magic link até definir senha).
+    let newUserId: string;
+    try {
+      const created = await createAppUser({
+        email: data.email,
+        name: data.displayName,
+        emailVerified: true,
+      });
+      newUserId = created.id;
+    } catch (e) {
+      if (e instanceof Error && e.message === "USER_EXISTS") {
+        throw new Error("Já existe um usuário com este e-mail.");
+      }
+      throw e;
     }
 
-    // 4) Concessão opcional de plano (mesma lógica do grantManualPlan).
+    // 3) Concessão opcional de plano (mesma lógica do grantManualPlan).
     let grantInfo: { status: string; currentPeriodEnd: string | null } | null = null;
     if (data.grant) {
       const g = data.grant;
-      const days =
-        g.mode === "lifetime" ? null : (g.durationDays ?? (g.mode === "trial" ? 14 : 30));
-      const periodEnd = days ? new Date(Date.now() + days * 86400_000).toISOString() : null;
-      const status =
-        g.mode === "lifetime" ? "lifetime" : g.mode === "trial" ? "trialing" : "active";
-
-      const { error: serr } = await supabaseAdmin.from("subscriptions").insert({
-        user_id: newUserId,
-        plan: g.plan,
-        price_id: `manual_${g.plan}`,
-        status,
-        provider: "manual",
-        current_period_end: periodEnd,
-        cancel_at_period_end: false,
-      });
-      if (serr) throw new Error(serr.message);
+      const { periodEnd, status } = manualGrant(g.mode, g.durationDays);
+      await db()
+        .insert(schema.subscriptions)
+        .values({
+          userId: newUserId,
+          plan: g.plan,
+          priceId: `manual_${g.plan}`,
+          status,
+          provider: "manual",
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: false,
+        });
       grantInfo = { status, currentPeriodEnd: periodEnd };
     }
 
-    // 5) Magic link opcional (convite para o usuário entrar).
+    // 4) Magic link opcional (convite para o usuário entrar).
     let magicLink: string | null = null;
     if (data.sendMagicLink) {
-      const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
-      const { data: link, error: lerr } = await supabaseAdmin.auth.admin.generateLink({
-        type: "magiclink",
-        email: data.email,
-        options: appUrl ? { redirectTo: `${appUrl}/app` } : undefined,
-      });
-      if (lerr) throw new Error(lerr.message);
-      magicLink = (link?.properties?.action_link as string | undefined) ?? null;
+      const { generateMagicLink } = await import("@/lib/magicLink.server");
+      magicLink = await generateMagicLink(data.email, "/app");
     }
 
-    // 6) Auditoria.
+    // 5) Auditoria.
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as AuthClaims | undefined)?.email,
+      actorEmail: actorEmail(context),
       action: "user.created_manually",
       resource: "user",
       targetId: newUserId,
@@ -419,18 +386,18 @@ export const createManualUser = createServerFn({ method: "POST" })
 // ---------------------------------------------------------------------------
 // checkEmailAvailable — usada pelo dialog de "Novo usuário" para detectar
 // duplicidade ANTES da etapa de confirmação, evitando 1 chamada perdida ao
-// admin.createUser.
+// createAppUser.
 // ---------------------------------------------------------------------------
 export const checkEmailAvailable = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((d: { email: string }) =>
     z.object({ email: z.string().trim().toLowerCase().email().max(255) }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const hit = await findUserByEmail(supabaseAdmin, data.email);
+    const { findAppUserByEmail } = await import("@/lib/users.server");
+    const hit = await findAppUserByEmail(data.email);
     return hit
-      ? { available: false as const, userId: hit.id as string, email: data.email }
+      ? { available: false as const, userId: hit.id, email: data.email }
       : { available: true as const, email: data.email };
   });

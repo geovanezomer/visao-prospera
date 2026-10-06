@@ -1,5 +1,5 @@
 // ============================================================================
-// Notify Admin — envia alertas via Slack (webhook) e/ou Resend (e-mail).
+// Notify Admin — envia alertas via Slack (webhook) e/ou e-mail (sendMail).
 // Throttle simples: deduplicação por chave nos últimos 5 minutos via
 // admin_audit_log (resource='notify').
 // ============================================================================
@@ -16,12 +16,13 @@ export async function notifyAdmin(
   payload: NotifyPayload,
 ): Promise<{ sent: boolean; reason?: string }> {
   try {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: cfg } = await supabaseAdmin
-      .from("notification_settings")
-      .select("*")
-      .eq("id", 1)
-      .maybeSingle();
+    const { db, schema } = await import("@/db/client.server");
+    const { and, eq, gte } = await import("drizzle-orm");
+    const [cfg] = await db()
+      .select()
+      .from(schema.notificationSettings)
+      .where(eq(schema.notificationSettings.id, 1))
+      .limit(1);
     if (!cfg) return { sent: false, reason: "no-config" };
     const events = (cfg.events as Record<string, boolean>) ?? {};
     if (events[payload.event] === false) return { sent: false, reason: "event-disabled" };
@@ -29,21 +30,26 @@ export async function notifyAdmin(
     // Dedup
     if (payload.dedupKey) {
       const since = new Date(Date.now() - 5 * 60_000).toISOString();
-      const { data: dupe } = await supabaseAdmin
-        .from("admin_audit_log")
-        .select("id")
-        .eq("resource", "notify")
-        .eq("target_label", payload.dedupKey)
-        .gte("created_at", since)
+      const t = schema.adminAuditLog;
+      const dupe = await db()
+        .select({ id: t.id })
+        .from(t)
+        .where(
+          and(
+            eq(t.resource, "notify"),
+            eq(t.targetLabel, payload.dedupKey),
+            gte(t.createdAt, since),
+          ),
+        )
         .limit(1);
-      if (dupe && dupe.length > 0) return { sent: false, reason: "dedup" };
+      if (dupe.length > 0) return { sent: false, reason: "dedup" };
     }
 
     const tasks: Promise<unknown>[] = [];
 
-    if (cfg.slack_webhook_url) {
+    if (cfg.slackWebhookUrl) {
       tasks.push(
-        fetch(cfg.slack_webhook_url, {
+        fetch(cfg.slackWebhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -53,40 +59,33 @@ export async function notifyAdmin(
       );
     }
 
-    if (cfg.email_to) {
-      const { data: emailCfg } = await supabaseAdmin
-        .from("email_settings")
-        .select("*")
-        .limit(1)
-        .maybeSingle();
-      const apiKey = emailCfg?.resend_api_key || process.env.RESEND_API_KEY;
-      const fromEmail = emailCfg?.from_email || process.env.FEEDBACK_FROM;
-      const fromName = emailCfg?.from_name || "Finnance Admin";
-      if (apiKey && fromEmail) {
-        tasks.push(
-          fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              from: `${fromName} <${fromEmail}>`,
-              to: cfg.email_to,
-              subject: `[Finnance] ${payload.title}`,
-              html: `<h3>${payload.title}</h3><p>${payload.body.replace(/\n/g, "<br/>")}</p><p style="color:#888;font-size:12px">Evento: ${payload.event}</p>`,
-            }),
-          }).catch((e) => console.error("[notify] email falhou", e)),
-        );
-      }
+    if (cfg.emailTo) {
+      const { sendMail } = await import("@/lib/mailer.server");
+      tasks.push(
+        sendMail({
+          to: cfg.emailTo,
+          subject: `[Finnance] ${payload.title}`,
+          html: `<h3>${payload.title}</h3><p>${payload.body.replace(/\n/g, "<br/>")}</p><p style="color:#888;font-size:12px">Evento: ${payload.event}</p>`,
+          text: `${payload.title}\n\n${payload.body}\n\nEvento: ${payload.event}`,
+        })
+          .then((r) => {
+            if (!r.sent && r.error) console.error("[notify] email falhou", r.error);
+          })
+          .catch((e) => console.error("[notify] email falhou", e)),
+      );
     }
 
     await Promise.all(tasks);
 
     // registra para dedup
-    await supabaseAdmin.from("admin_audit_log").insert({
-      action: `notify.${payload.event}`,
-      resource: "notify",
-      target_label: payload.dedupKey ?? payload.title,
-      metadata: { title: payload.title } as unknown as import("@/integrations/supabase/types").Json,
-    });
+    await db()
+      .insert(schema.adminAuditLog)
+      .values({
+        action: `notify.${payload.event}`,
+        resource: "notify",
+        targetLabel: payload.dedupKey ?? payload.title,
+        metadata: { title: payload.title },
+      });
 
     return { sent: tasks.length > 0 };
   } catch (e) {

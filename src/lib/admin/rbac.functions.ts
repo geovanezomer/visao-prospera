@@ -1,23 +1,53 @@
 // ============================================================================
-// rbac.functions — checagens de papel para o cliente, sem expor e-mail
-// do administrador no bundle (F-04). Backed by public.has_role no Postgres.
+// rbac.functions — papel do usuário (`user.role`: "admin" | "user").
+//
+// - isCurrentUserAdmin: gating de UI (toda mutação admin é revalidada no
+//   servidor via `assertAdmin`).
+// - setUserAdminRole: concede/revoga o papel admin. Nunca deixa o sistema
+//   sem administrador.
 // ============================================================================
 
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { z } from "zod";
+import { requireAuth } from "@/lib/requireAuth";
+import { assertAdmin } from "./assertAdmin";
+import { actorEmail } from "./_types";
+
+/** true se o usuário autenticado tem papel `admin` (lido do banco). */
+export const isCurrentUserAdmin = createServerFn({ method: "GET" })
+  .middleware([requireAuth])
+  .handler(async ({ context }) => {
+    try {
+      const { isAdminUser } = await import("@/lib/users.server");
+      return await isAdminUser(context.userId);
+    } catch {
+      return false;
+    }
+  });
 
 /**
- * Retorna true se o usuário autenticado possui o papel `admin`
- * em `public.user_roles`. Usado apenas para gating de UI; toda mutação
- * admin é revalidada no servidor via `assertAdmin`.
+ * Concede (`admin: true`) ou revoga (`admin: false`) o papel admin.
+ * Bloqueia a revogação quando o alvo é o último administrador.
  */
-export const isCurrentUserAdmin = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data, error } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (error) return false;
-    return data === true;
+export const setUserAdminRole = createServerFn({ method: "POST" })
+  .middleware([requireAuth])
+  .validator((d: { userId: string; admin: boolean }) =>
+    z.object({ userId: z.string().uuid(), admin: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { applyAdminRole } = await import("./rbac.server");
+    const res = await applyAdminRole(data.userId, data.admin);
+    if (res.changed) {
+      const { logAudit } = await import("./audit.server");
+      await logAudit({
+        actorId: context.userId,
+        actorEmail: actorEmail(context),
+        action: data.admin ? "user.role_grant_admin" : "user.role_revoke_admin",
+        resource: "user",
+        targetId: data.userId,
+        targetLabel: res.email,
+      });
+    }
+    return { ok: true, role: res.role };
   });

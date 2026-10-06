@@ -1,11 +1,12 @@
 // ============================================================================
-// Server fns: email_settings + email_templates (Resend).
+// Server fns: email_settings + email_templates.
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
 import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AuthClaims } from "./_types";
+import { requireAuth } from "@/lib/requireAuth";
+import { asc, eq } from "drizzle-orm";
+import { toSnake } from "./_types";
 
 const TEMPLATE_KINDS = [
   "magic_link",
@@ -27,24 +28,24 @@ function mask(v: string | null | undefined): string | null {
 }
 
 export const getEmailSettings = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin.from("email_settings").select("*").limit(1).maybeSingle();
+    const { db, schema } = await import("@/db/client.server");
+    const [data] = await db().select().from(schema.emailSettings).limit(1);
     return {
       id: data?.id ?? null,
-      apiKeyMasked: mask(data?.resend_api_key),
-      hasApiKey: !!data?.resend_api_key,
-      fromEmail: data?.from_email ?? "",
-      fromName: data?.from_name ?? "",
-      replyTo: data?.reply_to ?? "",
-      updatedAt: data?.updated_at ?? null,
+      apiKeyMasked: mask(data?.resendApiKey),
+      hasApiKey: !!data?.resendApiKey,
+      fromEmail: data?.fromEmail ?? "",
+      fromName: data?.fromName ?? "",
+      replyTo: data?.replyTo ?? "",
+      updatedAt: data?.updatedAt ?? null,
     };
   });
 
 export const updateEmailSettings = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((d: { apiKey?: string; fromEmail?: string; fromName?: string; replyTo?: string }) =>
     z
       .object({
@@ -57,79 +58,61 @@ export const updateEmailSettings = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: existing } = await supabaseAdmin
-      .from("email_settings")
-      .select("id")
-      .limit(1)
-      .maybeSingle();
-    const patch: {
-      updated_at: string;
-      updated_by: string | null;
-      resend_api_key?: string;
-      from_email?: string;
-      from_name?: string;
-      reply_to?: string | null;
-    } = {
-      updated_at: new Date().toISOString(),
-      updated_by: context.userId ?? null,
+    const { db, schema } = await import("@/db/client.server");
+    const t = schema.emailSettings;
+    const [existing] = await db().select({ id: t.id }).from(t).limit(1);
+    const patch: Partial<typeof t.$inferInsert> = {
+      updatedAt: new Date().toISOString(),
+      updatedBy: context.userId ?? null,
     };
-    if (data.apiKey) patch.resend_api_key = data.apiKey;
-    if (data.fromEmail !== undefined) patch.from_email = data.fromEmail;
-    if (data.fromName !== undefined) patch.from_name = data.fromName;
-    if (data.replyTo !== undefined) patch.reply_to = data.replyTo || null;
+    if (data.apiKey) patch.resendApiKey = data.apiKey;
+    if (data.fromEmail !== undefined) patch.fromEmail = data.fromEmail;
+    if (data.fromName !== undefined) patch.fromName = data.fromName;
+    if (data.replyTo !== undefined) patch.replyTo = data.replyTo || null;
     if (existing?.id) {
-      const { error } = await supabaseAdmin
-        .from("email_settings")
-        .update(patch)
-        .eq("id", existing.id);
-      if (error) throw new Error(error.message);
+      await db().update(t).set(patch).where(eq(t.id, existing.id));
     } else {
-      const { error } = await supabaseAdmin.from("email_settings").insert(patch);
-      if (error) throw new Error(error.message);
+      await db().insert(t).values(patch);
     }
     return { ok: true };
   });
 
 export const sendTestEmail = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((d: { to: string }) => z.object({ to: z.string().email() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: s } = await supabaseAdmin
-      .from("email_settings")
-      .select("*")
-      .limit(1)
-      .maybeSingle();
-    if (!s?.resend_api_key || !s?.from_email) throw new Error("Configuração de e-mail incompleta.");
-    const from = s.from_name ? `${s.from_name} <${s.from_email}>` : s.from_email;
-    const r = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${s.resend_api_key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from,
-        to: data.to,
-        subject: "Teste — Finnance",
-        html: "<p>Este é um e-mail de teste do painel administrativo.</p>",
-      }),
+    const { sendMail } = await import("@/lib/mailer.server");
+    const r = await sendMail({
+      to: data.to,
+      subject: "Teste — Finnance",
+      html: "<p>Este é um e-mail de teste do painel administrativo.</p>",
+      text: "Este é um e-mail de teste do painel administrativo.",
     });
-    if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text()}`);
+    if (!r.sent) {
+      throw new Error(
+        r.via === "none"
+          ? "Nenhum envio configurado (defina SMTP_HOST ou a chave do Resend)."
+          : `Falha no envio (${r.via}): ${r.error ?? "erro desconhecido"}`,
+      );
+    }
     return { ok: true };
   });
 
 export const listEmailTemplates = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin.from("email_templates").select("*").order("kind");
-    if (error) throw new Error(error.message);
-    return { templates: data ?? [] };
+    const { db, schema } = await import("@/db/client.server");
+    const rows = await db()
+      .select()
+      .from(schema.emailTemplates)
+      .orderBy(asc(schema.emailTemplates.kind));
+    return { templates: rows.map(toSnake) };
   });
 
 export const updateEmailTemplate = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator(
     (d: { kind: TemplateKind; subject: string; html: string; text?: string; enabled?: boolean }) =>
       z
@@ -144,18 +127,17 @@ export const updateEmailTemplate = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("email_templates")
-      .update({
+    const { db, schema } = await import("@/db/client.server");
+    await db()
+      .update(schema.emailTemplates)
+      .set({
         subject: data.subject,
         html: data.html,
         text: data.text ?? null,
         enabled: data.enabled ?? true,
-        updated_at: new Date().toISOString(),
-        updated_by: context.userId,
+        updatedAt: new Date().toISOString(),
+        updatedBy: context.userId,
       })
-      .eq("kind", data.kind);
-    if (error) throw new Error(error.message);
+      .where(eq(schema.emailTemplates.kind, data.kind));
     return { ok: true };
   });

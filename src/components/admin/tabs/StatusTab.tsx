@@ -1,5 +1,5 @@
 // ============================================================================
-// StatusTab — saúde dos serviços externos (Supabase, Stripe, Resend, Asaas, AI).
+// StatusTab — saúde dos serviços externos (PostgreSQL, Stripe, e-mail, Asaas, AI).
 // ============================================================================
 import { useEffect, useState, useCallback } from "react";
 import { Loader2, RefreshCw, CheckCircle2, AlertTriangle, XCircle, HelpCircle } from "lucide-react";

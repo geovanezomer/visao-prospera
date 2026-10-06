@@ -4,11 +4,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AuthClaims } from "./_types";
+import { and, count, desc, eq, ilike, or } from "drizzle-orm";
+import { requireAuth } from "@/lib/requireAuth";
+import { toSnake, type Json } from "./_types";
 
 export const listAuditLog = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator(
     (d: { page?: number; perPage?: number; search?: string; action?: string; resource?: string }) =>
       z
@@ -23,24 +24,36 @@ export const listAuditLog = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db, schema } = await import("@/db/client.server");
+    const t = schema.adminAuditLog;
     const page = data.page ?? 1;
     const perPage = data.perPage ?? 50;
-    const from = (page - 1) * perPage;
-    const to = from + perPage - 1;
 
-    let q = supabaseAdmin
-      .from("admin_audit_log")
-      .select("*", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .range(from, to);
-    if (data.action) q = q.eq("action", data.action);
-    if (data.resource) q = q.eq("resource", data.resource);
-    if (data.search) {
-      const s = data.search.trim();
-      q = q.or(`actor_email.ilike.%${s}%,target_id.ilike.%${s}%,target_label.ilike.%${s}%`);
+    const conds = [];
+    if (data.action) conds.push(eq(t.action, data.action));
+    if (data.resource) conds.push(eq(t.resource, data.resource));
+    if (data.search?.trim()) {
+      const like = `%${data.search.trim()}%`;
+      conds.push(
+        or(ilike(t.actorEmail, like), ilike(t.targetId, like), ilike(t.targetLabel, like)),
+      );
     }
-    const { data: rows, error, count } = await q;
-    if (error) throw new Error(error.message);
-    return { rows: rows ?? [], total: count ?? 0, page, perPage };
+    const where = conds.length ? and(...conds) : undefined;
+
+    const [rows, [{ total }]] = await Promise.all([
+      db()
+        .select()
+        .from(t)
+        .where(where)
+        .orderBy(desc(t.createdAt))
+        .limit(perPage)
+        .offset((page - 1) * perPage),
+      db().select({ total: count() }).from(t).where(where),
+    ]);
+    return {
+      rows: rows.map((r) => toSnake({ ...r, metadata: r.metadata as Json })),
+      total: Number(total),
+      page,
+      perPage,
+    };
   });

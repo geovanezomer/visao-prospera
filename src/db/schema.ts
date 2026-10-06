@@ -149,7 +149,8 @@ export const subscriptions = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [
-    check("subscriptions_provider_check", sql`${t.provider} in ('stripe','asaas')`),
+    // "manual": plano concedido pelo admin (sem provedor de pagamento).
+    check("subscriptions_provider_check", sql`${t.provider} in ('stripe','asaas','manual')`),
     index("idx_subscriptions_user_status_created").on(t.userId, t.status, t.createdAt.desc()),
     index("idx_subscriptions_provider_customer").on(t.provider, t.providerCustomerId),
   ],

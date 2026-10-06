@@ -1,16 +1,17 @@
 // ============================================================================
-// Broadcasts — disparo segmentado para usuários via Resend.
+// Broadcasts — disparo segmentado para usuários via mailer (SMTP/Resend).
 // Segmentação suportada:
 //   - plan: free | starter | pro | lifetime
 //   - status: active | trialing | past_due | canceled | none
 //   - emails: lista de e-mails específicos (override do filtro)
-// Limite prático: 1000 destinatários por broadcast (rate de Resend free ~10 req/s).
+// Limite prático: 2000 destinatários por broadcast (throttle ~7.5 envios/s).
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
 import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AuthClaims } from "./_types";
+import { requireAuth } from "@/lib/requireAuth";
+import { desc, eq, inArray } from "drizzle-orm";
+import { actorEmail, toSnake, type Json } from "./_types";
 
 const SegmentSchema = z.object({
   plan: z.enum(["all", "free", "starter", "pro", "lifetime"]).optional(),
@@ -23,7 +24,7 @@ export type BroadcastSegment = z.infer<typeof SegmentSchema>;
 // previewBroadcastAudience — devolve contagem e amostra (até 20).
 // ----------------------------------------------------------------------------
 export const previewBroadcastAudience = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((d: { segment: BroadcastSegment }) => z.object({ segment: SegmentSchema }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
@@ -35,7 +36,7 @@ export const previewBroadcastAudience = createServerFn({ method: "POST" })
 // sendBroadcast — registra + envia. Throttling simples: 8 req/s.
 // ----------------------------------------------------------------------------
 export const sendBroadcast = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((d: { subject: string; html: string; segment: BroadcastSegment }) =>
     z
       .object({
@@ -47,48 +48,43 @@ export const sendBroadcast = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db, schema } = await import("@/db/client.server");
+    const { sendMail, isMailConfigured } = await import("@/lib/mailer.server");
 
     const { recipients } = await resolveAudience(data.segment);
     if (recipients.length === 0) throw new Error("Nenhum destinatário encontrado para o segmento.");
     if (recipients.length > 2000) throw new Error("Limite de 2000 destinatários por broadcast.");
 
-    const { data: cfg } = await supabaseAdmin
-      .from("email_settings")
-      .select("*")
-      .limit(1)
-      .maybeSingle();
-    const apiKey = cfg?.resend_api_key || process.env.RESEND_API_KEY;
-    const fromEmail = cfg?.from_email || process.env.FEEDBACK_FROM;
-    const fromName = cfg?.from_name || "Finnance";
-    if (!apiKey || !fromEmail) throw new Error("E-mail não configurado (Resend).");
-    const from = `${fromName} <${fromEmail}>`;
+    const [cfg] = await db().select().from(schema.emailSettings).limit(1);
+    if (!isMailConfigured() && !cfg?.resendApiKey) {
+      throw new Error("E-mail não configurado (SMTP ou Resend).");
+    }
 
-    const { data: row, error: insErr } = await supabaseAdmin
-      .from("broadcasts")
-      .insert({
+    const [row] = await db()
+      .insert(schema.broadcasts)
+      .values({
         subject: data.subject,
         html: data.html,
         segment: data.segment,
         status: "sending",
-        total_recipients: recipients.length,
-        created_by: context.userId,
+        totalRecipients: recipients.length,
+        createdBy: context.userId,
       })
-      .select("id")
-      .single();
-    if (insErr || !row) throw new Error(insErr?.message ?? "Falha ao registrar broadcast.");
+      .returning({ id: schema.broadcasts.id });
+    if (!row) throw new Error("Falha ao registrar broadcast.");
 
-    // Disparo sequencial com pequeno delay para respeitar rate Resend.
+    // Disparo sequencial com pequeno delay para respeitar rate do provedor.
     let sent = 0;
     let failed = 0;
     for (const r of recipients) {
       try {
-        const res = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ from, to: r.email, subject: data.subject, html: data.html }),
+        const res = await sendMail({
+          to: r.email,
+          subject: data.subject,
+          html: data.html,
+          replyTo: cfg?.replyTo ?? undefined,
         });
-        if (res.ok) sent++;
+        if (res.sent) sent++;
         else failed++;
       } catch {
         failed++;
@@ -96,20 +92,20 @@ export const sendBroadcast = createServerFn({ method: "POST" })
       await new Promise((res) => setTimeout(res, 130)); // ~7.5 req/s
     }
 
-    await supabaseAdmin
-      .from("broadcasts")
-      .update({
+    await db()
+      .update(schema.broadcasts)
+      .set({
         status: failed === recipients.length ? "failed" : "sent",
-        sent_count: sent,
-        failed_count: failed,
-        sent_at: new Date().toISOString(),
+        sentCount: sent,
+        failedCount: failed,
+        sentAt: new Date().toISOString(),
       })
-      .eq("id", row.id);
+      .where(eq(schema.broadcasts.id, row.id));
 
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as AuthClaims | undefined)?.email,
+      actorEmail: actorEmail(context),
       action: "broadcast.send",
       resource: "broadcast",
       targetId: row.id,
@@ -122,19 +118,27 @@ export const sendBroadcast = createServerFn({ method: "POST" })
 // listBroadcasts — histórico recente.
 // ----------------------------------------------------------------------------
 export const listBroadcasts = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
-      .from("broadcasts")
-      .select(
-        "id, subject, status, total_recipients, sent_count, failed_count, created_at, sent_at, segment",
-      )
-      .order("created_at", { ascending: false })
+    const { db, schema } = await import("@/db/client.server");
+    const t = schema.broadcasts;
+    const rows = await db()
+      .select({
+        id: t.id,
+        subject: t.subject,
+        status: t.status,
+        totalRecipients: t.totalRecipients,
+        sentCount: t.sentCount,
+        failedCount: t.failedCount,
+        createdAt: t.createdAt,
+        sentAt: t.sentAt,
+        segment: t.segment,
+      })
+      .from(t)
+      .orderBy(desc(t.createdAt))
       .limit(50);
-    if (error) throw new Error(error.message);
-    return { broadcasts: data ?? [] };
+    return { broadcasts: rows.map((r) => toSnake({ ...r, segment: r.segment as Json })) };
   });
 
 // ----------------------------------------------------------------------------
@@ -143,34 +147,35 @@ export const listBroadcasts = createServerFn({ method: "POST" })
 async function resolveAudience(
   seg: BroadcastSegment,
 ): Promise<{ recipients: { id: string; email: string }[] }> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // Lista de e-mails específicos: override total.
   if (seg.emails && seg.emails.length > 0) {
     return { recipients: seg.emails.map((email) => ({ id: "", email })) };
   }
 
-  // Lê todos os usuários (até 5000).
-  const all: Array<{ id: string; email?: string | null }> = [];
-  for (let p = 1; p <= 25; p++) {
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: p, perPage: 200 });
-    if (error) throw new Error(error.message);
-    all.push(...(data.users ?? []));
-    if ((data.users ?? []).length < 200) break;
-  }
+  const { db, schema } = await import("@/db/client.server");
+  const all = await db()
+    .select({ id: schema.user.id, email: schema.user.email })
+    .from(schema.user)
+    .orderBy(desc(schema.user.createdAt));
 
   const plan = seg.plan && seg.plan !== "all" ? seg.plan : null;
   const status = seg.status && seg.status !== "all" ? seg.status : null;
 
   // Se filtra por plano/status, precisamos das subscriptions.
-  const subByUser = new Map<string, { user_id: string; plan: string | null; status: string }>();
-  if (plan || status) {
-    const ids = all.map((u) => u.id);
-    const { data: subs } = await supabaseAdmin
-      .from("subscriptions")
-      .select("user_id, plan, status, created_at")
-      .in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"])
-      .order("created_at", { ascending: false });
-    for (const s of subs ?? []) if (!subByUser.has(s.user_id)) subByUser.set(s.user_id, s);
+  const subByUser = new Map<string, { plan: string | null; status: string }>();
+  if ((plan || status) && all.length > 0) {
+    const t = schema.subscriptions;
+    const subs = await db()
+      .select({ userId: t.userId, plan: t.plan, status: t.status })
+      .from(t)
+      .where(
+        inArray(
+          t.userId,
+          all.map((u) => u.id),
+        ),
+      )
+      .orderBy(desc(t.createdAt));
+    for (const s of subs) if (!subByUser.has(s.userId)) subByUser.set(s.userId, s);
   }
 
   const recipients: { id: string; email: string }[] = [];

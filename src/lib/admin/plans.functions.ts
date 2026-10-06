@@ -1,13 +1,13 @@
 // ============================================================================
 // Admin · Plans CRUD — configuração de planos via UI.
-// Leitura pública (plans ativos) é livre via RLS; escrita exige admin.
+// Leitura pública (plans ativos) sem login; escrita exige admin.
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
 import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AuthClaims } from "./_types";
-import type { Json } from "@/integrations/supabase/types";
+import { requireAuth } from "@/lib/requireAuth";
+import { asc, eq } from "drizzle-orm";
+import { actorEmail, type Json } from "./_types";
 
 export type PlanRow = {
   id: string;
@@ -31,31 +31,27 @@ export type PlanRow = {
   upsellAsaasRef: string | null;
 };
 
-/**
- * Shape mínimo de uma linha da tabela `plans` (subset consumido aqui).
- * Não usamos `Tables<'plans'>` direto para evitar ressentir cada coluna
- * nova do schema — só os campos que efetivamente lemos.
- */
+/** Linha da tabela `plans` como o Drizzle devolve (camelCase). */
 type DbPlanRow = {
   id: string;
   slug: string;
   name: string;
   description: string | null;
-  price_cents: number;
+  priceCents: number;
   currency: string;
   interval: string;
   features: unknown;
   limits: unknown;
-  stripe_price_id: string | null;
-  asaas_plan_ref: string | null;
+  stripePriceId: string | null;
+  asaasPlanRef: string | null;
   active: boolean;
-  sort_order: number;
-  upsell_enabled: boolean | null;
-  upsell_name: string | null;
-  upsell_description: string | null;
-  upsell_price_cents: number | null;
-  upsell_stripe_price_id: string | null;
-  upsell_asaas_ref: string | null;
+  sortOrder: number;
+  upsellEnabled: boolean | null;
+  upsellName: string | null;
+  upsellDescription: string | null;
+  upsellPriceCents: number | null;
+  upsellStripePriceId: string | null;
+  upsellAsaasRef: string | null;
 };
 
 function rowToPlan(r: DbPlanRow): PlanRow {
@@ -64,36 +60,32 @@ function rowToPlan(r: DbPlanRow): PlanRow {
     slug: r.slug,
     name: r.name,
     description: r.description,
-    priceCents: r.price_cents,
+    priceCents: r.priceCents,
     currency: r.currency,
     interval: r.interval,
     features: Array.isArray(r.features) ? (r.features as string[]) : [],
     limits: (r.limits ?? {}) as Json,
-    stripePriceId: r.stripe_price_id,
-    asaasPlanRef: r.asaas_plan_ref,
+    stripePriceId: r.stripePriceId,
+    asaasPlanRef: r.asaasPlanRef,
     active: r.active,
-    sortOrder: r.sort_order,
-    upsellEnabled: !!r.upsell_enabled,
-    upsellName: r.upsell_name ?? null,
-    upsellDescription: r.upsell_description ?? null,
-    upsellPriceCents: r.upsell_price_cents ?? 0,
-    upsellStripePriceId: r.upsell_stripe_price_id ?? null,
-    upsellAsaasRef: r.upsell_asaas_ref ?? null,
+    sortOrder: r.sortOrder,
+    upsellEnabled: !!r.upsellEnabled,
+    upsellName: r.upsellName ?? null,
+    upsellDescription: r.upsellDescription ?? null,
+    upsellPriceCents: r.upsellPriceCents ?? 0,
+    upsellStripePriceId: r.upsellStripePriceId ?? null,
+    upsellAsaasRef: r.upsellAsaasRef ?? null,
   };
 }
 
 // Listagem admin (todos, ativos e inativos).
 export const listPlansAdmin = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
-      .from("plans")
-      .select("*")
-      .order("sort_order", { ascending: true });
-    if (error) throw new Error(error.message);
-    return { plans: (data ?? []).map(rowToPlan) };
+    const { db, schema } = await import("@/db/client.server");
+    const rows = await db().select().from(schema.plans).orderBy(asc(schema.plans.sortOrder));
+    return { plans: rows.map(rowToPlan) };
   });
 
 // Listagem pública (apenas ativos) — usado pela landing/pricing.
@@ -108,20 +100,13 @@ export const listPlansPublic = createServerFn({ method: "GET" }).handler(async (
   if (plansCache && now - plansCache.at < PLANS_TTL_MS) return plansCache.data;
   if (plansInFlight) return plansInFlight;
   plansInFlight = (async () => {
-    const { createClient } = await import("@supabase/supabase-js");
-    const url = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
-    const key =
-      process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    const sb = createClient(url!, key!, {
-      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    });
-    const { data, error } = await sb
-      .from("plans")
-      .select("*")
-      .eq("active", true)
-      .order("sort_order", { ascending: true });
-    if (error) throw new Error(error.message);
-    const out = { plans: (data ?? []).map(rowToPlan) };
+    const { db, schema } = await import("@/db/client.server");
+    const rows = await db()
+      .select()
+      .from(schema.plans)
+      .where(eq(schema.plans.active, true))
+      .orderBy(asc(schema.plans.sortOrder));
+    const out = { plans: rows.map(rowToPlan) };
     plansCache = { at: Date.now(), data: out };
     return out;
   })().finally(() => {
@@ -165,43 +150,43 @@ const planSchema = z.object({
 });
 
 export const upsertPlan = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((data: z.infer<typeof planSchema>) => planSchema.parse(data))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db, schema } = await import("@/db/client.server");
     const payload = {
       slug: data.slug,
       name: data.name,
       description: data.description ?? null,
-      price_cents: data.priceCents,
+      priceCents: data.priceCents,
       currency: data.currency,
       interval: data.interval,
       features: data.features,
-      // `limits` é jsonb no banco — Json é compatível mas o tipo gerado
-      // do PostgREST exige cast explícito para `Json`.
-      limits: data.limits as Json,
-      stripe_price_id: data.stripePriceId ?? null,
-      asaas_plan_ref: data.asaasPlanRef ?? null,
+      limits: data.limits,
+      stripePriceId: data.stripePriceId ?? null,
+      asaasPlanRef: data.asaasPlanRef ?? null,
       active: data.active,
-      sort_order: data.sortOrder,
-      upsell_enabled: data.upsellEnabled ?? false,
-      upsell_name: data.upsellName ?? null,
-      upsell_description: data.upsellDescription ?? null,
-      upsell_price_cents: data.upsellPriceCents ?? 0,
-      upsell_stripe_price_id: data.upsellStripePriceId ?? null,
-      upsell_asaas_ref: data.upsellAsaasRef ?? null,
+      sortOrder: data.sortOrder,
+      upsellEnabled: data.upsellEnabled ?? false,
+      upsellName: data.upsellName ?? null,
+      upsellDescription: data.upsellDescription ?? null,
+      upsellPriceCents: data.upsellPriceCents ?? 0,
+      upsellStripePriceId: data.upsellStripePriceId ?? null,
+      upsellAsaasRef: data.upsellAsaasRef ?? null,
     };
-    const q = data.id
-      ? supabaseAdmin.from("plans").update(payload).eq("id", data.id).select().maybeSingle()
-      : supabaseAdmin.from("plans").insert(payload).select().maybeSingle();
-    const { data: row, error } = await q;
-    if (error) throw new Error(error.message);
+    const [row] = data.id
+      ? await db()
+          .update(schema.plans)
+          .set({ ...payload, updatedAt: new Date().toISOString() })
+          .where(eq(schema.plans.id, data.id))
+          .returning()
+      : await db().insert(schema.plans).values(payload).returning();
     invalidatePublicPlansCache();
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as AuthClaims | undefined)?.email,
+      actorEmail: actorEmail(context),
       action: data.id ? "plan.update" : "plan.create",
       resource: "plan",
       targetId: row?.id ?? null,
@@ -212,23 +197,20 @@ export const upsertPlan = createServerFn({ method: "POST" })
   });
 
 export const deletePlan = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((data: { id: string }) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: existing } = await supabaseAdmin
-      .from("plans")
-      .select("slug")
-      .eq("id", data.id)
-      .maybeSingle();
-    const { error } = await supabaseAdmin.from("plans").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
+    const { db, schema } = await import("@/db/client.server");
+    const [existing] = await db()
+      .delete(schema.plans)
+      .where(eq(schema.plans.id, data.id))
+      .returning({ slug: schema.plans.slug });
     invalidatePublicPlansCache();
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as AuthClaims | undefined)?.email,
+      actorEmail: actorEmail(context),
       action: "plan.delete",
       resource: "plan",
       targetId: data.id,

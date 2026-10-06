@@ -1,5 +1,5 @@
 // ============================================================================
-// EmailsTab — configuração Resend + templates editáveis.
+// EmailsTab — remetente/Resend (opcional) + templates editáveis.
 // ============================================================================
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -156,7 +156,13 @@ export function EmailsTab() {
     <div className="space-y-6">
       <section className="space-y-4 rounded-lg border border-border/60 bg-card p-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Resend</h3>
+          <div>
+            <h3 className="text-sm font-semibold">Envio de e-mail</h3>
+            <p className="text-xs text-muted-foreground">
+              Usa o SMTP do servidor (SMTP_HOST) quando configurado; senão, a chave do Resend abaixo
+              (opcional). Remetente e resposta valem para ambos.
+            </p>
+          </div>
           {cfg.hasApiKey && (
             <Badge variant="outline" className="text-[10px]">
               Chave atual: {cfg.apiKeyMasked}
@@ -165,7 +171,7 @@ export function EmailsTab() {
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1">
-            <Label>API Key</Label>
+            <Label>Resend API Key (opcional)</Label>
             <Input
               type="password"
               value={cfg.apiKey}

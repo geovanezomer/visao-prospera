@@ -226,7 +226,7 @@ CREATE TABLE "subscriptions" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "subscriptions_stripe_subscription_id_unique" UNIQUE("stripe_subscription_id"),
-	CONSTRAINT "subscriptions_provider_check" CHECK ("subscriptions"."provider" in ('stripe','asaas'))
+	CONSTRAINT "subscriptions_provider_check" CHECK ("subscriptions"."provider" in ('stripe','asaas','manual'))
 );
 --> statement-breakpoint
 CREATE TABLE "trial_requests" (

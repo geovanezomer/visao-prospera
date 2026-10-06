@@ -5,8 +5,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AuthClaims } from "./_types";
+import { requireAuth } from "@/lib/requireAuth";
+import { eq, ne } from "drizzle-orm";
 
 function mask(v: string | null | undefined): string | null {
   if (!v) return null;
@@ -27,22 +27,21 @@ export type ProviderRow = {
 };
 
 export const listProviders = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin.from("provider_credentials").select("*");
-    if (error) throw new Error(error.message);
-    const rows: ProviderRow[] = (data ?? []).map((r) => ({
+    const { db, schema } = await import("@/db/client.server");
+    const data = await db().select().from(schema.providerCredentials);
+    const rows: ProviderRow[] = data.map((r) => ({
       id: r.id,
       provider: r.provider as ProviderRow["provider"],
       mode: r.mode as ProviderRow["mode"],
-      apiKeyMasked: mask(r.api_key),
-      webhookSecretMasked: mask(r.webhook_secret),
-      hasApiKey: !!r.api_key,
-      hasWebhookSecret: !!r.webhook_secret,
-      isActive: r.is_active,
-      updatedAt: r.updated_at,
+      apiKeyMasked: mask(r.apiKey),
+      webhookSecretMasked: mask(r.webhookSecret),
+      hasApiKey: !!r.apiKey,
+      hasWebhookSecret: !!r.webhookSecret,
+      isActive: r.isActive,
+      updatedAt: r.updatedAt,
     }));
     // Garante slots para ambos (mesmo sem registro ainda)
     for (const p of ["stripe", "asaas"] as const) {
@@ -64,7 +63,7 @@ export const listProviders = createServerFn({ method: "POST" })
   });
 
 export const upsertProvider = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator(
     (data: {
       provider: "stripe" | "asaas";
@@ -83,58 +82,50 @@ export const upsertProvider = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db, schema } = await import("@/db/client.server");
     // Upsert preservando campos não enviados (não sobrescreve secret com null).
-    const patch: {
-      provider: string;
-      mode: string;
-      updated_by: string;
-      updated_at: string;
-      api_key?: string;
-      webhook_secret?: string;
-    } = {
-      provider: data.provider,
+    const patch: Partial<typeof schema.providerCredentials.$inferInsert> = {
       mode: data.mode,
-      updated_by: context.userId,
-      updated_at: new Date().toISOString(),
+      updatedBy: context.userId,
+      updatedAt: new Date().toISOString(),
     };
-    if (data.apiKey) patch.api_key = data.apiKey;
-    if (data.webhookSecret) patch.webhook_secret = data.webhookSecret;
-    const { error } = await supabaseAdmin
-      .from("provider_credentials")
-      .upsert(patch, { onConflict: "provider" });
-    if (error) throw new Error(error.message);
+    if (data.apiKey) patch.apiKey = data.apiKey;
+    if (data.webhookSecret) patch.webhookSecret = data.webhookSecret;
+    await db()
+      .insert(schema.providerCredentials)
+      .values({ provider: data.provider, ...patch })
+      .onConflictDoUpdate({ target: schema.providerCredentials.provider, set: patch });
     return { ok: true };
   });
 
 export const setActiveProvider = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((data: { provider: "stripe" | "asaas" }) =>
     z.object({ provider: z.enum(["stripe", "asaas"]) }).parse(data),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // Desativa todos e ativa o escolhido (transação implícita não é crítica aqui).
-    await supabaseAdmin
-      .from("provider_credentials")
-      .update({ is_active: false })
-      .neq("provider", "");
-    const { error } = await supabaseAdmin
-      .from("provider_credentials")
-      .update({ is_active: true, updated_at: new Date().toISOString(), updated_by: context.userId })
-      .eq("provider", data.provider);
-    if (error) throw new Error(error.message);
-    // Espelha em app_settings.active_provider (para resolução rápida sem service-role).
-    await supabaseAdmin.from("app_settings").upsert(
-      {
-        key: "active_provider",
+    const { db, schema } = await import("@/db/client.server");
+    const now = new Date().toISOString();
+    await db().transaction(async (tx) => {
+      const pc = schema.providerCredentials;
+      // Desativa os outros e ativa o escolhido (índice único: só 1 ativo).
+      await tx.update(pc).set({ isActive: false }).where(ne(pc.provider, data.provider));
+      await tx
+        .update(pc)
+        .set({ isActive: true, updatedAt: now, updatedBy: context.userId })
+        .where(eq(pc.provider, data.provider));
+      // Espelha em app_settings.active_provider (resolução rápida).
+      const setting = {
         value: { provider: data.provider },
-        updated_by: context.userId,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "key" },
-    );
+        updatedBy: context.userId,
+        updatedAt: now,
+      };
+      await tx
+        .insert(schema.appSettings)
+        .values({ key: "active_provider", ...setting })
+        .onConflictDoUpdate({ target: schema.appSettings.key, set: setting });
+    });
     // Invalida cache do seletor de provider (evita janela de 60s servindo o antigo).
     const { invalidateProviderCache } = await import("@/lib/payments");
     invalidateProviderCache();
@@ -142,21 +133,22 @@ export const setActiveProvider = createServerFn({ method: "POST" })
   });
 
 export const testProviderConnection = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((data: { provider: "stripe" | "asaas" }) =>
     z.object({ provider: z.enum(["stripe", "asaas"]) }).parse(data),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: cred } = await supabaseAdmin
-      .from("provider_credentials")
-      .select("api_key, mode")
-      .eq("provider", data.provider)
-      .maybeSingle();
-    if (!cred?.api_key) return { ok: false, message: "API Key não configurada." };
+    const { db, schema } = await import("@/db/client.server");
+    const pc = schema.providerCredentials;
+    const [cred] = await db()
+      .select({ apiKey: pc.apiKey, mode: pc.mode })
+      .from(pc)
+      .where(eq(pc.provider, data.provider))
+      .limit(1);
+    if (!cred?.apiKey) return { ok: false, message: "API Key não configurada." };
 
-    const key = cred.api_key.trim();
+    const key = cred.apiKey.trim();
 
     // Validação de prefixo: bloqueia teste cruzado entre provedores.
     // Stripe Secret Key: sk_test_ / sk_live_  |  Asaas: $aact_ (ou access token alfanumérico).

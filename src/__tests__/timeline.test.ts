@@ -1,173 +1,175 @@
 // ============================================================================
-// Testes de aggregateTimeline — visão 360° do cliente.
+// Testes de aggregateTimeline — visão 360° do cliente, contra um PostgreSQL
+// real em memória (PGlite) com as migrations da aplicação.
 //
 // Cobre:
 //   • Agregação de fontes mistas → normaliza para o mesmo shape
 //   • Ordenação por data desc, limite de 100
-//   • Filtro por tipo (indireto: verifica kinds retornados)
-//   • Ausência de email_log NÃO quebra (fonte opcional)
+//   • Cruzamento de webhooks por e-mail OU subscription_id
+//   • Sem e-mail: só fontes ligadas ao userId
 // ============================================================================
-import { describe, expect, test } from "vitest";
-import { aggregateTimeline } from "@/lib/admin/timeline.functions";
+import { createHash } from "node:crypto";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { createTestDb } from "./helpers/testDb";
+import { schema } from "@/db/client.server";
+import { aggregateTimeline } from "@/lib/admin/timeline.server";
 
-type Row = Record<string, unknown>;
+let t: Awaited<ReturnType<typeof createTestDb>>;
+let userId: string;
+const EMAIL = "u@x.com";
 
-/**
- * Cria admin mock que responde a .from(table).select().eq/order/limit/in/or
- * seguindo o fluxo do lifecycleEmails.test.ts. `emailLogPresent=false` faz
- * a checagem de existência falhar (tableExists → false), simulando schema
- * antigo sem email_log.
- */
-function makeAdmin(opts: {
-  subscriptions?: Row[];
-  webhooks?: Row[];
-  emailLog?: Row[] | null; // null = tabela inexistente
-  audit?: Row[];
-  checkouts?: Row[];
-}) {
-  const data = {
-    subscriptions: opts.subscriptions ?? [],
-    webhook_events: opts.webhooks ?? [],
-    email_log: opts.emailLog,
-    admin_audit_log: opts.audit ?? [],
-    checkout_intents: opts.checkouts ?? [],
-  } as Record<string, Row[] | null | undefined>;
+beforeEach(async () => {
+  t = await createTestDb();
+  const [u] = await t.db
+    .insert(schema.user)
+    .values({ name: "U", email: EMAIL })
+    .returning({ id: schema.user.id });
+  userId = u.id;
+});
+afterEach(async () => t.close());
 
-  const chain = (table: string) => {
-    const rows = data[table] === null ? null : (data[table] ?? []);
-    const err = rows === null ? { message: `relation "${table}" does not exist` } : null;
-    const result = { data: rows, error: err };
-    const q: any = {
-      select: () => q,
-      eq: () => q,
-      in: () => q,
-      or: () => q,
-      order: () => q,
-      limit: () => q,
-      then: (r: any) => Promise.resolve(result).then(r),
-    };
-    return q;
-  };
-
-  return { from: chain } as any;
-}
+const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 
 describe("aggregateTimeline", () => {
   test("normaliza fontes mistas e ordena por data desc", async () => {
-    const admin = makeAdmin({
-      subscriptions: [
-        {
-          id: "s1",
-          plan: "pro",
-          status: "active",
-          provider: "stripe",
-          stripe_subscription_id: "sub_1",
-          created_at: "2026-01-01T10:00:00Z",
-          updated_at: "2026-01-01T10:00:00Z",
-          cancel_at_period_end: false,
-        },
-      ],
-      webhooks: [
-        {
-          id: "w1",
-          provider: "stripe",
-          event_type: "invoice.paid",
-          status: "processed",
-          subscription_id: "sub_1",
-          received_at: "2026-06-15T09:00:00Z",
-          error: null,
-        },
-      ],
-      emailLog: [
-        {
-          id: "e1",
-          kind: "payment_failed",
-          subscription_id: "sub_1",
-          sent_at: "2026-06-20T12:00:00Z",
-        },
-      ],
-      audit: [
-        {
-          id: "a1",
-          action: "plan.grant_manual",
-          resource: "subscription",
-          actor_email: "root@x.com",
-          created_at: "2026-07-01T00:00:00Z",
-          metadata: null,
-        },
-      ],
-      checkouts: [
-        {
-          id: "c1",
-          status: "paid",
-          plan_slug: "pro",
-          provider: "stripe",
-          created_at: "2026-01-01T09:00:00Z",
-          updated_at: "2026-01-01T09:30:00Z",
-          confirmed_at: "2026-01-01T09:30:00Z",
-          last_error: null,
-        },
-      ],
+    await t.db.insert(schema.subscriptions).values([
+      {
+        userId,
+        plan: "pro",
+        status: "active",
+        provider: "stripe",
+        priceId: "pro_monthly",
+        stripeSubscriptionId: "sub_1",
+        createdAt: "2026-01-01T10:00:00Z",
+        updatedAt: "2026-01-01T10:00:00Z",
+      },
+      {
+        userId,
+        plan: "starter",
+        status: "canceled",
+        provider: "stripe",
+        priceId: "starter_monthly",
+        stripeSubscriptionId: "sub_0",
+        createdAt: "2025-06-01T10:00:00Z",
+        updatedAt: "2025-12-01T10:00:00Z",
+      },
+    ]);
+    await t.db.insert(schema.webhookEvents).values([
+      // casa por subscription_id
+      {
+        provider: "stripe",
+        eventType: "invoice.paid",
+        status: "processed",
+        subscriptionId: "sub_1",
+        receivedAt: "2026-06-15T09:00:00Z",
+      },
+      // casa por e-mail
+      {
+        provider: "asaas",
+        eventType: "PAYMENT_OVERDUE",
+        status: "failed",
+        customerEmail: EMAIL,
+        error: "boom",
+        receivedAt: "2026-06-16T09:00:00Z",
+      },
+      // de outro cliente — não pode aparecer
+      {
+        provider: "stripe",
+        eventType: "invoice.paid",
+        status: "processed",
+        subscriptionId: "sub_outro",
+        customerEmail: "outro@x.com",
+        receivedAt: "2026-06-17T09:00:00Z",
+      },
+    ]);
+    await t.db.insert(schema.emailLog).values({
+      kind: "payment_failed",
+      subscriptionId: "sub_1",
+      sentToHash: sha(EMAIL),
+      sentAt: "2026-06-20T12:00:00Z",
+    });
+    await t.db.insert(schema.adminAuditLog).values({
+      action: "plan.grant_manual",
+      resource: "subscription",
+      actorEmail: "root@x.com",
+      targetId: userId,
+      createdAt: "2026-07-01T00:00:00Z",
+    });
+    await t.db.insert(schema.checkoutIntents).values({
+      planSlug: "pro",
+      email: EMAIL,
+      provider: "stripe",
+      status: "paid",
+      createdAt: "2026-01-01T09:00:00Z",
+      updatedAt: "2026-01-01T09:30:00Z",
+      confirmedAt: "2026-01-01T09:30:00Z",
     });
 
-    const items = await aggregateTimeline(admin, "00000000-0000-0000-0000-000000000001", "u@x.com");
+    const items = await aggregateTimeline(userId, EMAIL);
 
     // Ordenação desc
     const dates = items.map((i) => i.at);
-    const sorted = [...dates].sort().reverse();
-    expect(dates).toEqual(sorted);
+    expect(dates).toEqual([...dates].sort().reverse());
 
     // Kinds presentes
     const kinds = new Set(items.map((i) => i.kind));
-    expect(kinds.has("webhook")).toBe(true);
-    expect(kinds.has("email")).toBe(true);
-    expect(kinds.has("admin")).toBe(true);
-    expect(kinds.has("checkout")).toBe(true);
-    expect(kinds.has("assinatura")).toBe(true);
+    for (const k of ["webhook", "email", "admin", "checkout", "assinatura"] as const) {
+      expect(kinds.has(k)).toBe(true);
+    }
 
-    // Shape normalizado
+    // Webhooks: só os do cliente (por sub e por e-mail), com tom correto
+    const hooks = items.filter((i) => i.kind === "webhook");
+    expect(hooks.map((h) => h.title).sort()).toEqual([
+      "PAYMENT_OVERDUE · failed",
+      "invoice.paid · processed",
+    ]);
+    expect(hooks.find((h) => h.title.startsWith("PAYMENT"))?.tone).toBe("bad");
+    expect(hooks.every((h) => h.refId)).toBe(true);
+
+    // Assinatura cancelada gera dois eventos (criada + cancelada)
+    const subs = items.filter((i) => i.kind === "assinatura");
+    expect(subs).toHaveLength(3);
+    expect(subs.some((s) => s.title.startsWith("Assinatura cancelada") && s.tone === "warn")).toBe(
+      true,
+    );
+
+    // Checkout usa confirmed_at
+    expect(items.find((i) => i.kind === "checkout")?.at).toBe("2026-01-01T09:30:00.000Z");
+
     for (const it of items) {
       expect(it).toHaveProperty("at");
-      expect(it).toHaveProperty("kind");
       expect(it).toHaveProperty("title");
       expect(it).toHaveProperty("tone");
     }
   });
 
-  test("ausência de email_log não quebra (fonte opcional)", async () => {
-    const admin = makeAdmin({
-      subscriptions: [],
-      webhooks: [],
-      emailLog: null, // tabela inexistente
-      audit: [
-        {
-          id: "a1",
-          action: "x",
-          resource: "y",
-          actor_email: null,
-          created_at: "2026-01-01T00:00:00Z",
-          metadata: null,
-        },
-      ],
-      checkouts: [],
+  test("sem e-mail: só fontes ligadas ao userId", async () => {
+    await t.db.insert(schema.adminAuditLog).values({
+      action: "x",
+      resource: "y",
+      targetId: userId,
     });
-
-    const items = await aggregateTimeline(admin, "00000000-0000-0000-0000-000000000001", "u@x.com");
+    await t.db.insert(schema.checkoutIntents).values({
+      planSlug: "pro",
+      email: EMAIL,
+      provider: "stripe",
+    });
+    const items = await aggregateTimeline(userId, null);
     expect(items.some((i) => i.kind === "admin")).toBe(true);
-    expect(items.some((i) => i.kind === "email")).toBe(false);
+    expect(items.some((i) => i.kind === "checkout" || i.kind === "email")).toBe(false);
   });
 
   test("limita a 100 itens", async () => {
-    const many = Array.from({ length: 200 }, (_, i) => ({
-      id: `a${i}`,
-      action: "x",
-      resource: "y",
-      actor_email: null,
-      created_at: new Date(2026, 0, 1, 0, 0, i).toISOString(),
-      metadata: null,
-    }));
-    const admin = makeAdmin({ audit: many, emailLog: [] });
-    const items = await aggregateTimeline(admin, "00000000-0000-0000-0000-000000000001", null);
+    await t.db.insert(schema.adminAuditLog).values(
+      Array.from({ length: 150 }, (_, i) => ({
+        action: "x",
+        resource: "y",
+        targetId: userId,
+        createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
+      })),
+    );
+    const items = await aggregateTimeline(userId, null);
     expect(items.length).toBe(100);
+    expect(items[0].at).toBe(new Date(Date.UTC(2026, 0, 1, 0, 2, 29)).toISOString());
   });
 });

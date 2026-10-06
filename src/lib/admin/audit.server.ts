@@ -5,7 +5,6 @@
 // ============================================================================
 import { getRequest, getRequestHeader } from "@tanstack/react-start/server";
 import { clientIp } from "@/lib/rateLimit.server";
-import type { Json } from "@/integrations/supabase/types";
 
 export type AuditEntry = {
   actorId?: string | null;
@@ -19,7 +18,7 @@ export type AuditEntry = {
 
 export async function logAudit(entry: AuditEntry): Promise<void> {
   try {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db, schema } = await import("@/db/client.server");
     let ip: string | null = null;
     let userAgent: string | null = null;
     try {
@@ -29,17 +28,19 @@ export async function logAudit(entry: AuditEntry): Promise<void> {
     } catch {
       /* contexto não-HTTP (test, etc.) */
     }
-    await supabaseAdmin.from("admin_audit_log").insert({
-      actor_id: entry.actorId ?? null,
-      actor_email: entry.actorEmail ?? null,
-      action: entry.action,
-      resource: entry.resource,
-      target_id: entry.targetId ?? null,
-      target_label: entry.targetLabel ?? null,
-      metadata: (entry.metadata ?? {}) as unknown as Json,
-      ip,
-      user_agent: userAgent,
-    });
+    await db()
+      .insert(schema.adminAuditLog)
+      .values({
+        actorId: entry.actorId ?? null,
+        actorEmail: entry.actorEmail ?? null,
+        action: entry.action,
+        resource: entry.resource,
+        targetId: entry.targetId ?? null,
+        targetLabel: entry.targetLabel ?? null,
+        metadata: entry.metadata ?? {},
+        ip,
+        userAgent,
+      });
   } catch (e) {
     console.error("[audit] log falhou:", e instanceof Error ? e.message : e);
   }

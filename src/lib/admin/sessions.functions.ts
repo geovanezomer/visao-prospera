@@ -1,64 +1,102 @@
 // ============================================================================
-// Admin · Sessões ativas. Usa Supabase Auth Admin para revogar tokens.
-// Listagem inferida via `last_sign_in_at` + identidades; revogação global
-// usa signOut com escopo `global`.
+// Admin · Sessões ativas do usuário (tabela `session` do Better Auth).
+// Lista as sessões não expiradas e permite revogar uma ou todas.
 // ============================================================================
 import { createServerFn } from "@tanstack/react-start";
 import { assertAdmin } from "./assertAdmin";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { AuthClaims } from "./_types";
+import { and, eq } from "drizzle-orm";
+import { requireAuth } from "@/lib/requireAuth";
+import { actorEmail } from "./_types";
+
+export type ActiveSession = {
+  id: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+  expiresAt: string;
+};
 
 export type UserSession = {
   userId: string;
   email: string | null;
   lastSignInAt: string | null;
   createdAt: string;
-  identities: Array<{ provider: string; createdAt: string | null; lastSignInAt: string | null }>;
+  /** Formas de login disponíveis: "senha" (conta credential) e "magic link". */
+  loginMethods: string[];
+  sessions: ActiveSession[];
 };
 
 export const getUserSessions = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireAuth])
   .validator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data, context }): Promise<UserSession> => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: u, error } = await supabaseAdmin.auth.admin.getUserById(data.userId);
-    if (error || !u?.user) throw new Error(error?.message ?? "Usuário não encontrado.");
-    const user = u.user;
-    const session: UserSession = {
+    const { getAppUser, listUserSessions } = await import("@/lib/users.server");
+    const { db, schema } = await import("@/db/client.server");
+    const user = await getAppUser(data.userId);
+    if (!user) throw new Error("Usuário não encontrado.");
+    const [cred] = await db()
+      .select({ id: schema.account.id })
+      .from(schema.account)
+      .where(
+        and(eq(schema.account.userId, data.userId), eq(schema.account.providerId, "credential")),
+      )
+      .limit(1);
+    const now = Date.now();
+    const sessions = (await listUserSessions(data.userId))
+      .filter((s) => s.expiresAt.getTime() > now)
+      .map((s) => ({
+        id: s.id,
+        ipAddress: s.ipAddress,
+        userAgent: s.userAgent,
+        createdAt: s.createdAt.toISOString(),
+        expiresAt: s.expiresAt.toISOString(),
+      }));
+    return {
       userId: user.id,
-      email: user.email ?? null,
-      lastSignInAt: user.last_sign_in_at ?? null,
-      createdAt: user.created_at,
-      identities: (user.identities ?? []).map((i) => ({
-        provider: i.provider,
-        createdAt: i.created_at ?? null,
-        lastSignInAt: i.last_sign_in_at ?? null,
-      })),
+      email: user.email,
+      lastSignInAt: user.lastSignInAt,
+      createdAt: user.createdAt,
+      loginMethods: cred ? ["senha", "magic link"] : ["magic link"],
+      sessions,
     };
-    return session;
   });
 
-export const revokeAllSessions = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
+export const revokeSession = createServerFn({ method: "POST" })
+  .middleware([requireAuth])
+  .validator((data: { userId: string; sessionId: string }) =>
+    z.object({ userId: z.string().uuid(), sessionId: z.string().uuid() }).parse(data),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // `signOut(userId, scope)` é admin-only e exposta como helper sem
-    // tipagem pública. Mantemos um cast estreito para a assinatura.
-    type AdminSignOut = (
-      userId: string,
-      scope: "global" | "local",
-    ) => Promise<{ error: { message: string } | null }>;
-    const adminAuth = supabaseAdmin.auth.admin as unknown as { signOut: AdminSignOut };
-    const { error } = await adminAuth.signOut(data.userId, "global");
-    if (error) throw new Error(error.message);
+    const { db, schema } = await import("@/db/client.server");
+    await db()
+      .delete(schema.session)
+      .where(and(eq(schema.session.id, data.sessionId), eq(schema.session.userId, data.userId)));
     const { logAudit } = await import("./audit.server");
     await logAudit({
       actorId: context.userId,
-      actorEmail: (context.claims as AuthClaims | undefined)?.email,
+      actorEmail: actorEmail(context),
+      action: "user.session_revoked",
+      resource: "user",
+      targetId: data.userId,
+      metadata: { sessionId: data.sessionId },
+    });
+    return { ok: true };
+  });
+
+export const revokeAllSessions = createServerFn({ method: "POST" })
+  .middleware([requireAuth])
+  .validator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { revokeUserSessions } = await import("@/lib/users.server");
+    await revokeUserSessions(data.userId);
+    const { logAudit } = await import("./audit.server");
+    await logAudit({
+      actorId: context.userId,
+      actorEmail: actorEmail(context),
       action: "user.sessions_revoked",
       resource: "user",
       targetId: data.userId,
