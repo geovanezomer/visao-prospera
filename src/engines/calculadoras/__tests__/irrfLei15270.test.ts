@@ -3,11 +3,7 @@
  * Vetores da orientação oficial RFB (dez/2025).
  */
 import { describe, expect, it } from "vitest";
-import {
-  calcularINSS,
-  calcularIRRF,
-  redutorLei15270,
-} from "../rescisao";
+import { calcularINSS, calcularIRRF, redutorLei15270 } from "../rescisao";
 import { calcularDecimoTerceiro } from "../decimoTerceiro";
 
 describe("Lei 15.270/2025 — redutor IRRF mensal", () => {

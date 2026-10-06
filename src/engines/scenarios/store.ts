@@ -225,8 +225,7 @@ export function archiveYearAsHistorical(
   opts?: { subKind?: "realizado" | "previsao"; name?: string },
 ): ScenarioRecord {
   const subKind = opts?.subKind ?? "realizado";
-  const defaultName =
-    subKind === "previsao" ? `Previsão ${fiscalYear}` : `Ano ${fiscalYear}`;
+  const defaultName = subKind === "previsao" ? `Previsão ${fiscalYear}` : `Ano ${fiscalYear}`;
   const name = opts?.name?.trim() || defaultName;
   // Idempotência: realizado → por ano. Previsão → por (ano, nome).
   const existing = listScenarios(company).find((s) => {
@@ -279,8 +278,7 @@ export function switchToYear(
   if (!target.state || !target.fiscalYear) {
     throw new Error("Snapshot-alvo inválido (sem state ou fiscalYear).");
   }
-  const currentYear =
-    currentState.fiscalYear ?? new Date().getFullYear();
+  const currentYear = currentState.fiscalYear ?? new Date().getFullYear();
   // Só auto-arquiva se o ano corrente é DIFERENTE do alvo — evita sobrescrever
   // o próprio snapshot que estamos carregando.
   if (currentYear !== target.fiscalYear) {
@@ -288,7 +286,6 @@ export function switchToYear(
   }
   return { ...target.state, fiscalYear: target.fiscalYear };
 }
-
 
 // ─── Ramificação e comparação (Fase 4) ───────────────────────────────
 // Clonagem com `parentId` permite árvore de variantes (ex: "Otimista_v2"

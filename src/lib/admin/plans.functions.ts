@@ -9,7 +9,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 import type { Json } from "@/integrations/supabase/types";
 
-
 export type PlanRow = {
   id: string;
   slug: string;
@@ -83,7 +82,6 @@ function rowToPlan(r: DbPlanRow): PlanRow {
   };
 }
 
-
 // Listagem admin (todos, ativos e inativos).
 export const listPlansAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -112,7 +110,8 @@ export const listPlansPublic = createServerFn({ method: "GET" }).handler(async (
   plansInFlight = (async () => {
     const { createClient } = await import("@supabase/supabase-js");
     const url = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
-    const key = process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const key =
+      process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     const sb = createClient(url!, key!, {
       auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
     });
@@ -138,7 +137,11 @@ export function invalidatePublicPlansCache() {
 
 const planSchema = z.object({
   id: z.string().uuid().optional(),
-  slug: z.string().min(1).max(40).regex(/^[a-z0-9_]+$/),
+  slug: z
+    .string()
+    .min(1)
+    .max(40)
+    .regex(/^[a-z0-9_]+$/),
   name: z.string().min(1).max(80),
   description: z.string().max(500).nullable().optional(),
   priceCents: z.number().int().min(0),
@@ -211,7 +214,11 @@ export const deletePlan = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: existing } = await supabaseAdmin.from("plans").select("slug").eq("id", data.id).maybeSingle();
+    const { data: existing } = await supabaseAdmin
+      .from("plans")
+      .select("slug")
+      .eq("id", data.id)
+      .maybeSingle();
     const { error } = await supabaseAdmin.from("plans").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     invalidatePublicPlansCache();

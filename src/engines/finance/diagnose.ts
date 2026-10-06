@@ -189,7 +189,9 @@ export function diagnose(state: AppState, dre: DRE, ind: Indicators): Diagnostic
           `isso soma o valor a capital.abertura.lucrosAcumulados e equilibra a abertura.`,
       });
     }
-  } catch { /* no-op */ }
+  } catch {
+    /* no-op */
+  }
 
   return out;
 }

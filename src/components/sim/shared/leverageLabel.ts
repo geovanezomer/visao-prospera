@@ -58,7 +58,10 @@ export function leverageDisplay(
     const caixaLiquidoMultiplo = base > 0 ? Math.abs(dividaLiquida / base) : null;
     return {
       label: DEFAULT_LABEL[metric],
-      value: caixaLiquidoMultiplo == null ? "Caixa líquido" : `${caixaLiquidoMultiplo.toFixed(2)}× caixa líq.`,
+      value:
+        caixaLiquidoMultiplo == null
+          ? "Caixa líquido"
+          : `${caixaLiquidoMultiplo.toFixed(2)}× caixa líq.`,
       tone: "pos",
       chip: "Cash-rich",
       desc:

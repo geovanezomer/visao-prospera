@@ -577,8 +577,9 @@ export function ForecastCard({ state }: { state: AppState }) {
         Modelo estruturado: receita cresce composta; custos fixos seguem inflação (não escalam com
         receita); folha tem saltos discretos por step de receita; CPV escala com volume e ganha
         eficiência via curva de escala. FCL/FCFF = NOPAT + D&A − CAPEX − ΔNCG (variação de capital
-        de giro recalculada mês a mês), sem juros para não duplicar dívida no DCF. Impostos projetados pela base efetiva do ano-base.
-        Aproximação consultiva — para análise formal use 3 cenários (otimista/base/pessimista).
+        de giro recalculada mês a mês), sem juros para não duplicar dívida no DCF. Impostos
+        projetados pela base efetiva do ano-base. Aproximação consultiva — para análise formal use 3
+        cenários (otimista/base/pessimista).
       </p>
     </section>
   );

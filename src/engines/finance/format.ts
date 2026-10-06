@@ -55,13 +55,10 @@ export const fmtRatio = (n: number, d = 2) =>
     : "—";
 
 /** Dias (PMR, PMP, ciclo). */
-export const fmtDays = (n: number, d = 0) =>
-  Number.isFinite(n) ? `${fmtNum(n, d)} dias` : "—";
+export const fmtDays = (n: number, d = 0) => (Number.isFinite(n) ? `${fmtNum(n, d)} dias` : "—");
 
 /** Anos (payback, amortização). */
-export const fmtAnos = (n: number, d = 1) =>
-  Number.isFinite(n) ? `${fmtNum(n, d)} anos` : "—";
-
+export const fmtAnos = (n: number, d = 1) => (Number.isFinite(n) ? `${fmtNum(n, d)} anos` : "—");
 
 export const sum = (arr: number[]) => arr.reduce((a, b) => a + (Number(b) || 0), 0);
 export const avg = (arr: number[]) => (arr.length ? sum(arr) / arr.length : 0);

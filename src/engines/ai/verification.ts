@@ -53,7 +53,10 @@ function stripNonCitationBlocks(text: string): string {
 
 /** "1.234.567,89" → 1234567.89 ; "18,2" → 18.2 ; "487320" → 487320 */
 function parsePtBrNumber(s: string): number {
-  const cleaned = s.replace(/[R$\s%]/g, "").replace(/p\.p\./g, "").trim();
+  const cleaned = s
+    .replace(/[R$\s%]/g, "")
+    .replace(/p\.p\./g, "")
+    .trim();
   // Se tem "," ela é o decimal e "." é milhar
   if (cleaned.includes(",")) {
     return Number(cleaned.replace(/\./g, "").replace(",", "."));
@@ -144,16 +147,14 @@ function matchesPercent(cited: number, pool: number[]): boolean {
 }
 
 /** Verifica todos os números citados na resposta contra os payloads. */
-export function verifyResponse(
-  responseText: string,
-  toolResults: string[],
-): VerificationResult {
+export function verifyResponse(responseText: string, toolResults: string[]): VerificationResult {
   const cited = extractNumbers(responseText);
   const pool = extractNumbersFromPayloads(toolResults);
   const verified: CitedNumber[] = [];
   const unverified: CitedNumber[] = [];
   for (const c of cited) {
-    const ok = c.kind === "currency" ? matchesCurrency(c.value, pool) : matchesPercent(c.value, pool);
+    const ok =
+      c.kind === "currency" ? matchesCurrency(c.value, pool) : matchesPercent(c.value, pool);
     (ok ? verified : unverified).push(c);
   }
   const total = verified.length + unverified.length;

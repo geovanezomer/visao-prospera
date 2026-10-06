@@ -40,7 +40,11 @@ export const regimePJLabel: Record<RegimePJ, string> = {
 export const PARAMETROS_PJ = {
   // DAS MEI (serviços): INSS 5% × SM + ISS R$ 5,00 — valor do ano vigente
   // vem de getTabelas().meiDasServicos (SSOT anual em ./tabelas.ts).
-  mei: { aliquotaImpostos: 0, dasFixoMensal: getTabelas().meiDasServicos, tetoFaturamentoAnual: 81000 },
+  mei: {
+    aliquotaImpostos: 0,
+    dasFixoMensal: getTabelas().meiDasServicos,
+    tetoFaturamentoAnual: 81000,
+  },
   // Simples: alíquota efetiva é CALCULADA por faixa (Anexo III) — ver aliquotaSimplesAnexoIII().
   // Mantemos um fallback informativo de ~9,3% para fins de tooltip apenas.
   simples: { aliquotaImpostos: 0.093, dasFixoMensal: 0, tetoFaturamentoAnual: 4_800_000 },
@@ -129,10 +133,7 @@ export const cltVsPjInputSchema = z.object({
    */
   irpjAdicionalPct: z.number().min(0).max(1).default(IRPJ_ADICIONAL_PCT_DEFAULT),
   /** Gatilho MENSAL do adicional IRPJ (R$). Padrão R$ 20.000. */
-  irpjAdicionalGatilhoMensal: z
-    .number()
-    .min(0)
-    .default(IRPJ_ADICIONAL_GATILHO_MENSAL_DEFAULT),
+  irpjAdicionalGatilhoMensal: z.number().min(0).default(IRPJ_ADICIONAL_GATILHO_MENSAL_DEFAULT),
 });
 
 /** Input do usuário (campos com default são opcionais). */
@@ -322,7 +323,11 @@ export interface ComparativoCltVsPj {
   faturamentoEmpate: Record<RegimePJ, number>;
 }
 
-function faturamentoParaIgualar(regime: RegimePJ, alvoMensal: number, i: CltVsPjInputParsed): number {
+function faturamentoParaIgualar(
+  regime: RegimePJ,
+  alvoMensal: number,
+  i: CltVsPjInputParsed,
+): number {
   // Busca binária (faturamento ≥ alvo). Iterativa, rápida e simples.
   let lo = 0,
     hi = Math.max(alvoMensal * 5, 100000);

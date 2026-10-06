@@ -32,10 +32,10 @@ risco de novos arquivos importarem do caminho legado.
 
 ## Equivalência de imports
 
-| Antes                                                   | Depois                              |
-| ------------------------------------------------------- | ----------------------------------- |
-| `@/engines/finance/calculations` (código de aplicação)  | `@/engines/finance`                 |
-| `./calculations` (dentro de `src/engines/finance/`)     | submódulo específico (`./dre`, etc.) |
+| Antes                                                  | Depois                               |
+| ------------------------------------------------------ | ------------------------------------ |
+| `@/engines/finance/calculations` (código de aplicação) | `@/engines/finance`                  |
+| `./calculations` (dentro de `src/engines/finance/`)    | submódulo específico (`./dre`, etc.) |
 
 Mapa símbolo → submódulo:
 

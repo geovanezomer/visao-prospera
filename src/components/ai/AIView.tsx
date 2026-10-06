@@ -41,7 +41,12 @@ import { ChatChart, parseChartSpec } from "./ChatChart";
 import { ScenarioBar } from "./ScenarioBar";
 import { useAIChat } from "@/hooks/useAIChat";
 import { resetAIStorage } from "@/engines/ai/providers";
-import { useMemories, deleteMemory, createMemory, type MemoryCategory } from "@/engines/memory/store";
+import {
+  useMemories,
+  deleteMemory,
+  createMemory,
+  type MemoryCategory,
+} from "@/engines/memory/store";
 import { Input } from "@/components/ui/input";
 import { AI_MODE_LABELS, AI_MODE_DESCRIPTIONS, type AIMode } from "@/engines/ai/systemPrompt";
 
@@ -184,7 +189,6 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
     }
   }, [messages, streaming]);
 
-
   const onFilesChange = async (files: FileList | null) => {
     await handleFiles(files);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -262,8 +266,11 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
         )}
 
         <div className="relative flex flex-1 flex-col overflow-hidden">
-          <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-6 space-y-6">
-
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto p-6 space-y-6"
+          >
             {messages.length === 0 ? (
               <div className="max-w-3xl mx-auto space-y-6">
                 <div className="bg-card/30 rounded-xl p-6 border border-border/40">
@@ -341,12 +348,16 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                                     const spec = parseChartSpec(String(children).trim());
                                     if (spec) return <ChatChart spec={spec} />;
                                   }
-                                  return <code className={className} {...props}>{children}</code>;
+                                  return (
+                                    <code className={className} {...props}>
+                                      {children}
+                                    </code>
+                                  );
                                 },
                               }}
                             >
                               {m.content}
-                          </ReactMarkdown>
+                            </ReactMarkdown>
                           </Suspense>
                         </div>
                         {m.role === "assistant" && m.verification && (
@@ -384,8 +395,6 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
             </Button>
           )}
 
-
-
           {(pipeline360.active || pipeline360.completed.length > 0) && (
             <div className="border-t border-border/40 bg-card/20 px-4 py-2">
               <div className="max-w-4xl mx-auto flex items-center gap-3">
@@ -397,11 +406,7 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                       <div key={stage} className="flex items-center gap-1.5">
                         <div
                           className={`h-2 w-2 rounded-full ${
-                            done
-                              ? "bg-primary"
-                              : current
-                                ? "bg-primary animate-pulse"
-                                : "bg-muted"
+                            done ? "bg-primary" : current ? "bg-primary animate-pulse" : "bg-muted"
                           }`}
                         />
                         <span
@@ -532,9 +537,7 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                   size="icon"
                   className="h-9 w-9 shrink-0"
                   onClick={() => void runPipeline360(input)}
-                  disabled={
-                    mode !== "board" || streaming || pipeline360.active
-                  }
+                  disabled={mode !== "board" || streaming || pipeline360.active}
                   title={
                     mode !== "board"
                       ? "Disponível no Modo Conselho (Board)"
@@ -586,7 +589,6 @@ function AIViewContent({ state, simulatedState, simActive, simParams }: Props) {
                 </Select>
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -650,7 +652,10 @@ function MemoriesPopover({ company }: { company: string }) {
             className="h-8 text-xs"
           />
           <div className="flex gap-1">
-            <Select value={novaCategoria} onValueChange={(v) => setNovaCategoria(v as MemoryCategory)}>
+            <Select
+              value={novaCategoria}
+              onValueChange={(v) => setNovaCategoria(v as MemoryCategory)}
+            >
               <SelectTrigger className="h-8 flex-1 text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -671,19 +676,29 @@ function MemoriesPopover({ company }: { company: string }) {
 
         {/* Filtros por categoria */}
         <div className="mb-2 flex flex-wrap gap-1">
-          {(["todas", "decisao", "hipotese", "premissa", "diagnostico", "preferencia", "outro"] as const).map(
-            (c) => (
-              <button
-                key={c}
-                onClick={() => setFilter(c)}
-                className={`rounded px-2 py-0.5 text-[10px] uppercase ${
-                  filter === c ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {c} {c !== "todas" && `(${contar(c as MemoryCategory)})`}
-              </button>
-            ),
-          )}
+          {(
+            [
+              "todas",
+              "decisao",
+              "hipotese",
+              "premissa",
+              "diagnostico",
+              "preferencia",
+              "outro",
+            ] as const
+          ).map((c) => (
+            <button
+              key={c}
+              onClick={() => setFilter(c)}
+              className={`rounded px-2 py-0.5 text-[10px] uppercase ${
+                filter === c
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {c} {c !== "todas" && `(${contar(c as MemoryCategory)})`}
+            </button>
+          ))}
         </div>
 
         {filtradas.length === 0 ? (

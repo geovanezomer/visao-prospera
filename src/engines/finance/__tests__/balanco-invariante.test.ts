@@ -46,15 +46,12 @@ function mulberry32(seed: number): () => number {
 }
 
 // Helpers de amostragem.
-const pick = <T>(rng: () => number, arr: readonly T[]): T =>
-  arr[Math.floor(rng() * arr.length)];
+const pick = <T>(rng: () => number, arr: readonly T[]): T => arr[Math.floor(rng() * arr.length)];
 const rInt = (rng: () => number, lo: number, hi: number): number =>
   Math.floor(rng() * (hi - lo + 1)) + lo;
-const rFloat = (rng: () => number, lo: number, hi: number): number =>
-  rng() * (hi - lo) + lo;
+const rFloat = (rng: () => number, lo: number, hi: number): number => rng() * (hi - lo) + lo;
 
-const sumArr = (a: number[] | undefined): number =>
-  (a ?? []).reduce((x, y) => x + (y || 0), 0);
+const sumArr = (a: number[] | undefined): number => (a ?? []).reduce((x, y) => x + (y || 0), 0);
 
 // ────────────────── Gerador de estados aleatórios ──────────────────
 function randomState(seed: number): AppState {
@@ -69,7 +66,8 @@ function randomState(seed: number): AppState {
   const padrao = pick(rng, ["uniforme", "sazonal", "crescente"] as const);
   const bruta = Array.from({ length: 12 }, (_, i) => {
     if (padrao === "uniforme") return receitaBase;
-    if (padrao === "sazonal") return receitaBase * (0.6 + 0.8 * Math.abs(Math.sin((i / 12) * Math.PI * 2)));
+    if (padrao === "sazonal")
+      return receitaBase * (0.6 + 0.8 * Math.abs(Math.sin((i / 12) * Math.PI * 2)));
     return receitaBase * (0.7 + (0.6 * i) / 11); // crescente
   });
 
@@ -258,53 +256,48 @@ describe("Balanço — invariante contábil sobre 50 estados aleatórios", () =>
     expect(Math.abs(fx.totals.diferenca)).toBeLessThan(1);
   });
 
-  it.each(SEEDS)(
-    "seed %i — conservações individuais (CR, Fornec, ImpPagar)",
-    (seed) => {
-      const state = randomState(seed);
-      const norm = normalizeStateFromBalanco(state);
-      const reg = resolveEffectiveRegime(norm);
-      const { dre } = buildDRE(norm, reg);
-      const cf = buildCashFlow(norm);
-      const fx = deriveBalancoFechamento({ state: norm, dre, cf });
-      const ab = deriveAbertura({
-        state: norm,
-        impostosTotalMensais: dre.impostosTotal,
-      });
+  it.each(SEEDS)("seed %i — conservações individuais (CR, Fornec, ImpPagar)", (seed) => {
+    const state = randomState(seed);
+    const norm = normalizeStateFromBalanco(state);
+    const reg = resolveEffectiveRegime(norm);
+    const { dre } = buildDRE(norm, reg);
+    const cf = buildCashFlow(norm);
+    const fx = deriveBalancoFechamento({ state: norm, dre, cf });
+    const ab = deriveAbertura({
+      state: norm,
+      impostosTotalMensais: dre.impostosTotal,
+    });
 
-      const crIni = ab.contasReceber.value;
-      const crFim = fx.balanco.ativoCirculante?.contasReceberClientes ?? 0;
-      const recebivel = sumArr(buildRecebivelMensal(norm, dre));
-      const recebido = sumArr(cf.recebimentos);
-      // ΔCR = recebível − recebido (tolerância de centavos)
-      expect(crFim - crIni).toBeCloseTo(recebivel - recebido, 1);
+    const crIni = ab.contasReceber.value;
+    const crFim = fx.balanco.ativoCirculante?.contasReceberClientes ?? 0;
+    const recebivel = sumArr(buildRecebivelMensal(norm, dre));
+    const recebido = sumArr(cf.recebimentos);
+    // ΔCR = recebível − recebido (tolerância de centavos)
+    expect(crFim - crIni).toBeCloseTo(recebivel - recebido, 1);
 
-      const fornIni = ab.fornecedores.value;
-      const fornFim = fx.balanco.passivoCirculante?.fornecedores ?? 0;
-      const compras = sumArr(buildComprasMensal(norm, reg));
-      const pagFornec = sumArr(cf.pagamentosFornecedores);
-      expect(fornFim - fornIni).toBeCloseTo(compras - pagFornec, 1);
+    const fornIni = ab.fornecedores.value;
+    const fornFim = fx.balanco.passivoCirculante?.fornecedores ?? 0;
+    const compras = sumArr(buildComprasMensal(norm, reg));
+    const pagFornec = sumArr(cf.pagamentosFornecedores);
+    expect(fornFim - fornIni).toBeCloseTo(compras - pagFornec, 1);
 
-      const impIni = ab.impostosPagar.value;
-      const impFim = fx.balanco.passivoCirculante?.impostosPagar ?? 0;
-      const impComp = sumArr(dre.impostosTotal);
-      const impPag = sumArr(cf.pagamentosImpostos);
-      expect(impFim - impIni).toBeCloseTo(impComp - impPag, 1);
-    },
-  );
+    const impIni = ab.impostosPagar.value;
+    const impFim = fx.balanco.passivoCirculante?.impostosPagar ?? 0;
+    const impComp = sumArr(dre.impostosTotal);
+    const impPag = sumArr(cf.pagamentosImpostos);
+    expect(impFim - impIni).toBeCloseTo(impComp - impPag, 1);
+  });
 
-  it.each(SEEDS)(
-    "seed %i — Resultado do Exercício do Balanço = Lucro Líquido da DRE",
-    (seed) => {
-      const state = randomState(seed);
-      const model = buildFinancialModel(state);
-      const fx = model.balancoFechamento;
+  it.each(SEEDS)("seed %i — Resultado do Exercício do Balanço = Lucro Líquido da DRE", (seed) => {
+    const state = randomState(seed);
+    const model = buildFinancialModel(state);
+    const fx = model.balancoFechamento;
 
-      expect(
-        fx.balanco.patrimonioLiquido?.resultadoExercicio ?? 0,
-      ).toBeCloseTo(sumArr(model.dre.lucroLiquido), 2);
-    },
-  );
+    expect(fx.balanco.patrimonioLiquido?.resultadoExercicio ?? 0).toBeCloseTo(
+      sumArr(model.dre.lucroLiquido),
+      2,
+    );
+  });
 
   // SSOT NCG: o indicador `ind.ncg` deve reproduzir exatamente a identidade
   // do balanço de fechamento — não pode existir divergência entre os dois
@@ -316,7 +309,9 @@ describe("Balanço — invariante contábil sobre 50 estados aleatórios", () =>
     const ac = bal.ativoCirculante ?? {};
     const pc = bal.passivoCirculante ?? {};
     const cr = (ac.contasReceberClientes ?? 0) - (ac.pdd ?? 0);
-    const ncgBal = (cr + (ac.estoques ?? 0)) -
+    const ncgBal =
+      cr +
+      (ac.estoques ?? 0) -
       ((pc.fornecedores ?? 0) + (pc.salariosEncargos ?? 0) + (pc.impostosPagar ?? 0));
     expect(Math.abs(model.ind.ncg - ncgBal)).toBeLessThan(1);
   });
@@ -363,8 +358,7 @@ describe("Balanço — invariante contábil sobre 50 estados aleatórios", () =>
       // Passo 2 — clique do botão: SOMA a diferença ao valor atual.
       base.capital.abertura = {
         ...(base.capital.abertura ?? {}),
-        lucrosAcumulados:
-          (base.capital.abertura?.lucrosAcumulados ?? 0) + ab1.totals.diferenca,
+        lucrosAcumulados: (base.capital.abertura?.lucrosAcumulados ?? 0) + ab1.totals.diferenca,
       };
 
       // Passo 3 — reconstrói e valida fechamento < R$ 1.

@@ -31,7 +31,13 @@ export type LandingVideo = { enabled: boolean; url: string };
 export type Trial = { enabled: boolean; durationHours: number };
 
 const DEFAULTS = {
-  branding: { systemName: "Finnance", logoUrl: null, faviconUrl: null, authorPhotoUrl: null, recolorLogo: false } as Branding,
+  branding: {
+    systemName: "Finnance",
+    logoUrl: null,
+    faviconUrl: null,
+    authorPhotoUrl: null,
+    recolorLogo: false,
+  } as Branding,
   login_texts: {
     headline: "Análise financeira completa para sua empresa",
     subheadline:
@@ -44,7 +50,13 @@ const DEFAULTS = {
 };
 
 type AppSettingsShape = {
-  branding?: { system_name?: string; logo_url?: string; favicon_url?: string; author_photo_url?: string; recolor_logo?: boolean };
+  branding?: {
+    system_name?: string;
+    logo_url?: string;
+    favicon_url?: string;
+    author_photo_url?: string;
+    recolor_logo?: boolean;
+  };
   login_texts?: { headline?: string; subheadline?: string; cta?: string };
   footer?: { text?: string };
   landing_video?: { enabled?: boolean; url?: string };
@@ -52,7 +64,11 @@ type AppSettingsShape = {
 };
 
 export function useBranding() {
-  const { data: raw, isLoading, isFetched } = useQuery({
+  const {
+    data: raw,
+    isLoading,
+    isFetched,
+  } = useQuery({
     queryKey: ["app_settings"],
     queryFn: () => getAppSettings(),
     staleTime: 60 * 60_000,
@@ -60,7 +76,8 @@ export function useBranding() {
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
-    initialData: () => readSettingsCache() as Awaited<ReturnType<typeof getAppSettings>> | undefined,
+    initialData: () =>
+      readSettingsCache() as Awaited<ReturnType<typeof getAppSettings>> | undefined,
     initialDataUpdatedAt: () => (readSettingsCache() ? Date.now() : 0),
   });
 

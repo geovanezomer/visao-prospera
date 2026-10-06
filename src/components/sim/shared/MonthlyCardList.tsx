@@ -128,9 +128,7 @@ function MonthlyCard({
             <span>{fmtPct(pct)} rec.</span>
           </div>
           {row.readOnly && row.readOnlyHint && (
-            <div className="mt-1 text-[10px] italic text-muted-foreground">
-              {row.readOnlyHint}
-            </div>
+            <div className="mt-1 text-[10px] italic text-muted-foreground">{row.readOnlyHint}</div>
           )}
         </div>
         {onRemove && !row.readOnly && (
@@ -180,7 +178,8 @@ function MonthlyCard({
             </div>
           </div>
         ) : (
-          open && !row.readOnly && (
+          open &&
+          !row.readOnly && (
             <div className="grid grid-cols-3 gap-2">
               {row.values.map((v, i) => (
                 <label key={i} className="space-y-1">

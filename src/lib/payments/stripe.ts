@@ -35,14 +35,17 @@ async function stripeFetch<T>(
   // Stripe aceita Idempotency-Key em qualquer POST: garante que reenvio
   // da mesma chave devolve a sessão já criada (sem cobrar/criar de novo).
   if (opts?.idempotencyKey) headers["Idempotency-Key"] = opts.idempotencyKey;
-  const res = await fetch(`${STRIPE_API}${path}`, { method: "POST", headers, body: form(body as Record<string, string | number | boolean | undefined>) });
+  const res = await fetch(`${STRIPE_API}${path}`, {
+    method: "POST",
+    headers,
+    body: form(body as Record<string, string | number | boolean | undefined>),
+  });
   const json = (await res.json()) as { error?: { message?: string } } & T;
   if (!res.ok) {
     throw new Error(`Stripe API ${path}: ${json.error?.message ?? res.statusText}`);
   }
   return json;
 }
-
 
 /** Mapeia priceId (lookup_key) de volta para o PlanId interno. */
 function planFromPriceRef(priceRef: string): PlanId {
@@ -77,17 +80,26 @@ export class StripeProvider implements PaymentProvider {
     currency?: string;
     providerRef?: string | null;
     planName?: string;
-    upsell?: { name: string; priceCents: number; stripePriceId?: string | null; asaasRef?: string | null } | null;
+    upsell?: {
+      name: string;
+      priceCents: number;
+      stripePriceId?: string | null;
+      asaasRef?: string | null;
+    } | null;
     idempotencyKey?: string;
-  }): Promise<{ url: string; providerSessionId?: string | null; providerCustomerId?: string | null }> {
-
+  }): Promise<{
+    url: string;
+    providerSessionId?: string | null;
+    providerCustomerId?: string | null;
+  }> {
     const isOneTime = input.interval === "one_time" || input.interval === "lifetime";
     const mode = isOneTime ? "payment" : "subscription";
 
     // Resolve referência do preço:
     // 1) providerRef explícito (stripe_price_id no plano do banco);
     // 2) fallback legacy via getProviderPlanRef + env vars (starter/pro).
-    const explicitRef = input.providerRef && input.providerRef.trim() !== "" ? input.providerRef : null;
+    const explicitRef =
+      input.providerRef && input.providerRef.trim() !== "" ? input.providerRef : null;
 
     const body: Record<string, string | number | boolean | undefined> = {
       mode,
@@ -102,7 +114,6 @@ export class StripeProvider implements PaymentProvider {
       allow_promotion_codes: "true",
     };
 
-
     if (explicitRef) {
       body["line_items[0][price]"] = explicitRef;
     } else if (typeof input.priceCents === "number" && input.priceCents > 0) {
@@ -110,12 +121,17 @@ export class StripeProvider implements PaymentProvider {
       const currency = (input.currency || "BRL").toLowerCase();
       body["line_items[0][price_data][currency]"] = currency;
       body["line_items[0][price_data][unit_amount]"] = input.priceCents;
-      body["line_items[0][price_data][product_data][name]"] = input.planName || `Plano ${input.plan}`;
+      body["line_items[0][price_data][product_data][name]"] =
+        input.planName || `Plano ${input.plan}`;
       if (!isOneTime) {
-        const interval = input.interval === "year" ? "year"
-          : input.interval === "week" ? "week"
-          : input.interval === "day" ? "day"
-          : "month";
+        const interval =
+          input.interval === "year"
+            ? "year"
+            : input.interval === "week"
+              ? "week"
+              : input.interval === "day"
+                ? "day"
+                : "month";
         body["line_items[0][price_data][recurring][interval]"] = interval;
       }
     } else {
@@ -163,7 +179,6 @@ export class StripeProvider implements PaymentProvider {
       body["payment_intent_data[metadata][email]"] = input.email;
     }
 
-
     const session = await stripeFetch<{ id?: string; url: string; customer?: string | null }>(
       this.apiKey,
       "/checkout/sessions",
@@ -175,7 +190,6 @@ export class StripeProvider implements PaymentProvider {
       providerSessionId: session.id ?? null,
       providerCustomerId: session.customer ?? null,
     };
-
   }
 
   async createPortal(input: { customerId: string; returnUrl: string }): Promise<{ url: string }> {
@@ -259,7 +273,9 @@ export class StripeProvider implements PaymentProvider {
           customerId: String(obj.customer),
           subscriptionId: String(obj.id),
           plan: (obj.metadata?.plan as PlanId) ?? planFromPriceRef(priceRef),
-          status: (obj.status as "active" | "canceled" | "incomplete" | "past_due" | "trialing") ?? "active",
+          status:
+            (obj.status as "active" | "canceled" | "incomplete" | "past_due" | "trialing") ??
+            "active",
           currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
         };
       }

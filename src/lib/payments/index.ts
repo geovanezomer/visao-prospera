@@ -75,7 +75,7 @@ export async function loadProviderConfig(provider: ProviderName): Promise<Provid
     return {
       apiKey: cred.api_key as string,
       webhookSecret: (cred.webhook_secret as string | null) ?? null,
-      mode: (cred.mode === "live" ? "live" : cred.mode === "sandbox" ? "sandbox" : null),
+      mode: cred.mode === "live" ? "live" : cred.mode === "sandbox" ? "sandbox" : null,
     };
   } catch {
     return null;
@@ -101,7 +101,7 @@ export async function resolveProvider(): Promise<PaymentProvider> {
       "Nenhum provedor de pagamento configurado. Configure no Painel Admin > Provider ou defina PAYMENT_PROVIDER/chaves no .env.",
     );
   }
-  const cfg = fromDb ? (await loadProviderConfig(choice)) ?? undefined : undefined;
+  const cfg = fromDb ? ((await loadProviderConfig(choice)) ?? undefined) : undefined;
   const instance = await instantiate(choice, cfg);
   _cached = { name: choice, instance, until: Date.now() + TTL_MS };
   _activeName = choice;
@@ -120,11 +120,21 @@ export function getProviderPlanRef(plan: string): string {
   const isStarter = plan === "starter";
   const key =
     name === "stripe"
-      ? isStarter ? "STRIPE_PRICE_STARTER" : "STRIPE_PRICE_PRO"
-      : isStarter ? "ASAAS_PLAN_STARTER" : "ASAAS_PLAN_PRO";
+      ? isStarter
+        ? "STRIPE_PRICE_STARTER"
+        : "STRIPE_PRICE_PRO"
+      : isStarter
+        ? "ASAAS_PLAN_STARTER"
+        : "ASAAS_PLAN_PRO";
   const value = process.env[key];
   if (!value) throw new Error(`Variável ${key} não configurada no .env`);
   return value;
 }
 
-export type { PaymentProvider, NormalizedEvent, PlanId, ProviderName, ProviderConfig } from "./types";
+export type {
+  PaymentProvider,
+  NormalizedEvent,
+  PlanId,
+  ProviderName,
+  ProviderConfig,
+} from "./types";

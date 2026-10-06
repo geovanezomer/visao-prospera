@@ -176,20 +176,20 @@ describe("Getters clampam override fora do range (snapshot corrompido)", () => {
 describe("Cobertura: cada campo de FAIXAS_TRIBUTARIAS tem getter/uso associado", () => {
   // Map campo → função que resolve o valor efetivo a partir de TaxConfig.
   const GETTERS: Record<CampoTributario, (t: TaxConfig) => number> = {
-    irpj:              (t) => getIrpjPct(t),
-    irpjAdicional:     (t) => getIrpjAdicionalPct(t),
+    irpj: (t) => getIrpjPct(t),
+    irpjAdicional: (t) => getIrpjAdicionalPct(t),
     irpjAdicionalGatilhoTri: (t) => getIrpjAdicionalGatilhoTri(t),
-    csll:              (t) => getCsllPct(t),
-    pisCum:            (t) => getPisCumPct(t),
-    cofinsCum:         (t) => getCofinsCumPct(t),
-    pisNaoCum:         (t) => getPisNaoCumPct(t),
-    cofinsNaoCum:      (t) => getCofinsNaoCumPct(t),
-    iss:               (t) => t.issIcms, // valor direto do state.tax — usado na engine
-    cbsAliquota:       (t) => getCbsAliquota(t),
-    ibsAliquotaRef:    (t) => getIbsAliquotaRef(t),
+    csll: (t) => getCsllPct(t),
+    pisCum: (t) => getPisCumPct(t),
+    cofinsCum: (t) => getCofinsCumPct(t),
+    pisNaoCum: (t) => getPisNaoCumPct(t),
+    cofinsNaoCum: (t) => getCofinsNaoCumPct(t),
+    iss: (t) => t.issIcms, // valor direto do state.tax — usado na engine
+    cbsAliquota: (t) => getCbsAliquota(t),
+    ibsAliquotaRef: (t) => getIbsAliquotaRef(t),
     presumidoBaseIRPJ: (t) => getPresumidoBases(t, "servicos").irpj,
     presumidoBaseCSLL: (t) => getPresumidoBases(t, "servicos").csll,
-    fatorRMinimo:      (t) => getFatorRMinimoPct(t),
+    fatorRMinimo: (t) => getFatorRMinimoPct(t),
   };
 
   it("todos os campos declarados têm getter", () => {

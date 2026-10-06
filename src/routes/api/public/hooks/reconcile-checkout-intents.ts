@@ -51,11 +51,9 @@ export const Route = createFileRoute("/api/public/hooks/reconcile-checkout-inten
           }
         }
 
-        const sb = createClient(
-          process.env.SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-          { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-        );
+        const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+          auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+        });
 
         // Busca candidatos antigos o suficiente para sequer caberem na
         // menor das janelas (2h). Filtramos por janela específica em JS,

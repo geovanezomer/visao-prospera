@@ -45,11 +45,7 @@ export function useChatThreads({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   // Injeta briefing inicial estilo CFO em conversa nova/vazia.
-  const injectBriefingIfEmpty = (
-    company: string,
-    threadId: string,
-    currentMsgs: ChatMessage[],
-  ) => {
+  const injectBriefingIfEmpty = (company: string, threadId: string, currentMsgs: ChatMessage[]) => {
     if (currentMsgs.length > 0) return currentMsgs;
     const md = getBriefingMd();
     if (!md) return currentMsgs;
@@ -114,11 +110,7 @@ export function useChatThreads({
       }
       setActiveId(fallback.id);
       setMessages(
-        injectBriefingIfEmpty(
-          companyName,
-          fallback.id,
-          loadMessages(companyName, fallback.id),
-        ),
+        injectBriefingIfEmpty(companyName, fallback.id, loadMessages(companyName, fallback.id)),
       );
     }
   };

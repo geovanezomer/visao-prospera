@@ -128,7 +128,12 @@ export async function runLiveCase(
   const toolsCalled: string[] = [];
   try {
     const out = await chatWithTools(
-      { provider: "lmstudio", model: cfg.model, apiKey: cfg.apiKey || "", baseUrl: cfg.baseUrl } as unknown as Parameters<typeof chatWithTools>[0],
+      {
+        provider: "lmstudio",
+        model: cfg.model,
+        apiKey: cfg.apiKey || "",
+        baseUrl: cfg.baseUrl,
+      } as unknown as Parameters<typeof chatWithTools>[0],
       messages,
       (name, args) => Promise.resolve(runTool(name, args, state)),
       {

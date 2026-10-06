@@ -18,7 +18,21 @@ describe("Indicadores — WACC", () => {
   it("WACC = wE·Ke + wD·Kd·(1−T) no Lucro Real (T=34%)", () => {
     const s = createState({
       tax: { regime: "real" },
-      capital: { ke: 15, kd: 10, patrimonioLiquido: 600_000, debtContracts: [{ id: "sim", credor: "Banco", saldoDevedor: 400_000, taxaAA: 18, sistema: "price" as const, prazoMeses: 24 }]},
+      capital: {
+        ke: 15,
+        kd: 10,
+        patrimonioLiquido: 600_000,
+        debtContracts: [
+          {
+            id: "sim",
+            credor: "Banco",
+            saldoDevedor: 400_000,
+            taxaAA: 18,
+            sistema: "price" as const,
+            prazoMeses: 24,
+          },
+        ],
+      },
     });
     const { dre } = buildDRE(s, "real");
     const ind = calcIndicators(s, dre);
@@ -30,7 +44,21 @@ describe("Indicadores — WACC", () => {
     expect(irShieldForRegime("simples")).toBe(0);
     const s = createState({
       tax: { regime: "simples" },
-      capital: { ke: 15, kd: 10, patrimonioLiquido: 500_000, debtContracts: [{ id: "sim", credor: "Banco", saldoDevedor: 500_000, taxaAA: 18, sistema: "price" as const, prazoMeses: 24 }]},
+      capital: {
+        ke: 15,
+        kd: 10,
+        patrimonioLiquido: 500_000,
+        debtContracts: [
+          {
+            id: "sim",
+            credor: "Banco",
+            saldoDevedor: 500_000,
+            taxaAA: 18,
+            sistema: "price" as const,
+            prazoMeses: 24,
+          },
+        ],
+      },
     });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
@@ -40,7 +68,7 @@ describe("Indicadores — WACC", () => {
 
   it("WACC finito mesmo com PL=0 e Dívida=0 (safeMath)", () => {
     const s = createState({
-      capital: { ke: 15, kd: 10, patrimonioLiquido: 0,  proprio: 100 },
+      capital: { ke: 15, kd: 10, patrimonioLiquido: 0, proprio: 100 },
     });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
@@ -52,8 +80,10 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
   it("ROIC preserva prejuízo operacional (não trava NOPAT negativo em zero)", () => {
     const s = createState({
       revenue: { bruta: m12(10_000), inadimplencia: m12(0) },
-      costs: [{ id: "cf", label: "Custo fixo", category: "fixo", values: m12(30_000), fixed: true }],
-      capital: { ativoTotal: 1_000_000, patrimonioLiquido: 700_000, },
+      costs: [
+        { id: "cf", label: "Custo fixo", category: "fixo", values: m12(30_000), fixed: true },
+      ],
+      capital: { ativoTotal: 1_000_000, patrimonioLiquido: 700_000 },
     });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
@@ -70,7 +100,7 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
       capital: {
         ativoTotal: 0,
         patrimonioLiquido: 0,
-        
+
         passivosNaoOnerosos: 0,
         caixaOcioso: 0,
       },
@@ -91,7 +121,7 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
       tax: { regime: "real" },
       revenue: { bruta: m12(100_000), inadimplencia: m12(0) },
       costs: [{ id: "cv", label: "CV", category: "variavel", values: m12(40_000), fixed: false }],
-      capital: { ativoTotal: 2_000_000, patrimonioLiquido: 1_500_000, },
+      capital: { ativoTotal: 2_000_000, patrimonioLiquido: 1_500_000 },
     });
     const { dre } = buildDRE(s, "real");
     const ind = calcIndicators(s, dre);
@@ -163,7 +193,7 @@ describe("Indicadores — ROIC / ROE / ROA", () => {
       capital: {
         ativoTotal: 0,
         patrimonioLiquido: 0,
-        
+
         passivosNaoOnerosos: 0,
         fornecedores: 0,
       },
@@ -239,7 +269,9 @@ describe("Indicadores — NCG e FCF (SSOT via Balanço)", () => {
     // reproduzir exatamente a identidade — sem divergência com o balanço.
     const s = createState({
       revenue: { bruta: m12(60_000) },
-      costs: [{ id: "cpv", label: "CPV", category: "custo_vendas", values: m12(30_000), fixed: false }],
+      costs: [
+        { id: "cpv", label: "CPV", category: "custo_vendas", values: m12(30_000), fixed: false },
+      ],
       capital: { contasReceber: 100_000, estoques: 50_000, fornecedores: 30_000 },
     });
     const model = buildFinancialModel(s);
@@ -249,7 +281,7 @@ describe("Indicadores — NCG e FCF (SSOT via Balanço)", () => {
     const forn = bal.passivoCirculante?.fornecedores ?? 0;
     const sal = bal.passivoCirculante?.salariosEncargos ?? 0;
     const imp = bal.passivoCirculante?.impostosPagar ?? 0;
-    const ncgBal = (cr + est) - (forn + sal + imp);
+    const ncgBal = cr + est - (forn + sal + imp);
     expect(model.ind.ncg).toBeCloseTo(ncgBal, 0);
   });
 
@@ -268,7 +300,9 @@ describe("Indicadores — Liquidez SSOT (Balanço de Fechamento)", () => {
   it("LC/LS/LG do indicador === razão calculada direto do Balanço", () => {
     const s = createState({
       revenue: { bruta: m12(60_000) },
-      costs: [{ id: "cpv", label: "CPV", category: "custo_vendas", values: m12(30_000), fixed: false }],
+      costs: [
+        { id: "cpv", label: "CPV", category: "custo_vendas", values: m12(30_000), fixed: false },
+      ],
       capital: {
         contasReceber: 100_000,
         estoques: 50_000,
@@ -314,7 +348,6 @@ describe("Indicadores — Liquidez SSOT (Balanço de Fechamento)", () => {
     expect(ind.liquidezImediata).toBeLessThanOrEqual(0);
   });
 });
-
 
 describe("Indicadores — Cobertura de Juros / DSCR / Giro", () => {
   it("Sem dívida onerosa → coberturaJuros e DSCR = null (N/A)", () => {
@@ -383,13 +416,13 @@ describe("Indicadores — ROA / Giro com Ativo Médio (CFA/Damodaran)", () => {
     // Ativo do balanço > 0 → ROA deve ser finito e usar esse denominador.
     expect(model.balancoFechamento.totals.ativo).toBeGreaterThan(0);
     if (Math.abs(model.ind.lucroLiquidoAnual) > 1) {
-      const roaEsperado = (model.ind.lucroLiquidoAnual / model.balancoFechamento.totals.ativo) * 100;
+      const roaEsperado =
+        (model.ind.lucroLiquidoAnual / model.balancoFechamento.totals.ativo) * 100;
       expect(model.ind.roa).toBeCloseTo(roaEsperado, 1);
     }
   });
 
   it("PL fechamento é SSOT do balanço: ROE e Dívida Líq./PL não colapsam quando capital.patrimonioLiquido=0 mas o balanço tem PL>0", () => {
-
     // Cenário do bug histórico: `capital.patrimonioLiquido = 0` (só capital social zero)
     // enquanto o balanço reconciliado acumula lucros/reservas. Antes: PL=0 →
     // ROE inflado (plMedio pequeno) e dividaLiqPl saturava no clamp ±99.
@@ -447,7 +480,3 @@ describe("Indicadores — ROA / Giro com Ativo Médio (CFA/Damodaran)", () => {
     }
   });
 });
-
-
-
-

@@ -10,8 +10,8 @@ testes que protegem a engine de cálculo. A cada mudança em `systemPrompt.ts`,
   com verdade conhecida (dívida crítica, caixa apertado, saudável,
   Simples estourado, margem baixa, serviços/Fator R).
 - `goldenSet.ts` — casos `EvalCase` combinando fixture + pergunta + modo
-  + expectativas (`deveConter`, `naoPodeConter`, `toolsEsperadas`,
-  `numChavePayload`).
+  - expectativas (`deveConter`, `naoPodeConter`, `toolsEsperadas`,
+    `numChavePayload`).
 - `runner.ts` — dois níveis de execução.
 - `goldenset-static.test.ts` — vitest do Nível A (roda no CI).
 - `../../../../scripts/eval-ai.ts` — script Nível B (dev sob demanda).

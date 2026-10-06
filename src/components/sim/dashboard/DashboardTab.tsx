@@ -28,13 +28,20 @@ import { fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
 import { StatCard, renderHint } from "@/components/sim/shared/primitives";
 import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 
-
 import { DashboardExtras, Top5Despesas } from "./DashboardExtras";
 import { WaccRoicMeter } from "@/components/sim/capital/WaccRoicMeter";
 import { KanitzCard } from "@/components/sim/shared/KanitzCard";
 import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
 
-const COLORS = ["var(--success)", "var(--primary)", "#F5B85B", "#C77DFF", "var(--destructive)", "#7DD3FC", "#FACC15"];
+const COLORS = [
+  "var(--success)",
+  "var(--primary)",
+  "#F5B85B",
+  "#C77DFF",
+  "var(--destructive)",
+  "#7DD3FC",
+  "#FACC15",
+];
 
 const TOOLTIP_STYLE = {
   background: "var(--popover)",
@@ -68,9 +75,19 @@ function Gauge({
   const numeric = isNA ? 0 : (value as number);
   const clamped = Math.max(0, Math.min(numeric, max));
   const ratio = max > 0 ? clamped / max : 0;
-  const tone = isNA ? "var(--muted)"
-    : good === "high" ? (ratio > 0.66 ? "var(--success)" : ratio > 0.33 ? "#F5B85B" : "var(--destructive)")
-                     : (ratio < 0.33 ? "var(--success)" : ratio < 0.66 ? "#F5B85B" : "var(--destructive)");
+  const tone = isNA
+    ? "var(--muted)"
+    : good === "high"
+      ? ratio > 0.66
+        ? "var(--success)"
+        : ratio > 0.33
+          ? "#F5B85B"
+          : "var(--destructive)"
+      : ratio < 0.33
+        ? "var(--success)"
+        : ratio < 0.66
+          ? "#F5B85B"
+          : "var(--destructive)";
   const data = [
     { name: "v", value: clamped, fill: tone },
     { name: "r", value: Math.max(0, max - clamped), fill: "var(--muted)" },
@@ -93,15 +110,24 @@ function Gauge({
               outerRadius="95%"
               stroke="none"
             >
-              {data.map((d, i) => <Cell key={i} fill={d.fill} />)}
+              {data.map((d, i) => (
+                <Cell key={i} fill={d.fill} />
+              ))}
             </Pie>
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex items-end justify-center pb-2">
           <span className="mono text-2xl font-bold text-foreground">
-            {isNA
-              ? <span title="Indicador não aplicável — verifique o denominador (ex.: PL ≤ 0).">N/A</span>
-              : <>{numeric.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}<span className="text-sm text-muted-foreground">{suffix}</span></>}
+            {isNA ? (
+              <span title="Indicador não aplicável — verifique o denominador (ex.: PL ≤ 0).">
+                N/A
+              </span>
+            ) : (
+              <>
+                {numeric.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}
+                <span className="text-sm text-muted-foreground">{suffix}</span>
+              </>
+            )}
           </span>
         </div>
       </div>
@@ -125,7 +151,12 @@ export function DashboardTab() {
   const { dre, ind, cagrReceitas12m } = useFinanceModel(state);
   const c = buildIndicatorCalcs(state, dre, ind, cagrReceitas12m);
   // SSOT — mesma fórmula da aba Capital/Indicadores.
-  const alav = leverageDisplay("pl", ind.dividaLiqPl, ind.dividaLiquida, state.capital.patrimonioLiquido);
+  const alav = leverageDisplay(
+    "pl",
+    ind.dividaLiqPl,
+    ind.dividaLiquida,
+    state.capital.patrimonioLiquido,
+  );
 
   // Receita mensal + margem líquida acumulada
   const receitaMargem = useMemo(
@@ -141,8 +172,6 @@ export function DashboardTab() {
       }),
     [dre],
   );
-
-
 
   // Lucro acumulado (área)
   const acumulado = useMemo(() => {
@@ -183,30 +212,24 @@ export function DashboardTab() {
         cat === "custo_vendas" || cat === "direto_venda"
           ? bucket.cpv
           : cat === "despesa_comercial" || cat === "variavel"
-          ? bucket.comerciais
-          : cat === "financeiro"
-          ? bucket.financeiras
-          : bucket.administrativas;
+            ? bucket.comerciais
+            : cat === "financeiro"
+              ? bucket.financeiras
+              : bucket.administrativas;
       for (let i = 0; i < 12; i++) target[i] += c.values[i] ?? 0;
     }
     return MESES.map((m, i) => ({
       mes: m,
       "CPV/CMV/CSP": bucket.cpv[i],
-      "Comerciais": bucket.comerciais[i],
-      "Administrativas": bucket.administrativas[i],
-      "Financeiras": bucket.financeiras[i],
-      "EBIT": dre.ebit[i] ?? 0,
+      Comerciais: bucket.comerciais[i],
+      Administrativas: bucket.administrativas[i],
+      Financeiras: bucket.financeiras[i],
+      EBIT: dre.ebit[i] ?? 0,
     }));
   }, [state.costs, dre.ebit]);
 
-
-
   return (
     <div className="space-y-6">
-
-
-
-
       {/* Linha 1 — Cards numéricos resumo (com tooltips, base unificada `useFinanceModel`) */}
       <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <StatCard
@@ -215,7 +238,8 @@ export function DashboardTab() {
           tone="pos"
           sub="Últimos 12 meses"
           hint={{
-            description: "Receita bruta dos últimos 12 meses descontados impostos sobre vendas, devoluções e abatimentos.",
+            description:
+              "Receita bruta dos últimos 12 meses descontados impostos sobre vendas, devoluções e abatimentos.",
             formula: "Receita Bruta − Impostos sobre Vendas − Devoluções",
             calc: c.receitaLiquida12m,
           }}
@@ -224,9 +248,14 @@ export function DashboardTab() {
           label="EBITDA (12m)"
           value={fmtBRL(ind.ebitdaAnual)}
           tone={ind.ebitdaAnual >= 0 ? "pos" : "neg"}
-          sub={ind.receitaLiquidaAnual > 0 ? fmtPct((ind.ebitdaAnual / ind.receitaLiquidaAnual) * 100) + " da receita" : "—"}
+          sub={
+            ind.receitaLiquidaAnual > 0
+              ? fmtPct((ind.ebitdaAnual / ind.receitaLiquidaAnual) * 100) + " da receita"
+              : "—"
+          }
           hint={{
-            description: "Lucro operacional antes de juros, impostos, depreciação e amortização. Mede a geração operacional de caixa.",
+            description:
+              "Lucro operacional antes de juros, impostos, depreciação e amortização. Mede a geração operacional de caixa.",
             formula: "Lucro Operacional + Depreciação + Amortização",
             calc: c.ebitda12m,
           }}
@@ -235,7 +264,11 @@ export function DashboardTab() {
           label="Lucro Líquido (12m)"
           value={fmtBRL(ind.lucroLiquidoAnual)}
           tone={ind.lucroLiquidoAnual >= 0 ? "pos" : "neg"}
-          sub={ind.receitaLiquidaAnual > 0 ? fmtPct((ind.lucroLiquidoAnual / ind.receitaLiquidaAnual) * 100) + " da receita" : "—"}
+          sub={
+            ind.receitaLiquidaAnual > 0
+              ? fmtPct((ind.lucroLiquidoAnual / ind.receitaLiquidaAnual) * 100) + " da receita"
+              : "—"
+          }
           hint={{
             description: "Resultado final do exercício após todas as despesas, juros e impostos.",
             formula: "Receita Líquida − Custos − Despesas − Juros − IRPJ/CSLL",
@@ -257,19 +290,26 @@ export function DashboardTab() {
         <StatCard
           label="DSCR"
           value={ind.dscr == null ? "N/A" : ind.dscr >= 99 ? "∞" : `${ind.dscr.toFixed(2)}×`}
-          tone={ind.dscr == null ? "default" : ind.dscr >= DSCR_THRESHOLDS.warn ? "pos" : ind.dscr >= DSCR_THRESHOLDS.danger ? "default" : "neg"}
+          tone={
+            ind.dscr == null
+              ? "default"
+              : ind.dscr >= DSCR_THRESHOLDS.warn
+                ? "pos"
+                : ind.dscr >= DSCR_THRESHOLDS.danger
+                  ? "default"
+                  : "neg"
+          }
           sub={ind.dscr == null ? "Sem dívida a servir" : "EBITDA ÷ Serviço da Dívida"}
           hint={{
-            description: ind.dscr == null
-              ? "N/A — a empresa não tem dívida onerosa (contratos + amortizações). O indicador não se aplica."
-              : "Debt Service Coverage Ratio — capacidade do EBITDA cobrir o serviço da dívida (juros de contratos + amortização do principal). ≥1.25× é saudável; <1.0× sinaliza risco real de inadimplência.",
+            description:
+              ind.dscr == null
+                ? "N/A — a empresa não tem dívida onerosa (contratos + amortizações). O indicador não se aplica."
+                : "Debt Service Coverage Ratio — capacidade do EBITDA cobrir o serviço da dívida (juros de contratos + amortização do principal). ≥1.25× é saudável; <1.0× sinaliza risco real de inadimplência.",
             formula: "EBITDA Anual ÷ (Juros de contratos + Amortizações Anuais)",
             calc: c.dscr,
           }}
         />
       </div>
-
-
 
       {/* Linha 2 — KPIs em gauges (logo após os cards principais) */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -278,7 +318,8 @@ export function DashboardTab() {
           value={ind.margemLiquida}
           max={30}
           hint={{
-            description: "O lucro que efetivamente sobra para os sócios, após tudo pago (custos, despesas, juros e impostos).",
+            description:
+              "O lucro que efetivamente sobra para os sócios, após tudo pago (custos, despesas, juros e impostos).",
             formula: "Lucro Líquido ÷ Receita Líquida × 100",
             calc: c.margemLiquida,
           }}
@@ -288,7 +329,8 @@ export function DashboardTab() {
           value={ind.roe}
           max={30}
           hint={{
-            description: "Retorno sobre o Patrimônio Líquido. Usa PL MÉDIO quando o PL de abertura é informado em Capital; caso contrário, usa PL fim de período.",
+            description:
+              "Retorno sobre o Patrimônio Líquido. Usa PL MÉDIO quando o PL de abertura é informado em Capital; caso contrário, usa PL fim de período.",
             formula: "Lucro Líquido ÷ PL Médio × 100",
             calc: c.roe,
           }}
@@ -299,7 +341,8 @@ export function DashboardTab() {
           max={3}
           suffix="x"
           hint={{
-            description: "Capacidade de pagar dívidas de curto prazo com recursos de curto prazo. Acima de 1,0 indica folga; abaixo, aperto.",
+            description:
+              "Capacidade de pagar dívidas de curto prazo com recursos de curto prazo. Acima de 1,0 indica folga; abaixo, aperto.",
             formula: "Ativo Circulante ÷ Passivo Circulante",
             calc: c.liquidezCorrente,
           }}
@@ -310,21 +353,16 @@ export function DashboardTab() {
           max={100}
           good="low"
           hint={{
-            description: "Percentual do ativo financiado por dívidas (terceiros). Acima de 60% costuma indicar alto risco financeiro.",
+            description:
+              "Percentual do ativo financiado por dívidas (terceiros). Acima de 60% costuma indicar alto risco financeiro.",
             formula: "Passivo Total ÷ Ativo Total × 100",
             calc: c.endividamentoGeral,
           }}
         />
       </div>
 
-
-
-
-
-
       {/* Elementos visuais para o empresário: runway, semáforos, score e top despesas */}
       <DashboardExtras state={state} />
-
 
       {/* Linha 4 — Receitas vs Despesas | Top 5 Despesas */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -333,11 +371,32 @@ export function DashboardTab() {
             <ComposedChart data={receitasDespesas}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
-              <YAxis stroke="var(--muted-foreground)" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => fmtBRL(v)} />
+              <YAxis
+                stroke="var(--muted-foreground)"
+                fontSize={10}
+                tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+              />
+              <Tooltip
+                contentStyle={TOOLTIP_STYLE}
+                labelStyle={TOOLTIP_LABEL_STYLE}
+                itemStyle={TOOLTIP_ITEM_STYLE}
+                formatter={(v: number) => fmtBRL(v)}
+              />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="Receitas" stroke="var(--success)" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="Despesas" stroke="var(--destructive)" strokeWidth={2} dot={false} />
+              <Line
+                type="monotone"
+                dataKey="Receitas"
+                stroke="var(--success)"
+                strokeWidth={2}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="Despesas"
+                stroke="var(--destructive)"
+                strokeWidth={2}
+                dot={false}
+              />
             </ComposedChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -365,16 +424,25 @@ export function DashboardTab() {
                 fontSize={10}
                 tickFormatter={(v) => `${v.toFixed(0)}%`}
               />
-              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number, n) => n === "Margem %" ? `${v.toFixed(1)}%` : fmtBRL(v)} />
+              <Tooltip
+                contentStyle={TOOLTIP_STYLE}
+                labelStyle={TOOLTIP_LABEL_STYLE}
+                itemStyle={TOOLTIP_ITEM_STYLE}
+                formatter={(v: number, n) => (n === "Margem %" ? `${v.toFixed(1)}%` : fmtBRL(v))}
+              />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar yAxisId="left" dataKey="Receita" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-              <Line yAxisId="right" type="monotone" dataKey="Margem %" stroke="var(--success)" strokeWidth={2} dot={false} />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="Margem %"
+                stroke="var(--success)"
+                strokeWidth={2}
+                dot={false}
+              />
             </ComposedChart>
           </ResponsiveContainer>
         </ChartCard>
-
-
-
 
         <ChartCard title="Lucro Líquido Acumulado (12m)">
           <ResponsiveContainer width="100%" height={280}>
@@ -387,18 +455,28 @@ export function DashboardTab() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
-              <YAxis stroke="var(--muted-foreground)" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => fmtBRL(v)} />
-              <Area type="monotone" dataKey="Acumulado" stroke="var(--success)" fill="url(#grad)" strokeWidth={2} />
+              <YAxis
+                stroke="var(--muted-foreground)"
+                fontSize={10}
+                tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+              />
+              <Tooltip
+                contentStyle={TOOLTIP_STYLE}
+                labelStyle={TOOLTIP_LABEL_STYLE}
+                itemStyle={TOOLTIP_ITEM_STYLE}
+                formatter={(v: number) => fmtBRL(v)}
+              />
+              <Area
+                type="monotone"
+                dataKey="Acumulado"
+                stroke="var(--success)"
+                fill="url(#grad)"
+                strokeWidth={2}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </ChartCard>
       </div>
-
-
-
-
-
 
       {/* Composição mensal de custos × EBIT (stacked + line) */}
       <ChartCard title="Composição Mensal de Custos × EBIT (12m)">
@@ -419,13 +497,37 @@ export function DashboardTab() {
               fontSize={10}
               tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
             />
-            <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL_STYLE} itemStyle={TOOLTIP_ITEM_STYLE} formatter={(v: number) => fmtBRL(v)} />
+            <Tooltip
+              contentStyle={TOOLTIP_STYLE}
+              labelStyle={TOOLTIP_LABEL_STYLE}
+              itemStyle={TOOLTIP_ITEM_STYLE}
+              formatter={(v: number) => fmtBRL(v)}
+            />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar yAxisId="left" dataKey="CPV/CMV/CSP" stackId="custos" fill="#1E5BB8" radius={[0, 0, 0, 0]} />
+            <Bar
+              yAxisId="left"
+              dataKey="CPV/CMV/CSP"
+              stackId="custos"
+              fill="#1E5BB8"
+              radius={[0, 0, 0, 0]}
+            />
             <Bar yAxisId="left" dataKey="Administrativas" stackId="custos" fill="#F59E0B" />
             <Bar yAxisId="left" dataKey="Comerciais" stackId="custos" fill="#A855F7" />
-            <Bar yAxisId="left" dataKey="Financeiras" stackId="custos" fill="#EF4444" radius={[4, 4, 0, 0]} />
-            <Line yAxisId="right" type="monotone" dataKey="EBIT" stroke="var(--success)" strokeWidth={2.5} dot={{ r: 3 }} />
+            <Bar
+              yAxisId="left"
+              dataKey="Financeiras"
+              stackId="custos"
+              fill="#EF4444"
+              radius={[4, 4, 0, 0]}
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="EBIT"
+              stroke="var(--success)"
+              strokeWidth={2.5}
+              dot={{ r: 3 }}
+            />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -435,10 +537,6 @@ export function DashboardTab() {
 
       {/* Termômetro de Insolvência (Kanitz) — alerta precoce de descontinuidade */}
       <KanitzCard />
-
-
     </div>
   );
 }
-
-

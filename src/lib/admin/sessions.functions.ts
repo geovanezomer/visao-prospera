@@ -9,7 +9,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
-
 export type UserSession = {
   userId: string;
   email: string | null;
@@ -49,7 +48,10 @@ export const revokeAllSessions = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // `signOut(userId, scope)` é admin-only e exposta como helper sem
     // tipagem pública. Mantemos um cast estreito para a assinatura.
-    type AdminSignOut = (userId: string, scope: "global" | "local") => Promise<{ error: { message: string } | null }>;
+    type AdminSignOut = (
+      userId: string,
+      scope: "global" | "local",
+    ) => Promise<{ error: { message: string } | null }>;
     const adminAuth = supabaseAdmin.auth.admin as unknown as { signOut: AdminSignOut };
     const { error } = await adminAuth.signOut(data.userId, "global");
     if (error) throw new Error(error.message);

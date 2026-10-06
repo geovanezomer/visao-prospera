@@ -67,8 +67,18 @@ export function DecimoTerceiroCalc() {
         { label: "Dependentes IRRF", value: String(dependentes) },
       ],
       kpis: [
-        { label: "13º líquido", value: fmtBRL(r.liquido), sub: fmtPct(r.bruto > 0 ? r.liquido / r.bruto : 0), tone: "ok" },
-        { label: "13º bruto", value: fmtBRL(r.bruto), sub: "Proporcional aos meses", tone: "neutral" },
+        {
+          label: "13º líquido",
+          value: fmtBRL(r.liquido),
+          sub: fmtPct(r.bruto > 0 ? r.liquido / r.bruto : 0),
+          tone: "ok",
+        },
+        {
+          label: "13º bruto",
+          value: fmtBRL(r.bruto),
+          sub: "Proporcional aos meses",
+          tone: "neutral",
+        },
         { label: "Descontos", value: fmtBRL(r.inss + r.irrf), sub: "INSS + IRRF", tone: "warn" },
       ],
     });
@@ -113,7 +123,10 @@ export function DecimoTerceiroCalc() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Field label="Salário Bruto Mensal" hint="Salário bruto registrado na carteira de trabalho.">
+          <Field
+            label="Salário Bruto Mensal"
+            hint="Salário bruto registrado na carteira de trabalho."
+          >
             <MoneyInput value={salarioBruto} onChange={setSalarioBruto} />
           </Field>
 
@@ -188,12 +201,10 @@ export function DecimoTerceiroCalc() {
                     Até 30/Nov
                   </Badge>
                 </div>
-                <p className="text-2xl font-bold text-foreground">
-                  {fmtBRL(r.primeiraParcela)}
-                </p>
+                <p className="text-2xl font-bold text-foreground">{fmtBRL(r.primeiraParcela)}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  50% do valor bruto, sem descontos de INSS ou IRRF. Pode ser solicitada junto com as
-                  férias.
+                  50% do valor bruto, sem descontos de INSS ou IRRF. Pode ser solicitada junto com
+                  as férias.
                 </p>
               </CardContent>
             </Card>
@@ -203,9 +214,7 @@ export function DecimoTerceiroCalc() {
                   <p className="text-sm font-semibold text-foreground">2ª Parcela</p>
                   <Badge className="bg-primary text-primary-foreground">Até 20/Dez</Badge>
                 </div>
-                <p className="text-2xl font-bold text-foreground">
-                  {fmtBRL(r.segundaParcela)}
-                </p>
+                <p className="text-2xl font-bold text-foreground">{fmtBRL(r.segundaParcela)}</p>
                 <p className="text-[11px] text-muted-foreground">
                   Valor restante após descontos de INSS e IRRF aplicados integralmente nesta
                   parcela.
@@ -235,8 +244,7 @@ export function DecimoTerceiroCalc() {
                   <span className="h-2 w-2 rounded-full bg-amber-500" /> INSS {fmtPct(pctInss)}
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-destructive/70" /> IRRF{" "}
-                  {fmtPct(pctIrrf)}
+                  <span className="h-2 w-2 rounded-full bg-destructive/70" /> IRRF {fmtPct(pctIrrf)}
                 </span>
               </div>
             </CardContent>
@@ -337,15 +345,13 @@ export function DecimoTerceiroCalc() {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-3 border-t pt-4 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">
-                Como funciona o cálculo do 13º salário?
-              </p>
+              <p className="font-medium text-foreground">Como funciona o cálculo do 13º salário?</p>
               <p>
                 O 13º salário (gratificação natalina) é um direito garantido pela Lei 4.090/1964 e
                 corresponde a 1/12 do salário bruto por mês trabalhado no ano. Meses com mais de 15
                 dias trabalhados contam como mês cheio. O pagamento é feito em duas parcelas: a
-                primeira (50% do salário bruto, sem descontos de IR) até 30 de novembro, e a
-                segunda (restante menos INSS e IRRF) até 20 de dezembro.
+                primeira (50% do salário bruto, sem descontos de IR) até 30 de novembro, e a segunda
+                (restante menos INSS e IRRF) até 20 de dezembro.
               </p>
               <p>
                 O desconto de INSS na segunda parcela é calculado sobre o valor total do 13º (não
@@ -377,13 +383,21 @@ export function DecimoTerceiroCalc() {
                 dezembro
               </p>
               <ul className="ml-4 list-disc space-y-1">
-                <li>13º bruto: R$ 5.000,00 × (12/12) = <strong>R$ 5.000,00</strong></li>
-                <li>1ª parcela (nov): R$ 5.000,00 ÷ 2 = <strong>R$ 2.500,00</strong> (sem desconto)</li>
+                <li>
+                  13º bruto: R$ 5.000,00 × (12/12) = <strong>R$ 5.000,00</strong>
+                </li>
+                <li>
+                  1ª parcela (nov): R$ 5.000,00 ÷ 2 = <strong>R$ 2.500,00</strong> (sem desconto)
+                </li>
                 <li>INSS sobre R$ 5.000: R$ 509,59 (tabela progressiva)</li>
                 <li>Base IRRF: R$ 5.000 − R$ 509,59 = R$ 4.490,41</li>
                 <li>IRRF: R$ 347,58</li>
-                <li>2ª parcela = R$ 2.500,00 − R$ 509,59 − R$ 347,58 = <strong>R$ 1.642,83</strong></li>
-                <li><strong>Total líquido recebido: R$ 4.142,83</strong></li>
+                <li>
+                  2ª parcela = R$ 2.500,00 − R$ 509,59 − R$ 347,58 = <strong>R$ 1.642,83</strong>
+                </li>
+                <li>
+                  <strong>Total líquido recebido: R$ 4.142,83</strong>
+                </li>
               </ul>
 
               <p className="pt-2 font-medium text-foreground">Dicas</p>
@@ -411,7 +425,8 @@ export function DecimoTerceiroCalc() {
 
               <p className="pt-2 text-xs">
                 Bases: Lei 4.090/1962, Lei 4.749/1965, CF art. 7º VIII, IN RFB 1.500/2014, tabelas
-                INSS/IRRF {ANO_VIGENTE}. IRRF conforme Lei nº 15.270/2025 (redutor até R$ 7.350). Estimativa — valide com contador antes de uso oficial.
+                INSS/IRRF {ANO_VIGENTE}. IRRF conforme Lei nº 15.270/2025 (redutor até R$ 7.350).
+                Estimativa — valide com contador antes de uso oficial.
               </p>
             </CardContent>
           </CollapsibleContent>

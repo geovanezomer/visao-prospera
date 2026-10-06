@@ -5,12 +5,10 @@ import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { KE_DEFAULT_BY_SECTOR } from "@/engines/finance/indicators";
 import { StatCard } from "@/components/sim/shared/primitives";
 
-
 import { BalanceSheetCard } from "@/components/sim/capital/BalanceSheetCard";
 import { AberturaCard } from "@/components/sim/capital/AberturaCard";
 
 import { CapexAtivacaoSection } from "@/components/sim/capital/CapexAtivacaoSection";
-
 
 import { DebtContractsCard } from "@/components/sim/capital/DebtContractsCard";
 import {
@@ -22,8 +20,6 @@ import { assertDebtContracts } from "@/engines/finance/debtContracts.validation"
 import { toast } from "sonner";
 import { deriveAbertura } from "@/engines/finance/aberturaDerivada";
 import type { CostLine, DebtContract } from "@/engines/finance/types";
-
-
 
 const EMPTY_CONTRACTS: DebtContract[] = [];
 
@@ -42,7 +38,6 @@ export function CapitalTab() {
   );
 
   const set = (patch: Partial<typeof c>) =>
-
     update((s) => ({ ...s, capital: { ...s.capital, ...patch } }));
 
   // Sincroniza Contratos de Dívida → dividaOnerosa, cashflow.amortizacoes
@@ -108,8 +103,6 @@ export function CapitalTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.businessType]);
 
-
-
   // Validações de inconsistência patrimonial.
   const warnings: string[] = [];
   const _dividaOnerosaTotal = totalDividaOnerosa(state);
@@ -173,7 +166,6 @@ export function CapitalTab() {
         />
       </div>
 
-
       {warnings.length > 0 && (
         <div className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-xs">
           <div className="mb-1 font-semibold text-warning">
@@ -187,9 +179,6 @@ export function CapitalTab() {
         </div>
       )}
 
-
-
-
       <div className="space-y-4">
         <BalanceSheetCard
           capital={c}
@@ -201,19 +190,19 @@ export function CapitalTab() {
             <div id="debt-contracts-card">
               <DebtContractsCard
                 contracts={contracts}
-              onChange={(next) => {
-                // Valida antes de persistir; bloqueia salvamento inválido
-                // e exibe toast amigável apontando o primeiro erro.
-                try {
-                  assertDebtContracts(next);
-                } catch (err) {
-                  const msg = err instanceof Error ? err.message : String(err);
-                  const firstLine = msg.split("\n").slice(0, 2).join(" ");
-                  toast.error("Contrato de dívida inválido", { description: firstLine });
-                  return;
-                }
-                set({ debtContracts: next });
-              }}
+                onChange={(next) => {
+                  // Valida antes de persistir; bloqueia salvamento inválido
+                  // e exibe toast amigável apontando o primeiro erro.
+                  try {
+                    assertDebtContracts(next);
+                  } catch (err) {
+                    const msg = err instanceof Error ? err.message : String(err);
+                    const firstLine = msg.split("\n").slice(0, 2).join(" ");
+                    toast.error("Contrato de dívida inválido", { description: firstLine });
+                    return;
+                  }
+                  set({ debtContracts: next });
+                }}
               />
             </div>
           }

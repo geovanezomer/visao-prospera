@@ -27,9 +27,13 @@ import { calcCbs, calcIbs } from "tributos-br";
 // arredondamento HALF_UP (padrão SEFAZ) sobre cada multiplicação
 // alíquota × base, evitando drift de centavos em apurações mensais.
 const cbsValor = (base: number, pct: number): number =>
-  pct > 0 && base > 0 ? Number(calcCbs({ base: base.toString(), aliquota: (pct / 100).toString() }).imposto) : 0;
+  pct > 0 && base > 0
+    ? Number(calcCbs({ base: base.toString(), aliquota: (pct / 100).toString() }).imposto)
+    : 0;
 const ibsValor = (base: number, pct: number): number =>
-  pct > 0 && base > 0 ? Number(calcIbs({ base: base.toString(), aliquota: (pct / 100).toString() }).imposto) : 0;
+  pct > 0 && base > 0
+    ? Number(calcIbs({ base: base.toString(), aliquota: (pct / 100).toString() }).imposto)
+    : 0;
 
 /** @deprecated Use getPresumidoBases(tax, business) de taxDefaults.ts. Mantido para retro-compat. */
 export function presumidoBases(business: BusinessType): { irpj: number; csll: number } {
@@ -44,8 +48,8 @@ export function calcPresumido(state: AppState): MonthlyTax {
   // (postura "consultor edita com responsabilidade" — MODO A). Só cai no campo
   // avulso `tax.presumidoBaseIRPJ/CSLL` quando não há override específico da atividade.
   const hasOverride = !!tax.ratesOverride?.presumidoBases?.[businessType];
-  const baseIRPJ = (hasOverride ? bases.irpj : (tax.presumidoBaseIRPJ || bases.irpj)) / 100;
-  const baseCSLL = (hasOverride ? bases.csll : (tax.presumidoBaseCSLL || bases.csll)) / 100;
+  const baseIRPJ = (hasOverride ? bases.irpj : tax.presumidoBaseIRPJ || bases.irpj) / 100;
+  const baseCSLL = (hasOverride ? bases.csll : tax.presumidoBaseCSLL || bases.csll) / 100;
   const iss = tax.issIcms / 100;
   const issDed = (tax.issDeducoes ?? 0) / 12;
   const isMercadoria = businessType === "comercio" || businessType === "industria";

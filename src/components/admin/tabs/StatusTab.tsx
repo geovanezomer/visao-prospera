@@ -25,7 +25,9 @@ export function StatusTab() {
       const r = await getSystemStatus();
       setChecks(r.checks);
       setCheckedAt(r.checkedAt);
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -40,11 +42,17 @@ export function StatusTab() {
         <div>
           <h3 className="text-sm font-semibold">Status dos serviços</h3>
           <p className="text-xs text-muted-foreground">
-            Última verificação: {checkedAt ? new Date(checkedAt).toLocaleTimeString("pt-BR") : "—"} · refresh automático 60s
+            Última verificação: {checkedAt ? new Date(checkedAt).toLocaleTimeString("pt-BR") : "—"}{" "}
+            · refresh automático 60s
           </p>
         </div>
         <Button size="sm" variant="outline" onClick={() => void load()} disabled={loading}>
-          {loading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1.5 h-3.5 w-3.5" />}Recheck
+          {loading ? (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+          )}
+          Recheck
         </Button>
       </div>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -55,7 +63,9 @@ export function StatusTab() {
                 <Light s={c.status} />
                 <span className="text-sm font-medium">{c.name}</span>
               </div>
-              <Badge variant="outline" className="text-[10px]">{c.latencyMs ?? "—"} ms</Badge>
+              <Badge variant="outline" className="text-[10px]">
+                {c.latencyMs ?? "—"} ms
+              </Badge>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">{c.message}</p>
           </div>

@@ -21,16 +21,27 @@ import { clientIp, rlConsume, tooManyRequests } from "@/lib/rateLimit.server";
 import { isValidCPF, isValidPhoneBR, onlyDigits } from "@/lib/validators/cpf";
 
 const Body = z.object({
-  plan: z.string().min(1).max(40).regex(/^[a-z0-9_]+$/, "slug do plano inválido"),
+  plan: z
+    .string()
+    .min(1)
+    .max(40)
+    .regex(/^[a-z0-9_]+$/, "slug do plano inválido"),
   email: z.string().email("e-mail inválido").max(200),
   name: z.string().trim().min(3, "nome muito curto").max(120),
   // CPF e telefone passaram a ser coletados na página do provedor (Asaas/Stripe).
   // Mantemos aceitos como opcionais para compatibilidade com clientes antigos.
-  cpf: z.string().transform(onlyDigits).refine((v) => v === "" || isValidCPF(v), "CPF inválido").optional(),
-  phone: z.string().transform(onlyDigits).refine((v) => v === "" || isValidPhoneBR(v), "telefone inválido").optional(),
+  cpf: z
+    .string()
+    .transform(onlyDigits)
+    .refine((v) => v === "" || isValidCPF(v), "CPF inválido")
+    .optional(),
+  phone: z
+    .string()
+    .transform(onlyDigits)
+    .refine((v) => v === "" || isValidPhoneBR(v), "telefone inválido")
+    .optional(),
   withUpsell: z.boolean().optional().default(false),
 });
-
 
 // ─── Schemas que validam o que veio do BANCO ─────────────────────────────────
 // O banco é confiável, mas pode estar mal configurado (preço negativo,
@@ -64,14 +75,8 @@ type PlanRow = z.infer<typeof PlanRowSchema>;
 
 // Rate limiting agora é distribuído via tabela `rate_limit_buckets` (rl_consume).
 
-
 // ─── Helpers ────────────────────────────────────────────────────────────────
-function err(
-  status: number,
-  code: string,
-  message: string,
-  field?: string,
-) {
+function err(status: number, code: string, message: string, field?: string) {
   return Response.json({ error: message, code, field }, { status });
 }
 
@@ -123,11 +128,7 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
         }
 
         // 3) Rate limit adicional por email (após termos um email válido)
-        const rlEmail = await rlConsume(
-          `checkout:email:${parsed.email.toLowerCase()}`,
-          5,
-          60,
-        );
+        const rlEmail = await rlConsume(`checkout:email:${parsed.email.toLowerCase()}`, 5, 60);
         if (!rlEmail.allowed) return tooManyRequests(rlEmail.retryAfter);
 
         // 3) Config base — usa APP_URL se configurado, senão deriva do request.
@@ -136,10 +137,15 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
           try {
             const u = new URL(request.url);
             const proto = request.headers.get("x-forwarded-proto") || u.protocol.replace(":", "");
-            const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || u.host;
+            const host =
+              request.headers.get("x-forwarded-host") || request.headers.get("host") || u.host;
             appUrl = `${proto}://${host}`;
           } catch {
-            return err(500, "config_missing", "APP_URL não configurado e não foi possível derivar do request");
+            return err(
+              500,
+              "config_missing",
+              "APP_URL não configurado e não foi possível derivar do request",
+            );
           }
         }
 
@@ -249,12 +255,20 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
             .select("id,checkout_url,status")
             .eq("idempotency_key", idempotencyKey)
             .maybeSingle();
-          if (existing?.checkout_url && existing.status !== "paid" && existing.status !== "failed") {
+          if (
+            existing?.checkout_url &&
+            existing.status !== "paid" &&
+            existing.status !== "failed"
+          ) {
             await sb
               .from("checkout_intents")
               .update({ status: "redirected" })
               .eq("id", existing.id);
-            return Response.json({ url: existing.checkout_url, provider: provider.name, reused: true });
+            return Response.json({
+              url: existing.checkout_url,
+              provider: provider.name,
+              reused: true,
+            });
           }
 
           // Token assinado por HMAC — vai na URL de retorno em vez do raw key.
@@ -265,7 +279,11 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
           const providerRef =
             provider.name === "stripe" ? plan.stripe_price_id : plan.asaas_plan_ref;
 
-          let providerResult: { url: string; providerSessionId?: string | null; providerCustomerId?: string | null };
+          let providerResult: {
+            url: string;
+            providerSessionId?: string | null;
+            providerCustomerId?: string | null;
+          };
           try {
             providerResult = await provider.createCheckout({
               plan: parsed.plan,
@@ -286,20 +304,23 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
           } catch (provErr) {
             const msg = provErr instanceof Error ? provErr.message : "Erro desconhecido";
             // Registra a falha no intent para auditoria/admin.
-            await sb.from("checkout_intents").upsert({
-              plan_slug: parsed.plan,
-              email: parsed.email.toLowerCase(),
-              with_upsell: parsed.withUpsell,
-              provider: provider.name,
-              plan_amount_cents: plan.price_cents,
-              upsell_amount_cents: upsellPayload?.priceCents ?? null,
-              currency: plan.currency,
-              ip,
-              user_agent: request.headers.get("user-agent")?.slice(0, 500) ?? null,
-              idempotency_key: idempotencyKey,
-              status: "failed",
-              last_error: msg.slice(0, 1000),
-            }, { onConflict: "idempotency_key" });
+            await sb.from("checkout_intents").upsert(
+              {
+                plan_slug: parsed.plan,
+                email: parsed.email.toLowerCase(),
+                with_upsell: parsed.withUpsell,
+                provider: provider.name,
+                plan_amount_cents: plan.price_cents,
+                upsell_amount_cents: upsellPayload?.priceCents ?? null,
+                currency: plan.currency,
+                ip,
+                user_agent: request.headers.get("user-agent")?.slice(0, 500) ?? null,
+                idempotency_key: idempotencyKey,
+                status: "failed",
+                last_error: msg.slice(0, 1000),
+              },
+              { onConflict: "idempotency_key" },
+            );
             console.error("[checkout] provedor recusou checkout:", msg);
             return err(
               422,
@@ -311,29 +332,31 @@ export const Route = createFileRoute("/api/public/payments/checkout")({
           // 7) Persiste intenção (status='redirected') com providerIds para
           //    o webhook conseguir correlacionar de volta.
           try {
-            await sb.from("checkout_intents").upsert({
-              plan_slug: parsed.plan,
-              email: parsed.email.toLowerCase(),
-              with_upsell: parsed.withUpsell,
-              provider: provider.name,
-              plan_amount_cents: plan.price_cents,
-              upsell_amount_cents: upsellPayload?.priceCents ?? null,
-              currency: plan.currency,
-              ip,
-              user_agent: request.headers.get("user-agent")?.slice(0, 500) ?? null,
-              idempotency_key: idempotencyKey,
-              status: "redirected",
-              checkout_url: providerResult.url,
-              provider_session_id: providerResult.providerSessionId ?? null,
-              provider_customer_id: providerResult.providerCustomerId ?? null,
-              last_error: null,
-            }, { onConflict: "idempotency_key" });
+            await sb.from("checkout_intents").upsert(
+              {
+                plan_slug: parsed.plan,
+                email: parsed.email.toLowerCase(),
+                with_upsell: parsed.withUpsell,
+                provider: provider.name,
+                plan_amount_cents: plan.price_cents,
+                upsell_amount_cents: upsellPayload?.priceCents ?? null,
+                currency: plan.currency,
+                ip,
+                user_agent: request.headers.get("user-agent")?.slice(0, 500) ?? null,
+                idempotency_key: idempotencyKey,
+                status: "redirected",
+                checkout_url: providerResult.url,
+                provider_session_id: providerResult.providerSessionId ?? null,
+                provider_customer_id: providerResult.providerCustomerId ?? null,
+                last_error: null,
+              },
+              { onConflict: "idempotency_key" },
+            );
           } catch (logErr) {
             console.error("[checkout] log de intenção falhou (ignorado):", logErr);
           }
 
           return Response.json({ url: providerResult.url, provider: provider.name });
-
         } catch (e) {
           const msg = e instanceof Error ? e.message : "Erro desconhecido";
           console.error("[checkout] falhou:", msg);

@@ -113,7 +113,13 @@ export function PaywallScreen({ status, onExportFinnance }: PaywallScreenProps) 
       <div className="w-full max-w-3xl">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-            {isPastDue ? <AlertTriangle className="h-6 w-6" /> : isTrialExpired ? <Clock className="h-6 w-6" /> : <Lock className="h-6 w-6" />}
+            {isPastDue ? (
+              <AlertTriangle className="h-6 w-6" />
+            ) : isTrialExpired ? (
+              <Clock className="h-6 w-6" />
+            ) : (
+              <Lock className="h-6 w-6" />
+            )}
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">
             {isPastDue && "Pagamento pendente"}
@@ -135,15 +141,15 @@ export function PaywallScreen({ status, onExportFinnance }: PaywallScreenProps) 
               <div className="flex-1">
                 <p className="text-sm font-medium">Última cobrança recusada</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Você tem alguns dias de tolerância antes do bloqueio total. Atualize seu cartão ou pague a fatura em aberto.
+                  Você tem alguns dias de tolerância antes do bloqueio total. Atualize seu cartão ou
+                  pague a fatura em aberto.
                 </p>
-                <Button
-                  size="sm"
-                  className="mt-3"
-                  onClick={openPortal}
-                  disabled={portalBusy}
-                >
-                  {portalBusy ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <CreditCard className="mr-2 h-3.5 w-3.5" />}
+                <Button size="sm" className="mt-3" onClick={openPortal} disabled={portalBusy}>
+                  {portalBusy ? (
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <CreditCard className="mr-2 h-3.5 w-3.5" />
+                  )}
                   Atualizar forma de pagamento
                 </Button>
               </div>

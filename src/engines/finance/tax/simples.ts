@@ -88,4 +88,3 @@ export function calcSimples(state: AppState): MonthlyTax {
     detail,
   };
 }
-

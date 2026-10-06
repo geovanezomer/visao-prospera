@@ -56,7 +56,6 @@ export interface DiagnosticoExecutivo {
   propostasSimulador?: PropostaSimulador[];
 }
 
-
 /** System prompt — identidade + regras + schema do output. */
 export function buildSystemPrompt(): string {
   return `Você é um CFO sênior brasileiro escrevendo um DIAGNÓSTICO EXECUTIVO para um consultor CVM apresentar ao cliente dele (uma PME).
@@ -101,7 +100,6 @@ REGRAS DAS PROPOSTAS:
 - Não repita o mesmo \`moveId\` duas vezes.
 - Se o diagnóstico for saudável e nenhum ajuste se justificar, retorne \`propostasSimulador: []\`.`;
 }
-
 
 /** User prompt — entrega o briefing serializado. */
 export function buildUserPrompt(briefing: Briefing): string {

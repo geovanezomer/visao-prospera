@@ -67,7 +67,12 @@ export type StripeWebhookObject = {
   id?: string;
   mode?: string;
   metadata?: { plan?: string };
-  items?: { data?: Array<{ price?: { lookup_key?: string; id?: string } | null; current_period_end?: number }> };
+  items?: {
+    data?: Array<{
+      price?: { lookup_key?: string; id?: string } | null;
+      current_period_end?: number;
+    }>;
+  };
   current_period_end?: number;
   trial_end?: number;
   status?: "active" | "canceled" | "incomplete" | "past_due" | "trialing" | string;

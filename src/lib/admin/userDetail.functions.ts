@@ -15,7 +15,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AdminClient, AuthClaims } from "./_types";
 
-
 // Procura usuário por e-mail paginando auth.admin.listUsers (até 5k usuários).
 async function findUserByEmail(supabaseAdmin: AdminClient, email: string) {
   const target = email.toLowerCase();
@@ -82,9 +81,7 @@ export type UserDetail = {
 
 export const getUserDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: { userId: string }) =>
-    z.object({ userId: z.string().uuid() }).parse(d),
-  )
+  .validator((d: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<UserDetail> => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -94,7 +91,10 @@ export const getUserDetail = createServerFn({ method: "POST" })
     const au = u.user;
 
     const { data: prof } = await supabaseAdmin
-      .from("profiles").select("display_name").eq("id", data.userId).maybeSingle();
+      .from("profiles")
+      .select("display_name")
+      .eq("id", data.userId)
+      .maybeSingle();
 
     const meta = (au.user_metadata ?? {}) as Record<string, unknown>;
     const displayName =
@@ -215,9 +215,7 @@ export const grantManualPlan = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const days =
-      data.mode === "lifetime"
-        ? null
-        : data.durationDays ?? (data.mode === "trial" ? 14 : 30);
+      data.mode === "lifetime" ? null : (data.durationDays ?? (data.mode === "trial" ? 14 : 30));
     const periodEnd = days ? new Date(Date.now() + days * 86400_000).toISOString() : null;
     const status =
       data.mode === "lifetime" ? "lifetime" : data.mode === "trial" ? "trialing" : "active";
@@ -361,7 +359,7 @@ export const createManualUser = createServerFn({ method: "POST" })
     if (data.grant) {
       const g = data.grant;
       const days =
-        g.mode === "lifetime" ? null : g.durationDays ?? (g.mode === "trial" ? 14 : 30);
+        g.mode === "lifetime" ? null : (g.durationDays ?? (g.mode === "trial" ? 14 : 30));
       const periodEnd = days ? new Date(Date.now() + days * 86400_000).toISOString() : null;
       const status =
         g.mode === "lifetime" ? "lifetime" : g.mode === "trial" ? "trialing" : "active";

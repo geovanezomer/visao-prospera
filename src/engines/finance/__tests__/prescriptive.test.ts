@@ -78,8 +78,12 @@ describe("prescriptive.ts — benchmark de margem bruta vem de resolveBenchmark"
   });
 
   it("alterar benchmarkCustom altera a string do card", () => {
-    const s1 = stateWithLowGrossMargin({ benchmarkCustom: { margemBruta: 70 } } as Partial<AppState>);
-    const s2 = stateWithLowGrossMargin({ benchmarkCustom: { margemBruta: 90 } } as Partial<AppState>);
+    const s1 = stateWithLowGrossMargin({
+      benchmarkCustom: { margemBruta: 70 },
+    } as Partial<AppState>);
+    const s2 = stateWithLowGrossMargin({
+      benchmarkCustom: { margemBruta: 90 },
+    } as Partial<AppState>);
     const c1 = findMB(buildPrescriptiveCards(s1))!;
     const c2 = findMB(buildPrescriptiveCards(s2))!;
     expect(c1).toBeDefined();

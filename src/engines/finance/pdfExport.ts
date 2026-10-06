@@ -29,24 +29,24 @@ import type { PrescriptiveCard } from "@/engines/finance/prescriptive";
 import type { DiagnosticoResult } from "@/engines/ai/diagnostico";
 
 // ── Paleta (mínima, executiva) ────────────────────────────────────────
-const INK = [10, 10, 10] as [number, number, number];           // preto
-const CHARCOAL = [31, 41, 55] as [number, number, number];      // gray-800
-const GRAY = [107, 114, 128] as [number, number, number];       // gray-500
-const LIGHT = [229, 231, 235] as [number, number, number];      // gray-200
-const HAIRLINE = [209, 213, 219] as [number, number, number];   // gray-300
-const SUBTLE = [249, 250, 251] as [number, number, number];     // gray-50
-const COVER_BG = [0, 0, 0] as [number, number, number];          // preto puro (capa)
-const COVER_FG = [243, 244, 246] as [number, number, number];   // gray-100
-const COVER_MUTED = [156, 163, 175] as [number, number, number];// gray-400
-const OK = [5, 150, 105] as [number, number, number];           // emerald-600
-const WARN = [217, 119, 6] as [number, number, number];         // amber-600
-const BAD = [220, 38, 38] as [number, number, number];          // red-600
+const INK = [10, 10, 10] as [number, number, number]; // preto
+const CHARCOAL = [31, 41, 55] as [number, number, number]; // gray-800
+const GRAY = [107, 114, 128] as [number, number, number]; // gray-500
+const LIGHT = [229, 231, 235] as [number, number, number]; // gray-200
+const HAIRLINE = [209, 213, 219] as [number, number, number]; // gray-300
+const SUBTLE = [249, 250, 251] as [number, number, number]; // gray-50
+const COVER_BG = [0, 0, 0] as [number, number, number]; // preto puro (capa)
+const COVER_FG = [243, 244, 246] as [number, number, number]; // gray-100
+const COVER_MUTED = [156, 163, 175] as [number, number, number]; // gray-400
+const OK = [5, 150, 105] as [number, number, number]; // emerald-600
+const WARN = [217, 119, 6] as [number, number, number]; // amber-600
+const BAD = [220, 38, 38] as [number, number, number]; // red-600
 
 const FOOTER_TEXT = "Gerado com FinnancePRO  ·  Mais detalhes em finnancepro.com.br";
 const PAGE_MARGIN = 56;
-const HEADER_Y = 36;       // linha do cabeçalho topo
-const CONTENT_TOP = 92;    // primeira linha de conteúdo
-const FONT = "helvetica";  // proxy de Inter
+const HEADER_Y = 36; // linha do cabeçalho topo
+const CONTENT_TOP = 92; // primeira linha de conteúdo
+const FONT = "helvetica"; // proxy de Inter
 
 // ── Utilitários ───────────────────────────────────────────────────────
 async function loadImageAsDataURL(url: string): Promise<string | null> {
@@ -67,11 +67,17 @@ async function loadImageAsDataURL(url: string): Promise<string | null> {
 
 function nowBR(): string {
   return new Date().toLocaleString("pt-BR", {
-    day: "2-digit", month: "long", year: "numeric",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
   });
 }
 
-function setColor(doc: jsPDF, kind: "text" | "fill" | "draw", c: readonly [number, number, number]) {
+function setColor(
+  doc: jsPDF,
+  kind: "text" | "fill" | "draw",
+  c: readonly [number, number, number],
+) {
   if (kind === "text") doc.setTextColor(c[0], c[1], c[2]);
   else if (kind === "fill") doc.setFillColor(c[0], c[1], c[2]);
   else doc.setDrawColor(c[0], c[1], c[2]);
@@ -103,12 +109,22 @@ function drawFooter(doc: jsPDF, pageNum: number, pageCount: number) {
   doc.setFontSize(7.5);
   setColor(doc, "text", GRAY);
   doc.text(FOOTER_TEXT, PAGE_MARGIN, h - 26);
-  doc.text(`${String(pageNum).padStart(2, "0")} / ${String(pageCount).padStart(2, "0")}`,
-    w - PAGE_MARGIN, h - 26, { align: "right" });
+  doc.text(
+    `${String(pageNum).padStart(2, "0")} / ${String(pageCount).padStart(2, "0")}`,
+    w - PAGE_MARGIN,
+    h - 26,
+    { align: "right" },
+  );
 }
 
 // Título de página (h1 grande, subtítulo cinza).
-function pageTitle(doc: jsPDF, y: number, eyebrow: string, title: string, subtitle?: string): number {
+function pageTitle(
+  doc: jsPDF,
+  y: number,
+  eyebrow: string,
+  title: string,
+  subtitle?: string,
+): number {
   doc.setFont(FONT, "bold");
   doc.setFontSize(8);
   setColor(doc, "text", GRAY);
@@ -139,7 +155,12 @@ function newPage(doc: jsPDF, eyebrow: string, title: string, subtitle?: string):
 }
 
 // Texto multi-linha simples.
-function paragraph(doc: jsPDF, y: number, text: string, opts?: { size?: number; color?: readonly [number, number, number]; bold?: boolean }): number {
+function paragraph(
+  doc: jsPDF,
+  y: number,
+  text: string,
+  opts?: { size?: number; color?: readonly [number, number, number]; bold?: boolean },
+): number {
   const size = opts?.size ?? 10.5;
   doc.setFont(FONT, opts?.bold ? "bold" : "normal");
   doc.setFontSize(size);
@@ -151,8 +172,13 @@ function paragraph(doc: jsPDF, y: number, text: string, opts?: { size?: number; 
 
 // ── Capa executiva (página 1, fundo escuro) ───────────────────────────
 function drawCover(
-  doc: jsPDF, logoData: string | null, companyName: string,
-  periodMonths: number, score: number, conceito: string, scoreTone: "ok" | "warn" | "bad",
+  doc: jsPDF,
+  logoData: string | null,
+  companyName: string,
+  periodMonths: number,
+  score: number,
+  conceito: string,
+  scoreTone: "ok" | "warn" | "bad",
   execMessage: string,
 ) {
   const w = doc.internal.pageSize.getWidth();
@@ -162,7 +188,11 @@ function drawCover(
 
   // Logo + wordmark topo
   if (logoData) {
-    try { doc.addImage(logoData, "PNG", PAGE_MARGIN, PAGE_MARGIN, 28, 28); } catch { /* noop */ }
+    try {
+      doc.addImage(logoData, "PNG", PAGE_MARGIN, PAGE_MARGIN, 28, 28);
+    } catch {
+      /* noop */
+    }
   }
   doc.setFont(FONT, "bold");
   doc.setFontSize(11);
@@ -171,7 +201,11 @@ function drawCover(
   doc.setFont(FONT, "normal");
   doc.setFontSize(8);
   setColor(doc, "text", COVER_MUTED);
-  doc.text("Relatório Executivo de Saúde Financeira", PAGE_MARGIN + (logoData ? 38 : 0), PAGE_MARGIN + 30);
+  doc.text(
+    "Relatório Executivo de Saúde Financeira",
+    PAGE_MARGIN + (logoData ? 38 : 0),
+    PAGE_MARGIN + 30,
+  );
 
   // Bloco central
   const cy = h * 0.32;
@@ -190,8 +224,11 @@ function drawCover(
   doc.setFont(FONT, "normal");
   doc.setFontSize(10);
   setColor(doc, "text", COVER_MUTED);
-  doc.text(`Horizonte de análise: ${periodMonths} meses  ·  Emitido em ${nowBR()}`,
-    PAGE_MARGIN, cy + 28 + nameLines.length * 30 + 18);
+  doc.text(
+    `Horizonte de análise: ${periodMonths} meses  ·  Emitido em ${nowBR()}`,
+    PAGE_MARGIN,
+    cy + 28 + nameLines.length * 30 + 18,
+  );
 
   // Régua decorativa
   setColor(doc, "draw", COVER_MUTED);
@@ -237,7 +274,9 @@ function drawCover(
 
 // ── KPI Card (executivo, sem cor) ─────────────────────────────────────
 type KpiCard = {
-  label: string; value: string; sub?: string;
+  label: string;
+  value: string;
+  sub?: string;
   tone?: "ok" | "warn" | "bad" | "neutral";
 };
 function drawKpiCards(doc: jsPDF, yStart: number, cards: KpiCard[], cols: number): number {
@@ -298,7 +337,10 @@ function blockHeader(doc: jsPDF, y: number, title: string, hint?: string): numbe
 
 // Tabela executiva (clean, sem zebra agressiva).
 function execTable(
-  doc: jsPDF, yStart: number, head: string[], body: (string | number)[][],
+  doc: jsPDF,
+  yStart: number,
+  head: string[],
+  body: (string | number)[][],
   opts?: { colStyles?: Record<number, Record<string, unknown>>; firstColBold?: boolean },
 ): number {
   autoTable(doc, {
@@ -308,21 +350,30 @@ function execTable(
     margin: { left: PAGE_MARGIN, right: PAGE_MARGIN, top: CONTENT_TOP, bottom: 64 },
     theme: "plain",
     styles: {
-      font: FONT, fontSize: 9.5, cellPadding: { top: 7, right: 8, bottom: 7, left: 8 },
-      textColor: CHARCOAL, lineColor: LIGHT, lineWidth: 0,
+      font: FONT,
+      fontSize: 9.5,
+      cellPadding: { top: 7, right: 8, bottom: 7, left: 8 },
+      textColor: CHARCOAL,
+      lineColor: LIGHT,
+      lineWidth: 0,
       valign: "middle",
     },
     headStyles: {
-      fillColor: [255, 255, 255], textColor: GRAY,
-      fontStyle: "bold", fontSize: 7.5, halign: "left",
+      fillColor: [255, 255, 255],
+      textColor: GRAY,
+      fontStyle: "bold",
+      fontSize: 7.5,
+      halign: "left",
       cellPadding: { top: 4, right: 8, bottom: 8, left: 8 },
-      lineColor: INK, lineWidth: 0,
+      lineColor: INK,
+      lineWidth: 0,
     },
     bodyStyles: { lineColor: LIGHT, lineWidth: 0 },
-    columnStyles: (opts?.colStyles ?? head.reduce<Record<number, { halign: "right" | "left" }>>((acc, _h, i) => {
-      if (i > 0) acc[i] = { halign: "right" };
-      return acc;
-    }, {})) as Record<number, Partial<Record<string, unknown>>>,
+    columnStyles: (opts?.colStyles ??
+      head.reduce<Record<number, { halign: "right" | "left" }>>((acc, _h, i) => {
+        if (i > 0) acc[i] = { halign: "right" };
+        return acc;
+      }, {})) as Record<number, Partial<Record<string, unknown>>>,
     didParseCell: (data) => {
       if (data.section === "head") {
         // Linha sob o cabeçalho
@@ -349,7 +400,10 @@ function execTable(
 
 // Tabela densa (apêndice).
 function appendixTable(
-  doc: jsPDF, yStart: number, head: string[], body: (string | number)[][],
+  doc: jsPDF,
+  yStart: number,
+  head: string[],
+  body: (string | number)[][],
   rowMeta: ("normal" | "section" | "total" | "highlight")[],
   colStyles: Record<number, Record<string, unknown>>,
 ): number {
@@ -360,12 +414,20 @@ function appendixTable(
     margin: { left: PAGE_MARGIN, right: PAGE_MARGIN, top: CONTENT_TOP, bottom: 64 },
     theme: "plain",
     styles: {
-      font: FONT, fontSize: 8.5, cellPadding: { top: 5, right: 6, bottom: 5, left: 6 },
-      textColor: CHARCOAL, lineColor: LIGHT, lineWidth: 0, valign: "middle",
+      font: FONT,
+      fontSize: 8.5,
+      cellPadding: { top: 5, right: 6, bottom: 5, left: 6 },
+      textColor: CHARCOAL,
+      lineColor: LIGHT,
+      lineWidth: 0,
+      valign: "middle",
     },
     headStyles: {
-      fillColor: [255, 255, 255], textColor: GRAY,
-      fontStyle: "bold", fontSize: 7.5, halign: "left",
+      fillColor: [255, 255, 255],
+      textColor: GRAY,
+      fontStyle: "bold",
+      fontSize: 7.5,
+      halign: "left",
       cellPadding: { top: 4, right: 6, bottom: 8, left: 6 },
     },
     columnStyles: colStyles as Record<number, Partial<Record<string, unknown>>>,
@@ -406,7 +468,15 @@ function appendixTable(
 }
 
 // Barra horizontal simples (gauge minimalista).
-function drawBar(doc: jsPDF, x: number, y: number, w: number, h: number, pct: number, tone: "ok" | "warn" | "bad") {
+function drawBar(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  pct: number,
+  tone: "ok" | "warn" | "bad",
+) {
   const color = tone === "ok" ? OK : tone === "warn" ? WARN : BAD;
   setColor(doc, "fill", LIGHT);
   doc.rect(x, y, w, h, "F");
@@ -416,8 +486,13 @@ function drawBar(doc: jsPDF, x: number, y: number, w: number, h: number, pct: nu
 
 // ── Mini chart: área/linha 12 meses (nativo jsPDF) ────────────────────
 function drawMonthlyChart(
-  doc: jsPDF, x: number, y: number, w: number, h: number,
-  values: number[], opts?: {
+  doc: jsPDF,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  values: number[],
+  opts?: {
     label?: string;
     fill?: readonly [number, number, number];
     line?: readonly [number, number, number];
@@ -426,7 +501,10 @@ function drawMonthlyChart(
 ) {
   const lineCol = opts?.line ?? CHARCOAL;
   const fillCol = opts?.fill ?? LIGHT;
-  const padL = 38, padR = 8, padT = 6, padB = 18;
+  const padL = 38,
+    padR = 8,
+    padT = 6,
+    padB = 18;
   const innerW = w - padL - padR;
   const innerH = h - padT - padB;
   const allVals = [...values, 0, ...(opts?.refY ? [opts.refY.value] : [])];
@@ -451,9 +529,7 @@ function drawMonthlyChart(
     doc.setFontSize(6.5);
     setColor(doc, "text", GRAY);
     const v = min + span * p;
-    const lbl = Math.abs(v) >= 1000
-      ? `R$${(v / 1000).toFixed(0)}k`
-      : `R$${v.toFixed(0)}`;
+    const lbl = Math.abs(v) >= 1000 ? `R$${(v / 1000).toFixed(0)}k` : `R$${v.toFixed(0)}`;
     doc.text(lbl, x + padL - 3, yy + 2, { align: "right" });
   });
 
@@ -533,7 +609,10 @@ function drawMonthlyChart(
 
 // ── Bloco Runway (caixa + barra + chart) ──────────────────────────────
 function drawRunwayBlock(
-  doc: jsPDF, yStart: number, state: AppState, model: FinancialModel,
+  doc: jsPDF,
+  yStart: number,
+  state: AppState,
+  model: FinancialModel,
 ): number {
   const w = doc.internal.pageSize.getWidth();
   const x0 = PAGE_MARGIN;
@@ -549,14 +628,17 @@ function drawRunwayBlock(
   const burnMedio = -(ult3.reduce((a, b) => a + b, 0) / Math.max(1, ult3.length));
   const queimando = burnMedio > 0;
   const runway = queimando ? caixaAtual / burnMedio : Infinity;
-  const runwayLabel = !Number.isFinite(runway)
-    ? "∞ (gerando caixa)" : `${runway.toFixed(1)} meses`;
-  const runwayTone: "ok" | "warn" | "bad" = !Number.isFinite(runway) || runway > 12
-    ? "ok" : runway > 6 ? "warn" : "bad";
+  const runwayLabel = !Number.isFinite(runway) ? "∞ (gerando caixa)" : `${runway.toFixed(1)} meses`;
+  const runwayTone: "ok" | "warn" | "bad" =
+    !Number.isFinite(runway) || runway > 12 ? "ok" : runway > 6 ? "warn" : "bad";
 
   // Cabeçalho do bloco
-  blockHeader(doc, yStart, "Pista de Caixa (Runway) & Saldo Projetado",
-    "Caixa disponível, queima mensal e projeção de 12 meses.");
+  blockHeader(
+    doc,
+    yStart,
+    "Pista de Caixa (Runway) & Saldo Projetado",
+    "Caixa disponível, queima mensal e projeção de 12 meses.",
+  );
 
   const yB = yStart + 18;
   // Coluna esquerda — números
@@ -585,7 +667,10 @@ function drawRunwayBlock(
   doc.setFontSize(6.5);
   setColor(doc, "text", GRAY);
   ["0m", "6m", "12m", "18m+"].forEach((s, i) =>
-    doc.text(s, x0 + ((leftW - 8) * i) / 3, yB + 90, { align: i === 0 ? "left" : i === 3 ? "right" : "center" }));
+    doc.text(s, x0 + ((leftW - 8) * i) / 3, yB + 90, {
+      align: i === 0 ? "left" : i === 3 ? "right" : "center",
+    }),
+  );
 
   doc.setFont(FONT, "bold");
   doc.setFontSize(7);
@@ -622,8 +707,12 @@ function drawTermometroValor(doc: jsPDF, yStart: number, ind: FinancialModel["in
   const delta = roic - wacc;
   const tCol = creating ? OK : BAD;
 
-  blockHeader(doc, yStart, "Termômetro de Valor",
-    "Compara o custo do capital (WACC) com o retorno entregue (ROIC). Spread positivo = criação de valor.");
+  blockHeader(
+    doc,
+    yStart,
+    "Termômetro de Valor",
+    "Compara o custo do capital (WACC) com o retorno entregue (ROIC). Spread positivo = criação de valor.",
+  );
 
   const yB = yStart + 22;
 
@@ -635,10 +724,7 @@ function drawTermometroValor(doc: jsPDF, yStart: number, ind: FinancialModel["in
 
   doc.setFont(FONT, "bold");
   doc.setFontSize(14);
-  doc.text(
-    `${delta >= 0 ? "+" : ""}${delta.toFixed(2)} p.p.`,
-    x0 + totalW, yB, { align: "right" },
-  );
+  doc.text(`${delta >= 0 ? "+" : ""}${delta.toFixed(2)} p.p.`, x0 + totalW, yB, { align: "right" });
   doc.setFont(FONT, "normal");
   doc.setFontSize(7);
   setColor(doc, "text", GRAY);
@@ -650,20 +736,28 @@ function drawTermometroValor(doc: jsPDF, yStart: number, ind: FinancialModel["in
   const roicPct = Math.min(1, Math.max(0, roic) / max);
 
   const barY1 = yB + 16;
-  doc.setFont(FONT, "bold"); doc.setFontSize(8); setColor(doc, "text", INK);
+  doc.setFont(FONT, "bold");
+  doc.setFontSize(8);
+  setColor(doc, "text", INK);
   doc.text("WACC", x0, barY1);
-  doc.setFont(FONT, "normal"); setColor(doc, "text", GRAY);
+  doc.setFont(FONT, "normal");
+  setColor(doc, "text", GRAY);
   doc.text("custo do capital", x0 + 36, barY1);
-  doc.setFont(FONT, "bold"); setColor(doc, "text", WARN);
+  doc.setFont(FONT, "bold");
+  setColor(doc, "text", WARN);
   doc.text(`${wacc.toFixed(2)}%`, x0 + totalW, barY1, { align: "right" });
   drawBar(doc, x0, barY1 + 4, totalW, 4, waccPct, "warn");
 
   const barY2 = barY1 + 22;
-  doc.setFont(FONT, "bold"); doc.setFontSize(8); setColor(doc, "text", INK);
+  doc.setFont(FONT, "bold");
+  doc.setFontSize(8);
+  setColor(doc, "text", INK);
   doc.text("ROIC", x0, barY2);
-  doc.setFont(FONT, "normal"); setColor(doc, "text", GRAY);
+  doc.setFont(FONT, "normal");
+  setColor(doc, "text", GRAY);
   doc.text("retorno entregue", x0 + 36, barY2);
-  doc.setFont(FONT, "bold"); setColor(doc, "text", tCol);
+  doc.setFont(FONT, "bold");
+  setColor(doc, "text", tCol);
   doc.text(`${roic.toFixed(2)}%`, x0 + totalW, barY2, { align: "right" });
   drawBar(doc, x0, barY2 + 4, totalW, 4, roicPct, creating ? "ok" : "bad");
 
@@ -671,13 +765,14 @@ function drawTermometroValor(doc: jsPDF, yStart: number, ind: FinancialModel["in
   const comentario = creating
     ? `Cada R$ investido rende +${delta.toFixed(2)} p.p. acima do custo do capital. Mantenha o ritmo e reinvista nas alavancas que sustentam esse spread.`
     : `Cada R$ investido rende ${delta.toFixed(2)} p.p. abaixo do custo do capital. Melhore margem, gire mais o capital ou reduza o custo da dívida.`;
-  doc.setFont(FONT, "normal"); doc.setFontSize(9); setColor(doc, "text", CHARCOAL);
+  doc.setFont(FONT, "normal");
+  doc.setFontSize(9);
+  setColor(doc, "text", CHARCOAL);
   const cLines = doc.splitTextToSize(comentario, totalW);
   doc.text(cLines, x0, barY2 + 22);
 
   return barY2 + 22 + cLines.length * 11 + 6;
 }
-
 
 // ── Top 5 Despesas (barras horizontais) ───────────────────────────────
 function drawTop5Despesas(doc: jsPDF, yStart: number, model: FinancialModel): number {
@@ -691,15 +786,23 @@ function drawTop5Despesas(doc: jsPDF, yStart: number, model: FinancialModel): nu
   const x0 = PAGE_MARGIN;
   const totalW = w - PAGE_MARGIN * 2;
 
-  blockHeader(doc, yStart, "Top 5 Despesas — Onde o dinheiro vai",
-    "Categorias com maior impacto no resultado do período.");
+  blockHeader(
+    doc,
+    yStart,
+    "Top 5 Despesas — Onde o dinheiro vai",
+    "Categorias com maior impacto no resultado do período.",
+  );
   let y = yStart + 22;
   if (top.length === 0) {
     paragraph(doc, y, "Sem despesas cadastradas no período.", { color: GRAY, size: 9.5 });
     return y + 20;
   }
   const palette: Array<[number, number, number]> = [
-    [220, 38, 38], [217, 119, 6], [124, 58, 237], [37, 99, 235], [14, 165, 233],
+    [220, 38, 38],
+    [217, 119, 6],
+    [124, 58, 237],
+    [37, 99, 235],
+    [14, 165, 233],
   ];
   top.forEach((d, i) => {
     const pct = totalTop > 0 ? d.value / totalTop : 0;
@@ -712,7 +815,9 @@ function drawTop5Despesas(doc: jsPDF, yStart: number, model: FinancialModel): nu
     doc.setFont(FONT, "normal");
     doc.setFontSize(9);
     setColor(doc, "text", CHARCOAL);
-    doc.text(`${fmtBRL(d.value)}  (${(pct * 100).toFixed(0)}%)`, x0 + totalW, y, { align: "right" });
+    doc.text(`${fmtBRL(d.value)}  (${(pct * 100).toFixed(0)}%)`, x0 + totalW, y, {
+      align: "right",
+    });
     // barra
     setColor(doc, "fill", LIGHT);
     doc.rect(x0, y + 4, totalW, 5, "F");
@@ -730,7 +835,9 @@ function drawTop5Despesas(doc: jsPDF, yStart: number, model: FinancialModel): nu
 // ── Score de saúde (mesma fórmula do DashboardExtras) ─────────────────
 
 function computeGuardianScore(ind: FinancialModel["ind"]): {
-  score: number; conceito: string; tone: "ok" | "warn" | "bad";
+  score: number;
+  conceito: string;
+  tone: "ok" | "warn" | "bad";
 } {
   const parts = [
     Math.min(100, Math.max(0, (ind.liquidezCorrente / 2) * 100)),
@@ -742,8 +849,8 @@ function computeGuardianScore(ind: FinancialModel["ind"]): {
     Math.min(100, Math.max(0, 100 - ind.dividaLiqEbitda * 25)),
   ];
   const score = parts.reduce((a, b) => a + b, 0) / parts.length;
-  const conceito = score >= 80 ? "Excelente" : score >= 65 ? "Boa"
-    : score >= 45 ? "Atenção" : "Crítica";
+  const conceito =
+    score >= 80 ? "Excelente" : score >= 65 ? "Boa" : score >= 45 ? "Atenção" : "Crítica";
   const tone: "ok" | "warn" | "bad" = score >= 65 ? "ok" : score >= 45 ? "warn" : "bad";
   return { score, conceito, tone };
 }
@@ -762,7 +869,10 @@ export interface ExportPDFInput {
   aiDiagnostico?: DiagnosticoResult | null;
 }
 
-interface PageMeta { eyebrow: string; title: string }
+interface PageMeta {
+  eyebrow: string;
+  title: string;
+}
 const pageMeta: Record<number, PageMeta> = {}; // mapeia índice → seção (para header)
 
 export async function exportFinancePDF({
@@ -786,7 +896,7 @@ export async function exportFinancePDF({
       .replace(/←/g, "<")
       .replace(/↦/g, ">")
       .replace(/⇒/g, "=>")
-      .replace(/\u2212/g, "-")  // − minus
+      .replace(/\u2212/g, "-") // − minus
       .replace(/\u2010/g, "-")
       .replace(/\u2011/g, "-")
       .replace(/≥/g, ">=")
@@ -794,10 +904,10 @@ export async function exportFinancePDF({
       .replace(/Δ/g, "Dif")
       .replace(/…/g, "...")
       .replace(/[\u2248\u2243\u2245]/g, "~") // ≈ ≃ ≅ aproximadamente
-      .replace(/[\u00D7\u2715]/g, "x")        // × multiplicação
-      .replace(/[\u00F7]/g, "/")              // ÷ divisão
+      .replace(/[\u00D7\u2715]/g, "x") // × multiplicação
+      .replace(/[\u00F7]/g, "/") // ÷ divisão
       .replace(/[\u2022\u25CF\u25E6]/g, "-") // • bullets
-      .replace(/[\u2013\u2014]/g, "-")        // – — en/em dash
+      .replace(/[\u2013\u2014]/g, "-") // – — en/em dash
       .replace(/[\u2018\u2019\u201A\u201B]/g, "'") // aspas curvas simples
       .replace(/[\u201C\u201D\u201E\u201F]/g, '"') // aspas curvas duplas
       .replace(/\u00A0/g, " ")
@@ -820,7 +930,8 @@ export async function exportFinancePDF({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (doc as any).splitTextToSize = function (s: unknown, w: unknown, opts?: unknown) {
     if (typeof s === "string") s = sanitizeText(s);
-    else if (Array.isArray(s)) s = (s as unknown[]).map((x) => (typeof x === "string" ? sanitizeText(x) : x));
+    else if (Array.isArray(s))
+      s = (s as unknown[]).map((x) => (typeof x === "string" ? sanitizeText(x) : x));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (_origSplit as any)(s, w, opts);
   };
@@ -854,9 +965,13 @@ export async function exportFinancePDF({
   // ── PÁGINA 2 — RESUMO EXECUTIVO ────────────────────────────────────
   doc.addPage();
   pageMeta[doc.getNumberOfPages()] = { eyebrow: "01", title: "Resumo Executivo" };
-  let y = pageTitle(doc, CONTENT_TOP, "01  ·  Sumário",
+  let y = pageTitle(
+    doc,
+    CONTENT_TOP,
+    "01  ·  Sumário",
     "Resumo Executivo",
-    "Os pontos a seguir sintetizam o diagnóstico financeiro do período. Detalhes e recomendações nas seções seguintes.");
+    "Os pontos a seguir sintetizam o diagnóstico financeiro do período. Detalhes e recomendações nas seções seguintes.",
+  );
 
   // Insights — mínimo de 5 itens no resumo executivo.
   const insights = buildExecutiveInsights(state, model, score, conceito).slice(0, 5);
@@ -872,9 +987,13 @@ export async function exportFinancePDF({
     doc.setFont(FONT, "normal");
     doc.setFontSize(9.5);
     setColor(doc, "text", CHARCOAL);
-    const lines = doc.splitTextToSize(it.detail, doc.internal.pageSize.getWidth() - PAGE_MARGIN * 2 - 40);
+    const lines = doc.splitTextToSize(
+      it.detail,
+      doc.internal.pageSize.getWidth() - PAGE_MARGIN * 2 - 40,
+    );
     doc.text(lines, PAGE_MARGIN + 40, y + 10);
-    const tColor = it.tone === "ok" ? OK : it.tone === "warn" ? WARN : it.tone === "bad" ? BAD : GRAY;
+    const tColor =
+      it.tone === "ok" ? OK : it.tone === "warn" ? WARN : it.tone === "bad" ? BAD : GRAY;
     setColor(doc, "fill", tColor);
     doc.circle(PAGE_MARGIN + 34, y - 6, 2, "F");
     y += 10 + lines.length * 12 + 12;
@@ -888,52 +1007,79 @@ export async function exportFinancePDF({
   // ~3 linhas de respiro antes do Termômetro de Valor.
   y = drawTermometroValor(doc, y + 36, ind);
 
-
-
   // ── PÁGINA 3 — PAINEL EXECUTIVO ────────────────────────────────────
   doc.addPage();
   pageMeta[doc.getNumberOfPages()] = { eyebrow: "02", title: "Painel Executivo" };
-  y = pageTitle(doc, CONTENT_TOP, "02  ·  KPIs",
+  y = pageTitle(
+    doc,
+    CONTENT_TOP,
+    "02  ·  KPIs",
     "Painel Executivo",
-    "Indicadores-chave de performance do período analisado.");
+    "Indicadores-chave de performance do período analisado.",
+  );
 
   const caixaAtual = state.capital.disponibilidades ?? 0;
   const dscrFmt = ind.dscr == null ? "N/A" : ind.dscr !== 0 ? `${ind.dscr.toFixed(2)}x` : "—";
   const kpiCards: KpiCard[] = [
     { label: "Receita Líquida", value: fmtBRL(ind.receitaLiquidaAnual), sub: "Últimos 12 meses" },
-    { label: "EBITDA", value: fmtBRL(ind.ebitdaAnual),
+    {
+      label: "EBITDA",
+      value: fmtBRL(ind.ebitdaAnual),
       sub: `Margem ${ind.margemEbitda.toFixed(1)}%`,
-      tone: ind.ebitdaAnual >= 0 ? "ok" : "bad" },
-    { label: "Lucro Líquido", value: fmtBRL(ind.lucroLiquidoAnual),
+      tone: ind.ebitdaAnual >= 0 ? "ok" : "bad",
+    },
+    {
+      label: "Lucro Líquido",
+      value: fmtBRL(ind.lucroLiquidoAnual),
       sub: `Margem ${ind.margemLiquida.toFixed(1)}%`,
-      tone: ind.lucroLiquidoAnual >= 0 ? "ok" : "bad" },
-    { label: "Caixa Atual", value: fmtBRL(caixaAtual),
-      sub: `Saldo projetado dez: ${fmtBRL(cf.totais.saldoFinal)}` },
-    { label: "ROIC", value: fmtPct(ind.roic / 100),
+      tone: ind.lucroLiquidoAnual >= 0 ? "ok" : "bad",
+    },
+    {
+      label: "Caixa Atual",
+      value: fmtBRL(caixaAtual),
+      sub: `Saldo projetado dez: ${fmtBRL(cf.totais.saldoFinal)}`,
+    },
+    {
+      label: "ROIC",
+      value: fmtPct(ind.roic / 100),
       sub: `WACC: ${fmtPct(ind.wacc / 100)}`,
-      tone: ind.roic >= ind.wacc ? "ok" : "bad" },
+      tone: ind.roic >= ind.wacc ? "ok" : "bad",
+    },
     { label: "WACC", value: fmtPct(ind.wacc / 100), sub: "Custo de capital ponderado" },
-    { label: "Guardian Score", value: `${score.toFixed(0)}/100`,
-      sub: `Classificação: ${conceito}`, tone },
-    { label: "DSCR", value: dscrFmt,
+    {
+      label: "Guardian Score",
+      value: `${score.toFixed(0)}/100`,
+      sub: `Classificação: ${conceito}`,
+      tone,
+    },
+    {
+      label: "DSCR",
+      value: dscrFmt,
       sub: "Cobertura do serviço da dívida",
-      tone: ind.dscr == null ? "ok" : ind.dscr >= 1.5 ? "ok" : ind.dscr >= 1.25 ? "warn" : "bad" },
-    { label: "Margem Líquida", value: `${ind.margemLiquida.toFixed(1)}%`,
+      tone: ind.dscr == null ? "ok" : ind.dscr >= 1.5 ? "ok" : ind.dscr >= 1.25 ? "warn" : "bad",
+    },
+    {
+      label: "Margem Líquida",
+      value: `${ind.margemLiquida.toFixed(1)}%`,
       sub: "Lucro / Receita Bruta",
-      tone: ind.margemLiquida >= 8 ? "ok" : ind.margemLiquida >= 3 ? "warn" : "bad" },
+      tone: ind.margemLiquida >= 8 ? "ok" : ind.margemLiquida >= 3 ? "warn" : "bad",
+    },
   ];
   y = drawKpiCards(doc, y, kpiCards, 3);
 
   // ~3 linhas de respiro entre os cards e o bloco de Top 5 Despesas.
   drawTop5Despesas(doc, y + 36, model);
 
-
   // ── PÁGINA 4 — SAÚDE FINANCEIRA ────────────────────────────────────
   doc.addPage();
   pageMeta[doc.getNumberOfPages()] = { eyebrow: "03", title: "Saúde Financeira" };
-  y = pageTitle(doc, CONTENT_TOP, "03  ·  Diagnóstico",
+  y = pageTitle(
+    doc,
+    CONTENT_TOP,
+    "03  ·  Diagnóstico",
     "Saúde Financeira",
-    "Avaliação por dimensão: liquidez, rentabilidade, endividamento, capital de giro, geração de caixa e tributação.");
+    "Avaliação por dimensão: liquidez, rentabilidade, endividamento, capital de giro, geração de caixa e tributação.",
+  );
 
   const dimensions = buildHealthDimensions(ind, state);
   const w = doc.internal.pageSize.getWidth();
@@ -970,21 +1116,27 @@ export async function exportFinancePDF({
   // Gráfico — Resultado acumulado (lucro líquido) — mesma página
   let acc = 0;
   const cumul = model.dre.lucroLiquido.map((v) => (acc += v));
-  blockHeader(doc, y + 4, "Resultado acumulado (lucro líquido)",
-    "Trajetória do lucro líquido somado ao longo de 12 meses.");
-  drawMonthlyChart(doc, PAGE_MARGIN, y + 28,
-    w - PAGE_MARGIN * 2, 150, cumul, {
-      fill: [16, 185, 129] as [number, number, number],
-      line: [5, 150, 105] as [number, number, number],
-    });
-
+  blockHeader(
+    doc,
+    y + 4,
+    "Resultado acumulado (lucro líquido)",
+    "Trajetória do lucro líquido somado ao longo de 12 meses.",
+  );
+  drawMonthlyChart(doc, PAGE_MARGIN, y + 28, w - PAGE_MARGIN * 2, 150, cumul, {
+    fill: [16, 185, 129] as [number, number, number],
+    line: [5, 150, 105] as [number, number, number],
+  });
 
   // ── PÁGINA 5 — RISCOS & RECOMENDAÇÕES ──────────────────────────────
   doc.addPage();
   pageMeta[doc.getNumberOfPages()] = { eyebrow: "04", title: "Riscos & Recomendações" };
-  y = pageTitle(doc, CONTENT_TOP, "04  ·  Riscos & Recomendações",
+  y = pageTitle(
+    doc,
+    CONTENT_TOP,
+    "04  ·  Riscos & Recomendações",
     "Riscos & Recomendações",
-    "Cada risco identificado é apresentado junto com diagnóstico, ações recomendadas e prazo de execução.");
+    "Cada risco identificado é apresentado junto com diagnóstico, ações recomendadas e prazo de execução.",
+  );
 
   const riskRecs = buildRiscosERecomendacoes(diags, prescriptive).slice(0, 6);
   if (riskRecs.length === 0) {
@@ -995,11 +1147,16 @@ export async function exportFinancePDF({
       if (y > doc.internal.pageSize.getHeight() - 200) {
         doc.addPage();
         pageMeta[doc.getNumberOfPages()] = { eyebrow: "04", title: "Riscos & Recomendações" };
-        y = pageTitle(doc, CONTENT_TOP, "04  ·  Riscos & Recomendações",
-          "Riscos & Recomendações (cont.)");
+        y = pageTitle(
+          doc,
+          CONTENT_TOP,
+          "04  ·  Riscos & Recomendações",
+          "Riscos & Recomendações (cont.)",
+        );
       }
       const sCol = r.severity === "danger" ? BAD : r.severity === "warn" ? WARN : CHARCOAL;
-      const sLabel = r.severity === "danger" ? "CRÍTICO" : r.severity === "warn" ? "ATENÇÃO" : "OPORTUNIDADE";
+      const sLabel =
+        r.severity === "danger" ? "CRÍTICO" : r.severity === "warn" ? "ATENÇÃO" : "OPORTUNIDADE";
       // tag superior
       doc.setFont(FONT, "bold");
       doc.setFontSize(7);
@@ -1069,13 +1226,22 @@ export async function exportFinancePDF({
   // ── PÁGINA 6 — PRIORIDADES DO CFO ──────────────────────────────────
   doc.addPage();
   pageMeta[doc.getNumberOfPages()] = { eyebrow: "05", title: "Prioridades do CFO" };
-  y = pageTitle(doc, CONTENT_TOP, "05  ·  Plano de Ação",
+  y = pageTitle(
+    doc,
+    CONTENT_TOP,
+    "05  ·  Plano de Ação",
     "Prioridades do CFO",
-    "Principais prioridades ordenadas por impacto financeiro e prazo de execução.");
+    "Principais prioridades ordenadas por impacto financeiro e prazo de execução.",
+  );
 
   const priorities = buildPriorities(prescriptive, diags).slice(0, 6);
   if (priorities.length === 0) {
-    paragraph(doc, y, "Nenhuma ação prioritária identificada — manter o monitoramento regular dos indicadores.", { color: GRAY });
+    paragraph(
+      doc,
+      y,
+      "Nenhuma ação prioritária identificada — manter o monitoramento regular dos indicadores.",
+      { color: GRAY },
+    );
   } else {
     priorities.forEach((p, i) => {
       const blockH = 116;
@@ -1083,8 +1249,7 @@ export async function exportFinancePDF({
       if (y + blockH + 24 > doc.internal.pageSize.getHeight() - 80) {
         doc.addPage();
         pageMeta[doc.getNumberOfPages()] = { eyebrow: "05", title: "Prioridades do CFO" };
-        y = pageTitle(doc, CONTENT_TOP, "05  ·  Plano de Ação",
-          "Prioridades do CFO (cont.)");
+        y = pageTitle(doc, CONTENT_TOP, "05  ·  Plano de Ação", "Prioridades do CFO (cont.)");
       }
       doc.setFont(FONT, "bold");
       doc.setFontSize(48);
@@ -1150,8 +1315,6 @@ export async function exportFinancePDF({
     }
   }
 
-
-
   // ════════════════════════════════════════════════════════════════════
   // APÊNDICE
   // ════════════════════════════════════════════════════════════════════
@@ -1159,25 +1322,41 @@ export async function exportFinancePDF({
   // Divisor de apêndice (página simples)
   doc.addPage();
   pageMeta[doc.getNumberOfPages()] = { eyebrow: "Apêndice", title: "Demonstrações & Indicadores" };
-  pageTitle(doc, doc.internal.pageSize.getHeight() / 2 - 60,
-    "Apêndice", "Demonstrações & Indicadores",
-    "DRE, Balanço Patrimonial, Fluxo de Caixa e quadro de indicadores essenciais, avançados e técnicos.");
+  pageTitle(
+    doc,
+    doc.internal.pageSize.getHeight() / 2 - 60,
+    "Apêndice",
+    "Demonstrações & Indicadores",
+    "DRE, Balanço Patrimonial, Fluxo de Caixa e quadro de indicadores essenciais, avançados e técnicos.",
+  );
 
   // A.1 — DRE
-  y = newPage(doc, "Apêndice A", "Demonstração do Resultado",
-    "Visão trimestral · estrutura fiel à tela do sistema.");
+  y = newPage(
+    doc,
+    "Apêndice A",
+    "Demonstração do Resultado",
+    "Visão trimestral · estrutura fiel à tela do sistema.",
+  );
   pageMeta[doc.getNumberOfPages()] = { eyebrow: "Apêndice A", title: "DRE" };
   renderDRE(doc, y, state, model);
 
   // A.2 — Balanço
-  y = newPage(doc, "Apêndice B", "Balanço Patrimonial",
-    "Fechamento derivado por construção · todas as rubricas.");
+  y = newPage(
+    doc,
+    "Apêndice B",
+    "Balanço Patrimonial",
+    "Fechamento derivado por construção · todas as rubricas.",
+  );
   pageMeta[doc.getNumberOfPages()] = { eyebrow: "Apêndice B", title: "Balanço" };
   renderBalanco(doc, y, balancoFechamento.balanco, balancoFechamento.totals);
 
   // A.3 — Fluxo de Caixa
-  y = newPage(doc, "Apêndice C", "Fluxo de Caixa",
-    "DFC método direto · trimestral · operacional, investimento e financiamento.");
+  y = newPage(
+    doc,
+    "Apêndice C",
+    "Fluxo de Caixa",
+    "DFC método direto · trimestral · operacional, investimento e financiamento.",
+  );
   pageMeta[doc.getNumberOfPages()] = { eyebrow: "Apêndice C", title: "Fluxo de Caixa" };
   renderDFC(doc, y, state, model);
 
@@ -1207,7 +1386,10 @@ export async function exportFinancePDF({
 
 type Insight = { title: string; detail: string; tone: "ok" | "warn" | "bad" | "neutral" };
 function buildExecutiveInsights(
-  state: AppState, model: FinancialModel, score: number, conceito: string,
+  state: AppState,
+  model: FinancialModel,
+  score: number,
+  conceito: string,
 ): Insight[] {
   const { ind, dre, cf } = model;
   const insights: Insight[] = [];
@@ -1243,12 +1425,14 @@ function buildExecutiveInsights(
   }
 
   // 3. Margem / estrutura de custos
-  const tag = ind.margemLiquida >= 8 ? "saudável" : ind.margemLiquida >= 3 ? "apertada" : "comprimida";
+  const tag =
+    ind.margemLiquida >= 8 ? "saudável" : ind.margemLiquida >= 3 ? "apertada" : "comprimida";
   insights.push({
     title: `Margem líquida ${tag} (${ind.margemLiquida.toFixed(1)}%)`,
-    detail: ind.margemLiquida < 3
-      ? "Estrutura de custos consome quase toda a receita; revisão urgente de despesas e precificação."
-      : "Estrutura de custos compatível com o porte e modelo de negócio.",
+    detail:
+      ind.margemLiquida < 3
+        ? "Estrutura de custos consome quase toda a receita; revisão urgente de despesas e precificação."
+        : "Estrutura de custos compatível com o porte e modelo de negócio.",
     tone: ind.margemLiquida >= 8 ? "ok" : ind.margemLiquida >= 3 ? "warn" : "bad",
   });
 
@@ -1263,10 +1447,16 @@ function buildExecutiveInsights(
   const ult3 = cf.fluxoOperacional.slice(-3);
   const burn = -(ult3.reduce((a, b) => a + b, 0) / Math.max(1, ult3.length));
   let prio = "Manter monitoramento mensal dos indicadores e revisão trimestral do plano.";
-  if (burn > 0) prio = `Operação queima ${fmtBRL(burn)}/mês em média no último trimestre — prioridade imediata é estancar o burn.`;
-  else if (ind.dscr != null && ind.dscr < 1.25) prio = "Renegociar prazos e taxas com credores — DSCR abaixo de 1,25× compromete acesso a novas linhas.";
-  else if (ind.endividamentoOneroso > 60) prio = "Alavancagem financeira elevada — priorizar amortização e revisão do mix de capital.";
-  else if (sum(dre.lucroLiquido) < 0) prio = "Resultado negativo — revisão de precificação, mix e estrutura de custos é a prioridade #1.";
+  if (burn > 0)
+    prio = `Operação queima ${fmtBRL(burn)}/mês em média no último trimestre — prioridade imediata é estancar o burn.`;
+  else if (ind.dscr != null && ind.dscr < 1.25)
+    prio =
+      "Renegociar prazos e taxas com credores — DSCR abaixo de 1,25× compromete acesso a novas linhas.";
+  else if (ind.endividamentoOneroso > 60)
+    prio = "Alavancagem financeira elevada — priorizar amortização e revisão do mix de capital.";
+  else if (sum(dre.lucroLiquido) < 0)
+    prio =
+      "Resultado negativo — revisão de precificação, mix e estrutura de custos é a prioridade #1.";
   insights.push({
     title: `Prioridade #1: ${prio.split(" — ")[0]}`,
     detail: prio,
@@ -1274,7 +1464,8 @@ function buildExecutiveInsights(
   });
 
   // referência muda para evitar warning de "conceito" não usado
-  void conceito; void state;
+  void conceito;
+  void state;
   return insights;
 }
 
@@ -1305,7 +1496,10 @@ function buildHealthDimensions(ind: FinancialModel["ind"], state: AppState): Hea
     },
     {
       label: "Capital de Giro",
-      score: ind.gapCapitalGiro <= 0 ? 90 : clamp(100 - (ind.gapCapitalGiro / Math.max(1, Math.abs(ind.ncg))) * 100),
+      score:
+        ind.gapCapitalGiro <= 0
+          ? 90
+          : clamp(100 - (ind.gapCapitalGiro / Math.max(1, Math.abs(ind.ncg))) * 100),
       tone: ind.gapCapitalGiro <= 0 ? "ok" : ind.gapCapitalGiro < ind.ncg * 0.3 ? "warn" : "bad",
       comment: `NCG ${fmtBRL(ind.ncg)} · gap ${fmtBRL(ind.gapCapitalGiro)} · ciclo financeiro ${ind.cicloFinanceiro.toFixed(0)} dias.`,
     },
@@ -1325,9 +1519,16 @@ function buildHealthDimensions(ind: FinancialModel["ind"], state: AppState): Hea
   return dims;
 }
 
-type Risk = { title: string; impact: string; probability: string; recommendation: string; severity: "warn" | "bad" | "info" };
+type Risk = {
+  title: string;
+  impact: string;
+  probability: string;
+  recommendation: string;
+  severity: "warn" | "bad" | "info";
+};
 function buildTopRisks(
-  diags: Diagnostic[], ind: FinancialModel["ind"],
+  diags: Diagnostic[],
+  ind: FinancialModel["ind"],
   prescriptive: PrescriptiveCard[],
 ): Risk[] {
   const order: Record<string, number> = { danger: 0, warn: 1, ok: 2 };
@@ -1337,53 +1538,70 @@ function buildTopRisks(
     .map((d) => {
       const sev: Risk["severity"] = d.level === "danger" ? "bad" : "warn";
       const probability = d.level === "danger" ? "Alta" : "Média";
-      const impact = d.level === "danger" ? "Alto · risco material ao caixa ou ao resultado"
-        : "Médio · pode comprometer indicadores no horizonte próximo";
+      const impact =
+        d.level === "danger"
+          ? "Alto · risco material ao caixa ou ao resultado"
+          : "Médio · pode comprometer indicadores no horizonte próximo";
       // tenta achar recomendação correlata
-      const rec = prescriptive.find((p) => p.problem.toLowerCase().includes(d.title.toLowerCase().slice(0, 8)));
+      const rec = prescriptive.find((p) =>
+        p.problem.toLowerCase().includes(d.title.toLowerCase().slice(0, 8)),
+      );
       const recommendation = rec?.actions[0]?.title ?? d.message;
       return { title: d.title, impact, probability, recommendation, severity: sev };
     })
     .concat(
-      ind.dscr != null && ind.dscr > 0 && ind.dscr < 1.25 ? [{
-        title: "DSCR abaixo do mínimo bancário",
-        impact: `DSCR ${ind.dscr.toFixed(2)}x compromete acesso a novas linhas de crédito`,
-        probability: "Alta",
-        recommendation: "Renegociar prazo e taxa do principal · alongar amortizações",
-        severity: "bad" as const,
-      }] : []
+      ind.dscr != null && ind.dscr > 0 && ind.dscr < 1.25
+        ? [
+            {
+              title: "DSCR abaixo do mínimo bancário",
+              impact: `DSCR ${ind.dscr.toFixed(2)}x compromete acesso a novas linhas de crédito`,
+              probability: "Alta",
+              recommendation: "Renegociar prazo e taxa do principal · alongar amortizações",
+              severity: "bad" as const,
+            },
+          ]
+        : [],
     );
 }
 
-type Priority = { title: string; description: string; benefit: string; deadline: string; complexity: string };
-function buildPriorities(
-  prescriptive: PrescriptiveCard[],
-  diags: Diagnostic[],
-): Priority[] {
+type Priority = {
+  title: string;
+  description: string;
+  benefit: string;
+  deadline: string;
+  complexity: string;
+};
+function buildPriorities(prescriptive: PrescriptiveCard[], diags: Diagnostic[]): Priority[] {
   const sevOrder: Record<string, number> = { danger: 0, warn: 1, info: 2, ok: 3 };
-  const ranked = [...prescriptive].sort((a, b) =>
-    (sevOrder[a.severity] ?? 9) - (sevOrder[b.severity] ?? 9));
+  const ranked = [...prescriptive].sort(
+    (a, b) => (sevOrder[a.severity] ?? 9) - (sevOrder[b.severity] ?? 9),
+  );
   const out: Priority[] = ranked.slice(0, 6).map((c) => ({
     title: c.problem,
     description: c.actions[0]?.title ?? c.cause,
-    benefit: c.severity === "danger" ? "Alto"
-      : c.severity === "warn" ? "Médio"
-      : "Incremental",
-    deadline: c.severity === "danger" ? "30 a 60 dias"
-      : c.severity === "warn" ? "60 a 120 dias" : "Até 180 dias",
+    benefit: c.severity === "danger" ? "Alto" : c.severity === "warn" ? "Médio" : "Incremental",
+    deadline:
+      c.severity === "danger"
+        ? "30 a 60 dias"
+        : c.severity === "warn"
+          ? "60 a 120 dias"
+          : "Até 180 dias",
     complexity: c.actions.length > 2 ? "Alta" : c.actions.length > 0 ? "Média" : "Baixa",
   }));
   // fallback baseado em diagnose se prescriptive estiver vazio
   if (out.length === 0) {
-    diags.filter((d) => d.level !== "ok").slice(0, 6).forEach((d) => {
-      out.push({
-        title: d.title,
-        description: d.message,
-        benefit: d.level === "danger" ? "Alto" : "Médio",
-        deadline: d.level === "danger" ? "30 a 60 dias" : "60 a 120 dias",
-        complexity: "Média",
+    diags
+      .filter((d) => d.level !== "ok")
+      .slice(0, 6)
+      .forEach((d) => {
+        out.push({
+          title: d.title,
+          description: d.message,
+          benefit: d.level === "danger" ? "Alto" : "Médio",
+          deadline: d.level === "danger" ? "30 a 60 dias" : "60 a 120 dias",
+          complexity: "Média",
+        });
       });
-    });
   }
   return out;
 }
@@ -1451,8 +1669,7 @@ function buildRiscosERecomendacoes(
 
   return out.sort(
     (a, b) =>
-      ({ danger: 0, warn: 1, info: 2 }[a.severity] -
-        { danger: 0, warn: 1, info: 2 }[b.severity]),
+      ({ danger: 0, warn: 1, info: 2 })[a.severity] - { danger: 0, warn: 1, info: 2 }[b.severity],
   );
 }
 
@@ -1460,9 +1677,13 @@ function buildRiscosERecomendacoes(
 function renderDiagnosticoIA(doc: jsPDF, result: DiagnosticoResult): void {
   doc.addPage();
   pageMeta[doc.getNumberOfPages()] = { eyebrow: "06", title: "Diagnóstico Executivo IA" };
-  let y = pageTitle(doc, CONTENT_TOP, "06  ·  Análise Assistida por IA",
+  let y = pageTitle(
+    doc,
+    CONTENT_TOP,
+    "06  ·  Análise Assistida por IA",
     "Diagnóstico Executivo IA",
-    "Leitura interpretativa gerada por inteligência artificial a partir dos números calculados pela engine. Revisão e validação são do consultor.");
+    "Leitura interpretativa gerada por inteligência artificial a partir dos números calculados pela engine. Revisão e validação são do consultor.",
+  );
   const w = doc.internal.pageSize.getWidth();
   const d = result.data;
 
@@ -1484,8 +1705,12 @@ function renderDiagnosticoIA(doc: jsPDF, result: DiagnosticoResult): void {
     if (y + need > doc.internal.pageSize.getHeight() - 80) {
       doc.addPage();
       pageMeta[doc.getNumberOfPages()] = { eyebrow: "06", title: "Diagnóstico Executivo IA" };
-      y = pageTitle(doc, CONTENT_TOP, "06  ·  Análise Assistida por IA",
-        "Diagnóstico Executivo IA (cont.)");
+      y = pageTitle(
+        doc,
+        CONTENT_TOP,
+        "06  ·  Análise Assistida por IA",
+        "Diagnóstico Executivo IA (cont.)",
+      );
     }
   };
 
@@ -1551,7 +1776,8 @@ function renderDiagnosticoIA(doc: jsPDF, result: DiagnosticoResult): void {
       doc.setFont(FONT, "normal");
       doc.setFontSize(8.5);
       setColor(doc, "text", GRAY);
-      const prazoLbl = p.prazo === "imediato" ? "Imediato" : p.prazo === "30d" ? "30 dias" : "90 dias";
+      const prazoLbl =
+        p.prazo === "imediato" ? "Imediato" : p.prazo === "30d" ? "30 dias" : "90 dias";
       const meta = p.impactoEsperado
         ? `Prazo: ${prazoLbl}  ·  Impacto: ${p.impactoEsperado}`
         : `Prazo: ${prazoLbl}`;
@@ -1573,23 +1799,27 @@ function renderDiagnosticoIA(doc: jsPDF, result: DiagnosticoResult): void {
   doc.text(stamp, PAGE_MARGIN, y + 16);
   doc.text(
     "Análise assistida por IA — revisão e responsabilidade técnica são do consultor.",
-    PAGE_MARGIN, y + 28,
+    PAGE_MARGIN,
+    y + 28,
   );
 }
-
 
 function renderDRE(doc: jsPDF, yStart: number, state: AppState, model: FinancialModel) {
   const { dre, regime } = model;
   const QUARTERS = ["1º Tri", "2º Tri", "3º Tri", "4º Tri", "Total"];
   const zeros12 = () => Array(12).fill(0);
   const quartersOf = (arr: number[]) => {
-    const q = [0, 1, 2, 3].map((i) => (arr[i * 3] ?? 0) + (arr[i * 3 + 1] ?? 0) + (arr[i * 3 + 2] ?? 0));
+    const q = [0, 1, 2, 3].map(
+      (i) => (arr[i * 3] ?? 0) + (arr[i * 3 + 1] ?? 0) + (arr[i * 3 + 2] ?? 0),
+    );
     return [...q, q.reduce((a, b) => a + b, 0)];
   };
   const dedById = (id: string) => state.revenue.deducoes?.find((d) => d.id === id);
   const descIncond = dedById("desc_incond")?.valores ?? zeros12();
   const abatimentos = dedById("abatimentos")?.valores ?? zeros12();
-  const outrasDedResto = dre.outrasDeducoes.map((v, i) => v - (descIncond[i] ?? 0) - (abatimentos[i] ?? 0));
+  const outrasDedResto = dre.outrasDeducoes.map(
+    (v, i) => v - (descIncond[i] ?? 0) - (abatimentos[i] ?? 0),
+  );
   const despComerciais = zeros12();
   const despAdmin = zeros12();
   const despFinanc = zeros12();
@@ -1599,7 +1829,8 @@ function renderDRE(doc: jsPDF, yStart: number, state: AppState, model: Financial
     else if (c.category === "fixo") for (let i = 0; i < 12; i++) despAdmin[i] += v[i];
     else if (c.category === "financeiro") for (let i = 0; i < 12; i++) despFinanc[i] += v[i];
   }
-  const { financeiras: receitasFinMensal, operacionais: outrasReceitasOpMensal } = splitReceitasFinanceiras(state);
+  const { financeiras: receitasFinMensal, operacionais: outrasReceitasOpMensal } =
+    splitReceitasFinanceiras(state);
   const usaPDD = !!state.revenue.inadimplenciaComoPDD;
   const pddLine = usaPDD ? dre.pdd : zeros12();
   const outrasOperacionais = dre.depreciacao.map(
@@ -1610,31 +1841,79 @@ function renderDRE(doc: jsPDF, yStart: number, state: AppState, model: Financial
   type Row = { label: string; vals: number[]; meta: "normal" | "total" | "highlight" };
   const rows: Row[] = [
     { label: "(+) Receita Operacional Bruta", vals: quartersOf(dre.receitaBruta), meta: "total" },
-    { label: usaPDD ? "(−) Inadimplência (PDD)" : "(−) Inadimplência (estimada)",
-      vals: quartersOf(dre.deducoesInadimplencia).map((v) => -v), meta: "normal" },
-    { label: "(−) Descontos Incondicionais", vals: quartersOf(descIncond).map((v) => -v), meta: "normal" },
+    {
+      label: usaPDD ? "(−) Inadimplência (PDD)" : "(−) Inadimplência (estimada)",
+      vals: quartersOf(dre.deducoesInadimplencia).map((v) => -v),
+      meta: "normal",
+    },
+    {
+      label: "(−) Descontos Incondicionais",
+      vals: quartersOf(descIncond).map((v) => -v),
+      meta: "normal",
+    },
     { label: "(−) Abatimentos", vals: quartersOf(abatimentos).map((v) => -v), meta: "normal" },
-    { label: "(−) Outras Deduções", vals: quartersOf(outrasDedResto).map((v) => -v), meta: "normal" },
-    { label: regime === "simples" ? "(−) DAS Simples Nacional" : "(−) Tributos sobre Receita (PIS/COFINS/ICMS/ISS/CBS/IBS)",
-      vals: quartersOf(dre.impostosVendas).map((v) => -v), meta: "normal" },
-    { label: "(=) Receita Operacional Líquida", vals: quartersOf(dre.receitaLiquida), meta: "total" },
+    {
+      label: "(−) Outras Deduções",
+      vals: quartersOf(outrasDedResto).map((v) => -v),
+      meta: "normal",
+    },
+    {
+      label:
+        regime === "simples"
+          ? "(−) DAS Simples Nacional"
+          : "(−) Tributos sobre Receita (PIS/COFINS/ICMS/ISS/CBS/IBS)",
+      vals: quartersOf(dre.impostosVendas).map((v) => -v),
+      meta: "normal",
+    },
+    {
+      label: "(=) Receita Operacional Líquida",
+      vals: quartersOf(dre.receitaLiquida),
+      meta: "total",
+    },
     { label: "(−) CPV / CMV / CSP", vals: quartersOf(dre.cpv).map((v) => -v), meta: "normal" },
     { label: "(=) Lucro Bruto", vals: quartersOf(dre.lucroBruto), meta: "total" },
-    { label: "(−) Despesas Comerciais", vals: quartersOf(despComerciais).map((v) => -v), meta: "normal" },
-    { label: "(−) Despesas Administrativas", vals: quartersOf(despAdmin).map((v) => -v), meta: "normal" },
-    { label: "(±) Outras Despesas/Receitas Operacionais", vals: quartersOf(outrasOperacionais), meta: "normal" },
+    {
+      label: "(−) Despesas Comerciais",
+      vals: quartersOf(despComerciais).map((v) => -v),
+      meta: "normal",
+    },
+    {
+      label: "(−) Despesas Administrativas",
+      vals: quartersOf(despAdmin).map((v) => -v),
+      meta: "normal",
+    },
+    {
+      label: "(±) Outras Despesas/Receitas Operacionais",
+      vals: quartersOf(outrasOperacionais),
+      meta: "normal",
+    },
     { label: "(=) EBIT (Lucro Operacional)", vals: quartersOf(dre.ebit), meta: "total" },
     { label: "(+) Receitas Financeiras", vals: quartersOf(receitasFinMensal), meta: "normal" },
     { label: "(=) Lucro Antes do Financiamento e Tributos", vals: quartersOf(laft), meta: "total" },
-    { label: "(−) Despesas Financeiras", vals: quartersOf(despFinanc).map((v) => -v), meta: "normal" },
+    {
+      label: "(−) Despesas Financeiras",
+      vals: quartersOf(despFinanc).map((v) => -v),
+      meta: "normal",
+    },
     { label: "(=) Lucro Antes do IR/CSLL (EBT)", vals: quartersOf(dre.lair), meta: "total" },
-    { label: dre.impostosLucroBase === "receita_presumida"
-      ? "(−) IR / CSLL (base presumida sobre receita)" : "(−) IR / CSLL",
-      vals: quartersOf(dre.impostos).map((v) => -v), meta: "normal" },
-    { label: "(=) Lucro Líquido do Exercício", vals: quartersOf(dre.lucroLiquido), meta: "highlight" },
+    {
+      label:
+        dre.impostosLucroBase === "receita_presumida"
+          ? "(−) IR / CSLL (base presumida sobre receita)"
+          : "(−) IR / CSLL",
+      vals: quartersOf(dre.impostos).map((v) => -v),
+      meta: "normal",
+    },
+    {
+      label: "(=) Lucro Líquido do Exercício",
+      vals: quartersOf(dre.lucroLiquido),
+      meta: "highlight",
+    },
   ];
 
-  appendixTable(doc, yStart,
+  appendixTable(
+    doc,
+    yStart,
     ["Conta", ...QUARTERS],
     rows.map((r) => [r.label, ...r.vals.map(fmtBRL)]),
     rows.map((r) => r.meta),
@@ -1649,13 +1928,13 @@ function renderDRE(doc: jsPDF, yStart: number, state: AppState, model: Financial
   );
 }
 
-
-
 // =====================================================================
 // APÊNDICE — Balanço
 // =====================================================================
 function renderBalanco(
-  doc: jsPDF, yStart: number, b: BalancoDetalhado,
+  doc: jsPDF,
+  yStart: number,
+  b: BalancoDetalhado,
   totals: { ativo: number; passivo: number; pl: number; diferenca: number; fechado: boolean },
 ) {
   type Linha = { label: string; v: number; redutora?: boolean };
@@ -1669,47 +1948,71 @@ function renderBalanco(
   const pl = b.patrimonioLiquido ?? {};
 
   const ativoGrupos: Grp[] = [
-    { titulo: "Ativo Circulante", linhas: [
-      { label: "Caixa e equivalentes", v: ac.caixaEquivalentes ?? 0 },
-      { label: "Contas a receber de clientes", v: ac.contasReceberClientes ?? 0 },
-      { label: "Estoques", v: ac.estoques ?? 0 },
-      { label: "Impostos a recuperar", v: ac.impostosRecuperar ?? 0 },
-    ]},
-    { titulo: "Ativo Não Circulante — Imobilizado", linhas: [
-      { label: "Terrenos", v: im.terrenos ?? 0 },
-      { label: "Edificações", v: im.edificacoes ?? 0 },
-      { label: "Máquinas e equipamentos", v: im.maquinasEquipamentos ?? 0 },
-      { label: "Veículos", v: im.veiculos ?? 0 },
-      { label: "Móveis e utensílios", v: im.moveisUtensilios ?? 0 },
-      { label: "Outros (inclui CAPEX do período)", v: im.outrosImobilizados ?? 0 },
-      { label: "(−) Depreciação acumulada", v: im.depreciacaoAcumulada ?? 0, redutora: true },
-    ]},
-    { titulo: "Ativo Não Circulante — Intangível", linhas: [
-      { label: "Marcas e patentes", v: it.marcasPatentes ?? 0 },
-      { label: "(−) Amortização acumulada", v: it.amortizacaoAcumulada ?? 0, redutora: true },
-    ]},
+    {
+      titulo: "Ativo Circulante",
+      linhas: [
+        { label: "Caixa e equivalentes", v: ac.caixaEquivalentes ?? 0 },
+        { label: "Contas a receber de clientes", v: ac.contasReceberClientes ?? 0 },
+        { label: "Estoques", v: ac.estoques ?? 0 },
+        { label: "Impostos a recuperar", v: ac.impostosRecuperar ?? 0 },
+      ],
+    },
+    {
+      titulo: "Ativo Não Circulante — Imobilizado",
+      linhas: [
+        { label: "Terrenos", v: im.terrenos ?? 0 },
+        { label: "Edificações", v: im.edificacoes ?? 0 },
+        { label: "Máquinas e equipamentos", v: im.maquinasEquipamentos ?? 0 },
+        { label: "Veículos", v: im.veiculos ?? 0 },
+        { label: "Móveis e utensílios", v: im.moveisUtensilios ?? 0 },
+        { label: "Outros (inclui CAPEX do período)", v: im.outrosImobilizados ?? 0 },
+        { label: "(−) Depreciação acumulada", v: im.depreciacaoAcumulada ?? 0, redutora: true },
+      ],
+    },
+    {
+      titulo: "Ativo Não Circulante — Intangível",
+      linhas: [
+        { label: "Marcas e patentes", v: it.marcasPatentes ?? 0 },
+        { label: "(−) Amortização acumulada", v: it.amortizacaoAcumulada ?? 0, redutora: true },
+      ],
+    },
   ];
   if (inv > 0) {
-    ativoGrupos.splice(1, 0, { titulo: "Ativo Não Circulante — Investimentos",
-      linhas: [{ label: "Investimentos", v: inv }] });
+    ativoGrupos.splice(1, 0, {
+      titulo: "Ativo Não Circulante — Investimentos",
+      linhas: [{ label: "Investimentos", v: inv }],
+    });
   }
   const passivoGrupos: Grp[] = [
-    { titulo: "Passivo Circulante", linhas: [
-      { label: "Fornecedores", v: pc.fornecedores ?? 0 },
-      { label: "Empréstimos e financiamentos CP", v: pc.emprestimosFinanciamentosCP ?? 0 },
-      { label: "Impostos a pagar", v: pc.impostosPagar ?? 0 },
-      { label: "Salários e encargos", v: pc.salariosEncargos ?? 0 },
-    ]},
-    { titulo: "Passivo Não Circulante", linhas: [
-      { label: "Empréstimos e financiamentos LP", v: pnc.emprestimosFinanciamentosLP ?? 0 },
-    ]},
-    { titulo: "Patrimônio Líquido", linhas: [
-      { label: "Capital social", v: pl.capitalSocial ?? 0 },
-      { label: "Reservas de capital", v: pl.reservasCapital ?? 0 },
-      { label: "Lucros/prejuízos acumulados (abertura)", v: pl.lucrosPrejuizosAcumulados ?? 0 },
-      { label: "(−) Dividendos pagos no período", v: pl.dividendosPagosPeriodo ?? 0, redutora: true },
-      { label: "Resultado do exercício (DRE)", v: pl.resultadoExercicio ?? 0 },
-    ]},
+    {
+      titulo: "Passivo Circulante",
+      linhas: [
+        { label: "Fornecedores", v: pc.fornecedores ?? 0 },
+        { label: "Empréstimos e financiamentos CP", v: pc.emprestimosFinanciamentosCP ?? 0 },
+        { label: "Impostos a pagar", v: pc.impostosPagar ?? 0 },
+        { label: "Salários e encargos", v: pc.salariosEncargos ?? 0 },
+      ],
+    },
+    {
+      titulo: "Passivo Não Circulante",
+      linhas: [
+        { label: "Empréstimos e financiamentos LP", v: pnc.emprestimosFinanciamentosLP ?? 0 },
+      ],
+    },
+    {
+      titulo: "Patrimônio Líquido",
+      linhas: [
+        { label: "Capital social", v: pl.capitalSocial ?? 0 },
+        { label: "Reservas de capital", v: pl.reservasCapital ?? 0 },
+        { label: "Lucros/prejuízos acumulados (abertura)", v: pl.lucrosPrejuizosAcumulados ?? 0 },
+        {
+          label: "(−) Dividendos pagos no período",
+          v: pl.dividendosPagosPeriodo ?? 0,
+          redutora: true,
+        },
+        { label: "Resultado do exercício (DRE)", v: pl.resultadoExercicio ?? 0 },
+      ],
+    },
   ];
 
   type R = { type: "grp" | "lin" | "sub" | "tot"; label: string; v?: number };
@@ -1730,10 +2033,19 @@ function renderBalanco(
   };
 
   const render = (rows: R[], y0: number, secTitle: string): number => {
-    const body = rows.map((r) => [r.type === "lin" ? `    ${r.label}` : r.label,
-      r.v !== undefined ? fmtBRL(r.v) : ""]);
+    const body = rows.map((r) => [
+      r.type === "lin" ? `    ${r.label}` : r.label,
+      r.v !== undefined ? fmtBRL(r.v) : "",
+    ]);
     const meta = rows.map((r): "normal" | "section" | "total" | "highlight" =>
-      r.type === "grp" ? "section" : r.type === "tot" ? "total" : r.type === "sub" ? "highlight" : "normal");
+      r.type === "grp"
+        ? "section"
+        : r.type === "tot"
+          ? "total"
+          : r.type === "sub"
+            ? "highlight"
+            : "normal",
+    );
     return appendixTable(doc, y0, [secTitle, "Valor"], body, meta, {
       0: { halign: "left" },
       1: { halign: "right", cellWidth: 130, fontStyle: "bold" },
@@ -1747,11 +2059,17 @@ function renderBalanco(
     pageMeta[doc.getNumberOfPages()] = { eyebrow: "Apêndice B", title: "Balanço (cont.)" };
     y = pageTitle(doc, CONTENT_TOP, "Apêndice B", "Balanço Patrimonial (continuação)");
   }
-  y = render(buildRows(passivoGrupos, "Total do Passivo + PL", totals.passivo + totals.pl), y, "Passivo + Patrimônio Líquido");
+  y = render(
+    buildRows(passivoGrupos, "Total do Passivo + PL", totals.passivo + totals.pl),
+    y,
+    "Passivo + Patrimônio Líquido",
+  );
 
   // Faixa de validação minimalista
   const w = doc.internal.pageSize.getWidth();
-  const okStr = totals.fechado ? "Balanço fechado por construção" : "Diferença residual identificada";
+  const okStr = totals.fechado
+    ? "Balanço fechado por construção"
+    : "Diferença residual identificada";
   doc.setFont(FONT, "bold");
   doc.setFontSize(8);
   setColor(doc, "text", totals.fechado ? OK : WARN);
@@ -1761,7 +2079,9 @@ function renderBalanco(
   setColor(doc, "text", GRAY);
   doc.text(
     `Ativo ${fmtBRL(totals.ativo)}  ·  Passivo + PL ${fmtBRL(totals.passivo + totals.pl)}  ·  Δ ${fmtBRL(totals.diferenca)}`,
-    w - PAGE_MARGIN, y + 4, { align: "right" },
+    w - PAGE_MARGIN,
+    y + 4,
+    { align: "right" },
   );
 }
 
@@ -1772,42 +2092,106 @@ function renderDFC(doc: jsPDF, yStart: number, state: AppState, model: Financial
   const { cf } = model;
   const QUARTERS = ["1º Tri", "2º Tri", "3º Tri", "4º Tri", "Total"];
   const quartersOf = (arr: number[]) => {
-    const q = [0, 1, 2, 3].map((i) => (arr[i * 3] ?? 0) + (arr[i * 3 + 1] ?? 0) + (arr[i * 3 + 2] ?? 0));
+    const q = [0, 1, 2, 3].map(
+      (i) => (arr[i * 3] ?? 0) + (arr[i * 3 + 1] ?? 0) + (arr[i * 3 + 2] ?? 0),
+    );
     return [...q, q.reduce((a, b) => a + b, 0)];
   };
 
   type Row = { label: string; vals?: number[]; meta: "normal" | "section" | "total" | "highlight" };
   const rows: Row[] = [
-    { label: "Saldo Inicial", meta: "normal", vals: [cf.saldoInicial[0] ?? 0, cf.saldoInicial[3] ?? 0,
-      cf.saldoInicial[6] ?? 0, cf.saldoInicial[9] ?? 0, cf.saldoInicial[0] ?? 0] },
+    {
+      label: "Saldo Inicial",
+      meta: "normal",
+      vals: [
+        cf.saldoInicial[0] ?? 0,
+        cf.saldoInicial[3] ?? 0,
+        cf.saldoInicial[6] ?? 0,
+        cf.saldoInicial[9] ?? 0,
+        cf.saldoInicial[0] ?? 0,
+      ],
+    },
     { label: "Atividades Operacionais", meta: "section" },
     { label: "(+) Recebimentos de clientes", meta: "normal", vals: quartersOf(cf.recebimentos) },
-    { label: "(+) Receitas financeiras (aplicações)", meta: "normal", vals: quartersOf(cf.receitasFinanceiras) },
-    { label: "(−) Pagamentos a fornecedores (CPV)", meta: "normal", vals: quartersOf(cf.pagamentosFornecedores).map((v) => -v) },
-    { label: "(−) Pagamentos de custos fixos", meta: "normal", vals: quartersOf(cf.pagamentosFixos).map((v) => -v) },
-    { label: "(−) Pagamentos de custos variáveis", meta: "normal", vals: quartersOf(cf.pagamentosVariaveis).map((v) => -v) },
-    { label: "(−) Despesas financeiras", meta: "normal", vals: quartersOf(cf.pagamentosFinanceiros).map((v) => -v) },
-    { label: "(−) Impostos pagos", meta: "normal", vals: quartersOf(cf.pagamentosImpostos).map((v) => -v) },
+    {
+      label: "(+) Receitas financeiras (aplicações)",
+      meta: "normal",
+      vals: quartersOf(cf.receitasFinanceiras),
+    },
+    {
+      label: "(−) Pagamentos a fornecedores (CPV)",
+      meta: "normal",
+      vals: quartersOf(cf.pagamentosFornecedores).map((v) => -v),
+    },
+    {
+      label: "(−) Pagamentos de custos fixos",
+      meta: "normal",
+      vals: quartersOf(cf.pagamentosFixos).map((v) => -v),
+    },
+    {
+      label: "(−) Pagamentos de custos variáveis",
+      meta: "normal",
+      vals: quartersOf(cf.pagamentosVariaveis).map((v) => -v),
+    },
+    {
+      label: "(−) Despesas financeiras",
+      meta: "normal",
+      vals: quartersOf(cf.pagamentosFinanceiros).map((v) => -v),
+    },
+    {
+      label: "(−) Impostos pagos",
+      meta: "normal",
+      vals: quartersOf(cf.pagamentosImpostos).map((v) => -v),
+    },
     { label: "(=) Fluxo das Operações", meta: "total", vals: quartersOf(cf.fluxoOperacional) },
     { label: "Atividades de Investimento", meta: "section" },
-    { label: "(−) CapEx — Investimentos em equipamentos e ativo (Capital)", meta: "normal", vals: quartersOf(cf.capex).map((v) => -v) },
+    {
+      label: "(−) CapEx — Investimentos em equipamentos e ativo (Capital)",
+      meta: "normal",
+      vals: quartersOf(cf.capex).map((v) => -v),
+    },
     { label: "(=) Fluxo de Investimento", meta: "total", vals: quartersOf(cf.fluxoInvestimento) },
     { label: "Atividades de Financiamento", meta: "section" },
     { label: "(+) Aportes de sócios", meta: "normal", vals: quartersOf(state.cashflow.aportes) },
-    { label: "(+) Captação de empréstimos", meta: "normal", vals: quartersOf(state.cashflow.emprestimosCaptados) },
-    { label: "(−) Amortização de principal", meta: "normal", vals: quartersOf(state.cashflow.amortizacoes).map((v) => -v) },
-    { label: "(−) Distribuição de dividendos", meta: "normal", vals: quartersOf(state.cashflow.dividendos).map((v) => -v) },
+    {
+      label: "(+) Captação de empréstimos",
+      meta: "normal",
+      vals: quartersOf(state.cashflow.emprestimosCaptados),
+    },
+    {
+      label: "(−) Amortização de principal",
+      meta: "normal",
+      vals: quartersOf(state.cashflow.amortizacoes).map((v) => -v),
+    },
+    {
+      label: "(−) Distribuição de dividendos",
+      meta: "normal",
+      vals: quartersOf(state.cashflow.dividendos).map((v) => -v),
+    },
     { label: "(=) Fluxo de Financiamento", meta: "total", vals: quartersOf(cf.fluxoFinanciamento) },
     { label: "(=) Variação de Caixa", meta: "highlight", vals: quartersOf(cf.variacaoCaixa) },
-    { label: "(=) Saldo Final", meta: "highlight", vals: [cf.saldoFinal[2] ?? 0, cf.saldoFinal[5] ?? 0,
-      cf.saldoFinal[8] ?? 0, cf.saldoFinal[11] ?? 0, cf.saldoFinal[11] ?? 0] },
+    {
+      label: "(=) Saldo Final",
+      meta: "highlight",
+      vals: [
+        cf.saldoFinal[2] ?? 0,
+        cf.saldoFinal[5] ?? 0,
+        cf.saldoFinal[8] ?? 0,
+        cf.saldoFinal[11] ?? 0,
+        cf.saldoFinal[11] ?? 0,
+      ],
+    },
   ];
 
-  appendixTable(doc, yStart,
+  appendixTable(
+    doc,
+    yStart,
     ["Linha", ...QUARTERS],
-    rows.map((r) => r.meta === "section"
-      ? [r.label, "", "", "", "", ""]
-      : [r.label, ...(r.vals ?? []).map(fmtBRL)]),
+    rows.map((r) =>
+      r.meta === "section"
+        ? [r.label, "", "", "", "", ""]
+        : [r.label, ...(r.vals ?? []).map(fmtBRL)],
+    ),
     rows.map((r) => r.meta),
     {
       0: { halign: "left", cellWidth: 188 },
@@ -1824,72 +2208,239 @@ function renderDFC(doc: jsPDF, yStart: number, state: AppState, model: Financial
 // APÊNDICE — INDICADORES (essenciais / avançados / técnicos)
 // =====================================================================
 function renderIndicadoresGrouped(
-  doc: jsPDF, model: FinancialModel,
+  doc: jsPDF,
+  model: FinancialModel,
   registerPage: (pageIdx: number, eyebrow: string, title: string) => string,
 ) {
   const { ind } = model;
   type Row = { nome: string; mede: string; valor: string };
 
   const essenciais: Row[] = [
-    { nome: "Margem Bruta", mede: "Quanto sobra da receita após o custo direto.", valor: fmtPct(ind.margemBruta / 100) },
-    { nome: "Margem EBITDA", mede: "Geração de caixa operacional antes de juros, impostos e depreciação.", valor: fmtPct(ind.margemEbitda / 100) },
-    { nome: "Margem Líquida", mede: "Lucro que sobra para os sócios após tudo pago.", valor: fmtPct(ind.margemLiquida / 100) },
-    { nome: "ROE", mede: "Retorno sobre o patrimônio dos sócios.", valor: ind.roe == null ? "N/A — PL ≤ 0" : fmtPct(ind.roe / 100) },
-    { nome: "ROIC", mede: "Retorno sobre o capital investido na operação.", valor: fmtPct(ind.roic / 100) },
-    { nome: "WACC", mede: "Custo médio ponderado do capital — meta mínima do ROIC.", valor: fmtPct(ind.wacc / 100) },
-    { nome: "Liquidez Corrente", mede: "Capacidade de pagar dívidas de curto prazo.", valor: `${ind.liquidezCorrente.toFixed(2)}x` },
-    { nome: "Endividamento Geral", mede: "% do ativo financiado por dívida.", valor: fmtPct(ind.endividamentoGeral / 100) },
-    { nome: "Dívida Líq./EBITDA", mede: "Anos de EBITDA para quitar a dívida.", valor: `${ind.dividaLiqEbitda.toFixed(2)}x` },
-    { nome: "DSCR", mede: "Cobertura do serviço da dívida — bancos exigem ≥ 1,25×.", valor: ind.dscr == null ? "N/A" : ind.dscr !== 0 ? `${ind.dscr.toFixed(2)}x` : "—" },
+    {
+      nome: "Margem Bruta",
+      mede: "Quanto sobra da receita após o custo direto.",
+      valor: fmtPct(ind.margemBruta / 100),
+    },
+    {
+      nome: "Margem EBITDA",
+      mede: "Geração de caixa operacional antes de juros, impostos e depreciação.",
+      valor: fmtPct(ind.margemEbitda / 100),
+    },
+    {
+      nome: "Margem Líquida",
+      mede: "Lucro que sobra para os sócios após tudo pago.",
+      valor: fmtPct(ind.margemLiquida / 100),
+    },
+    {
+      nome: "ROE",
+      mede: "Retorno sobre o patrimônio dos sócios.",
+      valor: ind.roe == null ? "N/A — PL ≤ 0" : fmtPct(ind.roe / 100),
+    },
+    {
+      nome: "ROIC",
+      mede: "Retorno sobre o capital investido na operação.",
+      valor: fmtPct(ind.roic / 100),
+    },
+    {
+      nome: "WACC",
+      mede: "Custo médio ponderado do capital — meta mínima do ROIC.",
+      valor: fmtPct(ind.wacc / 100),
+    },
+    {
+      nome: "Liquidez Corrente",
+      mede: "Capacidade de pagar dívidas de curto prazo.",
+      valor: `${ind.liquidezCorrente.toFixed(2)}x`,
+    },
+    {
+      nome: "Endividamento Geral",
+      mede: "% do ativo financiado por dívida.",
+      valor: fmtPct(ind.endividamentoGeral / 100),
+    },
+    {
+      nome: "Dívida Líq./EBITDA",
+      mede: "Anos de EBITDA para quitar a dívida.",
+      valor: `${ind.dividaLiqEbitda.toFixed(2)}x`,
+    },
+    {
+      nome: "DSCR",
+      mede: "Cobertura do serviço da dívida — bancos exigem ≥ 1,25×.",
+      valor: ind.dscr == null ? "N/A" : ind.dscr !== 0 ? `${ind.dscr.toFixed(2)}x` : "—",
+    },
   ];
   const avancados: Row[] = [
-    { nome: "Margem EBIT", mede: "Lucro operacional após depreciação.", valor: fmtPct(ind.margemEbit / 100) },
-    { nome: "Margem de Contribuição", mede: "Quanto sobra para cobrir fixos e gerar lucro.", valor: fmtPct(ind.margemContribuicao / 100) },
+    {
+      nome: "Margem EBIT",
+      mede: "Lucro operacional após depreciação.",
+      valor: fmtPct(ind.margemEbit / 100),
+    },
+    {
+      nome: "Margem de Contribuição",
+      mede: "Quanto sobra para cobrir fixos e gerar lucro.",
+      valor: fmtPct(ind.margemContribuicao / 100),
+    },
     { nome: "ROA", mede: "Retorno sobre o ativo total.", valor: fmtPct(ind.roa / 100) },
-    { nome: "Liquidez Seca", mede: "Liquidez corrente sem estoques.", valor: `${ind.liquidezSeca.toFixed(2)}x` },
-    { nome: "Liquidez Imediata", mede: "Capacidade de pagar dívidas só com caixa.", valor: `${ind.liquidezImediata.toFixed(2)}x` },
-    { nome: "Liquidez Geral", mede: "Honra todas as dívidas (curto + longo).", valor: `${ind.liquidezGeral.toFixed(2)}x` },
-    { nome: "Cobertura de Juros", mede: "Quantas vezes o EBIT cobre os juros.", valor: ind.coberturaJuros == null ? "N/A" : `${ind.coberturaJuros.toFixed(2)}x` },
-    { nome: "Ciclo Operacional", mede: "Dias entre comprar e receber.", valor: `${ind.cicloOperacional.toFixed(0)} dias` },
-    { nome: "Ciclo Financeiro", mede: "Dias em que a empresa financia a operação.", valor: `${ind.cicloFinanceiro.toFixed(0)} dias` },
+    {
+      nome: "Liquidez Seca",
+      mede: "Liquidez corrente sem estoques.",
+      valor: `${ind.liquidezSeca.toFixed(2)}x`,
+    },
+    {
+      nome: "Liquidez Imediata",
+      mede: "Capacidade de pagar dívidas só com caixa.",
+      valor: `${ind.liquidezImediata.toFixed(2)}x`,
+    },
+    {
+      nome: "Liquidez Geral",
+      mede: "Honra todas as dívidas (curto + longo).",
+      valor: `${ind.liquidezGeral.toFixed(2)}x`,
+    },
+    {
+      nome: "Cobertura de Juros",
+      mede: "Quantas vezes o EBIT cobre os juros.",
+      valor: ind.coberturaJuros == null ? "N/A" : `${ind.coberturaJuros.toFixed(2)}x`,
+    },
+    {
+      nome: "Ciclo Operacional",
+      mede: "Dias entre comprar e receber.",
+      valor: `${ind.cicloOperacional.toFixed(0)} dias`,
+    },
+    {
+      nome: "Ciclo Financeiro",
+      mede: "Dias em que a empresa financia a operação.",
+      valor: `${ind.cicloFinanceiro.toFixed(0)} dias`,
+    },
     { nome: "NCG", mede: "Necessidade de Capital de Giro.", valor: fmtBRL(ind.ncg) },
-    { nome: "Gap de Capital de Giro", mede: "Déficit entre NCG e caixa.", valor: fmtBRL(ind.gapCapitalGiro) },
-    { nome: "FCF estimado", mede: "Free Cash Flow operacional antes do CAPEX.", valor: fmtBRL(ind.fcf) },
-    { nome: "FCF após CAPEX", mede: "Caixa livre após investimentos.", valor: fmtBRL(ind.fcfAposCapex) },
-    { nome: "Conversão EBITDA → Caixa", mede: "Quanto do EBITDA vira caixa livre.", valor: `${ind.conversaoEbitdaCaixa.toFixed(1)}%` },
-    { nome: "Margem de Segurança", mede: "Folga entre receita e ponto de equilíbrio.", valor: ind.margemSeguranca !== 0 ? fmtPct(ind.margemSeguranca / 100) : "—" },
+    {
+      nome: "Gap de Capital de Giro",
+      mede: "Déficit entre NCG e caixa.",
+      valor: fmtBRL(ind.gapCapitalGiro),
+    },
+    {
+      nome: "FCF estimado",
+      mede: "Free Cash Flow operacional antes do CAPEX.",
+      valor: fmtBRL(ind.fcf),
+    },
+    {
+      nome: "FCF após CAPEX",
+      mede: "Caixa livre após investimentos.",
+      valor: fmtBRL(ind.fcfAposCapex),
+    },
+    {
+      nome: "Conversão EBITDA → Caixa",
+      mede: "Quanto do EBITDA vira caixa livre.",
+      valor: `${ind.conversaoEbitdaCaixa.toFixed(1)}%`,
+    },
+    {
+      nome: "Margem de Segurança",
+      mede: "Folga entre receita e ponto de equilíbrio.",
+      valor: ind.margemSeguranca !== 0 ? fmtPct(ind.margemSeguranca / 100) : "—",
+    },
   ];
   const tecnicos: Row[] = [
-    { nome: "PE Operacional", mede: "Receita mínima para cobrir fixos operacionais.", valor: fmtBRL(ind.pontoEquilibrioOperacional) },
-    { nome: "PE Financeiro", mede: "Break-even em caixa.", valor: fmtBRL(ind.pontoEquilibrioFinanceiro) },
+    {
+      nome: "PE Operacional",
+      mede: "Receita mínima para cobrir fixos operacionais.",
+      valor: fmtBRL(ind.pontoEquilibrioOperacional),
+    },
+    {
+      nome: "PE Financeiro",
+      mede: "Break-even em caixa.",
+      valor: fmtBRL(ind.pontoEquilibrioFinanceiro),
+    },
     { nome: "PE Total", mede: "Inclui juros como custo fixo.", valor: fmtBRL(ind.pontoEquilibrio) },
-    { nome: "Capital Próprio", mede: "Participação do PL no financiamento total.", valor: `${ind.proprioPercent.toFixed(1)}%` },
-    { nome: "Giro do Ativo", mede: "Quantas vezes o ativo gira em vendas/ano.", valor: `${ind.giroAtivo.toFixed(2)}x` },
-    { nome: "Dívida Líq./EBIT", mede: "Conservador vs. DL/EBITDA.", valor: `${ind.dividaLiqEbit.toFixed(2)}x` },
-    { nome: "Dívida Líq./PL", mede: "Alavancagem sobre patrimônio próprio.", valor: `${ind.dividaLiqPl.toFixed(2)}x` },
-    { nome: "Amortização do PL pelo Lucro", mede: "Anos para o lucro acumulado igualar o PL.",
-      valor: Number.isFinite(ind.amortizacaoPlPorLucro) ? `${ind.amortizacaoPlPorLucro.toFixed(1)} anos` : "—" },
-    { nome: "Payback (CAPEX)", mede: "Tempo para recuperar o CAPEX.",
-      valor: Number.isFinite(ind.paybackCapex) && ind.paybackCapex > 0 ? `${ind.paybackCapex.toFixed(1)} anos` : "—" },
-    { nome: "CAGR Receitas 12m", mede: "Crescimento anualizado da receita.",
-      valor: Number.isFinite(model.cagrReceitas12m) ? fmtPct(model.cagrReceitas12m) : "—" },
-    { nome: "GAO", mede: "Sensibilidade do EBIT à variação da receita.", valor: ind.gao !== 0 ? `${ind.gao.toFixed(2)}x` : "—" },
-    { nome: "Qualidade do Lucro", mede: "Lucro contábil está virando caixa?", valor: ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}x` : "—" },
-    { nome: "Faturamento / Colaborador", mede: "Produtividade por cabeça.", valor: fmtBRL(ind.faturamentoPorColaborador) },
-    { nome: "Receita Líq. / Colaborador", mede: "Receita líquida por colaborador.", valor: fmtBRL(ind.receitaPorColaborador) },
-    { nome: "EBITDA / Colaborador", mede: "Geração operacional por colaborador.", valor: fmtBRL(ind.ebitdaPorColaborador) },
-    { nome: "Lucro / Colaborador", mede: "Lucro líquido por colaborador.", valor: fmtBRL(ind.lucroPorColaborador) },
-    { nome: "Folha / Receita", mede: "Peso da folha sobre a receita.",
-      valor: ind.custoPessoalSobreReceita > 0 ? fmtPct(ind.custoPessoalSobreReceita / 100) : "—" },
-    { nome: "Impostos / Receita", mede: "Carga tributária total sobre receita.", valor: fmtPct(ind.impostosSobreReceita / 100) },
-    { nome: "Impostos / Lucro Líquido", mede: "Quanto a empresa paga de imposto por R$ 1 de lucro.",
-      valor: ind.impostosSobreLucro !== 0 ? fmtPct(ind.impostosSobreLucro / 100) : "—" },
+    {
+      nome: "Capital Próprio",
+      mede: "Participação do PL no financiamento total.",
+      valor: `${ind.proprioPercent.toFixed(1)}%`,
+    },
+    {
+      nome: "Giro do Ativo",
+      mede: "Quantas vezes o ativo gira em vendas/ano.",
+      valor: `${ind.giroAtivo.toFixed(2)}x`,
+    },
+    {
+      nome: "Dívida Líq./EBIT",
+      mede: "Conservador vs. DL/EBITDA.",
+      valor: `${ind.dividaLiqEbit.toFixed(2)}x`,
+    },
+    {
+      nome: "Dívida Líq./PL",
+      mede: "Alavancagem sobre patrimônio próprio.",
+      valor: `${ind.dividaLiqPl.toFixed(2)}x`,
+    },
+    {
+      nome: "Amortização do PL pelo Lucro",
+      mede: "Anos para o lucro acumulado igualar o PL.",
+      valor: Number.isFinite(ind.amortizacaoPlPorLucro)
+        ? `${ind.amortizacaoPlPorLucro.toFixed(1)} anos`
+        : "—",
+    },
+    {
+      nome: "Payback (CAPEX)",
+      mede: "Tempo para recuperar o CAPEX.",
+      valor:
+        Number.isFinite(ind.paybackCapex) && ind.paybackCapex > 0
+          ? `${ind.paybackCapex.toFixed(1)} anos`
+          : "—",
+    },
+    {
+      nome: "CAGR Receitas 12m",
+      mede: "Crescimento anualizado da receita.",
+      valor: Number.isFinite(model.cagrReceitas12m) ? fmtPct(model.cagrReceitas12m) : "—",
+    },
+    {
+      nome: "GAO",
+      mede: "Sensibilidade do EBIT à variação da receita.",
+      valor: ind.gao !== 0 ? `${ind.gao.toFixed(2)}x` : "—",
+    },
+    {
+      nome: "Qualidade do Lucro",
+      mede: "Lucro contábil está virando caixa?",
+      valor: ind.qualidadeLucro !== 0 ? `${ind.qualidadeLucro.toFixed(2)}x` : "—",
+    },
+    {
+      nome: "Faturamento / Colaborador",
+      mede: "Produtividade por cabeça.",
+      valor: fmtBRL(ind.faturamentoPorColaborador),
+    },
+    {
+      nome: "Receita Líq. / Colaborador",
+      mede: "Receita líquida por colaborador.",
+      valor: fmtBRL(ind.receitaPorColaborador),
+    },
+    {
+      nome: "EBITDA / Colaborador",
+      mede: "Geração operacional por colaborador.",
+      valor: fmtBRL(ind.ebitdaPorColaborador),
+    },
+    {
+      nome: "Lucro / Colaborador",
+      mede: "Lucro líquido por colaborador.",
+      valor: fmtBRL(ind.lucroPorColaborador),
+    },
+    {
+      nome: "Folha / Receita",
+      mede: "Peso da folha sobre a receita.",
+      valor: ind.custoPessoalSobreReceita > 0 ? fmtPct(ind.custoPessoalSobreReceita / 100) : "—",
+    },
+    {
+      nome: "Impostos / Receita",
+      mede: "Carga tributária total sobre receita.",
+      valor: fmtPct(ind.impostosSobreReceita / 100),
+    },
+    {
+      nome: "Impostos / Lucro Líquido",
+      mede: "Quanto a empresa paga de imposto por R$ 1 de lucro.",
+      valor: ind.impostosSobreLucro !== 0 ? fmtPct(ind.impostosSobreLucro / 100) : "—",
+    },
   ];
 
   const renderGroup = (title: string, subtitle: string, rows: Row[]) => {
     const y = newPage(doc, "Apêndice D", title, subtitle);
     registerPage(doc.getNumberOfPages(), title, "");
-    appendixTable(doc, y,
+    appendixTable(
+      doc,
+      y,
       ["Indicador", "O que ele mede", "Valor"],
       rows.map((r) => [r.nome, r.mede, r.valor]),
       rows.map(() => "normal"),
@@ -1901,7 +2452,15 @@ function renderIndicadoresGrouped(
     );
   };
 
-  renderGroup("Indicadores Essenciais", "Os 10 indicadores que todo conselho deve acompanhar.", essenciais);
-  renderGroup("Indicadores Avançados", "Visão complementar de liquidez, capital de giro e geração de caixa.", avancados);
+  renderGroup(
+    "Indicadores Essenciais",
+    "Os 10 indicadores que todo conselho deve acompanhar.",
+    essenciais,
+  );
+  renderGroup(
+    "Indicadores Avançados",
+    "Visão complementar de liquidez, capital de giro e geração de caixa.",
+    avancados,
+  );
   renderGroup("Indicadores Técnicos", "Métricas adicionais para análise aprofundada.", tecnicos);
 }

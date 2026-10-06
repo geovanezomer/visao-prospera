@@ -25,11 +25,6 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
   // Memória de cálculo — SSOT para todos os cards.
   const c = buildIndicatorCalcs(state, dre, ind, cagrReceitas12m);
 
-
-
-
-
-
   // ─── Análise Tributária — métricas adicionais ───
   // Carga Tributária Efetiva: total de tributos (s/ vendas + IRPJ/CSLL) ÷ Receita Bruta.
   const receitaBrutaAnual = sum(dre.receitaBruta);
@@ -67,8 +62,6 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
     receitaLiquidaAnual > 0
       ? `${fmtBRL(fcoAnual)} ÷ ${fmtBRL(receitaLiquidaAnual)} × 100 = ${fmtPct(margemCaixaOp / 100)}`
       : "Receita Líquida = 0 → indicador indisponível";
-
-
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5">
@@ -269,7 +262,13 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           <Ind
             label="Endividamento Oneroso"
             v={fmtPct(ind.endividamentoOneroso / 100)}
-            tone={ind.endividamentoOneroso <= 40 ? "pos" : ind.endividamentoOneroso <= 60 ? "warn" : "neg"}
+            tone={
+              ind.endividamentoOneroso <= 40
+                ? "pos"
+                : ind.endividamentoOneroso <= 60
+                  ? "warn"
+                  : "neg"
+            }
             desc="Só dívida FINANCEIRA (bancos, financiamentos, debêntures) sobre o ativo total. Métrica que banco/investidor lê para julgar alavancagem — 0% = empresa sem dívida onerosa."
             formula="Dívida Onerosa ÷ Ativo Total × 100"
           />
@@ -297,18 +296,30 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             label="Cobertura de Juros"
             v={ind.coberturaJuros == null ? "N/A" : fmtTimes(ind.coberturaJuros, ebitAnual)}
             tone={ind.coberturaJuros == null ? "pos" : ind.coberturaJuros >= 2 ? "pos" : "neg"}
-            desc={ind.coberturaJuros == null
-              ? "Sem dívida onerosa a servir — indicador não aplicável."
-              : "Quantas vezes o lucro operacional cobre os juros de contratos de dívida. Abaixo de 2× é zona de risco. Exclui tarifas, IOF e juros de cheque especial (custos operacionais)."}
+            desc={
+              ind.coberturaJuros == null
+                ? "Sem dívida onerosa a servir — indicador não aplicável."
+                : "Quantas vezes o lucro operacional cobre os juros de contratos de dívida. Abaixo de 2× é zona de risco. Exclui tarifas, IOF e juros de cheque especial (custos operacionais)."
+            }
             formula="EBIT ÷ Juros de contratos de dívida"
             calc={c.coberturaJuros}
           />
           {(() => {
             // Sempre renderiza os 3 múltiplos de alavancagem (EBITDA, EBIT, PL).
             // `leverageDisplay` já trata cash-rich por métrica (Dívida Líq < 0 → "Posição Líquida de Caixa").
-            const dlEbitda = leverageDisplay("ebitda", ind.dividaLiqEbitda, ind.dividaLiquida, ebitdaAnual);
+            const dlEbitda = leverageDisplay(
+              "ebitda",
+              ind.dividaLiqEbitda,
+              ind.dividaLiquida,
+              ebitdaAnual,
+            );
             const dlEbit = leverageDisplay("ebit", ind.dividaLiqEbit, ind.dividaLiquida, ebitAnual);
-            const dlPl = leverageDisplay("pl", ind.dividaLiqPl, ind.dividaLiquida, state.capital.patrimonioLiquido);
+            const dlPl = leverageDisplay(
+              "pl",
+              ind.dividaLiqPl,
+              ind.dividaLiquida,
+              state.capital.patrimonioLiquido,
+            );
             return (
               <>
                 <Ind
@@ -316,7 +327,10 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
                   v={dlEbitda.value}
                   tone={dlEbitda.tone}
                   chip={dlEbitda.chip}
-                  desc={dlEbitda.desc ?? "Em quantos anos de geração de caixa (EBITDA) a empresa quitaria sua dívida líquida. Acima de 3× preocupa bancos."}
+                  desc={
+                    dlEbitda.desc ??
+                    "Em quantos anos de geração de caixa (EBITDA) a empresa quitaria sua dívida líquida. Acima de 3× preocupa bancos."
+                  }
                   formula={dlEbitda.formula ?? "(Dívida Onerosa − Disponibilidades) ÷ EBITDA"}
                   calc={c.dividaLiqEbitda}
                 />
@@ -325,7 +339,10 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
                   v={dlEbit.value}
                   tone={dlEbit.tone}
                   chip={dlEbit.chip}
-                  desc={dlEbit.desc ?? "Quantos anos de lucro operacional (já líquido da depreciação) seriam necessários para quitar a dívida líquida. Mais conservador que Dívida/EBITDA."}
+                  desc={
+                    dlEbit.desc ??
+                    "Quantos anos de lucro operacional (já líquido da depreciação) seriam necessários para quitar a dívida líquida. Mais conservador que Dívida/EBITDA."
+                  }
                   formula={dlEbit.formula ?? "(Dívida Onerosa − Disponibilidades) ÷ EBIT"}
                   calc={c.dividaLiqEbit}
                 />
@@ -334,8 +351,13 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
                   v={dlPl.value}
                   tone={dlPl.tone}
                   chip={dlPl.chip}
-                  desc={dlPl.desc ?? "Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio."}
-                  formula={dlPl.formula ?? "(Dívida Onerosa − Disponibilidades) ÷ Patrimônio Líquido"}
+                  desc={
+                    dlPl.desc ??
+                    "Relação entre dívida líquida e capital dos sócios. Mostra o quanto a empresa está alavancada em relação ao patrimônio próprio."
+                  }
+                  formula={
+                    dlPl.formula ?? "(Dívida Onerosa − Disponibilidades) ÷ Patrimônio Líquido"
+                  }
                   calc={c.dividaLiqPl}
                 />
               </>
@@ -357,9 +379,11 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
                     ? "warn"
                     : "neg"
             }
-            desc={ind.dscr == null
-              ? "Sem dívida a servir (nem contratos, nem amortizações informadas). O indicador não se aplica — a empresa não tem serviço de dívida a cobrir."
-              : `Quantas vezes o EBITDA cobre o serviço total da dívida (juros de contratos + amortização do principal). Bancos exigem ≥1,25× para renovar giro; ≥1,50× destrava melhores linhas.${!ind.dscrAmortizacoesInformadas && ind.dividaOnerosa > 0 ? " ⚠️ Amortizações de principal não informadas no Fluxo de Caixa — DSCR exibido equivale à Cobertura de Juros e pode estar SUPERESTIMADO." : ""}`}
+            desc={
+              ind.dscr == null
+                ? "Sem dívida a servir (nem contratos, nem amortizações informadas). O indicador não se aplica — a empresa não tem serviço de dívida a cobrir."
+                : `Quantas vezes o EBITDA cobre o serviço total da dívida (juros de contratos + amortização do principal). Bancos exigem ≥1,25× para renovar giro; ≥1,50× destrava melhores linhas.${!ind.dscrAmortizacoesInformadas && ind.dividaOnerosa > 0 ? " ⚠️ Amortizações de principal não informadas no Fluxo de Caixa — DSCR exibido equivale à Cobertura de Juros e pode estar SUPERESTIMADO." : ""}`
+            }
             formula="EBITDA ÷ (Juros de contratos + Amortizações de Principal)"
             calc={c.dscr}
           />
@@ -463,11 +487,7 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             label="Impostos / Lucro Líquido"
             v={ind.impostosSobreLucro !== 0 ? fmtPct(ind.impostosSobreLucro / 100) : "—"}
             tone={
-              ind.impostosSobreLucro > 100
-                ? "neg"
-                : ind.impostosSobreLucro > 0
-                  ? "warn"
-                  : undefined
+              ind.impostosSobreLucro > 100 ? "neg" : ind.impostosSobreLucro > 0 ? "warn" : undefined
             }
             desc="Quanto a empresa paga de impostos TOTAIS para cada R$ 1,00 de lucro líquido gerado. Acima de 100% indica que o fisco leva mais do que sobra para os sócios — sinal de regime tributário ineficiente."
             formula="(Impostos s/ Vendas + IRPJ/CSLL) ÷ Lucro Líquido × 100"
@@ -476,9 +496,7 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           <Ind
             label="Carga Tributária Efetiva"
             v={receitaBrutaAnual > 0 ? fmtPct(cargaTribEfetiva / 100) : "—"}
-            tone={
-              cargaTribEfetiva > 30 ? "neg" : cargaTribEfetiva > 0 ? "pos" : undefined
-            }
+            tone={cargaTribEfetiva > 30 ? "neg" : cargaTribEfetiva > 0 ? "pos" : undefined}
             desc="Total de tributos (impostos sobre vendas + IRPJ/CSLL) sobre a Receita Bruta. Mais correto que usar Receita Líquida, pois muitos tributos incidem sobre o bruto. Mede o peso fiscal real do negócio."
             formula="Total de Tributos ÷ Receita Bruta × 100"
             calc={cargaTribEfetivaCalc}
@@ -492,7 +510,6 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
             calc={distIsentaCalc}
           />
         </Group>
-
       </div>
     </div>
   );
@@ -510,7 +527,6 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
     </section>
   );
 }
-
 
 function Ind({
   label,
@@ -540,8 +556,7 @@ function Ind({
   return (
     <div className="rounded-md border border-border/40 bg-background/40 p-3">
       <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-        <span>{label}</span>{" "}
-        {desc && <HelpTip text={desc} formula={formula} calc={calc} />}
+        <span>{label}</span> {desc && <HelpTip text={desc} formula={formula} calc={calc} />}
         {chip && (
           <span className="ml-auto rounded-full bg-pos/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-pos">
             {chip}
@@ -552,4 +567,3 @@ function Ind({
     </div>
   );
 }
-

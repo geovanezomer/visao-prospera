@@ -7,7 +7,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
-
 export type UserNote = {
   id: string;
   userId: string;
@@ -86,7 +85,10 @@ export const toggleNotePin = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("user_notes").update({ pinned: data.pinned }).eq("id", data.id);
+    const { error } = await supabaseAdmin
+      .from("user_notes")
+      .update({ pinned: data.pinned })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

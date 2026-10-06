@@ -18,7 +18,10 @@ const PRICE_TABLE_BRL_MONTH: Record<string, number> = {
   pro_yearly: 9900 * 10,
 };
 
-function priceToMonthlyBRL(priceId: string | null | undefined, plan: string | null | undefined): number {
+function priceToMonthlyBRL(
+  priceId: string | null | undefined,
+  plan: string | null | undefined,
+): number {
   if (priceId && PRICE_TABLE_BRL_MONTH[priceId] !== undefined) {
     const isYearly = /yearly|anual|year/i.test(priceId);
     return isYearly ? PRICE_TABLE_BRL_MONTH[priceId] / 12 : PRICE_TABLE_BRL_MONTH[priceId];
@@ -42,16 +45,18 @@ export type Funnel = {
 export type DashboardMetrics = {
   periodDays: PeriodDays;
   windows: {
-    currentStart: string; currentEnd: string;
-    previousStart: string; previousEnd: string;
+    currentStart: string;
+    currentEnd: string;
+    previousStart: string;
+    previousEnd: string;
   };
-  mrr: Delta;                // MRR reconstruído ao fim de cada janela
+  mrr: Delta; // MRR reconstruído ao fim de cada janela
   arr: Delta;
-  activeSubs: Delta;         // ativos ao fim de cada janela
-  signups: Delta;            // novos usuários na janela
-  churn: Delta;              // cancelamentos na janela
-  trials: Delta;             // trial_requests na janela
-  conversion: Delta;         // paid/trialsRequested na mesma janela (0..1)
+  activeSubs: Delta; // ativos ao fim de cada janela
+  signups: Delta; // novos usuários na janela
+  churn: Delta; // cancelamentos na janela
+  trials: Delta; // trial_requests na janela
+  conversion: Delta; // paid/trialsRequested na mesma janela (0..1)
   series: SeriesPoint[];
   funnel: Funnel;
   // Snapshot atual (não janelado) — mantém compat com resto do painel.
@@ -77,7 +82,7 @@ export function computeWindows(now: Date, periodDays: PeriodDays) {
   const ms = periodDays * 86400_000;
   const currentEnd = now.getTime();
   const currentStart = currentEnd - ms;
-  const previousEnd = currentStart;           // sem overlap
+  const previousEnd = currentStart; // sem overlap
   const previousStart = previousEnd - ms;
   return {
     currentStart: new Date(currentStart),
@@ -138,7 +143,8 @@ function activeAt(subs: SubRow[], atDate: Date): number {
   }
   let n = 0;
   for (const s of latestByUser.values()) {
-    if (s.status === "canceled" && s.updated_at && new Date(s.updated_at).getTime() <= cutoff) continue;
+    if (s.status === "canceled" && s.updated_at && new Date(s.updated_at).getTime() <= cutoff)
+      continue;
     if (s.status === "active" || s.status === "trialing" || s.status === "past_due") n++;
   }
   return n;
@@ -157,7 +163,12 @@ type SubRow = {
 };
 
 type TrialRow = { user_id: string | null; created_at: string | null; consumed_at: string | null };
-type IntentRow = { status: string; created_at: string; confirmed_at: string | null; updated_at: string | null };
+type IntentRow = {
+  status: string;
+  created_at: string;
+  confirmed_at: string | null;
+  updated_at: string | null;
+};
 
 /**
  * Constrói o funil da janela (pure — separado para teste).
@@ -207,7 +218,10 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
     // Snapshot atual (não janelado).
     const latestByUser = new Map<string, SubRow>();
     for (const s of subs) if (!latestByUser.has(s.user_id)) latestByUser.set(s.user_id, s);
-    let trialing = 0, pastDue = 0, canceled = 0, lifetime = 0;
+    let trialing = 0,
+      pastDue = 0,
+      canceled = 0,
+      lifetime = 0;
     const byProvider = { stripe: 0, asaas: 0 };
     const byPlan: Record<string, number> = {};
     for (const s of latestByUser.values()) {
@@ -229,15 +243,23 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
     const activePrevious = activeAt(subs, w.previousEnd);
 
     // Churn por janela: cancelados cujo updated_at cai na janela.
-    const churnCurrent = subs.filter((s) => s.status === "canceled" && inWindow(s.updated_at, w.currentStart, w.currentEnd)).length;
-    const churnPrevious = subs.filter((s) => s.status === "canceled" && inWindow(s.updated_at, w.previousStart, w.previousEnd)).length;
+    const churnCurrent = subs.filter(
+      (s) => s.status === "canceled" && inWindow(s.updated_at, w.currentStart, w.currentEnd),
+    ).length;
+    const churnPrevious = subs.filter(
+      (s) => s.status === "canceled" && inWindow(s.updated_at, w.previousStart, w.previousEnd),
+    ).length;
 
     // ── Signups por janela via auth.admin.listUsers (paginação até 25×200). ──
-    let signupsCurrent = 0, signupsPrevious = 0;
+    let signupsCurrent = 0,
+      signupsPrevious = 0;
     const allUsers: { created_at: string }[] = [];
     const MAX_PAGES = 25;
     for (let p = 1; p <= MAX_PAGES; p++) {
-      const { data: u, error: ue } = await supabaseAdmin.auth.admin.listUsers({ page: p, perPage: 200 });
+      const { data: u, error: ue } = await supabaseAdmin.auth.admin.listUsers({
+        page: p,
+        perPage: 200,
+      });
       if (ue) throw new Error(ue.message);
       const list = u.users ?? [];
       for (const usr of list) {
@@ -256,8 +278,12 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
       .gte("created_at", sinceFar)
       .limit(50000);
     const trials = (trialRows ?? []) as TrialRow[];
-    const trialsCurrent = trials.filter((t) => inWindow(t.created_at, w.currentStart, w.currentEnd)).length;
-    const trialsPrevious = trials.filter((t) => inWindow(t.created_at, w.previousStart, w.previousEnd)).length;
+    const trialsCurrent = trials.filter((t) =>
+      inWindow(t.created_at, w.currentStart, w.currentEnd),
+    ).length;
+    const trialsPrevious = trials.filter((t) =>
+      inWindow(t.created_at, w.previousStart, w.previousEnd),
+    ).length;
 
     // ── Checkout intents (para funil e conversão). ───────────────────────────
     const { data: intentRows } = await supabaseAdmin
@@ -272,7 +298,8 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
 
     // Conversão = paid/trialsRequested por janela (0..1 em base 10k p/ int).
     const convCurrent = funnel.trialsRequested > 0 ? funnel.paid / funnel.trialsRequested : 0;
-    const convPrevious = funnelPrev.trialsRequested > 0 ? funnelPrev.paid / funnelPrev.trialsRequested : 0;
+    const convPrevious =
+      funnelPrev.trialsRequested > 0 ? funnelPrev.paid / funnelPrev.trialsRequested : 0;
 
     // ── Webhooks 24h (snapshot). ─────────────────────────────────────────────
     const since24 = new Date(now.getTime() - 86400_000).toISOString();
@@ -280,7 +307,8 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
       .from("webhook_events")
       .select("status")
       .gte("received_at", since24);
-    let wOk = 0, wFail = 0;
+    let wOk = 0,
+      wFail = 0;
     for (const r of hooks ?? []) {
       if (r.status === "failed") wFail++;
       else if (r.status === "processed" || r.status === "replayed") wOk++;
@@ -324,7 +352,12 @@ export const getDashboardMetrics = createServerFn({ method: "POST" })
       series,
       funnel,
       snapshot: {
-        trialing, pastDue, canceled, lifetime, byProvider, byPlan,
+        trialing,
+        pastDue,
+        canceled,
+        lifetime,
+        byProvider,
+        byPlan,
         webhook24h: { total: hooks?.length ?? 0, ok: wOk, failed: wFail },
       },
       generatedAt: now.toISOString(),

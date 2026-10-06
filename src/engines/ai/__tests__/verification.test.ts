@@ -35,27 +35,18 @@ describe("verification — parsing pt-BR", () => {
 
 describe("verification — tolerância de arredondamento", () => {
   it("moeda: 487.320 vs 487.319,60 → verified", () => {
-    const r = verifyResponse(
-      "EBITDA de R$ 487.320 no período.",
-      ["| EBITDA | R$ 487.319,60 |"],
-    );
+    const r = verifyResponse("EBITDA de R$ 487.320 no período.", ["| EBITDA | R$ 487.319,60 |"]);
     expect(r.verified).toHaveLength(1);
     expect(r.unverified).toHaveLength(0);
   });
 
   it("percentual: 18,2% vs 0,182 na payload (fração) → verified", () => {
-    const r = verifyResponse(
-      "Margem: 18,2%.",
-      ['{"margem": 0.182}'],
-    );
+    const r = verifyResponse("Margem: 18,2%.", ['{"margem": 0.182}']);
     expect(r.verified).toHaveLength(1);
   });
 
   it("número inventado → unverified", () => {
-    const r = verifyResponse(
-      "Receita de R$ 52.400 no ano.",
-      ["| Receita | R$ 987.000 |"],
-    );
+    const r = verifyResponse("Receita de R$ 52.400 no ano.", ["| Receita | R$ 987.000 |"]);
     expect(r.unverified).toHaveLength(1);
     expect(r.coveragePct).toBe(0);
   });
@@ -98,10 +89,9 @@ describe("verification — coverage", () => {
   });
 
   it("cobertura parcial calculada corretamente", () => {
-    const r = verifyResponse(
-      "EBITDA R$ 100 e margem 20%. Receita R$ 999 inventada.",
-      ["EBITDA 100; margem 0,20"],
-    );
+    const r = verifyResponse("EBITDA R$ 100 e margem 20%. Receita R$ 999 inventada.", [
+      "EBITDA 100; margem 0,20",
+    ]);
     expect(r.verified).toHaveLength(2);
     expect(r.unverified).toHaveLength(1);
     expect(r.coveragePct).toBeCloseTo(66.7, 1);
@@ -110,10 +100,7 @@ describe("verification — coverage", () => {
 
 describe("verification — extração de payloads", () => {
   it("captura números formatados e crus", () => {
-    const vals = extractNumbersFromPayloads([
-      "EBITDA: R$ 100.000",
-      '{"raw": 42, "pct": 0.15}',
-    ]);
+    const vals = extractNumbersFromPayloads(["EBITDA: R$ 100.000", '{"raw": 42, "pct": 0.15}']);
     expect(vals).toContain(100000);
     expect(vals).toContain(42);
     expect(vals).toContain(0.15);

@@ -7,7 +7,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
-
 const TEMPLATE_KINDS = [
   "magic_link",
   "receipt",
@@ -46,21 +45,24 @@ export const getEmailSettings = createServerFn({ method: "POST" })
 
 export const updateEmailSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(
-    (d: { apiKey?: string; fromEmail?: string; fromName?: string; replyTo?: string }) =>
-      z
-        .object({
-          apiKey: z.string().min(8).optional(),
-          fromEmail: z.string().email().optional(),
-          fromName: z.string().max(120).optional(),
-          replyTo: z.string().email().optional().or(z.literal("")),
-        })
-        .parse(d),
+  .validator((d: { apiKey?: string; fromEmail?: string; fromName?: string; replyTo?: string }) =>
+    z
+      .object({
+        apiKey: z.string().min(8).optional(),
+        fromEmail: z.string().email().optional(),
+        fromName: z.string().max(120).optional(),
+        replyTo: z.string().email().optional().or(z.literal("")),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: existing } = await supabaseAdmin.from("email_settings").select("id").limit(1).maybeSingle();
+    const { data: existing } = await supabaseAdmin
+      .from("email_settings")
+      .select("id")
+      .limit(1)
+      .maybeSingle();
     const patch: {
       updated_at: string;
       updated_by: string | null;
@@ -77,7 +79,10 @@ export const updateEmailSettings = createServerFn({ method: "POST" })
     if (data.fromName !== undefined) patch.from_name = data.fromName;
     if (data.replyTo !== undefined) patch.reply_to = data.replyTo || null;
     if (existing?.id) {
-      const { error } = await supabaseAdmin.from("email_settings").update(patch).eq("id", existing.id);
+      const { error } = await supabaseAdmin
+        .from("email_settings")
+        .update(patch)
+        .eq("id", existing.id);
       if (error) throw new Error(error.message);
     } else {
       const { error } = await supabaseAdmin.from("email_settings").insert(patch);
@@ -92,7 +97,11 @@ export const sendTestEmail = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: s } = await supabaseAdmin.from("email_settings").select("*").limit(1).maybeSingle();
+    const { data: s } = await supabaseAdmin
+      .from("email_settings")
+      .select("*")
+      .limit(1)
+      .maybeSingle();
     if (!s?.resend_api_key || !s?.from_email) throw new Error("Configuração de e-mail incompleta.");
     const from = s.from_name ? `${s.from_name} <${s.from_email}>` : s.from_email;
     const r = await fetch("https://api.resend.com/emails", {

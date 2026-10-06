@@ -8,7 +8,6 @@ import { assertAdmin } from "./assertAdmin";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
-
 // Tabela de preços local (centavos / mês). Manter em sincronia com dashboard.functions.ts.
 const PRICE_TABLE_BRL_MONTH: Record<string, number> = {
   starter_monthly: 4900,
@@ -16,7 +15,10 @@ const PRICE_TABLE_BRL_MONTH: Record<string, number> = {
   pro_monthly: 9900,
   pro_yearly: 9900 * 10,
 };
-function priceToMonthlyBRL(priceId: string | null | undefined, plan: string | null | undefined): number {
+function priceToMonthlyBRL(
+  priceId: string | null | undefined,
+  plan: string | null | undefined,
+): number {
   if (priceId && PRICE_TABLE_BRL_MONTH[priceId] !== undefined) {
     const isYearly = /yearly|anual|year/i.test(priceId);
     return isYearly ? PRICE_TABLE_BRL_MONTH[priceId] / 12 : PRICE_TABLE_BRL_MONTH[priceId];
@@ -27,11 +29,11 @@ function priceToMonthlyBRL(priceId: string | null | undefined, plan: string | nu
 }
 
 export type MonthlyPoint = {
-  month: string;       // "2026-01"
-  label: string;       // "jan/26"
-  mrr: number;         // centavos
-  churned: number;     // qtd cancelados naquele mês
-  newUsers: number;    // novos signups no mês
+  month: string; // "2026-01"
+  label: string; // "jan/26"
+  mrr: number; // centavos
+  churned: number; // qtd cancelados naquele mês
+  newUsers: number; // novos signups no mês
   activeUsers: number; // assinaturas ativas no fim do mês
 };
 
@@ -71,7 +73,9 @@ export const getDashboardCharts = createServerFn({ method: "POST" })
     // Subscriptions completas (cap 10k linhas).
     const { data: subs, error: subErr } = await supabaseAdmin
       .from("subscriptions")
-      .select("user_id, plan, status, price_id, provider, current_period_end, cancel_at_period_end, created_at, updated_at")
+      .select(
+        "user_id, plan, status, price_id, provider, current_period_end, cancel_at_period_end, created_at, updated_at",
+      )
       .order("created_at", { ascending: true })
       .limit(10000);
     if (subErr) throw new Error(subErr.message);
@@ -84,7 +88,9 @@ export const getDashboardCharts = createServerFn({ method: "POST" })
 
     // Distribuição por plano (apenas ativos/trialing/lifetime/past_due).
     const planMap: Record<string, number> = {};
-    let activeTotal = 0, trialingTotal = 0, lifetimeTotal = 0;
+    let activeTotal = 0,
+      trialingTotal = 0,
+      lifetimeTotal = 0;
     for (const s of latestByUser.values()) {
       if (["active", "trialing", "past_due", "lifetime"].includes(s.status)) {
         const k = s.plan ?? "—";
@@ -102,7 +108,10 @@ export const getDashboardCharts = createServerFn({ method: "POST" })
     const userCreatedAt = new Map<string, number>();
     const MAX_PAGES = 25;
     for (let p = 1; p <= MAX_PAGES; p++) {
-      const { data: u, error: ue } = await supabaseAdmin.auth.admin.listUsers({ page: p, perPage: 200 });
+      const { data: u, error: ue } = await supabaseAdmin.auth.admin.listUsers({
+        page: p,
+        perPage: 200,
+      });
       if (ue) throw new Error(ue.message);
       const list = u.users ?? [];
       for (const usr of list) userCreatedAt.set(usr.id, new Date(usr.created_at).getTime());
@@ -133,10 +142,13 @@ export const getDashboardCharts = createServerFn({ method: "POST" })
       for (const s of lastByUserUpToMonth.values()) {
         const monthlyPrice = priceToMonthlyBRL(s.price_id, s.plan);
         const status = s.status as string;
-        const upd = s.updated_at ? new Date(s.updated_at).getTime() : new Date(s.created_at).getTime();
+        const upd = s.updated_at
+          ? new Date(s.updated_at).getTime()
+          : new Date(s.created_at).getTime();
         // Considera ativo no fim do mês se status atual é ativo/trialing/past_due/lifetime
         // E updated_at < endMs (estado vigente).
-        const isActiveLike = ["active", "trialing", "past_due", "lifetime"].includes(status) && upd < endMs;
+        const isActiveLike =
+          ["active", "trialing", "past_due", "lifetime"].includes(status) && upd < endMs;
         if (isActiveLike) {
           activeAtEnd.add(s.user_id);
           mrr += monthlyPrice;

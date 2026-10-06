@@ -68,10 +68,7 @@ export function HistoricalYearPills() {
     [all],
   );
 
-  const mesesAtual = useMemo(
-    () => mesesPreenchidos(state.revenue.bruta),
-    [state.revenue.bruta],
-  );
+  const mesesAtual = useMemo(() => mesesPreenchidos(state.revenue.bruta), [state.revenue.bruta]);
 
   const [pendingLoadId, setPendingLoadId] = useState<string | null>(null);
   const [renameTarget, setRenameTarget] = useState<ScenarioRecord | null>(null);
@@ -133,62 +130,60 @@ export function HistoricalYearPills() {
           const isPrev = (h.subKind ?? "realizado") === "previsao";
           const isSel = compareActive && selected.has(h.id);
           return (
-          <div key={h.id} className="group/pill inline-flex items-center">
-            <button
-              type="button"
-              role={compareActive ? "checkbox" : "tab"}
-              aria-checked={compareActive ? isSel : undefined}
-              onClick={() =>
-                compareActive ? toggleSelected(h.id) : setPendingLoadId(h.id)
-              }
-              className={cn(
-                "rounded-l-full border border-r-0 px-2.5 py-0.5 text-[11px] font-medium transition-colors inline-flex items-center gap-1",
-                isSel
-                  ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-                  : isPrev
-                    ? "border-[var(--warning)]/50 bg-[var(--warning)]/10 text-[var(--warning)] hover:bg-[var(--warning)]/20"
-                    : "border-input bg-background hover:bg-accent hover:text-accent-foreground",
-              )}
-              title={
-                compareActive
-                  ? `${isSel ? "Remover" : "Incluir"} ${h.name} na comparação`
-                  : `Carregar ${isPrev ? "previsão" : "snapshot"} de ${h.fiscalYear}`
-              }
-            >
-              {compareActive && isSel && <Check className="h-3 w-3" />}
-              {!compareActive && isPrev && <span className="mr-0.5 opacity-70">◇</span>}
-              {h.name}
-            </button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className={cn(
-                    "h-[22px] rounded-r-full border px-1 transition-colors",
-                    isSel
-                      ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-                      : isPrev
-                        ? "border-[var(--warning)]/50 bg-[var(--warning)]/10 text-[var(--warning)] hover:bg-[var(--warning)]/20"
-                        : "border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                  )}
-                  aria-label={`Gerenciar ${h.name}`}
-                >
-                  <MoreVertical className="h-3 w-3" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => openRename(h)}>
-                  <Pencil className="mr-2 h-3.5 w-3.5" /> Renomear
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setDeleteTarget(h)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="mr-2 h-3.5 w-3.5" /> Excluir
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+            <div key={h.id} className="group/pill inline-flex items-center">
+              <button
+                type="button"
+                role={compareActive ? "checkbox" : "tab"}
+                aria-checked={compareActive ? isSel : undefined}
+                onClick={() => (compareActive ? toggleSelected(h.id) : setPendingLoadId(h.id))}
+                className={cn(
+                  "rounded-l-full border border-r-0 px-2.5 py-0.5 text-[11px] font-medium transition-colors inline-flex items-center gap-1",
+                  isSel
+                    ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                    : isPrev
+                      ? "border-[var(--warning)]/50 bg-[var(--warning)]/10 text-[var(--warning)] hover:bg-[var(--warning)]/20"
+                      : "border-input bg-background hover:bg-accent hover:text-accent-foreground",
+                )}
+                title={
+                  compareActive
+                    ? `${isSel ? "Remover" : "Incluir"} ${h.name} na comparação`
+                    : `Carregar ${isPrev ? "previsão" : "snapshot"} de ${h.fiscalYear}`
+                }
+              >
+                {compareActive && isSel && <Check className="h-3 w-3" />}
+                {!compareActive && isPrev && <span className="mr-0.5 opacity-70">◇</span>}
+                {h.name}
+              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      "h-[22px] rounded-r-full border px-1 transition-colors",
+                      isSel
+                        ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                        : isPrev
+                          ? "border-[var(--warning)]/50 bg-[var(--warning)]/10 text-[var(--warning)] hover:bg-[var(--warning)]/20"
+                          : "border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                    )}
+                    aria-label={`Gerenciar ${h.name}`}
+                  >
+                    <MoreVertical className="h-3 w-3" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => openRename(h)}>
+                    <Pencil className="mr-2 h-3.5 w-3.5" /> Renomear
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setDeleteTarget(h)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-3.5 w-3.5" /> Excluir
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           );
         })}
 
@@ -261,11 +256,10 @@ export function HistoricalYearPills() {
 
       {compareActive && selected.size < 2 && (
         <p className="mt-1.5 text-[10px] text-muted-foreground">
-          Selecione 2 ou mais cenários (incluindo <strong>Atual</strong>) para
-          ver o comparativo no DRE e no Fluxo de Caixa.
+          Selecione 2 ou mais cenários (incluindo <strong>Atual</strong>) para ver o comparativo no
+          DRE e no Fluxo de Caixa.
         </p>
       )}
-
 
       {/* Confirmação de troca de período. */}
       <AlertDialog
@@ -278,9 +272,8 @@ export function HistoricalYearPills() {
               Carregar snapshot de {confirmLoadTarget?.fiscalYear}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              O ano corrente será <strong>arquivado automaticamente</strong> antes
-              da troca — você poderá voltar a ele a qualquer momento pelas pills.
-              Nenhum dado é perdido.
+              O ano corrente será <strong>arquivado automaticamente</strong> antes da troca — você
+              poderá voltar a ele a qualquer momento pelas pills. Nenhum dado é perdido.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -293,10 +286,7 @@ export function HistoricalYearPills() {
       </AlertDialog>
 
       {/* Renomear snapshot. */}
-      <Dialog
-        open={renameTarget !== null}
-        onOpenChange={(open) => !open && setRenameTarget(null)}
-      >
+      <Dialog open={renameTarget !== null} onOpenChange={(open) => !open && setRenameTarget(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Renomear snapshot</DialogTitle>
@@ -329,8 +319,8 @@ export function HistoricalYearPills() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir "{deleteTarget?.name}"?</AlertDialogTitle>
             <AlertDialogDescription>
-              O snapshot será arquivado (soft delete). Esta ação remove-o das pills
-              de período imediatamente.
+              O snapshot será arquivado (soft delete). Esta ação remove-o das pills de período
+              imediatamente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

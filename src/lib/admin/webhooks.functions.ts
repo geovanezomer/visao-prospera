@@ -7,7 +7,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
-
 export const listWebhookEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(
@@ -16,7 +15,14 @@ export const listWebhookEvents = createServerFn({ method: "POST" })
       perPage?: number;
       search?: string;
       provider?: "all" | "stripe" | "asaas" | "admin";
-      status?: "all" | "processed" | "failed" | "skipped" | "replayed" | "pending_retry" | "dead_letter";
+      status?:
+        | "all"
+        | "processed"
+        | "failed"
+        | "skipped"
+        | "replayed"
+        | "pending_retry"
+        | "dead_letter";
     }) =>
       z
         .object({
@@ -24,7 +30,17 @@ export const listWebhookEvents = createServerFn({ method: "POST" })
           perPage: z.number().int().min(1).max(200).optional(),
           search: z.string().max(120).optional(),
           provider: z.enum(["all", "stripe", "asaas", "admin"]).optional(),
-          status: z.enum(["all", "processed", "failed", "skipped", "replayed", "pending_retry", "dead_letter"]).optional(),
+          status: z
+            .enum([
+              "all",
+              "processed",
+              "failed",
+              "skipped",
+              "replayed",
+              "pending_retry",
+              "dead_letter",
+            ])
+            .optional(),
         })
         .parse(d ?? {}),
   )
@@ -114,7 +130,8 @@ export const replayWebhookEvent = createServerFn({ method: "POST" })
       targetId: data.id,
       metadata: { status: result.status, error: result.error ?? null, forced: !!data.force },
     });
-    if (!result.ok) throw new Error(result.error ?? `Reprocessamento falhou (status=${result.status}).`);
+    if (!result.ok)
+      throw new Error(result.error ?? `Reprocessamento falhou (status=${result.status}).`);
     return { ok: true, status: result.status };
   });
 
@@ -140,4 +157,3 @@ export const runWebhookRetryNow = createServerFn({ method: "POST" })
     });
     return r;
   });
-

@@ -164,7 +164,8 @@ export function SharedLinksDialog() {
           <DialogHeader>
             <DialogTitle>Links compartilhados</DialogTitle>
             <DialogDescription>
-              Gerencie os links públicos somente leitura. Revogue para invalidar o acesso imediatamente.
+              Gerencie os links públicos somente leitura. Revogue para invalidar o acesso
+              imediatamente.
             </DialogDescription>
           </DialogHeader>
 
@@ -196,7 +197,9 @@ export function SharedLinksDialog() {
                       <p className="font-mono text-[11px] text-muted-foreground">
                         /shared/{it.shareId}
                       </p>
-                      <div className={`flex items-center gap-1 text-[11px] font-medium ${toneClass}`}>
+                      <div
+                        className={`flex items-center gap-1 text-[11px] font-medium ${toneClass}`}
+                      >
                         <span>expira em {r.label}</span>
                         <Popover>
                           <PopoverTrigger asChild>

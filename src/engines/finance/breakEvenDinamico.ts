@@ -49,7 +49,6 @@ export interface BreakEvenDinamicoResult {
   observacao?: string;
 }
 
-
 /** Default da meta conforme restrição. */
 function defaultMeta(restricao: RestricaoBreakEven): number {
   if (restricao === "dscr") return 1.25;
@@ -91,10 +90,7 @@ export function solveBreakEvenDinamico(
   const sazonalidade = input.sazonalidade !== false;
 
   const metricaBase = metricaDo(base, restricao);
-  const receitaBaseAnual = base.revenue.bruta.reduce(
-    (s, v) => s + (Number.isFinite(v) ? v : 0),
-    0,
-  );
+  const receitaBaseAnual = base.revenue.bruta.reduce((s, v) => s + (Number.isFinite(v) ? v : 0), 0);
 
   // Atende sem alavanca?
   if (metricaBase >= metaValor) {
@@ -123,10 +119,7 @@ export function solveBreakEvenDinamico(
   if (metricaHi < metaValor) {
     // Inalcançável dentro do intervalo (provável MC ≤ 0).
     const stHi = simulado(base, hi);
-    const receitaHi = stHi.revenue.bruta.reduce(
-      (s, v) => s + (Number.isFinite(v) ? v : 0),
-      0,
-    );
+    const receitaHi = stHi.revenue.bruta.reduce((s, v) => s + (Number.isFinite(v) ? v : 0), 0);
     return {
       restricao,
       metaValor,
@@ -191,18 +184,13 @@ export function breakEvenDinamicoToMarkdown(r: BreakEvenDinamicoResult): string 
         ? `Saldo de caixa mensal ≥ ${brl(r.metaValor)}`
         : `EBITDA anual ≥ ${brl(r.metaValor)}`;
 
-  const valFmt = (v: number) =>
-    r.restricao === "dscr" ? `${v.toFixed(2)}x` : brl(v);
+  const valFmt = (v: number) => (r.restricao === "dscr" ? `${v.toFixed(2)}x` : brl(v));
 
   const lines: string[] = [];
   lines.push(`## Break-Even Dinâmico — restrição: ${labelRestr}`);
-  lines.push(
-    `- **Baseline:** ${valFmt(r.metricaBase)} · Receita anual ${brl(r.receitaBaseAnual)}`,
-  );
+  lines.push(`- **Baseline:** ${valFmt(r.metricaBase)} · Receita anual ${brl(r.receitaBaseAnual)}`);
   if (!r.atingiuMeta) {
-    lines.push(
-      `- ⚠️ **Meta não atingida** mesmo com +${r.volumeDeltaPct.toFixed(0)}% de volume.`,
-    );
+    lines.push(`- ⚠️ **Meta não atingida** mesmo com +${r.volumeDeltaPct.toFixed(0)}% de volume.`);
     if (r.observacao) lines.push(`- ${r.observacao}`);
     return lines.join("\n");
   }

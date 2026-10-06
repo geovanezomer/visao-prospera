@@ -16,10 +16,7 @@ export interface Pipeline360Persisted {
 const KEY = (company: string, thread: string) =>
   `gz-finance-pipeline360-${company || "default"}-${thread}`;
 
-export function loadPipeline360(
-  company: string,
-  thread: string,
-): Pipeline360Persisted | null {
+export function loadPipeline360(company: string, thread: string): Pipeline360Persisted | null {
   if (typeof window === "undefined" || !thread) return null;
   try {
     const raw = sessionStorage.getItem(KEY(company, thread));
@@ -32,11 +29,7 @@ export function loadPipeline360(
   }
 }
 
-export function savePipeline360(
-  company: string,
-  thread: string,
-  data: Pipeline360Persisted,
-): void {
+export function savePipeline360(company: string, thread: string, data: Pipeline360Persisted): void {
   if (typeof window === "undefined" || !thread) return;
   try {
     sessionStorage.setItem(KEY(company, thread), JSON.stringify(data));

@@ -8,10 +8,10 @@ documentos como referência pontual.
 
 ## 📚 Documentos
 
-| Arquivo                                      | O que é                                                                                                                                                                                                                                                 |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Arquivo                                      | O que é                                                                                                                                                                                                                                                     |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`ENGINE_OVERVIEW.md`](./ENGINE_OVERVIEW.md) | **Comece aqui.** Visão técnica completa da engine financeira: arquitetura, `AppState`, fluxo de cálculo (DRE → indicadores → forecast → valuation), camada tributária, formato `.finnance`, store/persistência, calculadoras isoladas, testes e convenções. |
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md)       | Arquitetura geral do app (rotas, providers, fronteiras client/server, deploy).                                                                                                                                                                          |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md)       | Arquitetura geral do app (rotas, providers, fronteiras client/server, deploy).                                                                                                                                                                              |
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md)       | Como contribuir, padrões de código, e o procedimento para **bump de versão** do `AppState` e do `.finnance` (adicionar `vN_to_vN+1` quando o schema muda).                                                                                                  |
 
 ---

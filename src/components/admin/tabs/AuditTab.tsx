@@ -8,13 +8,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { listAuditLog } from "@/lib/admin/audit.functions";
 import { TableSkeleton, EmptyState } from "@/components/admin/ui-states";
 
 function fmt(iso?: string | null) {
   if (!iso) return "—";
-  try { return new Date(iso).toLocaleString("pt-BR"); } catch { return "—"; }
+  try {
+    return new Date(iso).toLocaleString("pt-BR");
+  } catch {
+    return "—";
+  }
 }
 
 const ACTIONS = [
@@ -47,14 +57,32 @@ export function AuditTab() {
     setLoading(true);
     try {
       const r = await listAuditLog({
-        data: { page, perPage, search, action: action || undefined, resource: resource || undefined },
+        data: {
+          page,
+          perPage,
+          search,
+          action: action || undefined,
+          resource: resource || undefined,
+        },
       });
-      setRows(r.rows); setTotal(r.total);
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
-    finally { setLoading(false); }
+      setRows(r.rows);
+      setTotal(r.total);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha.");
+    } finally {
+      setLoading(false);
+    }
   };
-  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [page, action, resource]);
-  useEffect(() => { const t = setTimeout(() => { setPage(1); void load(); }, 350); return () => clearTimeout(t); /* eslint-disable-next-line */ }, [search]);
+  useEffect(() => {
+    void load(); /* eslint-disable-next-line */
+  }, [page, action, resource]);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setPage(1);
+      void load();
+    }, 350);
+    return () => clearTimeout(t); /* eslint-disable-next-line */
+  }, [search]);
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
@@ -65,29 +93,53 @@ export function AuditTab() {
           <Label className="text-xs">Buscar</Label>
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="e-mail, target_id…" className="h-9 pl-8" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="e-mail, target_id…"
+              className="h-9 pl-8"
+            />
           </div>
         </div>
         <div>
           <Label className="text-xs">Ação</Label>
           <Select value={action || "all"} onValueChange={(v) => setAction(v === "all" ? "" : v)}>
-            <SelectTrigger className="h-9 w-48"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-48">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
-              {ACTIONS.map((a) => <SelectItem key={a.v || "all"} value={a.v || "all"}>{a.label}</SelectItem>)}
+              {ACTIONS.map((a) => (
+                <SelectItem key={a.v || "all"} value={a.v || "all"}>
+                  {a.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
         <div>
           <Label className="text-xs">Recurso</Label>
-          <Select value={resource || "all"} onValueChange={(v) => setResource(v === "all" ? "" : v)}>
-            <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+          <Select
+            value={resource || "all"}
+            onValueChange={(v) => setResource(v === "all" ? "" : v)}
+          >
+            <SelectTrigger className="h-9 w-40">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
-              {RESOURCES.map((a) => <SelectItem key={a.v || "all"} value={a.v || "all"}>{a.label}</SelectItem>)}
+              {RESOURCES.map((a) => (
+                <SelectItem key={a.v || "all"} value={a.v || "all"}>
+                  {a.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
         <Button size="sm" variant="outline" onClick={load} disabled={loading} className="h-9">
-          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+          {loading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5" />
+          )}
         </Button>
       </div>
 
@@ -105,25 +157,39 @@ export function AuditTab() {
           </thead>
           <tbody>
             {loading && rows.length === 0 ? (
-              <tr><td colSpan={6} className="p-0"><TableSkeleton rows={6} cols={6} /></td></tr>
-            ) : rows.length === 0 ? (
-              <tr><td colSpan={6} className="p-0">
-                <EmptyState
-                  icon={ScrollText}
-                  title="Sem registros de auditoria"
-                  description="Nenhuma ação administrativa foi registrada para os filtros atuais."
-                />
-              </td></tr>
-            ) : rows.map((r) => (
-              <tr key={r.id} className="border-t border-border/40">
-                <td className="px-3 py-2 whitespace-nowrap">{fmt(r.created_at)}</td>
-                <td className="px-3 py-2">{r.actor_email ?? "—"}</td>
-                <td className="px-3 py-2"><Badge variant="outline" className="font-mono text-[10px]">{r.action}</Badge></td>
-                <td className="px-3 py-2 text-muted-foreground">{r.resource}</td>
-                <td className="px-3 py-2 font-mono text-[10px]">{r.target_label ?? r.target_id ?? "—"}</td>
-                <td className="px-3 py-2 text-muted-foreground">{r.ip ?? "—"}</td>
+              <tr>
+                <td colSpan={6} className="p-0">
+                  <TableSkeleton rows={6} cols={6} />
+                </td>
               </tr>
-            ))}
+            ) : rows.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="p-0">
+                  <EmptyState
+                    icon={ScrollText}
+                    title="Sem registros de auditoria"
+                    description="Nenhuma ação administrativa foi registrada para os filtros atuais."
+                  />
+                </td>
+              </tr>
+            ) : (
+              rows.map((r) => (
+                <tr key={r.id} className="border-t border-border/40">
+                  <td className="px-3 py-2 whitespace-nowrap">{fmt(r.created_at)}</td>
+                  <td className="px-3 py-2">{r.actor_email ?? "—"}</td>
+                  <td className="px-3 py-2">
+                    <Badge variant="outline" className="font-mono text-[10px]">
+                      {r.action}
+                    </Badge>
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground">{r.resource}</td>
+                  <td className="px-3 py-2 font-mono text-[10px]">
+                    {r.target_label ?? r.target_id ?? "—"}
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground">{r.ip ?? "—"}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -131,9 +197,27 @@ export function AuditTab() {
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>{total} registros</span>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="h-7">Anterior</Button>
-          <span>{page} / {totalPages}</span>
-          <Button size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="h-7">Próxima</Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="h-7"
+          >
+            Anterior
+          </Button>
+          <span>
+            {page} / {totalPages}
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="h-7"
+          >
+            Próxima
+          </Button>
         </div>
       </div>
     </div>

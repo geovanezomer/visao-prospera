@@ -13,11 +13,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { loadConfig, AI_CONFIG_CHANGED_EVENT, type AIConfig } from "@/engines/ai/providers";
-import {
-  gerarDiagnostico,
-  isAIConfigured,
-  type DiagnosticoResult,
-} from "@/engines/ai/diagnostico";
+import { gerarDiagnostico, isAIConfigured, type DiagnosticoResult } from "@/engines/ai/diagnostico";
 import { PROMPT_VERSION } from "@/engines/ai/diagnosticoPrompt";
 import type { Briefing } from "@/engines/finance/briefing";
 import { briefingCacheKey } from "@/engines/finance/briefing";

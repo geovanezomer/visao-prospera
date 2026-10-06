@@ -10,9 +10,7 @@ describe("golden set — nível A (estático, sem LLM)", () => {
       const r = await runStaticCase(c);
       if (!r.ok) {
         // Falha explícita mostrando todos os problemas do caso.
-        throw new Error(
-          `Caso "${c.id}" falhou:\n  - ` + r.errors.join("\n  - "),
-        );
+        throw new Error(`Caso "${c.id}" falhou:\n  - ` + r.errors.join("\n  - "));
       }
       expect(r.toolsRun.length).toBeGreaterThan(0);
       expect(r.payloadChars).toBeGreaterThan(0);

@@ -47,7 +47,9 @@ export function TrialBanner({ expiresAt }: { expiresAt: string }) {
       expiredRef.current = true;
       // Não desloga: o SubscriptionGate detecta trial expirado via useAccessStatus
       // e troca para a PaywallScreen na próxima renderização (mesmos dados, menos hostil).
-      toast.info("Seu teste gratuito terminou. Escolha um plano para continuar.", { duration: 6000 });
+      toast.info("Seu teste gratuito terminou. Escolha um plano para continuar.", {
+        duration: 6000,
+      });
     }
   }, [now, target, navigate]);
 
@@ -100,12 +102,26 @@ export function TrialBanner({ expiresAt }: { expiresAt: string }) {
         </div>
         <div className="flex items-center gap-2">
           <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs">
-            <Link to="/landing" hash="planos">Ver planos</Link>
+            <Link to="/landing" hash="planos">
+              Ver planos
+            </Link>
           </Button>
-          <Button size="sm" variant="outline" className="h-7 px-3 text-xs" disabled={upgrading} onClick={() => upgrade("starter")}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-3 text-xs"
+            disabled={upgrading}
+            onClick={() => upgrade("starter")}
+          >
             {upgrading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Assinar Starter"}
           </Button>
-          <Button size="sm" variant="default" className="h-7 px-3 text-xs" disabled={upgrading} onClick={() => upgrade("pro")}>
+          <Button
+            size="sm"
+            variant="default"
+            className="h-7 px-3 text-xs"
+            disabled={upgrading}
+            onClick={() => upgrade("pro")}
+          >
             {upgrading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Assinar Pro"}
           </Button>
         </div>

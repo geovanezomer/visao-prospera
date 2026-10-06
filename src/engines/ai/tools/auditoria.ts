@@ -126,7 +126,15 @@ function scoreCaixa(s: AppState): ModuleScore {
   const max = 2;
   if (c && Number.isFinite(c.caixaMinimo) && c.caixaMinimo >= 0) pts++;
   else missing.push("Caixa mínimo desejado");
-  if (c && (hasMonths(c.capex) || hasMonths(c.aportes) || hasMonths(c.amortizacoes) || hasMonths(c.dividendos) || hasMonths(c.emprestimosCaptados))) pts++;
+  if (
+    c &&
+    (hasMonths(c.capex) ||
+      hasMonths(c.aportes) ||
+      hasMonths(c.amortizacoes) ||
+      hasMonths(c.dividendos) ||
+      hasMonths(c.emprestimosCaptados))
+  )
+    pts++;
   else missing.push("Movimentos não-operacionais (capex/aportes/amortiz./divid.) — pode ser 0");
   return { key: "caixa", label: "Caixa & Movimentos", score: pts / max, missing };
 }
@@ -225,10 +233,18 @@ function buildInconsistenciasMd(state: AppState): {
   const fmt = (w: (typeof ws)[number]) =>
     `- **[${w.category}/${w.severity.toUpperCase()}]** ${w.title} — ${w.detail}${w.fixHint ? ` _Sugestão: ${w.fixHint}_` : ""}${w.location ? ` (aba: ${w.location})` : ""}`;
   const blocks: string[] = ["## Inconsistências cross-aba"];
-  if (g.error.length) blocks.push(`\n### ❌ Erros (${g.error.length})\n${g.error.map(fmt).join("\n")}`);
-  if (g.warn.length) blocks.push(`\n### ⚠️ Avisos (${g.warn.length})\n${g.warn.map(fmt).join("\n")}`);
-  if (g.info.length) blocks.push(`\n### ℹ️ Infos (${g.info.length})\n${g.info.map(fmt).join("\n")}`);
-  return { md: blocks.join("\n"), errors: g.error.length, warns: g.warn.length, infos: g.info.length };
+  if (g.error.length)
+    blocks.push(`\n### ❌ Erros (${g.error.length})\n${g.error.map(fmt).join("\n")}`);
+  if (g.warn.length)
+    blocks.push(`\n### ⚠️ Avisos (${g.warn.length})\n${g.warn.map(fmt).join("\n")}`);
+  if (g.info.length)
+    blocks.push(`\n### ℹ️ Infos (${g.info.length})\n${g.info.map(fmt).join("\n")}`);
+  return {
+    md: blocks.join("\n"),
+    errors: g.error.length,
+    warns: g.warn.length,
+    infos: g.info.length,
+  };
 }
 
 function buildConfianca(state: AppState): {
@@ -312,7 +328,8 @@ const handlers: Record<string, ToolHandler> = {
         `${i++}. **[AVISO]** ${w.title} — ${w.detail}${w.location ? ` _(aba: ${w.location})_` : ""}`,
       );
     }
-    if (!passos.length) return "## Próximos passos\n\n✅ Base completa e consistente — nada bloqueando análise 360°.";
+    if (!passos.length)
+      return "## Próximos passos\n\n✅ Base completa e consistente — nada bloqueando análise 360°.";
     return ["## Próximos passos priorizados", "", ...passos].join("\n");
   },
 

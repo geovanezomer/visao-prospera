@@ -112,20 +112,40 @@ export function CustoFuncionarioCalc() {
     if (!resultado) return;
     await exportCalculadoraPDF({
       title: "Custo Real do Funcionário CLT",
-      subtitle:
-        "Custo de contratação considerando salário, encargos, provisões e benefícios.",
+      subtitle: "Custo de contratação considerando salário, encargos, provisões e benefícios.",
       inputs: [
         { label: "Salário bruto", value: fmtBRL(salarioBruto) },
         { label: "Regime", value: regime.toUpperCase() },
         { label: "Grau RAT", value: String(grauRAT) },
         { label: "Alíquota Terceiros", value: `${aliquotaTerceiros.toFixed(2)}%` },
         { label: "VT (custo empresa)", value: vtAtivo ? fmtBRL(vtCusto) : "—" },
-        { label: "VR / Plano Saúde / Outros", value: `${fmtBRL(vr)} / ${fmtBRL(planoSaude)} / ${fmtBRL(outros)}` },
+        {
+          label: "VR / Plano Saúde / Outros",
+          value: `${fmtBRL(vr)} / ${fmtBRL(planoSaude)} / ${fmtBRL(outros)}`,
+        },
       ],
       kpis: [
-        { label: "Custo mensal total", value: fmtBRL(resultado.custoMensalTotal), sub: `${resultado.fatorMultiplicador.toFixed(2).replace(".", ",")}× o salário bruto`, tone: "warn" },
-        { label: "Custo anual total", value: fmtBRL(resultado.custoAnualTotal), sub: "12 meses + provisões", tone: "warn" },
-        { label: "Encargos + Provisões", value: fmtBRL(resultado.encargos.total + resultado.provisoes.total), sub: fmtPct((resultado.encargos.total + resultado.provisoes.total) / Math.max(1, resultado.salarioBruto)), tone: "neutral" },
+        {
+          label: "Custo mensal total",
+          value: fmtBRL(resultado.custoMensalTotal),
+          sub: `${resultado.fatorMultiplicador.toFixed(2).replace(".", ",")}× o salário bruto`,
+          tone: "warn",
+        },
+        {
+          label: "Custo anual total",
+          value: fmtBRL(resultado.custoAnualTotal),
+          sub: "12 meses + provisões",
+          tone: "warn",
+        },
+        {
+          label: "Encargos + Provisões",
+          value: fmtBRL(resultado.encargos.total + resultado.provisoes.total),
+          sub: fmtPct(
+            (resultado.encargos.total + resultado.provisoes.total) /
+              Math.max(1, resultado.salarioBruto),
+          ),
+          tone: "neutral",
+        },
       ],
       sections: [
         {
@@ -157,7 +177,13 @@ export function CustoFuncionarioCalc() {
           </p>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={exportar} title="Exportar PDF" disabled={!resultado}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={exportar}
+            title="Exportar PDF"
+            disabled={!resultado}
+          >
             <Download className="mr-2 h-4 w-4" /> Exportar PDF
           </Button>
           <Button variant="ghost" size="sm" onClick={limpar}>

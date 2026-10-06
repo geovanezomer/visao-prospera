@@ -78,7 +78,6 @@ export function DRETab() {
       ? `D.R.E. — Comparativo (${selectedSnaps.length} cenários selecionados)`
       : `D.R.E. — Comparativo anual (últimos ${annualSnaps.length - 1} anos + atual)`;
 
-
   // Períodos exibidos na tabela conforme o modo de visualização.
   const QUARTERS = ["1º Tri", "2º Tri", "3º Tri", "4º Tri"];
   const periodLabels = view === "mensal" ? MESES : view === "trimestral" ? QUARTERS : [];
@@ -96,7 +95,6 @@ export function DRETab() {
   // sejam idênticos aos da aba Indicadores.
   const { regime, dre, ind, cf, cagrReceitas12m, model } = useFinanceModel(state);
   const tax = model.tax;
-
 
   const limiar = state.cashflow.limiarAlerta ?? -10000;
   const mesesCriticosIdx = new Set(
@@ -132,8 +130,7 @@ export function DRETab() {
       for (let i = 0; i < 12; i++) despComerciais[i] += v[i];
     else if (c.category === "despesa_administrativa" || c.category === "fixo")
       for (let i = 0; i < 12; i++) despAdmin[i] += v[i];
-    else if (c.category === "financeiro")
-      for (let i = 0; i < 12; i++) despFinanc[i] += v[i];
+    else if (c.category === "financeiro") for (let i = 0; i < 12; i++) despFinanc[i] += v[i];
   }
   // Receitas Financeiras — separar genuínas (rendimentos de aplicações, juros recebidos)
   // das operacionais (aluguéis, venda de ativos). As operacionais JÁ entram no EBITDA via
@@ -146,8 +143,7 @@ export function DRETab() {
   // aqui divergia da engine e duplicava linhas custom.
   const OPERACIONAIS_IDS_LEGADO = new Set(["alugueis", "venda_ativos"]);
   const isOperacionalRF = (rf: { id: string; tipo?: "operacional" | "financeira" }) =>
-    rf.tipo === "operacional" ||
-    (rf.tipo === undefined && OPERACIONAIS_IDS_LEGADO.has(rf.id));
+    rf.tipo === "operacional" || (rf.tipo === undefined && OPERACIONAIS_IDS_LEGADO.has(rf.id));
   // Linhas detalhadas (somente genuinamente financeiras) p/ o accordion pós-EBIT.
   const linhasReceitasFin = (state.revenue.receitasFinanceiras ?? [])
     .filter((rf) => !isOperacionalRF(rf))
@@ -223,7 +219,9 @@ export function DRETab() {
     },
     {
       kind: "linha",
-      k: usaPDD ? "(−) Inadimplência (contabilizada como PDD)" : "(−) Inadimplência (perdas estimadas)",
+      k: usaPDD
+        ? "(−) Inadimplência (contabilizada como PDD)"
+        : "(−) Inadimplência (perdas estimadas)",
       v: dre.deducoesInadimplencia.map((x) => -x),
       tone: "neg",
     },
@@ -351,22 +349,21 @@ export function DRETab() {
       const isLucroKey = (k: string) =>
         /^(IRPJ|CSLL|Adicional IRPJ|\(−\) Compensação|\(−\) IRRF)/i.test(k);
       const totalLucroAno = sum(dre.impostos);
-      const share = dre.impostos.map((v) =>
-        totalLucroAno > 0 ? v / totalLucroAno : 1 / 12,
-      );
-      const baseNota =
-        dre.impostosLucroBase === "receita_presumida" ? " (base presumida)" : "";
+      const share = dre.impostos.map((v) => (totalLucroAno > 0 ? v / totalLucroAno : 1 / 12));
+      const baseNota = dre.impostosLucroBase === "receita_presumida" ? " (base presumida)" : "";
       const entries = Object.entries(tax.detail)
         .filter(([k, v]) => isLucroKey(k) && v !== 0)
         .sort((a, b) => b[1] - a[1]);
       // Fallback: se detail vier vazio (defensivo), mostra linha agregada.
       if (entries.length === 0) {
-        return [{
-          kind: "linha" as const,
-          k: `(−) IR / CSLL${baseNota}`,
-          v: dre.impostos.map((x) => -x),
-          tone: "neg" as const,
-        }];
+        return [
+          {
+            kind: "linha" as const,
+            k: `(−) IR / CSLL${baseNota}`,
+            v: dre.impostos.map((x) => -x),
+            tone: "neg" as const,
+          },
+        ];
       }
       return entries.map(([label, anual]) => ({
         kind: "linha" as const,
@@ -400,7 +397,14 @@ export function DRETab() {
           dre.depreciacao[i],
         Lucro: dre.lucroLiquido[i],
       })),
-    [dre.receitaLiquida, dre.cpv, dre.despesasOperacionais, dre.custosFinanceirosTotal, dre.depreciacao, dre.lucroLiquido],
+    [
+      dre.receitaLiquida,
+      dre.cpv,
+      dre.despesasOperacionais,
+      dre.custosFinanceirosTotal,
+      dre.depreciacao,
+      dre.lucroLiquido,
+    ],
   );
 
   const acumulado = useMemo(
@@ -425,8 +429,7 @@ export function DRETab() {
   // Waterfall — inclui Deduções (inadimplência + descontos + abatimentos) e
   // Outras Receitas Operacionais para que a cadeia reconcilie até o Lucro Líq.
   // (antes, faltavam essas duas rubricas e o Lucro Líq. não fechava).
-  const deducoesAnual =
-    sum(dre.deducoesInadimplencia) + sum(descIncond) + sum(abatimentos);
+  const deducoesAnual = sum(dre.deducoesInadimplencia) + sum(descIncond) + sum(abatimentos);
   const waterfall = [
     { name: "Receita Bruta", value: sum(dre.receitaBruta) },
     { name: "− Deduções", value: -deducoesAnual },
@@ -442,11 +445,17 @@ export function DRETab() {
 
   return (
     <div className="space-y-6">
-
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
-          <div role="tablist" aria-label="Período de visualização da DRE" className="inline-flex rounded-md border border-border/60 bg-card/40 p-1">
-            {(readOnly ? (["trimestral", "mensal"] as const) : (["anual", "trimestral", "mensal"] as const)).map((v) => {
+          <div
+            role="tablist"
+            aria-label="Período de visualização da DRE"
+            className="inline-flex rounded-md border border-border/60 bg-card/40 p-1"
+          >
+            {(readOnly
+              ? (["trimestral", "mensal"] as const)
+              : (["anual", "trimestral", "mensal"] as const)
+            ).map((v) => {
               const active = view === v;
               return (
                 <button
@@ -556,72 +565,241 @@ export function DRETab() {
           </div>
         </div>
       ) : (
-      <>
-      {/* DRE Table */}
-      <div className="rounded-lg border border-border/60 bg-card/40 overflow-hidden shadow-sm">
-        <div className="border-b border-border/60 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h3 className="text-sm sm:text-base font-semibold">
-              D.R.E. — Demonstração do Resultado do Exercício
-            </h3>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-              Regime de Competência
-            </p>
-          </div>
-        </div>
-        <div className="scrollbar-none w-full overflow-x-auto overflow-y-hidden touch-pan-x">
-          <table id="dre-tabela" aria-label="Demonstração do Resultado do Exercício" className="w-full min-w-[600px] md:min-w-full text-[clamp(0.65rem,1vw+0.3rem,0.875rem)] table-fixed md:table-auto">
-            <colgroup>
-              <col className="w-[120px] sm:w-auto" />
-              {showPeriods &&
-                periodLabels.map((_, i) => (
-                  <col key={i} className={view === "mensal" ? "w-[70px]" : "w-[90px]"} />
-                ))}
-              <col className="w-[90px] md:w-auto" />
-              <col className="w-[50px] md:w-auto" />
-            </colgroup>
+        <>
+          {/* DRE Table */}
+          <div className="rounded-lg border border-border/60 bg-card/40 overflow-hidden shadow-sm">
+            <div className="border-b border-border/60 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm sm:text-base font-semibold">
+                  D.R.E. — Demonstração do Resultado do Exercício
+                </h3>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                  Regime de Competência
+                </p>
+              </div>
+            </div>
+            <div className="scrollbar-none w-full overflow-x-auto overflow-y-hidden touch-pan-x">
+              <table
+                id="dre-tabela"
+                aria-label="Demonstração do Resultado do Exercício"
+                className="w-full min-w-[600px] md:min-w-full text-[clamp(0.65rem,1vw+0.3rem,0.875rem)] table-fixed md:table-auto"
+              >
+                <colgroup>
+                  <col className="w-[120px] sm:w-auto" />
+                  {showPeriods &&
+                    periodLabels.map((_, i) => (
+                      <col key={i} className={view === "mensal" ? "w-[70px]" : "w-[90px]"} />
+                    ))}
+                  <col className="w-[90px] md:w-auto" />
+                  <col className="w-[50px] md:w-auto" />
+                </colgroup>
 
-            <thead>
-              <tr className="bg-card text-[10px] uppercase tracking-wider text-muted-foreground">
-                <th scope="col" className="sticky left-0 z-20 bg-card px-4 py-2 text-left shadow-[1px_0_0_0_var(--border)]">
-                  Descrição
-                </th>
-                {showPeriods &&
-                  periodLabels.map((m, i) => (
+                <thead>
+                  <tr className="bg-card text-[10px] uppercase tracking-wider text-muted-foreground">
                     <th
                       scope="col"
-                      key={m}
-                      className={`px-2 py-2 text-right ${periodCritical(i) ? "text-destructive" : ""}`}
+                      className="sticky left-0 z-20 bg-card px-4 py-2 text-left shadow-[1px_0_0_0_var(--border)]"
                     >
-                      {m}
+                      Descrição
                     </th>
-                  ))}
-                <th scope="col" className="px-4 py-2 text-right">Anual</th>
-                <th scope="col" className="px-3 py-2 text-right">% Rec</th>
-              </tr>
-            </thead>
+                    {showPeriods &&
+                      periodLabels.map((m, i) => (
+                        <th
+                          scope="col"
+                          key={m}
+                          className={`px-2 py-2 text-right ${periodCritical(i) ? "text-destructive" : ""}`}
+                        >
+                          {m}
+                        </th>
+                      ))}
+                    <th scope="col" className="px-4 py-2 text-right">
+                      Anual
+                    </th>
+                    <th scope="col" className="px-3 py-2 text-right">
+                      % Rec
+                    </th>
+                  </tr>
+                </thead>
 
-            <tbody>
-              {rows.map((row, idx) => {
-                if (row.kind === "grupo") {
-                  const total = sum(row.v);
-                  const pct = rb > 0 ? Math.abs(total) / rb : 0;
-                  const isOpen = !!openGroups[row.id];
-                  const toneCls =
-                    row.tone === "neg" ? "text-neg" : row.tone === "pos" ? "text-pos" : "";
-                  return (
-                    <Fragment key={idx}>
+                <tbody>
+                  {rows.map((row, idx) => {
+                    if (row.kind === "grupo") {
+                      const total = sum(row.v);
+                      const pct = rb > 0 ? Math.abs(total) / rb : 0;
+                      const isOpen = !!openGroups[row.id];
+                      const toneCls =
+                        row.tone === "neg" ? "text-neg" : row.tone === "pos" ? "text-pos" : "";
+                      return (
+                        <Fragment key={idx}>
+                          <tr
+                            className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20"
+                            onClick={() => toggleGroup(row.id)}
+                          >
+                            <td className="sticky left-0 z-10 bg-inherit px-3 py-2 text-[10px] sm:text-xs font-semibold truncate shadow-[1px_0_0_0_var(--border)]">
+                              <span className="inline-flex items-center gap-1">
+                                <ChevronRight
+                                  className={`h-3 w-3 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`}
+                                />
+                                {row.titulo}
+                              </span>
+                            </td>
+                            {showPeriods &&
+                              aggregate(row.v).map((v, i) => (
+                                <td
+                                  key={i}
+                                  className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}
+                                >
+                                  {v === 0 ? "—" : fmtBRLCompact(v)}
+                                </td>
+                              ))}
+
+                            <td
+                              className={`num px-4 py-2 text-right font-semibold ${total < 0 ? "text-neg" : total > 0 ? toneCls || "text-foreground" : ""}`}
+                            >
+                              {fmtBRL(total)}
+                            </td>
+                            <td className="num px-3 py-2 text-right text-xs text-muted-foreground">
+                              {fmtPct(pct)}
+                            </td>
+                          </tr>
+                          {isOpen &&
+                            row.lines.map((l, li) => {
+                              const sgn = row.tone === "neg" ? -1 : 1;
+                              const lTotal = sum(l.values) * sgn;
+                              return (
+                                <tr
+                                  key={`${row.id}_${li}`}
+                                  className="border-t border-border/20 bg-card"
+                                >
+                                  <td className="sticky left-0 z-10 bg-inherit px-4 py-1.5 pl-8 text-xs text-muted-foreground shadow-[1px_0_0_0_var(--border)]">
+                                    {l.label}
+                                  </td>
+                                  {showPeriods &&
+                                    aggregate(l.values).map((v, i) => {
+                                      const sv = v * sgn;
+                                      return (
+                                        <td
+                                          key={i}
+                                          className={`num px-2 py-1.5 text-right text-xs ${sv < 0 ? "text-neg" : sv > 0 ? "text-pos" : "text-muted-foreground"}`}
+                                        >
+                                          {sv === 0 ? "—" : fmtBRLCompact(sv)}
+                                        </td>
+                                      );
+                                    })}
+
+                                  <td
+                                    className={`num px-4 py-1.5 text-right text-xs ${lTotal < 0 ? "text-neg" : lTotal > 0 ? "text-pos" : ""}`}
+                                  >
+                                    {fmtBRL(lTotal)}
+                                  </td>
+                                  <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">
+                                    {fmtPct(rb > 0 ? Math.abs(lTotal) / rb : 0)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          {isOpen && row.lines.length === 0 && (
+                            <tr className="border-t border-border/20 bg-card">
+                              <td
+                                colSpan={(showPeriods ? periodLabels.length : 0) + 3}
+                                className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground"
+                              >
+                                {row.emptyMsg ?? "Sem itens cadastrados."}
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    }
+                    if (row.kind === "cpv") {
+                      const total = sum(dre.cpv);
+                      const pct = rb > 0 ? total / rb : 0;
+                      return (
+                        <Fragment key={idx}>
+                          <tr
+                            className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20"
+                            onClick={() => setOpenCpv((v) => !v)}
+                          >
+                            <td className="sticky left-0 z-10 bg-inherit px-3 py-2 text-[10px] sm:text-xs font-semibold truncate shadow-[1px_0_0_0_var(--border)]">
+                              <span className="inline-flex items-center gap-1">
+                                <ChevronRight
+                                  className={`h-3 w-3 shrink-0 transition-transform ${openCpv ? "rotate-90" : ""}`}
+                                />
+                                (−) {cvLabel.long}
+                              </span>
+                            </td>
+                            {showPeriods &&
+                              aggregate(dre.cpv).map((v, i) => (
+                                <td
+                                  key={i}
+                                  className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "" : ""} text-neg`}
+                                >
+                                  {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
+                                </td>
+                              ))}
+
+                            <td className="num px-4 py-2 text-right font-semibold text-neg">
+                              − {fmtBRL(total)}
+                            </td>
+                            <td className="num px-3 py-2 text-right text-xs text-muted-foreground">
+                              {fmtPct(pct)}
+                            </td>
+                          </tr>
+                          {openCpv &&
+                            linhasCpv.map((l, li) => {
+                              const lTotal = sum(l.values);
+                              return (
+                                <tr key={`cpv_${li}`} className="border-t border-border/20 bg-card">
+                                  <td className="sticky left-0 z-10 bg-inherit px-4 py-1.5 pl-8 text-xs text-muted-foreground shadow-[1px_0_0_0_var(--border)]">
+                                    {l.label}
+                                  </td>
+                                  {showPeriods &&
+                                    aggregate(l.values).map((v, i) => (
+                                      <td
+                                        key={i}
+                                        className="num px-2 py-1.5 text-right text-xs text-muted-foreground"
+                                      >
+                                        {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
+                                      </td>
+                                    ))}
+
+                                  <td className="num px-4 py-1.5 text-right text-xs text-neg">
+                                    − {fmtBRL(lTotal)}
+                                  </td>
+                                  <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">
+                                    {fmtPct(rb > 0 ? lTotal / rb : 0)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          {openCpv && linhasCpv.length === 0 && (
+                            <tr className="border-t border-border/20 bg-card">
+                              <td
+                                colSpan={(showPeriods ? periodLabels.length : 0) + 3}
+                                className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground"
+                              >
+                                Nenhum item classificado como {cvLabel.short} ainda. Cadastre custos
+                                na categoria "Custo de Vendas" na aba Custos.
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    }
+
+                    const total = sum(row.v);
+                    const pct = rb > 0 ? total / rb : 0;
+                    const toneCls =
+                      row.tone === "pos" ? "text-pos" : row.tone === "neg" ? "text-neg" : "";
+                    return (
                       <tr
-                        className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20"
-                        onClick={() => toggleGroup(row.id)}
+                        key={idx}
+                        className={`border-t border-border/30 ${row.highlight ? "bg-primary/10" : row.strong ? "bg-accent/20" : "bg-card"}`}
                       >
-                        <td className="sticky left-0 z-10 bg-inherit px-3 py-2 text-[10px] sm:text-xs font-semibold truncate shadow-[1px_0_0_0_var(--border)]">
-                          <span className="inline-flex items-center gap-1">
-                            <ChevronRight
-                              className={`h-3 w-3 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`}
-                            />
-                            {row.titulo}
-                          </span>
+                        <td
+                          className={`sticky left-0 z-10 bg-inherit shadow-[1px_0_0_0_var(--border)] px-3 py-2 ${row.strong ? "font-semibold" : "text-muted-foreground"} text-[10px] sm:text-xs truncate`}
+                        >
+                          {row.k}
                         </td>
                         {showPeriods &&
                           aggregate(row.v).map((v, i) => (
@@ -634,183 +812,27 @@ export function DRETab() {
                           ))}
 
                         <td
-                          className={`num px-4 py-2 text-right font-semibold ${total < 0 ? "text-neg" : total > 0 ? toneCls || "text-foreground" : ""}`}
+                          className={`num px-4 py-2 text-right ${row.strong ? "font-semibold" : ""} ${total < 0 ? "text-neg" : total > 0 ? toneCls || "text-foreground" : ""}`}
                         >
                           {fmtBRL(total)}
+                          {row.margin !== undefined && (
+                            <div className="text-[10px] font-normal text-muted-foreground">
+                              Margem {row.margin.toFixed(1)}%
+                            </div>
+                          )}
                         </td>
                         <td className="num px-3 py-2 text-right text-xs text-muted-foreground">
                           {fmtPct(pct)}
                         </td>
                       </tr>
-                      {isOpen &&
-                        row.lines.map((l, li) => {
-                          const sgn = row.tone === "neg" ? -1 : 1;
-                          const lTotal = sum(l.values) * sgn;
-                          return (
-                            <tr key={`${row.id}_${li}`} className="border-t border-border/20 bg-card">
-                              <td className="sticky left-0 z-10 bg-inherit px-4 py-1.5 pl-8 text-xs text-muted-foreground shadow-[1px_0_0_0_var(--border)]">
-                                {l.label}
-                              </td>
-                              {showPeriods &&
-                                aggregate(l.values).map((v, i) => {
-                                  const sv = v * sgn;
-                                  return (
-                                    <td
-                                      key={i}
-                                      className={`num px-2 py-1.5 text-right text-xs ${sv < 0 ? "text-neg" : sv > 0 ? "text-pos" : "text-muted-foreground"}`}
-                                    >
-                                      {sv === 0 ? "—" : fmtBRLCompact(sv)}
-                                    </td>
-                                  );
-                                })}
-
-                              <td
-                                className={`num px-4 py-1.5 text-right text-xs ${lTotal < 0 ? "text-neg" : lTotal > 0 ? "text-pos" : ""}`}
-                              >
-                                {fmtBRL(lTotal)}
-                              </td>
-                              <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">
-                                {fmtPct(rb > 0 ? Math.abs(lTotal) / rb : 0)}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      {isOpen && row.lines.length === 0 && (
-                        <tr className="border-t border-border/20 bg-card">
-                          <td
-                            colSpan={(showPeriods ? periodLabels.length : 0) + 3}
-                            className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground"
-                          >
-                            {row.emptyMsg ?? "Sem itens cadastrados."}
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                }
-                if (row.kind === "cpv") {
-                  const total = sum(dre.cpv);
-                  const pct = rb > 0 ? total / rb : 0;
-                  return (
-                    <Fragment key={idx}>
-                      <tr
-                        className="border-t border-border/30 bg-accent/10 cursor-pointer hover:bg-accent/20"
-                        onClick={() => setOpenCpv((v) => !v)}
-                      >
-                        <td className="sticky left-0 z-10 bg-inherit px-3 py-2 text-[10px] sm:text-xs font-semibold truncate shadow-[1px_0_0_0_var(--border)]">
-                          <span className="inline-flex items-center gap-1">
-                            <ChevronRight
-                              className={`h-3 w-3 shrink-0 transition-transform ${openCpv ? "rotate-90" : ""}`}
-                            />
-                            (−) {cvLabel.long}
-                          </span>
-                        </td>
-                        {showPeriods &&
-                          aggregate(dre.cpv).map((v, i) => (
-                            <td
-                              key={i}
-                              className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "" : ""} text-neg`}
-                            >
-                              {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
-                            </td>
-                          ))}
-
-                        <td className="num px-4 py-2 text-right font-semibold text-neg">
-                          − {fmtBRL(total)}
-                        </td>
-                        <td className="num px-3 py-2 text-right text-xs text-muted-foreground">
-                          {fmtPct(pct)}
-                        </td>
-                      </tr>
-                      {openCpv &&
-                        linhasCpv.map((l, li) => {
-                          const lTotal = sum(l.values);
-                          return (
-                            <tr key={`cpv_${li}`} className="border-t border-border/20 bg-card">
-                              <td className="sticky left-0 z-10 bg-inherit px-4 py-1.5 pl-8 text-xs text-muted-foreground shadow-[1px_0_0_0_var(--border)]">
-                                {l.label}
-                              </td>
-                              {showPeriods &&
-                                aggregate(l.values).map((v, i) => (
-                                  <td
-                                    key={i}
-                                    className="num px-2 py-1.5 text-right text-xs text-muted-foreground"
-                                  >
-                                    {v === 0 ? "—" : `− ${fmtBRLCompact(v)}`}
-                                  </td>
-                                ))}
-
-                              <td className="num px-4 py-1.5 text-right text-xs text-neg">
-                                − {fmtBRL(lTotal)}
-                              </td>
-                              <td className="num px-3 py-1.5 text-right text-[10px] text-muted-foreground">
-                                {fmtPct(rb > 0 ? lTotal / rb : 0)}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      {openCpv && linhasCpv.length === 0 && (
-                        <tr className="border-t border-border/20 bg-card">
-                          <td
-                            colSpan={(showPeriods ? periodLabels.length : 0) + 3}
-                            className="px-4 py-1.5 pl-8 text-[10px] italic text-muted-foreground"
-                          >
-                            Nenhum item classificado como {cvLabel.short} ainda. Cadastre custos na
-                            categoria "Custo de Vendas" na aba Custos.
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                }
-
-                const total = sum(row.v);
-                const pct = rb > 0 ? total / rb : 0;
-                const toneCls =
-                  row.tone === "pos" ? "text-pos" : row.tone === "neg" ? "text-neg" : "";
-                return (
-                  <tr
-                    key={idx}
-                    className={`border-t border-border/30 ${row.highlight ? "bg-primary/10" : row.strong ? "bg-accent/20" : "bg-card"}`}
-                  >
-                    <td
-                      className={`sticky left-0 z-10 bg-inherit shadow-[1px_0_0_0_var(--border)] px-3 py-2 ${row.strong ? "font-semibold" : "text-muted-foreground"} text-[10px] sm:text-xs truncate`}
-                    >
-                      {row.k}
-                    </td>
-                    {showPeriods &&
-                      aggregate(row.v).map((v, i) => (
-                        <td
-                          key={i}
-                          className={`num px-2 py-2 text-right text-xs ${periodCritical(i) ? "" : ""} ${v < 0 ? "text-neg" : v > 0 ? toneCls || "text-pos" : "text-muted-foreground"}`}
-                        >
-                          {v === 0 ? "—" : fmtBRLCompact(v)}
-                        </td>
-                      ))}
-
-                    <td
-                      className={`num px-4 py-2 text-right ${row.strong ? "font-semibold" : ""} ${total < 0 ? "text-neg" : total > 0 ? toneCls || "text-foreground" : ""}`}
-                    >
-                      {fmtBRL(total)}
-                      {row.margin !== undefined && (
-                        <div className="text-[10px] font-normal text-muted-foreground">
-                          Margem {row.margin.toFixed(1)}%
-                        </div>
-                      )}
-                    </td>
-                    <td className="num px-3 py-2 text-right text-xs text-muted-foreground">
-                      {fmtPct(pct)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      </>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
-
     </div>
   );
 }

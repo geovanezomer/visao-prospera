@@ -1,25 +1,15 @@
 import { AppState, TaxRegime } from "./types";
 import { buildDRE, type DRE } from "./dre";
 import { resolveEffectiveRegime } from "./regime";
-import {
-  splitReceitasFinanceiras,
-  computeCapexMensal,
-  outrasDeducoesMensal,
-} from "./shared";
+import { splitReceitasFinanceiras, computeCapexMensal, outrasDeducoesMensal } from "./shared";
 import type { MonthlyTax } from "./tax/shared";
-import {
-  partitionMonthlyTaxByLag,
-  LAG_DIAS_PADRAO,
-  LAG_DIAS_SPLIT,
-} from "./tax/impostosLag";
+import { partitionMonthlyTaxByLag, LAG_DIAS_PADRAO, LAG_DIAS_SPLIT } from "./tax/impostosLag";
 import { MESES, sum, zeros12 } from "./format";
 import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 import { getSplitPaymentAtivo } from "./taxDefaults";
 import { getDistribuicaoRealizadaMeses } from "./socios";
 import { deriveAbertura } from "./aberturaDerivada";
 import { isFolhaCost, isCpvCost, effectiveMonthValues } from "./costs";
-
-
 
 export interface CashFlow {
   saldoInicial: number[];
@@ -76,7 +66,6 @@ export interface CashFlow {
     pioresMes: { mes: string; saldo: number } | null;
   };
 }
-
 
 // =====================================================================
 // Funções puras — cada uma testável isoladamente, sem efeito colateral.
@@ -150,9 +139,7 @@ export function buildRecebivelMensal(state: AppState, dre: DRE): number[] {
     (b, i) => (b || 0) * ((state.revenue.inadimplencia[i] || 0) / 100),
   );
   const deducoes = outrasDeducoesMensal(state);
-  return dre.receitaBruta.map((r, i) =>
-    Math.max(0, r - inadimpReal[i] - (deducoes[i] || 0)),
-  );
+  return dre.receitaBruta.map((r, i) => Math.max(0, r - inadimpReal[i] - (deducoes[i] || 0)));
 }
 
 /**
@@ -171,8 +158,6 @@ export function computeRecebimentos(
   }
   return shiftByDaysSplit(recebivelMensal, state.revenue.pmr);
 }
-
-
 
 /**
  * Compras (base de fornecedores) — SSOT compartilhado com balancoFechamento.
@@ -208,7 +193,6 @@ export function computeFornecedores(
   return shiftByDaysSplit(compras, state.revenue.pmp);
 }
 
-
 /**
  * Distribui a liquidação de um saldo de abertura ao longo dos primeiros meses,
  * proporcional ao prazo médio (PMR, PMP ou similar). SSOT dos "kickstarts" da
@@ -240,7 +224,6 @@ export function distributeByPrazo(saldo: number, prazoDias: number): number[] {
   return out;
 }
 
-
 /**
  * Pagamentos de impostos = total mensal deslocado pelos lags oficiais.
  * A PARTIÇÃO (Split lag 0 · vendas lag 30 · IRPJ/CSLL trimestral no fim do
@@ -263,9 +246,7 @@ export function computeImpostos(
   // abr/jul/out/jan (o de janeiro vira transbordo).
   const c = shiftByDaysSplit(lucroTri, LAG_DIAS_PADRAO);
   return {
-    inAno: a.inAno.map(
-      (v, i) => v + (b.inAno[i] ?? 0) + (c.inAno[i] ?? 0),
-    ),
+    inAno: a.inAno.map((v, i) => v + (b.inAno[i] ?? 0) + (c.inAno[i] ?? 0)),
     transbordo: a.transbordo + b.transbordo + c.transbordo,
   };
 }
@@ -316,7 +297,10 @@ export function computePagamentosOperacionais(
   // Invariante — nunca deve ser negativo pela construção acima.
   if (process.env.NODE_ENV !== "production") {
     for (let i = 0; i < 12; i++) {
-      console.assert(variaveis[i] >= -0.01, `pagamentosVariaveis negativo mês ${i}: ${variaveis[i]}`);
+      console.assert(
+        variaveis[i] >= -0.01,
+        `pagamentosVariaveis negativo mês ${i}: ${variaveis[i]}`,
+      );
       console.assert(fixos[i] >= -0.01, `pagamentosFixos negativo mês ${i}: ${fixos[i]}`);
     }
   }
@@ -452,9 +436,7 @@ export function computeBurnRunway(args: {
   // a média para baixo, subestimando o burn e superestimando o runway.
   const janelaCurta = Math.min(3, mesesOp);
   const burnMedio3 =
-    janelaCurta > 0
-      ? burnMensal.slice(-janelaCurta).reduce((a, b) => a + b, 0) / janelaCurta
-      : 0;
+    janelaCurta > 0 ? burnMensal.slice(-janelaCurta).reduce((a, b) => a + b, 0) / janelaCurta : 0;
   const colchao = args.caixaAtual + args.recebiveis;
   const queimando = burnMedio3 > 0;
   const runwayMeses = queimando ? colchao / burnMedio3 : Infinity;
@@ -478,10 +460,8 @@ export function buildCashFlow(
   // B2: rendimentos de aplicações financeiras realizam-se em caixa no mês de
   // competência. `operacionais` (aluguéis, venda de ativos) idem — entram no
   // EBITDA (DRE) e agora também no fluxo operacional (BUG 2).
-  const {
-    financeiras: receitasFinanceiras,
-    operacionais: outrasReceitasOperacionais,
-  } = splitReceitasFinanceiras(state);
+  const { financeiras: receitasFinanceiras, operacionais: outrasReceitasOperacionais } =
+    splitReceitasFinanceiras(state);
 
   // ─── Liquidação dos saldos de abertura ───
   // Contrapartida da conservação de massa do balanço de fechamento: os saldos
@@ -520,7 +500,6 @@ export function buildCashFlow(
   const recebimentosInAno = rec.inAno.map((v, i) => v + kickRecebimentos[i]);
   const fornecedoresInAno = fornec.inAno.map((v, i) => v + kickFornecedores[i]);
   const impostosInAno = imp.inAno.map((v, i) => v + kickImpostos[i]);
-
 
   const aportes = cashflow.aportes.slice();
   const emprestimosCaptados = cashflow.emprestimosCaptados.slice();
@@ -573,8 +552,6 @@ export function buildCashFlow(
     mutuosDevolvidos,
   });
 
-
-
   // Permutas: somam direto à variação de caixa, fora de OP/INV/FIN.
   const variacaoCaixa = fluxos.variacaoCaixa.map((v, i) => v + permutasLiquido[i]);
 
@@ -585,10 +562,7 @@ export function buildCashFlow(
     Number(capital.balanco?.ativoCirculante?.caixaEquivalentes) ||
     Number(capital.disponibilidades) ||
     0;
-  const { saldoInicial, saldoFinal } = computeSaldos(
-    caixaAbertura,
-    variacaoCaixa,
-  );
+  const { saldoInicial, saldoFinal } = computeSaldos(caixaAbertura, variacaoCaixa);
 
   const alertas = computeAlertas(saldoFinal, cashflow.caixaMinimo);
   const pior = computePiorMes(saldoFinal);
@@ -643,4 +617,3 @@ export function buildCashFlow(
     },
   };
 }
-

@@ -38,7 +38,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { HelpTip, PctInput, SectionTitle } from "@/components/sim/shared/primitives";
 
-
 // =================================================================
 // Componentes movidos para o topo do módulo (B9) — evitam recriação
 // a cada render e preservam identidade React dos filhos.
@@ -241,9 +240,7 @@ export function TaxTab() {
                     : state.tax.regime === "presumido"
                       ? "Lucro Presumido"
                       : "Lucro Real"}
-                  {desenquadradoSimples && state.tax.regime === "simples"
-                    ? " (desenquadrado)"
-                    : ""}
+                  {desenquadradoSimples && state.tax.regime === "simples" ? " (desenquadrado)" : ""}
                 </span>
               </div>
               <span className="text-[9px] text-muted-foreground">
@@ -329,12 +326,15 @@ export function TaxTab() {
                   </div>
                   {era === "transicao" && (
                     <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-primary/20 pt-2">
-                      <Badge variant="outline" className="border-amber-500/50 bg-amber-500/10 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                      <Badge
+                        variant="outline"
+                        className="border-amber-500/50 bg-amber-500/10 text-[10px] font-medium text-amber-700 dark:text-amber-400"
+                      >
                         Ponto médio 2027–2032
                       </Badge>
                       <span className="text-[10.5px] text-muted-foreground">
-                        Ponto médio do cronograma 2027–2032 — para o valor de um ano específico,
-                        use a projeção ano-a-ano.
+                        Ponto médio do cronograma 2027–2032 — para o valor de um ano específico, use
+                        a projeção ano-a-ano.
                       </span>
                       <button
                         type="button"
@@ -365,13 +365,26 @@ export function TaxTab() {
                             </thead>
                             <tbody>
                               {rows.map((r) => (
-                                <tr key={r.year} className="border-b border-border/30 last:border-0">
+                                <tr
+                                  key={r.year}
+                                  className="border-b border-border/30 last:border-0"
+                                >
                                   <td className="px-2 py-1 font-medium">{r.year}</td>
-                                  <td className="px-2 py-1 text-right num">{r.rates.cbsPct.toFixed(2)}%</td>
-                                  <td className="px-2 py-1 text-right num">{r.rates.ibsPct.toFixed(2)}%</td>
-                                  <td className="px-2 py-1 text-right num">{(r.rates.pisCofinsMult * 100).toFixed(0)}%</td>
-                                  <td className="px-2 py-1 text-right num">{(r.rates.icmsIssMult * 100).toFixed(0)}%</td>
-                                  <td className="px-2 py-1 text-right num">{r.effective.toFixed(2)}%</td>
+                                  <td className="px-2 py-1 text-right num">
+                                    {r.rates.cbsPct.toFixed(2)}%
+                                  </td>
+                                  <td className="px-2 py-1 text-right num">
+                                    {r.rates.ibsPct.toFixed(2)}%
+                                  </td>
+                                  <td className="px-2 py-1 text-right num">
+                                    {(r.rates.pisCofinsMult * 100).toFixed(0)}%
+                                  </td>
+                                  <td className="px-2 py-1 text-right num">
+                                    {(r.rates.icmsIssMult * 100).toFixed(0)}%
+                                  </td>
+                                  <td className="px-2 py-1 text-right num">
+                                    {r.effective.toFixed(2)}%
+                                  </td>
                                   <td className="px-2 py-1 text-right num">{fmtBRL(r.annual)}</td>
                                 </tr>
                               ))}
@@ -380,7 +393,8 @@ export function TaxTab() {
                         );
                       })()}
                       <div className="mt-1 text-[10px] text-muted-foreground">
-                        Cronograma LC 214/2025 · regime <strong>{state.tax.regime}</strong> · mantém receita e custos constantes.
+                        Cronograma LC 214/2025 · regime <strong>{state.tax.regime}</strong> · mantém
+                        receita e custos constantes.
                       </div>
                     </div>
                   )}
@@ -598,7 +612,6 @@ export function TaxTab() {
           </div>
         </RegimeCard>
       </div>
-
 
       {/* Comparativo Atual vs. Reforma — tabela + gráfico */}
       <div className="rounded-lg border border-border/60 bg-card/40">

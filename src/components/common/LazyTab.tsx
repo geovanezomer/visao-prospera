@@ -26,10 +26,10 @@ function TabSkeleton() {
  * @example
  *   const UsersTab = lazyNamed(() => import("./UsersTab"), "UsersTab");
  */
-export function lazyNamed<
-  T extends Record<string, ComponentType<unknown>>,
-  K extends keyof T,
->(loader: () => Promise<T>, name: K): ComponentType<Record<string, unknown>> {
+export function lazyNamed<T extends Record<string, ComponentType<unknown>>, K extends keyof T>(
+  loader: () => Promise<T>,
+  name: K,
+): ComponentType<Record<string, unknown>> {
   const Lazy = lazy(async () => {
     const mod = await loader();
     return { default: mod[name] as ComponentType<Record<string, unknown>> };

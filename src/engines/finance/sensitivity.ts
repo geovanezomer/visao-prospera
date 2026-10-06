@@ -31,8 +31,10 @@ export function applyDriver(state: AppState, driver: DriverKey, deltaPct: number
     // volume sobe receita e custos variáveis proporcionalmente.
     // Inclui `direto_venda` (CPV de serviços/comércio) — auditoria bug #1.
     const costs = state.costs.map((c) =>
-      c.category === "custo_vendas" || c.category === "direto_venda" ||
-      c.category === "variavel" || c.category === "despesa_comercial"
+      c.category === "custo_vendas" ||
+      c.category === "direto_venda" ||
+      c.category === "variavel" ||
+      c.category === "despesa_comercial"
         ? { ...c, values: c.values.map((v) => v * f) }
         : c,
     );
@@ -48,7 +50,12 @@ export function applyDriver(state: AppState, driver: DriverKey, deltaPct: number
     if (driver === "cpv" && (c.category === "custo_vendas" || c.category === "direto_venda"))
       hit = true;
     if (driver === "folha" && isLabor) hit = true;
-    if (driver === "fixos" && (c.category === "fixo" || c.category === "despesa_administrativa") && !isLabor) hit = true;
+    if (
+      driver === "fixos" &&
+      (c.category === "fixo" || c.category === "despesa_administrativa") &&
+      !isLabor
+    )
+      hit = true;
     if (driver === "juros" && c.category === "financeiro") hit = true;
     return hit ? { ...c, values: c.values.map((v) => v * f) } : c;
   });

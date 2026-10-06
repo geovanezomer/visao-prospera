@@ -17,7 +17,6 @@ import {
 } from "./diagnosticoPrompt";
 import { compileAiMove } from "@/engines/finance/levers/aiMoves";
 
-
 /** Detecta se a config tem o mínimo para gerar — usada pra ocultar o card. */
 export function isAIConfigured(cfg: AIConfig): boolean {
   // LM Studio é local: precisa apenas de baseUrl + model.
@@ -146,7 +145,6 @@ function validatePropostas(raw: unknown): PropostaSimulador[] {
   }
   return out;
 }
-
 
 /**
  * Gera o diagnóstico executivo a partir do briefing.

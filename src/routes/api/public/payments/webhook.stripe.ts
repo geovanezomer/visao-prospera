@@ -26,7 +26,11 @@ export const Route = createFileRoute("/api/public/payments/webhook/stripe")({
           const event = await provider.verifyWebhook(request, rawBody);
           // FIX P0 — extrai event.id do payload para replay protection.
           let providerEventId: string | null = null;
-          try { providerEventId = (JSON.parse(rawBody)?.id ?? null) as string | null; } catch { /* noop */ }
+          try {
+            providerEventId = (JSON.parse(rawBody)?.id ?? null) as string | null;
+          } catch {
+            /* noop */
+          }
           await handleNormalizedEvent("stripe", event, providerEventId);
           return Response.json({ received: true });
         } catch (e) {

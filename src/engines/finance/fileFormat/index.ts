@@ -123,7 +123,6 @@ export function parseFinnanceFile(raw: unknown): OpenedFile {
   };
 }
 
-
 /** Remove caracteres inválidos para nome de arquivo cross-OS. */
 export function sanitizeFilename(name: string): string {
   return (

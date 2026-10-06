@@ -13,35 +13,63 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  LayoutDashboard, Users, Package, Settings, Mail, Megaphone, Webhook,
-  CreditCard, Flag, Activity, FileClock, FileText,
-  Loader2, Send, ListTree, Download,
+  LayoutDashboard,
+  Users,
+  Package,
+  Settings,
+  Mail,
+  Megaphone,
+  Webhook,
+  CreditCard,
+  Flag,
+  Activity,
+  FileClock,
+  FileText,
+  Loader2,
+  Send,
+  ListTree,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  CommandDialog, CommandInput, CommandList, CommandEmpty,
-  CommandGroup, CommandItem, CommandSeparator,
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandSeparator,
 } from "@/components/ui/command";
 import { listAdminUsers, resendMagicLink, type AdminUserRow } from "@/lib/admin/admin.functions";
 import { exportUsersCsv } from "@/lib/admin/export.functions";
 
 type TabKey =
-  | "dashboard" | "usuarios" | "planos" | "sistema" | "emails" | "broadcasts"
-  | "webhooks" | "provider" | "flags" | "status" | "auditoria" | "legal";
+  | "dashboard"
+  | "usuarios"
+  | "planos"
+  | "sistema"
+  | "emails"
+  | "broadcasts"
+  | "webhooks"
+  | "provider"
+  | "flags"
+  | "status"
+  | "auditoria"
+  | "legal";
 
 const TABS: { key: TabKey; label: string; Icon: typeof Users }[] = [
-  { key: "dashboard",  label: "Dashboard",         Icon: LayoutDashboard },
-  { key: "usuarios",   label: "Usuários",          Icon: Users },
-  { key: "planos",     label: "Planos",            Icon: Package },
-  { key: "sistema",    label: "Sistema",           Icon: Settings },
-  { key: "emails",     label: "E-mails",           Icon: Mail },
-  { key: "broadcasts", label: "Broadcasts",        Icon: Megaphone },
-  { key: "webhooks",   label: "Webhooks",          Icon: Webhook },
-  { key: "provider",   label: "Provider",          Icon: CreditCard },
-  { key: "flags",      label: "Feature Flags",     Icon: Flag },
-  { key: "status",     label: "Status",            Icon: Activity },
-  { key: "auditoria",  label: "Auditoria",         Icon: FileClock },
-  { key: "legal",      label: "Termos / Privacidade", Icon: FileText },
+  { key: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
+  { key: "usuarios", label: "Usuários", Icon: Users },
+  { key: "planos", label: "Planos", Icon: Package },
+  { key: "sistema", label: "Sistema", Icon: Settings },
+  { key: "emails", label: "E-mails", Icon: Mail },
+  { key: "broadcasts", label: "Broadcasts", Icon: Megaphone },
+  { key: "webhooks", label: "Webhooks", Icon: Webhook },
+  { key: "provider", label: "Provider", Icon: CreditCard },
+  { key: "flags", label: "Feature Flags", Icon: Flag },
+  { key: "status", label: "Status", Icon: Activity },
+  { key: "auditoria", label: "Auditoria", Icon: FileClock },
+  { key: "legal", label: "Termos / Privacidade", Icon: FileText },
 ];
 
 export function AdminCommandPalette({
@@ -119,7 +147,9 @@ export function AdminCommandPalette({
       const blob = new Blob([r.csv ?? ""], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = `usuarios-${Date.now()}.csv`; a.click();
+      a.href = url;
+      a.download = `usuarios-${Date.now()}.csv`;
+      a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao exportar CSV.");
@@ -149,11 +179,7 @@ export function AdminCommandPalette({
 
         <CommandGroup heading="Navegação">
           {TABS.map(({ key, label, Icon }) => (
-            <CommandItem
-              key={key}
-              value={`nav ${label}`}
-              onSelect={() => goToTab(key)}
-            >
+            <CommandItem key={key} value={`nav ${label}`} onSelect={() => goToTab(key)}>
               <Icon className="mr-2 h-4 w-4" />
               <span>Ir para {label}</span>
             </CommandItem>
@@ -168,12 +194,17 @@ export function AdminCommandPalette({
                 <CommandItem
                   key={u.id}
                   value={`user ${u.email} ${u.displayName ?? ""}`}
-                  onSelect={() => { setSelected(u); openUser(u); }}
+                  onSelect={() => {
+                    setSelected(u);
+                    openUser(u);
+                  }}
                 >
                   <Users className="mr-2 h-4 w-4" />
                   <div className="flex flex-1 flex-col">
                     <span>{u.displayName ?? u.email}</span>
-                    <span className="text-[10px] text-muted-foreground">{u.email} · {u.plan ?? "free"}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {u.email} · {u.plan ?? "free"}
+                    </span>
                   </div>
                 </CommandItem>
               ))}
@@ -184,7 +215,9 @@ export function AdminCommandPalette({
         {(selected || results.length > 0) && (
           <>
             <CommandSeparator />
-            <CommandGroup heading={selected ? `Ações rápidas · ${selected.email}` : "Ações rápidas"}>
+            <CommandGroup
+              heading={selected ? `Ações rápidas · ${selected.email}` : "Ações rápidas"}
+            >
               {selected && (
                 <>
                   <CommandItem
@@ -213,9 +246,15 @@ export function AdminCommandPalette({
       </CommandList>
 
       <div className="flex items-center justify-end gap-3 border-t border-border/40 px-3 py-1.5 text-[10px] text-muted-foreground">
-        <span><kbd className="rounded border border-border/60 px-1">↑↓</kbd> navegar</span>
-        <span><kbd className="rounded border border-border/60 px-1">↵</kbd> abrir</span>
-        <span><kbd className="rounded border border-border/60 px-1">esc</kbd> fechar</span>
+        <span>
+          <kbd className="rounded border border-border/60 px-1">↑↓</kbd> navegar
+        </span>
+        <span>
+          <kbd className="rounded border border-border/60 px-1">↵</kbd> abrir
+        </span>
+        <span>
+          <kbd className="rounded border border-border/60 px-1">esc</kbd> fechar
+        </span>
       </div>
     </CommandDialog>
   );

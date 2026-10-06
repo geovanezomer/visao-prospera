@@ -19,10 +19,7 @@ import {
   useFinanceReadOnly,
 } from "@/engines/finance/AppStateContext";
 import { fmtBRL } from "@/engines/finance/format";
-import {
-  aggregateMutuos,
-  SELIC_MENSAL_REFERENCIA,
-} from "@/engines/finance/mutuosSocios";
+import { aggregateMutuos, SELIC_MENSAL_REFERENCIA } from "@/engines/finance/mutuosSocios";
 import type { MutuoSocio } from "@/engines/finance/types";
 import { SectionTitle, MoneyInput } from "@/components/sim/shared/primitives";
 
@@ -75,7 +72,13 @@ export function MutuosSociosCard() {
         mutuosDevolvidos: agg.devolucao,
       });
     }
-  }, [agg, readOnly, state.cashflow.mutuosConcedidos, state.cashflow.mutuosDevolvidos, patchCashflow]);
+  }, [
+    agg,
+    readOnly,
+    state.cashflow.mutuosConcedidos,
+    state.cashflow.mutuosDevolvidos,
+    patchCashflow,
+  ]);
 
   // SSOT — Juros recebidos vão automaticamente para Receita Financeira na DRE.
   // Como `cashflow.receitasFinanceiras` deriva de `revenue.receitasFinanceiras`
@@ -113,9 +116,7 @@ export function MutuosSociosCard() {
     });
   }, [agg, readOnly, update]);
 
-
-  const setMutuos = (next: MutuoSocio[]) =>
-    update((s) => ({ ...s, mutuosSocios: next }));
+  const setMutuos = (next: MutuoSocio[]) => update((s) => ({ ...s, mutuosSocios: next }));
 
   const addMutuo = () => {
     const nome = socios[0]?.nome ?? `Sócio ${mutuos.length + 1}`;
@@ -125,8 +126,7 @@ export function MutuosSociosCard() {
   const updateMutuo = (id: string, patch: Partial<MutuoSocio>) =>
     setMutuos(mutuos.map((m) => (m.id === id ? { ...m, ...patch } : m)));
 
-  const removeMutuo = (id: string) =>
-    setMutuos(mutuos.filter((m) => m.id !== id));
+  const removeMutuo = (id: string) => setMutuos(mutuos.filter((m) => m.id !== id));
 
   // Alertas por contrato (para badge na linha)
   const algumSemContrato = mutuos.some((m) => m.valorConcedido > 0 && m.prazoMeses <= 0);
@@ -148,11 +148,12 @@ export function MutuosSociosCard() {
       {/* Alerta fixo — tributário + IOF */}
       {mutuos.length > 0 && (
         <div className="p-4 pb-0">
-          <Alert variant="destructive" className="border-amber-500/40 bg-amber-500/5 text-amber-200">
+          <Alert
+            variant="destructive"
+            className="border-amber-500/40 bg-amber-500/5 text-amber-200"
+          >
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="text-amber-200">
-              Atenção — formalização obrigatória
-            </AlertTitle>
+            <AlertTitle className="text-amber-200">Atenção — formalização obrigatória</AlertTitle>
             <AlertDescription className="space-y-2 text-xs text-amber-100/90">
               <p>
                 <strong>Risco tributário (RFB):</strong> a Receita Federal pode reclassificar o
@@ -162,8 +163,8 @@ export function MutuosSociosCard() {
               </p>
               <p>
                 <strong>IOF/Crédito:</strong> mútuo PJ→PF está sujeito a IOF (alíquota diária +
-                0,38% adicional), recolhido pela PJ mutuante. Considere essa carga ao definir a
-                taxa cobrada do sócio.
+                0,38% adicional), recolhido pela PJ mutuante. Considere essa carga ao definir a taxa
+                cobrada do sócio.
               </p>
               {algumSemContrato && (
                 <p className="font-semibold">
@@ -273,9 +274,7 @@ export function MutuosSociosCard() {
                       disabled={readOnly}
                     />
                   </td>
-                  <td className="px-2 py-2 text-right font-mono">
-                    {fmtBRL(singleAgg.saldoFinal)}
-                  </td>
+                  <td className="px-2 py-2 text-right font-mono">{fmtBRL(singleAgg.saldoFinal)}</td>
                   <td className="px-2 py-2 text-right">
                     {!readOnly && (
                       <Button
@@ -308,10 +307,9 @@ export function MutuosSociosCard() {
               <tr className="bg-card/60 text-xs text-muted-foreground">
                 <td colSpan={6} className="px-3 py-2">
                   <Info className="mr-1 inline h-3 w-3" />
-                  Saldo devedor remanescente ao fim do ano vai ao Balanço (Mútuos a Receber).
-                  Juros são sincronizados automaticamente em Receitas → "Juros sobre mútuo a
-                  sócios" e refletem na DRE (Resultado Financeiro) e no Fluxo de Caixa
-                  Operacional.
+                  Saldo devedor remanescente ao fim do ano vai ao Balanço (Mútuos a Receber). Juros
+                  são sincronizados automaticamente em Receitas → "Juros sobre mútuo a sócios" e
+                  refletem na DRE (Resultado Financeiro) e no Fluxo de Caixa Operacional.
                 </td>
                 <td className="px-2 py-2 text-right font-mono">{fmtBRL(agg.saldoFinal)}</td>
                 <td></td>

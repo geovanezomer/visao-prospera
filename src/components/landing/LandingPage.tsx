@@ -42,8 +42,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-
-
 /* ============================================================
    HERO
    ============================================================ */
@@ -73,8 +71,8 @@ function Hero() {
         <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
           Impactos da Reforma Tributária e Split Payment, DRE, Balanço, Fluxo de Caixa,{" "}
           <strong className="text-foreground">+40 indicadores</strong> em um único painel — com{" "}
-          <strong className="text-foreground">Inteligência Artificial</strong> que entrega diagnósticos e relatórios em
-          PDF em tempo real.
+          <strong className="text-foreground">Inteligência Artificial</strong> que entrega
+          diagnósticos e relatórios em PDF em tempo real.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -115,7 +113,8 @@ function Hero() {
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10"
           style={{
-            background: "linear-gradient(180deg, color-mix(in oklab, var(--primary) 6%, transparent), transparent)",
+            background:
+              "linear-gradient(180deg, color-mix(in oklab, var(--primary) 6%, transparent), transparent)",
           }}
         />
         <div className="mx-auto max-w-6xl px-6 py-14">
@@ -174,11 +173,12 @@ function AudienceStrip() {
         <div className="mx-auto max-w-2xl text-center">
           <SectionEyebrow>Para quem é</SectionEyebrow>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            Feito para <span className="text-primary">empresários, consultores e BPOs Financeiros</span>
+            Feito para{" "}
+            <span className="text-primary">empresários, consultores e BPOs Financeiros</span>
           </h2>
           <p className="mt-4 text-base text-muted-foreground">
-            Não importa se você comanda a empresa, consulta para ela ou cuida dos números dela — o FinnancePRO traduz
-            complexidade financeira em decisões simplificadas.
+            Não importa se você comanda a empresa, consulta para ela ou cuida dos números dela — o
+            FinnancePRO traduz complexidade financeira em decisões simplificadas.
           </p>
         </div>
 
@@ -258,8 +258,8 @@ function ProblemAgitation() {
             <span className="text-muted-foreground">Precisa de clareza em tempo real.</span>
           </h2>
           <p className="mt-4 text-base text-muted-foreground">
-            Toda decisão financeira mal calculada custa caro. E quase nunca aparece no extrato — aparece no resultado do
-            próximo trimestre da empresa.
+            Toda decisão financeira mal calculada custa caro. E quase nunca aparece no extrato —
+            aparece no resultado do próximo trimestre da empresa.
           </p>
         </div>
 
@@ -274,7 +274,9 @@ function ProblemAgitation() {
               </span>
               <div>
                 <div className="text-sm font-semibold text-foreground">{d.dor}</div>
-                <div className="mt-1 text-xs leading-relaxed text-muted-foreground">{d.consequencia}</div>
+                <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {d.consequencia}
+                </div>
               </div>
             </div>
           ))}
@@ -393,7 +395,10 @@ function FeatureGrid() {
 
         <div className="mt-12 grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
           {features.map((f) => (
-            <div key={f.t} className="group flex flex-col gap-3 bg-card p-6 transition hover:bg-accent/30">
+            <div
+              key={f.t}
+              className="group flex flex-col gap-3 bg-card p-6 transition hover:bg-accent/30"
+            >
               <f.icon className="h-6 w-6 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">{f.t}</h3>
               <p className="text-xs leading-relaxed text-muted-foreground">{f.d}</p>
@@ -421,7 +426,8 @@ function MetricsBand() {
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
-          background: "linear-gradient(180deg, color-mix(in oklab, var(--primary) 6%, transparent), transparent)",
+          background:
+            "linear-gradient(180deg, color-mix(in oklab, var(--primary) 6%, transparent), transparent)",
         }}
       />
       <div className="mx-auto max-w-6xl px-6">
@@ -533,7 +539,9 @@ function HowItWorks() {
                   <div className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-card text-primary">
                     <p.icon className="h-5 w-5" />
                   </div>
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary/70">Passo {p.n}</div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary/70">
+                    Passo {p.n}
+                  </div>
                 </div>
                 <h3 className="mt-5 text-base font-semibold text-foreground">{p.t}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.d}</p>
@@ -673,7 +681,6 @@ function ComparisonTable() {
 
 // Seção "Planos" extraída para src/components/landing/PlansSection.tsx.
 
-
 /* ============================================================
     AUTORIDADE
    ============================================================ */
@@ -694,13 +701,19 @@ function AuthorityBlock() {
               <div className="text-center">
                 <div className="mx-auto flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-2 border-primary/40 bg-background text-2xl font-semibold text-primary">
                   {branding.authorPhotoUrl ? (
-                    <img src={branding.authorPhotoUrl} alt="Geovane Zomer" className="h-full w-full object-cover" />
+                    <img
+                      src={branding.authorPhotoUrl}
+                      alt="Geovane Zomer"
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     "GZ"
                   )}
                 </div>
                 <div className="mt-4 text-sm font-semibold text-foreground">Geovane Zomer</div>
-                <div className="text-xs text-muted-foreground">Consultor Financeiro & Investimentos</div>
+                <div className="text-xs text-muted-foreground">
+                  Consultor Financeiro & Investimentos
+                </div>
                 <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-primary">
                   <ShieldCheck className="h-3 w-3" />
                   CVM 3354-5
@@ -714,9 +727,12 @@ function AuthorityBlock() {
               </h2>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
                 O FinnancePRO nasceu dentro da{" "}
-                <strong className="text-foreground">GZ Consultoria Financeira & Investimentos</strong> para resolver o
-                que toda planilha falha: dar a empresários, consultores e BPOs Financeiros a mesma profundidade de
-                análise que grandes corporações têm — sem o custo de um time de CFO.
+                <strong className="text-foreground">
+                  GZ Consultoria Financeira & Investimentos
+                </strong>{" "}
+                para resolver o que toda planilha falha: dar a empresários, consultores e BPOs
+                Financeiros a mesma profundidade de análise que grandes corporações têm — sem o
+                custo de um time de CFO.
               </p>
               <ul className="mt-6 space-y-2 text-sm text-foreground/90">
                 {[
@@ -784,7 +800,9 @@ function SocialProof() {
                 }}
               />
               <Quote className="h-7 w-7 text-primary/60" />
-              <blockquote className="mt-4 flex-1 text-sm leading-relaxed text-foreground/90">"{c.q}"</blockquote>
+              <blockquote className="mt-4 flex-1 text-sm leading-relaxed text-foreground/90">
+                "{c.q}"
+              </blockquote>
               <figcaption className="mt-6 flex items-center gap-3 border-t border-border pt-5">
                 <div className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary">
                   <c.icon className="h-4 w-4" />
@@ -853,9 +871,17 @@ function FaqAccordion() {
                   aria-expanded={isOpen}
                 >
                   <span>{f.q}</span>
-                  <span className={`text-primary transition-transform ${isOpen ? "rotate-45" : ""}`}>+</span>
+                  <span
+                    className={`text-primary transition-transform ${isOpen ? "rotate-45" : ""}`}
+                  >
+                    +
+                  </span>
                 </button>
-                {isOpen && <div className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">{f.a}</div>}
+                {isOpen && (
+                  <div className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">
+                    {f.a}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -941,7 +967,11 @@ function FinalCta({ onRequestTrial }: { onRequestTrial: () => void }) {
    HEADER + FOOTER + helpers
    ============================================================ */
 function SectionEyebrow({ children }: { children: React.ReactNode }) {
-  return <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{children}</span>;
+  return (
+    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+      {children}
+    </span>
+  );
 }
 
 function Header() {
@@ -1050,4 +1080,3 @@ export function LandingPage({
     </div>
   );
 }
-

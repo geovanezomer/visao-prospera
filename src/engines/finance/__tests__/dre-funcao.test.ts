@@ -12,11 +12,7 @@ import { buildDRE } from "../dre";
 import { createState, m12 } from "./helpers";
 import type { CostLine } from "../types";
 
-const line = (
-  id: string,
-  category: CostLine["category"],
-  monthly: number,
-): CostLine => ({
+const line = (id: string, category: CostLine["category"], monthly: number): CostLine => ({
   id,
   label: id,
   category,
@@ -27,7 +23,12 @@ const line = (
 describe("DRE por função — separação Comerciais × Administrativas", () => {
   it("acumula despesa_comercial e despesa_administrativa em buckets distintos por mês", () => {
     const s = createState({
-      revenue: { bruta: m12(100_000), inadimplencia: m12(0), deducoes: [], receitasFinanceiras: [] },
+      revenue: {
+        bruta: m12(100_000),
+        inadimplencia: m12(0),
+        deducoes: [],
+        receitasFinanceiras: [],
+      },
       tax: { regime: "presumido" },
       costs: [
         line("mkt", "despesa_comercial", 5_000), // comercial
@@ -50,8 +51,7 @@ describe("DRE por função — separação Comerciais × Administrativas", () =>
         for (let i = 0; i < 12; i++) comerciais[i] += c.values[i];
       else if (c.category === "despesa_administrativa" || c.category === "fixo")
         for (let i = 0; i < 12; i++) admin[i] += c.values[i];
-      else if (c.category === "financeiro")
-        for (let i = 0; i < 12; i++) financ[i] += c.values[i];
+      else if (c.category === "financeiro") for (let i = 0; i < 12; i++) financ[i] += c.values[i];
     }
 
     // Mês a mês: comerciais = 8.000, admin = 5.000, financeiras = 2.000.
@@ -64,10 +64,7 @@ describe("DRE por função — separação Comerciais × Administrativas", () =>
     // EBITDA = LB − (Comerciais + Admin). Lucro Bruto = RecLíq − CPV.
     // Diferença (LB − EBITDA) deve igualar a soma de Comerciais + Admin por mês.
     for (let i = 0; i < 12; i++) {
-      expect(dre.lucroBruto[i] - dre.ebitda[i]).toBeCloseTo(
-        comerciais[i] + admin[i],
-        2,
-      );
+      expect(dre.lucroBruto[i] - dre.ebitda[i]).toBeCloseTo(comerciais[i] + admin[i], 2);
     }
 
     // Financeiras NÃO entram no EBITDA — vão ao Resultado Financeiro pós-EBIT.

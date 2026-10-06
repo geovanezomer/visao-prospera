@@ -5,8 +5,15 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  RefreshCw, TrendingUp, Users as UsersIcon, AlertTriangle,
-  Activity, Sparkles, ArrowUp, ArrowDown, Minus,
+  RefreshCw,
+  TrendingUp,
+  Users as UsersIcon,
+  AlertTriangle,
+  Activity,
+  Sparkles,
+  ArrowUp,
+  ArrowDown,
+  Minus,
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { ResponsiveContainer, LineChart, Line } from "recharts";
@@ -24,7 +31,11 @@ import {
 import { CardSkeletonGrid } from "@/components/admin/ui-states";
 
 function brl(centavos: number): string {
-  return (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  return (centavos / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  });
 }
 function pct(x: number): string {
   return (x * 100).toFixed(1) + "%";
@@ -44,7 +55,13 @@ function deltaOf(d: Delta): { direction: DeltaDirection; ratio: number } {
 function DeltaBadge({ d, higherIsBetter = true }: { d: Delta; higherIsBetter?: boolean }) {
   const { direction, ratio } = deltaOf(d);
   if (direction === "new") return <span className="text-[10px] text-muted-foreground">novo</span>;
-  if (direction === "flat") return <span className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground"><Minus className="h-3 w-3" />0%</span>;
+  if (direction === "flat")
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground">
+        <Minus className="h-3 w-3" />
+        0%
+      </span>
+    );
   const good = (direction === "up") === higherIsBetter;
   const cls = good ? "text-emerald-600" : "text-red-600";
   const Icon = direction === "up" ? ArrowUp : ArrowDown;
@@ -59,7 +76,14 @@ function DeltaBadge({ d, higherIsBetter = true }: { d: Delta; higherIsBetter?: b
 // ── Card com delta e sparkline opcional ──────────────────────────────────────
 type CardTone = "ok" | "warn" | "bad" | "info" | undefined;
 function Card({
-  label, value, sub, tone, delta, higherIsBetter = true, sparkKey, series,
+  label,
+  value,
+  sub,
+  tone,
+  delta,
+  higherIsBetter = true,
+  sparkKey,
+  series,
 }: {
   label: string;
   value: string;
@@ -71,11 +95,15 @@ function Card({
   series?: SeriesPoint[];
 }) {
   const toneCls =
-    tone === "ok" ? "text-emerald-600"
-    : tone === "warn" ? "text-amber-600"
-    : tone === "bad" ? "text-red-600"
-    : tone === "info" ? "text-blue-600"
-    : "text-foreground";
+    tone === "ok"
+      ? "text-emerald-600"
+      : tone === "warn"
+        ? "text-amber-600"
+        : tone === "bad"
+          ? "text-red-600"
+          : tone === "info"
+            ? "text-blue-600"
+            : "text-foreground";
   return (
     <div className="rounded-lg border border-border/60 bg-card p-4">
       <div className="flex items-center justify-between gap-2">
@@ -125,7 +153,11 @@ export function DashboardTab() {
   const [loading, setLoading] = useState(false);
 
   const setPeriod = (p: PeriodDays) => {
-    navigate({ to: "/admin", search: (prev: Record<string, unknown>) => ({ ...prev, period: p }), replace: true });
+    navigate({
+      to: "/admin",
+      search: (prev: Record<string, unknown>) => ({ ...prev, period: p }),
+      replace: true,
+    });
   };
 
   const load = async (p: PeriodDays) => {
@@ -139,7 +171,9 @@ export function DashboardTab() {
       setLoading(false);
     }
   };
-  useEffect(() => { void load(period as PeriodDays); }, [period]);
+  useEffect(() => {
+    void load(period as PeriodDays);
+  }, [period]);
 
   if (!m) {
     return (
@@ -189,9 +223,28 @@ export function DashboardTab() {
           <TrendingUp className="h-3.5 w-3.5" /> Receita
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Card label="MRR" value={brl(m.mrr.current)} sub="Receita mensal recorrente" tone="ok" delta={m.mrr} sparkKey="mrrCents" series={m.series} />
-          <Card label="ARR" value={brl(m.arr.current)} sub="Receita anualizada" tone="ok" delta={m.arr} />
-          <Card label="Ativos" value={String(m.activeSubs.current)} sub="Assinaturas pagantes" delta={m.activeSubs} />
+          <Card
+            label="MRR"
+            value={brl(m.mrr.current)}
+            sub="Receita mensal recorrente"
+            tone="ok"
+            delta={m.mrr}
+            sparkKey="mrrCents"
+            series={m.series}
+          />
+          <Card
+            label="ARR"
+            value={brl(m.arr.current)}
+            sub="Receita anualizada"
+            tone="ok"
+            delta={m.arr}
+          />
+          <Card
+            label="Ativos"
+            value={String(m.activeSubs.current)}
+            sub="Assinaturas pagantes"
+            delta={m.activeSubs}
+          />
           <Card label="Lifetime" value={String(m.snapshot.lifetime)} sub="Acessos vitalícios" />
         </div>
       </div>
@@ -202,10 +255,26 @@ export function DashboardTab() {
           <UsersIcon className="h-3.5 w-3.5" /> Aquisição
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Card label={`Signups (${m.periodDays}d)`} value={String(m.signups.current)} delta={m.signups} sparkKey="signups" series={m.series} />
-          <Card label={`Trials (${m.periodDays}d)`} value={String(m.trials.current)} tone="info" delta={m.trials} />
+          <Card
+            label={`Signups (${m.periodDays}d)`}
+            value={String(m.signups.current)}
+            delta={m.signups}
+            sparkKey="signups"
+            series={m.series}
+          />
+          <Card
+            label={`Trials (${m.periodDays}d)`}
+            value={String(m.trials.current)}
+            tone="info"
+            delta={m.trials}
+          />
           <Card label="Em trial (agora)" value={String(m.snapshot.trialing)} tone="info" />
-          <Card label="Conversão trial→pago" value={pct(m.conversion.current)} tone="info" delta={m.conversion} />
+          <Card
+            label="Conversão trial→pago"
+            value={pct(m.conversion.current)}
+            tone="info"
+            delta={m.conversion}
+          />
         </div>
       </div>
 
@@ -215,7 +284,12 @@ export function DashboardTab() {
           <AlertTriangle className="h-3.5 w-3.5" /> Saúde da carteira
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Card label="Past due (agora)" value={String(m.snapshot.pastDue)} sub="Inadimplência ativa" tone={m.snapshot.pastDue > 0 ? "warn" : "ok"} />
+          <Card
+            label="Past due (agora)"
+            value={String(m.snapshot.pastDue)}
+            sub="Inadimplência ativa"
+            tone={m.snapshot.pastDue > 0 ? "warn" : "ok"}
+          />
           <Card
             label={`Churn (${m.periodDays}d)`}
             value={String(m.churn.current)}
@@ -229,7 +303,11 @@ export function DashboardTab() {
           <Card
             label="Webhooks 24h"
             value={`${m.snapshot.webhook24h.ok}/${m.snapshot.webhook24h.total}`}
-            sub={m.snapshot.webhook24h.failed > 0 ? `${m.snapshot.webhook24h.failed} falhas` : "sem falhas"}
+            sub={
+              m.snapshot.webhook24h.failed > 0
+                ? `${m.snapshot.webhook24h.failed} falhas`
+                : "sem falhas"
+            }
             tone={m.snapshot.webhook24h.failed > 0 ? "warn" : "ok"}
           />
         </div>
@@ -243,9 +321,17 @@ export function DashboardTab() {
         <div className="flex flex-col gap-2 md:flex-row md:items-stretch">
           <FunnelStep label="Trials solicitados" value={f.trialsRequested} />
           <div className="hidden md:flex items-center px-1 text-muted-foreground">→</div>
-          <FunnelStep label="Trials ativados" value={f.trialsActivated} rate={rate(f.trialsActivated, f.trialsRequested)} />
+          <FunnelStep
+            label="Trials ativados"
+            value={f.trialsActivated}
+            rate={rate(f.trialsActivated, f.trialsRequested)}
+          />
           <div className="hidden md:flex items-center px-1 text-muted-foreground">→</div>
-          <FunnelStep label="Checkouts iniciados" value={f.checkoutsStarted} rate={rate(f.checkoutsStarted, f.trialsActivated)} />
+          <FunnelStep
+            label="Checkouts iniciados"
+            value={f.checkoutsStarted}
+            rate={rate(f.checkoutsStarted, f.trialsActivated)}
+          />
           <div className="hidden md:flex items-center px-1 text-muted-foreground">→</div>
           <FunnelStep label="Pagos" value={f.paid} rate={rate(f.paid, f.checkoutsStarted)} />
         </div>
@@ -267,11 +353,15 @@ export function DashboardTab() {
           <div className="rounded-lg border border-border/60 bg-card p-4">
             <div className="text-xs uppercase text-muted-foreground">Por plano</div>
             <div className="mt-2 flex flex-wrap gap-2">
-              {Object.entries(m.snapshot.byPlan).length === 0
-                ? <span className="text-xs text-muted-foreground">—</span>
-                : Object.entries(m.snapshot.byPlan).map(([p, n]) => (
-                    <Badge key={p} variant="outline">{p}: {String(n)}</Badge>
-                  ))}
+              {Object.entries(m.snapshot.byPlan).length === 0 ? (
+                <span className="text-xs text-muted-foreground">—</span>
+              ) : (
+                Object.entries(m.snapshot.byPlan).map(([p, n]) => (
+                  <Badge key={p} variant="outline">
+                    {p}: {String(n)}
+                  </Badge>
+                ))
+              )}
             </div>
           </div>
         </div>

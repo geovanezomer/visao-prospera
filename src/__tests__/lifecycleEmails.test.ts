@@ -46,10 +46,7 @@ function makeAdmin(opts: {
                   limit: () => ({
                     maybeSingle: async () => {
                       const found = log.find(
-                        (r) =>
-                          r.kind === kind &&
-                          r.subscription_id === subId &&
-                          r.sent_at >= since,
+                        (r) => r.kind === kind && r.subscription_id === subId && r.sent_at >= since,
                       );
                       return { data: found ?? null, error: null };
                     },
@@ -160,9 +157,8 @@ afterEach(() => {
 
 describe("sendLifecycleEmail", () => {
   test("resolve e-mail via subscriptions→auth e envia via Resend", async () => {
-    const { sendLifecycleEmail, resolveSubscriberEmail } = await import(
-      "@/lib/payments/lifecycleEmails.server"
-    );
+    const { sendLifecycleEmail, resolveSubscriberEmail } =
+      await import("@/lib/payments/lifecycleEmails.server");
     const admin = makeAdmin({
       subscribers: {
         sub_1: { userId: "usr_1", email: "cliente@example.com", displayName: "Ana" },

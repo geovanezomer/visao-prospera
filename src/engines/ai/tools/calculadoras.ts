@@ -18,11 +18,7 @@ import {
   cltVsPjInputSchema,
   type CltVsPjInput,
 } from "@/engines/calculadoras/cltVsPj";
-import {
-  calcularFerias,
-  feriasInputSchema,
-  type FeriasInput,
-} from "@/engines/calculadoras/ferias";
+import { calcularFerias, feriasInputSchema, type FeriasInput } from "@/engines/calculadoras/ferias";
 import {
   calcularDecimoTerceiro,
   decimoTerceiroInputSchema,
@@ -294,7 +290,8 @@ const handlers: Record<string, ToolHandler> = {
       `| Verba | Valor | INSS | IRRF |`,
       `|---|---:|:-:|:-:|`,
       ...o.verbas.map(
-        (v) => `| ${v.rotulo} | ${brl(v.valor)} | ${v.incideINSS ? "✓" : "—"} | ${v.incideIRRF ? "✓" : "—"} |`,
+        (v) =>
+          `| ${v.rotulo} | ${brl(v.valor)} | ${v.incideINSS ? "✓" : "—"} | ${v.incideIRRF ? "✓" : "—"} |`,
       ),
       ``,
       `**Bruto:** ${brl(o.totalBruto)} · INSS ${brl(o.inss)} · IRRF ${brl(o.irrf)}`,

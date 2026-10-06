@@ -30,9 +30,7 @@ class MemStorage {
 globalThis.localStorage = new MemStorage();
 
 // Import APÓS polyfills.
-const { saveKey, saveKeySync, loadKey, removeKey } = await import(
-  "@/engines/finance/persistence"
-);
+const { saveKey, saveKeySync, loadKey, removeKey } = await import("@/engines/finance/persistence");
 const { openDB } = await import("idb");
 
 const STORE = "kv";
@@ -59,9 +57,7 @@ describe("persistence — espelhamento localStorage ⇄ IndexedDB", () => {
     await saveKey("test:user", { name: "Maria", id: 42 });
 
     // localStorage: gravação síncrona, já visível
-    expect(localStorage.getItem("test:user")).toBe(
-      JSON.stringify({ name: "Maria", id: 42 }),
-    );
+    expect(localStorage.getItem("test:user")).toBe(JSON.stringify({ name: "Maria", id: 42 }));
     // IndexedDB: persistido
     expect(await readIDB("test:user")).toEqual({ name: "Maria", id: 42 });
   });
@@ -70,9 +66,7 @@ describe("persistence — espelhamento localStorage ⇄ IndexedDB", () => {
     saveKeySync("test:cfg", { theme: "dark" });
 
     // Mirror síncrono — imediatamente legível
-    expect(localStorage.getItem("test:cfg")).toBe(
-      JSON.stringify({ theme: "dark" }),
-    );
+    expect(localStorage.getItem("test:cfg")).toBe(JSON.stringify({ theme: "dark" }));
 
     // IDB chega em microtask
     await new Promise((r) => setTimeout(r, 20));

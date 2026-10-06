@@ -33,8 +33,11 @@ function ncgFromBalanco(model: ReturnType<typeof buildFinancialModel>): number {
   const ac = bal.ativoCirculante ?? {};
   const pc = bal.passivoCirculante ?? {};
   const cr = (ac.contasReceberClientes ?? 0) - (ac.pdd ?? 0);
-  return (cr + (ac.estoques ?? 0)) -
-    ((pc.fornecedores ?? 0) + (pc.salariosEncargos ?? 0) + (pc.impostosPagar ?? 0));
+  return (
+    cr +
+    (ac.estoques ?? 0) -
+    ((pc.fornecedores ?? 0) + (pc.salariosEncargos ?? 0) + (pc.impostosPagar ?? 0))
+  );
 }
 
 describe("NCG — SSOT derivado do Balanço (branches de estoqueMedio para PME)", () => {

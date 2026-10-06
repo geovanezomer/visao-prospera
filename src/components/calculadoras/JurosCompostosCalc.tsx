@@ -124,8 +124,7 @@ export function JurosCompostosCalc() {
   async function exportar() {
     if (!sim) return;
     const taxaLabel = `${taxa}% ${taxaTipo}`;
-    const periodoLabel =
-      periodoTipo === "anos" ? `${periodo} ano(s)` : `${periodo} mês(es)`;
+    const periodoLabel = periodoTipo === "anos" ? `${periodo} ano(s)` : `${periodo} mês(es)`;
     // Amostra anual para a tabela.
     const linhasAnuais = sim.linhas.filter((l) => l.mes % 12 === 0 || l.mes === sim.linhas.length);
     await exportCalculadoraPDF({
@@ -138,9 +137,24 @@ export function JurosCompostosCalc() {
         { label: "Período", value: periodoLabel },
       ],
       kpis: [
-        { label: "Valor final", value: fmtBRL(sim.totalFinal), sub: `${sim.multiplicador.toFixed(1)}× o investido`, tone: "ok" },
-        { label: "Total investido", value: fmtBRL(sim.totalInvestido), sub: fmtPct(sim.pctInvestido), tone: "neutral" },
-        { label: "Total em juros", value: fmtBRL(sim.totalJuros), sub: fmtPct(sim.pctJuros), tone: "ok" },
+        {
+          label: "Valor final",
+          value: fmtBRL(sim.totalFinal),
+          sub: `${sim.multiplicador.toFixed(1)}× o investido`,
+          tone: "ok",
+        },
+        {
+          label: "Total investido",
+          value: fmtBRL(sim.totalInvestido),
+          sub: fmtPct(sim.pctInvestido),
+          tone: "neutral",
+        },
+        {
+          label: "Total em juros",
+          value: fmtBRL(sim.totalJuros),
+          sub: fmtPct(sim.pctJuros),
+          tone: "ok",
+        },
       ],
       sections: [
         {

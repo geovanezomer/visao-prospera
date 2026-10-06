@@ -3,7 +3,13 @@ import { useFinance, usePatchRevenue } from "@/engines/finance/AppStateContext";
 import { AppState, RevenueDeducao } from "@/engines/finance/types";
 import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { MoneyInput, PctInput, StatCard, SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
+import {
+  MoneyInput,
+  PctInput,
+  StatCard,
+  SectionTitle,
+  HelpTip,
+} from "@/components/sim/shared/primitives";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
@@ -248,9 +254,7 @@ export function RevenueTab() {
       ),
     }));
 
-  const isCustomFin = (id: string): boolean =>
-    !!finList.find((d) => d.id === id)?.custom;
-
+  const isCustomFin = (id: string): boolean => !!finList.find((d) => d.id === id)?.custom;
 
   const setMonth = (row: Row, i: number, v: number) => {
     if (row.kind === "bruta") {
@@ -362,75 +366,73 @@ export function RevenueTab() {
     }
   };
 
-
   return (
     <div className="space-y-4 md:space-y-6">
       {(() => {
-        const recFinAnual =
-          r.receitasFinanceiras?.reduce((acc, f) => acc + sum(f.valores), 0) || 0;
+        const recFinAnual = r.receitasFinanceiras?.reduce((acc, f) => acc + sum(f.valores), 0) || 0;
         const totalReceitas = brutaAnual + recFinAnual;
         return (
-      <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-        <StatCard
-          label="Receita Bruta Anual"
-          value={fmtBRL(brutaAnual)}
-          tone="pos"
-          hint={{
-            description: "Total faturado no ano antes de qualquer dedução.",
-            formula: "Σ Receita Bruta dos 12 meses",
-            calc: `Σ 12 meses = ${fmtBRL(brutaAnual)}`,
-          }}
-        />
-        <StatCard
-          label="Deduções da Receita"
-          value={fmtBRL(deducoesAnual)}
-          tone="neg"
-          sub={fmtPct(pctRec(deducoesAnual)) + " da receita"}
-          hint={{
-            description: usaPDD
-              ? "Descontos incondicionais e abatimentos (a inadimplência esperada está classificada como PDD em Despesas Operacionais, conforme CPC 47/IFRS 9)."
-              : "Inadimplência esperada, descontos incondicionais e abatimentos deduzidos diretamente da Receita Bruta.",
-            formula: usaPDD
-              ? "Descontos Incondicionais + Abatimentos"
-              : "Inadimplência + Descontos Incondicionais + Abatimentos",
-            calc: `${fmtBRL(deducoesAnual)} ÷ ${fmtBRL(brutaAnual)} × 100 = ${fmtPct(pctRec(deducoesAnual))}`,
-          }}
-        />
-        <StatCard
-          label="Receita Operacional"
-          value={fmtBRL(liqAnual)}
-          tone="pos"
-          sub={fmtPct(pctRec(liqAnual)) + " da receita"}
-          hint={{
-            description:
-              "Receita após deduções (devoluções, cancelamentos, descontos e abatimentos). Os impostos sobre venda são abatidos depois, na DRE — só então temos a Receita Líquida contábil.",
-            formula: "Receita Bruta − Deduções da Receita",
-            calc: `${fmtBRL(brutaAnual)} − ${fmtBRL(deducoesAnual)} = ${fmtBRL(liqAnual)}`,
-          }}
-        />
-        <StatCard
-          label="Média Mensal YTD"
-          value={fmtBRL(mediaYTD)}
-          sub={`${monthsWithRevenue} ${monthsWithRevenue === 1 ? "mês" : "meses"} com receita`}
-          hint={{
-            description:
-              "Média mensal da Receita Operacional considerando apenas meses com receita bruta lançada.",
-            formula: "Receita Operacional ÷ Meses com receita",
-            calc: `${fmtBRL(liqAnual)} ÷ ${monthsWithRevenue || 1} = ${fmtBRL(mediaYTD)}`,
-          }}
-        />
-        <StatCard
-          label="Total de Receitas"
-          value={fmtBRL(totalReceitas)}
-          tone="pos"
-          hint={{
-            description:
-              "Soma da Receita Operacional Bruta com as Receitas Financeiras e demais entradas (aluguéis, venda de ativos).",
-            formula: "Receita Bruta + Receitas Financeiras",
-            calc: `${fmtBRL(brutaAnual)} + ${fmtBRL(recFinAnual)} = ${fmtBRL(totalReceitas)}`,
-          }}
-        />
-      </div>
+          <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+            <StatCard
+              label="Receita Bruta Anual"
+              value={fmtBRL(brutaAnual)}
+              tone="pos"
+              hint={{
+                description: "Total faturado no ano antes de qualquer dedução.",
+                formula: "Σ Receita Bruta dos 12 meses",
+                calc: `Σ 12 meses = ${fmtBRL(brutaAnual)}`,
+              }}
+            />
+            <StatCard
+              label="Deduções da Receita"
+              value={fmtBRL(deducoesAnual)}
+              tone="neg"
+              sub={fmtPct(pctRec(deducoesAnual)) + " da receita"}
+              hint={{
+                description: usaPDD
+                  ? "Descontos incondicionais e abatimentos (a inadimplência esperada está classificada como PDD em Despesas Operacionais, conforme CPC 47/IFRS 9)."
+                  : "Inadimplência esperada, descontos incondicionais e abatimentos deduzidos diretamente da Receita Bruta.",
+                formula: usaPDD
+                  ? "Descontos Incondicionais + Abatimentos"
+                  : "Inadimplência + Descontos Incondicionais + Abatimentos",
+                calc: `${fmtBRL(deducoesAnual)} ÷ ${fmtBRL(brutaAnual)} × 100 = ${fmtPct(pctRec(deducoesAnual))}`,
+              }}
+            />
+            <StatCard
+              label="Receita Operacional"
+              value={fmtBRL(liqAnual)}
+              tone="pos"
+              sub={fmtPct(pctRec(liqAnual)) + " da receita"}
+              hint={{
+                description:
+                  "Receita após deduções (devoluções, cancelamentos, descontos e abatimentos). Os impostos sobre venda são abatidos depois, na DRE — só então temos a Receita Líquida contábil.",
+                formula: "Receita Bruta − Deduções da Receita",
+                calc: `${fmtBRL(brutaAnual)} − ${fmtBRL(deducoesAnual)} = ${fmtBRL(liqAnual)}`,
+              }}
+            />
+            <StatCard
+              label="Média Mensal YTD"
+              value={fmtBRL(mediaYTD)}
+              sub={`${monthsWithRevenue} ${monthsWithRevenue === 1 ? "mês" : "meses"} com receita`}
+              hint={{
+                description:
+                  "Média mensal da Receita Operacional considerando apenas meses com receita bruta lançada.",
+                formula: "Receita Operacional ÷ Meses com receita",
+                calc: `${fmtBRL(liqAnual)} ÷ ${monthsWithRevenue || 1} = ${fmtBRL(mediaYTD)}`,
+              }}
+            />
+            <StatCard
+              label="Total de Receitas"
+              value={fmtBRL(totalReceitas)}
+              tone="pos"
+              hint={{
+                description:
+                  "Soma da Receita Operacional Bruta com as Receitas Financeiras e demais entradas (aluguéis, venda de ativos).",
+                formula: "Receita Bruta + Receitas Financeiras",
+                calc: `${fmtBRL(brutaAnual)} + ${fmtBRL(recFinAnual)} = ${fmtBRL(totalReceitas)}`,
+              }}
+            />
+          </div>
         );
       })()}
 
@@ -456,7 +458,6 @@ export function RevenueTab() {
               checked={inadimpEmBRL}
               onCheckedChange={(v) => patchRevenue({ inadimplenciaModo: v ? "brl" : "pct" })}
             />
-
             Digitar inadimplência em R$
             <HelpTip
               text="Quando ATIVO: você informa o valor da inadimplência em reais por mês — o sistema converte automaticamente para % da Receita Bruta do mês (storage interno permanece em %). Quando DESATIVO (padrão): edição direta em %. Não há impacto em cálculos da DRE, fluxo de caixa, impostos ou indicadores — apenas muda a forma de entrada."
@@ -496,7 +497,12 @@ export function RevenueTab() {
           onRemove={removeFinLine}
         />
         <div className="px-3 pb-3 pt-1">
-          <Button size="sm" variant="outline" onClick={() => addFinLine("operacional")} className="h-7 text-xs">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => addFinLine("operacional")}
+            className="h-7 text-xs"
+          >
             <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar linha
           </Button>
         </div>
@@ -524,7 +530,12 @@ export function RevenueTab() {
           onRemove={removeFinLine}
         />
         <div className="px-3 pb-3 pt-1">
-          <Button size="sm" variant="outline" onClick={() => addFinLine("financeira")} className="h-7 text-xs">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => addFinLine("financeira")}
+            className="h-7 text-xs"
+          >
             <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar linha
           </Button>
         </div>
@@ -563,7 +574,6 @@ export function RevenueTab() {
           })
         }
       />
-
     </div>
   );
 }
@@ -614,8 +624,7 @@ function RevenueTable({
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
   const footerToneClass = footer?.tone === "neg" ? "text-neg" : "text-pos";
 
-  const rowIsCustom = (row: Row): boolean =>
-    !!(isCustom && row.finId && isCustom(row.finId));
+  const rowIsCustom = (row: Row): boolean => !!(isCustom && row.finId && isCustom(row.finId));
 
   const renderCellInput = (row: Row, v: number, onChange: (n: number) => void) =>
     row.unit === "pct" ? (
@@ -640,9 +649,7 @@ function RevenueTable({
         }))}
         receitaAnual={brutaAnual}
         footer={
-          footer
-            ? { label: footer.label, total: footer.total, tone: footer.tone }
-            : undefined
+          footer ? { label: footer.label, total: footer.total, tone: footer.tone } : undefined
         }
         onMonth={(id, i, v) => {
           const row = rows.find((r) => r.id === id);
@@ -665,113 +672,113 @@ function RevenueTable({
           if (row?.finId && onRemove) onRemove(row.finId);
         }}
       />
-    <div className="scrollbar-thin hidden md:block w-full overflow-x-auto overflow-y-hidden">
-      <table className="w-full min-w-[800px] text-[clamp(0.75rem,1vw+0.5rem,0.875rem)] md:min-w-[1000px]">
-        <thead>
-          <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-            <th className="w-56 px-3 py-2">Descrição</th>
-            <th className="w-24 px-2 py-2 text-center">Modo</th>
-            {MESES.map((m) => (
-              <th key={m} className="px-1 py-2 text-right">
-                {m}
-              </th>
-            ))}
-            <th className="px-3 py-2 text-right">Anual</th>
-            <th className="w-14 px-2 py-2 text-right">% Rec</th>
-            <th className="w-8 px-1 py-2" />
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            // Total ANUAL exibido sempre em R$ (mesmo quando input é %).
-            const anual = sum(row.brlValues);
-            const pct = pctRec(anual);
-            const toneClass =
-              row.tone === "pos" ? "text-pos" : anual > 0 ? "text-neg" : "text-muted-foreground";
-            const anualDisplay =
-              row.tone === "neg" && anual > 0 ? `− ${fmtBRL(anual)}` : fmtBRL(anual);
-            return (
-              <tr key={row.id} className="border-t border-border/40 align-middle">
-                <td className="px-3 py-2">
-                  {rowIsCustom(row) && onRename ? (
-                    <input
-                      className="w-full bg-transparent text-xs outline-none focus:bg-accent/30 rounded px-1"
-                      value={row.label}
-                      onChange={(e) => row.finId && onRename(row.finId, e.target.value)}
-                    />
-                  ) : (
-                    <span className="text-xs">{row.label}</span>
-                  )}
-                </td>
-                <td className="px-2 py-2">
-                  <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
-                    <span>Fixo</span>
-                    <Switch checked={!row.fixed} onCheckedChange={(v) => onFixed(row, !v)} />
-                    <span>Mensal</span>
-                  </div>
-                </td>
-                {row.fixed ? (
-                  <td className="px-1 py-1" colSpan={12}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase text-muted-foreground">
-                        {row.unit === "pct"
-                          ? "% aplicado em todos os meses:"
-                          : "Valor aplicado em todos os meses:"}
-                      </span>
-                      <div className="w-36">
-                        {renderCellInput(row, fixedBase(row.values), (n) => onAllMonths(row, n))}
-                      </div>
+      <div className="scrollbar-thin hidden md:block w-full overflow-x-auto overflow-y-hidden">
+        <table className="w-full min-w-[800px] text-[clamp(0.75rem,1vw+0.5rem,0.875rem)] md:min-w-[1000px]">
+          <thead>
+            <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+              <th className="w-56 px-3 py-2">Descrição</th>
+              <th className="w-24 px-2 py-2 text-center">Modo</th>
+              {MESES.map((m) => (
+                <th key={m} className="px-1 py-2 text-right">
+                  {m}
+                </th>
+              ))}
+              <th className="px-3 py-2 text-right">Anual</th>
+              <th className="w-14 px-2 py-2 text-right">% Rec</th>
+              <th className="w-8 px-1 py-2" />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              // Total ANUAL exibido sempre em R$ (mesmo quando input é %).
+              const anual = sum(row.brlValues);
+              const pct = pctRec(anual);
+              const toneClass =
+                row.tone === "pos" ? "text-pos" : anual > 0 ? "text-neg" : "text-muted-foreground";
+              const anualDisplay =
+                row.tone === "neg" && anual > 0 ? `− ${fmtBRL(anual)}` : fmtBRL(anual);
+              return (
+                <tr key={row.id} className="border-t border-border/40 align-middle">
+                  <td className="px-3 py-2">
+                    {rowIsCustom(row) && onRename ? (
+                      <input
+                        className="w-full bg-transparent text-xs outline-none focus:bg-accent/30 rounded px-1"
+                        value={row.label}
+                        onChange={(e) => row.finId && onRename(row.finId, e.target.value)}
+                      />
+                    ) : (
+                      <span className="text-xs">{row.label}</span>
+                    )}
+                  </td>
+                  <td className="px-2 py-2">
+                    <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
+                      <span>Fixo</span>
+                      <Switch checked={!row.fixed} onCheckedChange={(v) => onFixed(row, !v)} />
+                      <span>Mensal</span>
                     </div>
                   </td>
-                ) : (
-                  row.values.map((v, i) => (
-                    <td key={i} className="px-1 py-1">
-                      {renderCellInput(row, v, (n) => onMonth(row, i, n))}
+                  {row.fixed ? (
+                    <td className="px-1 py-1" colSpan={12}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase text-muted-foreground">
+                          {row.unit === "pct"
+                            ? "% aplicado em todos os meses:"
+                            : "Valor aplicado em todos os meses:"}
+                        </span>
+                        <div className="w-36">
+                          {renderCellInput(row, fixedBase(row.values), (n) => onAllMonths(row, n))}
+                        </div>
+                      </div>
                     </td>
-                  ))
-                )}
-                <td className={`num px-3 py-2 text-right ${toneClass}`}>{anualDisplay}</td>
-                <td className="num px-2 py-2 text-right text-xs text-muted-foreground">
-                  {fmtPct(pct)}
-                </td>
-                <td className="px-1 py-2 text-right">
-                  {rowIsCustom(row) && onRemove ? (
-                    <button
-                      type="button"
-                      onClick={() => row.finId && onRemove(row.finId)}
-                      className="text-muted-foreground hover:text-destructive"
-                      aria-label="Remover linha"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  ) : null}
-                </td>
-              </tr>
-            );
-          })}
+                  ) : (
+                    row.values.map((v, i) => (
+                      <td key={i} className="px-1 py-1">
+                        {renderCellInput(row, v, (n) => onMonth(row, i, n))}
+                      </td>
+                    ))
+                  )}
+                  <td className={`num px-3 py-2 text-right ${toneClass}`}>{anualDisplay}</td>
+                  <td className="num px-2 py-2 text-right text-xs text-muted-foreground">
+                    {fmtPct(pct)}
+                  </td>
+                  <td className="px-1 py-2 text-right">
+                    {rowIsCustom(row) && onRemove ? (
+                      <button
+                        type="button"
+                        onClick={() => row.finId && onRemove(row.finId)}
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label="Remover linha"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    ) : null}
+                  </td>
+                </tr>
+              );
+            })}
 
-          {footer && (
-            <tr className="border-t border-border/40 bg-accent/20 align-middle">
-              <td className="px-3 py-2 text-xs font-semibold" colSpan={2}>
-                {footer.label}
-              </td>
-              {footer.values.map((v, i) => (
-                <td key={i} className={`num px-1 py-2 text-right text-[11px] ${footerToneClass}`}>
-                  {fmtBRLCompact(v)}
+            {footer && (
+              <tr className="border-t border-border/40 bg-accent/20 align-middle">
+                <td className="px-3 py-2 text-xs font-semibold" colSpan={2}>
+                  {footer.label}
                 </td>
-              ))}
-              <td className={`num px-3 py-2 text-right font-semibold ${footerToneClass}`}>
-                {fmtBRL(footer.total)}
-              </td>
-              <td className="num px-2 py-2 text-right text-xs text-muted-foreground">
-                {fmtPct(pctRec(footer.total))}
-              </td>
-              <td />
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
+                {footer.values.map((v, i) => (
+                  <td key={i} className={`num px-1 py-2 text-right text-[11px] ${footerToneClass}`}>
+                    {fmtBRLCompact(v)}
+                  </td>
+                ))}
+                <td className={`num px-3 py-2 text-right font-semibold ${footerToneClass}`}>
+                  {fmtBRL(footer.total)}
+                </td>
+                <td className="num px-2 py-2 text-right text-xs text-muted-foreground">
+                  {fmtPct(pctRec(footer.total))}
+                </td>
+                <td />
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

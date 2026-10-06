@@ -184,9 +184,15 @@ describe("Edge — Forecast financeiro", () => {
     const s = createState({
       tax: { regime: "presumido" },
       revenue: { bruta: m12(20_000), inadimplencia: m12(0) },
-      costs: [{ id: "cf", label: "Custo fixo alto", category: "fixo", values: m12(50_000), fixed: true }],
+      costs: [
+        { id: "cf", label: "Custo fixo alto", category: "fixo", values: m12(50_000), fixed: true },
+      ],
     });
-    const forecast = buildForecast(s, { ...DEFAULT_FORECAST_CFG, horizonteMeses: 1, crescimentoMensalPct: 0 });
+    const forecast = buildForecast(s, {
+      ...DEFAULT_FORECAST_CFG,
+      horizonteMeses: 1,
+      crescimentoMensalPct: 0,
+    });
     const fcl = forecast.meses[0].fcl;
 
     expect(Number.isFinite(fcl)).toBe(true);
@@ -201,9 +207,22 @@ describe("Edge — Forecast financeiro", () => {
     });
     const alavancada = createState({
       ...base,
-      costs: [{ id: "juros", label: "Juros sobre empréstimo", category: "financeiro", values: m12(10_000), fixed: true }],
+      costs: [
+        {
+          id: "juros",
+          label: "Juros sobre empréstimo",
+          category: "financeiro",
+          values: m12(10_000),
+          fixed: true,
+        },
+      ],
     });
-    const cfg = { ...DEFAULT_FORECAST_CFG, horizonteMeses: 1, crescimentoMensalPct: 0, capexInicial: 0 };
+    const cfg = {
+      ...DEFAULT_FORECAST_CFG,
+      horizonteMeses: 1,
+      crescimentoMensalPct: 0,
+      capexInicial: 0,
+    };
     const semJuros = buildForecast(base, cfg).meses[0];
     const comJuros = buildForecast(alavancada, cfg).meses[0];
 

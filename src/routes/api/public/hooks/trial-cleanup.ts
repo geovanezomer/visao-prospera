@@ -34,7 +34,10 @@ export const Route = createFileRoute("/api/public/hooks/trial-cleanup")({
         const PER_PAGE = 200;
         const MAX_PAGES = 50;
         for (let page = 1; page <= MAX_PAGES; page++) {
-          const { data: list, error } = await admin.auth.admin.listUsers({ page, perPage: PER_PAGE });
+          const { data: list, error } = await admin.auth.admin.listUsers({
+            page,
+            perPage: PER_PAGE,
+          });
           if (error) {
             console.error("[trial-cleanup] listUsers falhou:", error.message);
             break;
@@ -44,7 +47,9 @@ export const Route = createFileRoute("/api/public/hooks/trial-cleanup")({
           for (const u of users) {
             const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
             if (!meta.is_trial) continue;
-            const exp = meta.trial_expires_at ? new Date(String(meta.trial_expires_at)).getTime() : 0;
+            const exp = meta.trial_expires_at
+              ? new Date(String(meta.trial_expires_at)).getTime()
+              : 0;
             // Tolerância de 5 minutos para evitar race com banner client-side.
             if (!exp || exp > now - 5 * 60_000) continue;
 

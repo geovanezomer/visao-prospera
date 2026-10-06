@@ -36,14 +36,26 @@ function makeQuery(table: string) {
       dbInserts.push({ table, row });
       return Promise.resolve({ error: null });
     },
-    eq() { return chain; },
-    select() { return chain; },
-    order() { return chain; },
-    limit() { return chain; },
-    maybeSingle() {
-      return Promise.resolve({ data: { user_id: "u1", plan: "pro", stripe_subscription_id: "sub_1" } });
+    eq() {
+      return chain;
     },
-    then(fn: (v: unknown) => unknown) { return Promise.resolve({ error: null }).then(fn); },
+    select() {
+      return chain;
+    },
+    order() {
+      return chain;
+    },
+    limit() {
+      return chain;
+    },
+    maybeSingle() {
+      return Promise.resolve({
+        data: { user_id: "u1", plan: "pro", stripe_subscription_id: "sub_1" },
+      });
+    },
+    then(fn: (v: unknown) => unknown) {
+      return Promise.resolve({ error: null }).then(fn);
+    },
   };
   return chain;
 }
@@ -71,7 +83,9 @@ const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
     return new Response(JSON.stringify({ id: "in_1", payment_intent: "pi_1" }), { status: 200 });
   }
   if (u.endsWith("/refunds")) {
-    return new Response(JSON.stringify({ id: "re_1", amount: 4990, status: "succeeded" }), { status: 200 });
+    return new Response(JSON.stringify({ id: "re_1", amount: 4990, status: "succeeded" }), {
+      status: 200,
+    });
   }
   return new Response("{}", { status: 200 });
 });
@@ -80,7 +94,12 @@ beforeEach(() => {
   dbUpdates.length = 0;
   dbInserts.length = 0;
   cancelSpy.mockReset();
-  cancelSpy.mockResolvedValue({ ok: true, provider: "stripe", subscriptionId: "sub_1", providerStatus: "canceled" });
+  cancelSpy.mockResolvedValue({
+    ok: true,
+    provider: "stripe",
+    subscriptionId: "sub_1",
+    providerStatus: "canceled",
+  });
   vi.stubGlobal("fetch", fetchMock);
 });
 afterEach(() => vi.unstubAllGlobals());

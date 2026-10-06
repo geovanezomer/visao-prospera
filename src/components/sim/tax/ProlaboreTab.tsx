@@ -5,7 +5,6 @@
 import { useMemo } from "react";
 import { SociosCard } from "./SociosCard";
 
-
 import { StatCard } from "@/components/sim/shared/primitives";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
@@ -115,8 +114,6 @@ export function ProlaboreTab() {
           unificados no card "O que a empresa deve" da aba Capital,
           selecionando "Sócio (mútuo PF→PJ / AFAC)" como tipo de credor. */}
       {/* PermutasCard movido para o topo da aba Fluxo de Caixa. */}
-
-
     </div>
   );
 }

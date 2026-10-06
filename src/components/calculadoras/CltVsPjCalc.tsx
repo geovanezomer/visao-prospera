@@ -93,9 +93,24 @@ export function CltVsPjCalc() {
         { label: "Plano de saúde/mês", value: fmtBRL(planoSaudeMensal) },
       ],
       kpis: [
-        { label: "Vencedor", value: venceLabel, sub: `+${fmtBRL(Math.abs(r.diferencaAnual))}/ano`, tone: "ok" },
-        { label: "Líquido CLT/ano", value: fmtBRL(r.clt.totalAnualLiquido), sub: `${fmtBRL(r.clt.totalAnualLiquido / 12)}/mês`, tone: "neutral" },
-        { label: "Líquido melhor PJ/ano", value: fmtBRL(r.pj[r.melhorRegimePJ].liquidoAnual), sub: `${fmtBRL(r.pj[r.melhorRegimePJ].liquidoMensal)}/mês`, tone: "neutral" },
+        {
+          label: "Vencedor",
+          value: venceLabel,
+          sub: `+${fmtBRL(Math.abs(r.diferencaAnual))}/ano`,
+          tone: "ok",
+        },
+        {
+          label: "Líquido CLT/ano",
+          value: fmtBRL(r.clt.totalAnualLiquido),
+          sub: `${fmtBRL(r.clt.totalAnualLiquido / 12)}/mês`,
+          tone: "neutral",
+        },
+        {
+          label: "Líquido melhor PJ/ano",
+          value: fmtBRL(r.pj[r.melhorRegimePJ].liquidoAnual),
+          sub: `${fmtBRL(r.pj[r.melhorRegimePJ].liquidoMensal)}/mês`,
+          tone: "neutral",
+        },
       ],
       sections: [
         {
@@ -340,9 +355,8 @@ export function CltVsPjCalc() {
                           className="text-[10px] text-amber-600 dark:text-amber-500"
                           title="Retenção na fonte sobre distribuições acima de R$ 50 mil/mês da mesma PJ à mesma PF; antecipação do IRPF Mínimo anual."
                         >
-                          ⚠ Renda anual do sócio acima de R$ 600 mil — sujeita ao IRPF Mínimo
-                          (até 10%). Simulação não calcula o IRPFM, que depende da renda global
-                          da PF.
+                          ⚠ Renda anual do sócio acima de R$ 600 mil — sujeita ao IRPF Mínimo (até
+                          10%). Simulação não calcula o IRPFM, que depende da renda global da PF.
                         </p>
                       )}
                       {p.acimaDoTetoRegime && (
@@ -599,7 +613,8 @@ export function CltVsPjCalc() {
               </div>
               <p className="pt-2 text-xs">
                 Bases: LC 123/2006 (Simples/MEI), Lei 9.249/95 (Lucro Presumido), Lei 8.212/91 (INSS
-                pró-labore), tabelas IRRF/INSS {ANO_VIGENTE}. IRRF conforme Lei nº 15.270/2025 (redutor até R$ 7.350). Estimativa — sempre confirme com seu contador.
+                pró-labore), tabelas IRRF/INSS {ANO_VIGENTE}. IRRF conforme Lei nº 15.270/2025
+                (redutor até R$ 7.350). Estimativa — sempre confirme com seu contador.
               </p>
             </CardContent>
           </CollapsibleContent>

@@ -49,9 +49,7 @@ import { timingSafeEqual as timingSafeEqualHex } from "@/lib/timingSafe";
  * Aceita formato legado (somente a key sem `.sig`) apenas se LEGACY=true
  * for explicitamente habilitado via env — por padrão é false (estrito).
  */
-export async function verifyIntentToken(
-  token: string | null | undefined,
-): Promise<string | null> {
+export async function verifyIntentToken(token: string | null | undefined): Promise<string | null> {
   if (!token) return null;
   const parts = token.split(".");
   if (parts.length !== 2) return null;

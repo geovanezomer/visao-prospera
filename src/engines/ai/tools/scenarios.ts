@@ -11,12 +11,7 @@ import {
   resolveScenarios,
   type ScenarioRecord,
 } from "@/engines/scenarios/store";
-import {
-  buildDRE,
-  calcIndicators,
-  resolveEffectiveRegime,
-  buildCashFlow,
-} from "@/engines/finance";
+import { buildDRE, calcIndicators, resolveEffectiveRegime, buildCashFlow } from "@/engines/finance";
 import { buildValuation, defaultValuationParams } from "@/engines/finance/valuation";
 import { applySimulator, DEFAULT_SIM, type SimulatorParams } from "@/engines/finance/simulator";
 import { type ToolDef, type ToolHandler, type ToolModule } from "./shared";

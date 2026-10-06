@@ -90,9 +90,24 @@ export function SalarioLiquidoCalc() {
         { label: "Outros descontos", value: fmtBRL(outrosDescontos) },
       ],
       kpis: [
-        { label: "Salário líquido", value: fmtBRL(r.liquido), sub: `${fmtPct(r.pctLiquido)} do bruto`, tone: "ok" },
-        { label: "INSS", value: fmtBRL(r.inss), sub: `Alíquota efetiva ${fmtPct(r.inssAliquota)}`, tone: "warn" },
-        { label: "IRRF", value: r.irrf > 0 ? fmtBRL(r.irrf) : "Isento", sub: `Alíquota ${fmtPct(r.irrfAliquota)}`, tone: r.irrf > 0 ? "warn" : "ok" },
+        {
+          label: "Salário líquido",
+          value: fmtBRL(r.liquido),
+          sub: `${fmtPct(r.pctLiquido)} do bruto`,
+          tone: "ok",
+        },
+        {
+          label: "INSS",
+          value: fmtBRL(r.inss),
+          sub: `Alíquota efetiva ${fmtPct(r.inssAliquota)}`,
+          tone: "warn",
+        },
+        {
+          label: "IRRF",
+          value: r.irrf > 0 ? fmtBRL(r.irrf) : "Isento",
+          sub: `Alíquota ${fmtPct(r.irrfAliquota)}`,
+          tone: r.irrf > 0 ? "warn" : "ok",
+        },
       ],
       sections: [
         {
@@ -416,8 +431,8 @@ export function SalarioLiquidoCalc() {
                 O cálculo segue uma ordem específica: primeiro desconta-se o INSS, pois a base do
                 IRRF já considera o INSS como dedução. Em seguida aplica-se a tabela do IR sobre a
                 base resultante. Cada dependente reduz a base do IR em <strong>R$ 189,59</strong>.
-                Beneficiários do Salário-Família (renda bruta até {fmtBRL(SALARIO_FAMILIA_TETO)}) recebem
-                acréscimo de {fmtBRL(SALARIO_FAMILIA_VALOR)} por filho menor de 14 anos.
+                Beneficiários do Salário-Família (renda bruta até {fmtBRL(SALARIO_FAMILIA_TETO)})
+                recebem acréscimo de {fmtBRL(SALARIO_FAMILIA_VALOR)} por filho menor de 14 anos.
               </p>
               <div className="rounded-md bg-muted/40 p-3 font-mono text-xs">
                 Base IRRF = Salário Bruto − INSS − (Dependentes × R$ 189,59) − Pensão
@@ -466,9 +481,10 @@ export function SalarioLiquidoCalc() {
                     12% da renda bruta anual na declaração completa.
                   </li>
                   <li>
-                    <strong>Cheque o Salário-Família:</strong> se seu bruto for até {fmtBRL(SALARIO_FAMILIA_TETO)},
-                    você tem direito a {fmtBRL(SALARIO_FAMILIA_VALOR)} por filho menor de 14 anos — basta
-                    apresentar certidão de nascimento ao RH.
+                    <strong>Cheque o Salário-Família:</strong> se seu bruto for até{" "}
+                    {fmtBRL(SALARIO_FAMILIA_TETO)}, você tem direito a{" "}
+                    {fmtBRL(SALARIO_FAMILIA_VALOR)} por filho menor de 14 anos — basta apresentar
+                    certidão de nascimento ao RH.
                   </li>
                   <li>
                     <strong>Desconto marginal:</strong> entre {fmtBRL(TABELA.inssFaixas[2].ate)} e{" "}

@@ -38,8 +38,7 @@ export function PermutasCard() {
   // Toggle local Fixo/Mensal por linha.
   const [fixedMap, setFixedMap] = useState<Record<string, boolean>>({});
   const isFixed = (id: string) => fixedMap[id] ?? true;
-  const setFixed = (id: string, v: boolean) =>
-    setFixedMap((m) => ({ ...m, [id]: v }));
+  const setFixed = (id: string, v: boolean) => setFixedMap((m) => ({ ...m, [id]: v }));
 
   const updateLinha = (id: string, patch: Partial<PermutaLinha>) =>
     patchCashflow((cur) => ({
@@ -50,7 +49,12 @@ export function PermutasCard() {
     patchCashflow((cur) => ({
       permutas: (cur.permutas ?? []).map((p) =>
         p.id === id
-          ? { ...p, values: p.values.map((v, i) => (i === monthIdx ? value : v)) as PermutaLinha["values"] }
+          ? {
+              ...p,
+              values: p.values.map((v, i) =>
+                i === monthIdx ? value : v,
+              ) as PermutaLinha["values"],
+            }
           : p,
       ),
     }));

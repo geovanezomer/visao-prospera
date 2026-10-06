@@ -29,11 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Save, CalendarDays, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useFinance } from "@/engines/finance/AppStateContext";
-import {
-  archiveYearAsHistorical,
-  switchToYear,
-  deleteScenario,
-} from "@/engines/scenarios/store";
+import { archiveYearAsHistorical, switchToYear, deleteScenario } from "@/engines/scenarios/store";
 import { ConfirmDialog } from "@/components/sim/shared/ConfirmDialog";
 import { fmtBRL, fmtPct } from "@/engines/finance/format";
 import { buildFinancialModel } from "@/engines/finance/financialModel";
@@ -49,9 +45,7 @@ export function ScenarioBar() {
   const allHistoricals = useCompanySnapshots(HISTORICAL_SNAPSHOT_OPTS);
 
   const historicals = useMemo(
-    () =>
-      [...allHistoricals]
-        .sort((a, b) => (b.fiscalYear ?? 0) - (a.fiscalYear ?? 0)),
+    () => [...allHistoricals].sort((a, b) => (b.fiscalYear ?? 0) - (a.fiscalYear ?? 0)),
     [allHistoricals],
   );
 
@@ -81,21 +75,15 @@ export function ScenarioBar() {
     return m;
   }, [historicals]);
 
-
   const defaultYear = new Date().getFullYear();
-  const [year, setYear] = useState<number>(
-    YEARS.includes(defaultYear) ? defaultYear : 2025,
-  );
+  const [year, setYear] = useState<number>(YEARS.includes(defaultYear) ? defaultYear : 2025);
   const [subKind, setSubKind] = useState<"realizado" | "previsao">("realizado");
   const [previsaoName, setPrevisaoName] = useState<string>("");
   const [saveOpen, setSaveOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
 
   const handleSave = () => {
-    const name =
-      subKind === "previsao"
-        ? previsaoName.trim() || `Previsão ${year}`
-        : undefined;
+    const name = subKind === "previsao" ? previsaoName.trim() || `Previsão ${year}` : undefined;
     archiveYearAsHistorical(company, year, state, undefined, { subKind, name });
     // Estampa o ano no AppState ativo — a partir daqui, trocar de pill faz
     // auto-arquivamento correto sob este `fiscalYear`.
@@ -123,8 +111,7 @@ export function ScenarioBar() {
     (h) =>
       h.fiscalYear === year &&
       (h.subKind ?? "realizado") === subKind &&
-      (subKind === "realizado" ||
-        h.name === (previsaoName.trim() || `Previsão ${year}`)),
+      (subKind === "realizado" || h.name === (previsaoName.trim() || `Previsão ${year}`)),
   );
 
   return (
@@ -142,9 +129,9 @@ export function ScenarioBar() {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Use <strong>Ano realizado</strong>
-              {" "}para arquivar um exercício fechado/em andamento, ou <strong>Previsão</strong>
-              {" "}para guardar um orçamento (budget) e comparar Previsto × Realizado.
+              Use <strong>Ano realizado</strong> para arquivar um exercício fechado/em andamento, ou{" "}
+              <strong>Previsão</strong> para guardar um orçamento (budget) e comparar Previsto ×
+              Realizado.
             </p>
 
             {/* Toggle Realizado / Previsão */}
@@ -197,8 +184,7 @@ export function ScenarioBar() {
             {subKind === "previsao" && (
               <div className="space-y-1.5">
                 <label className="text-xs font-medium">
-                  Nome da previsão{" "}
-                  <span className="text-muted-foreground">(opcional)</span>
+                  Nome da previsão <span className="text-muted-foreground">(opcional)</span>
                 </label>
                 <input
                   type="text"
@@ -225,9 +211,7 @@ export function ScenarioBar() {
               Cancelar
             </Button>
             <Button onClick={handleSave}>
-              {subKind === "previsao"
-                ? `Salvar Previsão ${year}`
-                : `Salvar Ano ${year}`}
+              {subKind === "previsao" ? `Salvar Previsão ${year}` : `Salvar Ano ${year}`}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -269,64 +253,55 @@ export function ScenarioBar() {
                     const m = metrics.get(h.id);
                     const isPrev = (h.subKind ?? "realizado") === "previsao";
                     return (
-                    <tr key={h.id} className="border-t border-border/40">
-                      <td className="p-2 font-semibold">{h.name}</td>
-                      <td className="p-2">
-                        <span
-                          className={
-                            "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium " +
-                            (isPrev
-                              ? "bg-[var(--warning)]/15 text-[var(--warning)] border border-[var(--warning)]/40"
-                              : "bg-primary/15 text-primary border border-primary/40")
-                          }
-                        >
-                          {isPrev ? "Previsão" : "Realizado"}
-                        </span>
-                      </td>
-                      <td className="num p-2 text-right">
-                        {m ? fmtBRL(m.faturamento) : "—"}
-                      </td>
-                      <td className="num p-2 text-right">
-                        {m ? fmtBRL(m.ebitda) : "—"}
-                      </td>
-                      <td className="num p-2 text-right">
-                        {m ? fmtPct(m.roe / 100) : "—"}
-                      </td>
-                      <td className="num p-2 text-right">
-                        {m ? fmtPct(m.margemLiquida / 100) : "—"}
-                      </td>
-                      <td className="num p-2 text-right">
-                        {m ? fmtBRL(m.lucroLiquido) : "—"}
-                      </td>
-                      <td className="p-2">
-
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleLoad(h.id)}
-                            title="Carregar este ano no AppState"
-                          >
-                            <Download className="mr-1 h-3.5 w-3.5" /> Carregar
-                          </Button>
-                          <ConfirmDialog
-                            title={`Excluir "${h.name}"?`}
-                            description="O snapshot será removido das pills e da comparação."
-                            confirmLabel="Excluir"
-                            destructive
-                            onConfirm={() => {
-                              deleteScenario(company, h.id);
-                              toast.success(`${h.name} removido`);
-                            }}
-                            trigger={
-                              <Button size="sm" variant="ghost" title="Excluir ano">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                      <tr key={h.id} className="border-t border-border/40">
+                        <td className="p-2 font-semibold">{h.name}</td>
+                        <td className="p-2">
+                          <span
+                            className={
+                              "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium " +
+                              (isPrev
+                                ? "bg-[var(--warning)]/15 text-[var(--warning)] border border-[var(--warning)]/40"
+                                : "bg-primary/15 text-primary border border-primary/40")
                             }
-                          />
-                        </div>
-                      </td>
-                    </tr>
+                          >
+                            {isPrev ? "Previsão" : "Realizado"}
+                          </span>
+                        </td>
+                        <td className="num p-2 text-right">{m ? fmtBRL(m.faturamento) : "—"}</td>
+                        <td className="num p-2 text-right">{m ? fmtBRL(m.ebitda) : "—"}</td>
+                        <td className="num p-2 text-right">{m ? fmtPct(m.roe / 100) : "—"}</td>
+                        <td className="num p-2 text-right">
+                          {m ? fmtPct(m.margemLiquida / 100) : "—"}
+                        </td>
+                        <td className="num p-2 text-right">{m ? fmtBRL(m.lucroLiquido) : "—"}</td>
+                        <td className="p-2">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleLoad(h.id)}
+                              title="Carregar este ano no AppState"
+                            >
+                              <Download className="mr-1 h-3.5 w-3.5" /> Carregar
+                            </Button>
+                            <ConfirmDialog
+                              title={`Excluir "${h.name}"?`}
+                              description="O snapshot será removido das pills e da comparação."
+                              confirmLabel="Excluir"
+                              destructive
+                              onConfirm={() => {
+                                deleteScenario(company, h.id);
+                                toast.success(`${h.name} removido`);
+                              }}
+                              trigger={
+                                <Button size="sm" variant="ghost" title="Excluir ano">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              }
+                            />
+                          </div>
+                        </td>
+                      </tr>
                     );
                   })}
                 </tbody>

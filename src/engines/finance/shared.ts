@@ -23,7 +23,6 @@ export function computeNetDebt(state: AppState): number {
   return D - cash;
 }
 
-
 /**
  * SSOT — CAPEX MENSAL UNIFICADO.
  * Fonte única: `capital.capexAtivacao[]` (card "Investimentos em equipamentos
@@ -43,7 +42,6 @@ export function computeCapexMensal(state: AppState): number[] {
   }
   return out;
 }
-
 
 /**
  * Soma mensal das linhas livres de dedução da Receita
@@ -89,8 +87,7 @@ export function splitReceitasFinanceiras(state: AppState): {
     const vals = rf.valores ?? [];
     // Classificação: `tipo` explícito quando presente; fallback p/ id (compat).
     const isOperacional =
-      rf.tipo === "operacional" ||
-      (rf.tipo === undefined && OPERACIONAIS_IDS.has(rf.id));
+      rf.tipo === "operacional" || (rf.tipo === undefined && OPERACIONAIS_IDS.has(rf.id));
     const exclusivaFonte = !!rf.tributacaoExclusivaFonte;
     for (let i = 0; i < 12; i++) {
       const v = Number(vals[i]) || 0;

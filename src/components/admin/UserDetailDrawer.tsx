@@ -6,13 +6,25 @@
 import { useEffect, useState } from "react";
 import { Loader2, Copy, ExternalLink, Gift, UserCog, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   getUserDetail,
   grantManualPlan,
@@ -25,7 +37,11 @@ import { UserTimelinePanel } from "./UserTimelinePanel";
 
 function fmt(iso: string | null | undefined) {
   if (!iso) return "—";
-  try { return new Date(iso).toLocaleString("pt-BR"); } catch { return "—"; }
+  try {
+    return new Date(iso).toLocaleString("pt-BR");
+  } catch {
+    return "—";
+  }
 }
 
 export function UserDetailDrawer({
@@ -48,10 +64,17 @@ export function UserDetailDrawer({
       setDetail(d);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao carregar.");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { if (userId) { setDetail(null); void load(); } /* eslint-disable-next-line */ }, [userId]);
+  useEffect(() => {
+    if (userId) {
+      setDetail(null);
+      void load();
+    } /* eslint-disable-next-line */
+  }, [userId]);
 
   return (
     <Sheet open={!!userId} onOpenChange={(o) => !o && onClose()}>
@@ -62,7 +85,9 @@ export function UserDetailDrawer({
         </SheetHeader>
 
         {loading && !detail ? (
-          <div className="flex h-64 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          <div className="flex h-64 items-center justify-center">
+            <Loader2 className="h-5 w-5 animate-spin" />
+          </div>
         ) : detail ? (
           <Tabs defaultValue="resumo" className="mt-4">
             <TabsList className="grid w-full grid-cols-8">
@@ -81,7 +106,11 @@ export function UserDetailDrawer({
               <Row label="E-mail">{detail.user.email}</Row>
               <Row label="Telefone">{detail.user.phone ?? "—"}</Row>
               <Row label="Provider login">{detail.user.provider ?? "email"}</Row>
-              <Row label="E-mail confirmado">{detail.user.emailConfirmedAt ? "Sim · " + fmt(detail.user.emailConfirmedAt) : "Não"}</Row>
+              <Row label="E-mail confirmado">
+                {detail.user.emailConfirmedAt
+                  ? "Sim · " + fmt(detail.user.emailConfirmedAt)
+                  : "Não"}
+              </Row>
               <Row label="Criado em">{fmt(detail.user.createdAt)}</Row>
               <Row label="Último login">{fmt(detail.user.lastSignInAt)}</Row>
               <Row label="Banido até">{fmt(detail.user.bannedUntil)}</Row>
@@ -105,7 +134,9 @@ export function UserDetailDrawer({
                       <div className="mt-1 grid grid-cols-2 gap-1 text-muted-foreground">
                         <div>Expira: {fmt(s.currentPeriodEnd)}</div>
                         <div>Cancel @ end: {s.cancelAtPeriodEnd ? "sim" : "não"}</div>
-                        <div className="col-span-2 truncate">Sub: {s.stripeSubscriptionId ?? "—"}</div>
+                        <div className="col-span-2 truncate">
+                          Sub: {s.stripeSubscriptionId ?? "—"}
+                        </div>
                         <div className="col-span-2 truncate">Cust: {s.customerId ?? "—"}</div>
                       </div>
                     </div>
@@ -119,8 +150,6 @@ export function UserDetailDrawer({
               <UserTimelinePanel userId={detail.user.id} email={detail.user.email} />
             </TabsContent>
 
-
-
             <TabsContent value="notas" className="pt-3">
               <UserNotesPanel userId={detail.user.id} />
             </TabsContent>
@@ -129,18 +158,27 @@ export function UserDetailDrawer({
               <UserSessionsPanel userId={detail.user.id} />
             </TabsContent>
 
-
             <TabsContent value="webhooks" className="pt-3">
               {detail.webhookEvents.length === 0 ? (
                 <Empty>Sem eventos relacionados.</Empty>
               ) : (
                 <div className="space-y-1">
                   {detail.webhookEvents.map((e) => (
-                    <div key={e.id} className="flex items-center justify-between rounded border border-border/40 px-2 py-1 text-xs">
+                    <div
+                      key={e.id}
+                      className="flex items-center justify-between rounded border border-border/40 px-2 py-1 text-xs"
+                    >
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[9px]">{e.provider}</Badge>
+                        <Badge variant="outline" className="text-[9px]">
+                          {e.provider}
+                        </Badge>
                         <span className="font-mono">{e.eventType}</span>
-                        <Badge variant={e.status === "processed" ? "default" : "destructive"} className="text-[9px]">{e.status}</Badge>
+                        <Badge
+                          variant={e.status === "processed" ? "default" : "destructive"}
+                          className="text-[9px]"
+                        >
+                          {e.status}
+                        </Badge>
                       </div>
                       <span className="text-muted-foreground">{fmt(e.receivedAt)}</span>
                     </div>
@@ -160,7 +198,9 @@ export function UserDetailDrawer({
                         <span className="font-mono">{a.action}</span>
                         <span className="text-muted-foreground">{fmt(a.createdAt)}</span>
                       </div>
-                      <div className="text-muted-foreground">por {a.actorEmail ?? "—"} · {a.resource}</div>
+                      <div className="text-muted-foreground">
+                        por {a.actorEmail ?? "—"} · {a.resource}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -168,7 +208,13 @@ export function UserDetailDrawer({
             </TabsContent>
 
             <TabsContent value="acoes" className="space-y-4 pt-3">
-              <GrantPlanForm userId={detail.user.id} onDone={() => { void load(); onChanged?.(); }} />
+              <GrantPlanForm
+                userId={detail.user.id}
+                onDone={() => {
+                  void load();
+                  onChanged?.();
+                }}
+              />
               <ImpersonateForm userId={detail.user.id} />
             </TabsContent>
           </Tabs>
@@ -187,7 +233,11 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 function Empty({ children }: { children: React.ReactNode }) {
-  return <div className="rounded border border-dashed border-border/60 p-6 text-center text-xs text-muted-foreground">{children}</div>;
+  return (
+    <div className="rounded border border-dashed border-border/60 p-6 text-center text-xs text-muted-foreground">
+      {children}
+    </div>
+  );
 }
 
 // ----------------------------------------------------------------------------
@@ -212,8 +262,11 @@ function GrantPlanForm({ userId, onDone }: { userId: string; onDone: () => void 
       });
       toast.success(`Plano concedido (${r.status}).`);
       onDone();
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
-    finally { setBusy(false); }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -225,7 +278,9 @@ function GrantPlanForm({ userId, onDone }: { userId: string; onDone: () => void 
         <div>
           <Label className="text-xs">Plano</Label>
           <Select value={plan} onValueChange={(v) => setPlan(v as any)}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="starter">Starter</SelectItem>
               <SelectItem value="pro">Pro</SelectItem>
@@ -236,7 +291,9 @@ function GrantPlanForm({ userId, onDone }: { userId: string; onDone: () => void 
         <div>
           <Label className="text-xs">Modo</Label>
           <Select value={mode} onValueChange={(v) => setMode(v as any)}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="trial">Trial</SelectItem>
               <SelectItem value="ativo">Ativo (cortesia)</SelectItem>
@@ -247,12 +304,22 @@ function GrantPlanForm({ userId, onDone }: { userId: string; onDone: () => void 
         {mode !== "lifetime" && (
           <div className="col-span-2">
             <Label className="text-xs">Duração (dias)</Label>
-            <Input value={days} onChange={(e) => setDays(e.target.value)} inputMode="numeric" className="h-9" />
+            <Input
+              value={days}
+              onChange={(e) => setDays(e.target.value)}
+              inputMode="numeric"
+              className="h-9"
+            />
           </div>
         )}
         <div className="col-span-2">
           <Label className="text-xs">Motivo</Label>
-          <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex.: cortesia de parceria" className="h-9" />
+          <Input
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Ex.: cortesia de parceria"
+            className="h-9"
+          />
         </div>
       </div>
       <Button onClick={submit} disabled={busy} className="mt-3 w-full" size="sm">
@@ -277,8 +344,11 @@ function ImpersonateForm({ userId }: { userId: string }) {
       const r = await impersonateUser({ data: { userId, reason: reason || undefined } });
       setLink(r.link);
       toast.success("Link gerado. Abra em aba anônima.");
-    } catch (e) { toast.error(e instanceof Error ? e.message : "Falha."); }
-    finally { setBusy(false); }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -288,24 +358,44 @@ function ImpersonateForm({ userId }: { userId: string }) {
       </div>
       <div className="mb-2 flex items-start gap-1.5 rounded border border-amber-500/30 bg-amber-500/10 p-2 text-[11px] text-amber-900 dark:text-amber-200">
         <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-        Gera um magic link de uso único. Abra em aba anônima para não derrubar
-        sua sessão de admin. A ação fica auditada.
+        Gera um magic link de uso único. Abra em aba anônima para não derrubar sua sessão de admin.
+        A ação fica auditada.
       </div>
       <Label className="text-xs">Motivo</Label>
-      <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex.: investigar bug reportado" className="h-9" />
+      <Input
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Ex.: investigar bug reportado"
+        className="h-9"
+      />
       <Button onClick={submit} disabled={busy} variant="outline" className="mt-2 w-full" size="sm">
         {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
         Gerar magic link
       </Button>
       {link && (
         <div className="mt-2 space-y-1">
-          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Link (10 min)</Label>
+          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Link (10 min)
+          </Label>
           <div className="flex gap-1">
             <Input readOnly value={link} className="h-8 font-mono text-[10px]" />
-            <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => { navigator.clipboard.writeText(link); toast.success("Copiado."); }}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 px-2"
+              onClick={() => {
+                navigator.clipboard.writeText(link);
+                toast.success("Copiado.");
+              }}
+            >
               <Copy className="h-3.5 w-3.5" />
             </Button>
-            <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => window.open(link, "_blank", "noopener,noreferrer")}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 px-2"
+              onClick={() => window.open(link, "_blank", "noopener,noreferrer")}
+            >
               <ExternalLink className="h-3.5 w-3.5" />
             </Button>
           </div>

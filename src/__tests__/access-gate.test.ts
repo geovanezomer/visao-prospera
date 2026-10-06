@@ -8,7 +8,13 @@ const future = (h: number) => new Date(NOW + h * 3_600_000).toISOString();
 const past = (h: number) => new Date(NOW - h * 3_600_000).toISOString();
 
 describe("resolveAccessStatus", () => {
-  const base = { hydrated: true, subLoading: false, isTrial: false, trialExpiresAt: null, now: NOW };
+  const base = {
+    hydrated: true,
+    subLoading: false,
+    isTrial: false,
+    trialExpiresAt: null,
+    now: NOW,
+  };
 
   it("loading quando não hidratou ou sub carregando", () => {
     expect(resolveAccessStatus({ ...base, hydrated: false, plan: null }).kind).toBe("loading");
@@ -18,7 +24,12 @@ describe("resolveAccessStatus", () => {
   it("plan active → active", () => {
     const r = resolveAccessStatus({
       ...base,
-      plan: { plan: "pro", status: "active", current_period_end: future(24), cancel_at_period_end: false },
+      plan: {
+        plan: "pro",
+        status: "active",
+        current_period_end: future(24),
+        cancel_at_period_end: false,
+      },
     });
     expect(r).toMatchObject({ kind: "active", plan: "pro", cancelAtPeriodEnd: false });
   });
@@ -27,13 +38,23 @@ describe("resolveAccessStatus", () => {
     expect(
       resolveAccessStatus({
         ...base,
-        plan: { plan: "starter", status: "trialing", current_period_end: future(24), cancel_at_period_end: false },
+        plan: {
+          plan: "starter",
+          status: "trialing",
+          current_period_end: future(24),
+          cancel_at_period_end: false,
+        },
       }).kind,
     ).toBe("active");
     expect(
       resolveAccessStatus({
         ...base,
-        plan: { plan: "lt", status: "lifetime", current_period_end: null, cancel_at_period_end: false },
+        plan: {
+          plan: "lt",
+          status: "lifetime",
+          current_period_end: null,
+          cancel_at_period_end: false,
+        },
       }).kind,
     ).toBe("active");
   });
@@ -41,7 +62,12 @@ describe("resolveAccessStatus", () => {
   it("plan past_due → past_due", () => {
     const r = resolveAccessStatus({
       ...base,
-      plan: { plan: "pro", status: "past_due", current_period_end: past(24), cancel_at_period_end: false },
+      plan: {
+        plan: "pro",
+        status: "past_due",
+        current_period_end: past(24),
+        cancel_at_period_end: false,
+      },
     });
     expect(r).toMatchObject({ kind: "past_due", plan: "pro" });
   });
@@ -49,7 +75,12 @@ describe("resolveAccessStatus", () => {
   it("plan canceled com período vigente → active com cancelAtPeriodEnd", () => {
     const r = resolveAccessStatus({
       ...base,
-      plan: { plan: "pro", status: "canceled", current_period_end: future(48), cancel_at_period_end: true },
+      plan: {
+        plan: "pro",
+        status: "canceled",
+        current_period_end: future(48),
+        cancel_at_period_end: true,
+      },
     });
     expect(r).toMatchObject({ kind: "active", cancelAtPeriodEnd: true });
   });
@@ -57,13 +88,23 @@ describe("resolveAccessStatus", () => {
   it("plan canceled com período vencido → canceled", () => {
     const r = resolveAccessStatus({
       ...base,
-      plan: { plan: "pro", status: "canceled", current_period_end: past(1), cancel_at_period_end: true },
+      plan: {
+        plan: "pro",
+        status: "canceled",
+        current_period_end: past(1),
+        cancel_at_period_end: true,
+      },
     });
     expect(r.kind).toBe("canceled");
   });
 
   it("trial válido → trial", () => {
-    const r = resolveAccessStatus({ ...base, isTrial: true, trialExpiresAt: future(1), plan: null });
+    const r = resolveAccessStatus({
+      ...base,
+      isTrial: true,
+      trialExpiresAt: future(1),
+      plan: null,
+    });
     expect(r.kind).toBe("trial");
   });
 

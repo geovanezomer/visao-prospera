@@ -60,10 +60,7 @@ export default defineConfig({
             // node_modules (Radix UI, etc.). É inofensivo no nosso bundle
             // SSR/CSR — não somos um RSC framework.
             onwarn(warning, defaultHandler) {
-              if (
-                warning.code === "MODULE_LEVEL_DIRECTIVE" &&
-                /use client/.test(warning.message)
-              ) {
+              if (warning.code === "MODULE_LEVEL_DIRECTIVE" && /use client/.test(warning.message)) {
                 return;
               }
               defaultHandler(warning);
@@ -83,4 +80,3 @@ export default defineConfig({
     },
   },
 });
-

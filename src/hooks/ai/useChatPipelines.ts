@@ -13,11 +13,7 @@ import {
 import { streamChat } from "@/engines/ai/client";
 import { buildLlmMessages } from "@/engines/ai/historyUtils";
 import { recordChatTrail } from "@/engines/ai/chatTrail";
-import {
-  loadPipeline360,
-  savePipeline360,
-  clearPipeline360,
-} from "@/engines/ai/pipeline360Store";
+import { loadPipeline360, savePipeline360, clearPipeline360 } from "@/engines/ai/pipeline360Store";
 import type { AIMode } from "@/engines/ai/systemPrompt";
 
 type Pipeline360Stage = "cfo" | "controller" | "auditor";
@@ -176,9 +172,7 @@ export function useChatPipelines(params: UseChatPipelinesParams): UseChatPipelin
     seedOutputs: Array<{ stage: Pipeline360Stage; output: string }>,
   ) => {
     if (!activeId) return;
-    const { PIPELINE_360, buildStagePrompt, stageHeader } = await import(
-      "@/engines/ai/pipeline"
-    );
+    const { PIPELINE_360, buildStagePrompt, stageHeader } = await import("@/engines/ai/pipeline");
     setStreaming(true);
     touchThread(companyName, activeId);
     const ac = new AbortController();
@@ -237,10 +231,7 @@ export function useChatPipelines(params: UseChatPipelinesParams): UseChatPipelin
           }
           const body = acc.slice(header.length);
           outputs.push({ stage, output: body });
-          convo = [
-            ...convo.slice(0, -1),
-            { role: "assistant", content: acc, ts: Date.now() },
-          ];
+          convo = [...convo.slice(0, -1), { role: "assistant", content: acc, ts: Date.now() }];
           setPipeline360((p) => ({
             ...p,
             completed: [...p.completed, stage],
@@ -334,11 +325,7 @@ export function useChatPipelines(params: UseChatPipelinesParams): UseChatPipelin
       return;
     }
     setPipeline360((p) => ({ ...p, active: true, aborted: false, current: null }));
-    await _runPipelineStages(
-      pipeline360.question,
-      startIdx,
-      pipeline360.outputs ?? [],
-    );
+    await _runPipelineStages(pipeline360.question, startIdx, pipeline360.outputs ?? []);
   };
 
   const resetPipeline360 = () => {
@@ -423,7 +410,9 @@ export function useChatPipelines(params: UseChatPipelinesParams): UseChatPipelin
       setMessages((prev) => [...prev, synthPlaceholder]);
       const synthPrompt = `Você é o secretário do conselho. As 3 vozes responderam à pergunta: "${q}".\n\n${outputs
         .map((o) => `## ${o.label}\n${o.text}`)
-        .join("\n\n")}\n\nProduza em **máx. 180 palavras**:\n1. **Consenso** — onde os 3 concordam (1-2 bullets).\n2. **Divergência** — onde discordam (1-2 bullets, dizendo qual voz defende cada lado).\n3. **Recomendação final** — placar (ex.: "2 de 3 recomendam X") + decisão executiva sugerida com 1 número de impacto.\n4. **📎 Trilha de auditoria** — consolide as fontes citadas pelas 3 vozes em um bloco único, agrupado por tipo: **Tools** (lista deduplicada com o número/output principal), **Benchmark** (P25/P50/P75 citados), **Base legal** (artigos/LCs), **Fórmulas** (expressões usadas). Cite a voz responsável entre parênteses quando houver divergência de número.`;
+        .join(
+          "\n\n",
+        )}\n\nProduza em **máx. 180 palavras**:\n1. **Consenso** — onde os 3 concordam (1-2 bullets).\n2. **Divergência** — onde discordam (1-2 bullets, dizendo qual voz defende cada lado).\n3. **Recomendação final** — placar (ex.: "2 de 3 recomendam X") + decisão executiva sugerida com 1 número de impacto.\n4. **📎 Trilha de auditoria** — consolide as fontes citadas pelas 3 vozes em um bloco único, agrupado por tipo: **Tools** (lista deduplicada com o número/output principal), **Benchmark** (P25/P50/P75 citados), **Base legal** (artigos/LCs), **Fórmulas** (expressões usadas). Cite a voz responsável entre parênteses quando houver divergência de número.`;
       let acc = "### 🧩 Síntese do Conselho\n\n";
       updateByTs(synthTs, acc);
       try {

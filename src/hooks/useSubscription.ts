@@ -37,7 +37,11 @@ export function useSubscription() {
 
   // Chavear por userId evita reaproveitar cache de outra identidade
   // (ex.: null anônimo pré-login virando resposta "sem plano" no dashboard).
-  const { data: plan = null, isLoading, refetch } = useQuery({
+  const {
+    data: plan = null,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["active_plan", userId],
     queryFn: fetchActivePlan,
     enabled: !!userId,
@@ -63,9 +67,7 @@ export function useSubscription() {
   // NÃO consideramos `isFetching` (background refetch) como loading, senão
   // qualquer revalidação silenciosa desmontaria o app inteiro (o
   // SubscriptionGate voltaria a "Carregando…" e perderia estado de UI).
-  const loading =
-    !hydrated ||
-    (!!userId && (isLoading || plan === undefined));
+  const loading = !hydrated || (!!userId && (isLoading || plan === undefined));
 
   return { plan, loading, isActive: !!plan, refetch };
 }

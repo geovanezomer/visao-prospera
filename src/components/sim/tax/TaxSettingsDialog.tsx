@@ -81,7 +81,15 @@ const BUSINESS: { key: BusinessType; label: string; hint: string }[] = [
 ];
 
 // Passos do wizard. Cada um traz um título amigável e ícone próprio.
-type StepKey = "intro" | "empresa" | "federais" | "simples" | "presumido" | "folha" | "reforma" | "revisao";
+type StepKey =
+  | "intro"
+  | "empresa"
+  | "federais"
+  | "simples"
+  | "presumido"
+  | "folha"
+  | "reforma"
+  | "revisao";
 const STEPS: { key: StepKey; label: string; icon: typeof Settings }[] = [
   { key: "intro", label: "Boas-vindas", icon: Sparkles },
   { key: "empresa", label: "Empresa", icon: Building2 },
@@ -150,7 +158,13 @@ export function TaxSettingsDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Configurações da empresa e parâmetros tributários" aria-label="Configurações">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 w-8 p-0"
+          title="Configurações da empresa e parâmetros tributários"
+          aria-label="Configurações"
+        >
           <Settings className="h-4 w-4" />
         </Button>
       </DialogTrigger>
@@ -269,17 +283,18 @@ function StepIntro({ customCount }: { customCount: number }) {
     <div className="space-y-4 text-sm leading-relaxed">
       <p>
         Bem-vindo às <b>Configurações</b> do FinnancePRO. Aqui você define tanto os{" "}
-        <b>dados da sua empresa</b> (nome, CNPJ, setor, ramo, número de colaboradores,
-        regime tributário e período de análise) quanto as <b>alíquotas e tabelas
-        tributárias brasileiras</b> usadas pelos cálculos. Você <b>não precisa</b> ser
-        especialista: os valores já vêm preenchidos com os <b>padrões oficiais</b>.
+        <b>dados da sua empresa</b> (nome, CNPJ, setor, ramo, número de colaboradores, regime
+        tributário e período de análise) quanto as{" "}
+        <b>alíquotas e tabelas tributárias brasileiras</b> usadas pelos cálculos. Você{" "}
+        <b>não precisa</b> ser especialista: os valores já vêm preenchidos com os{" "}
+        <b>padrões oficiais</b>.
       </p>
 
       <Callout tone="info" title="Comece pela Empresa">
         <p className="text-[13px]">
-          O próximo passo é <b>Empresa</b>: confira nome, CNPJ, setor/ramo, número de
-          colaboradores e regime tributário. Esses dados alimentam todos os indicadores
-          (por colaborador, por setor) e definem qual passo tributário se aplica a você.
+          O próximo passo é <b>Empresa</b>: confira nome, CNPJ, setor/ramo, número de colaboradores
+          e regime tributário. Esses dados alimentam todos os indicadores (por colaborador, por
+          setor) e definem qual passo tributário se aplica a você.
         </p>
       </Callout>
 
@@ -299,10 +314,10 @@ function StepIntro({ customCount }: { customCount: number }) {
 
       <Callout tone="ok" title="O que esperar a seguir">
         <p className="text-[13px]">
-          Você passará pela <b>Empresa</b> e por 4 áreas tributárias (Federais, Simples,
-          Presumido e Reforma). Em cada uma, os campos vêm com a <b>fonte legal</b> e o
-          botão <RotateCcw className="inline h-3 w-3" /> para voltar ao padrão oficial.
-          Ao final, uma tela de <b>revisão</b> resume tudo.
+          Você passará pela <b>Empresa</b> e por 4 áreas tributárias (Federais, Simples, Presumido e
+          Reforma). Em cada uma, os campos vêm com a <b>fonte legal</b> e o botão{" "}
+          <RotateCcw className="inline h-3 w-3" /> para voltar ao padrão oficial. Ao final, uma tela
+          de <b>revisão</b> resume tudo.
         </p>
       </Callout>
 
@@ -323,16 +338,15 @@ function StepEmpresa() {
     <div className="space-y-4">
       <Callout tone="info" title="Dados da empresa">
         <p className="text-[13px]">
-          Estas configurações são <b>compartilhadas por todos os módulos</b>: cálculos
-          tributários, indicadores por colaborador, benchmarks setoriais e comparações
-          históricas. As mudanças são salvas <b>automaticamente</b> a cada campo.
+          Estas configurações são <b>compartilhadas por todos os módulos</b>: cálculos tributários,
+          indicadores por colaborador, benchmarks setoriais e comparações históricas. As mudanças
+          são salvas <b>automaticamente</b> a cada campo.
         </p>
       </Callout>
       <CompanyConfigForm />
     </div>
   );
 }
-
 
 function StepFederais({
   ov,
@@ -364,7 +378,7 @@ function StepFederais({
           value={ov.irpj ?? IRPJ_PCT}
           onChange={(v) => patchOv({ irpj: v })}
           onReset={() => patchOv({ irpj: undefined })}
-        faixa={FAIXAS_TRIBUTARIAS.irpj}
+          faixa={FAIXAS_TRIBUTARIAS.irpj}
         />
         <FriendlyRow
           label="Adicional de IRPJ"
@@ -374,7 +388,7 @@ function StepFederais({
           value={ov.irpjAdicional ?? IRPJ_ADICIONAL_PCT}
           onChange={(v) => patchOv({ irpjAdicional: v })}
           onReset={() => patchOv({ irpjAdicional: undefined })}
-        faixa={FAIXAS_TRIBUTARIAS.irpjAdicional}
+          faixa={FAIXAS_TRIBUTARIAS.irpjAdicional}
         />
         <FriendlyRow
           label="Gatilho trimestral do Adicional"
@@ -384,7 +398,7 @@ function StepFederais({
           value={ov.irpjAdicionalGatilhoTri ?? IRPJ_ADICIONAL_GATILHO_TRI}
           onChange={(v) => patchOv({ irpjAdicionalGatilhoTri: v })}
           onReset={() => patchOv({ irpjAdicionalGatilhoTri: undefined })}
-        faixa={FAIXAS_TRIBUTARIAS.irpjAdicionalGatilhoTri}
+          faixa={FAIXAS_TRIBUTARIAS.irpjAdicionalGatilhoTri}
         />
         <FriendlyRow
           label="CSLL"
@@ -394,7 +408,7 @@ function StepFederais({
           value={ov.csll ?? CSLL_PCT}
           onChange={(v) => patchOv({ csll: v })}
           onReset={() => patchOv({ csll: undefined })}
-        faixa={FAIXAS_TRIBUTARIAS.csll}
+          faixa={FAIXAS_TRIBUTARIAS.csll}
         />
       </Section>
 
@@ -420,7 +434,7 @@ function StepFederais({
           value={ov.pisCum ?? PIS_CUM_PCT}
           onChange={(v) => patchOv({ pisCum: v })}
           onReset={() => patchOv({ pisCum: undefined })}
-        faixa={FAIXAS_TRIBUTARIAS.pisCum}
+          faixa={FAIXAS_TRIBUTARIAS.pisCum}
         />
         <FriendlyRow
           label="COFINS cumulativo"
@@ -430,7 +444,7 @@ function StepFederais({
           value={ov.cofinsCum ?? COFINS_CUM_PCT}
           onChange={(v) => patchOv({ cofinsCum: v })}
           onReset={() => patchOv({ cofinsCum: undefined })}
-        faixa={FAIXAS_TRIBUTARIAS.cofinsCum}
+          faixa={FAIXAS_TRIBUTARIAS.cofinsCum}
         />
       </Section>
 
@@ -443,7 +457,7 @@ function StepFederais({
           value={ov.pisNaoCum ?? PIS_NAO_CUM_PCT}
           onChange={(v) => patchOv({ pisNaoCum: v })}
           onReset={() => patchOv({ pisNaoCum: undefined })}
-        faixa={FAIXAS_TRIBUTARIAS.pisNaoCum}
+          faixa={FAIXAS_TRIBUTARIAS.pisNaoCum}
         />
         <FriendlyRow
           label="COFINS não-cumulativo"
@@ -453,16 +467,16 @@ function StepFederais({
           value={ov.cofinsNaoCum ?? COFINS_NAO_CUM_PCT}
           onChange={(v) => patchOv({ cofinsNaoCum: v })}
           onReset={() => patchOv({ cofinsNaoCum: undefined })}
-        faixa={FAIXAS_TRIBUTARIAS.cofinsNaoCum}
+          faixa={FAIXAS_TRIBUTARIAS.cofinsNaoCum}
         />
       </Section>
 
       <Callout tone="info" title="Lucro Real — créditos anuais e prejuízo fiscal">
         <p className="text-[13px]">
-          Empresas no Lucro Real podem <b>abater créditos de PIS/COFINS</b> apurados
-          sobre insumos e <b>compensar prejuízo fiscal</b> de exercícios anteriores
-          (Lei 9.065/95 — trava de 30% do lucro trimestral). Estes campos ficavam
-          apenas na aba de Tributos; agora estão consolidados aqui.
+          Empresas no Lucro Real podem <b>abater créditos de PIS/COFINS</b> apurados sobre insumos e{" "}
+          <b>compensar prejuízo fiscal</b> de exercícios anteriores (Lei 9.065/95 — trava de 30% do
+          lucro trimestral). Estes campos ficavam apenas na aba de Tributos; agora estão
+          consolidados aqui.
         </p>
       </Callout>
 
@@ -495,7 +509,6 @@ function StepFederais({
           onReset={() => patchTax({ cofinsCreditos: 0 })}
         />
       </Section>
-
     </div>
   );
 }
@@ -535,7 +548,7 @@ function StepSimples({
           value={ov.fatorRMinimo ?? FATOR_R_MINIMO_PCT}
           onChange={(v) => patchOv({ fatorRMinimo: v })}
           onReset={() => patchOv({ fatorRMinimo: undefined })}
-        faixa={FAIXAS_TRIBUTARIAS.fatorRMinimo}
+          faixa={FAIXAS_TRIBUTARIAS.fatorRMinimo}
         />
       </Section>
 
@@ -638,7 +651,7 @@ function StepPresumido({
           value={state.tax.issIcms ?? 5}
           onChange={(v) => patchTax({ issIcms: v })}
           onReset={() => patchTax({ issIcms: 5 })}
-        faixa={FAIXAS_TRIBUTARIAS.iss}
+          faixa={FAIXAS_TRIBUTARIAS.iss}
         />
         <FriendlyRow
           label="Deduções anuais de ISS (materiais/subempreitada)"
@@ -695,12 +708,11 @@ function StepReforma({
 
       <Callout tone="ok" title="Crédito amplo (LC 214/2025, arts. 47-56)">
         <p className="text-[13px]">
-          CBS/IBS geram <b>crédito sobre praticamente todos os insumos</b> —
-          aluguel, energia, frete, serviços tomados, marketing, TI, etc. — e não
-          apenas sobre o CPV. As exceções são <b>folha de pagamento</b> (art. 57),
-          despesas financeiras e linhas marcadas <b>"sem crédito"</b> (uso e
-          consumo pessoal). Isso reduz a carga efetiva especialmente para
-          empresas de <b>serviços</b> (CPV baixo, OpEx alto).
+          CBS/IBS geram <b>crédito sobre praticamente todos os insumos</b> — aluguel, energia,
+          frete, serviços tomados, marketing, TI, etc. — e não apenas sobre o CPV. As exceções são{" "}
+          <b>folha de pagamento</b> (art. 57), despesas financeiras e linhas marcadas{" "}
+          <b>"sem crédito"</b> (uso e consumo pessoal). Isso reduz a carga efetiva especialmente
+          para empresas de <b>serviços</b> (CPV baixo, OpEx alto).
         </p>
       </Callout>
 
@@ -713,7 +725,7 @@ function StepReforma({
           value={state.tax.cbsAliquota ?? CBS_ALIQUOTA_PLENA}
           onChange={(v) => patchTax({ cbsAliquota: v })}
           onReset={() => patchTax({ cbsAliquota: undefined })}
-        faixa={FAIXAS_TRIBUTARIAS.cbsAliquota}
+          faixa={FAIXAS_TRIBUTARIAS.cbsAliquota}
         />
         <FriendlyRow
           label="IBS — alíquota de referência"
@@ -723,7 +735,7 @@ function StepReforma({
           value={state.tax.ibsAliquotaRef ?? IBS_ALIQUOTA_PLENA}
           onChange={(v) => patchTax({ ibsAliquotaRef: v })}
           onReset={() => patchTax({ ibsAliquotaRef: undefined })}
-        faixa={FAIXAS_TRIBUTARIAS.ibsAliquotaRef}
+          faixa={FAIXAS_TRIBUTARIAS.ibsAliquotaRef}
         />
         <FriendlyRow
           label="% do CPV vindo de fornecedor Simples Nacional"
@@ -773,16 +785,14 @@ function StepReforma({
       <Section title="Split Payment (LC 214/2025)">
         <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/30 p-3">
           <div className="flex-1">
-            <div className="text-sm font-medium">
-              Aplicar Split Payment no fluxo de caixa
-            </div>
+            <div className="text-sm font-medium">Aplicar Split Payment no fluxo de caixa</div>
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-              Com Split ATIVO, CBS e IBS são retidos no momento da liquidação financeira (lag 0)
-              em vez de recolhidos no mês seguinte. Isso elimina o <i>float</i> tributário e reduz
+              Com Split ATIVO, CBS e IBS são retidos no momento da liquidação financeira (lag 0) em
+              vez de recolhidos no mês seguinte. Isso elimina o <i>float</i> tributário e reduz
               permanentemente o caixa operacional — todos os indicadores (DSCR, NCG, Liquidez,
               Runway) recalculam automaticamente. Padrão ligado a partir de{" "}
-              <b>{state.tax.splitPaymentAnoInicio ?? SPLIT_PAYMENT_ANO_INICIO_DEFAULT}</b>.
-              Desligue apenas para comparar com o "mundo antigo".
+              <b>{state.tax.splitPaymentAnoInicio ?? SPLIT_PAYMENT_ANO_INICIO_DEFAULT}</b>. Desligue
+              apenas para comparar com o "mundo antigo".
             </p>
           </div>
           <Switch
@@ -910,8 +920,7 @@ function SnPresumidoExplainer({
           Fornecedor no Simples Nacional não destaca CBS/IBS na nota — o comprador (Lucro Real/
           Presumido) só tem direito a um <b>crédito presumido</b> de{" "}
           <b>{ALIQ_PRESUMIDA_CBS_SN.toFixed(1).replace(".", ",")}% CBS</b> e{" "}
-          <b>{ALIQ_PRESUMIDA_IBS_SN.toFixed(1).replace(".", ",")}% IBS</b>, e não da alíquota
-          cheia.
+          <b>{ALIQ_PRESUMIDA_IBS_SN.toFixed(1).replace(".", ",")}% IBS</b>, e não da alíquota cheia.
         </p>
         <div className="grid grid-cols-2 gap-2 rounded bg-background/60 p-2 font-mono text-[12px]">
           <div>
@@ -974,7 +983,9 @@ function FriendlyRow({
   faixa?: FaixaLegal;
 }) {
   const isDefault = value === defaultVal;
-  const resultado = faixa ? validarPelaFaixa(faixa, value) : { ok: true, nivel: "ok" as const, msg: undefined };
+  const resultado = faixa
+    ? validarPelaFaixa(faixa, value)
+    : { ok: true, nivel: "ok" as const, msg: undefined };
   const guardedOnChange = (n: number) => {
     if (faixa) {
       const r = validarPelaFaixa(faixa, n);
@@ -1008,12 +1019,7 @@ function FriendlyRow({
         </div>
         <div className="flex items-center gap-1 sm:shrink-0">
           <div className="flex-1 sm:w-[110px] sm:flex-none">
-            <NumInput
-              value={value}
-              onChange={guardedOnChange}
-              min={faixa?.min}
-              max={faixa?.max}
-            />
+            <NumInput value={value} onChange={guardedOnChange} min={faixa?.min} max={faixa?.max} />
           </div>
           <span className="w-6 text-center text-[10px] text-muted-foreground">{suffix}</span>
           <Button
@@ -1031,9 +1037,7 @@ function FriendlyRow({
       {resultado.msg && resultado.nivel !== "ok" ? (
         <p
           className={`mt-2 text-[11px] ${
-            resultado.nivel === "erro"
-              ? "text-[var(--destructive)]"
-              : "text-[var(--warning)]"
+            resultado.nivel === "erro" ? "text-[var(--destructive)]" : "text-[var(--warning)]"
           }`}
           role={resultado.nivel === "erro" ? "alert" : undefined}
         >
@@ -1078,7 +1082,6 @@ function validarPelaFaixa(
   }
   return { ok: true, nivel: "ok" };
 }
-
 
 function SimplesTableEditor({
   ov,
@@ -1160,8 +1163,7 @@ function StepFolhaSocios({
   patchOv: (p: Partial<TaxRatesOverride>) => void;
 }) {
   const pr: PayrollOverride = ov.payroll ?? {};
-  const patchPr = (patch: Partial<PayrollOverride>) =>
-    patchOv({ payroll: { ...pr, ...patch } });
+  const patchPr = (patch: Partial<PayrollOverride>) => patchOv({ payroll: { ...pr, ...patch } });
 
   const irpfTable = pr.irpfTable ?? IRPF_TABLE_DEFAULT;
   const isIrpfCustom = !!pr.irpfTable;
@@ -1178,8 +1180,8 @@ function StepFolhaSocios({
       <Callout tone="info" title="Por que esta tela existe?">
         <p className="text-[13px]">
           O cartão <b>"Pró-labore × Distribuição de Lucros"</b> em Tributos usa estes parâmetros
-          para calcular INSS do sócio, INSS patronal, IRPF mensal e o limite de distribuição
-          isenta. Todos os valores vêm preenchidos com os padrões oficiais 2025 — só mude se houver
+          para calcular INSS do sócio, INSS patronal, IRPF mensal e o limite de distribuição isenta.
+          Todos os valores vêm preenchidos com os padrões oficiais 2025 — só mude se houver
           alteração regulatória ou para simulações.
         </p>
       </Callout>
@@ -1228,7 +1230,8 @@ function StepFolhaSocios({
           <div className="flex-1">
             <div className="text-sm font-medium">Aplicar patronal também no Simples (Anexo IV)</div>
             <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Empresas no Anexo IV recolhem patronal por fora do DAS. Para os demais anexos, manter desligado.
+              Empresas no Anexo IV recolhem patronal por fora do DAS. Para os demais anexos, manter
+              desligado.
             </p>
           </div>
           <Switch
@@ -1259,9 +1262,12 @@ function StepFolhaSocios({
         />
         <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/30 p-3">
           <div className="flex-1">
-            <div className="text-sm font-medium">Escolher automaticamente tradicional × simplificado</div>
+            <div className="text-sm font-medium">
+              Escolher automaticamente tradicional × simplificado
+            </div>
             <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Quando ligado, o sistema testa os dois modelos para cada sócio e aplica o que resulta em menor IRPF.
+              Quando ligado, o sistema testa os dois modelos para cada sócio e aplica o que resulta
+              em menor IRPF.
             </p>
           </div>
           <Switch

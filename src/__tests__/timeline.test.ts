@@ -56,19 +56,57 @@ describe("aggregateTimeline", () => {
   test("normaliza fontes mistas e ordena por data desc", async () => {
     const admin = makeAdmin({
       subscriptions: [
-        { id: "s1", plan: "pro", status: "active", provider: "stripe", stripe_subscription_id: "sub_1", created_at: "2026-01-01T10:00:00Z", updated_at: "2026-01-01T10:00:00Z", cancel_at_period_end: false },
+        {
+          id: "s1",
+          plan: "pro",
+          status: "active",
+          provider: "stripe",
+          stripe_subscription_id: "sub_1",
+          created_at: "2026-01-01T10:00:00Z",
+          updated_at: "2026-01-01T10:00:00Z",
+          cancel_at_period_end: false,
+        },
       ],
       webhooks: [
-        { id: "w1", provider: "stripe", event_type: "invoice.paid", status: "processed", subscription_id: "sub_1", received_at: "2026-06-15T09:00:00Z", error: null },
+        {
+          id: "w1",
+          provider: "stripe",
+          event_type: "invoice.paid",
+          status: "processed",
+          subscription_id: "sub_1",
+          received_at: "2026-06-15T09:00:00Z",
+          error: null,
+        },
       ],
       emailLog: [
-        { id: "e1", kind: "payment_failed", subscription_id: "sub_1", sent_at: "2026-06-20T12:00:00Z" },
+        {
+          id: "e1",
+          kind: "payment_failed",
+          subscription_id: "sub_1",
+          sent_at: "2026-06-20T12:00:00Z",
+        },
       ],
       audit: [
-        { id: "a1", action: "plan.grant_manual", resource: "subscription", actor_email: "root@x.com", created_at: "2026-07-01T00:00:00Z", metadata: null },
+        {
+          id: "a1",
+          action: "plan.grant_manual",
+          resource: "subscription",
+          actor_email: "root@x.com",
+          created_at: "2026-07-01T00:00:00Z",
+          metadata: null,
+        },
       ],
       checkouts: [
-        { id: "c1", status: "paid", plan_slug: "pro", provider: "stripe", created_at: "2026-01-01T09:00:00Z", updated_at: "2026-01-01T09:30:00Z", confirmed_at: "2026-01-01T09:30:00Z", last_error: null },
+        {
+          id: "c1",
+          status: "paid",
+          plan_slug: "pro",
+          provider: "stripe",
+          created_at: "2026-01-01T09:00:00Z",
+          updated_at: "2026-01-01T09:30:00Z",
+          confirmed_at: "2026-01-01T09:30:00Z",
+          last_error: null,
+        },
       ],
     });
 
@@ -102,7 +140,14 @@ describe("aggregateTimeline", () => {
       webhooks: [],
       emailLog: null, // tabela inexistente
       audit: [
-        { id: "a1", action: "x", resource: "y", actor_email: null, created_at: "2026-01-01T00:00:00Z", metadata: null },
+        {
+          id: "a1",
+          action: "x",
+          resource: "y",
+          actor_email: null,
+          created_at: "2026-01-01T00:00:00Z",
+          metadata: null,
+        },
       ],
       checkouts: [],
     });
@@ -114,8 +159,12 @@ describe("aggregateTimeline", () => {
 
   test("limita a 100 itens", async () => {
     const many = Array.from({ length: 200 }, (_, i) => ({
-      id: `a${i}`, action: "x", resource: "y", actor_email: null,
-      created_at: new Date(2026, 0, 1, 0, 0, i).toISOString(), metadata: null,
+      id: `a${i}`,
+      action: "x",
+      resource: "y",
+      actor_email: null,
+      created_at: new Date(2026, 0, 1, 0, 0, i).toISOString(),
+      metadata: null,
     }));
     const admin = makeAdmin({ audit: many, emailLog: [] });
     const items = await aggregateTimeline(admin, "00000000-0000-0000-0000-000000000001", null);

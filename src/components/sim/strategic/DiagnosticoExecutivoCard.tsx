@@ -26,7 +26,6 @@ import { useDiagnosticoIA } from "@/hooks/useDiagnosticoIA";
 import { readTelemetry, clearTelemetry } from "@/engines/ai/diagnosticoTelemetry";
 import { compileAiMove, getAiMove } from "@/engines/finance/levers/aiMoves";
 
-
 // Labels humanos dos indicadores — usados nos chips.
 const INDICADOR_LABEL: Record<IndicadorKey, string> = {
   margemBruta: "Margem Bruta",
@@ -157,9 +156,7 @@ export function DiagnosticoExecutivoCard({ briefing }: Props) {
       {data && !loading && (
         <div className="space-y-5">
           {/* Veredito */}
-          <p className="text-base font-medium leading-snug text-foreground">
-            {data.data.veredito}
-          </p>
+          <p className="text-base font-medium leading-snug text-foreground">{data.data.veredito}</p>
 
           {/* Contexto */}
           {data.data.contexto && (
@@ -335,8 +332,8 @@ export function DiagnosticoExecutivoCard({ briefing }: Props) {
                 })}
               </ul>
               <p className="mt-2 text-[10px] italic text-muted-foreground">
-                Propostas geradas pela IA com base no diagnóstico. Cada botão abre o Simulador com
-                o slider pré-configurado — você pode então combinar com outras alavancas antes de
+                Propostas geradas pela IA com base no diagnóstico. Cada botão abre o Simulador com o
+                slider pré-configurado — você pode então combinar com outras alavancas antes de
                 aplicar ao plano-base.
               </p>
             </div>
@@ -354,8 +351,8 @@ export function DiagnosticoExecutivoCard({ briefing }: Props) {
                 <span className="font-mono">
                   {data.provider}/{data.modelo}
                 </span>{" "}
-                a partir de números calculados pela engine. A revisão, validação e
-                responsabilidade técnica são do consultor / analista.
+                a partir de números calculados pela engine. A revisão, validação e responsabilidade
+                técnica são do consultor / analista.
               </span>
             </div>
             <div className="flex items-center justify-between gap-2">

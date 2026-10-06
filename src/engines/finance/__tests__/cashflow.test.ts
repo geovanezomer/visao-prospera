@@ -81,7 +81,9 @@ describe("buildCashFlow — PMR e PMP", () => {
   it("Capex ativado em Capital sai como fluxo de investimento negativo", () => {
     const s = createState({
       capital: {
-        capexAtivacao: [{ id: "capex-1", label: "Equipamento", valor: 50000, mes: 1, vidaUtilMeses: 60 }],
+        capexAtivacao: [
+          { id: "capex-1", label: "Equipamento", valor: 50000, mes: 1, vidaUtilMeses: 60 },
+        ],
       },
     });
     const cf = buildCashFlow(s);
@@ -145,4 +147,3 @@ describe("buildCashFlow — Inadimplência reduz caixa em ambos os modos", () =>
     expect(Math.abs(sum(cfDed.recebimentos) - sum(cfPdd.recebimentos))).toBeLessThan(1);
   });
 });
-

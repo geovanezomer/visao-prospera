@@ -156,10 +156,7 @@ const ehRuim = (n: Nivel | null) => n === "critico" || n === "atencao";
  * Manter por aqui (não em JSON): a lógica é declarativa-mas-condicional, código
  * tipado é melhor que dados.
  */
-function detectarPadroes(
-  classes: ClassificacaoIndicador[],
-  ind: Indicators,
-): PadraoDetectado[] {
+function detectarPadroes(classes: ClassificacaoIndicador[], ind: Indicators): PadraoDetectado[] {
   const c = map(classes);
   const padroes: PadraoDetectado[] = [];
 
@@ -174,10 +171,7 @@ function detectarPadroes(
   }
 
   // P2: Margem operacional OK mas caixa sofrendo
-  if (
-    !ehRuim(nivelDe(c.margemEbitda)) &&
-    ehRuim(nivelDe(c.conversaoEbitdaCaixa))
-  ) {
+  if (!ehRuim(nivelDe(c.margemEbitda)) && ehRuim(nivelDe(c.conversaoEbitdaCaixa))) {
     padroes.push({
       codigo: "ebitda_nao_vira_caixa",
       titulo: "EBITDA saudável que não está virando caixa",
@@ -227,10 +221,7 @@ function detectarPadroes(
   }
 
   // P7: Tudo verde
-  if (
-    classes.length > 0 &&
-    classes.every((cl) => cl.nivel === "ok" || cl.nivel === "excelente")
-  ) {
+  if (classes.length > 0 && classes.every((cl) => cl.nivel === "ok" || cl.nivel === "excelente")) {
     padroes.push({
       codigo: "saude_solida",
       titulo: "Indicadores saudáveis em toda a estrutura",

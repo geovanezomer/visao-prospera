@@ -162,10 +162,9 @@ export function SociosCard() {
     patronal: resultadosFolha.reduce((a, r) => a + r.inssPatronal, 0) * 12,
     inssSocio: resultadosFolha.reduce((a, r) => a + r.inssSocio, 0) * 12,
     irpf: resultadosFolha.reduce((a, r) => a + r.irpfMensal, 0) * 12,
-    liquidoFolha: resultadosFolha.reduce(
-      (a, r) => a + (r.prolaboreMensal - r.inssSocio - r.irpfMensal),
-      0,
-    ) * 12,
+    liquidoFolha:
+      resultadosFolha.reduce((a, r) => a + (r.prolaboreMensal - r.inssSocio - r.irpfMensal), 0) *
+      12,
     custoPJ: resultadosFolha.reduce((a, r) => a + r.custoTotalPJ, 0) * 12,
   };
 
@@ -182,7 +181,9 @@ export function SociosCard() {
             Capacidade teórica mensal: <b>{fmtBRL(lucroMensalDisponivel)}</b>
             {(payoutPct !== 100 || reservaMin > 0) && (
               <span className="text-muted-foreground/70">
-                {" "}(bruto {fmtBRL(lucroMensalBruto)} − reserva {fmtBRL(reservaMin)} × payout {payoutPct}%)
+                {" "}
+                (bruto {fmtBRL(lucroMensalBruto)} − reserva {fmtBRL(reservaMin)} × payout{" "}
+                {payoutPct}%)
               </span>
             )}{" "}
             · Regime: <b className="uppercase">{regime}</b> · Piso legal:{" "}
@@ -196,8 +197,8 @@ export function SociosCard() {
 
       {socios.length === 0 ? (
         <div className="mt-4 rounded-md border border-dashed border-border/60 p-6 text-center text-sm text-muted-foreground">
-          Nenhum sócio cadastrado. Clique em <b>Editar sócios</b> para abrir o cadastro
-          em Configurações → Empresa → Sócios.
+          Nenhum sócio cadastrado. Clique em <b>Editar sócios</b> para abrir o cadastro em
+          Configurações → Empresa → Sócios.
         </div>
       ) : (
         <div className="mt-4 overflow-x-auto">
@@ -236,11 +237,21 @@ export function SociosCard() {
                     >
                       {fmtBRL(s.prolaboreMensal)}
                     </td>
-                    <td className="num px-2 py-1.5 text-right text-foreground/90">{fmtBRL(r.inssSocio)}</td>
-                    <td className="num px-2 py-1.5 text-right text-foreground/90">{fmtBRL(r.inssPatronal)}</td>
-                    <td className="num px-2 py-1.5 text-right text-foreground/90">{fmtBRL(r.irpfMensal)}</td>
-                    <td className="num px-2 py-1.5 text-right font-semibold text-pos">{fmtBRL(liquidoFolha)}</td>
-                    <td className="num px-2 py-1.5 text-right font-semibold">{fmtBRL(r.custoTotalPJ)}</td>
+                    <td className="num px-2 py-1.5 text-right text-foreground/90">
+                      {fmtBRL(r.inssSocio)}
+                    </td>
+                    <td className="num px-2 py-1.5 text-right text-foreground/90">
+                      {fmtBRL(r.inssPatronal)}
+                    </td>
+                    <td className="num px-2 py-1.5 text-right text-foreground/90">
+                      {fmtBRL(r.irpfMensal)}
+                    </td>
+                    <td className="num px-2 py-1.5 text-right font-semibold text-pos">
+                      {fmtBRL(liquidoFolha)}
+                    </td>
+                    <td className="num px-2 py-1.5 text-right font-semibold">
+                      {fmtBRL(r.custoTotalPJ)}
+                    </td>
                   </tr>
                 );
               })}
@@ -259,7 +270,9 @@ export function SociosCard() {
                 <td className="num px-2 py-2 text-right">{fmtBRL(totaisAno.inssSocio)}</td>
                 <td className="num px-2 py-2 text-right">{fmtBRL(totaisAno.patronal)}</td>
                 <td className="num px-2 py-2 text-right">{fmtBRL(totaisAno.irpf)}</td>
-                <td className="num px-2 py-2 text-right text-pos">{fmtBRL(totaisAno.liquidoFolha)}</td>
+                <td className="num px-2 py-2 text-right text-pos">
+                  {fmtBRL(totaisAno.liquidoFolha)}
+                </td>
                 <td className="num px-2 py-2 text-right">{fmtBRL(totaisAno.custoPJ)}</td>
               </tr>
             </tfoot>
@@ -283,9 +296,8 @@ export function SociosCard() {
                     )}
                     {r.alertaIRPFM && (
                       <div className="text-[var(--warning)]">
-                        ⚠ Renda anual do sócio acima de R$ 600 mil — sujeita ao IRPF Mínimo
-                        (até 10%). Simulação não calcula o IRPFM, que depende da renda global
-                        da PF.
+                        ⚠ Renda anual do sócio acima de R$ 600 mil — sujeita ao IRPF Mínimo (até
+                        10%). Simulação não calcula o IRPFM, que depende da renda global da PF.
                       </div>
                     )}
                   </div>
@@ -308,9 +320,7 @@ export function SociosCard() {
         <Separator className="my-4" />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <h4 className="text-sm font-semibold">
-              Distribuição Realizada — 12 meses
-            </h4>
+            <h4 className="text-sm font-semibold">Distribuição Realizada — 12 meses</h4>
             <HelpTip
               text={SEPARATOR_HINT.description}
               formula={SEPARATOR_HINT.formula}
@@ -328,19 +338,29 @@ export function SociosCard() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={usarPrevisao} title="Copia a capacidade prevista para todos os meses">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={usarPrevisao}
+              title="Copia a capacidade prevista para todos os meses"
+            >
               <Wand2 className="mr-1 h-3.5 w-3.5" /> Usar Previsão
             </Button>
-            <Button size="sm" variant="ghost" onClick={zerarRealizada} title="Zera todos os meses (segura o caixa)">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={zerarRealizada}
+              title="Zera todos os meses (segura o caixa)"
+            >
               <Eraser className="mr-1 h-3.5 w-3.5" /> Zerar
             </Button>
           </div>
         </div>
 
         <p className="mt-1 text-[11px] text-muted-foreground">
-          O valor preenchido aqui é o que <b>efetivamente</b> sai do caixa para os sócios.
-          Use <b>Usar Previsão</b> para distribuir 100% do disponível, ou ajuste mês-a-mês
-          para reter caixa nos meses críticos.
+          O valor preenchido aqui é o que <b>efetivamente</b> sai do caixa para os sócios. Use{" "}
+          <b>Usar Previsão</b> para distribuir 100% do disponível, ou ajuste mês-a-mês para reter
+          caixa nos meses críticos.
         </p>
 
         <div className="mt-3 flex items-center gap-3">
@@ -407,9 +427,7 @@ export function SociosCard() {
             value={fmtBRL(irpfExcedenteMes)}
             tone={irpfExcedenteMes > 0 ? "warn" : "default"}
             sub={
-              acimaIsento
-                ? `Excedente anual ${fmtBRL(excedenteAno)}`
-                : "Dentro do limite isento"
+              acimaIsento ? `Excedente anual ${fmtBRL(excedenteAno)}` : "Dentro do limite isento"
             }
           />
         </div>
@@ -420,68 +438,74 @@ export function SociosCard() {
             (RIR/2018 art. 238) com base no Lucro Líquido do exercício. */}
         {retencaoForte && !acimaIsento && (
           <div className="mt-3 rounded border border-border/60 bg-muted/30 px-3 py-2 text-[12px] text-muted-foreground">
-            💡 Empresa está retendo <b>{fmtBRL(retidoAno)}</b> ({((retidoAno / previsaoTotalAno) * 100).toFixed(0)}%) do disponível.
-            O caixa preservado aparece como aumento de <b>Lucros Acumulados</b> no Balanço.
+            💡 Empresa está retendo <b>{fmtBRL(retidoAno)}</b> (
+            {((retidoAno / previsaoTotalAno) * 100).toFixed(0)}%) do disponível. O caixa preservado
+            aparece como aumento de <b>Lucros Acumulados</b> no Balanço.
           </div>
         )}
 
-        {alertaSemLastro && (() => {
-          // Excedente sem lastro = distribuição anual acima do LL positivo do exercício.
-          // Se LL ≤ 0, todo o valor distribuído fica sem lastro no ano.
-          const excedenteSemLastro = Math.max(
-            0,
-            realizadaTotalAno - Math.max(0, llAnualReal),
-          );
-          // Estimativas de tributação adicional sobre o excedente:
-          //  - Piso: ganho de capital (15%) se reclassificado como devolução de capital.
-          //  - Teto: IRPF (27,5%) se reclassificado como rendimento tributável do sócio.
-          const irpfMin = excedenteSemLastro * 0.15;
-          const irpfMax = excedenteSemLastro * 0.275;
-          return (
-            <div className="mt-3 rounded border border-destructive/50 bg-destructive/10 px-3 py-2 text-[12px] text-foreground/90">
-              <div className="font-semibold text-destructive mb-1">
-                ⚠️ Distribuição sem lastro no lucro do exercício
+        {alertaSemLastro &&
+          (() => {
+            // Excedente sem lastro = distribuição anual acima do LL positivo do exercício.
+            // Se LL ≤ 0, todo o valor distribuído fica sem lastro no ano.
+            const excedenteSemLastro = Math.max(0, realizadaTotalAno - Math.max(0, llAnualReal));
+            // Estimativas de tributação adicional sobre o excedente:
+            //  - Piso: ganho de capital (15%) se reclassificado como devolução de capital.
+            //  - Teto: IRPF (27,5%) se reclassificado como rendimento tributável do sócio.
+            const irpfMin = excedenteSemLastro * 0.15;
+            const irpfMax = excedenteSemLastro * 0.275;
+            return (
+              <div className="mt-3 rounded border border-destructive/50 bg-destructive/10 px-3 py-2 text-[12px] text-foreground/90">
+                <div className="font-semibold text-destructive mb-1">
+                  ⚠️ Distribuição sem lastro no lucro do exercício
+                </div>
+                <p className="leading-relaxed">
+                  Distribuição anual planejada: <b>{fmtBRL(realizadaTotalAno)}</b> · Lucro Líquido
+                  do exercício: <b>{fmtBRL(llAnualReal)}</b>.
+                </p>
+                <p className="leading-relaxed mt-1">
+                  Sem lucro suficiente no ano, a Receita pode reclassificar o excedente como{" "}
+                  <b>devolução de capital</b> (potencial ganho de capital 15–22,5% para o sócio) ou{" "}
+                  <b>rendimento tributável</b> (IRPF até 27,5%) — RIR/2018 art. 238. Só distribua
+                  acima do LL se houver <b>reserva de lucros de exercícios anteriores</b>{" "}
+                  devidamente registrada em balanço (Lei 6.404/76 art. 201).
+                </p>
+                <p className="leading-relaxed mt-2">
+                  <b>Estimativa de tributação adicional</b> sobre o excedente sem lastro de{" "}
+                  <b>{fmtBRL(excedenteSemLastro)}</b>: entre <b>{fmtBRL(irpfMin)}</b> (ganho de
+                  capital 15%) e <b>{fmtBRL(irpfMax)}</b> (IRPF 27,5%), a depender do enquadramento
+                  pela Receita.
+                </p>
               </div>
-              <p className="leading-relaxed">
-                Distribuição anual planejada: <b>{fmtBRL(realizadaTotalAno)}</b> · Lucro Líquido
-                do exercício: <b>{fmtBRL(llAnualReal)}</b>.
-              </p>
-              <p className="leading-relaxed mt-1">
-                Sem lucro suficiente no ano, a Receita pode reclassificar o excedente como{" "}
-                <b>devolução de capital</b> (potencial ganho de capital 15–22,5% para o sócio)
-                ou <b>rendimento tributável</b> (IRPF até 27,5%) — RIR/2018 art. 238. Só
-                distribua acima do LL se houver <b>reserva de lucros de exercícios anteriores</b>{" "}
-                devidamente registrada em balanço (Lei 6.404/76 art. 201).
-              </p>
-              <p className="leading-relaxed mt-2">
-                <b>Estimativa de tributação adicional</b> sobre o excedente sem lastro
-                de <b>{fmtBRL(excedenteSemLastro)}</b>: entre <b>{fmtBRL(irpfMin)}</b>{" "}
-                (ganho de capital 15%) e <b>{fmtBRL(irpfMax)}</b> (IRPF 27,5%),
-                a depender do enquadramento pela Receita.
-              </p>
-            </div>
-          );
-        })()}
+            );
+          })()}
 
         {realizadaTotalAno > 0 && (
           <div className="mt-3 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/5 px-3 py-2 text-[12px] text-foreground/90">
-            <div className="font-semibold text-[var(--warning)] mb-1">⚖️ Atenção — Requisitos legais para distribuir lucros</div>
+            <div className="font-semibold text-[var(--warning)] mb-1">
+              ⚖️ Atenção — Requisitos legais para distribuir lucros
+            </div>
             <p className="leading-relaxed">
-              A distribuição de lucros só é permitida quando a empresa está <b>em dia com tributos federais</b>
-              (Lei nº 4.357/1964, art. 32 — veda a distribuição enquanto houver débito não garantido com a União,
-              INSS, FGTS ou contribuições sociais, sob pena de multa de 50% do valor distribuído aos sócios).
-              É obrigatório manter <b>escrituração contábil regular</b> (Livro Diário, Razão, Balanço e DRE) que
-              comprove a existência de lucro efetivamente apurado (CC/2002 art. 1.078; RIR/2018 arts. 238 e 725;
-              IN RFB 1.700/2017). Sem contabilidade completa, a isenção do IRPF (Lei 9.249/1995 art. 10) fica
-              limitada ao lucro presumido líquido dos tributos — o excedente é tributado como rendimento do sócio.
-              Recomenda-se reter <b>CND/CPEN</b> e <b>ata de deliberação</b> dos sócios antes de cada pagamento.
+              A distribuição de lucros só é permitida quando a empresa está{" "}
+              <b>em dia com tributos federais</b>
+              (Lei nº 4.357/1964, art. 32 — veda a distribuição enquanto houver débito não garantido
+              com a União, INSS, FGTS ou contribuições sociais, sob pena de multa de 50% do valor
+              distribuído aos sócios). É obrigatório manter <b>
+                escrituração contábil regular
+              </b>{" "}
+              (Livro Diário, Razão, Balanço e DRE) que comprove a existência de lucro efetivamente
+              apurado (CC/2002 art. 1.078; RIR/2018 arts. 238 e 725; IN RFB 1.700/2017). Sem
+              contabilidade completa, a isenção do IRPF (Lei 9.249/1995 art. 10) fica limitada ao
+              lucro presumido líquido dos tributos — o excedente é tributado como rendimento do
+              sócio. Recomenda-se reter <b>CND/CPEN</b> e <b>ata de deliberação</b> dos sócios antes
+              de cada pagamento.
             </p>
           </div>
         )}
 
         <p className="mt-3 text-[11px] text-muted-foreground">
-          Para alterar nome, participação, pró-labore, dependentes ou status operacional,
-          edite o cadastro em <b>Configurações → Empresa → Sócios</b>.
+          Para alterar nome, participação, pró-labore, dependentes ou status operacional, edite o
+          cadastro em <b>Configurações → Empresa → Sócios</b>.
         </p>
       </div>
 
@@ -502,11 +526,7 @@ function SummaryBox({
   sub?: string;
 }) {
   const toneClass =
-    tone === "pos"
-      ? "text-pos"
-      : tone === "warn"
-      ? "text-[var(--warning)]"
-      : "text-foreground";
+    tone === "pos" ? "text-pos" : tone === "warn" ? "text-[var(--warning)]" : "text-foreground";
   return (
     <div className="rounded-md border border-border/60 bg-background/40 px-3 py-2">
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>

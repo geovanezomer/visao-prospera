@@ -58,8 +58,16 @@ export function calcKanitz(state: AppState, ind: Indicators): KanitzResult {
       status: "indisponivel",
       label: "Base insuficiente",
       tone: "muted",
-      x1: 0, x2: 0, x3: 0, x4: 0, x5: 0,
-      c1: 0, c2: 0, c3: 0, c4: 0, c5: 0,
+      x1: 0,
+      x2: 0,
+      x3: 0,
+      x4: 0,
+      x5: 0,
+      c1: 0,
+      c2: 0,
+      c3: 0,
+      c4: 0,
+      c5: 0,
       baseInsuficiente: true,
     };
   }
@@ -76,8 +84,7 @@ export function calcKanitz(state: AppState, ind: Indicators): KanitzResult {
   // senão, aproxima por (Dívida Onerosa + Passivos Não Onerosos) / PL.
   const pno = Math.max(0, capital.passivosNaoOnerosos ?? capital.fornecedores ?? 0);
   const D = Math.max(0, sumContractSaldos(capital.debtContracts));
-  const passivoTerceiros =
-    capital.ativoTotal > PL ? capital.ativoTotal - PL : D + pno;
+  const passivoTerceiros = capital.ativoTotal > PL ? capital.ativoTotal - PL : D + pno;
   const x5 = safeDivide(passivoTerceiros, PL);
 
   const c1 = W.x1 * x1;
@@ -91,14 +98,36 @@ export function calcKanitz(state: AppState, ind: Indicators): KanitzResult {
   let label: string;
   let tone: KanitzResult["tone"];
   if (fi >= 0) {
-    status = "solvencia"; label = "Solvência"; tone = "pos";
+    status = "solvencia";
+    label = "Solvência";
+    tone = "pos";
   } else if (fi >= -3) {
-    status = "penumbra"; label = "Penumbra"; tone = "warn";
+    status = "penumbra";
+    label = "Penumbra";
+    tone = "warn";
   } else {
-    status = "insolvencia"; label = "Insolvência"; tone = "neg";
+    status = "insolvencia";
+    label = "Insolvência";
+    tone = "neg";
   }
 
-  return { fi, status, label, tone, x1, x2, x3, x4, x5, c1, c2, c3, c4, c5, baseInsuficiente: false };
+  return {
+    fi,
+    status,
+    label,
+    tone,
+    x1,
+    x2,
+    x3,
+    x4,
+    x5,
+    c1,
+    c2,
+    c3,
+    c4,
+    c5,
+    baseInsuficiente: false,
+  };
 }
 
 /** Memória de cálculo formatada (pt-BR) para tooltip/expansor. */

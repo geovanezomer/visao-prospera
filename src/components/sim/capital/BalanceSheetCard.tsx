@@ -3,14 +3,7 @@ import { fmtBRL } from "@/engines/finance/format";
 import { sumContractSaldos } from "@/engines/finance/debtContracts";
 
 import { useEffect } from "react";
-import {
-  Banknote,
-  Package,
-  Settings2,
-  Building2,
-  Landmark,
-} from "lucide-react";
-
+import { Banknote, Package, Settings2, Building2, Landmark } from "lucide-react";
 
 import { StepCard, SimpleField, MiniStat } from "@/components/sim/capital/parts";
 
@@ -43,7 +36,6 @@ function getBalancoAt(bal: BalancoDetalhado | undefined, path: string): number {
   }
   return typeof cur === "number" && isFinite(cur) ? cur : 0;
 }
-
 
 // Fotografia do balanço hoje — 3 passos (Ativos · Dívidas+PL · Resumo) +
 // lançamentos mensais. Cálculos auxiliares ficam no topo.
@@ -89,7 +81,6 @@ export function BalanceSheetCard({
     (intang?.amortizacaoAcumulada || 0);
   const ativoNaoCircCalc = Math.max(0, imobLiquido) + Math.max(0, intangLiquido);
   const ativoTotalDerivado = ativoCircCalc + ativoNaoCircCalc;
-  
 
   // Ativo Total agora é SEMPRE derivado (soma automática de circulante +
   // imobilizado líq. + intangível líq.). Sincroniza silenciosamente no state
@@ -100,7 +91,6 @@ export function BalanceSheetCard({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ativoTotalDerivado]);
-
 
   // CFO #2 — soma do PL detalhado. Quando preenchido, vira a fonte derivada.
   const plDet = capital.balanco?.patrimonioLiquido;
@@ -149,14 +139,8 @@ export function BalanceSheetCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plFinal, capital.contasReceber, capital.fornecedores]);
 
-
-
-
-
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
-
-
       {/* PASSO 1 — ATIVOS + Detalhes patrimoniais (imobilizado e PL dos sócios) */}
       <StepCard
         step={1}
@@ -181,17 +165,13 @@ export function BalanceSheetCard({
           />
           {/* "Clientes que te devem" (contasReceber) escondido — sempre derivado
               via PMR na engine (fallback: Receita × PMR/360). */}
-
         </div>
-
-
-
-
 
         {/* Detalhes patrimoniais (antes era StepCard separado — agora unificado aqui) */}
         <div className="mt-5 border-t border-border/40 pt-4">
           <div className="mb-3 text-[11px] text-muted-foreground">
-            <strong className="text-foreground">Imobilizado (opcional)</strong> — bens duráveis da empresa. Vão direto para o Balanço.
+            <strong className="text-foreground">Imobilizado (opcional)</strong> — bens duráveis da
+            empresa. Vão direto para o Balanço.
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <SimpleField
@@ -200,7 +180,13 @@ export function BalanceSheetCard({
               hint="Valor contábil dos terrenos próprios."
               value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.terrenos")}
               onChange={(n) =>
-                onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.terrenos", n) })
+                onChange({
+                  balanco: setBalancoAt(
+                    capital.balanco,
+                    "ativoNaoCirculante.imobilizado.terrenos",
+                    n,
+                  ),
+                })
               }
             />
             <SimpleField
@@ -209,16 +195,31 @@ export function BalanceSheetCard({
               hint="Imóveis, galpões, salas, reformas capitalizadas."
               value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.edificacoes")}
               onChange={(n) =>
-                onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.edificacoes", n) })
+                onChange({
+                  balanco: setBalancoAt(
+                    capital.balanco,
+                    "ativoNaoCirculante.imobilizado.edificacoes",
+                    n,
+                  ),
+                })
               }
             />
             <SimpleField
               icon={<Settings2 className="h-4 w-4" />}
               label="Máquinas e equipamentos"
               hint="Valor contábil de máquinas, equipamentos produtivos e ferramentas."
-              value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.maquinasEquipamentos")}
+              value={getBalancoAt(
+                capital.balanco,
+                "ativoNaoCirculante.imobilizado.maquinasEquipamentos",
+              )}
               onChange={(n) =>
-                onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.maquinasEquipamentos", n) })
+                onChange({
+                  balanco: setBalancoAt(
+                    capital.balanco,
+                    "ativoNaoCirculante.imobilizado.maquinasEquipamentos",
+                    n,
+                  ),
+                })
               }
             />
             <SimpleField
@@ -227,22 +228,38 @@ export function BalanceSheetCard({
               hint="Frota da empresa (carros, caminhões, motos)."
               value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.veiculos")}
               onChange={(n) =>
-                onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.veiculos", n) })
+                onChange({
+                  balanco: setBalancoAt(
+                    capital.balanco,
+                    "ativoNaoCirculante.imobilizado.veiculos",
+                    n,
+                  ),
+                })
               }
             />
             <SimpleField
               icon={<Package className="h-4 w-4" />}
               label="Móveis e utensílios"
               hint="Mobiliário, computadores, equipamentos de escritório."
-              value={getBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.moveisUtensilios")}
+              value={getBalancoAt(
+                capital.balanco,
+                "ativoNaoCirculante.imobilizado.moveisUtensilios",
+              )}
               onChange={(n) =>
-                onChange({ balanco: setBalancoAt(capital.balanco, "ativoNaoCirculante.imobilizado.moveisUtensilios", n) })
+                onChange({
+                  balanco: setBalancoAt(
+                    capital.balanco,
+                    "ativoNaoCirculante.imobilizado.moveisUtensilios",
+                    n,
+                  ),
+                })
               }
             />
           </div>
 
           <div className="mt-4 mb-3 text-[11px] text-muted-foreground">
-            <strong className="text-foreground">Patrimônio dos sócios (opcional)</strong> — origem do capital da empresa.
+            <strong className="text-foreground">Patrimônio dos sócios (opcional)</strong> — origem
+            do capital da empresa.
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <SimpleField
@@ -251,7 +268,9 @@ export function BalanceSheetCard({
               hint="Valor integralizado pelos sócios no contrato social."
               value={getBalancoAt(capital.balanco, "patrimonioLiquido.capitalSocial")}
               onChange={(n) =>
-                onChange({ balanco: setBalancoAt(capital.balanco, "patrimonioLiquido.capitalSocial", n) })
+                onChange({
+                  balanco: setBalancoAt(capital.balanco, "patrimonioLiquido.capitalSocial", n),
+                })
               }
             />
             <SimpleField
@@ -260,54 +279,50 @@ export function BalanceSheetCard({
               hint="Ágio na emissão de cotas/ações, subvenções, doações."
               value={getBalancoAt(capital.balanco, "patrimonioLiquido.reservasCapital")}
               onChange={(n) =>
-                onChange({ balanco: setBalancoAt(capital.balanco, "patrimonioLiquido.reservasCapital", n) })
+                onChange({
+                  balanco: setBalancoAt(capital.balanco, "patrimonioLiquido.reservasCapital", n),
+                })
               }
             />
             {/* "Lucros / prejuízos acumulados" REMOVIDO daqui — SSOT única em
                 Capital → Saldos de Abertura → Outras informações
                 (campo `abertura.lucrosAcumulados`). Evita duplicidade. */}
-
           </div>
 
           {/* Sugestão de PL removida — PL agora é sempre derivado via useEffect. */}
 
+          {/* Régua de resumo — rodapé do Card 1. Total de ativos com memória de cálculo. */}
+          <div className="mt-5 grid grid-cols-4 overflow-hidden rounded-md border border-border/40 text-center text-[10px]">
+            <MiniStat label="Caixa/bancos" value={fmtBRL(capital.disponibilidades)} />
+            <MiniStat label="Estoque" value={fmtBRL(capital.estoques)} />
+            <MiniStat
+              label="A receber"
+              value="auto (PMR)"
+              hint="Calculado automaticamente pela engine: Receita Bruta × PMR / 360. Configure o PMR na aba Receitas."
+            />
 
-
-
-
-        {/* Régua de resumo — rodapé do Card 1. Total de ativos com memória de cálculo. */}
-        <div className="mt-5 grid grid-cols-4 overflow-hidden rounded-md border border-border/40 text-center text-[10px]">
-          <MiniStat label="Caixa/bancos" value={fmtBRL(capital.disponibilidades)} />
-          <MiniStat label="Estoque" value={fmtBRL(capital.estoques)} />
-          <MiniStat
-            label="A receber"
-            value="auto (PMR)"
-            hint="Calculado automaticamente pela engine: Receita Bruta × PMR / 360. Configure o PMR na aba Receitas."
-          />
-
-          <MiniStat
-            label="Total de ativos"
-            value={fmtBRL(ativoTotalDerivado)}
-            highlight
-            hint={
-              "Soma automática de tudo que a empresa possui.\n\n" +
-              "Fórmula: Ativo Circulante + Imobilizado líq. + Intangível líq.\n\n" +
-              `Memória de cálculo:\n` +
-              `• Caixa/bancos: ${fmtBRL(capital.disponibilidades)}\n` +
-              `• Estoque: ${fmtBRL(capital.estoques)}\n` +
-              `• Contas a receber: ${fmtBRL(capital.contasReceber)}\n` +
-              `  = Ativo Circulante: ${fmtBRL(ativoCircCalc)}\n\n` +
-              `• Imobilizado bruto: ${fmtBRL(imobBruto)}\n` +
-              `  (−) Depreciação acum.: ${fmtBRL(imob?.depreciacaoAcumulada || 0)}\n` +
-              `  = Imobilizado líq.: ${fmtBRL(Math.max(0, imobLiquido))}\n\n` +
-              `• Intangível líq.: ${fmtBRL(Math.max(0, intangLiquido))}\n\n` +
-              `TOTAL: ${fmtBRL(ativoTotalDerivado)}`
-            }
-          />
-        </div>
+            <MiniStat
+              label="Total de ativos"
+              value={fmtBRL(ativoTotalDerivado)}
+              highlight
+              hint={
+                "Soma automática de tudo que a empresa possui.\n\n" +
+                "Fórmula: Ativo Circulante + Imobilizado líq. + Intangível líq.\n\n" +
+                `Memória de cálculo:\n` +
+                `• Caixa/bancos: ${fmtBRL(capital.disponibilidades)}\n` +
+                `• Estoque: ${fmtBRL(capital.estoques)}\n` +
+                `• Contas a receber: ${fmtBRL(capital.contasReceber)}\n` +
+                `  = Ativo Circulante: ${fmtBRL(ativoCircCalc)}\n\n` +
+                `• Imobilizado bruto: ${fmtBRL(imobBruto)}\n` +
+                `  (−) Depreciação acum.: ${fmtBRL(imob?.depreciacaoAcumulada || 0)}\n` +
+                `  = Imobilizado líq.: ${fmtBRL(Math.max(0, imobLiquido))}\n\n` +
+                `• Intangível líq.: ${fmtBRL(Math.max(0, intangLiquido))}\n\n` +
+                `TOTAL: ${fmtBRL(ativoTotalDerivado)}`
+              }
+            />
+          </div>
         </div>
       </StepCard>
-
 
       {capexSlot}
 
@@ -324,14 +339,7 @@ export function BalanceSheetCard({
             ambos são sempre derivados:
               • fornecedores  = CPV × PMP/360 (engine, fallback quando input = 0)
               • patrimonioLiq = Ativo Total − Dívidas (sincronizado via useEffect) */}
-
-
       </StepCard>
-
-
-
-
-
     </div>
   );
 }

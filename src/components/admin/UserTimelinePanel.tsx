@@ -7,7 +7,11 @@ import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getUserTimeline, type TimelineItem, type TimelineKind } from "@/lib/admin/timeline.functions";
+import {
+  getUserTimeline,
+  type TimelineItem,
+  type TimelineKind,
+} from "@/lib/admin/timeline.functions";
 import { replayWebhookEvent } from "@/lib/admin/webhooks.functions";
 
 type FilterKind = "all" | "webhook" | "email" | "admin" | "checkout" | "assinatura";
@@ -39,16 +43,14 @@ function timeAgo(iso: string): string {
 }
 
 function absTime(iso: string): string {
-  try { return new Date(iso).toLocaleString("pt-BR"); } catch { return iso; }
+  try {
+    return new Date(iso).toLocaleString("pt-BR");
+  } catch {
+    return iso;
+  }
 }
 
-export function UserTimelinePanel({
-  userId,
-  email,
-}: {
-  userId: string;
-  email: string | null;
-}) {
+export function UserTimelinePanel({ userId, email }: { userId: string; email: string | null }) {
   const [items, setItems] = useState<TimelineItem[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<FilterKind>("all");
@@ -66,7 +68,9 @@ export function UserTimelinePanel({
     }
   };
 
-  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [userId]);
+  useEffect(() => {
+    void load(); /* eslint-disable-next-line */
+  }, [userId]);
 
   const filtered = useMemo(() => {
     if (!items) return [];
@@ -104,7 +108,13 @@ export function UserTimelinePanel({
             </button>
           ))}
         </div>
-        <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => void load()} disabled={loading}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2"
+          onClick={() => void load()}
+          disabled={loading}
+        >
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
         </Button>
       </div>
@@ -151,12 +161,16 @@ function TimelineRow({
 
   return (
     <li className="relative">
-      <span className={`absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full ring-2 ring-background ${dot}`} />
+      <span
+        className={`absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full ring-2 ring-background ${dot}`}
+      />
       <div className="rounded-md border border-border/50 bg-card/50 p-2 text-xs">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5">
-              <Badge variant="outline" className="text-[9px] uppercase">{kindLabel(item.kind)}</Badge>
+              <Badge variant="outline" className="text-[9px] uppercase">
+                {kindLabel(item.kind)}
+              </Badge>
               <span className="font-medium">{item.title}</span>
             </div>
             {item.detail && (
@@ -175,10 +189,7 @@ function TimelineRow({
             )}
           </div>
           <div className="flex flex-col items-end gap-1 shrink-0">
-            <span
-              className="text-[10px] text-muted-foreground"
-              title={absTime(item.at)}
-            >
+            <span className="text-[10px] text-muted-foreground" title={absTime(item.at)}>
               {timeAgo(item.at)}
             </span>
             {isFailedWebhook && item.refId && (
@@ -201,10 +212,15 @@ function TimelineRow({
 
 function kindLabel(k: TimelineKind): string {
   switch (k) {
-    case "webhook": return "webhook";
-    case "email": return "e-mail";
-    case "admin": return "admin";
-    case "checkout": return "checkout";
-    case "assinatura": return "assinatura";
+    case "webhook":
+      return "webhook";
+    case "email":
+      return "e-mail";
+    case "admin":
+      return "admin";
+    case "checkout":
+      return "checkout";
+    case "assinatura":
+      return "assinatura";
   }
 }

@@ -264,7 +264,8 @@ const defs: ToolDef[] = [
             properties: {
               nome: { type: "string" },
               receita_delta: {
-                description: "Escalar (-0.10 = -10%) ou array mês-a-mês de mesma length que `meses`.",
+                description:
+                  "Escalar (-0.10 = -10%) ou array mês-a-mês de mesma length que `meses`.",
                 oneOf: [{ type: "number" }, { type: "array", items: { type: "number" } }],
               },
               folha_delta: {
@@ -278,7 +279,10 @@ const defs: ToolDef[] = [
                   properties: {
                     mes: { type: "number", description: "Mês 1-indexado no horizonte." },
                     valor: { type: "number" },
-                    prazo_devolucao: { type: "number", description: "Meses de amortização linear." },
+                    prazo_devolucao: {
+                      type: "number",
+                      description: "Meses de amortização linear.",
+                    },
                   },
                   required: ["mes", "valor", "prazo_devolucao"],
                 },

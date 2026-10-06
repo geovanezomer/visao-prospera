@@ -61,11 +61,11 @@ export const SIMPLES_SUBLIMITE_ESTADUAL = 3_600_000;
  * consumo (`computeIcmsIssNormal` → ISS_TETO_LC116).
  */
 export const SIMPLES_PARTILHA_ICMS_ISS_PCT: Record<SimplesAnexo, number> = {
-  I: 33.5,   // ICMS — comércio
-  II: 32.0,  // ICMS — indústria
+  I: 33.5, // ICMS — comércio
+  II: 32.0, // ICMS — indústria
   III: 32.15, // ISS — serviços (respeitando teto 5% LC 116)
   IV: 44.75, // ISS — serviços Anexo IV
-  V: 30.5,   // ISS — serviços Anexo V
+  V: 30.5, // ISS — serviços Anexo V
 };
 /** Fator R — relação folha/RBT12 mínima para migrar Anexo V → III (%). */
 export const FATOR_R_MINIMO_PCT = 28;
@@ -304,7 +304,6 @@ export const getCbsAliquota = (tax: TaxConfig): number =>
 /** [CBS/IBS] Alíquota IBS plena de referência (%) — lê `tax.ibsAliquotaRef` ou cai no default oficial. */
 export const getIbsAliquotaRef = (tax: TaxConfig): number =>
   clamped("ibsAliquotaRef", pick(tax.ibsAliquotaRef, IBS_ALIQUOTA_PLENA));
-
 
 /** [Split Payment LC 214/2025] Default `true` — projeto Lovable trabalha com Split ativo. */
 export const SPLIT_PAYMENT_DEFAULT = true;

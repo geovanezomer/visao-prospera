@@ -21,12 +21,7 @@ const g = globalThis as any;
 g.localStorage = new LocalStorageMock();
 g.window = { localStorage: g.localStorage };
 
-import {
-  readChatTrail,
-  recordChatTrail,
-  clearChatTrail,
-  chatTrailToMarkdown,
-} from "../chatTrail";
+import { readChatTrail, recordChatTrail, clearChatTrail, chatTrailToMarkdown } from "../chatTrail";
 
 const COMPANY = "Acme S.A.";
 const OTHER = "Beta LTDA";

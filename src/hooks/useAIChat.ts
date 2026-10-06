@@ -4,13 +4,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  AIConfig,
-  ChatMessage,
-  loadConfig,
-  saveConfig,
-  touchThread,
-} from "@/engines/ai/providers";
+import { AIConfig, ChatMessage, loadConfig, saveConfig, touchThread } from "@/engines/ai/providers";
 import { chatWithTools, streamChat, type LLMMessage, type ToolCall } from "@/engines/ai/client";
 import { buildSnapshot, getSectionsCached, estimateTokens } from "@/engines/ai/snapshot";
 import { buildLlmMessages } from "@/engines/ai/historyUtils";
@@ -19,10 +13,7 @@ import { loadAIMode, saveAIMode } from "@/engines/ai/modeStore";
 import { recordChatTrail } from "@/engines/ai/chatTrail";
 import { verifyResponse } from "@/engines/ai/verification";
 import { useMemories, memoriesToPromptBlock } from "@/engines/memory/store";
-import {
-  buildPdfContext,
-  buildVisionMessageContent,
-} from "@/engines/ai/attachments";
+import { buildPdfContext, buildVisionMessageContent } from "@/engines/ai/attachments";
 import { buildDynamicSuggestions } from "@/engines/ai/suggestions";
 import { buildOpeningBriefing } from "@/engines/ai/briefing";
 import type { AppState } from "@/engines/finance/types";
@@ -120,7 +111,7 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
         parts.push(
           `fixos ${p.fixedCutPct > 0 ? "-" : "+"}${Math.abs(p.fixedCutPct)}% (top ${p.fixedCutTopN})`,
         );
-      
+
       if (p.pmrDeltaDays) parts.push(`PMR ${p.pmrDeltaDays > 0 ? "+" : ""}${p.pmrDeltaDays}d`);
       if (p.pmpDeltaDays) parts.push(`PMP ${p.pmpDeltaDays > 0 ? "+" : ""}${p.pmpDeltaDays}d`);
       if (p.antecipPctAm) parts.push(`antecipação ${p.antecipPctAm}% a.m.`);
@@ -368,7 +359,11 @@ export function useAIChat({ state, simulatedState, simActive, simParams }: UseAI
           })),
           { role: "assistant", content: out.finalText, ts: Date.now(), verification },
         ]);
-        recordTrail("ok", out.finalText.length, collected.map((c) => c.name));
+        recordTrail(
+          "ok",
+          out.finalText.length,
+          collected.map((c) => c.name),
+        );
       } catch (e: unknown) {
         const msg = errToMd(e);
         setMessages([...history, { role: "assistant", content: msg, ts: Date.now() }]);

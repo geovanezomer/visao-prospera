@@ -14,7 +14,8 @@ export const Route = createFileRoute("/signup")({
       { property: "og:title", content: "Cadastro indisponível — FinnancePRO" },
       {
         property: "og:description",
-        content: "Novos cadastros estão temporariamente pausados. Entre em contato com a GZ Consultoria.",
+        content:
+          "Novos cadastros estão temporariamente pausados. Entre em contato com a GZ Consultoria.",
       },
       { name: "twitter:title", content: "Cadastro indisponível — FinnancePRO" },
       {

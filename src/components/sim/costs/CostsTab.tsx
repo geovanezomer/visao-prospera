@@ -35,17 +35,12 @@ export function CostsTab() {
     variavel: "despesa_comercial",
   };
   const byCat = (cat: CostCategory) =>
-    state.costs.filter(
-      (c) => (c.category === cat || c.category === ALIAS[cat]) && !c.system,
-    );
+    state.costs.filter((c) => (c.category === cat || c.category === ALIAS[cat]) && !c.system);
   // Linhas system (sócios: pró-labore, INSS patronal) — exibidas somente-leitura
   // dentro de "Despesas Administrativas" para que a tabela some ao total do card.
   const systemAdminLines = state.costs.filter(
-    (c) =>
-      !!c.system &&
-      (c.category === "despesa_administrativa" || c.category === "fixo"),
+    (c) => !!c.system && (c.category === "despesa_administrativa" || c.category === "fixo"),
   );
-
 
   const updateLine = (id: string, patch: Partial<CostLine>) =>
     update((s) => ({ ...s, costs: s.costs.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
@@ -136,7 +131,8 @@ export function CostsTab() {
     // sintética de juros de contratos de dívida (vinda do módulo Capital),
     // ignora linhas MANUAIS cujo label indique juros de empréstimo/contrato/
     // mútuo/sócio, para evitar dupla contagem.
-    const LOAN_INTEREST_RE = /juros[^a-z]*(sobre)?[^a-z]*(empr[eé]stimo|contrato|m[uú]tuo|afac|s[óo]cio)/i;
+    const LOAN_INTEREST_RE =
+      /juros[^a-z]*(sobre)?[^a-z]*(empr[eé]stimo|contrato|m[uú]tuo|afac|s[óo]cio)/i;
     const hasSyntheticDebt = state.costs.some((c) => c.id === DEBT_CONTRACTS_COST_ID);
     for (const c of state.costs) {
       const v = sum(monthValues(c, effectiveRegime));
@@ -163,7 +159,6 @@ export function CostsTab() {
     };
   }, [state.costs, effectiveRegime]);
 
-
   const pctRec = useCallback(
     (v: number) => (receitaBrutaAnual > 0 ? v / receitaBrutaAnual : 0),
     [receitaBrutaAnual],
@@ -184,8 +179,7 @@ export function CostsTab() {
     const dups: { label: string; categories: CostCategory[] }[] = [];
     for (const [key, cats] of map) {
       if (cats.size > 1) {
-        const original =
-          state.costs.find((c) => norm(c.label) === key)?.label ?? key;
+        const original = state.costs.find((c) => norm(c.label) === key)?.label ?? key;
         dups.push({ label: original, categories: Array.from(cats) });
       }
     }
@@ -206,7 +200,8 @@ export function CostsTab() {
           <div className="space-y-1 text-foreground/90">
             {duplicateLabels.map((d) => (
               <div key={d.label}>
-                ⚠️ O item <strong>"{d.label}"</strong> aparece em mais de um grupo de custo. Verifique se não há lançamento duplicado.
+                ⚠️ O item <strong>"{d.label}"</strong> aparece em mais de um grupo de custo.
+                Verifique se não há lançamento duplicado.
               </div>
             ))}
           </div>
@@ -297,12 +292,11 @@ export function CostsTab() {
         onAdd={() => addLine("despesa_administrativa")}
       >
         {state.socios?.some((s) => (s.prolaboreMensal ?? 0) > 0) && (
-
           <div className="mb-3 rounded-md border border-primary/20 bg-primary/5 p-2.5 text-[11px] text-muted-foreground">
             <strong className="text-foreground">Pró-labore</strong> e{" "}
             <strong className="text-foreground">INSS Patronal</strong> dos sócios são geridos em{" "}
-            <em>Configurações → Sócios / Pró-labore</em>. Os valores entram automaticamente
-            no DRE, Balanço e Fluxo de Caixa.
+            <em>Configurações → Sócios / Pró-labore</em>. Os valores entram automaticamente no DRE,
+            Balanço e Fluxo de Caixa.
           </div>
         )}
 
@@ -465,9 +459,7 @@ function CostTable({
             editableLabel: !!c.custom,
             removable: !!c.custom,
             readOnly: !!c.system,
-            readOnlyHint: c.system
-              ? "Gerido em Configurações → Sócios / Pró-labore"
-              : undefined,
+            readOnlyHint: c.system ? "Gerido em Configurações → Sócios / Pró-labore" : undefined,
           };
         })}
         receitaAnual={receitaBrutaAnual}
@@ -477,114 +469,115 @@ function CostTable({
         onLabel={onLabel}
         onRemove={onRemove}
       />
-    <div className="scrollbar-thin hidden md:block w-full overflow-x-auto overflow-y-hidden">
-      <table className="w-full min-w-[900px] text-[clamp(0.75rem,1vw+0.5rem,0.875rem)] md:min-w-[1200px]">
-        <thead>
-          <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-            <th className="w-56 px-3 py-2">Descrição</th>
-            <th className="w-24 px-2 py-2 text-center">Modo</th>
-            {MESES.map((m) => (
-              <th key={m} className="px-1 py-2 text-right">
-                {m}
-              </th>
-            ))}
-            <th className="px-3 py-2 text-right">Anual</th>
-            <th className="w-14 px-2 py-2 text-right">% Rec</th>
-            <th className="w-8 px-1 py-2" />
-          </tr>
-        </thead>
-        <tbody>
-          {lines.map((c) => {
-            const vals = monthValues(c, regime);
-            const anual = sum(vals);
-            const pct = receitaBrutaAnual > 0 ? anual / receitaBrutaAnual : 0;
-            return (
-              <tr key={c.id} className={`border-t border-border/40 align-middle ${c.system ? "bg-muted/20" : ""}`}>
-                <td className="px-3 py-2">
-                  {c.custom ? (
-                    <input
-                      value={c.label}
-                      onChange={(e) => onLabel(c.id, e.target.value)}
-                      className="w-full rounded-md border border-border/40 bg-input/40 px-2 py-1 text-xs outline-none focus:border-primary"
-                    />
-                  ) : (
-                    <span className="text-xs">
-                      {c.label}
-                      {c.system && (
-                        <span
-                          className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-primary"
-                          title="Gerido em Configurações → Sócios / Pró-labore"
-                        >
-                          Auto
-                        </span>
-                      )}
-                    </span>
-                  )}
-                </td>
-
-                <td className="px-2 py-2">
-                  {c.system ? (
-                    <div className="text-center text-[10px] italic text-muted-foreground">
-                      —
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
-                      <span>Fixo</span>
-                      <Switch checked={!c.fixed} onCheckedChange={(v) => onFixed(c.id, !v)} />
-                      <span>Mensal</span>
-                    </div>
-                  )}
-                </td>
-                {c.fixed ? (
-                  <td className="px-1 py-1" colSpan={12}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase text-muted-foreground">
-                        {c.system
-                          ? "Valor mensal (gerido em Configurações → Sócios):"
-                          : "Valor aplicado em todos os meses:"}
+      <div className="scrollbar-thin hidden md:block w-full overflow-x-auto overflow-y-hidden">
+        <table className="w-full min-w-[900px] text-[clamp(0.75rem,1vw+0.5rem,0.875rem)] md:min-w-[1200px]">
+          <thead>
+            <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+              <th className="w-56 px-3 py-2">Descrição</th>
+              <th className="w-24 px-2 py-2 text-center">Modo</th>
+              {MESES.map((m) => (
+                <th key={m} className="px-1 py-2 text-right">
+                  {m}
+                </th>
+              ))}
+              <th className="px-3 py-2 text-right">Anual</th>
+              <th className="w-14 px-2 py-2 text-right">% Rec</th>
+              <th className="w-8 px-1 py-2" />
+            </tr>
+          </thead>
+          <tbody>
+            {lines.map((c) => {
+              const vals = monthValues(c, regime);
+              const anual = sum(vals);
+              const pct = receitaBrutaAnual > 0 ? anual / receitaBrutaAnual : 0;
+              return (
+                <tr
+                  key={c.id}
+                  className={`border-t border-border/40 align-middle ${c.system ? "bg-muted/20" : ""}`}
+                >
+                  <td className="px-3 py-2">
+                    {c.custom ? (
+                      <input
+                        value={c.label}
+                        onChange={(e) => onLabel(c.id, e.target.value)}
+                        className="w-full rounded-md border border-border/40 bg-input/40 px-2 py-1 text-xs outline-none focus:border-primary"
+                      />
+                    ) : (
+                      <span className="text-xs">
+                        {c.label}
+                        {c.system && (
+                          <span
+                            className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-primary"
+                            title="Gerido em Configurações → Sócios / Pró-labore"
+                          >
+                            Auto
+                          </span>
+                        )}
                       </span>
-                      <div className="w-36">
+                    )}
+                  </td>
+
+                  <td className="px-2 py-2">
+                    {c.system ? (
+                      <div className="text-center text-[10px] italic text-muted-foreground">—</div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
+                        <span>Fixo</span>
+                        <Switch checked={!c.fixed} onCheckedChange={(v) => onFixed(c.id, !v)} />
+                        <span>Mensal</span>
+                      </div>
+                    )}
+                  </td>
+                  {c.fixed ? (
+                    <td className="px-1 py-1" colSpan={12}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase text-muted-foreground">
+                          {c.system
+                            ? "Valor mensal (gerido em Configurações → Sócios):"
+                            : "Valor aplicado em todos os meses:"}
+                        </span>
+                        <div className="w-36">
+                          <MoneyInput
+                            value={fixedCostBase(c.values)}
+                            onChange={(n) => onAllMonths(c.id, n)}
+                            readOnly={!!c.system}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                  ) : (
+                    c.values.map((v, i) => (
+                      <td key={i} className="px-1 py-1">
                         <MoneyInput
-                          value={fixedCostBase(c.values)}
-                          onChange={(n) => onAllMonths(c.id, n)}
+                          value={v}
+                          onChange={(n) => onMonth(c.id, i, n)}
                           readOnly={!!c.system}
                         />
-                      </div>
-                    </div>
-                  </td>
-                ) : (
-                  c.values.map((v, i) => (
-                    <td key={i} className="px-1 py-1">
-                      <MoneyInput
-                        value={v}
-                        onChange={(n) => onMonth(c.id, i, n)}
-                        readOnly={!!c.system}
-                      />
-                    </td>
-                  ))
-                )}
-
-                <td className="num px-3 py-2 text-right text-neg">{fmtBRL(anual)}</td>
-                <td className="num px-2 py-2 text-right text-xs text-muted-foreground">
-                  {fmtPct(pct)}
-                </td>
-                <td className="px-1 py-2 text-center">
-                  {c.custom && !c.system && (
-                    <button
-                      onClick={() => onRemove(c.id)}
-                      title="Remover linha"
-                      className="text-muted-foreground transition hover:text-neg"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                      </td>
+                    ))
                   )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+
+                  <td className="num px-3 py-2 text-right text-neg">{fmtBRL(anual)}</td>
+                  <td className="num px-2 py-2 text-right text-xs text-muted-foreground">
+                    {fmtPct(pct)}
+                  </td>
+                  <td className="px-1 py-2 text-center">
+                    {c.custom && !c.system && (
+                      <button
+                        onClick={() => onRemove(c.id)}
+                        title="Remover linha"
+                        className="text-muted-foreground transition hover:text-neg"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

@@ -29,7 +29,9 @@ function AuthCallbackPage() {
             method: "POST",
             headers: { Authorization: `Bearer ${session.access_token}` },
           });
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
       setStatus("ok");
       setTimeout(() => navigate({ to: "/app" }), 400);
@@ -39,7 +41,8 @@ function AuthCallbackPage() {
     const url = new URL(window.location.href);
     const code = url.searchParams.get("code");
     if (code) {
-      void supabase.auth.exchangeCodeForSession(window.location.href)
+      void supabase.auth
+        .exchangeCodeForSession(window.location.href)
         .then(({ data, error }) => {
           if (cancelled) return;
           if (error || !data.session) return; // listener abaixo cuida do fallback hash
@@ -49,7 +52,9 @@ function AuthCallbackPage() {
     }
 
     // 2) Escuta SIGNED_IN (cobre fluxo implicit/hash). detectSessionInUrl roda async.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
       if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
         void finish(session);
@@ -87,9 +92,11 @@ function AuthCallbackPage() {
           )}
         </div>
         <h1 className="text-lg font-semibold tracking-tight">
-          {status === "ok" ? "Acesso confirmado" :
-           status === "err" ? "Link inválido ou expirado" :
-           "Confirmando seu acesso…"}
+          {status === "ok"
+            ? "Acesso confirmado"
+            : status === "err"
+              ? "Link inválido ou expirado"
+              : "Confirmando seu acesso…"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {status === "err"

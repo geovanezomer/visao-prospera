@@ -37,10 +37,9 @@ const MAX_PAYLOAD_BYTES = 2 * 1024 * 1024;
 const createSchema = z
   .object({
     // payload .finnance já serializado (objeto JSON).
-    payload: z.unknown().refine(
-      (v) => v != null && typeof v === "object",
-      "payload deve ser um objeto JSON",
-    ),
+    payload: z
+      .unknown()
+      .refine((v) => v != null && typeof v === "object", "payload deve ser um objeto JSON"),
     companyName: z.string().min(1).max(200),
   })
   .superRefine((d, ctx) => {

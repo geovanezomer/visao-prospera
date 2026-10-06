@@ -43,7 +43,10 @@ globalThis.window = {
 };
 // @ts-expect-error — CustomEvent fake.
 globalThis.CustomEvent = class {
-  constructor(public type: string, public init?: unknown) {}
+  constructor(
+    public type: string,
+    public init?: unknown,
+  ) {}
 };
 
 const COMPANY = "ACME";
@@ -80,9 +83,7 @@ describe("scenarios/store — pruning", () => {
     }
     const all = listScenarios(COMPANY);
     expect(all.filter((s) => s.kind === "whatif").length).toBe(5);
-    expect(all.filter((s) => s.kind === "historical").length).toBe(
-      MAX_HISTORICALS_PER_COMPANY,
-    );
+    expect(all.filter((s) => s.kind === "historical").length).toBe(MAX_HISTORICALS_PER_COMPANY);
   });
 });
 

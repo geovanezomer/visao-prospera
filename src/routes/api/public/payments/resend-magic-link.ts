@@ -11,7 +11,11 @@ export const Route = createFileRoute("/api/public/payments/resend-magic-link")({
     handlers: {
       POST: async ({ request }) => {
         let body: { i?: string } = {};
-        try { body = (await request.json()) as { i?: string }; } catch { /* noop */ }
+        try {
+          body = (await request.json()) as { i?: string };
+        } catch {
+          /* noop */
+        }
         const intentKey = await verifyIntentToken(body.i ?? null);
         if (!intentKey) {
           return Response.json({ error: "invalid_key" }, { status: 400 });
@@ -59,7 +63,8 @@ export const Route = createFileRoute("/api/public/payments/resend-magic-link")({
           email: intent.email as string,
           options: redirectTo ? { redirectTo } : undefined,
         });
-        if (linkErr) return Response.json({ error: "link_failed", detail: linkErr.message }, { status: 500 });
+        if (linkErr)
+          return Response.json({ error: "link_failed", detail: linkErr.message }, { status: 500 });
 
         const actionLink = linkRes?.properties?.action_link;
         if (!actionLink) return Response.json({ error: "no_link" }, { status: 500 });
@@ -70,7 +75,10 @@ export const Route = createFileRoute("/api/public/payments/resend-magic-link")({
         const fromName = cfg?.from_name || "Finnance";
         if (!apiKey || !fromEmail) {
           // F-06: nunca logar action_link (token de auth). Mascarar email.
-          console.log("[resend-magic] sem envio (config faltando) para:", String(intent.email).replace(/(.{2}).+(@.+)/, "$1***$2"));
+          console.log(
+            "[resend-magic] sem envio (config faltando) para:",
+            String(intent.email).replace(/(.{2}).+(@.+)/, "$1***$2"),
+          );
           return Response.json({ ok: true, sent: false });
         }
         const name = (intent.email as string).split("@")[0];

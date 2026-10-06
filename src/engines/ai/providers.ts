@@ -3,8 +3,6 @@
 
 import { removeKey, saveKeySync } from "@/engines/finance/persistence";
 
-
-
 export type Provider = "lmstudio" | "openai" | "anthropic";
 
 // SKILL: capacidade modular opt-in que é anexada ao system prompt quando ativa.
@@ -195,11 +193,7 @@ export interface AIConfig {
 /** Tarefas roteáveis. Chat e tools continuam sempre na config base. */
 export type AITask = "chat" | "tools" | "diagnostico" | "pipeline360" | "relatorio";
 
-const PREMIUM_TASKS: ReadonlySet<AITask> = new Set([
-  "diagnostico",
-  "pipeline360",
-  "relatorio",
-]);
+const PREMIUM_TASKS: ReadonlySet<AITask> = new Set(["diagnostico", "pipeline360", "relatorio"]);
 
 /** Providers que exigem apiKey para funcionar (LM Studio é local). */
 const providerRequiresKey = (p: Provider): boolean => p !== "lmstudio";
@@ -357,7 +351,6 @@ function sanitizePremium(input: unknown): AIConfigPremium | undefined {
   return out;
 }
 
-
 function sanitizeThreads(input: unknown): ChatThread[] {
   if (!Array.isArray(input)) return [];
   return input
@@ -420,7 +413,6 @@ export function loadConfig(): AIConfig {
   }
 }
 
-
 /** Nome do evento custom emitido após saveConfig — ouvido por hooks reativos. */
 export const AI_CONFIG_CHANGED_EVENT = "ai-config-changed";
 
@@ -440,9 +432,7 @@ export function saveConfig(cfg: AIConfig) {
       const premiumKey = safe.premium?.apiKey || "";
       if (premiumKey) sessionStorage.setItem(SESSION_KEY_BAG + "-premium", premiumKey);
       else sessionStorage.removeItem(SESSION_KEY_BAG + "-premium");
-      const strippedPremium = safe.premium
-        ? { ...safe.premium, apiKey: undefined }
-        : undefined;
+      const strippedPremium = safe.premium ? { ...safe.premium, apiKey: undefined } : undefined;
       saveKeySync(CFG_KEY, { ...persisted, apiKey: "", premium: strippedPremium });
     }
   } catch {

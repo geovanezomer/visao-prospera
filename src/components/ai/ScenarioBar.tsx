@@ -10,21 +10,9 @@ import { Bookmark, Plus, Sliders, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  useScenarios,
-  saveScenario,
-  deleteScenario,
-} from "@/engines/scenarios/store";
-import {
-  DEFAULT_SIM,
-  countActiveLevers,
-  type SimulatorParams,
-} from "@/engines/finance/simulator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useScenarios, saveScenario, deleteScenario } from "@/engines/scenarios/store";
+import { DEFAULT_SIM, countActiveLevers, type SimulatorParams } from "@/engines/finance/simulator";
 import { toast } from "sonner";
 
 interface Props {
@@ -35,9 +23,7 @@ interface Props {
 // Dispara o evento global que routes/index.tsx escuta.
 function applyParams(params: Partial<SimulatorParams> | null) {
   try {
-    window.dispatchEvent(
-      new CustomEvent("gz-apply-simulator-params", { detail: params }),
-    );
+    window.dispatchEvent(new CustomEvent("gz-apply-simulator-params", { detail: params }));
   } catch {
     /* SSR */
   }
@@ -287,12 +273,7 @@ function SliderRow({
   // positiveIsGood: valores >0 são "bons"; invertColor: inverte a lógica padrão.
   const sign = value > 0 ? 1 : value < 0 ? -1 : 0;
   const good = positiveIsGood ? sign > 0 : invertColor ? sign < 0 : sign !== 0;
-  const color =
-    sign === 0
-      ? "text-muted-foreground"
-      : good
-        ? "text-emerald-500"
-        : "text-amber-500";
+  const color = sign === 0 ? "text-muted-foreground" : good ? "text-emerald-500" : "text-amber-500";
   return (
     <div>
       <div className="flex items-center justify-between text-[11px] mb-1">

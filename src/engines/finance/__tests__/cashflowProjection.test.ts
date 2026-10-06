@@ -48,7 +48,8 @@ describe("cashflowProjection — debtContracts delta", () => {
   it("contrato vencido (prazo<=12) zera delta após o vencimento", () => {
     const curto: DebtContract = { ...contratoPrice, id: "c3", prazoMeses: 6 };
     const s = createState({ capital: { debtContracts: [curto] } });
-    const r = projectCashflow(s, 24, [{ nome: "Base", receitaDelta: 0, folhaDelta: 0 }]).cenarios[0];
+    const r = projectCashflow(s, 24, [{ nome: "Base", receitaDelta: 0, folhaDelta: 0 }])
+      .cenarios[0];
     // Sem NaN/Inf em qualquer mês após o vencimento.
     for (const m of r.meses.slice(12)) {
       expect(Number.isFinite(m.pagamentos)).toBe(true);

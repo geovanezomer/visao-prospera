@@ -34,9 +34,7 @@ export function writeSettingsCache(data: unknown) {
     if (prev === serialized) return; // no-op, evita loops
     window.localStorage.setItem(SETTINGS_CACHE_KEY, serialized);
     // Notifica a própria aba (storage event nativo só dispara em outras abas)
-    window.dispatchEvent(
-      new CustomEvent(SETTINGS_CHANGE_EVENT, { detail: data })
-    );
+    window.dispatchEvent(new CustomEvent(SETTINGS_CHANGE_EVENT, { detail: data }));
   } catch {
     /* ignore */
   }
@@ -46,9 +44,7 @@ export function clearSettingsCache() {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.removeItem(SETTINGS_CACHE_KEY);
-    window.dispatchEvent(
-      new CustomEvent(SETTINGS_CHANGE_EVENT, { detail: null })
-    );
+    window.dispatchEvent(new CustomEvent(SETTINGS_CHANGE_EVENT, { detail: null }));
   } catch {
     /* ignore */
   }

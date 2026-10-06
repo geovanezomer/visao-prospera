@@ -9,12 +9,28 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 import type { Json } from "@/integrations/supabase/types";
 
-
-const KEYS = ["branding", "login_texts", "footer", "active_provider", "tracking", "legal", "landing_video", "trial"] as const;
+const KEYS = [
+  "branding",
+  "login_texts",
+  "footer",
+  "active_provider",
+  "tracking",
+  "legal",
+  "landing_video",
+  "trial",
+] as const;
 export type SettingKey = (typeof KEYS)[number];
 
 /** Leitura pública — só chaves seguras para anon. `trial` é público para a landing saber se exibe o CTA. */
-const PUBLIC_KEYS = ["branding", "login_texts", "footer", "tracking", "legal", "landing_video", "trial"] as const;
+const PUBLIC_KEYS = [
+  "branding",
+  "login_texts",
+  "footer",
+  "tracking",
+  "legal",
+  "landing_video",
+  "trial",
+] as const;
 
 // Cache em memória do worker (TTL 60s) — reduz drasticamente as queries ao
 // banco em SSR de alto volume (Black Friday). Mudanças do admin propagam em
@@ -33,7 +49,8 @@ export const getAppSettings = createServerFn({ method: "GET" }).handler(async ()
   settingsInFlight = (async () => {
     const { createClient } = await import("@supabase/supabase-js");
     const url = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
-    const key = process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const key =
+      process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     const sb = createClient(url!, key!, {
       auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
     });
@@ -59,10 +76,17 @@ export const updateAppSetting = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("app_settings").upsert(
-      { key: data.key, value: data.value, updated_by: context.userId, updated_at: new Date().toISOString() },
-      { onConflict: "key" },
-    );
+    const { error } = await supabaseAdmin
+      .from("app_settings")
+      .upsert(
+        {
+          key: data.key,
+          value: data.value,
+          updated_by: context.userId,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "key" },
+      );
     if (error) throw new Error(error.message);
     // Invalida cache em memória para refletir mudança imediatamente.
     settingsCache = null;

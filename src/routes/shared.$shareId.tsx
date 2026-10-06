@@ -16,12 +16,24 @@ import { Eye, ArrowLeft, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { TabKey } from "@/engines/finance/types";
 
-const DRETab = lazy(() => import("@/components/sim/dre/DRETab").then(m => ({ default: m.DRETab })));
-const BalancoTab = lazy(() => import("@/components/sim/balanco/BalancoTab").then(m => ({ default: m.BalancoTab })));
-const CashflowTab = lazy(() => import("@/components/sim/cashflow/CashflowTab").then(m => ({ default: m.CashflowTab })));
-const DiagnosisTab = lazy(() => import("@/components/sim/diagnosis/DiagnosisTab").then(m => ({ default: m.DiagnosisTab })));
-const IndicatorsTab = lazy(() => import("@/components/sim/indicators/IndicatorsTab").then(m => ({ default: m.IndicatorsTab })));
-const DashboardTab = lazy(() => import("@/components/sim/dashboard/DashboardTab").then(m => ({ default: m.DashboardTab })));
+const DRETab = lazy(() =>
+  import("@/components/sim/dre/DRETab").then((m) => ({ default: m.DRETab })),
+);
+const BalancoTab = lazy(() =>
+  import("@/components/sim/balanco/BalancoTab").then((m) => ({ default: m.BalancoTab })),
+);
+const CashflowTab = lazy(() =>
+  import("@/components/sim/cashflow/CashflowTab").then((m) => ({ default: m.CashflowTab })),
+);
+const DiagnosisTab = lazy(() =>
+  import("@/components/sim/diagnosis/DiagnosisTab").then((m) => ({ default: m.DiagnosisTab })),
+);
+const IndicatorsTab = lazy(() =>
+  import("@/components/sim/indicators/IndicatorsTab").then((m) => ({ default: m.IndicatorsTab })),
+);
+const DashboardTab = lazy(() =>
+  import("@/components/sim/dashboard/DashboardTab").then((m) => ({ default: m.DashboardTab })),
+);
 
 const sharedQuery = (shareId: string) =>
   queryOptions({
@@ -32,14 +44,17 @@ const sharedQuery = (shareId: string) =>
   });
 
 export const Route = createFileRoute("/shared/$shareId")({
-  loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(sharedQuery(params.shareId)),
+  loader: ({ context, params }) => context.queryClient.ensureQueryData(sharedQuery(params.shareId)),
   head: ({ loaderData }) => {
-    const company = (loaderData as { companyName?: string } | undefined)?.companyName ?? "FinnancePRO";
+    const company =
+      (loaderData as { companyName?: string } | undefined)?.companyName ?? "FinnancePRO";
     return {
       meta: [
         { title: `${company} — FinnancePRO (somente leitura)` },
-        { name: "description", content: `Visualização compartilhada de ${company} no FinnancePRO.` },
+        {
+          name: "description",
+          content: `Visualização compartilhada de ${company} no FinnancePRO.`,
+        },
         { property: "og:title", content: `${company} — FinnancePRO` },
         { property: "og:description", content: "Relatório financeiro compartilhado." },
         { name: "robots", content: "noindex,nofollow" },
@@ -206,9 +221,7 @@ function SharedReport() {
                 expira em {remainingLabel.text}
               </span>
             )}
-            <span className="text-muted-foreground">
-              · {data.companyName} · somente leitura
-            </span>
+            <span className="text-muted-foreground">· {data.companyName} · somente leitura</span>
           </div>
           {/*
             Link para a tela interna do FinnancePRO foi removido nesta rota:
@@ -249,14 +262,16 @@ function SharedReport() {
                 className="m-0 min-w-0 border-0 p-0 [&_*]:cursor-default"
                 aria-label="Conteúdo somente leitura"
               >
-              <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Carregando…</div>}>
-                {activeTab === "dashboard" && <DashboardTab />}
-                {activeTab === "caixa" && <CashflowTab />}
-                {activeTab === "dre" && <DRETab />}
-                {activeTab === "balanco" && <BalancoTab />}
-                {activeTab === "indicadores" && <IndicatorsTab />}
-                {activeTab === "resultados" && <DiagnosisTab />}
-              </Suspense>
+                <Suspense
+                  fallback={<div className="p-6 text-sm text-muted-foreground">Carregando…</div>}
+                >
+                  {activeTab === "dashboard" && <DashboardTab />}
+                  {activeTab === "caixa" && <CashflowTab />}
+                  {activeTab === "dre" && <DRETab />}
+                  {activeTab === "balanco" && <BalancoTab />}
+                  {activeTab === "indicadores" && <IndicatorsTab />}
+                  {activeTab === "resultados" && <DiagnosisTab />}
+                </Suspense>
               </fieldset>
             </FinanceErrorBoundary>
           </div>

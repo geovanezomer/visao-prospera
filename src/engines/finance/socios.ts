@@ -11,14 +11,7 @@
  *
  * Toda alíquota/tabela é lida via getters de taxDefaults — ZERO hardcode aqui.
  */
-import type {
-  AppState,
-  CostLine,
-  Months,
-  SocioRetirada,
-  TaxConfig,
-  TaxRegime,
-} from "./types";
+import type { AppState, CostLine, Months, SocioRetirada, TaxConfig, TaxRegime } from "./types";
 import {
   getInssSocioAliq,
   getInssTeto,
@@ -91,8 +84,7 @@ export interface SocioCalcResult {
   custoTotalPJ: number;
 }
 
-const fill12 = (n: number): Months =>
-  [n, n, n, n, n, n, n, n, n, n, n, n] as Months;
+const fill12 = (n: number): Months => [n, n, n, n, n, n, n, n, n, n, n, n] as Months;
 
 // =====================================================================
 // INSS sócio — contribuinte individual (plano simplificado)
@@ -143,8 +135,7 @@ export function calcIrpfMensal(
   if (prolaboreMensal <= 0) return { valor: 0, modo: "tradicional" };
   const deducaoDep = getIrpfDependenteDeducao(tax);
   // Tradicional: prolab − INSS − dependentes − outras.
-  const baseTrad =
-    prolaboreMensal - inssSocio - dependentes * deducaoDep - outrasDeducoes;
+  const baseTrad = prolaboreMensal - inssSocio - dependentes * deducaoDep - outrasDeducoes;
   const irpfTrad = irpfPorTabela(Math.max(0, baseTrad), tax);
 
   // Redutor Lei 15.270/2025 — aplica-se sobre o rendimento tributável bruto
@@ -177,10 +168,7 @@ export function calcIrpfMensal(
  * Para Lucro Real, default = Infinity (escrituração já é exigida).
  * Para Simples, default = Infinity (RBT × percentuais — a engine simplifica).
  */
-export function calcDistribuicaoIsentaLimite(
-  state: AppState,
-  regime: TaxRegime,
-): number {
+export function calcDistribuicaoIsentaLimite(state: AppState, regime: TaxRegime): number {
   const { tax } = state;
   if (regime !== "presumido") return Number.POSITIVE_INFINITY;
   if (!getDistribuicaoLimitePresumidoAuto(tax)) return Number.POSITIVE_INFINITY;
@@ -199,8 +187,7 @@ export function calcDistribuicaoIsentaLimite(
   // SUPERESTIMADO em empresas com lucro alto — o adicional já saiu do caixa.
   const baseTri = basePresumida / 4;
   const gatilhoTri = getIrpjAdicionalGatilhoTri(tax);
-  const adicionalIrpjAno =
-    Math.max(0, baseTri - gatilhoTri) * (getIrpjAdicionalPct(tax) / 100) * 4;
+  const adicionalIrpjAno = Math.max(0, baseTri - gatilhoTri) * (getIrpjAdicionalPct(tax) / 100) * 4;
   const disponivelAno = Math.max(0, basePresumida - tributosFed - adicionalIrpjAno);
   return disponivelAno / 12;
 }
@@ -220,8 +207,7 @@ export function calcDistribuicaoIsentaBreakdown(state: AppState, regime: TaxRegi
     receitaBrutaAno * ((getPisCumPct(tax) + getCofinsCumPct(tax)) / 100);
   const baseTri = basePresumida / 4;
   const gatilhoTri = getIrpjAdicionalGatilhoTri(tax);
-  const adicionalIrpjAno =
-    Math.max(0, baseTri - gatilhoTri) * (getIrpjAdicionalPct(tax) / 100) * 4;
+  const adicionalIrpjAno = Math.max(0, baseTri - gatilhoTri) * (getIrpjAdicionalPct(tax) / 100) * 4;
   const limiteMensal = calcDistribuicaoIsentaLimite(state, regime);
   return { basePresumida, tributosFed, adicionalIrpjAno, baseTri, gatilhoTri, limiteMensal };
 }
@@ -346,13 +332,7 @@ export function otimizarProLabore(
   const custoTotal = (p: number): number => {
     const inssS = calcInssSocio(p, tax);
     const inssP = calcInssPatronal(p, regime, tax);
-    const { valor: irpf } = calcIrpfMensal(
-      p,
-      inssS,
-      socio.dependentes,
-      socio.outrasDeducoes,
-      tax,
-    );
+    const { valor: irpf } = calcIrpfMensal(p, inssS, socio.dependentes, socio.outrasDeducoes, tax);
     return inssS + inssP + irpf;
   };
 

@@ -6,7 +6,6 @@ import { assertAdmin } from "./assertAdmin";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
-
 export type ServiceStatus = {
   name: string;
   status: "operational" | "degraded" | "down" | "unknown";
@@ -14,7 +13,10 @@ export type ServiceStatus = {
   message: string;
 };
 
-async function check(name: string, fn: () => Promise<{ status: ServiceStatus["status"]; message: string }>): Promise<ServiceStatus> {
+async function check(
+  name: string,
+  fn: () => Promise<{ status: ServiceStatus["status"]; message: string }>,
+): Promise<ServiceStatus> {
   const start = Date.now();
   try {
     const r = await Promise.race([
@@ -41,7 +43,8 @@ export const getSystemStatus = createServerFn({ method: "POST" })
       check("Supabase", async () => {
         const { createClient } = await import("@supabase/supabase-js");
         const url = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
-        const key = process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const key =
+          process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const sb = createClient(url!, key!);
         const { error } = await sb.from("plans").select("id").limit(1);
         if (error) return { status: "degraded", message: error.message };

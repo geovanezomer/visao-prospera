@@ -57,8 +57,7 @@ export function partitionMonthlyTaxByLag(
   if (regime !== "simples") {
     for (let q = 0; q < 4; q++) {
       const m0 = q * 3;
-      lucroTri[m0 + 2] =
-        (lucro[m0] ?? 0) + (lucro[m0 + 1] ?? 0) + (lucro[m0 + 2] ?? 0);
+      lucroTri[m0 + 2] = (lucro[m0] ?? 0) + (lucro[m0 + 1] ?? 0) + (lucro[m0 + 2] ?? 0);
     }
   } else {
     // Fallback seguro: se por algum motivo o Simples tiver monthlyLucro > 0
@@ -88,8 +87,6 @@ export function computeImpostosPagarFechamento(args: {
   let passivoVendas = vendas[11] ?? 0;
   if (splitAtivo) passivoVendas = Math.max(0, passivoVendas - cbsIbsDez);
   const passivoLucro =
-    regime === "simples"
-      ? 0
-      : (lucro[9] ?? 0) + (lucro[10] ?? 0) + (lucro[11] ?? 0);
+    regime === "simples" ? 0 : (lucro[9] ?? 0) + (lucro[10] ?? 0) + (lucro[11] ?? 0);
   return Math.max(0, passivoVendas + passivoLucro);
 }

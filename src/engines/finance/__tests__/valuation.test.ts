@@ -5,7 +5,6 @@ import { sum } from "../format";
 import { createState, m12 } from "./helpers";
 import { computeNetDebt } from "../shared";
 
-
 // Cria um cenário lucrativo (EBITDA > 0) para testar valuation positiva.
 // O DEFAULT_STATE tem custos altos → EBITDA negativo, inadequado para esses testes.
 function profitableState() {
@@ -37,13 +36,23 @@ describe("buildValuation — cenário lucrativo", () => {
   it("Equity = max(0, EV − Dívida Líquida) [Damodaran]", () => {
     const s = createState({
       revenue: { bruta: m12(80000), inadimplencia: m12(1) },
-      capital: { debtContracts: [{ id: "sim", credor: "Banco", saldoDevedor: 30000, taxaAA: 18, sistema: "price" as const, prazoMeses: 24 }]},
+      capital: {
+        debtContracts: [
+          {
+            id: "sim",
+            credor: "Banco",
+            saldoDevedor: 30000,
+            taxaAA: 18,
+            sistema: "price" as const,
+            prazoMeses: 24,
+          },
+        ],
+      },
     });
     const v = buildValuation(s, defaultValuationParams(s.businessType));
     const nd = Math.max(0, computeNetDebt(s));
     expect(v.equityValue.base).toBeCloseTo(Math.max(0, v.enterpriseValue.base - nd), 2);
   });
-
 
   it("Liquidity discount reduz o EV proporcionalmente", () => {
     const s = profitableState();
@@ -69,14 +78,31 @@ describe("buildValuation — cenário lucrativo", () => {
   it("Múltiplos P/L: EV implícito inclui Dívida Líquida (sem dupla dedução)", () => {
     const s = createState({
       revenue: { bruta: m12(80000), inadimplencia: m12(1) },
-      capital: { debtContracts: [{ id: "sim", credor: "Banco", saldoDevedor: 50000, taxaAA: 18, sistema: "price" as const, prazoMeses: 24 }]},
+      capital: {
+        debtContracts: [
+          {
+            id: "sim",
+            credor: "Banco",
+            saldoDevedor: 50000,
+            taxaAA: 18,
+            sistema: "price" as const,
+            prazoMeses: 24,
+          },
+        ],
+      },
     });
     const sNoD = createState({
       revenue: { bruta: m12(80000), inadimplencia: m12(1) },
-      capital: { },
+      capital: {},
     });
-    const vCom = buildValuation(s, { ...defaultValuationParams(s.businessType), method: "multiples" });
-    const vSem = buildValuation(sNoD, { ...defaultValuationParams(sNoD.businessType), method: "multiples" });
+    const vCom = buildValuation(s, {
+      ...defaultValuationParams(s.businessType),
+      method: "multiples",
+    });
+    const vSem = buildValuation(sNoD, {
+      ...defaultValuationParams(sNoD.businessType),
+      method: "multiples",
+    });
     // Equity de cenários com mesma operação deve ser parecido (a dívida não destrói valor de equity duas vezes).
     // Tolerância larga porque pode mudar imposto na margem; teste qualitativo.
     expect(vCom.equityValue.base).toBeGreaterThan(vSem.equityValue.base * 0.5);
@@ -88,7 +114,7 @@ describe("buildValuation — cenário lucrativo", () => {
     const v = buildValuation(s, {
       ...defaultValuationParams(s.businessType),
       method: "dcf",
-      terminalGrowthRate: 0.50, // absurdo, força spread negativo
+      terminalGrowthRate: 0.5, // absurdo, força spread negativo
     });
     expect(v.dcfDetails?.warnings.some((w) => w.includes("Spread"))).toBe(true);
   });
@@ -96,8 +122,14 @@ describe("buildValuation — cenário lucrativo", () => {
   // Bloco 7: Strategic haircut reduz EV proporcionalmente.
   it("Haircut estratégico aplicado reduz EV final", () => {
     const s = profitableState();
-    const sem = buildValuation(s, { ...defaultValuationParams(s.businessType), applyStrategicHaircut: false });
-    const com = buildValuation(s, { ...defaultValuationParams(s.businessType), applyStrategicHaircut: true });
+    const sem = buildValuation(s, {
+      ...defaultValuationParams(s.businessType),
+      applyStrategicHaircut: false,
+    });
+    const com = buildValuation(s, {
+      ...defaultValuationParams(s.businessType),
+      applyStrategicHaircut: true,
+    });
     expect(com.enterpriseValue.base).toBeLessThanOrEqual(sem.enterpriseValue.base);
   });
 });

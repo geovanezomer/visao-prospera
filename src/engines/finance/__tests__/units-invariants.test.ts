@@ -17,7 +17,21 @@ describe("Unidades — Ke/Kd/WACC nunca duplicam ×100", () => {
   it("WACC fica na faixa 0–100 (% units, não fração)", () => {
     const s = createState({
       tax: { regime: "simples" },
-      capital: { ke: 15, kd: 10, patrimonioLiquido: 600_000, debtContracts: [{ id: "sim", credor: "Banco", saldoDevedor: 400_000, taxaAA: 18, sistema: "price" as const, prazoMeses: 24 }]},
+      capital: {
+        ke: 15,
+        kd: 10,
+        patrimonioLiquido: 600_000,
+        debtContracts: [
+          {
+            id: "sim",
+            credor: "Banco",
+            saldoDevedor: 400_000,
+            taxaAA: 18,
+            sistema: "price" as const,
+            prazoMeses: 24,
+          },
+        ],
+      },
     });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
@@ -31,7 +45,21 @@ describe("Unidades — Ke/Kd/WACC nunca duplicam ×100", () => {
   it("WACC com Ke=Kd não pode ser menor que min(Ke,Kd)·(1−T)", () => {
     const s = createState({
       tax: { regime: "real" },
-      capital: { ke: 20, kd: 20, patrimonioLiquido: 500_000, debtContracts: [{ id: "sim", credor: "Banco", saldoDevedor: 500_000, taxaAA: 18, sistema: "price" as const, prazoMeses: 24 }]},
+      capital: {
+        ke: 20,
+        kd: 20,
+        patrimonioLiquido: 500_000,
+        debtContracts: [
+          {
+            id: "sim",
+            credor: "Banco",
+            saldoDevedor: 500_000,
+            taxaAA: 18,
+            sistema: "price" as const,
+            prazoMeses: 24,
+          },
+        ],
+      },
     });
     const { dre } = buildDRE(s, "real");
     const ind = calcIndicators(s, dre);
@@ -46,7 +74,7 @@ describe("Unidades — Ke/Kd/WACC nunca duplicam ×100", () => {
   it("Piso de Ke=8% (não 0.08) quando ke<=0 — bug histórico", () => {
     const s = createState({
       tax: { regime: "simples" },
-      capital: { ke: 0, kd: 0, patrimonioLiquido: 1_000_000, },
+      capital: { ke: 0, kd: 0, patrimonioLiquido: 1_000_000 },
     });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
@@ -61,7 +89,16 @@ describe("Unidades — Ke/Kd/WACC nunca duplicam ×100", () => {
         ke: 12,
         kd: 9,
         patrimonioLiquido: 800_000,
-        debtContracts: [{ id: "sim", credor: "Banco Teste", saldoDevedor: 200_000, taxaAA: 18, sistema: "price", prazoMeses: 24 }],
+        debtContracts: [
+          {
+            id: "sim",
+            credor: "Banco Teste",
+            saldoDevedor: 200_000,
+            taxaAA: 18,
+            sistema: "price",
+            prazoMeses: 24,
+          },
+        ],
         ativoTotal: 1_500_000,
       },
     });
@@ -94,11 +131,11 @@ describe("Unidades — Ke/Kd/WACC nunca duplicam ×100", () => {
   it("Linearidade: dobrar Ke dobra a contribuição de equity no WACC", () => {
     const base = createState({
       tax: { regime: "simples" },
-      capital: { ke: 10, kd: 0, patrimonioLiquido: 1_000_000, },
+      capital: { ke: 10, kd: 0, patrimonioLiquido: 1_000_000 },
     });
     const dobro = createState({
       tax: { regime: "simples" },
-      capital: { ke: 20, kd: 0, patrimonioLiquido: 1_000_000, },
+      capital: { ke: 20, kd: 0, patrimonioLiquido: 1_000_000 },
     });
     const a = calcIndicators(base, buildDRE(base, "simples").dre);
     const b = calcIndicators(dobro, buildDRE(dobro, "simples").dre);

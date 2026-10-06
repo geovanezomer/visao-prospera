@@ -114,9 +114,7 @@ describe("Integração — simulação completa espelha LS + IDB", () => {
     };
 
     // Não deve lançar — saveKeySync é tolerante
-    expect(() =>
-      saveScenario(COMPANY, { name: "Stress-quota", kind: "whatif" }),
-    ).not.toThrow();
+    expect(() => saveScenario(COMPANY, { name: "Stress-quota", kind: "whatif" })).not.toThrow();
 
     expect(quotaHits).toBeGreaterThan(0);
     // @ts-ignore restaura
@@ -134,15 +132,11 @@ describe("Integração — simulação completa espelha LS + IDB", () => {
     delete (globalThis as { indexedDB?: unknown }).indexedDB;
 
     // Reimporta para que getDB() detecte ausência de IDB
-    const fresh = await import(
-      `@/engines/finance/persistence?nocache=${Date.now()}`
-    );
+    const fresh = await import(`@/engines/finance/persistence?nocache=${Date.now()}`);
     fresh.saveKeySync("kv:fallback", { ok: true });
 
     // localStorage continua funcionando
-    expect(localStorage.getItem("kv:fallback")).toBe(
-      JSON.stringify({ ok: true }),
-    );
+    expect(localStorage.getItem("kv:fallback")).toBe(JSON.stringify({ ok: true }));
     // loadKey retorna do LS sem explodir
     const v = await fresh.loadKey("kv:fallback");
     expect(v).toEqual({ ok: true });

@@ -22,7 +22,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Cloud, CloudDownload, Loader2, Search, Trash2, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
+import {
+  Cloud,
+  CloudDownload,
+  Loader2,
+  Search,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  AlertTriangle,
+} from "lucide-react";
 import { listBackups, downloadBackup, deleteBackup } from "@/lib/api/cloudBackup";
 import { parseFinnanceFile } from "@/engines/finance/fileFormat";
 import { applyExtras } from "@/engines/finance/fileExtras";
@@ -39,7 +48,12 @@ interface Props {
   /** Última modificação local — usada no diálogo de descarte. */
   lastModified: number | null;
   hasUnsavedChanges: boolean;
-  confirm: (opts: { title: string; description?: string; confirmLabel?: string; destructive?: boolean }) => Promise<boolean>;
+  confirm: (opts: {
+    title: string;
+    description?: string;
+    confirmLabel?: string;
+    destructive?: boolean;
+  }) => Promise<boolean>;
   setState: (s: AppState) => void;
   replaceScenarios: (s: Scenario[]) => void;
   onRestored: (filename: string) => void;
@@ -214,7 +228,10 @@ export function RestoreBackupDialog({
             ) : (
               <ul className="divide-y divide-border/40">
                 {pageItems.map((item) => (
-                  <li key={item.name} className="flex items-center gap-2 px-3 py-2 hover:bg-accent/30">
+                  <li
+                    key={item.name}
+                    className="flex items-center gap-2 px-3 py-2 hover:bg-accent/30"
+                  >
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium" title={item.name}>
                         {item.name}
@@ -258,8 +275,8 @@ export function RestoreBackupDialog({
           {filtered.length > PAGE_SIZE && (
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
               <span>
-                {safePage * PAGE_SIZE + 1}–
-                {Math.min((safePage + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
+                {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filtered.length)}{" "}
+                de {filtered.length}
               </span>
               <div className="flex items-center gap-1">
                 <Button
@@ -299,10 +316,7 @@ export function RestoreBackupDialog({
       </Dialog>
 
       {/* Confirmação explícita do que será descartado */}
-      <AlertDialog
-        open={!!pendingRestore}
-        onOpenChange={(v) => !v && setPendingRestore(null)}
-      >
+      <AlertDialog open={!!pendingRestore} onOpenChange={(v) => !v && setPendingRestore(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">

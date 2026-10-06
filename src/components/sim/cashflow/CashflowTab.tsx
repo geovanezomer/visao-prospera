@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
-import { useFinance, usePatchCashflow, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
+import {
+  useFinance,
+  usePatchCashflow,
+  useFinanceReadOnly,
+} from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
 import { fmtBRL, MESES } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
@@ -19,7 +23,6 @@ import {
 
 import { DFCTable } from "@/components/sim/cashflow/DFCTable";
 import { PermutasCard } from "@/components/sim/tax/PermutasCard";
-
 
 // Estilo padrão do tooltip dos gráficos (DRY)
 const TOOLTIP_STYLE = {
@@ -42,7 +45,6 @@ export function CashflowTab() {
   const readOnly = useFinanceReadOnly();
   // SSOT: reusa o cf do FinancialModel (cacheado por WeakMap), evita 2ª passada.
   const { cf } = useFinanceModel(state);
-  
 
   const setCaixaMin = (v: number) => patchCashflow({ caixaMinimo: v });
 
@@ -79,10 +81,6 @@ export function CashflowTab() {
       });
     }
   }, [mesesCriticosKey, limiar, mesesCriticos]);
-
-
-
-
 
   // Usar cf.alertas e cf.totais.pioresMes (já calculados pela engine)
   const alertas = cf.alertas;
@@ -162,7 +160,6 @@ export function CashflowTab() {
 
   return (
     <div className="space-y-6">
-
       {/* Sumário — KPIs no topo */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
@@ -225,7 +222,6 @@ export function CashflowTab() {
       {!readOnly && <PermutasCard />}
 
       {/* Movimentações de caixa não operacionais foram movidas para a aba Retiradas e Aportes. */}
-
 
       {/* Tabela detalhada */}
       <DFCTable state={state} cf={cf} />
@@ -367,106 +363,106 @@ export function CashflowTab() {
 
       {/* Gráfico de saldo — escondido em modo somente leitura */}
       {!readOnly && (
-      <div className="rounded-lg border border-border/60 bg-card/40 p-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h4 className="text-sm font-semibold">Saldo de caixa projetado (12 meses)</h4>
-          <div className="flex flex-wrap items-center gap-4 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">Caixa mínimo:</span>
-              <div className="w-32">
-                <MoneyInput value={state.cashflow.caixaMinimo} onChange={setCaixaMin} />
+        <div className="rounded-lg border border-border/60 bg-card/40 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h4 className="text-sm font-semibold">Saldo de caixa projetado (12 meses)</h4>
+            <div className="flex flex-wrap items-center gap-4 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Caixa mínimo:</span>
+                <div className="w-32">
+                  <MoneyInput value={state.cashflow.caixaMinimo} onChange={setCaixaMin} />
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">Limiar crítico:</span>
-              <div className="w-32">
-                <MoneyInput value={limiar} onChange={setLimiar} />
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Limiar crítico:</span>
+                <div className="w-32">
+                  <MoneyInput value={limiar} onChange={setLimiar} />
+                </div>
               </div>
             </div>
           </div>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={chart}>
+              <defs>
+                <linearGradient id="gSaldo" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--success)" stopOpacity={0.5} />
+                  <stop offset="100%" stopColor="var(--success)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
+              <YAxis
+                stroke="var(--muted-foreground)"
+                fontSize={10}
+                tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+              />
+              <Tooltip
+                contentStyle={TOOLTIP_STYLE}
+                itemStyle={TOOLTIP_ITEM}
+                labelStyle={TOOLTIP_LABEL}
+                formatter={(v: number) => fmtBRL(v)}
+              />
+              <ReferenceLine
+                y={state.cashflow.caixaMinimo}
+                stroke="var(--warning)"
+                strokeDasharray="4 4"
+                label={{ value: "mínimo", fill: "var(--warning)", fontSize: 10, position: "right" }}
+              />
+              <ReferenceLine
+                y={limiar}
+                stroke="var(--destructive)"
+                strokeDasharray="6 3"
+                label={{
+                  value: "limiar",
+                  fill: "var(--destructive)",
+                  fontSize: 10,
+                  position: "right",
+                }}
+              />
+              <ReferenceLine y={0} stroke="var(--destructive)" strokeDasharray="4 4" />
+              <Area
+                type="monotone"
+                dataKey="saldo"
+                stroke="var(--success)"
+                strokeWidth={2}
+                fill="url(#gSaldo)"
+                dot={(props: {
+                  cx?: number;
+                  cy?: number;
+                  payload?: { critical?: "negativo" | "abaixoMinimo" | null };
+                  index?: number;
+                }) => {
+                  const { cx, cy, payload, index } = props;
+                  const tipo = payload?.critical as "negativo" | "abaixoMinimo" | null;
+                  if (!tipo) return <circle key={`dot-${index}`} cx={cx} cy={cy} r={0} />;
+                  const color = tipo === "negativo" ? "var(--destructive)" : "var(--warning)";
+                  return (
+                    <circle
+                      key={`dot-${index}`}
+                      cx={cx}
+                      cy={cy}
+                      r={5}
+                      fill={color}
+                      stroke="var(--background)"
+                      strokeWidth={2}
+                    />
+                  );
+                }}
+                activeDot={{ r: 6, stroke: "var(--background)", strokeWidth: 2 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+          <div className="mt-2 flex flex-wrap items-center gap-4 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full" style={{ background: "var(--destructive)" }} />
+              Caixa negativo
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full" style={{ background: "var(--warning)" }} />
+              Abaixo do mínimo
+            </span>
+          </div>
         </div>
-        <ResponsiveContainer width="100%" height={280}>
-          <AreaChart data={chart}>
-            <defs>
-              <linearGradient id="gSaldo" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--success)" stopOpacity={0.5} />
-                <stop offset="100%" stopColor="var(--success)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
-            <YAxis
-              stroke="var(--muted-foreground)"
-              fontSize={10}
-              tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
-            />
-            <Tooltip
-              contentStyle={TOOLTIP_STYLE}
-              itemStyle={TOOLTIP_ITEM}
-              labelStyle={TOOLTIP_LABEL}
-              formatter={(v: number) => fmtBRL(v)}
-            />
-            <ReferenceLine
-              y={state.cashflow.caixaMinimo}
-              stroke="var(--warning)"
-              strokeDasharray="4 4"
-              label={{ value: "mínimo", fill: "var(--warning)", fontSize: 10, position: "right" }}
-            />
-            <ReferenceLine
-              y={limiar}
-              stroke="var(--destructive)"
-              strokeDasharray="6 3"
-              label={{
-                value: "limiar",
-                fill: "var(--destructive)",
-                fontSize: 10,
-                position: "right",
-              }}
-            />
-            <ReferenceLine y={0} stroke="var(--destructive)" strokeDasharray="4 4" />
-            <Area
-              type="monotone"
-              dataKey="saldo"
-              stroke="var(--success)"
-              strokeWidth={2}
-              fill="url(#gSaldo)"
-              dot={(props: {
-                cx?: number;
-                cy?: number;
-                payload?: { critical?: "negativo" | "abaixoMinimo" | null };
-                index?: number;
-              }) => {
-                const { cx, cy, payload, index } = props;
-                const tipo = payload?.critical as "negativo" | "abaixoMinimo" | null;
-                if (!tipo) return <circle key={`dot-${index}`} cx={cx} cy={cy} r={0} />;
-                const color = tipo === "negativo" ? "var(--destructive)" : "var(--warning)";
-                return (
-                  <circle
-                    key={`dot-${index}`}
-                    cx={cx}
-                    cy={cy}
-                    r={5}
-                    fill={color}
-                    stroke="var(--background)"
-                    strokeWidth={2}
-                  />
-                );
-              }}
-              activeDot={{ r: 6, stroke: "var(--background)", strokeWidth: 2 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-        <div className="mt-2 flex flex-wrap items-center gap-4 text-[10px] text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full" style={{ background: "var(--destructive)" }} />
-            Caixa negativo
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full" style={{ background: "var(--warning)" }} />
-            Abaixo do mínimo
-          </span>
-        </div>
-      </div>
       )}
     </div>
   );

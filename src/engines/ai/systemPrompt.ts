@@ -128,7 +128,14 @@ export function buildContextHeader(ctx: RuntimeContext = {}): string {
 // "chat" é o padrão (sem bloco extra). Outros modos anexam um bloco
 // específico ao system prompt que muda postura/formato de resposta.
 // =====================================================================
-export type AIMode = "chat" | "cfo" | "controller" | "auditor" | "board" | "tributarista" | "contador";
+export type AIMode =
+  | "chat"
+  | "cfo"
+  | "controller"
+  | "auditor"
+  | "board"
+  | "tributarista"
+  | "contador";
 
 export const AI_MODE_LABELS: Record<AIMode, string> = {
   chat: "Chat",
@@ -149,7 +156,6 @@ export const AI_MODE_DESCRIPTIONS: Record<AIMode, string> = {
   tributarista: "Especialista em regime tributário, CBS/IBS e Reforma (LC 214/2025).",
   contador: "Rotinas contábeis: folha, rescisão, férias, pró-labore, encargos.",
 };
-
 
 const MODE_AUDITOR_BLOCK = `MODO AUDITOR: produza um RELATÓRIO ESTRUTURADO para apresentação ao cliente.
 
@@ -238,7 +244,6 @@ const MODE_BLOCKS: Record<AIMode, string> = {
   tributarista: MODE_TRIBUTARISTA_BLOCK,
   contador: MODE_CONTADOR_BLOCK,
 };
-
 
 /**
  * Versão "em partes" do system prompt — separa o conteúdo ESTÁVEL

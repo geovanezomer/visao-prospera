@@ -73,8 +73,7 @@ export const AI_MOVE_CATALOG: AiMove[] = [
   {
     id: "reduzir_pmr",
     label: "Reduzir PMR (prazo de recebimento)",
-    description:
-      "Reduz prazo de recebimento em N dias. Acelera entrada de caixa (NCG menor).",
+    description: "Reduz prazo de recebimento em N dias. Acelera entrada de caixa (NCG menor).",
     unit: "dias",
     range: [5, 45],
     toParams: (m) => ({ pmrDeltaDays: -Math.abs(m) }),

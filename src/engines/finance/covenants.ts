@@ -179,11 +179,11 @@ export function analyzeCovenants(
 
 /** Formata como markdown para a IA citar números. */
 export function covenantsToMarkdown(r: CovenantsResult): string {
-  const icon = (s: CovenantStatus) =>
-    s === "GREEN" ? "🟢" : s === "YELLOW" ? "🟡" : "🔴";
+  const icon = (s: CovenantStatus) => (s === "GREEN" ? "🟢" : s === "YELLOW" ? "🟡" : "🔴");
   const fmtVal = (m: string, v: number | null) => {
     if (v == null) return "N/A";
-    if (m.includes("DSCR") || m.includes("/EBITDA") || m.includes("D/PL")) return `${v.toFixed(2)}x`;
+    if (m.includes("DSCR") || m.includes("/EBITDA") || m.includes("D/PL"))
+      return `${v.toFixed(2)}x`;
     if (m.includes("Liq")) return v.toFixed(2);
     return v.toFixed(2);
   };

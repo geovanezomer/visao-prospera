@@ -17,8 +17,7 @@ import { resolveEffectiveRegime } from "../regime";
 import { deriveAbertura } from "../aberturaDerivada";
 import { createState, m12 } from "./helpers";
 
-const sumArr = (a: number[] | undefined) =>
-  (a ?? []).reduce((x, y) => x + (y || 0), 0);
+const sumArr = (a: number[] | undefined) => (a ?? []).reduce((x, y) => x + (y || 0), 0);
 
 function conservationCheck(state = createState()) {
   const regime = resolveEffectiveRegime(state);
@@ -31,9 +30,7 @@ function conservationCheck(state = createState()) {
   });
   const esperado = Math.max(
     0,
-    abertura.impostosPagar.value +
-      sumArr(dre.impostosTotal) -
-      sumArr(cf.pagamentosImpostos),
+    abertura.impostosPagar.value + sumArr(dre.impostosTotal) - sumArr(cf.pagamentosImpostos),
   );
   return { res, esperado, cf, dre };
 }
@@ -70,20 +67,13 @@ describe("balancoFechamento — impostosPagar (conservação de massa)", () => {
     const rSplit = conservationCheck(stateSplit);
     const rNoSplit = conservationCheck(stateNoSplit);
     // Cada um respeita sua própria conservação.
-    expect(rSplit.res.balanco.passivoCirculante!.impostosPagar).toBeCloseTo(
-      rSplit.esperado,
-      0,
-    );
-    expect(rNoSplit.res.balanco.passivoCirculante!.impostosPagar).toBeCloseTo(
-      rNoSplit.esperado,
-      0,
-    );
+    expect(rSplit.res.balanco.passivoCirculante!.impostosPagar).toBeCloseTo(rSplit.esperado, 0);
+    expect(rNoSplit.res.balanco.passivoCirculante!.impostosPagar).toBeCloseTo(rNoSplit.esperado, 0);
     // Split ativo faz CBS/IBS liquidarem no mesmo mês (lag 0), então o
     // passivo tributário de fechamento é MENOR do que sem Split (lag 30).
     expect(rSplit.res.balanco.passivoCirculante!.impostosPagar!).toBeLessThan(
       rNoSplit.res.balanco.passivoCirculante!.impostosPagar!,
     );
-
   });
 
   it("Passivo nunca é negativo (guard)", () => {
@@ -119,5 +109,4 @@ describe("balancoFechamento — impostosPagar (conservação de massa)", () => {
       expect(delta).toBeLessThanOrEqual(tol);
     }
   });
-
 });

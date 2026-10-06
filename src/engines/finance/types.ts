@@ -50,7 +50,6 @@ export const TAB_KEYS: readonly TabKey[] = [
   "valuation",
 ] as const;
 
-
 export type BusinessType = "servicos" | "comercio" | "industria";
 export type TaxRegime = "simples" | "presumido" | "real";
 export type SimplesAnexo = "I" | "II" | "III" | "IV" | "V";
@@ -208,7 +207,6 @@ export interface MutuoSocio {
 // DebtContract com `tipoCredor="socio"` na aba Capital. Não há tipo separado
 // para evitar duplicidade contábil (DRE/DFC/BP).
 
-
 export interface CapitalStructure {
   proprio: number; // % capital próprio (E) — referência editável quando PL não preenchido
   ke: number;
@@ -329,7 +327,6 @@ export interface BalancoAbertura {
   /** Lucros/prejuízos acumulados na abertura — PLUG do histórico. */
   lucrosAcumulados?: number;
 }
-
 
 /** Rubricas detalhadas do Balanço Patrimonial (modelo brasileiro CPC). */
 export interface BalancoDetalhado {
@@ -695,7 +692,6 @@ export interface AppState {
   /** Respostas qualitativas do módulo de Análise Estratégica (opcional). */
   strategic?: StrategicAnswers;
 
-
   /** Sócios retirantes — Pró-labore × Distribuição de Lucros. Sincronizado
    *  bidirecionalmente com linhas system em `costs` via syncSociosToCosts. */
   socios?: SocioRetirada[];
@@ -707,7 +703,6 @@ export interface AppState {
   // [SSOT] Mútuos PF→PJ (sócio→empresa) foram consolidados em
   // `capital.debtContracts` (tipoCredor="socio"). Removido campo dedicado
   // para eliminar duplicidade contábil.
-
 
   /** Distribuição de lucros REALIZADA (12 meses). Diferente da "Previsão"
    *  (capacidade teórica calculada a partir do lucro), esta é a decisão dos

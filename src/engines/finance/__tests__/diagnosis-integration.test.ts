@@ -29,11 +29,7 @@ function lowMargin(overrides: Partial<AppState> = {}): AppState {
 }
 
 /** Formato canônico do `benchmark` em cards prescritivos. */
-function expectedBenchmarkString(
-  label: string,
-  p25: number,
-  p50: number,
-): string {
+function expectedBenchmarkString(label: string, p25: number, p50: number): string {
   return `${label}: P25 ${p25.toFixed(1)}% · mediana ${p50.toFixed(1)}%`;
 }
 
@@ -80,8 +76,9 @@ describe("DiagnosisTab (integração) — benchmarks dos cards refletem resolveB
   );
 
   it("alterar ramoAtuacao recalcula o texto do card sem reusar valores antigos", () => {
-    const ids = ["serv-ti-saas", "serv-consultoria", "serv-saude"]
-      .filter((id) => SECTORS.some((s) => s.id === id));
+    const ids = ["serv-ti-saas", "serv-consultoria", "serv-saude"].filter((id) =>
+      SECTORS.some((s) => s.id === id),
+    );
     const benchmarks = ids.map((id) => {
       const s = lowMargin({ ramoAtuacao: id } as Partial<AppState>);
       const card = buildPrescriptiveCards(s).find((c) => c.id === "margem_bruta");

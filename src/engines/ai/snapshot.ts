@@ -99,7 +99,10 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
 
   const effectiveRegime =
     model?.regime ?? tryRun(() => resolveEffectiveRegime(state), state.tax.regime);
-  const dre = model?.dre ?? tryRun<BuiltDRE | null>(() => buildDRE(state, effectiveRegime), null)?.dre ?? null;
+  const dre =
+    model?.dre ??
+    tryRun<BuiltDRE | null>(() => buildDRE(state, effectiveRegime), null)?.dre ??
+    null;
   const ind =
     model?.ind ?? (dre ? tryRun<Ind | null>(() => calcIndicators(state, dre), null) : null);
   const cf = model?.cf ?? tryRun<CF | null>(() => buildCashFlow(state), null);
@@ -294,7 +297,10 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
       ),
     );
     // Kanitz — Termômetro de Insolvência
-    const kanitz = tryRun(() => calcKanitz(state, ind), null as null | ReturnType<typeof calcKanitz>);
+    const kanitz = tryRun(
+      () => calcKanitz(state, ind),
+      null as null | ReturnType<typeof calcKanitz>,
+    );
     if (kanitz && !kanitz.baseInsuficiente) {
       indLines.push(
         `\n**Kanitz (Termômetro de Insolvência):** FI = ${fmtNum(safe(kanitz.fi), 2)} → **${kanitz.label}**`,
@@ -821,7 +827,20 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
       });
       dividasLines.push(
         table(
-          ["Credor", "Tipo", "Descrição", "Saldo", "Taxa", "Sistema", "Freq. Amort.", "Prazo", "CP/LP", "Garantia", "Covenants", "Obs."],
+          [
+            "Credor",
+            "Tipo",
+            "Descrição",
+            "Saldo",
+            "Taxa",
+            "Sistema",
+            "Freq. Amort.",
+            "Prazo",
+            "CP/LP",
+            "Garantia",
+            "Covenants",
+            "Obs.",
+          ],
           rows,
         ),
       );
@@ -839,7 +858,6 @@ export function buildSections(state: AppState, simulatedState?: AppState): Snaps
       );
     }
   }
-
 
   // ----- Regime Tributário (config) -----
   const regLines: string[] = [`## Regime Tributário (config)`];

@@ -12,10 +12,16 @@ export type NotifyPayload = {
   dedupKey?: string;
 };
 
-export async function notifyAdmin(payload: NotifyPayload): Promise<{ sent: boolean; reason?: string }> {
+export async function notifyAdmin(
+  payload: NotifyPayload,
+): Promise<{ sent: boolean; reason?: string }> {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: cfg } = await supabaseAdmin.from("notification_settings").select("*").eq("id", 1).maybeSingle();
+    const { data: cfg } = await supabaseAdmin
+      .from("notification_settings")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
     if (!cfg) return { sent: false, reason: "no-config" };
     const events = (cfg.events as Record<string, boolean>) ?? {};
     if (events[payload.event] === false) return { sent: false, reason: "event-disabled" };
@@ -48,7 +54,11 @@ export async function notifyAdmin(payload: NotifyPayload): Promise<{ sent: boole
     }
 
     if (cfg.email_to) {
-      const { data: emailCfg } = await supabaseAdmin.from("email_settings").select("*").limit(1).maybeSingle();
+      const { data: emailCfg } = await supabaseAdmin
+        .from("email_settings")
+        .select("*")
+        .limit(1)
+        .maybeSingle();
       const apiKey = emailCfg?.resend_api_key || process.env.RESEND_API_KEY;
       const fromEmail = emailCfg?.from_email || process.env.FEEDBACK_FROM;
       const fromName = emailCfg?.from_name || "Finnance Admin";

@@ -317,11 +317,19 @@ export function findSector(query: string): SectorBenchmark | undefined {
 export function resolveBenchmark(state: {
   businessType?: BusinessType;
   ramoAtuacao?: string;
-  benchmarkCustom?: Partial<Record<
-    "margemBruta" | "margemEbitda" | "margemLiquida" | "giroAtivo" |
-    "endividamento" | "pmr" | "pmp" | "evEbitda",
-    number
-  >>;
+  benchmarkCustom?: Partial<
+    Record<
+      | "margemBruta"
+      | "margemEbitda"
+      | "margemLiquida"
+      | "giroAtivo"
+      | "endividamento"
+      | "pmr"
+      | "pmp"
+      | "evEbitda",
+      number
+    >
+  >;
 }): SectorBenchmark | undefined {
   // Base: setor escolhido ou primeiro do businessType.
   const base: SectorBenchmark | undefined =

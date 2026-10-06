@@ -12,7 +12,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
-
 const SegmentSchema = z.object({
   plan: z.enum(["all", "free", "starter", "pro", "lifetime"]).optional(),
   status: z.enum(["all", "active", "trialing", "past_due", "canceled", "none"]).optional(),
@@ -25,9 +24,7 @@ export type BroadcastSegment = z.infer<typeof SegmentSchema>;
 // ----------------------------------------------------------------------------
 export const previewBroadcastAudience = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: { segment: BroadcastSegment }) =>
-    z.object({ segment: SegmentSchema }).parse(d),
-  )
+  .validator((d: { segment: BroadcastSegment }) => z.object({ segment: SegmentSchema }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { recipients } = await resolveAudience(data.segment);
@@ -56,7 +53,11 @@ export const sendBroadcast = createServerFn({ method: "POST" })
     if (recipients.length === 0) throw new Error("Nenhum destinatário encontrado para o segmento.");
     if (recipients.length > 2000) throw new Error("Limite de 2000 destinatários por broadcast.");
 
-    const { data: cfg } = await supabaseAdmin.from("email_settings").select("*").limit(1).maybeSingle();
+    const { data: cfg } = await supabaseAdmin
+      .from("email_settings")
+      .select("*")
+      .limit(1)
+      .maybeSingle();
     const apiKey = cfg?.resend_api_key || process.env.RESEND_API_KEY;
     const fromEmail = cfg?.from_email || process.env.FEEDBACK_FROM;
     const fromName = cfg?.from_name || "Finnance";
@@ -127,7 +128,9 @@ export const listBroadcasts = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("broadcasts")
-      .select("id, subject, status, total_recipients, sent_count, failed_count, created_at, sent_at, segment")
+      .select(
+        "id, subject, status, total_recipients, sent_count, failed_count, created_at, sent_at, segment",
+      )
       .order("created_at", { ascending: false })
       .limit(50);
     if (error) throw new Error(error.message);
@@ -137,7 +140,9 @@ export const listBroadcasts = createServerFn({ method: "POST" })
 // ----------------------------------------------------------------------------
 // Helper interno — resolve audiência conforme segmento.
 // ----------------------------------------------------------------------------
-async function resolveAudience(seg: BroadcastSegment): Promise<{ recipients: { id: string; email: string }[] }> {
+async function resolveAudience(
+  seg: BroadcastSegment,
+): Promise<{ recipients: { id: string; email: string }[] }> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // Lista de e-mails específicos: override total.
   if (seg.emails && seg.emails.length > 0) {

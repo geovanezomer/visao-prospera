@@ -28,11 +28,9 @@ export const Route = createFileRoute("/api/public/payments/intent-status")({
         const rl = await rlConsume(`intent-status:${ip}:${intentKey}`, 60, 60);
         if (!rl.allowed) return tooManyRequests(rl.retryAfter);
 
-        const sb = createClient(
-          process.env.SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-          { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-        );
+        const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+          auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+        });
 
         const { data, error } = await sb
           .from("checkout_intents")

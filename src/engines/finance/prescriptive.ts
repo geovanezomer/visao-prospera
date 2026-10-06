@@ -64,7 +64,6 @@ export interface PrescriptiveAction {
   asSimulatorParams?: Partial<SimulatorParams>;
 }
 
-
 export interface PrescriptiveCard {
   id: string;
   severity: "danger" | "warn" | "info" | "ok";
@@ -109,10 +108,12 @@ export function snapshot(state: AppState, pre?: PrescriptivePrecomputed): Metric
   // Perf: quando o chamador não passa `pre`, usa modelo memoizado — evita
   // recomputação em cascata de buildDRE + buildCashFlow + calcIndicators
   // (que por sua vez chamaria buildCashFlow + deriveBalancoFechamento).
-  const built: PrescriptivePrecomputed = pre ?? (() => {
-    const m = getFinancialModelCached(state);
-    return { dre: m.dre, tax: m.tax, ind: m.ind, cf: m.cf };
-  })();
+  const built: PrescriptivePrecomputed =
+    pre ??
+    (() => {
+      const m = getFinancialModelCached(state);
+      return { dre: m.dre, tax: m.tax, ind: m.ind, cf: m.cf };
+    })();
   const { dre, tax, ind, cf } = built;
   return {
     receitaBruta: sum(dre.receitaBruta),
@@ -159,10 +160,12 @@ export function buildPrescriptiveCards(
   // Regime efetivo (verdade absoluta — alinhado com IndicatorsTab/CashflowTab).
   // Otimização: reusa o modelo já computado (DiagnosisTab/PDF) — evita 3
   // passagens completas pela engine por render.
-  const built = pre ?? (() => {
-    const m = getFinancialModelCached(state);
-    return { dre: m.dre, tax: null as never, ind: m.ind, cf: m.cf };
-  })();
+  const built =
+    pre ??
+    (() => {
+      const m = getFinancialModelCached(state);
+      return { dre: m.dre, tax: null as never, ind: m.ind, cf: m.cf };
+    })();
   const { dre, ind, cf } = built;
   const receitaLiqAnual = sum(dre.receitaLiquida);
   const { totalMensal: folhaMensal } = laborCltLinesTotal(state);
@@ -189,13 +192,13 @@ export function buildPrescriptiveCards(
         {
           id: "dismiss_2_severance",
           title: "Demitir 2 posições (com custo rescisório real)",
-          detail: `Aviso + 13º + férias + 1/3 + multa FGTS 40% ≈ ${fmtBRL((severanceCostPerPosition(custoMedio / 1.7) * 2))} de saída de caixa one-shot (Mês 1), redução estrutural da folha a partir do mês 2.`,
+          detail: `Aviso + 13º + férias + 1/3 + multa FGTS 40% ≈ ${fmtBRL(severanceCostPerPosition(custoMedio / 1.7) * 2)} de saída de caixa one-shot (Mês 1), redução estrutural da folha a partir do mês 2.`,
           apply: (s) => dismissWithSeverance(s, 2, custoMedio / 1.7, 0),
         },
         {
           id: "reduce_clt_2",
           title: "Reduzir 2 posições CLT (sem rescisão — encerramento de contrato/aposentadoria)",
-          detail: `Corte equivalente a ~${fmtBRL((2 * custoMedio))}/mês incluindo encargos. Não impacta caixa one-shot.`,
+          detail: `Corte equivalente a ~${fmtBRL(2 * custoMedio)}/mês incluindo encargos. Não impacta caixa one-shot.`,
           apply: (s) => reduceLaborByPositions(s, 2, custoMedio),
         },
         {
@@ -215,7 +218,6 @@ export function buildPrescriptiveCards(
       ],
     });
   }
-
 
   // ===== 2. ROIC < WACC =====
   if (Number.isFinite(ind.roic) && ind.roic < ind.wacc) {
@@ -267,9 +269,7 @@ export function buildPrescriptiveCards(
       severity: cf.alertas.some((a) => a.tipo === "negativo") ? "danger" : "warn",
       problem: "Caixa projetado fura o mínimo de segurança",
       metricLabel: "Pior mês de caixa",
-      metricValue: pior
-        ? `${pior.mes}: ${fmtBRL(pior.saldo)}`
-        : "—",
+      metricValue: pior ? `${pior.mes}: ${fmtBRL(pior.saldo)}` : "—",
       cause:
         "Mesmo lucrando, a empresa pode ficar sem dinheiro em caixa em determinado mês por descasamento entre recebimentos (PMR) e pagamentos (PMP) e/ou sazonalidade.",
       actions: [
@@ -296,7 +296,6 @@ export function buildPrescriptiveCards(
         },
       ],
     });
-
   }
 
   // ===== 4. Cobertura de juros baixa =====
@@ -325,7 +324,6 @@ export function buildPrescriptiveCards(
           apply: (s) => payDownDebt(s, 0.3),
           asSimulatorParams: { debtPaydownPct: 30 },
         },
-
       ],
     });
   }
@@ -354,7 +352,6 @@ export function buildPrescriptiveCards(
           apply: (s) => setPmp(s, s.revenue.pmp + 15),
           asSimulatorParams: { pmpDeltaDays: 15 },
         },
-
       ],
     });
   }
@@ -388,7 +385,6 @@ export function buildPrescriptiveCards(
           apply: (s) => scaleCategory(s, "custo_vendas", 0.9),
           asSimulatorParams: { cpvDeltaPct: -10 },
         },
-
       ],
     });
   }
@@ -408,10 +404,7 @@ export function buildPrescriptiveCards(
     const economiaPct = atual.annual > 0 ? (economia / atual.annual) * 100 : 0;
 
     const comparativo = ranked
-      .map(
-        ([k, v]) =>
-          `${labelRegime(k)}: ${fmtBRL(v.annual)}/ano (${v.effective.toFixed(1)}%)`,
-      )
+      .map(([k, v]) => `${labelRegime(k)}: ${fmtBRL(v.annual)}/ano (${v.effective.toFixed(1)}%)`)
       .join(" · ");
 
     if (isAtualMelhor) {
@@ -443,7 +436,6 @@ export function buildPrescriptiveCards(
             apply: (s) => switchRegime(s, melhor[0] as AppState["tax"]["regime"]),
             asSimulatorParams: { regimeOverride: melhor[0] as AppState["tax"]["regime"] },
           },
-
         ],
       });
     }
@@ -476,7 +468,6 @@ export function buildPrescriptiveCards(
           apply: (s) => scaleCostLines(s, new Set(top3.map((l) => l.id)), 0.8),
           asSimulatorParams: { fixedCutPct: 20, fixedCutTopN: 3 },
         },
-
       ],
     });
   }

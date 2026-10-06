@@ -3,7 +3,13 @@
 // piores gaps + diagnóstico comparativo com gap em pp e recomendação acionável.
 
 import type { AppState } from "@/engines/finance/types";
-import { findSector, listSectors, rank, resolveBenchmark, type SectorBenchmark } from "@/engines/benchmark/sectors";
+import {
+  findSector,
+  listSectors,
+  rank,
+  resolveBenchmark,
+  type SectorBenchmark,
+} from "@/engines/benchmark/sectors";
 import { calcIndicators } from "@/engines/finance";
 import { getFinancialModelCached } from "@/engines/finance/financialModel";
 import { type ToolArgs, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
@@ -44,9 +50,21 @@ function compareSectorMd(state: AppState, sector: SectorBenchmark): string {
   const items: CompareItem[] = [
     { label: "Margem Bruta", v: ind.margemBruta, b: sector.margemBruta, hi: true, unit: "pp" },
     { label: "Margem EBITDA", v: ind.margemEbitda, b: sector.margemEbitda, hi: true, unit: "pp" },
-    { label: "Margem Líquida", v: ind.margemLiquida, b: sector.margemLiquida, hi: true, unit: "pp" },
+    {
+      label: "Margem Líquida",
+      v: ind.margemLiquida,
+      b: sector.margemLiquida,
+      hi: true,
+      unit: "pp",
+    },
     { label: "Giro do Ativo", v: ind.giroAtivo, b: sector.giroAtivo, hi: true, unit: "x" },
-    { label: "Endividamento", v: ind.endividamentoGeral, b: sector.endividamento, hi: false, unit: "pp" },
+    {
+      label: "Endividamento",
+      v: ind.endividamentoGeral,
+      b: sector.endividamento,
+      hi: false,
+      unit: "pp",
+    },
     { label: "PMR (dias)", v: state.revenue.pmr, b: sector.pmr, hi: false, unit: "d" },
     { label: "PMP (dias)", v: state.revenue.pmp, b: sector.pmp, hi: false, unit: "d" },
   ];
@@ -146,35 +164,121 @@ const PME_BASELINES: Record<string, { p25: number; p50: number; p75: number }> =
 };
 
 const METRICS: MetricDef[] = [
-  { key: "ebitda_pct", label: "Margem EBITDA", unit: "pp", higherIsBetter: true,
-    band: (s) => s.margemEbitda, read: (i) => i.margemEbitda },
-  { key: "bruta_pct", label: "Margem Bruta", unit: "pp", higherIsBetter: true,
-    band: (s) => s.margemBruta, read: (i) => i.margemBruta },
-  { key: "liquida_pct", label: "Margem Líquida", unit: "pp", higherIsBetter: true,
-    band: (s) => s.margemLiquida, read: (i) => i.margemLiquida },
-  { key: "folha_pct", label: "Folha / Receita", unit: "pp", higherIsBetter: false,
-    band: () => PME_BASELINES.folha_pct, read: (i) => i.custoPessoalSobreReceita },
-  { key: "roe", label: "ROE", unit: "pp", higherIsBetter: true,
-    band: () => PME_BASELINES.roe, read: (i) => i.roe ?? 0 },
-  { key: "roic", label: "ROIC", unit: "pp", higherIsBetter: true,
-    band: () => PME_BASELINES.roic, read: (i) => i.roic },
-  { key: "dscr", label: "DSCR", unit: "x", higherIsBetter: true,
-    band: () => PME_BASELINES.dscr, read: (i) => i.dscr ?? 0 },
-  { key: "d_ebitda", label: "Dívida Líq. / EBITDA", unit: "x", higherIsBetter: false,
-    band: () => PME_BASELINES.d_ebitda, read: (i) => i.dividaLiqEbitda },
-  { key: "liq_corr", label: "Liquidez Corrente", unit: "x", higherIsBetter: true,
-    band: () => PME_BASELINES.liq_corr, read: (i) => i.liquidezCorrente },
-  { key: "endividamento", label: "Endividamento Geral", unit: "pp", higherIsBetter: false,
-    band: (s) => s.endividamento, read: (i) => i.endividamentoGeral },
-  { key: "giro_ativo", label: "Giro do Ativo", unit: "x", higherIsBetter: true,
-    band: (s) => s.giroAtivo, read: (i) => i.giroAtivo },
-  { key: "pmr", label: "PMR (dias)", unit: "d", higherIsBetter: false,
-    band: (s) => s.pmr, read: (_i, s) => s.revenue.pmr },
-  { key: "pmp", label: "PMP (dias)", unit: "d", higherIsBetter: false,
-    band: (s) => s.pmp, read: (_i, s) => s.revenue.pmp },
+  {
+    key: "ebitda_pct",
+    label: "Margem EBITDA",
+    unit: "pp",
+    higherIsBetter: true,
+    band: (s) => s.margemEbitda,
+    read: (i) => i.margemEbitda,
+  },
+  {
+    key: "bruta_pct",
+    label: "Margem Bruta",
+    unit: "pp",
+    higherIsBetter: true,
+    band: (s) => s.margemBruta,
+    read: (i) => i.margemBruta,
+  },
+  {
+    key: "liquida_pct",
+    label: "Margem Líquida",
+    unit: "pp",
+    higherIsBetter: true,
+    band: (s) => s.margemLiquida,
+    read: (i) => i.margemLiquida,
+  },
+  {
+    key: "folha_pct",
+    label: "Folha / Receita",
+    unit: "pp",
+    higherIsBetter: false,
+    band: () => PME_BASELINES.folha_pct,
+    read: (i) => i.custoPessoalSobreReceita,
+  },
+  {
+    key: "roe",
+    label: "ROE",
+    unit: "pp",
+    higherIsBetter: true,
+    band: () => PME_BASELINES.roe,
+    read: (i) => i.roe ?? 0,
+  },
+  {
+    key: "roic",
+    label: "ROIC",
+    unit: "pp",
+    higherIsBetter: true,
+    band: () => PME_BASELINES.roic,
+    read: (i) => i.roic,
+  },
+  {
+    key: "dscr",
+    label: "DSCR",
+    unit: "x",
+    higherIsBetter: true,
+    band: () => PME_BASELINES.dscr,
+    read: (i) => i.dscr ?? 0,
+  },
+  {
+    key: "d_ebitda",
+    label: "Dívida Líq. / EBITDA",
+    unit: "x",
+    higherIsBetter: false,
+    band: () => PME_BASELINES.d_ebitda,
+    read: (i) => i.dividaLiqEbitda,
+  },
+  {
+    key: "liq_corr",
+    label: "Liquidez Corrente",
+    unit: "x",
+    higherIsBetter: true,
+    band: () => PME_BASELINES.liq_corr,
+    read: (i) => i.liquidezCorrente,
+  },
+  {
+    key: "endividamento",
+    label: "Endividamento Geral",
+    unit: "pp",
+    higherIsBetter: false,
+    band: (s) => s.endividamento,
+    read: (i) => i.endividamentoGeral,
+  },
+  {
+    key: "giro_ativo",
+    label: "Giro do Ativo",
+    unit: "x",
+    higherIsBetter: true,
+    band: (s) => s.giroAtivo,
+    read: (i) => i.giroAtivo,
+  },
+  {
+    key: "pmr",
+    label: "PMR (dias)",
+    unit: "d",
+    higherIsBetter: false,
+    band: (s) => s.pmr,
+    read: (_i, s) => s.revenue.pmr,
+  },
+  {
+    key: "pmp",
+    label: "PMP (dias)",
+    unit: "d",
+    higherIsBetter: false,
+    band: (s) => s.pmp,
+    read: (_i, s) => s.revenue.pmp,
+  },
 ];
 
-const DEFAULT_METRIC_KEYS = ["ebitda_pct", "folha_pct", "roe", "roic", "dscr", "d_ebitda", "liq_corr"];
+const DEFAULT_METRIC_KEYS = [
+  "ebitda_pct",
+  "folha_pct",
+  "roe",
+  "roic",
+  "dscr",
+  "d_ebitda",
+  "liq_corr",
+];
 
 /** Estima percentil via interpolação linear sobre P25/P50/P75 (extrapola P0/P100). */
 function estimatePercentile(
@@ -242,7 +346,13 @@ function detailedBenchmarkMd(state: AppState, sector: SectorBenchmark, keys: str
   rows.push("| Métrica | Empresa | P25 | P50 | P75 | Percentil | Status |");
   rows.push("| --- | --- | --- | --- | --- | --- | --- |");
 
-  const decomp: { m: MetricDef; v: number; b: { p25: number; p50: number; p75: number }; pct: number; delta: number }[] = [];
+  const decomp: {
+    m: MetricDef;
+    v: number;
+    b: { p25: number; p50: number; p75: number };
+    pct: number;
+    delta: number;
+  }[] = [];
 
   for (const m of selected) {
     const v = m.read(ind, state);
@@ -255,14 +365,21 @@ function detailedBenchmarkMd(state: AppState, sector: SectorBenchmark, keys: str
     );
   }
 
-  const fora = decomp.filter((d) => d.pct < 25).sort((a, b) => a.pct - b.pct).slice(0, 3);
+  const fora = decomp
+    .filter((d) => d.pct < 25)
+    .sort((a, b) => a.pct - b.pct)
+    .slice(0, 3);
   if (fora.length > 0) {
     rows.push("");
     rows.push("### Decomposição (onde está fora do padrão)");
     for (const d of fora) {
       const direction = d.m.higherIsBetter
-        ? (d.delta < 0 ? "abaixo" : "acima")
-        : (d.delta > 0 ? "acima" : "abaixo");
+        ? d.delta < 0
+          ? "abaixo"
+          : "acima"
+        : d.delta > 0
+          ? "acima"
+          : "abaixo";
       rows.push(
         `- **${d.m.label}**: ${fmtVal(d.v, d.m.unit)} vs. P50 ${fmtVal(d.b.p50, d.m.unit)} = **${fmtDelta(d.delta, d.m.unit)} ${direction}** (≈${bucketPercentile(d.pct)} do setor).`,
       );
@@ -305,7 +422,7 @@ const defs: ToolDef[] = [
   {
     name: "benchmarking_detalhado",
     description:
-      "Benchmarking detalhado por métrica: tabela P25/P50/P75 + percentil aproximado (P1/P10/P25/P50/P75/P90/P99) com semáforo 🔴🟡🟢 e decomposição dos maiores desvios em pp/x. Métricas: ebitda_pct, bruta_pct, liquida_pct, folha_pct, roe, roic, dscr, d_ebitda, liq_corr, endividamento, giro_ativo, pmr, pmp. Use quando o cliente pedir granularidade (\"onde estou fora do padrão?\").",
+      'Benchmarking detalhado por métrica: tabela P25/P50/P75 + percentil aproximado (P1/P10/P25/P50/P75/P90/P99) com semáforo 🔴🟡🟢 e decomposição dos maiores desvios em pp/x. Métricas: ebitda_pct, bruta_pct, liquida_pct, folha_pct, roe, roic, dscr, d_ebitda, liq_corr, endividamento, giro_ativo, pmr, pmp. Use quando o cliente pedir granularidade ("onde estou fora do padrão?").',
     parameters: {
       type: "object",
       properties: {
@@ -314,14 +431,20 @@ const defs: ToolDef[] = [
           items: { type: "string" },
           description: "Lista de métricas. Omita para usar o conjunto padrão.",
         },
-        setor: { type: "string", description: "Opcional. ID/nome do setor; default = setor da empresa." },
+        setor: {
+          type: "string",
+          description: "Opcional. ID/nome do setor; default = setor da empresa.",
+        },
       },
       required: [],
     },
   },
 ];
 
-function resolveSector(args: ToolArgs | undefined, state: AppState): { sector?: SectorBenchmark; auto: boolean } {
+function resolveSector(
+  args: ToolArgs | undefined,
+  state: AppState,
+): { sector?: SectorBenchmark; auto: boolean } {
   let sector: SectorBenchmark | undefined;
   let auto = false;
   if (args?.setor) sector = findSector(String(args.setor));
@@ -354,12 +477,11 @@ const handlers: Record<string, ToolHandler> = {
   benchmarking_detalhado: (args, { state }) => {
     const { sector, auto } = resolveSector(args, state);
     if (!sector) return "Nenhum setor disponível para comparação.";
-    const keys = Array.isArray(args?.metricas) && args.metricas.length > 0
-      ? (args.metricas as unknown[]).map((k) => String(k))
-      : DEFAULT_METRIC_KEYS;
-    const header = auto
-      ? `_(setor inferido automaticamente: **${sector.label}**.)_\n\n`
-      : "";
+    const keys =
+      Array.isArray(args?.metricas) && args.metricas.length > 0
+        ? (args.metricas as unknown[]).map((k) => String(k))
+        : DEFAULT_METRIC_KEYS;
+    const header = auto ? `_(setor inferido automaticamente: **${sector.label}**.)_\n\n` : "";
     return header + detailedBenchmarkMd(state, sector, keys);
   },
 };

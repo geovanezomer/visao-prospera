@@ -60,8 +60,18 @@ export function FeriasCltCalc() {
         { label: "Abono pecuniário", value: abono ? "Sim (1/3 vendido)" : "Não" },
       ],
       kpis: [
-        { label: "Líquido a receber", value: fmtBRL(r.liquido), sub: `${r.diasGozados} dias gozados`, tone: "ok" },
-        { label: "Bruto total", value: fmtBRL(r.brutoTotal), sub: "Férias + 1/3 + abono", tone: "neutral" },
+        {
+          label: "Líquido a receber",
+          value: fmtBRL(r.liquido),
+          sub: `${r.diasGozados} dias gozados`,
+          tone: "ok",
+        },
+        {
+          label: "Bruto total",
+          value: fmtBRL(r.brutoTotal),
+          sub: "Férias + 1/3 + abono",
+          tone: "neutral",
+        },
         { label: "Descontos", value: fmtBRL(r.inss + r.irrf), sub: "INSS + IRRF", tone: "warn" },
       ],
       sections: [
@@ -72,7 +82,12 @@ export function FeriasCltCalc() {
           body: [
             [`Férias (${r.diasGozados} dias)`, fmtBRL(r.feriasBase)],
             ["1/3 constitucional", fmtBRL(r.tercoFerias)],
-            ...(abono ? [[`Abono pecuniário (${r.diasAbono} dias)`, fmtBRL(r.abonoValor)], ["1/3 sobre abono", fmtBRL(r.tercoAbono)]] : []),
+            ...(abono
+              ? [
+                  [`Abono pecuniário (${r.diasAbono} dias)`, fmtBRL(r.abonoValor)],
+                  ["1/3 sobre abono", fmtBRL(r.tercoAbono)],
+                ]
+              : []),
             ["(−) INSS", fmtBRL(r.inss)],
             ["(−) IRRF", fmtBRL(r.irrf)],
             ["Líquido", fmtBRL(r.liquido)],
@@ -371,8 +386,9 @@ export function FeriasCltCalc() {
               </div>
 
               <p className="pt-2 text-xs">
-                Bases: CLT arts. 129–153; CF art. 7º, XVII; Lei 7.713/88; tabelas INSS/IRRF {ANO_VIGENTE}. IRRF conforme Lei nº 15.270/2025 (redutor até R$ 7.350).
-                Estimativa — valide com contador antes de uso oficial.
+                Bases: CLT arts. 129–153; CF art. 7º, XVII; Lei 7.713/88; tabelas INSS/IRRF{" "}
+                {ANO_VIGENTE}. IRRF conforme Lei nº 15.270/2025 (redutor até R$ 7.350). Estimativa —
+                valide com contador antes de uso oficial.
               </p>
             </CardContent>
           </CollapsibleContent>

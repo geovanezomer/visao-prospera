@@ -136,7 +136,6 @@ export function SimulatorTab({
 
       {/* Grid 2 colunas — DRE ocupa 1/2 da largura da página */}
       <div className="grid gap-4 lg:grid-cols-2">
-
         {/* Sliders */}
         <div className="space-y-3">
           <Accordion
@@ -206,7 +205,6 @@ export function SimulatorTab({
                 }
               />
             </Group>
-
 
             <Group value="custos" title="Custos & Pessoal">
               <SliderRow
@@ -321,7 +319,6 @@ export function SimulatorTab({
                 suffix=" p.p."
                 signed
               />
-
             </Group>
 
             <Group value="divida" title="Dívida & Juros">
@@ -385,11 +382,6 @@ export function SimulatorTab({
           <KanitzCard state={simState} />
         </div>
       </div>
-
-
-
-
-
 
       {/* Projeções refletindo o cenário simulado */}
       <div className="space-y-4 border-t border-border/60 pt-6">
@@ -785,7 +777,6 @@ function DREPanel({
     },
   ];
 
-
   return (
     <div className="space-y-3 rounded-lg border border-border/60 bg-card/60 p-3 sm:p-4">
       <div className="flex items-center justify-between border-b border-border/40 pb-2">
@@ -968,7 +959,13 @@ function pctDelta(a: number, b: number): number {
 // + NCG e Gap de Capital de Giro (Indicadores). Reagem instantaneamente
 // às alavancas — mesma dinâmica dos KPIs comparativos já presentes no painel DRE.
 
-const KpiCardsRow = memo(function KpiCardsRow({ base, sim }: { base: SimDREView; sim: SimDREView }) {
+const KpiCardsRow = memo(function KpiCardsRow({
+  base,
+  sim,
+}: {
+  base: SimDREView;
+  sim: SimDREView;
+}) {
   const items: {
     label: string;
     baseV: number;
@@ -1020,7 +1017,6 @@ const KpiCardsRow = memo(function KpiCardsRow({ base, sim }: { base: SimDREView;
     },
   ];
 
-
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
       {items.map((it) => {
@@ -1046,7 +1042,9 @@ const KpiCardsRow = memo(function KpiCardsRow({ base, sim }: { base: SimDREView;
               <span className="mono text-[10px] text-muted-foreground line-through opacity-70">
                 {fmtBRLCompact(it.baseV)}
               </span>
-              <span className={cn("inline-flex items-center gap-0.5 text-[10px] font-semibold", tone)}>
+              <span
+                className={cn("inline-flex items-center gap-0.5 text-[10px] font-semibold", tone)}
+              >
                 <Icon className="h-3 w-3" />
                 {flat ? "—" : `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%`}
               </span>

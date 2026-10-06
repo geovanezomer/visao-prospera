@@ -126,4 +126,3 @@ describe("buildDRE — identidades estruturais (CPC/IFRS)", () => {
     }
   });
 });
-

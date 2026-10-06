@@ -47,8 +47,8 @@ export function KanitzCard({
 
   const pos = pctFromFi(k.fi);
   // Limites das faixas em % da escala (MIN..MAX).
-  const insolEnd = ((-3 - MIN) / RANGE) * 100;   // 0 → -3
-  const penumEnd = ((0 - MIN) / RANGE) * 100;    // -3 → 0
+  const insolEnd = ((-3 - MIN) / RANGE) * 100; // 0 → -3
+  const penumEnd = ((0 - MIN) / RANGE) * 100; // -3 → 0
 
   return (
     <div className="rounded-lg border border-primary/30 bg-card/60 p-5 shadow-sm">
@@ -70,7 +70,10 @@ export function KanitzCard({
           <div className="mono text-3xl font-bold" style={{ color: toneColor }}>
             {k.baseInsuficiente ? "—" : k.fi.toFixed(2)}
           </div>
-          <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: toneColor }}>
+          <div
+            className="text-[11px] font-semibold uppercase tracking-wider"
+            style={{ color: toneColor }}
+          >
             {k.label}
           </div>
         </div>
@@ -117,10 +120,15 @@ export function KanitzCard({
         </div>
       )}
 
-      <p className={cn("mt-3 text-[11px] leading-relaxed text-muted-foreground", compact && "hidden")}>
-        Modelo discriminante de Stephen Kanitz (FEA-USP, 1978), calibrado em
-        empresas brasileiras. Excelente alerta precoce de descontinuidade —
-        deve ser lido junto com DSCR, geração de caixa e covenants.
+      <p
+        className={cn(
+          "mt-3 text-[11px] leading-relaxed text-muted-foreground",
+          compact && "hidden",
+        )}
+      >
+        Modelo discriminante de Stephen Kanitz (FEA-USP, 1978), calibrado em empresas brasileiras.
+        Excelente alerta precoce de descontinuidade — deve ser lido junto com DSCR, geração de caixa
+        e covenants.
       </p>
 
       {/* ── Termômetro de Crise — estágio operacional + rota recomendada ── */}
@@ -151,7 +159,10 @@ function CrisisStagePanel({
         <div className="flex items-center gap-2">
           <Icon className="h-5 w-5" style={{ color: palette.fg }} aria-hidden />
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: palette.fg }}>
+            <div
+              className="text-[10px] font-bold uppercase tracking-wider"
+              style={{ color: palette.fg }}
+            >
               Estágio {crisis.stage} de 4 · Termômetro de Crise
             </div>
             <div className="mt-0.5 text-sm font-semibold" style={{ color: palette.fg }}>
@@ -169,9 +180,7 @@ function CrisisStagePanel({
         />
       </div>
 
-      <p className="mt-2 text-[12px] leading-relaxed text-foreground/90">
-        {crisis.description}
-      </p>
+      <p className="mt-2 text-[12px] leading-relaxed text-foreground/90">{crisis.description}</p>
 
       {/* Régua dos 4 estágios */}
       <div className="mt-3 grid grid-cols-5 gap-1">
@@ -234,13 +243,29 @@ function CrisisStagePanel({
 function toneToPalette(tone: CrisisTone) {
   switch (tone) {
     case "pos":
-      return { fg: "var(--success)", border: "color-mix(in srgb, var(--success) 35%, transparent)", bg: "color-mix(in srgb, var(--success) 8%, transparent)" };
+      return {
+        fg: "var(--success)",
+        border: "color-mix(in srgb, var(--success) 35%, transparent)",
+        bg: "color-mix(in srgb, var(--success) 8%, transparent)",
+      };
     case "warn":
-      return { fg: "#F5B85B", border: "color-mix(in srgb, #F5B85B 40%, transparent)", bg: "color-mix(in srgb, #F5B85B 10%, transparent)" };
+      return {
+        fg: "#F5B85B",
+        border: "color-mix(in srgb, #F5B85B 40%, transparent)",
+        bg: "color-mix(in srgb, #F5B85B 10%, transparent)",
+      };
     case "neg":
-      return { fg: "var(--destructive)", border: "color-mix(in srgb, var(--destructive) 40%, transparent)", bg: "color-mix(in srgb, var(--destructive) 8%, transparent)" };
+      return {
+        fg: "var(--destructive)",
+        border: "color-mix(in srgb, var(--destructive) 40%, transparent)",
+        bg: "color-mix(in srgb, var(--destructive) 8%, transparent)",
+      };
     case "crit":
-      return { fg: "var(--destructive)", border: "var(--destructive)", bg: "color-mix(in srgb, var(--destructive) 16%, transparent)" };
+      return {
+        fg: "var(--destructive)",
+        border: "var(--destructive)",
+        bg: "color-mix(in srgb, var(--destructive) 16%, transparent)",
+      };
     default:
       return { fg: "var(--muted-foreground)", border: "var(--border)", bg: "transparent" };
   }
@@ -259,18 +284,20 @@ function KanitzCell({
   v,
   c,
   fmt,
-}: { label: string; v: number; c: number; fmt: "frac" | "x" }) {
-  const f = (n: number) =>
-    n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+}: {
+  label: string;
+  v: number;
+  c: number;
+  fmt: "frac" | "x";
+}) {
+  const f = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
   return (
     <div className="flex flex-col">
       <span className="text-muted-foreground">{label}</span>
       <span className="mono font-semibold text-foreground">
         {fmt === "frac" ? `${(v * 100).toFixed(1)}%` : `${f(v)}×`}
       </span>
-      <span className="mono text-[10px] text-muted-foreground">
-        contrib.: {f(c)}
-      </span>
+      <span className="mono text-[10px] text-muted-foreground">contrib.: {f(c)}</span>
     </div>
   );
 }

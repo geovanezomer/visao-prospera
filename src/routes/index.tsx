@@ -41,8 +41,7 @@ export const Route = createFileRoute("/")({
       },
       {
         property: "og:title",
-        content:
-          "FinancePRO — O Raio-X financeiro que transforma consultor em CFO da PME",
+        content: "FinancePRO — O Raio-X financeiro que transforma consultor em CFO da PME",
       },
       {
         property: "og:description",
@@ -53,13 +52,11 @@ export const Route = createFileRoute("/")({
       { property: "og:url", content: CANONICAL },
       {
         name: "twitter:title",
-        content:
-          "FinancePRO — O Raio-X financeiro que transforma consultor em CFO da PME",
+        content: "FinancePRO — O Raio-X financeiro que transforma consultor em CFO da PME",
       },
       {
         name: "twitter:description",
-        content:
-          "+40 indicadores, módulo CBS/IBS e IA estratégica para PMEs brasileiras.",
+        content: "+40 indicadores, módulo CBS/IBS e IA estratégica para PMEs brasileiras.",
       },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],

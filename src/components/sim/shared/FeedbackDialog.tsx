@@ -73,8 +73,7 @@ export function FeedbackDialog() {
           subject: subject.trim(),
           message: message.trim(),
           appVersion: import.meta.env.VITE_APP_VERSION ?? undefined,
-          userAgent:
-            typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+          userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -95,7 +94,6 @@ export function FeedbackDialog() {
       setSending(false);
     }
   };
-
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

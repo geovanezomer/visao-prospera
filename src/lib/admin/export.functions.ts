@@ -6,7 +6,6 @@ import { assertAdmin } from "./assertAdmin";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
-
 function csvEscape(v: unknown): string {
   if (v === null || v === undefined) return "";
   const s = String(v).replace(/"/g, '""');
@@ -19,7 +18,9 @@ export const exportUsersCsv = createServerFn({ method: "POST" })
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    type AuthUser = Awaited<ReturnType<typeof supabaseAdmin.auth.admin.listUsers>>["data"]["users"][number] & {
+    type AuthUser = Awaited<
+      ReturnType<typeof supabaseAdmin.auth.admin.listUsers>
+    >["data"]["users"][number] & {
       banned_until?: string | null;
     };
     const all: AuthUser[] = [];

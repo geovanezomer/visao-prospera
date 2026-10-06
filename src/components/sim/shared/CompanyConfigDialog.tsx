@@ -69,11 +69,7 @@ const benchmarkCustomSchema = z
   .optional();
 
 const formSchema = z.object({
-  companyName: z
-    .string()
-    .trim()
-    .min(1, "Nome obrigatório")
-    .max(120, "Máximo 120 caracteres"),
+  companyName: z.string().trim().min(1, "Nome obrigatório").max(120, "Máximo 120 caracteres"),
   businessType: z.enum(["servicos", "comercio", "industria"]),
   ramoAtuacao: z.string().trim().max(60).optional().or(z.literal("")),
   benchmarkCustom: benchmarkCustomSchema,
@@ -84,18 +80,9 @@ const formSchema = z.object({
     .max(100000, "Valor irreal"),
   // numSocios removido: agora é derivado de state.socios.length na seção Sócios.
   regime: z.enum(["simples", "presumido", "real"]),
-  periodoAnaliseMeses: z.union([
-    z.literal(6),
-    z.literal(12),
-    z.literal(24),
-    z.literal(36),
-  ]),
+  periodoAnaliseMeses: z.union([z.literal(6), z.literal(12), z.literal(24), z.literal(36)]),
   fiscalYearStartMonth: z.number().int().min(1).max(12),
-  margemAlvoPct: z
-    .number()
-    .min(-100, "Margem inválida")
-    .max(100, "Margem inválida")
-    .optional(),
+  margemAlvoPct: z.number().min(-100, "Margem inválida").max(100, "Margem inválida").optional(),
   payoutPolicyPct: z.number().min(0).max(100),
   reservaMinimaMensal: z.number().min(0).max(1_000_000_000),
 });
@@ -127,8 +114,8 @@ export function CompanyConfigDialog({ open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>Configurar Empresa</DialogTitle>
           <DialogDescription>
-            Dados centralizados da empresa, regime tributário, sócios e período de análise.
-            Estas configurações afetam cálculos em todas as abas.
+            Dados centralizados da empresa, regime tributário, sócios e período de análise. Estas
+            configurações afetam cálculos em todas as abas.
           </DialogDescription>
         </DialogHeader>
         <CompanyConfigForm onCommitted={() => onOpenChange(false)} showArchiveSection />
@@ -179,10 +166,7 @@ export function CompanyConfigForm({
   ]);
 
   // Lista de setores (benchmarks) disponíveis para o businessType corrente.
-  const setoresDisponiveis = useMemo(
-    () => listSectors(form.businessType),
-    [form.businessType],
-  );
+  const setoresDisponiveis = useMemo(() => listSectors(form.businessType), [form.businessType]);
 
   // Setor selecionado (referência para defaults do benchmark personalizado).
   const setorSelecionado = useMemo(
@@ -207,7 +191,7 @@ export function CompanyConfigForm({
           ? d.benchmarkCustom
           : undefined,
       numColaboradores: d.numColaboradores,
-      
+
       headcountRange: rangeFromNumber(d.numColaboradores),
       periodoAnaliseMeses: d.periodoAnaliseMeses,
       fiscalYearStartMonth: d.fiscalYearStartMonth,
@@ -349,9 +333,9 @@ export function CompanyConfigForm({
             </div>
             <CollapsibleContent className="mt-2 space-y-2 rounded-md border border-border/40 p-3">
               <p className="text-[11px] text-muted-foreground">
-                Ajuste a mediana (P50) de cada indicador para refletir a realidade do seu
-                cliente. Os quartis P25/P75 são derivados automaticamente como ±20%. Campos em
-                branco usam o valor padrão do setor <strong>{setorSelecionado.label}</strong>.
+                Ajuste a mediana (P50) de cada indicador para refletir a realidade do seu cliente.
+                Os quartis P25/P75 são derivados automaticamente como ±20%. Campos em branco usam o
+                valor padrão do setor <strong>{setorSelecionado.label}</strong>.
               </p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {BENCHMARK_FIELDS.map((f) => {
@@ -362,7 +346,8 @@ export function CompanyConfigForm({
                   const effectiveP50 = isCustom ? current : defaultP50;
                   const p25 = +(effectiveP50 * 0.8).toFixed(2);
                   const p75 = +(effectiveP50 * 1.2).toFixed(2);
-                  const fmt = (n: number) => `${n}${f.unit === "%" ? "%" : f.unit === "x" ? "x" : " " + f.unit}`;
+                  const fmt = (n: number) =>
+                    `${n}${f.unit === "%" ? "%" : f.unit === "x" ? "x" : " " + f.unit}`;
                   return (
                     <div key={f.key} className="space-y-1">
                       <div className="flex items-center gap-1">
@@ -371,9 +356,7 @@ export function CompanyConfigForm({
                         </Label>
                         <HelpTip
                           text={`Origem: ${
-                            isCustom
-                              ? "valor personalizado"
-                              : `setor ${setorSelecionado.label}`
+                            isCustom ? "valor personalizado" : `setor ${setorSelecionado.label}`
                           }. Quartis efetivos: P25 ${fmt(p25)} · P50 ${fmt(effectiveP50)} · P75 ${fmt(p75)}.${
                             isCustom ? ` Padrão do setor: ${fmt(defaultP50)}.` : ""
                           }`}
@@ -389,10 +372,7 @@ export function CompanyConfigForm({
                         placeholder={String(defaultP50)}
                         onChange={(e) => {
                           const raw = e.target.value;
-                          updateBenchField(
-                            f.key,
-                            raw === "" ? undefined : Number(raw),
-                          );
+                          updateBenchField(f.key, raw === "" ? undefined : Number(raw));
                         }}
                         className="h-8"
                       />
@@ -404,7 +384,6 @@ export function CompanyConfigForm({
           </Collapsible>
         )}
       </section>
-
 
       {/* Porte */}
       <section className="space-y-3">
@@ -512,7 +491,8 @@ export function CompanyConfigForm({
               }
             />
             <p className="text-[10px] text-muted-foreground">
-              Valor absoluto retido antes do payout (capital de giro, reserva legal, reinvestimento).
+              Valor absoluto retido antes do payout (capital de giro, reserva legal,
+              reinvestimento).
             </p>
           </div>
         </div>
@@ -577,8 +557,8 @@ export function CompanyConfigForm({
             Fechamento de ano
           </h3>
           <p className="text-[11px] text-muted-foreground">
-            Arquiva o AppState atual como snapshot histórico. Após 2+ snapshots, o
-            cabeçalho das abas com histórico mostra pills para navegar e comparar períodos.
+            Arquiva o AppState atual como snapshot histórico. Após 2+ snapshots, o cabeçalho das
+            abas com histórico mostra pills para navegar e comparar períodos.
           </p>
           <ArchiveYearButton onClose={() => onCommitted?.()} />
         </section>
@@ -602,11 +582,15 @@ function buildFormFromState(state: AppState): FormData {
   const inferNum = (): number => {
     if (typeof state.numColaboradores === "number") return state.numColaboradores;
     switch (state.headcountRange) {
-      case "10-49": return 10;
-      case "50-99": return 50;
-      case "100+": return 100;
+      case "10-49":
+        return 10;
+      case "50-99":
+        return 50;
+      case "100+":
+        return 100;
       case "1-9":
-      default: return 1;
+      default:
+        return 1;
     }
   };
   // Se ramoAtuacao salvo não bate com SECTORS (legado do RAMOS_POR_SETOR), cai
@@ -619,7 +603,7 @@ function buildFormFromState(state: AppState): FormData {
     ramoAtuacao: ramoEfetivo,
     benchmarkCustom: state.benchmarkCustom,
     numColaboradores: inferNum(),
-    
+
     regime: state.tax.regime,
     periodoAnaliseMeses: state.periodoAnaliseMeses ?? 12,
     fiscalYearStartMonth: state.fiscalYearStartMonth ?? 1,
@@ -642,9 +626,7 @@ function ArchiveYearButton({ onClose }: { onClose: () => void }) {
   const handleArchive = () => {
     archiveYearAsHistorical(company, year, state);
     toast.success(
-      jaArquivado
-        ? `Snapshot ${year} atualizado`
-        : `Ano ${year} arquivado como snapshot histórico`,
+      jaArquivado ? `Snapshot ${year} atualizado` : `Ano ${year} arquivado como snapshot histórico`,
     );
     onClose();
   };
@@ -870,13 +852,13 @@ function SociosSection() {
 
       {!partOk && (
         <p className="text-[11px] text-[var(--warning)]">
-          ⚠️ A soma das participações precisa fechar <b>100%</b> para a distribuição de
-          lucros ser calculada corretamente.
+          ⚠️ A soma das participações precisa fechar <b>100%</b> para a distribuição de lucros ser
+          calculada corretamente.
         </p>
       )}
       <p className="text-[10px] text-muted-foreground">
-        Sócio operacional deve receber pró-labore ≥ salário mínimo (IN RFB 971/2009). No
-        Simples Nacional não há INSS patronal sobre pró-labore; em Presumido/Real aplica-se 20%.
+        Sócio operacional deve receber pró-labore ≥ salário mínimo (IN RFB 971/2009). No Simples
+        Nacional não há INSS patronal sobre pró-labore; em Presumido/Real aplica-se 20%.
       </p>
     </section>
   );

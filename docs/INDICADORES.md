@@ -23,6 +23,7 @@
 10. [Calculadoras Avulsas](#10-calculadoras-avulsas)
 11. [Forecast / Projeção](#11-forecast--projeção)
 12. [Biblioteca Externa Centralizada](#12-biblioteca-externa-centralizada)
+
 - [Anexo A — Mapa de Dependências](#anexo-a--mapa-de-dependências)
 - [Anexo B — Convenções](#anexo-b--convenções)
 
@@ -39,12 +40,12 @@
 
 #### Arquitetura interna (4 sub-funções privadas)
 
-| Passo | Sub-função | Responsabilidade |
-|-------|-----------|-----------------|
-| 1 | `computeImpostosVendas` | Calcula tributos sobre venda (PIS/COFINS/ISS/ICMS/DAS/CBS/IBS) — independem do LAIR |
-| 2 | `classifyCosts` | Distribui custos em CPV vs OpEx, Fixo vs Variável, aplica PDD líquida |
-| 3 | `computeDepreciacao` | Depreciação base + ativações de custos + CAPEX programado |
-| 4 | `computeImpostosLucro` | Segunda passagem — IRPJ/CSLL sobre LAIR apurado (somente Lucro Real) |
+| Passo | Sub-função              | Responsabilidade                                                                    |
+| ----- | ----------------------- | ----------------------------------------------------------------------------------- |
+| 1     | `computeImpostosVendas` | Calcula tributos sobre venda (PIS/COFINS/ISS/ICMS/DAS/CBS/IBS) — independem do LAIR |
+| 2     | `classifyCosts`         | Distribui custos em CPV vs OpEx, Fixo vs Variável, aplica PDD líquida               |
+| 3     | `computeDepreciacao`    | Depreciação base + ativações de custos + CAPEX programado                           |
+| 4     | `computeImpostosLucro`  | Segunda passagem — IRPJ/CSLL sobre LAIR apurado (somente Lucro Real)                |
 
 #### Linhas da DRE e fórmulas
 
@@ -69,25 +70,27 @@ Receita Bruta (receitaBruta)
 
 **Fórmulas-chave (dre.ts):**
 
-| Campo | Fórmula | Linha-ref |
-|-------|---------|-----------|
-| `receitaLiquida[i]` | `receitaBruta[i] − deducoesInadimplencia[i] − outrasDeducoes[i] − impostosVendas[i]` | `dre.ts:218-220` |
-| `lucroBruto[i]` | `receitaLiquida[i] − cpv[i]` | `dre.ts:226` |
-| `ebitda[i]` | `lucroBruto[i] − despesasOperacionais[i] + outrasReceitasOperacionais[i]` | `dre.ts:231` |
-| `ebit[i]` | `ebitda[i] − depreciacao[i]` | `dre.ts:235` |
-| `resultadoFinanceiro[i]` | `rendimentosFinanceiros[i] − custosFinanceirosTotal[i]` | `dre.ts:238-240` |
-| `lair[i]` | `ebit[i] + resultadoFinanceiro[i]` | `dre.ts:241` |
-| `lucroLiquido[i]` | `lair[i] − impostosLucro[i]` | `dre.ts:247` |
-| `impostosTotal[i]` | `impostosVendas[i] + impostosLucro[i]` | `dre.ts:246` |
-| `depreciacao[i]` | `depreciacaoMensalBase + Σ(ativacoes custo) + Σ(capexAtivacao)` — linear `valor/vidaUtilMeses` | `dre.ts:166-182` |
-| PDD bruta | `receitaBruta[i] × (inadimplencia[i] / 100)` | `dre.ts:210` |
-| PDD líquida | `max(0, pddBruta[i] − pddReversaoMensal[i])` | `dre.ts:139` |
+| Campo                    | Fórmula                                                                                        | Linha-ref        |
+| ------------------------ | ---------------------------------------------------------------------------------------------- | ---------------- |
+| `receitaLiquida[i]`      | `receitaBruta[i] − deducoesInadimplencia[i] − outrasDeducoes[i] − impostosVendas[i]`           | `dre.ts:218-220` |
+| `lucroBruto[i]`          | `receitaLiquida[i] − cpv[i]`                                                                   | `dre.ts:226`     |
+| `ebitda[i]`              | `lucroBruto[i] − despesasOperacionais[i] + outrasReceitasOperacionais[i]`                      | `dre.ts:231`     |
+| `ebit[i]`                | `ebitda[i] − depreciacao[i]`                                                                   | `dre.ts:235`     |
+| `resultadoFinanceiro[i]` | `rendimentosFinanceiros[i] − custosFinanceirosTotal[i]`                                        | `dre.ts:238-240` |
+| `lair[i]`                | `ebit[i] + resultadoFinanceiro[i]`                                                             | `dre.ts:241`     |
+| `lucroLiquido[i]`        | `lair[i] − impostosLucro[i]`                                                                   | `dre.ts:247`     |
+| `impostosTotal[i]`       | `impostosVendas[i] + impostosLucro[i]`                                                         | `dre.ts:246`     |
+| `depreciacao[i]`         | `depreciacaoMensalBase + Σ(ativacoes custo) + Σ(capexAtivacao)` — linear `valor/vidaUtilMeses` | `dre.ts:166-182` |
+| PDD bruta                | `receitaBruta[i] × (inadimplencia[i] / 100)`                                                   | `dre.ts:210`     |
+| PDD líquida              | `max(0, pddBruta[i] − pddReversaoMensal[i])`                                                   | `dre.ts:139`     |
 
 **Lógica inadimplência:**
+
 - `inadimplenciaComoPDD = false`: deduzida na linha "Deduções por Inadimplência" (antes da Receita Líquida).
 - `inadimplenciaComoPDD = true`: contabilizada como PDD em despesas operacionais (CPC 47/IFRS 9); classificada como custo **variável**.
 
 **Campo `impostosLucroBase`:**
+
 - `"lair"` → Lucro Real (IRPJ/CSLL sobre LAIR)
 - `"receita_presumida"` → Lucro Presumido (base = receita × % de presunção)
 - `"nao_aplica"` → Simples Nacional (IRPJ/CSLL embutidos no DAS)
@@ -130,19 +133,20 @@ Saldo Final[i] = Saldo Final[i-1] + Variação[i]
 
 #### Funções auxiliares puras (cashflow.ts)
 
-| Função | Fórmula | Linha-ref |
-|--------|---------|-----------|
-| `shiftByDaysSplit(values, lagDays)` | Desloca array por `round(lagDays/30)` posições; transbordo acumula em `contasReceberAnoSeguinte` | `cashflow.ts:57-71` |
-| `shiftByDaysSplitMonthly(values, lagDaysByMonth)` | Variante com lag diferente por mês (sazonalidade de PMR/PMP) | `cashflow.ts:77-90` |
-| `computeRecebimentos(state, dre)` | `receitaBruta[i] − deducoesInadimplencia[i]`, deslocado por PMR (ou `pmrMensal` se houver variação) | `cashflow.ts:107-116` |
-| `computeFornecedores(state, dre)` | `dre.cpv`, deslocado por PMP | `cashflow.ts:121-129` |
-| `computeImpostos(tax)` | `tax.monthly`, deslocado 30 dias (apuração + DARF) | `cashflow.ts:134-136` |
-| `computePagamentosOperacionais(dre)` | fixos=`dre.custosFixos`; variáveis=`dre.custosVariaveis − cpv − pdd` (PDD é não-caixa, CPC 47/IFRS 9); financeiros=`dre.custosFinanceirosTotal` | `cashflow.ts:142-154` |
-| `computeFluxos(...)` | Compõe os 3 fluxos e variação de caixa | `cashflow.ts:159-197` |
-| `computeSaldos(saldo0, variacao)` | `saldoFinal[i] = saldoFinal[i-1] + variacaoCaixa[i]` | `cashflow.ts:202-218` |
-| `computeBurnRunway(...)` | `burnMedio3 = média(-fluxoOp[-3:])`, `runway = (caixa + recebiveis) / burnMedio3` | `cashflow.ts:250-262` |
+| Função                                            | Fórmula                                                                                                                                         | Linha-ref             |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| `shiftByDaysSplit(values, lagDays)`               | Desloca array por `round(lagDays/30)` posições; transbordo acumula em `contasReceberAnoSeguinte`                                                | `cashflow.ts:57-71`   |
+| `shiftByDaysSplitMonthly(values, lagDaysByMonth)` | Variante com lag diferente por mês (sazonalidade de PMR/PMP)                                                                                    | `cashflow.ts:77-90`   |
+| `computeRecebimentos(state, dre)`                 | `receitaBruta[i] − deducoesInadimplencia[i]`, deslocado por PMR (ou `pmrMensal` se houver variação)                                             | `cashflow.ts:107-116` |
+| `computeFornecedores(state, dre)`                 | `dre.cpv`, deslocado por PMP                                                                                                                    | `cashflow.ts:121-129` |
+| `computeImpostos(tax)`                            | `tax.monthly`, deslocado 30 dias (apuração + DARF)                                                                                              | `cashflow.ts:134-136` |
+| `computePagamentosOperacionais(dre)`              | fixos=`dre.custosFixos`; variáveis=`dre.custosVariaveis − cpv − pdd` (PDD é não-caixa, CPC 47/IFRS 9); financeiros=`dre.custosFinanceirosTotal` | `cashflow.ts:142-154` |
+| `computeFluxos(...)`                              | Compõe os 3 fluxos e variação de caixa                                                                                                          | `cashflow.ts:159-197` |
+| `computeSaldos(saldo0, variacao)`                 | `saldoFinal[i] = saldoFinal[i-1] + variacaoCaixa[i]`                                                                                            | `cashflow.ts:202-218` |
+| `computeBurnRunway(...)`                          | `burnMedio3 = média(-fluxoOp[-3:])`, `runway = (caixa + recebiveis) / burnMedio3`                                                               | `cashflow.ts:250-262` |
 
 **Alertas automáticos:**
+
 - `saldoFinal[i] < 0` → tipo `"negativo"`
 - `saldoFinal[i] < caixaMinimo` → tipo `"abaixoMinimo"`
 
@@ -156,26 +160,26 @@ O FinancePRO **não gera** um Balanço automaticamente — os dados patrimoniais
 
 **Inputs de `capital` usados nos cálculos:**
 
-| Campo | Uso |
-|-------|-----|
-| `patrimonioLiquido` (PL) | ROE, WACC, endividamento, payback PL |
-| `patrimonioLiquidoAbertura` | ROE com PL médio (CFA/Damodaran): `(PL_abertura + PL_fim) / 2` |
-| `dividaOnerosa` (D) | WACC, dívida líquida, grau de endividamento |
-| `ativoTotal` | ROA, giro do ativo, endividamento geral |
-| `ativoCirculante` | Liquidez corrente e seca |
-| `passivoCirculante` | Liquidez corrente, seca, imediata |
-| `disponibilidades` | Saldo inicial DFC, liquidez imediata |
-| `caixaOcioso` | Dívida líquida (SSOT: `D − caixaOcioso`) |
-| `contasReceber` | NCG (preferencial sobre estimativa PMR) |
-| `estoques` / `estoqueInicial` / `estoqueFinal` | PME, NCG |
-| `fornecedores` | NCG, passivo circulante estimado |
-| `passivosNaoOnerosos` (PNO) | Capital investido (ROIC), endividamento fallback |
-| `capitalGiroDisponivel` | Gap de capital de giro, ΔNCG abertura |
-| `ncgAbertura` | Âncora para ΔNCG anual (evita consumo inflado) |
-| `dividaCurtoPrazoPct` | Fração D que compõe o passivo circulante (default 30%) |
-| `ke`, `kd`, `proprio` | WACC (custo de capital próprio e de terceiros) |
-| `capexAtivacao[]` | Depreciação + CAPEX anual |
-| `depreciacaoMensal` | Linha base de D&A |
+| Campo                                          | Uso                                                            |
+| ---------------------------------------------- | -------------------------------------------------------------- |
+| `patrimonioLiquido` (PL)                       | ROE, WACC, endividamento, payback PL                           |
+| `patrimonioLiquidoAbertura`                    | ROE com PL médio (CFA/Damodaran): `(PL_abertura + PL_fim) / 2` |
+| `dividaOnerosa` (D)                            | WACC, dívida líquida, grau de endividamento                    |
+| `ativoTotal`                                   | ROA, giro do ativo, endividamento geral                        |
+| `ativoCirculante`                              | Liquidez corrente e seca                                       |
+| `passivoCirculante`                            | Liquidez corrente, seca, imediata                              |
+| `disponibilidades`                             | Saldo inicial DFC, liquidez imediata                           |
+| `caixaOcioso`                                  | Dívida líquida (SSOT: `D − caixaOcioso`)                       |
+| `contasReceber`                                | NCG (preferencial sobre estimativa PMR)                        |
+| `estoques` / `estoqueInicial` / `estoqueFinal` | PME, NCG                                                       |
+| `fornecedores`                                 | NCG, passivo circulante estimado                               |
+| `passivosNaoOnerosos` (PNO)                    | Capital investido (ROIC), endividamento fallback               |
+| `capitalGiroDisponivel`                        | Gap de capital de giro, ΔNCG abertura                          |
+| `ncgAbertura`                                  | Âncora para ΔNCG anual (evita consumo inflado)                 |
+| `dividaCurtoPrazoPct`                          | Fração D que compõe o passivo circulante (default 30%)         |
+| `ke`, `kd`, `proprio`                          | WACC (custo de capital próprio e de terceiros)                 |
+| `capexAtivacao[]`                              | Depreciação + CAPEX anual                                      |
+| `depreciacaoMensal`                            | Linha base de D&A                                              |
 
 ---
 
@@ -237,18 +241,21 @@ O FinancePRO **não gera** um Balanço automaticamente — os dados patrimoniais
 ### Ponto de Equilíbrio — Três variantes
 
 #### PE Total (Financeiro com juros)
+
 - **Fórmula:** `(Custos Fixos + Depreciação + Juros) / (MC%)`
 - **Calculado em:** `indicators.ts:157`
 - **Onde:** `custosFixosComJuros = custosFixosAnual + jurosAnual`; `mcFrac = margemContribuicao/100`
 - **Uso:** Cobertura financeira completa. Inclui juros por serem custo fixo recorrente para PME.
 
 #### PE Operacional Clássico (Garrison/Horngren)
+
 - **Fórmula:** `Custos Fixos Operacionais (com D&A, SEM juros) / MC%`
 - **Calculado em:** `indicators.ts:155-156`
 - **Onde:** `custosFixosAnual = sum(dre.custosFixos) + sum(dre.depreciacao)`
 - **Uso:** Referência acadêmica/contábil — juros ficam abaixo do EBIT.
 
 #### PE Financeiro (caixa, sem D&A)
+
 - **Fórmula:** `Custos Fixos Operacionais SEM depreciação e SEM juros / MC%`
 - **Calculado em:** `indicators.ts:158-159`
 - **Onde:** `custosFixosOperacionaisSemDep = custosFixosAnual − depreciacaoAnual`
@@ -303,13 +310,13 @@ O FinancePRO **não gera** um Balanço automaticamente — os dados patrimoniais
 
 ### Indicadores por Colaborador
 
-| Indicador | Fórmula | Linha-ref |
-|-----------|---------|-----------|
-| `receitaPorColaborador` | Receita Líquida Anual / headcount | `indicators.ts:302` |
-| `faturamentoPorColaborador` | Receita Bruta Anual / headcount | `indicators.ts:303` |
-| `ebitdaPorColaborador` | EBITDA Anual / headcount | `indicators.ts:304` |
-| `lucroPorColaborador` | Lucro Líquido Anual / headcount | `indicators.ts:305` |
-| `custoPessoalSobreReceita` | Folha Anual Total / Receita Líquida × 100 | `indicators.ts:307` |
+| Indicador                   | Fórmula                                   | Linha-ref           |
+| --------------------------- | ----------------------------------------- | ------------------- |
+| `receitaPorColaborador`     | Receita Líquida Anual / headcount         | `indicators.ts:302` |
+| `faturamentoPorColaborador` | Receita Bruta Anual / headcount           | `indicators.ts:303` |
+| `ebitdaPorColaborador`      | EBITDA Anual / headcount                  | `indicators.ts:304` |
+| `lucroPorColaborador`       | Lucro Líquido Anual / headcount           | `indicators.ts:305` |
+| `custoPessoalSobreReceita`  | Folha Anual Total / Receita Líquida × 100 | `indicators.ts:307` |
 
 **Input:** `state.numColaboradores`; Folha via `folhaAnual(state)` de `regime.ts`.
 
@@ -475,15 +482,16 @@ O FinancePRO **não gera** um Balanço automaticamente — os dados patrimoniais
 - **Calculado em:** `indicators.ts:171`
 - **Componentes:**
 
-| Componente | Descrição | Fonte |
-|-----------|-----------|-------|
-| `wE` | Peso do capital próprio = `PL / (PL + D)` (fallback: `capital.proprio/100`) | `indicators.ts:165` |
-| `wD` | Peso do capital de terceiros = `D / (PL + D)` | `indicators.ts:166` |
-| `Ke` | Custo do capital próprio (% a.a.) — input direto `capital.ke`; piso 8% (Selic neutra) | `indicators.ts:170-171` |
-| `Kd` | Custo da dívida (% a.a.) — input direto `capital.kd` | `indicators.ts:171` |
-| `IR Shield` | Escudo fiscal de juros — `irShieldForRegime()` de `tax/real.ts:202-204` | `indicators.ts:169` |
+| Componente  | Descrição                                                                             | Fonte                   |
+| ----------- | ------------------------------------------------------------------------------------- | ----------------------- |
+| `wE`        | Peso do capital próprio = `PL / (PL + D)` (fallback: `capital.proprio/100`)           | `indicators.ts:165`     |
+| `wD`        | Peso do capital de terceiros = `D / (PL + D)`                                         | `indicators.ts:166`     |
+| `Ke`        | Custo do capital próprio (% a.a.) — input direto `capital.ke`; piso 8% (Selic neutra) | `indicators.ts:170-171` |
+| `Kd`        | Custo da dívida (% a.a.) — input direto `capital.kd`                                  | `indicators.ts:171`     |
+| `IR Shield` | Escudo fiscal de juros — `irShieldForRegime()` de `tax/real.ts:202-204`               | `indicators.ts:169`     |
 
 **Escudo Fiscal (`irShieldForRegime`):**
+
 - Lucro Real com LAIR > R$ 240k → **34%** (15% IRPJ + 10% Adicional + 9% CSLL)
 - Lucro Real com LAIR ≤ R$ 240k → **24%** (15% IRPJ + 9% CSLL, sem adicional)
 - Simples / Presumido → **0%** (não captura escudo)
@@ -508,11 +516,11 @@ O FinancePRO **não gera** um Balanço automaticamente — os dados patrimoniais
 
 ### Presets por Tipo de Negócio
 
-| Segmento | EV/EBITDA (P/B/O) | EV/Receita (P/B/O) | P/L (P/B/O) | g terminal |
-|---------|------------------|-------------------|------------|-----------|
-| Serviços | 4,0 / 5,5 / 7,0× | 0,8 / 1,3 / 2,0× | 8 / 12 / 18× | 2,5% |
-| Comércio | 3,0 / 4,0 / 5,5× | 0,4 / 0,7 / 1,1× | 6 / 9 / 14× | 1,5% |
-| Indústria | 4,5 / 6,0 / 8,0× | 0,7 / 1,1 / 1,6× | 9 / 13 / 20× | 2,0% |
+| Segmento  | EV/EBITDA (P/B/O) | EV/Receita (P/B/O) | P/L (P/B/O)  | g terminal |
+| --------- | ----------------- | ------------------ | ------------ | ---------- |
+| Serviços  | 4,0 / 5,5 / 7,0×  | 0,8 / 1,3 / 2,0×   | 8 / 12 / 18× | 2,5%       |
+| Comércio  | 3,0 / 4,0 / 5,5×  | 0,4 / 0,7 / 1,1×   | 6 / 9 / 14×  | 1,5%       |
+| Indústria | 4,5 / 6,0 / 8,0×  | 0,7 / 1,1 / 1,6×   | 9 / 13 / 20× | 2,0%       |
 
 Arquivo: `valuation.ts:81-108`
 
@@ -523,12 +531,12 @@ Arquivo: `valuation.ts:81-108`
 - **Calculado em:** `valuation.ts:154-182` (função `buildMultiples`)
 - **Ponderação:** EV/EBITDA 50% · EV/Receita 30% · P/L 20% (pesos renormalizados pelos múltiplos > 0)
 
-| Múltiplo | Fórmula | Nota |
-|---------|---------|------|
-| EV via EBITDA | `max(0, EBITDA) × evEbitdaMultiple` | EBITDA anual da DRE |
-| EV via Receita | `max(0, Receita Bruta) × evRevenueMultiple` | Receita bruta anual |
-| Equity via P/L | `max(0, LL) × plMultiple` | Equity Value; convertido para EV: `equityFromPL + Dívida Líquida` — evita dupla dedução |
-| EV Ponderado | `(EV_EBITDA×0.5 + EV_Receita×0.3 + EV_implícito_PL×0.2) / wTotal` | |
+| Múltiplo       | Fórmula                                                           | Nota                                                                                    |
+| -------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| EV via EBITDA  | `max(0, EBITDA) × evEbitdaMultiple`                               | EBITDA anual da DRE                                                                     |
+| EV via Receita | `max(0, Receita Bruta) × evRevenueMultiple`                       | Receita bruta anual                                                                     |
+| Equity via P/L | `max(0, LL) × plMultiple`                                         | Equity Value; convertido para EV: `equityFromPL + Dívida Líquida` — evita dupla dedução |
+| EV Ponderado   | `(EV_EBITDA×0.5 + EV_Receita×0.3 + EV_implícito_PL×0.2) / wTotal` |                                                                                         |
 
 ---
 
@@ -556,25 +564,25 @@ Arquivo: `valuation.ts:81-108`
 
 ### Ajustes pós-EV
 
-| Ajuste | Fórmula |
-|--------|---------|
-| Controle | `EV × (1 + controlPremium)` |
-| Liquidez | `EV × (1 − liquidityDiscount)` — default 15% |
-| Haircut Estratégico | `EV × (1 − haircut)` — de `computeStrategic()`, 0–40% |
-| Equity Value | `max(0, EV − Dívida Líquida)` |
-| Faixa (low/high) | `EV × 0,75 / × 1,35` (com DCF) ou `× 0,90 / × 1,15` (só múltiplos) |
+| Ajuste              | Fórmula                                                            |
+| ------------------- | ------------------------------------------------------------------ |
+| Controle            | `EV × (1 + controlPremium)`                                        |
+| Liquidez            | `EV × (1 − liquidityDiscount)` — default 15%                       |
+| Haircut Estratégico | `EV × (1 − haircut)` — de `computeStrategic()`, 0–40%              |
+| Equity Value        | `max(0, EV − Dívida Líquida)`                                      |
+| Faixa (low/high)    | `EV × 0,75 / × 1,35` (com DCF) ou `× 0,90 / × 1,15` (só múltiplos) |
 
 ---
 
 ### Confidence Grade
 
 | Score | Grade | Gatilhos de penalidade |
-|-------|-------|----------------------|
-| ≥ 85 | A | — |
-| 70–84 | B | — |
-| 55–69 | C | — |
-| 40–54 | D | — |
-| < 40 | E | — |
+| ----- | ----- | ---------------------- |
+| ≥ 85  | A     | —                      |
+| 70–84 | B     | —                      |
+| 55–69 | C     | —                      |
+| 40–54 | D     | —                      |
+| < 40  | E     | —                      |
 
 Penalidades: análise estratégica não preenchida (−25), risco estratégico elevado (−15), estrutura de capital não informada (−20), Ke/Kd não definidos (−10), g > 5% (−10), WACC fora de faixa (−15). Arquivo: `valuation.ts:257-296`.
 
@@ -599,12 +607,12 @@ Penalidades: análise estratégica não preenchida (−25), risco estratégico e
 
 #### Variáveis de Choque
 
-| Variável | Sigma default | Descrição |
-|----------|--------------|-----------|
-| `precoSigmaPct` | 5% | Desvio-padrão do crescimento de preço |
-| `volumeSigmaPct` | 8% | Desvio-padrão do volume/demanda |
-| `cpvSigmaPct` | 5% | Desvio-padrão do custo de vendas |
-| `folhaSigmaPct` | 3% | Desvio-padrão da folha de salários |
+| Variável         | Sigma default | Descrição                             |
+| ---------------- | ------------- | ------------------------------------- |
+| `precoSigmaPct`  | 5%            | Desvio-padrão do crescimento de preço |
+| `volumeSigmaPct` | 8%            | Desvio-padrão do volume/demanda       |
+| `cpvSigmaPct`    | 5%            | Desvio-padrão do custo de vendas      |
+| `folhaSigmaPct`  | 3%            | Desvio-padrão da folha de salários    |
 
 #### Geração de Números Aleatórios — Box-Muller
 
@@ -613,6 +621,7 @@ u = max(1e-9, random())
 v = random()
 z = sqrt(-2 × ln(u)) × cos(2π × v)
 ```
+
 `montecarlo.ts:85-88`
 
 #### Correlação entre Variáveis — Cholesky
@@ -631,28 +640,29 @@ volume      -0.30    1.00  -0.20   0.30   ← economias de escala; horas extras
 CPV          0.20   -0.20   1.00   0.40   ← inflação setorial; câmbio
 folha        0.10    0.30   0.40   1.00   ← dissídios; reajustes
 ```
+
 `montecarlo.ts:37-42`
 
 #### Aplicação dos Choques
 
-| Variável shockada | Fórmula |
-|------------------|---------|
-| Receita | `receitaBruta[i] × (1 + zPreco × sigma_preco/100) × (1 + zVol × sigma_vol/100)` |
-| CPV | `cpv[i] × fVol × fCpv` |
-| Custos variáveis | `valor × fVol` |
-| Folha (CLT/pró-labore) | `valor × fFolha` |
+| Variável shockada      | Fórmula                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| Receita                | `receitaBruta[i] × (1 + zPreco × sigma_preco/100) × (1 + zVol × sigma_vol/100)` |
+| CPV                    | `cpv[i] × fVol × fCpv`                                                          |
+| Custos variáveis       | `valor × fVol`                                                                  |
+| Folha (CLT/pró-labore) | `valor × fFolha`                                                                |
 
 `montecarlo.ts:142-162`
 
 #### Outputs
 
-| Campo | Fórmula |
-|-------|---------|
-| `ebitda` | Distribuição do EBITDA anual — MCDist (mean, median, P5, P25, P75, P95) |
-| `lucroLiquido` | Distribuição do Lucro Líquido anual |
-| `saldoCaixaFinal` | Distribuição do saldo de caixa de dezembro |
-| `probPrejuizo` | `count(ll < 0) / iterations` |
-| `probCaixaNegativo` | `count(saldo < caixaMinimo) / iterations` |
+| Campo               | Fórmula                                                                 |
+| ------------------- | ----------------------------------------------------------------------- |
+| `ebitda`            | Distribuição do EBITDA anual — MCDist (mean, median, P5, P25, P75, P95) |
+| `lucroLiquido`      | Distribuição do Lucro Líquido anual                                     |
+| `saldoCaixaFinal`   | Distribuição do saldo de caixa de dezembro                              |
+| `probPrejuizo`      | `count(ll < 0) / iterations`                                            |
+| `probCaixaNegativo` | `count(saldo < caixaMinimo) / iterations`                               |
 
 **Percentil sem viés:** `idx = floor(p/100 × (n−1))` — corrige deslocamento de ~0,5pp em séries de 200 iterações. `montecarlo.ts:170-172`
 
@@ -666,23 +676,23 @@ folha        0.10    0.30   0.40   1.00   ← dissídios; reajustes
 
 #### Drivers disponíveis
 
-| Driver | O que muda |
-|--------|-----------|
-| `preco` | Receita bruta (× fator, custos inalterados) |
+| Driver   | O que muda                                                           |
+| -------- | -------------------------------------------------------------------- |
+| `preco`  | Receita bruta (× fator, custos inalterados)                          |
 | `volume` | Receita bruta + custos variáveis (CPV + `variavel` + `direto_venda`) |
-| `cpv` | Custos `custo_vendas` e `direto_venda` |
-| `folha` | Custos com `encargosAuto` ou label de folha |
-| `fixos` | Custos `fixo` não-folha |
-| `juros` | Custos `financeiro` |
+| `cpv`    | Custos `custo_vendas` e `direto_venda`                               |
+| `folha`  | Custos com `encargosAuto` ou label de folha                          |
+| `fixos`  | Custos `fixo` não-folha                                              |
+| `juros`  | Custos `financeiro`                                                  |
 
 #### Outputs disponíveis
 
-| Output | Fórmula |
-|--------|---------|
-| `ebitda` | `sum(dre.ebitda)` |
-| `lucroLiquido` | `sum(dre.lucroLiquido)` |
-| `saldoCaixa` | `buildCashFlow().totais.saldoFinal` |
-| `roic` | `calcIndicators().roic` |
+| Output         | Fórmula                             |
+| -------------- | ----------------------------------- |
+| `ebitda`       | `sum(dre.ebitda)`                   |
+| `lucroLiquido` | `sum(dre.lucroLiquido)`             |
+| `saldoCaixa`   | `buildCashFlow().totais.saldoFinal` |
+| `roic`         | `calcIndicators().roic`             |
 
 #### Elasticidade
 
@@ -704,6 +714,7 @@ folha        0.10    0.30   0.40   1.00   ← dissídios; reajustes
 ```
 AliqEfetiva(%) = max(0, (RBT12 × AliqNominal − ParcelaADeduzir) / RBT12) × 100
 ```
+
 `simples.ts:17-26`
 
 **Onde:** RBT12 = Receita Bruta dos últimos 12 meses; tabela por Anexo (I a V) em `taxDefaults.ts`.
@@ -730,18 +741,19 @@ DAS[i] = receitaTributavel[i] × (AliqEfetiva / 100)
 
 #### Tributos calculados
 
-| Tributo | Base | Alíquota / Regra |
-|---------|------|-----------------|
-| IRPJ | `receitaTributavel × baseIRPJ%` | 15% sobre base; tabela `getIrpjPct(tax)` |
-| Adicional IRPJ | base trimestral > R$ 60k | 10% sobre excedente; `adicionalIrpjTrimestral()` — `tax/shared.ts:29-43` |
-| CSLL | `receitaTributavel × baseCSLL%` | 9%; tabela `getCsllPct(tax)` |
-| PIS (cumulativo) | `receitaTributavel` | 0,65% × `pisCofinsMult` |
-| COFINS (cumulativo) | `receitaTributavel` | 3% × `pisCofinsMult` |
-| ISS/ICMS | `(receitaTributavel − deducoes) × issIcms%` | `icmsIssMult`; crédito ICMS de entrada |
-| CBS `[CBS/IBS]` | `receitaTributavel × cbsPct%` | NÃO-cumulativo; crédito sobre CPV |
-| IBS `[CBS/IBS]` | `receitaTributavel × ibsPct%` | NÃO-cumulativo; crédito sobre CPV |
+| Tributo             | Base                                        | Alíquota / Regra                                                         |
+| ------------------- | ------------------------------------------- | ------------------------------------------------------------------------ |
+| IRPJ                | `receitaTributavel × baseIRPJ%`             | 15% sobre base; tabela `getIrpjPct(tax)`                                 |
+| Adicional IRPJ      | base trimestral > R$ 60k                    | 10% sobre excedente; `adicionalIrpjTrimestral()` — `tax/shared.ts:29-43` |
+| CSLL                | `receitaTributavel × baseCSLL%`             | 9%; tabela `getCsllPct(tax)`                                             |
+| PIS (cumulativo)    | `receitaTributavel`                         | 0,65% × `pisCofinsMult`                                                  |
+| COFINS (cumulativo) | `receitaTributavel`                         | 3% × `pisCofinsMult`                                                     |
+| ISS/ICMS            | `(receitaTributavel − deducoes) × issIcms%` | `icmsIssMult`; crédito ICMS de entrada                                   |
+| CBS `[CBS/IBS]`     | `receitaTributavel × cbsPct%`               | NÃO-cumulativo; crédito sobre CPV                                        |
+| IBS `[CBS/IBS]`     | `receitaTributavel × ibsPct%`               | NÃO-cumulativo; crédito sobre CPV                                        |
 
 **Bases de presunção (default LC 9.249/95):**
+
 - Serviços: IRPJ 32%, CSLL 32%
 - Comércio: IRPJ 8%, CSLL 12%
 - Indústria: IRPJ 8%, CSLL 12%
@@ -760,19 +772,20 @@ DAS[i] = receitaTributavel[i] × (AliqEfetiva / 100)
 
 #### Tributos calculados
 
-| Tributo | Base | Alíquota / Regra |
-|---------|------|-----------------|
-| IRPJ | LAIR trimestral − carryforward prejuízo (Lei 9.065/95, máx 30%) | 15%; `getIrpjPct(tax)` |
-| Adicional IRPJ | base trimestral > gatilho | 10%; `adicionalIrpjTrimestral()` |
-| CSLL | LAIR mensal | 9%; `getCsllPct(tax)` |
-| PIS (não-cumulativo) | `receitaTributavel − créditosPIS` | 1,65% × `pisCofinsMult`; crédito acumulável |
-| COFINS (não-cumulativo) | `receitaTributavel − créditosCOFINS` | 7,6% × `pisCofinsMult`; crédito acumulável |
-| PIS/COFINS s/ Rec. Fin. | `rendimentosFinanceiros` | 0,65% + 4% (Decreto 8.426/2015); extinto quando `pisCofinsMult=0` |
-| ISS/ICMS | igual ao Presumido | crédito ICMS de entrada |
-| CBS `[CBS/IBS]` | igual ao Presumido | não-cumulativo |
-| IBS `[CBS/IBS]` | igual ao Presumido | não-cumulativo |
+| Tributo                 | Base                                                            | Alíquota / Regra                                                  |
+| ----------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------- |
+| IRPJ                    | LAIR trimestral − carryforward prejuízo (Lei 9.065/95, máx 30%) | 15%; `getIrpjPct(tax)`                                            |
+| Adicional IRPJ          | base trimestral > gatilho                                       | 10%; `adicionalIrpjTrimestral()`                                  |
+| CSLL                    | LAIR mensal                                                     | 9%; `getCsllPct(tax)`                                             |
+| PIS (não-cumulativo)    | `receitaTributavel − créditosPIS`                               | 1,65% × `pisCofinsMult`; crédito acumulável                       |
+| COFINS (não-cumulativo) | `receitaTributavel − créditosCOFINS`                            | 7,6% × `pisCofinsMult`; crédito acumulável                        |
+| PIS/COFINS s/ Rec. Fin. | `rendimentosFinanceiros`                                        | 0,65% + 4% (Decreto 8.426/2015); extinto quando `pisCofinsMult=0` |
+| ISS/ICMS                | igual ao Presumido                                              | crédito ICMS de entrada                                           |
+| CBS `[CBS/IBS]`         | igual ao Presumido                                              | não-cumulativo                                                    |
+| IBS `[CBS/IBS]`         | igual ao Presumido                                              | não-cumulativo                                                    |
 
 **Carryforward de Prejuízo Fiscal (Lei 9.065/95 art. 42):**
+
 - Apuração trimestral.
 - Prejuízo de trimestres anteriores compensa até 30% do lucro dos trimestres seguintes.
 - Sem isso, empresas sazonais com Q1 negativo pagam IRPJ/CSLL sem compensação no Q2+.
@@ -790,29 +803,30 @@ DAS[i] = receitaTributavel[i] × (AliqEfetiva / 100)
 
 #### Eras disponíveis
 
-| Era (`TaxEra`) | CBS | IBS | PIS/COFINS | ICMS/ISS |
-|---------------|-----|-----|-----------|---------|
-| `"atual"` | 0% | 0% | 100% | 100% |
-| `"transicao"` | CBS plena | IBS × `ibsMult` | 0% | `icmsIssMult` |
-| `"pleno"` | CBS plena | IBS plena | 0% | 0% |
+| Era (`TaxEra`) | CBS       | IBS             | PIS/COFINS | ICMS/ISS      |
+| -------------- | --------- | --------------- | ---------- | ------------- |
+| `"atual"`      | 0%        | 0%              | 100%       | 100%          |
+| `"transicao"`  | CBS plena | IBS × `ibsMult` | 0%         | `icmsIssMult` |
+| `"pleno"`      | CBS plena | IBS plena       | 0%         | 0%            |
 
 **Alíquotas de referência (configuráveis):**
+
 - CBS: `cfg.cbsAliquota` (default **8,8%**)
 - IBS: `cfg.ibsAliquotaRef` (default **17,7%**)
 
 #### Cronograma oficial ano a ano
 
-| Ano | CBS | IBS (% do pleno) | PIS/COFINS | ICMS/ISS |
-|-----|-----|-----------------|-----------|---------|
-| 2025 | 0% | 0% | 100% | 100% |
-| 2026 | 0,9% (teste) | 0,1% absoluto | 100% | 100% |
-| 2027 | CBS plena | ~0% | 0% | 100% |
-| 2028 | CBS plena | ~0% | 0% | 100% |
-| 2029 | CBS plena | 10% | 0% | 90% |
-| 2030 | CBS plena | 20% | 0% | 80% |
-| 2031 | CBS plena | 30% | 0% | 70% |
-| 2032 | CBS plena | 40% | 0% | 60% |
-| 2033+ | CBS plena | 100% | 0% | 0% |
+| Ano   | CBS          | IBS (% do pleno) | PIS/COFINS | ICMS/ISS |
+| ----- | ------------ | ---------------- | ---------- | -------- |
+| 2025  | 0%           | 0%               | 100%       | 100%     |
+| 2026  | 0,9% (teste) | 0,1% absoluto    | 100%       | 100%     |
+| 2027  | CBS plena    | ~0%              | 0%         | 100%     |
+| 2028  | CBS plena    | ~0%              | 0%         | 100%     |
+| 2029  | CBS plena    | 10%              | 0%         | 90%      |
+| 2030  | CBS plena    | 20%              | 0%         | 80%      |
+| 2031  | CBS plena    | 30%              | 0%         | 70%      |
+| 2032  | CBS plena    | 40%              | 0%         | 60%      |
+| 2033+ | CBS plena    | 100%             | 0%         | 0%       |
 
 `reforma.ts:51-78`
 
@@ -840,31 +854,33 @@ DAS[i] = receitaTributavel[i] × (AliqEfetiva / 100)
 
 #### CLT — Cálculo de Renda Líquida
 
-| Item | Fórmula |
-|------|---------|
-| INSS Mensal | Progressivo por faixas 2025 (7,5% / 9% / 12% / 14%) — `calcularINSS()` em `rescisao.ts:78-90` |
-| IRRF Mensal | Sobre `salário − INSS − dependentes × R$ 189,59` — `calcularIRRF()` em `rescisao.ts:93-102` |
-| Líquido Mensal | `salário − INSS − IRRF` |
-| 13º Líquido | INSS + IRRF calculados separadamente |
-| Férias Líquidas | Base = `salário + salário/3`; INSS + IRRF sobre a base |
-| PLR Líquido | Tabela exclusiva anual (Lei 14.020/2020): isenção até R$ 7.640,80 — `irrfPlr()` em `cltVsPj.ts:79-84` |
-| FGTS Anual | `salário × 8% × 12` (depositado pela empresa) |
-| Multa FGTS Potencial | `fgtsAnual × 40%` |
-| Total Anual Líquido | `liquidoAnual + 13ºLíquido + fériasLíquidas + PLRLíquido + benefíciosAnuais` |
+| Item                 | Fórmula                                                                                               |
+| -------------------- | ----------------------------------------------------------------------------------------------------- |
+| INSS Mensal          | Progressivo por faixas 2025 (7,5% / 9% / 12% / 14%) — `calcularINSS()` em `rescisao.ts:78-90`         |
+| IRRF Mensal          | Sobre `salário − INSS − dependentes × R$ 189,59` — `calcularIRRF()` em `rescisao.ts:93-102`           |
+| Líquido Mensal       | `salário − INSS − IRRF`                                                                               |
+| 13º Líquido          | INSS + IRRF calculados separadamente                                                                  |
+| Férias Líquidas      | Base = `salário + salário/3`; INSS + IRRF sobre a base                                                |
+| PLR Líquido          | Tabela exclusiva anual (Lei 14.020/2020): isenção até R$ 7.640,80 — `irrfPlr()` em `cltVsPj.ts:79-84` |
+| FGTS Anual           | `salário × 8% × 12` (depositado pela empresa)                                                         |
+| Multa FGTS Potencial | `fgtsAnual × 40%`                                                                                     |
+| Total Anual Líquido  | `liquidoAnual + 13ºLíquido + fériasLíquidas + PLRLíquido + benefíciosAnuais`                          |
 
 #### PJ — Cálculo por Regime
 
-| Regime | Impostos | Pró-labore | Limite Anual |
-|--------|---------|-----------|-------------|
-| MEI | DAS fixo ~R$ 80/mês | Mínimo 1 SM (INSS 5% embutido no DAS) | R$ 81.000 |
-| Simples Nacional | Alíquota efetiva Anexo III progressiva | 11% INSS sobre pró-labore (até teto) + IRRF | R$ 4,8M |
-| Lucro Presumido | ~16,33% sobre faturamento (IRPJ 15%×32% + CSLL 9%×32% + PIS 0,65% + COFINS 3% + ISS 5%) | 11% INSS + IRRF | R$ 78M |
+| Regime           | Impostos                                                                                | Pró-labore                                  | Limite Anual |
+| ---------------- | --------------------------------------------------------------------------------------- | ------------------------------------------- | ------------ |
+| MEI              | DAS fixo ~R$ 80/mês                                                                     | Mínimo 1 SM (INSS 5% embutido no DAS)       | R$ 81.000    |
+| Simples Nacional | Alíquota efetiva Anexo III progressiva                                                  | 11% INSS sobre pró-labore (até teto) + IRRF | R$ 4,8M      |
+| Lucro Presumido  | ~16,33% sobre faturamento (IRPJ 15%×32% + CSLL 9%×32% + PIS 0,65% + COFINS 3% + ISS 5%) | 11% INSS + IRRF                             | R$ 78M       |
 
 **Alíquota Simples Anexo III:**
+
 ```
 rbt12 = faturamentoMensal × 12
 efetiva = (rbt12 × aliqNominal − parcelaADeduzir) / rbt12
 ```
+
 `cltVsPj.ts:56-64`
 
 **Faturamento de Empate:** busca binária (60 iterações) do faturamento PJ que iguala o líquido mensal equivalente CLT. `cltVsPj.ts:262-272`
@@ -879,25 +895,26 @@ efetiva = (rbt12 × aliqNominal − parcelaADeduzir) / rbt12
 
 #### Componentes do Custo Mensal
 
-| Componente | Fórmula | Regime Simples? |
-|-----------|---------|----------------|
-| INSS Patronal | `salário × 20%` | Embutido no DAS (exceto Anexo IV) |
-| RAT | `salário × (1% / 2% / 3%)` | Sempre devido |
-| Sistema S (Terceiros) | `salário × 5,8%` (default) | Embutido no DAS |
-| FGTS | `salário × 8%` | Sempre devido |
-| Provisão 13º | `salário × 1/12` | — |
-| FGTS sobre 13º | `salário × 0,8/12` | — |
-| Provisão Férias | `salário × (1/12 × 4/3)` | — |
-| FGTS sobre Férias | `salário × 0,08 × (1/12 × 4/3)` | — |
-| Encargos patronais sobre 13º | `salário × (1/12) × aliqPatronal` | — |
-| Encargos patronais sobre Férias | `salário × (1/12 × 4/3) × aliqPatronal` | — |
-| VT (custo empresa) | `max(0, custoVT − 6% × salário)` | — |
-| VR, Plano Saúde, Outros | valor direto | — |
+| Componente                      | Fórmula                                 | Regime Simples?                   |
+| ------------------------------- | --------------------------------------- | --------------------------------- |
+| INSS Patronal                   | `salário × 20%`                         | Embutido no DAS (exceto Anexo IV) |
+| RAT                             | `salário × (1% / 2% / 3%)`              | Sempre devido                     |
+| Sistema S (Terceiros)           | `salário × 5,8%` (default)              | Embutido no DAS                   |
+| FGTS                            | `salário × 8%`                          | Sempre devido                     |
+| Provisão 13º                    | `salário × 1/12`                        | —                                 |
+| FGTS sobre 13º                  | `salário × 0,8/12`                      | —                                 |
+| Provisão Férias                 | `salário × (1/12 × 4/3)`                | —                                 |
+| FGTS sobre Férias               | `salário × 0,08 × (1/12 × 4/3)`         | —                                 |
+| Encargos patronais sobre 13º    | `salário × (1/12) × aliqPatronal`       | —                                 |
+| Encargos patronais sobre Férias | `salário × (1/12 × 4/3) × aliqPatronal` | —                                 |
+| VT (custo empresa)              | `max(0, custoVT − 6% × salário)`        | —                                 |
+| VR, Plano Saúde, Outros         | valor direto                            | —                                 |
 
 ```
 custoMensal = salário + encargos + provisões + benefícios
 fatorMultiplicador = custoMensal / salário
 ```
+
 `custoFuncionario.ts:271-273`
 
 ---
@@ -910,28 +927,32 @@ fatorMultiplicador = custoMensal / salário
 
 #### Verbas por Motivo de Rescisão
 
-| Motivo | Saldo | 13º Prop. | Férias Prop. | Aviso | Multa FGTS | Saque FGTS |
-|--------|-------|-----------|-------------|-------|-----------|-----------|
-| Sem Justa Causa | ✓ | ✓ | ✓ | Integral | 40% | 100% |
-| Rescisão Indireta | ✓ | ✓ | ✓ | Integral | 40% | 100% |
-| Acordo 484-A | ✓ | ✓ | ✓ | 50% | 20% | 80% |
-| Pedido de Demissão | ✓ | ✓ | ✓ | — | — | — |
-| Justa Causa | ✓ | — | — | — | — | — |
-| Término Experiência | ✓ | ✓ | ✓ | — | — | 100% |
+| Motivo              | Saldo | 13º Prop. | Férias Prop. | Aviso    | Multa FGTS | Saque FGTS |
+| ------------------- | ----- | --------- | ------------ | -------- | ---------- | ---------- |
+| Sem Justa Causa     | ✓     | ✓         | ✓            | Integral | 40%        | 100%       |
+| Rescisão Indireta   | ✓     | ✓         | ✓            | Integral | 40%        | 100%       |
+| Acordo 484-A        | ✓     | ✓         | ✓            | 50%      | 20%        | 80%        |
+| Pedido de Demissão  | ✓     | ✓         | ✓            | —        | —          | —          |
+| Justa Causa         | ✓     | —         | —            | —        | —          | —          |
+| Término Experiência | ✓     | ✓         | ✓            | —        | —          | 100%       |
 
 **Aviso Prévio Proporcional (Lei 12.506/2011):**
+
 ```
 dias = min(90, 30 + floor(anosNaEmpresa) × 3)
 ```
+
 `rescisao.ts:244-247`
 
 **INSS/IRRF isentos:** aviso prévio indenizado e férias indenizadas + 1/3 (STJ REsp 1.230.957; STF Tema 985). `rescisao.ts:277-285`
 
 **Tabelas 2025:**
+
 - INSS progressivo: 7,5% até R$ 1.518 / 9% até R$ 2.793,88 / 12% até R$ 4.190,83 / 14% até R$ 8.157,41. `rescisao.ts:58-63`
 - IRRF: 0% até R$ 2.428,80 / 7,5% até R$ 2.826,65 / 15% até R$ 3.751,05 / 22,5% até R$ 4.664,68 / 27,5% acima. Deduç. R$ 189,59/dependente. `rescisao.ts:66-76`
 
 **Indenização Experiência (arts. 479/480):**
+
 - Empregador rompe: `50% × diasRestantes × salário/30`
 - Empregado rompe: desconto de `50% × diasRestantes × salário/30`
 
@@ -949,6 +970,7 @@ amortização = PV / n (constante)
 juros[t]    = saldoDevedor[t-1] × taxaMensal
 parcela[t]  = amortização + juros[t]     ← decrescente ao longo do tempo
 ```
+
 `sacPrice.ts:45-72`
 
 #### PRICE (Sistema Francês)
@@ -958,6 +980,7 @@ parcela_fixa = PV × [i × (1+i)^n] / [(1+i)^n − 1]  ← PMT via formulajs
 juros[t]     = saldoDevedor[t-1] × i
 amort[t]     = parcela_fixa − juros[t]               ← crescente ao longo do tempo
 ```
+
 `sacPrice.ts:74-105`
 
 **Conversão taxa:** `(1 + taxaAnualPct/100)^(1/12) − 1` → `sacPrice.ts:38-40`
@@ -981,33 +1004,33 @@ amort[t]     = parcela_fixa − juros[t]               ← crescente ao longo do
 
 ### Configurações (ForecastConfig)
 
-| Parâmetro | Default | Descrição |
-|-----------|---------|-----------|
-| `crescimentoMensalPct` | 1,0% | Crescimento composto mensal da receita |
-| `inflacaoFixosAA` | 5% | Inflação anual sobre custos fixos não-folha |
-| `ganhoEscalaCpvAA` | 0% | Ganho de escala anual no CPV (reduz CPV/receita) |
-| `stepReceitaPct` | 50% | A cada X% de receita extra, folha sobe 1 step |
-| `stepFolhaPct` | 25% | Incremento de folha por step |
-| `horizonteMeses` | 36 | Número de meses projetados |
-| `capexInicial` | 0 | Investimento inicial no t=0 |
+| Parâmetro              | Default | Descrição                                        |
+| ---------------------- | ------- | ------------------------------------------------ |
+| `crescimentoMensalPct` | 1,0%    | Crescimento composto mensal da receita           |
+| `inflacaoFixosAA`      | 5%      | Inflação anual sobre custos fixos não-folha      |
+| `ganhoEscalaCpvAA`     | 0%      | Ganho de escala anual no CPV (reduz CPV/receita) |
+| `stepReceitaPct`       | 50%     | A cada X% de receita extra, folha sobe 1 step    |
+| `stepFolhaPct`         | 25%     | Incremento de folha por step                     |
+| `horizonteMeses`       | 36      | Número de meses projetados                       |
+| `capexInicial`         | 0       | Investimento inicial no t=0                      |
 
 ### Lógica de Projeção Mês a Mês
 
-| Componente | Fórmula | Arquivo:Linha |
-|-----------|---------|--------------|
-| Receita | `receitaBase[mes] × (1+g)^i` | `forecast.ts:162-163` |
-| CPV não-folha | `receita × cpvNaoFolhaRatio × (1 − ganhoEscalaCpvAA/100)^(i/12)` | `forecast.ts:166` |
-| Variáveis não-CPV | `receita × variaveisRatioBase` | `forecast.ts:169` |
+| Componente              | Fórmula                                                                                                     | Arquivo:Linha         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------- |
+| Receita                 | `receitaBase[mes] × (1+g)^i`                                                                                | `forecast.ts:162-163` |
+| CPV não-folha           | `receita × cpvNaoFolhaRatio × (1 − ganhoEscalaCpvAA/100)^(i/12)`                                            | `forecast.ts:166`     |
+| Variáveis não-CPV       | `receita × variaveisRatioBase`                                                                              | `forecast.ts:169`     |
 | Folha (steps discretos) | `folhaMensalBase × (1 + stepFolhaPct/100)^steps` onde `steps = floor((crescVsBase × 100) / stepReceitaPct)` | `forecast.ts:173-179` |
-| Fixos não-folha | `fixosMensalBase × (1 + inflacaoAA/100)^(i/12)` | `forecast.ts:184-185` |
-| EBITDA | `receita − cpv − despesasOp` | `forecast.ts:189` |
-| EBIT | `EBITDA − depMensal` | `forecast.ts:190` |
-| Resultado Financeiro | `receita × resultadoFinanceiroRatioBase` (proporção do ano-base) | `forecast.ts:191` |
-| Impostos sobre venda | `receita × taxVendasRatio` | `forecast.ts:195` |
-| Impostos sobre lucro | `max(0, LAIR_projetado) × taxLucroRatio` | `forecast.ts:196` |
-| NCG | `CR_T + estoque_T − fornec_T` (recalculada mês a mês via PMR/PMP) | `forecast.ts:200-204` |
-| ΔNCG | `NCG_T − NCG_{T-1}` | `forecast.ts:205` |
-| FCL | `EBITDA + resultadoFinanceiro − impostos − capex − ΔNCG` | `forecast.ts:211` |
+| Fixos não-folha         | `fixosMensalBase × (1 + inflacaoAA/100)^(i/12)`                                                             | `forecast.ts:184-185` |
+| EBITDA                  | `receita − cpv − despesasOp`                                                                                | `forecast.ts:189`     |
+| EBIT                    | `EBITDA − depMensal`                                                                                        | `forecast.ts:190`     |
+| Resultado Financeiro    | `receita × resultadoFinanceiroRatioBase` (proporção do ano-base)                                            | `forecast.ts:191`     |
+| Impostos sobre venda    | `receita × taxVendasRatio`                                                                                  | `forecast.ts:195`     |
+| Impostos sobre lucro    | `max(0, LAIR_projetado) × taxLucroRatio`                                                                    | `forecast.ts:196`     |
+| NCG                     | `CR_T + estoque_T − fornec_T` (recalculada mês a mês via PMR/PMP)                                           | `forecast.ts:200-204` |
+| ΔNCG                    | `NCG_T − NCG_{T-1}`                                                                                         | `forecast.ts:205`     |
+| FCL                     | `EBITDA + resultadoFinanceiro − impostos − capex − ΔNCG`                                                    | `forecast.ts:211`     |
 
 **Separação dos impostos (Auditoria #4):** `taxVendasRatio = sum(monthlyVendas) / receitaAnoBase` e `taxLucroRatio = sum(monthlyLucro) / max(1, LAIRAnoBase)` — evita distorção quando margem muda vs ano-base. `forecast.ts:97-99`
 
@@ -1015,14 +1038,14 @@ amort[t]     = parcela_fixa − juros[t]               ← crescente ao longo do
 
 ### Outputs do Forecast
 
-| Campo | Descrição |
-|-------|-----------|
-| `meses[]` | Array de `ForecastMonth` com receita, EBITDA, LL, NCG, ΔNCG, FCL, saldoCaixa acumulado |
-| `totalReceita/Ebitda/Lucro/Fcl` | Somas do período |
-| `vpl` | VPL via WACC — `vplClassico(i_m, [-capexInicial, ...fcl])` usando `external.ts` |
-| `tir` | TIR via Newton-Raphson + bisseção (`irrDetailed`) — %a.m. |
-| `paybackMeses` | Primeiro mês em que o fluxo acumulado ≥ 0 |
-| `taxaDescontoMensal` | WACC mensal equivalente usado no VPL |
+| Campo                           | Descrição                                                                              |
+| ------------------------------- | -------------------------------------------------------------------------------------- |
+| `meses[]`                       | Array de `ForecastMonth` com receita, EBITDA, LL, NCG, ΔNCG, FCL, saldoCaixa acumulado |
+| `totalReceita/Ebitda/Lucro/Fcl` | Somas do período                                                                       |
+| `vpl`                           | VPL via WACC — `vplClassico(i_m, [-capexInicial, ...fcl])` usando `external.ts`        |
+| `tir`                           | TIR via Newton-Raphson + bisseção (`irrDetailed`) — %a.m.                              |
+| `paybackMeses`                  | Primeiro mês em que o fluxo acumulado ≥ 0                                              |
+| `taxaDescontoMensal`            | WACC mensal equivalente usado no VPL                                                   |
 
 **TIR:** Newton-Raphson (80 iterações) → fallback bisseção (200 iterações). Retorna `null` quando não converge ou fluxos sem sinais opostos. `forecast.ts:262-296`
 
@@ -1035,44 +1058,45 @@ amort[t]     = parcela_fixa − juros[t]               ← crescente ao longo do
 
 ### Funções Financeiras (formulajs)
 
-| Nome PT-BR | Origem | Descrição |
-|-----------|--------|-----------|
-| `vplExcel` | `NPV` | VPL estilo Excel — desconta a partir do período 1 |
-| `vplClassico` | `NPV` + ajuste | VPL com fluxo[0] no presente (período 0 não descontado) |
-| `tir` | `IRR` | TIR — fluxo[0] = investimento (negativo) |
-| `tirModificada` | `MIRR` | TIR Modificada (tx reinvestimento ≠ tx financiamento) |
-| `vplDatasIrregulares` | `XNPV` | VPL com datas irregulares |
-| `tirDatasIrregulares` | `XIRR` | TIR com datas irregulares |
-| `parcela` | `PMT` | Parcela de financiamento |
-| `valorPresente` | `PV` | Valor presente |
-| `valorFuturo` | `FV` | Valor futuro |
-| `numeroPeriodos` | `NPER` | Número de períodos |
-| `taxaJuros` | `RATE` | Taxa de juros por período |
-| `jurosParcela` | `IPMT` | Juros de parcela específica |
-| `amortizacaoParcela` | `PPMT` | Amortização de parcela específica |
-| `jurosAcumulados` | `CUMIPMT` | Juros acumulados entre períodos |
-| `amortizacaoAcumulada` | `CUMPRINC` | Amortização acumulada entre períodos |
-| `depreciacaoLinear` | `SLN` | Depreciação linear (Straight-Line) |
-| `depreciacaoSaldoFixo` | `DB` | Depreciação por saldo decrescente fixo |
-| `depreciacaoSaldoDuplo` | `DDB` | Depreciação duplo declínio |
-| `depreciacaoSomaDigitos` | `SYD` | Depreciação soma dos dígitos |
+| Nome PT-BR               | Origem         | Descrição                                               |
+| ------------------------ | -------------- | ------------------------------------------------------- |
+| `vplExcel`               | `NPV`          | VPL estilo Excel — desconta a partir do período 1       |
+| `vplClassico`            | `NPV` + ajuste | VPL com fluxo[0] no presente (período 0 não descontado) |
+| `tir`                    | `IRR`          | TIR — fluxo[0] = investimento (negativo)                |
+| `tirModificada`          | `MIRR`         | TIR Modificada (tx reinvestimento ≠ tx financiamento)   |
+| `vplDatasIrregulares`    | `XNPV`         | VPL com datas irregulares                               |
+| `tirDatasIrregulares`    | `XIRR`         | TIR com datas irregulares                               |
+| `parcela`                | `PMT`          | Parcela de financiamento                                |
+| `valorPresente`          | `PV`           | Valor presente                                          |
+| `valorFuturo`            | `FV`           | Valor futuro                                            |
+| `numeroPeriodos`         | `NPER`         | Número de períodos                                      |
+| `taxaJuros`              | `RATE`         | Taxa de juros por período                               |
+| `jurosParcela`           | `IPMT`         | Juros de parcela específica                             |
+| `amortizacaoParcela`     | `PPMT`         | Amortização de parcela específica                       |
+| `jurosAcumulados`        | `CUMIPMT`      | Juros acumulados entre períodos                         |
+| `amortizacaoAcumulada`   | `CUMPRINC`     | Amortização acumulada entre períodos                    |
+| `depreciacaoLinear`      | `SLN`          | Depreciação linear (Straight-Line)                      |
+| `depreciacaoSaldoFixo`   | `DB`           | Depreciação por saldo decrescente fixo                  |
+| `depreciacaoSaldoDuplo`  | `DDB`          | Depreciação duplo declínio                              |
+| `depreciacaoSomaDigitos` | `SYD`          | Depreciação soma dos dígitos                            |
 
 ### Funções Estatísticas (simple-statistics)
 
-| Nome PT-BR | Origem | Uso |
-|-----------|--------|-----|
-| `media` | `mean` | Monte Carlo, análise |
-| `mediana` | `median` | Monte Carlo |
-| `desvioPadrao` | `standardDeviation` | Monte Carlo |
-| `variancia` | `variance` | — |
-| `quantil` | `quantile` | P5, P25, P75, P95 |
-| `correlacao` | `sampleCorrelation` | — |
-| `regressaoLinear` | `linearRegression` | — |
-| `linhaRegressao` | `linearRegressionLine` | — |
-| `minimo` / `maximo` | `min` / `max` | — |
-| `somatorio` | `sum` | — |
+| Nome PT-BR          | Origem                 | Uso                  |
+| ------------------- | ---------------------- | -------------------- |
+| `media`             | `mean`                 | Monte Carlo, análise |
+| `mediana`           | `median`               | Monte Carlo          |
+| `desvioPadrao`      | `standardDeviation`    | Monte Carlo          |
+| `variancia`         | `variance`             | —                    |
+| `quantil`           | `quantile`             | P5, P25, P75, P95    |
+| `correlacao`        | `sampleCorrelation`    | —                    |
+| `regressaoLinear`   | `linearRegression`     | —                    |
+| `linhaRegressao`    | `linearRegressionLine` | —                    |
+| `minimo` / `maximo` | `min` / `max`          | —                    |
+| `somatorio`         | `sum`                  | —                    |
 
 **Convenção de fluxo de caixa para VPL/TIR:**
+
 - `flows[0]` = investimento inicial (negativo, período 0)
 - `flows[1..n]` = entradas líquidas por período
 - `vplExcel` desconta todos a partir do período 1 (convenção Excel)
@@ -1172,35 +1196,35 @@ simularSacPrice (sacPrice.ts)
 
 ### Sinais
 
-| Regra | Detalhe |
-|-------|---------|
-| Entradas (receitas, rendimentos) | **positivo** |
+| Regra                                        | Detalhe                                                           |
+| -------------------------------------------- | ----------------------------------------------------------------- |
+| Entradas (receitas, rendimentos)             | **positivo**                                                      |
 | Saídas (custos, impostos, capex, dividendos) | **positivo** (o sinal negativo é aplicado na composição do fluxo) |
-| Resultado Financeiro | pode ser negativo (empresa alavancada: juros > rendimentos) |
-| Dívida Líquida | `D − Caixa`; negativo = caixa > dívida (posição de caixa líquida) |
-| Fluxo de Investimento | sempre negativo na DFC (`−capex[i]`) |
+| Resultado Financeiro                         | pode ser negativo (empresa alavancada: juros > rendimentos)       |
+| Dívida Líquida                               | `D − Caixa`; negativo = caixa > dívida (posição de caixa líquida) |
+| Fluxo de Investimento                        | sempre negativo na DFC (`−capex[i]`)                              |
 
 ### Unidades
 
-| Tipo | Unidade |
-|------|---------|
-| Valores monetários | R$ (reais) |
-| Percentuais | % (0 a 100, não frações) — exceto internamente onde `mcFrac = margem/100` |
-| Prazos (PMR, PMP) | dias |
-| Taxas (WACC, Ke, Kd) | % ao ano |
-| Alíquotas tributárias | % (0 a 100) |
+| Tipo                  | Unidade                                                                   |
+| --------------------- | ------------------------------------------------------------------------- |
+| Valores monetários    | R$ (reais)                                                                |
+| Percentuais           | % (0 a 100, não frações) — exceto internamente onde `mcFrac = margem/100` |
+| Prazos (PMR, PMP)     | dias                                                                      |
+| Taxas (WACC, Ke, Kd)  | % ao ano                                                                  |
+| Alíquotas tributárias | % (0 a 100)                                                               |
 
 ### Períodos
 
-| Conceito | Convenção |
-|---------|-----------|
-| Série mensal | Array `number[12]`, índice 0 = Janeiro |
-| Anual | `sum(array12)` via `format.ts:sum()` |
-| Período DRE | Ano-calendário configurado |
-| Forecast | t=0 = primeiro mês após o ano-base |
-| VPL (Excel) | t=0 = hoje (não descontado em `vplClassico`); t=1 em diante descontados |
-| Apuração IRPJ/CSLL | Trimestral (Q1=Jan–Mar, Q2=Abr–Jun, Q3=Jul–Set, Q4=Out–Dez) |
-| Parcela DARF impostos | Deslocamento de 30 dias (apuração + pagamento) |
+| Conceito              | Convenção                                                               |
+| --------------------- | ----------------------------------------------------------------------- |
+| Série mensal          | Array `number[12]`, índice 0 = Janeiro                                  |
+| Anual                 | `sum(array12)` via `format.ts:sum()`                                    |
+| Período DRE           | Ano-calendário configurado                                              |
+| Forecast              | t=0 = primeiro mês após o ano-base                                      |
+| VPL (Excel)           | t=0 = hoje (não descontado em `vplClassico`); t=1 em diante descontados |
+| Apuração IRPJ/CSLL    | Trimestral (Q1=Jan–Mar, Q2=Abr–Jun, Q3=Jul–Set, Q4=Out–Dez)             |
+| Parcela DARF impostos | Deslocamento de 30 dias (apuração + pagamento)                          |
 
 ### Arredondamento
 
@@ -1226,4 +1250,4 @@ simularSacPrice (sacPrice.ts)
 
 ---
 
-*Fim do documento — FinancePRO INDICADORES.md*
+_Fim do documento — FinancePRO INDICADORES.md_

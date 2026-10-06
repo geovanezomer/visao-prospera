@@ -8,7 +8,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
-
 function mask(v: string | null | undefined): string | null {
   if (!v) return null;
   if (v.length <= 8) return "••••";
@@ -117,7 +116,10 @@ export const setActiveProvider = createServerFn({ method: "POST" })
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // Desativa todos e ativa o escolhido (transação implícita não é crítica aqui).
-    await supabaseAdmin.from("provider_credentials").update({ is_active: false }).neq("provider", "");
+    await supabaseAdmin
+      .from("provider_credentials")
+      .update({ is_active: false })
+      .neq("provider", "");
     const { error } = await supabaseAdmin
       .from("provider_credentials")
       .update({ is_active: true, updated_at: new Date().toISOString(), updated_by: context.userId })
@@ -127,7 +129,12 @@ export const setActiveProvider = createServerFn({ method: "POST" })
     await supabaseAdmin
       .from("app_settings")
       .upsert(
-        { key: "active_provider", value: { provider: data.provider }, updated_by: context.userId, updated_at: new Date().toISOString() },
+        {
+          key: "active_provider",
+          value: { provider: data.provider },
+          updated_by: context.userId,
+          updated_at: new Date().toISOString(),
+        },
         { onConflict: "key" },
       );
     // Invalida cache do seletor de provider (evita janela de 60s servindo o antigo).
@@ -157,21 +164,44 @@ export const testProviderConnection = createServerFn({ method: "POST" })
     // Stripe Secret Key: sk_test_ / sk_live_  |  Asaas: $aact_ (ou access token alfanumérico).
     if (data.provider === "stripe") {
       if (key.startsWith("$aact_")) {
-        return { ok: false, message: "Esta chave parece ser do Asaas ($aact_...). Cole a Secret Key do Stripe (sk_test_... ou sk_live_...) no slot do Stripe." };
+        return {
+          ok: false,
+          message:
+            "Esta chave parece ser do Asaas ($aact_...). Cole a Secret Key do Stripe (sk_test_... ou sk_live_...) no slot do Stripe.",
+        };
       }
       if (key.startsWith("whsec_")) {
-        return { ok: false, message: "Isto é um Webhook Secret do Stripe (whsec_...), não a Secret Key. Use sk_test_... ou sk_live_..." };
+        return {
+          ok: false,
+          message:
+            "Isto é um Webhook Secret do Stripe (whsec_...), não a Secret Key. Use sk_test_... ou sk_live_...",
+        };
       }
       if (!key.startsWith("sk_test_") && !key.startsWith("sk_live_") && !key.startsWith("rk_")) {
-        return { ok: false, message: "Formato de chave Stripe inválido. Esperado sk_test_... ou sk_live_..." };
+        return {
+          ok: false,
+          message: "Formato de chave Stripe inválido. Esperado sk_test_... ou sk_live_...",
+        };
       }
     } else {
       // Asaas
-      if (key.startsWith("sk_test_") || key.startsWith("sk_live_") || key.startsWith("whsec_") || key.startsWith("rk_")) {
-        return { ok: false, message: "Esta chave parece ser do Stripe. Cole o access_token do Asaas ($aact_...) no slot do Asaas." };
+      if (
+        key.startsWith("sk_test_") ||
+        key.startsWith("sk_live_") ||
+        key.startsWith("whsec_") ||
+        key.startsWith("rk_")
+      ) {
+        return {
+          ok: false,
+          message:
+            "Esta chave parece ser do Stripe. Cole o access_token do Asaas ($aact_...) no slot do Asaas.",
+        };
       }
       if (!key.startsWith("$aact_") && key.length < 40) {
-        return { ok: false, message: "Formato de access_token do Asaas inválido. Esperado começar com $aact_..." };
+        return {
+          ok: false,
+          message: "Formato de access_token do Asaas inválido. Esperado começar com $aact_...",
+        };
       }
     }
 
@@ -181,18 +211,21 @@ export const testProviderConnection = createServerFn({ method: "POST" })
           headers: { Authorization: `Bearer ${key}` },
         });
         if (!r.ok) {
-          const msg = r.status === 401
-            ? "Stripe 401: chave inválida ou sem permissão. Verifique a Secret Key (sk_...) e o modo (test/live)."
-            : `Stripe ${r.status}: falha ao validar credenciais.`;
+          const msg =
+            r.status === 401
+              ? "Stripe 401: chave inválida ou sem permissão. Verifique a Secret Key (sk_...) e o modo (test/live)."
+              : `Stripe ${r.status}: falha ao validar credenciais.`;
           return { ok: false, message: msg };
         }
       } else {
-        const base = cred.mode === "live" ? "https://api.asaas.com/v3" : "https://sandbox.asaas.com/api/v3";
+        const base =
+          cred.mode === "live" ? "https://api.asaas.com/v3" : "https://sandbox.asaas.com/api/v3";
         const r = await fetch(`${base}/myAccount`, { headers: { access_token: key } });
         if (!r.ok) {
-          const msg = r.status === 401
-            ? "Asaas 401: access_token inválido. Verifique a chave e o ambiente (sandbox/live)."
-            : `Asaas ${r.status}: falha ao validar credenciais.`;
+          const msg =
+            r.status === 401
+              ? "Asaas 401: access_token inválido. Verifique a chave e o ambiente (sandbox/live)."
+              : `Asaas ${r.status}: falha ao validar credenciais.`;
           return { ok: false, message: msg };
         }
       }
@@ -201,4 +234,3 @@ export const testProviderConnection = createServerFn({ method: "POST" })
       return { ok: false, message: e instanceof Error ? e.message : "Falha na conexão." };
     }
   });
-

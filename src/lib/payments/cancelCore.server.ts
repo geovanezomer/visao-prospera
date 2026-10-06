@@ -22,9 +22,7 @@ export type CancelCoreResult = {
   providerStatus: string;
 };
 
-export async function cancelSubscriptionNow(
-  input: CancelCoreInput,
-): Promise<CancelCoreResult> {
+export async function cancelSubscriptionNow(input: CancelCoreInput): Promise<CancelCoreResult> {
   const { loadProviderConfig } = await import("./index");
   if (input.provider === "stripe") {
     const cfg = await loadProviderConfig("stripe");
@@ -48,11 +46,12 @@ export async function cancelSubscriptionNow(
     const apiKey = cfg?.apiKey ?? process.env.ASAAS_API_KEY ?? "";
     const mode = cfg?.mode ?? (process.env.ASAAS_ENV === "sandbox" ? "sandbox" : "live");
     if (!apiKey) throw new Error("ASAAS_API_KEY ausente.");
-    const base = mode === "sandbox" ? "https://sandbox.asaas.com/api/v3" : "https://api.asaas.com/v3";
-    const r = await fetch(
-      `${base}/subscriptions/${encodeURIComponent(input.subscriptionId)}`,
-      { method: "DELETE", headers: { access_token: apiKey } },
-    );
+    const base =
+      mode === "sandbox" ? "https://sandbox.asaas.com/api/v3" : "https://api.asaas.com/v3";
+    const r = await fetch(`${base}/subscriptions/${encodeURIComponent(input.subscriptionId)}`, {
+      method: "DELETE",
+      headers: { access_token: apiKey },
+    });
     const j = (await r.json().catch(() => ({}))) as { deleted?: boolean; errors?: unknown };
     if (!r.ok) throw new Error(`Asaas cancel: ${JSON.stringify(j)}`);
     return {

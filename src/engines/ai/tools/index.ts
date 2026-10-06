@@ -220,9 +220,7 @@ export function runTool(
   if (name === "tool_invoke") {
     const target = typeof args.name === "string" ? args.name : "";
     const inner =
-      args.arguments && typeof args.arguments === "object"
-        ? (args.arguments as ToolArgs)
-        : {};
+      args.arguments && typeof args.arguments === "object" ? (args.arguments as ToolArgs) : {};
     const handler = HANDLERS[target];
     if (!handler) {
       return JSON.stringify({ error: `Ferramenta desconhecida: ${target}` });

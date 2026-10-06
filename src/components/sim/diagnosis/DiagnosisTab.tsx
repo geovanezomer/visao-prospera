@@ -6,7 +6,14 @@ import { buildPrescriptiveCards, PrescriptiveCard } from "@/engines/finance/pres
 import { diagnose } from "@/engines/finance";
 import { buildBriefing } from "@/engines/finance/briefing";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { AlertTriangle, CheckCircle2, ChevronRight, Info, SlidersHorizontal, TriangleAlert } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronRight,
+  Info,
+  SlidersHorizontal,
+  TriangleAlert,
+} from "lucide-react";
 import { StrategicSummary } from "@/components/sim/strategic/StrategicSummary";
 import { SectionTitle } from "@/components/sim/shared/primitives";
 import { HealthScoreCard, SensitivityCard } from "@/components/sim/analysis/AnalysisTab";
@@ -21,12 +28,13 @@ export function DiagnosisTab() {
   const model = useFinanceModel(state);
   // Passa o modelo precomputado para evitar 3 passagens redundantes pela engine.
   const cards = useMemo(
-    () => buildPrescriptiveCards(state, {
-      dre: model.dre,
-      tax: model.model.tax,
-      ind: model.ind,
-      cf: model.cf,
-    }),
+    () =>
+      buildPrescriptiveCards(state, {
+        dre: model.dre,
+        tax: model.model.tax,
+        ind: model.ind,
+        cf: model.cf,
+      }),
     [state, model.dre, model.ind, model.cf, model.model.tax],
   );
   const diagnostics = useMemo(
@@ -52,8 +60,6 @@ export function DiagnosisTab() {
     <div className="space-y-6">
       {/* Diagnóstico Executivo gerado pela IA — só renderiza se IA configurada */}
       <DiagnosticoExecutivoCard briefing={briefing} />
-
-
 
       {/* Capital de Giro — explica NCG e ciclo financeiro */}
       <NCGExplanationCard
@@ -232,7 +238,6 @@ function CardView({ card }: { card: PrescriptiveCard }) {
               pré-configurados — você pode então combinar com outras alavancas antes de aplicar ao
               plano-base.
             </p>
-
           </div>
         )}
       </div>

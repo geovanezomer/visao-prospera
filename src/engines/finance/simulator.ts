@@ -36,7 +36,6 @@ const PROLABORE_RE = /pr[óo]-?labore|prolabore/i;
 const isLaborLine = (c: CostLine) => c.encargosAuto === true || LABOR_RE.test(c.label);
 const isProlaboreLine = (c: CostLine) => PROLABORE_RE.test(c.label);
 
-
 export interface SimulatorParams {
   // Receita & Preço
   priceDeltaPct: number; // -30..+30  → multiplica receita
@@ -46,7 +45,6 @@ export interface SimulatorParams {
   // Ex.: E=1.2, +10% preço → −12% volume induzido (soma ao volumeDeltaPct manual).
   priceElasticity: number; // 0..3
 
-
   // Custos & Pessoal
   cpvDeltaPct: number; // -20..+30  → multiplica linhas custo_vendas
   payrollDeltaPct: number; // -30..+30  → multiplica linhas com encargosAuto
@@ -54,7 +52,6 @@ export interface SimulatorParams {
   distribuicaoDeltaPct: number; // -100..+200 → escala distribuição de lucros — afeta CAIXA (não DRE)
   fixedCutPct: number; // -50..+50  → positivo = corte, negativo = aumento nos top-N fixos
   fixedCutTopN: number; // 1..5
-
 
   // Capital de Giro
   pmrDeltaDays: number; // -60..0    (sempre reduz ou 0)
@@ -133,7 +130,8 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     distribuicaoRealizada: base.distribuicaoRealizada
       ? {
           ...base.distribuicaoRealizada,
-          values: base.distribuicaoRealizada.values.slice() as typeof base.distribuicaoRealizada.values,
+          values:
+            base.distribuicaoRealizada.values.slice() as typeof base.distribuicaoRealizada.values,
         }
       : base.distribuicaoRealizada,
 
@@ -164,8 +162,10 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       }));
     }
     s.costs = s.costs.map((c) =>
-      c.category === "custo_vendas" || c.category === "direto_venda" ||
-      c.category === "variavel" || c.category === "despesa_comercial"
+      c.category === "custo_vendas" ||
+      c.category === "direto_venda" ||
+      c.category === "variavel" ||
+      c.category === "despesa_comercial"
         ? { ...c, values: c.values.map((v) => v * f) }
         : c,
     );
@@ -207,15 +207,15 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     if (s.distribuicaoRealizada) {
       s.distribuicaoRealizada = {
         ...s.distribuicaoRealizada,
-        values: s.distribuicaoRealizada.values.map((v) => Math.max(0, v * f)) as typeof s.distribuicaoRealizada.values,
+        values: s.distribuicaoRealizada.values.map((v) =>
+          Math.max(0, v * f),
+        ) as typeof s.distribuicaoRealizada.values,
       };
     } else {
       // Fallback legado — sem distribuicaoRealizada, escala o campo antigo.
       s.cashflow.dividendos = s.cashflow.dividendos.map((v) => Math.max(0, v * f));
     }
   }
-
-
 
   // 5) Ajuste de fixos (top-N) — primitiva scaleCostLines (já cobre fixo + despesa_administrativa).
   if (p.fixedCutPct !== 0) {
@@ -260,9 +260,7 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
   //    OU linhas sintéticas do simulador/contratos de dívida).
   const isInterestLine = (c: CostLine) =>
     c.category === "financeiro" &&
-    (/juros/i.test(c.label) ||
-      c.id === "sim_loan_juros" ||
-      c.id.startsWith("__debt_contracts"));
+    (/juros/i.test(c.label) || c.id === "sim_loan_juros" || c.id.startsWith("__debt_contracts"));
   if (p.kdDeltaPp !== 0) {
     const kdAtual = Math.max(s.capital.kd, 0.5);
     const novoKd = Math.max(0.5, s.capital.kd + p.kdDeltaPp);
@@ -273,12 +271,17 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     );
   }
 
-
   // 10) Quitar dívida EXISTENTE (antes de captar)
   if (p.debtPaydownPct > 0) {
     const pct = p.debtPaydownPct / 100;
     const pago = sumContractSaldos(s.capital.debtContracts) * pct;
-    s.capital = { ...s.capital, debtContracts: (s.capital.debtContracts ?? []).map(c => ({...c, saldoDevedor: Math.max(0, (c.saldoDevedor||0)*(1-pct))})) };
+    s.capital = {
+      ...s.capital,
+      debtContracts: (s.capital.debtContracts ?? []).map((c) => ({
+        ...c,
+        saldoDevedor: Math.max(0, (c.saldoDevedor || 0) * (1 - pct)),
+      })),
+    };
     s.costs = s.costs.map((c) =>
       isInterestLine(c) ? { ...c, values: c.values.map((v) => v * (1 - pct)) } : c,
     );
@@ -339,7 +342,6 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       },
     ];
   }
-
 
   // 12) Regime — primitiva switchRegime.
   if (p.regimeOverride !== "base") {
@@ -434,7 +436,6 @@ export function computeSimView(state: AppState, precomputed?: SimViewPrecomputed
   const outrasOp = sum(dre.outrasReceitasOperacionais) - sum(dre.depreciacao);
   const receitasFin = sum(state.revenue.receitasFinanceiras?.flatMap((r) => r.valores ?? []) ?? []);
 
-
   const ganhoAlien = 0;
   const ebit = sum(dre.ebit);
   const laft = ebit + receitasFin + ganhoAlien;
@@ -497,7 +498,6 @@ export function countActiveLevers(p: SimulatorParams): number {
 
   if (p.fixedCutPct !== 0) n++;
 
-  
   if (p.pmrDeltaDays !== 0) n++;
   if (p.pmpDeltaDays !== 0) n++;
   if (p.antecipPctAm > 0) n++;

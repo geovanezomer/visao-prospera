@@ -57,9 +57,6 @@ function mkSocio(overrides: Partial<SocioRetirada> = {}): SocioRetirada {
   };
 }
 
-
-
-
 describe("Lei 15.270/2025 — integração com sócio", () => {
   const state: AppState = {
     ...DEFAULT_STATE,

@@ -126,7 +126,8 @@ export function computeHealth(state: AppState, precomputed?: HealthPrecomputed):
       key: "cob",
       // Sem dívida (coberturaJuros == null) → dimensão saudável (score máximo).
       label: "Cobertura de Juros",
-      score: ind.coberturaJuros == null ? band(10, 0, 6) : band(Math.min(ind.coberturaJuros, 10), 0, 6),
+      score:
+        ind.coberturaJuros == null ? band(10, 0, 6) : band(Math.min(ind.coberturaJuros, 10), 0, 6),
       weight: 0.08,
       value: ind.coberturaJuros == null ? "N/A" : `${ind.coberturaJuros.toFixed(1)}×`,
       comment:
@@ -135,7 +136,9 @@ export function computeHealth(state: AppState, precomputed?: HealthPrecomputed):
           : ind.coberturaJuros < 2
             ? "EBIT mal cobre os juros — risco de default."
             : "Lucro operacional cobre confortavelmente o serviço da dívida.",
-      status: statusFromScore(ind.coberturaJuros == null ? band(10, 0, 6) : band(Math.min(ind.coberturaJuros, 10), 0, 6)),
+      status: statusFromScore(
+        ind.coberturaJuros == null ? band(10, 0, 6) : band(Math.min(ind.coberturaJuros, 10), 0, 6),
+      ),
     },
     {
       key: "liq",

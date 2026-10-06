@@ -9,7 +9,11 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Mail, Loader2, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,8 +28,12 @@ type State =
   | { kind: "err"; msg: string };
 
 export function TrialRequestDialog({
-  open, onOpenChange,
-}: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
   const [state, setState] = useState<State>({ kind: "idle" });
@@ -36,17 +44,27 @@ export function TrialRequestDialog({
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    void supabase.from("app_settings").select("value").eq("key", "trial").maybeSingle()
+    void supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "trial")
+      .maybeSingle()
       .then(({ data }) => {
         if (cancelled || !data?.value) return;
         const v = data.value as { duration_hours?: number };
         const h = Number(v.duration_hours);
         if (Number.isFinite(h) && h > 0) setCfgHours(Math.min(Math.max(h, 1), 72));
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
-  const reset = () => { setEmail(""); setWebsite(""); setState({ kind: "idle" }); };
+  const reset = () => {
+    setEmail("");
+    setWebsite("");
+    setState({ kind: "idle" });
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,22 +77,53 @@ export function TrialRequestDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: normalizedEmail, website }),
       });
-      const body = (await r.json().catch(() => ({}))) as { error?: string; hours?: number; sent?: boolean };
+      const body = (await r.json().catch(() => ({}))) as {
+        error?: string;
+        hours?: number;
+        sent?: boolean;
+      };
       if (r.ok && body.sent !== false) {
         setEmail(normalizedEmail);
         setState({ kind: "ok", hours: body.hours ?? 2 });
         return;
       }
       if (r.ok && body.sent === false) {
-        setState({ kind: "err", msg: "Seu teste foi criado, mas o e-mail não pôde ser enviado agora. Tente novamente em alguns minutos ou fale com o suporte." });
+        setState({
+          kind: "err",
+          msg: "Seu teste foi criado, mas o e-mail não pôde ser enviado agora. Tente novamente em alguns minutos ou fale com o suporte.",
+        });
         return;
       }
-      if (r.status === 409) { setState({ kind: "already" }); return; }
-      if (r.status === 429) { setState({ kind: "err", msg: "Muitas tentativas. Tente novamente em alguns minutos." }); return; }
-      if (body.error === "disposable_email") { setState({ kind: "err", msg: "Use um e-mail corporativo ou pessoal válido." }); return; }
-      if (body.error === "trial_disabled") { setState({ kind: "err", msg: "Testes gratuitos temporariamente desativados." }); return; }
-      if (body.error === "email_config_missing") { setState({ kind: "err", msg: "O envio de e-mail do teste ainda não está configurado corretamente. Fale com o administrador." }); return; }
-      if (body.error === "email_send_failed") { setState({ kind: "err", msg: "Não foi possível enviar o link de teste agora. Verifique o e-mail informado e tente novamente." }); return; }
+      if (r.status === 409) {
+        setState({ kind: "already" });
+        return;
+      }
+      if (r.status === 429) {
+        setState({ kind: "err", msg: "Muitas tentativas. Tente novamente em alguns minutos." });
+        return;
+      }
+      if (body.error === "disposable_email") {
+        setState({ kind: "err", msg: "Use um e-mail corporativo ou pessoal válido." });
+        return;
+      }
+      if (body.error === "trial_disabled") {
+        setState({ kind: "err", msg: "Testes gratuitos temporariamente desativados." });
+        return;
+      }
+      if (body.error === "email_config_missing") {
+        setState({
+          kind: "err",
+          msg: "O envio de e-mail do teste ainda não está configurado corretamente. Fale com o administrador.",
+        });
+        return;
+      }
+      if (body.error === "email_send_failed") {
+        setState({
+          kind: "err",
+          msg: "Não foi possível enviar o link de teste agora. Verifique o e-mail informado e tente novamente.",
+        });
+        return;
+      }
       setState({ kind: "err", msg: "Não foi possível processar agora. Tente novamente." });
     } catch {
       setState({ kind: "err", msg: "Erro de rede. Verifique sua conexão." });
@@ -82,7 +131,13 @@ export function TrialRequestDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) reset();
+        onOpenChange(v);
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -101,10 +156,15 @@ export function TrialRequestDialog({
               <div>
                 <p className="font-medium text-foreground">Pronto! Cheque seu e-mail.</p>
                 <p className="mt-1 text-muted-foreground">
-                  Enviamos um link de acesso para <strong>{email}</strong>. Ele expira em <strong>{state.hours} hora{state.hours === 1 ? "" : "s"}</strong>.
-                  Após esse período, sua sessão será encerrada automaticamente.
+                  Enviamos um link de acesso para <strong>{email}</strong>. Ele expira em{" "}
+                  <strong>
+                    {state.hours} hora{state.hours === 1 ? "" : "s"}
+                  </strong>
+                  . Após esse período, sua sessão será encerrada automaticamente.
                 </p>
-                <p className="mt-2 text-xs text-muted-foreground">Não viu? Verifique o spam ou aguarde 1–2 minutos.</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Não viu? Verifique o spam ou aguarde 1–2 minutos.
+                </p>
               </div>
             </div>
           </div>
@@ -116,9 +176,13 @@ export function TrialRequestDialog({
               <AlertCircle className="mt-0.5 h-5 w-5 text-amber-500 shrink-0" />
               <div className="flex-1">
                 <p className="font-medium text-foreground">Este e-mail já testou a plataforma.</p>
-                <p className="mt-1 text-muted-foreground">Para continuar usando, escolha um dos planos abaixo.</p>
+                <p className="mt-1 text-muted-foreground">
+                  Para continuar usando, escolha um dos planos abaixo.
+                </p>
                 <Button asChild size="sm" className="mt-3">
-                  <Link to="/landing" hash="planos" onClick={() => onOpenChange(false)}>Ver planos</Link>
+                  <Link to="/landing" hash="planos" onClick={() => onOpenChange(false)}>
+                    Ver planos
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -131,7 +195,9 @@ export function TrialRequestDialog({
               <p className="flex items-start gap-2">
                 <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                 <span>
-                  Você recebe um <strong>link mágico</strong> por e-mail. Ao clicar, entra direto na plataforma — sem senha. Seu acesso expira em <strong>{cfgHours}h</strong> a partir do envio do link.
+                  Você recebe um <strong>link mágico</strong> por e-mail. Ao clicar, entra direto na
+                  plataforma — sem senha. Seu acesso expira em <strong>{cfgHours}h</strong> a partir
+                  do envio do link.
                 </span>
               </p>
             </div>
@@ -150,20 +216,34 @@ export function TrialRequestDialog({
             </div>
             {/* honeypot — escondido visualmente, bots costumam preencher */}
             <input
-              type="text" tabIndex={-1} autoComplete="off"
-              value={website} onChange={(e) => setWebsite(e.target.value)}
-              className="hidden" aria-hidden="true"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              className="hidden"
+              aria-hidden="true"
             />
-            {state.kind === "err" && (
-              <p className="text-sm text-destructive">{state.msg}</p>
-            )}
+            {state.kind === "err" && <p className="text-sm text-destructive">{state.msg}</p>}
             <Button type="submit" disabled={state.kind === "loading" || !email} className="w-full">
-              {state.kind === "loading"
-                ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando…</>
-                : <>Enviar meu link de acesso</>}
+              {state.kind === "loading" ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enviando…
+                </>
+              ) : (
+                <>Enviar meu link de acesso</>
+              )}
             </Button>
             <p className="text-[11px] text-center text-muted-foreground">
-              Já tem conta? <Link to="/login" className="underline hover:text-foreground" onClick={() => onOpenChange(false)}>Entrar</Link>
+              Já tem conta?{" "}
+              <Link
+                to="/login"
+                className="underline hover:text-foreground"
+                onClick={() => onOpenChange(false)}
+              >
+                Entrar
+              </Link>
             </p>
           </form>
         )}

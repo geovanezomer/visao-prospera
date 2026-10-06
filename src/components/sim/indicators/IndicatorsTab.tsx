@@ -13,8 +13,6 @@ export function IndicatorsTab() {
   const { dre, ind, cagrReceitas12m } = useFinanceModel(state);
   const c = buildIndicatorCalcs(state, dre, ind, cagrReceitas12m);
 
-
-
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-4">
@@ -45,7 +43,9 @@ export function IndicatorsTab() {
             />
           </div>
           <div className="mono mt-2 text-2xl font-bold text-foreground">{fmtBRL(ind.ncg)}</div>
-          <div className={`mt-1 text-[11px] font-medium ${ind.gapCapitalGiro > 0 ? "text-neg" : "text-pos"}`}>
+          <div
+            className={`mt-1 text-[11px] font-medium ${ind.gapCapitalGiro > 0 ? "text-neg" : "text-pos"}`}
+          >
             {ind.gapCapitalGiro > 0
               ? `Falta ${fmtBRL(ind.gapCapitalGiro)} (gap de capital)`
               : `Sobra ${fmtBRL(Math.abs(ind.gapCapitalGiro))} (CDG cobre a NCG)`}
@@ -68,14 +68,11 @@ export function IndicatorsTab() {
       </div>
 
       <IndicatorsGrid state={state} />
-
     </div>
   );
 }
 
-
 // `Ind` foi extraído para IndicatorsGrid.tsx (SSOT visual dos indicadores).
-
 
 // (I2) Consome ind.conversaoEbitdaCaixa — não recalcula localmente.
 function CashConversionSmall({ conversao, calc }: { conversao: number; calc?: string }) {

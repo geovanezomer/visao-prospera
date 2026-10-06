@@ -15,9 +15,7 @@ function asaasBaseFor(mode: "live" | "sandbox" | null | undefined): string {
   const envMode = (mode ?? (process.env.ASAAS_ENV === "sandbox" ? "sandbox" : "live")) as
     | "live"
     | "sandbox";
-  return envMode === "sandbox"
-    ? "https://sandbox.asaas.com/api/v3"
-    : "https://api.asaas.com/v3";
+  return envMode === "sandbox" ? "https://sandbox.asaas.com/api/v3" : "https://api.asaas.com/v3";
 }
 
 type AsaasFetchOpts = {
@@ -51,7 +49,6 @@ async function asaasFetch<T>(
   return json as T;
 }
 
-
 function planFromValue(value: number): PlanId {
   // Heurística simples — preço PRO costuma ser maior. Asaas não tem
   // lookup_key; usamos o valor cobrado para mapear de volta.
@@ -72,8 +69,9 @@ export class AsaasProvider implements PaymentProvider {
   constructor(config?: ProviderConfig) {
     this.apiKey = config?.apiKey ?? process.env.ASAAS_API_KEY ?? "";
     this.webhookSecret = config?.webhookSecret ?? process.env.ASAAS_WEBHOOK_TOKEN ?? null;
-    this.mode = (config?.mode ??
-      (process.env.ASAAS_ENV === "sandbox" ? "sandbox" : "live")) as "live" | "sandbox";
+    this.mode = (config?.mode ?? (process.env.ASAAS_ENV === "sandbox" ? "sandbox" : "live")) as
+      | "live"
+      | "sandbox";
     this.baseUrl = asaasBaseFor(this.mode);
   }
 
@@ -94,9 +92,18 @@ export class AsaasProvider implements PaymentProvider {
     currency?: string;
     providerRef?: string | null;
     planName?: string;
-    upsell?: { name: string; priceCents: number; stripePriceId?: string | null; asaasRef?: string | null } | null;
+    upsell?: {
+      name: string;
+      priceCents: number;
+      stripePriceId?: string | null;
+      asaasRef?: string | null;
+    } | null;
     idempotencyKey?: string;
-  }): Promise<{ url: string; providerSessionId?: string | null; providerCustomerId?: string | null }> {
+  }): Promise<{
+    url: string;
+    providerSessionId?: string | null;
+    providerCustomerId?: string | null;
+  }> {
     const ik = input.idempotencyKey;
     const ikFor = (suffix: string) => (ik ? `${ik}:${suffix}` : undefined);
 
@@ -105,10 +112,14 @@ export class AsaasProvider implements PaymentProvider {
     let cycle = "MONTHLY";
     if (typeof input.priceCents === "number" && input.priceCents > 0) {
       value = input.priceCents / 100;
-      cycle = input.interval === "year" ? "YEARLY"
-        : input.interval === "week" ? "WEEKLY"
-        : input.interval === "day" ? "DAILY"
-        : "MONTHLY";
+      cycle =
+        input.interval === "year"
+          ? "YEARLY"
+          : input.interval === "week"
+            ? "WEEKLY"
+            : input.interval === "day"
+              ? "DAILY"
+              : "MONTHLY";
     } else {
       const ref = input.providerRef || getProviderPlanRef(input.plan);
       const [valueStr, cycleStr] = ref.split(":");
@@ -117,7 +128,8 @@ export class AsaasProvider implements PaymentProvider {
     }
 
     const isOneTime = input.interval === "one_time" || input.interval === "lifetime";
-    const upsellValue = input.upsell && input.upsell.priceCents > 0 ? input.upsell.priceCents / 100 : 0;
+    const upsellValue =
+      input.upsell && input.upsell.priceCents > 0 ? input.upsell.priceCents / 100 : 0;
     const planDesc = input.planName || `FinancePRO — plano ${input.plan}`;
 
     // Asaas Checkout hospedado — o link é criado sem pré-cadastrar cliente;
@@ -187,7 +199,6 @@ export class AsaasProvider implements PaymentProvider {
       };
     }
 
-
     const checkout = await this.fetch<{ id: string; link?: string; url?: string }>("/checkouts", {
       method: "POST",
       body,
@@ -197,7 +208,6 @@ export class AsaasProvider implements PaymentProvider {
     if (!url) throw new Error(`Asaas: link de checkout não retornado (total ${totalValue}).`);
     return { url, providerSessionId: checkout.id ?? null, providerCustomerId: null };
   }
-
 
   async createPortal(input: { customerId: string; returnUrl: string }): Promise<{ url: string }> {
     // Asaas Central do Cliente: URL pública por customer.
@@ -230,7 +240,9 @@ export class AsaasProvider implements PaymentProvider {
     }
   }
 
-  private async parseEvent(event: import("./_remote-types").AsaasWebhookEvent): Promise<NormalizedEvent> {
+  private async parseEvent(
+    event: import("./_remote-types").AsaasWebhookEvent,
+  ): Promise<NormalizedEvent> {
     const p = event.payment;
     const s = event.subscription;
     switch (event.event) {

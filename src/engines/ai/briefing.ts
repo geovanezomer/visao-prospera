@@ -70,7 +70,12 @@ export function buildOpeningBriefing(state: AppState, sections?: SnapshotSection
     }
 
     // 5) Cobertura de juros
-    if (pontos.length < 3 && ind.coberturaJuros != null && Number.isFinite(ind.coberturaJuros) && ind.coberturaJuros < 2) {
+    if (
+      pontos.length < 3 &&
+      ind.coberturaJuros != null &&
+      Number.isFinite(ind.coberturaJuros) &&
+      ind.coberturaJuros < 2
+    ) {
       pontos.push(
         `cobertura de juros em **${ind.coberturaJuros.toFixed(1)}x** (EBIT mal cobre os juros)`,
       );

@@ -12,8 +12,7 @@ import { resolve } from "node:path";
 // análise estática do código-fonte. Qualquer reintrodução de lógica
 // duplicada faz o teste falhar antes do build.
 
-const read = (rel: string) =>
-  readFileSync(resolve(process.cwd(), rel), "utf8");
+const read = (rel: string) => readFileSync(resolve(process.cwd(), rel), "utf8");
 
 const CARD = "src/components/sim/indicators/IndicatorsCard.tsx";
 const TAB = "src/components/sim/indicators/IndicatorsTab.tsx";
@@ -48,9 +47,7 @@ describe("SSOT visual de Indicadores (Card ↔ Tab ↔ Grid)", () => {
 
   it("Card e Tab renderizam o MESMO conjunto de labels (vindo do Grid)", () => {
     // Conjunto canônico de labels = todos os `label="..."` presentes no Grid.
-    const gridLabels = new Set(
-      [...grid.matchAll(/label="([^"]+)"/g)].map((m) => m[1]),
-    );
+    const gridLabels = new Set([...grid.matchAll(/label="([^"]+)"/g)].map((m) => m[1]));
     expect(gridLabels.size).toBeGreaterThanOrEqual(30); // sanity: temos ~33 cards
     // Nenhum label de indicador pode ser declarado fora do Grid (no Card
     // ou no Tab) — isso pegaria qualquer "cópia esquecida".

@@ -221,10 +221,7 @@ export interface SuggestOpts {
 }
 
 /** Constrói uma sugestão de Balanço a partir do state operacional. Pure. */
-export function suggestBalancoFromState(
-  state: AppState,
-  opts: SuggestOpts,
-): BalancoDetalhado {
+export function suggestBalancoFromState(state: AppState, opts: SuggestOpts): BalancoDetalhado {
   const cap = state.capital;
   const rev = state.revenue;
   const receitaBrutaAnual = (rev?.bruta ?? []).reduce((a, b) => a + (b || 0), 0);
@@ -233,21 +230,13 @@ export function suggestBalancoFromState(
 
   // CR: usa capital, senão deriva do PMR (receitaBruta × pmr/360).
   const ar =
-    cap.contasReceber > 0
-      ? cap.contasReceber
-      : (receitaBrutaAnual * (rev?.pmr || 0)) / 360;
+    cap.contasReceber > 0 ? cap.contasReceber : (receitaBrutaAnual * (rev?.pmr || 0)) / 360;
   // Fornecedores: usa capital, senão deriva do PMP (CPV × pmp/360).
-  const ap =
-    cap.fornecedores > 0
-      ? cap.fornecedores
-      : (cpvAnual * (rev?.pmp || 0)) / 360;
+  const ap = cap.fornecedores > 0 ? cap.fornecedores : (cpvAnual * (rev?.pmp || 0)) / 360;
 
   // CAPEX → imobilizado (proxy). Depreciação acumulada: (depMensal×12) +
   // acumulado de cada ativação até dezembro.
-  const capexTotal = (cap.capexAtivacao ?? []).reduce(
-    (a, c) => a + (c.valor || 0),
-    0,
-  );
+  const capexTotal = (cap.capexAtivacao ?? []).reduce((a, c) => a + (c.valor || 0), 0);
   const depAcumCapex = (cap.capexAtivacao ?? []).reduce((a, c) => {
     const meses = Math.max(0, 13 - (c.mes || 1));
     const vu = c.vidaUtilMeses > 0 ? c.vidaUtilMeses : 60;
@@ -269,7 +258,6 @@ export function suggestBalancoFromState(
   // (créditos com partes relacionadas — CPC 05).
   const msAgg = aggregateMutuos(state.mutuosSocios);
   const mutuosAtivosSaldoAReceber = Math.max(0, msAgg.saldoFinal);
-
 
   // Provisões ~ 1 mês.
   const salariosPagar = folhaAnual > 0 ? folhaAnual / 12 : 0;

@@ -108,7 +108,10 @@ describe("arquitetura de pastas", () => {
     const offenders: string[] = [];
     for (const mod of forbidden) {
       // captura toda linha que importa do módulo proibido (com aspas simples ou duplas)
-      const re = new RegExp(`^[^\\n]*from\\s+["']${mod.replace(/[/$.]/g, "\\$&")}["'][^\\n]*$`, "gm");
+      const re = new RegExp(
+        `^[^\\n]*from\\s+["']${mod.replace(/[/$.]/g, "\\$&")}["'][^\\n]*$`,
+        "gm",
+      );
       let m: RegExpExecArray | null;
       while ((m = re.exec(src))) {
         const line = m[0].trim();

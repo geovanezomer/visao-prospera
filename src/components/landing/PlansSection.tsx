@@ -43,8 +43,16 @@ function mapPlan(p: RawPlan) {
   return {
     nome: p.name,
     descricao: p.description ?? "",
-    preco: (priceCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
-    periodo: p.interval === "year" ? "/ano" : p.interval === "one_time" || p.interval === "lifetime" ? "" : "/mês",
+    preco: (priceCents / 100).toLocaleString("pt-BR", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }),
+    periodo:
+      p.interval === "year"
+        ? "/ano"
+        : p.interval === "one_time" || p.interval === "lifetime"
+          ? ""
+          : "/mês",
     badge: p.slug === "pro" ? { texto: "Mais Popular", icone: Zap } : null,
     destaque: p.slug === "pro",
     recursos: Array.isArray(p.features) ? (p.features as string[]) : [],
@@ -62,7 +70,11 @@ function mapPlan(p: RawPlan) {
 }
 
 function SectionEyebrow({ children }: { children: React.ReactNode }) {
-  return <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{children}</span>;
+  return (
+    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+      {children}
+    </span>
+  );
 }
 
 // Converte PlanRow (camelCase) → RawPlan (snake_case) que mapPlan consome.
@@ -145,12 +157,15 @@ export function PlansSection({
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<{ message: string; code?: string; field?: string } | null>(null);
+  const [error, setError] = useState<{ message: string; code?: string; field?: string } | null>(
+    null,
+  );
 
   const ERROR_LABELS: Record<string, string> = {
     plan_not_found: "Este plano não está mais ativo. Recarregue a página e tente outro.",
     upsell_disabled: "O adicional foi desativado para este plano.",
-    upsell_invalid_price: "O preço do adicional está mal configurado. Tente novamente sem o adicional.",
+    upsell_invalid_price:
+      "O preço do adicional está mal configurado. Tente novamente sem o adicional.",
     upsell_currency_mismatch: "A moeda do adicional não confere com a do plano.",
     upsell_below_min: "O adicional está abaixo do valor mínimo permitido (R$ 0,50).",
     upsell_above_max: "O adicional está com valor desproporcional ao plano.",
@@ -160,7 +175,10 @@ export function PlansSection({
     provider_error: "O provedor de pagamento recusou a operação. Tente novamente.",
   };
 
-  const planoConfirm = useMemo(() => planos?.find((p) => p.planId === confirmFor) ?? null, [confirmFor, planos]);
+  const planoConfirm = useMemo(
+    () => planos?.find((p) => p.planId === confirmFor) ?? null,
+    [confirmFor, planos],
+  );
   const upsellLigado = !!(planoConfirm && upsellSel[planoConfirm.planId] && planoConfirm.upsell);
   const totalReais = useMemo(() => {
     if (!planoConfirm) return 0;
@@ -199,10 +217,16 @@ export function PlansSection({
           withUpsell: !!upsellSel[planoConfirm.planId],
         }),
       });
-      const json = (await res.json()) as { url?: string; error?: string; code?: string; field?: string };
+      const json = (await res.json()) as {
+        url?: string;
+        error?: string;
+        code?: string;
+        field?: string;
+      };
       if (!res.ok || !json.url) {
         const code = json.code;
-        const friendly = (code && ERROR_LABELS[code]) || json.error || "Falha ao iniciar o checkout.";
+        const friendly =
+          (code && ERROR_LABELS[code]) || json.error || "Falha ao iniciar o checkout.";
         setError({ message: friendly, code, field: json.field });
         if (code?.startsWith("upsell_")) {
           setUpsellSel((s) => ({ ...s, [planoConfirm.planId]: false }));
@@ -254,7 +278,9 @@ export function PlansSection({
                 <div
                   key={plano.nome}
                   className={`relative flex flex-col rounded-2xl border p-7 transition ${
-                    plano.destaque ? "border-primary/40 bg-card shadow-2xl shadow-primary/10" : "border-border bg-card/60"
+                    plano.destaque
+                      ? "border-primary/40 bg-card shadow-2xl shadow-primary/10"
+                      : "border-border bg-card/60"
                   }`}
                 >
                   {plano.badge && (
@@ -299,11 +325,15 @@ export function PlansSection({
                         type="checkbox"
                         className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
                         checked={!!upsellSel[plano.planId]}
-                        onChange={(e) => setUpsellSel((s) => ({ ...s, [plano.planId]: e.target.checked }))}
+                        onChange={(e) =>
+                          setUpsellSel((s) => ({ ...s, [plano.planId]: e.target.checked }))
+                        }
                       />
                       <div className="flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-semibold text-foreground">+ {plano.upsell.name}</span>
+                          <span className="font-semibold text-foreground">
+                            + {plano.upsell.name}
+                          </span>
                           <span className="text-sm font-semibold text-primary">
                             + R${" "}
                             {(plano.upsell.priceCents / 100).toLocaleString("pt-BR", {
@@ -313,7 +343,9 @@ export function PlansSection({
                           </span>
                         </div>
                         {plano.upsell.description && (
-                          <p className="mt-0.5 text-xs text-muted-foreground">{plano.upsell.description}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {plano.upsell.description}
+                          </p>
                         )}
                       </div>
                     </label>
@@ -345,11 +377,18 @@ export function PlansSection({
         </div>
       </div>
 
-      <Dialog open={!!confirmFor} onOpenChange={(o) => { if (!o && !submitting) setConfirmFor(null); }}>
+      <Dialog
+        open={!!confirmFor}
+        onOpenChange={(o) => {
+          if (!o && !submitting) setConfirmFor(null);
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Confirmar assinatura</DialogTitle>
-            <DialogDescription>Revise os itens abaixo antes de seguir para o pagamento.</DialogDescription>
+            <DialogDescription>
+              Revise os itens abaixo antes de seguir para o pagamento.
+            </DialogDescription>
           </DialogHeader>
 
           {planoConfirm && (
@@ -358,11 +397,15 @@ export function PlansSection({
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="font-semibold text-foreground">Plano {planoConfirm.nome}</div>
-                    <div className="text-xs text-muted-foreground">Cobrança {planoConfirm.periodo || "única"}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Cobrança {planoConfirm.periodo || "única"}
+                    </div>
                   </div>
                   <div className="text-right font-semibold text-foreground">
                     R$ {planoConfirm.preco}
-                    <div className="text-[11px] font-normal text-muted-foreground">{planoConfirm.periodo}</div>
+                    <div className="text-[11px] font-normal text-muted-foreground">
+                      {planoConfirm.periodo}
+                    </div>
                   </div>
                 </div>
 
@@ -385,14 +428,20 @@ export function PlansSection({
                 <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
                   <span className="text-sm font-semibold text-foreground">Total hoje</span>
                   <span className="text-base font-bold text-foreground">
-                    R$ {totalReais.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    R${" "}
+                    {totalReais.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </span>
                 </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5 sm:col-span-2">
-                  <label htmlFor="checkout-name" className="text-xs font-medium text-foreground">Nome completo</label>
+                  <label htmlFor="checkout-name" className="text-xs font-medium text-foreground">
+                    Nome completo
+                  </label>
                   <input
                     id="checkout-name"
                     type="text"
@@ -406,7 +455,9 @@ export function PlansSection({
                 </div>
 
                 <div className="space-y-1.5 sm:col-span-2">
-                  <label htmlFor="checkout-email" className="text-xs font-medium text-foreground">E-mail para receber o acesso</label>
+                  <label htmlFor="checkout-email" className="text-xs font-medium text-foreground">
+                    E-mail para receber o acesso
+                  </label>
                   <input
                     id="checkout-email"
                     type="email"
@@ -420,7 +471,8 @@ export function PlansSection({
                 </div>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Demais dados serão solicitados na próxima etapa, diretamente no checkout seguro do provedor de pagamento.
+                Demais dados serão solicitados na próxima etapa, diretamente no checkout seguro do
+                provedor de pagamento.
               </p>
 
               {error && (

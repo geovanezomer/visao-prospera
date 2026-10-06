@@ -105,9 +105,24 @@ export function HorasExtrasCalc() {
         { label: "Horas extras 100%", value: String(qtd100) },
       ],
       kpis: [
-        { label: "Total a receber", value: fmtBRL(r.totalExtras), sub: `+${(r.pctAcrescimo * 100).toFixed(1)}% sobre o salário`, tone: "ok" },
-        { label: "Hora normal", value: fmtBRL(r.horaNormal), sub: "Base de cálculo", tone: "neutral" },
-        { label: "Reflexo de DSR", value: fmtBRL(r.totalDSR), sub: "Súmula 172 TST", tone: "neutral" },
+        {
+          label: "Total a receber",
+          value: fmtBRL(r.totalExtras),
+          sub: `+${(r.pctAcrescimo * 100).toFixed(1)}% sobre o salário`,
+          tone: "ok",
+        },
+        {
+          label: "Hora normal",
+          value: fmtBRL(r.horaNormal),
+          sub: "Base de cálculo",
+          tone: "neutral",
+        },
+        {
+          label: "Reflexo de DSR",
+          value: fmtBRL(r.totalDSR),
+          sub: "Súmula 172 TST",
+          tone: "neutral",
+        },
       ],
       sections: [
         {

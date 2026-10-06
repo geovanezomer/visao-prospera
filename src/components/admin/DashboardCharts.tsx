@@ -32,12 +32,24 @@ import {
   type MonthlyPoint,
 } from "@/lib/admin/dashboardCharts.functions";
 
-const PIE_COLORS = ["#10b981", "var(--primary)", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899"];
+const PIE_COLORS = [
+  "#10b981",
+  "var(--primary)",
+  "#f59e0b",
+  "#ef4444",
+  "#8b5cf6",
+  "#06b6d4",
+  "#ec4899",
+];
 const PERIODS = [6, 12, 24] as const;
 type Period = (typeof PERIODS)[number];
 
 function brl(centavos: number): string {
-  return (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  return (centavos / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  });
 }
 function fmtNum(v: number): string {
   return v.toLocaleString("pt-BR");
@@ -98,12 +110,17 @@ function MonthlyTooltip({
       {payload.map((p) => {
         const fmt = formatters[p.dataKey] ?? fmtNum;
         const cur = Number(p.value ?? 0);
-        const prevVal = prev ? Number((prev as unknown as Record<string, number>)[p.dataKey] ?? 0) : 0;
+        const prevVal = prev
+          ? Number((prev as unknown as Record<string, number>)[p.dataKey] ?? 0)
+          : 0;
         const d = fmtDelta(cur - prevVal, p.dataKey === "mrr");
         return (
           <div key={p.dataKey} className="flex items-center justify-between gap-4">
             <span className="flex items-center gap-1.5">
-              <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: p.color }} />
+              <span
+                className="inline-block h-2 w-2 rounded-sm"
+                style={{ backgroundColor: p.color }}
+              />
               {p.name}
             </span>
             <span className="tabular-nums">
@@ -111,9 +128,11 @@ function MonthlyTooltip({
               {prev ? (
                 <span
                   className={
-                    d.positive === true ? "ml-2 text-emerald-600"
-                    : d.positive === false ? "ml-2 text-red-600"
-                    : "ml-2 text-muted-foreground"
+                    d.positive === true
+                      ? "ml-2 text-emerald-600"
+                      : d.positive === false
+                        ? "ml-2 text-red-600"
+                        : "ml-2 text-muted-foreground"
                   }
                 >
                   {d.txt}
@@ -211,20 +230,20 @@ export function DashboardCharts() {
         if (!cancel) setLoading(false);
       }
     })();
-    return () => { cancel = true; };
+    return () => {
+      cancel = true;
+    };
   }, [period]);
 
   const toggle = (key: string) => setHidden((h) => ({ ...h, [key]: !h[key] }));
 
-  const mrrExtremes = useMemo(
-    () => (data ? pickExtremes(data.monthly, "mrr") : null),
-    [data],
-  );
+  const mrrExtremes = useMemo(() => (data ? pickExtremes(data.monthly, "mrr") : null), [data]);
 
   if (loading && !data) {
     return (
       <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />Carregando gráficos…
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Carregando gráficos…
       </div>
     );
   }
@@ -247,7 +266,9 @@ export function DashboardCharts() {
               type="button"
               onClick={() => setPeriod(p)}
               className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
-                period === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                period === p
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted"
               }`}
             >
               {p} meses
@@ -281,8 +302,18 @@ export function DashboardCharts() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="left" tick={{ fontSize: 11 }} tickFormatter={(v) => brl(v)} width={80} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} allowDecimals={false} />
+              <YAxis
+                yAxisId="left"
+                tick={{ fontSize: 11 }}
+                tickFormatter={(v) => brl(v)}
+                width={80}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                tick={{ fontSize: 11 }}
+                allowDecimals={false}
+              />
               <Tooltip
                 content={
                   <MonthlyTooltip
@@ -340,7 +371,11 @@ export function DashboardCharts() {
         {/* 2. Funil */}
         <Panel title="Funil de Conversão" subtitle="Do signup até a ativação paga">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data.funnel} layout="vertical" margin={{ top: 8, right: 24, left: 32, bottom: 0 }}>
+            <BarChart
+              data={data.funnel}
+              layout="vertical"
+              margin={{ top: 8, right: 24, left: 32, bottom: 0 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
               <YAxis type="category" dataKey="stage" tick={{ fontSize: 11 }} width={140} />
@@ -352,7 +387,10 @@ export function DashboardCharts() {
                   const prev = idx > 0 ? data.funnel[idx - 1].value : top;
                   const ratioTop = top > 0 ? ((Number(v) / top) * 100).toFixed(1) : "0";
                   const ratioPrev = prev > 0 ? ((Number(v) / prev) * 100).toFixed(1) : "0";
-                  return [`${fmtNum(Number(v))} (${ratioPrev}% etapa anterior · ${ratioTop}% do topo)`, "Usuários"];
+                  return [
+                    `${fmtNum(Number(v))} (${ratioPrev}% etapa anterior · ${ratioTop}% do topo)`,
+                    "Usuários",
+                  ];
                 }}
               />
               <Bar dataKey="value" name="Usuários" fill="var(--primary)" radius={[0, 6, 6, 0]} />
@@ -392,10 +430,24 @@ export function DashboardCharts() {
                 onClick={(e: LegendClickArg) => toggle(String(e.dataKey ?? ""))}
               />
               {!hidden.newUsers && (
-                <Line type="monotone" dataKey="newUsers" name="Novos" stroke="var(--primary)" strokeWidth={2} dot={{ r: 3 }} />
+                <Line
+                  type="monotone"
+                  dataKey="newUsers"
+                  name="Novos"
+                  stroke="var(--primary)"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
               )}
               {!hidden.activeUsers && (
-                <Line type="monotone" dataKey="activeUsers" name="Ativos" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+                <Line
+                  type="monotone"
+                  dataKey="activeUsers"
+                  name="Ativos"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
               )}
             </LineChart>
           </ResponsiveContainer>
@@ -404,7 +456,9 @@ export function DashboardCharts() {
         {/* 4. Por plano */}
         <Panel title="Distribuição por plano" subtitle="Mix de assinaturas ativas">
           {data.byPlan.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem dados.</div>
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              Sem dados.
+            </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>

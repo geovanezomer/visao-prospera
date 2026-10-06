@@ -29,13 +29,7 @@ import { AppState } from "@/engines/finance/types";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { fmtBRL, MESES, sum } from "@/engines/finance/format";
 import { aggregateContracts } from "@/engines/finance/debtContracts";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  AlertCircle,
-  Wallet,
-  TrendingDown,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, AlertCircle, Wallet, TrendingDown } from "lucide-react";
 
 const TOOLTIP_STYLE = {
   background: "var(--popover)",
@@ -45,7 +39,15 @@ const TOOLTIP_STYLE = {
   color: "var(--popover-foreground)",
 } as const;
 
-function Card({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
+function Card({
+  title,
+  children,
+  className = "",
+}: {
+  title: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div className={`rounded-lg border border-border/40 bg-card p-4 ${className}`}>
       <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -83,7 +85,7 @@ function RunwayCard({ state }: { state: AppState }) {
         : "text-neg";
 
   // Barra horizontal de runway (escala até 18 meses)
-  const pct = Math.min(100, (Number.isFinite(runwayMeses) ? runwayMeses : 18) / 18 * 100);
+  const pct = Math.min(100, ((Number.isFinite(runwayMeses) ? runwayMeses : 18) / 18) * 100);
 
   return (
     <Card title="Pista de Caixa (Runway) & Saldo Projetado">
@@ -107,7 +109,10 @@ function RunwayCard({ state }: { state: AppState }) {
               />
             </div>
             <div className="mt-1 flex justify-between text-[9px] text-muted-foreground">
-              <span>0m</span><span>6m</span><span>12m</span><span>18m+</span>
+              <span>0m</span>
+              <span>6m</span>
+              <span>12m</span>
+              <span>18m+</span>
             </div>
           </div>
           <div>
@@ -134,11 +139,31 @@ function RunwayCard({ state }: { state: AppState }) {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
-              <YAxis stroke="var(--muted-foreground)" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+              <YAxis
+                stroke="var(--muted-foreground)"
+                fontSize={10}
+                tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+              />
               <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => fmtBRL(v)} />
-              <ReferenceLine y={caixaMinimo} stroke="var(--destructive)" strokeDasharray="4 4" label={{ value: "Caixa mínimo", fill: "var(--destructive)", fontSize: 10, position: "insideTopRight" }} />
+              <ReferenceLine
+                y={caixaMinimo}
+                stroke="var(--destructive)"
+                strokeDasharray="4 4"
+                label={{
+                  value: "Caixa mínimo",
+                  fill: "var(--destructive)",
+                  fontSize: 10,
+                  position: "insideTopRight",
+                }}
+              />
               <ReferenceLine y={0} stroke="var(--muted-foreground)" />
-              <Area type="monotone" dataKey="Saldo" stroke="var(--primary)" fill="url(#grSaldo)" strokeWidth={2} />
+              <Area
+                type="monotone"
+                dataKey="Saldo"
+                stroke="var(--primary)"
+                fill="url(#grSaldo)"
+                strokeWidth={2}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -171,7 +196,8 @@ function SemaforoPanel({ state }: { state: AppState }) {
       nome: "Endividamento (Oneroso)",
       // Semáforo usa dívida ONEROSA (bancos/financiamentos). Passivo operacional
       // não deve pintar a empresa de vermelho sozinho — vira sub-alerta de ciclo.
-      status: ind.endividamentoOneroso <= 40 ? "ok" : ind.endividamentoOneroso <= 60 ? "warn" : "bad",
+      status:
+        ind.endividamentoOneroso <= 40 ? "ok" : ind.endividamentoOneroso <= 60 ? "warn" : "bad",
       descricao: `${ind.endividamentoOneroso.toFixed(1)}% oneroso · ${ind.endividamentoGeral.toFixed(1)}% total (com passivo operacional)`,
     },
     {
@@ -181,10 +207,18 @@ function SemaforoPanel({ state }: { state: AppState }) {
     },
     {
       nome: "Cobertura de Juros",
-      status: ind.coberturaJuros == null ? "ok" : ind.coberturaJuros >= 3 ? "ok" : ind.coberturaJuros >= 1.5 ? "warn" : "bad",
-      descricao: ind.coberturaJuros == null
-        ? "N/A — sem dívida a servir"
-        : `${ind.coberturaJuros.toFixed(1)}x — EBIT cobre os juros quantas vezes`,
+      status:
+        ind.coberturaJuros == null
+          ? "ok"
+          : ind.coberturaJuros >= 3
+            ? "ok"
+            : ind.coberturaJuros >= 1.5
+              ? "warn"
+              : "bad",
+      descricao:
+        ind.coberturaJuros == null
+          ? "N/A — sem dívida a servir"
+          : `${ind.coberturaJuros.toFixed(1)}x — EBIT cobre os juros quantas vezes`,
     },
     {
       nome: "Dívida Líq./EBITDA",
@@ -193,16 +227,18 @@ function SemaforoPanel({ state }: { state: AppState }) {
     },
     {
       nome: "Conversão de Caixa",
-      status: ind.conversaoEbitdaCaixa >= 70 ? "ok" : ind.conversaoEbitdaCaixa >= 40 ? "warn" : "bad",
+      status:
+        ind.conversaoEbitdaCaixa >= 70 ? "ok" : ind.conversaoEbitdaCaixa >= 40 ? "warn" : "bad",
       descricao: `${ind.conversaoEbitdaCaixa.toFixed(0)}% — quanto do EBITDA vira caixa de fato`,
     },
     {
       nome: "ROE (Retorno do Sócio)",
       // ROE pode vir null quando PL médio ≤ 0 (empresa com passivo a descoberto) — semáforo neutro.
       status: ind.roe == null ? "warn" : ind.roe >= 15 ? "ok" : ind.roe >= 8 ? "warn" : "bad",
-      descricao: ind.roe == null
-        ? "N/A — PL médio ≤ 0 (passivo a descoberto). ROE perdeu significado."
-        : `${ind.roe.toFixed(1)}% — retorno sobre o capital investido pelos sócios`,
+      descricao:
+        ind.roe == null
+          ? "N/A — PL médio ≤ 0 (passivo a descoberto). ROE perdeu significado."
+          : `${ind.roe.toFixed(1)}% — retorno sobre o capital investido pelos sócios`,
     },
     {
       nome: "Ciclo Financeiro",
@@ -220,18 +256,29 @@ function SemaforoPanel({ state }: { state: AppState }) {
   return (
     <Card title="Painel de Saúde Financeira — Semáforos">
       <div className="mb-3 flex gap-3 text-xs">
-        <span className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4 text-pos" /> {resumo.ok} saudáveis</span>
-        <span className="flex items-center gap-1"><AlertCircle className="h-4 w-4 text-amber-400" /> {resumo.warn} atenção</span>
-        <span className="flex items-center gap-1"><AlertTriangle className="h-4 w-4 text-neg" /> {resumo.bad} críticos</span>
+        <span className="flex items-center gap-1">
+          <CheckCircle2 className="h-4 w-4 text-pos" /> {resumo.ok} saudáveis
+        </span>
+        <span className="flex items-center gap-1">
+          <AlertCircle className="h-4 w-4 text-amber-400" /> {resumo.warn} atenção
+        </span>
+        <span className="flex items-center gap-1">
+          <AlertTriangle className="h-4 w-4 text-neg" /> {resumo.bad} críticos
+        </span>
       </div>
       <div className="grid gap-2 md:grid-cols-2">
         {itens.map((i) => (
-          <div key={i.nome} className="flex items-start gap-2 rounded-md border border-border/30 bg-card/60 p-2.5">
+          <div
+            key={i.nome}
+            className="flex items-start gap-2 rounded-md border border-border/30 bg-card/60 p-2.5"
+          >
             <div className="mt-0.5">{statusIcon(i.status)}</div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-foreground">{i.nome}</span>
-                <span className="text-[10px] uppercase text-muted-foreground">{statusLabel(i.status)}</span>
+                <span className="text-[10px] uppercase text-muted-foreground">
+                  {statusLabel(i.status)}
+                </span>
               </div>
               <div className="text-[11px] text-muted-foreground">{i.descricao}</div>
             </div>
@@ -281,7 +328,11 @@ function CronogramaDividas({ state }: { state: AppState }) {
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={11} />
-          <YAxis stroke="var(--muted-foreground)" fontSize={10} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+          <YAxis
+            stroke="var(--muted-foreground)"
+            fontSize={10}
+            tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+          />
           <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => fmtBRL(v)} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           <Bar dataKey="Amortização" stackId="d" fill="var(--primary)" />
@@ -299,20 +350,28 @@ function ScoreSaude({ state }: { state: AppState }) {
   // Normaliza cada métrica em 0–100 (com tetos pragmáticos para PMEs)
   const score = useMemo(() => {
     const norms = [
-      Math.min(100, Math.max(0, ind.liquidezCorrente / 2 * 100)),       // 2x = 100
-      Math.min(100, Math.max(0, 100 - ind.endividamentoOneroso * 1.5)),  // dívida onerosa: 66% → 0
-      Math.min(100, Math.max(0, ind.margemLiquida * 5)),                // 20% = 100
-      Math.min(100, Math.max(0, (ind.coberturaJuros ?? 5) * 20)),        // sem dívida → 100
-      Math.min(100, Math.max(0, (ind.roe ?? 0) * 5)),                  // 20% = 100 (null → neutro 0)
-      Math.min(100, Math.max(0, ind.conversaoEbitdaCaixa)),             // 100%
-      Math.min(100, Math.max(0, 100 - ind.dividaLiqEbitda * 25)),       // 4x = 0
+      Math.min(100, Math.max(0, (ind.liquidezCorrente / 2) * 100)), // 2x = 100
+      Math.min(100, Math.max(0, 100 - ind.endividamentoOneroso * 1.5)), // dívida onerosa: 66% → 0
+      Math.min(100, Math.max(0, ind.margemLiquida * 5)), // 20% = 100
+      Math.min(100, Math.max(0, (ind.coberturaJuros ?? 5) * 20)), // sem dívida → 100
+      Math.min(100, Math.max(0, (ind.roe ?? 0) * 5)), // 20% = 100 (null → neutro 0)
+      Math.min(100, Math.max(0, ind.conversaoEbitdaCaixa)), // 100%
+      Math.min(100, Math.max(0, 100 - ind.dividaLiqEbitda * 25)), // 4x = 0
     ];
     return norms.reduce((a, b) => a + b, 0) / norms.length;
   }, [ind]);
 
   const cor = score >= 70 ? "var(--success)" : score >= 40 ? "#F5B85B" : "var(--destructive)";
   const conceito =
-    score >= 80 ? "Excelente" : score >= 65 ? "Boa" : score >= 45 ? "Regular" : score >= 30 ? "Frágil" : "Crítica";
+    score >= 80
+      ? "Excelente"
+      : score >= 65
+        ? "Boa"
+        : score >= 45
+          ? "Regular"
+          : score >= 30
+            ? "Frágil"
+            : "Crítica";
 
   const data = [
     { name: "score", value: score, fill: cor },
@@ -324,8 +383,18 @@ function ScoreSaude({ state }: { state: AppState }) {
       <div className="relative h-44">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie data={data} dataKey="value" startAngle={180} endAngle={0} innerRadius="65%" outerRadius="95%" stroke="none">
-              {data.map((d, i) => <Cell key={i} fill={d.fill} />)}
+            <Pie
+              data={data}
+              dataKey="value"
+              startAngle={180}
+              endAngle={0}
+              innerRadius="65%"
+              outerRadius="95%"
+              stroke="none"
+            >
+              {data.map((d, i) => (
+                <Cell key={i} fill={d.fill} />
+              ))}
             </Pie>
           </PieChart>
         </ResponsiveContainer>
@@ -339,7 +408,8 @@ function ScoreSaude({ state }: { state: AppState }) {
         </div>
       </div>
       <div className="mt-2 text-center text-[11px] text-muted-foreground">
-        Nota agregada de 7 indicadores: liquidez, endividamento, margem, juros, ROE, conversão de caixa e Dív.Líq./EBITDA.
+        Nota agregada de 7 indicadores: liquidez, endividamento, margem, juros, ROE, conversão de
+        caixa e Dív.Líq./EBITDA.
       </div>
     </Card>
   );
@@ -379,13 +449,18 @@ export function Top5Despesas({ state }: { state: AppState }) {
           return (
             <div key={d.name}>
               <div className="mb-1 flex items-center justify-between text-xs">
-                <span className="truncate font-semibold text-foreground">{i + 1}. {d.name}</span>
+                <span className="truncate font-semibold text-foreground">
+                  {i + 1}. {d.name}
+                </span>
                 <span className="mono ml-2 shrink-0 text-muted-foreground">
                   {fmtBRL(d.value)} <span className="text-[10px]">({pct.toFixed(0)}%)</span>
                 </span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: cores[i] }} />
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${pct}%`, background: cores[i] }}
+                />
               </div>
             </div>
           );
@@ -393,7 +468,8 @@ export function Top5Despesas({ state }: { state: AppState }) {
       </div>
       <div className="mt-3 flex items-center gap-2 border-t border-border/30 pt-2 text-[11px] text-muted-foreground">
         <Wallet className="h-3.5 w-3.5" />
-        Total das 5 maiores: <span className="mono font-semibold text-foreground">{fmtBRL(total)}</span>
+        Total das 5 maiores:{" "}
+        <span className="mono font-semibold text-foreground">{fmtBRL(total)}</span>
       </div>
     </Card>
   );
@@ -411,9 +487,6 @@ export function DashboardExtras({ state }: { state: AppState }) {
         </div>
         <ScoreSaude state={state} />
       </div>
-
-      
-
     </div>
   );
 }

@@ -7,7 +7,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
-
 export type FeatureFlag = {
   key: string;
   description: string | null;
@@ -36,24 +35,29 @@ export const listFeatureFlags = createServerFn({ method: "POST" })
 // ----------------------------------------------------------------------------
 export const upsertFeatureFlag = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: {
-    key: string;
-    description?: string;
-    enabled: boolean;
-    rollout_percent?: number;
-    allowed_emails?: string[];
-    allowed_plans?: string[];
-  }) =>
-    z
-      .object({
-        key: z.string().min(2).max(80).regex(/^[a-z0-9_.-]+$/, "kebab/snake-case"),
-        description: z.string().max(280).optional(),
-        enabled: z.boolean(),
-        rollout_percent: z.number().int().min(0).max(100).optional(),
-        allowed_emails: z.array(z.string().email()).max(500).optional(),
-        allowed_plans: z.array(z.string()).max(20).optional(),
-      })
-      .parse(d),
+  .validator(
+    (d: {
+      key: string;
+      description?: string;
+      enabled: boolean;
+      rollout_percent?: number;
+      allowed_emails?: string[];
+      allowed_plans?: string[];
+    }) =>
+      z
+        .object({
+          key: z
+            .string()
+            .min(2)
+            .max(80)
+            .regex(/^[a-z0-9_.-]+$/, "kebab/snake-case"),
+          description: z.string().max(280).optional(),
+          enabled: z.boolean(),
+          rollout_percent: z.number().int().min(0).max(100).optional(),
+          allowed_emails: z.array(z.string().email()).max(500).optional(),
+          allowed_plans: z.array(z.string()).max(20).optional(),
+        })
+        .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);

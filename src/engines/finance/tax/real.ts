@@ -20,9 +20,13 @@ import { adicionalIrpjTrimestral, type MonthlyTax } from "./shared";
 // arredondamento HALF_UP (padrão SEFAZ) sobre cada multiplicação
 // alíquota × base, evitando drift de centavos em apurações mensais.
 const cbsValor = (base: number, pct: number): number =>
-  pct > 0 && base > 0 ? Number(calcCbs({ base: base.toString(), aliquota: (pct / 100).toString() }).imposto) : 0;
+  pct > 0 && base > 0
+    ? Number(calcCbs({ base: base.toString(), aliquota: (pct / 100).toString() }).imposto)
+    : 0;
 const ibsValor = (base: number, pct: number): number =>
-  pct > 0 && base > 0 ? Number(calcIbs({ base: base.toString(), aliquota: (pct / 100).toString() }).imposto) : 0;
+  pct > 0 && base > 0
+    ? Number(calcIbs({ base: base.toString(), aliquota: (pct / 100).toString() }).imposto)
+    : 0;
 
 export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax {
   const { revenue, tax, businessType } = state;

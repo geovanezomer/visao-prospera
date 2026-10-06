@@ -14,7 +14,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-
 // ── Paleta (idêntica ao pdfExport.ts) ─────────────────────────────────
 const INK = [10, 10, 10] as [number, number, number];
 const CHARCOAL = [31, 41, 55] as [number, number, number];
@@ -64,7 +63,6 @@ export interface CalcReportPayload {
 }
 
 // ── Utilitários ───────────────────────────────────────────────────────
-
 
 function nowBR(): string {
   return new Date().toLocaleString("pt-BR", {
@@ -151,10 +149,7 @@ function pageTitle(
     doc.setFont(FONT, "normal");
     doc.setFontSize(10.5);
     setColor(doc, "text", CHARCOAL);
-    const lines = doc.splitTextToSize(
-      subtitle,
-      doc.internal.pageSize.getWidth() - PAGE_MARGIN * 2,
-    );
+    const lines = doc.splitTextToSize(subtitle, doc.internal.pageSize.getWidth() - PAGE_MARGIN * 2);
     doc.text(lines, PAGE_MARGIN, cursor + 4);
     cursor += lines.length * 14;
   }
@@ -190,8 +185,7 @@ function drawKpiCards(doc: jsPDF, yStart: number, cards: CalcKpi[]): number {
     setColor(doc, "draw", HAIRLINE);
     doc.setLineWidth(0.5);
     doc.rect(x, y, cardW, cardH, "S");
-    const tone =
-      c.tone === "ok" ? OK : c.tone === "warn" ? WARN : c.tone === "bad" ? BAD : INK;
+    const tone = c.tone === "ok" ? OK : c.tone === "warn" ? WARN : c.tone === "bad" ? BAD : INK;
     setColor(doc, "fill", tone);
     doc.rect(x, y, 2, cardH, "F");
     doc.setFont(FONT, "bold");
@@ -241,7 +235,7 @@ function drawKv(
   const innerW = w - PAGE_MARGIN * 2;
   const colW = innerW / 2;
   const cellW = colW - 8; // respiro entre colunas
-  const gap = 10;          // espaço mínimo entre label e value
+  const gap = 10; // espaço mínimo entre label e value
   const rowH = 18;
 
   // Pré-calcula a largura necessária para cada valor (na fonte do value: 10pt).
@@ -342,12 +336,7 @@ function drawTable(
   return (doc.lastAutoTable?.finalY ?? yStart) + 16;
 }
 
-function ensureSpace(
-  doc: jsPDF,
-  y: number,
-  needed: number,
-  section: string,
-): number {
+function ensureSpace(doc: jsPDF, y: number, needed: number, section: string): number {
   const h = doc.internal.pageSize.getHeight();
   if (y + needed > h - 64) {
     doc.addPage();

@@ -1,10 +1,7 @@
 // Tools de leitura/diagnóstico financeiro: premissas, DRE, indicadores,
 // WACC, valuation, saúde, governança, prescritivo, resumo executivo, etc.
 
-import {
-  resolveEffectiveRegime,
-  diagnose,
-} from "@/engines/finance";
+import { resolveEffectiveRegime, diagnose } from "@/engines/finance";
 import { sumContractSaldos } from "@/engines/finance/debtContracts";
 import { getFinancialModelCached } from "@/engines/finance/financialModel";
 import { brl, pct, sum, type ToolDef, type ToolHandler, type ToolModule } from "./shared";
@@ -171,7 +168,8 @@ const handlers: Record<string, ToolHandler> = {
       .join("\n\n"),
   get_regime_tributario: (_a, { sec }) => sec.regime,
   get_eras_reforma: (_a, { sec }) => {
-    const body = sec.eras || "_Comparativo de eras indisponível (verifique a configuração tributária)._";
+    const body =
+      sec.eras || "_Comparativo de eras indisponível (verifique a configuração tributária)._";
     return (
       body +
       "\n\n> ℹ️ Valores da transição representam o **PONTO MÉDIO** do cronograma (IBS ~50%, ICMS/ISS ~50%). Para um ano específico (ex: 2029), use a ferramenta `simular_transicao_reforma`."

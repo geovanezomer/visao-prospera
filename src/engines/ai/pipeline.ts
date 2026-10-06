@@ -7,11 +7,9 @@
 
 import type { AIMode } from "./systemPrompt";
 
-export const PIPELINE_360: ReadonlyArray<Exclude<AIMode, "chat" | "board" | "tributarista" | "contador">> = [
-  "cfo",
-  "controller",
-  "auditor",
-] as const;
+export const PIPELINE_360: ReadonlyArray<
+  Exclude<AIMode, "chat" | "board" | "tributarista" | "contador">
+> = ["cfo", "controller", "auditor"] as const;
 
 export type Pipeline360Stage = (typeof PIPELINE_360)[number];
 
@@ -36,10 +34,7 @@ export function buildStagePrompt(
     return `[Pipeline 360° · Estágio 1/3 — CFO]\nPergunta do conselho: ${q}\n\nProduza sua tese no formato do MODO CFO ESTRATÉGICO.`;
   }
   const blocks = previous
-    .map(
-      (p, i) =>
-        `### Estágio ${i + 1} — ${STAGE_LABEL[p.stage]}\n${p.output.trim()}`,
-    )
+    .map((p, i) => `### Estágio ${i + 1} — ${STAGE_LABEL[p.stage]}\n${p.output.trim()}`)
     .join("\n\n");
   const idx = previous.length + 1;
   const focus =

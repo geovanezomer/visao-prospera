@@ -27,7 +27,6 @@ import type { AppState, DebtContract } from "./types";
 import { safeNumber as n } from "./safeMath";
 import { isFolhaCost } from "./costs";
 
-
 const firstMonth = (a: number[] | undefined): number => n(a?.[0]);
 
 /** Split de contratos de dívida em CP (≤12m) e LP (>12m) pelo prazo restante. */
@@ -156,25 +155,15 @@ export function deriveAbertura({
     n(imo.outrosImobilizados);
 
   const ativo =
-    caixaVal +
-    crVal +
-    estoqueVal +
-    impostosRecVal +
-    imobBruto -
-    depAcumVal -
-    amortAcumVal;
+    caixaVal + crVal + estoqueVal + impostosRecVal + imobBruto - depAcumVal - amortAcumVal;
 
-  const passivo =
-    fornVal + cpVal + lpVal + impostosPagarVal + folhaMes1;
+  const passivo = fornVal + cpVal + lpVal + impostosPagarVal + folhaMes1;
 
   // BUG-FIX: `reservasLucros` também compõe o PL de abertura (o fechamento
   // já inclui). Sem isso, ao preencher reservas de lucros no Card do Balanço,
   // a diferença abertura vs fechamento quebrava exatamente por esse valor.
   const plTotal =
-    n(pl.capitalSocial) +
-    n(pl.reservasCapital) +
-    n(pl.reservasLucros) +
-    lucrosAcumVal;
+    n(pl.capitalSocial) + n(pl.reservasCapital) + n(pl.reservasLucros) + lucrosAcumVal;
 
   const diferenca = ativo - (passivo + plTotal);
   const tol = Math.max(100, ativo * 0.001);
@@ -222,17 +211,13 @@ export function deriveAbertura({
     emprestimosCP: {
       label: "Empréstimos CP",
       origem:
-        split.cp + split.lp > 0
-          ? "Contratos · prazo ≤ 12 meses"
-          : "Sem contratos cadastrados",
+        split.cp + split.lp > 0 ? "Contratos · prazo ≤ 12 meses" : "Sem contratos cadastrados",
       value: cpVal,
     },
     emprestimosLP: {
       label: "Empréstimos LP",
       origem:
-        split.cp + split.lp > 0
-          ? "Contratos · prazo > 12 meses"
-          : "Sem contratos cadastrados",
+        split.cp + split.lp > 0 ? "Contratos · prazo > 12 meses" : "Sem contratos cadastrados",
       value: lpVal,
     },
     impostosPagar: {

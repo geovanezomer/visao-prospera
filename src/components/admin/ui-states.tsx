@@ -52,10 +52,7 @@ export function CardSkeletonGrid({ count = 4, height = 96 }: { count?: number; h
   return (
     <div role="status" aria-label="Carregando" className="grid grid-cols-2 gap-3 md:grid-cols-4">
       {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="rounded-lg border border-border/60 bg-card p-4"
-        >
+        <div key={i} className="rounded-lg border border-border/60 bg-card p-4">
           <div className="h-3 w-16 rounded bg-muted animate-pulse" />
           <div
             className="mt-3 w-24 rounded bg-muted animate-pulse"
@@ -87,9 +84,7 @@ export function EmptyState({
       </div>
       <div className="space-y-1">
         <div className="text-sm font-medium text-foreground">{title}</div>
-        {description ? (
-          <div className="text-xs text-muted-foreground">{description}</div>
-        ) : null}
+        {description ? <div className="text-xs text-muted-foreground">{description}</div> : null}
       </div>
       {action}
     </div>
@@ -119,7 +114,9 @@ export function TypedConfirmDialog({
   onConfirm: () => void | Promise<void>;
 }) {
   const [typed, setTyped] = useState("");
-  useEffect(() => { if (open) setTyped(""); }, [open]);
+  useEffect(() => {
+    if (open) setTyped("");
+  }, [open]);
   const matches = typed.trim() === expectedText.trim();
 
   return (
@@ -135,7 +132,10 @@ export function TypedConfirmDialog({
         </AlertDialogHeader>
         <div className="space-y-2">
           <Label className="text-xs">
-            Para confirmar, digite <code className="rounded bg-muted px-1 py-0.5 text-[11px] font-mono">{expectedText}</code>
+            Para confirmar, digite{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-[11px] font-mono">
+              {expectedText}
+            </code>
           </Label>
           <Input
             value={typed}
@@ -147,10 +147,7 @@ export function TypedConfirmDialog({
         </div>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={busy}>{cancelLabel}</AlertDialogCancel>
-          <AlertDialogAction
-            asChild
-            disabled={!matches || busy}
-          >
+          <AlertDialogAction asChild disabled={!matches || busy}>
             <Button
               variant="destructive"
               disabled={!matches || busy}

@@ -135,9 +135,7 @@ function ComparisonTable({ rows, snapshots }: { rows: Row[]; snapshots: Snapshot
         from: s,
         to: atual,
         // Convenção FP&A: from=Orçado, to=Realizado → Δ = Realizado − Orçado.
-        label: budget
-          ? `Δ Realizado − Orçado (${s.label})`
-          : `Δ% ${s.label}→Atual`,
+        label: budget ? `Δ Realizado − Orçado (${s.label})` : `Δ% ${s.label}→Atual`,
         budget,
       });
     }
@@ -167,7 +165,8 @@ function ComparisonTable({ rows, snapshots }: { rows: Row[]; snapshots: Snapshot
     <div className="overflow-x-auto rounded-lg border border-border/60 bg-card/40">
       {isBudgetMode && (
         <div className="border-b border-border/40 bg-primary/5 px-3 py-1.5 text-[11px] font-medium text-primary">
-          Modo Orçado × Realizado — semáforo invertido em custos/despesas (gastar mais que o orçado = vermelho).
+          Modo Orçado × Realizado — semáforo invertido em custos/despesas (gastar mais que o orçado
+          = vermelho).
         </div>
       )}
       <table className="w-full text-sm">
@@ -276,13 +275,13 @@ function ComparisonTable({ rows, snapshots }: { rows: Row[]; snapshots: Snapshot
             : atual
               ? `Δ% compara cada ano histórico vs Atual. `
               : `Δ% compara o primeiro vs o último período selecionado. `}
-          Variações ≥ {ALERT_THRESHOLD}% destacam a linha. Ano corrente exibido com totais anualizados (extrapolados pelos meses preenchidos).
+          Variações ≥ {ALERT_THRESHOLD}% destacam a linha. Ano corrente exibido com totais
+          anualizados (extrapolados pelos meses preenchidos).
         </p>
       )}
     </div>
   );
 }
-
 
 // ─── DRE ──────────────────────────────────────────────────────────────
 
@@ -304,21 +303,39 @@ export function DREComparison({ snapshots }: { snapshots: Snapshot[] }) {
     { label: "Receita Bruta", get: get("receitaBruta"), bold: true },
     { label: "(−) Impostos sobre vendas", get: (s) => -get("impostosVendas")(s), indent: true },
     { label: "(−) Outras deduções", get: (s) => -get("outrasDeducoes")(s), indent: true },
-    { label: "(−) Inadimplência/PDD", get: (s) => -(get("deducoesInadimplencia")(s) + get("pdd")(s)), indent: true },
+    {
+      label: "(−) Inadimplência/PDD",
+      get: (s) => -(get("deducoesInadimplencia")(s) + get("pdd")(s)),
+      indent: true,
+    },
     { label: "Receita Líquida", get: get("receitaLiquida"), bold: true },
     { label: "(−) CPV/CMV/CSP", get: (s) => -get("cpv")(s), indent: true },
     { label: "Lucro Bruto", get: get("lucroBruto"), bold: true },
-    { label: "(−) Despesas Operacionais", get: (s) => -get("despesasOperacionais")(s), indent: true },
+    {
+      label: "(−) Despesas Operacionais",
+      get: (s) => -get("despesasOperacionais")(s),
+      indent: true,
+    },
     { label: "(+) Outras receitas op.", get: get("outrasReceitasOperacionais"), indent: true },
     { label: "EBITDA", get: get("ebitda"), bold: true },
-    { label: "Margem EBITDA", asPercent: true, get: (s) => safePct(get("ebitda")(s), get("receitaLiquida")(s)), indent: true },
+    {
+      label: "Margem EBITDA",
+      asPercent: true,
+      get: (s) => safePct(get("ebitda")(s), get("receitaLiquida")(s)),
+      indent: true,
+    },
     { label: "(−) Depreciação", get: (s) => -get("depreciacao")(s), indent: true },
     { label: "EBIT", get: get("ebit"), bold: true },
     { label: "Resultado Financeiro", get: get("resultadoFinanceiro"), indent: true },
     { label: "LAIR", get: get("lair"), bold: true },
     { label: "(−) IRPJ/CSLL", get: (s) => -get("impostos")(s), indent: true },
     { label: "Lucro Líquido", get: get("lucroLiquido"), bold: true },
-    { label: "Margem Líquida", asPercent: true, get: (s) => safePct(get("lucroLiquido")(s), get("receitaLiquida")(s)), indent: true },
+    {
+      label: "Margem Líquida",
+      asPercent: true,
+      get: (s) => safePct(get("lucroLiquido")(s), get("receitaLiquida")(s)),
+      indent: true,
+    },
   ];
 
   return <ComparisonTable rows={rows} snapshots={snapshots} />;

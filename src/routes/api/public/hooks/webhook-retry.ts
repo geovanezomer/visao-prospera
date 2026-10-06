@@ -9,15 +9,19 @@ export const Route = createFileRoute("/api/public/hooks/webhook-retry")({
     handlers: {
       POST: async ({ request }) => {
         const apikey = request.headers.get("apikey") ?? "";
-        const expected = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY ?? "";
+        const expected =
+          process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY ?? "";
         if (!expected || apikey !== expected) {
           return new Response("Unauthorized", { status: 401 });
         }
         let limit = 25;
         try {
           const body = await request.json().catch(() => ({}));
-          if (typeof body?.limit === "number" && body.limit > 0 && body.limit <= 100) limit = body.limit;
-        } catch { /* corpo opcional */ }
+          if (typeof body?.limit === "number" && body.limit > 0 && body.limit <= 100)
+            limit = body.limit;
+        } catch {
+          /* corpo opcional */
+        }
         const { runRetryBatch } = await import("@/lib/payments/webhook-handler.server");
         const result = await runRetryBatch(limit);
         return Response.json({ ...result });

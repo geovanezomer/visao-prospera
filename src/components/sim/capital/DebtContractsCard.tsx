@@ -98,10 +98,7 @@ export function DebtContractsCard({
               const sch = scheduleContract(c);
               const isOpen = expanded === c.id;
               return (
-                <div
-                  key={c.id}
-                  className="rounded-md border border-border/40 bg-background/30"
-                >
+                <div key={c.id} className="rounded-md border border-border/40 bg-background/30">
                   <div className="grid grid-cols-2 md:grid-cols-[1.6fr_1fr_0.8fr_0.7fr_0.8fr_0.8fr_24px] gap-2 items-center px-2 py-2 text-xs">
                     <div className="col-span-2 md:col-span-1">
                       <div className="font-semibold text-foreground truncate">
@@ -111,9 +108,7 @@ export function DebtContractsCard({
                         {c.descricao || "—"}
                       </div>
                     </div>
-                    <div className="text-right num font-semibold">
-                      {fmtBRL(c.saldoDevedor)}
-                    </div>
+                    <div className="text-right num font-semibold">{fmtBRL(c.saldoDevedor)}</div>
                     <div className="text-right num">{c.taxaAA.toFixed(1)}% a.a.</div>
                     <div className="text-center">
                       <span
@@ -126,9 +121,7 @@ export function DebtContractsCard({
                         {c.sistema}
                       </span>
                     </div>
-                    <div className="text-center text-[11px]">
-                      {vencimentoLabel(c.prazoMeses)}
-                    </div>
+                    <div className="text-center text-[11px]">{vencimentoLabel(c.prazoMeses)}</div>
                     <div className="text-right num font-semibold text-warning">
                       {fmtBRL(sch.parcelaMes)}
                     </div>
@@ -137,7 +130,11 @@ export function DebtContractsCard({
                       className="ml-auto text-muted-foreground hover:text-primary"
                       aria-label="Detalhes"
                     >
-                      {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {isOpen ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
 
@@ -199,7 +196,11 @@ export function DebtContractsCard({
                           step="1"
                           min={1}
                           value={c.prazoMeses}
-                          onChange={(e) => update(c.id, { prazoMeses: Math.max(1, Math.floor(Number(e.target.value) || 0)) })}
+                          onChange={(e) =>
+                            update(c.id, {
+                              prazoMeses: Math.max(1, Math.floor(Number(e.target.value) || 0)),
+                            })
+                          }
                           className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm outline-none focus:border-primary"
                         />
                       </Field>
@@ -213,7 +214,14 @@ export function DebtContractsCard({
                           min={0}
                           max={12}
                           value={c.mesCaptacao ?? 0}
-                          onChange={(e) => update(c.id, { mesCaptacao: Math.max(0, Math.min(12, Math.floor(Number(e.target.value) || 0))) })}
+                          onChange={(e) =>
+                            update(c.id, {
+                              mesCaptacao: Math.max(
+                                0,
+                                Math.min(12, Math.floor(Number(e.target.value) || 0)),
+                              ),
+                            })
+                          }
                           className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-right text-sm outline-none focus:border-primary"
                         />
                       </Field>
@@ -233,7 +241,11 @@ export function DebtContractsCard({
                       >
                         <select
                           value={c.tipoCredor ?? "banco"}
-                          onChange={(e) => update(c.id, { tipoCredor: e.target.value as DebtContract["tipoCredor"] })}
+                          onChange={(e) =>
+                            update(c.id, {
+                              tipoCredor: e.target.value as DebtContract["tipoCredor"],
+                            })
+                          }
                           className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm outline-none focus:border-primary"
                         >
                           <option value="banco">Banco</option>
@@ -249,7 +261,12 @@ export function DebtContractsCard({
                       >
                         <select
                           value={c.frequenciaAmortizacao ?? "mensal"}
-                          onChange={(e) => update(c.id, { frequenciaAmortizacao: e.target.value as DebtContract["frequenciaAmortizacao"] })}
+                          onChange={(e) =>
+                            update(c.id, {
+                              frequenciaAmortizacao: e.target
+                                .value as DebtContract["frequenciaAmortizacao"],
+                            })
+                          }
                           className="w-full rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-sm outline-none focus:border-primary"
                         >
                           <option value="mensal">Mensal</option>
@@ -291,8 +308,18 @@ export function DebtContractsCard({
                       </Field>
                       <div className="sm:col-span-2 md:col-span-3 flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-2">
                         <div className="flex gap-3 text-[11px] text-muted-foreground">
-                          <span>Juros 12m: <strong className="num text-warning">{fmtBRL(sch.totalJurosAno)}</strong></span>
-                          <span>Amort. 12m: <strong className="num text-foreground">{fmtBRL(sch.totalAmortAno)}</strong></span>
+                          <span>
+                            Juros 12m:{" "}
+                            <strong className="num text-warning">
+                              {fmtBRL(sch.totalJurosAno)}
+                            </strong>
+                          </span>
+                          <span>
+                            Amort. 12m:{" "}
+                            <strong className="num text-foreground">
+                              {fmtBRL(sch.totalAmortAno)}
+                            </strong>
+                          </span>
                         </div>
                         <button
                           onClick={() => remove(c.id)}
@@ -342,8 +369,8 @@ export function DebtContractsCard({
             />
           </div>
           <div className="text-[10px] text-muted-foreground">
-            Os contratos alimentam automaticamente: Dívida Onerosa, Serviço da Dívida,
-            DSCR, Cobertura de Juros, ROIC, WACC e o Custo Financeiro na DRE.
+            Os contratos alimentam automaticamente: Dívida Onerosa, Serviço da Dívida, DSCR,
+            Cobertura de Juros, ROIC, WACC e o Custo Financeiro na DRE.
           </div>
         </>
       )}
@@ -393,7 +420,9 @@ function Stat({
         <span>{label}</span>
         {hint && <HelpTip text={hint} />}
       </div>
-      <div className={`mt-0.5 text-sm font-semibold num ${tone === "warn" ? "text-warning" : "text-foreground"}`}>
+      <div
+        className={`mt-0.5 text-sm font-semibold num ${tone === "warn" ? "text-warning" : "text-foreground"}`}
+      >
         {value}
       </div>
     </div>

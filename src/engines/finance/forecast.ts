@@ -67,7 +67,7 @@ export interface ForecastResult {
 
 const LABOR_RE = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra|m\.o\.|clt/i;
 
-  /**
+/**
  * Projeção estruturada (substitui o modelo de fator único):
  *   • Receita: crescimento composto mensal.
  *   • Custos variáveis (CPV + variáveis não-folha): escalam com receita, com ganho de escala anual no CPV.
@@ -76,7 +76,7 @@ const LABOR_RE = /sal[áa]rio|folha|prolabore|pró-labore|mod|mão de obra|m\.o\
  *   • Depreciação: constante.
  *   • Impostos: alíquota efetiva do ano-base aplicada à receita projetada (aproximação).
  *   • NCG: recalculada mês a mês (CR via PMR + estoque proporcional ao CPV − fornecedores via PMP).
-   *   • FCL/FCFF = NOPAT + D&A − CAPEX − ΔNCG, sem resultado financeiro.
+ *   • FCL/FCFF = NOPAT + D&A − CAPEX − ΔNCG, sem resultado financeiro.
  */
 export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastResult {
   // SSOT: regime EFETIVO. Garante consistência com IndicatorsTab/Valuation

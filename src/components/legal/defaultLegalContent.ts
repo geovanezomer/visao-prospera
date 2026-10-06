@@ -105,8 +105,11 @@ export function fillPlaceholders(
   template: string,
   values: Partial<Record<"RAZAO_SOCIAL" | "CNPJ" | "EMAIL_CONTATO" | "EMAIL_ENCARREGADO", string>>,
 ): string {
-  return template.replace(/\{\{(RAZAO_SOCIAL|CNPJ|EMAIL_CONTATO|EMAIL_ENCARREGADO)\}\}/g, (m, key) => {
-    const v = values[key as keyof typeof values];
-    return v && v.trim() ? v : m;
-  });
+  return template.replace(
+    /\{\{(RAZAO_SOCIAL|CNPJ|EMAIL_CONTATO|EMAIL_ENCARREGADO)\}\}/g,
+    (m, key) => {
+      const v = values[key as keyof typeof values];
+      return v && v.trim() ? v : m;
+    },
+  );
 }

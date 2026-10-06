@@ -54,7 +54,9 @@ const appStateShape = z
     ramoAtuacao: z.string().optional(),
     benchmarkCustom: z.object({}).passthrough().optional(),
     headcountRange: z.enum(["1-9", "10-49", "50-99", "100+"]).optional(),
-    periodoAnaliseMeses: z.union([z.literal(6), z.literal(12), z.literal(24), z.literal(36)]).optional(),
+    periodoAnaliseMeses: z
+      .union([z.literal(6), z.literal(12), z.literal(24), z.literal(36)])
+      .optional(),
     fiscalYearStartMonth: z.number().int().min(1).max(12).optional(),
     margemAlvoPct: z.number().optional(),
     moedaBase: z.string().optional(),
@@ -217,7 +219,6 @@ function variaveisFor(business: BusinessType): CostLine[] {
 }
 
 const financeiros = (): CostLine[] => [
-  
   line("cheque_especial", "Juros sobre cheque especial", "financeiro", 0),
   line("iof", "IOF", "financeiro", 120),
   line("tarifas_bancarias", "Tarifas bancárias", "financeiro", 0),
@@ -258,9 +259,27 @@ export const DEFAULT_STATE: AppState = {
       { id: "abatimentos", label: "Abatimentos", valores: fill12(0), fixed: true },
     ],
     receitasFinanceiras: [
-      { id: "rend_aplic", label: "Rendimento de aplicações", valores: fill12(0), fixed: true, tipo: "financeira" },
-      { id: "alugueis", label: "Aluguéis Recebidos", valores: fill12(0), fixed: true, tipo: "operacional" },
-      { id: "venda_ativos", label: "Venda de Ativos", valores: fill12(0), fixed: true, tipo: "operacional" },
+      {
+        id: "rend_aplic",
+        label: "Rendimento de aplicações",
+        valores: fill12(0),
+        fixed: true,
+        tipo: "financeira",
+      },
+      {
+        id: "alugueis",
+        label: "Aluguéis Recebidos",
+        valores: fill12(0),
+        fixed: true,
+        tipo: "operacional",
+      },
+      {
+        id: "venda_ativos",
+        label: "Venda de Ativos",
+        valores: fill12(0),
+        fixed: true,
+        tipo: "operacional",
+      },
     ],
   },
   costs: defaultCostsFor("servicos"),
@@ -270,8 +289,8 @@ export const DEFAULT_STATE: AppState = {
     // debtContracts, PMR/PMP). Percentuais (proprio/ke/kd) são referências
     // editáveis, não valores monetários.
     proprio: 100, // 100% capital próprio até o usuário informar dívida
-    ke: 15,       // custo do equity — referência editável
-    kd: 0,        // custo da dívida — 0 até haver dívida cadastrada
+    ke: 15, // custo do equity — referência editável
+    kd: 0, // custo da dívida — 0 até haver dívida cadastrada
     capitalGiroDisponivel: 0,
     depreciacaoMensal: 0,
 
@@ -355,7 +374,9 @@ export function migrateCostLine(c: CostLine): CostLine {
   const semCredito = c.semCredito ?? c.subcategory === "icms_st";
   // Normaliza aliases legados → categorias por FUNÇÃO contábil (CPC 26).
   // `fixo`/`variavel` eram proxies para Admin/Comercial — promove para os nomes canônicos.
-  const normalizeLegacy = (cat: CostLine["category"] | undefined): CostLine["category"] | undefined => {
+  const normalizeLegacy = (
+    cat: CostLine["category"] | undefined,
+  ): CostLine["category"] | undefined => {
     if (cat === "fixo") return "despesa_administrativa";
     if (cat === "variavel") return "despesa_comercial";
     return cat;

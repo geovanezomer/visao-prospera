@@ -121,7 +121,7 @@ export function AuditReport({
       </div>
 
       {/* Checklist da auditoria — contagem por status */}
-      {(counts.ok + counts.warn + counts.danger) > 0 && (
+      {counts.ok + counts.warn + counts.danger > 0 && (
         <div className="flex flex-wrap items-center gap-2 border-b border-primary/20 bg-background/40 px-3 py-2 text-[11px]">
           <span className="font-semibold uppercase tracking-wide text-muted-foreground">
             Checklist:

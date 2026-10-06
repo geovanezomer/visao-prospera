@@ -24,7 +24,9 @@ import { useAdminCommandShortcut } from "@/components/admin/AdminCommandPalette"
 type Listener = (e: KeyboardEvent) => void;
 const listeners: Listener[] = [];
 const fakeWindow = {
-  addEventListener: (_: string, fn: Listener) => { listeners.push(fn); },
+  addEventListener: (_: string, fn: Listener) => {
+    listeners.push(fn);
+  },
   removeEventListener: (_: string, fn: Listener) => {
     const i = listeners.indexOf(fn);
     if (i >= 0) listeners.splice(i, 1);

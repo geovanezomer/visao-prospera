@@ -397,11 +397,9 @@ export function calcIndicators(
   // vem do balanço reconciliado (não de `capital.ativoTotal`), consistente com
   // o Ativo Total impresso no PDF.
   const atAbertura = Math.max(0, capital.ativoTotalAbertura ?? 0);
-  const atMedio = atAbertura > 0 && ativoTotalFim > 0
-    ? (atAbertura + ativoTotalFim) / 2
-    : ativoTotalFim;
+  const atMedio =
+    atAbertura > 0 && ativoTotalFim > 0 ? (atAbertura + ativoTotalFim) / 2 : ativoTotalFim;
   const roa = atMedio > 0 ? safePct(llAnual, atMedio) : 0;
-
 
   // ---- Ciclo / NCG / Gap ----
   // PMR/PME/PMP continuam vindo da fórmula estática (métrica de DIAS,
@@ -430,7 +428,7 @@ export function calcIndicators(
   const fornBal = safeNumber(bPc.fornecedores);
   const salBal = safeNumber(bPc.salariosEncargos);
   const impBal = safeNumber(bPc.impostosPagar);
-  const ncg = (crBal + estBal) - (fornBal + salBal + impBal);
+  const ncg = crBal + estBal - (fornBal + salBal + impBal);
 
   // CDG (Capital de Giro) via Fleuriet = (PL + PNC) − ANC.
   // Reusa `plBalSSOT` (calculado no topo) — mesmo SSOT do PL usado em ROE/DL-PL.
@@ -459,7 +457,7 @@ export function calcIndicators(
     safeNumber(bAnc.realizavelLP?.depositosJudiciais) +
     safeNumber(bAnc.realizavelLP?.impostosDiferidos) +
     safeNumber(bAnc.realizavelLP?.outros);
-  const cdg = (plBal + pncTotal) - ancTotal;
+  const cdg = plBal + pncTotal - ancTotal;
   const gapCapitalGiro = ncg - cdg;
 
   // Estimativas legadas mantidas para consumidores de liquidez/PMR abaixo.
@@ -473,10 +471,14 @@ export function calcIndicators(
   // eliminando divergência histórica entre "indicador" e "balanço".
   // caixaBal PODE SER NEGATIVO (descoberto bancário projetado) — o sinal
   // é preservado para que Liquidez Imediata sinalize o risco real.
-  const caixaBal = safeNumber(bAc.caixaEquivalentes) + safeNumber((bAc as { aplicacoesFinanceirasCP?: number }).aplicacoesFinanceirasCP);
+  const caixaBal =
+    safeNumber(bAc.caixaEquivalentes) +
+    safeNumber((bAc as { aplicacoesFinanceirasCP?: number }).aplicacoesFinanceirasCP);
   const impRecBal = safeNumber(bAc.impostosRecuperar);
   const acBal = caixaBal + crBal + estBal + impRecBal;
-  const emprestCPBal = safeNumber((bPc as { emprestimosFinanciamentosCP?: number }).emprestimosFinanciamentosCP);
+  const emprestCPBal = safeNumber(
+    (bPc as { emprestimosFinanciamentosCP?: number }).emprestimosFinanciamentosCP,
+  );
   const pcBal = fornBal + salBal + impBal + emprestCPBal;
   const temBalancoAC = Math.abs(acBal) > 0 || crBal !== 0 || estBal !== 0 || caixaBal !== 0;
   const temBalancoPC = pcBal > 0;
@@ -521,9 +523,7 @@ export function calcIndicators(
   const liquidezCorrente =
     passivoCirculante > 1 ? capUp(ativoCirculante / passivoCirculante) : CAP_LIQ;
   const liquidezSeca =
-    passivoCirculante > 1
-      ? capUp((ativoCirculante - estoqueLiq) / passivoCirculante)
-      : CAP_LIQ;
+    passivoCirculante > 1 ? capUp((ativoCirculante - estoqueLiq) / passivoCirculante) : CAP_LIQ;
   // Liquidez Imediata: sem clamp inferior — caixa negativo → ratio negativo.
   // Cap superior mantido só para evitar Infinity quando PC ≈ 0.
   const liquidezImediata =
@@ -533,8 +533,6 @@ export function calcIndicators(
   const passivoTotalAprox = ativoTotalFim > PL ? ativoTotalFim - PL : 0;
   const liquidezGeral =
     passivoTotalAprox > 1 ? capUp(ativoCirculante / passivoTotalAprox) : CAP_LIQ;
-
-
 
   // ---- Endividamento ----
   // [Correção auditoria] Passivo Total vem do Balanço Detalhado (soma dos subcampos
@@ -624,9 +622,8 @@ export function calcIndicators(
   // é conceitualmente errado: NCG ≠ Caixa (são linhas DISJUNTAS do balanço — NCG é ACO−PCO,
   // caixa é ACF). Esse fallback invertia o sinal de ΔNCG na maioria dos casos e produzia
   // FCF irreal (NOPAT + D&A − NCG_atual + Caixa).
-  const ncgAbertura = capital.ncgAbertura != null && capital.ncgAbertura > 0
-    ? capital.ncgAbertura
-    : ncg; // sem dado de abertura → assume ΔNCG=0
+  const ncgAbertura =
+    capital.ncgAbertura != null && capital.ncgAbertura > 0 ? capital.ncgAbertura : ncg; // sem dado de abertura → assume ΔNCG=0
   const deltaNcgAnual = ncg - ncgAbertura;
 
   // FCFF (Free Cash Flow to the Firm) padrão Damodaran/Koller:
@@ -664,8 +661,7 @@ export function calcIndicators(
   // Otimização: reusa `cfPre` se passado por `buildFinancialModel` (evita 2ª chamada).
   const cfForFco = cfPre ?? buildCashFlow(state);
   const fcoAnual = an(cfForFco.totais.fluxoOperacional);
-  const qualidadeLucro =
-    Math.abs(llAnual) > 1 ? Math.max(-9, Math.min(9, fcoAnual / llAnual)) : 0;
+  const qualidadeLucro = Math.abs(llAnual) > 1 ? Math.max(-9, Math.min(9, fcoAnual / llAnual)) : 0;
 
   const headcount = Math.max(0, state.numColaboradores ?? 0);
   const receitaPorColaborador = headcount > 0 ? receitaLiqAnual / headcount : 0;
@@ -694,9 +690,7 @@ export function calcIndicators(
   const servicoDivida = jurosDivida + amortizPrincipalAnual;
   const CAP_DSCR = 99;
   const dscr: number | null =
-    servicoDivida > 1
-      ? Math.max(-CAP_DSCR, Math.min(CAP_DSCR, ebitdaAnual / servicoDivida))
-      : null;
+    servicoDivida > 1 ? Math.max(-CAP_DSCR, Math.min(CAP_DSCR, ebitdaAnual / servicoDivida)) : null;
 
   return {
     margemBruta: safePct(lucroBrutoAnual, receitaLiqAnual),
@@ -756,11 +750,8 @@ export function calcIndicators(
     passivoCirculante,
     ativoCirculante,
     impostosSobreReceita:
-      receitaBrutaAnual > 0
-        ? ((impostosVendasAnual + impostosAnual) / receitaBrutaAnual) * 100
-        : 0,
-    impostosSobreLucro:
-      llAnual > 1 ? ((impostosVendasAnual + impostosAnual) / llAnual) * 100 : 0,
+      receitaBrutaAnual > 0 ? ((impostosVendasAnual + impostosAnual) / receitaBrutaAnual) * 100 : 0,
+    impostosSobreLucro: llAnual > 1 ? ((impostosVendasAnual + impostosAnual) / llAnual) * 100 : 0,
     ebitdaAnual,
     ebitAnual,
     receitaBrutaAnual,

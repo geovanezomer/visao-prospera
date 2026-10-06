@@ -81,4 +81,3 @@ export const v1_to_v2: Migration = {
     return file;
   },
 };
-

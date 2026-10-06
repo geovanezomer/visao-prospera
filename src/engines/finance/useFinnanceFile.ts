@@ -153,17 +153,20 @@ export function useFinnanceFile({
   }, [state, scenarios]);
 
   // Marca o estado atual como "salvo" e limpa o draft de recuperação.
-  const markSaved = useCallback((name: string) => {
-    lastSavedSnapshot.current = snapshot(state, scenarios);
-    setCurrentFileName(name);
-    setDirty(false);
-    setLastModified(Date.now());
-    try {
-      removeKey(draftKey(state.companyName));
-    } catch {
-      /* ignora */
-    }
-  }, [state, scenarios]);
+  const markSaved = useCallback(
+    (name: string) => {
+      lastSavedSnapshot.current = snapshot(state, scenarios);
+      setCurrentFileName(name);
+      setDirty(false);
+      setLastModified(Date.now());
+      try {
+        removeKey(draftKey(state.companyName));
+      } catch {
+        /* ignora */
+      }
+    },
+    [state, scenarios],
+  );
 
   // Salva APENAS no computador (download local).
   const saveToDisk = useCallback(() => {
@@ -367,5 +370,14 @@ export function useFinnanceFile({
     };
   }, []);
 
-  return { currentFileName, dirty, lastModified, save, saveToDisk, saveToCloud, open, resetWithConfirm };
+  return {
+    currentFileName,
+    dirty,
+    lastModified,
+    save,
+    saveToDisk,
+    saveToCloud,
+    open,
+    resetWithConfirm,
+  };
 }

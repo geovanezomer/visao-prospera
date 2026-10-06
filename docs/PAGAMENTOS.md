@@ -19,6 +19,7 @@ Landing (/) → Pricing → POST /api/public/payments/checkout
 ```
 
 **Arquivos-chave**:
+
 - `src/lib/payments/types.ts` — interface `PaymentProvider`.
 - `src/lib/payments/index.ts` — seleção via `PAYMENT_PROVIDER`.
 - `src/lib/payments/stripe.ts` — adapter REST Stripe (checkout + portal + HMAC).
@@ -32,6 +33,7 @@ Landing (/) → Pricing → POST /api/public/payments/checkout
 ## 2. Variáveis de ambiente
 
 ### Flag global
+
 ```env
 VITE_PAYMENTS_ENABLED=true       # Mostra preços e BillingButton
 PAYMENT_PROVIDER=stripe          # ou "asaas" — opcional; autodetecta pelas chaves
@@ -39,6 +41,7 @@ APP_URL=https://app.seudominio.com
 ```
 
 ### Stripe
+
 ```env
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
@@ -47,6 +50,7 @@ STRIPE_PRICE_PRO=price_yyyyy
 ```
 
 ### Asaas
+
 ```env
 ASAAS_API_KEY=$aact_prod_...
 ASAAS_WEBHOOK_TOKEN=<token-definido-no-dashboard>
@@ -56,6 +60,7 @@ ASAAS_PRICE_PRO=<id-do-plano-ou-link>
 ```
 
 ### Magic link (opcional, recomendado)
+
 ```env
 RESEND_API_KEY=re_...
 EMAIL_FROM=FinancePRO <no-reply@seudominio.com>
@@ -91,6 +96,7 @@ Sem Resend, o sistema cria o usuário no Supabase mesmo assim — apenas não en
 ## 5. Deploy em VPS com Docker
 
 ### docker-compose.yml (trecho)
+
 ```yaml
 services:
   app:
@@ -101,6 +107,7 @@ services:
 ```
 
 ### Nginx reverse-proxy (trecho)
+
 ```nginx
 location /api/public/payments/webhook/ {
   proxy_pass http://app:3000;
@@ -112,6 +119,7 @@ location /api/public/payments/webhook/ {
 ```
 
 ### Passo-a-passo
+
 ```bash
 git pull
 cp .env.example .env   # preencher chaves
@@ -129,19 +137,20 @@ Basta alterar `PAYMENT_PROVIDER=asaas` (ou `stripe`) e reiniciar o container. As
 
 ## 7. Troubleshooting
 
-| Sintoma | Causa provável | Solução |
-|---|---|---|
-| "Pagamentos não configurados" no console | `VITE_PAYMENTS_ENABLED` ausente | Setar `true` no `.env` e rebuild |
-| Webhook Stripe 400 "Invalid signature" | Nginx buferizando corpo | `proxy_request_buffering off` |
-| Webhook Asaas 401 | Token divergente | Conferir `ASAAS_WEBHOOK_TOKEN` |
-| `BillingButton` não aparece | Usuário sem assinatura ativa | Confirmar webhook chegou → checar tabela `subscriptions` |
-| Magic link não chega | Resend não configurado ou e-mail em spam | Setar `RESEND_API_KEY` + domínio verificado |
+| Sintoma                                  | Causa provável                           | Solução                                                  |
+| ---------------------------------------- | ---------------------------------------- | -------------------------------------------------------- |
+| "Pagamentos não configurados" no console | `VITE_PAYMENTS_ENABLED` ausente          | Setar `true` no `.env` e rebuild                         |
+| Webhook Stripe 400 "Invalid signature"   | Nginx buferizando corpo                  | `proxy_request_buffering off`                            |
+| Webhook Asaas 401                        | Token divergente                         | Conferir `ASAAS_WEBHOOK_TOKEN`                           |
+| `BillingButton` não aparece              | Usuário sem assinatura ativa             | Confirmar webhook chegou → checar tabela `subscriptions` |
+| Magic link não chega                     | Resend não configurado ou e-mail em spam | Setar `RESEND_API_KEY` + domínio verificado              |
 
 ---
 
 ## 8. Tabela `subscriptions`
 
 Colunas relevantes:
+
 - `provider` (`stripe` \| `asaas`)
 - `provider_customer_id`
 - `stripe_subscription_id` (usado por ambos como ID externo)

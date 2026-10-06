@@ -42,7 +42,10 @@ function resolvePath(root: unknown, path: string): unknown {
 }
 
 /** Stringify estável + cap em caracteres com marcador de truncagem. */
-function jsonCapped(value: unknown, maxChars: number): { body: string; truncated: boolean; total: number } {
+function jsonCapped(
+  value: unknown,
+  maxChars: number,
+): { body: string; truncated: boolean; total: number } {
   const full = JSON.stringify(value, null, 2) ?? "null";
   if (full.length <= maxChars) return { body: full, truncated: false, total: full.length };
   return {
@@ -106,7 +109,8 @@ const handleResumo: ToolHandler = (_args, ctx) => {
 
 const handleSecao: ToolHandler = (args, ctx) => {
   const path = typeof args.path === "string" ? args.path.trim() : "";
-  const maxChars = typeof args.maxChars === "number" ? Math.max(500, Math.min(120000, args.maxChars)) : 20000;
+  const maxChars =
+    typeof args.maxChars === "number" ? Math.max(500, Math.min(120000, args.maxChars)) : 20000;
   if (!path) {
     return "Erro: informe `path` (ex.: 'state.tax', 'scenarios', 'extras.actions', 'meta').";
   }
@@ -121,7 +125,8 @@ const handleSecao: ToolHandler = (args, ctx) => {
 };
 
 const handleCompleto: ToolHandler = (args, ctx) => {
-  const maxChars = typeof args.maxChars === "number" ? Math.max(2000, Math.min(200000, args.maxChars)) : 60000;
+  const maxChars =
+    typeof args.maxChars === "number" ? Math.max(2000, Math.min(200000, args.maxChars)) : 60000;
   const file = buildArquivo(ctx);
   const { body, truncated, total } = jsonCapped(file, maxChars);
   const warn = truncated

@@ -85,7 +85,13 @@ export interface JointMove {
 
 export interface JointResult {
   moves: JointMove[];
-  outputs: { output: OutputKey; baseline: number; cenario: number; delta: number; deltaPct: number }[];
+  outputs: {
+    output: OutputKey;
+    baseline: number;
+    cenario: number;
+    delta: number;
+    deltaPct: number;
+  }[];
 }
 
 /** Cenário combinado: aplica todos os drivers ao mesmo tempo (composição). */
@@ -114,15 +120,12 @@ const brl = (n: number) =>
     currency: "BRL",
     maximumFractionDigits: 0,
   });
-const fmtOutput = (o: OutputKey, v: number) =>
-  o === "roic" ? `${v.toFixed(2)}%` : brl(v);
+const fmtOutput = (o: OutputKey, v: number) => (o === "roic" ? `${v.toFixed(2)}%` : brl(v));
 
 export function tornadoToMarkdown(r: TornadoResult): string {
   const lines: string[] = [];
   lines.push(`## Tornado — sensibilidade ±${r.deltaPct}% por driver`);
-  lines.push(
-    `_Drivers ordenados pelo IMPACTO ABSOLUTO total (soma dos swings nos outputs)._`,
-  );
+  lines.push(`_Drivers ordenados pelo IMPACTO ABSOLUTO total (soma dos swings nos outputs)._`);
   lines.push("");
   const header = ["Driver", ...r.outputs.map((o) => `Δ ${OUTPUT_LABEL[o]}`)].join(" | ");
   const sep = ["---", ...r.outputs.map(() => "---:")].join(" | ");

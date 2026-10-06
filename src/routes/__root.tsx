@@ -40,7 +40,6 @@ function buildBrandingCss(colors?: { primary?: string; accent?: string }): strin
   return `:root,.dark{--primary:${colors.primary};--primary-foreground:${fg};--ring:${colors.primary};--accent:${accent};--sidebar-primary:${colors.primary};--sidebar-primary-foreground:${fg};--sidebar-ring:${colors.primary};}`;
 }
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background px-4">

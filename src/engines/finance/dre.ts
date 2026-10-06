@@ -29,9 +29,8 @@ import type { MonthlyTax } from "./tax/shared";
 import { aggregateMutuos } from "./mutuosSocios";
 
 // Regex compilada uma única vez (era recriada a cada chamada de classifyCosts).
-const LOAN_INTEREST_RE = /juros[^a-z]*(sobre)?[^a-z]*(empr[eé]stimo|contrato|m[uú]tuo|afac|s[oó]cio)/i;
-
-
+const LOAN_INTEREST_RE =
+  /juros[^a-z]*(sobre)?[^a-z]*(empr[eé]stimo|contrato|m[uú]tuo|afac|s[oó]cio)/i;
 
 export interface DRE {
   receitaBruta: number[];
@@ -259,7 +258,8 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   const mutuosAgg = aggregateMutuos(state.mutuosSocios);
   // Resultado Financeiro = rendimentos aplicações + juros mútuos − custos financeiros
   const resultadoFinanceiro = ebit.map(
-    (_, i) => rendimentosFinanceiros[i] + (mutuosAgg.juros[i] || 0) - buckets.custosFinanceirosTotal[i],
+    (_, i) =>
+      rendimentosFinanceiros[i] + (mutuosAgg.juros[i] || 0) - buckets.custosFinanceirosTotal[i],
   );
   const lair = ebit.map((e, i) => e + resultadoFinanceiro[i]);
 

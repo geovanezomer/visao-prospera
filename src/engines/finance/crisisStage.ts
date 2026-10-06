@@ -43,7 +43,8 @@ const DEFS: Record<CrisisStage, Omit<CrisisAssessment, "triggers">> = {
     stage: 0,
     label: "Saudável",
     tone: "pos",
-    description: "Margens positivas, caixa operacional gerando e estrutura de capital sob controle.",
+    description:
+      "Margens positivas, caixa operacional gerando e estrutura de capital sob controle.",
     recommendation: "Manter disciplina de caixa e revisar covenants trimestralmente.",
     legalBasis: "Operação normal — sem necessidade de medidas de reorganização.",
   },
@@ -51,33 +52,43 @@ const DEFS: Record<CrisisStage, Omit<CrisisAssessment, "triggers">> = {
     stage: 1,
     label: "Declínio",
     tone: "warn",
-    description: "Rentabilidade comprimida, mas a operação ainda gera caixa. Janela para ajustes preventivos.",
-    recommendation: "Plano de eficiência em 90 dias: corte de OPEX, revisão de pricing e mix de produto.",
+    description:
+      "Rentabilidade comprimida, mas a operação ainda gera caixa. Janela para ajustes preventivos.",
+    recommendation:
+      "Plano de eficiência em 90 dias: corte de OPEX, revisão de pricing e mix de produto.",
     legalBasis: "Fase pré-crise — sem instrumentos judiciais; atuação 100% gerencial.",
   },
   2: {
     stage: 2,
     label: "Iliquidez",
     tone: "neg",
-    description: "FCO negativo ou liquidez corrente abaixo de 1 — a empresa começa a queimar caixa.",
-    recommendation: "Renegociação extrajudicial direta com bancos e fornecedores; alongar prazos e suspender CAPEX não essencial.",
-    legalBasis: "Acordo bilateral com credores (sem homologação judicial). Preserva o nome e o crédito.",
+    description:
+      "FCO negativo ou liquidez corrente abaixo de 1 — a empresa começa a queimar caixa.",
+    recommendation:
+      "Renegociação extrajudicial direta com bancos e fornecedores; alongar prazos e suspender CAPEX não essencial.",
+    legalBasis:
+      "Acordo bilateral com credores (sem homologação judicial). Preserva o nome e o crédito.",
   },
   3: {
     stage: 3,
     label: "Insolvência Técnica",
     tone: "neg",
-    description: "Patrimônio Líquido negativo OU Dívida Líquida/EBITDA acima de 7×. Estrutura financeira insustentável.",
-    recommendation: "Recuperação Extrajudicial: negociar plano com classes de credores e homologar em juízo.",
+    description:
+      "Patrimônio Líquido negativo OU Dívida Líquida/EBITDA acima de 7×. Estrutura financeira insustentável.",
+    recommendation:
+      "Recuperação Extrajudicial: negociar plano com classes de credores e homologar em juízo.",
     legalBasis: "Lei 11.101/2005, art. 161 — adesão de ½ + 1 por classe vincula os dissidentes.",
   },
   4: {
     stage: 4,
     label: "Insolvência Jurídica",
     tone: "crit",
-    description: "PL negativo combinado com EBITDA negativo. Default iminente — falência se nada for feito.",
-    recommendation: "Pedido de Recuperação Judicial — stay period de 180 dias suspende execuções e protestos.",
-    legalBasis: "Lei 11.101/2005, art. 47 e 6º. Plano em 60 dias após deferimento; assembleia em até 150 dias.",
+    description:
+      "PL negativo combinado com EBITDA negativo. Default iminente — falência se nada for feito.",
+    recommendation:
+      "Pedido de Recuperação Judicial — stay period de 180 dias suspende execuções e protestos.",
+    legalBasis:
+      "Lei 11.101/2005, art. 47 e 6º. Plano em 60 dias após deferimento; assembleia em até 150 dias.",
   },
 };
 
@@ -125,5 +136,9 @@ export function assessCrisisStage(state: AppState, ind: Indicators): CrisisAsses
 }
 
 function fmtBRL(v: number): string {
-  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  return v.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  });
 }

@@ -194,7 +194,6 @@ function checkTier1Estrutural(state: AppState, dre: DRE, ind: Indicators): Valid
     }
   }
 
-
   // 1.4 Dividendos > Lucro Líquido projetado (distribuição além do permitido)
   if (dividendos > 0 && dividendos > ll) {
     const detail =

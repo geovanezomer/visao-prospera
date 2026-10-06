@@ -42,7 +42,10 @@ async function hashEmail(email: string): Promise<string> {
 
 async function tableExists(admin: AdminClient, name: string): Promise<boolean> {
   try {
-    const { error } = await admin.from(name as never).select("*", { head: true, count: "exact" }).limit(1);
+    const { error } = await admin
+      .from(name as never)
+      .select("*", { head: true, count: "exact" })
+      .limit(1);
     return !error;
   } catch {
     return false;
@@ -51,13 +54,18 @@ async function tableExists(admin: AdminClient, name: string): Promise<boolean> {
 
 // ─── Coletores por fonte (retornam TimelineItem[]) ──────────────────────────
 
-async function collectSubscriptions(admin: AdminClient, userId: string): Promise<{
+async function collectSubscriptions(
+  admin: AdminClient,
+  userId: string,
+): Promise<{
   items: TimelineItem[];
   subIds: string[];
 }> {
   const { data } = await admin
     .from("subscriptions")
-    .select("id, plan, status, provider, stripe_subscription_id, created_at, updated_at, cancel_at_period_end")
+    .select(
+      "id, plan, status, provider, stripe_subscription_id, created_at, updated_at, cancel_at_period_end",
+    )
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(50);
@@ -72,7 +80,10 @@ async function collectSubscriptions(admin: AdminClient, userId: string): Promise
       kind: "assinatura",
       title: `Assinatura criada · ${s.plan ?? "—"}`,
       detail: `provider=${s.provider ?? "—"} status=${s.status ?? "—"}`,
-      tone: s.status === "active" || s.status === "trialing" || s.status === "lifetime" ? "ok" : "neutral",
+      tone:
+        s.status === "active" || s.status === "trialing" || s.status === "lifetime"
+          ? "ok"
+          : "neutral",
     });
     // Schema não tem canceled_at — usamos updated_at quando status=canceled.
     if (s.status === "canceled") {
@@ -200,10 +211,7 @@ async function collectCheckouts(admin: AdminClient, email: string | null): Promi
       at: c.confirmed_at ?? c.updated_at ?? c.created_at,
       kind: "checkout" as const,
       title: `Checkout ${c.status} · ${c.plan_slug}`,
-      detail: [
-        `provider=${c.provider}`,
-        c.last_error ? `erro=${c.last_error}` : null,
-      ]
+      detail: [`provider=${c.provider}`, c.last_error ? `erro=${c.last_error}` : null]
         .filter(Boolean)
         .join(" · "),
       tone,
@@ -247,13 +255,7 @@ export async function aggregateTimeline(
     collectEmails(admin, email),
     collectCheckouts(admin, email),
   ]);
-  const all: TimelineItem[] = [
-    ...subsBundle.items,
-    ...webhooks,
-    ...emails,
-    ...audit,
-    ...checkouts,
-  ];
+  const all: TimelineItem[] = [...subsBundle.items, ...webhooks, ...emails, ...audit, ...checkouts];
   all.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
   return all.slice(0, 100);
 }

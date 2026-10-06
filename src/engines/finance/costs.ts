@@ -8,10 +8,7 @@
 import { CostLine, TaxRegime, DEFAULT_ENCARGOS_PCT } from "./types";
 import { fill12 } from "./format";
 import { DEFAULT_ENCARGOS_PCT_SIMPLES } from "./taxDefaults";
-import {
-  calcularCustoFuncionario,
-  type GrauRAT,
-} from "@/engines/calculadoras/custoFuncionario";
+import { calcularCustoFuncionario, type GrauRAT } from "@/engines/calculadoras/custoFuncionario";
 
 /** Classificação canônica: linhas que compõem o CPV/CMV/CSP (geram crédito tributário
  *  e escalam com receita no forecast). Usado em buildDRE, calcReal e forecast. */
@@ -61,7 +58,6 @@ export function isCreditoAmploCbsIbs(c: CostLine): boolean {
   if (isLaborLine(c)) return false;
   return true;
 }
-
 
 /** Despesa Administrativa (função CPC 26). Aceita o alias legado `fixo`. */
 export function isAdminCost(c: CostLine): boolean {

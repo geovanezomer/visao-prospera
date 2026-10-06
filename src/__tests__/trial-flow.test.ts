@@ -31,8 +31,20 @@ const db: {
     trial: { enabled: true, duration_hours: 2 },
     branding: { system_name: "Finnance" },
   },
-  email_settings: { resend_api_key: "re_test", from_email: "no-reply@x.com", from_name: "Finnance" },
-  email_templates: [{ kind: "trial_magic_link", subject: "Olá {{name}}", html: "{{link}}", text: "{{link}}", enabled: true }],
+  email_settings: {
+    resend_api_key: "re_test",
+    from_email: "no-reply@x.com",
+    from_name: "Finnance",
+  },
+  email_templates: [
+    {
+      kind: "trial_magic_link",
+      subject: "Olá {{name}}",
+      html: "{{link}}",
+      text: "{{link}}",
+      enabled: true,
+    },
+  ],
   users: new Map(),
 };
 
@@ -47,8 +59,20 @@ function reset() {
     trial: { enabled: true, duration_hours: 2 },
     branding: { system_name: "Finnance" },
   };
-  db.email_settings = { resend_api_key: "re_test", from_email: "no-reply@x.com", from_name: "Finnance" };
-  db.email_templates = [{ kind: "trial_magic_link", subject: "Olá {{name}}", html: "{{link}}", text: "{{link}}", enabled: true }];
+  db.email_settings = {
+    resend_api_key: "re_test",
+    from_email: "no-reply@x.com",
+    from_name: "Finnance",
+  };
+  db.email_templates = [
+    {
+      kind: "trial_magic_link",
+      subject: "Olá {{name}}",
+      html: "{{link}}",
+      text: "{{link}}",
+      enabled: true,
+    },
+  ];
   db.users.clear();
   cap.generateLinkCalls.length = 0;
   cap.resendCalls.length = 0;
@@ -62,10 +86,20 @@ function makeClient(_token?: string) {
       const api: any = {
         _table: table,
         _filters: [] as Array<{ k: string; v: any; op: string }>,
-        select() { return this; },
-        eq(k: string, v: any) { this._filters.push({ k, v, op: "eq" }); return this; },
-        is(k: string, v: any) { this._filters.push({ k, v, op: "is" }); return this; },
-        limit() { return this; },
+        select() {
+          return this;
+        },
+        eq(k: string, v: any) {
+          this._filters.push({ k, v, op: "eq" });
+          return this;
+        },
+        is(k: string, v: any) {
+          this._filters.push({ k, v, op: "is" });
+          return this;
+        },
+        limit() {
+          return this;
+        },
         async maybeSingle() {
           if (table === "trial_requests") {
             const row = db.trial_requests.find((r) =>
@@ -132,11 +166,16 @@ function makeClient(_token?: string) {
       return api;
     },
 
-    rpc: async () => ({ data: [{ allowed: true, remaining: 100, retry_after_seconds: 0 }], error: null }),
+    rpc: async () => ({
+      data: [{ allowed: true, remaining: 100, retry_after_seconds: 0 }],
+      error: null,
+    }),
     auth: {
       async getUser(token: string) {
         const u = db.users.get(token);
-        return u ? { data: { user: u }, error: null } : { data: { user: null }, error: { message: "no" } };
+        return u
+          ? { data: { user: u }, error: null }
+          : { data: { user: null }, error: { message: "no" } };
       },
       admin: {
         async createUser({ email, user_metadata }: any) {
@@ -183,8 +222,13 @@ beforeAll(() => {
   }) as typeof fetch;
 });
 
-beforeEach(() => { reset(); resendStatus = 200; });
-afterEach(() => { vi.restoreAllMocks(); });
+beforeEach(() => {
+  reset();
+  resendStatus = 200;
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 async function loadPost(modPath: string) {
@@ -207,7 +251,9 @@ function jsonReq(url: string, body: any, headers: Record<string, string> = {}) {
 describe("POST /api/public/trial/request", () => {
   test("feliz: cria usuário, registra trial, envia magic link com redirect /auth/callback", async () => {
     const handler = await POST_REQUEST();
-    const res = await handler({ request: jsonReq("https://app.example.com/api/public/trial/request", { email: "a@b.com" }) });
+    const res = await handler({
+      request: jsonReq("https://app.example.com/api/public/trial/request", { email: "a@b.com" }),
+    });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toMatchObject({ ok: true, sent: true, hours: 2 });
@@ -219,7 +265,9 @@ describe("POST /api/public/trial/request", () => {
 
   test("honeypot retorna ok sem efeito colateral", async () => {
     const handler = await POST_REQUEST();
-    const res = await handler({ request: jsonReq("https://x/", { email: "a@b.com", website: "spam" }) });
+    const res = await handler({
+      request: jsonReq("https://x/", { email: "a@b.com", website: "spam" }),
+    });
     expect(res.status).toBe(200);
     expect(db.trial_requests).toHaveLength(0);
     expect(db.users.size).toBe(0);
@@ -274,7 +322,8 @@ describe("POST /api/public/trial/activate", () => {
     // Seed: cria usuário trial + trial_requests pendente
     const token = "tok_usr_1";
     db.users.set(token, {
-      id: "usr_1", email: "a@b.com",
+      id: "usr_1",
+      email: "a@b.com",
       user_metadata: { is_trial: true },
     });
     db.trial_requests.push({ email: "a@b.com", user_id: "usr_1", consumed_at: null });
@@ -301,7 +350,10 @@ describe("POST /api/public/trial/activate", () => {
     db.users.set(token, { id: "usr_9", email: "z@b.com", user_metadata: {} });
     const handler = await POST_ACTIVATE();
     const res = await handler({
-      request: new Request("https://x/", { method: "POST", headers: { Authorization: `Bearer ${token}` } }),
+      request: new Request("https://x/", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }),
     });
     expect(res.status).toBe(200);
     expect((await res.json()).activated).toBe(false);
@@ -311,7 +363,9 @@ describe("POST /api/public/trial/activate", () => {
 describe("magic link aponta para /auth/callback (evita /login)", () => {
   test("redirectTo termina em /auth/callback", async () => {
     const handler = await POST_REQUEST();
-    await handler({ request: jsonReq("https://meusite.com/api/public/trial/request", { email: "novo@ex.com" }) });
+    await handler({
+      request: jsonReq("https://meusite.com/api/public/trial/request", { email: "novo@ex.com" }),
+    });
     expect(cap.generateLinkCalls[0].redirectTo).toMatch(/\/auth\/callback$/);
   });
 });

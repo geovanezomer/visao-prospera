@@ -67,7 +67,11 @@ async function stripeGet<T>(apiKey: string, path: string): Promise<T> {
   return j as T;
 }
 
-async function stripePost<T>(apiKey: string, path: string, body: Record<string, string | number>): Promise<T> {
+async function stripePost<T>(
+  apiKey: string,
+  path: string,
+  body: Record<string, string | number>,
+): Promise<T> {
   if (!apiKey) throw new Error("STRIPE_SECRET_KEY ausente.");
   const u = new URLSearchParams();
   for (const [k, v] of Object.entries(body)) u.set(k, String(v));
@@ -128,7 +132,11 @@ async function asaasReq<T>(
   return j as T;
 }
 
-async function refundAsaas(input: RefundInput, apiKey: string, mode: "live" | "sandbox"): Promise<RefundResult> {
+async function refundAsaas(
+  input: RefundInput,
+  apiKey: string,
+  mode: "live" | "sandbox",
+): Promise<RefundResult> {
   if (!input.subscriptionId) throw new Error("Asaas: subscriptionId ausente.");
   const payments = await asaasReq<{ data: AsaasPayment[] }>(
     apiKey,
@@ -165,9 +173,7 @@ async function refundAsaas(input: RefundInput, apiKey: string, mode: "live" | "s
 // composto e trata manualmente o que sobrou.
 // ============================================================================
 
-export type StepStatus =
-  | { ok: true; detail?: string }
-  | { ok: false; error: string };
+export type StepStatus = { ok: true; detail?: string } | { ok: false; error: string };
 
 export type RefundAndRevokeResult = {
   refund: StepStatus & { data?: RefundResult };
@@ -183,9 +189,7 @@ export type RefundAndRevokeInput = RefundInput & {
   actorId: string;
 };
 
-export async function refundAndRevoke(
-  input: RefundAndRevokeInput,
-): Promise<RefundAndRevokeResult> {
+export async function refundAndRevoke(input: RefundAndRevokeInput): Promise<RefundAndRevokeResult> {
   const result: RefundAndRevokeResult = {
     refund: { ok: false, error: "not-run" },
     revoke: { ok: true, detail: "skipped" },
@@ -280,18 +284,16 @@ export async function refundAndRevoke(
     const { data: userRes } = await supabaseAdmin.auth.admin.getUserById(input.userId);
     const email = userRes?.user?.email;
     if (email) {
-      const {
-        getEmailConfig,
-        getTemplate,
-        renderTemplate,
-      } = await import("./lifecycleEmails.server");
+      const { getEmailConfig, getTemplate, renderTemplate } =
+        await import("./lifecycleEmails.server");
       const cfg = await getEmailConfig(supabaseAdmin);
       const tpl = await getTemplate(supabaseAdmin, "refund");
       if (cfg && tpl) {
         const meta = (userRes?.user?.user_metadata ?? {}) as Record<string, unknown>;
         const name =
           (typeof meta.display_name === "string" && meta.display_name) ||
-          email.split("@")[0] || "Cliente";
+          email.split("@")[0] ||
+          "Cliente";
         const refundData = "data" in result.refund ? result.refund.data : undefined;
         const vars: Record<string, string> = {
           name,
@@ -315,7 +317,10 @@ export async function refundAndRevoke(
         if (!res.ok) throw new Error(`Resend ${res.status}`);
         result.email = { ok: true };
       } else {
-        result.email = { ok: false, error: cfg ? "template refund desabilitado" : "email não configurado" };
+        result.email = {
+          ok: false,
+          error: cfg ? "template refund desabilitado" : "email não configurado",
+        };
       }
     } else {
       result.email = { ok: false, error: "usuário sem e-mail" };
@@ -326,5 +331,3 @@ export async function refundAndRevoke(
 
   return result;
 }
-
-

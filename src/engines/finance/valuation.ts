@@ -237,8 +237,7 @@ function buildDCF(
   // Gordon clássico: VT_T = FCF_{T+1} / (WACC − g) = FCF_T · (1+g) / (WACC − g).
   // `lastYearFCF` é o FCF do último ano projetado (período T); aplicamos (1+g) para
   // obter o fluxo do primeiro ano da perpetuidade (T+1), conforme convenção CFA/Damodaran.
-  const terminalValue =
-    spread >= 0.005 ? (lastYearFCF * (1 + g)) / spread : lastYearFCF * 5; // fallback p/ WACC≈g
+  const terminalValue = spread >= 0.005 ? (lastYearFCF * (1 + g)) / spread : lastYearFCF * 5; // fallback p/ WACC≈g
   const npvTerminal = terminalValue / Math.pow(1 + waccMonthly, fcfProjected.length);
 
   return {
@@ -481,7 +480,9 @@ export function traceValuation(
             formula: `FCL_LTM · (1+g) / (WACC − g) = ${dcf.fcfProjected
               .slice(-12)
               .reduce((a, b) => a + b, 0)
-              .toFixed(0)} · ${(1 + dcf.growthTerminal).toFixed(4)} / ${(dcf.wacc / 100 - dcf.growthTerminal).toFixed(4)}`,
+              .toFixed(
+                0,
+              )} · ${(1 + dcf.growthTerminal).toFixed(4)} / ${(dcf.wacc / 100 - dcf.growthTerminal).toFixed(4)}`,
             value: dcf.terminalValue,
             note: "Gordon clássico: numerador é FCF_{T+1} = FCF_T · (1+g).",
           },

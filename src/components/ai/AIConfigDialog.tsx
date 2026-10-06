@@ -154,7 +154,8 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
                   >
                     platform.openai.com/api-keys
                   </a>
-                  . Faça login, clique em <em>Create new secret key</em>, copie o valor (começa com <code>sk-</code>) e cole aqui. Requer crédito ativo na conta OpenAI.
+                  . Faça login, clique em <em>Create new secret key</em>, copie o valor (começa com{" "}
+                  <code>sk-</code>) e cole aqui. Requer crédito ativo na conta OpenAI.
                 </p>
               )}
             </div>
@@ -263,7 +264,9 @@ export function AIConfigDialog({ open, onOpenChange, config, onSave }: Props) {
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-[10px]">API Key (opcional — herda da principal se vazio)</Label>
+              <Label className="text-[10px]">
+                API Key (opcional — herda da principal se vazio)
+              </Label>
               <Input
                 className="h-8 text-xs"
                 type="password"

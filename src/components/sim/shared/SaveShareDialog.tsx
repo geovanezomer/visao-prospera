@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { HardDrive, Cloud, Link2, Loader2, Copy, Check } from "lucide-react";
@@ -181,7 +187,17 @@ interface CardProps {
   disabledHint?: string;
 }
 
-function ActionCard({ icon, tone, title, description, cta, onClick, busy, disabled, disabledHint }: CardProps) {
+function ActionCard({
+  icon,
+  tone,
+  title,
+  description,
+  cta,
+  onClick,
+  busy,
+  disabled,
+  disabledHint,
+}: CardProps) {
   // Tons baseados em design tokens — nada hard-coded.
   const toneClasses = {
     primary: { bg: "bg-primary/10", text: "text-primary", btn: "default" as const },
@@ -191,7 +207,13 @@ function ActionCard({ icon, tone, title, description, cta, onClick, busy, disabl
 
   return (
     <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-5 text-center shadow-sm transition-colors hover:border-border/80">
-      <div className={cn("flex h-14 w-14 items-center justify-center rounded-full", toneClasses.bg, toneClasses.text)}>
+      <div
+        className={cn(
+          "flex h-14 w-14 items-center justify-center rounded-full",
+          toneClasses.bg,
+          toneClasses.text,
+        )}
+      >
         {icon}
       </div>
       <h3 className="text-sm font-semibold text-foreground">{title}</h3>

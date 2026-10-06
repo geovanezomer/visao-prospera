@@ -69,8 +69,7 @@ export async function requireActiveSubscription(userId: string): Promise<void> {
 
   const meta = (userRes.data.user?.user_metadata ?? {}) as Record<string, unknown>;
   const isTrial = meta.is_trial === true;
-  const trialExpiresAt =
-    typeof meta.trial_expires_at === "string" ? meta.trial_expires_at : null;
+  const trialExpiresAt = typeof meta.trial_expires_at === "string" ? meta.trial_expires_at : null;
 
   const ok = isAccessGranted({
     subscription: subRes.data

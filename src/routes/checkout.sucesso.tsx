@@ -66,14 +66,18 @@ function SucessoPage() {
             return;
           }
         }
-      } catch { /* tenta de novo */ }
+      } catch {
+        /* tenta de novo */
+      }
       setElapsed(Math.floor((Date.now() - start) / 1000));
       const next = Math.min(2000 + Math.floor((Date.now() - start) / 5000) * 1000, 6000);
       if (Date.now() - start < 90_000) setTimeout(tick, next);
       else stoppedRef.current = true;
     }
     tick();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [i]);
 
   const status: IntentStatus["status"] = data?.status ?? (i ? "created" : "paid");
@@ -98,11 +102,14 @@ function SucessoPage() {
 function OrderSummary({
   data,
   fallbackPlan,
-}: { data: IntentStatus | null; fallbackPlan?: string }) {
+}: {
+  data: IntentStatus | null;
+  fallbackPlan?: string;
+}) {
   const plan = data?.plan ?? fallbackPlan;
   const currency = data?.currency ?? "BRL";
   const planAmt = data?.planAmountCents ?? null;
-  const upsellAmt = data?.withUpsell ? data?.upsellAmountCents ?? 0 : 0;
+  const upsellAmt = data?.withUpsell ? (data?.upsellAmountCents ?? 0) : 0;
   const total = (planAmt ?? 0) + (upsellAmt ?? 0);
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -112,7 +119,9 @@ function OrderSummary({
       </div>
       <div className="mt-3 space-y-2 text-sm">
         <div className="flex justify-between text-foreground">
-          <span>Plano <span className="font-medium">{planLabel(plan)}</span></span>
+          <span>
+            Plano <span className="font-medium">{planLabel(plan)}</span>
+          </span>
           <span className="tabular-nums">{fmtMoney(planAmt, currency)}</span>
         </div>
         {data?.withUpsell && (
@@ -162,7 +171,10 @@ function StatusTitle({ status }: { status: IntentStatus["status"] }) {
 }
 
 function StatusBody({
-  status, data, elapsed, intentKey,
+  status,
+  data,
+  elapsed,
+  intentKey,
 }: {
   status: IntentStatus["status"];
   data: IntentStatus | null;
@@ -174,8 +186,8 @@ function StatusBody({
     return (
       <>
         <p className="mt-3 text-sm text-muted-foreground">
-          Não conseguimos confirmar este pagamento. Se o valor foi debitado,
-          aguarde alguns minutos — o sistema reconcilia automaticamente.
+          Não conseguimos confirmar este pagamento. Se o valor foi debitado, aguarde alguns minutos
+          — o sistema reconcilia automaticamente.
         </p>
         {data?.lastError && (
           <p className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
@@ -194,8 +206,8 @@ function StatusBody({
   return (
     <>
       <p className="mt-3 text-sm text-muted-foreground">
-        Seu pagamento foi enviado ao provedor. Estamos confirmando — isto
-        leva normalmente poucos segundos.
+        Seu pagamento foi enviado ao provedor. Estamos confirmando — isto leva normalmente poucos
+        segundos.
       </p>
       <div className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-border/60 bg-background/60 px-4 py-3 text-sm text-muted-foreground">
         <Clock className="h-4 w-4" />
@@ -213,7 +225,9 @@ function StatusBody({
 
 function PaidBody({ data, intentKey }: { data: IntentStatus | null; intentKey?: string }) {
   const email = data?.emailMasked;
-  const [resendState, setResendState] = useState<"idle" | "sending" | "sent" | "error" | "wait">("idle");
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent" | "error" | "wait">(
+    "idle",
+  );
   const [resendMsg, setResendMsg] = useState<string>("");
 
   async function resend() {
@@ -235,7 +249,9 @@ function PaidBody({ data, intentKey }: { data: IntentStatus | null; intentKey?: 
         setResendMsg(`Aguarde ${j.retryAfter ?? 60}s antes de tentar de novo.`);
       } else {
         setResendState("error");
-        setResendMsg(j.error === "not_paid" ? "Pagamento ainda não confirmado." : "Não foi possível reenviar.");
+        setResendMsg(
+          j.error === "not_paid" ? "Pagamento ainda não confirmado." : "Não foi possível reenviar.",
+        );
       }
     } catch {
       setResendState("error");
@@ -247,8 +263,13 @@ function PaidBody({ data, intentKey }: { data: IntentStatus | null; intentKey?: 
     <>
       <p className="mt-3 text-sm text-muted-foreground">
         Pagamento confirmado. Enviamos um <strong>link de acesso</strong>
-        {email ? <> para <span className="font-mono text-foreground">{email}</span></> : null}.
-        Clique no link do e-mail para entrar — não precisa criar senha.
+        {email ? (
+          <>
+            {" "}
+            para <span className="font-mono text-foreground">{email}</span>
+          </>
+        ) : null}
+        . Clique no link do e-mail para entrar — não precisa criar senha.
       </p>
 
       <div className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-border/60 bg-background/60 px-4 py-3 text-sm text-foreground">
@@ -260,14 +281,16 @@ function PaidBody({ data, intentKey }: { data: IntentStatus | null; intentKey?: 
       <div className="mt-3 grid grid-cols-2 gap-2">
         <a
           href="https://mail.google.com"
-          target="_blank" rel="noreferrer"
+          target="_blank"
+          rel="noreferrer"
           className="inline-flex items-center justify-center gap-1 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground hover:bg-accent"
         >
           Abrir Gmail <ExternalLink className="h-3 w-3" />
         </a>
         <a
           href="https://outlook.live.com/mail"
-          target="_blank" rel="noreferrer"
+          target="_blank"
+          rel="noreferrer"
           className="inline-flex items-center justify-center gap-1 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground hover:bg-accent"
         >
           Abrir Outlook <ExternalLink className="h-3 w-3" />
@@ -283,7 +306,9 @@ function PaidBody({ data, intentKey }: { data: IntentStatus | null; intentKey?: 
         {resendState === "sending" ? "Reenviando…" : "Não recebi — reenviar link"}
       </button>
       {resendMsg && (
-        <p className={`mt-2 text-xs ${resendState === "error" ? "text-destructive" : "text-muted-foreground"}`}>
+        <p
+          className={`mt-2 text-xs ${resendState === "error" ? "text-destructive" : "text-muted-foreground"}`}
+        >
           {resendMsg}
         </p>
       )}

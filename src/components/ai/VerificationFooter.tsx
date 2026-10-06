@@ -43,18 +43,14 @@ export function VerificationFooter({ verification }: Props) {
           {!full && ` · ${verification.unverified.length} sem procedência`}
         </span>
         {!full &&
-          (open ? (
-            <ChevronDown className="h-3 w-3" />
-          ) : (
-            <ChevronRight className="h-3 w-3" />
-          ))}
+          (open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
       </button>
       {open && !full && (
         <ul className="mt-1.5 space-y-1 border-t border-current/20 pt-1.5">
           {verification.unverified.map((n, i) => (
             <li key={i} className="leading-snug">
-              <span className="font-mono font-semibold">{n.raw}</span> — não encontrado
-              nos dados das ferramentas desta conversa. Confirme antes de apresentar.
+              <span className="font-mono font-semibold">{n.raw}</span> — não encontrado nos dados
+              das ferramentas desta conversa. Confirme antes de apresentar.
             </li>
           ))}
         </ul>

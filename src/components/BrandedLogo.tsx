@@ -57,14 +57,7 @@ export function BrandedLogo({
       WebkitMaskSize: "contain",
       maskSize: "contain",
     };
-    return (
-      <span
-        role="img"
-        aria-label={alt}
-        className={className}
-        style={maskStyle}
-      />
-    );
+    return <span role="img" aria-label={alt} className={className} style={maskStyle} />;
   }
 
   // Fallback: <img> tradicional (PNG/JPG/WebP, ou recolor desligado, ou erro).

@@ -20,14 +20,7 @@ import { calcBalancoTotals, snapshotAnterior } from "@/engines/finance/balanco";
 import { calcAberturaTotals } from "@/components/sim/capital/AberturaCard";
 import { fmtBRL } from "@/engines/finance/format";
 import type { BalancoDetalhado } from "@/engines/finance/types";
-import {
-  GitCompare,
-  CheckCircle2,
-  AlertTriangle,
-  Camera,
-  ArrowRight,
-  Search,
-} from "lucide-react";
+import { GitCompare, CheckCircle2, AlertTriangle, Camera, ArrowRight, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/sim/shared/primitives";
 import { AuditoriaPanel } from "./AuditoriaPanel";
@@ -57,13 +50,29 @@ const ATIVO: Grupo[] = [
     titulo: "Ativo Circulante",
     rubricas: [
       { path: "ativoCirculante.caixaEquivalentes", label: "Caixa e equivalentes", modo: "padrao" },
-      { path: "ativoCirculante.aplicacoesFinanceirasCP", label: "Aplicações financeiras CP", modo: "completo" },
-      { path: "ativoCirculante.contasReceberClientes", label: "Contas a receber de clientes", modo: "padrao" },
+      {
+        path: "ativoCirculante.aplicacoesFinanceirasCP",
+        label: "Aplicações financeiras CP",
+        modo: "completo",
+      },
+      {
+        path: "ativoCirculante.contasReceberClientes",
+        label: "Contas a receber de clientes",
+        modo: "padrao",
+      },
       { path: "ativoCirculante.pdd", label: "(−) PDD", modo: "completo", redutora: true },
       { path: "ativoCirculante.estoques", label: "Estoques", modo: "padrao" },
       { path: "ativoCirculante.impostosRecuperar", label: "Impostos a recuperar", modo: "padrao" },
-      { path: "ativoCirculante.adiantamentos", label: "Adiantamentos a fornecedores", modo: "completo" },
-      { path: "ativoCirculante.outrosAtivosCirculantes", label: "Outros ativos circulantes", modo: "completo" },
+      {
+        path: "ativoCirculante.adiantamentos",
+        label: "Adiantamentos a fornecedores",
+        modo: "completo",
+      },
+      {
+        path: "ativoCirculante.outrosAtivosCirculantes",
+        label: "Outros ativos circulantes",
+        modo: "completo",
+      },
     ],
   },
   {
@@ -76,21 +85,55 @@ const ATIVO: Grupo[] = [
         titulo: "Imobilizado",
         rubricas: [
           { path: "ativoNaoCirculante.imobilizado.terrenos", label: "Terrenos", modo: "padrao" },
-          { path: "ativoNaoCirculante.imobilizado.edificacoes", label: "Edificações", modo: "padrao" },
-          { path: "ativoNaoCirculante.imobilizado.maquinasEquipamentos", label: "Máquinas e equipamentos", modo: "padrao" },
+          {
+            path: "ativoNaoCirculante.imobilizado.edificacoes",
+            label: "Edificações",
+            modo: "padrao",
+          },
+          {
+            path: "ativoNaoCirculante.imobilizado.maquinasEquipamentos",
+            label: "Máquinas e equipamentos",
+            modo: "padrao",
+          },
           { path: "ativoNaoCirculante.imobilizado.veiculos", label: "Veículos", modo: "padrao" },
-          { path: "ativoNaoCirculante.imobilizado.moveisUtensilios", label: "Móveis e utensílios", modo: "padrao" },
-          { path: "ativoNaoCirculante.imobilizado.outrosImobilizados", label: "Outros (inclui CAPEX do período)", modo: "padrao" },
-          { path: "ativoNaoCirculante.imobilizado.depreciacaoAcumulada", label: "(−) Depreciação acumulada", modo: "padrao", redutora: true },
+          {
+            path: "ativoNaoCirculante.imobilizado.moveisUtensilios",
+            label: "Móveis e utensílios",
+            modo: "padrao",
+          },
+          {
+            path: "ativoNaoCirculante.imobilizado.outrosImobilizados",
+            label: "Outros (inclui CAPEX do período)",
+            modo: "padrao",
+          },
+          {
+            path: "ativoNaoCirculante.imobilizado.depreciacaoAcumulada",
+            label: "(−) Depreciação acumulada",
+            modo: "padrao",
+            redutora: true,
+          },
         ],
       },
       {
         titulo: "Intangível",
         rubricas: [
-          { path: "ativoNaoCirculante.intangivel.marcasPatentes", label: "Marcas e patentes", modo: "padrao" },
+          {
+            path: "ativoNaoCirculante.intangivel.marcasPatentes",
+            label: "Marcas e patentes",
+            modo: "padrao",
+          },
           { path: "ativoNaoCirculante.intangivel.goodwill", label: "Goodwill", modo: "completo" },
-          { path: "ativoNaoCirculante.intangivel.outrosIntangiveis", label: "Outros intangíveis", modo: "completo" },
-          { path: "ativoNaoCirculante.intangivel.amortizacaoAcumulada", label: "(−) Amortização acumulada", modo: "padrao", redutora: true },
+          {
+            path: "ativoNaoCirculante.intangivel.outrosIntangiveis",
+            label: "Outros intangíveis",
+            modo: "completo",
+          },
+          {
+            path: "ativoNaoCirculante.intangivel.amortizacaoAcumulada",
+            label: "(−) Amortização acumulada",
+            modo: "padrao",
+            redutora: true,
+          },
         ],
       },
     ],
@@ -102,16 +145,28 @@ const PASSIVO_PL: Grupo[] = [
     titulo: "Passivo Circulante",
     rubricas: [
       { path: "passivoCirculante.fornecedores", label: "Fornecedores", modo: "padrao" },
-      { path: "passivoCirculante.emprestimosFinanciamentosCP", label: "Empréstimos e financiamentos CP", modo: "padrao" },
+      {
+        path: "passivoCirculante.emprestimosFinanciamentosCP",
+        label: "Empréstimos e financiamentos CP",
+        modo: "padrao",
+      },
       { path: "passivoCirculante.impostosPagar", label: "Impostos a pagar", modo: "padrao" },
       { path: "passivoCirculante.salariosEncargos", label: "Salários e encargos", modo: "padrao" },
-      { path: "passivoCirculante.outrosPassivosCirculantes", label: "Outros passivos circulantes", modo: "completo" },
+      {
+        path: "passivoCirculante.outrosPassivosCirculantes",
+        label: "Outros passivos circulantes",
+        modo: "completo",
+      },
     ],
   },
   {
     titulo: "Passivo Não Circulante",
     rubricas: [
-      { path: "passivoNaoCirculante.emprestimosFinanciamentosLP", label: "Empréstimos e financiamentos LP", modo: "padrao" },
+      {
+        path: "passivoNaoCirculante.emprestimosFinanciamentosLP",
+        label: "Empréstimos e financiamentos LP",
+        modo: "padrao",
+      },
       { path: "passivoNaoCirculante.debentures", label: "Debêntures", modo: "completo" },
       { path: "passivoNaoCirculante.provisoesLP", label: "Provisões LP", modo: "completo" },
     ],
@@ -122,9 +177,22 @@ const PASSIVO_PL: Grupo[] = [
       { path: "patrimonioLiquido.capitalSocial", label: "Capital social", modo: "padrao" },
       { path: "patrimonioLiquido.reservasCapital", label: "Reservas de capital", modo: "padrao" },
       { path: "patrimonioLiquido.reservasLucros", label: "Reservas de lucros", modo: "completo" },
-      { path: "patrimonioLiquido.lucrosPrejuizosAcumulados", label: "Lucros/prejuízos acumulados (abertura)", modo: "padrao" },
-      { path: "patrimonioLiquido.dividendosPagosPeriodo", label: "(−) Dividendos pagos no período", modo: "padrao", redutora: true },
-      { path: "patrimonioLiquido.resultadoExercicio", label: "Resultado do exercício (DRE)", modo: "padrao" },
+      {
+        path: "patrimonioLiquido.lucrosPrejuizosAcumulados",
+        label: "Lucros/prejuízos acumulados (abertura)",
+        modo: "padrao",
+      },
+      {
+        path: "patrimonioLiquido.dividendosPagosPeriodo",
+        label: "(−) Dividendos pagos no período",
+        modo: "padrao",
+        redutora: true,
+      },
+      {
+        path: "patrimonioLiquido.resultadoExercicio",
+        label: "Resultado do exercício (DRE)",
+        modo: "padrao",
+      },
     ],
   },
 ];
@@ -143,8 +211,7 @@ function getAt(obj: unknown, path: Path): number {
 
 const modoRank: Record<Modo, number> = { padrao: 0, completo: 1 };
 const isVisible = (rc: Modo, ma: Modo) => modoRank[rc] <= modoRank[ma];
-const visibleRubricas = (rs: Rubrica[], m: Modo) =>
-  rs.filter((r) => isVisible(r.modo, m));
+const visibleRubricas = (rs: Rubrica[], m: Modo) => rs.filter((r) => isVisible(r.modo, m));
 
 // ─────────────────────────── Componente ───────────────────────────
 export function BalancoTab() {
@@ -233,7 +300,8 @@ export function BalancoTab() {
           label="D/PL"
           value={`${(totalsAtual.patrimonioLiquido > 0 ? totalsAtual.dividaOnerosa / totalsAtual.patrimonioLiquido : 0).toFixed(2)}×`}
           tone={
-            totalsAtual.patrimonioLiquido > 0 && totalsAtual.dividaOnerosa / totalsAtual.patrimonioLiquido > 1
+            totalsAtual.patrimonioLiquido > 0 &&
+            totalsAtual.dividaOnerosa / totalsAtual.patrimonioLiquido > 1
               ? "neg"
               : "pos"
           }
@@ -248,7 +316,6 @@ export function BalancoTab() {
           }}
         />
       </div>
-
 
       {/* Header — toolbar apenas (escondida em modo somente leitura) */}
       {!readOnly && (
@@ -271,8 +338,7 @@ export function BalancoTab() {
               onClick={() => setShowAnterior((v) => !v)}
               className="h-8 gap-1.5 text-[11px]"
             >
-              <GitCompare className="h-3.5 w-3.5" />
-              N vs N-1
+              <GitCompare className="h-3.5 w-3.5" />N vs N-1
             </Button>
             <Button
               size="sm"
@@ -289,7 +355,6 @@ export function BalancoTab() {
       )}
 
       {showAudit && <AuditoriaPanel onClose={() => setShowAudit(false)} />}
-
 
       {/* Validação de fechamento */}
       <div
@@ -313,9 +378,9 @@ export function BalancoTab() {
           <>
             <AlertTriangle className="h-4 w-4" />
             <span>
-              Diferença residual de <strong>{fmtBRL(fechamento.totals.diferenca)}</strong> —
-              a abertura está equilibrada, o resíduo é técnico (arredondamentos ou
-              rubricas de período). Investigue com <strong>Auditoria</strong> acima.
+              Diferença residual de <strong>{fmtBRL(fechamento.totals.diferenca)}</strong> — a
+              abertura está equilibrada, o resíduo é técnico (arredondamentos ou rubricas de
+              período). Investigue com <strong>Auditoria</strong> acima.
             </span>
           </>
         ) : (
@@ -328,9 +393,7 @@ export function BalancoTab() {
                 type="button"
                 className="underline font-semibold hover:text-warning/80"
                 onClick={() =>
-                  window.dispatchEvent(
-                    new CustomEvent("gz-set-tab", { detail: "capital" }),
-                  )
+                  window.dispatchEvent(new CustomEvent("gz-set-tab", { detail: "capital" }))
                 }
               >
                 Capital
@@ -340,9 +403,6 @@ export function BalancoTab() {
           </>
         )}
       </div>
-
-
-
 
       {/* Abertura → Movimento → Fechamento */}
       <div className="grid grid-cols-3 gap-3 text-[11px]">
@@ -377,8 +437,18 @@ export function BalancoTab() {
           totalAtual={totalsAtual.ativoTotal}
           totalAnterior={totalsAnterior.ativoTotal}
           subtotais={[
-            { label: "Total Ativo Circulante", atual: totalsAtual.ativoCirculante, ant: totalsAnterior.ativoCirculante, grupo: "Ativo Circulante" },
-            { label: "Total Ativo Não Circulante", atual: totalsAtual.ativoNaoCirculante, ant: totalsAnterior.ativoNaoCirculante, grupo: "Ativo Não Circulante" },
+            {
+              label: "Total Ativo Circulante",
+              atual: totalsAtual.ativoCirculante,
+              ant: totalsAnterior.ativoCirculante,
+              grupo: "Ativo Circulante",
+            },
+            {
+              label: "Total Ativo Não Circulante",
+              atual: totalsAtual.ativoNaoCirculante,
+              ant: totalsAnterior.ativoNaoCirculante,
+              grupo: "Ativo Não Circulante",
+            },
           ]}
           totalLabel="TOTAL DO ATIVO"
         />
@@ -393,14 +463,28 @@ export function BalancoTab() {
           totalAtual={totalsAtual.passivoTotal + totalsAtual.patrimonioLiquido}
           totalAnterior={totalsAnterior.passivoTotal + totalsAnterior.patrimonioLiquido}
           subtotais={[
-            { label: "Total Passivo Circulante", atual: totalsAtual.passivoCirculante, ant: totalsAnterior.passivoCirculante, grupo: "Passivo Circulante" },
-            { label: "Total Passivo Não Circulante", atual: totalsAtual.passivoNaoCirculante, ant: totalsAnterior.passivoNaoCirculante, grupo: "Passivo Não Circulante" },
-            { label: "Total Patrimônio Líquido", atual: totalsAtual.patrimonioLiquido, ant: totalsAnterior.patrimonioLiquido, grupo: "Patrimônio Líquido" },
+            {
+              label: "Total Passivo Circulante",
+              atual: totalsAtual.passivoCirculante,
+              ant: totalsAnterior.passivoCirculante,
+              grupo: "Passivo Circulante",
+            },
+            {
+              label: "Total Passivo Não Circulante",
+              atual: totalsAtual.passivoNaoCirculante,
+              ant: totalsAnterior.passivoNaoCirculante,
+              grupo: "Passivo Não Circulante",
+            },
+            {
+              label: "Total Patrimônio Líquido",
+              atual: totalsAtual.patrimonioLiquido,
+              ant: totalsAnterior.patrimonioLiquido,
+              grupo: "Patrimônio Líquido",
+            },
           ]}
           totalLabel="TOTAL PASSIVO + PL"
         />
       </div>
-
     </div>
   );
 }
@@ -568,7 +652,13 @@ function Coluna({
               {sub && (
                 <div className="mt-1.5 flex items-baseline justify-between border-t border-dashed border-border/40 pt-1 text-[12px] font-semibold">
                   <span>{sub.label}</span>
-                  <SubtotalCells atual={sub.atual} anterior={sub.ant} showAnterior={showAnterior} total={totalAtual} totalAnt={totalAnterior} />
+                  <SubtotalCells
+                    atual={sub.atual}
+                    anterior={sub.ant}
+                    showAnterior={showAnterior}
+                    total={totalAtual}
+                    totalAnt={totalAnterior}
+                  />
                 </div>
               )}
             </div>
@@ -648,9 +738,7 @@ function SubtotalCells({
         </>
       )}
       <span className="w-28 text-right">{fmtBRL(atual)}</span>
-      <span className="w-10 text-right text-[10px] text-muted-foreground">
-        {av.toFixed(0)}%
-      </span>
+      <span className="w-10 text-right text-[10px] text-muted-foreground">{av.toFixed(0)}%</span>
       {showAnterior && (
         <span
           className={`w-14 text-right text-[10px] font-medium ${

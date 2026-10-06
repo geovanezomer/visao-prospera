@@ -7,7 +7,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
-
 export type NotifEvents = {
   signup: boolean;
   churn: boolean;
@@ -21,7 +20,10 @@ export type NotifSettings = {
 };
 
 const DEFAULT_EVENTS: NotifEvents = {
-  signup: true, churn: true, past_due: true, webhook_failure: true,
+  signup: true,
+  churn: true,
+  past_due: true,
+  webhook_failure: true,
 };
 
 export const getNotifSettings = createServerFn({ method: "POST" })
@@ -29,7 +31,11 @@ export const getNotifSettings = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin.from("notification_settings").select("*").eq("id", 1).maybeSingle();
+    const { data } = await supabaseAdmin
+      .from("notification_settings")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
     const events = (data?.events as NotifEvents | null) ?? DEFAULT_EVENTS;
     return {
       slackWebhookUrl: data?.slack_webhook_url ?? null,

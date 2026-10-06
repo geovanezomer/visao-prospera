@@ -203,8 +203,7 @@ export async function sendLifecycleEmail(
       amount: vars.amount ?? "",
       portal_url: vars.portal_url ?? "",
       plans_url:
-        vars.plans_url ??
-        `${(process.env.APP_URL || "").replace(/\/$/, "")}/landing#planos`,
+        vars.plans_url ?? `${(process.env.APP_URL || "").replace(/\/$/, "")}/landing#planos`,
       trial_end: vars.trial_end ?? "",
       access_end: vars.access_end ?? "",
     };

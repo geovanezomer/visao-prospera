@@ -106,8 +106,11 @@ export interface PaymentProvider {
      * header `Idempotency-Key`; Asaas: header `idempotency-key`).
      */
     idempotencyKey?: string;
-  }): Promise<{ url: string; providerSessionId?: string | null; providerCustomerId?: string | null }>;
-
+  }): Promise<{
+    url: string;
+    providerSessionId?: string | null;
+    providerCustomerId?: string | null;
+  }>;
 
   /**
    * Cria uma sessão do Portal do Cliente (cancelamento, troca de cartão,

@@ -118,7 +118,6 @@ describe("deriveAbertura — empréstimos CP/LP", () => {
   });
 });
 
-
 describe("deriveAbertura — passivos derivados de DRE/Despesas (1º mês)", () => {
   it("usa média do 1º trimestre para impostosPagar (M8 — evita viés sazonal)", () => {
     const s = createState();
@@ -137,8 +136,20 @@ describe("deriveAbertura — passivos derivados de DRE/Despesas (1º mês)", () 
     // são folha (LABOR_EXCLUDE_RE).
     const s = createState({
       costs: [
-        { id: "f1", label: "Salários", category: "despesa_administrativa", fixed: true, values: [25_000, ...m12(0).slice(1)] },
-        { id: "v1", label: "Comissão", category: "despesa_comercial", fixed: false, values: [5_000, ...m12(0).slice(1)] },
+        {
+          id: "f1",
+          label: "Salários",
+          category: "despesa_administrativa",
+          fixed: true,
+          values: [25_000, ...m12(0).slice(1)],
+        },
+        {
+          id: "v1",
+          label: "Comissão",
+          category: "despesa_comercial",
+          fixed: false,
+          values: [5_000, ...m12(0).slice(1)],
+        },
         { id: "c1", label: "CPV", category: "custo_vendas", fixed: false, values: m12(10_000) },
       ],
     });
@@ -196,7 +207,6 @@ describe("deriveAbertura — totais Ativo = Passivo + PL", () => {
           lucrosAcumulados: 60_000, // plug para fechar
         },
         debtContracts: [],
-        
       },
     });
     const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
@@ -216,7 +226,6 @@ describe("deriveAbertura — totais Ativo = Passivo + PL", () => {
         },
         abertura: { lucrosAcumulados: 0 },
         debtContracts: [],
-        
       },
     });
     const r = deriveAbertura({ state: s, impostosTotalMensais: [] });
@@ -236,7 +245,6 @@ describe("deriveAbertura — plug assistido de Lucros Acumulados", () => {
         },
         abertura: { lucrosAcumulados: 0 },
         debtContracts: [],
-        
       },
     });
     const before = deriveAbertura({ state: s, impostosTotalMensais: [] });
@@ -263,7 +271,6 @@ describe("deriveAbertura — plug assistido de Lucros Acumulados", () => {
         },
         abertura: { lucrosAcumulados: 0 },
         debtContracts: [],
-        
       },
     });
     const before = deriveAbertura({ state: s, impostosTotalMensais: [] });

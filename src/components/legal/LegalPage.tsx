@@ -50,9 +50,15 @@ export function LegalPage({ kind }: Props) {
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
           <BrandHeader size="sm" asLink />
           <nav className="flex items-center gap-5 text-xs text-muted-foreground">
-            <Link to="/termos" className="hover:text-foreground">Termos</Link>
-            <Link to="/privacidade" className="hover:text-foreground">Privacidade</Link>
-            <Link to="/login" className="hover:text-foreground">Entrar</Link>
+            <Link to="/termos" className="hover:text-foreground">
+              Termos
+            </Link>
+            <Link to="/privacidade" className="hover:text-foreground">
+              Privacidade
+            </Link>
+            <Link to="/login" className="hover:text-foreground">
+              Entrar
+            </Link>
           </nav>
         </div>
       </header>
@@ -67,10 +73,16 @@ export function LegalPage({ kind }: Props) {
 
       <footer className="border-t border-border/60 py-8">
         <div className="mx-auto flex max-w-4xl flex-col items-center justify-between gap-3 px-6 text-xs text-muted-foreground sm:flex-row">
-          <span>© {year} {branding.systemName}</span>
+          <span>
+            © {year} {branding.systemName}
+          </span>
           <div className="flex items-center gap-5">
-            <Link to="/termos" className="hover:text-foreground">Termos</Link>
-            <Link to="/privacidade" className="hover:text-foreground">Privacidade</Link>
+            <Link to="/termos" className="hover:text-foreground">
+              Termos
+            </Link>
+            <Link to="/privacidade" className="hover:text-foreground">
+              Privacidade
+            </Link>
           </div>
         </div>
       </footer>

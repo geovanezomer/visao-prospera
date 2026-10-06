@@ -38,7 +38,6 @@ import {
 import { fmtBRL } from "@/engines/finance/format";
 import { ANO_VIGENTE } from "@/engines/calculadoras/tabelas";
 
-
 export function RescisaoCltCalc() {
   const [motivo, setMotivo] = useState<MotivoRescisao>("sem_justa_causa");
   const [salarioBruto, setSalarioBruto] = useState<number>(4000);
@@ -125,9 +124,24 @@ export function RescisaoCltCalc() {
         { label: "Dependentes IR", value: String(dependentesIR) },
       ],
       kpis: [
-        { label: "Total líquido", value: fmtBRL(resultado.totalLiquido), sub: "Após INSS e IRRF", tone: "ok" },
-        { label: "Total bruto", value: fmtBRL(resultado.totalBruto), sub: "Soma de verbas", tone: "neutral" },
-        { label: "Saque FGTS + Multa", value: fmtBRL(resultado.saqueFGTS + resultado.multaFGTS), sub: `Multa: ${fmtBRL(resultado.multaFGTS)}`, tone: "ok" },
+        {
+          label: "Total líquido",
+          value: fmtBRL(resultado.totalLiquido),
+          sub: "Após INSS e IRRF",
+          tone: "ok",
+        },
+        {
+          label: "Total bruto",
+          value: fmtBRL(resultado.totalBruto),
+          sub: "Soma de verbas",
+          tone: "neutral",
+        },
+        {
+          label: "Saque FGTS + Multa",
+          value: fmtBRL(resultado.saqueFGTS + resultado.multaFGTS),
+          sub: `Multa: ${fmtBRL(resultado.multaFGTS)}`,
+          tone: "ok",
+        },
       ],
       sections: [
         {
@@ -153,7 +167,13 @@ export function RescisaoCltCalc() {
           </p>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={exportar} title="Exportar PDF" disabled={!resultado}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={exportar}
+            title="Exportar PDF"
+            disabled={!resultado}
+          >
             <Download className="mr-2 h-4 w-4" /> Exportar PDF
           </Button>
           <Button variant="ghost" size="sm" onClick={limpar}>
@@ -528,7 +548,8 @@ export function RescisaoCltCalc() {
               </div>
               <p className="pt-2 text-xs">
                 Bases: CLT arts. 477, 482, 484-A, 487; Lei 12.506/2011; Lei 8.036/90; tabelas
-                INSS/IRRF {ANO_VIGENTE}. IRRF conforme Lei nº 15.270/2025 (redutor até R$ 7.350). Estimativa — valide com contador antes de uso oficial.
+                INSS/IRRF {ANO_VIGENTE}. IRRF conforme Lei nº 15.270/2025 (redutor até R$ 7.350).
+                Estimativa — valide com contador antes de uso oficial.
               </p>
             </CardContent>
           </CollapsibleContent>

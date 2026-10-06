@@ -13,12 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useEffect } from "react";
 
-import {
-  LogOut,
-  Share2,
-  FolderOpen,
-  Calculator,
-} from "lucide-react";
+import { LogOut, Share2, FolderOpen, Calculator } from "lucide-react";
 import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
 import { BrandedLogo } from "@/components/BrandedLogo";
 import { useBranding } from "@/hooks/useBranding";
@@ -70,7 +65,10 @@ export function AppSidebar({
               alt={branding.systemName}
               recolor={branding.recolorLogo}
               className="h-8 w-8 shrink-0 rounded-md object-contain group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-6 [&>svg]:h-8 [&>svg]:w-8 group-data-[collapsible=icon]:[&>svg]:h-6 group-data-[collapsible=icon]:[&>svg]:w-6"
-              imgProps={{ className: "h-8 w-8 shrink-0 rounded-md object-contain group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-6" }}
+              imgProps={{
+                className:
+                  "h-8 w-8 shrink-0 rounded-md object-contain group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-6",
+              }}
             />
           ) : (
             <div className="h-8 w-8 shrink-0 animate-pulse rounded-md bg-sidebar-accent group-data-[collapsible=icon]:h-6 group-data-[collapsible=icon]:w-6" />
@@ -98,27 +96,29 @@ export function AppSidebar({
       <SidebarContent className="py-2">
         <SidebarGroup>
           <SidebarMenu className="gap-0.5">
-            {NAV_ITEMS.filter((it) => it.value !== "ai" || user?.aiEnabled !== false).map((item) => (
-              <SidebarMenuItem key={item.value}>
-                <SidebarMenuButton
-                  isActive={activeTab === item.value}
-                  onClick={() => {
-                    setActiveTab(item.value);
-                    setOpenMobile(false);
-                  }}
-                  tooltip={item.title}
-                  className={cn(
-                    "h-7 transition-colors",
-                    activeTab === item.value
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.title}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {NAV_ITEMS.filter((it) => it.value !== "ai" || user?.aiEnabled !== false).map(
+              (item) => (
+                <SidebarMenuItem key={item.value}>
+                  <SidebarMenuButton
+                    isActive={activeTab === item.value}
+                    onClick={() => {
+                      setActiveTab(item.value);
+                      setOpenMobile(false);
+                    }}
+                    tooltip={item.title}
+                    className={cn(
+                      "h-7 transition-colors",
+                      activeTab === item.value
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ),
+            )}
             <li className="my-1 border-t border-sidebar-border/50" aria-hidden="true" />
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -172,9 +172,7 @@ export function AppSidebar({
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
       </SidebarContent>
-
 
       <SidebarFooter className="border-t border-sidebar-border/50 p-2">
         <SidebarMenu>

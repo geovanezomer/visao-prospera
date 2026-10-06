@@ -64,14 +64,32 @@ export function SacVsPriceCalc() {
         "Comparação entre os dois sistemas de amortização mais usados em financiamentos no Brasil.",
       inputs: [
         { label: "Valor financiado", value: fmtBRL(valor) },
-        { label: "Taxa de juros anual", value: `${taxaAnual}% a.a. (${fmtPct(sim.taxaMensal)} a.m.)` },
+        {
+          label: "Taxa de juros anual",
+          value: `${taxaAnual}% a.a. (${fmtPct(sim.taxaMensal)} a.m.)`,
+        },
         { label: "Prazo", value: `${meses} meses` },
         { label: "Sistema preferido", value: tabela.toUpperCase() },
       ],
       kpis: [
-        { label: "Economia de juros (SAC vs PRICE)", value: fmtBRL(sim.economiaJurosSac), sub: "SAC paga menos juros no total", tone: "ok" },
-        { label: "Total pago — SAC", value: fmtBRL(sim.sac.totalPago), sub: `Juros: ${fmtBRL(sim.sac.totalJuros)}`, tone: "neutral" },
-        { label: "Total pago — PRICE", value: fmtBRL(sim.price.totalPago), sub: `Juros: ${fmtBRL(sim.price.totalJuros)}`, tone: "neutral" },
+        {
+          label: "Economia de juros (SAC vs PRICE)",
+          value: fmtBRL(sim.economiaJurosSac),
+          sub: "SAC paga menos juros no total",
+          tone: "ok",
+        },
+        {
+          label: "Total pago — SAC",
+          value: fmtBRL(sim.sac.totalPago),
+          sub: `Juros: ${fmtBRL(sim.sac.totalJuros)}`,
+          tone: "neutral",
+        },
+        {
+          label: "Total pago — PRICE",
+          value: fmtBRL(sim.price.totalPago),
+          sub: `Juros: ${fmtBRL(sim.price.totalJuros)}`,
+          tone: "neutral",
+        },
       ],
       sections: [
         {

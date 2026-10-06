@@ -2,7 +2,14 @@
 // Modo é transient por sessão mas restaurado ao recarregar.
 import type { AIMode } from "./systemPrompt";
 
-const VALID_MODES: readonly AIMode[] = ["chat", "cfo", "controller", "auditor", "board", "tributarista"];
+const VALID_MODES: readonly AIMode[] = [
+  "chat",
+  "cfo",
+  "controller",
+  "auditor",
+  "board",
+  "tributarista",
+];
 const KEY = (company: string) => `gz-finance-ai-mode-${company || "default"}`;
 
 export function loadAIMode(company: string): AIMode {

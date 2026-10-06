@@ -12,13 +12,7 @@
 // Toda derivação vive em engines/finance/aberturaDerivada.ts (SSOT).
 import { useMemo } from "react";
 import { toast } from "sonner";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Wallet,
-  Receipt,
-  Info,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, Wallet, Receipt, Info } from "lucide-react";
 import type { AppState, BalancoAbertura } from "@/engines/finance/types";
 import { fmtBRL } from "@/engines/finance/format";
 import { StepCard, SimpleField } from "@/components/sim/capital/parts";
@@ -30,17 +24,12 @@ import {
   type AberturaDerivadaSource,
 } from "@/engines/finance/aberturaDerivada";
 
-
-const n = (v: number | undefined) =>
-  typeof v === "number" && isFinite(v) ? v : 0;
+const n = (v: number | undefined) => (typeof v === "number" && isFinite(v) ? v : 0);
 
 /** Mantido para compat: usado por outros componentes (briefing, auditoria etc.).
  *  Recebe a série `dre.impostosTotal` explicitamente para evitar a violação de
  *  SSOT anterior (fake state sem DRE → impostosPagar = 0). */
-export function calcAberturaTotals(
-  state: AppState,
-  impostosTotalMensais: number[],
-) {
+export function calcAberturaTotals(state: AppState, impostosTotalMensais: number[]) {
   const d = deriveAbertura({ state, impostosTotalMensais });
   return {
     ativoIni: d.totals.ativo,
@@ -85,17 +74,12 @@ function DerivedRow({
             </span>
           )}
         </div>
-        <div className="text-[10px] text-muted-foreground truncate">
-          ← {source.origem}
-        </div>
+        <div className="text-[10px] text-muted-foreground truncate">← {source.origem}</div>
       </div>
-      <div className="font-mono text-[12.5px] tabular-nums shrink-0">
-        {fmtBRL(source.value)}
-      </div>
+      <div className="font-mono text-[12.5px] tabular-nums shrink-0">{fmtBRL(source.value)}</div>
     </div>
   );
 }
-
 
 export function AberturaCard({
   capital,
@@ -110,16 +94,12 @@ export function AberturaCard({
   const isReal = state.tax.regime === "real";
   const { model } = useFinanceModel(state);
 
-  
-
   const derived: AberturaDerivada = useMemo(
-    () =>
-      deriveAbertura({ state, impostosTotalMensais: model.dre.impostosTotal }),
+    () => deriveAbertura({ state, impostosTotalMensais: model.dre.impostosTotal }),
     [state, model.dre.impostosTotal],
   );
 
-  const set = (patch: Partial<BalancoAbertura>) =>
-    onChange({ abertura: { ...ab, ...patch } });
+  const set = (patch: Partial<BalancoAbertura>) => onChange({ abertura: { ...ab, ...patch } });
 
   const ajustarLucros = () => {
     const novoLucros = n(ab.lucrosAcumulados) + derived.totals.diferenca;
@@ -131,77 +111,75 @@ export function AberturaCard({
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-5 space-y-5">
-
-
       {/* Outras informações de abertura — só faz sentido para Lucro Real */}
       {isReal && (
-      <StepCard
-        step={3}
-
-        color="var(--primary)"
-        title="Outras informações de abertura"
-        subtitle="Lucros acumulados, créditos tributários e depreciação mensal"
-      >
-        <div className="mb-3 flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 p-2.5 text-[10.5px] text-muted-foreground">
-          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-          <span>
-            <strong className="text-foreground">Lucros Acumulados é o único "plug" aceitável.</strong>{" "}
-            Se o balanço de abertura não fechar (Ativo ≠ Passivo + PL), esta linha absorve o
-            resíduo histórico — não é erro de cálculo, é a contrapartida de exercícios anteriores
-            que você não reconstruiu rubrica a rubrica. Use o botão <em>"Ajustar Lucros Acumulados"</em>{" "}
-            no painel derivado para zerar a diferença.
-          </span>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <SimpleField
-            icon={<Wallet className="h-4 w-4" />}
-            label="Lucros / prejuízos acumulados (abertura)"
-            hint="Resultados retidos de TODOS os exercícios anteriores (não distribuídos). Pode ser negativo. É o ÚNICO plug aceitável — representa o histórico contábil não reconstruído."
-            value={n(ab.lucrosAcumulados)}
-            onChange={(v) => set({ lucrosAcumulados: v })}
-            emphasis
-          />
-          <SimpleField
-            icon={<Receipt className="h-4 w-4" />}
-            label="Impostos a recuperar (abertura)"
-            hint="Créditos de PIS/COFINS/ICMS/IRPJ a compensar com débitos futuros. Sem modelo automático — informe o saldo conhecido."
-            value={n(ab.impostosRecuperar)}
-            onChange={(v) => set({ impostosRecuperar: v })}
-          />
-          <SimpleField
-            icon={<Wallet className="h-4 w-4" />}
-            label="Depreciação mensal"
-            hint="Perda contábil de valor de máquinas, equipamentos e imóveis. Sempre aparece no DRE reduzindo EBIT e LAIR (visão contábil) e nunca sai do caixa. IMPACTO TRIBUTÁRIO: só reduz IR/CSLL no LUCRO REAL — em Simples Nacional e Lucro Presumido o imposto é calculado sobre a receita (presunção), então a depreciação não gera economia fiscal nesses regimes. Junta-se à depreciação automática do CapEx (Ativações de imobilizado)."
-            value={n(capital.depreciacaoMensal)}
-            onChange={(v) => onChange({ depreciacaoMensal: v })}
-          />
-          <SimpleField
-            icon={<Wallet className="h-4 w-4" />}
-            label="(−) Depreciação acumulada"
-            hint="Total já depreciado sobre o imobilizado existente, antes do exercício. Positivo — entra como redutor. Em greenfield, deixe em zero."
-            value={n(ab.depreciacaoAcumulada)}
-            onChange={(v) => set({ depreciacaoAcumulada: v })}
-          />
-          <SimpleField
-            icon={<Wallet className="h-4 w-4" />}
-            label="(−) Amortização acumulada"
-            hint="Total já amortizado sobre intangíveis, antes do exercício. Positivo — entra como redutor. Em greenfield, deixe em zero."
-            value={n(ab.amortizacaoAcumulada)}
-            onChange={(v) => set({ amortizacaoAcumulada: v })}
-          />
-          {isReal && (
+        <StepCard
+          step={3}
+          color="var(--primary)"
+          title="Outras informações de abertura"
+          subtitle="Lucros acumulados, créditos tributários e depreciação mensal"
+        >
+          <div className="mb-3 flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 p-2.5 text-[10.5px] text-muted-foreground">
+            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+            <span>
+              <strong className="text-foreground">
+                Lucros Acumulados é o único "plug" aceitável.
+              </strong>{" "}
+              Se o balanço de abertura não fechar (Ativo ≠ Passivo + PL), esta linha absorve o
+              resíduo histórico — não é erro de cálculo, é a contrapartida de exercícios anteriores
+              que você não reconstruiu rubrica a rubrica. Use o botão{" "}
+              <em>"Ajustar Lucros Acumulados"</em> no painel derivado para zerar a diferença.
+            </span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <SimpleField
+              icon={<Wallet className="h-4 w-4" />}
+              label="Lucros / prejuízos acumulados (abertura)"
+              hint="Resultados retidos de TODOS os exercícios anteriores (não distribuídos). Pode ser negativo. É o ÚNICO plug aceitável — representa o histórico contábil não reconstruído."
+              value={n(ab.lucrosAcumulados)}
+              onChange={(v) => set({ lucrosAcumulados: v })}
+              emphasis
+            />
             <SimpleField
               icon={<Receipt className="h-4 w-4" />}
-              label="Prejuízo fiscal acumulado (abertura) — Lucro Real"
-              hint="Saldo da parte B do e-Lalur (ECF). É FISCAL — diferente de 'Lucros/prejuízos acumulados' (que é contábil/PL). Compensa até 30% do lucro tributável de cada trimestre (Lei 9.065/95 art. 42). A base negativa de CSLL usa o mesmo saldo. Só se aplica ao Lucro Real."
-              value={n(state.tax.prejuizoFiscalAcumuladoAbertura)}
-              onChange={(v) => patchTax({ prejuizoFiscalAcumuladoAbertura: Math.max(0, v) })}
+              label="Impostos a recuperar (abertura)"
+              hint="Créditos de PIS/COFINS/ICMS/IRPJ a compensar com débitos futuros. Sem modelo automático — informe o saldo conhecido."
+              value={n(ab.impostosRecuperar)}
+              onChange={(v) => set({ impostosRecuperar: v })}
             />
-          )}
-        </div>
-      </StepCard>
+            <SimpleField
+              icon={<Wallet className="h-4 w-4" />}
+              label="Depreciação mensal"
+              hint="Perda contábil de valor de máquinas, equipamentos e imóveis. Sempre aparece no DRE reduzindo EBIT e LAIR (visão contábil) e nunca sai do caixa. IMPACTO TRIBUTÁRIO: só reduz IR/CSLL no LUCRO REAL — em Simples Nacional e Lucro Presumido o imposto é calculado sobre a receita (presunção), então a depreciação não gera economia fiscal nesses regimes. Junta-se à depreciação automática do CapEx (Ativações de imobilizado)."
+              value={n(capital.depreciacaoMensal)}
+              onChange={(v) => onChange({ depreciacaoMensal: v })}
+            />
+            <SimpleField
+              icon={<Wallet className="h-4 w-4" />}
+              label="(−) Depreciação acumulada"
+              hint="Total já depreciado sobre o imobilizado existente, antes do exercício. Positivo — entra como redutor. Em greenfield, deixe em zero."
+              value={n(ab.depreciacaoAcumulada)}
+              onChange={(v) => set({ depreciacaoAcumulada: v })}
+            />
+            <SimpleField
+              icon={<Wallet className="h-4 w-4" />}
+              label="(−) Amortização acumulada"
+              hint="Total já amortizado sobre intangíveis, antes do exercício. Positivo — entra como redutor. Em greenfield, deixe em zero."
+              value={n(ab.amortizacaoAcumulada)}
+              onChange={(v) => set({ amortizacaoAcumulada: v })}
+            />
+            {isReal && (
+              <SimpleField
+                icon={<Receipt className="h-4 w-4" />}
+                label="Prejuízo fiscal acumulado (abertura) — Lucro Real"
+                hint="Saldo da parte B do e-Lalur (ECF). É FISCAL — diferente de 'Lucros/prejuízos acumulados' (que é contábil/PL). Compensa até 30% do lucro tributável de cada trimestre (Lei 9.065/95 art. 42). A base negativa de CSLL usa o mesmo saldo. Só se aplica ao Lucro Real."
+                value={n(state.tax.prejuizoFiscalAcumuladoAbertura)}
+                onChange={(v) => patchTax({ prejuizoFiscalAcumuladoAbertura: Math.max(0, v) })}
+              />
+            )}
+          </div>
+        </StepCard>
       )}
-
 
       {/* Painel DERIVADO */}
       <StepCard
@@ -210,7 +188,6 @@ export function AberturaCard({
         title="Saldos derivados automaticamente"
         subtitle="Cada rubrica mostra a sua fonte única (SSOT)"
       >
-
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           <DerivedRow
             source={derived.caixa}
@@ -294,7 +271,9 @@ export function AberturaCard({
               <button
                 type="button"
                 onClick={() => {
-                  document.getElementById("debt-contracts-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  document
+                    .getElementById("debt-contracts-card")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
                 className="text-primary underline underline-offset-2 hover:opacity-80"
               >
@@ -306,15 +285,13 @@ export function AberturaCard({
         <div className="mt-3 flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 p-2.5 text-[10.5px] text-muted-foreground">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
           <span>
-            Para corrigir um destes valores, edite na <strong>fonte</strong>{" "}
-            (Balanço, Contratos de Dívida, Receitas ou Despesas) — não aqui.
-            Os contratos com prazo <strong>≤ 12 meses</strong> entram em
-            Empréstimos CP; <strong>&gt; 12 meses</strong> em Empréstimos LP.
+            Para corrigir um destes valores, edite na <strong>fonte</strong> (Balanço, Contratos de
+            Dívida, Receitas ou Despesas) — não aqui. Os contratos com prazo{" "}
+            <strong>≤ 12 meses</strong> entram em Empréstimos CP; <strong>&gt; 12 meses</strong> em
+            Empréstimos LP.
           </span>
         </div>
       </StepCard>
-
-
 
       {/* Validação de fechamento */}
       <div
@@ -328,10 +305,9 @@ export function AberturaCard({
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4" />
             <span>
-              <strong>✓ Abertura equilibrada</strong> — Ativo{" "}
-              {fmtBRL(derived.totals.ativo)} = Passivo + PL{" "}
-              {fmtBRL(derived.totals.passivo + derived.totals.pl)}. O Balanço
-              de fechamento será derivado por construção.
+              <strong>✓ Abertura equilibrada</strong> — Ativo {fmtBRL(derived.totals.ativo)} =
+              Passivo + PL {fmtBRL(derived.totals.passivo + derived.totals.pl)}. O Balanço de
+              fechamento será derivado por construção.
             </span>
           </div>
         ) : (
@@ -339,11 +315,8 @@ export function AberturaCard({
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
-                <strong>
-                  Abertura desequilibrada em {fmtBRL(derived.totals.diferenca)}.
-                </strong>{" "}
-                Ativo {fmtBRL(derived.totals.ativo)} · Passivo{" "}
-                {fmtBRL(derived.totals.passivo)} · PL{" "}
+                <strong>Abertura desequilibrada em {fmtBRL(derived.totals.diferenca)}.</strong>{" "}
+                Ativo {fmtBRL(derived.totals.ativo)} · Passivo {fmtBRL(derived.totals.passivo)} · PL{" "}
                 {fmtBRL(derived.totals.pl)}.
               </span>
             </div>
@@ -361,8 +334,7 @@ export function AberturaCard({
               Ajustar Lucros Acumulados (plug: {fmtBRL(derived.totals.diferenca)})
             </button>
             <span className="text-[10px] opacity-80">
-              O ajuste vai para Lucros/Prejuízos Acumulados — único plug
-              contábil aceitável.
+              O ajuste vai para Lucros/Prejuízos Acumulados — único plug contábil aceitável.
             </span>
           </div>
         )}
@@ -370,5 +342,3 @@ export function AberturaCard({
     </div>
   );
 }
-
-

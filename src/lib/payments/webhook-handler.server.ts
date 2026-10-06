@@ -89,7 +89,10 @@ async function getOrCreateUserId(admin: AdminClient, email: string): Promise<str
   if (row?.user_id) return row.user_id as string;
 
   // 2) Não achou → cria; o trigger em auth.users popula user_emails.
-  const { data: created, error } = await admin.auth.admin.createUser({ email, email_confirm: true });
+  const { data: created, error } = await admin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+  });
   if (error) {
     console.error("[webhook] createUser falhou:", error.message);
     return null;
@@ -116,7 +119,10 @@ async function sendMagicLink(admin: AdminClient, email: string, plan?: string): 
   const cfg = await getEmailConfig(admin);
   if (!cfg) {
     // Etapa 1 P1 / F-06: nunca logar o action_link (contém token de auth).
-    console.log("[webhook] magic link gerado (sem envio) para:", email.replace(/(.{2}).+(@.+)/, "$1***$2"));
+    console.log(
+      "[webhook] magic link gerado (sem envio) para:",
+      email.replace(/(.{2}).+(@.+)/, "$1***$2"),
+    );
     return;
   }
   const tpl = await getTemplate(admin, "magic_link");
@@ -407,9 +413,7 @@ async function runEventLogic(
             event.subscriptionId,
           );
         } else {
-          console.log(
-            `[webhook] trial_will_end ${event.subscriptionId} — sem e-mail resolvível`,
-          );
+          console.log(`[webhook] trial_will_end ${event.subscriptionId} — sem e-mail resolvível`);
         }
       } catch (e) {
         console.warn("[webhook] lifecycle trial_will_end falhou (ignorado):", e);
@@ -440,7 +444,16 @@ export async function handleNormalizedEvent(
   }
 
   if (event.type === "ignored") {
-    await insertEvent(supabaseAdmin, provider, event, "skipped", event.reason, 0, null, providerEventId);
+    await insertEvent(
+      supabaseAdmin,
+      provider,
+      event,
+      "skipped",
+      event.reason,
+      0,
+      null,
+      providerEventId,
+    );
     return;
   }
 
@@ -462,7 +475,9 @@ export async function handleNormalizedEvent(
           body: `Tipo: ${eventType(event)}\nErro: ${msg}`,
           dedupKey: `whf:${provider}:${eventSubscriptionId(event) ?? eventType(event)}`,
         });
-      } catch {/* noop */}
+      } catch {
+        /* noop */
+      }
     }
     // Não relança — o status fica registrado e o retry/replay assume.
     console.error("[webhook] processamento falhou:", msg);
@@ -473,10 +488,13 @@ export async function handleNormalizedEvent(
  * Reprocessa um evento já persistido (worker de retry ou replay manual).
  * Faz lock leve via `locked_at` para evitar processamento concorrente.
  */
-export async function reprocessWebhookEventRow(eventId: string, opts?: {
-  manual?: boolean;
-  actorId?: string | null;
-}): Promise<{ ok: boolean; status: string; error?: string }> {
+export async function reprocessWebhookEventRow(
+  eventId: string,
+  opts?: {
+    manual?: boolean;
+    actorId?: string | null;
+  },
+): Promise<{ ok: boolean; status: string; error?: string }> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   // Lock leve: só claima se locked_at IS NULL ou expirado (>2min).
@@ -489,7 +507,8 @@ export async function reprocessWebhookEventRow(eventId: string, opts?: {
     .select("*")
     .maybeSingle();
   if (lockErr) throw new Error(lockErr.message);
-  if (!claimed) return { ok: false, status: "locked", error: "Evento em processamento por outra rotina." };
+  if (!claimed)
+    return { ok: false, status: "locked", error: "Evento em processamento por outra rotina." };
 
   // `claimed` é uma linha de webhook_events tipada pelo schema gerado.
   // Os campos `provider`, `payload`, `attempts` etc. existem no schema;
@@ -504,7 +523,13 @@ export async function reprocessWebhookEventRow(eventId: string, opts?: {
     await runEventLogic(supabaseAdmin, provider, payload);
     const finalStatus = opts?.manual ? "replayed" : "processed";
     const history = Array.isArray(ev.attempt_history) ? ev.attempt_history : [];
-    history.push({ at: startedAt, status: finalStatus, attempt: newAttempts, error: null, manual: !!opts?.manual });
+    history.push({
+      at: startedAt,
+      status: finalStatus,
+      attempt: newAttempts,
+      error: null,
+      manual: !!opts?.manual,
+    });
     await supabaseAdmin
       .from("webhook_events")
       .update({
@@ -526,7 +551,13 @@ export async function reprocessWebhookEventRow(eventId: string, opts?: {
     const next = delay ? new Date(Date.now() + delay * 1000).toISOString() : null;
     const finalStatus = delay ? "pending_retry" : "dead_letter";
     const history = Array.isArray(ev.attempt_history) ? ev.attempt_history : [];
-    history.push({ at: startedAt, status: finalStatus, attempt: newAttempts, error: msg, manual: !!opts?.manual });
+    history.push({
+      at: startedAt,
+      status: finalStatus,
+      attempt: newAttempts,
+      error: msg,
+      manual: !!opts?.manual,
+    });
     await supabaseAdmin
       .from("webhook_events")
       .update({
@@ -548,7 +579,9 @@ export async function reprocessWebhookEventRow(eventId: string, opts?: {
           body: `Tipo: ${ev.event_type}\nTentativas: ${newAttempts}\nÚltimo erro: ${msg}`,
           dedupKey: `whdl:${eventId}`,
         });
-      } catch {/* noop */}
+      } catch {
+        /* noop */
+      }
     }
     return { ok: false, status: finalStatus, error: msg };
   }
@@ -558,7 +591,10 @@ export async function reprocessWebhookEventRow(eventId: string, opts?: {
  * Worker chamado pelo cron: pega lotes de pending_retry maduros.
  */
 export async function runRetryBatch(limit = 25): Promise<{
-  picked: number; ok: number; failed: number; deadLetter: number;
+  picked: number;
+  ok: number;
+  failed: number;
+  deadLetter: number;
 }> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const nowIso = new Date().toISOString();
@@ -571,7 +607,9 @@ export async function runRetryBatch(limit = 25): Promise<{
     .limit(limit);
 
   const ids = (due ?? []).map((r) => r.id);
-  let ok = 0, failed = 0, deadLetter = 0;
+  let ok = 0,
+    failed = 0,
+    deadLetter = 0;
   for (const id of ids) {
     const r = await reprocessWebhookEventRow(id, { manual: false });
     if (r.ok) ok++;
@@ -580,4 +618,3 @@ export async function runRetryBatch(limit = 25): Promise<{
   }
   return { picked: ids.length, ok, failed, deadLetter };
 }
-

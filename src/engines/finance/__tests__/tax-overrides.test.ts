@@ -306,10 +306,18 @@ describe("prejuizoFiscalAcumuladoAbertura — Lucro Real", () => {
     // Com abertura 60k: Q1 prej vira 90k+60k=150k acum. Q2 compensa 45k (saldo→105k),
     // Q3 compensa 45k (saldo→60k), Q4 compensa 45k (saldo→15k).
     const lair = [
-      -30_000, -30_000, -30_000, // Q1: −90k
-      50_000, 50_000, 50_000,   // Q2
-      50_000, 50_000, 50_000,   // Q3
-      50_000, 50_000, 50_000,   // Q4
+      -30_000,
+      -30_000,
+      -30_000, // Q1: −90k
+      50_000,
+      50_000,
+      50_000, // Q2
+      50_000,
+      50_000,
+      50_000, // Q3
+      50_000,
+      50_000,
+      50_000, // Q4
     ];
     const semAbertura = calcReal(
       createState({ tax: { regime: "real", prejuizoFiscalAcumuladoAbertura: 0 } }),
@@ -342,4 +350,3 @@ describe("prejuizoFiscalAcumuladoAbertura — Lucro Real", () => {
     expect(comCmp.llBy.real).toBeGreaterThan(semCmp.llBy.real);
   });
 });
-

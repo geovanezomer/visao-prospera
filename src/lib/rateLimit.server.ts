@@ -60,7 +60,10 @@ export function clientIp(req: Request): string {
 }
 
 /** Resposta padronizada de 429. */
-export function tooManyRequests(retryAfter: number, message = "Muitas requisições. Tente mais tarde."): Response {
+export function tooManyRequests(
+  retryAfter: number,
+  message = "Muitas requisições. Tente mais tarde.",
+): Response {
   return new Response(JSON.stringify({ error: "rate_limited", retryAfter }), {
     status: 429,
     headers: {

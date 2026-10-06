@@ -10,21 +10,33 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  previewBroadcastAudience, sendBroadcast, listBroadcasts,
+  previewBroadcastAudience,
+  sendBroadcast,
+  listBroadcasts,
 } from "@/lib/admin/broadcast.functions";
 import { TableSkeleton, EmptyState } from "@/components/admin/ui-states";
 
 function fmt(iso: string | null | undefined) {
   if (!iso) return "—";
-  try { return new Date(iso).toLocaleString("pt-BR"); } catch { return "—"; }
+  try {
+    return new Date(iso).toLocaleString("pt-BR");
+  } catch {
+    return "—";
+  }
 }
 
 export function BroadcastsTab() {
   const [plan, setPlan] = useState<"all" | "free" | "starter" | "pro" | "lifetime">("all");
-  const [status, setStatus] = useState<"all" | "active" | "trialing" | "past_due" | "canceled" | "none">("all");
+  const [status, setStatus] = useState<
+    "all" | "active" | "trialing" | "past_due" | "canceled" | "none"
+  >("all");
   const [emailsRaw, setEmailsRaw] = useState("");
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
@@ -36,7 +48,10 @@ export function BroadcastsTab() {
   const segment = () => ({
     plan,
     status,
-    emails: emailsRaw.split(",").map((s) => s.trim()).filter(Boolean),
+    emails: emailsRaw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
   });
 
   const loadHistory = async () => {
@@ -46,10 +61,14 @@ export function BroadcastsTab() {
       setHistory(r.broadcasts);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao carregar histórico.");
-    } finally { setLoadingHist(false); }
+    } finally {
+      setLoadingHist(false);
+    }
   };
 
-  useEffect(() => { void loadHistory(); }, []);
+  useEffect(() => {
+    void loadHistory();
+  }, []);
 
   const doPreview = async () => {
     setBusy(true);
@@ -58,7 +77,9 @@ export function BroadcastsTab() {
       setPreview(r);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao prever.");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   };
 
   const doSend = async () => {
@@ -75,24 +96,37 @@ export function BroadcastsTab() {
     try {
       const r = await sendBroadcast({ data: { subject, html, segment: segment() } });
       toast.success(`Enviados: ${r.sent} · Falhas: ${r.failed}`);
-      setSubject(""); setHtml(""); setPreview(null);
+      setSubject("");
+      setHtml("");
+      setPreview(null);
       void loadHistory();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao enviar.");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-border/60 bg-card p-4">
         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          <Megaphone className="h-4 w-4" />Novo broadcast
+          <Megaphone className="h-4 w-4" />
+          Novo broadcast
         </h3>
         <div className="grid gap-3 sm:grid-cols-3">
           <div>
             <Label className="text-xs">Plano</Label>
-            <Select value={plan} onValueChange={(v) => { setPlan(v as any); setPreview(null); }}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <Select
+              value={plan}
+              onValueChange={(v) => {
+                setPlan(v as any);
+                setPreview(null);
+              }}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="free">Free</SelectItem>
@@ -104,8 +138,16 @@ export function BroadcastsTab() {
           </div>
           <div>
             <Label className="text-xs">Status</Label>
-            <Select value={status} onValueChange={(v) => { setStatus(v as any); setPreview(null); }}>
-              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <Select
+              value={status}
+              onValueChange={(v) => {
+                setStatus(v as any);
+                setPreview(null);
+              }}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
@@ -118,8 +160,15 @@ export function BroadcastsTab() {
           </div>
           <div className="sm:col-span-3">
             <Label className="text-xs">E-mails específicos (opcional — override do filtro)</Label>
-            <Textarea rows={2} value={emailsRaw} onChange={(e) => { setEmailsRaw(e.target.value); setPreview(null); }}
-              placeholder="alice@x.com, bob@y.com" />
+            <Textarea
+              rows={2}
+              value={emailsRaw}
+              onChange={(e) => {
+                setEmailsRaw(e.target.value);
+                setPreview(null);
+              }}
+              placeholder="alice@x.com, bob@y.com"
+            />
           </div>
           <div className="sm:col-span-3">
             <Label className="text-xs">Assunto</Label>
@@ -127,25 +176,38 @@ export function BroadcastsTab() {
           </div>
           <div className="sm:col-span-3">
             <Label className="text-xs">Corpo HTML</Label>
-            <Textarea rows={8} value={html} onChange={(e) => setHtml(e.target.value)}
-              placeholder="<p>Olá,</p><p>...</p>" className="font-mono text-xs" />
+            <Textarea
+              rows={8}
+              value={html}
+              onChange={(e) => setHtml(e.target.value)}
+              placeholder="<p>Olá,</p><p>...</p>"
+              className="font-mono text-xs"
+            />
           </div>
         </div>
         {preview && (
           <div className="mt-3 rounded-md border border-border/60 bg-muted/30 p-3 text-xs">
             <div className="font-medium">Audiência: {preview.total} destinatário(s)</div>
             {preview.sample.length > 0 && (
-              <div className="mt-1 text-muted-foreground">Amostra: {preview.sample.join(", ")}{preview.total > preview.sample.length ? "…" : ""}</div>
+              <div className="mt-1 text-muted-foreground">
+                Amostra: {preview.sample.join(", ")}
+                {preview.total > preview.sample.length ? "…" : ""}
+              </div>
             )}
           </div>
         )}
         <div className="mt-3 flex justify-end gap-2">
           <Button onClick={doPreview} disabled={busy} size="sm" variant="outline">
-            {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Eye className="mr-1.5 h-3.5 w-3.5" />}
+            {busy ? (
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Eye className="mr-1.5 h-3.5 w-3.5" />
+            )}
             Preview audiência
           </Button>
           <Button onClick={doSend} disabled={busy || !preview} size="sm">
-            <Send className="mr-1.5 h-3.5 w-3.5" />Enviar
+            <Send className="mr-1.5 h-3.5 w-3.5" />
+            Enviar
           </Button>
         </div>
       </div>
@@ -155,7 +217,9 @@ export function BroadcastsTab() {
           <h3 className="text-sm font-semibold">Histórico</h3>
         </div>
         {loadingHist ? (
-          <div className="p-3"><TableSkeleton rows={4} cols={4} /></div>
+          <div className="p-3">
+            <TableSkeleton rows={4} cols={4} />
+          </div>
         ) : history.length === 0 ? (
           <EmptyState
             icon={Megaphone}
@@ -164,9 +228,12 @@ export function BroadcastsTab() {
             action={
               <Button
                 size="sm"
-                onClick={() => document.querySelector<HTMLInputElement>('input[aria-label], input')?.focus()}
+                onClick={() =>
+                  document.querySelector<HTMLInputElement>("input[aria-label], input")?.focus()
+                }
               >
-                <Send className="mr-1.5 h-3.5 w-3.5" />Criar broadcast
+                <Send className="mr-1.5 h-3.5 w-3.5" />
+                Criar broadcast
               </Button>
             }
           />
@@ -186,11 +253,18 @@ export function BroadcastsTab() {
                   <td className="p-2 text-muted-foreground">{fmt(b.sent_at ?? b.created_at)}</td>
                   <td className="p-2">{b.subject}</td>
                   <td className="p-2 text-center">
-                    <Badge variant="outline" className={
-                      b.status === "sent" ? "border-emerald-500/40 text-emerald-600" :
-                      b.status === "failed" ? "border-destructive/40 text-destructive" :
-                      "border-border text-muted-foreground"
-                    }>{b.status}</Badge>
+                    <Badge
+                      variant="outline"
+                      className={
+                        b.status === "sent"
+                          ? "border-emerald-500/40 text-emerald-600"
+                          : b.status === "failed"
+                            ? "border-destructive/40 text-destructive"
+                            : "border-border text-muted-foreground"
+                      }
+                    >
+                      {b.status}
+                    </Badge>
                   </td>
                   <td className="p-2 text-right font-mono text-xs">
                     {b.sent_count} / {b.failed_count} / {b.total_recipients}

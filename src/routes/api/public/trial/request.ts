@@ -16,8 +16,14 @@ const Body = z.object({
 
 // Domínios de e-mail descartáveis bloqueados (lista mínima).
 const DISPOSABLE = new Set([
-  "mailinator.com", "guerrillamail.com", "tempmail.com", "10minutemail.com",
-  "trashmail.com", "yopmail.com", "getnada.com", "discard.email",
+  "mailinator.com",
+  "guerrillamail.com",
+  "tempmail.com",
+  "10minutemail.com",
+  "trashmail.com",
+  "yopmail.com",
+  "getnada.com",
+  "discard.email",
 ]);
 
 type AdminClient = SupabaseClient<any, "public", any>;
@@ -39,7 +45,11 @@ export const Route = createFileRoute("/api/public/trial/request")({
     handlers: {
       POST: async ({ request }) => {
         let raw: unknown;
-        try { raw = await request.json(); } catch { return Response.json({ error: "invalid_body" }, { status: 400 }); }
+        try {
+          raw = await request.json();
+        } catch {
+          return Response.json({ error: "invalid_body" }, { status: 400 });
+        }
         const parsed = Body.safeParse(raw);
         if (!parsed.success) return Response.json({ error: "invalid_email" }, { status: 400 });
         const { email, website } = parsed.data;
@@ -88,9 +98,11 @@ export const Route = createFileRoute("/api/public/trial/request")({
         const expiresAt = new Date(Date.now() + hours * 3600_000).toISOString();
 
         // 3) Cria usuário com flag de trial
-        const password = crypto.getRandomValues(new Uint8Array(24))
-          .reduce((s, b) => s + b.toString(36), "")
-          .slice(0, 24) + "A1!"; // garante complexidade mínima
+        const password =
+          crypto
+            .getRandomValues(new Uint8Array(24))
+            .reduce((s, b) => s + b.toString(36), "")
+            .slice(0, 24) + "A1!"; // garante complexidade mínima
         const { data: created, error: createErr } = await admin.auth.admin.createUser({
           email,
           password,
@@ -106,7 +118,10 @@ export const Route = createFileRoute("/api/public/trial/request")({
           if (/already.*registered|exists/i.test(createErr?.message ?? "")) {
             return Response.json({ error: "already_used" }, { status: 409 });
           }
-          return Response.json({ error: "create_failed", detail: createErr?.message }, { status: 500 });
+          return Response.json(
+            { error: "create_failed", detail: createErr?.message },
+            { status: 500 },
+          );
         }
 
         const userId = created.user.id;
@@ -114,7 +129,10 @@ export const Route = createFileRoute("/api/public/trial/request")({
         // 4) Registra trial_requests antes de enviar e-mail. Se falhar, desfaz o usuário
         // recém-criado para não deixar auth.users sem lock de trial.
         const { error: insertErr } = await admin.from("trial_requests").insert({
-          email, user_id: created.user.id, ip, expires_at: expiresAt,
+          email,
+          user_id: created.user.id,
+          ip,
+          expires_at: expiresAt,
         });
         if (insertErr) {
           await deleteTrialUser(admin, userId);
@@ -141,7 +159,11 @@ export const Route = createFileRoute("/api/public/trial/request")({
         const actionLink = linkRes.properties.action_link;
 
         // 6) Resend (config admin)
-        const { data: emailCfg } = await admin.from("email_settings").select("*").limit(1).maybeSingle();
+        const { data: emailCfg } = await admin
+          .from("email_settings")
+          .select("*")
+          .limit(1)
+          .maybeSingle();
         const { data: tpl } = await admin
           .from("email_templates")
           .select("subject,html,text,enabled")
@@ -163,19 +185,28 @@ export const Route = createFileRoute("/api/public/trial/request")({
           const name = email.split("@")[0];
           // Lê system_name de app_settings.branding se existir.
           const { data: brandingRow } = await admin
-            .from("app_settings").select("value").eq("key", "branding").maybeSingle();
+            .from("app_settings")
+            .select("value")
+            .eq("key", "branding")
+            .maybeSingle();
           const systemName =
             (brandingRow?.value as { system_name?: string } | null)?.system_name ?? "Finnance";
 
-          const render = (s: string) => s
-            .replaceAll("{{name}}", name)
-            .replaceAll("{{link}}", actionLink)
-            .replaceAll("{{hours}}", String(hours))
-            .replaceAll("{{system_name}}", systemName);
+          const render = (s: string) =>
+            s
+              .replaceAll("{{name}}", name)
+              .replaceAll("{{link}}", actionLink)
+              .replaceAll("{{hours}}", String(hours))
+              .replaceAll("{{system_name}}", systemName);
 
           const subject = render(tpl?.subject ?? `Seu teste gratuito do ${systemName}`);
-          const html = render(tpl?.html ?? `<p>Olá ${name}, acesse: <a href="${actionLink}">entrar</a> (válido por ${hours}h).</p>`);
-          const text = render(tpl?.text ?? `Olá ${name}, acesse: ${actionLink} (válido por ${hours}h).`);
+          const html = render(
+            tpl?.html ??
+              `<p>Olá ${name}, acesse: <a href="${actionLink}">entrar</a> (válido por ${hours}h).</p>`,
+          );
+          const text = render(
+            tpl?.text ?? `Olá ${name}, acesse: ${actionLink} (válido por ${hours}h).`,
+          );
 
           const sendRes = await fetch("https://api.resend.com/emails", {
             method: "POST",
@@ -183,7 +214,9 @@ export const Route = createFileRoute("/api/public/trial/request")({
             body: JSON.stringify({
               from: `${fromName} <${fromEmail}>`,
               to: email,
-              subject, html, text,
+              subject,
+              html,
+              text,
             }),
           });
           if (!sendRes.ok) {

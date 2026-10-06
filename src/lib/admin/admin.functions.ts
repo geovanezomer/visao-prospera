@@ -47,7 +47,13 @@ export type AdminUserFilters = {
   status?: "all" | "active" | "trialing" | "past_due" | "canceled" | "none";
   provider?: "all" | "stripe" | "asaas";
 };
-export type AdminUserSort = "created_desc" | "created_asc" | "expires_desc" | "expires_asc" | "name_asc" | "name_desc";
+export type AdminUserSort =
+  | "created_desc"
+  | "created_asc"
+  | "expires_desc"
+  | "expires_asc"
+  | "name_asc"
+  | "name_desc";
 
 export const listAdminUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -65,7 +71,14 @@ export const listAdminUsers = createServerFn({ method: "POST" })
           perPage: z.number().int().min(1).max(200).optional(),
           search: z.string().max(120).optional(),
           sort: z
-            .enum(["created_desc", "created_asc", "expires_desc", "expires_asc", "name_asc", "name_desc"])
+            .enum([
+              "created_desc",
+              "created_asc",
+              "expires_desc",
+              "expires_asc",
+              "name_asc",
+              "name_desc",
+            ])
             .optional(),
           filters: z
             .object({
@@ -94,14 +107,19 @@ export const listAdminUsers = createServerFn({ method: "POST" })
     const all: AdminUser[] = [];
     let truncated = false;
     for (let p = 1; p <= MAX_PAGES; p++) {
-      const { data: usersPage, error } = await supabaseAdmin.auth.admin.listUsers({ page: p, perPage: 200 });
+      const { data: usersPage, error } = await supabaseAdmin.auth.admin.listUsers({
+        page: p,
+        perPage: 200,
+      });
       if (error) throw new Error(error.message);
       all.push(...((usersPage.users ?? []) as AdminUser[]));
       if ((usersPage.users ?? []).length < 200) break;
       if (p === MAX_PAGES) truncated = true;
     }
     if (truncated) {
-      console.warn(`[admin] listAdminUsers atingiu cap de ${MAX_PAGES * 200} usuários; refine a busca.`);
+      console.warn(
+        `[admin] listAdminUsers atingiu cap de ${MAX_PAGES * 200} usuários; refine a busca.`,
+      );
     }
 
     const ids = all.map((u) => u.id);
@@ -131,7 +149,6 @@ export const listAdminUsers = createServerFn({ method: "POST" })
       .eq("role", "admin")
       .in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
     const adminIds = new Set<string>((adminRoleRows ?? []).map((r) => r.user_id));
-
 
     let rows: AdminUserRow[] = all.map((u) => {
       const s = subByUser.get(u.id);
@@ -175,10 +192,16 @@ export const listAdminUsers = createServerFn({ method: "POST" })
       );
     }
     if (filters.plan && filters.plan !== "all") {
-      rows = filters.plan === "free" ? rows.filter((r) => !r.plan) : rows.filter((r) => r.plan === filters.plan);
+      rows =
+        filters.plan === "free"
+          ? rows.filter((r) => !r.plan)
+          : rows.filter((r) => r.plan === filters.plan);
     }
     if (filters.status && filters.status !== "all") {
-      rows = filters.status === "none" ? rows.filter((r) => !r.planStatus) : rows.filter((r) => r.planStatus === filters.status);
+      rows =
+        filters.status === "none"
+          ? rows.filter((r) => !r.planStatus)
+          : rows.filter((r) => r.planStatus === filters.status);
     }
     if (filters.provider && filters.provider !== "all") {
       rows = rows.filter((r) => r.provider === filters.provider);
@@ -192,13 +215,20 @@ export const listAdminUsers = createServerFn({ method: "POST" })
     };
     rows.sort((a, b) => {
       switch (sort) {
-        case "created_asc": return cmpDate(a.createdAt, b.createdAt);
-        case "created_desc": return cmpDate(b.createdAt, a.createdAt);
-        case "expires_asc": return cmpDate(a.currentPeriodEnd, b.currentPeriodEnd);
-        case "expires_desc": return cmpDate(b.currentPeriodEnd, a.currentPeriodEnd);
-        case "name_asc": return (a.displayName ?? "").localeCompare(b.displayName ?? "");
-        case "name_desc": return (b.displayName ?? "").localeCompare(a.displayName ?? "");
-        default: return 0;
+        case "created_asc":
+          return cmpDate(a.createdAt, b.createdAt);
+        case "created_desc":
+          return cmpDate(b.createdAt, a.createdAt);
+        case "expires_asc":
+          return cmpDate(a.currentPeriodEnd, b.currentPeriodEnd);
+        case "expires_desc":
+          return cmpDate(b.currentPeriodEnd, a.currentPeriodEnd);
+        case "name_asc":
+          return (a.displayName ?? "").localeCompare(b.displayName ?? "");
+        case "name_desc":
+          return (b.displayName ?? "").localeCompare(a.displayName ?? "");
+        default:
+          return 0;
       }
     });
 
@@ -227,10 +257,9 @@ export const setUserActive = createServerFn({ method: "POST" })
 
     // `ban_duration` é parte da API admin do Supabase mas não está nos
     // tipos públicos. Cast estreito (apenas o campo necessário) em vez de `any`.
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(
-      data.userId,
-      { ban_duration: data.active ? "none" : "100000h" } as { ban_duration: string },
-    );
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      ban_duration: data.active ? "none" : "100000h",
+    } as { ban_duration: string });
     if (error) throw new Error(error.message);
     const { logAudit } = await import("./audit.server");
     await logAudit({
@@ -279,15 +308,12 @@ export const setUserAIEnabled = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 // ----------------------------------------------------------------------------
 // sendPasswordReset — gera link de recuperação e dispara via Supabase Auth.
 // ----------------------------------------------------------------------------
 export const sendPasswordReset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { userId: string }) =>
-    z.object({ userId: z.string().uuid() }).parse(data),
-  )
+  .validator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -318,9 +344,7 @@ export const sendPasswordReset = createServerFn({ method: "POST" })
 // ----------------------------------------------------------------------------
 export const revalidatePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { userId: string }) =>
-    z.object({ userId: z.string().uuid() }).parse(data),
-  )
+  .validator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -358,9 +382,7 @@ export const refundPayment = createServerFn({ method: "POST" })
 
     const { data: sub, error } = await supabaseAdmin
       .from("subscriptions")
-      .select(
-        "provider, stripe_subscription_id, provider_customer_id, stripe_customer_id",
-      )
+      .select("provider, stripe_subscription_id, provider_customer_id, stripe_customer_id")
       .eq("user_id", data.userId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -397,7 +419,6 @@ export const refundPayment = createServerFn({ method: "POST" })
     return result;
   });
 
-
 // ----------------------------------------------------------------------------
 // resendMagicLink — gera novo magic link Supabase e envia via Resend (usando
 // templates/SMTP do banco quando configurado). Útil quando o e-mail inicial
@@ -405,9 +426,7 @@ export const refundPayment = createServerFn({ method: "POST" })
 // ----------------------------------------------------------------------------
 export const resendMagicLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: { userId: string }) =>
-    z.object({ userId: z.string().uuid() }).parse(data),
-  )
+  .validator((data: { userId: string }) => z.object({ userId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -426,7 +445,11 @@ export const resendMagicLink = createServerFn({ method: "POST" })
 
     // Tenta enviar via Resend (banco → env fallback). Se nada configurado,
     // devolve o link para o admin copiar manualmente.
-    const { data: cfg } = await supabaseAdmin.from("email_settings").select("*").limit(1).maybeSingle();
+    const { data: cfg } = await supabaseAdmin
+      .from("email_settings")
+      .select("*")
+      .limit(1)
+      .maybeSingle();
     const apiKey = cfg?.resend_api_key || process.env.RESEND_API_KEY;
     const fromEmail = cfg?.from_email || process.env.FEEDBACK_FROM || process.env.MAGICLINK_FROM;
     const fromName = cfg?.from_name || "Finnance";

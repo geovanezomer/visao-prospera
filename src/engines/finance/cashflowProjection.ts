@@ -12,7 +12,10 @@ import { fmtBRLCompact as fmtBRL } from "./format";
  * usado para projetar saídas de caixa além dos 12 meses do ano-base.
  * Reproduz a mesma lógica de `scheduleContract` (Price/SAC) sem o teto de 12.
  */
-function scheduleContractFull(c: DebtContract, meses: number): { juros: number[]; amort: number[] } {
+function scheduleContractFull(
+  c: DebtContract,
+  meses: number,
+): { juros: number[]; amort: number[] } {
   const juros = new Array(meses).fill(0);
   const amort = new Array(meses).fill(0);
   const saldoIni = Math.max(0, c.saldoDevedor || 0);
@@ -203,7 +206,8 @@ function projectScenario(
   let firstRecov: ProjecaoCenarioResult["primeiroMesRecuperado"] = null;
   let seenNeg = false;
   for (const m of meses_out) {
-    if (!pior || m.saldoFinal < pior.saldo) pior = { mesIdx: m.mesIdx, rotulo: m.rotulo, saldo: m.saldoFinal };
+    if (!pior || m.saldoFinal < pior.saldo)
+      pior = { mesIdx: m.mesIdx, rotulo: m.rotulo, saldo: m.saldoFinal };
     if (!firstNeg && m.saldoFinal < 0) {
       firstNeg = { mesIdx: m.mesIdx, rotulo: m.rotulo };
       seenNeg = true;
@@ -240,7 +244,6 @@ export function projectCashflow(
 // ============================================================
 // Formatação markdown + spec finance-chart
 // ============================================================
-
 
 export function projectionToMarkdown(res: ProjecaoResult): string {
   const out: string[] = [];

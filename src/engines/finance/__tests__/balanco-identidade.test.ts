@@ -17,8 +17,7 @@ import { deriveAbertura } from "../aberturaDerivada";
 import { normalizeStateFromBalanco } from "../balanco";
 import { createState, m12 } from "./helpers";
 
-const sumArr = (a: number[] | undefined) =>
-  (a ?? []).reduce((x, y) => x + (y || 0), 0);
+const sumArr = (a: number[] | undefined) => (a ?? []).reduce((x, y) => x + (y || 0), 0);
 
 /** Executa a pipeline completa — mesma ordem de `buildFinancialModel`. */
 function run(rawState = createState()) {
@@ -34,7 +33,6 @@ function run(rawState = createState()) {
   return { res, abertura, dre, cf };
 }
 
-
 /** A conservação de massa garante: |residuo_fim − residuo_ini| ≈ 0. */
 function assertConservacao(residuoFim: number, residuoIni: number, ativo: number) {
   const delta = Math.abs(residuoFim - residuoIni);
@@ -43,7 +41,6 @@ function assertConservacao(residuoFim: number, residuoIni: number, ativo: number
   const tol = Math.max(1, ativo * 0.001);
   expect(delta).toBeLessThanOrEqual(tol);
 }
-
 
 describe("Balanço de Fechamento — identidade contábil por conservação de massa", () => {
   it("(a) empresa uniforme, sem PMR/PMP — fecha com diferença desprezível", () => {
@@ -55,7 +52,10 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
   });
 
   it("(b) receita sazonal com PMR 45 — fecha (CR_fim ≠ ini, sem inflar)", () => {
-    const bruta = [80_000, 40_000, 60_000, 100_000, 30_000, 70_000, 90_000, 55_000, 65_000, 45_000, 85_000, 75_000];
+    const bruta = [
+      80_000, 40_000, 60_000, 100_000, 30_000, 70_000, 90_000, 55_000, 65_000, 45_000, 85_000,
+      75_000,
+    ];
     const st = createState({ revenue: { bruta, pmr: 45, pmp: 30 } });
     const { res, abertura } = run(st);
     assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
@@ -67,8 +67,8 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
       cashflow: {
         emprestimosCaptados: m12(0),
         amortizacoes: [
-          10_000, 10_000, 10_000, 10_000, 10_000, 10_000,
-          10_000, 10_000, 10_000, 10_000, 10_000, 10_000,
+          10_000, 10_000, 10_000, 10_000, 10_000, 10_000, 10_000, 10_000, 10_000, 10_000, 10_000,
+          10_000,
         ],
       },
       capital: {
@@ -97,9 +97,7 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
     const st = createState({
       revenue: { bruta: m12(70_000) },
       capital: {
-        capexAtivacao: [
-          { id: "c1", label: "Máquina", valor: 120_000, mes: 6, vidaUtilMeses: 60 },
-        ],
+        capexAtivacao: [{ id: "c1", label: "Máquina", valor: 120_000, mes: 6, vidaUtilMeses: 60 }],
       },
     });
     const { res, abertura } = run(st);
@@ -197,9 +195,7 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
       revenue: {
         bruta: m12(50_000),
         pmr: 0,
-        deducoes: [
-          { id: "desc_incond", label: "Descontos", valores: m12(5_000), fixed: true },
-        ],
+        deducoes: [{ id: "desc_incond", label: "Descontos", valores: m12(5_000), fixed: true }],
       },
     });
     const { res, abertura, cf, dre } = run(st);
@@ -215,7 +211,13 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
       revenue: {
         bruta: m12(60_000),
         receitasFinanceiras: [
-          { id: "alugueis", label: "Aluguéis Recebidos", valores: m12(3_000), fixed: true, tipo: "operacional" },
+          {
+            id: "alugueis",
+            label: "Aluguéis Recebidos",
+            valores: m12(3_000),
+            fixed: true,
+            tipo: "operacional",
+          },
         ],
       },
     });
@@ -247,11 +249,15 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
         bruta: m12(120_000),
         pmr: 30,
         pmp: 30,
-        deducoes: [
-          { id: "desc_incond", label: "Descontos", valores: m12(4_000), fixed: true },
-        ],
+        deducoes: [{ id: "desc_incond", label: "Descontos", valores: m12(4_000), fixed: true }],
         receitasFinanceiras: [
-          { id: "alugueis", label: "Aluguéis Recebidos", valores: m12(2_500), fixed: true, tipo: "operacional" },
+          {
+            id: "alugueis",
+            label: "Aluguéis Recebidos",
+            valores: m12(2_500),
+            fixed: true,
+            tipo: "operacional",
+          },
         ],
       },
     });
@@ -262,4 +268,3 @@ describe("Balanço de Fechamento — identidade contábil por conservação de m
     assertConservacao(res.totals.diferenca, abertura.totals.diferenca, res.totals.ativo);
   });
 });
-

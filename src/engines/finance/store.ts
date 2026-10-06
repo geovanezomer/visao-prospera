@@ -5,7 +5,6 @@ import { useAuth } from "@/lib/auth";
 import { loadKey, saveKey, broadcastChange, onRemoteChange } from "./persistence";
 import { archiveYearAsHistorical } from "@/engines/scenarios/store";
 
-
 const stateKey = (u: string) => `finnance:state:${u}`;
 const scenKey = (u: string) => `finnance:scenarios:${u}`;
 

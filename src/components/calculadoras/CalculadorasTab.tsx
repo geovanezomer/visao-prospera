@@ -16,10 +16,7 @@ const RescisaoCltCalc = lazyNamed(
   () => import("@/components/calculadoras/RescisaoCltCalc"),
   "RescisaoCltCalc",
 );
-const CltVsPjCalc = lazyNamed(
-  () => import("@/components/calculadoras/CltVsPjCalc"),
-  "CltVsPjCalc",
-);
+const CltVsPjCalc = lazyNamed(() => import("@/components/calculadoras/CltVsPjCalc"), "CltVsPjCalc");
 const SalarioLiquidoCalc = lazyNamed(
   () => import("@/components/calculadoras/SalarioLiquidoCalc"),
   "SalarioLiquidoCalc",
@@ -73,16 +70,36 @@ export function CalculadorasTab() {
           <TabsTrigger value="independencia">Independência</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="custo-funcionario"><CustoFuncionarioCalc /></TabsContent>
-        <TabsContent value="rescisao"><RescisaoCltCalc /></TabsContent>
-        <TabsContent value="clt-vs-pj"><CltVsPjCalc /></TabsContent>
-        <TabsContent value="salario-liquido"><SalarioLiquidoCalc /></TabsContent>
-        <TabsContent value="ferias"><FeriasCltCalc /></TabsContent>
-        <TabsContent value="decimo-terceiro"><DecimoTerceiroCalc /></TabsContent>
-        <TabsContent value="horas-extras"><HorasExtrasCalc /></TabsContent>
-        <TabsContent value="sac-vs-price"><SacVsPriceCalc /></TabsContent>
-        <TabsContent value="juros-compostos"><JurosCompostosCalc /></TabsContent>
-        <TabsContent value="independencia"><IndependenciaCalc /></TabsContent>
+        <TabsContent value="custo-funcionario">
+          <CustoFuncionarioCalc />
+        </TabsContent>
+        <TabsContent value="rescisao">
+          <RescisaoCltCalc />
+        </TabsContent>
+        <TabsContent value="clt-vs-pj">
+          <CltVsPjCalc />
+        </TabsContent>
+        <TabsContent value="salario-liquido">
+          <SalarioLiquidoCalc />
+        </TabsContent>
+        <TabsContent value="ferias">
+          <FeriasCltCalc />
+        </TabsContent>
+        <TabsContent value="decimo-terceiro">
+          <DecimoTerceiroCalc />
+        </TabsContent>
+        <TabsContent value="horas-extras">
+          <HorasExtrasCalc />
+        </TabsContent>
+        <TabsContent value="sac-vs-price">
+          <SacVsPriceCalc />
+        </TabsContent>
+        <TabsContent value="juros-compostos">
+          <JurosCompostosCalc />
+        </TabsContent>
+        <TabsContent value="independencia">
+          <IndependenciaCalc />
+        </TabsContent>
       </Tabs>
     </div>
   );

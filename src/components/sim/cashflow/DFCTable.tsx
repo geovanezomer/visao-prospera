@@ -35,13 +35,20 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
         {/* Toggle de período — em readOnly o <fieldset disabled> da rota /shared
             desabilita <button>; usamos <div role="button"> para manter clicável. */}
         <div className="inline-flex rounded-md border border-border/60 bg-card p-0.5 text-xs">
-          {((readOnly ? ["mensal", "trimestral"] : ["mensal", "trimestral", "anual"]) as Period[]).map((p) => (
+          {(
+            (readOnly ? ["mensal", "trimestral"] : ["mensal", "trimestral", "anual"]) as Period[]
+          ).map((p) => (
             <div
               key={p}
               role="button"
               tabIndex={0}
               onClick={() => setPeriod(p)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPeriod(p); } }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setPeriod(p);
+                }
+              }}
               className={`cursor-pointer select-none rounded px-3 py-1 capitalize transition-colors ${
                 period === p
                   ? "bg-primary text-primary-foreground font-semibold"
@@ -61,224 +68,228 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
           <CashFlowComparison snapshots={comparisonSnaps} />
         </div>
       ) : (
-      <>
-      <div className="scrollbar-thin relative isolate overflow-x-auto">
-        <table className="w-full min-w-[900px] border-separate border-spacing-0 text-sm">
-          <thead>
-            <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-              <th className="sticky left-0 z-20 w-[320px] min-w-[320px] bg-card px-4 py-2 shadow-[1px_0_0_0_var(--border)]">
-                Linha
-              </th>
-              {cols.map((c) => (
-                <th key={c} className="px-2 py-2 text-right">
-                  {c}
-                </th>
-              ))}
-              <th className="px-3 py-2 text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <Row
-              label="Saldo inicial"
-              values={aggregate(cf.saldoInicial, period, "first")}
-              muted
-              rawTotal={cf.saldoInicial[0]}
-            />
-            <SectionRow label="ATIVIDADES OPERACIONAIS" cols={cols.length} />
-            <Row
-              label="(+) Recebimentos de clientes"
-              values={aggregate(cf.recebimentos, period, "sum")}
-              tone="pos"
-            />
-            <Row
-              label="(+) Receitas financeiras (aplicações)"
-              values={aggregate(cf.receitasFinanceiras, period, "sum")}
-              tone="pos"
-              rawTotal={sum(cf.receitasFinanceiras)}
-            />
-            <Row
-              label="(+) Outras receitas operacionais (aluguéis, venda de ativos)"
-              values={aggregate(cf.outrasReceitasOperacionais, period, "sum")}
-              tone="pos"
-              rawTotal={sum(cf.outrasReceitasOperacionais)}
-            />
-            <Row
-              label="(−) Pagamentos a fornecedores (CPV)"
-              values={aggregate(
-                cf.pagamentosFornecedores.map((v) => -v),
-                period,
-                "sum",
-              )}
-              tone="neg"
-              rawTotal={-sum(cf.pagamentosFornecedores)}
-            />
-            <Row
-              label="(−) Pagamentos de custos fixos"
-              values={aggregate(
-                cf.pagamentosFixos.map((v) => -v),
-                period,
-                "sum",
-              )}
-              tone="neg"
-              rawTotal={-sum(cf.pagamentosFixos)}
-            />
-            <Row
-              label="(−) Pagamentos de custos variáveis"
-              values={aggregate(
-                cf.pagamentosVariaveis.map((v) => -v),
-                period,
-                "sum",
-              )}
-              tone="neg"
-              rawTotal={-sum(cf.pagamentosVariaveis)}
-            />
-            <Row
-              label="(−) Despesas financeiras"
-              values={aggregate(
-                cf.pagamentosFinanceiros.map((v) => -v),
-                period,
-                "sum",
-              )}
-              tone="neg"
-              rawTotal={-sum(cf.pagamentosFinanceiros)}
-            />
-            <Row
-              label="(−) Impostos pagos"
-              values={aggregate(
-                cf.pagamentosImpostos.map((v) => -v),
-                period,
-                "sum",
-              )}
-              tone="neg"
-              rawTotal={-sum(cf.pagamentosImpostos)}
-            />
-            <Row
-              label="(=) Fluxo das Operações"
-              values={aggregate(cf.fluxoOperacional, period, "sum")}
-              strong
-              rawTotal={sum(cf.fluxoOperacional)}
-            />
-
-            <SectionRow label="ATIVIDADES DE INVESTIMENTO" cols={cols.length} />
-            <Row
-              label="(−) CapEx — Investimentos em equipamentos e ativo (Capital)"
-              values={aggregate(
-                cf.capex.map((v) => -v),
-                period,
-                "sum",
-              )}
-              tone="neg"
-              rawTotal={-sum(cf.capex)}
-            />
-            <Row
-              label="(=) Fluxo de Investimento"
-              values={aggregate(cf.fluxoInvestimento, period, "sum")}
-              strong
-              rawTotal={sum(cf.fluxoInvestimento)}
-            />
-
-            <SectionRow label="ATIVIDADES DE FINANCIAMENTO" cols={cols.length} />
-            <Row
-              label="(+) Aportes de sócios"
-              values={aggregate(state.cashflow.aportes, period, "sum")}
-              tone="pos"
-              rawTotal={sum(state.cashflow.aportes)}
-            />
-            <Row
-              label="(+) Captação de empréstimos"
-              values={aggregate(state.cashflow.emprestimosCaptados, period, "sum")}
-              tone="pos"
-              rawTotal={sum(state.cashflow.emprestimosCaptados)}
-            />
-            <Row
-              label="(−) Amortização de principal"
-              values={aggregate(
-                state.cashflow.amortizacoes.map((v) => -v),
-                period,
-                "sum",
-              )}
-              tone="neg"
-              rawTotal={-sum(state.cashflow.amortizacoes)}
-            />
-            <Row
-              label="(−) Distribuição de dividendos"
-              values={aggregate(
-                state.cashflow.dividendos.map((v) => -v),
-                period,
-                "sum",
-              )}
-              tone="neg"
-              rawTotal={-sum(state.cashflow.dividendos)}
-            />
-            <Row
-              label="(−) Empréstimos concedidos a sócios"
-              values={aggregate(
-                (state.cashflow.mutuosConcedidos ?? []).map((v) => -v),
-                period,
-                "sum",
-              )}
-              tone="neg"
-              rawTotal={-sum(state.cashflow.mutuosConcedidos ?? [])}
-            />
-            <Row
-              label="(+) Devolução de empréstimos de sócios"
-              values={aggregate(state.cashflow.mutuosDevolvidos ?? [], period, "sum")}
-              tone="pos"
-              rawTotal={sum(state.cashflow.mutuosDevolvidos ?? [])}
-            />
-            <Row
-              label="(=) Fluxo de Financiamento"
-              values={aggregate(cf.fluxoFinanciamento, period, "sum")}
-              strong
-              rawTotal={sum(cf.fluxoFinanciamento)}
-            />
-
-            {(sum(cf.permutasCredito) !== 0 || sum(cf.permutasDebito) !== 0) && (
-              <>
-                <SectionRow label="PERMUTAS (NÃO OPERACIONAIS)" cols={cols.length} />
+        <>
+          <div className="scrollbar-thin relative isolate overflow-x-auto">
+            <table className="w-full min-w-[900px] border-separate border-spacing-0 text-sm">
+              <thead>
+                <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <th className="sticky left-0 z-20 w-[320px] min-w-[320px] bg-card px-4 py-2 shadow-[1px_0_0_0_var(--border)]">
+                    Linha
+                  </th>
+                  {cols.map((c) => (
+                    <th key={c} className="px-2 py-2 text-right">
+                      {c}
+                    </th>
+                  ))}
+                  <th className="px-3 py-2 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
                 <Row
-                  label="(+) Permutas a crédito"
-                  values={aggregate(cf.permutasCredito, period, "sum")}
+                  label="Saldo inicial"
+                  values={aggregate(cf.saldoInicial, period, "first")}
+                  muted
+                  rawTotal={cf.saldoInicial[0]}
+                />
+                <SectionRow label="ATIVIDADES OPERACIONAIS" cols={cols.length} />
+                <Row
+                  label="(+) Recebimentos de clientes"
+                  values={aggregate(cf.recebimentos, period, "sum")}
                   tone="pos"
-                  rawTotal={sum(cf.permutasCredito)}
                 />
                 <Row
-                  label="(−) Permutas a débito"
-                  values={aggregate(cf.permutasDebito.map((v) => -v), period, "sum")}
+                  label="(+) Receitas financeiras (aplicações)"
+                  values={aggregate(cf.receitasFinanceiras, period, "sum")}
+                  tone="pos"
+                  rawTotal={sum(cf.receitasFinanceiras)}
+                />
+                <Row
+                  label="(+) Outras receitas operacionais (aluguéis, venda de ativos)"
+                  values={aggregate(cf.outrasReceitasOperacionais, period, "sum")}
+                  tone="pos"
+                  rawTotal={sum(cf.outrasReceitasOperacionais)}
+                />
+                <Row
+                  label="(−) Pagamentos a fornecedores (CPV)"
+                  values={aggregate(
+                    cf.pagamentosFornecedores.map((v) => -v),
+                    period,
+                    "sum",
+                  )}
                   tone="neg"
-                  rawTotal={-sum(cf.permutasDebito)}
+                  rawTotal={-sum(cf.pagamentosFornecedores)}
                 />
                 <Row
-                  label="(=) Permutas (líquido)"
-                  values={aggregate(cf.permutasLiquido, period, "sum")}
-                  strong
-                  rawTotal={sum(cf.permutasLiquido)}
+                  label="(−) Pagamentos de custos fixos"
+                  values={aggregate(
+                    cf.pagamentosFixos.map((v) => -v),
+                    period,
+                    "sum",
+                  )}
+                  tone="neg"
+                  rawTotal={-sum(cf.pagamentosFixos)}
                 />
-              </>
-            )}
+                <Row
+                  label="(−) Pagamentos de custos variáveis"
+                  values={aggregate(
+                    cf.pagamentosVariaveis.map((v) => -v),
+                    period,
+                    "sum",
+                  )}
+                  tone="neg"
+                  rawTotal={-sum(cf.pagamentosVariaveis)}
+                />
+                <Row
+                  label="(−) Despesas financeiras"
+                  values={aggregate(
+                    cf.pagamentosFinanceiros.map((v) => -v),
+                    period,
+                    "sum",
+                  )}
+                  tone="neg"
+                  rawTotal={-sum(cf.pagamentosFinanceiros)}
+                />
+                <Row
+                  label="(−) Impostos pagos"
+                  values={aggregate(
+                    cf.pagamentosImpostos.map((v) => -v),
+                    period,
+                    "sum",
+                  )}
+                  tone="neg"
+                  rawTotal={-sum(cf.pagamentosImpostos)}
+                />
+                <Row
+                  label="(=) Fluxo das Operações"
+                  values={aggregate(cf.fluxoOperacional, period, "sum")}
+                  strong
+                  rawTotal={sum(cf.fluxoOperacional)}
+                />
 
-            <Row
-              label="(=) VARIAÇÃO DE CAIXA"
-              values={aggregate(cf.variacaoCaixa, period, "sum")}
-              strong
-              highlight
-              rawTotal={sum(cf.variacaoCaixa)}
-            />
-            <Row
-              label="(=) SALDO FINAL"
-              values={aggregate(cf.saldoFinal, period, "last")}
-              strong
-              highlight
-              rawTotal={cf.saldoFinal[11]}
-            />
-          </tbody>
-        </table>
-      </div>
-      <div className="border-t border-border/60 px-4 py-2 text-[10px] text-muted-foreground">
-        Modelo simplificado: ignora variações de estoque e ajustes de capital de giro contábil mais
-        finos. Para diagnóstico operacional é suficiente.
-      </div>
-      </>
+                <SectionRow label="ATIVIDADES DE INVESTIMENTO" cols={cols.length} />
+                <Row
+                  label="(−) CapEx — Investimentos em equipamentos e ativo (Capital)"
+                  values={aggregate(
+                    cf.capex.map((v) => -v),
+                    period,
+                    "sum",
+                  )}
+                  tone="neg"
+                  rawTotal={-sum(cf.capex)}
+                />
+                <Row
+                  label="(=) Fluxo de Investimento"
+                  values={aggregate(cf.fluxoInvestimento, period, "sum")}
+                  strong
+                  rawTotal={sum(cf.fluxoInvestimento)}
+                />
+
+                <SectionRow label="ATIVIDADES DE FINANCIAMENTO" cols={cols.length} />
+                <Row
+                  label="(+) Aportes de sócios"
+                  values={aggregate(state.cashflow.aportes, period, "sum")}
+                  tone="pos"
+                  rawTotal={sum(state.cashflow.aportes)}
+                />
+                <Row
+                  label="(+) Captação de empréstimos"
+                  values={aggregate(state.cashflow.emprestimosCaptados, period, "sum")}
+                  tone="pos"
+                  rawTotal={sum(state.cashflow.emprestimosCaptados)}
+                />
+                <Row
+                  label="(−) Amortização de principal"
+                  values={aggregate(
+                    state.cashflow.amortizacoes.map((v) => -v),
+                    period,
+                    "sum",
+                  )}
+                  tone="neg"
+                  rawTotal={-sum(state.cashflow.amortizacoes)}
+                />
+                <Row
+                  label="(−) Distribuição de dividendos"
+                  values={aggregate(
+                    state.cashflow.dividendos.map((v) => -v),
+                    period,
+                    "sum",
+                  )}
+                  tone="neg"
+                  rawTotal={-sum(state.cashflow.dividendos)}
+                />
+                <Row
+                  label="(−) Empréstimos concedidos a sócios"
+                  values={aggregate(
+                    (state.cashflow.mutuosConcedidos ?? []).map((v) => -v),
+                    period,
+                    "sum",
+                  )}
+                  tone="neg"
+                  rawTotal={-sum(state.cashflow.mutuosConcedidos ?? [])}
+                />
+                <Row
+                  label="(+) Devolução de empréstimos de sócios"
+                  values={aggregate(state.cashflow.mutuosDevolvidos ?? [], period, "sum")}
+                  tone="pos"
+                  rawTotal={sum(state.cashflow.mutuosDevolvidos ?? [])}
+                />
+                <Row
+                  label="(=) Fluxo de Financiamento"
+                  values={aggregate(cf.fluxoFinanciamento, period, "sum")}
+                  strong
+                  rawTotal={sum(cf.fluxoFinanciamento)}
+                />
+
+                {(sum(cf.permutasCredito) !== 0 || sum(cf.permutasDebito) !== 0) && (
+                  <>
+                    <SectionRow label="PERMUTAS (NÃO OPERACIONAIS)" cols={cols.length} />
+                    <Row
+                      label="(+) Permutas a crédito"
+                      values={aggregate(cf.permutasCredito, period, "sum")}
+                      tone="pos"
+                      rawTotal={sum(cf.permutasCredito)}
+                    />
+                    <Row
+                      label="(−) Permutas a débito"
+                      values={aggregate(
+                        cf.permutasDebito.map((v) => -v),
+                        period,
+                        "sum",
+                      )}
+                      tone="neg"
+                      rawTotal={-sum(cf.permutasDebito)}
+                    />
+                    <Row
+                      label="(=) Permutas (líquido)"
+                      values={aggregate(cf.permutasLiquido, period, "sum")}
+                      strong
+                      rawTotal={sum(cf.permutasLiquido)}
+                    />
+                  </>
+                )}
+
+                <Row
+                  label="(=) VARIAÇÃO DE CAIXA"
+                  values={aggregate(cf.variacaoCaixa, period, "sum")}
+                  strong
+                  highlight
+                  rawTotal={sum(cf.variacaoCaixa)}
+                />
+                <Row
+                  label="(=) SALDO FINAL"
+                  values={aggregate(cf.saldoFinal, period, "last")}
+                  strong
+                  highlight
+                  rawTotal={cf.saldoFinal[11]}
+                />
+              </tbody>
+            </table>
+          </div>
+          <div className="border-t border-border/60 px-4 py-2 text-[10px] text-muted-foreground">
+            Modelo simplificado: ignora variações de estoque e ajustes de capital de giro contábil
+            mais finos. Para diagnóstico operacional é suficiente.
+          </div>
+        </>
       )}
     </div>
   );

@@ -15,9 +15,7 @@ const BUCKET = "backups";
  * A variável é injetada em build-time via `define` no vite.config.
  */
 export function isBackupEnabled(): boolean {
-  const raw =
-    (import.meta.env as Record<string, string | undefined>).SUPABASE_BACKUP ??
-    "ON";
+  const raw = (import.meta.env as Record<string, string | undefined>).SUPABASE_BACKUP ?? "ON";
   const v = String(raw).trim().toUpperCase();
   return v !== "OFF" && v !== "FALSE" && v !== "0";
 }
@@ -27,18 +25,12 @@ export function isBackupEnabled(): boolean {
  * Path: backups/{userId}/{filename}
  * Usa upsert: true — sempre sobrescreve o arquivo anterior.
  */
-export async function uploadBackup(
-  userId: string,
-  filename: string,
-  blob: Blob,
-): Promise<void> {
+export async function uploadBackup(userId: string, filename: string, blob: Blob): Promise<void> {
   const path = `${userId}/${filename}`;
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, blob, {
-      upsert: true,
-      contentType: "application/json",
-    });
+  const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
+    upsert: true,
+    contentType: "application/json",
+  });
   if (error) throw error;
 }
 
@@ -60,10 +52,7 @@ export async function listBackups(
 }
 
 /** Baixa um arquivo de backup pelo nome. Retorna o texto JSON do arquivo. */
-export async function downloadBackup(
-  userId: string,
-  filename: string,
-): Promise<string> {
+export async function downloadBackup(userId: string, filename: string): Promise<string> {
   const path = `${userId}/${filename}`;
   const { data, error } = await supabase.storage.from(BUCKET).download(path);
   if (error) throw error;
@@ -71,10 +60,7 @@ export async function downloadBackup(
 }
 
 /** Remove um arquivo de backup pelo nome. */
-export async function deleteBackup(
-  userId: string,
-  filename: string,
-): Promise<void> {
+export async function deleteBackup(userId: string, filename: string): Promise<void> {
   const path = `${userId}/${filename}`;
   const { error } = await supabase.storage.from(BUCKET).remove([path]);
   if (error) throw error;

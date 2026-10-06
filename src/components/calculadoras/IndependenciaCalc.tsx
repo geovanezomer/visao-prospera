@@ -198,8 +198,7 @@ export function IndependenciaCalc() {
     const linhasAnuais = sim.linhas.filter((_, i) => i % 5 === 0 || i === sim.linhas.length - 1);
     await exportCalculadoraPDF({
       title: "Independência Financeira (FIRE)",
-      subtitle:
-        "Simulação em termos reais — descontada a inflação (equação de Fisher).",
+      subtitle: "Simulação em termos reais — descontada a inflação (equação de Fisher).",
       inputs: [
         { label: "Idade atual / alvo", value: `${idadeAtual} → ${idadeAlvo} anos` },
         { label: "Gastos mensais", value: fmtBRLCompact(gastosMensais) },
@@ -210,9 +209,24 @@ export function IndependenciaCalc() {
         { label: "Taxa de retirada", value: `${taxaRetirada}%` },
       ],
       kpis: [
-        { label: "Número FIRE", value: fmtBRLCompact(sim.numeroFire), sub: "Patrimônio necessário", tone: "neutral" },
-        { label: "Idade FIRE", value: idadeFireStr, sub: sim.atingeNoTempo ? "Atinge no tempo" : "Após a idade-alvo", tone: sim.atingeNoTempo ? "ok" : "warn" },
-        { label: "Renda na idade-alvo", value: `${fmtBRLCompact(sim.rendaMensalAlvo)}/mês`, sub: `${(sim.pctFire * 100).toFixed(0)}% do FIRE`, tone: sim.pctFire >= 1 ? "ok" : "warn" },
+        {
+          label: "Número FIRE",
+          value: fmtBRLCompact(sim.numeroFire),
+          sub: "Patrimônio necessário",
+          tone: "neutral",
+        },
+        {
+          label: "Idade FIRE",
+          value: idadeFireStr,
+          sub: sim.atingeNoTempo ? "Atinge no tempo" : "Após a idade-alvo",
+          tone: sim.atingeNoTempo ? "ok" : "warn",
+        },
+        {
+          label: "Renda na idade-alvo",
+          value: `${fmtBRLCompact(sim.rendaMensalAlvo)}/mês`,
+          sub: `${(sim.pctFire * 100).toFixed(0)}% do FIRE`,
+          tone: sim.pctFire >= 1 ? "ok" : "warn",
+        },
       ],
       sections: [
         {

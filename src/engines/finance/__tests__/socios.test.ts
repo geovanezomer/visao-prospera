@@ -15,11 +15,7 @@ import {
   SOCIOS_PATRONAL_LINE_ID,
 } from "../socios";
 import { DEFAULT_STATE } from "../defaults";
-import {
-  INSS_SOCIO_ALIQ_DEFAULT,
-  INSS_TETO_DEFAULT,
-  SALARIO_MINIMO_DEFAULT,
-} from "../taxDefaults";
+import { INSS_SOCIO_ALIQ_DEFAULT, INSS_TETO_DEFAULT, SALARIO_MINIMO_DEFAULT } from "../taxDefaults";
 import type { AppState, SocioRetirada } from "../types";
 
 const mkSocio = (over: Partial<SocioRetirada> = {}): SocioRetirada => ({
@@ -92,7 +88,10 @@ describe("socios — otimização", () => {
     expect(otimo).toBe(0);
   });
   it("Presumido → ótimo respeita piso e não excede total", () => {
-    const state: AppState = { ...DEFAULT_STATE, tax: { ...DEFAULT_STATE.tax, regime: "presumido" } };
+    const state: AppState = {
+      ...DEFAULT_STATE,
+      tax: { ...DEFAULT_STATE.tax, regime: "presumido" },
+    };
     const otimo = otimizarProLabore(mkSocio({ operacional: true }), 15000, state, "presumido");
     expect(otimo).toBeGreaterThanOrEqual(SALARIO_MINIMO_DEFAULT);
     expect(otimo).toBeLessThanOrEqual(15000);
@@ -127,13 +126,11 @@ describe("socios — syncSociosToCosts (SSOT)", () => {
 
 describe("socios — calcRetiradaSocio", () => {
   it("calcula líquido coerente com componentes", () => {
-    const state: AppState = { ...DEFAULT_STATE, tax: { ...DEFAULT_STATE.tax, regime: "presumido" } };
-    const r = calcRetiradaSocio(
-      mkSocio({ prolaboreMensal: 5000 }),
-      state,
-      "presumido",
-      8000,
-    );
+    const state: AppState = {
+      ...DEFAULT_STATE,
+      tax: { ...DEFAULT_STATE.tax, regime: "presumido" },
+    };
+    const r = calcRetiradaSocio(mkSocio({ prolaboreMensal: 5000 }), state, "presumido", 8000);
     expect(r.inssSocio).toBeGreaterThan(0);
     expect(r.inssPatronal).toBeCloseTo(1000, 2);
     expect(r.custoTotalPJ).toBeCloseTo(5000 + 1000, 2);

@@ -79,10 +79,6 @@ export function BrandingApplier() {
     };
   }, [queryClient]);
 
-
-
-
-
   // Favicon — atualiza apenas o href do <link rel="icon"> já emitido no SSR.
   // NÃO criamos/removemos o nó: o React controla o <head>, e qualquer
   // appendChild/removeChild aqui causa "Failed to execute 'removeChild' on

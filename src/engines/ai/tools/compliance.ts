@@ -3,10 +3,7 @@
 
 import { regimeComparisonToMarkdown, taxAuditToMarkdown } from "@/engines/compliance/tax";
 import { checklistToMarkdown } from "@/engines/compliance/checklist";
-import {
-  compareYearsForRegime,
-  resolveEffectiveRegime,
-} from "@/engines/finance";
+import { compareYearsForRegime, resolveEffectiveRegime } from "@/engines/finance";
 import { getFinancialModelCached } from "@/engines/finance/financialModel";
 import {
   analyzeCovenants,
@@ -233,7 +230,20 @@ const handlers: Record<string, ToolHandler> = {
     );
 
     // ===== 3. Timeline: quando o caixa cruza zero descontando o float =====
-    const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    const meses = [
+      "Jan",
+      "Fev",
+      "Mar",
+      "Abr",
+      "Mai",
+      "Jun",
+      "Jul",
+      "Ago",
+      "Set",
+      "Out",
+      "Nov",
+      "Dez",
+    ];
     let mesZeroSplit: string | null = null;
     let mesZeroBase: string | null = null;
     for (let i = 0; i < 12; i++) {

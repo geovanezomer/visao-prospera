@@ -33,9 +33,9 @@ Edite `.env` antes de buildar.
 
 Dois grupos lidos a partir do mesmo `.env`:
 
-| Prefixo               | Quando é lida                            | Exemplos                                                     |
-| --------------------- | ---------------------------------------- | ------------------------------------------------------------ |
-| `VITE_*`              | **Build-time** (bundlada no JS do client) | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`         |
+| Prefixo               | Quando é lida                             | Exemplos                                                      |
+| --------------------- | ----------------------------------------- | ------------------------------------------------------------- |
+| `VITE_*`              | **Build-time** (bundlada no JS do client) | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`          |
 | Sem prefixo (runtime) | **Runtime SSR** (`process.env`)           | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_*`, etc. |
 
 O Dockerfile **copia o `.env` no estágio de build E no runtime**, então a

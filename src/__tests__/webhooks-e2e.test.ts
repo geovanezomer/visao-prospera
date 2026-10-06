@@ -77,8 +77,16 @@ function makeClient() {
                 maybeSingle: async () => ({
                   data:
                     provider === "stripe"
-                      ? { api_key: "sk_test_x", webhook_secret: STRIPE_WEBHOOK_SECRET, mode: "sandbox" }
-                      : { api_key: "asaas_test", webhook_secret: ASAAS_WEBHOOK_TOKEN, mode: "sandbox" },
+                      ? {
+                          api_key: "sk_test_x",
+                          webhook_secret: STRIPE_WEBHOOK_SECRET,
+                          mode: "sandbox",
+                        }
+                      : {
+                          api_key: "asaas_test",
+                          webhook_secret: ASAAS_WEBHOOK_TOKEN,
+                          mode: "sandbox",
+                        },
                   error: null,
                 }),
               }),
@@ -127,7 +135,10 @@ function makeClient() {
         },
       };
     },
-    rpc: async () => ({ data: [{ allowed: true, remaining: 100, retry_after_seconds: 0 }], error: null }),
+    rpc: async () => ({
+      data: [{ allowed: true, remaining: 100, retry_after_seconds: 0 }],
+      error: null,
+    }),
     auth: {
       admin: {
         listUsers: async (_args: { page: number; perPage: number }) => ({
@@ -315,7 +326,11 @@ describe("Stripe webhook E2E", () => {
           customer: "cus_123",
           status: "active",
           metadata: { plan: "pro" },
-          items: { data: [{ price: { lookup_key: "pro", id: "price_pro" }, current_period_end: 1800000000 }] },
+          items: {
+            data: [
+              { price: { lookup_key: "pro", id: "price_pro" }, current_period_end: 1800000000 },
+            ],
+          },
         },
       },
     };

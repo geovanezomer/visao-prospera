@@ -67,9 +67,7 @@ export function BrandHeader({
       />
       {!hideName && (
         <div>
-          <p className={cn("font-semibold tracking-tight", sz.name)}>
-            {branding.systemName}
-          </p>
+          <p className={cn("font-semibold tracking-tight", sz.name)}>{branding.systemName}</p>
           {subtitle && (
             <p className="text-[11.5px] uppercase tracking-[0.2em] text-muted-foreground">
               {subtitle}

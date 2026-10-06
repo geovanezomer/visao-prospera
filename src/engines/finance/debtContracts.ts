@@ -10,7 +10,6 @@
 // - Kd anual ponderado por saldo (avgKdAnual) p/ WACC/valuation
 import type { AppState, DebtContract } from "./types";
 
-
 export const DEBT_CONTRACTS_COST_ID = "__debt_contracts_juros";
 
 export interface ContractSchedule {
@@ -37,8 +36,7 @@ export function scheduleContract(c: DebtContract): ContractSchedule {
   }
 
   let saldo = saldoIni;
-  const parcelaPrice =
-    im > 0 ? (saldo * im) / (1 - Math.pow(1 + im, -n)) : saldo / n;
+  const parcelaPrice = im > 0 ? (saldo * im) / (1 - Math.pow(1 + im, -n)) : saldo / n;
   const amortSAC = saldo / n;
   const meses = Math.min(12, n);
   for (let m = 0; m < meses; m++) {
@@ -51,8 +49,7 @@ export function scheduleContract(c: DebtContract): ContractSchedule {
     saldo -= a;
   }
 
-  const parcelaMes =
-    c.sistema === "price" ? parcelaPrice : amortSAC + saldoIni * im;
+  const parcelaMes = c.sistema === "price" ? parcelaPrice : amortSAC + saldoIni * im;
   const totalJurosAno = juros.reduce((s, v) => s + v, 0);
   const totalAmortAno = amort.reduce((s, v) => s + v, 0);
   return { juros, amort, parcelaMes, totalJurosAno, totalAmortAno };
@@ -90,11 +87,23 @@ export function aggregateContracts(contracts: DebtContract[]) {
   };
 }
 
-
 /** Converte prazo em meses (a partir de hoje) para rótulo "Mmm/AAAA". */
 export function vencimentoLabel(prazoMeses: number, from = new Date()): string {
   const d = new Date(from.getFullYear(), from.getMonth() + Math.max(0, prazoMeses), 1);
-  const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  const meses = [
+    "Jan",
+    "Fev",
+    "Mar",
+    "Abr",
+    "Mai",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Set",
+    "Out",
+    "Nov",
+    "Dez",
+  ];
   return `${meses[d.getMonth()]}/${d.getFullYear()}`;
 }
 

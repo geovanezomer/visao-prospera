@@ -26,7 +26,9 @@ export function useCompanySnapshots(opts: Options = {}): ScenarioRecord[] {
     const { kind, sortByYear } = opts;
     let out = all;
     if (kind === "historical") {
-      out = out.filter((s) => s.kind === "historical" && s.state && typeof s.fiscalYear === "number");
+      out = out.filter(
+        (s) => s.kind === "historical" && s.state && typeof s.fiscalYear === "number",
+      );
     } else if (kind === "whatif") {
       out = out.filter((s) => s.kind !== "historical");
     }

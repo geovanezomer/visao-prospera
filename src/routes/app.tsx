@@ -13,22 +13,52 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 // Antes: TODAS as abas (Recharts, jsPDF, IA, etc.) entravam no bundle
 // inicial → first paint de 15–20s no VPS. Agora só a aba ativa é baixada.
 // ─────────────────────────────────────────────────────────────────────────
-const RevenueTab = lazy(() => import("@/components/sim/revenue/RevenueTab").then(m => ({ default: m.RevenueTab })));
-const CostsTab = lazy(() => import("@/components/sim/costs/CostsTab").then(m => ({ default: m.CostsTab })));
-const CapitalTab = lazy(() => import("@/components/sim/capital/CapitalTab").then(m => ({ default: m.CapitalTab })));
-const TaxTab = lazy(() => import("@/components/sim/tax/TaxTab").then(m => ({ default: m.TaxTab })));
-const ProlaboreTab = lazy(() => import("@/components/sim/tax/ProlaboreTab").then(m => ({ default: m.ProlaboreTab })));
-const DRETab = lazy(() => import("@/components/sim/dre/DRETab").then(m => ({ default: m.DRETab })));
-const BalancoTab = lazy(() => import("@/components/sim/balanco/BalancoTab").then(m => ({ default: m.BalancoTab })));
-const CashflowTab = lazy(() => import("@/components/sim/cashflow/CashflowTab").then(m => ({ default: m.CashflowTab })));
-const DiagnosisTab = lazy(() => import("@/components/sim/diagnosis/DiagnosisTab").then(m => ({ default: m.DiagnosisTab })));
-const StrategicTab = lazy(() => import("@/components/sim/strategic/StrategicTab").then(m => ({ default: m.StrategicTab })));
-const SimulatorTab = lazy(() => import("@/components/sim/simulator/SimulatorTab").then(m => ({ default: m.SimulatorTab })));
-const ValuationTab = lazy(() => import("@/components/sim/valuation/ValuationTab").then(m => ({ default: m.ValuationTab })));
-const IndicatorsTab = lazy(() => import("@/components/sim/indicators/IndicatorsTab").then(m => ({ default: m.IndicatorsTab })));
-const DashboardTab = lazy(() => import("@/components/sim/dashboard/DashboardTab").then(m => ({ default: m.DashboardTab })));
-const AIView = lazy(() => import("@/components/ai/AIView").then(m => ({ default: m.AIView })));
-const CalculadorasTab = lazy(() => import("@/components/calculadoras/CalculadorasTab").then(m => ({ default: m.CalculadorasTab })));
+const RevenueTab = lazy(() =>
+  import("@/components/sim/revenue/RevenueTab").then((m) => ({ default: m.RevenueTab })),
+);
+const CostsTab = lazy(() =>
+  import("@/components/sim/costs/CostsTab").then((m) => ({ default: m.CostsTab })),
+);
+const CapitalTab = lazy(() =>
+  import("@/components/sim/capital/CapitalTab").then((m) => ({ default: m.CapitalTab })),
+);
+const TaxTab = lazy(() =>
+  import("@/components/sim/tax/TaxTab").then((m) => ({ default: m.TaxTab })),
+);
+const ProlaboreTab = lazy(() =>
+  import("@/components/sim/tax/ProlaboreTab").then((m) => ({ default: m.ProlaboreTab })),
+);
+const DRETab = lazy(() =>
+  import("@/components/sim/dre/DRETab").then((m) => ({ default: m.DRETab })),
+);
+const BalancoTab = lazy(() =>
+  import("@/components/sim/balanco/BalancoTab").then((m) => ({ default: m.BalancoTab })),
+);
+const CashflowTab = lazy(() =>
+  import("@/components/sim/cashflow/CashflowTab").then((m) => ({ default: m.CashflowTab })),
+);
+const DiagnosisTab = lazy(() =>
+  import("@/components/sim/diagnosis/DiagnosisTab").then((m) => ({ default: m.DiagnosisTab })),
+);
+const StrategicTab = lazy(() =>
+  import("@/components/sim/strategic/StrategicTab").then((m) => ({ default: m.StrategicTab })),
+);
+const SimulatorTab = lazy(() =>
+  import("@/components/sim/simulator/SimulatorTab").then((m) => ({ default: m.SimulatorTab })),
+);
+const ValuationTab = lazy(() =>
+  import("@/components/sim/valuation/ValuationTab").then((m) => ({ default: m.ValuationTab })),
+);
+const IndicatorsTab = lazy(() =>
+  import("@/components/sim/indicators/IndicatorsTab").then((m) => ({ default: m.IndicatorsTab })),
+);
+const DashboardTab = lazy(() =>
+  import("@/components/sim/dashboard/DashboardTab").then((m) => ({ default: m.DashboardTab })),
+);
+const AIView = lazy(() => import("@/components/ai/AIView").then((m) => ({ default: m.AIView })));
+const CalculadorasTab = lazy(() =>
+  import("@/components/calculadoras/CalculadorasTab").then((m) => ({ default: m.CalculadorasTab })),
+);
 
 import { ScenarioBar } from "@/components/sim/shared/ScenarioBar";
 import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
@@ -77,7 +107,6 @@ function TabLoading() {
     </div>
   );
 }
-
 
 // Formata "há X" relativo para o breadcrumb do header.
 function timeAgo(ts: number | null): string {
@@ -287,7 +316,6 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
     return () => window.removeEventListener("gz-set-tab", onSetTab);
   }, []);
 
-
   if (!hydrated || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
@@ -325,8 +353,8 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                     {activeTab === "ai"
                       ? "Consultor IA"
                       : activeTab === "calculadoras"
-                      ? "Calculadoras"
-                      : (NAV_ITEMS.find((i) => i.value === activeTab)?.title ?? activeTab)}
+                        ? "Calculadoras"
+                        : (NAV_ITEMS.find((i) => i.value === activeTab)?.title ?? activeTab)}
                   </h2>
                   {/* Breadcrumb: empresa + status de backup na nuvem. */}
                   <div
@@ -366,7 +394,6 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                 </div>
               </div>
 
-
               {/* Pills centralizados: só aparecem em DRE / Fluxo de Caixa. */}
               {(activeTab === "dre" || activeTab === "caixa") && (
                 <div
@@ -376,8 +403,6 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                   <HistoricalYearPills />
                 </div>
               )}
-
-
 
               <div className="flex items-center gap-2">
                 {meetingMode && (
@@ -395,7 +420,11 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                     variant={meetingMode ? "default" : "ghost"}
                     onClick={() => setMeetingMode((v) => !v)}
                     className="h-8 w-8 p-0"
-                    title={meetingMode ? "Sair do Modo Reunião" : "Modo Reunião: oculta menus, amplia fontes e destaca KPIs"}
+                    title={
+                      meetingMode
+                        ? "Sair do Modo Reunião"
+                        : "Modo Reunião: oculta menus, amplia fontes e destaca KPIs"
+                    }
                     aria-label={meetingMode ? "Sair do Modo Reunião" : "Modo Reunião"}
                   >
                     {meetingMode ? (
@@ -445,7 +474,9 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                         // Diagnóstico IA: tenta cache primeiro, gera uma vez se ainda
                         // não houver. Preserva o comportamento histórico do exportador,
                         // mas mantém o pdfExport puro (render-only).
-                        let aiDiagnostico = null as Awaited<ReturnType<typeof gerarDiagnostico>> | null;
+                        let aiDiagnostico = null as Awaited<
+                          ReturnType<typeof gerarDiagnostico>
+                        > | null;
                         const aiCfg = loadConfig();
                         if (isAIConfigured(aiCfg)) {
                           try {
@@ -462,7 +493,13 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                           }
                         }
 
-                        await exportFinancePDF({ state, model, diags, prescriptive, aiDiagnostico });
+                        await exportFinancePDF({
+                          state,
+                          model,
+                          diags,
+                          prescriptive,
+                          aiDiagnostico,
+                        });
                         toast.success("PDF gerado com sucesso", { id: "pdf-export" });
                       } catch (err) {
                         console.error("[pdf-export] falhou:", err);
@@ -552,10 +589,16 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
             </main>
 
             <footer className="border-t border-border/20 py-4 text-center text-[10px] text-muted-foreground">
-              <p>© 2026 FinnancePRO | Desenvolvido por GZ Consultoria Financeira &amp; Investimentos</p>
+              <p>
+                © 2026 FinnancePRO | Desenvolvido por GZ Consultoria Financeira &amp; Investimentos
+              </p>
               <p className="mt-1 flex items-center justify-center gap-4">
-                <Link to="/termos" className="hover:text-foreground">Termos</Link>
-                <Link to="/privacidade" className="hover:text-foreground">Privacidade</Link>
+                <Link to="/termos" className="hover:text-foreground">
+                  Termos
+                </Link>
+                <Link to="/privacidade" className="hover:text-foreground">
+                  Privacidade
+                </Link>
               </p>
             </footer>
           </SidebarInset>
@@ -574,7 +617,9 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
               confirm={confirm}
               setState={setState}
               replaceScenarios={replaceScenarios}
-              onRestored={() => { /* file foi carregado pelo setState */ }}
+              onRestored={() => {
+                /* file foi carregado pelo setState */
+              }}
             />
           )}
           <OpenRestoreDialog

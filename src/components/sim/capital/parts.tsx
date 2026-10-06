@@ -33,9 +33,7 @@ export function StepCard({
         </span>
         <div>
           <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-          {subtitle && (
-            <p className="text-[11px] text-muted-foreground">{subtitle}</p>
-          )}
+          {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
         </div>
       </header>
       <div>{children}</div>
@@ -72,18 +70,13 @@ export function SimpleField({
         {icon}
         <span>{label}</span>
         {hint && (
-          <span
-            title={hint}
-            className="ml-auto inline-flex cursor-help text-muted-foreground"
-          >
+          <span title={hint} className="ml-auto inline-flex cursor-help text-muted-foreground">
             <Info className="h-3 w-3" />
           </span>
         )}
       </span>
       <MoneyInput value={value} onChange={onChange} />
-      {placeholder && (
-        <span className="text-[10px] text-muted-foreground">{placeholder}</span>
-      )}
+      {placeholder && <span className="text-[10px] text-muted-foreground">{placeholder}</span>}
     </label>
   );
 }
@@ -124,4 +117,3 @@ export function MiniStat({
     </div>
   );
 }
-

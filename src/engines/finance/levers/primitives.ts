@@ -40,9 +40,7 @@ export function laborCltLinesTotal(state: AppState): {
   totalMensal: number;
 } {
   const re = /sal[áa]rio|folha|clt|mod|mão de obra/i;
-  const lines = state.costs.filter(
-    (c) => c.category !== "financeiro" && re.test(c.label),
-  );
+  const lines = state.costs.filter((c) => c.category !== "financeiro" && re.test(c.label));
   const totalMensal = lines.reduce(
     (acc, c) => acc + (c.fixed ? c.values[0] : sum(c.values) / 12),
     0,
@@ -55,10 +53,7 @@ export function laborCltLinesTotal(state: AppState): {
  *   Aviso indenizado (1 salário) + 13º proporcional + férias + 1/3 (~4/3 salário)
  *   + multa FGTS 40% sobre 8% × meses trabalhados.
  */
-export function severanceCostPerPosition(
-  salarioBase: number,
-  mesesTrabalhados = 24,
-): number {
+export function severanceCostPerPosition(salarioBase: number, mesesTrabalhados = 24): number {
   const aviso = salarioBase;
   const decimoTerceiro = salarioBase;
   const feriasMais1_3 = salarioBase * (4 / 3);
@@ -181,7 +176,13 @@ export function addLoan(
 export function payDownDebt(state: AppState, pct: number): AppState {
   const safePct = Math.min(Math.max(pct, 0), 1);
   const originalDivida = sumContractSaldos(state.capital.debtContracts);
-  const capital = { ...state.capital, debtContracts: (state.capital.debtContracts ?? []).map(c => ({...c, saldoDevedor: Math.max(0,(c.saldoDevedor||0)*(1-safePct))})) };
+  const capital = {
+    ...state.capital,
+    debtContracts: (state.capital.debtContracts ?? []).map((c) => ({
+      ...c,
+      saldoDevedor: Math.max(0, (c.saldoDevedor || 0) * (1 - safePct)),
+    })),
+  };
   const costs = cloneCosts(state.costs).map((c) =>
     c.category === "financeiro" && /juros/i.test(c.label)
       ? { ...c, values: c.values.map((v) => v * (1 - safePct)) }
@@ -195,10 +196,7 @@ export function payDownDebt(state: AppState, pct: number): AppState {
 }
 
 /** Troca o regime tributário. */
-export function switchRegime(
-  state: AppState,
-  regime: AppState["tax"]["regime"],
-): AppState {
+export function switchRegime(state: AppState, regime: AppState["tax"]["regime"]): AppState {
   return { ...state, tax: { ...state.tax, regime } };
 }
 
@@ -250,11 +248,7 @@ export function dismissWithSeverance(
 }
 
 /** Escala um conjunto arbitrário de linhas de custo (por IDs) por um fator. */
-export function scaleCostLines(
-  state: AppState,
-  ids: Set<string>,
-  factor: number,
-): AppState {
+export function scaleCostLines(state: AppState, ids: Set<string>, factor: number): AppState {
   const costs = cloneCosts(state.costs).map((c) =>
     ids.has(c.id) ? { ...c, values: c.values.map((v) => v * factor) } : c,
   );
@@ -341,8 +335,7 @@ export const LEVER_REGISTRY = {
   switch_regime: {
     description: "Troca regime tributário (simples, presumido, real).",
     schema: z.object({ regime: z.enum(["simples", "presumido", "real"]) }),
-    apply: (s: AppState, p: { regime: AppState["tax"]["regime"] }) =>
-      switchRegime(s, p.regime),
+    apply: (s: AppState, p: { regime: AppState["tax"]["regime"] }) => switchRegime(s, p.regime),
   },
   reduce_labor_by_positions: {
     description: "Reduz folha CLT pelo equivalente a N posições ao custo médio informado.",
@@ -361,10 +354,8 @@ export const LEVER_REGISTRY = {
       salarioBase: z.number().positive(),
       monthIdx: z.number().int().min(0).max(11).default(0),
     }),
-    apply: (
-      s: AppState,
-      p: { positions: number; salarioBase: number; monthIdx?: number },
-    ) => dismissWithSeverance(s, p.positions, p.salarioBase, p.monthIdx ?? 0),
+    apply: (s: AppState, p: { positions: number; salarioBase: number; monthIdx?: number }) =>
+      dismissWithSeverance(s, p.positions, p.salarioBase, p.monthIdx ?? 0),
   },
   scale_labor_lines: {
     description: "Escala todas as linhas de folha CLT por um fator (ex.: 0.95 = -5%).",

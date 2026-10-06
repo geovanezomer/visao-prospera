@@ -33,8 +33,7 @@ export const Route = createFileRoute("/landing")({
   head: () => ({
     meta: [
       {
-        title:
-          "Tour do FinancePRO — Recursos, Planos e Demonstração | GZ Consultoria",
+        title: "Tour do FinancePRO — Recursos, Planos e Demonstração | GZ Consultoria",
       },
       {
         name: "description",
@@ -58,8 +57,7 @@ export const Route = createFileRoute("/landing")({
       },
       {
         name: "twitter:description",
-        content:
-          "Tour completo do FinancePRO: módulos, indicadores, Reforma Tributária e planos.",
+        content: "Tour completo do FinancePRO: módulos, indicadores, Reforma Tributária e planos.",
       },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
@@ -84,9 +82,7 @@ export const Route = createFileRoute("/landing")({
       },
     ],
   }),
-  errorComponent: () => (
-    <LandingPage initialPlans={PLANS_FALLBACK} plansSource="fallback" />
-  ),
+  errorComponent: () => <LandingPage initialPlans={PLANS_FALLBACK} plansSource="fallback" />,
   notFoundComponent: () => <Navigate to="/" />,
   component: LandingRoute,
 });
@@ -98,4 +94,3 @@ function LandingRoute() {
   const { plans, source } = Route.useLoaderData();
   return <LandingPage initialPlans={plans} plansSource={source} />;
 }
-

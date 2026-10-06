@@ -350,6 +350,6 @@ Rodar: `bunx vitest run`. Hoje: **100/100 passando**.
 | Mudar indicador                 | `indicators.ts`                                                           |
 | Mudar regime tributário         | `tax/<regime>.ts` + `taxDefaults.ts`                                      |
 | Adicionar campo persistido      | `types.ts` → bump `APP_STATE_SCHEMA_VERSION` → `defaults.ts/migrateState` |
-| Adicionar campo ao `.finnance`      | bump `CURRENT_VERSION` + nova migration (ver CONTRIBUTING)                |
+| Adicionar campo ao `.finnance`  | bump `CURRENT_VERSION` + nova migration (ver CONTRIBUTING)                |
 | Adicionar alavanca no simulador | `simulator.ts` + `prescriptive.ts`                                        |
 | Mudar valuation                 | `valuation.ts` (cuidado com EV vs Equity)                                 |

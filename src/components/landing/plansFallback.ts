@@ -45,11 +45,7 @@ export const PLANS_FALLBACK: PlanRow[] = [
     priceCents: 97000,
     currency: "BRL",
     interval: "year",
-    features: [
-      "Tudo do plano Mensal",
-      "Economia equivalente a 2 meses",
-      "Suporte prioritário",
-    ],
+    features: ["Tudo do plano Mensal", "Economia equivalente a 2 meses", "Suporte prioritário"],
     limits: {},
     stripePriceId: null,
     asaasPlanRef: null,

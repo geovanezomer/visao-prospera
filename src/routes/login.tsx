@@ -91,8 +91,12 @@ function LoginPage() {
         <div className="space-y-2 text-[11px] text-muted-foreground">
           <div>{footer.text}</div>
           <div className="flex items-center gap-4">
-            <Link to="/termos" className="hover:text-foreground">Termos</Link>
-            <Link to="/privacidade" className="hover:text-foreground">Privacidade</Link>
+            <Link to="/termos" className="hover:text-foreground">
+              Termos
+            </Link>
+            <Link to="/privacidade" className="hover:text-foreground">
+              Privacidade
+            </Link>
           </div>
         </div>
       </section>

@@ -78,12 +78,7 @@ export {
 } from "./tax/reforma";
 export { compareYearsForRegime, compareRegimes, compareErasForRegime } from "./tax/compare";
 export { isCpvCost, fixedCostBase, effectiveMonthValues, monthValues } from "./costs";
-export {
-  splitReceitasFinanceiras,
-  outrasDeducoesMensal,
-  computeNetDebt,
-  cagr12m,
-} from "./shared";
+export { splitReceitasFinanceiras, outrasDeducoesMensal, computeNetDebt, cagr12m } from "./shared";
 
 // ============= Estado e persistência =============
 export { useAppState, useScenarios } from "./store";

@@ -7,17 +7,10 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AuthClaims } from "./_types";
 
-
 export const listAuditLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(
-    (d: {
-      page?: number;
-      perPage?: number;
-      search?: string;
-      action?: string;
-      resource?: string;
-    }) =>
+    (d: { page?: number; perPage?: number; search?: string; action?: string; resource?: string }) =>
       z
         .object({
           page: z.number().int().min(1).max(10000).optional(),
@@ -45,9 +38,7 @@ export const listAuditLog = createServerFn({ method: "POST" })
     if (data.resource) q = q.eq("resource", data.resource);
     if (data.search) {
       const s = data.search.trim();
-      q = q.or(
-        `actor_email.ilike.%${s}%,target_id.ilike.%${s}%,target_label.ilike.%${s}%`,
-      );
+      q = q.or(`actor_email.ilike.%${s}%,target_id.ilike.%${s}%,target_label.ilike.%${s}%`);
     }
     const { data: rows, error, count } = await q;
     if (error) throw new Error(error.message);

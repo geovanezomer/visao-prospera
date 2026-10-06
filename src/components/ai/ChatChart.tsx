@@ -113,40 +113,93 @@ export function ChatChart({ spec }: { spec: ChartSpec }) {
           {spec.type === "line" ? (
             <LineChart data={spec.data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-              <XAxis dataKey={labelKey} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-              <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => fmt(v, format)} />
+              <XAxis
+                dataKey={labelKey}
+                tick={{ fontSize: 10 }}
+                stroke="hsl(var(--muted-foreground))"
+              />
+              <YAxis
+                tick={{ fontSize: 10 }}
+                stroke="hsl(var(--muted-foreground))"
+                tickFormatter={(v) => fmt(v, format)}
+              />
               <Tooltip
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
+                contentStyle={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  fontSize: 12,
+                }}
                 formatter={(v: number) => fmt(v, format)}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               {keys.map((k, i) => (
-                <Line key={k} type="monotone" dataKey={k} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={false} />
+                <Line
+                  key={k}
+                  type="monotone"
+                  dataKey={k}
+                  stroke={COLORS[i % COLORS.length]}
+                  strokeWidth={2}
+                  dot={false}
+                />
               ))}
             </LineChart>
           ) : spec.type === "waterfall" ? (
             <BarChart data={waterfallData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-              <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-              <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => fmt(v, format)} />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 10 }}
+                stroke="hsl(var(--muted-foreground))"
+              />
+              <YAxis
+                tick={{ fontSize: 10 }}
+                stroke="hsl(var(--muted-foreground))"
+                tickFormatter={(v) => fmt(v, format)}
+              />
               <Tooltip
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
+                contentStyle={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  fontSize: 12,
+                }}
                 formatter={(_v: number, _n, p) => fmt(Number(p?.payload?.absValue ?? 0), format)}
               />
               <Bar dataKey="base" stackId="w" fill="transparent" />
               <Bar dataKey="delta" stackId="w">
                 {waterfallData.map((d, i) => (
-                  <Cell key={i} fill={d.isTotal ? "hsl(var(--primary))" : d.positive ? "#22c55e" : "#ef4444"} />
+                  <Cell
+                    key={i}
+                    fill={d.isTotal ? "hsl(var(--primary))" : d.positive ? "#22c55e" : "#ef4444"}
+                  />
                 ))}
               </Bar>
             </BarChart>
           ) : spec.type === "tornado" ? (
-            <BarChart layout="vertical" data={tornadoData} margin={{ top: 8, right: 12, left: 60, bottom: 0 }}>
+            <BarChart
+              layout="vertical"
+              data={tornadoData}
+              margin={{ top: 8, right: 12, left: 60, bottom: 0 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-              <XAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => fmt(v, format)} />
-              <YAxis type="category" dataKey="label" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={120} />
+              <XAxis
+                type="number"
+                tick={{ fontSize: 10 }}
+                stroke="hsl(var(--muted-foreground))"
+                tickFormatter={(v) => fmt(v, format)}
+              />
+              <YAxis
+                type="category"
+                dataKey="label"
+                tick={{ fontSize: 10 }}
+                stroke="hsl(var(--muted-foreground))"
+                width={120}
+              />
               <Tooltip
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
+                contentStyle={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  fontSize: 12,
+                }}
                 formatter={(v: number) => fmt(v, format)}
               />
               <Bar dataKey="impact">
@@ -158,10 +211,22 @@ export function ChatChart({ spec }: { spec: ChartSpec }) {
           ) : (
             <BarChart data={spec.data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-              <XAxis dataKey={labelKey} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-              <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => fmt(v, format)} />
+              <XAxis
+                dataKey={labelKey}
+                tick={{ fontSize: 10 }}
+                stroke="hsl(var(--muted-foreground))"
+              />
+              <YAxis
+                tick={{ fontSize: 10 }}
+                stroke="hsl(var(--muted-foreground))"
+                tickFormatter={(v) => fmt(v, format)}
+              />
               <Tooltip
-                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
+                contentStyle={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  fontSize: 12,
+                }}
                 formatter={(v: number) => fmt(v, format)}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />

@@ -61,7 +61,6 @@ export function HelpTip({
   );
 }
 
-
 export function renderHint(hint: HelpHint | undefined) {
   if (!hint) return null;
   if (typeof hint === "string") return <HelpTip text={hint} />;

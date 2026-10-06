@@ -34,9 +34,7 @@ import { buildRecebivelMensal, buildComprasMensal } from "./cashflow";
 import { isFolhaCost, effectiveMonthValues } from "./costs";
 import { resolveEffectiveRegime } from "./regime";
 
-
-const sumArr = (a: number[] | undefined): number =>
-  (a ?? []).reduce((x, y) => x + (y || 0), 0);
+const sumArr = (a: number[] | undefined): number => (a ?? []).reduce((x, y) => x + (y || 0), 0);
 
 // (sumCostByCat removido — folha agora sai de `isFolhaCost` via SSOT.)
 
@@ -64,11 +62,7 @@ export interface BalancoFechamentoResult {
 }
 
 /** Deriva o Balanço de Fechamento a partir da abertura + período. PURE. */
-export function deriveBalancoFechamento({
-  state,
-  dre,
-  cf,
-}: DeriveOpts): BalancoFechamentoResult {
+export function deriveBalancoFechamento({ state, dre, cf }: DeriveOpts): BalancoFechamentoResult {
   const cap = state.capital;
   // Saldos de abertura — fonte única em `aberturaSSOT` (abaixo).
   const balConst = cap.balanco ?? {}; // itens patrimoniais constantes
@@ -96,10 +90,7 @@ export function deriveBalancoFechamento({
   const lucroLiquidoAnual = sumArr(dre.lucroLiquido);
 
   // CAPEX ativado no período (base para imobilizado bruto).
-  const capexAtivado = (cap.capexAtivacao ?? []).reduce(
-    (a, c) => a + (c.valor || 0),
-    0,
-  );
+  const capexAtivado = (cap.capexAtivacao ?? []).reduce((a, c) => a + (c.valor || 0), 0);
 
   // Depreciação do período: SSOT único = dre.depreciacao (removido recálculo
   // local). Se a DRE mudar a regra de depreciação, o balanço acompanha.
@@ -120,14 +111,11 @@ export function deriveBalancoFechamento({
   const recebivelAnual = sumArr(buildRecebivelMensal(state, dre));
   const crFim = Math.max(
     0,
-    aberturaSSOT.contasReceber.value +
-      recebivelAnual -
-      sumArr(cf.recebimentos),
+    aberturaSSOT.contasReceber.value + recebivelAnual - sumArr(cf.recebimentos),
   );
 
   // Estoques: compras ≈ CPV → estoque em steady-state = abertura.
-  const estoquesFim =
-    cap.estoques > 0 ? cap.estoques : aberturaSSOT.estoques.value;
+  const estoquesFim = cap.estoques > 0 ? cap.estoques : aberturaSSOT.estoques.value;
 
   // Impostos a recuperar: assume constante (sem modelo de geração de crédito).
   const impostosRecuperarFim = aberturaSSOT.impostosRecuperar.value;
@@ -157,14 +145,11 @@ export function deriveBalancoFechamento({
   const comprasAnual = sumArr(buildComprasMensal(state, regime));
   const fornecedoresFim = Math.max(
     0,
-    aberturaSSOT.fornecedores.value +
-      comprasAnual -
-      sumArr(cf.pagamentosFornecedores),
+    aberturaSSOT.fornecedores.value + comprasAnual - sumArr(cf.pagamentosFornecedores),
   );
 
   // Empréstimos: saldo de abertura ± movimentos do período (DFC).
-  const emprestimosIniTotal =
-    aberturaSSOT.emprestimosCP.value + aberturaSSOT.emprestimosLP.value;
+  const emprestimosIniTotal = aberturaSSOT.emprestimosCP.value + aberturaSSOT.emprestimosLP.value;
   const captacoesPeriodo = sumArr(cf.emprestimosCaptados);
   const amortizacoesPeriodo = sumArr(cf.amortizacoes);
   const emprestimosFimTotal = Math.max(
@@ -211,8 +196,8 @@ export function deriveBalancoFechamento({
     emprestimosFimTotal > 0
       ? cpFimContratos / emprestimosFimTotal
       : emprestimosIniTotal > 0
-      ? aberturaSSOT.emprestimosCP.value / emprestimosIniTotal
-      : 0.3;
+        ? aberturaSSOT.emprestimosCP.value / emprestimosIniTotal
+        : 0.3;
   const emprestimosCPFim = emprestimosFimTotal * cpShare;
   const emprestimosLPFim = emprestimosFimTotal * (1 - cpShare);
 
@@ -224,9 +209,7 @@ export function deriveBalancoFechamento({
   const impostosCompetencia = sumArr(dre.impostosTotal);
   const impostosPagarFim = Math.max(
     0,
-    aberturaSSOT.impostosPagar.value +
-      impostosCompetencia -
-      sumArr(cf.pagamentosImpostos),
+    aberturaSSOT.impostosPagar.value + impostosCompetencia - sumArr(cf.pagamentosImpostos),
   );
 
   // Salários a pagar — CONSERVAÇÃO DE MASSA:
@@ -236,9 +219,7 @@ export function deriveBalancoFechamento({
   // (o mês 12 vira transbordo, provisionado no passivo).
   const salariosPagarFim = Math.max(
     0,
-    aberturaSSOT.salariosEncargos.value +
-      folhaAnual -
-      sumArr(cf.pagamentosFolha),
+    aberturaSSOT.salariosEncargos.value + folhaAnual - sumArr(cf.pagamentosFolha),
   );
 
   // ─────────────────────────────── PL ───────────────────────────────
@@ -311,11 +292,7 @@ export function deriveBalancoFechamento({
   const ativo = ativoCirc + imobLiq + intangLiq;
 
   const passivo =
-    fornecedoresFim +
-    emprestimosCPFim +
-    emprestimosLPFim +
-    impostosPagarFim +
-    salariosPagarFim;
+    fornecedoresFim + emprestimosCPFim + emprestimosLPFim + impostosPagarFim + salariosPagarFim;
 
   const pl =
     capitalSocial +
