@@ -486,7 +486,7 @@ function HowItWorks() {
       n: "01",
       icon: FileSpreadsheet,
       t: "Cadastre seus dados",
-      d: "Receita, custos, regime, ativos. Importa de Excel ou preenche guiado — em minutos.",
+      d: "Receita, custos, regime e ativos, com preenchimento guiado mês a mês.",
     },
     {
       n: "02",
