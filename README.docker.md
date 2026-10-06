@@ -54,7 +54,8 @@ ou por `docker run --env-file .env`.
   crie um banco e um usuário **separados** para o FinnancePRO, defina
   `DATABASE_URL` no `.env` e remova o serviço `db` do compose. Nunca use o
   banco do Odoo.
-- Backup: `docker compose exec db pg_dump -U financepro financepro > backup.sql`.
+- Backup diário automático (serviço `backup`), restauração, alertas e atualização: veja
+  [docs/OPERACAO.md](docs/OPERACAO.md).
 - Migrations manuais (opcional): `DATABASE_URL=... bun run db:migrate`.
 - Alterou `src/db/schema.ts`? Gere a migration: `bun run db:generate`.
 
