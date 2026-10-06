@@ -206,6 +206,7 @@ export function payDownDebt(state: AppState, pct: number): AppState {
     ...state.capital,
     debtContracts: (state.capital.debtContracts ?? []).map((c) => ({
       ...c,
+      saldoAbertura: c.saldoAbertura ?? c.saldoDevedor,
       saldoDevedor: Math.max(0, (c.saldoDevedor || 0) * (1 - safePct)),
     })),
   };
@@ -215,9 +216,10 @@ export function payDownDebt(state: AppState, pct: number): AppState {
       : c,
   );
   const cashUsed = originalDivida * safePct;
-  const cashflow = { ...state.cashflow };
-  cashflow.amortizacoes = state.cashflow.amortizacoes.slice();
-  cashflow.amortizacoes[0] = (cashflow.amortizacoes[0] || 0) + cashUsed;
+  // Pagamento único no mês 1, como no simulador (não se repete nos anos seguintes).
+  const extra = (state.cashflow.amortizacaoExtraordinaria ?? Array(12).fill(0)).slice();
+  extra[0] = (extra[0] || 0) + cashUsed;
+  const cashflow = { ...state.cashflow, amortizacaoExtraordinaria: extra };
   return { ...state, costs, cashflow, capital };
 }
 

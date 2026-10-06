@@ -61,9 +61,19 @@ describe("aggregateMutuos", () => {
     ]);
     expect(r.devolucao).toEqual(new Array(12).fill(500));
     expect(soma(r.devolucao)).toBe(6_000);
-    // OBS: saldoFinal deveria ser 6.000 (12 parcelas a receber após o mês 12),
-    // mas a engine continua amortizando além do horizonte e devolve 0 — bug
-    // reportado; a asserção foi omitida para não cristalizar o comportamento.
+    // 12 parcelas ainda a receber depois do mês 12 ficam no saldo do ano.
+    expect(r.saldoFinal).toBe(6_000);
+  });
+
+  it("com juros: saldo final = valor presente das parcelas que faltam (Price)", () => {
+    // 10.000 a 1% a.m. em 24×; após 12 parcelas o saldo é o PV das 12 restantes.
+    const r = aggregateMutuos([
+      mk({ valorConcedido: 10_000, taxaMensalPct: 1, prazoMeses: 24, mesInicioDevolucao: 1 }),
+    ]);
+    const pmt = (10_000 * 0.01) / (1 - Math.pow(1.01, -24));
+    const pvRestante = (pmt * (1 - Math.pow(1.01, -12))) / 0.01;
+    expect(r.saldoFinal).toBeCloseTo(pvRestante, 6);
+    expect(soma(r.devolucao) + r.saldoFinal).toBeCloseTo(10_000, 6);
   });
 
   it("concessão e início fora de 1..12 são limitados; prazo 0 vira 1 parcela; valor ≤ 0 é ignorado", () => {

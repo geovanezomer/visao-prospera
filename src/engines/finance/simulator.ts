@@ -376,6 +376,7 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       ...s.capital,
       debtContracts: (s.capital.debtContracts ?? []).map((c) => ({
         ...c,
+        saldoAbertura: c.saldoAbertura ?? c.saldoDevedor,
         saldoDevedor: Math.max(0, (c.saldoDevedor || 0) * (1 - pct)),
       })),
     };

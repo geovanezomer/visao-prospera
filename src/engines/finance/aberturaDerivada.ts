@@ -38,7 +38,8 @@ export function splitDebtByMaturity(contracts: DebtContract[] | undefined): {
   let cp = 0;
   let lp = 0;
   for (const c of contracts ?? []) {
-    const saldo = Math.max(0, c.saldoDevedor || 0);
+    // Quitação antecipada no ano: a abertura é o saldo antes do pagamento.
+    const saldo = Math.max(0, c.saldoAbertura ?? (c.saldoDevedor || 0));
     if (saldo <= 0) continue;
     const prazo = Math.max(0, Math.floor(c.prazoMeses || 0));
     if (prazo <= 12) cp += saldo;

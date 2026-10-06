@@ -54,15 +54,14 @@ export function aggregateMutuos(mutuos: MutuoSocio[] | undefined): MutuosAgregad
     // mas só registra dentro do horizonte 1..12. Tudo após mês 12 fica no saldoFinal.
     const pmt = pmtPrice(pv, i, n);
     let saldo = pv;
-    for (let k = 0; k < n; k++) {
-      const mesAbs = inicio + k; // 1..N (pode passar de 12)
+    // Só até o fim do ano (mês 12): o que vence depois continua no saldo.
+    for (let k = 0; k < n && inicio + k <= 12; k++) {
+      const mesAbs = inicio + k; // 1..12
       const jurosMes = saldo * i;
       const amortMes = Math.min(saldo, pmt - jurosMes);
       saldo = Math.max(0, saldo - amortMes);
-      if (mesAbs >= 1 && mesAbs <= 12) {
-        devolucao[mesAbs - 1] += amortMes;
-        juros[mesAbs - 1] += jurosMes;
-      }
+      devolucao[mesAbs - 1] += amortMes;
+      juros[mesAbs - 1] += jurosMes;
     }
     // Saldo remanescente (parcelas após mês 12) vai para o saldoFinal.
     saldoFinal += saldo;

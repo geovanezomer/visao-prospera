@@ -433,6 +433,12 @@ export interface DebtContract {
   descricao?: string;
   /** Saldo devedor atual (R$). */
   saldoDevedor: number;
+  /**
+   * Saldo no início do ano quando houve quitação antecipada simulada no mês 1:
+   * a abertura do balanço usa este valor e o pagamento sai pela DFC
+   * (`cashflow.amortizacaoExtraordinaria`), sem abater o saldo duas vezes.
+   */
+  saldoAbertura?: number;
   /** Taxa nominal anual (%). Converte para mensal por i/12. */
   taxaAA: number;
   sistema: DebtSystem;

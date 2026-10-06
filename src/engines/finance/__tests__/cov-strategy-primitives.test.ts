@@ -251,7 +251,10 @@ describe("payDownDebt", () => {
     expect(v("iof")).toBe(100); // sem "juros" no rótulo
     expect(v("alu")).toBe(3000); // não financeiro
     // Caixa usado = 100.000 × 30% = 30.000 (saída no mês 1)
-    expect(r.cashflow.amortizacoes[0]).toBeCloseTo(30_000, 6);
+    expect(r.cashflow.amortizacaoExtraordinaria![0]).toBeCloseTo(30_000, 6);
+    expect(r.cashflow.amortizacoes[0]).toBe(s.cashflow.amortizacoes[0]);
+    // A abertura do balanço continua com o saldo antes da quitação.
+    expect(r.capital.debtContracts!.map((c) => c.saldoAbertura)).toEqual([60_000, 40_000]);
     expect(s.capital.debtContracts![0].saldoDevedor).toBe(60_000);
   });
 
@@ -259,7 +262,7 @@ describe("payDownDebt", () => {
     const s = comDivida();
     const tudo = payDownDebt(s, 1.5);
     expect(tudo.capital.debtContracts!.every((c) => c.saldoDevedor === 0)).toBe(true);
-    expect(tudo.cashflow.amortizacoes[0]).toBeCloseTo(100_000, 6);
+    expect(tudo.cashflow.amortizacaoExtraordinaria![0]).toBeCloseTo(100_000, 6);
     const nada = payDownDebt(s, -0.2);
     expect(nada.capital.debtContracts!.map((c) => c.saldoDevedor)).toEqual([60_000, 40_000]);
     expect(nada.cashflow.amortizacoes[0]).toBe(0);
