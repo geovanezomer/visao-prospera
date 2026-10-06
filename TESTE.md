@@ -26,8 +26,20 @@ no primeiro acesso.
 
 1. Preencha **Receitas**, **Despesas** e **Capital**. **DRE**, **Fluxo de Caixa**,
    **Balanço**, **Indicadores** e **Diagnóstico** recalculam na hora.
-2. No **Simulador**, mexa nas alavancas (preço, volume, custos, prazos) e compare com o
-   cenário base. Teste também o **Valuation**.
+2. No **Simulador**, mexa nas alavancas (preço, elasticidade, volume, custos, prazos,
+   dívida, regime) e compare com o cenário base. Abaixo das alavancas, o painel
+   **Insights estratégicos** traz:
+   - leitura executiva automática (o que mais move lucro e caixa, criação ou destruição
+     de valor, risco de dívida, crédito necessário, regime mais vantajoso);
+   - **Ponte de valor**: quanto cada alavanca contribui, somando exatamente a diferença
+     total (valor de Shapley — não depende da ordem das decisões);
+   - **Sensibilidade** (tornado), **Preço × volume** (volume para empatar e
+     elasticidade-limite), **Metas** ("que preço leva o EBITDA a R$ X?", com botão para
+     levar o resultado ao simulador), **Estresse** (choques de receita, prazo,
+     inadimplência, custo, juros e todos juntos) e **Valor econômico** (ROIC × WACC, EVA,
+     alavancagens, DSCR).
+     Teste também o **Valuation** e o **Monte Carlo** (Análise), agora reprodutível, com
+     risco de caixa no pior mês e perda média nos 5% piores cenários.
 3. Em **Salvar / Compartilhar**, gere o arquivo `.finnance` e reabra-o em
    **Abrir / Restaurar**. O PDF sai pelo ícone de impressora.
 
@@ -63,34 +75,54 @@ Em **Administração › Odoo**:
 
 ### 3.3 Usar o cockpit
 
-Volte ao app. A barra do topo agora mostra:
+Volte ao app. Ele abre no **Cockpit**: caixa e fôlego, EBITDA e margem, receita, saúde dos
+dados, capital de giro, endividamento, carga tributária, ponte da receita ao lucro,
+alertas e valor estimado. Cada instrumento mostra a fonte (ERP, Cálculo ou Premissa) e
+abre a aba de detalhe com um clique.
+
+A barra do topo mostra:
 
 - **Odoo | Simulação livre**;
 - a empresa: _Grupo Alfa (matriz + filiais)_, _Filial SP (visão gerencial)_, _Beta_ ou
   _Consolidado do grupo_;
-- a janela de 12 meses (padrão: até o último mês fechado no Odoo).
+- a janela de 12 meses (padrão: até o último mês fechado no Odoo; meses e trimestres
+  aparecem com os nomes reais — out/25…set/26);
+- a **luz de saúde dos dados**: clique nela para ver as conferências (balancete zerado,
+  ativo = passivo + PL, eliminações com os dois lados, contas sem classificação,
+  lançamentos de encerramento, rascunhos, meses abertos, moeda, idade e erros da
+  sincronização).
+
+**Princípio do modo Odoo — números exibidos = razão.** DRE (inclusive tributos), fluxo de
+caixa e balanço do cenário-base são os da contabilidade. O fluxo de caixa realizado é
+montado pelo método indireto sobre o balanço mensal e fecha com o saldo contábil de caixa
+mês a mês. No Simulador, o resultado é _realizado + efeito das alavancas_.
 
 O que conferir:
 
-| Onde                          | O que esperar                                                    |
-| ----------------------------- | ---------------------------------------------------------------- |
-| Receitas / Despesas / Capital | números do Odoo, com aviso e todos os campos travados            |
-| DRE                           | receita bruta, CMV, folha etc. iguais ao balancete do Odoo       |
-| Regime Tributário             | sugerido pelos dados (aqui, Presumido), mas editável por empresa |
-| **Consolidado** (menu)        | DRE por CNPJ, eliminações, consolidado, conciliação e filiais    |
-| Simulação livre               | volta ao espaço manual, com tudo editável                        |
+| Onde                                  | O que esperar                                                        |
+| ------------------------------------- | -------------------------------------------------------------------- |
+| Cockpit                               | caixa, EBITDA, receita e carga tributária iguais ao Odoo             |
+| Receitas / Despesas / Capital / Caixa | números do Odoo, em modo leitura (sem botões de edição)              |
+| DRE                                   | iguais ao balancete do Odoo; selo "Tributos: contabilizados no Odoo" |
+| Balanço                               | fechamento real, fechando (ativo = passivo + PL)                     |
+| Regime Tributário                     | vale para simulações e conciliação; filial herda o regime da matriz  |
+| **Consolidado** (menu)                | DRE por CNPJ, eliminações, consolidado, conciliação e filiais        |
+| Simulação livre                       | volta ao espaço manual, com tudo editável                            |
 
 Números de referência do laboratório (out/2025 a set/2026, `scripts/odoo-demo/expected.json`):
 
-|             | Receita bruta                                               | Lucro líquido contábil |
-| ----------- | ----------------------------------------------------------- | ---------------------- |
-| Alfa matriz | R$ 5.325.955,77                                             | −R$ 315.920,72         |
-| Filial SP   | R$ 1.838.722,84                                             | −R$ 4.217,55           |
-| Beta        | R$ 1.384.814,07                                             | R$ 309.207,04          |
-| Consolidado | R$ 8.369.492,68 (já sem os R$ 180 mil de serviços internos) |                        |
+|                      | Receita bruta                                               | Lucro líquido  | Caixa em 30/09/2026 |
+| -------------------- | ----------------------------------------------------------- | -------------- | ------------------- |
+| Alfa matriz + filial | R$ 7.164.678,61                                             | −R$ 320.138,27 | R$ 371.121,39       |
+| Filial SP            | R$ 1.838.722,84                                             | −R$ 4.217,55   | R$ 84.366,17        |
+| Beta                 | R$ 1.384.814,07                                             | R$ 309.207,04  | R$ 680.938,34       |
+| Consolidado          | R$ 8.369.492,68 (já sem os R$ 180 mil de serviços internos) | −R$ 10.931,23  | R$ 1.052.059,73     |
 
-**Conciliação tributária.** Ela compara o contabilizado com o que o motor calcula pelo
-regime configurado:
+O script `scripts/odoo-demo/validate-connector.ts` confere esses números automaticamente
+— inclusive o que o app **exibe** em cada entidade.
+
+**Conciliação tributária.** Compara o contabilizado com o que o regime configurado
+calcularia:
 
 - impostos sobre vendas: devem bater (diferença ≈ 0%);
 - IRPJ/CSLL: compare com mês final em fim de trimestre (set/26). A apuração
@@ -117,10 +149,12 @@ leitura, o próprio Odoo recusa qualquer escrita.
 
 ## 5. Limitações conhecidas desta versão
 
-- **Dívidas:** os contratos são estimados a partir dos saldos de empréstimos (CP/LP). A
-  taxa sai dos juros do período e os prazos são de 12 e 36 meses.
-- **Fluxo de caixa:** projetado pelo motor a partir do realizado; ainda não é o extrato
-  bancário do Odoo.
+- **Dívidas:** os saldos são os contábeis, mas os contratos (taxa e prazo) são estimados —
+  taxa pelos juros do período, prazos de 12 e 36 meses. Afeta só simulações de dívida.
+- **Fluxo de caixa:** realizado pelo método indireto sobre o balanço contábil (fecha com o
+  caixa), apresentado por natureza; não é a leitura linha a linha do extrato bancário.
+- **Encerramento do exercício:** lançamentos de apuração do resultado não são excluídos
+  automaticamente; a luz de saúde avisa quando há indício deles.
 - **Setor:** inferido pelo peso do CMV (comércio × serviços). Indústria precisa ser
   ajustada à mão em "Regime Tributário".
 - **Moeda:** só BRL. Empresas em outra moeda entram sem conversão.
