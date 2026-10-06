@@ -37,6 +37,7 @@ type Captured = {
   subscriptionsUpdate: any[];
   checkoutIntentsUpdate: any[];
   webhookEventsInsert: any[];
+  webhookEventsUpdate: any[];
   generateLinkCalls: Array<{ type: string; email: string }>;
 };
 
@@ -45,8 +46,12 @@ const cap: Captured = {
   subscriptionsUpdate: [],
   checkoutIntentsUpdate: [],
   webhookEventsInsert: [],
+  webhookEventsUpdate: [],
   generateLinkCalls: [],
 };
+
+// provider_event_id já presentes no UNIQUE de webhook_events (simula 23505).
+const claimedEventIds = new Set<string>();
 
 const knownUsers = new Map<string, string>(); // email → id
 
@@ -125,10 +130,25 @@ function makeClient() {
           const fn = chain({ data: [{ id: "row-1" }], error: null });
           if (table === "subscriptions") cap.subscriptionsUpdate.push(patch);
           if (table === "checkout_intents") cap.checkoutIntentsUpdate.push(patch);
+          if (table === "webhook_events") cap.webhookEventsUpdate.push(patch);
           return fn;
         },
         insert: (row: any) => {
-          if (table === "webhook_events") cap.webhookEventsInsert.push(row);
+          if (table === "webhook_events") {
+            const id = row.provider_event_id as string | null;
+            if (id && claimedEventIds.has(id)) {
+              return {
+                select: () => ({
+                  maybeSingle: async () => ({
+                    data: null,
+                    error: { code: "23505", message: "duplicate key value" },
+                  }),
+                }),
+              };
+            }
+            if (id) claimedEventIds.add(id);
+            cap.webhookEventsInsert.push(row);
+          }
           return {
             select: () => ({ maybeSingle: async () => ({ data: { id: "ev-1" }, error: null }) }),
           };
@@ -192,7 +212,9 @@ beforeEach(() => {
   cap.subscriptionsUpdate.length = 0;
   cap.checkoutIntentsUpdate.length = 0;
   cap.webhookEventsInsert.length = 0;
+  cap.webhookEventsUpdate.length = 0;
   cap.generateLinkCalls.length = 0;
+  claimedEventIds.clear();
   knownUsers.clear();
 });
 
@@ -294,6 +316,62 @@ describe("Stripe webhook E2E", () => {
     });
     expect(cap.generateLinkCalls).toEqual([{ type: "magiclink", email: "alice@exemplo.com" }]);
     expect(cap.webhookEventsInsert.at(-1)?.status).toBe("processed");
+  });
+
+  test("evento com id: reivindica antes de processar e fecha como processed", async () => {
+    const body = {
+      id: "evt_claim_1",
+      type: "customer.subscription.deleted",
+      data: { object: { id: "sub_claim", customer: "cus_1", status: "canceled" } },
+    };
+    const raw = JSON.stringify(body);
+    const POST = await loadPost("@/routes/api/public/payments/webhook.stripe");
+    const r = await POST({ request: stripeReq(body, await signStripe(raw)) });
+
+    expect(r.status).toBe(200);
+    expect(cap.webhookEventsInsert).toHaveLength(1);
+    expect(cap.webhookEventsInsert[0]).toMatchObject({
+      provider_event_id: "evt_claim_1",
+      status: "pending_retry",
+    });
+    expect(cap.webhookEventsInsert[0].locked_at).toBeTruthy();
+    expect(cap.webhookEventsUpdate.at(-1)).toMatchObject({
+      status: "processed",
+      locked_at: null,
+      attempts: 1,
+    });
+  });
+
+  test("entrega duplicada (mesmo id) não roda a lógica duas vezes", async () => {
+    const body = {
+      id: "evt_dup_1",
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          mode: "subscription",
+          customer: "cus_dup",
+          subscription: "sub_dup",
+          customer_email: "dup@exemplo.com",
+          metadata: { plan: "pro", email: "dup@exemplo.com" },
+        },
+      },
+    };
+    const { StripeProvider } = await import("@/lib/payments/stripe");
+    const { handleNormalizedEvent } = await import("@/lib/payments/webhook-handler.server");
+    const raw = JSON.stringify(body);
+    const event = await new StripeProvider({
+      apiKey: "sk_test_x",
+      webhookSecret: STRIPE_WEBHOOK_SECRET,
+      mode: "sandbox",
+    }).verifyWebhook(stripeReq(body, await signStripe(raw)), raw);
+
+    await Promise.all([
+      handleNormalizedEvent("stripe", event, "evt_dup_1"),
+      handleNormalizedEvent("stripe", event, "evt_dup_1"),
+    ]);
+
+    expect(cap.subscriptionsUpsert).toHaveLength(1);
+    expect(cap.generateLinkCalls).toHaveLength(1);
   });
 
   test("checkout.session.completed (one_time / lifetime) → subscriptionId sintético pi_*", async () => {

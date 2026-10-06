@@ -214,6 +214,76 @@ async function isDuplicateEvent(
   return !!data;
 }
 
+/** Janela após a qual um claim travado (processo caiu) volta para o worker de retry. */
+const CLAIM_LEASE_MS = 2 * 60 * 1000;
+
+/**
+ * Reivindica o evento ANTES de rodar a lógica: insere a linha e deixa o
+ * UNIQUE (provider, provider_event_id) decidir quem processa. Duas entregas
+ * simultâneas do mesmo evento não passam ambas — a segunda recebe 23505.
+ *
+ * O estado "em processamento" é `pending_retry` com `locked_at` agora e
+ * `next_attempt_at` no fim da janela: se o processo cair no meio, o worker
+ * de retry retoma o evento sozinho depois de CLAIM_LEASE_MS.
+ *
+ * Retorna o id da linha, ou null se outro processamento já é dono do evento.
+ */
+async function claimEvent(
+  admin: AdminClient,
+  provider: ProviderName,
+  event: NormalizedEvent,
+  providerEventId: string,
+): Promise<string | null> {
+  const now = new Date();
+  const { data, error } = await admin
+    .from("webhook_events")
+    .insert({
+      provider,
+      provider_event_id: providerEventId,
+      event_type: eventType(event),
+      subscription_id: eventSubscriptionId(event),
+      customer_email: eventEmail(event),
+      status: "pending_retry",
+      payload: event,
+      attempts: 0,
+      locked_at: now.toISOString(),
+      next_attempt_at: new Date(now.getTime() + CLAIM_LEASE_MS).toISOString(),
+      attempt_history: [],
+    })
+    .select("id")
+    .maybeSingle();
+  if (error) {
+    if (error.code === "23505") return null;
+    throw new Error(`claim do evento falhou: ${error.message}`);
+  }
+  if (!data?.id) throw new Error("claim do evento não retornou id");
+  return data.id;
+}
+
+/** Fecha um evento reivindicado com o resultado da primeira tentativa. */
+async function finalizeClaim(
+  admin: AdminClient,
+  id: string,
+  status: "processed" | "failed" | "pending_retry",
+  error: string | null,
+  nextAttemptAt: string | null,
+): Promise<void> {
+  const at = new Date().toISOString();
+  const { error: updErr } = await admin
+    .from("webhook_events")
+    .update({
+      status,
+      error,
+      attempts: 1,
+      last_attempt_at: at,
+      next_attempt_at: nextAttemptAt,
+      locked_at: null,
+      attempt_history: [{ at, status, attempt: 1, error }],
+    })
+    .eq("id", id);
+  if (updErr) console.error("[webhook] finalizeClaim falhou:", updErr.message);
+}
+
 /**
  * Executa apenas a lógica de negócio para um evento normalizado.
  * Não escreve em webhook_events — o caller cuida da persistência/retry.
@@ -432,15 +502,8 @@ export async function handleNormalizedEvent(
 ): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  // FIX P0 — Replay protection: se o mesmo (provider, provider_event_id)
-  // já foi processado, ignora. Defesa em profundidade complementar ao
-  // UNIQUE INDEX (que protege contra race conditions concorrentes).
-  if (await isDuplicateEvent(supabaseAdmin, provider, providerEventId)) {
-    console.log(`[webhook] evento ${provider}/${providerEventId} já processado — replay ignorado`);
-    return;
-  }
-
   if (event.type === "ignored") {
+    if (await isDuplicateEvent(supabaseAdmin, provider, providerEventId)) return;
     await insertEvent(
       supabaseAdmin,
       provider,
@@ -454,15 +517,29 @@ export async function handleNormalizedEvent(
     return;
   }
 
+  // Replay protection atômica: com provider_event_id, o claim no UNIQUE
+  // decide quem processa. Sem ele (provedor não manda id), não há como
+  // deduplicar — processa e registra.
+  let claimId: string | null = null;
+  if (providerEventId) {
+    claimId = await claimEvent(supabaseAdmin, provider, event, providerEventId);
+    if (!claimId) {
+      console.log(`[webhook] evento ${provider}/${providerEventId} já reivindicado — ignorado`);
+      return;
+    }
+  }
+
   try {
     await runEventLogic(supabaseAdmin, provider, event);
-    await insertEvent(supabaseAdmin, provider, event, "processed", null, 1, null, providerEventId);
+    if (claimId) await finalizeClaim(supabaseAdmin, claimId, "processed", null, null);
+    else await insertEvent(supabaseAdmin, provider, event, "processed", null, 1, null, null);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "erro";
     const delay = nextDelaySeconds(1);
     const next = delay ? new Date(Date.now() + delay * 1000).toISOString() : null;
     const status = delay ? "pending_retry" : "failed";
-    await insertEvent(supabaseAdmin, provider, event, status, msg, 1, next, providerEventId);
+    if (claimId) await finalizeClaim(supabaseAdmin, claimId, status, msg, next);
+    else await insertEvent(supabaseAdmin, provider, event, status, msg, 1, next, null);
     if (!delay) {
       try {
         const { notifyAdmin } = await import("@/lib/admin/notify.server");
