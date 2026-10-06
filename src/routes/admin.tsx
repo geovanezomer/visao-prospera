@@ -20,6 +20,7 @@ import {
   Activity,
   FileText,
   Search,
+  PlugZap,
 } from "lucide-react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
@@ -56,6 +57,7 @@ const BroadcastsTab = lazyNamed(
 );
 const PlansTab = lazyNamed(() => import("@/components/admin/tabs/PlansTab"), "PlansTab");
 const StatusTab = lazyNamed(() => import("@/components/admin/tabs/StatusTab"), "StatusTab");
+const OdooTab = lazyNamed(() => import("@/components/admin/tabs/OdooTab"), "OdooTab");
 const LegalTab = lazyNamed(() => import("@/components/admin/tabs/LegalTab"), "LegalTab");
 
 const TAB_KEYS = [
@@ -71,6 +73,7 @@ const TAB_KEYS = [
   "status",
   "auditoria",
   "legal",
+  "odoo",
 ] as const;
 const searchSchema = z.object({
   tab: fallback(z.enum(TAB_KEYS), "dashboard").default("dashboard"),
@@ -156,10 +159,14 @@ function AdminPage() {
 
       <main className="mx-auto max-w-[1400px] p-4 sm:p-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="mb-4 grid w-full grid-cols-3 gap-1 sm:grid-cols-6 lg:w-auto lg:grid-cols-11 lg:inline-flex">
+          <TabsList className="mb-4 grid w-full grid-cols-3 gap-1 sm:grid-cols-6 lg:w-auto lg:grid-cols-12 lg:inline-flex">
             <TabsTrigger value="dashboard">
               <LayoutDashboard className="mr-1.5 h-3.5 w-3.5" />
               Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="odoo">
+              <PlugZap className="mr-1.5 h-3.5 w-3.5" />
+              Odoo
             </TabsTrigger>
             <TabsTrigger value="usuarios">
               <Users className="mr-1.5 h-3.5 w-3.5" />
@@ -208,6 +215,9 @@ function AdminPage() {
           </TabsList>
           <TabsContent value="dashboard">
             <DashboardTab />
+          </TabsContent>
+          <TabsContent value="odoo">
+            <OdooTab />
           </TabsContent>
           <TabsContent value="usuarios">
             <UsersTab />

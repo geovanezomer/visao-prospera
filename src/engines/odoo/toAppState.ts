@@ -193,7 +193,8 @@ const BS_KEYS: BsBucket[] = [
 
 /**
  * Janela de 12 meses terminando em `endMonth` ("yyyy-mm"); sem `endMonth`,
- * termina no último mês fechado (data de bloqueio) ou no último do retrato.
+ * termina no último mês fechado (data de bloqueio) ou no último mês completo
+ * do retrato.
  */
 export function resolveWindow(
   snapshot: OdooSnapshot,
@@ -202,6 +203,8 @@ export function resolveWindow(
 ): { start: number; end: number } {
   const months = snapshot.months;
   let end = months.length - 1;
+  // Sem data de bloqueio, o mês da sincronização ainda está em andamento.
+  if (!endMonth && !lockDate && months[end] === snapshot.syncedAt.slice(0, 7) && end > 0) end -= 1;
   const target = endMonth ?? (lockDate ? lockDate.slice(0, 7) : null);
   if (target) {
     const idx = months.indexOf(target);
@@ -439,7 +442,10 @@ export type OdooOverlay = {
     cnpj: string | null;
     fiscalYear: number | null;
   };
-  revenue: Pick<AppState["revenue"], "bruta" | "brutaFixa" | "deducoes" | "receitasFinanceiras">;
+  revenue: Pick<
+    AppState["revenue"],
+    "bruta" | "brutaFixa" | "deducoes" | "receitasFinanceiras" | "inadimplencia"
+  >;
   costs: CostLine[];
   capital: Partial<AppState["capital"]>;
   abertura: Partial<AppState["capital"]["abertura"]>;
@@ -520,7 +526,14 @@ export function prepareOdooOverlay(data: OdooEntityData): OdooOverlay {
       fiscalYear: fy || null,
       periodoAnaliseMeses: 12,
     },
-    revenue: { bruta: pl.receita_bruta.map(r2), brutaFixa: false, deducoes, receitasFinanceiras },
+    revenue: {
+      bruta: pl.receita_bruta.map(r2),
+      brutaFixa: false,
+      deducoes,
+      receitasFinanceiras,
+      // Perdas reais já estão na contabilidade — nada de inadimplência estimada.
+      inadimplencia: zeros(12),
+    },
     costs,
     capital: {
       depreciacaoMensal: r2(sum(pl.depreciacao) / 12),
@@ -575,4 +588,41 @@ export function applyOdooOverlay(base: AppState, ov: OdooOverlay): AppState {
 
 export function mergeOdooActuals(base: AppState, data: OdooEntityData): AppState {
   return applyOdooOverlay(base, prepareOdooOverlay(data));
+}
+
+/**
+ * Premissas iniciais de uma entidade do Odoo (só na primeira vez; depois
+ * valem as que o usuário salvar). Setor e regime são inferidos do próprio
+ * realizado: peso do CPV na receita e IRPJ/CSLL contabilizado fora do DAS.
+ */
+export function suggestPremissas(base: AppState, data: OdooEntityData): AppState {
+  const { pl } = data.actuals;
+  const receita = sum(pl.receita_bruta);
+  const cpvPct = receita > 0 ? sum(pl.cpv) / receita : 0;
+  const businessType = cpvPct > 0.25 ? "comercio" : "servicos";
+  const irCsll = sum(pl.ir_csll);
+  const regime: AppState["tax"]["regime"] =
+    irCsll > 0
+      ? receita > 78_000_000
+        ? "real"
+        : "presumido"
+      : receita > 4_800_000
+        ? "presumido"
+        : "simples";
+  // Alíquota efetiva de ICMS/ISS: impostos sobre vendas menos PIS/COFINS cumulativos.
+  const pctVendas = receita > 0 ? (sum(pl.impostos_vendas) / receita) * 100 : 0;
+  const issIcms =
+    regime === "simples" ? base.tax.issIcms : Math.max(0, Math.round((pctVendas - 3.65) * 10) / 10);
+  return {
+    ...base,
+    businessType,
+    tax: {
+      ...base.tax,
+      regime,
+      simplesAnexo: businessType === "comercio" ? "I" : "III",
+      presumidoBaseIRPJ: businessType === "comercio" ? 8 : 32,
+      presumidoBaseCSLL: businessType === "comercio" ? 12 : 32,
+      issIcms: issIcms || base.tax.issIcms,
+    },
+  };
 }

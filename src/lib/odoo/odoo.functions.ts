@@ -195,7 +195,7 @@ export type AccountClassificationRow = {
   code: string;
   name: string;
   type: string;
-  /** Classificação em uso (já considerando o ajuste manual). */
+  /** Classificação automática (sem o ajuste manual). */
   current: string;
   override: string | null;
   companies: number[];
@@ -206,6 +206,7 @@ export const listAccountClassifications = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<AccountClassificationRow[]> => {
     await admin(context);
     const { latestSnapshot, loadOverrides } = await import("./sync.server");
+    const { classifyAccount } = await import("@/engines/odoo/mapping");
     const snap = await latestSnapshot();
     if (!snap) return [];
     const overrides = await loadOverrides();
@@ -216,7 +217,10 @@ export const listAccountClassifications = createServerFn({ method: "GET" })
           code: a.code,
           name: a.name,
           type: a.type,
-          current: a.cls.kind === "pl" ? a.cls.line : a.cls.kind === "bs" ? a.cls.bucket : "ignore",
+          current: (() => {
+            const auto = classifyAccount({ code: a.code, name: a.name, type: a.type });
+            return auto.kind === "pl" ? auto.line : auto.kind === "bs" ? auto.bucket : "ignore";
+          })(),
           override: overrides.get(a.code) ?? null,
           companies: [],
         };

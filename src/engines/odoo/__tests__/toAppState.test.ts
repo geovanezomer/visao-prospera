@@ -224,3 +224,26 @@ describe("mergeOdooActuals", () => {
     ).toBe(1_000);
   });
 });
+
+describe("suggestPremissas", () => {
+  it("comércio com IR/CSLL contabilizado → Presumido, bases 8%/12%", async () => {
+    const { suggestPremissas } = await import("../toAppState");
+    const s = snapshot();
+    // Matriz com IR/CSLL lançado.
+    s.perCompany["1"].accounts.push(
+      acc(9, "3.02.01.01.01.02", "(-) Provision for Income Tax", "expense", flat(500)),
+    );
+    const data = buildEntityData(s, listEntities(s)[0]);
+    const p = suggestPremissas(createState(), data);
+    expect(p.businessType).toBe("comercio");
+    expect(p.tax.regime).toBe("presumido");
+    expect(p.tax.presumidoBaseIRPJ).toBe(8);
+    expect(p.tax.presumidoBaseCSLL).toBe(12);
+  });
+
+  it("realizado não leva inadimplência estimada", () => {
+    const s = snapshot();
+    const merged = mergeOdooActuals(createState(), buildEntityData(s, listEntities(s)[0]));
+    expect(merged.revenue.inadimplencia.every((v) => v === 0)).toBe(true);
+  });
+});

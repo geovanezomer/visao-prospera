@@ -55,6 +55,9 @@ const IndicatorsTab = lazy(() =>
 const DashboardTab = lazy(() =>
   import("@/components/sim/dashboard/DashboardTab").then((m) => ({ default: m.DashboardTab })),
 );
+const ConsolidadoTab = lazy(() =>
+  import("@/components/odoo/ConsolidadoTab").then((m) => ({ default: m.ConsolidadoTab })),
+);
 const AIView = lazy(() => import("@/components/ai/AIView").then((m) => ({ default: m.AIView })));
 const CalculadorasTab = lazy(() =>
   import("@/components/calculadoras/CalculadorasTab").then((m) => ({ default: m.CalculadorasTab })),
@@ -92,6 +95,13 @@ import { PaywallScreen } from "@/components/PaywallScreen";
 import { useAccessStatus, daysSince, GRACE_DAYS_PAST_DUE } from "@/hooks/useAccessStatus";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { cn } from "@/lib/utils";
+import { OdooCockpitProvider, useOdooCockpit } from "@/components/odoo/cockpit";
+import { OdooBar } from "@/components/odoo/OdooBar";
+import { ActualsLock } from "@/components/odoo/ActualsLock";
+import { applyOdooOverlay, suggestPremissas } from "@/engines/odoo/toAppState";
+import { DEFAULT_STATE } from "@/engines/finance/defaults";
+
+type AppTab = TabKey | "ai" | "calculadoras" | "consolidado";
 
 // Renderiza o TrialBanner apenas se o usuário logado for um trial válido.
 function TrialBannerSlot() {
@@ -223,7 +233,27 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
     if (hydrated && !user) navigate({ to: "/login" });
   }, [hydrated, user, navigate]);
 
-  const { state, update, reset, setState, hydrated: stateHydrated, autosaveStatus } = useAppState();
+  // Modo Odoo: o realizado vem do ERP e as premissas ficam num espaço próprio
+  // por entidade; a "Simulação livre" usa o espaço manual de sempre.
+  const cockpit = useOdooCockpit();
+  const namespace = cockpit.active && cockpit.entity ? `odoo:${cockpit.entity.key}` : undefined;
+  const initialPremissas = useMemo(
+    () => (cockpit.data ? suggestPremissas(DEFAULT_STATE, cockpit.data) : undefined),
+    [cockpit.data],
+  );
+  const {
+    state: baseState,
+    update,
+    reset,
+    setState,
+    hydrated: stateHydrated,
+    autosaveStatus,
+  } = useAppState(namespace, initialPremissas);
+  const overlay = cockpit.active ? cockpit.overlay : null;
+  const state = useMemo(
+    () => (overlay ? applyOdooOverlay(baseState, overlay) : baseState),
+    [baseState, overlay],
+  );
   const { scenarios, save, remove, replaceAll: replaceScenarios } = useScenarios();
   // Persistimos a aba ativa em sessionStorage para sobreviver a qualquer
   // remontagem transitória do SimulaPro (ex.: o SubscriptionGate voltar a
@@ -231,16 +261,16 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
   // muito tempo em background). Sem isso, ao voltar de outra aba do
   // navegador o usuário era jogado de volta para "dre" e via "Carregando…".
   const TAB_KEY = "finnance:activeTab";
-  const [activeTab, setActiveTabState] = useState<TabKey | "ai" | "calculadoras">(() => {
+  const [activeTab, setActiveTabState] = useState<AppTab>(() => {
     if (typeof window === "undefined") return "dre";
     try {
       const v = window.sessionStorage.getItem(TAB_KEY);
-      return (v as TabKey | "ai" | "calculadoras") || "dre";
+      return (v as AppTab) || "dre";
     } catch {
       return "dre";
     }
   });
-  const setActiveTab = (t: TabKey | "ai" | "calculadoras") => {
+  const setActiveTab = (t: AppTab) => {
     setActiveTabState(t);
     try {
       window.sessionStorage.setItem(TAB_KEY, t);
@@ -319,7 +349,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
     const onSetTab = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (typeof detail === "string") {
-        setActiveTab(detail as TabKey | "ai" | "calculadoras");
+        setActiveTab(detail as AppTab);
       }
     };
     window.addEventListener("gz-set-tab", onSetTab);
@@ -336,321 +366,341 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
 
   return (
     <SidebarProvider>
-      <FinanceProvider state={state} update={update}>
-        <div className="flex min-h-screen w-full bg-background text-foreground">
-          <AppSidebar
-            activeTab={activeTab}
-            setActiveTab={(tab) => {
-              setActiveTab(tab);
-              // No mobile, fecha a sidebar após selecionar
-              if (window.innerWidth < 768) {
-                document.dispatchEvent(new CustomEvent("close-mobile-sidebar"));
-              }
-            }}
-            onSave={() => setSaveShareOpen(true)}
-            onOpenRestore={() => setOpenRestoreOpen(true)}
-            currentFileName={fileApi.currentFileName}
-            dirty={fileApi.dirty}
-          />
+      <OdooCockpitProvider value={cockpit}>
+        <FinanceProvider state={state} update={update}>
+          <div className="flex min-h-screen w-full bg-background text-foreground">
+            <AppSidebar
+              activeTab={activeTab}
+              setActiveTab={(tab) => {
+                setActiveTab(tab);
+                // No mobile, fecha a sidebar após selecionar
+                if (window.innerWidth < 768) {
+                  document.dispatchEvent(new CustomEvent("close-mobile-sidebar"));
+                }
+              }}
+              onSave={() => setSaveShareOpen(true)}
+              onOpenRestore={() => setOpenRestoreOpen(true)}
+              currentFileName={fileApi.currentFileName}
+              dirty={fileApi.dirty}
+              showConsolidado={cockpit.active}
+            />
 
-          <SidebarInset className="flex flex-col">
-            <TrialBannerSlot />
-            <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/80 px-4 backdrop-blur sm:px-6">
-              <div className="flex items-center gap-2 min-w-0">
-                <SidebarTrigger className="h-9 w-9" data-meeting-hide="true" />
-                <div className="flex items-center gap-2 md:gap-4 min-w-0">
-                  <h2 className="text-sm font-medium text-muted-foreground md:text-base shrink-0">
-                    {activeTab === "ai"
-                      ? "Consultor IA"
-                      : activeTab === "calculadoras"
-                        ? "Calculadoras"
-                        : (NAV_ITEMS.find((i) => i.value === activeTab)?.title ?? activeTab)}
-                  </h2>
-                  {/* Breadcrumb: empresa + status de backup na nuvem. */}
-                  <div
-                    className="hidden md:flex items-center gap-1.5 min-w-0 text-[11px] text-muted-foreground border-l border-border/40 pl-3"
-                    data-meeting-hide="true"
-                  >
-                    <FileText className="h-3 w-3 shrink-0" />
-                    <span className="truncate font-medium text-foreground/80">
-                      {state.companyName?.trim() || "Sem empresa"}
-                    </span>
-                    {/* Indicador de backup na nuvem — só aparece quando há userId e status ≠ idle. */}
-                    {user && backupStatus !== "idle" && (
-                      <>
-                        <span className="opacity-40">·</span>
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1",
-                            backupStatus === "syncing" && "text-muted-foreground",
-                            backupStatus === "synced" && "text-emerald-500",
-                            backupStatus === "error" && "text-amber-500",
-                          )}
-                          title={
-                            backupStatus === "syncing"
-                              ? "Sincronizando com a nuvem…"
-                              : backupStatus === "synced"
-                                ? "Backup salvo na nuvem"
-                                : "Backup falhou — arquivo local salvo"
-                          }
-                        >
-                          {backupStatus === "syncing" && "↻ Sincronizando"}
-                          {backupStatus === "synced" && "☁ Backup salvo"}
-                          {backupStatus === "error" && "⚠ Sem backup"}
-                        </span>
-                      </>
-                    )}
+            <SidebarInset className="flex flex-col">
+              <TrialBannerSlot />
+              <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/80 px-4 backdrop-blur sm:px-6">
+                <div className="flex items-center gap-2 min-w-0">
+                  <SidebarTrigger className="h-9 w-9" data-meeting-hide="true" />
+                  <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                    <h2 className="text-sm font-medium text-muted-foreground md:text-base shrink-0">
+                      {activeTab === "ai"
+                        ? "Consultor IA"
+                        : activeTab === "calculadoras"
+                          ? "Calculadoras"
+                          : activeTab === "consolidado"
+                            ? "Consolidado & Conciliação"
+                            : (NAV_ITEMS.find((i) => i.value === activeTab)?.title ?? activeTab)}
+                    </h2>
+                    {/* Breadcrumb: empresa + status de backup na nuvem. */}
+                    <div
+                      className="hidden md:flex items-center gap-1.5 min-w-0 text-[11px] text-muted-foreground border-l border-border/40 pl-3"
+                      data-meeting-hide="true"
+                    >
+                      <FileText className="h-3 w-3 shrink-0" />
+                      <span className="truncate font-medium text-foreground/80">
+                        {state.companyName?.trim() || "Sem empresa"}
+                      </span>
+                      {/* Indicador de backup na nuvem — só aparece quando há userId e status ≠ idle. */}
+                      {user && backupStatus !== "idle" && (
+                        <>
+                          <span className="opacity-40">·</span>
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1",
+                              backupStatus === "syncing" && "text-muted-foreground",
+                              backupStatus === "synced" && "text-emerald-500",
+                              backupStatus === "error" && "text-amber-500",
+                            )}
+                            title={
+                              backupStatus === "syncing"
+                                ? "Sincronizando com a nuvem…"
+                                : backupStatus === "synced"
+                                  ? "Backup salvo na nuvem"
+                                  : "Backup falhou — arquivo local salvo"
+                            }
+                          >
+                            {backupStatus === "syncing" && "↻ Sincronizando"}
+                            {backupStatus === "synced" && "☁ Backup salvo"}
+                            {backupStatus === "error" && "⚠ Sem backup"}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Pills centralizados: só aparecem em DRE / Fluxo de Caixa. */}
-              {(activeTab === "dre" || activeTab === "caixa") && (
-                <div
-                  className="hidden md:flex flex-1 justify-center px-4 min-w-0"
-                  data-meeting-hide="true"
-                >
-                  <HistoricalYearPills />
-                </div>
-              )}
-
-              <div className="flex items-center gap-2">
-                {meetingMode && (
-                  <Badge
-                    variant="outline"
-                    className="hidden sm:inline-flex border-primary/40 bg-primary/10 text-primary text-[10px] uppercase tracking-wider"
+                {/* Pills centralizados: só aparecem em DRE / Fluxo de Caixa. */}
+                {!cockpit.active && (activeTab === "dre" || activeTab === "caixa") && (
+                  <div
+                    className="hidden md:flex flex-1 justify-center px-4 min-w-0"
+                    data-meeting-hide="true"
                   >
-                    Modo Reunião · ESC para sair
-                  </Badge>
+                    <HistoricalYearPills />
+                  </div>
                 )}
-                <div data-meeting-hide="true" className="contents">
-                  <TaxSettingsDialog />
-                  <Button
-                    size="sm"
-                    variant={meetingMode ? "default" : "ghost"}
-                    onClick={() => setMeetingMode((v) => !v)}
-                    className="h-8 w-8 p-0"
-                    title={
-                      meetingMode
-                        ? "Sair do Modo Reunião"
-                        : "Modo Reunião: oculta menus, amplia fontes e destaca KPIs"
-                    }
-                    aria-label={meetingMode ? "Sair do Modo Reunião" : "Modo Reunião"}
-                  >
-                    {meetingMode ? (
-                      <X className="h-3.5 w-3.5" />
-                    ) : (
-                      <Presentation className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0"
-                    onClick={async () => {
-                      try {
-                        toast.loading("Gerando PDF…", { id: "pdf-export" });
-                        // Dynamic imports — jsPDF + autotable (~850 KB) só carregam ao clicar.
-                        // Importa também `diagnose`, `buildPrescriptiveCards` e `buildBriefing` aqui
-                        // porque pdfExport é render-only (não invoca lógica de domínio).
-                        // Assim, o PDF e a tela compartilham EXATAMENTE o mesmo call-site dessas
-                        // funções — não há risco de divergência silenciosa.
-                        const [
-                          { exportFinancePDF },
-                          { buildFinancialModel },
-                          { diagnose },
-                          { buildPrescriptiveCards },
-                          { buildBriefing, briefingCacheKey },
-                          { loadConfig },
-                          { isAIConfigured, gerarDiagnostico },
-                          { PROMPT_VERSION },
-                          { getCached, setCached },
-                        ] = await Promise.all([
-                          import("@/engines/finance/pdfExport"),
-                          import("@/engines/finance/financialModel"),
-                          import("@/engines/finance/diagnose"),
-                          import("@/engines/finance/prescriptive"),
-                          import("@/engines/finance/briefing"),
-                          import("@/engines/ai/providers"),
-                          import("@/engines/ai/diagnostico"),
-                          import("@/engines/ai/diagnosticoPrompt"),
-                          import("@/engines/ai/diagnosticoCache"),
-                        ]);
-                        const model = buildFinancialModel(state);
-                        const { dre, ind, tax, cf } = model;
-                        const diags = diagnose(state, dre, ind);
-                        const prescriptive = buildPrescriptiveCards(state, { dre, tax, ind, cf });
 
-                        // Diagnóstico IA: tenta cache primeiro, gera uma vez se ainda
-                        // não houver. Preserva o comportamento histórico do exportador,
-                        // mas mantém o pdfExport puro (render-only).
-                        let aiDiagnostico = null as Awaited<
-                          ReturnType<typeof gerarDiagnostico>
-                        > | null;
-                        const aiCfg = loadConfig();
-                        if (isAIConfigured(aiCfg)) {
-                          try {
-                            const briefing = buildBriefing(state, dre, ind);
-                            const key = `${PROMPT_VERSION}::${aiCfg.provider}::${aiCfg.model}::${briefingCacheKey(briefing)}`;
-                            aiDiagnostico = getCached(key) ?? null;
-                            if (!aiDiagnostico) {
-                              aiDiagnostico = await gerarDiagnostico(briefing, aiCfg);
-                              setCached(key, aiDiagnostico);
-                            }
-                          } catch (e) {
-                            console.warn("[pdf-export] diagnóstico IA falhou:", e);
-                            aiDiagnostico = null; // segue sem a página IA
-                          }
-                        }
-
-                        await exportFinancePDF({
-                          state,
-                          model,
-                          diags,
-                          prescriptive,
-                          aiDiagnostico,
-                        });
-                        toast.success("PDF gerado com sucesso", { id: "pdf-export" });
-                      } catch (err) {
-                        console.error("[pdf-export] falhou:", err);
-                        toast.error("Falha ao gerar PDF", { id: "pdf-export" });
+                <div className="flex items-center gap-2">
+                  {meetingMode && (
+                    <Badge
+                      variant="outline"
+                      className="hidden sm:inline-flex border-primary/40 bg-primary/10 text-primary text-[10px] uppercase tracking-wider"
+                    >
+                      Modo Reunião · ESC para sair
+                    </Badge>
+                  )}
+                  <div data-meeting-hide="true" className="contents">
+                    <TaxSettingsDialog />
+                    <Button
+                      size="sm"
+                      variant={meetingMode ? "default" : "ghost"}
+                      onClick={() => setMeetingMode((v) => !v)}
+                      className="h-8 w-8 p-0"
+                      title={
+                        meetingMode
+                          ? "Sair do Modo Reunião"
+                          : "Modo Reunião: oculta menus, amplia fontes e destaca KPIs"
                       }
-                    }}
-                    title="Exportar relatório em PDF"
-                    aria-label="Exportar PDF"
-                  >
-                    <Printer className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0"
-                    onClick={() => void fileApi.resetWithConfirm()}
-                    title="Restaurar dados (Ctrl+Shift+R)"
-                    aria-label="Reset"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                  </Button>
-                  <SharedLinksDialog />
-                  <BillingButton />
-                  <FeedbackDialog />
-                </div>
-              </div>
-            </header>
+                      aria-label={meetingMode ? "Sair do Modo Reunião" : "Modo Reunião"}
+                    >
+                      {meetingMode ? (
+                        <X className="h-3.5 w-3.5" />
+                      ) : (
+                        <Presentation className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                      onClick={async () => {
+                        try {
+                          toast.loading("Gerando PDF…", { id: "pdf-export" });
+                          // Dynamic imports — jsPDF + autotable (~850 KB) só carregam ao clicar.
+                          // Importa também `diagnose`, `buildPrescriptiveCards` e `buildBriefing` aqui
+                          // porque pdfExport é render-only (não invoca lógica de domínio).
+                          // Assim, o PDF e a tela compartilham EXATAMENTE o mesmo call-site dessas
+                          // funções — não há risco de divergência silenciosa.
+                          const [
+                            { exportFinancePDF },
+                            { buildFinancialModel },
+                            { diagnose },
+                            { buildPrescriptiveCards },
+                            { buildBriefing, briefingCacheKey },
+                            { loadConfig },
+                            { isAIConfigured, gerarDiagnostico },
+                            { PROMPT_VERSION },
+                            { getCached, setCached },
+                          ] = await Promise.all([
+                            import("@/engines/finance/pdfExport"),
+                            import("@/engines/finance/financialModel"),
+                            import("@/engines/finance/diagnose"),
+                            import("@/engines/finance/prescriptive"),
+                            import("@/engines/finance/briefing"),
+                            import("@/engines/ai/providers"),
+                            import("@/engines/ai/diagnostico"),
+                            import("@/engines/ai/diagnosticoPrompt"),
+                            import("@/engines/ai/diagnosticoCache"),
+                          ]);
+                          const model = buildFinancialModel(state);
+                          const { dre, ind, tax, cf } = model;
+                          const diags = diagnose(state, dre, ind);
+                          const prescriptive = buildPrescriptiveCards(state, { dre, tax, ind, cf });
 
-            <main className="flex-1 overflow-x-hidden overflow-y-auto">
-              <div
-                className={
-                  activeTab === "ai"
-                    ? "h-[calc(100dvh-3.5rem)] w-full max-w-[1600px] mx-auto"
-                    : "mx-auto h-full max-w-[1600px] p-2 sm:p-4 md:p-6"
-                }
-              >
-                {/* Boundary garante que crash em uma aba não derruba o app inteiro
+                          // Diagnóstico IA: tenta cache primeiro, gera uma vez se ainda
+                          // não houver. Preserva o comportamento histórico do exportador,
+                          // mas mantém o pdfExport puro (render-only).
+                          let aiDiagnostico = null as Awaited<
+                            ReturnType<typeof gerarDiagnostico>
+                          > | null;
+                          const aiCfg = loadConfig();
+                          if (isAIConfigured(aiCfg)) {
+                            try {
+                              const briefing = buildBriefing(state, dre, ind);
+                              const key = `${PROMPT_VERSION}::${aiCfg.provider}::${aiCfg.model}::${briefingCacheKey(briefing)}`;
+                              aiDiagnostico = getCached(key) ?? null;
+                              if (!aiDiagnostico) {
+                                aiDiagnostico = await gerarDiagnostico(briefing, aiCfg);
+                                setCached(key, aiDiagnostico);
+                              }
+                            } catch (e) {
+                              console.warn("[pdf-export] diagnóstico IA falhou:", e);
+                              aiDiagnostico = null; // segue sem a página IA
+                            }
+                          }
+
+                          await exportFinancePDF({
+                            state,
+                            model,
+                            diags,
+                            prescriptive,
+                            aiDiagnostico,
+                          });
+                          toast.success("PDF gerado com sucesso", { id: "pdf-export" });
+                        } catch (err) {
+                          console.error("[pdf-export] falhou:", err);
+                          toast.error("Falha ao gerar PDF", { id: "pdf-export" });
+                        }
+                      }}
+                      title="Exportar relatório em PDF"
+                      aria-label="Exportar PDF"
+                    >
+                      <Printer className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                      onClick={() => void fileApi.resetWithConfirm()}
+                      title="Restaurar dados (Ctrl+Shift+R)"
+                      aria-label="Reset"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    </Button>
+                    <SharedLinksDialog />
+                    <BillingButton />
+                    <FeedbackDialog />
+                  </div>
+                </div>
+              </header>
+              <OdooBar cockpit={cockpit} />
+
+              <main className="flex-1 overflow-x-hidden overflow-y-auto">
+                <div
+                  className={
+                    activeTab === "ai"
+                      ? "h-[calc(100dvh-3.5rem)] w-full max-w-[1600px] mx-auto"
+                      : "mx-auto h-full max-w-[1600px] p-2 sm:p-4 md:p-6"
+                  }
+                >
+                  {/* Boundary garante que crash em uma aba não derruba o app inteiro
                   e que componentes consumidos fora do FinanceProvider exibam
                   fallback amigável em vez de tela branca. */}
-                <FinanceErrorBoundary>
-                  <Suspense fallback={<TabLoading />}>
-                    {activeTab === "ai" ? (
-                      <AIView
-                        state={state}
-                        simulatedState={simulatedState}
-                        simActive={simActive}
-                        simParams={simParams}
-                      />
-                    ) : activeTab === "calculadoras" ? (
-                      <div className="animate-in fade-in duration-500">
-                        <CalculadorasTab />
-                      </div>
-                    ) : (
-                      <div className="space-y-6 animate-in fade-in duration-500">
-                        {activeTab === "receitas" && <RevenueTab />}
-                        {activeTab === "custos" && <CostsTab />}
-                        {activeTab === "capital" && <CapitalTab />}
-                        {activeTab === "tributos" && <TaxTab />}
-                        {activeTab === "prolabore" && <ProlaboreTab />}
-                        {activeTab === "caixa" && <CashflowTab />}
-                        {activeTab === "governanca" && <StrategicTab />}
-                        {activeTab === "dre" && <DRETab />}
-                        {activeTab === "balanco" && <BalancoTab />}
-                        {activeTab === "indicadores" && <IndicatorsTab />}
-                        {activeTab === "resultados" && <DiagnosisTab />}
-                        {activeTab === "dashboard" && <DashboardTab />}
-                        {activeTab === "simulador" && (
-                          <SimulatorTab
-                            state={state}
-                            apply={update}
-                            params={simParams}
-                            setParams={setSimParams}
-                          />
-                        )}
-                        {activeTab === "valuation" && (
-                          <ValuationTab
-                            baseState={state}
-                            simulatedState={simulatedState}
-                            simActive={simActive}
-                          />
-                        )}
-                      </div>
-                    )}
-                  </Suspense>
-                </FinanceErrorBoundary>
-              </div>
-            </main>
+                  <FinanceErrorBoundary>
+                    <Suspense fallback={<TabLoading />}>
+                      {activeTab === "ai" ? (
+                        <AIView
+                          state={state}
+                          simulatedState={simulatedState}
+                          simActive={simActive}
+                          simParams={simParams}
+                        />
+                      ) : activeTab === "calculadoras" ? (
+                        <div className="animate-in fade-in duration-500">
+                          <CalculadorasTab />
+                        </div>
+                      ) : (
+                        <div className="space-y-6 animate-in fade-in duration-500">
+                          {activeTab === "receitas" && (
+                            <ActualsLock what="As receitas">
+                              <RevenueTab />
+                            </ActualsLock>
+                          )}
+                          {activeTab === "custos" && (
+                            <ActualsLock what="As despesas">
+                              <CostsTab />
+                            </ActualsLock>
+                          )}
+                          {activeTab === "capital" && (
+                            <ActualsLock what="O balanço de abertura e as dívidas">
+                              <CapitalTab />
+                            </ActualsLock>
+                          )}
+                          {activeTab === "consolidado" && <ConsolidadoTab />}
+                          {activeTab === "tributos" && <TaxTab />}
+                          {activeTab === "prolabore" && <ProlaboreTab />}
+                          {activeTab === "caixa" && <CashflowTab />}
+                          {activeTab === "governanca" && <StrategicTab />}
+                          {activeTab === "dre" && <DRETab />}
+                          {activeTab === "balanco" && <BalancoTab />}
+                          {activeTab === "indicadores" && <IndicatorsTab />}
+                          {activeTab === "resultados" && <DiagnosisTab />}
+                          {activeTab === "dashboard" && <DashboardTab />}
+                          {activeTab === "simulador" && (
+                            <SimulatorTab
+                              state={state}
+                              apply={update}
+                              params={simParams}
+                              setParams={setSimParams}
+                            />
+                          )}
+                          {activeTab === "valuation" && (
+                            <ValuationTab
+                              baseState={state}
+                              simulatedState={simulatedState}
+                              simActive={simActive}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </Suspense>
+                  </FinanceErrorBoundary>
+                </div>
+              </main>
 
-            <footer className="border-t border-border/20 py-4 text-center text-[10px] text-muted-foreground">
-              <p>
-                © 2026 FinnancePRO | Desenvolvido por GZ Consultoria Financeira &amp; Investimentos
-              </p>
-              <p className="mt-1 flex items-center justify-center gap-4">
-                <Link to="/termos" className="hover:text-foreground">
-                  Termos
-                </Link>
-                <Link to="/privacidade" className="hover:text-foreground">
-                  Privacidade
-                </Link>
-              </p>
-            </footer>
-          </SidebarInset>
+              <footer className="border-t border-border/20 py-4 text-center text-[10px] text-muted-foreground">
+                <p>
+                  © 2026 FinnancePRO | Desenvolvido por GZ Consultoria Financeira &amp;
+                  Investimentos
+                </p>
+                <p className="mt-1 flex items-center justify-center gap-4">
+                  <Link to="/termos" className="hover:text-foreground">
+                    Termos
+                  </Link>
+                  <Link to="/privacidade" className="hover:text-foreground">
+                    Privacidade
+                  </Link>
+                </p>
+              </footer>
+            </SidebarInset>
 
-          <ScenarioBar />
-          {confirmDialog}
-          {user && (
-            <RestoreBackupDialog
-              open={restoreOpen}
-              onOpenChange={setRestoreOpen}
-              userId={user.id}
-              currentCompanyName={state.companyName}
-              currentFileName={fileApi.currentFileName}
-              lastModified={fileApi.lastModified}
-              hasUnsavedChanges={fileApi.dirty}
-              confirm={confirm}
-              setState={setState}
-              replaceScenarios={replaceScenarios}
-              onRestored={() => {
-                /* file foi carregado pelo setState */
-              }}
+            <ScenarioBar />
+            {confirmDialog}
+            {user && (
+              <RestoreBackupDialog
+                open={restoreOpen}
+                onOpenChange={setRestoreOpen}
+                userId={user.id}
+                currentCompanyName={state.companyName}
+                currentFileName={fileApi.currentFileName}
+                lastModified={fileApi.lastModified}
+                hasUnsavedChanges={fileApi.dirty}
+                confirm={confirm}
+                setState={setState}
+                replaceScenarios={replaceScenarios}
+                onRestored={() => {
+                  /* file foi carregado pelo setState */
+                }}
+              />
+            )}
+            <OpenRestoreDialog
+              open={openRestoreOpen}
+              onOpenChange={setOpenRestoreOpen}
+              onOpenDisk={fileApi.open}
+              onOpenCloud={user && isBackupEnabled() ? () => setRestoreOpen(true) : undefined}
+              canUseCloud={!!user && isBackupEnabled()}
             />
-          )}
-          <OpenRestoreDialog
-            open={openRestoreOpen}
-            onOpenChange={setOpenRestoreOpen}
-            onOpenDisk={fileApi.open}
-            onOpenCloud={user && isBackupEnabled() ? () => setRestoreOpen(true) : undefined}
-            canUseCloud={!!user && isBackupEnabled()}
-          />
-          <SaveShareDialog
-            open={saveShareOpen}
-            onOpenChange={setSaveShareOpen}
-            onSaveDisk={fileApi.saveToDisk}
-            onSaveCloud={user && isBackupEnabled() ? fileApi.saveToCloud : undefined}
-            state={state}
-            scenarios={scenarios}
-            canUseCloud={!!user && isBackupEnabled()}
-          />
-          {/* AI FAB REMOVIDO POR SOLICITAÇÃO DO USUÁRIO */}
-        </div>
-      </FinanceProvider>
+            <SaveShareDialog
+              open={saveShareOpen}
+              onOpenChange={setSaveShareOpen}
+              onSaveDisk={fileApi.saveToDisk}
+              onSaveCloud={user && isBackupEnabled() ? fileApi.saveToCloud : undefined}
+              state={state}
+              scenarios={scenarios}
+              canUseCloud={!!user && isBackupEnabled()}
+            />
+            {/* AI FAB REMOVIDO POR SOLICITAÇÃO DO USUÁRIO */}
+          </div>
+        </FinanceProvider>
+      </OdooCockpitProvider>
     </SidebarProvider>
   );
 }

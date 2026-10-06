@@ -22,14 +22,21 @@ async function readFirstAsync<T>(keys: string[]): Promise<T | null> {
 
 export type AutosaveStatus = "idle" | "saving" | "saved" | "error";
 
-export function useAppState() {
+/**
+ * @param namespace espaço de trabalho separado (ex.: "odoo:e:12" guarda as
+ *   premissas de cada entidade do Odoo sem misturar com a simulação manual).
+ */
+export function useAppState(namespace?: string, initialState?: AppState) {
   const { user } = useAuth();
-  const username = user?.id ?? "guest";
+  const username = `${user?.id ?? "guest"}${namespace ? `:${namespace}` : ""}`;
   const [state, setState] = useState<AppState>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
   const [autosaveStatus, setAutosaveStatus] = useState<AutosaveStatus>("idle");
   // Evita race ao trocar de sessão (estado do user A escrito na key do user B).
   const hydratedFor = useRef<string | null>(null);
+  // Estado inicial de um espaço novo (ex.: premissas sugeridas pelo Odoo).
+  const initialRef = useRef(initialState);
+  initialRef.current = initialState;
   // Suprime salvamento quando o estado foi recebido via broadcast de outra aba.
   const suppressSave = useRef(false);
 
@@ -38,17 +45,17 @@ export function useAppState() {
     hydratedFor.current = null;
     try {
       const stored = await loadKey<unknown>(stateKey(username));
-      const fromLegacy = stored ?? (await readFirstAsync<unknown>(LEGACY_STATE));
+      const fromLegacy = stored ?? (namespace ? null : await readFirstAsync<unknown>(LEGACY_STATE));
       // validateAndMigrate: Zod no shape de topo + migrateState (sanitiza
       // Months[12], normaliza NaN/Infinity, garante invariantes). Se o
       // JSON estiver corrompido ou manipulado, cai em DEFAULT_STATE.
-      setState(fromLegacy ? validateAndMigrate(fromLegacy) : DEFAULT_STATE);
+      setState(fromLegacy ? validateAndMigrate(fromLegacy) : (initialRef.current ?? DEFAULT_STATE));
     } catch {
       setState(DEFAULT_STATE);
     }
     hydratedFor.current = username;
     setHydrated(true);
-  }, [username]);
+  }, [username, namespace]);
 
   useEffect(() => {
     void hydrate();
@@ -74,7 +81,8 @@ export function useAppState() {
         // sempre seu snapshot mais recente — pills de período carregam
         // exatamente o que o usuário deixou ao trocar de ano ou reabrir.
         try {
-          if (state.fiscalYear && state.companyName) {
+          // No modo Odoo o histórico vem do ERP — não arquiva premissas como "ano".
+          if (!namespace && state.fiscalYear && state.companyName) {
             archiveYearAsHistorical(state.companyName, state.fiscalYear, state);
           }
         } catch {
@@ -87,7 +95,7 @@ export function useAppState() {
     }, 300);
 
     return () => clearTimeout(t);
-  }, [state, hydrated, username]);
+  }, [state, hydrated, username, namespace]);
 
   // Após "saved", volta a "idle" depois de 2s — evita poluir o header.
   useEffect(() => {

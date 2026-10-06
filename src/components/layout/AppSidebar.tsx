@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useEffect, useState } from "react";
 
-import { LogOut, Share2, FolderOpen, Calculator, KeyRound } from "lucide-react";
+import { LogOut, Share2, FolderOpen, Calculator, KeyRound, Network } from "lucide-react";
 import { logoAsset } from "@/lib/brandAssets";
 import { BrandedLogo } from "@/components/BrandedLogo";
 import { useBranding } from "@/hooks/useBranding";
@@ -27,9 +27,13 @@ import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 
 import { cn } from "@/lib/utils";
 
+type SidebarTab = TabKey | "ai" | "calculadoras" | "consolidado";
+
 interface AppSidebarProps {
-  activeTab: TabKey | "ai" | "calculadoras";
-  setActiveTab: (tab: TabKey | "ai" | "calculadoras") => void;
+  activeTab: SidebarTab;
+  setActiveTab: (tab: SidebarTab) => void;
+  /** Modo Odoo: mostra o atalho para o consolidado do grupo. */
+  showConsolidado?: boolean;
   onSave: () => void;
   onOpenRestore: () => void;
   currentFileName: string | null;
@@ -43,6 +47,7 @@ export function AppSidebar({
   onOpenRestore,
   currentFileName,
   dirty,
+  showConsolidado = false,
 }: AppSidebarProps) {
   const { user, logout } = useAuth();
   const { setOpenMobile } = useSidebar();
@@ -120,6 +125,27 @@ export function AppSidebar({
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ),
+            )}
+            {showConsolidado && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={activeTab === "consolidado"}
+                  onClick={() => {
+                    setActiveTab("consolidado");
+                    setOpenMobile(false);
+                  }}
+                  tooltip="Consolidado & Conciliação"
+                  className={cn(
+                    "h-7 transition-colors",
+                    activeTab === "consolidado"
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  )}
+                >
+                  <Network className="h-4 w-4" />
+                  <span>Consolidado</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             )}
             <li className="my-1 border-t border-sidebar-border/50" aria-hidden="true" />
             <SidebarMenuItem>
