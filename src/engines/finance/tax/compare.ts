@@ -65,14 +65,20 @@ export function compareYearsForRegime(
  */
 export function compareRegimes(state: AppState, era?: TaxEra) {
   const s: AppState = era ? { ...state, tax: { ...state.tax, era } } : state;
-  const baseLair = buildDRE(s, "presumido").dre.lair;
+  const dreBy = {
+    simples: buildDRE(s, "simples").dre,
+    presumido: buildDRE(s, "presumido").dre,
+    real: buildDRE(s, "real").dre,
+  };
   const simples = calcSimples(s);
   const presumido = calcPresumido(s);
-  const real = calcReal(s, baseLair);
+  // IRPJ/CSLL do Real incidem sobre o LAIR do PRÓPRIO Real (PIS/COFINS
+  // não-cumulativos de 9,25%), não sobre o LAIR do Presumido (3,65%).
+  const real = calcReal(s, dreBy.real.lair);
   const llBy: Record<TaxRegime, number> = {
-    simples: sum(buildDRE(s, "simples").dre.lucroLiquido),
-    presumido: sum(buildDRE(s, "presumido").dre.lucroLiquido),
-    real: sum(buildDRE(s, "real").dre.lucroLiquido),
+    simples: sum(dreBy.simples.lucroLiquido),
+    presumido: sum(dreBy.presumido.lucroLiquido),
+    real: sum(dreBy.real.lucroLiquido),
   };
   const desenquadrado = simplesExcedeLimite(s);
   const candidates: TaxRegime[] = desenquadrado

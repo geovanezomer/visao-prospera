@@ -58,9 +58,10 @@ export function taxAuditToMarkdown(state: AppState): string {
   md += `- **Faturamento (RBT12):** ${fmtBRL(rbAnual)}\n`;
   md += `- **Lucro Líquido Real:** ${fmtBRL(llAnual)}\n\n`;
 
-  const savings =
-    regimes[currentRegime].annual -
-    Math.min(regimes.simples.annual, regimes.presumido.annual, regimes.real.annual);
+  // Economia = ganho de LUCRO LÍQUIDO no melhor regime elegível. Comparar só o
+  // total de tributos ignorava a CPP sobre a folha (dentro do DAS no Simples,
+  // por fora no Presumido/Real) e incluía o Simples mesmo após desenquadramento.
+  const savings = Math.max(0, regimes.llBy[regimes.best] - regimes.llBy[currentRegime]);
 
   md += `### 🔍 Análise de Oportunidades\n`;
 
@@ -69,7 +70,7 @@ export function taxAuditToMarkdown(state: AppState): string {
   }
 
   if (savings > 0) {
-    md += `2. **Inha de Economia:** Existe um potencial de redução de carga tributária de **${fmtBRL(savings)}/ano**.\n`;
+    md += `2. **Oportunidade de economia:** No regime ${regimes.best.toUpperCase()} o lucro líquido seria **${fmtBRL(savings)}/ano** maior.\n`;
   } else {
     md += `2. **Otimização:** Você já está no regime de menor carga nominal.\n`;
   }

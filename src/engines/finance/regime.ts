@@ -8,7 +8,7 @@
 import { AppState, SimplesAnexo, TaxRegime } from "./types";
 import { sum } from "./format";
 import { getSimplesLimite, getFatorRMinimoPct } from "./taxDefaults";
-import { effectiveMonthValues, isLaborLine } from "./costs";
+import { effectiveMonthValues, isFatorRFolha, isLaborLine } from "./costs";
 
 // =====================================================================
 // Fator R automático: Anexo V vira III se folha/RBT12 ≥ 28%
@@ -43,6 +43,14 @@ export function folhaAnual(state: AppState): number {
   return laborCosts.reduce((acc, c) => acc + sum(effectiveMonthValues(c, regime)), 0);
 }
 
+/** Folha de salários para o Fator R (ver `isFatorRFolha`). */
+export function folhaFatorR(state: AppState): number {
+  const regime = resolveEffectiveRegime(state);
+  return state.costs
+    .filter(isFatorRFolha)
+    .reduce((acc, c) => acc + sum(effectiveMonthValues(c, regime)), 0);
+}
+
 // SSOT-10: LIMITE_SIMPLES removido — use SIMPLES_LIMITE / getSimplesLimite(tax) de taxDefaults.ts.
 
 export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
@@ -50,7 +58,7 @@ export function resolveSimplesAnexo(state: AppState): SimplesAnexo {
   if (!state.tax.fatorRAuto || anexo !== "V") return anexo;
   const rbt12 = sum(state.revenue.bruta);
   if (rbt12 <= 0 || rbt12 > getSimplesLimite(state.tax)) return anexo;
-  const fatorR = folhaAnual(state) / rbt12;
+  const fatorR = folhaFatorR(state) / rbt12;
   const minPct = getFatorRMinimoPct(state.tax);
   return fatorR >= minPct / 100 ? "III" : "V";
 }

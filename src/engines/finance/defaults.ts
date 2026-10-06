@@ -275,7 +275,7 @@ export const DEFAULT_STATE: AppState = {
       },
       {
         id: "venda_ativos",
-        label: "Venda de Ativos",
+        label: "Ganho na venda de ativos",
         valores: fill12(0),
         fixed: true,
         tipo: "operacional",
@@ -517,7 +517,7 @@ export function migrateState(s: AppState): AppState {
   };
   ensureRF("rend_aplic", "Rendimento de aplicações", "financeira");
   ensureRF("alugueis", "Aluguéis Recebidos", "operacional");
-  ensureRF("venda_ativos", "Venda de Ativos", "operacional");
+  ensureRF("venda_ativos", "Ganho na venda de ativos", "operacional");
   if (!Array.isArray(revenue.pmrMensal) || revenue.pmrMensal.length !== 12) {
     revenue.pmrMensal = fill12(revenue.pmr || 0);
     revenue.pmrFixo = true;

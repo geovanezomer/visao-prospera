@@ -26,13 +26,37 @@ export const LABOR_INCLUDE_RE =
 export const DISTRIBUICAO_SOCIO_RE =
   /s[óo]ci[oa]s?|acionist|cotist|dividendo|distribui[çc][ãa]o.*(lucro|result)|lucro.*distribu/i;
 export const LABOR_EXCLUDE_RE = /comiss[ãa]o|comiss[õo]es/i;
+/** Pró-labore é remuneração do trabalho do sócio — sempre folha, mesmo que o
+ *  rótulo cite "sócios" (ex.: "Pró-labore sócios"). */
+export const PROLABORE_RE = /pr[óo]\s*-?\s*labore|prolabore/i;
+/** Benefícios (VR/VT/saúde) — gasto com pessoal, mas não remuneração. */
+export const BENEFICIO_RE = /benef[íi]cio/i;
+/** Mão de obra contratada de PJ. */
+export const TERCEIRIZACAO_RE = /terceiriz/i;
 
 /** True se a linha representa gasto com PESSOAL (folha, pró-labore, benefícios,
- *  MO terceirizada). NÃO entra em crédito de CBS/IBS (LC 214/2025 art. 57). */
+ *  MO terceirizada). Escopo amplo: indicador Folha/Receita, salários a pagar e
+ *  DFC. Para Fator R use `isFatorRFolha`; para crédito CBS/IBS,
+ *  `isCreditoAmploCbsIbs`. */
 export function isLaborLine(c: CostLine): boolean {
   if (LABOR_EXCLUDE_RE.test(c.label)) return false; // comissões nunca são folha
+  if (PROLABORE_RE.test(c.label)) return true;
   if (DISTRIBUICAO_SOCIO_RE.test(c.label)) return false; // distribuição a sócio ≠ folha
   return !!c.encargosAuto || LABOR_INCLUDE_RE.test(c.label);
+}
+
+/**
+ * Folha de salários do Fator R (LC 123/06 art. 18 §24): remunerações pagas a
+ * PESSOAS FÍSICAS pelo trabalho (salários, pró-labore, PLR) com CPP e FGTS.
+ * Ficam fora benefícios (não são remuneração) e terceirização via PJ (não é
+ * pagamento a pessoa física) — contá-los podia migrar a empresa do Anexo V
+ * para o III indevidamente.
+ */
+export function isFatorRFolha(c: CostLine): boolean {
+  if (!isFolhaCost(c)) return false;
+  if (BENEFICIO_RE.test(c.label)) return false;
+  if (TERCEIRIZACAO_RE.test(c.label) && !c.encargosAuto) return false;
+  return true;
 }
 
 /** Linhas de folha (SSOT — reusado por Fator R, abertura e balanço de fechamento).
@@ -48,13 +72,16 @@ export function isFolhaCost(c: CostLine): boolean {
  * INCLUI: praticamente todo insumo/despesa operacional (CPV, aluguel, energia,
  * frete, serviços tomados, marketing, TI, etc.).
  * EXCLUI:
- *   (a) Folha/pessoal (art. 57) — salários, pró-labore, benefícios, MO terceirizada
+ *   (a) Folha/pessoal — salários, pró-labore, benefícios (não há aquisição
+ *       tributada de bem/serviço)
  *   (b) Despesas financeiras (juros de dívida não geram crédito)
  *   (c) Linhas marcadas `semCredito` (uso e consumo pessoal, ICMS-ST embutido, etc.)
+ * Terceirização via PJ é serviço tomado: gera crédito como qualquer insumo.
  */
 export function isCreditoAmploCbsIbs(c: CostLine): boolean {
   if (c.semCredito) return false;
   if (c.category === "financeiro") return false;
+  if (TERCEIRIZACAO_RE.test(c.label) && !c.encargosAuto) return true;
   if (isLaborLine(c)) return false;
   return true;
 }

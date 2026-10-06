@@ -62,6 +62,7 @@ export { calcPresumido, presumidoBases } from "./tax/presumido";
 export { calcReal, irShieldForRegime } from "./tax/real";
 export {
   folhaAnual,
+  folhaFatorR,
   resolveEffectiveRegime,
   resolveSimplesAnexo,
   simplesExcedeLimite,

@@ -5,10 +5,13 @@ import {
   AppState,
   BusinessType,
   SimplesAnexo,
+  TaxConfig,
   TaxEra,
   TaxRegime,
   TAX_ERA_SHORT,
 } from "@/engines/finance/types";
+
+type RatesOverride = NonNullable<TaxConfig["ratesOverride"]>;
 import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
 import {
   compareErasForRegime,
@@ -17,7 +20,7 @@ import {
   getReformaRates,
   simplesAliquotaEfetiva,
   resolveSimplesAnexo,
-  folhaAnual,
+  folhaFatorR,
   buildDRE,
 } from "@/engines/finance";
 import {
@@ -181,8 +184,7 @@ export function TaxTab() {
       );
     }
     if (state.tax.simplesAnexo === "V" && state.tax.fatorRAuto) {
-      // B6: usa helper barato `folhaAnual` em vez de `buildDRE(...).folhaCltAnual`.
-      const folha = folhaAnual(state);
+      const folha = folhaFatorR(state);
       const fatorRMin = getFatorRMinimoPct(state.tax) / 100;
       if (rbAnual > 0 && folha / rbAnual >= fatorRMin) {
         w.push(
@@ -197,7 +199,7 @@ export function TaxTab() {
   const reforma = useMemo(() => getReformaRates(era, state.tax), [era, state.tax]);
 
   const setOverride = useCallback(
-    (patch: Partial<NonNullable<typeof state.tax.ratesOverride>>) =>
+    (patch: Partial<RatesOverride>) =>
       set((cur) => ({ ratesOverride: { ...(cur.ratesOverride ?? {}), ...patch } })),
     [set],
   );

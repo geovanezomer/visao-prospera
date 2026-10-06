@@ -329,6 +329,13 @@ export function CltVsPjCalc() {
                           value={`−${fmtBRL(p.inssProLaboreMensal)}`}
                           tone="destructive"
                         />
+                        {p.cppProLaboreMensal > 0 && (
+                          <Row
+                            label="CPP 20% s/ pró-labore"
+                            value={`−${fmtBRL(p.cppProLaboreMensal)}`}
+                            tone="destructive"
+                          />
+                        )}
                         {p.custosFixosMensal > 0 && (
                           <Row
                             label="Custos fixos"
@@ -517,6 +524,13 @@ export function CltVsPjCalc() {
                       value={`−${fmtBRL(r.pj[r.melhorRegimePJ].inssProLaboreMensal * 12)}`}
                       tone="destructive"
                     />
+                    {r.pj[r.melhorRegimePJ].cppProLaboreMensal > 0 && (
+                      <Row
+                        label="CPP 20% s/ pró-labore (anual)"
+                        value={`−${fmtBRL(r.pj[r.melhorRegimePJ].cppProLaboreMensal * 12)}`}
+                        tone="destructive"
+                      />
+                    )}
                     {r.pj[r.melhorRegimePJ].irrfProLaboreMensal > 0 && (
                       <Row
                         label="IRRF pró-labore (anual)"

@@ -51,6 +51,8 @@ export const PARAMETROS_PJ = {
   presumido: { aliquotaImpostos: 0.1633, dasFixoMensal: 0, tetoFaturamentoAnual: 78_000_000 },
 } as const;
 
+/** CPP patronal sobre pró-labore no Lucro Presumido/Real (Lei 8.212/91 art. 22, III). */
+export const CPP_PATRONAL_PROLABORE = 0.2;
 /** Base de presunção para IRPJ no Lucro Presumido — serviços = 32%. */
 export const PRESUMIDO_BASE_IRPJ_SERVICOS = 0.32;
 /** Adicional IRPJ — alíquota padrão (LC 9.249/95 art. 3º §1º). */
@@ -218,6 +220,8 @@ export interface ResultadoPJ {
   impostosMensal: number;
   proLaboreMensal: number;
   inssProLaboreMensal: number;
+  /** CPP patronal (20%) sobre o pró-labore — só no Lucro Presumido. */
+  cppProLaboreMensal: number;
   irrfProLaboreMensal: number;
   custosFixosMensal: number;
   /** Sobra distribuída como dividendo ao sócio (antes da retenção Lei 15.270/25). */
@@ -273,12 +277,18 @@ export function calcularPJ(regime: RegimePJ, i: CltVsPjInputParsed): ResultadoPJ
   // MEI: como não há pró-labore formal nem retenção de INSS de contribuinte
   // individual, também não há retenção de IRRF típica do pró-labore.
   const irrfProLabore = regime === "mei" ? 0 : calcularIRRF(proLabore, inssProLabore, 0);
+  // CPP patronal de 20% sobre o pró-labore, sem teto (Lei 8.212/91 art. 22, III).
+  // No Simples (Anexo III) a CPP está dentro do DAS; o MEI não recolhe.
+  const cppProLabore =
+    regime === "presumido" ? Math.round(proLabore * CPP_PATRONAL_PROLABORE * 100) / 100 : 0;
 
   const custosFixos = i.contabilidadeMensal + i.planoSaudeMensal;
 
   // Sobra distribuída como dividendo ao sócio (antes da retenção Lei 15.270/25).
   const distribuicaoDividendoMensal =
-    Math.round((fat - impostosMensal - inssProLabore - irrfProLabore - custosFixos) * 100) / 100;
+    Math.round(
+      (fat - impostosMensal - inssProLabore - cppProLabore - irrfProLabore - custosFixos) * 100,
+    ) / 100;
 
   // Retenção 10% sobre TOTAL quando dividendo mensal > R$ 50k (Lei 15.270/2025).
   const retencaoDividendosMensal =
@@ -297,6 +307,7 @@ export function calcularPJ(regime: RegimePJ, i: CltVsPjInputParsed): ResultadoPJ
     impostosMensal,
     proLaboreMensal: Math.round(proLabore * 100) / 100,
     inssProLaboreMensal: inssProLabore,
+    cppProLaboreMensal: cppProLabore,
     irrfProLaboreMensal: irrfProLabore,
     custosFixosMensal: custosFixos,
     distribuicaoDividendoMensal,

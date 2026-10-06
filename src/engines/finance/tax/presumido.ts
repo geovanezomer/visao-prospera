@@ -89,13 +89,21 @@ export function calcPresumido(state: AppState): MonthlyTax {
     }
   }
 
-  // [Receitas Financeiras] No Presumido, rendimentos de aplicações entram INTEGRAIS
-  // na base de IRPJ/CSLL (sem o redutor de 8/32%). Aluguéis/venda de ativos vão
-  // como "operacionais" (já tratados na DRE) e não somam aqui. Rendimentos com
-  // tributação EXCLUSIVA na fonte (IRRF definitivo) são excluídos da base.
-  const { financeirasIrpjBase: rendFinTrib } = splitReceitasFinanceiras(state);
-  const baseIRPJMensal = trib.map((r, i) => r * baseIRPJ + (rendFinTrib[i] || 0));
-  const baseCSLLMensal = trib.map((r, i) => r * baseCSLL + (rendFinTrib[i] || 0));
+  // [Demais receitas] Lei 9.430/96 art. 25, II: além da receita presumida, entram
+  // INTEGRAIS na base de IRPJ/CSLL (sem o redutor de 8/32%):
+  //   - rendimentos de aplicações (exceto tributação exclusiva na fonte);
+  //   - aluguéis, ganho de capital e demais receitas fora da atividade
+  //     (linhas "operacionais" de receitasFinanceiras).
+  // Antes as operacionais ficavam fora: R$ 10 mil/mês de aluguel deixavam de
+  // gerar ~R$ 2,4 mil/mês de IRPJ/CSLL.
+  const { financeirasIrpjBase: rendFinTrib, operacionais: demaisReceitas } =
+    splitReceitasFinanceiras(state);
+  const baseIRPJMensal = trib.map(
+    (r, i) => r * baseIRPJ + (rendFinTrib[i] || 0) + (demaisReceitas[i] || 0),
+  );
+  const baseCSLLMensal = trib.map(
+    (r, i) => r * baseCSLL + (rendFinTrib[i] || 0) + (demaisReceitas[i] || 0),
+  );
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
   // IRRF antecipação sobre rendimentos de aplicações — compensável com IRPJ.
   // No modelo, aplicamos compensação MENSAL com piso zero (não gera restituição

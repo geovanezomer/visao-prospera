@@ -14,7 +14,7 @@ import { totalDividaOnerosa } from "./debtContracts";
 import type { AppState } from "./types";
 import { buildDRE, type DRE } from "./dre";
 import { calcIndicators, type Indicators } from "./indicators";
-import { folhaAnual, resolveEffectiveRegime } from "./regime";
+import { folhaAnual, folhaFatorR, resolveEffectiveRegime } from "./regime";
 import { getFinancialModelCached } from "./financialModel";
 import { getSimplesLimite, getFatorRMinimoPct } from "./taxDefaults";
 import { sum } from "./format";
@@ -238,7 +238,7 @@ function checkTier2Fiscal(state: AppState, dre: DRE): ValidationWarning[] {
   const out: ValidationWarning[] = [];
   const { tax } = state;
   const rbt12 = sum(dre.receitaBruta); // RBT12 derivado da receita bruta anual
-  const folha = folhaAnual(state);
+  const folha = folhaFatorR(state);
   const limiteSimples = getSimplesLimite(tax);
 
   // 2.1 Simples + RBT12 acima do limite → desenquadramento obrigatório
