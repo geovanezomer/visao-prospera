@@ -37,9 +37,11 @@ if ! pg_dump --format=custom --compress=6 --no-owner --no-privileges --file="$pa
   exit 1
 fi
 
-# Confere o arquivo: o índice precisa ser legível e conter as tabelas.
+# Confere o arquivo: o índice precisa ser legível e, se o banco tem tabelas,
+# trazer os dados delas.
+tem_tabelas="$(psql -tAc "select count(*) from information_schema.tables where table_schema='public'" 2>/dev/null || echo 0)"
 if ! pg_restore --list "$part" >"$BACKUP_DIR/.last_list" 2>"$BACKUP_DIR/.last_error" \
-  || ! grep -q "TABLE DATA" "$BACKUP_DIR/.last_list"; then
+  || { [ "${tem_tabelas:-0}" -gt 0 ] && ! grep -q "TABLE DATA" "$BACKUP_DIR/.last_list"; }; then
   status erro "" 0 "dump ilegível: $(head -c 300 "$BACKUP_DIR/.last_error")"
   rm -f "$part"
   echo "[backup] ERRO: dump ilegível" >&2

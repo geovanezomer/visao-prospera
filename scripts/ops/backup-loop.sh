@@ -12,11 +12,21 @@ here="$(dirname "$0")"
 
 until pg_isready -q; do sleep 2; done
 
+# Instalação nova: espera o app criar as tabelas (migrations) antes do 1º backup.
+i=0
+until [ "$(psql -tAc "select 1 from information_schema.tables where table_schema='public' limit 1" 2>/dev/null)" = "1" ]; do
+  i=$((i + 1))
+  [ "$i" -ge 300 ] && break
+  sleep 2
+done
+
 today_done() { ls "$BACKUP_DIR"/"$PGDATABASE"-"$(date -u +%Y%m%d)"-*.dump >/dev/null 2>&1; }
 
 run() {
   "$here/backup.sh" || echo "[backup-loop] backup falhou; nova tentativa em 1 h" >&2
-  if [ "$(date -u +%d)" = "01" ] || [ ! -f "$BACKUP_DIR/restore-test.json" ]; then
+  # Dia 1º de cada mês, na primeira vez ou enquanto o último teste estiver falhando.
+  if [ "$(date -u +%d)" = "01" ] || [ ! -f "$BACKUP_DIR/restore-test.json" ] \
+    || grep -q '"ok":false' "$BACKUP_DIR/restore-test.json"; then
     "$here/restore-test.sh" || true
   fi
 }
