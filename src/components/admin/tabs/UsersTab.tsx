@@ -2,6 +2,7 @@
 // UsersTab — listagem paginada com filtros e ordenação.
 // ============================================================================
 import { useEffect, useMemo, useState } from "react";
+import { lerNumeroBR } from "@/lib/numeroBR";
 import {
   RefreshCw,
   KeyRound,
@@ -984,7 +985,7 @@ function RefundDialog({
     try {
       let amount: number | undefined;
       if (mode === "parcial") {
-        const num = Number(valor.replace(",", "."));
+        const num = lerNumeroBR(valor);
         if (!Number.isFinite(num) || num <= 0) throw new Error("Valor inválido.");
         amount = isStripe ? Math.round(num * 100) : num;
       }

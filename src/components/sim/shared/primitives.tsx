@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 import { Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { lerNumeroBR, numeroParaCampo } from "@/lib/numeroBR";
 
 export type HelpHint =
   | string
@@ -74,19 +75,8 @@ export function HintTip({ hint }: { hint: HelpHint | undefined }) {
   );
 }
 
-function numToText(n: number): string {
-  if (!Number.isFinite(n) || n === 0) return "";
-  // Use dot as canonical separator; allow user to type either . or ,
-  return String(n);
-}
-
-function parseLoose(s: string): number {
-  if (!s) return 0;
-  // Accept both Brazilian comma and dot
-  const normalized = s.replace(/\s/g, "").replace(",", ".");
-  const n = parseFloat(normalized);
-  return Number.isFinite(n) ? n : 0;
-}
+const numToText = numeroParaCampo;
+const parseLoose = lerNumeroBR;
 
 export function MoneyInput({
   value,

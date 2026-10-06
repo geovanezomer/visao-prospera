@@ -2,6 +2,7 @@
 // PlansTab — gestão de planos via UI (preço, features, limites, IDs provedor).
 // ============================================================================
 import { useEffect, useState } from "react";
+import { lerNumeroBR } from "@/lib/numeroBR";
 import { Loader2, Plus, Save, Trash2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -119,10 +120,8 @@ export function PlansTab() {
   const save = async () => {
     try {
       const limits = editing.limits.trim() ? JSON.parse(editing.limits) : {};
-      const cents = Math.round(parseFloat(editing.priceReais.replace(",", ".") || "0") * 100);
-      const upsellCents = Math.round(
-        parseFloat(editing.upsellPriceReais.replace(",", ".") || "0") * 100,
-      );
+      const cents = Math.round(lerNumeroBR(editing.priceReais) * 100);
+      const upsellCents = Math.round(lerNumeroBR(editing.upsellPriceReais) * 100);
       setSaving(true);
       await upsertPlan({
         data: {
