@@ -175,12 +175,12 @@ export const setDataSource = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await admin(context);
     const { db, schema } = await import("@/db/client.server");
-    const { readConnection, latestSnapshot } = await import("./sync.server");
+    const { readConnection, latestSnapshotMeta } = await import("./sync.server");
     if (data.mode === "odoo") {
       const row = await readConnection();
       if (!row?.url || !row.apiKeyEnc)
         throw new Error("Configure e teste a conexão antes de ativar o modo Odoo.");
-      if (!(await latestSnapshot()))
+      if (!(await latestSnapshotMeta()))
         throw new Error("Faça a primeira sincronização antes de ativar o modo Odoo.");
     }
     await db()
@@ -336,16 +336,28 @@ export const getCockpitConfig = createServerFn({ method: "GET" })
     };
   });
 
+/**
+ * Retrato do Odoo. `companyIds`: só essas empresas (undefined = todas;
+ * [] = só o cabeçalho com meses e empresas) — o navegador baixa apenas as
+ * empresas da entidade aberta.
+ */
 export const getOdooSnapshot = createServerFn({ method: "GET" })
   .middleware([requireAuth])
-  .handler(async ({ context }): Promise<{ syncedAt: string; snapshot: OdooSnapshot } | null> => {
-    await assertCanSeeErp(context.userId);
-    const { latestSnapshot, readConnection } = await import("./sync.server");
-    const row = await readConnection();
-    // Fora do modo Odoo o retrato não é servido (só o admin o vê, pelo painel).
-    if (row?.dataSource !== "odoo") return null;
-    const snap = await latestSnapshot();
-    return snap ? { syncedAt: snap.syncedAt, snapshot: snap.payload } : null;
-  });
+  .inputValidator((d: unknown) =>
+    z
+      .object({ companyIds: z.array(z.number().int().positive()).max(500).optional() })
+      .parse(d ?? {}),
+  )
+  .handler(
+    async ({ context, data }): Promise<{ syncedAt: string; snapshot: OdooSnapshot } | null> => {
+      await assertCanSeeErp(context.userId);
+      const { latestSnapshot, readConnection } = await import("./sync.server");
+      const row = await readConnection();
+      // Fora do modo Odoo o retrato não é servido (só o admin o vê, pelo painel).
+      if (row?.dataSource !== "odoo") return null;
+      const snap = await latestSnapshot(data.companyIds);
+      return snap ? { syncedAt: snap.syncedAt, snapshot: snap.payload } : null;
+    },
+  );
 
 export type { AccountOverride };

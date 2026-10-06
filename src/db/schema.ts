@@ -578,6 +578,23 @@ export const odooSnapshots = pgTable(
   (t) => [index("odoo_snapshots_synced_idx").on(t.syncedAt.desc())],
 );
 
+/**
+ * Retrato por empresa (contas, intercompany, rascunhos). O cabeçalho (meses,
+ * empresas) fica em odoo_snapshots.payload; assim o navegador baixa só as
+ * empresas da entidade aberta e a reclassificação regrava só o necessário.
+ */
+export const odooSnapshotCompanies = pgTable(
+  "odoo_snapshot_companies",
+  {
+    snapshotId: uuid("snapshot_id")
+      .notNull()
+      .references(() => odooSnapshots.id, { onDelete: "cascade" }),
+    companyId: integer("company_id").notNull(),
+    payload: jsonb("payload").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.snapshotId, t.companyId] })],
+);
+
 /** Ajustes manuais de classificação de contas (por código). */
 export const odooAccountOverrides = pgTable("odoo_account_overrides", {
   code: text("code").primaryKey(),

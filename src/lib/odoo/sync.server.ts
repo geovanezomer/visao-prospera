@@ -7,7 +7,7 @@
 // restritos a parceiros que são empresas do grupo. Nenhum lançamento é
 // baixado linha a linha.
 // ============================================================================
-import { and, desc, eq, lt, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
 import { db, queryRows, schema } from "@/db/client.server";
 import { classifyAccount } from "@/engines/odoo/mapping";
 import type {
@@ -494,9 +494,24 @@ export function syncOdoo(): Promise<SyncResult> {
         historyMonths: row?.historyMonths ?? 24,
       });
       const durationMs = Date.now() - t0;
-      await db()
-        .insert(schema.odooSnapshots)
-        .values({ status: "ok", durationMs, payload: snapshot });
+      // Cabeçalho (meses, empresas) + uma linha por empresa, numa transação.
+      const { perCompany, ...header } = snapshot;
+      await db().transaction(async (tx) => {
+        const [ins] = await tx
+          .insert(schema.odooSnapshots)
+          .values({
+            status: "ok",
+            durationMs,
+            payload: { ...header, perCompany: {}, storage: "per-company" },
+          })
+          .returning({ id: schema.odooSnapshots.id });
+        const rows = Object.entries(perCompany).map(([cid, payload]) => ({
+          snapshotId: ins.id,
+          companyId: Number(cid),
+          payload,
+        }));
+        if (rows.length) await tx.insert(schema.odooSnapshotCompanies).values(rows);
+      });
       await db()
         .update(schema.odooConnection)
         .set({ lastSyncAt: now, lastSyncStatus: "ok", lastError: null })
@@ -547,8 +562,13 @@ async function pruneSnapshots(): Promise<void> {
 }
 
 /** Retrato mais recente com sucesso (ou null). */
-export async function latestSnapshot(): Promise<{
-  id: number;
+/**
+ * Retrato mais recente com sucesso (ou null). `companyIds`: só essas empresas
+ * no perCompany (undefined = todas; [] = só o cabeçalho). Lê também o formato
+ * antigo (perCompany inteiro no cabeçalho).
+ */
+export async function latestSnapshot(companyIds?: number[]): Promise<{
+  id: string;
   syncedAt: string;
   payload: OdooSnapshot;
 } | null> {
@@ -562,23 +582,44 @@ export async function latestSnapshot(): Promise<{
     .where(eq(schema.odooSnapshots.status, "ok"))
     .orderBy(desc(schema.odooSnapshots.syncedAt))
     .limit(1);
-  return row?.payload
-    ? { id: Number(row.id), syncedAt: row.syncedAt, payload: row.payload as OdooSnapshot }
-    : null;
+  if (!row?.payload) return null;
+  const head = row.payload as OdooSnapshot & { storage?: string };
+  let perCompany: OdooSnapshot["perCompany"] = {};
+  if (head.storage === "per-company") {
+    if (!companyIds || companyIds.length) {
+      const where = companyIds
+        ? and(
+            eq(schema.odooSnapshotCompanies.snapshotId, row.id),
+            inArray(schema.odooSnapshotCompanies.companyId, companyIds),
+          )
+        : eq(schema.odooSnapshotCompanies.snapshotId, row.id);
+      const rows = await db().select().from(schema.odooSnapshotCompanies).where(where);
+      perCompany = Object.fromEntries(
+        rows.map((r) => [String(r.companyId), r.payload as OdooSnapshot["perCompany"][string]]),
+      );
+    }
+  } else {
+    const all = head.perCompany ?? {};
+    perCompany = companyIds
+      ? Object.fromEntries(Object.entries(all).filter(([k]) => companyIds.includes(Number(k))))
+      : all;
+  }
+  const { storage: _s, ...rest } = head;
+  return { id: String(row.id), syncedAt: row.syncedAt, payload: { ...rest, perCompany } };
 }
 
 /** Id e revisão do retrato em uso, sem carregar o payload inteiro. */
 export async function latestSnapshotMeta(): Promise<{
-  id: number;
+  id: string;
   syncedAt: string;
   revision: string;
 } | null> {
-  const rows = await queryRows<{ id: number; synced_at: string | Date; revision: string | null }>(
+  const rows = await queryRows<{ id: string; synced_at: string | Date; revision: string | null }>(
     sql`select id, synced_at, payload->>'revisedAt' as revision from odoo_snapshots
         where status = 'ok' order by synced_at desc limit 1`,
   );
   const r = rows[0];
   if (!r) return null;
   const syncedAt = r.synced_at instanceof Date ? r.synced_at.toISOString() : String(r.synced_at);
-  return { id: Number(r.id), syncedAt, revision: r.revision ?? "0" };
+  return { id: String(r.id), syncedAt, revision: r.revision ?? "0" };
 }

@@ -14,6 +14,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -39,7 +40,10 @@ export type OdooCockpit = {
   loading: boolean;
   view: CockpitView;
   setView: (v: CockpitView) => void;
+  /** Cabeçalho + empresas carregadas da entidade aberta. */
   snapshot: OdooSnapshot | null;
+  /** As empresas da entidade selecionada já chegaram (senão, mostra a anterior). */
+  entityReady: boolean;
   syncedAt: string | null;
   /** Último erro de sincronização (o retrato exibido pode estar desatualizado). */
   lastError: string | null;
@@ -83,11 +87,13 @@ export function useOdooCockpit(): OdooCockpit {
     refetchInterval: 5 * 60_000,
   });
   const available = config.data?.dataSource === "odoo";
-  const snap = useQuery({
+  // 1) Cabeçalho do retrato (meses, empresas): pequeno, define as entidades.
+  const snapshotKey = config.data?.snapshotKey ?? null;
+  const head = useQuery({
     // Chave = retrato em uso: falhas de sincronização não forçam novo download.
-    queryKey: ["odoo", "snapshot", config.data?.snapshotKey ?? null],
-    queryFn: () => getOdooSnapshot(),
-    enabled: available && !!config.data?.snapshotKey,
+    queryKey: ["odoo", "snapshot-head", snapshotKey],
+    queryFn: () => getOdooSnapshot({ data: { companyIds: [] } }),
+    enabled: available && !!snapshotKey,
     staleTime: Infinity,
   });
 
@@ -113,25 +119,58 @@ export function useOdooCockpit(): OdooCockpit {
     writeLS(LS_END, m);
   }, []);
 
-  const snapshot = snap.data?.snapshot ?? null;
-  const entities = useMemo(() => (snapshot ? listEntities(snapshot) : []), [snapshot]);
+  const header = head.data?.snapshot ?? null;
+  const entities = useMemo(() => (header ? listEntities(header) : []), [header]);
   const entity = entities.find((e) => e.key === entityKey) ?? entities[0] ?? null;
-  const validEnd = endMonth && snapshot?.months.includes(endMonth) ? endMonth : null;
-  const data = useMemo(
+
+  // 2) Só as empresas da entidade aberta (filial: a matriz e as filiais, que
+  //    servem de referência para as premissas).
+  const neededIds = useMemo(() => {
+    if (!entity) return [];
+    const root =
+      entity.kind === "branch"
+        ? entities.find((e) => e.kind === "entity" && e.rootId === entity.rootId)
+        : null;
+    return [...(root?.companyIds ?? entity.companyIds)].sort((a, b) => a - b);
+  }, [entity, entities]);
+  const comps = useQuery({
+    queryKey: ["odoo", "snapshot-companies", snapshotKey, neededIds.join(",")],
+    queryFn: () => getOdooSnapshot({ data: { companyIds: neededIds } }),
+    enabled: available && !!snapshotKey && neededIds.length > 0,
+    staleTime: Infinity,
+  });
+
+  const loaded = comps.data?.snapshot ?? null;
+  const ready = !!loaded && neededIds.every((id) => loaded.perCompany[String(id)]);
+  const snapshot = useMemo(
+    () => (header && ready && loaded ? { ...header, perCompany: loaded.perCompany } : null),
+    [header, ready, loaded],
+  );
+  const validEnd = endMonth && header?.months.includes(endMonth) ? endMonth : null;
+  const fresh = useMemo(
     () => (snapshot && entity ? buildEntityData(snapshot, entity, validEnd) : null),
     [snapshot, entity, validEnd],
   );
+  // Troca de entidade: mantém os números anteriores até os novos chegarem
+  // (evita piscar o espaço manual).
+  const lastRef = useRef<{ snapshot: OdooSnapshot; data: OdooEntityData } | null>(null);
+  if (fresh && snapshot) lastRef.current = { snapshot, data: fresh };
+  const data = fresh ?? (available ? (lastRef.current?.data ?? null) : null);
+  const shownSnapshot = snapshot ?? (available ? (lastRef.current?.snapshot ?? null) : null);
   const overlay = useMemo(() => (data ? prepareOdooOverlay(data) : null), [data]);
 
   const active = available && view === "odoo" && overlay !== null;
   return {
     available,
     active,
-    loading: config.isLoading || (available && !!config.data?.snapshotKey && snap.isLoading),
+    loading:
+      config.isLoading ||
+      (available && !!snapshotKey && (head.isLoading || (!data && comps.isLoading))),
     view,
     setView,
-    snapshot,
-    syncedAt: snap.data?.syncedAt ?? null,
+    snapshot: shownSnapshot,
+    entityReady: ready,
+    syncedAt: head.data?.syncedAt ?? null,
     lastError: config.data?.lastError ?? null,
     instanceKey: config.data?.instanceKey ?? null,
     entities,
@@ -159,4 +198,24 @@ export function OdooCockpitProvider({
 /** null fora do provider (ex.: página compartilhada) — trate como modo manual. */
 export function useOdooCockpitContext(): OdooCockpit | null {
   return useContext(Ctx);
+}
+
+/**
+ * Retrato com TODAS as empresas (Consolidado e conciliação). Cacheado pelo
+ * retrato em uso; só é baixado quando a aba que precisa dele abre.
+ */
+export function useOdooFullSnapshot(cockpit: OdooCockpit | null): OdooSnapshot | null {
+  const config = useQuery({
+    queryKey: ["odoo", "cockpit-config"],
+    queryFn: () => getCockpitConfig(),
+    staleTime: 60_000,
+  });
+  const snapshotKey = config.data?.snapshotKey ?? null;
+  const q = useQuery({
+    queryKey: ["odoo", "snapshot-full", snapshotKey],
+    queryFn: () => getOdooSnapshot({ data: {} }),
+    enabled: !!cockpit?.active && !!snapshotKey,
+    staleTime: Infinity,
+  });
+  return q.data?.snapshot ?? null;
 }

@@ -31,7 +31,7 @@ import {
   type OdooEntity,
 } from "@/engines/odoo/toAppState";
 import type { OdooSnapshot } from "@/engines/odoo/types";
-import { useOdooCockpitContext } from "./cockpit";
+import { useOdooCockpitContext, useOdooFullSnapshot } from "./cockpit";
 import { fmtMonth } from "./format";
 import { cn } from "@/lib/utils";
 
@@ -151,7 +151,8 @@ export function ConsolidadoTab() {
   const cockpit = useOdooCockpitContext();
   const { user } = useAuth();
   const liveState = useFinanceState();
-  const snapshot = cockpit?.snapshot ?? null;
+  // Consolidado precisa de todas as empresas do grupo (baixadas sob demanda).
+  const snapshot = useOdooFullSnapshot(cockpit);
   const fiscal = useMemo(
     () => (cockpit?.entities ?? []).filter((e) => e.kind === "entity"),
     [cockpit?.entities],
@@ -231,7 +232,9 @@ export function ConsolidadoTab() {
   if (!cockpit?.active || !snapshot || !result) {
     return (
       <div className="rounded-lg border border-border/60 p-6 text-sm text-muted-foreground">
-        Disponível no modo Odoo, depois da primeira sincronização.
+        {cockpit?.active
+          ? "Carregando todas as empresas do grupo…"
+          : "Disponível no modo Odoo, depois da primeira sincronização."}
       </div>
     );
   }

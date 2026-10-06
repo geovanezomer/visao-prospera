@@ -15,6 +15,13 @@
       "when": 1791261680771,
       "tag": "0001_odoo_connector",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791273761436,
+      "tag": "0002_odoo_snapshot_companies",
+      "breakpoints": true
     }
   ]
 }
