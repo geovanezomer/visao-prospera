@@ -356,7 +356,7 @@ function Row({
 function SectionRow({ label, cols = 12 }: { label: string; cols?: number }) {
   return (
     <tr className="bg-card/60">
-      <td className="sticky left-0 z-10 w-[320px] min-w-[320px] border-t border-border/40 bg-card/80 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary/80 shadow-[1px_0_0_0_var(--border)]">
+      <td className="sticky left-0 z-10 w-[320px] min-w-[320px] border-t border-border/40 bg-card/80 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary shadow-[1px_0_0_0_var(--border)]">
         {label}
       </td>
       <td colSpan={cols + 1} className="border-t border-border/40 px-4 py-1.5" />

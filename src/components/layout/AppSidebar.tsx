@@ -89,7 +89,7 @@ export function AppSidebar({
                 <span className="truncate text-base font-bold leading-none tracking-tight">
                   {branding.systemName}
                 </span>
-                <span className="mt-1 truncate text-[10px] uppercase tracking-widest text-muted-foreground/80">
+                <span className="mt-1 truncate text-[10px] uppercase tracking-widest text-muted-foreground">
                   Auditoria & Gestão
                 </span>
               </>
@@ -233,7 +233,7 @@ export function AppSidebar({
       <SidebarFooter className="border-t border-sidebar-border/50 p-2">
         <SidebarMenu>
           {user && (
-            <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:hidden">
+            <li className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:hidden">
               <button
                 type="button"
                 onClick={() => logout()}
@@ -251,7 +251,7 @@ export function AppSidebar({
                   {user.email}
                 </span>
               </div>
-            </div>
+            </li>
           )}
           {user && (
             <SidebarMenuItem>

@@ -386,23 +386,27 @@ function ScoreSaude({ state }: { state: AppState }) {
   return (
     <Card title="Score de Saúde Financeira">
       <div className="relative h-44">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              startAngle={180}
-              endAngle={0}
-              innerRadius="65%"
-              outerRadius="95%"
-              stroke="none"
-            >
-              {data.map((d, i) => (
-                <Cell key={i} fill={d.fill} />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
+        {/* Gauge decorativo: o valor já aparece em texto logo abaixo. */}
+        <div className="h-full" aria-hidden="true">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="value"
+                rootTabIndex={-1}
+                startAngle={180}
+                endAngle={0}
+                innerRadius="65%"
+                outerRadius="95%"
+                stroke="none"
+              >
+                {data.map((d, i) => (
+                  <Cell key={i} fill={d.fill} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-2">
           <span className="mono text-4xl font-bold" style={{ color: cor }}>
             {score.toFixed(0)}

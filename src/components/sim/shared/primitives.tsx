@@ -93,11 +93,16 @@ export function MoneyInput({
   onChange,
   className,
   readOnly,
+  id,
+  "aria-label": ariaLabel,
 }: {
   value: number;
   onChange: (n: number) => void;
   className?: string;
   readOnly?: boolean;
+  id?: string;
+  /** Nome acessível quando não há <label> associado. */
+  "aria-label"?: string;
 }) {
   const [text, setText] = useState<string>(() => numToText(value));
   const focusedRef = useRef(false);
@@ -112,6 +117,8 @@ export function MoneyInput({
     <input
       type="text"
       inputMode="decimal"
+      id={id}
+      aria-label={ariaLabel}
       value={text}
       readOnly={readOnly}
       tabIndex={readOnly ? -1 : undefined}

@@ -168,6 +168,7 @@ export function PermutasCard() {
                     <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
                       <span>Fixo</span>
                       <Switch
+                        aria-label={`Valores mês a mês — ${row.label}`}
                         checked={!fixed}
                         onCheckedChange={(v) => {
                           if (!v && hasSazonalidade(row.values)) {
@@ -190,6 +191,7 @@ export function PermutasCard() {
                         </span>
                         <div className="w-36">
                           <MoneyInput
+                            aria-label={`Valor aplicado em todos os meses — ${row.label}`}
                             value={fixedBase(row.values)}
                             onChange={(n) => setAllMonths(row.id, n)}
                           />
@@ -199,7 +201,11 @@ export function PermutasCard() {
                   ) : (
                     row.values.map((v, i) => (
                       <td key={i} className="px-1 py-1">
-                        <MoneyInput value={v} onChange={(n) => setMonth(row.id, i, n)} />
+                        <MoneyInput
+                          aria-label={`${row.label} — ${MESES[i]}`}
+                          value={v}
+                          onChange={(n) => setMonth(row.id, i, n)}
+                        />
                       </td>
                     ))
                   )}

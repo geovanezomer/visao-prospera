@@ -376,13 +376,17 @@ export function CashflowTab() {
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Caixa mínimo:</span>
                 <div className="w-32">
-                  <MoneyInput value={state.cashflow.caixaMinimo} onChange={setCaixaMin} />
+                  <MoneyInput
+                    aria-label="Caixa mínimo"
+                    value={state.cashflow.caixaMinimo}
+                    onChange={setCaixaMin}
+                  />
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Limiar crítico:</span>
                 <div className="w-32">
-                  <MoneyInput value={limiar} onChange={setLimiar} />
+                  <MoneyInput aria-label="Limiar crítico" value={limiar} onChange={setLimiar} />
                 </div>
               </div>
             </div>

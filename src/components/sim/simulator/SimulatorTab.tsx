@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useId, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AppState, TaxRegime } from "@/engines/finance/types";
 import {
@@ -149,12 +149,17 @@ export function SimulatorTab({
           >
             <Group value="trib" title="Tributário">
               <div className="space-y-1">
-                <div className="text-xs font-medium text-foreground">Mudar regime tributário</div>
+                <label
+                  htmlFor="sim-regime-override"
+                  className="block text-xs font-medium text-foreground"
+                >
+                  Mudar regime tributário
+                </label>
                 <Select
                   value={p.regimeOverride}
                   onValueChange={(v) => set("regimeOverride", v as TaxRegime | "base")}
                 >
-                  <SelectTrigger className="h-9">
+                  <SelectTrigger id="sim-regime-override" className="h-9">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -272,6 +277,7 @@ export function SimulatorTab({
                   type="number"
                   min={1}
                   max={8}
+                  aria-label="Top N rubricas fixas atingidas"
                   value={p.fixedCutTopN}
                   onChange={(e) =>
                     set("fixedCutTopN", Math.max(1, Math.min(8, parseInt(e.target.value) || 1)))
@@ -399,7 +405,7 @@ export function SimulatorTab({
         >
           <TriangleAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" />
           <div>
-            <div className="font-semibold text-amber-700 dark:text-amber-400">
+            <div className="font-semibold text-amber-800 dark:text-amber-400">
               Atenção — Cenário Simulado
             </div>
             <div className="mt-1 text-muted-foreground">
@@ -502,7 +508,9 @@ function Delta({
   const tone = highlight
     ? pos
       ? "bg-primary text-primary-foreground px-1.5 py-0.5 rounded shadow-sm"
-      : "bg-neg text-white px-1.5 py-0.5 rounded"
+      : neg
+        ? "bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded"
+        : "text-muted-foreground"
     : pos
       ? "text-pos"
       : neg
@@ -562,6 +570,7 @@ const SliderRow = memo(function SliderRow({
         </div>
       </div>
       <Slider
+        aria-label={label}
         min={min}
         max={max}
         step={step}
@@ -597,10 +606,17 @@ function NumInput({
   step: number;
   min: number;
 }) {
+  const id = useId();
   return (
     <div className="space-y-1">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <label
+        htmlFor={id}
+        className="block text-[10px] uppercase tracking-wider text-muted-foreground"
+      >
+        {label}
+      </label>
       <Input
+        id={id}
         type="number"
         step={step}
         min={min}
@@ -953,9 +969,7 @@ function Kpi({
         <span className={cn("mono text-sm font-bold", better ? "text-pos" : "text-neg")}>
           {sim}
         </span>
-        <span className="mono text-[9px] text-muted-foreground line-through opacity-70">
-          {base}
-        </span>
+        <span className="mono text-[9px] text-muted-foreground line-through">{base}</span>
       </div>
     </div>
   );
@@ -1051,7 +1065,7 @@ const KpiCardsRow = memo(function KpiCardsRow({
               {fmtBRLCompact(it.simV)}
             </div>
             <div className="mt-0.5 flex items-center justify-between gap-2">
-              <span className="mono text-[10px] text-muted-foreground line-through opacity-70">
+              <span className="mono text-[10px] text-muted-foreground line-through">
                 {fmtBRLCompact(it.baseV)}
               </span>
               <span
