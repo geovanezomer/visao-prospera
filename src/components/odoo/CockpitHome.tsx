@@ -26,6 +26,7 @@ import { computeTrust } from "@/engines/odoo/trust";
 import { useOdooCockpitContext } from "./cockpit";
 import { usePeriodLabels } from "./usePeriodLabels";
 import { ConciliacaoCard } from "./ConciliacaoCard";
+import { RetrotesteCard } from "./RetrotesteCard";
 import { cn } from "@/lib/utils";
 
 const sum = (a: number[]) => a.reduce((x, y) => x + (y || 0), 0);
@@ -454,6 +455,7 @@ export function CockpitHome() {
         </div>
       </div>
       <ConciliacaoCard exibido={{ receitaBruta, lucroLiquido: ll }} />
+      <RetrotesteCard />
       <p className="text-center text-[11px] text-muted-foreground">
         Período: {MESES[0]} a {MESES[11]} · {fmtBRL(receitaBruta)} de receita bruta · clique em um
         instrumento para o detalhe.
