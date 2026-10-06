@@ -14,7 +14,14 @@ import { getIrpjPct, getCsllPct, getPisNaoCumPct, getCofinsNaoCumPct } from "../
 import { receitaTributavel, splitReceitasFinanceiras } from "../shared";
 import { isCpvCost, isCreditoAmploCbsIbs, effectiveMonthValues } from "../costs";
 import { getReformaRates, getCbsCredCpvPct, getIbsCredCpvPct } from "./reforma";
-import { adicionalIrpjTrimestral, type MonthlyTax } from "./shared";
+import {
+  adicionalIrpjTrimestral,
+  compensarTrimestral,
+  fatorReducaoReforma,
+  icmsAjustes,
+  temCreditoPisCofins,
+  type MonthlyTax,
+} from "./shared";
 
 // [CBS/IBS] Helpers: usam tributos-br (LC 214/2025) para garantir
 // arredondamento HALF_UP (padrão SEFAZ) sobre cada multiplicação
@@ -53,9 +60,11 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   //   arts. 47-56 — todo insumo exceto folha/financeiro/semCredito).
   const cpvMonthly = zeros12();
   const baseCreditoCbsIbsMonthly = zeros12();
+  const baseCreditoPisCofinsMonthly = zeros12();
   const temCpvCredito = icmsCredAliq > 0;
   const temCredAmplo = usaReforma;
-  if (temCpvCredito || temCredAmplo) {
+  const temCredPisCofins = !!tax.pisCofinsCreditoAuto;
+  if (temCpvCredito || temCredAmplo || temCredPisCofins) {
     for (const c of state.costs) {
       const v = effectiveMonthValues(c);
       if (temCpvCredito && isCpvCost(c) && !c.semCredito) {
@@ -64,8 +73,13 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
       if (temCredAmplo && isCreditoAmploCbsIbs(c)) {
         for (let i = 0; i < 12; i++) baseCreditoCbsIbsMonthly[i] += v[i];
       }
+      if (temCredPisCofins && temCreditoPisCofins(c)) {
+        for (let i = 0; i < 12; i++) baseCreditoPisCofinsMonthly[i] += v[i];
+      }
     }
   }
+  const icmsAj = icmsAjustes(tax, isMercadoria);
+  const fatorVendaReforma = fatorReducaoReforma(tax);
 
   // [Receitas Financeiras] Rendimentos com tributação EXCLUSIVA na fonte (IRRF definitivo)
   // não compõem o lucro tributável: subtraímos do LAIR antes de calcular IRPJ/CSLL.
@@ -79,37 +93,26 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   // Apuração trimestral: prejuízo de trimestres anteriores compensa até 30% do lucro
   // dos trimestres seguintes. Sem isso, empresas sazonais com Q1 negativo e Q2+ positivo
   // pagam IRPJ/CSLL sobre o bruto, sem compensação.
-  const baseSignedMonthly = baseLairMonthly.map((l, i) => l - (rendFinExclusivo[i] || 0));
-  const baseIRPJMensal = zeros12();
-  // Saldo de abertura de prejuízo fiscal (Parte B do e-Lalur). Clamp em ≥0.
-  let prejAcum = Math.max(0, tax.prejuizoFiscalAcumuladoAbertura ?? 0);
-  let totalCompensado = 0;
-  for (let q = 0; q < 4; q++) {
-    const i0 = q * 3;
-    const sumQ = baseSignedMonthly[i0] + baseSignedMonthly[i0 + 1] + baseSignedMonthly[i0 + 2];
-    if (sumQ <= 0) {
-      prejAcum += -sumQ; // acumula prejuízo do trimestre
-      // baseIRPJMensal[i0..i0+2] permanecem 0
-    } else {
-      const compensacao = Math.min(sumQ * 0.3, prejAcum);
-      prejAcum -= compensacao;
-      totalCompensado += compensacao;
-      const ajustado = sumQ - compensacao;
-      // Distribui proporcionalmente aos meses positivos do trimestre.
-      const posSum =
-        Math.max(0, baseSignedMonthly[i0]) +
-        Math.max(0, baseSignedMonthly[i0 + 1]) +
-        Math.max(0, baseSignedMonthly[i0 + 2]);
-      if (posSum > 0) {
-        for (let k = 0; k < 3; k++) {
-          const pos = Math.max(0, baseSignedMonthly[i0 + k]);
-          baseIRPJMensal[i0 + k] = ajustado * (pos / posSum);
-        }
-      } else {
-        baseIRPJMensal[i0] = baseIRPJMensal[i0 + 1] = baseIRPJMensal[i0 + 2] = ajustado / 3;
-      }
-    }
-  }
+  // Lalur/Lacs: adições (+) e exclusões (−) ao lucro contábil, rateadas por mês.
+  const ajusteMensal = (alvo: "irpj" | "csll") =>
+    (tax.lalurAjustes ?? [])
+      .filter((a) => (a.base ?? "ambos") === "ambos" || a.base === alvo)
+      .reduce((s, a) => s + (a.tipo === "adicao" ? 1 : -1) * Math.max(0, a.valorAnual || 0), 0) /
+    12;
+  const ajIrpj = ajusteMensal("irpj");
+  const ajCsll = ajusteMensal("csll");
+  const baseContabil = baseLairMonthly.map((l, i) => l - (rendFinExclusivo[i] || 0));
+  const irpjComp = compensarTrimestral(
+    baseContabil.map((v) => v + ajIrpj),
+    tax.prejuizoFiscalAcumuladoAbertura ?? 0,
+  );
+  const csllComp = compensarTrimestral(
+    baseContabil.map((v) => v + ajCsll),
+    tax.baseNegativaCsllAbertura ?? tax.prejuizoFiscalAcumuladoAbertura ?? 0,
+  );
+  const baseIRPJMensal = irpjComp.mensal;
+  const baseCSLLMensal = csllComp.mensal;
+  const totalCompensado = irpjComp.compensado;
   const adicionalMensal = adicionalIrpjTrimestral(baseIRPJMensal, tax);
 
   // Auditoria Jun/2026: ratear créditos anuais por mês
@@ -146,36 +149,39 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
     const lair = baseIRPJMensal[i];
     const irpj = lair * irpjAliq;
     const adicional = adicionalMensal[i];
-    const csll = lair * csllAliq;
+    const csll = baseCSLLMensal[i] * csllAliq;
     // Auditoria #6: PIS/COFINS não-cumulativos com saldo credor acumulável (como ICMS).
     const debitoPis = r * pisAliq;
-    const creditoPisMes = pisCreditoMensal + saldoCredorPIS;
+    const creditoPisMes =
+      pisCreditoMensal + baseCreditoPisCofinsMonthly[i] * pisAliq + saldoCredorPIS;
     const pisVenda = Math.max(0, debitoPis - creditoPisMes);
     saldoCredorPIS = Math.max(0, creditoPisMes - debitoPis);
     const debitoCofins = r * cofinsAliq;
-    const creditoCofinsMes = cofinsCreditoMensal + saldoCredorCOFINS;
+    const creditoCofinsMes =
+      cofinsCreditoMensal + baseCreditoPisCofinsMonthly[i] * cofinsAliq + saldoCredorCOFINS;
     const cofinsVenda = Math.max(0, debitoCofins - creditoCofinsMes);
     saldoCredorCOFINS = Math.max(0, creditoCofinsMes - debitoCofins);
     const pisRF = (rendFin[i] || 0) * PIS_RF;
     const cofinsRF = (rendFin[i] || 0) * COFINS_RF;
     const pis = (pisVenda + pisRF) * reforma.pisCofinsMult;
     const cofins = (cofinsVenda + cofinsRF) * reforma.pisCofinsMult;
-    const issBase = Math.max(0, r - issDed);
+    // ICMS próprio só sobre a parte sem substituição tributária; DIFAL à parte.
+    const issBase = Math.max(0, r * icmsAj.baseProprio - issDed);
     const debito = issBase * iss;
     const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
-    const issvBruto = Math.max(0, debito - creditoMes);
+    const issvBruto = Math.max(0, debito - creditoMes) + r * icmsAj.difalSobreReceita;
     const issv = issvBruto * reforma.icmsIssMult;
     saldoCredorICMS = Math.max(0, creditoMes - debito);
     let cbs = 0,
       ibs = 0;
     if (reforma.cbsPct > 0) {
-      const dCbs = cbsValor(r, reforma.cbsPct);
+      const dCbs = cbsValor(r, reforma.cbsPct * fatorVendaReforma);
       const cCbs = cbsValor(baseCreditoCbsIbsMonthly[i], cbsCredPct) + saldoCBS;
       cbs = Math.max(0, dCbs - cCbs);
       saldoCBS = Math.max(0, cCbs - dCbs);
     }
     if (reforma.ibsPct > 0) {
-      const dIbs = ibsValor(r, reforma.ibsPct);
+      const dIbs = ibsValor(r, reforma.ibsPct * fatorVendaReforma);
       const cIbs = ibsValor(baseCreditoCbsIbsMonthly[i], ibsCredPct) + saldoIBS;
       ibs = Math.max(0, dIbs - cIbs);
       saldoIBS = Math.max(0, cIbs - dIbs);
@@ -206,6 +212,14 @@ export function calcReal(state: AppState, baseLairMonthly: number[]): MonthlyTax
   if (totalCompensado > 0) {
     detail["(−) Compensação prejuízo fiscal (trava 30%)"] = -totalCompensado;
   }
+  if (csllComp.compensado > 0) {
+    detail["(−) Compensação base negativa CSLL (trava 30%)"] = -csllComp.compensado;
+  }
+  if (ajIrpj !== 0) detail["Ajustes Lalur (adições − exclusões)"] = ajIrpj * 12;
+  if (ajCsll !== ajIrpj) detail["Ajustes Lacs (adições − exclusões)"] = ajCsll * 12;
+  const credAuto = sum(baseCreditoPisCofinsMonthly);
+  if (credAuto > 0 && reforma.pisCofinsMult > 0)
+    detail["Base de créditos PIS/COFINS (custos com direito)"] = credAuto;
   if (reforma.pisCofinsMult > 0) {
     detail["PIS (não-cum.)"] = pisTotal;
     detail["COFINS (não-cum.)"] = cofinsTotal;

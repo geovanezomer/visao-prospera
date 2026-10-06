@@ -72,6 +72,7 @@ import {
   ALIQ_PRESUMIDA_IBS_SN,
 } from "@/engines/finance/tax/reforma";
 import { CompanyConfigForm } from "@/components/sim/shared/CompanyConfigDialog";
+import { LalurAjustesEditor } from "./LalurAjustesEditor";
 
 const ANEXOS: SimplesAnexo[] = ["I", "II", "III", "IV", "V"];
 const BUSINESS: { key: BusinessType; label: string; hint: string }[] = [
@@ -491,6 +492,39 @@ function StepFederais({
           onReset={() => patchTax({ prejuizoFiscalAcumuladoAbertura: 0 })}
         />
         <FriendlyRow
+          label="Base negativa de CSLL acumulada (abertura)"
+          suffix="R$"
+          defaultVal={state.tax.prejuizoFiscalAcumuladoAbertura ?? 0}
+          help="Saldo de base negativa de CSLL (Parte B do e-Lacs), compensável com a mesma trava de 30%. Se não informar, o cálculo usa o prejuízo fiscal acima."
+          value={
+            state.tax.baseNegativaCsllAbertura ?? state.tax.prejuizoFiscalAcumuladoAbertura ?? 0
+          }
+          onChange={(v) => patchTax({ baseNegativaCsllAbertura: Math.max(0, v) })}
+          onReset={() => patchTax({ baseNegativaCsllAbertura: undefined })}
+        />
+        <LalurAjustesEditor
+          value={state.tax.lalurAjustes ?? []}
+          onChange={(v) => patchTax({ lalurAjustes: v })}
+        />
+        <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+          <div className="flex-1">
+            <div className="text-sm font-medium">
+              Calcular créditos de PIS/COFINS pelos custos com direito
+            </div>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+              Aplica 1,65% e 7,6% sobre insumos do CPV, energia, aluguéis e arrendamento pagos a PJ,
+              frete, armazenagem e depreciação (Leis 10.637/02 e 10.833/03, art. 3º), mês a mês.
+              Folha e linhas marcadas "sem crédito" ficam de fora. Os créditos anuais informados
+              abaixo somam-se a estes.
+            </p>
+          </div>
+          <Switch
+            checked={!!state.tax.pisCofinsCreditoAuto}
+            onCheckedChange={(v) => patchTax({ pisCofinsCreditoAuto: v })}
+            aria-label="Calcular créditos de PIS/COFINS pelos custos"
+          />
+        </div>
+        <FriendlyRow
           label="Créditos anuais de PIS (não-cumulativo)"
           suffix="R$"
           defaultVal={0}
@@ -681,6 +715,36 @@ function StepPresumido({
           onReset={() => patchTax({ irrfAplicacoesPct: 15 })}
         />
       </Section>
+
+      <Section title="ICMS — substituição tributária e DIFAL (comércio/indústria)">
+        <FriendlyRow
+          label="Receita com ICMS retido por ST"
+          suffix="%"
+          defaultVal={0}
+          help="Parte da receita de mercadorias cujo ICMS já foi recolhido antes, por substituição tributária: não há débito de ICMS próprio na venda."
+          value={state.tax.icmsStReceitaPct ?? 0}
+          onChange={(v) => patchTax({ icmsStReceitaPct: Math.max(0, Math.min(100, v)) })}
+          onReset={() => patchTax({ icmsStReceitaPct: 0 })}
+        />
+        <FriendlyRow
+          label="Receita interestadual a não contribuinte (DIFAL)"
+          suffix="%"
+          defaultVal={0}
+          help="Vendas a consumidor final de outro estado (EC 87/2015, LC 190/2022): a empresa recolhe ao estado de destino a diferença de alíquota."
+          value={state.tax.difalReceitaPct ?? 0}
+          onChange={(v) => patchTax({ difalReceitaPct: Math.max(0, Math.min(100, v)) })}
+          onReset={() => patchTax({ difalReceitaPct: 0 })}
+        />
+        <FriendlyRow
+          label="Diferencial de alíquota (interna destino − interestadual)"
+          suffix="p.p."
+          defaultVal={0}
+          help="Ex.: alíquota interna de 18% e interestadual de 12% → 6 p.p."
+          value={state.tax.difalAliquotaPct ?? 0}
+          onChange={(v) => patchTax({ difalAliquotaPct: Math.max(0, Math.min(30, v)) })}
+          onReset={() => patchTax({ difalAliquotaPct: 0 })}
+        />
+      </Section>
     </div>
   );
 }
@@ -780,6 +844,30 @@ function StepReforma({
           onChange={(v) => patchOv({ reformaTransicaoIcmsIssMult: v })}
           onReset={() => patchOv({ reformaTransicaoIcmsIssMult: undefined })}
         />
+      </Section>
+
+      <Section title="Redução de alíquota do setor (LC 214/2025)">
+        <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+          <div className="flex-1">
+            <div className="text-sm font-medium">Redução de CBS/IBS nas vendas</div>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+              30% para profissões intelectuais regulamentadas; 60% para saúde, educação, insumos
+              agropecuários e outros listados na lei; 100% (alíquota zero) para itens como a cesta
+              básica nacional. Os créditos das compras continuam pela alíquota do fornecedor.
+            </p>
+          </div>
+          <select
+            className="h-8 rounded-md border bg-background px-2 text-xs"
+            aria-label="Redução de alíquota do setor"
+            value={String(state.tax.reformaReducaoPct ?? 0)}
+            onChange={(e) => patchTax({ reformaReducaoPct: Number(e.target.value) })}
+          >
+            <option value="0">Sem redução</option>
+            <option value="30">30%</option>
+            <option value="60">60%</option>
+            <option value="100">100% (alíquota zero)</option>
+          </select>
+        </div>
       </Section>
 
       <Section title="Split Payment (LC 214/2025)">

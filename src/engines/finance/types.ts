@@ -427,6 +427,16 @@ export type DebtSystem = "price" | "sac";
 export type FrequenciaAmortizacao = "mensal" | "trimestral" | "semestral" | "anual" | "bullet";
 export type TipoCredor = "banco" | "fomento" | "fornecedor" | "socio" | "outro";
 
+/** Ajuste do Lalur/Lacs ao lucro contábil (valor anual em R$). */
+export interface LalurAjuste {
+  id: string;
+  descricao: string;
+  tipo: "adicao" | "exclusao";
+  valorAnual: number;
+  /** Onde o ajuste vale. Padrão: IRPJ e CSLL. */
+  base?: "ambos" | "irpj" | "csll";
+}
+
 export interface DebtContract {
   id: string;
   credor: string;
@@ -512,8 +522,30 @@ export interface TaxConfig {
   /** Prejuízo fiscal acumulado de exercícios anteriores (R$, valor absoluto ≥ 0),
    *  compensável no Lucro Real com trava de 30% do lucro trimestral
    *  (Lei 9.065/95 art. 42). Base negativa de CSLL é tratada com o mesmo
-   *  saldo (simplificação — na prática são registros separados na ECF). */
+   *  saldo quando `baseNegativaCsllAbertura` não é informada. */
   prejuizoFiscalAcumuladoAbertura?: number;
+  /** Base negativa de CSLL de exercícios anteriores (R$ ≥ 0), compensável com
+   *  a mesma trava de 30% (Lei 9.065/95 art. 58). Sem valor: usa o prejuízo fiscal. */
+  baseNegativaCsllAbertura?: number;
+  /** Lucro Real: adições e exclusões do Lalur/Lacs (RIR/2018, arts. 260-261). */
+  lalurAjustes?: LalurAjuste[];
+  /** Lucro Real: créditos de PIS/COFINS calculados pelos custos que dão direito
+   *  (Leis 10.637/02 e 10.833/03, art. 3º): insumos do CPV, energia, aluguéis e
+   *  arrendamento pagos a PJ, frete e armazenagem, depreciação. Soma-se aos
+   *  créditos informados em `pisCreditos`/`cofinsCreditos`. */
+  pisCofinsCreditoAuto?: boolean;
+  /** Comércio/indústria: % da receita com ICMS já retido por substituição
+   *  tributária (sem débito de ICMS próprio na venda). */
+  icmsStReceitaPct?: number;
+  /** DIFAL (EC 87/2015, LC 190/2022): % da receita em vendas interestaduais a
+   *  consumidor final não contribuinte. */
+  difalReceitaPct?: number;
+  /** DIFAL: diferença entre a alíquota interna do destino e a interestadual (p.p.). */
+  difalAliquotaPct?: number;
+  /** Reforma (LC 214/2025): redução de alíquota de CBS/IBS do setor sobre as
+   *  vendas — 30% (profissões regulamentadas), 60% (saúde, educação e outros)
+   *  ou 100% (alíquota zero). Créditos de compras não mudam. */
+  reformaReducaoPct?: number;
   // ----- Reforma Tributária (CBS/IBS) — EC 132/2023 + LC 214/2025 -----
   /** Era do sistema tributário aplicado ao cálculo. Default "atual". */
   era?: TaxEra;

@@ -20,7 +20,12 @@ import {
 import { receitaTributavel, splitReceitasFinanceiras } from "../shared";
 import { isCpvCost, isCreditoAmploCbsIbs, effectiveMonthValues } from "../costs";
 import { getReformaRates, getCbsCredCpvPct, getIbsCredCpvPct } from "./reforma";
-import { adicionalIrpjTrimestral, type MonthlyTax } from "./shared";
+import {
+  adicionalIrpjTrimestral,
+  fatorReducaoReforma,
+  icmsAjustes,
+  type MonthlyTax,
+} from "./shared";
 import { calcCbs, calcIbs } from "tributos-br";
 
 // [CBS/IBS] Helpers: usam tributos-br (LC 214/2025) para garantir
@@ -109,6 +114,8 @@ export function calcPresumido(state: AppState): MonthlyTax {
   // No modelo, aplicamos compensação MENSAL com piso zero (não gera restituição
   // automática; excesso não retorna). Base = mesma rendFinTrib usada no IRPJ.
   const irrfAliq = getIrrfAplicacoesPct(tax) / 100;
+  const icmsAj = icmsAjustes(tax, isMercadoria);
+  const fatorVendaReforma = fatorReducaoReforma(tax);
 
   let irpjTotal = 0,
     csllTotal = 0,
@@ -135,22 +142,23 @@ export function calcPresumido(state: AppState): MonthlyTax {
     const irpjLiquido = Math.max(0, irpj + adicional - irrfRetido);
     const pis = r * pisAliq * reforma.pisCofinsMult;
     const cofins = r * cofinsAliq * reforma.pisCofinsMult;
-    const issBase = Math.max(0, r - issDed);
+    // ICMS próprio só sobre a parte sem substituição tributária; DIFAL à parte.
+    const issBase = Math.max(0, r * icmsAj.baseProprio - issDed);
     const debito = issBase * iss;
     const creditoMes = cpvMonthly[i] * icmsCredAliq + saldoCredorICMS;
-    const issvBruto = Math.max(0, debito - creditoMes);
+    const issvBruto = Math.max(0, debito - creditoMes) + r * icmsAj.difalSobreReceita;
     const issv = issvBruto * reforma.icmsIssMult;
     saldoCredorICMS = Math.max(0, creditoMes - debito);
     let cbs = 0,
       ibs = 0;
     if (reforma.cbsPct > 0) {
-      const dCbs = cbsValor(r, reforma.cbsPct);
+      const dCbs = cbsValor(r, reforma.cbsPct * fatorVendaReforma);
       const cCbs = cbsValor(baseCreditoCbsIbsMonthly[i], cbsCredPct) + saldoCBS;
       cbs = Math.max(0, dCbs - cCbs);
       saldoCBS = Math.max(0, cCbs - dCbs);
     }
     if (reforma.ibsPct > 0) {
-      const dIbs = ibsValor(r, reforma.ibsPct);
+      const dIbs = ibsValor(r, reforma.ibsPct * fatorVendaReforma);
       const cIbs = ibsValor(baseCreditoCbsIbsMonthly[i], ibsCredPct) + saldoIBS;
       ibs = Math.max(0, dIbs - cIbs);
       saldoIBS = Math.max(0, cIbs - dIbs);
