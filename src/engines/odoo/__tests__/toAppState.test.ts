@@ -219,7 +219,7 @@ describe("mergeOdooActuals", () => {
     const merged = mergeOdooActuals(createState(), data);
     expect(merged.revenue.bruta[0]).toBe(10_000);
     expect(
-      merged.revenue.receitasFinanceiras.find((r) => r.id === "odoo:receitas-financeiras")
+      merged.revenue.receitasFinanceiras?.find((r) => r.id === "odoo:receitas-financeiras")
         ?.valores[0],
     ).toBe(1_000);
   });
