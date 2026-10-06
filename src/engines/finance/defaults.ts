@@ -593,3 +593,40 @@ export function migrateState(s: AppState): AppState {
     distribuicaoRealizada: distFinal,
   });
 }
+
+/**
+ * Empresa em branco para começar com dados reais: mesma estrutura do exemplo
+ * (rubricas de custo do setor, deduções, receitas financeiras), com todos os
+ * valores zerados.
+ */
+export function blankState(): AppState {
+  const zero = fill12(0);
+  return {
+    ...DEFAULT_STATE,
+    companyName: "Minha empresa",
+    numColaboradores: 0,
+    revenue: {
+      ...DEFAULT_STATE.revenue,
+      bruta: zero.slice(),
+      inadimplencia: zero.slice(),
+      deducoes: (DEFAULT_STATE.revenue.deducoes ?? []).map((d) => ({
+        ...d,
+        valores: zero.slice(),
+      })),
+      receitasFinanceiras: (DEFAULT_STATE.revenue.receitasFinanceiras ?? []).map((r) => ({
+        ...r,
+        valores: zero.slice(),
+      })),
+    },
+    costs: defaultCostsFor("servicos").map((c) => ({ ...c, values: zero.slice() })),
+    cashflow: { ...DEFAULT_STATE.cashflow, caixaMinimo: 0 },
+  };
+}
+
+/** Ainda são os dados de exemplo (nada foi digitado na receita nem no nome)? */
+export function isExampleState(s: AppState): boolean {
+  return (
+    s.companyName === DEFAULT_STATE.companyName &&
+    s.revenue.bruta.every((v, i) => v === DEFAULT_STATE.revenue.bruta[i])
+  );
+}

@@ -140,3 +140,26 @@ test("guia de primeiros passos reabre pelo botão de ajuda e leva à tela", asyn
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.locator("header").getByText("Receitas", { exact: true }).first()).toBeVisible();
 });
+
+test("empresa em branco: aviso nas telas de resultado e volta ao exemplo", async ({ page }) => {
+  await page.goto("/app");
+  await page.getByRole("button", { name: "Guia de primeiros passos" }).click();
+  await page.getByRole("button", { name: "Começar em branco" }).click();
+  await expect(page.getByRole("dialog", { name: /Empresa e regime/ })).toBeVisible();
+  await page.getByRole("button", { name: "Pular guia" }).click();
+
+  const sidebar = page.locator("[data-sidebar='sidebar']").first();
+  await sidebar.getByRole("button", { name: "Dashboard", exact: true }).click();
+  const aviso = page.getByRole("region", { name: "Sem dados lançados" });
+  await expect(aviso).toBeVisible();
+  await aviso.getByRole("button", { name: "Lançar receitas" }).click();
+  await expect(page.locator("header").getByText("Receitas", { exact: true }).first()).toBeVisible();
+  // Telas de cadastro não mostram o aviso.
+  await expect(aviso).toHaveCount(0);
+
+  // Restaura os dados de exemplo (os demais testes dependem deles).
+  await page.getByRole("button", { name: "Reset" }).click();
+  await page.getByRole("button", { name: "Restaurar", exact: true }).click();
+  await sidebar.getByRole("button", { name: "Dashboard", exact: true }).click();
+  await expect(aviso).toHaveCount(0);
+});

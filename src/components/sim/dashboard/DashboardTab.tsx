@@ -283,8 +283,14 @@ export function DashboardTab() {
         />
         <StatCard
           label="Alavancagem Patrimonial"
-          value={ind.dividaLiquida < 0 ? "Caixa > Dívida" : "Caixa < Dívida"}
-          tone={ind.dividaLiquida < 0 ? "pos" : "neg"}
+          value={
+            ind.dividaLiquida < 0
+              ? "Caixa > Dívida"
+              : ind.dividaLiquida > 0
+                ? "Caixa < Dívida"
+                : "Sem dívida líquida"
+          }
+          tone={ind.dividaLiquida < 0 ? "pos" : ind.dividaLiquida > 0 ? "neg" : undefined}
           sub={alav.value}
           hint={{
             description:
@@ -343,7 +349,10 @@ export function DashboardTab() {
         />
         <Gauge
           label="Liquidez Corrente"
-          value={ind.liquidezCorrente}
+          // Sem ativo nem passivo circulante (empresa sem dados), a razão não existe.
+          value={
+            ind.ativoCirculante <= 1 && ind.passivoCirculante <= 1 ? null : ind.liquidezCorrente
+          }
           max={3}
           suffix="x"
           hint={{

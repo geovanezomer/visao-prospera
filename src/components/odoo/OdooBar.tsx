@@ -13,6 +13,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { computeTrust, type TrustLevel } from "@/engines/odoo/trust";
 import { cn } from "@/lib/utils";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import type { OdooCockpit } from "./cockpit";
 import { fmtMonth } from "./format";
 
@@ -29,6 +30,7 @@ function since(iso: string | null): string {
 export function OdooBar({ cockpit }: { cockpit: OdooCockpit }) {
   // Celular: uma linha (empresa + luz de saúde); o resto abre no "⋯".
   const [mais, setMais] = useState(false);
+  const isAdmin = useIsAdmin();
   if (!cockpit.available) return null;
   const { snapshot, entity, data } = cockpit;
   const lock = entity?.rootId
@@ -89,8 +91,18 @@ export function OdooBar({ cockpit }: { cockpit: OdooCockpit }) {
             <span className="text-muted-foreground">Carregando dados do Odoo…</span>
           )}
           {!cockpit.loading && !snapshot && (
-            <span className="text-amber-600">
-              Nenhuma sincronização ainda — peça ao administrador para sincronizar.
+            <span className="text-amber-800 dark:text-amber-400">
+              {isAdmin ? (
+                <>
+                  Nenhuma sincronização ainda.{" "}
+                  <a className="underline" href="/admin?tab=odoo">
+                    Conectar e sincronizar o Odoo
+                  </a>{" "}
+                  — enquanto isso, use a Simulação livre.
+                </>
+              ) : (
+                "Nenhuma sincronização ainda — peça ao administrador para sincronizar. Enquanto isso, use a Simulação livre."
+              )}
             </span>
           )}
           {snapshot && (

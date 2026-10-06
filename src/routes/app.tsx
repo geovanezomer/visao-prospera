@@ -92,6 +92,8 @@ import { Button } from "@/components/ui/button";
 import { RotateCcw, Presentation, X, FileText, Printer } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FirstStepsGuide, GuideButton } from "@/components/onboarding/FirstStepsGuide";
+import { EmptyResultsNotice } from "@/components/onboarding/EmptyResultsNotice";
+import { blankState, isExampleState } from "@/engines/finance/defaults";
 import { useQuery } from "@tanstack/react-query";
 import { getCockpitConfig } from "@/lib/odoo/odoo.functions";
 import { LegalAcceptGate } from "@/components/LegalAcceptGate";
@@ -146,6 +148,19 @@ function suggestFor(
   const refData = ref === entity ? data : buildEntityData(snapshot, ref, endMonth);
   return suggestPremissas(DEFAULT_STATE, refData);
 }
+
+/** Telas que só fazem sentido com faturamento lançado (aviso de vazio). */
+const TELAS_DE_RESULTADO = new Set([
+  "dashboard",
+  "dre",
+  "balanco",
+  "caixa",
+  "indicadores",
+  "resultados",
+  "valuation",
+  "simulador",
+  "governanca",
+]);
 
 type AppTab = TabKey | "ai" | "calculadoras" | "consolidado" | "cockpit";
 
@@ -711,6 +726,11 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                         </div>
                       ) : (
                         <div className="space-y-6 animate-in fade-in duration-500">
+                          {!cockpit.active &&
+                            TELAS_DE_RESULTADO.has(activeTab) &&
+                            state.revenue.bruta.every((v) => !v) && (
+                              <EmptyResultsNotice onIrPara={(aba) => setActiveTab(aba as AppTab)} />
+                            )}
                           {activeTab === "receitas" &&
                             (cockpit.active ? <OdooActualsView kind="receitas" /> : <RevenueTab />)}
                           {activeTab === "custos" &&
@@ -782,6 +802,11 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                 modo={cockpit.active ? "odoo" : "manual"}
                 isAdmin={user.role === "admin"}
                 onIrPara={(aba) => setActiveTab(aba as AppTab)}
+                onEmpresaEmBranco={
+                  !cockpit.active && isExampleState(state)
+                    ? () => update(() => blankState())
+                    : undefined
+                }
               />
             )}
             {confirmDialog}

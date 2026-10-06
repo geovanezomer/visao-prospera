@@ -75,9 +75,13 @@ function RunwayCard({ state }: { state: AppState }) {
 
   const queimando = burnMedio3 > 0;
   const runwayMeses = queimando ? caixaAtual / burnMedio3 : Infinity;
-  const runwayLabel = !Number.isFinite(runwayMeses)
-    ? "∞ (gerando caixa)"
-    : `${runwayMeses.toFixed(1)} meses`;
+  // Sem caixa e sem operação (empresa sem dados) não há o que medir.
+  const semOperacao = caixaAtual === 0 && cf.fluxoOperacional.every((v) => Math.abs(v) < 0.005);
+  const runwayLabel = semOperacao
+    ? "—"
+    : !Number.isFinite(runwayMeses)
+      ? "∞ (gerando caixa)"
+      : `${runwayMeses.toFixed(1)} meses`;
 
   const tone =
     !Number.isFinite(runwayMeses) || runwayMeses > 12

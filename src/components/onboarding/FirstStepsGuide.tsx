@@ -125,11 +125,14 @@ export function FirstStepsGuide({
   modo,
   isAdmin,
   onIrPara,
+  onEmpresaEmBranco,
 }: {
   userId: string;
   modo: "manual" | "odoo";
   isAdmin: boolean;
   onIrPara: (aba: string) => void;
+  /** Troca os dados de exemplo por uma empresa em branco (só enquanto são os de exemplo). */
+  onEmpresaEmBranco?: () => void;
 }) {
   const [aberto, setAberto] = useState(false);
   const [i, setI] = useState(0);
@@ -174,6 +177,24 @@ export function FirstStepsGuide({
             {etapa.texto}
           </DialogDescription>
         </DialogHeader>
+        {i === 0 && onEmpresaEmBranco && (
+          <div className="flex flex-col gap-2 rounded-md border border-border/60 bg-muted/30 p-3 text-xs sm:flex-row sm:items-center">
+            <span className="flex-1 text-muted-foreground">
+              Vai lançar os dados de uma empresa real? Comece com tudo zerado, sem os números de
+              exemplo.
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                onEmpresaEmBranco();
+                setI(1);
+              }}
+            >
+              Começar em branco
+            </Button>
+          </div>
+        )}
         {etapa.aba && (
           <Button
             variant="outline"

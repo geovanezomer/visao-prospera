@@ -311,3 +311,19 @@ describe("migrateState — receita, tributos, estratégia e séries", () => {
     );
   });
 });
+
+describe("blankState / isExampleState", () => {
+  it("empresa em branco: estrutura do exemplo, valores zerados e motor sem erro", async () => {
+    const { blankState, isExampleState, DEFAULT_STATE } = await import("../defaults");
+    const { buildFinancialModel } = await import("../financialModel");
+    const b = blankState();
+    expect(b.revenue.bruta.every((v) => v === 0)).toBe(true);
+    expect(b.costs.length).toBeGreaterThan(0);
+    expect(b.costs.every((c) => c.values.every((v) => v === 0))).toBe(true);
+    expect(isExampleState(DEFAULT_STATE)).toBe(true);
+    expect(isExampleState(b)).toBe(false);
+    const m = buildFinancialModel(b);
+    expect(m.dre.receitaBruta.reduce((a, x) => a + x, 0)).toBe(0);
+    expect(m.dre.lucroLiquido.every(Number.isFinite)).toBe(true);
+  });
+});
