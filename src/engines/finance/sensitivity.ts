@@ -1,5 +1,6 @@
 import { AppState } from "./types";
 import { buildDRE } from "./dre";
+import { isLaborLine } from "./costs";
 import { calcIndicators } from "./indicators";
 import { resolveEffectiveRegime } from "./regime";
 import { buildCashFlow } from "./cashflow";
@@ -15,8 +16,6 @@ const DRIVER_LABEL: Record<DriverKey, string> = {
   fixos: "Custos Fixos não-folha",
   juros: "Despesas Financeiras",
 };
-
-const LABOR_RE = /sal[áa]rio|folha|clt|prolabore|pró-labore|mod|mão de obra/i;
 
 export function applyDriver(state: AppState, driver: DriverKey, deltaPct: number): AppState {
   const f = 1 + deltaPct / 100;
@@ -45,7 +44,7 @@ export function applyDriver(state: AppState, driver: DriverKey, deltaPct: number
     };
   }
   const costs = state.costs.map((c) => {
-    const isLabor = c.encargosAuto || LABOR_RE.test(c.label);
+    const isLabor = isLaborLine(c); // SSOT costs.ts
     let hit = false;
     if (driver === "cpv" && (c.category === "custo_vendas" || c.category === "direto_venda"))
       hit = true;

@@ -1,5 +1,6 @@
 import { AppState } from "./types";
 import { buildDRE } from "./dre";
+import { isLaborLine } from "./costs";
 import { resolveEffectiveRegime } from "./regime";
 import { buildCashFlow } from "./cashflow";
 import { sum } from "./format";
@@ -144,8 +145,6 @@ function correlatedNormals(L: number[][]): number[] {
   return out;
 }
 
-const LABOR_RE = /sal[áa]rio|folha|clt|prolabore|pró-labore|mod|mão de obra/i;
-
 /**
  * Aplica choques (já em unidades de desvio-padrão) ao AppState.
  * Recebe vetor [zPreco, zVolume, zCpv, zFolha] em N(0,1) correlacionados.
@@ -165,7 +164,7 @@ function shockState(s: AppState, cfg: MCConfig, shocks: number[]): AppState {
   const fReceita = fPreco * fVol;
   const revenue = { ...s.revenue, bruta: s.revenue.bruta.map((v) => v * fReceita) };
   const costs = s.costs.map((c) => {
-    const isLabor = c.encargosAuto || LABOR_RE.test(c.label);
+    const isLabor = isLaborLine(c); // SSOT costs.ts
     if (c.category === "custo_vendas") {
       // CPV total = volume × CPV unitário (ambos shocados).
       return { ...c, values: c.values.map((v) => v * fVol * fCpv) };

@@ -422,6 +422,13 @@ function costLineFor(acc: OdooActuals["plAccounts"][number]): CostLine | null {
     case "pessoal_beneficios":
       return {
         ...base,
+        // INSS patronal/RAT/terceiros (não FGTS): no Simples ficam dentro do DAS.
+        cppPatronal:
+          acc.line === "pessoal_encargos" &&
+          !/fgts/i.test(acc.name) &&
+          /inss|previd|social security|seguridade|\brat\b|\bsat\b|terceiros|sistema s|senai|sesc|sebrae|incra|sal[áa]rio[- ]educa/i.test(
+            acc.name,
+          ),
         label: `${COST_PREFIX[acc.line]}: ${clean}`,
         category: "despesa_administrativa",
         comportamento: "fixo",

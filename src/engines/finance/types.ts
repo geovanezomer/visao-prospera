@@ -156,6 +156,13 @@ export interface CostLine {
   custom?: boolean;
   /** Linha de folha CLT. Aplica encargos automáticos (INSS Patr + FGTS + RAT/S + provisão 13º/férias). */
   encargosAuto?: boolean;
+  /** Linha de contribuição patronal (INSS/CPP, RAT, terceiros) já lançada em
+   *  separado (ex.: vinda do Odoo). No Simples (exceto Anexo IV) a CPP está
+   *  dentro do DAS, então a linha zera ao simular esse regime. */
+  cppPatronal?: boolean;
+  /** Direcionador no simulador: "receita" (comissões, cartão — acompanha preço ×
+   *  volume), "volume" (custo por unidade) ou "fixo". Padrão: pela categoria. */
+  driver?: "receita" | "volume" | "fixo";
   /** % de encargos sobre o salário base (default 70% = INSS 20% + FGTS 8% + SAT/Sist.S ~5% + 13º + férias + 1/3). */
   encargosPct?: number;
   /** Linha de custo de aquisição que NÃO gera crédito de ICMS/PIS/COFINS (ex: ICMS-ST, simples nacional do fornecedor).
@@ -536,6 +543,9 @@ export interface CashFlowConfig {
   capex: Months;
   dividendos: Months;
   amortizacoes: Months;
+  /** Quitação antecipada pontual (simulador). Entra nas amortizações do ano,
+   *  mas NÃO se repete na projeção plurianual (é evento único). */
+  amortizacaoExtraordinaria?: Months;
   /** Empréstimos concedidos a sócios (mútuo PJ→PF) — saída de caixa.
    *  Derivado de state.mutuosSocios via aggregateMutuos (SSOT). */
   /** Empréstimos concedidos a sócios (mútuo PJ→PF) — saída de caixa.

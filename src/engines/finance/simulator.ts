@@ -10,7 +10,7 @@ import { AppState, CostLine, TaxRegime } from "./types";
 import { sumContractSaldos } from "./debtContracts";
 import { buildDRE, type DRE } from "./dre";
 import { calcIndicators, type Indicators } from "./indicators";
-import { monthValues } from "./costs";
+import { monthValues, isLaborLine, PROLABORE_RE } from "./costs";
 import { resolveEffectiveRegime } from "./regime";
 import { buildValuation, defaultValuationParams } from "./valuation";
 import { buildCashFlow, type CashFlow } from "./cashflow";
@@ -30,11 +30,21 @@ import {
   topNFixedLines as p_topNFixedLines,
 } from "./levers/primitives";
 
-// Mesmo regex usado em sensitivity.ts/prescriptive.ts — verdade única para identificar folha.
-const LABOR_RE = /sal[áa]rio|folha|clt|prolabore|pr[óo]-labore|mod|m[ãa]o de obra/i;
-const PROLABORE_RE = /pr[óo]-?labore|prolabore/i;
-const isLaborLine = (c: CostLine) => c.encargosAuto === true || LABOR_RE.test(c.label);
+// SSOT de folha/pró-labore (costs.ts) — o regex local antigo pegava "Comodato".
 const isProlaboreLine = (c: CostLine) => PROLABORE_RE.test(c.label);
+
+/** Linhas cujo valor acompanha a RECEITA (preço × volume): comissões, taxas de
+ *  cartão/gateway, marketplace, royalties. Demais variáveis acompanham só o volume. */
+const REVENUE_DRIVEN_RE =
+  /comiss|cart[ãa]o|adquir[êe]ncia|gateway|marketplace|royalt|intermedia[çc][ãa]o/i;
+export function costDriver(c: CostLine): "receita" | "volume" | "fixo" {
+  if (c.driver) return c.driver;
+  const isCpv = c.category === "custo_vendas" || c.category === "direto_venda";
+  const isOpVar = c.category === "variavel" || c.category === "despesa_comercial";
+  const comportamento = c.comportamento ?? (isCpv || isOpVar ? "variavel" : "fixo");
+  if (comportamento !== "variavel") return "fixo";
+  return REVENUE_DRIVEN_RE.test(c.label) ? "receita" : "volume";
+}
 
 export interface SimulatorParams {
   // Receita & Preço
@@ -56,7 +66,9 @@ export interface SimulatorParams {
   // Capital de Giro
   pmrDeltaDays: number; // -60..0    (sempre reduz ou 0)
   pmpDeltaDays: number; // 0..+60    (sempre aumenta ou 0)
-  antecipPctAm: number; // 0..6      custo % a.m. sobre 50% da receita
+  antecipPctAm: number; // 0..6      custo % a.m. da antecipação
+  /** % da carteira antecipada (default 50). */
+  antecipShare?: number;
   inadimplenciaDeltaPp: number; // -5..+10 p.p. somados à inadimplência mensal
 
   // Dívida & Juros
@@ -85,6 +97,7 @@ export const DEFAULT_SIM: SimulatorParams = {
   pmrDeltaDays: 0,
   pmpDeltaDays: 0,
   antecipPctAm: 0,
+  antecipShare: 50,
   inadimplenciaDeltaPp: 0,
 
   loanPrincipal: 0,
@@ -138,37 +151,33 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     tax: { ...base.tax },
   };
 
-  // 1) Preço — primitiva adjustRevenue (escala receita bruta).
-  if (p.priceDeltaPct !== 0) {
-    s.revenue = p_adjustRevenue(s, 1 + p.priceDeltaPct / 100).revenue;
-  }
-
-  // 2) Volume: receita + custo_vendas + variavel + deduções absolutas (S2)
-  // Inadimplência é %, escala automaticamente. Devoluções/descontos/abatimentos são R$ absolutos —
-  // precisam crescer junto, senão Receita Líquida fica artificialmente alta em volumes maiores.
-  // Volume efetivo = volumeDeltaPct manual + induzido pela elasticidade-preço.
-  // E.g., E=1.2 e +10% preço → −12% volume induzido. Clamp em [−90, +200] para
-  // evitar destruição completa da receita em combinações extremas.
-  const inducedVolPct = -(p.priceElasticity || 0) * (p.priceDeltaPct || 0);
-  const effectiveVolPct = Math.max(-90, Math.min(200, (p.volumeDeltaPct || 0) + inducedVolPct));
-  if (effectiveVolPct !== 0) {
-    const f = 1 + effectiveVolPct / 100;
-    s.revenue.bruta = s.revenue.bruta.map((v) => v * f);
-
+  // 1+2) Preço e volume.
+  // Elasticidade de ELASTICIDADE CONSTANTE: volume induzido = (1+Δp)^(−E).
+  // (A forma linear −E×Δp errava muito em variações grandes: E=2 e +30% de
+  // preço dava receita ×0,52 em vez de ×0,77.) Volume manual compõe
+  // multiplicativamente. Fator limitado a [0,1; 6].
+  const fp = 1 + (p.priceDeltaPct || 0) / 100;
+  const fvInduzido = p.priceElasticity ? Math.pow(Math.max(0.01, fp), -p.priceElasticity) : 1;
+  const fv = Math.max(0.1, Math.min(6, (1 + (p.volumeDeltaPct || 0) / 100) * fvInduzido));
+  if (fp !== 1) s.revenue = p_adjustRevenue(s, fp).revenue;
+  if (fv !== 1) s.revenue.bruta = s.revenue.bruta.map((v) => v * fv);
+  if (fp !== 1 || fv !== 1) {
+    // Devoluções/descontos em R$ acompanham a receita (preço × volume).
     if (s.revenue.deducoes) {
       s.revenue.deducoes = s.revenue.deducoes.map((d) => ({
         ...d,
-        valores: d.valores.map((v) => v * f),
+        valores: d.valores.map((v) => v * fp * fv),
       }));
     }
-    s.costs = s.costs.map((c) =>
-      c.category === "custo_vendas" ||
-      c.category === "direto_venda" ||
-      c.category === "variavel" ||
-      c.category === "despesa_comercial"
-        ? { ...c, values: c.values.map((v) => v * f) }
-        : c,
-    );
+    // Custos pelo direcionador: receita (comissões, cartão) → preço × volume;
+    // variáveis por unidade → volume; fixos (inclusive MO CLT no CPV marcada
+    // como fixa) não se mexem.
+    s.costs = s.costs.map((c) => {
+      const d = costDriver(c);
+      if (d === "fixo") return c;
+      const f = d === "receita" ? fp * fv : fv;
+      return f === 1 ? c : { ...c, values: c.values.map((v) => v * f) };
+    });
   }
 
   // 3) CPV — escala TODAS as linhas tratadas como CPV (custo_vendas E direto_venda).
@@ -232,48 +241,53 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
   }
 
   // 7) PMR / PMP — primitivas setPmr / setPmp.
+  // Também desloca as séries mensais (com sazonalidade de prazo, o escalar era ignorado).
   if (p.pmrDeltaDays !== 0) {
     s.revenue = p_setPmr(s, s.revenue.pmr + p.pmrDeltaDays).revenue;
+    if (s.revenue.pmrMensal)
+      s.revenue.pmrMensal = s.revenue.pmrMensal.map((v) =>
+        Math.max(0, v + p.pmrDeltaDays),
+      ) as typeof s.revenue.pmrMensal;
   }
   if (p.pmpDeltaDays !== 0) {
     s.revenue = p_setPmp(s, s.revenue.pmp + p.pmpDeltaDays).revenue;
+    if (s.revenue.pmpMensal)
+      s.revenue.pmpMensal = s.revenue.pmpMensal.map((v) =>
+        Math.max(0, v + p.pmpDeltaDays),
+      ) as typeof s.revenue.pmpMensal;
   }
 
-  // 8) Antecipação de recebíveis — custo financeiro + aceleração de caixa (PMR ↓).
-  //    Hipótese: antecipa-se 50% da carteira; reduzimos PMR proporcionalmente ao % a.m.,
-  //    cap em 20 dias para evitar redução irreal em taxas altas.
+  // 8) Antecipação de recebíveis: antecipa-se a fração `a` da carteira.
+  //    Custo = a × receita × taxa a.m. × (PMR/30) + IOF (0,38% + 0,0082%/dia).
+  //    Caixa: PMR efetivo cai para PMR × (1 − a) (deslocamento fracionário).
   if (p.antecipPctAm > 0) {
-    const custo = s.revenue.bruta.map((v) => v * 0.5 * (p.antecipPctAm / 100));
+    const a = Math.max(0, Math.min(1, (p.antecipShare ?? 50) / 100));
+    const pmr = Math.max(0, s.revenue.pmr);
+    const taxaPeriodo = (p.antecipPctAm / 100) * (pmr / 30) + 0.0038 + 0.000082 * pmr;
+    const custo = s.revenue.bruta.map((v) => v * a * taxaPeriodo);
     s.costs.push({
       id: "sim_antecip",
-      label: `Antecipação de recebíveis (${p.antecipPctAm.toFixed(2)}% a.m.)`,
+      label: `Antecipação de recebíveis (${p.antecipPctAm.toFixed(2)}% a.m. + IOF, ${Math.round(a * 100)}% da carteira)`,
       category: "financeiro",
       values: custo,
       fixed: false,
       custom: true,
     });
-    const reduce = Math.min(20, Math.round(s.revenue.pmr * 0.5));
-    s.revenue = p_setPmr(s, Math.max(0, s.revenue.pmr - reduce)).revenue;
+    s.revenue = p_setPmr(s, pmr * (1 - a)).revenue;
+    if (s.revenue.pmrMensal)
+      s.revenue.pmrMensal = s.revenue.pmrMensal.map(
+        (v) => v * (1 - a),
+      ) as typeof s.revenue.pmrMensal;
   }
 
-  // 9) kd / Selic — escala juros existentes (linhas financeiras com "juros" no rótulo
-  //    OU linhas sintéticas do simulador/contratos de dívida).
+  // 10) Quitar dívida EXISTENTE (antes de captar). Saldo dos contratos cai UMA
+  //     vez; juros das linhas de juros caem na mesma proporção; o pagamento é
+  //     evento único (não se repete na projeção plurianual).
   const isInterestLine = (c: CostLine) =>
     c.category === "financeiro" &&
     (/juros/i.test(c.label) || c.id === "sim_loan_juros" || c.id.startsWith("__debt_contracts"));
-  if (p.kdDeltaPp !== 0) {
-    const kdAtual = Math.max(s.capital.kd, 0.5);
-    const novoKd = Math.max(0.5, s.capital.kd + p.kdDeltaPp);
-    const fator = novoKd / kdAtual;
-    s.capital.kd = novoKd;
-    s.costs = s.costs.map((c) =>
-      isInterestLine(c) ? { ...c, values: c.values.map((v) => v * fator) } : c,
-    );
-  }
-
-  // 10) Quitar dívida EXISTENTE (antes de captar)
   if (p.debtPaydownPct > 0) {
-    const pct = p.debtPaydownPct / 100;
+    const pct = Math.min(1, p.debtPaydownPct / 100);
     const pago = sumContractSaldos(s.capital.debtContracts) * pct;
     s.capital = {
       ...s.capital,
@@ -285,14 +299,9 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     s.costs = s.costs.map((c) =>
       isInterestLine(c) ? { ...c, values: c.values.map((v) => v * (1 - pct)) } : c,
     );
-    // Reduz também o saldo dos contratos para que a projeção plurianual reflita a quitação.
-    if (s.capital.debtContracts?.length) {
-      s.capital.debtContracts = s.capital.debtContracts.map((d) => ({
-        ...d,
-        saldoDevedor: Math.max(0, (d.saldoDevedor || 0) * (1 - pct)),
-      }));
-    }
-    s.cashflow.amortizacoes[0] = (s.cashflow.amortizacoes[0] || 0) + pago;
+    const extra = (s.cashflow.amortizacaoExtraordinaria ?? Array(12).fill(0)).slice();
+    extra[0] = (extra[0] || 0) + pago;
+    s.cashflow.amortizacaoExtraordinaria = extra as typeof s.cashflow.amortizacoes;
   }
 
   // 11) Captar empréstimo NOVO (PRICE) — depois da quitação.
@@ -325,8 +334,9 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
       fixed: false,
       custom: true,
     });
-    // Contrato sintético para projeção plurianual (taxa aa equivalente nominal).
-    const taxaAA = p.loanRatePctAm * 12;
+    // Contrato sintético para projeção plurianual: taxa EFETIVA anual
+    // ((1+i)^12 − 1), que é como scheduleContract a interpreta.
+    const taxaAA = (Math.pow(1 + i, 12) - 1) * 100;
     s.capital.debtContracts = [
       ...(s.capital.debtContracts ?? []),
       {
@@ -341,6 +351,25 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
         valorCaptado: p.loanPrincipal,
       },
     ];
+  }
+
+  // 11b) kd / Selic — ADITIVO: Δjuros = Δkd × dívida média (contratos,
+  //      inclusive o empréstimo simulado) ÷ 12 por mês. A forma antiga
+  //      (razão de kd com piso) dobrava os juros com +1 p.p. quando kd = 0.
+  if (p.kdDeltaPp !== 0) {
+    const divida = sumContractSaldos(s.capital.debtContracts);
+    const deltaMes = ((p.kdDeltaPp / 100) * divida) / 12;
+    s.capital.kd = Math.max(0, (s.capital.kd || 0) + p.kdDeltaPp);
+    if (divida > 0 && deltaMes !== 0) {
+      s.costs.push({
+        id: "sim_kd",
+        label: `Variação do custo da dívida (${p.kdDeltaPp > 0 ? "+" : ""}${p.kdDeltaPp.toFixed(1)} p.p. a.a.)`,
+        category: "financeiro",
+        values: Array(12).fill(deltaMes),
+        fixed: false,
+        custom: true,
+      });
+    }
   }
 
   // 12) Regime — primitiva switchRegime.
@@ -423,13 +452,11 @@ export function computeSimView(state: AppState, precomputed?: SimViewPrecomputed
 
   // Comerciais (variavel) / Administrativas (fixo) / Financeiras (financeiro) — usa regime EFETIVO.
   let despComerciais = 0,
-    despAdmin = 0,
-    despFinanc = 0;
+    despAdmin = 0;
   for (const c of state.costs) {
     const v = sum(monthValues(c, regime));
     if (c.category === "despesa_comercial" || c.category === "variavel") despComerciais += v;
     else if (c.category === "despesa_administrativa" || c.category === "fixo") despAdmin += v;
-    else if (c.category === "financeiro") despFinanc += v;
   }
   // Outras receitas/(despesas) operacionais — alinhado ao buildDRE:
   //   outras = outrasReceitasOperacionais − depreciação (D&A entra como redutor).
@@ -467,7 +494,8 @@ export function computeSimView(state: AppState, precomputed?: SimViewPrecomputed
     receitasFinanceiras: receitasFin,
     ganhoAlienacao: ganhoAlien,
     laft,
-    despesasFinanceiras: despFinanc,
+    // Mesma série da DRE (com a deduplicação de juros de contratos).
+    despesasFinanceiras: sum(dre.custosFinanceirosTotal),
     resultadoFinanceiro: sum(dre.resultadoFinanceiro),
     lair: sum(dre.lair),
     impostos: impostosAnuais,

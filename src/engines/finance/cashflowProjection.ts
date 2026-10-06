@@ -174,11 +174,15 @@ function projectScenario(
       debtDelta.deltaJuros[i] +
       cf.pagamentosImpostos[b] * rFator;
     const capex = cf.capex[b];
+    // Eventos únicos do ano-base (captações e quitação antecipada) não se repetem.
+    const primeiroAno = i <= 12;
+    const captacao = primeiroAno ? cf.emprestimosCaptados[b] : 0;
+    const quitacao = primeiroAno ? 0 : (state.cashflow?.amortizacaoExtraordinaria?.[b] ?? 0);
     const financiamento =
       cf.aportes[b] +
-      cf.emprestimosCaptados[b] +
+      captacao +
       extraCapt[i] -
-      cf.amortizacoes[b] -
+      (cf.amortizacoes[b] - quitacao) -
       debtDelta.deltaAmort[i] -
       extraAmort[i] -
       cf.dividendos[b];

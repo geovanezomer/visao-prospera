@@ -84,21 +84,16 @@ export function shiftByDaysSplit(
   values: number[],
   lagDays: number,
 ): { inAno: number[]; transbordo: number } {
-  const lag = Math.max(0, Math.round(lagDays / 30));
-  if (lag === 0) return { inAno: values.slice(), transbordo: 0 };
-  const out = zeros12();
-  let transbordo = 0;
-  for (let i = 0; i < 12; i++) {
-    const t = i + lag;
-    if (t < 12) out[t] += values[i];
-    else transbordo += values[i];
-  }
-  return { inAno: out, transbordo };
+  return shiftByDaysSplitMonthly(values, Array(12).fill(lagDays));
 }
 
 /**
  * Variante por mês: cada mês `i` tem seu próprio lag (em dias).
  * Útil quando o PMR/PMP varia ao longo do ano (sazonalidade, mix de clientes etc.).
+ *
+ * Deslocamento FRACIONÁRIO: 45 dias = metade em i+1 e metade em i+2. Antes o
+ * lag era arredondado para meses inteiros, e reduzir o PMR de 40 para 26 dias
+ * não mudava o caixa em nada.
  */
 export function shiftByDaysSplitMonthly(
   values: number[],
@@ -106,11 +101,18 @@ export function shiftByDaysSplitMonthly(
 ): { inAno: number[]; transbordo: number } {
   const out = zeros12();
   let transbordo = 0;
+  const place = (t: number, v: number) => {
+    if (t < 12) out[t] += v;
+    else transbordo += v;
+  };
   for (let i = 0; i < 12; i++) {
-    const lag = Math.max(0, Math.round((lagDaysByMonth[i] || 0) / 30));
-    const t = i + lag;
-    if (t < 12) out[t] += values[i];
-    else transbordo += values[i];
+    const v = values[i] || 0;
+    if (!v) continue;
+    const x = Math.max(0, lagDaysByMonth[i] || 0) / 30;
+    const k = Math.floor(x);
+    const w = x - k;
+    place(i + k, v * (1 - w));
+    if (w > 0) place(i + k + 1, v * w);
   }
   return { inAno: out, transbordo };
 }
@@ -515,7 +517,9 @@ export function buildCashFlowEngine(
 
   const aportes = cashflow.aportes.slice();
   const emprestimosCaptados = cashflow.emprestimosCaptados.slice();
-  const amortizacoes = cashflow.amortizacoes.slice();
+  const amortizacoes = cashflow.amortizacoes.map(
+    (v, i) => v + (cashflow.amortizacaoExtraordinaria?.[i] ?? 0),
+  );
   // [SSOT] Dividendos/distribuição saem SEMPRE de state.distribuicaoRealizada
   // (fonte única cadastrada em Pró-labore). cashflow.dividendos permanece como
   // fallback legado apenas se distribuicaoRealizada não existir.
