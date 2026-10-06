@@ -46,7 +46,27 @@ export const fmtNum = (n: number, d = 2) =>
  * SSOT — antes duplicado em IndicatorsTab/IndicatorsCard.
  */
 export const fmtTimes = (v: number | null, base: number, decimals = 1): string =>
-  v == null ? "N/A" : base <= 0 ? "—" : `${v.toFixed(decimals)}×`;
+  v == null
+    ? "N/A"
+    : base <= 0 || !Number.isFinite(v)
+      ? "—"
+      : v >= INDICADOR_TETO
+        ? `> ${INDICADOR_TETO}×`
+        : v <= -INDICADOR_TETO
+          ? `< −${INDICADOR_TETO}×`
+          : `${fmtNum(v, decimals)}×`;
+
+/**
+ * Teto técnico dos indicadores no motor (evita Infinity quando o denominador
+ * some). Valor no teto não é resultado: a razão não se aplica e a tela mostra "—".
+ */
+export const INDICADOR_TETO = 99;
+export const indicadorValido = (n: number | null | undefined): n is number =>
+  n != null && Number.isFinite(n) && Math.abs(n) < INDICADOR_TETO;
+
+/** Liquidez: negativa (ativo circulante < 0) ou no teto (sem passivo) = "—". */
+export const fmtLiquidez = (n: number, d = 2) =>
+  indicadorValido(n) && n >= 0 ? fmtRatio(n, d) : "—";
 
 /** Razão sem unidade — ex.: liquidez 4,44. */
 export const fmtRatio = (n: number, d = 2) =>
@@ -58,7 +78,8 @@ export const fmtRatio = (n: number, d = 2) =>
 export const fmtDays = (n: number, d = 0) => (Number.isFinite(n) ? `${fmtNum(n, d)} dias` : "—");
 
 /** Anos (payback, amortização). */
-export const fmtAnos = (n: number, d = 1) => (Number.isFinite(n) ? `${fmtNum(n, d)} anos` : "—");
+export const fmtAnos = (n: number, d = 1) =>
+  indicadorValido(n) && n >= 0 ? `${fmtNum(n, d)} anos` : "—";
 
 export const sum = (arr: number[]) => arr.reduce((a, b) => a + (Number(b) || 0), 0);
 export const avg = (arr: number[]) => (arr.length ? sum(arr) / arr.length : 0);

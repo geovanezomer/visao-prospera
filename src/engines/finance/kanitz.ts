@@ -45,6 +45,9 @@ export interface KanitzResult {
   baseInsuficiente: boolean;
 }
 
+/** Teto técnico de liquidez em indicators.ts (CAP_LIQ). */
+const LIQ_TETO = 99;
+
 const W = { x1: 0.05, x2: 1.65, x3: 3.55, x4: -1.06, x5: -0.33 } as const;
 
 export function calcKanitz(state: AppState, ind: Indicators): KanitzResult {
@@ -52,7 +55,12 @@ export function calcKanitz(state: AppState, ind: Indicators): KanitzResult {
   const PL = Math.max(0, capital.patrimonioLiquido);
 
   // Sem PL positivo o modelo perde sentido econômico (denominador X1 e X5).
-  if (PL <= 0) {
+  // Liquidez no teto técnico (sem passivo circulante) ou negativa (ativo
+  // circulante < 0) também: o índice explodiria (ex.: FI 159,99 na escala ±7).
+  const liqInvalida = [ind.liquidezGeral, ind.liquidezSeca, ind.liquidezCorrente].some(
+    (x) => !Number.isFinite(x) || x < 0 || x >= LIQ_TETO,
+  );
+  if (PL <= 0 || liqInvalida) {
     return {
       fi: NaN,
       status: "indisponivel",
@@ -132,7 +140,8 @@ export function calcKanitz(state: AppState, ind: Indicators): KanitzResult {
 
 /** Memória de cálculo formatada (pt-BR) para tooltip/expansor. */
 export function kanitzCalcMemo(k: KanitzResult): string {
-  if (k.baseInsuficiente) return "Base insuficiente — informe Patrimônio Líquido > 0.";
+  if (k.baseInsuficiente)
+    return "Base insuficiente — informe Patrimônio Líquido > 0 e o circulante (caixa, contas a receber, fornecedores) no Balanço.";
   const f = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
   return [
     `X1 (LL/PL)        = ${f(k.x1)}  ×  0,05  = ${f(k.c1)}`,

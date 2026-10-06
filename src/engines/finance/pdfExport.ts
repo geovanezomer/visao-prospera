@@ -18,6 +18,7 @@ import { sum, fmtBRL, fmtPct, MESES } from "@/engines/finance/format";
 import type { StrategicPdfInsights } from "@/engines/finance/strategic2";
 import type { AppState, BalancoDetalhado, TaxRegime } from "@/engines/finance/types";
 import type { FinancialModel } from "@/engines/finance/financialModel";
+import { HEALTH_LABEL } from "@/engines/finance/health";
 import {
   effectiveMonthValues,
   isAdminCost,
@@ -241,12 +242,12 @@ function drawCover(
   doc.setLineWidth(0.7);
   doc.line(PAGE_MARGIN, h * 0.58, PAGE_MARGIN + 80, h * 0.58);
 
-  // Score executivo (Guardian)
+  // Nota de saúde financeira (mesma do app)
   const scoreColor = scoreTone === "ok" ? OK : scoreTone === "warn" ? WARN : BAD;
   doc.setFont(FONT, "normal");
   doc.setFontSize(9);
   setColor(doc, "text", COVER_MUTED);
-  doc.text("GUARDIAN SCORE", PAGE_MARGIN, h * 0.62);
+  doc.text("NOTA DE SAÚDE FINANCEIRA", PAGE_MARGIN, h * 0.62);
 
   doc.setFont(FONT, "bold");
   doc.setFontSize(64);
@@ -838,27 +839,15 @@ function drawTop5Despesas(doc: jsPDF, yStart: number, model: FinancialModel): nu
   return y + 16;
 }
 
-// ── Score de saúde (mesma fórmula do DashboardExtras) ─────────────────
+// ── Nota de saúde: a MESMA do Dashboard e do Diagnóstico (computeHealth) ──
 
-function computeGuardianScore(ind: FinancialModel["ind"]): {
+function notaSaude(health: FinancialModel["health"]): {
   score: number;
   conceito: string;
   tone: "ok" | "warn" | "bad";
 } {
-  const parts = [
-    Math.min(100, Math.max(0, (ind.liquidezCorrente / 2) * 100)),
-    Math.min(100, Math.max(0, 100 - ind.endividamentoOneroso * 1.5)),
-    Math.min(100, Math.max(0, ind.margemLiquida * 5)),
-    Math.min(100, Math.max(0, (ind.coberturaJuros ?? 5) * 20)),
-    Math.min(100, Math.max(0, (ind.roe ?? 0) * 5)),
-    Math.min(100, Math.max(0, ind.conversaoEbitdaCaixa)),
-    Math.min(100, Math.max(0, 100 - ind.dividaLiqEbitda * 25)),
-  ];
-  const score = parts.reduce((a, b) => a + b, 0) / parts.length;
-  const conceito =
-    score >= 80 ? "Excelente" : score >= 65 ? "Boa" : score >= 45 ? "Atenção" : "Crítica";
-  const tone: "ok" | "warn" | "bad" = score >= 65 ? "ok" : score >= 45 ? "warn" : "bad";
-  return { score, conceito, tone };
+  const tone = health.status === "ok" ? "ok" : health.status === "warn" ? "warn" : "bad";
+  return { score: health.total, conceito: HEALTH_LABEL[health.grade], tone };
 }
 
 // =====================================================================
@@ -949,7 +938,7 @@ export async function exportFinancePDF({
   const companyName = state.companyName?.trim() || "Empresa Cliente";
   const { dre, ind, cf, balancoFechamento, regime, tax } = model;
   const periodoMeses = state.periodoAnaliseMeses ?? 12;
-  const { score, conceito, tone } = computeGuardianScore(ind);
+  const { score, conceito, tone } = notaSaude(model.health);
   // `diags` e `prescriptive` chegam JÁ CALCULADOS via `ExportPDFInput`
   // — pdfExport é render-only e nunca invoca `diagnose` ou
   // `buildPrescriptiveCards` diretamente (ver guardrail em
@@ -1056,7 +1045,7 @@ export async function exportFinancePDF({
     },
     { label: "WACC", value: fmtPct(ind.wacc / 100), sub: "Custo de capital ponderado" },
     {
-      label: "Guardian Score",
+      label: "Nota de saúde",
       value: `${score.toFixed(0)}/100`,
       sub: `Classificação: ${conceito}`,
       tone,

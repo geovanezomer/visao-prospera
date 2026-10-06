@@ -28,7 +28,15 @@ import {
 } from "recharts";
 import { AppState } from "@/engines/finance/types";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { fmtBRL, sum } from "@/engines/finance/format";
+import { HEALTH_LABEL } from "@/engines/finance/health";
+import {
+  fmtBRL,
+  fmtLiquidez,
+  fmtNum,
+  fmtTimes,
+  indicadorValido,
+  sum,
+} from "@/engines/finance/format";
 import { aggregateContracts } from "@/engines/finance/debtContracts";
 import { AlertTriangle, CheckCircle2, AlertCircle, Wallet, TrendingDown } from "lucide-react";
 
@@ -193,12 +201,21 @@ function statusLabel(s: Status) {
 
 function SemaforoPanel({ state }: { state: AppState }) {
   const { ind } = useFinanceModel(state);
+  const liquidezOk = indicadorValido(ind.liquidezCorrente) && ind.liquidezCorrente >= 0;
 
   const itens: { nome: string; status: Status; descricao: string }[] = [
     {
       nome: "Liquidez Corrente",
-      status: ind.liquidezCorrente >= 1.5 ? "ok" : ind.liquidezCorrente >= 1 ? "warn" : "bad",
-      descricao: `${ind.liquidezCorrente.toFixed(2)}x — capacidade de honrar dívidas de curto prazo`,
+      status: !liquidezOk
+        ? "warn"
+        : ind.liquidezCorrente >= 1.5
+          ? "ok"
+          : ind.liquidezCorrente >= 1
+            ? "warn"
+            : "bad",
+      descricao: liquidezOk
+        ? `${fmtLiquidez(ind.liquidezCorrente)}× — capacidade de honrar dívidas de curto prazo`
+        : "Não se aplica — revise caixa e contas do circulante no Balanço",
     },
     {
       nome: "Endividamento (Oneroso)",
@@ -206,12 +223,12 @@ function SemaforoPanel({ state }: { state: AppState }) {
       // não deve pintar a empresa de vermelho sozinho — vira sub-alerta de ciclo.
       status:
         ind.endividamentoOneroso <= 40 ? "ok" : ind.endividamentoOneroso <= 60 ? "warn" : "bad",
-      descricao: `${ind.endividamentoOneroso.toFixed(1)}% oneroso · ${ind.endividamentoGeral.toFixed(1)}% total (com passivo operacional)`,
+      descricao: `${fmtNum(ind.endividamentoOneroso, 1)}% oneroso · ${fmtNum(ind.endividamentoGeral, 1)}% total (com passivo operacional)`,
     },
     {
       nome: "Margem Líquida",
       status: ind.margemLiquida >= 10 ? "ok" : ind.margemLiquida >= 3 ? "warn" : "bad",
-      descricao: `${ind.margemLiquida.toFixed(1)}% — lucro sobrante a cada R$ de receita`,
+      descricao: `${fmtNum(ind.margemLiquida, 1)}% — lucro sobrante a cada R$ de receita`,
     },
     {
       nome: "Cobertura de Juros",
@@ -226,12 +243,16 @@ function SemaforoPanel({ state }: { state: AppState }) {
       descricao:
         ind.coberturaJuros == null
           ? "N/A — sem dívida a servir"
-          : `${ind.coberturaJuros.toFixed(1)}x — EBIT cobre os juros quantas vezes`,
+          : `${fmtTimes(ind.coberturaJuros, 1)} — EBIT cobre os juros quantas vezes`,
     },
     {
       nome: "Dívida Líq./EBITDA",
       status: ind.dividaLiqEbitda <= 2 ? "ok" : ind.dividaLiqEbitda <= 3.5 ? "warn" : "bad",
-      descricao: `${ind.dividaLiqEbitda.toFixed(2)}x — anos de EBITDA para zerar a dívida`,
+      descricao: indicadorValido(ind.dividaLiqEbitda)
+        ? `${fmtNum(ind.dividaLiqEbitda, 2)}× — anos de EBITDA para zerar a dívida`
+        : ind.dividaLiquida <= 0
+          ? "Sem dívida líquida (caixa maior que a dívida)"
+          : "EBITDA negativo — não se aplica",
     },
     {
       nome: "Conversão de Caixa",
@@ -354,33 +375,16 @@ function CronogramaDividas({ state }: { state: AppState }) {
 
 // ============ 4. SCORE DE SAÚDE 0-100 ============
 function ScoreSaude({ state }: { state: AppState }) {
-  const { ind } = useFinanceModel(state);
-
-  // Normaliza cada métrica em 0–100 (com tetos pragmáticos para PMEs)
-  const score = useMemo(() => {
-    const norms = [
-      Math.min(100, Math.max(0, (ind.liquidezCorrente / 2) * 100)), // 2x = 100
-      Math.min(100, Math.max(0, 100 - ind.endividamentoOneroso * 1.5)), // dívida onerosa: 66% → 0
-      Math.min(100, Math.max(0, ind.margemLiquida * 5)), // 20% = 100
-      Math.min(100, Math.max(0, (ind.coberturaJuros ?? 5) * 20)), // sem dívida → 100
-      Math.min(100, Math.max(0, (ind.roe ?? 0) * 5)), // 20% = 100 (null → neutro 0)
-      Math.min(100, Math.max(0, ind.conversaoEbitdaCaixa)), // 100%
-      Math.min(100, Math.max(0, 100 - ind.dividaLiqEbitda * 25)), // 4x = 0
-    ];
-    return norms.reduce((a, b) => a + b, 0) / norms.length;
-  }, [ind]);
-
-  const cor = score >= 70 ? "var(--success)" : score >= 40 ? "#F5B85B" : "var(--destructive)";
-  const conceito =
-    score >= 80
-      ? "Excelente"
-      : score >= 65
-        ? "Boa"
-        : score >= 45
-          ? "Regular"
-          : score >= 30
-            ? "Frágil"
-            : "Crítica";
+  // Mesma nota do Diagnóstico e do PDF (computeHealth): uma régua só.
+  const { health } = useFinanceModel(state).model;
+  const score = health.total;
+  const cor =
+    health.status === "ok"
+      ? "var(--success)"
+      : health.status === "warn"
+        ? "#F5B85B"
+        : "var(--destructive)";
+  const conceito = `${HEALTH_LABEL[health.grade]} · Nota ${health.grade}`;
 
   const data = [
     { name: "score", value: score, fill: cor },
@@ -421,8 +425,7 @@ function ScoreSaude({ state }: { state: AppState }) {
         </div>
       </div>
       <div className="mt-2 text-center text-[11px] text-muted-foreground">
-        Nota agregada de 7 indicadores: liquidez, endividamento, margem, juros, ROE, conversão de
-        caixa e Dív.Líq./EBITDA.
+        A mesma nota do Diagnóstico, onde está o detalhe de cada dimensão.
       </div>
     </Card>
   );

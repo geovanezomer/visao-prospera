@@ -20,7 +20,13 @@ import {
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { getFinancialModelCached } from "@/engines/finance/financialModel";
 import { diagnose } from "@/engines/finance/diagnose";
-import { fmtBRL, fmtBRLCompact } from "@/engines/finance/format";
+import {
+  fmtBRL,
+  fmtBRLCompact,
+  fmtLiquidez,
+  fmtTimes,
+  indicadorValido,
+} from "@/engines/finance/format";
 import { buildEntityData } from "@/engines/odoo/toAppState";
 import { computeTrust } from "@/engines/odoo/trust";
 import { useOdooCockpitContext } from "./cockpit";
@@ -331,8 +337,18 @@ export function CockpitHome() {
           <Line label="Necessidade de capital de giro" value={fmtBRLCompact(ind.ncg)} />
           <Line
             label="Liquidez corrente"
-            value={`${ind.liquidezCorrente.toFixed(2)}×`}
-            tone={ind.liquidezCorrente < 1 ? "neg" : "pos"}
+            value={
+              fmtLiquidez(ind.liquidezCorrente) === "—"
+                ? "—"
+                : `${fmtLiquidez(ind.liquidezCorrente)}×`
+            }
+            tone={
+              !indicadorValido(ind.liquidezCorrente)
+                ? undefined
+                : ind.liquidezCorrente < 1
+                  ? "neg"
+                  : "pos"
+            }
           />
         </Instrument>
 
@@ -351,12 +367,12 @@ export function CockpitHome() {
           />
           <Line
             label="Dívida líquida / EBITDA"
-            value={ebitda > 0 ? `${ind.dividaLiqEbitda.toFixed(2)}×` : "EBITDA negativo"}
+            value={ebitda > 0 ? fmtTimes(ind.dividaLiqEbitda, ebitda, 2) : "EBITDA negativo"}
             tone={ebitda <= 0 || ind.dividaLiqEbitda > 3 ? "neg" : undefined}
           />
           <Line
             label="Cobertura de juros"
-            value={ind.coberturaJuros ? `${ind.coberturaJuros.toFixed(1)}×` : "sem juros"}
+            value={ind.coberturaJuros ? fmtTimes(ind.coberturaJuros, 1) : "sem juros"}
             tone={ind.coberturaJuros && ind.coberturaJuros < 2 ? "neg" : undefined}
           />
           <Line

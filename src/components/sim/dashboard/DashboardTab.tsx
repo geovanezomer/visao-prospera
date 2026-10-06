@@ -25,7 +25,7 @@ import {
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { DSCR_THRESHOLDS } from "@/engines/finance/indicators";
-import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
+import { fmtBRL, fmtPct, indicadorValido, sum } from "@/engines/finance/format";
 import { StatCard, HintTip } from "@/components/sim/shared/primitives";
 import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 
@@ -351,7 +351,11 @@ export function DashboardTab() {
           label="Liquidez Corrente"
           // Sem ativo nem passivo circulante (empresa sem dados), a razão não existe.
           value={
-            ind.ativoCirculante <= 1 && ind.passivoCirculante <= 1 ? null : ind.liquidezCorrente
+            (ind.ativoCirculante <= 1 && ind.passivoCirculante <= 1) ||
+            !indicadorValido(ind.liquidezCorrente) ||
+            ind.liquidezCorrente < 0
+              ? null
+              : ind.liquidezCorrente
           }
           max={3}
           suffix="x"

@@ -59,6 +59,15 @@ function gradeFromScore(s: number): HealthScore["grade"] {
   return "E";
 }
 
+/** Conceito em palavras da nota (mesmo em Dashboard, Diagnóstico e PDF). */
+export const HEALTH_LABEL: Record<HealthScore["grade"], string> = {
+  A: "Excelente",
+  B: "Boa",
+  C: "Regular",
+  D: "Frágil",
+  E: "Crítica",
+};
+
 export function computeHealth(state: AppState, precomputed?: HealthPrecomputed): HealthScore {
   // Verdade absoluta: usa regime efetivo (Simples pode ter excedido limite → Presumido).
   const dre = precomputed?.dre ?? buildDRE(state, resolveEffectiveRegime(state)).dre;

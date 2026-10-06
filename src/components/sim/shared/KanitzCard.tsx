@@ -132,7 +132,8 @@ export function KanitzCard({
       </p>
 
       {/* ── Termômetro de Crise — estágio operacional + rota recomendada ── */}
-      <CrisisStagePanel crisis={crisis} compact={compact} />
+      {/* Sem base para o índice, o estágio ao lado contradiria o "—" acima. */}
+      {!k.baseInsuficiente && <CrisisStagePanel crisis={crisis} compact={compact} />}
     </div>
   );
 }

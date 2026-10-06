@@ -1,6 +1,14 @@
 import { AppState } from "@/engines/finance/types";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { fmtBRL, fmtPct, fmtTimes, sum } from "@/engines/finance/format";
+import {
+  fmtAnos,
+  fmtBRL,
+  fmtLiquidez,
+  fmtPct,
+  fmtTimes,
+  indicadorValido,
+  sum,
+} from "@/engines/finance/format";
 import { HelpTip, SectionTitle } from "@/components/sim/shared/primitives";
 import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
 import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
@@ -215,30 +223,42 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
         <Group title="Análise de Liquidez">
           <Ind
             label="Liquidez Corrente"
-            v={ind.liquidezCorrente.toFixed(2)}
-            tone={ind.liquidezCorrente >= 1 ? "pos" : "neg"}
+            v={fmtLiquidez(ind.liquidezCorrente)}
+            tone={
+              !indicadorValido(ind.liquidezCorrente)
+                ? undefined
+                : ind.liquidezCorrente >= 1
+                  ? "pos"
+                  : "neg"
+            }
             desc="Capacidade de pagar dívidas de curto prazo com recursos de curto prazo. Acima de 1,0 indica folga; abaixo, aperto."
             formula="Ativo Circulante ÷ Passivo Circulante"
             calc={c.liquidezCorrente}
           />
           <Ind
             label="Liquidez Seca"
-            v={ind.liquidezSeca.toFixed(2)}
+            v={fmtLiquidez(ind.liquidezSeca)}
             desc="Versão mais rigorosa da liquidez corrente: exclui estoques (que podem demorar a virar caixa). Ideal acima de 1,0."
             formula="(Ativo Circulante − Estoques) ÷ Passivo Circulante"
             calc={c.liquidezSeca}
           />
           <Ind
             label="Liquidez Imediata"
-            v={ind.liquidezImediata.toFixed(2)}
+            v={fmtLiquidez(ind.liquidezImediata)}
             desc="Capacidade de pagar dívidas de curto prazo IMEDIATAMENTE, só com dinheiro em caixa e aplicações."
             formula="Disponibilidades ÷ Passivo Circulante"
             calc={c.liquidezImediata}
           />
           <Ind
             label="Liquidez Geral"
-            v={ind.liquidezGeral.toFixed(2)}
-            tone={ind.liquidezGeral >= 1 ? "pos" : "neg"}
+            v={fmtLiquidez(ind.liquidezGeral)}
+            tone={
+              !indicadorValido(ind.liquidezGeral)
+                ? undefined
+                : ind.liquidezGeral >= 1
+                  ? "pos"
+                  : "neg"
+            }
             desc="Capacidade total de honrar todas as dívidas (curto + longo prazo) com todos os ativos circulantes. Acima de 1,0 indica solvência estrutural; abaixo, dependência de refinanciamento."
             formula="Ativo Circulante ÷ (Ativo Total − PL)"
             calc={c.liquidezGeral}
@@ -274,11 +294,7 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           />
           <Ind
             label="Amortização do PL pelo Lucro"
-            v={
-              Number.isFinite(ind.amortizacaoPlPorLucro)
-                ? `${ind.amortizacaoPlPorLucro.toFixed(1)} anos`
-                : "—"
-            }
+            v={fmtAnos(ind.amortizacaoPlPorLucro)}
             desc="Tempo (anos) para o lucro contábil acumulado igualar o Patrimônio Líquido. NÃO confundir com o Payback clássico — este indicador mede a velocidade de remuneração do capital próprio pelo lucro contábil."
             formula="Patrimônio Líquido ÷ Lucro Líquido Anual"
             calc={c.amortizacaoPlPorLucro}
