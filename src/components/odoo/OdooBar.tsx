@@ -1,18 +1,29 @@
 // Barra do modo Odoo no topo do cockpit: visão (Odoo | Simulação livre),
 // entidade, janela de 12 meses e status da sincronização.
-import { Building2, CalendarRange, Database, FlaskConical } from "lucide-react";
+import { useMemo } from "react";
+import {
+  AlertTriangle,
+  Building2,
+  CalendarRange,
+  CheckCircle2,
+  Database,
+  FlaskConical,
+  XCircle,
+} from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { computeTrust, type TrustLevel } from "@/engines/odoo/trust";
 import { cn } from "@/lib/utils";
 import type { OdooCockpit } from "./cockpit";
 import { fmtMonth } from "./format";
 
 function since(iso: string | null): string {
-  if (!iso) return "nunca";
+  if (!iso) return "nunca sincronizado";
   const min = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
-  if (min < 1) return "agora";
-  if (min < 60) return `há ${min} min`;
+  if (min < 1) return "sincronizado agora";
+  if (min < 60) return `sincronizado há ${min} min`;
   const h = Math.round(min / 60);
-  if (h < 24) return `há ${h} h`;
-  return new Date(iso).toLocaleDateString("pt-BR");
+  if (h < 24) return `sincronizado há ${h} h`;
+  return `sincronizado em ${new Date(iso).toLocaleDateString("pt-BR")}`;
 }
 
 export function OdooBar({ cockpit }: { cockpit: OdooCockpit }) {
@@ -28,7 +39,7 @@ export function OdooBar({ cockpit }: { cockpit: OdooCockpit }) {
 
   return (
     <div
-      className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border/40 bg-muted/30 px-4 py-2 text-xs sm:px-6"
+      className="sticky top-14 z-20 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border/40 bg-background/95 px-4 py-2 text-xs backdrop-blur sm:px-6"
       data-meeting-hide="true"
     >
       <div
@@ -120,17 +131,71 @@ export function OdooBar({ cockpit }: { cockpit: OdooCockpit }) {
                   {fmtMonth(data.months[0])}–{fmtMonth(data.months[data.months.length - 1])}
                 </span>
               )}
-              <span
-                className="ml-auto inline-flex items-center gap-1.5 text-muted-foreground"
-                title={cockpit.syncedAt ?? ""}
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Odoo sincronizado {since(cockpit.syncedAt)}
-              </span>
+              <TrustBadge cockpit={cockpit} />
             </>
           )}
         </>
       )}
     </div>
+  );
+}
+
+const LEVEL_STYLE: Record<TrustLevel, { dot: string; text: string; label: string }> = {
+  ok: { dot: "bg-emerald-500", text: "text-emerald-600", label: "Dados conferidos" },
+  warn: { dot: "bg-amber-500", text: "text-amber-600", label: "Dados com ressalvas" },
+  error: { dot: "bg-destructive", text: "text-destructive", label: "Dados com problema" },
+};
+
+/** Luz de saúde dos dados: verde/âmbar/vermelho, com o detalhe de cada conferência. */
+function TrustBadge({ cockpit }: { cockpit: OdooCockpit }) {
+  const { snapshot, entity, data, lastError } = cockpit;
+  const report = useMemo(
+    () => (snapshot && entity && data ? computeTrust(snapshot, entity, data, { lastError }) : null),
+    [snapshot, entity, data, lastError],
+  );
+  if (!report) return null;
+  const st = LEVEL_STYLE[report.level];
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "ml-auto inline-flex items-center gap-1.5 rounded px-2 py-1 font-medium hover:bg-muted",
+            st.text,
+          )}
+          aria-label={`${st.label}: ver conferências`}
+        >
+          <span className={cn("h-2 w-2 rounded-full", st.dot)} />
+          {st.label} · {since(cockpit.syncedAt)}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-[380px] p-0 text-xs">
+        <div className="border-b border-border/60 p-3">
+          <p className="font-semibold">Confiabilidade dos dados</p>
+          <p className="text-muted-foreground">
+            Conferências automáticas sobre o retrato do Odoo de{" "}
+            {snapshot ? new Date(snapshot.syncedAt).toLocaleString("pt-BR") : "—"}.
+          </p>
+        </div>
+        <ul className="max-h-[60vh] divide-y divide-border/40 overflow-auto">
+          {report.checks.map((c) => (
+            <li key={c.id} className="flex gap-2 p-3">
+              {c.level === "ok" ? (
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+              ) : c.level === "warn" ? (
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+              ) : (
+                <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+              )}
+              <div>
+                <p className="font-medium">{c.title}</p>
+                <p className="text-muted-foreground">{c.detail}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </PopoverContent>
+    </Popover>
   );
 }

@@ -1,4 +1,6 @@
 import { useMemo, useState, Fragment } from "react";
+import { usePeriodLabels } from "@/components/odoo/usePeriodLabels";
+import { useOdooCockpitContext } from "@/components/odoo/cockpit";
 import { useFinance, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 import { usePeriodView } from "@/hooks/usePeriodView";
 import {
@@ -10,7 +12,7 @@ import {
 } from "@/engines/finance/types";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
-import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum } from "@/engines/finance/format";
+import { fmtBRL, fmtBRLCompact, fmtPct, sum } from "@/engines/finance/format";
 import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 import { monthValues } from "@/engines/finance";
 import { splitReceitasFinanceiras } from "@/engines/finance/shared";
@@ -62,6 +64,8 @@ const CHART_COLORS = [
 ];
 
 export function DRETab() {
+  const MESES = usePeriodLabels();
+  const cockpitAtivo = !!useOdooCockpitContext()?.active;
   const { state, update } = useFinance();
   const readOnly = useFinanceReadOnly();
   const [view, setView] = usePeriodView("trimestral");
@@ -79,7 +83,9 @@ export function DRETab() {
       : `D.R.E. — Comparativo anual (últimos ${annualSnaps.length - 1} anos + atual)`;
 
   // Períodos exibidos na tabela conforme o modo de visualização.
-  const QUARTERS = ["1º Tri", "2º Tri", "3º Tri", "4º Tri"];
+  const QUARTERS = cockpitAtivo
+    ? [0, 3, 6, 9].map((i) => `${MESES[i]}–${MESES[i + 2]}`)
+    : ["1º Tri", "2º Tri", "3º Tri", "4º Tri"];
   const periodLabels = view === "mensal" ? MESES : view === "trimestral" ? QUARTERS : [];
   const showPeriods = view !== "anual";
   // Agrega um vetor mensal (12) conforme o período selecionado.
@@ -404,6 +410,7 @@ export function DRETab() {
       dre.custosFinanceirosTotal,
       dre.depreciacao,
       dre.lucroLiquido,
+      MESES,
     ],
   );
 
@@ -414,7 +421,7 @@ export function DRETab() {
         acc.push({ mes: MESES[i], valor: last + v });
         return acc;
       }, []),
-    [dre.lucroLiquido],
+    [dre.lucroLiquido, MESES],
   );
 
   const costPie = useMemo(
@@ -476,11 +483,24 @@ export function DRETab() {
           {/* Seleção de regime fica na aba Tributário — aqui apenas refletimos o regime ativo abaixo. */}
         </div>
         <div className="text-xs text-muted-foreground">
-          Período: <span className="num">Jan</span> a <span className="num">Dez</span> · Regime
-          ativo:{" "}
-          <Badge variant="outline" className="ml-1">
-            {regime === "simples" ? "Simples" : regime === "presumido" ? "Presumido" : "Real"}
-          </Badge>
+          Período: <span className="num">{MESES[0]}</span> a{" "}
+          <span className="num">{MESES[11]}</span> ·{" "}
+          {cockpitAtivo ? (
+            <Badge
+              variant="outline"
+              className="ml-1 border-primary/50 text-primary"
+              title="Tributos sobre vendas e IRPJ/CSLL como lançados no Odoo. O regime configurado vale para simulações e para a conciliação (aba Consolidado)."
+            >
+              Tributos: contabilizados no Odoo
+            </Badge>
+          ) : (
+            <>
+              Regime ativo:{" "}
+              <Badge variant="outline" className="ml-1">
+                {regime === "simples" ? "Simples" : regime === "presumido" ? "Presumido" : "Real"}
+              </Badge>
+            </>
+          )}
           <span className="ml-2">· Era:</span>
           <Badge
             variant="outline"

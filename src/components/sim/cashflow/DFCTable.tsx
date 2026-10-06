@@ -3,6 +3,7 @@ import { buildCashFlow } from "@/engines/finance/cashflow";
 import { fmtBRL, fmtBRLCompact, sum } from "@/engines/finance/format";
 import { SectionTitle } from "@/components/sim/shared/primitives";
 import { aggregate, periodLabels, Period } from "@/components/sim/cashflow/tableHelpers";
+import { usePeriodLabels } from "@/components/odoo/usePeriodLabels";
 import { usePeriodView } from "@/hooks/usePeriodView";
 import { useAnnualSnapshots } from "@/hooks/useAnnualSnapshots";
 import { useSelectedSnapshots } from "@/hooks/useSelectedSnapshots";
@@ -12,12 +13,13 @@ import { useFinanceReadOnly } from "@/engines/finance/AppStateContext";
 
 // Tabela DFC pelo método direto, com agregação mensal/trimestral/anual.
 export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof buildCashFlow> }) {
+  const MESES = usePeriodLabels();
   const [period, setPeriod] = usePeriodView("trimestral") as [Period, (p: Period) => void];
   const readOnly = useFinanceReadOnly();
   const annualSnaps = useAnnualSnapshots(3);
   const compareMode = useComparisonMode();
   const selectedSnaps = useSelectedSnapshots();
-  const cols = periodLabels(period);
+  const cols = periodLabels(period, MESES);
   const showAnnualComparison = period === "anual" && annualSnaps.length >= 2;
   const showCompareMode = compareMode.active && selectedSnaps.length >= 2;
   const showComparison = showAnnualComparison || showCompareMode;
@@ -120,6 +122,16 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
                   rawTotal={-sum(cf.pagamentosFornecedores)}
                 />
                 <Row
+                  label="(−) Folha de pagamento (salários, encargos, benefícios)"
+                  values={aggregate(
+                    cf.pagamentosFolha.map((v) => -v),
+                    period,
+                    "sum",
+                  )}
+                  tone="neg"
+                  rawTotal={-sum(cf.pagamentosFolha)}
+                />
+                <Row
                   label="(−) Pagamentos de custos fixos"
                   values={aggregate(
                     cf.pagamentosFixos.map((v) => -v),
@@ -187,35 +199,35 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
                 <SectionRow label="ATIVIDADES DE FINANCIAMENTO" cols={cols.length} />
                 <Row
                   label="(+) Aportes de sócios"
-                  values={aggregate(state.cashflow.aportes, period, "sum")}
+                  values={aggregate(cf.aportes, period, "sum")}
                   tone="pos"
-                  rawTotal={sum(state.cashflow.aportes)}
+                  rawTotal={sum(cf.aportes)}
                 />
                 <Row
                   label="(+) Captação de empréstimos"
-                  values={aggregate(state.cashflow.emprestimosCaptados, period, "sum")}
+                  values={aggregate(cf.emprestimosCaptados, period, "sum")}
                   tone="pos"
-                  rawTotal={sum(state.cashflow.emprestimosCaptados)}
+                  rawTotal={sum(cf.emprestimosCaptados)}
                 />
                 <Row
                   label="(−) Amortização de principal"
                   values={aggregate(
-                    state.cashflow.amortizacoes.map((v) => -v),
+                    cf.amortizacoes.map((v) => -v),
                     period,
                     "sum",
                   )}
                   tone="neg"
-                  rawTotal={-sum(state.cashflow.amortizacoes)}
+                  rawTotal={-sum(cf.amortizacoes)}
                 />
                 <Row
                   label="(−) Distribuição de dividendos"
                   values={aggregate(
-                    state.cashflow.dividendos.map((v) => -v),
+                    cf.dividendos.map((v) => -v),
                     period,
                     "sum",
                   )}
                   tone="neg"
-                  rawTotal={-sum(state.cashflow.dividendos)}
+                  rawTotal={-sum(cf.dividendos)}
                 />
                 <Row
                   label="(−) Empréstimos concedidos a sócios"
@@ -286,8 +298,9 @@ export function DFCTable({ state, cf }: { state: AppState; cf: ReturnType<typeof
             </table>
           </div>
           <div className="border-t border-border/60 px-4 py-2 text-[10px] text-muted-foreground">
-            Modelo simplificado: ignora variações de estoque e ajustes de capital de giro contábil
-            mais finos. Para diagnóstico operacional é suficiente.
+            {state.realizado
+              ? "Realizado do Odoo: método indireto sobre o balanço contábil mensal, apresentado por natureza. A variação de caixa fecha com o saldo contábil de caixa e aplicações. Mútuos e dívidas aparecem em captação/amortização."
+              : "Modelo simplificado: ignora variações de estoque e ajustes de capital de giro contábil mais finos. Para diagnóstico operacional é suficiente."}
           </div>
         </>
       )}

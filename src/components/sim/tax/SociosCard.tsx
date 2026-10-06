@@ -15,6 +15,7 @@
  * presumido trimestral (não sobre a retirada) — está correto e não muda.
  */
 import { useMemo, useState } from "react";
+import { usePeriodLabels } from "@/components/odoo/usePeriodLabels";
 import { Settings, Wand2, Eraser } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { useFinance, useFinanceUpdate } from "@/engines/finance/AppStateContext";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import { buildDRE } from "@/engines/finance/dre";
-import { fmtBRL, MESES, sum } from "@/engines/finance/format";
+import { fmtBRL, sum } from "@/engines/finance/format";
 import {
   calcRetiradaSocio,
   syncSociosToCosts,
@@ -54,6 +55,7 @@ const SEPARATOR_HINT = {
 };
 
 export function SociosCard() {
+  const MESES = usePeriodLabels();
   const { state } = useFinance();
   const update = useFinanceUpdate();
   const regime = resolveEffectiveRegime(state);

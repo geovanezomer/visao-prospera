@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef } from "react";
+import { usePeriodLabels } from "@/components/odoo/usePeriodLabels";
 import {
   useFinance,
   usePatchCashflow,
   useFinanceReadOnly,
 } from "@/engines/finance/AppStateContext";
 import { toast } from "sonner";
-import { fmtBRL, MESES } from "@/engines/finance/format";
+import { fmtBRL } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { MoneyInput, SectionTitle, StatCard } from "@/components/sim/shared/primitives";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,7 @@ const TOOLTIP_LABEL = { color: "var(--popover-foreground)", fontWeight: 600 } as
 // Orquestrador da aba Cashflow — KPIs, alertas, NonOpTable, DFCTable, runway e gráfico.
 // As tabelas detalhadas vivem em src/components/sim/cashflow/*.tsx.
 export function CashflowTab() {
+  const MESES = usePeriodLabels();
   const { state } = useFinance();
   const patchCashflow = usePatchCashflow();
   // Em modo somente leitura (link compartilhado), escondemos seções
@@ -56,7 +58,7 @@ export function CashflowTab() {
       MESES.map((mes, i) => ({ mes, saldo: cf.saldoFinal[i], idx: i })).filter(
         (m) => m.saldo <= limiar,
       ),
-    [cf.saldoFinal, limiar],
+    [cf.saldoFinal, limiar, MESES],
   );
 
   // Chave estável para o useEffect
@@ -103,7 +105,7 @@ export function CashflowTab() {
         minimo: state.cashflow.caixaMinimo,
         critical: criticalByMes[m] ?? null,
       })),
-    [cf.saldoFinal, state.cashflow.caixaMinimo, criticalByMes],
+    [cf.saldoFinal, state.cashflow.caixaMinimo, criticalByMes, MESES],
   );
 
   // CR: aplica o mesmo fallback do engine (`indicators.ts:341`) — quando
@@ -150,7 +152,7 @@ export function CashflowTab() {
       }))
         .sort((a, b) => a.saldo - b.saldo)
         .slice(0, 3),
-    [cf.saldoFinal, state.cashflow.caixaMinimo],
+    [cf.saldoFinal, state.cashflow.caixaMinimo, MESES],
   );
 
   // Tone do "Saldo final (Dez)" reflete o PRÓPRIO valor de dez.
@@ -203,7 +205,7 @@ export function CashflowTab() {
             </Badge>
           )}
           <StatCard
-            label="Saldo final (Dez)"
+            label={`Saldo final (${MESES[11]})`}
             value={fmtBRL(saldoDez)}
             tone={saldoDezTone}
             sub={piorMes ? `Pior mês: ${piorMes.mes} = ${fmtBRL(piorMes.saldo)}` : undefined}
@@ -365,7 +367,11 @@ export function CashflowTab() {
       {!readOnly && (
         <div className="rounded-lg border border-border/60 bg-card/40 p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h4 className="text-sm font-semibold">Saldo de caixa projetado (12 meses)</h4>
+            <h4 className="text-sm font-semibold">
+              {state.realizado
+                ? "Saldo de caixa realizado (12 meses)"
+                : "Saldo de caixa projetado (12 meses)"}
+            </h4>
             <div className="flex flex-wrap items-center gap-4 text-xs">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Caixa mínimo:</span>

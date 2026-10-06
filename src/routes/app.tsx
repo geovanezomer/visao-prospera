@@ -433,7 +433,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                 <div className="flex items-center gap-2 min-w-0">
                   <SidebarTrigger className="h-9 w-9" data-meeting-hide="true" />
                   <div className="flex items-center gap-2 md:gap-4 min-w-0">
-                    <h2 className="text-sm font-medium text-muted-foreground md:text-base shrink-0">
+                    <h2 className="min-w-0 truncate text-sm font-medium text-muted-foreground md:shrink-0 md:text-base">
                       {activeTab === "ai"
                         ? "Consultor IA"
                         : activeTab === "calculadoras"
@@ -602,7 +602,11 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                       variant="ghost"
                       className="h-8 w-8 p-0"
                       onClick={() => void fileApi.resetWithConfirm()}
-                      title="Restaurar dados (Ctrl+Shift+R)"
+                      title={
+                        cockpit.active
+                          ? "Restaurar premissas desta empresa (os dados do Odoo não mudam)"
+                          : "Restaurar dados (Ctrl+Shift+R)"
+                      }
                       aria-label="Reset"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
@@ -659,7 +663,11 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                           {activeTab === "consolidado" && <ConsolidadoTab />}
                           {activeTab === "tributos" && <TaxTab />}
                           {activeTab === "prolabore" && <ProlaboreTab />}
-                          {activeTab === "caixa" && <CashflowTab />}
+                          {activeTab === "caixa" && (
+                            <ActualsLock what="O fluxo de caixa realizado">
+                              <CashflowTab />
+                            </ActualsLock>
+                          )}
                           {activeTab === "governanca" && <StrategicTab />}
                           {activeTab === "dre" && <DRETab />}
                           {activeTab === "balanco" && <BalancoTab />}
@@ -704,7 +712,8 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
               </footer>
             </SidebarInset>
 
-            <ScenarioBar />
+            {/* Arquivar "ano"/cenários não se aplica ao realizado do ERP. */}
+            {!cockpit.active && <ScenarioBar />}
             {confirmDialog}
             {user && (
               <RestoreBackupDialog

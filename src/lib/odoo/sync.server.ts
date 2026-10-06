@@ -239,7 +239,24 @@ async function snapshotCompany(
     }))
     .filter((l) => l.code && l.counterpartCompanyId);
 
-  return { accounts: out, intercompany: { lines } };
+  // Rascunhos não entram nos números — o painel de confiabilidade avisa.
+  let draftCount = 0;
+  try {
+    draftCount = await odooCall<number>(cfg, "account.move", "search_count", {
+      domain: [
+        ["company_id", "=", company.id],
+        ["state", "=", "draft"],
+        ["date", ">=", start],
+        ["date", "<=", end],
+      ],
+      context: { allowed_company_ids: [company.id] },
+    });
+  } catch {
+    /* sem permissão para contar: o painel mostra "não verificado" */
+    draftCount = -1;
+  }
+
+  return { accounts: out, intercompany: { lines }, draftCount };
 }
 
 export async function loadOverrides(): Promise<Map<string, AccountOverride["target"]>> {

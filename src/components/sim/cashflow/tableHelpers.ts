@@ -16,10 +16,14 @@ export function bucketIndices(period: Period): number[][] {
     ];
   return [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]];
 }
-export function periodLabels(period: Period): string[] {
-  if (period === "mensal") return MESES;
-  if (period === "trimestral") return ["T1", "T2", "T3", "T4"];
-  return ["Ano"];
+/** `meses`: rótulos dos 12 meses (no modo Odoo, a janela real — ex.: "out/25"). */
+export function periodLabels(period: Period, meses: string[] = MESES): string[] {
+  if (period === "mensal") return meses;
+  if (period === "trimestral")
+    return meses === MESES
+      ? ["T1", "T2", "T3", "T4"]
+      : [0, 3, 6, 9].map((i) => `${meses[i]}–${meses[i + 2]}`);
+  return meses === MESES ? ["Ano"] : [`${meses[0]}–${meses[11]}`];
 }
 export function aggregate(values: number[], period: Period, agg: Agg): number[] {
   return bucketIndices(period).map((idxs) => {

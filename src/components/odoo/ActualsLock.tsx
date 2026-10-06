@@ -20,8 +20,10 @@ export function ActualsLock({ what, children }: { what: string; children: ReactN
       </div>
       <fieldset
         disabled
-        className="min-w-0 [&_input]:cursor-default [&_button:disabled]:opacity-60"
         aria-readonly="true"
+        // Leitura: campos viram texto e botões de edição (adicionar linha,
+        // alternar fixo/mensal, remover) somem — nada sugere que dá para editar.
+        className="min-w-0 [&_button:disabled]:hidden [&_input]:cursor-default [&_input]:border-transparent [&_input]:bg-transparent [&_input]:shadow-none [&_textarea]:border-transparent [&_textarea]:bg-transparent"
       >
         {children}
       </fieldset>

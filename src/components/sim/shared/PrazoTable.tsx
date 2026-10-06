@@ -1,4 +1,5 @@
-import { MESES, fill12 } from "@/engines/finance/format";
+import { fill12 } from "@/engines/finance/format";
+import { usePeriodLabels } from "@/components/odoo/usePeriodLabels";
 import { NumInput, SectionTitle } from "@/components/sim/shared/primitives";
 import { Switch } from "@/components/ui/switch";
 
@@ -41,6 +42,7 @@ export function PrazoTable({
   onAllMonths: (v: number) => void;
   onFixed: (fixed: boolean) => void;
 }) {
+  const MESES = usePeriodLabels();
   const vals = values?.length === 12 ? values : fill12(values?.[0] || 0);
   const media = avg(vals);
 

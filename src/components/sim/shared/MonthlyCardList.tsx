@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { usePeriodLabels } from "@/components/odoo/usePeriodLabels";
 import { ChevronDown, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { MoneyInput, PctInput } from "@/components/sim/shared/primitives";
-import { MESES, sum, fmtBRL, fmtPct } from "@/engines/finance/format";
+import { sum, fmtBRL, fmtPct } from "@/engines/finance/format";
 
 /**
  * Mobile-only card list para edição de rubricas mensais (Receitas / Custos).
@@ -101,6 +102,7 @@ function MonthlyCard({
   onLabel?: (label: string) => void;
   onRemove?: () => void;
 }) {
+  const MESES = usePeriodLabels();
   const [open, setOpen] = useState(false);
   const anual = sum(row.brlValues);
   const pct = receitaAnual > 0 ? anual / receitaAnual : 0;

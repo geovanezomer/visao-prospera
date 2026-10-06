@@ -239,7 +239,8 @@ export function BalancoTab() {
   // Balanço de fechamento DERIVADO (read-only).
   const fechamento = model.model.balancoFechamento;
   const balanco: BalancoDetalhado = fechamento.balanco;
-  const anterior: BalancoDetalhado = state.capital.balanco?.anterior ?? {};
+  const anteriorRaw = state.capital.balanco?.anterior;
+  const anterior: BalancoDetalhado = useMemo(() => anteriorRaw ?? {}, [anteriorRaw]);
 
   const totalsAtual = useMemo(() => calcBalancoTotals(balanco), [balanco]);
   const totalsAnterior = useMemo(() => calcBalancoTotals(anterior), [anterior]);
@@ -332,24 +333,28 @@ export function BalancoTab() {
               <Search className="h-3.5 w-3.5" />
               Auditoria
             </Button>
-            <Button
-              size="sm"
-              variant={showAnterior ? "default" : "outline"}
-              onClick={() => setShowAnterior((v) => !v)}
-              className="h-8 gap-1.5 text-[11px]"
-            >
-              <GitCompare className="h-3.5 w-3.5" />N vs N-1
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={salvarComoNm1}
-              className="h-8 gap-1.5 text-[11px]"
-              title="Congela o fechamento atual como base de comparação (N-1)."
-            >
-              <Camera className="h-3.5 w-3.5" />
-              Salvar como N-1
-            </Button>
+            {!state.realizado && (
+              <>
+                <Button
+                  size="sm"
+                  variant={showAnterior ? "default" : "outline"}
+                  onClick={() => setShowAnterior((v) => !v)}
+                  className="h-8 gap-1.5 text-[11px]"
+                >
+                  <GitCompare className="h-3.5 w-3.5" />N vs N-1
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={salvarComoNm1}
+                  className="h-8 gap-1.5 text-[11px]"
+                  title="Congela o fechamento atual como base de comparação (N-1)."
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  Salvar como N-1
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}

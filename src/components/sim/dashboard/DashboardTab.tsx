@@ -4,6 +4,7 @@
  * e deriva tudo do `useFinanceModel` (SSOT da engine).
  */
 import { useMemo } from "react";
+import { usePeriodLabels } from "@/components/odoo/usePeriodLabels";
 import {
   Area,
   AreaChart,
@@ -24,7 +25,7 @@ import {
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { DSCR_THRESHOLDS } from "@/engines/finance/indicators";
-import { fmtBRL, fmtPct, MESES, sum } from "@/engines/finance/format";
+import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
 import { StatCard, renderHint } from "@/components/sim/shared/primitives";
 import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 
@@ -147,6 +148,7 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 }
 
 export function DashboardTab() {
+  const MESES = usePeriodLabels();
   const state = useFinanceState();
   const { dre, ind, cagrReceitas12m } = useFinanceModel(state);
   const c = buildIndicatorCalcs(state, dre, ind, cagrReceitas12m);
@@ -170,7 +172,7 @@ export function DashboardTab() {
           "Margem %": rec > 0 ? (ll / rec) * 100 : 0,
         };
       }),
-    [dre],
+    [dre, MESES],
   );
 
   // Lucro acumulado (área)
@@ -180,7 +182,7 @@ export function DashboardTab() {
       acc += dre.lucroLiquido[i] ?? 0;
       return { mes: m, Acumulado: acc };
     });
-  }, [dre]);
+  }, [dre, MESES]);
 
   // Receitas vs Despesas (12m) — linhas verde/vermelha
   const receitasDespesas = useMemo(
@@ -195,7 +197,7 @@ export function DashboardTab() {
           (dre.despesasOperacionais[i] ?? 0) +
           (dre.custosFinanceirosTotal?.[i] ?? 0),
       })),
-    [dre],
+    [dre, MESES],
   );
 
   // Composição mensal de custos/despesas por função (stacked) + EBIT (linha)
@@ -226,7 +228,7 @@ export function DashboardTab() {
       Financeiras: bucket.financeiras[i],
       EBIT: dre.ebit[i] ?? 0,
     }));
-  }, [state.costs, dre.ebit]);
+  }, [state.costs, dre.ebit, MESES]);
 
   return (
     <div className="space-y-6">
@@ -250,7 +252,7 @@ export function DashboardTab() {
           tone={ind.ebitdaAnual >= 0 ? "pos" : "neg"}
           sub={
             ind.receitaLiquidaAnual > 0
-              ? fmtPct((ind.ebitdaAnual / ind.receitaLiquidaAnual) * 100) + " da receita"
+              ? fmtPct(ind.ebitdaAnual / ind.receitaLiquidaAnual) + " da receita"
               : "—"
           }
           hint={{
@@ -266,7 +268,7 @@ export function DashboardTab() {
           tone={ind.lucroLiquidoAnual >= 0 ? "pos" : "neg"}
           sub={
             ind.receitaLiquidaAnual > 0
-              ? fmtPct((ind.lucroLiquidoAnual / ind.receitaLiquidaAnual) * 100) + " da receita"
+              ? fmtPct(ind.lucroLiquidoAnual / ind.receitaLiquidaAnual) + " da receita"
               : "—"
           }
           hint={{

@@ -1,7 +1,8 @@
 import { useMemo } from "react";
+import { usePeriodLabels } from "@/components/odoo/usePeriodLabels";
 import { useFinance, usePatchRevenue } from "@/engines/finance/AppStateContext";
 import { AppState, RevenueDeducao } from "@/engines/finance/types";
-import { fmtBRL, fmtBRLCompact, fmtPct, MESES, sum, fill12 } from "@/engines/finance/format";
+import { fmtBRL, fmtBRLCompact, fmtPct, sum, fill12 } from "@/engines/finance/format";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import {
   MoneyInput,
@@ -52,6 +53,7 @@ type Row = {
 };
 
 export function RevenueTab() {
+  const MESES = usePeriodLabels();
   const { state } = useFinance();
   const patchRevenue = usePatchRevenue();
   const r = state.revenue;
@@ -103,7 +105,7 @@ export function RevenueTab() {
       monthsWithRevenue,
       mediaYTD,
     };
-  }, [state, r]);
+  }, [r, dre.impostosVendas, dre.receitaLiquida]);
 
   const {
     inadimpBRL,
@@ -621,6 +623,7 @@ function RevenueTable({
   onRename?: (finId: string, label: string) => void;
   onRemove?: (finId: string) => void;
 }) {
+  const MESES = usePeriodLabels();
   const pctRec = (v: number) => (brutaAnual > 0 ? v / brutaAnual : 0);
   const footerToneClass = footer?.tone === "neg" ? "text-neg" : "text-pos";
 

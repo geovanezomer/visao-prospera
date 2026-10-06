@@ -12,12 +12,13 @@
  *  - Balanço: efeito-líquido já refletido em Caixa.
  */
 import { useState } from "react";
+import { usePeriodLabels } from "@/components/odoo/usePeriodLabels";
 import { Plus, Trash2 } from "lucide-react";
 import { MoneyInput, SectionTitle } from "@/components/sim/shared/primitives";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useFinance, usePatchCashflow } from "@/engines/finance/AppStateContext";
-import { fmtBRL, MESES, sum, zeros12 } from "@/engines/finance/format";
+import { fmtBRL, sum, zeros12 } from "@/engines/finance/format";
 import type { PermutaLinha } from "@/engines/finance/types";
 import { fixedBase, hasSazonalidade } from "@/components/sim/cashflow/tableHelpers";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ const TOOLTIP_TEXT =
   "afetam apenas o Fluxo de Caixa (linha não operacional) e NÃO impactam a DRE.";
 
 export function PermutasCard() {
+  const MESES = usePeriodLabels();
   const { state } = useFinance();
   const patchCashflow = usePatchCashflow();
   const permutas = state.cashflow.permutas ?? [];

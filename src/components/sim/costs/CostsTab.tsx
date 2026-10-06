@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePeriodLabels } from "@/components/odoo/usePeriodLabels";
 import { useFinance } from "@/engines/finance/AppStateContext";
 import { AppState, CostCategory, CostLine, TaxRegime } from "@/engines/finance/types";
-import { fill12, fmtBRL, fmtPct, MESES, sum, genId } from "@/engines/finance/format";
+import { fill12, fmtBRL, fmtPct, sum, genId } from "@/engines/finance/format";
 import { fixedCostBase, monthValues } from "@/engines/finance";
 import { DEBT_CONTRACTS_COST_ID } from "@/engines/finance/debtContracts";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
@@ -16,6 +17,7 @@ import { MonthlyCardList } from "@/components/sim/shared/MonthlyCardList";
 type Updater = (p: Partial<AppState> | ((s: AppState) => AppState)) => void;
 
 export function CostsTab() {
+  const MESES = usePeriodLabels();
   const { state, update } = useFinance();
   const receitaBrutaAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
 
@@ -436,6 +438,7 @@ function CostTable({
   onLabel: (id: string, label: string) => void;
   onRemove: (id: string) => void;
 }) {
+  const MESES = usePeriodLabels();
   if (lines.length === 0) {
     return (
       <div className="px-4 py-3 text-xs text-muted-foreground">

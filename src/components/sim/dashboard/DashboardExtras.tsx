@@ -9,6 +9,7 @@
  * Lê do `useFinanceModel` (SSOT) e do `state` para parâmetros do consultor.
  */
 import { useMemo } from "react";
+import { usePeriodLabels } from "@/components/odoo/usePeriodLabels";
 import {
   Area,
   AreaChart,
@@ -27,7 +28,7 @@ import {
 } from "recharts";
 import { AppState } from "@/engines/finance/types";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { fmtBRL, MESES, sum } from "@/engines/finance/format";
+import { fmtBRL, sum } from "@/engines/finance/format";
 import { aggregateContracts } from "@/engines/finance/debtContracts";
 import { AlertTriangle, CheckCircle2, AlertCircle, Wallet, TrendingDown } from "lucide-react";
 
@@ -60,6 +61,7 @@ function Card({
 
 // ============ 1. RUNWAY + SALDO PROJETADO ============
 function RunwayCard({ state }: { state: AppState }) {
+  const MESES = usePeriodLabels();
   const { cf } = useFinanceModel(state);
   const caixaAtual = state.capital.disponibilidades ?? 0;
   const caixaMinimo = state.cashflow.caixaMinimo ?? 0;
@@ -127,7 +129,9 @@ function RunwayCard({ state }: { state: AppState }) {
 
         <div className="lg:col-span-2">
           <div className="mb-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-            Saldo de caixa projetado (12 meses)
+            {state.realizado
+              ? "Saldo de caixa realizado (12 meses)"
+              : "Saldo de caixa projetado (12 meses)"}
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={MESES.map((m, i) => ({ mes: m, Saldo: cf.saldoFinal[i] }))}>
@@ -291,14 +295,15 @@ function SemaforoPanel({ state }: { state: AppState }) {
 
 // ============ 3. CRONOGRAMA DE VENCIMENTOS ============
 function CronogramaDividas({ state }: { state: AppState }) {
-  const contratos = state.capital.debtContracts ?? [];
-  const agg = useMemo(() => aggregateContracts(contratos), [contratos]);
+  const MESES = usePeriodLabels();
+  const contratosRaw = state.capital.debtContracts;
+  const agg = useMemo(() => aggregateContracts(contratosRaw ?? []), [contratosRaw]);
   const data = useMemo(
     () => MESES.map((m, i) => ({ mes: m, Juros: agg.juros[i], Amortização: agg.amort[i] })),
-    [agg],
+    [agg, MESES],
   );
 
-  if (contratos.length === 0) {
+  if (!contratosRaw?.length) {
     return (
       <Card title="Cronograma de Vencimentos (Dívidas)">
         <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">

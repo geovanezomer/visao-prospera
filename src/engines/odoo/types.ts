@@ -102,6 +102,8 @@ export type OdooIntercompany = { lines: OdooIntercompanyLine[] };
 export type OdooCompanySnapshot = {
   accounts: OdooAccountSnapshot[];
   intercompany: OdooIntercompany;
+  /** Lançamentos em rascunho na janela (não entram nos números). */
+  draftCount?: number;
 };
 
 export type OdooSnapshot = {
