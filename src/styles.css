@@ -1,4 +1,8 @@
 @import "tailwindcss" source(none);
+/* Fontes servidas pelo próprio app (sem Google Fonts: não bloqueia a pintura nem
+   envia o IP do usuário a terceiros). Só os blocos de caracteres usados baixam. */
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
 @source "../src";
 @import "tw-animate-css";
 
@@ -6,8 +10,8 @@
 @custom-variant dark (&:where(html:not([data-theme="light"]) *));
 
 @theme inline {
-  --font-sans: "Inter", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "Inter Variable", "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

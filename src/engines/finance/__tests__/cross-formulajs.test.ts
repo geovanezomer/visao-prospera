@@ -8,7 +8,8 @@
  */
 import { describe, it, expect } from "vitest";
 import { npv, irr } from "../forecast";
-import { vplClassico, tir } from "../external";
+import { IRR as tir, NPV, PMT } from "@formulajs/formulajs";
+import { parcela, vplClassico, vplExcel } from "../external";
 
 const closeRel = (a: number, b: number, tol = 1e-4) =>
   Math.abs(a - b) / Math.max(Math.abs(b), 1) < tol;
@@ -34,5 +35,27 @@ describe("VPL/TIR — paridade com formulajs (Excel)", () => {
       if (nosso == null || externo instanceof Error) return;
       expect(closeRel(nosso, externo as number, 1e-3)).toBe(true);
     });
+  });
+});
+
+describe("implementação local × formulajs (Excel)", () => {
+  it("NPV igual ao do Excel", () => {
+    for (const [taxa, ...f] of [
+      [0.1, 300, 300, 300],
+      [0.015, -100, 50, 80, 120],
+      [0, 10, 20, 30],
+    ])
+      expect(vplExcel(taxa, ...f)).toBeCloseTo(NPV(taxa, ...f) as number, 9);
+  });
+
+  it("PMT igual ao do Excel (fim e início do período, com e sem valor futuro)", () => {
+    const casos: [number, number, number, number, 0 | 1][] = [
+      [0.02, 12, 100_000, 0, 0],
+      [0.01, 36, 250_000, 0, 1],
+      [0.015, 24, 50_000, 10_000, 0],
+      [0, 10, 1_000, 0, 0],
+    ];
+    for (const [i, n, pv, fv, t] of casos)
+      expect(parcela(i, n, pv, fv, t)).toBeCloseTo(PMT(i, n, pv, fv, t) as number, 9);
   });
 });

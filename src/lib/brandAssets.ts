@@ -5,5 +5,6 @@
 // Antes estes arquivos ficavam no CDN da Lovable (/__l5e/...) e quebravam
 // fora da plataforma deles.
 
-export const logoAsset = { url: "/brand/icon-512.png" } as const;
+// SVG (0,7 KB) no lugar do PNG de 512 px (111 KB) que o menu baixava em toda abertura.
+export const logoAsset = { url: "/brand/logo.svg" } as const;
 export const logoSvgUrl = "/brand/logo.svg";

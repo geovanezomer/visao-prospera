@@ -13,58 +13,68 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 // Antes: TODAS as abas (Recharts, jsPDF, IA, etc.) entravam no bundle
 // inicial → first paint de 15–20s no VPS. Agora só a aba ativa é baixada.
 // ─────────────────────────────────────────────────────────────────────────
-const RevenueTab = lazy(() =>
-  import("@/components/sim/revenue/RevenueTab").then((m) => ({ default: m.RevenueTab })),
-);
-const CostsTab = lazy(() =>
-  import("@/components/sim/costs/CostsTab").then((m) => ({ default: m.CostsTab })),
-);
-const CapitalTab = lazy(() =>
-  import("@/components/sim/capital/CapitalTab").then((m) => ({ default: m.CapitalTab })),
-);
-const TaxTab = lazy(() =>
-  import("@/components/sim/tax/TaxTab").then((m) => ({ default: m.TaxTab })),
-);
-const ProlaboreTab = lazy(() =>
-  import("@/components/sim/tax/ProlaboreTab").then((m) => ({ default: m.ProlaboreTab })),
-);
-const DRETab = lazy(() =>
-  import("@/components/sim/dre/DRETab").then((m) => ({ default: m.DRETab })),
-);
-const BalancoTab = lazy(() =>
-  import("@/components/sim/balanco/BalancoTab").then((m) => ({ default: m.BalancoTab })),
-);
-const CashflowTab = lazy(() =>
-  import("@/components/sim/cashflow/CashflowTab").then((m) => ({ default: m.CashflowTab })),
-);
+// Carregadores por aba: o lazy() e o pré-carregamento usam o mesmo import()
+// (o navegador baixa o arquivo uma vez só).
+const TAB_LOADERS = {
+  receitas: () => import("@/components/sim/revenue/RevenueTab"),
+  custos: () => import("@/components/sim/costs/CostsTab"),
+  capital: () => import("@/components/sim/capital/CapitalTab"),
+  tributos: () => import("@/components/sim/tax/TaxTab"),
+  prolabore: () => import("@/components/sim/tax/ProlaboreTab"),
+  dre: () => import("@/components/sim/dre/DRETab"),
+  balanco: () => import("@/components/sim/balanco/BalancoTab"),
+  caixa: () => import("@/components/sim/cashflow/CashflowTab"),
+  resultados: () => import("@/components/sim/diagnosis/DiagnosisTab"),
+  governanca: () => import("@/components/sim/strategic/StrategicTab"),
+  simulador: () => import("@/components/sim/simulator/SimulatorTab"),
+  valuation: () => import("@/components/sim/valuation/ValuationTab"),
+  indicadores: () => import("@/components/sim/indicators/IndicatorsTab"),
+  dashboard: () => import("@/components/sim/dashboard/DashboardTab"),
+  cockpit: () => import("@/components/odoo/CockpitHome"),
+  consolidado: () => import("@/components/odoo/ConsolidadoTab"),
+  ai: () => import("@/components/ai/AIView"),
+  calculadoras: () => import("@/components/calculadoras/CalculadorasTab"),
+} as const;
+
+const RevenueTab = lazy(() => TAB_LOADERS.receitas().then((m) => ({ default: m.RevenueTab })));
+const CostsTab = lazy(() => TAB_LOADERS.custos().then((m) => ({ default: m.CostsTab })));
+const CapitalTab = lazy(() => TAB_LOADERS.capital().then((m) => ({ default: m.CapitalTab })));
+const TaxTab = lazy(() => TAB_LOADERS.tributos().then((m) => ({ default: m.TaxTab })));
+const ProlaboreTab = lazy(() => TAB_LOADERS.prolabore().then((m) => ({ default: m.ProlaboreTab })));
+const DRETab = lazy(() => TAB_LOADERS.dre().then((m) => ({ default: m.DRETab })));
+const BalancoTab = lazy(() => TAB_LOADERS.balanco().then((m) => ({ default: m.BalancoTab })));
+const CashflowTab = lazy(() => TAB_LOADERS.caixa().then((m) => ({ default: m.CashflowTab })));
 const DiagnosisTab = lazy(() =>
-  import("@/components/sim/diagnosis/DiagnosisTab").then((m) => ({ default: m.DiagnosisTab })),
+  TAB_LOADERS.resultados().then((m) => ({ default: m.DiagnosisTab })),
 );
 const StrategicTab = lazy(() =>
-  import("@/components/sim/strategic/StrategicTab").then((m) => ({ default: m.StrategicTab })),
+  TAB_LOADERS.governanca().then((m) => ({ default: m.StrategicTab })),
 );
-const SimulatorTab = lazy(() =>
-  import("@/components/sim/simulator/SimulatorTab").then((m) => ({ default: m.SimulatorTab })),
-);
-const ValuationTab = lazy(() =>
-  import("@/components/sim/valuation/ValuationTab").then((m) => ({ default: m.ValuationTab })),
-);
+const SimulatorTab = lazy(() => TAB_LOADERS.simulador().then((m) => ({ default: m.SimulatorTab })));
+const ValuationTab = lazy(() => TAB_LOADERS.valuation().then((m) => ({ default: m.ValuationTab })));
 const IndicatorsTab = lazy(() =>
-  import("@/components/sim/indicators/IndicatorsTab").then((m) => ({ default: m.IndicatorsTab })),
+  TAB_LOADERS.indicadores().then((m) => ({ default: m.IndicatorsTab })),
 );
-const DashboardTab = lazy(() =>
-  import("@/components/sim/dashboard/DashboardTab").then((m) => ({ default: m.DashboardTab })),
-);
-const CockpitHome = lazy(() =>
-  import("@/components/odoo/CockpitHome").then((m) => ({ default: m.CockpitHome })),
-);
+const DashboardTab = lazy(() => TAB_LOADERS.dashboard().then((m) => ({ default: m.DashboardTab })));
+const CockpitHome = lazy(() => TAB_LOADERS.cockpit().then((m) => ({ default: m.CockpitHome })));
 const ConsolidadoTab = lazy(() =>
-  import("@/components/odoo/ConsolidadoTab").then((m) => ({ default: m.ConsolidadoTab })),
+  TAB_LOADERS.consolidado().then((m) => ({ default: m.ConsolidadoTab })),
 );
-const AIView = lazy(() => import("@/components/ai/AIView").then((m) => ({ default: m.AIView })));
+const AIView = lazy(() => TAB_LOADERS.ai().then((m) => ({ default: m.AIView })));
 const CalculadorasTab = lazy(() =>
-  import("@/components/calculadoras/CalculadorasTab").then((m) => ({ default: m.CalculadorasTab })),
+  TAB_LOADERS.calculadoras().then((m) => ({ default: m.CalculadorasTab })),
 );
+
+// A aba que vai abrir começa a baixar junto com o app, e não só depois que ele
+// monta (cascata que custava ~1 s em celular).
+if (typeof window !== "undefined") {
+  try {
+    const t = window.sessionStorage.getItem("finnance:activeTab") || "dre";
+    void (TAB_LOADERS as Record<string, () => Promise<unknown>>)[t]?.();
+  } catch {
+    void TAB_LOADERS.dre();
+  }
+}
 
 import { ScenarioBar } from "@/components/sim/shared/ScenarioBar";
 import { HistoricalYearPills } from "@/components/sim/shared/HistoricalYearPills";
@@ -81,6 +91,8 @@ import { BillingButton } from "@/components/billing/BillingButton";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Presentation, X, FileText, Printer } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useQuery } from "@tanstack/react-query";
+import { getCockpitConfig } from "@/lib/odoo/odoo.functions";
 import { LegalAcceptGate } from "@/components/LegalAcceptGate";
 // pdfExport e buildFinancialModel são carregados via dynamic import dentro
 // do handler de export — economiza ~850 KB no bundle inicial (jsPDF + autotable).
@@ -192,14 +204,6 @@ export const Route = createFileRoute("/app")({
       },
       { name: "robots", content: "noindex" },
     ],
-    links: [
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap",
-      },
-    ],
   }),
   component: SimulaProGated,
 });
@@ -211,6 +215,18 @@ export const Route = createFileRoute("/app")({
 function SimulaProGated() {
   const { user, hydrated } = useAuth();
   const navigate = useNavigate();
+  // Dispara já a consulta de assinatura, em paralelo com a dos termos (antes
+  // ela só começava depois do aceite conferido: duas idas ao servidor em fila).
+  useAccessStatus();
+  useIsAdmin();
+  // Idem para a configuração do cockpit (modo Odoo ou manual), usada logo
+  // na primeira tela: mesma chave do useOdooCockpit, a consulta é reaproveitada.
+  useQuery({
+    queryKey: ["odoo", "cockpit-config"],
+    queryFn: () => getCockpitConfig(),
+    staleTime: 60_000,
+    enabled: !!user && !user.mustChangePassword,
+  });
 
   useEffect(() => {
     if (hydrated && !user) navigate({ to: "/login" });

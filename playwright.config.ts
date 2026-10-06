@@ -26,6 +26,8 @@ export default defineConfig({
     screenshot: "only-on-failure",
     locale: "pt-BR",
     timezoneId: "America/Sao_Paulo",
+    // Ensaios atrás do Caddy local usam certificado interno.
+    ignoreHTTPSErrors: true,
   },
   projects: [
     { name: "setup", testMatch: /auth\.setup\.ts/ },

@@ -32,6 +32,10 @@ function readCloudBackupFlag(): string {
 const CLOUD_BACKUP = readCloudBackupFlag();
 
 export default defineConfig({
+  // Arquivos estáticos pré-comprimidos (brotli e gzip): o servidor Node envia a
+  // versão comprimida quando o navegador aceita — mesmo sem proxy na frente.
+  // (opção do Nitro repassada como está; o tipo do wrapper não a declara)
+  nitro: { compressPublicAssets: { gzip: true, brotli: true } } as { preset?: string },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
@@ -43,13 +47,17 @@ export default defineConfig({
     },
     plugins: ANALYZE
       ? [
-          visualizer({
-            filename: "dist/bundle-stats.html",
-            template: "treemap",
-            gzipSize: true,
-            brotliSize: true,
-            open: false,
-          }),
+          {
+            ...visualizer({
+              filename: "dist/bundle-stats.html",
+              template: "treemap",
+              gzipSize: true,
+              brotliSize: true,
+              open: false,
+            }),
+            // Só o bundle do navegador (o do servidor sobrescreveria o relatório).
+            applyToEnvironment: (env: { name: string }) => env.name === "client",
+          },
         ]
       : [],
     environments: {
@@ -67,14 +75,31 @@ export default defineConfig({
               defaultHandler(warning);
             },
             output: {
-              // Chunks dedicados para libs pesadas — apenas no bundle do cliente.
-              // No SSR essas libs são externas (resolvidas pelo runtime) e não
-              // podem entrar em manualChunks.
-              manualChunks: {
-                "vendor-charts": ["recharts"],
-                "vendor-pdf": ["jspdf", "jspdf-autotable"],
+              // Junta módulos pequenos em arquivos de pelo menos ~30 KB: eram ~65
+              // arquivos na abertura do app e, em HTTP/1.1 (6 conexões por
+              // servidor), a latência de rede móvel virava ~3 s de espera em fila.
+              experimentalMinChunkSize: 30_000,
+              // Os motores de cálculo (src/engines) viram um arquivo só: são usados
+              // por quase todas as telas e, soltos, eram dezenas de arquivos pequenos.
+              // O helper de preload do Vite fica no próprio arquivo de runtime.
+              manualChunks(id: string) {
+                if (id.includes("vite/preload-helper") || id.includes("commonjsHelpers"))
+                  return "runtime";
+                // Só o núcleo usado na abertura (finance/odoo), sem o PDF (jsPDF) e
+                // sem o que é carregado sob demanda (IA, calculadoras).
+                if (
+                  /[\\/]src[\\/]engines[\\/](finance|odoo)[\\/]/.test(id) &&
+                  !/pdfExport/.test(id)
+                )
+                  return "engines";
+                return undefined;
               },
             },
+            // Sem manualChunks: a divisão manual (recharts/jspdf em chunks fixos)
+            // arrastava o helper de preload do Vite e utilitários compartilhados
+            // para dentro desses chunks, e o app inteiro passava a baixar o
+            // pacote de PDF (~760 KB) logo na abertura. O Rollup divide pelo uso
+            // real; jsPDF só carrega ao exportar.
           },
         },
       },

@@ -215,7 +215,7 @@ function buildDCF(
 
   // VPL Excel: desconta cada fcfProjected[t] em (1+w)^(t+1) — convenção padrão de DCF.
   const npvRaw = vplExcel(waccMonthly, ...fcfProjected);
-  const npvFlows = npvRaw instanceof Error ? 0 : (npvRaw as number);
+  const npvFlows = Number.isFinite(npvRaw) ? npvRaw : 0;
 
   // Valor terminal por Gordon. Spread mínimo de 0,5% (V7: alinhado com a UI).
   const lastYearFCF = fcfProjected.slice(-12).reduce((a, b) => a + b, 0);

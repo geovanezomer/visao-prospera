@@ -73,10 +73,10 @@ export function calcularSAC(pv: number, taxaMensal: number, n: number): Resultad
 
 export function calcularPRICE(pv: number, taxaMensal: number, n: number): ResultadoSistema {
   const i = taxaMensal;
-  // Usa PMT (formulajs) via wrapper PT-BR. Excel retorna negativo para PV positivo
-  // (saída de caixa); invertemos o sinal para obter a parcela como valor positivo.
+  // PMT na convenção do Excel: negativo para PV positivo (saída de caixa);
+  // invertemos o sinal para obter a parcela como valor positivo.
   const pmt = parcela(i, n, pv);
-  const parcelaFixa = round2(pmt instanceof Error ? pv / n : -(pmt as number));
+  const parcelaFixa = round2(Number.isFinite(pmt) ? -pmt : pv / n);
   let saldo = pv;
   const parcelas: LinhaAmortizacao[] = [];
   let totalPago = 0;
