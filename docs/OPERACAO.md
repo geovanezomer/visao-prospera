@@ -16,7 +16,21 @@ segredos. Comandos executados na pasta do projeto, na VPS.
 Metas de recuperação: perda máxima de dados de **24 h** (um backup por dia) e serviço de
 volta em **até 1 h** seguindo a seção [Restaurar](#restaurar-o-banco).
 
-## Primeira subida
+## Instalação em um comando (recomendado)
+
+Numa VPS com Docker, com o domínio já apontando para ela e as portas 80/443 livres:
+
+```sh
+git clone <repositório> finnancepro && cd finnancepro
+./scripts/ops/install.sh --dominio app.cliente.com.br --email ti@cliente.com.br
+```
+
+O script gera o `.env` com segredos aleatórios, escreve o `Caddyfile` (HTTPS automático
+pelo Let's Encrypt), sobe banco, app, backup diário e o proxy HTTPS, e espera o app
+responder. A porta 3000 fica restrita à própria VPS. Depois, preencha `SMTP_*` no `.env`
+para o envio de e-mails e rode `docker compose up -d app`.
+
+## Primeira subida (manual)
 
 ```sh
 cp .env.example .env    # preencha POSTGRES_PASSWORD, BETTER_AUTH_SECRET, APP_URL e SMTP_*

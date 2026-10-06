@@ -14,6 +14,12 @@ terceiros obrigatórios e sem custo de backend: tudo sobe com um
 | `docker-compose.yml` | Serviços `db` (Postgres 17), `app` (prod), `app-dev`    |
 | `db/migrations/`     | Esquema do banco (Drizzle), aplicado pelo app na subida |
 
+## Instalação em um comando
+
+`./scripts/ops/install.sh --dominio app.cliente.com.br --email ti@cliente.com.br` gera o
+`.env`, liga HTTPS automático (Caddy) e sobe tudo com backup e monitoramento. Detalhes em
+[docs/OPERACAO.md](docs/OPERACAO.md).
+
 ## Primeira subida
 
 ```bash

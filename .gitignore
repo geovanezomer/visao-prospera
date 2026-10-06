@@ -48,3 +48,6 @@ dist-ssr
 
 # Cobertura de testes (vitest --coverage)
 /coverage/
+
+# Gerado por scripts/ops/install.sh
+/Caddyfile

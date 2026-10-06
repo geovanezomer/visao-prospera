@@ -70,7 +70,9 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      # Com o proxy HTTPS (perfil "https"), install.sh define APP_BIND=127.0.0.1:
+      # a porta 3000 deixa de ficar exposta na internet.
+      - "${APP_BIND:-0.0.0.0}:3000:3000"
     env_file:
       - .env
     volumes:
@@ -82,6 +84,24 @@ services:
       - HOST=0.0.0.0
       - BACKUP_DIR=/backups
       - DATABASE_URL=${DATABASE_URL:-postgres://${POSTGRES_USER:-financepro}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-financepro}}
+
+  # ---------- Proxy HTTPS (Caddy, certificado automático) ----------
+  # Ligado por scripts/ops/install.sh: docker compose --profile https up -d
+  caddy:
+    profiles: ["https"]
+    image: caddy:2-alpine
+    container_name: financepro-caddy
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
 
   # ---------- Desenvolvimento (hot reload) ----------
   app-dev:
@@ -113,3 +133,5 @@ services:
 
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:
