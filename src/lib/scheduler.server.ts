@@ -24,6 +24,8 @@ export function startScheduler(): void {
       console.log(`[scheduler] ${name}:`, JSON.stringify(result));
     } catch (e) {
       console.error(`[scheduler] ${name} falhou:`, e instanceof Error ? e.message : e);
+      const { recordError } = await import("@/lib/ops/errors.server");
+      await recordError("job", e, { path: `job:${name}` });
     }
   };
 
@@ -58,7 +60,13 @@ export function startScheduler(): void {
       return { ok: r.ok, companies: r.companies, durationMs: r.durationMs, error: r.error };
     }),
   );
+  // Operação: saúde (backup, restauração, Odoo, erros) e alertas por e-mail.
+  new Cron(
+    "*/15 * * * *",
+    opts,
+    run("ops-alerts", async () => (await import("@/lib/ops/alerts.server")).runOpsAlerts()),
+  );
   console.log(
-    "[scheduler] rotinas agendadas: webhook-retry, trial-cleanup, reconcile-checkout, odoo-sync.",
+    "[scheduler] rotinas agendadas: webhook-retry, trial-cleanup, reconcile-checkout, odoo-sync, ops-alerts.",
   );
 }

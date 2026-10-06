@@ -18,6 +18,7 @@ import { BrandingApplier } from "@/components/BrandingApplier";
 import { getAppSettings, type BrandingSetting } from "@/lib/admin/settings.functions";
 import { buildBrandingCss } from "@/lib/brandingCss";
 import { getBaseUrl } from "@/lib/seo/baseUrl";
+import { installClientErrorReporter, reportClientError } from "@/lib/clientErrorReporter";
 
 function NotFoundComponent() {
   return (
@@ -43,6 +44,7 @@ function NotFoundComponent() {
 
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
+  useEffect(() => reportClientError(error), [error]);
   const router = useRouter();
 
   return (
@@ -209,6 +211,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => installClientErrorReporter(), []);
 
   return (
     <QueryClientProvider client={queryClient}>

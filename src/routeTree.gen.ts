@@ -20,6 +20,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TermosRouteImport } from './routes/termos'
+import { Route as ApiClientErrorRouteImport } from './routes/api/client-error'
 import { Route as ApiFeedbackRouteImport } from './routes/api/feedback'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
@@ -90,6 +91,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
   path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiClientErrorRoute = ApiClientErrorRouteImport.update({
+  id: '/api/client-error',
+  path: '/api/client-error',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiFeedbackRoute = ApiFeedbackRouteImport.update({
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/termos': typeof TermosRoute
+  '/api/client-error': typeof ApiClientErrorRoute
   '/api/feedback': typeof ApiFeedbackRoute
   '/api/health': typeof ApiHealthRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -222,6 +229,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/termos': typeof TermosRoute
+  '/api/client-error': typeof ApiClientErrorRoute
   '/api/feedback': typeof ApiFeedbackRoute
   '/api/health': typeof ApiHealthRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -252,6 +260,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/termos': typeof TermosRoute
+  '/api/client-error': typeof ApiClientErrorRoute
   '/api/feedback': typeof ApiFeedbackRoute
   '/api/health': typeof ApiHealthRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -283,6 +292,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sitemap.xml'
     | '/termos'
+    | '/api/client-error'
     | '/api/feedback'
     | '/api/health'
     | '/auth/callback'
@@ -312,6 +322,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sitemap.xml'
     | '/termos'
+    | '/api/client-error'
     | '/api/feedback'
     | '/api/health'
     | '/auth/callback'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sitemap.xml'
     | '/termos'
+    | '/api/client-error'
     | '/api/feedback'
     | '/api/health'
     | '/auth/callback'
@@ -371,6 +383,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermosRoute: typeof TermosRoute
+  ApiClientErrorRoute: typeof ApiClientErrorRoute
   ApiFeedbackRoute: typeof ApiFeedbackRoute
   ApiHealthRoute: typeof ApiHealthRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
@@ -466,6 +479,13 @@ declare module '@tanstack/react-router' {
       path: '/termos'
       fullPath: '/termos'
       preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/client-error': {
+      id: '/api/client-error'
+      path: '/api/client-error'
+      fullPath: '/api/client-error'
+      preLoaderRoute: typeof ApiClientErrorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/feedback': {
@@ -595,6 +615,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermosRoute: TermosRoute,
+  ApiClientErrorRoute: ApiClientErrorRoute,
   ApiFeedbackRoute: ApiFeedbackRoute,
   ApiHealthRoute: ApiHealthRoute,
   AuthCallbackRoute: AuthCallbackRoute,

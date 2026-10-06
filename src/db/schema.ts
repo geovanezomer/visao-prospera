@@ -602,3 +602,31 @@ export const odooAccountOverrides = pgTable("odoo_account_overrides", {
   updatedAt: updatedAt(),
   updatedBy: uuid("updated_by").references(() => user.id, { onDelete: "set null" }),
 });
+
+// ---------------------------------------------------------------------------
+// Operação: erros capturados (servidor e navegador), agrupados por assinatura.
+// ---------------------------------------------------------------------------
+export const errorEvents = pgTable(
+  "error_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Hash de origem + mensagem + primeira linha útil da pilha. */
+    fingerprint: text("fingerprint").notNull(),
+    source: text("source").notNull(),
+    message: text("message").notNull(),
+    stack: text("stack"),
+    path: text("path"),
+    count: integer("count").notNull().default(1),
+    firstSeen: ts("first_seen")
+      .notNull()
+      .default(sql`now()`),
+    lastSeen: ts("last_seen")
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => [
+    uniqueIndex("error_events_fingerprint_idx").on(t.fingerprint),
+    index("error_events_last_seen_idx").on(t.lastSeen.desc()),
+    check("error_events_source_check", sql`${t.source} in ('server','client','job')`),
+  ],
+);
