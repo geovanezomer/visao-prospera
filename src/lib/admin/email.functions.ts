@@ -85,7 +85,7 @@ export const sendTestEmail = createServerFn({ method: "POST" })
     const { sendMail } = await import("@/lib/mailer.server");
     const r = await sendMail({
       to: data.to,
-      subject: "Teste — Finnance",
+      subject: "Teste — FinnancePRO",
       html: "<p>Este é um e-mail de teste do painel administrativo.</p>",
       text: "Este é um e-mail de teste do painel administrativo.",
     });

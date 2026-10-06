@@ -28,7 +28,7 @@ function createAuth() {
     throw new Error("BETTER_AUTH_SECRET ausente ou curto (mín. 32 caracteres).");
   }
   return betterAuth({
-    appName: "FinancePRO",
+    appName: "FinnancePRO",
     baseURL: appUrl(),
     secret,
     database: drizzleAdapter(db(), {

@@ -110,17 +110,17 @@ function fallbackTemplate(kind: LifecycleKind): { subject: string; html: string 
   switch (kind) {
     case "payment_failed":
       return {
-        subject: "Não conseguimos processar seu pagamento — Finnance",
+        subject: "Não conseguimos processar seu pagamento — FinnancePRO",
         html: `<h1>Olá {{name}}</h1><p>Não conseguimos processar sua última cobrança do plano <strong>{{plan}}</strong> no valor de <strong>{{amount}}</strong>.</p><p>Você tem <strong>7 dias</strong> para atualizar sua forma de pagamento antes do bloqueio do acesso.</p><p><a href="{{portal_url}}">Atualizar forma de pagamento</a></p>`,
       };
     case "trial_ending":
       return {
-        subject: "Seu teste do Finnance termina em breve",
+        subject: "Seu teste do FinnancePRO termina em breve",
         html: `<h1>Olá {{name}}</h1><p>Seu período de teste termina em <strong>{{trial_end}}</strong>.</p><p><a href="{{plans_url}}">Ver planos</a></p>`,
       };
     case "subscription_canceled":
       return {
-        subject: "Sua assinatura foi cancelada — Finnance",
+        subject: "Sua assinatura foi cancelada — FinnancePRO",
         html: `<h1>Olá {{name}}</h1><p>Confirmamos o cancelamento da sua assinatura. Seu acesso permanece ativo até <strong>{{access_end}}</strong>. Seus dados permanecem no seu dispositivo.</p><p><a href="{{plans_url}}">Ver planos</a></p>`,
       };
   }

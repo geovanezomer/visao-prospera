@@ -176,7 +176,7 @@ export const Route = createFileRoute("/api/public/trial/request")({
         {
           const name = email.split("@")[0];
           const branding = await appSetting<{ system_name?: string }>("branding");
-          const systemName = branding?.system_name ?? "Finnance";
+          const systemName = branding?.system_name ?? "FinnancePRO";
 
           const render = (s: string) =>
             s

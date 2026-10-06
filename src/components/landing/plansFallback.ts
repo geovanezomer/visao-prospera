@@ -14,7 +14,7 @@ export const PLANS_FALLBACK: PlanRow[] = [
     id: "fallback-starter",
     slug: "starter",
     name: "Mensal",
-    description: "Acesso completo ao FinancePRO mês a mês.",
+    description: "Acesso completo ao FinnancePRO mês a mês.",
     priceCents: 500,
     currency: "BRL",
     interval: "one_time",

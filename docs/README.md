@@ -1,4 +1,4 @@
-# FinancePRO — Documentação
+# FinnancePRO — Documentação
 
 Índice central da documentação técnica do projeto. Comece pelo
 `ENGINE_OVERVIEW.md` para entender a arquitetura; use os outros

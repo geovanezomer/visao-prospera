@@ -400,7 +400,7 @@ export const resendMagicLink = createServerFn({ method: "POST" })
     );
     const res = await sendMail({
       to: u.email,
-      subject: "Seu acesso ao Finnance",
+      subject: "Seu acesso ao FinnancePRO",
       html: `<p>Olá ${name}, acesse novamente clicando <a href="${actionLink}">aqui</a>.</p>`,
       text: `Olá ${name}, acesse novamente: ${actionLink}`,
     });

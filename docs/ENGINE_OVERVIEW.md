@@ -1,7 +1,7 @@
-# FinancePRO — Visão Técnica da Engine
+# FinnancePRO — Visão Técnica da Engine
 
 Documento didático e detalhado da arquitetura, fluxo de dados e
-responsabilidades de cada módulo do FinancePRO. Voltado a desenvolvedores
+responsabilidades de cada módulo do FinnancePRO. Voltado a desenvolvedores
 que vão evoluir a engine financeira, a camada tributária ou a UI.
 
 > Atualizado em: 2026-06-17. Versão do schema do `AppState`: ver
@@ -11,7 +11,7 @@ que vão evoluir a engine financeira, a camada tributária ou a UI.
 
 ## 1. Visão geral em 30 segundos
 
-O FinancePRO é um SPA TanStack Start + React 19 que roda **toda a
+O FinnancePRO é um SPA TanStack Start + React 19 que roda **toda a
 matemática financeira no cliente** (pure functions, sem backend de cálculo).
 O backend (Lovable Cloud / Supabase) cuida apenas de autenticação,
 persistência opcional e arquivos `.finnance` (snapshots do estado).

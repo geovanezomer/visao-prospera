@@ -1,8 +1,8 @@
-# FinancePRO
+# FinnancePRO
 
 > Plataforma brasileira de análise e simulação financeira para PMEs — DRE, Balanço, Fluxo de Caixa, Reforma Tributária (CBS/IBS — LC 214/2025), +40 indicadores e IA estratégica. Construída pela GZ Consultoria Financeira & Investimentos (consultor CVM).
 
-O FinancePRO transforma dados contábeis em diagnóstico executivo: cruza DRE, Balanço e Fluxo de Caixa em tempo real, simula o impacto da Reforma Tributária, calcula WACC, ROIC, NCG, Monte Carlo, valuation e gera relatórios em PDF com identidade visual padrão.
+O FinnancePRO transforma dados contábeis em diagnóstico executivo: cruza DRE, Balanço e Fluxo de Caixa em tempo real, simula o impacto da Reforma Tributária, calcula WACC, ROIC, NCG, Monte Carlo, valuation e gera relatórios em PDF com identidade visual padrão.
 
 ## Pages
 

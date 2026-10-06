@@ -130,7 +130,7 @@ export class AsaasProvider implements PaymentProvider {
     const isOneTime = input.interval === "one_time" || input.interval === "lifetime";
     const upsellValue =
       input.upsell && input.upsell.priceCents > 0 ? input.upsell.priceCents / 100 : 0;
-    const planDesc = input.planName || `FinancePRO — plano ${input.plan}`;
+    const planDesc = input.planName || `FinnancePRO — plano ${input.plan}`;
 
     // Asaas Checkout hospedado — o link é criado sem pré-cadastrar cliente;
     // a página do Asaas coleta/valida os dados completos do pagador.

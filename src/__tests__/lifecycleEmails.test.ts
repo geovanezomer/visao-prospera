@@ -151,7 +151,7 @@ describe("sendLifecycleEmail", () => {
       enabled: false,
     });
     await sendLifecycleEmail("trial_ending", "c@x.com", { trial_end: "10/07" }, "s");
-    expect(mails[0].subject).toBe("Seu teste do Finnance termina em breve");
+    expect(mails[0].subject).toBe("Seu teste do FinnancePRO termina em breve");
   });
 
   test("resolveSubscriberEmail retorna null para subscription desconhecida", async () => {

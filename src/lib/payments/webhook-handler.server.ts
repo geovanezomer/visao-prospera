@@ -89,7 +89,7 @@ async function sendMagicLink(email: string, plan?: string): Promise<void> {
   const tpl = await getTemplate("magic_link");
   const name = email.split("@")[0];
   const vars = { name, link: actionLink, plan: plan ?? "" };
-  const subject = tpl ? renderTemplate(tpl.subject, vars) : "Acesso ao Finnance";
+  const subject = tpl ? renderTemplate(tpl.subject, vars) : "Acesso ao FinnancePRO";
   const html = tpl
     ? renderTemplate(tpl.html, vars)
     : `<p>Olá ${name}, acesse <a href="${actionLink}">aqui</a>.</p>`;

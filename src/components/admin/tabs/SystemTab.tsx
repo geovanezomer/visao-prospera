@@ -45,7 +45,7 @@ type Branding = {
   colors: { primary: string; accent: string };
 };
 const DEFAULT_BRANDING: Branding = {
-  system_name: "Finnance",
+  system_name: "FinnancePRO",
   logo_url: "",
   favicon_url: "",
   author_photo_url: "",

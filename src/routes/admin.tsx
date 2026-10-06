@@ -83,7 +83,10 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/admin")({
   validateSearch: zodValidator(searchSchema),
   head: () => ({
-    meta: [{ title: "Administração — Finnance" }, { name: "robots", content: "noindex,nofollow" }],
+    meta: [
+      { title: "Administração — FinnancePRO" },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
   }),
   component: AdminPage,
 });

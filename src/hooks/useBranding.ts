@@ -32,7 +32,7 @@ export type Trial = { enabled: boolean; durationHours: number };
 
 const DEFAULTS = {
   branding: {
-    systemName: "Finnance",
+    systemName: "FinnancePRO",
     logoUrl: null,
     faviconUrl: null,
     authorPhotoUrl: null,

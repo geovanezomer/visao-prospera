@@ -64,7 +64,7 @@ export async function notifyAdmin(
       tasks.push(
         sendMail({
           to: cfg.emailTo,
-          subject: `[Finnance] ${payload.title}`,
+          subject: `[FinnancePRO] ${payload.title}`,
           html: `<h3>${payload.title}</h3><p>${payload.body.replace(/\n/g, "<br/>")}</p><p style="color:#888;font-size:12px">Evento: ${payload.event}</p>`,
           text: `${payload.title}\n\n${payload.body}\n\nEvento: ${payload.event}`,
         })

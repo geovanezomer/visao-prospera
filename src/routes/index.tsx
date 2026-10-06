@@ -1,4 +1,4 @@
-// Rota pública / — landing page principal do FinancePRO.
+// Rota pública / — landing page principal do FinnancePRO.
 // Quando VITE_LANDING_PAGE=OFF, redireciona para /app (que faz fallback para /login se não autenticado).
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { LandingPage } from "@/components/landing/LandingPage";
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/")({
   staleTime: 60_000,
   head: () => ({
     meta: [
-      { title: "FinancePRO — Raio-X Financeiro para PMEs | GZ Consultoria" },
+      { title: "FinnancePRO — Raio-X Financeiro para PMEs | GZ Consultoria" },
       {
         name: "description",
         content:
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/")({
       },
       {
         property: "og:title",
-        content: "FinancePRO — O Raio-X financeiro que transforma consultor em CFO da PME",
+        content: "FinnancePRO — O Raio-X financeiro que transforma consultor em CFO da PME",
       },
       {
         property: "og:description",
@@ -54,7 +54,7 @@ export const Route = createFileRoute("/")({
       { property: "og:url", content: CANONICAL },
       {
         name: "twitter:title",
-        content: "FinancePRO — O Raio-X financeiro que transforma consultor em CFO da PME",
+        content: "FinnancePRO — O Raio-X financeiro que transforma consultor em CFO da PME",
       },
       {
         name: "twitter:description",
@@ -68,7 +68,7 @@ export const Route = createFileRoute("/")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Product",
-          name: "FinancePRO",
+          name: "FinnancePRO",
           description:
             "Plataforma de análise financeira para PMEs brasileiras — DRE, Balanço, Fluxo de Caixa, Reforma Tributária CBS/IBS, +40 indicadores e IA estratégica.",
           brand: {

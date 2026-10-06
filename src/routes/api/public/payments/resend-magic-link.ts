@@ -65,8 +65,8 @@ export const Route = createFileRoute("/api/public/payments/resend-magic-link")({
         const name = intent.email.split("@")[0];
         const res = await sendMail({
           to: intent.email,
-          subject: "Seu link de acesso ao Finnance",
-          html: `<p>Olá ${name}, acesse <a href="${actionLink}">aqui</a> para entrar no Finnance.</p>`,
+          subject: "Seu link de acesso ao FinnancePRO",
+          html: `<p>Olá ${name}, acesse <a href="${actionLink}">aqui</a> para entrar no FinnancePRO.</p>`,
         }).catch((e) => {
           console.error("[resend-magic] envio falhou:", e);
           return { sent: false, via: "error" as const };

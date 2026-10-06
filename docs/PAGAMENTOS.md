@@ -63,7 +63,7 @@ ASAAS_PRICE_PRO=<id-do-plano-ou-link>
 
 ```env
 RESEND_API_KEY=re_...
-EMAIL_FROM=FinancePRO <no-reply@seudominio.com>
+EMAIL_FROM=FinnancePRO <no-reply@seudominio.com>
 ```
 
 Sem Resend, o sistema cria o usuário no Supabase mesmo assim — apenas não envia o e-mail automático.

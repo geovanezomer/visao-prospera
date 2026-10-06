@@ -72,7 +72,7 @@ export const Route = createFileRoute("/api/feedback")({
 
         const html = `
           <div style="font-family: -apple-system, Segoe UI, Arial, sans-serif; color:#111; max-width:600px;">
-            <h2 style="margin:0 0 12px;">Nova sugestão — FinancePRO</h2>
+            <h2 style="margin:0 0 12px;">Nova sugestão — FinnancePRO</h2>
             <p style="margin:0 0 4px;"><strong>Tópico:</strong> ${escapeHtml(topic)}</p>
             <p style="margin:0 0 12px;"><strong>Assunto:</strong> ${escapeHtml(subject)}</p>
             <hr style="border:none;border-top:1px solid #e5e7eb;margin:12px 0;" />

@@ -192,7 +192,7 @@ export function EmailsTab() {
             <Input
               value={cfg.fromName}
               onChange={(e) => setCfg({ ...cfg, fromName: e.target.value })}
-              placeholder="Finnance"
+              placeholder="FinnancePRO"
             />
           </div>
           <div className="space-y-1">

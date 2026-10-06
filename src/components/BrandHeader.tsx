@@ -11,7 +11,7 @@
 // ============================================================================
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
+import { logoAsset } from "@/lib/brandAssets";
 import { useBranding } from "@/hooks/useBranding";
 import { BrandedLogo } from "@/components/BrandedLogo";
 import { cn } from "@/lib/utils";

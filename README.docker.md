@@ -1,4 +1,4 @@
-# FinancePRO — Deploy com Docker (VPS)
+# FinnancePRO — Deploy com Docker (VPS)
 
 Aplicação **TanStack Start** (React 19 + Vite 7 + Nitro) com **PostgreSQL 17**
 próprio e login **Better Auth** rodando dentro do app. Sem serviços de
@@ -51,7 +51,7 @@ ou por `docker run --env-file .env`.
 - Serviço `db` (Postgres 17) com volume `pgdata`, sem porta exposta: só o app
   o acessa, pela rede interna do compose.
 - **Usar um Postgres existente** (por exemplo, o mesmo servidor do Odoo):
-  crie um banco e um usuário **separados** para o FinancePRO, defina
+  crie um banco e um usuário **separados** para o FinnancePRO, defina
   `DATABASE_URL` no `.env` e remova o serviço `db` do compose. Nunca use o
   banco do Odoo.
 - Backup: `docker compose exec db pg_dump -U financepro financepro > backup.sql`.

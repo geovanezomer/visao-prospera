@@ -1,4 +1,4 @@
-# Arquitetura do FinancePRO
+# Arquitetura do FinnancePRO
 
 Este documento é o contrato de onde cada tipo de código mora.
 Mudanças que violarem essas regras são detectadas por:

@@ -7,7 +7,7 @@ import { useBranding } from "@/hooks/useBranding";
 import { BrandedLogo } from "@/components/BrandedLogo";
 import { BrandHeader } from "@/components/BrandHeader";
 import { TrialRequestDialog } from "@/components/landing/TrialRequestDialog";
-import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
+import { logoAsset } from "@/lib/brandAssets";
 import {
   ArrowRight,
   BarChart3,

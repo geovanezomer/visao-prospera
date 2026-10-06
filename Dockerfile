@@ -1,5 +1,5 @@
 # ============================================================
-# FinancePRO — Build de produção (multi-stage)
+# FinnancePRO — Build de produção (multi-stage)
 # Stack: TanStack Start (Vite + Nitro) + Bun + React 19
 # Alvo: VPS (Docker), runtime Node 20
 # ============================================================

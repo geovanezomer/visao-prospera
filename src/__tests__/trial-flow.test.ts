@@ -78,7 +78,7 @@ beforeEach(async () => {
   sessionUserId = null;
   await t.db.insert(schema.appSettings).values([
     { key: "trial", value: { enabled: true, duration_hours: 2 } },
-    { key: "branding", value: { system_name: "Finnance" } },
+    { key: "branding", value: { system_name: "FinnancePRO" } },
   ]);
   await t.db.insert(schema.emailTemplates).values({
     kind: "trial_magic_link",
@@ -138,7 +138,7 @@ describe("POST /api/public/trial/request", () => {
     expect(cap.magicLinks).toEqual([{ email: "a@b.com", callbackPath: "/app" }]);
     expect(cap.mails).toHaveLength(1);
     expect(cap.mails[0].to).toBe("a@b.com");
-    expect(cap.mails[0].subject).toBe("Olá a — Finnance");
+    expect(cap.mails[0].subject).toBe("Olá a — FinnancePRO");
     expect(cap.mails[0].html).toContain("magic-link/verify");
     expect(cap.mails[0].html).toContain("(2h)");
   });

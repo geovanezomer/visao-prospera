@@ -33,31 +33,31 @@ export const Route = createFileRoute("/landing")({
   head: () => ({
     meta: [
       {
-        title: "Tour do FinancePRO — Recursos, Planos e Demonstração | GZ Consultoria",
+        title: "Tour do FinnancePRO — Recursos, Planos e Demonstração | GZ Consultoria",
       },
       {
         name: "description",
         content:
-          "Conheça o tour completo do FinancePRO: módulos de DRE, Balanço, Fluxo de Caixa, simulador CBS/IBS, comparação de planos e exemplos práticos para consultores e PMEs.",
+          "Conheça o tour completo do FinnancePRO: módulos de DRE, Balanço, Fluxo de Caixa, simulador CBS/IBS, comparação de planos e exemplos práticos para consultores e PMEs.",
       },
       {
         property: "og:title",
-        content: "Tour do FinancePRO — Recursos, Planos e Demonstração",
+        content: "Tour do FinnancePRO — Recursos, Planos e Demonstração",
       },
       {
         property: "og:description",
         content:
-          "Veja todos os módulos do FinancePRO em detalhe: indicadores, Reforma Tributária, IA estratégica e tabela de planos.",
+          "Veja todos os módulos do FinnancePRO em detalhe: indicadores, Reforma Tributária, IA estratégica e tabela de planos.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: CANONICAL },
       {
         name: "twitter:title",
-        content: "Tour do FinancePRO — Recursos, Planos e Demonstração",
+        content: "Tour do FinnancePRO — Recursos, Planos e Demonstração",
       },
       {
         name: "twitter:description",
-        content: "Tour completo do FinancePRO: módulos, indicadores, Reforma Tributária e planos.",
+        content: "Tour completo do FinnancePRO: módulos, indicadores, Reforma Tributária e planos.",
       },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
@@ -67,9 +67,9 @@ export const Route = createFileRoute("/landing")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Product",
-          name: "FinancePRO",
+          name: "FinnancePRO",
           description:
-            "Tour do FinancePRO: módulos de análise financeira, Reforma Tributária CBS/IBS, indicadores e planos para PMEs brasileiras.",
+            "Tour do FinnancePRO: módulos de análise financeira, Reforma Tributária CBS/IBS, indicadores e planos para PMEs brasileiras.",
           brand: {
             "@type": "Organization",
             name: "GZ Consultoria Financeira & Investimentos",

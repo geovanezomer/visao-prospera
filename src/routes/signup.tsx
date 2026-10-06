@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Lock } from "lucide-react";
-import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
+import { logoAsset } from "@/lib/brandAssets";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/signup")({
@@ -38,7 +38,7 @@ function SignupDisabledPage() {
           className="mx-auto mb-6 h-12 w-12 rounded-md object-contain"
         />
         <p className="text-sm font-semibold tracking-tight">
-          Finnance<span className="text-primary">PRO</span>
+          FinnancePRO<span className="text-primary">PRO</span>
         </p>
 
         <div className="mt-8 rounded-lg border border-border bg-card/50 p-6">

@@ -14,7 +14,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { LogOut, Share2, FolderOpen, Calculator, KeyRound } from "lucide-react";
-import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
+import { logoAsset } from "@/lib/brandAssets";
 import { BrandedLogo } from "@/components/BrandedLogo";
 import { useBranding } from "@/hooks/useBranding";
 

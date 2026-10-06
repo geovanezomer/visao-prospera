@@ -16,7 +16,7 @@ const Search = z.object({
 });
 
 export const Route = createFileRoute("/checkout/sucesso")({
-  head: () => ({ meta: [{ title: "Pagamento confirmado — FinancePRO" }] }),
+  head: () => ({ meta: [{ title: "Pagamento confirmado — FinnancePRO" }] }),
   validateSearch: Search,
   component: SucessoPage,
 });

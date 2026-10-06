@@ -1,5 +1,5 @@
 # ============================================================
-# FinancePRO — Docker Compose (VPS)
+# FinnancePRO — Docker Compose (VPS)
 #
 # Produção:        docker compose up -d --build
 # Desenvolvimento: docker compose --profile dev up app-dev db --build

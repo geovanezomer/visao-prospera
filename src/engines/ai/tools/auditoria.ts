@@ -161,7 +161,7 @@ const defs: ToolDef[] = [
   {
     name: "get_completude",
     description:
-      "Mede a COMPLETUDE de cada módulo do FinancePRO (Receitas, Despesas, Capital, Balanço, Tributos, Caixa, Governança) em 0–100%. Lista para cada módulo o que ainda falta preencher. Use SEMPRE antes de prometer análise 360° — se a completude estiver abaixo de 70%, peça os dados antes.",
+      "Mede a COMPLETUDE de cada módulo do FinnancePRO (Receitas, Despesas, Capital, Balanço, Tributos, Caixa, Governança) em 0–100%. Lista para cada módulo o que ainda falta preencher. Use SEMPRE antes de prometer análise 360° — se a completude estiver abaixo de 70%, peça os dados antes.",
     parameters: { type: "object", properties: {}, required: [] },
   },
   {

@@ -13,7 +13,7 @@
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoAsset from "@/assets/finnancepro-logo.png.asset.json";
+import { logoAsset } from "@/lib/brandAssets";
 import { sum, fmtBRL, fmtPct, MESES } from "@/engines/finance/format";
 import type { AppState, BalancoDetalhado } from "@/engines/finance/types";
 import type { FinancialModel } from "@/engines/finance/financialModel";

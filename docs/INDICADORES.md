@@ -1,4 +1,4 @@
-# Indicadores Financeiros — FinancePRO
+# Indicadores Financeiros — FinnancePRO
 
 > **Mapa de referência:** onde cada indicador é calculado, qual fórmula usa e quais inputs consome.
 > Última revisão: gerado a partir do código-fonte (src/engines/finance + src/engines/calculadoras).
@@ -156,7 +156,7 @@ Saldo Final[i] = Saldo Final[i-1] + Variação[i]
 
 ### 1.3 Balanço Patrimonial (inputs estruturais)
 
-O FinancePRO **não gera** um Balanço automaticamente — os dados patrimoniais são informados pelo consultor via `state.capital` e usados como base nos cálculos de indicadores.
+O FinnancePRO **não gera** um Balanço automaticamente — os dados patrimoniais são informados pelo consultor via `state.capital` e usados como base nos cálculos de indicadores.
 
 **Inputs de `capital` usados nos cálculos:**
 
@@ -1250,4 +1250,4 @@ simularSacPrice (sacPrice.ts)
 
 ---
 
-_Fim do documento — FinancePRO INDICADORES.md_
+_Fim do documento — FinnancePRO INDICADORES.md_
