@@ -106,6 +106,17 @@ export type OdooCompanySnapshot = {
   draftCount?: number;
   /** Lançamentos de encerramento/apuração do resultado excluídos do retrato. */
   closingMovesExcluded?: number;
+  /** Receita e custo por produto (40 maiores + "Outros"), por mês do retrato. */
+  products?: OdooProductLine[];
+};
+
+export type OdooProductLine = {
+  productId: number | null;
+  name: string;
+  /** Receita bruta por mês (positiva), alinhada com `OdooSnapshot.months`. */
+  revenue: number[];
+  /** Custo dos produtos vendidos por mês (positivo). */
+  cogs: number[];
 };
 
 export type OdooSnapshot = {

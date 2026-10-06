@@ -73,6 +73,17 @@ O conector os desconsidera, e a conferência acima continua batendo.
 docker compose exec -T odoo odoo shell -d lab20 $DB --no-http < add_closing_entries.py
 ```
 
+## Produtos para o "Mix de produtos" (opcional)
+
+`add_products.py` atribui produtos às linhas de receita e de custo já lançadas
+(Linha Premium/Padrão/Econômica/Acessórios no grupo Alfa; Consultoria/Implantação/
+Suporte na Beta), com pesos diferentes na receita e no custo para gerar margens
+diferentes. Depois, sincronize no app e abra Simulador › Insights › Mix de produtos.
+
+```sh
+docker compose exec -T odoo odoo shell -d lab20 $DB --no-http < add_products.py
+```
+
 ## Desligar
 
 ```sh

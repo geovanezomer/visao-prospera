@@ -153,8 +153,10 @@ leitura, o próprio Odoo recusa qualquer escrita.
   taxa pelos juros do período, prazos de 12 e 36 meses. Afeta só simulações de dívida.
 - **Fluxo de caixa:** realizado pelo método indireto sobre o balanço contábil (fecha com o
   caixa), apresentado por natureza; não é a leitura linha a linha do extrato bancário.
-- **Encerramento do exercício:** lançamentos de apuração do resultado não são excluídos
-  automaticamente; a luz de saúde avisa quando há indício deles.
+- **Encerramento do exercício:** excluído automaticamente quando toca resultado e PL ou
+  uma conta de "apuração do resultado"; outros formatos aparecem como alerta na luz de saúde.
+- **Mix de produtos:** depende de o Odoo ter o produto nas linhas de receita e de custo
+  (faturas e custo de estoque fazem isso; lançamentos manuais sem produto ficam de fora).
 - **Setor:** inferido pelo peso do CMV (comércio × serviços). Indústria precisa ser
   ajustada à mão em "Regime Tributário".
 - **Moeda:** só BRL. Empresas em outra moeda entram sem conversão.

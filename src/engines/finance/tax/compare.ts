@@ -25,18 +25,23 @@ import type { MonthlyTax } from "./shared";
  * art. 343), e PIS/COFINS seguem devidos. Calcular 2026 pela era "transicao"
  * zerava PIS/COFINS e subestimava a carga (≈2,65 p.p. no Presumido).
  */
-export function compareYearsForRegime(
+/**
+ * Estado com as alíquotas de transição da Reforma de um ano (2026–2033).
+ * 2026 usa as regras atuais (CBS/IBS de teste compensáveis — LC 214/2025, art. 343).
+ */
+export function stateForReformYear(
   state: AppState,
-  regime: TaxRegime,
-  years: number[],
-): { year: number; era: TaxEra; effective: number; annual: number; rates: ReformaRates }[] {
+  year: number,
+): { state: AppState; era: TaxEra; rates: ReformaRates } {
   const ibsFull = getIbsAliquotaRef(state.tax);
-  return years.map((year) => {
-    const rates = getReformaRatesForYear(year, state.tax);
-    const ibsFrac = ibsFull > 0 ? rates.ibsPct / ibsFull : 0;
-    const era = eraForYear(year);
-    const calcEra: TaxEra = year === 2026 ? "atual" : era;
-    const s: AppState = {
+  const rates = getReformaRatesForYear(year, state.tax);
+  const ibsFrac = ibsFull > 0 ? rates.ibsPct / ibsFull : 0;
+  const era = eraForYear(year);
+  const calcEra: TaxEra = year === 2026 ? "atual" : era;
+  return {
+    era,
+    rates,
+    state: {
       ...state,
       tax: {
         ...state.tax,
@@ -48,7 +53,17 @@ export function compareYearsForRegime(
           reformaTransicaoIcmsIssMult: rates.icmsIssMult,
         },
       },
-    };
+    },
+  };
+}
+
+export function compareYearsForRegime(
+  state: AppState,
+  regime: TaxRegime,
+  years: number[],
+): { year: number; era: TaxEra; effective: number; annual: number; rates: ReformaRates }[] {
+  return years.map((year) => {
+    const { state: s, era, rates } = stateForReformYear(state, year);
     let tax: MonthlyTax;
     if (regime === "simples") tax = calcSimples(s);
     else if (regime === "presumido") tax = calcPresumido(s);

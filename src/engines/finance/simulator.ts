@@ -80,6 +80,45 @@ export interface SimulatorParams {
 
   // Tributário
   regimeOverride: TaxRegime | "base"; // base = não muda
+
+  // Mercado (opcional — 0 desliga)
+  /** Tamanho do mercado endereçável (R$/ano). Com ele, a participação de mercado entra no cálculo. */
+  mercadoTamanho?: number;
+  /** Crescimento do mercado (%) — o volume acompanha mantida a participação. */
+  mercadoCrescimentoPct?: number;
+  /** Ganho/perda de participação de mercado (p.p.). Requer `mercadoTamanho`. */
+  participacaoDeltaPp?: number;
+  /** Variação do preço da concorrência (%). */
+  precoConcorrenciaPct?: number;
+  /** Elasticidade da participação ao preço relativo (nosso ÷ concorrência). */
+  elasticidadeParticipacao?: number;
+
+  // Macroeconomia (opcional)
+  /** IPCA do período (%): corrige custos fixos e folha. */
+  ipcaPct?: number;
+  /** Quanto do IPCA é repassado ao preço (%, 0–100). Repasse nominal não reduz a demanda. */
+  ipcaRepassePct?: number;
+  /** Variação do câmbio (%) sobre a parte importada do custo. */
+  cambioPct?: number;
+  /** Parte importada (ou dolarizada) do custo dos produtos (%). */
+  cpvImportadoPct?: number;
+  /** Variação da Selic (p.p.) — repassada à dívida pós-fixada. */
+  selicDeltaPp?: number;
+}
+
+/** Participação de mercado implícita (receita ÷ mercado), base e simulada. */
+export function marketShare(
+  base: AppState,
+  p: SimulatorParams,
+): { base: number; simulada: number } | null {
+  const mercado = p.mercadoTamanho ?? 0;
+  if (mercado <= 0) return null;
+  const rb = base.revenue.bruta.reduce((a, b) => a + (b || 0), 0);
+  const share0 = Math.min(1, rb / mercado);
+  return {
+    base: share0,
+    simulada: Math.max(0, Math.min(1, share0 + (p.participacaoDeltaPp ?? 0) / 100)),
+  };
 }
 
 export const DEFAULT_SIM: SimulatorParams = {
@@ -106,6 +145,16 @@ export const DEFAULT_SIM: SimulatorParams = {
   debtPaydownPct: 0,
   kdDeltaPp: 0,
   regimeOverride: "base",
+  mercadoTamanho: 0,
+  mercadoCrescimentoPct: 0,
+  participacaoDeltaPp: 0,
+  precoConcorrenciaPct: 0,
+  elasticidadeParticipacao: 0,
+  ipcaPct: 0,
+  ipcaRepassePct: 0,
+  cambioPct: 0,
+  cpvImportadoPct: 0,
+  selicDeltaPp: 0,
 };
 
 const cloneCosts = p_cloneCosts;
@@ -156,9 +205,23 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
   // (A forma linear −E×Δp errava muito em variações grandes: E=2 e +30% de
   // preço dava receita ×0,52 em vez de ×0,77.) Volume manual compõe
   // multiplicativamente. Fator limitado a [0,1; 6].
-  const fp = 1 + (p.priceDeltaPct || 0) / 100;
-  const fvInduzido = p.priceElasticity ? Math.pow(Math.max(0.01, fp), -p.priceElasticity) : 1;
-  const fv = Math.max(0.1, Math.min(6, (1 + (p.volumeDeltaPct || 0) / 100) * fvInduzido));
+  // Preço REAL (decisão de preço) × repasse NOMINAL da inflação.
+  const fpReal = 1 + (p.priceDeltaPct || 0) / 100;
+  const fpInflacao = 1 + ((p.ipcaPct || 0) / 100) * ((p.ipcaRepassePct || 0) / 100);
+  const fp = fpReal * fpInflacao;
+  const fvInduzido = p.priceElasticity ? Math.pow(Math.max(0.01, fpReal), -p.priceElasticity) : 1;
+  // Mercado: crescimento do mercado, ganho de participação e preço relativo à concorrência.
+  const share = marketShare(base, p);
+  const fShare = share && share.base > 0 ? share.simulada / share.base : 1;
+  const precoRelativo = fpReal / (1 + (p.precoConcorrenciaPct || 0) / 100);
+  const fCompetitivo = p.elasticidadeParticipacao
+    ? Math.pow(Math.max(0.01, precoRelativo), -p.elasticidadeParticipacao)
+    : 1;
+  const fMercado = (1 + (p.mercadoCrescimentoPct || 0) / 100) * fShare * fCompetitivo;
+  const fv = Math.max(
+    0.1,
+    Math.min(6, (1 + (p.volumeDeltaPct || 0) / 100) * fvInduzido * fMercado),
+  );
   if (fp !== 1) s.revenue = p_adjustRevenue(s, fp).revenue;
   if (fv !== 1) s.revenue.bruta = s.revenue.bruta.map((v) => v * fv);
   if (fp !== 1 || fv !== 1) {
@@ -185,6 +248,26 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
     const f = 1 + p.cpvDeltaPct / 100;
     s.costs = s.costs.map((c) =>
       c.category === "custo_vendas" || c.category === "direto_venda"
+        ? { ...c, values: c.values.map((v) => v * f) }
+        : c,
+    );
+  }
+
+  // 3b) Câmbio: a parte importada do custo dos produtos acompanha o dólar.
+  if (p.cambioPct && p.cpvImportadoPct) {
+    const f = 1 + (p.cambioPct / 100) * (p.cpvImportadoPct / 100);
+    s.costs = s.costs.map((c) =>
+      c.category === "custo_vendas" || c.category === "direto_venda"
+        ? { ...c, values: c.values.map((v) => v * f) }
+        : c,
+    );
+  }
+
+  // 3c) IPCA: corrige custos fixos e folha (aluguéis, contratos, dissídio).
+  if (p.ipcaPct) {
+    const f = 1 + p.ipcaPct / 100;
+    s.costs = s.costs.map((c) =>
+      costDriver(c) === "fixo" && c.category !== "financeiro"
         ? { ...c, values: c.values.map((v) => v * f) }
         : c,
     );
@@ -356,14 +439,15 @@ export function applySimulator(base: AppState, p: SimulatorParams): AppState {
   // 11b) kd / Selic — ADITIVO: Δjuros = Δkd × dívida média (contratos,
   //      inclusive o empréstimo simulado) ÷ 12 por mês. A forma antiga
   //      (razão de kd com piso) dobrava os juros com +1 p.p. quando kd = 0.
-  if (p.kdDeltaPp !== 0) {
+  const deltaKd = (p.kdDeltaPp || 0) + (p.selicDeltaPp || 0);
+  if (deltaKd !== 0) {
     const divida = sumContractSaldos(s.capital.debtContracts);
-    const deltaMes = ((p.kdDeltaPp / 100) * divida) / 12;
-    s.capital.kd = Math.max(0, (s.capital.kd || 0) + p.kdDeltaPp);
+    const deltaMes = ((deltaKd / 100) * divida) / 12;
+    s.capital.kd = Math.max(0, (s.capital.kd || 0) + deltaKd);
     if (divida > 0 && deltaMes !== 0) {
       s.costs.push({
         id: "sim_kd",
-        label: `Variação do custo da dívida (${p.kdDeltaPp > 0 ? "+" : ""}${p.kdDeltaPp.toFixed(1)} p.p. a.a.)`,
+        label: `Variação do custo da dívida (${deltaKd > 0 ? "+" : ""}${deltaKd.toFixed(1)} p.p. a.a.)`,
         category: "financeiro",
         values: Array(12).fill(deltaMes),
         fixed: false,
@@ -542,6 +626,12 @@ export function countActiveLevers(p: SimulatorParams): number {
   if (p.debtPaydownPct > 0) n++;
   if (p.kdDeltaPp !== 0) n++;
   if (p.regimeOverride !== "base") n++;
+  if (p.mercadoCrescimentoPct) n++;
+  if (p.participacaoDeltaPp && p.mercadoTamanho) n++;
+  if (p.precoConcorrenciaPct && p.elasticidadeParticipacao) n++;
+  if (p.ipcaPct) n++;
+  if (p.cambioPct && p.cpvImportadoPct) n++;
+  if (p.selicDeltaPp) n++;
   return n;
 }
 

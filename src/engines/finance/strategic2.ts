@@ -21,7 +21,7 @@ import { buildDRE } from "./dre";
 import { buildCashFlow } from "./cashflow";
 import { resolveEffectiveRegime, simplesExcedeLimite } from "./regime";
 import { buildFinancialModel } from "./financialModel";
-import { compareRegimes } from "./tax/compare";
+import { compareRegimes, stateForReformYear } from "./tax/compare";
 
 const sum = (a: number[]) => a.reduce((x, y) => x + (y || 0), 0);
 
@@ -83,6 +83,19 @@ export const PLAYERS: Player[] = [
   { id: "kd", label: "Custo da dívida (Selic)", keys: ["kdDeltaPp"] },
   { id: "distrib", label: "Distribuição de lucros", keys: ["distribuicaoDeltaPct"] },
   { id: "regime", label: "Regime tributário", keys: ["regimeOverride"] },
+  {
+    id: "mercado",
+    label: "Mercado (crescimento e participação)",
+    keys: ["mercadoTamanho", "mercadoCrescimentoPct", "participacaoDeltaPp"],
+  },
+  {
+    id: "concorrencia",
+    label: "Preço da concorrência",
+    keys: ["precoConcorrenciaPct", "elasticidadeParticipacao"],
+  },
+  { id: "ipca", label: "Inflação (IPCA)", keys: ["ipcaPct", "ipcaRepassePct"] },
+  { id: "cambio", label: "Câmbio", keys: ["cambioPct", "cpvImportadoPct"] },
+  { id: "selic", label: "Selic", keys: ["selicDeltaPp"] },
 ];
 
 /** Jogador está ativo quando algum parâmetro "de efeito" difere do padrão. */
@@ -92,9 +105,13 @@ function isActive(pl: Player, p: SimulatorParams): boolean {
     fixos: "fixedCutPct",
     antecip: "antecipPctAm",
     divida: "loanPrincipal",
+    concorrencia: "precoConcorrenciaPct",
   };
+  if (pl.id === "mercado")
+    return !!p.mercadoCrescimentoPct || (!!p.mercadoTamanho && !!p.participacaoDeltaPp);
+  if (pl.id === "cambio") return !!p.cambioPct && !!p.cpvImportadoPct;
   const k = effect[pl.id] ?? pl.keys[0];
-  return p[k] !== DEFAULT_SIM[k];
+  return (p[k] ?? 0) !== (DEFAULT_SIM[k] ?? 0);
 }
 
 function paramsFor(players: Player[], p: SimulatorParams): SimulatorParams {
@@ -278,7 +295,29 @@ export const LEVERS: LeverSpec[] = [
     max: 20,
   },
   { key: "kdDeltaPp", label: "Custo da dívida", unidade: " p.p.", passo: 3, min: -10, max: 15 },
+  {
+    key: "mercadoCrescimentoPct",
+    label: "Crescimento do mercado",
+    unidade: "%",
+    passo: 5,
+    min: -50,
+    max: 100,
+  },
+  {
+    key: "participacaoDeltaPp",
+    label: "Participação de mercado",
+    unidade: " p.p.",
+    passo: 1,
+    min: -30,
+    max: 30,
+  },
+  { key: "ipcaPct", label: "Inflação (IPCA)", unidade: "%", passo: 2, min: 0, max: 30 },
 ];
+
+/** Alavancas que só fazem sentido com o mercado informado. */
+export function leversFor(p: SimulatorParams): LeverSpec[] {
+  return LEVERS.filter((l) => l.key !== "participacaoDeltaPp" || (p.mercadoTamanho ?? 0) > 0);
+}
 
 export type TornadoBar = {
   key: keyof SimulatorParams;
@@ -296,19 +335,21 @@ export function tornado(
   metric: MetricKey,
 ): { atual: number; barras: TornadoBar[] } {
   const atual = simMetrics(base, p)[metric];
-  const barras = LEVERS.map((l) => {
-    const v = Number(p[l.key]) || 0;
-    const lo = simMetrics(base, { ...p, [l.key]: Math.max(l.min, v - l.passo) })[metric] - atual;
-    const hi = simMetrics(base, { ...p, [l.key]: Math.min(l.max, v + l.passo) })[metric] - atual;
-    return {
-      key: l.key,
-      label: l.label,
-      passo: `±${l.passo}${l.unidade}`,
-      baixo: lo,
-      alto: hi,
-      amplitude: Math.abs(hi - lo),
-    };
-  }).sort((a, b) => b.amplitude - a.amplitude);
+  const barras = leversFor(p)
+    .map((l) => {
+      const v = Number(p[l.key]) || 0;
+      const lo = simMetrics(base, { ...p, [l.key]: Math.max(l.min, v - l.passo) })[metric] - atual;
+      const hi = simMetrics(base, { ...p, [l.key]: Math.min(l.max, v + l.passo) })[metric] - atual;
+      return {
+        key: l.key,
+        label: l.label,
+        passo: `±${l.passo}${l.unidade}`,
+        baixo: lo,
+        alto: hi,
+        amplitude: Math.abs(hi - lo),
+      };
+    })
+    .sort((a, b) => b.amplitude - a.amplitude);
   return { atual, barras };
 }
 
@@ -627,4 +668,139 @@ export function narrative(
     });
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------
+// Reforma Tributária (CBS/IBS) — transição 2026–2033 no cenário simulado
+// ---------------------------------------------------------------------------
+
+export type ReformaYear = {
+  ano: number;
+  fase: string;
+  cargaPct: number;
+  lucroLiquido: number;
+  deltaLucro: number;
+  /** Variação de preço que mantém o lucro de 2026 (null = fora do alcance). */
+  repassePct: number | null;
+};
+
+const llAno = (state: AppState, year: number) => {
+  const s = stateForReformYear(state, year).state;
+  const regime = resolveEffectiveRegime(s);
+  const { dre } = buildDRE(s, regime);
+  return { ll: sum(dre.lucroLiquido), impostos: sum(dre.impostosTotal), rb: sum(dre.receitaBruta) };
+};
+
+export function reformaImpact(base: AppState, p: SimulatorParams): ReformaYear[] {
+  const anos = [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033];
+  const sim = applySimulator(base, p);
+  const ref = llAno(sim, 2026).ll;
+  const fase = (y: number) =>
+    y === 2026
+      ? "Teste (CBS 0,9% + IBS 0,1%)"
+      : y === 2027 || y === 2028
+        ? "CBS plena, PIS/COFINS extintos"
+        : y <= 2032
+          ? "Transição ICMS/ISS → IBS"
+          : "IVA dual pleno";
+  return anos.map((ano) => {
+    const r = llAno(sim, ano);
+    // Repasse: bisseção no preço até o lucro do ano igualar o de 2026.
+    const f = (x: number) =>
+      llAno(applySimulator(base, { ...p, priceDeltaPct: (p.priceDeltaPct || 0) + x }), ano).ll -
+      ref;
+    let repasse: number | null = 0;
+    if (Math.abs(r.ll - ref) > 1) {
+      let lo = -30;
+      let hi = 60;
+      let flo = f(lo);
+      if (Math.sign(flo) === Math.sign(f(hi))) repasse = null;
+      else {
+        for (let it = 0; it < 30; it++) {
+          const mid = (lo + hi) / 2;
+          const fm = f(mid);
+          if (Math.abs(fm) < 1) {
+            lo = hi = mid;
+            break;
+          }
+          if (Math.sign(fm) === Math.sign(flo)) {
+            lo = mid;
+            flo = fm;
+          } else hi = mid;
+        }
+        repasse = (lo + hi) / 2;
+      }
+    }
+    return {
+      ano,
+      fase: fase(ano),
+      cargaPct: r.rb > 0 ? (r.impostos / r.rb) * 100 : 0,
+      lucroLiquido: r.ll,
+      deltaLucro: r.ll - ref,
+      repassePct: repasse,
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Mix de produtos — margem de contribuição por linha (dados do Odoo)
+// ---------------------------------------------------------------------------
+
+export type ProductContribution = {
+  nome: string;
+  receita: number;
+  cmv: number;
+  /** Receita líquida dos tributos e deduções sobre vendas (alíquota média da entidade). */
+  receitaLiquida: number;
+  margem: number;
+  margemPct: number;
+  participacaoReceita: number;
+  participacaoMargem: number;
+  alerta: "negativa" | "diluidora" | null;
+};
+
+export function productContribution(
+  produtos: Array<{ nome: string; receita: number; cmv: number }>,
+  receitaBrutaTotal: number,
+  deducoesETributos: number,
+): {
+  itens: ProductContribution[];
+  aliquotaVendas: number;
+  pareto: { produtos: number; pctMargem: number };
+} {
+  const t =
+    receitaBrutaTotal > 0 ? Math.max(0, Math.min(0.9, deducoesETributos / receitaBrutaTotal)) : 0;
+  const base = produtos.map((p) => {
+    const rl = p.receita * (1 - t);
+    const margem = rl - p.cmv;
+    return { ...p, receitaLiquida: rl, margem, margemPct: rl ? (margem / rl) * 100 : 0 };
+  });
+  const totR = base.reduce((s, x) => s + x.receita, 0);
+  const totM = base.reduce((s, x) => s + Math.max(0, x.margem), 0);
+  const mediaPct = base.reduce((s, x) => s + x.receitaLiquida, 0)
+    ? (base.reduce((s, x) => s + x.margem, 0) / base.reduce((s, x) => s + x.receitaLiquida, 0)) *
+      100
+    : 0;
+  const itens: ProductContribution[] = base
+    .map((x) => ({
+      ...x,
+      participacaoReceita: totR ? (x.receita / totR) * 100 : 0,
+      participacaoMargem: totM ? (Math.max(0, x.margem) / totM) * 100 : 0,
+      alerta:
+        x.margem < 0
+          ? ("negativa" as const)
+          : x.margemPct < mediaPct * 0.5
+            ? ("diluidora" as const)
+            : null,
+    }))
+    .sort((a, b) => b.margem - a.margem);
+  // Pareto: quantos produtos (dos maiores em margem) fazem 80% da margem.
+  let acc = 0;
+  let n = 0;
+  for (const it of itens) {
+    if (acc >= 80) break;
+    acc += it.participacaoMargem;
+    n++;
+  }
+  return { itens, aliquotaVendas: t * 100, pareto: { produtos: n, pctMargem: Math.min(100, acc) } };
 }

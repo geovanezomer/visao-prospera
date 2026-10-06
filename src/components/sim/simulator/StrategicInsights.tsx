@@ -10,10 +10,14 @@ import { Button } from "@/components/ui/button";
 import { fmtBRL, fmtBRLCompact } from "@/engines/finance/format";
 import type { AppState } from "@/engines/finance/types";
 import type { SimulatorParams } from "@/engines/finance/simulator";
+import { marketShare } from "@/engines/finance/simulator";
+import { useOdooCockpitContext } from "@/components/odoo/cockpit";
 import {
   bridge,
   goalSeek,
-  LEVERS,
+  leversFor,
+  productContribution,
+  reformaImpact,
   METRIC_LABELS,
   narrative,
   priceVolume,
@@ -53,6 +57,17 @@ export function StrategicInsights({
   const value = useMemo(() => valueCreation(state, params), [state, params]);
   const regime = useMemo(() => regimeAdvice(state, params), [state, params]);
   const pv = useMemo(() => priceVolume(state), [state]);
+  const reforma = useMemo(() => reformaImpact(state, params), [state, params]);
+  const cockpit = useOdooCockpitContext();
+  const mix = useMemo(() => {
+    const d = cockpit?.active ? cockpit.data : null;
+    if (!d?.products.length) return null;
+    const p = d.actuals.pl;
+    const rb = p.receita_bruta.reduce((a, b) => a + b, 0);
+    const ded =
+      p.deducoes.reduce((a, b) => a + b, 0) + p.impostos_vendas.reduce((a, b) => a + b, 0);
+    return productContribution(d.products, rb, ded);
+  }, [cockpit?.active, cockpit?.data]);
   const insights = useMemo(
     () => narrative(br, stress, value, regime, fmtBRLCompact),
     [br, stress, value, regime],
@@ -111,6 +126,8 @@ export function StrategicInsights({
           <TabsTrigger value="metas">Metas</TabsTrigger>
           <TabsTrigger value="estresse">Estresse</TabsTrigger>
           <TabsTrigger value="valor">Valor econômico</TabsTrigger>
+          <TabsTrigger value="reforma">Reforma Tributária</TabsTrigger>
+          {mix && <TabsTrigger value="mix">Mix de produtos</TabsTrigger>}
         </TabsList>
 
         {/* Ponte */}
@@ -331,7 +348,198 @@ export function StrategicInsights({
             uso e "Simulado" é o que daria mais lucro neste cenário.
           </p>
         </TabsContent>
+        {/* Reforma Tributária */}
+        <TabsContent value="reforma" className="pt-3">
+          <p className="mb-2 text-xs text-muted-foreground">
+            Transição para CBS/IBS (EC 132/2023, LC 214/2025) aplicada ao cenário simulado, com o
+            regime e as alíquotas configurados. “Repasse” é a variação de preço que mantém o lucro
+            líquido de 2026 (já considerando a elasticidade configurada).
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-xs">
+              <thead>
+                <tr className="border-b border-border/60 text-right">
+                  <th className="p-2 text-left font-medium">Ano</th>
+                  <th className="p-2 text-left font-medium">Fase</th>
+                  <th className="p-2 font-medium">Tributos ÷ receita</th>
+                  <th className="p-2 font-medium">Lucro líquido</th>
+                  <th className="p-2 font-medium">vs. 2026</th>
+                  <th className="p-2 font-medium">Repasse de preço</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reforma.map((r) => (
+                  <tr key={r.ano} className="border-b border-border/20 text-right tabular-nums">
+                    <td className="p-2 text-left font-medium">{r.ano}</td>
+                    <td className="p-2 text-left text-muted-foreground">{r.fase}</td>
+                    <td className="p-2">{r.cargaPct.toFixed(1)}%</td>
+                    <td className={cn("p-2", r.lucroLiquido < 0 && "text-destructive")}>
+                      {fmtBRLCompact(r.lucroLiquido)}
+                    </td>
+                    <td
+                      className={cn(
+                        "p-2",
+                        r.deltaLucro < -1 && "text-destructive",
+                        r.deltaLucro > 1 && "text-emerald-600",
+                      )}
+                    >
+                      {r.ano === 2026 ? "—" : signed(r.deltaLucro)}
+                    </td>
+                    <td className="p-2">
+                      {r.ano === 2026
+                        ? "—"
+                        : r.repassePct === null
+                          ? "fora do alcance"
+                          : `${r.repassePct > 0 ? "+" : ""}${r.repassePct.toFixed(1)}%`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </TabsContent>
+
+        {/* Mix de produtos */}
+        {mix && (
+          <TabsContent value="mix" className="pt-3">
+            <p className="mb-2 text-xs text-muted-foreground">
+              Margem de contribuição por produto (receita − tributos e deduções sobre vendas de{" "}
+              {mix.aliquotaVendas.toFixed(1)}% − custo do produto), do Odoo.{" "}
+              <strong>
+                {mix.pareto.produtos} produto(s) fazem {mix.pareto.pctMargem.toFixed(0)}% da margem.
+              </strong>
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-xs">
+                <thead>
+                  <tr className="border-b border-border/60 text-right">
+                    <th className="p-2 text-left font-medium">Produto</th>
+                    <th className="p-2 font-medium">Receita</th>
+                    <th className="p-2 font-medium">% receita</th>
+                    <th className="p-2 font-medium">Custo</th>
+                    <th className="p-2 font-medium">Margem</th>
+                    <th className="p-2 font-medium">Margem %</th>
+                    <th className="p-2 font-medium">% da margem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mix.itens.map((it) => (
+                    <tr key={it.nome} className="border-b border-border/20 text-right tabular-nums">
+                      <td className="max-w-[260px] truncate p-2 text-left" title={it.nome}>
+                        {it.nome}
+                        {it.alerta && (
+                          <span
+                            className={cn(
+                              "ml-2 rounded px-1.5 py-0.5 text-[10px]",
+                              it.alerta === "negativa"
+                                ? "bg-destructive/15 text-destructive"
+                                : "bg-amber-500/15 text-amber-600",
+                            )}
+                          >
+                            {it.alerta === "negativa" ? "margem negativa" : "dilui a margem"}
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-2">{fmtBRLCompact(it.receita)}</td>
+                      <td className="p-2">{it.participacaoReceita.toFixed(1)}%</td>
+                      <td className="p-2">{fmtBRLCompact(it.cmv)}</td>
+                      <td className={cn("p-2", it.margem < 0 && "text-destructive")}>
+                        {fmtBRLCompact(it.margem)}
+                      </td>
+                      <td className="p-2">{it.margemPct.toFixed(1)}%</td>
+                      <td className="p-2">{it.participacaoMargem.toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
+    </section>
+  );
+}
+
+/** Alavancas de mercado e macroeconomia (entram na ponte, no tornado e nas metas). */
+export function MarketMacroCard({
+  state,
+  params,
+  setParams,
+}: {
+  state: AppState;
+  params: SimulatorParams;
+  setParams: (p: SimulatorParams) => void;
+}) {
+  const share = marketShare(state, params);
+  const set = (k: keyof SimulatorParams, v: number) => setParams({ ...params, [k]: v });
+  const campo = (k: keyof SimulatorParams, label: string, sufixo: string, dica?: string) => (
+    <label className="flex flex-col gap-1 text-xs" title={dica}>
+      <span className="text-muted-foreground">{label}</span>
+      <span className="flex items-center gap-1">
+        <input
+          type="number"
+          inputMode="decimal"
+          className="h-8 w-full min-w-0 rounded border border-border bg-background px-2 tabular-nums"
+          value={Number(params[k] ?? 0) || ""}
+          placeholder="0"
+          onChange={(e) => set(k, Number(e.target.value) || 0)}
+        />
+        <span className="shrink-0 text-muted-foreground">{sufixo}</span>
+      </span>
+    </label>
+  );
+  return (
+    <section className="rounded-lg border border-border/60 bg-card p-4">
+      <h3 className="mb-1 text-sm font-semibold">Mercado e macroeconomia</h3>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Hipóteses de mercado e de conjuntura. Zero = desligado. O repasse de inflação ao preço é
+        nominal e não reduz a demanda; a elasticidade vale só para mudança real de preço.
+        {share && (
+          <>
+            {" "}
+            Participação de mercado implícita: <strong>{(share.base * 100).toFixed(1)}%</strong>
+            {share.simulada !== share.base && (
+              <>
+                {" "}
+                → <strong>{(share.simulada * 100).toFixed(1)}%</strong>
+              </>
+            )}
+            .
+          </>
+        )}
+      </p>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        {campo(
+          "mercadoTamanho",
+          "Tamanho do mercado",
+          "R$/ano",
+          "Mercado endereçável anual — habilita a participação de mercado",
+        )}
+        {campo("mercadoCrescimentoPct", "Crescimento do mercado", "%")}
+        {campo(
+          "participacaoDeltaPp",
+          "Ganho de participação",
+          "p.p.",
+          "Requer o tamanho do mercado",
+        )}
+        {campo(
+          "precoConcorrenciaPct",
+          "Preço da concorrência",
+          "%",
+          "Variação do preço dos concorrentes",
+        )}
+        {campo(
+          "elasticidadeParticipacao",
+          "Elasticidade da participação",
+          "×",
+          "Quanto a participação reage ao preço relativo (nosso ÷ concorrência)",
+        )}
+        {campo("ipcaPct", "IPCA", "%", "Corrige custos fixos e folha")}
+        {campo("ipcaRepassePct", "Repasse do IPCA ao preço", "%")}
+        {campo("cambioPct", "Câmbio", "%", "Variação do dólar")}
+        {campo("cpvImportadoPct", "Parte importada do custo", "%")}
+        {campo("selicDeltaPp", "Selic", "p.p.", "Repassada à dívida pós-fixada")}
+      </div>
     </section>
   );
 }
@@ -465,7 +673,7 @@ function GoalSeekPanel({
   const [metric, setMetric] = useState<MetricKey>("ebitda");
   const [alvo, setAlvo] = useState<string>("");
   const [res, setRes] = useState<GoalSeekResult | null>(null);
-  const spec = LEVERS.find((l) => l.key === lever)!;
+  const spec = leversFor(params).find((l) => l.key === lever) ?? leversFor(params)[0];
 
   const run = () => {
     const v = Number(alvo.replace(/\./g, "").replace(",", "."));
@@ -488,7 +696,7 @@ function GoalSeekPanel({
             value={lever}
             onChange={(e) => setLever(e.target.value as keyof SimulatorParams)}
           >
-            {LEVERS.map((l) => (
+            {leversFor(params).map((l) => (
               <option key={l.key} value={l.key}>
                 {l.label}
               </option>

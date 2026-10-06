@@ -610,11 +610,15 @@ export type TaxReconciliation = {
   irCsllOdoo: number;
 };
 
+export type ProductMixItem = { nome: string; receita: number; cmv: number };
+
 export type OdooEntityData = {
   entity: OdooEntity;
   months: string[];
   actuals: OdooActuals;
   taxReconciliation: TaxReconciliation;
+  /** Receita e custo por produto na janela (vazio se o Odoo não tem produto nas linhas). */
+  products: ProductMixItem[];
 };
 
 export function buildEntityData(
@@ -635,7 +639,32 @@ export function buildEntityData(
       impostosVendasOdoo: r2(sum(actuals.pl.impostos_vendas)),
       irCsllOdoo: r2(sum(actuals.pl.ir_csll)),
     },
+    products: productMix(snapshot, entity.companyIds, window),
   };
+}
+
+/** Soma o mix de produtos das empresas na janela [start, end]. */
+function productMix(
+  snapshot: OdooSnapshot,
+  companyIds: number[],
+  window: { start: number; end: number },
+): ProductMixItem[] {
+  const map = new Map<string, ProductMixItem>();
+  for (const cid of companyIds) {
+    for (const p of snapshot.perCompany[String(cid)]?.products ?? []) {
+      const key = p.productId === null ? `outros:${cid}` : `p:${p.productId}`;
+      const it = map.get(key) ?? { nome: p.name, receita: 0, cmv: 0 };
+      for (let i = window.start; i <= window.end; i++) {
+        it.receita += p.revenue[i] ?? 0;
+        it.cmv += p.cogs[i] ?? 0;
+      }
+      map.set(key, it);
+    }
+  }
+  return [...map.values()]
+    .filter((x) => Math.abs(x.receita) > 0.005 || Math.abs(x.cmv) > 0.005)
+    .map((x) => ({ ...x, receita: r2(x.receita), cmv: r2(x.cmv) }))
+    .sort((a, b) => b.receita - a.receita);
 }
 
 function minLockDate(companies: OdooCompanyInfo[]): string | null {

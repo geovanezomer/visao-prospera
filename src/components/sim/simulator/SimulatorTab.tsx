@@ -31,7 +31,7 @@ import {
 import { SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
 import { ForecastCard, MonteCarloCard } from "@/components/sim/analysis/AnalysisTab";
 import { IndicatorsCard } from "@/components/sim/indicators/IndicatorsCard";
-import { StrategicInsights } from "./StrategicInsights";
+import { MarketMacroCard, StrategicInsights } from "./StrategicInsights";
 import { KanitzCard } from "@/components/sim/shared/KanitzCard";
 import {
   ArrowDownRight,
@@ -388,6 +388,7 @@ export function SimulatorTab({
       </div>
 
       {/* Simulador 2.0: ponte de valor, sensibilidade, metas, estresse, valor econômico */}
+      <MarketMacroCard state={state} params={p} setParams={setP} />
       <StrategicInsights state={state} params={p} onApplyParams={setP} />
 
       {/* Projeções refletindo o cenário simulado */}

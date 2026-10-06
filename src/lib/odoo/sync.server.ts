@@ -16,6 +16,7 @@ import type {
   OdooCompanyInfo,
   OdooCompanySnapshot,
   OdooIntercompanyLine,
+  OdooProductLine,
   OdooSnapshot,
 } from "@/engines/odoo/types";
 import { odooCall, odooServerVersion, type OdooConnectionConfig } from "./client.server";
@@ -328,6 +329,76 @@ async function snapshotCompany(
     }))
     .filter((l) => l.code && l.counterpartCompanyId);
 
+  // Mix de produtos: receita (contas de receita) e custo (custo direto) por produto.
+  let products: OdooProductLine[] = [];
+  try {
+    const period = [
+      ["date", ">=", start],
+      ["date", "<=", end],
+      ["product_id", "!=", false],
+    ];
+    const [revG, cogsG] = await Promise.all([
+      groups(
+        cfg,
+        company.id,
+        [...period, ["account_id.account_type", "=", "income"]],
+        ["product_id", "date:month"],
+        closingMoves,
+      ),
+      groups(
+        cfg,
+        company.id,
+        [...period, ["account_id.account_type", "=", "expense_direct_cost"]],
+        ["product_id", "date:month"],
+        closingMoves,
+      ),
+    ]);
+    const byProd = new Map<number, OdooProductLine>();
+    const pslot = (g: Group) => {
+      const id = m2oId(g.product_id);
+      if (!id) return null;
+      let pl = byProd.get(id);
+      if (!pl) {
+        const label = Array.isArray(g.product_id) ? String(g.product_id[1]) : `Produto ${id}`;
+        pl = {
+          productId: id,
+          name: label,
+          revenue: months.map(() => 0),
+          cogs: months.map(() => 0),
+        };
+        byProd.set(id, pl);
+      }
+      return pl;
+    };
+    for (const g of revG) {
+      const pl = pslot(g);
+      const i = monthOf(g);
+      if (pl && i !== undefined) pl.revenue[i] -= Number(g["balance:sum"] ?? 0);
+    }
+    for (const g of cogsG) {
+      const pl = pslot(g);
+      const i = monthOf(g);
+      if (pl && i !== undefined) pl.cogs[i] += Number(g["balance:sum"] ?? 0);
+    }
+    const all = [...byProd.values()].sort(
+      (a, b) => b.revenue.reduce((x, y) => x + y, 0) - a.revenue.reduce((x, y) => x + y, 0),
+    );
+    products = all.slice(0, 40);
+    const rest = all.slice(40);
+    if (rest.length) {
+      products.push({
+        productId: null,
+        name: `Outros (${rest.length} produtos)`,
+        revenue: months.map((_, i) => rest.reduce((s2, r) => s2 + r.revenue[i], 0)),
+        cogs: months.map((_, i) => rest.reduce((s2, r) => s2 + r.cogs[i], 0)),
+      });
+    }
+    const r2 = (v: number) => Math.round(v * 100) / 100;
+    products = products.map((x) => ({ ...x, revenue: x.revenue.map(r2), cogs: x.cogs.map(r2) }));
+  } catch {
+    products = []; // sem acesso a produtos: o mix simplesmente não aparece
+  }
+
   // Rascunhos não entram nos números — o painel de confiabilidade avisa.
   let draftCount = 0;
   try {
@@ -350,6 +421,7 @@ async function snapshotCompany(
     intercompany: { lines },
     draftCount,
     closingMovesExcluded: closingMoves.length,
+    products,
   };
 }
 
