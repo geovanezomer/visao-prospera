@@ -146,7 +146,8 @@ export const testOdooConnection = createServerFn({ method: "POST" })
     await admin(context);
     const { readConnection, fetchCompanies } = await import("./sync.server");
     const { decryptSecret } = await import("./secret.server");
-    const { odooServerVersion, normalizeOdooUrl } = await import("./client.server");
+    const { odooServerVersion, normalizeOdooUrl, assertSupportedOdooVersion } =
+      await import("./client.server");
     try {
       const row = await readConnection();
       const url = data.url || row?.url;
@@ -162,8 +163,10 @@ export const testOdooConnection = createServerFn({ method: "POST" })
       if (!url || !database || !apiKey)
         return { ok: false, error: "Preencha URL, banco e chave de API." };
       const cfg = { url, database, apiKey };
+      const serverVersion = await odooServerVersion(url);
+      assertSupportedOdooVersion(serverVersion);
       const companies = await fetchCompanies(cfg);
-      return { ok: true, serverVersion: await odooServerVersion(url), companies };
+      return { ok: true, serverVersion, companies };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : String(e) };
     }

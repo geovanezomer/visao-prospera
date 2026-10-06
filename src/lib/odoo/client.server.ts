@@ -187,6 +187,27 @@ function friendly(message: string, status: number): string {
   return message;
 }
 
+/** Versão mínima suportada: a API JSON-2 (/json/2) existe a partir do Odoo 19. */
+export const ODOO_MIN_MAJOR = 19;
+
+/** Versão principal a partir do texto do servidor ("20.0", "19.0+e", "saas~19.2"). */
+export function odooMajorVersion(v: string | null | undefined): number | null {
+  const m = /(\d+)(?:\.\d+)?/.exec(v ?? "");
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * Recusa versões anteriores ao Odoo 19 com mensagem clara. Versão desconhecida
+ * passa: a chamada JSON-2 seguinte falha com erro próprio se não houver a API.
+ */
+export function assertSupportedOdooVersion(v: string | null | undefined): void {
+  const major = odooMajorVersion(v);
+  if (major !== null && major < ODOO_MIN_MAJOR)
+    throw new Error(
+      `Odoo ${v} não é suportado. O FinnancePRO conecta ao Odoo ${ODOO_MIN_MAJOR} ou superior (API JSON-2).`,
+    );
+}
+
 /** Versão do servidor (endpoint público do Odoo). */
 export async function odooServerVersion(url: string): Promise<string | null> {
   const controller = new AbortController();

@@ -19,7 +19,12 @@ import type {
   OdooProductLine,
   OdooSnapshot,
 } from "@/engines/odoo/types";
-import { odooCall, odooServerVersion, type OdooConnectionConfig } from "./client.server";
+import {
+  assertSupportedOdooVersion,
+  odooCall,
+  odooServerVersion,
+  type OdooConnectionConfig,
+} from "./client.server";
 import { decryptSecret } from "./secret.server";
 
 type M2O = [number, string] | false;
@@ -448,6 +453,8 @@ export async function buildSnapshot(
   cfg: OdooConnectionConfig,
   opts: { companyIds: number[]; historyMonths: number; ref?: Date },
 ): Promise<OdooSnapshot> {
+  const serverVersion = await odooServerVersion(cfg.url);
+  assertSupportedOdooVersion(serverVersion);
   const all = await fetchCompanies(cfg);
   // Seleção: as empresas escolhidas e as filiais delas. Vazio = todas.
   // Sobe a árvore de parent_id: filiais de filiais também acompanham a matriz.
@@ -482,7 +489,7 @@ export async function buildSnapshot(
   return {
     version: 1,
     syncedAt: new Date().toISOString(),
-    serverVersion: await odooServerVersion(cfg.url),
+    serverVersion,
     months,
     companies: chosen,
     perCompany,

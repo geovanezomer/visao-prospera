@@ -28,3 +28,23 @@ describe("assertSafeOdooUrl — destino da chave de API", () => {
     await expect(assertSafeOdooUrl("não é url")).rejects.toThrow(/inválida/);
   });
 });
+
+describe("versão do Odoo", () => {
+  it("lê a versão principal nos formatos comuns", async () => {
+    const { odooMajorVersion } = await import("../client.server");
+    expect(odooMajorVersion("20.0")).toBe(20);
+    expect(odooMajorVersion("19.0+e")).toBe(19);
+    expect(odooMajorVersion("saas~19.2")).toBe(19);
+    expect(odooMajorVersion(null)).toBeNull();
+    expect(odooMajorVersion("desconhecida")).toBeNull();
+  });
+
+  it("aceita 19 ou superior e recusa versões antigas", async () => {
+    const { assertSupportedOdooVersion } = await import("../client.server");
+    expect(() => assertSupportedOdooVersion("20.0")).not.toThrow();
+    expect(() => assertSupportedOdooVersion("19.0")).not.toThrow();
+    expect(() => assertSupportedOdooVersion(null)).not.toThrow();
+    expect(() => assertSupportedOdooVersion("17.0")).toThrow(/não é suportado/);
+    expect(() => assertSupportedOdooVersion("saas~18.4")).toThrow(/Odoo 19 ou superior/);
+  });
+});

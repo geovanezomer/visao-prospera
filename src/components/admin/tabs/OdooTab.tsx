@@ -194,7 +194,7 @@ export function OdooTab() {
       {/* Conexão */}
       <section className="rounded-lg border border-border/60 p-4">
         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          <PlugZap className="h-4 w-4" /> Conexão com o Odoo 20
+          <PlugZap className="h-4 w-4" /> Conexão com o Odoo (19 ou superior)
         </h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
