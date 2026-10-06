@@ -30,6 +30,16 @@ setup("primeiro login do admin e troca obrigatória de senha", async ({ page }) 
     await page.getByRole("button", { name: "Salvar nova senha" }).click();
     await expect(forced).toBeHidden({ timeout: 20_000 });
   }
-  await expect(page.locator("[data-sidebar='sidebar']").first()).toBeVisible({ timeout: 30_000 });
+  // LGPD: aceite dos termos vigentes antes de liberar o app (uma vez por versão).
+  const termos = page.getByRole("heading", { name: "Termos de uso e privacidade" });
+  const sidebar = page.locator("[data-sidebar='sidebar']").first();
+  await expect(termos.or(sidebar)).toBeVisible({ timeout: 30_000 });
+  if (await termos.isVisible()) {
+    const aceitar = page.getByRole("button", { name: "Aceitar e continuar" });
+    await expect(aceitar).toBeDisabled();
+    await page.getByRole("checkbox", { name: /Li e aceito/ }).click();
+    await aceitar.click();
+  }
+  await expect(sidebar).toBeVisible({ timeout: 30_000 });
   await page.context().storageState({ path: "test-results/.auth/admin.json" });
 });

@@ -81,6 +81,7 @@ import { BillingButton } from "@/components/billing/BillingButton";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Presentation, X, FileText, Printer } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LegalAcceptGate } from "@/components/LegalAcceptGate";
 // pdfExport e buildFinancialModel são carregados via dynamic import dentro
 // do handler de export — economiza ~850 KB no bundle inicial (jsPDF + autotable).
 import { toast } from "sonner";
@@ -210,14 +211,12 @@ export const Route = createFileRoute("/app")({
 function SimulaProGated() {
   const { user, hydrated } = useAuth();
   const navigate = useNavigate();
-  const access = useAccessStatus();
-  const isAdmin = useIsAdmin();
 
   useEffect(() => {
     if (hydrated && !user) navigate({ to: "/login" });
   }, [hydrated, user, navigate]);
 
-  if (!hydrated || !user || access.kind === "loading") {
+  if (!hydrated || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
         Carregando…
@@ -230,6 +229,26 @@ function SimulaProGated() {
     return (
       <div className="min-h-screen bg-background">
         <ChangePasswordDialog open forced />
+      </div>
+    );
+  }
+
+  // LGPD: aceite da versão vigente dos termos antes de qualquer dado.
+  return (
+    <LegalAcceptGate>
+      <SimulaProAccess />
+    </LegalAcceptGate>
+  );
+}
+
+function SimulaProAccess() {
+  const access = useAccessStatus();
+  const isAdmin = useIsAdmin();
+
+  if (access.kind === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+        Carregando…
       </div>
     );
   }

@@ -29,6 +29,13 @@
       "when": 1791278738506,
       "tag": "0003_ops_error_events",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791284033733,
+      "tag": "0004_legal_acceptances",
+      "breakpoints": true
     }
   ]
 }

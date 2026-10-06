@@ -630,3 +630,24 @@ export const errorEvents = pgTable(
     check("error_events_source_check", sql`${t.source} in ('server','client','job')`),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// LGPD: aceite dos Termos de Uso e da Política de Privacidade, por versão.
+// A versão é o hash dos textos vigentes; editar os textos exige novo aceite.
+// ---------------------------------------------------------------------------
+export const legalAcceptances = pgTable(
+  "legal_acceptances",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    version: text("version").notNull(),
+    acceptedAt: ts("accepted_at")
+      .notNull()
+      .default(sql`now()`),
+    ip: text("ip"),
+    userAgent: text("user_agent"),
+  },
+  (t) => [uniqueIndex("legal_acceptances_user_version_idx").on(t.userId, t.version)],
+);
