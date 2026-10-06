@@ -78,9 +78,13 @@ export function splitReceitasFinanceiras(state: AppState): {
   financeiras: number[];
   operacionais: number[];
   financeirasIrpjBase: number[];
+  /** Outras receitas/despesas NÃO operacionais (alienação de ativos etc. —
+   *  Lei 6.404): abaixo do EBIT, fora do EBITDA. Pode ser negativo. */
+  naoOperacionais: number[];
 } {
   const financeiras = zeros12();
   const operacionais = zeros12();
+  const naoOperacionais = zeros12();
   const financeirasIrpjBase = zeros12();
   const OPERACIONAIS_IDS = new Set(["alugueis", "venda_ativos"]);
   for (const rf of state.revenue.receitasFinanceiras ?? []) {
@@ -89,16 +93,18 @@ export function splitReceitasFinanceiras(state: AppState): {
     const isOperacional =
       rf.tipo === "operacional" || (rf.tipo === undefined && OPERACIONAIS_IDS.has(rf.id));
     const exclusivaFonte = !!rf.tributacaoExclusivaFonte;
+    const naoOp = rf.tipo === "nao_operacional";
     for (let i = 0; i < 12; i++) {
       const v = Number(vals[i]) || 0;
-      if (isOperacional) operacionais[i] += v;
+      if (naoOp) naoOperacionais[i] += v;
+      else if (isOperacional) operacionais[i] += v;
       else {
         financeiras[i] += v;
         if (!exclusivaFonte) financeirasIrpjBase[i] += v;
       }
     }
   }
-  return { financeiras, operacionais, financeirasIrpjBase };
+  return { financeiras, operacionais, financeirasIrpjBase, naoOperacionais };
 }
 
 /**

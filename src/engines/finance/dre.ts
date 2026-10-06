@@ -50,6 +50,8 @@ export interface DRE {
   depreciacao: number[];
   ebit: number[];
   resultadoFinanceiro: number[];
+  /** Outras receitas e despesas não operacionais (abaixo do EBIT). */
+  resultadoNaoOperacional: number[];
   lair: number[];
   /** Impostos sobre lucro (IRPJ + Adicional + CSLL). Zero no Simples. */
   impostos: number[];
@@ -184,7 +186,11 @@ function classifyCosts(
 // ---------------------------------------------------------------------
 function computeDepreciacao(state: AppState): number[] {
   const { capital, costs } = state;
-  const depreciacao = fill12(capital.depreciacaoMensal);
+  const serie = capital.depreciacaoMensalSerie;
+  const depreciacao =
+    serie && serie.length === 12
+      ? serie.map((v) => Number(v) || 0)
+      : fill12(capital.depreciacaoMensal);
   for (const c of costs) {
     if (!c.ativacao || c.ativacao.vidaUtilMeses <= 0 || c.ativacao.valor <= 0) continue;
     const startIdx = Math.max(0, Math.min(11, (c.ativacao.mes || 1) - 1));
@@ -272,8 +278,11 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   const lucroBruto = receitaLiquida.map((r, i) => r - buckets.cpv[i]);
   // Aluguéis e venda de ativos: operacionais (entram no EBITDA).
   // Rendimentos financeiros: vão para o Resultado Financeiro (abaixo do EBIT).
-  const { financeiras: rendimentosFinanceiros, operacionais: outrasReceitasOperacionais } =
-    splitReceitasFinanceiras(state);
+  const {
+    financeiras: rendimentosFinanceiros,
+    operacionais: outrasReceitasOperacionais,
+    naoOperacionais: resultadoNaoOperacional,
+  } = splitReceitasFinanceiras(state);
   const ebitda = lucroBruto.map((g, i) => g - buckets.despOp[i] + outrasReceitasOperacionais[i]);
 
   // (3) Depreciação
@@ -288,7 +297,7 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
     (_, i) =>
       rendimentosFinanceiros[i] + (mutuosAgg.juros[i] || 0) - buckets.custosFinanceirosTotal[i],
   );
-  const lair = ebit.map((e, i) => e + resultadoFinanceiro[i]);
+  const lair = ebit.map((e, i) => e + resultadoFinanceiro[i] + resultadoNaoOperacional[i]);
 
   // (4) Impostos sobre lucro (com LAIR já correto no Real)
   const { tax: taxCalc, impostosLucroBase } = computeImpostosLucro(state, regime, lair, taxPre);
@@ -314,6 +323,7 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
       depreciacao,
       ebit,
       resultadoFinanceiro,
+      resultadoNaoOperacional,
       lair,
       impostos: impostosLucro,
       impostosLucroBase,

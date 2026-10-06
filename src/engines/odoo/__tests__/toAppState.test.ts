@@ -302,3 +302,31 @@ describe("resolveWindow — meses fechados", () => {
     expect(MONTHS[w.end]).toBe("2026-05");
   });
 });
+
+describe("não operacional e depreciação do Odoo", () => {
+  it("3.01.01.11 vai para não operacional (fora do EBITDA); depreciação mês a mês", async () => {
+    const { buildFinancialModel } = await import("@/engines/finance/financialModel");
+    const s = snapshot();
+    const dep = MONTHS.map((_, i) => (i < 7 ? 100 : 300));
+    s.perCompany["1"].accounts.push(
+      acc(
+        20,
+        "3.01.01.11.01.01",
+        "Ganho na venda de imobilizado",
+        "income_other",
+        MONTHS.map((_, i) => (i === 5 ? -5_000 : 0)),
+      ),
+      acc(21, "3.01.01.07.01.23", "(-) Depreciation Charges", "expense_depreciation", dep),
+    );
+    const data = buildEntityData(s, listEntities(s)[0]);
+    const st = mergeOdooActuals(createState({ tax: { regime: "presumido" } } as never), data);
+    const m = buildFinancialModel(st);
+    const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
+    expect(sum(m.dre.resultadoNaoOperacional)).toBeCloseTo(
+      data.actuals.pl.outras_receitas.reduce((x, y) => x + y, 0),
+      2,
+    );
+    expect(st.capital.depreciacaoMensalSerie).toEqual(data.actuals.pl.depreciacao);
+    expect(new Set(m.dre.depreciacao).size).toBeGreaterThan(1);
+  });
+});

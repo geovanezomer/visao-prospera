@@ -47,6 +47,7 @@ type Row = {
   ebitda: number;
   depreciacao: number;
   financeiro: number;
+  naoOperacional: number;
   lair: number;
   impostosLucro: number;
   lucroLiquido: number;
@@ -62,6 +63,7 @@ const ROWS: Array<{ key: keyof Row; label: string; strong?: boolean; sign?: -1 }
   { key: "ebitda", label: "EBITDA", strong: true },
   { key: "depreciacao", label: "(−) Depreciação", sign: -1 },
   { key: "financeiro", label: "Resultado financeiro" },
+  { key: "naoOperacional", label: "Outras receitas e despesas não operacionais" },
   { key: "lair", label: "LAIR", strong: true },
   { key: "impostosLucro", label: "(−) IRPJ / CSLL", sign: -1 },
   { key: "lucroLiquido", label: "Lucro líquido", strong: true },
@@ -87,6 +89,7 @@ function rowFromModel(state: AppState): {
     ebitda: sum(d.ebitda),
     depreciacao: sum(d.depreciacao),
     financeiro: sum(d.resultadoFinanceiro),
+    naoOperacional: sum(d.resultadoNaoOperacional),
     lair: sum(d.lair),
     impostosLucro: sum(d.impostos),
     lucroLiquido: sum(d.lucroLiquido),
@@ -110,12 +113,11 @@ function rowFromActuals(a: OdooActuals): Row {
     s("pessoal_encargos") +
     s("pessoal_beneficios") +
     s("despesa_administrativa") +
-    s("despesa_comercial") +
-    s("outras_despesas") -
-    s("outras_receitas");
+    s("despesa_comercial");
   const ebitda = lucroBruto - despesas;
   const financeiro = s("receita_financeira") - s("despesa_financeira");
-  const lair = ebitda - s("depreciacao") + financeiro;
+  const naoOperacional = s("outras_receitas") - s("outras_despesas");
+  const lair = ebitda - s("depreciacao") + financeiro + naoOperacional;
   return {
     receitaBruta: s("receita_bruta"),
     deducoes: s("deducoes") + s("impostos_vendas"),
@@ -126,6 +128,7 @@ function rowFromActuals(a: OdooActuals): Row {
     ebitda,
     depreciacao: s("depreciacao"),
     financeiro,
+    naoOperacional,
     lair,
     impostosLucro: s("ir_csll"),
     lucroLiquido: lair - s("ir_csll"),
@@ -214,7 +217,8 @@ export function ConsolidadoTab() {
       recomputed.receitaLiquida = elim.receitaBruta - elim.deducoes;
       recomputed.lucroBruto = recomputed.receitaLiquida - elim.cpv;
       recomputed.ebitda = recomputed.lucroBruto - elim.despesas;
-      recomputed.lair = recomputed.ebitda - elim.depreciacao + elim.financeiro;
+      recomputed.lair =
+        recomputed.ebitda - elim.depreciacao + elim.financeiro + elim.naoOperacional;
       recomputed.lucroLiquido = recomputed.lair;
       elim = recomputed;
       const sumCalc = perEntity.reduce((acc, x) => addRows(acc, x.calc.row), zeroRow());

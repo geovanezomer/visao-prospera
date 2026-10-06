@@ -100,7 +100,7 @@ export interface RevenueDeducao {
    * Quando ausente, o sistema usa o id como fallback (alugueis/venda_ativos = operacional;
    * demais = financeira) — mantém compatibilidade com snapshots antigos.
    */
-  tipo?: "financeira" | "operacional";
+  tipo?: "financeira" | "operacional" | "nao_operacional";
   /** Linha criada pelo usuário (permite editar rótulo e remover). */
   custom?: boolean;
 }
@@ -220,6 +220,9 @@ export interface CapitalStructure {
   kd: number;
   capitalGiroDisponivel: number;
   depreciacaoMensal: number;
+  /** Depreciação mês a mês (ex.: realizado do Odoo). Quando presente, substitui
+   *  `depreciacaoMensal` replicado nos 12 meses. */
+  depreciacaoMensalSerie?: number[];
   // (removido: jurosRecebidosMensal — rendimentos vêm de revenue.receitasFinanceiras.rend_aplic)
   /** PL final do período (saldo atual). Usado como fallback do PL médio quando abertura não informada. */
   patrimonioLiquido: number;

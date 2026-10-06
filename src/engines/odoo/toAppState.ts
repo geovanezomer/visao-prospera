@@ -434,7 +434,6 @@ function costLineFor(acc: OdooActuals["plAccounts"][number]): CostLine | null {
         comportamento: "fixo",
       };
     case "despesa_administrativa":
-    case "outras_despesas":
       return { ...base, label: clean, category: "despesa_administrativa", comportamento: "fixo" };
     case "despesa_comercial":
       return { ...base, label: clean, category: "despesa_comercial", comportamento: "variavel" };
@@ -554,7 +553,8 @@ export function buildLedgerCashFlow(
   );
   const pagamentosFinanceiros = [...p.despesa_financeira];
   const receitasFinanceiras = [...p.receita_financeira];
-  const outrasReceitasOperacionais = [...p.outras_receitas];
+  // Não operacionais (líquidas) — mesma coluna da DFC do motor.
+  const outrasReceitasOperacionais = p.outras_receitas.map((v, j) => v - p.outras_despesas[j]);
   const pagamentosFixos = m(
     (j) =>
       recebimentos[j] +
@@ -687,12 +687,14 @@ export function prepareOdooOverlay(data: OdooEntityData): OdooOverlay {
       tipo: "financeira",
     },
     {
-      id: "odoo:outras-receitas",
-      label: "Outras receitas (Odoo)",
-      valores: pl.outras_receitas.map(r2),
-      tipo: "operacional",
+      // Lei 6.404: outras receitas e despesas ficam abaixo do resultado
+      // operacional (fora do EBITDA).
+      id: "odoo:nao-operacional",
+      label: "Outras receitas e despesas não operacionais (Odoo)",
+      valores: pl.outras_receitas.map((v, i) => r2(v - pl.outras_despesas[i])),
+      tipo: "nao_operacional",
     },
-  ].filter((r) => sum(r.valores) !== 0) as RevenueDeducao[];
+  ].filter((r) => r.valores.some((v) => v !== 0)) as RevenueDeducao[];
 
   const costs = actuals.plAccounts
     .map(costLineFor)
@@ -755,6 +757,7 @@ export function prepareOdooOverlay(data: OdooEntityData): OdooOverlay {
     costs,
     capital: {
       depreciacaoMensal: r2(sum(pl.depreciacao) / 12),
+      depreciacaoMensalSerie: pl.depreciacao.map(r2),
       capexAtivacao: [],
       // Balanço de abertura (o motor projeta o fechamento pelos fluxos).
       balanco: {

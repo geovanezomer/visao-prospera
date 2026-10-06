@@ -400,6 +400,7 @@ export function CockpitHome() {
               },
               { label: "Depreciação", valor: -sum(dre.depreciacao) },
               { label: "Resultado financeiro", valor: sum(dre.resultadoFinanceiro) },
+              { label: "Não operacional", valor: sum(dre.resultadoNaoOperacional) },
               { label: "IRPJ + CSLL", valor: -sum(dre.impostos) },
               { label: "Lucro líquido", valor: ll, total: true },
             ]}

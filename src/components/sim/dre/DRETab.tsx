@@ -1,4 +1,5 @@
 import { useMemo, useState, Fragment } from "react";
+import type { RevenueDeducao } from "@/engines/finance/types";
 import { usePeriodLabels } from "@/components/odoo/usePeriodLabels";
 import { useOdooCockpitContext } from "@/components/odoo/cockpit";
 import { useFinance, useFinanceReadOnly } from "@/engines/finance/AppStateContext";
@@ -148,11 +149,13 @@ export function DRETab() {
   // e cai para IDs legados apenas quando `tipo` é undefined. Filtrar por id
   // aqui divergia da engine e duplicava linhas custom.
   const OPERACIONAIS_IDS_LEGADO = new Set(["alugueis", "venda_ativos"]);
-  const isOperacionalRF = (rf: { id: string; tipo?: "operacional" | "financeira" }) =>
+  const isOperacionalRF = (rf: { id: string; tipo?: RevenueDeducao["tipo"] }) =>
     rf.tipo === "operacional" || (rf.tipo === undefined && OPERACIONAIS_IDS_LEGADO.has(rf.id));
+  const isNaoOperacionalRF = (rf: { tipo?: RevenueDeducao["tipo"] }) =>
+    rf.tipo === "nao_operacional";
   // Linhas detalhadas (somente genuinamente financeiras) p/ o accordion pós-EBIT.
   const linhasReceitasFin = (state.revenue.receitasFinanceiras ?? [])
-    .filter((rf) => !isOperacionalRF(rf))
+    .filter((rf) => !isOperacionalRF(rf) && !isNaoOperacionalRF(rf))
     .map((rf) => ({ label: rf.label, values: rf.valores ?? zeros() }))
     .filter((x) => sum(x.values) > 0);
   // Linhas detalhadas das receitas operacionais (aluguéis, venda de ativos, custom op) p/ o grupo "Outras Op.".
@@ -160,8 +163,8 @@ export function DRETab() {
     .filter((rf) => isOperacionalRF(rf))
     .map((rf) => ({ label: rf.label, values: rf.valores ?? zeros() }))
     .filter((x) => sum(x.values) > 0);
-  // Ganho/Perda em alienação de ativos — sem input dedicado por enquanto
-  const ganhoAlienacao = zeros();
+  // Outras receitas e despesas NÃO operacionais (alienação de ativos etc.) — abaixo do EBIT.
+  const ganhoAlienacao = dre.resultadoNaoOperacional;
   // Outras Despesas/Receitas Operacionais — Depreciação (−) + PDD líq. (−) + Outras Receitas Op. (+).
   // Inclui PDD para que a soma das linhas visíveis reconcilie com o EBIT da engine.
   const usaPDD = !!state.revenue.inadimplenciaComoPDD;
@@ -323,7 +326,12 @@ export function DRETab() {
       lines: linhasReceitasFin,
       emptyMsg: "Sem receitas financeiras cadastradas.",
     },
-    { kind: "linha", k: "(±) Ganho/Perda em alienação de ativos", v: ganhoAlienacao, tone: "pos" },
+    {
+      kind: "linha",
+      k: "(±) Outras receitas e despesas não operacionais",
+      v: ganhoAlienacao,
+      tone: sum(ganhoAlienacao) >= 0 ? "pos" : "neg",
+    },
     {
       kind: "linha",
       k: "(=) LUCRO ANTES DO FINANCIAMENTO E TRIBUTOS",

@@ -474,8 +474,11 @@ export function buildCashFlowEngine(
   // B2: rendimentos de aplicações financeiras realizam-se em caixa no mês de
   // competência. `operacionais` (aluguéis, venda de ativos) idem — entram no
   // EBITDA (DRE) e agora também no fluxo operacional (BUG 2).
-  const { financeiras: receitasFinanceiras, operacionais: outrasReceitasOperacionais } =
-    splitReceitasFinanceiras(state);
+  // Não operacionais (alienação de ativos etc.) também viram caixa no mês;
+  // na DFC ficam junto de "outras receitas" (não há coluna dedicada).
+  const split = splitReceitasFinanceiras(state);
+  const receitasFinanceiras = split.financeiras;
+  const outrasReceitasOperacionais = split.operacionais.map((v, i) => v + split.naoOperacionais[i]);
 
   // ─── Liquidação dos saldos de abertura ───
   // Contrapartida da conservação de massa do balanço de fechamento: os saldos
