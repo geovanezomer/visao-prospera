@@ -1,6 +1,6 @@
 // Barra do modo Odoo no topo do cockpit: visão (Odoo | Simulação livre),
 // entidade, janela de 12 meses e status da sincronização.
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   Building2,
@@ -27,6 +27,8 @@ function since(iso: string | null): string {
 }
 
 export function OdooBar({ cockpit }: { cockpit: OdooCockpit }) {
+  // Celular: uma linha (empresa + luz de saúde); o resto abre no "⋯".
+  const [mais, setMais] = useState(false);
   if (!cockpit.available) return null;
   const { snapshot, entity, data } = cockpit;
   const lock = entity?.rootId
@@ -39,11 +41,14 @@ export function OdooBar({ cockpit }: { cockpit: OdooCockpit }) {
 
   return (
     <div
-      className="sticky top-14 z-20 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border/40 bg-background/95 px-4 py-2 text-xs backdrop-blur sm:px-6"
+      className="sticky top-14 z-20 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border/40 bg-background/95 px-3 py-2 text-xs backdrop-blur sm:px-6"
       data-meeting-hide="true"
     >
       <div
-        className="inline-flex rounded-md border border-border bg-background p-0.5"
+        className={cn(
+          "order-3 w-full rounded-md border border-border bg-background p-0.5 md:order-none md:inline-flex md:w-auto [&>button]:flex-1 md:[&>button]:flex-none",
+          mais || cockpit.view === "manual" ? "inline-flex" : "hidden",
+        )}
         role="radiogroup"
         aria-label="Visão do cockpit"
       >
@@ -90,12 +95,12 @@ export function OdooBar({ cockpit }: { cockpit: OdooCockpit }) {
           )}
           {snapshot && (
             <>
-              <label className="inline-flex items-center gap-1.5">
-                <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+              <label className="order-1 inline-flex min-w-0 flex-1 items-center gap-1.5 md:order-none md:flex-none">
+                <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <span className="sr-only">Empresa</span>
                 <select
                   aria-label="Empresa"
-                  className="h-7 max-w-[320px] rounded border border-border bg-background px-1.5"
+                  className="h-7 w-full min-w-0 rounded border border-border bg-background px-1.5 md:w-auto md:max-w-[320px]"
                   value={entity?.key ?? ""}
                   onChange={(e) => cockpit.setEntityKey(e.target.value)}
                 >
@@ -106,7 +111,12 @@ export function OdooBar({ cockpit }: { cockpit: OdooCockpit }) {
                   ))}
                 </select>
               </label>
-              <label className="inline-flex items-center gap-1.5">
+              <label
+                className={cn(
+                  "order-4 w-full items-center gap-1.5 md:order-none md:inline-flex md:w-auto",
+                  mais ? "inline-flex" : "hidden",
+                )}
+              >
                 <CalendarRange className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-muted-foreground">12 meses até</span>
                 <select
@@ -127,11 +137,20 @@ export function OdooBar({ cockpit }: { cockpit: OdooCockpit }) {
                 </select>
               </label>
               {data && (
-                <span className="text-muted-foreground">
+                <span className="order-5 hidden text-muted-foreground md:order-none md:inline">
                   {fmtMonth(data.months[0])}–{fmtMonth(data.months[data.months.length - 1])}
                 </span>
               )}
               <TrustBadge cockpit={cockpit} />
+              <button
+                type="button"
+                className="order-2 rounded border border-border px-2 py-1 md:hidden"
+                aria-expanded={mais}
+                aria-label="Mais opções do Odoo"
+                onClick={() => setMais((v) => !v)}
+              >
+                ⋯
+              </button>
             </>
           )}
         </>
@@ -161,13 +180,15 @@ function TrustBadge({ cockpit }: { cockpit: OdooCockpit }) {
         <button
           type="button"
           className={cn(
-            "ml-auto inline-flex items-center gap-1.5 rounded px-2 py-1 font-medium hover:bg-muted",
+            "order-2 inline-flex items-center gap-1.5 rounded px-2 py-1 font-medium hover:bg-muted md:order-none md:ml-auto",
             st.text,
           )}
           aria-label={`${st.label}: ver conferências`}
         >
           <span className={cn("h-2 w-2 rounded-full", st.dot)} />
-          {st.label} · {since(cockpit.syncedAt)}
+          <span className="hidden sm:inline">
+            {st.label} · {since(cockpit.syncedAt)}
+          </span>
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[380px] p-0 text-xs">

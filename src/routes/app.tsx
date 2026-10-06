@@ -101,6 +101,7 @@ import { cn } from "@/lib/utils";
 import { OdooCockpitProvider, useOdooCockpit } from "@/components/odoo/cockpit";
 import { OdooBar } from "@/components/odoo/OdooBar";
 import { ActualsLock } from "@/components/odoo/ActualsLock";
+import { OdooActualsView } from "@/components/odoo/OdooActualsView";
 import {
   anchorOdooState,
   applyOdooOverlay,
@@ -448,7 +449,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
               fileActions={!cockpit.active}
             />
 
-            <SidebarInset className="flex flex-col">
+            <SidebarInset className="flex min-w-0 flex-col">
               <TrialBannerSlot />
               <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/80 px-4 backdrop-blur sm:px-6">
                 <div className="flex items-center gap-2 min-w-0">
@@ -668,16 +669,10 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                         </div>
                       ) : (
                         <div className="space-y-6 animate-in fade-in duration-500">
-                          {activeTab === "receitas" && (
-                            <ActualsLock what="As receitas">
-                              <RevenueTab />
-                            </ActualsLock>
-                          )}
-                          {activeTab === "custos" && (
-                            <ActualsLock what="As despesas">
-                              <CostsTab />
-                            </ActualsLock>
-                          )}
+                          {activeTab === "receitas" &&
+                            (cockpit.active ? <OdooActualsView kind="receitas" /> : <RevenueTab />)}
+                          {activeTab === "custos" &&
+                            (cockpit.active ? <OdooActualsView kind="despesas" /> : <CostsTab />)}
                           {activeTab === "capital" && (
                             <ActualsLock what="O balanço de abertura e as dívidas">
                               <CapitalTab />
