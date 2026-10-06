@@ -93,8 +93,11 @@ describe("buildIndicatorCalcs — memória coerente com o card (SSOT)", () => {
     expect(rhs(c.endividamentoGeral)).toBe(fmtPct(ind.endividamentoGeral / 100));
   });
 
-  it("estrutura: capital próprio = PL ÷ (PL + D) = 300k ÷ 420k = 71,43%", () => {
-    expect(rhs(c.capitalProprio)).toBe(fmtPct(300_000 / 420_000));
+  it("estrutura: capital próprio = PL reconciliado ÷ (PL + D), igual ao card", () => {
+    const pl = ind.bases.pl;
+    expect(c.capitalProprio).toContain(`${fmtBRL(pl)} ÷ (${fmtBRL(pl)} + ${fmtBRL(120_000)})`);
+    expect(rhs(c.capitalProprio)).toBe(fmtPct(ind.proprioPercent / 100));
+    expect(ind.proprioPercent / 100).toBeCloseTo(pl / (pl + 120_000), 10);
   });
 
   it("cobertura de juros e DSCR usam juros dos contratos: DSCR = EBITDA ÷ (juros + 36.000)", () => {
@@ -152,32 +155,45 @@ describe("buildIndicatorCalcs — memória coerente com o card (SSOT)", () => {
 });
 
 describe("buildIndicatorCalcs — médias de abertura/fechamento e ramos alternativos", () => {
-  it("ROA/Giro com ativo médio: (abertura 400k + fechamento 600k) ÷ 2 = 500k", () => {
+  it("ROA/Giro com ativo médio: (abertura 400k + fechamento do balanço) ÷ 2", () => {
     const s = estado();
     s.capital.ativoTotalAbertura = 400_000;
     const { dre, ind } = pipeline(s);
     const c = buildIndicatorCalcs(s, dre, ind);
-    expect(c.roa).toContain(`÷ ${fmtBRL(500_000)} × 100`);
-    expect(rhs(c.roa)).toBe(fmtPct(ind.lucroLiquidoAnual / 500_000));
-    expect(rhs(c.giroAtivo)).toBe(`${fmtRatio(ind.receitaLiquidaAnual / 500_000)}×`);
+    const atMedio = (400_000 + ind.bases.ativoTotal) / 2;
+    expect(ind.bases.ativoMedio).toBeCloseTo(atMedio, 6);
+    expect(c.roa).toContain(`÷ ${fmtBRL(atMedio)} × 100`);
+    expect(rhs(c.roa)).toBe(fmtPct(ind.roa / 100));
+    expect(rhs(c.roa)).toBe(fmtPct(ind.lucroLiquidoAnual / atMedio));
+    expect(rhs(c.giroAtivo)).toBe(`${fmtRatio(ind.receitaLiquidaAnual / atMedio)}×`);
   });
 
   it("payback do CAPEX = CAPEX ÷ FCF (60k ÷ 30k = 2,0 anos)", () => {
     const s = estado();
     const { dre, ind } = pipeline(s);
-    const c = buildIndicatorCalcs(s, dre, { ...ind, capexAnual: 60_000, fcf: 30_000 });
+    const c = buildIndicatorCalcs(s, dre, {
+      ...ind,
+      capexAnual: 60_000,
+      fcf: 30_000,
+      paybackCapex: 2,
+    });
+    expect(c.paybackCapex).toContain(`${fmtBRL(60_000)} ÷ ${fmtBRL(30_000)}`);
     expect(rhs(c.paybackCapex)).toBe(fmtAnos(2));
   });
 
-  it("gap de capital de giro usa AC/PC informados no Capital quando > 0", () => {
+  it("gap de capital de giro mostra o CDG de Fleuriet (PL + PNC − ANC) usado pela engine", () => {
     const s = estado();
     s.capital.ativoCirculante = 200_000;
     s.capital.passivoCirculante = 80_000;
     const { dre, ind } = pipeline(s);
     const c = buildIndicatorCalcs(s, dre, ind);
-    // CDG = 200k − 80k = 120k
-    expect(c.gapCapitalGiro).toContain(`(${fmtBRL(200_000)} − ${fmtBRL(80_000)})`);
-    expect(c.gapCapitalGiro).toContain(`− ${fmtBRL(120_000)}`);
+    const b = ind.bases;
+    expect(c.gapCapitalGiro).toContain(
+      `(${fmtBRL(b.cdgPl)} + ${fmtBRL(b.cdgPnc)} − ${fmtBRL(b.cdgAnc)})`,
+    );
+    expect(c.gapCapitalGiro).toContain(`${fmtBRL(ind.ncg)} − ${fmtBRL(b.cdg)}`);
+    expect(ind.ncg - b.cdg).toBeCloseTo(ind.gapCapitalGiro, 6);
+    expect(rhs(c.gapCapitalGiro)).toBe(fmtBRL(ind.gapCapitalGiro));
   });
 });
 
@@ -189,7 +205,11 @@ describe("buildIndicatorCalcs — bases insuficientes", () => {
     numColaboradores: 0,
   });
   const { dre } = buildDRE(s, resolveEffectiveRegime(s));
-  const zeroInd = new Proxy({}, { get: () => 0 }) as unknown as Indicators;
+  const zeros = new Proxy({}, { get: () => 0 });
+  const zeroInd = new Proxy(
+    {},
+    { get: (_t, k) => (k === "bases" ? zeros : 0) },
+  ) as unknown as Indicators;
   const c = buildIndicatorCalcs(s, dre, zeroInd);
 
   it("todas as razões com denominador nulo devolvem a mensagem de base insuficiente", () => {
@@ -248,23 +268,22 @@ describe("buildIndicatorCalcs — bases insuficientes", () => {
     expect(rhs(c.receitaLiquida12m)).toBe(fmtBRL(0));
   });
 
-  it("PL de abertura informado manualmente entra na média do ROE: (100k + 300k) ÷ 2", () => {
+  it("PL de abertura informado manualmente entra na média do ROE (mesma base do card)", () => {
     const s2 = createState({
       revenue: { bruta: m12(0), inadimplencia: m12(0) },
       costs: [],
       capital: { patrimonioLiquido: 300_000, patrimonioLiquidoAbertura: 100_000 },
     });
-    const { dre: d2 } = buildDRE(s2, resolveEffectiveRegime(s2));
-    const c2 = buildIndicatorCalcs(s2, d2, {
-      ...(zeroInd as object),
-      lucroLiquidoAnual: 40_000,
-    } as unknown as Indicators);
+    const { dre: d2, ind: i2 } = pipeline(s2);
+    const c2 = buildIndicatorCalcs(s2, d2, i2);
     // Se a SSOT de abertura (deriveAbertura) não trouxer PL, usa o campo manual.
     const plSSOT = deriveAbertura({ state: s2, impostosTotalMensais: d2.impostosTotal }).totals.pl;
     const plAb = plSSOT > 0 ? plSSOT : 100_000;
-    const plMedio = (plAb + 300_000) / 2;
+    expect(i2.bases.plAbertura).toBe(plAb);
+    const plMedio = (plAb + i2.bases.pl) / 2;
+    expect(i2.bases.plMedio).toBeCloseTo(plMedio, 6);
     expect(c2.roe).toBe(
-      `${fmtBRL(40_000)} ÷ ${fmtBRL(plMedio)} × 100\n= ${fmtPct(40_000 / plMedio)}`,
+      `${fmtBRL(i2.lucroLiquidoAnual)} ÷ ${fmtBRL(plMedio)} × 100\n= ${fmtPct((i2.roe ?? NaN) / 100)}`,
     );
   });
 });

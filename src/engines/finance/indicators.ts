@@ -18,6 +18,77 @@ import { deriveAbertura } from "./aberturaDerivada";
 import { calcPassivoCirculante, calcPassivoNaoCirculante } from "./balanco";
 import { deriveBalancoFechamento, type BalancoFechamentoResult } from "./balancoFechamento";
 
+/**
+ * Bases EXATAS usadas por `calcIndicators` em cada fórmula — expostas para que a
+ * memória de cálculo (`indicatorCalc.ts`) mostre os MESMOS números do card, sem
+ * recalcular nada. Valores de fluxo já anualizados (mesma janela dos indicadores).
+ */
+export interface IndicatorBases {
+  /** Lucro bruto anualizado. */
+  lucroBrutoAnual: number;
+  /** Custos variáveis anualizados. */
+  custosVariaveisAnual: number;
+  /** Custos fixos operacionais SEM depreciação, anualizados. */
+  custosFixosSemDepAnual: number;
+  /** Depreciação anualizada. */
+  depreciacaoAnual: number;
+  /** Custos financeiros TOTAIS da DRE anualizados (base do PE total e do LL). */
+  custosFinanceirosAnual: number;
+  /** Receitas financeiras + resultado não operacional anualizados (LAIR = EBIT − custos fin. + este). */
+  outrosResultadosAnual: number;
+  /** Juros de CONTRATOS de dívida (base de Cobertura de Juros e DSCR). */
+  jurosDivida: number;
+  /** Amortizações de principal anualizadas (DSCR). */
+  amortizacaoAnual: number;
+  /** LAIR anualizado (GAF). */
+  lairAnual: number;
+  /** IRPJ/CSLL (impostos sobre o lucro) anualizados. */
+  impostosLucroAnual: number;
+  /** Impostos sobre vendas anualizados. */
+  impostosVendasAnual: number;
+  /** Deduções da receita (inadimplência, devoluções, descontos) anualizadas: RB − impostos s/ vendas − RL. */
+  deducoesReceitaAnual: number;
+  /** Margem de contribuição em fração (0–1). */
+  mcFrac: number;
+  /** PL de fechamento reconciliado (balanço) — base de ROE, WACC, D/PL, Liquidez Geral. */
+  pl: number;
+  /** PL de abertura usado na média do ROE. */
+  plAbertura: number;
+  /** PL médio (ROE). */
+  plMedio: number;
+  /** Ativo total de fechamento reconciliado (balanço). */
+  ativoTotal: number;
+  /** Ativo médio (ROA/Giro). */
+  ativoMedio: number;
+  /** Passivo total aproximado AT − PL (Liquidez Geral). */
+  passivoTotalAprox: number;
+  /** Passivo e ativo usados no Endividamento Geral. */
+  passivoEndividamento: number;
+  ativoEndividamento: number;
+  /** Pesos e custos do WACC (frações / %). */
+  pesoProprio: number;
+  pesoDivida: number;
+  ke: number;
+  kd: number;
+  /** Benefício fiscal do IR aplicado ao Kd (fração). */
+  irShield: number;
+  /** Estoque usado na Liquidez Seca. */
+  estoqueLiquidez: number;
+  /** Componentes da NCG (balanço de fechamento). */
+  contasReceber: number;
+  estoques: number;
+  passivoOperacional: number;
+  /** Componentes do CDG (Fleuriet): PL + PNC − ANC. */
+  cdgPl: number;
+  cdgPnc: number;
+  cdgAnc: number;
+  cdg: number;
+  /** Prazo médio de estocagem (dias). */
+  pme: number;
+  /** Variação da NCG no ano (FCF). */
+  deltaNcg: number;
+}
+
 export interface Indicators {
   /** Lucro Bruto ÷ Receita Líquida × 100 */
   margemBruta: number;
@@ -230,6 +301,8 @@ export interface Indicators {
   dividaPlBruto: number;
   /** FCO (Fluxo de Caixa Operacional) anualizado — mesmo total do FluxoCaixaTab. */
   fcoAnual: number;
+  /** Bases exatas das fórmulas (SSOT da memória de cálculo). */
+  bases: IndicatorBases;
 }
 
 // ─── Thresholds publicados (SSOT) ───────────────────────────────────
@@ -551,25 +624,27 @@ export function calcIndicators(
   const temBalancoPassivo = passivoBalTotal > 0;
   const passivoAgregadoLegado =
     Math.max(0, capital.passivoCirculante ?? 0) + D + Math.max(0, capital.passivosNaoOnerosos ?? 0);
-  let endividamentoGeral = 0;
   let endividamentoGeralDadosCompletos = false;
+  let passivoEndividamento: number;
+  let ativoEndividamento: number;
   if (ativoTotalFim > 0 && temBalancoPassivo) {
-    endividamentoGeral = (passivoBalTotal / ativoTotalFim) * 100;
+    passivoEndividamento = passivoBalTotal;
+    ativoEndividamento = ativoTotalFim;
     endividamentoGeralDadosCompletos = true;
   } else if (ativoTotalFim > 0 && passivoAgregadoLegado > 0) {
-    endividamentoGeral = (passivoAgregadoLegado / ativoTotalFim) * 100;
+    passivoEndividamento = passivoAgregadoLegado;
+    ativoEndividamento = ativoTotalFim;
     endividamentoGeralDadosCompletos = true;
   } else if (ativoTotalFim > 0) {
     // Último recurso: proxy contábil `AT − PL` — marca como incompleto.
-    const passivoTotalEstim = Math.max(0, ativoTotalFim - PL);
-    endividamentoGeral = (passivoTotalEstim / ativoTotalFim) * 100;
-    endividamentoGeralDadosCompletos = false;
+    passivoEndividamento = Math.max(0, ativoTotalFim - PL);
+    ativoEndividamento = ativoTotalFim;
   } else {
-    const passivoConhecido = D + pno;
-    const ativoProxy = PL + D + pno;
-    endividamentoGeral = ativoProxy > 0 ? (passivoConhecido / ativoProxy) * 100 : 0;
-    endividamentoGeralDadosCompletos = false;
+    passivoEndividamento = D + pno;
+    ativoEndividamento = PL + D + pno;
   }
+  const endividamentoGeral =
+    ativoEndividamento > 0 ? (passivoEndividamento / ativoEndividamento) * 100 : 0;
   // Endividamento ONEROSO — só dívida financeira. É o que o banco pergunta.
   const endividamentoOneroso = ativoTotalFim > 0 ? (D / ativoTotalFim) * 100 : 0;
   const grauEndividamento = PL > 0 ? (D / PL) * 100 : 0;
@@ -770,5 +845,43 @@ export function calcIndicators(
     eva: safeNumber(((roic - safeNumber(wacc)) / 100) * capitalInvestido),
     dividaPlBruto: PL > 0 ? D / PL : 0,
     fcoAnual: safeNumber(fcoAnual),
+    bases: {
+      lucroBrutoAnual,
+      custosVariaveisAnual: custosVarAnual,
+      custosFixosSemDepAnual: custosFixosOperacionaisSemDep,
+      depreciacaoAnual,
+      custosFinanceirosAnual: jurosAnual,
+      outrosResultadosAnual: lairAnual - ebitAnual + jurosAnual,
+      jurosDivida,
+      amortizacaoAnual: amortizPrincipalAnual,
+      lairAnual,
+      impostosLucroAnual: impostosAnual,
+      impostosVendasAnual,
+      deducoesReceitaAnual: receitaBrutaAnual - impostosVendasAnual - receitaLiqAnual,
+      mcFrac,
+      pl: PL,
+      plAbertura,
+      plMedio,
+      ativoTotal: ativoTotalFim,
+      ativoMedio: atMedio,
+      passivoTotalAprox,
+      passivoEndividamento,
+      ativoEndividamento,
+      pesoProprio: wE,
+      pesoDivida: wD,
+      ke: keSeguro,
+      kd: capital.kd,
+      irShield,
+      estoqueLiquidez: estoqueLiq,
+      contasReceber: crBal,
+      estoques: estBal,
+      passivoOperacional: fornBal + salBal + impBal,
+      cdgPl: plBal,
+      cdgPnc: pncTotal,
+      cdgAnc: ancTotal,
+      cdg,
+      pme,
+      deltaNcg: deltaNcgAnual,
+    },
   };
 }

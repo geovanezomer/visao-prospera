@@ -176,7 +176,7 @@ function scoreSuppliers(a: ConcentrationAnswers): SubScore {
 
   if (a.pctMaiorFornecedor != null) {
     const f = a.pctMaiorFornecedor;
-    // 0% → 100, 50% → 50, 100% → 0
+    // Parte de 80 e desconta 0,8 ponto por p.p.: 0% → 80, 50% → 40, 100% → 0
     score -= f * 0.8;
     if (f >= 50)
       highlights.push(`Maior fornecedor = ${f.toFixed(0)}% do CPV (alto risco de ruptura)`);

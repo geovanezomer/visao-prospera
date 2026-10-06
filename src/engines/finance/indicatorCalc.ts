@@ -5,22 +5,17 @@
 //
 // Regras:
 //  - Quando o denominador é 0 / base insuficiente → "Base insuficiente — cálculo indisponível".
-//  - Reusa SOMENTE valores anualizados já expostos em `Indicators` ou
-//    derivados diretos de `dre`/`state` — NENHUM novo cálculo financeiro.
+//  - Reusa SOMENTE valores já expostos em `Indicators` (incl. `ind.bases`,
+//    as bases exatas de cada fórmula) — NENHUM novo cálculo financeiro.
+//    O resultado mostrado é sempre o valor do card.
 //  - Formatação 100% pt-BR via helpers de `format.ts`.
 // =====================================================================
-import { sumContractSaldos, aggregateContracts } from "./debtContracts";
 import type { AppState } from "./types";
 import type { DRE } from "./dre";
 import type { Indicators } from "./indicators";
-import { deriveAbertura } from "./aberturaDerivada";
-import { fmtBRL, fmtPct, fmtRatio, fmtAnos, fmtDays, fmtNum, sum } from "./format";
+import { fmtBRL, fmtPct, fmtRatio, fmtAnos, fmtDays, fmtNum } from "./format";
 
 const NA = "Base insuficiente — cálculo indisponível";
-
-/** Divisão segura para formatação: devolve null quando denominador inviável. */
-const safe = (num: number, den: number): number | null =>
-  den > 0 && Number.isFinite(num) && Number.isFinite(den) ? num / den : null;
 
 const line = (lhs: string, rhs: string) => `${lhs}\n= ${rhs}`;
 
@@ -90,7 +85,12 @@ export function buildIndicatorCalcs(
   ind: Indicators,
   cagrReceitas12m = NaN,
 ): IndicatorCalcs {
-  const { capital } = state;
+  // `dre` mantido na assinatura por compatibilidade com os consumidores (UI);
+  // as bases da DRE já chegam anualizadas em `ind.bases`.
+  // SSOT: TODAS as bases vêm de `ind.bases` (exatamente os números usados por
+  // `calcIndicators`) e todos os resultados vêm do próprio card. Nada é
+  // recalculado aqui — assim a memória nunca diverge do indicador exibido.
+  const b = ind.bases;
 
   // --- Bases anualizadas (já normalizadas pela engine) ---
   const RL = ind.receitaLiquidaAnual;
@@ -98,42 +98,42 @@ export function buildIndicatorCalcs(
   const EBITDA = ind.ebitdaAnual;
   const EBIT = ind.ebitAnual;
   const LL = ind.lucroLiquidoAnual;
-  const LB = sum(dre.lucroBruto);
-  const cv = sum(dre.custosVariaveis);
+  const LB = b.lucroBrutoAnual;
+  const cv = b.custosVariaveisAnual;
+  const cf = b.custosFixosSemDepAnual;
+  const dep = b.depreciacaoAnual;
   // `juros` para DSCR / Cobertura de Juros = juros de CONTRATOS de dívida (SSOT com indicators.ts).
   // NÃO usa `custosFinanceirosTotal` da DRE (que inclui tarifas, IOF, cheque especial etc.).
-  const juros = aggregateContracts(capital.debtContracts ?? []).totalJurosAno;
-  const impVendas = sum(dre.impostosVendas);
-  const impLucro = sum(dre.impostos);
-  const cf = sum(dre.custosFixos);
-  const dep = sum(dre.depreciacao);
+  const juros = b.jurosDivida;
+  // Custos financeiros TOTAIS da DRE — base do PE total e do Lucro Líquido.
+  const custosFin = b.custosFinanceirosAnual;
+  const impVendas = b.impostosVendasAnual;
+  const impLucro = b.impostosLucroAnual;
 
-  // --- Estoque, AC, PC etc. ---
-  const PL = Math.max(0, capital.patrimonioLiquido);
-  const D = Math.max(0, sumContractSaldos(capital.debtContracts));
-  // SSOT do PL de abertura (mesma fonte que `indicators.ts`): soma completa do PL, não capital social sozinho.
-  const PLabSSOT = deriveAbertura({ state, impostosTotalMensais: dre.impostosTotal }).totals.pl;
-  const PLab = PLabSSOT > 0 ? PLabSSOT : Math.max(0, capital.patrimonioLiquidoAbertura ?? 0);
-  const PLmedio = PLab > 0 ? (PLab + PL) / 2 : PL;
-  const ATab = Math.max(0, capital.ativoTotalAbertura ?? 0);
-  const AT = capital.ativoTotal;
-  const ATmedio = ATab > 0 && AT > 0 ? (ATab + AT) / 2 : AT;
+  // --- Estrutura patrimonial (Balanço de Fechamento reconciliado) ---
+  const PL = b.pl;
+  const D = Math.max(0, ind.dividaOnerosa);
+  const PLmedio = b.plMedio;
+  const AT = b.ativoTotal;
+  const ATmedio = b.ativoMedio;
   const AC = ind.ativoCirculante;
   const PC = ind.passivoCirculante;
   const disp = ind.caixaLiquidez; // SSOT: caixa do balanço; pode ser negativo (descoberto).
-  const estoques = capital.estoques;
+  const estoques = b.estoqueLiquidez;
   const dl = ind.dividaLiquida;
   const headcount = Math.max(0, state.numColaboradores ?? 0);
 
+  /** Anota quando o card aplicou teto (cap) e o valor bruto da fórmula é maior. */
+  const capNote = (raw: number, shown: number) =>
+    Math.abs(raw - shown) > 0.005 ? `  (limitado a ${fmtRatio(shown)})` : "";
+  /** Soma/subtração com o sinal visível ("+ R$ x" ou "− R$ x"). */
+  const signed = (v: number) => (v < 0 ? `− ${fmtBRL(-v)}` : `+ ${fmtBRL(v)}`);
+
   // ----- Margens -----
-  const margemBruta = (() => {
-    const r = safe(LB, RL);
-    return r == null ? NA : line(`${fmtBRL(LB)} ÷ ${fmtBRL(RL)} × 100`, fmtPct(r));
-  })();
-  const margemEbitda = (() => {
-    const r = safe(EBITDA, RL);
-    return r == null ? NA : line(`${fmtBRL(EBITDA)} ÷ ${fmtBRL(RL)} × 100`, fmtPct(r));
-  })();
+  const margemBruta =
+    RL > 0 ? line(`${fmtBRL(LB)} ÷ ${fmtBRL(RL)} × 100`, fmtPct(ind.margemBruta / 100)) : NA;
+  const margemEbitda =
+    RL > 0 ? line(`${fmtBRL(EBITDA)} ÷ ${fmtBRL(RL)} × 100`, fmtPct(ind.margemEbitda / 100)) : NA;
   // EVA = (ROIC − WACC) × Capital Investido. ROIC/WACC em % → divide por 100.
   const evaStr =
     ind.capitalInvestido > 0
@@ -142,153 +142,183 @@ export function buildIndicatorCalcs(
           fmtBRL(ind.eva),
         )
       : NA;
-  const margemLiquida = (() => {
-    const r = safe(LL, RL);
-    return r == null ? NA : line(`${fmtBRL(LL)} ÷ ${fmtBRL(RL)} × 100`, fmtPct(r));
-  })();
-  const margemContribuicao = (() => {
-    const mc = RL - cv;
-    const r = safe(mc, RL);
-    return r == null
-      ? NA
-      : line(`(${fmtBRL(RL)} − ${fmtBRL(cv)}) ÷ ${fmtBRL(RL)} × 100`, fmtPct(r));
-  })();
+  const margemLiquida =
+    RL > 0 ? line(`${fmtBRL(LL)} ÷ ${fmtBRL(RL)} × 100`, fmtPct(ind.margemLiquida / 100)) : NA;
+  const margemContribuicao =
+    RL > 0
+      ? line(
+          `(${fmtBRL(RL)} − ${fmtBRL(cv)}) ÷ ${fmtBRL(RL)} × 100`,
+          fmtPct(ind.margemContribuicao / 100),
+        )
+      : NA;
 
   // ----- Ponto de equilíbrio -----
-  const mcFrac = RL > 0 ? (RL - cv) / RL : 0;
-  const peOp = (() => {
-    if (mcFrac <= 0) return NA;
-    return line(
-      `(${fmtBRL(cf)} + ${fmtBRL(dep)}) ÷ ${fmtPct(mcFrac)}`,
-      fmtBRL(ind.pontoEquilibrioOperacional),
-    );
-  })();
-  const peFin = (() => {
-    if (mcFrac <= 0) return NA;
-    return line(`${fmtBRL(cf)} ÷ ${fmtPct(mcFrac)}`, fmtBRL(ind.pontoEquilibrioFinanceiro));
-  })();
-  const peTot = (() => {
-    if (mcFrac <= 0) return NA;
-    return line(
-      `(${fmtBRL(cf)} + ${fmtBRL(dep)} + ${fmtBRL(juros)}) ÷ ${fmtPct(mcFrac)}`,
-      fmtBRL(ind.pontoEquilibrio),
-    );
-  })();
+  const mcFrac = b.mcFrac;
+  const peOp =
+    mcFrac > 0
+      ? line(
+          `(${fmtBRL(cf)} + ${fmtBRL(dep)}) ÷ ${fmtPct(mcFrac)}`,
+          fmtBRL(ind.pontoEquilibrioOperacional),
+        )
+      : NA;
+  const peFin =
+    mcFrac > 0
+      ? line(`${fmtBRL(cf)} ÷ ${fmtPct(mcFrac)}`, fmtBRL(ind.pontoEquilibrioFinanceiro))
+      : NA;
+  const peTot =
+    mcFrac > 0
+      ? line(
+          `(${fmtBRL(cf)} + ${fmtBRL(dep)} + ${fmtBRL(custosFin)}) ÷ ${fmtPct(mcFrac)}  (custos fixos + depreciação + custos financeiros)`,
+          fmtBRL(ind.pontoEquilibrio),
+        )
+      : NA;
 
   // ----- Retornos -----
   const roe =
-    PLmedio > 0 ? line(`${fmtBRL(LL)} ÷ ${fmtBRL(PLmedio)} × 100`, fmtPct(LL / PLmedio)) : NA;
+    PLmedio > 0 && ind.roe != null
+      ? line(`${fmtBRL(LL)} ÷ ${fmtBRL(PLmedio)} × 100`, fmtPct(ind.roe / 100))
+      : NA;
   const roa =
-    ATmedio > 0 ? line(`${fmtBRL(LL)} ÷ ${fmtBRL(ATmedio)} × 100`, fmtPct(LL / ATmedio)) : NA;
+    ATmedio > 0 ? line(`${fmtBRL(LL)} ÷ ${fmtBRL(ATmedio)} × 100`, fmtPct(ind.roa / 100)) : NA;
   const roic =
     ind.capitalInvestido > 0
       ? line(
           `${fmtBRL(ind.nopat)} ÷ ${fmtBRL(ind.capitalInvestido)} × 100  (IR efetivo: ${fmtNum(ind.aliquotaNopat, 1)}%)`,
-          fmtPct(ind.nopat / ind.capitalInvestido),
+          fmtPct(ind.roic / 100),
         )
       : NA;
-  const wacc = (() => {
-    const V = PL + D;
-    if (V <= 0) return NA;
-    const wE = PL / V;
-    const wD = D / V;
-    return line(
-      `(${fmtPct(wE)} × ${fmtNum(capital.ke, 1)}%) + (${fmtPct(wD)} × ${fmtNum(capital.kd, 1)}% × (1 − IR))`,
-      `${fmtNum(ind.wacc, 1)}%`,
-    );
-  })();
+  const wacc =
+    b.pesoProprio + b.pesoDivida > 0
+      ? line(
+          `(${fmtPct(b.pesoProprio)} × ${fmtNum(b.ke, 1)}%) + (${fmtPct(b.pesoDivida)} × ${fmtNum(b.kd, 1)}% × (1 − ${fmtPct(b.irShield)}))`,
+          `${fmtNum(ind.wacc, 1)}%`,
+        )
+      : NA;
 
   // ----- Liquidez -----
-  const liquidezCorrente = PC > 1 ? line(`${fmtBRL(AC)} ÷ ${fmtBRL(PC)}`, fmtRatio(AC / PC)) : NA;
+  const liquidezCorrente =
+    PC > 1
+      ? line(
+          `${fmtBRL(AC)} ÷ ${fmtBRL(PC)}`,
+          fmtRatio(ind.liquidezCorrente) + capNote(AC / PC, ind.liquidezCorrente),
+        )
+      : NA;
   const liquidezSeca =
     PC > 1
       ? line(
           `(${fmtBRL(AC)} − ${fmtBRL(estoques)}) ÷ ${fmtBRL(PC)}`,
-          fmtRatio((AC - estoques) / PC),
+          fmtRatio(ind.liquidezSeca) + capNote((AC - estoques) / PC, ind.liquidezSeca),
         )
       : NA;
   const liquidezImediata =
-    PC > 1 ? line(`${fmtBRL(disp)} ÷ ${fmtBRL(PC)}`, fmtRatio(disp / PC)) : NA;
-  const liquidezGeral = (() => {
-    const passivoTotal = AT > PL ? AT - PL : 0;
-    return passivoTotal > 1
-      ? line(`${fmtBRL(AC)} ÷ (${fmtBRL(AT)} − ${fmtBRL(PL)})`, fmtRatio(AC / passivoTotal))
+    PC > 1
+      ? line(
+          `${fmtBRL(disp)} ÷ ${fmtBRL(PC)}`,
+          fmtRatio(ind.liquidezImediata) + capNote(disp / PC, ind.liquidezImediata),
+        )
       : NA;
-  })();
+  const liquidezGeral =
+    b.passivoTotalAprox > 1
+      ? line(
+          `${fmtBRL(AC)} ÷ (${fmtBRL(AT)} − ${fmtBRL(PL)})`,
+          fmtRatio(ind.liquidezGeral) + capNote(AC / b.passivoTotalAprox, ind.liquidezGeral),
+        )
+      : NA;
 
   // ----- Estrutura -----
-  const endividamentoGeral = (() => {
-    if (AT > 0) {
-      // Passivo total agora vem da engine (soma real do Balanço Detalhado quando
-      // disponível — vide `indicators.ts`). Mostra o percentual conforme calculado
-      // e destaca o pedaço ONEROSO (dívida financeira), o número que o banco lê.
-      const passivo = (ind.endividamentoGeral / 100) * AT;
-      const oneroso = (ind.endividamentoOneroso / 100) * AT;
-      return line(
-        `${fmtBRL(passivo)} ÷ ${fmtBRL(AT)} × 100  (oneroso: ${fmtBRL(oneroso)} = ${fmtPct(ind.endividamentoOneroso / 100)})`,
-        fmtPct(ind.endividamentoGeral / 100),
-      );
-    }
-    return NA;
-  })();
-  const capitalProprio = (() => {
-    const V = PL + D;
-    return V > 0
-      ? line(`${fmtBRL(PL)} ÷ (${fmtBRL(PL)} + ${fmtBRL(D)}) × 100`, fmtPct(PL / V))
+  // Passivo e ativo exatamente como usados pela engine (Balanço Detalhado quando
+  // disponível — vide `indicators.ts`). Destaca o pedaço ONEROSO (dívida
+  // financeira), o número que o banco lê.
+  const endividamentoGeral =
+    b.ativoEndividamento > 0
+      ? line(
+          `${fmtBRL(b.passivoEndividamento)} ÷ ${fmtBRL(b.ativoEndividamento)} × 100  (oneroso: ${fmtBRL(D)} = ${fmtPct(ind.endividamentoOneroso / 100)})`,
+          fmtPct(ind.endividamentoGeral / 100),
+        )
       : NA;
-  })();
+  const capitalProprio =
+    PL + D > 0
+      ? line(
+          `${fmtBRL(PL)} ÷ (${fmtBRL(PL)} + ${fmtBRL(D)}) × 100`,
+          fmtPct(ind.proprioPercent / 100),
+        )
+      : NA;
   const coberturaJuros =
-    juros > 1
-      ? line(`${fmtBRL(EBIT)} ÷ ${fmtBRL(juros)}`, `${fmtRatio(EBIT / juros)}×`)
+    juros > 1 && ind.coberturaJuros != null
+      ? line(`${fmtBRL(EBIT)} ÷ ${fmtBRL(juros)}`, `${fmtRatio(ind.coberturaJuros)}×`)
       : "Sem dívida onerosa — indicador não aplicável (N/A)";
   const giroAtivo =
-    ATmedio > 0 ? line(`${fmtBRL(RL)} ÷ ${fmtBRL(ATmedio)}`, `${fmtRatio(RL / ATmedio)}×`) : NA;
+    ATmedio > 0 ? line(`${fmtBRL(RL)} ÷ ${fmtBRL(ATmedio)}`, `${fmtRatio(ind.giroAtivo)}×`) : NA;
 
   // ----- Alavancagem -----
   const dividaLiqEbitda =
-    EBITDA > 1 ? line(`${fmtBRL(dl)} ÷ ${fmtBRL(EBITDA)}`, `${fmtRatio(dl / EBITDA)}×`) : NA;
+    EBITDA > 1
+      ? line(
+          `${fmtBRL(dl)} ÷ ${fmtBRL(EBITDA)}`,
+          `${fmtRatio(ind.dividaLiqEbitda)}×${capNote(dl / EBITDA, ind.dividaLiqEbitda)}`,
+        )
+      : NA;
   const dividaLiqEbit =
-    EBIT > 1 ? line(`${fmtBRL(dl)} ÷ ${fmtBRL(EBIT)}`, `${fmtRatio(dl / EBIT)}×`) : NA;
-  const dividaLiqPl = PL > 1 ? line(`${fmtBRL(dl)} ÷ ${fmtBRL(PL)}`, `${fmtRatio(dl / PL)}×`) : NA;
+    EBIT > 1
+      ? line(
+          `${fmtBRL(dl)} ÷ ${fmtBRL(EBIT)}`,
+          `${fmtRatio(ind.dividaLiqEbit)}×${capNote(dl / EBIT, ind.dividaLiqEbit)}`,
+        )
+      : NA;
+  const dividaLiqPl =
+    PL > 1
+      ? line(
+          `${fmtBRL(dl)} ÷ ${fmtBRL(PL)}`,
+          `${fmtRatio(ind.dividaLiqPl)}×${capNote(dl / PL, ind.dividaLiqPl)}`,
+        )
+      : NA;
 
   const amortizacaoPlPorLucro =
-    LL > 1 && PL > 0 ? line(`${fmtBRL(PL)} ÷ ${fmtBRL(LL)}`, fmtAnos(PL / LL)) : NA;
+    LL > 1 && PL > 0
+      ? line(`${fmtBRL(PL)} ÷ ${fmtBRL(LL)}`, fmtAnos(ind.amortizacaoPlPorLucro))
+      : NA;
   const paybackCapex =
     ind.capexAnual > 0 && ind.fcf > 1
-      ? line(`${fmtBRL(ind.capexAnual)} ÷ ${fmtBRL(ind.fcf)}`, fmtAnos(ind.capexAnual / ind.fcf))
+      ? line(`${fmtBRL(ind.capexAnual)} ÷ ${fmtBRL(ind.fcf)}`, fmtAnos(ind.paybackCapex))
       : NA;
 
   // ----- Caixa / operação -----
-  const fcfStr = line(`${fmtBRL(ind.nopat)} + Depreciação − Δ NCG`, fmtBRL(ind.fcf));
+  const fcfStr = line(
+    `NOPAT + Depreciação − Δ NCG = ${fmtBRL(ind.nopat)} + ${fmtBRL(dep)} ${signed(-b.deltaNcg)}`,
+    fmtBRL(ind.fcf),
+  );
   const cagrStr = Number.isFinite(cagrReceitas12m)
     ? line(`Receita_fim ÷ Receita_início, anualizado em 12 meses`, fmtPct(cagrReceitas12m))
     : NA;
   const gaoStr =
     Math.abs(EBIT) > 1 ? line(`${fmtBRL(RL - cv)} ÷ ${fmtBRL(EBIT)}`, `${fmtRatio(ind.gao)}×`) : NA;
-  // M2: LAIR usado na fórmula do GAF deve ser o LAIR da DRE (EBIT − juros +
-  // receitas financeiras + outras), não apenas EBIT − juros. Isso mantém o
-  // tooltip alinhado ao cálculo de `indicators.ts` (que usa sum(dre.lair)).
-  const LAIR = sum(dre.lair);
+  // LAIR da DRE (EBIT − juros + receitas financeiras + outras), mesmo de `indicators.ts`.
+  const LAIR = b.lairAnual;
   const gafStr =
     Math.abs(EBIT) > 1 && LAIR > 1
       ? line(`${fmtBRL(EBIT)} ÷ ${fmtBRL(LAIR)}`, `${fmtRatio(ind.gaf)}×`)
       : NA;
   const qualidadeLucro =
-    Math.abs(LL) > 1 ? line(`FCO ÷ ${fmtBRL(LL)}`, `${fmtRatio(ind.qualidadeLucro)}×`) : NA;
+    Math.abs(LL) > 1
+      ? line(
+          `${fmtBRL(ind.fcoAnual)} ÷ ${fmtBRL(LL)}  (FCO ÷ Lucro Líquido)`,
+          `${fmtRatio(ind.qualidadeLucro)}×`,
+        )
+      : NA;
   const conversaoEbitdaCaixa =
     EBITDA > 0
-      ? line(`${fmtBRL(ind.fcf)} ÷ ${fmtBRL(EBITDA)} × 100`, fmtPct(ind.fcf / EBITDA))
+      ? line(`${fmtBRL(ind.fcf)} ÷ ${fmtBRL(EBITDA)} × 100`, fmtPct(ind.conversaoEbitdaCaixa / 100))
       : NA;
   const cicloFinanceiroStr = line(
-    `${fmtDays(state.revenue.pmr)} + PME − ${fmtDays(state.revenue.pmp)}`,
+    `PMR + PME − PMP = ${fmtDays(state.revenue.pmr, 1)} + ${fmtDays(b.pme, 1)} − ${fmtDays(state.revenue.pmp, 1)}`,
     fmtDays(ind.cicloFinanceiro, 1),
   );
-  const ncgStr = line(`Contas a Receber + Estoques − Fornecedores`, fmtBRL(ind.ncg));
-  const acGap = capital.ativoCirculante > 0 ? capital.ativoCirculante : disp;
-  const pcGap = capital.passivoCirculante > 0 ? capital.passivoCirculante : 0;
-  const cdgVal = acGap - pcGap;
+  const ncgStr = line(
+    `Contas a Receber + Estoques − Passivo operacional = ${fmtBRL(b.contasReceber)} + ${fmtBRL(b.estoques)} − ${fmtBRL(b.passivoOperacional)}`,
+    fmtBRL(ind.ncg),
+  );
   const gapCgStr = line(
-    `NCG − CDG = ${fmtBRL(ind.ncg)} − (${fmtBRL(acGap)} − ${fmtBRL(pcGap)}) = ${fmtBRL(ind.ncg)} − ${fmtBRL(cdgVal)}`,
+    `NCG − (PL + PNC − ANC) = ${fmtBRL(ind.ncg)} − (${fmtBRL(b.cdgPl)} + ${fmtBRL(b.cdgPnc)} − ${fmtBRL(b.cdgAnc)}) = ${fmtBRL(ind.ncg)} − ${fmtBRL(b.cdg)}`,
     fmtBRL(ind.gapCapitalGiro),
   );
 
@@ -318,13 +348,9 @@ export function buildIndicatorCalcs(
         )
       : NA;
   const dscr = (() => {
-    const amort = sum(state.cashflow.amortizacoes ?? []);
-    const serv = juros + amort;
-    return serv > 1
-      ? line(
-          `${fmtBRL(EBITDA)} ÷ (${fmtBRL(juros)} + ${fmtBRL(amort)})`,
-          `${fmtRatio(EBITDA / serv)}×`,
-        )
+    const amort = b.amortizacaoAnual;
+    return ind.dscr != null && juros + amort > 1
+      ? line(`${fmtBRL(EBITDA)} ÷ (${fmtBRL(juros)} + ${fmtBRL(amort)})`, `${fmtRatio(ind.dscr)}×`)
       : "Sem serviço da dívida no período — indicador não aplicável (N/A)";
   })();
 
@@ -346,12 +372,14 @@ export function buildIndicatorCalcs(
 
   // ----- Topo de páginas (Dashboard) -----
   const receitaLiquida12m = line(
-    `${fmtBRL(RB)} − ${fmtBRL(impVendas)} (− devoluções/abatimentos)`,
+    `${fmtBRL(RB)} − ${fmtBRL(b.deducoesReceitaAnual)} − ${fmtBRL(impVendas)}  (receita bruta − deduções − impostos sobre vendas)`,
     fmtBRL(RL),
   );
   const ebitda12m = line(`${fmtBRL(EBIT)} + ${fmtBRL(dep)}`, fmtBRL(EBITDA));
+  // LL = EBIT − custos financeiros da DRE ± receitas financeiras/não operacionais − IR/CSLL
+  // (mesma cadeia da DRE; os juros de contratos são só parte dos custos financeiros).
   const lucroLiquido12m = line(
-    `${fmtBRL(EBIT)} − ${fmtBRL(juros)} − ${fmtBRL(impLucro)}`,
+    `${fmtBRL(EBIT)} − ${fmtBRL(custosFin)} ${signed(b.outrosResultadosAnual)} − ${fmtBRL(impLucro)}  (EBIT − custos financeiros ± receitas financeiras/não operacionais − IR/CSLL)`,
     fmtBRL(LL),
   );
 

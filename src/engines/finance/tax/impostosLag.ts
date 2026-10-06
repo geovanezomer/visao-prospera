@@ -55,9 +55,15 @@ export function partitionMonthlyTaxByLag(
   // Simples: `monthlyLucro` já é zero (tributo está no DAS), então lucroTri = 0.
   const lucroTri = zeros();
   if (regime !== "simples") {
-    for (let q = 0; q < 4; q++) {
+    // Cobre TODOS os trimestres do horizonte (ceil(N/3)), não só os 4 do 1º ano.
+    // Trimestre final incompleto: soma o que existe e lança no último mês disponível.
+    const trimestres = Math.ceil(N / 3);
+    for (let q = 0; q < trimestres; q++) {
       const m0 = q * 3;
-      lucroTri[m0 + 2] = (lucro[m0] ?? 0) + (lucro[m0 + 1] ?? 0) + (lucro[m0 + 2] ?? 0);
+      const fim = Math.min(m0 + 2, N - 1);
+      let soma = 0;
+      for (let m = m0; m <= fim; m++) soma += lucro[m] ?? 0;
+      lucroTri[fim] = soma;
     }
   } else {
     // Fallback seguro: se por algum motivo o Simples tiver monthlyLucro > 0

@@ -178,8 +178,7 @@ describe("solveBreakEvenDinamico — DSCR e caixa mínimo", () => {
   });
 
   it("caixa mínimo: pior saldo mensal ≥ 0 na solução (recebimento à vista, PMR = 0)", () => {
-    // Com PMR = 0 o saldo mensal cresce com o volume (MC > 0) e a bisecção é válida.
-    // (Com PMR > 0 a métrica não é monotônica — ver relatório de bugs.)
+    // Com PMR = 0 o saldo mensal cresce com o volume (MC > 0): métrica monotônica.
     const base = createState({
       revenue: { bruta: SAZONAL, inadimplencia: m12(0), pmr: 0, pmrMensal: m12(0) },
       capital: { disponibilidades: 50_000 },
@@ -192,6 +191,59 @@ describe("solveBreakEvenDinamico — DSCR e caixa mínimo", () => {
     expect(r.atingiuMeta).toBe(true);
     expect(r.metricaAtingida).toBeGreaterThanOrEqual(0);
     expect(piorCaixaCom(base, r.volumeDeltaPct - 0.5)).toBeLessThan(0);
+  });
+});
+
+describe("solveBreakEvenDinamico — caixa mínimo NÃO monotônico (PMR > 0)", () => {
+  // Repro do relatório: receita 50k/mês (dez 100k), CPV 30%, aluguel 40k, caixa inicial 50k,
+  // PMR default (30 dias). Mais volume piora o caixa no início (recebíveis), mas há uma
+  // faixa viável (+40% → pior saldo ≈ +R$ 1.542). O solver antigo só testava +500% e
+  // devolvia "Meta inalcançável".
+  const base = createState({
+    revenue: { bruta: SAZONAL, inadimplencia: m12(0) },
+    capital: { disponibilidades: 50_000 },
+    costs: estadoDeficitario().costs,
+  });
+
+  it("a métrica de fato não é monotônica e +40% é viável", () => {
+    expect(base.revenue.pmr).toBeGreaterThan(0);
+    expect(piorCaixaCom(base, 0)).toBeLessThan(0);
+    expect(piorCaixaCom(base, 40)).toBeGreaterThanOrEqual(0);
+    expect(piorCaixaCom(base, 500)).toBeLessThan(0);
+  });
+
+  it("encontra o menor Δ% viável (grade + bisecção) em vez de declarar inalcançável", () => {
+    const r = solveBreakEvenDinamico(base, { restricao: "caixa_min" });
+    expect(r.atingiuMeta).toBe(true);
+    expect(r.observacao).toBeUndefined();
+    expect(r.metricaAtingida).toBeGreaterThanOrEqual(0);
+    expect(r.metricaAtingida).toBeCloseTo(piorCaixaCom(base, r.volumeDeltaPct), 4);
+    expect(r.volumeDeltaPct).toBeGreaterThan(0);
+    expect(r.volumeDeltaPct).toBeLessThanOrEqual(40);
+    // mínimo dentro da tolerância de bisecção (0,5pp)
+    expect(piorCaixaCom(base, r.volumeDeltaPct - 0.5)).toBeLessThan(0);
+  });
+
+  it("quando só reduzir o volume atende, devolve Δ% negativo com observação", () => {
+    // PMR longo (90 dias) e margem curta: vender mais só consome caixa no ano.
+    const s = createState({
+      revenue: { bruta: m12(50_000), inadimplencia: m12(0), pmr: 90, pmrMensal: m12(90) },
+      capital: { disponibilidades: 60_000 },
+      costs: [
+        linha("cv", "Insumos", "custo_vendas", 0, { values: m12(35_000), fixed: false }),
+        linha("alug", "Aluguel", "fixo", 2_000),
+      ],
+    });
+    const r = solveBreakEvenDinamico(s, { restricao: "caixa_min" });
+    expect(r.atingiuMeta).toBe(true);
+    expect(r.volumeDeltaPct).toBeLessThan(0);
+    expect(r.observacao).toMatch(/REDUZINDO/);
+    expect(piorCaixaCom(s, r.volumeDeltaPct)).toBeGreaterThanOrEqual(0);
+    // a redução mais próxima de 0 (tolerância 0,5pp)
+    expect(piorCaixaCom(s, r.volumeDeltaPct + 0.5)).toBeLessThan(0);
+    const md = breakEvenDinamicoToMarkdown(r);
+    expect(md).toContain(`(−${Math.abs(r.volumeDeltaPct).toFixed(1)}% volume`);
+    expect(md).toContain(r.observacao);
   });
 });
 

@@ -50,6 +50,23 @@ describe("partitionMonthlyTaxByLag", () => {
     expect(soma(r.vendasLag30) + soma(r.splitZero) + soma(r.lucroTri)).toBe(tax.annual);
   });
 
+  it("horizonte > 12 meses: agrupa TODOS os trimestres (ceil(N/3)), inclusive o incompleto", () => {
+    // 20 meses de lucro de 1k: 6 trimestres cheios (3k no 3º mês) + trimestre final de 2 meses
+    // (meses 18–19 → 2k lançados no mês 19). Antes só os 4 primeiros trimestres eram cobertos
+    // e o lucro dos meses 12–19 sumia da partição.
+    const n = 20;
+    const lucro20 = Array.from({ length: n }, () => 1000);
+    const vendas20 = Array.from({ length: n }, () => 10_000);
+    const t = mkTax(vendas20, [], lucro20);
+    const r = partitionMonthlyTaxByLag(t, false, "real");
+    expect(r.lucroTri).toHaveLength(n);
+    const esperado: number[] = Array.from({ length: n }, (_, i) => (i % 3 === 2 ? 3000 : 0));
+    esperado[19] = 2000;
+    expect(r.lucroTri).toEqual(esperado);
+    expect(soma(r.lucroTri)).toBe(soma(lucro20));
+    expect(soma(r.vendasLag30) + soma(r.splitZero) + soma(r.lucroTri)).toBe(t.annual);
+  });
+
   it("Real com split ativo: CBS/IBS saem para lag 0; vendas ex-CBS no lag 30", () => {
     const r = partitionMonthlyTaxByLag(tax, true, "real");
     expect(r.splitZero).toEqual(cbs);

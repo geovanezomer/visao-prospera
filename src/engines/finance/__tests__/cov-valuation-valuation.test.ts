@@ -381,6 +381,19 @@ describe("traceValuation — memória de cálculo coerente com buildValuation", 
     });
   });
 
+  it("passo 'Dívida líquida' mostra o MESMO caixa usado no valor (disponibilidades, não caixa ocioso)", () => {
+    // Bug: a fórmula imprimia `caixaOcioso` (0) enquanto o valor usava `disponibilidades`
+    // → "1000000.00 − 0.00" ao lado de 800.000.
+    const s = estado({ caixaOcioso: 0 });
+    const t = traceValuation(s, params(), modelo());
+    const passo = t.steps.find((x) => x.label === "Dívida líquida")!;
+    expect(passo.value).toBe(800_000);
+    expect(passo.formula).toBe("Dívida onerosa − Caixa = 1000000.00 − 200000.00");
+    const [div, caixa] = passo.formula.split(" = ")[1].split(" − ").map(Number);
+    expect(div - caixa).toBe(passo.value);
+    expect(t.inputs.caixa).toBe(200_000);
+  });
+
   it("métodos 'multiples' e 'dcf' selecionam o EV correto", () => {
     const tm = traceValuation(estado(), params({ method: "multiples" }), modelo());
     expect(tm.steps.find((s) => s.label === "EV método selecionado")!.value).toBeCloseTo(

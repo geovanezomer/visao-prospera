@@ -7,8 +7,13 @@
 //  • avalia covenants (DSCR) e fluxo de caixa mês a mês,
 //  • usa o mesmo motor de simulação do app (`applySimulator`), garantindo SSOT.
 //
-// Algoritmo: bisecção em `volumeDeltaPct` no intervalo [-50%, +500%]
-// até encontrar o menor valor que satisfaz a restrição (tolerância 0,5pp).
+// Algoritmo: varredura em grade de `volumeDeltaPct` (0 → +500%, passos de
+// 5/10/25pp) para achar o MENOR crescimento que satisfaz a restrição, seguida de
+// bisecção dentro do passo que cruza a meta (tolerância 0,5pp). A grade é
+// necessária porque nem toda métrica é monotônica no volume: com PMR > 0, mais
+// venda consome caixa no início (recebíveis) e o pior saldo mensal pode PIORAR
+// antes de melhorar — testar só o teto (+500%) declarava "inalcançável" uma meta
+// atingível. Se nenhum crescimento atende, a grade também testa reduções (até −50%).
 
 import type { AppState } from "./types";
 import { applySimulator, DEFAULT_SIM } from "./simulator";
@@ -48,6 +53,23 @@ export interface BreakEvenDinamicoResult {
   /** Mensagem explicativa quando não atinge (ex.: meta inalcançável). */
   observacao?: string;
 }
+
+/** Teto da busca: +500% = 6× a receita atual. */
+const VOLUME_MAX = 500;
+/** Piso da busca: −50% do volume atual. */
+const VOLUME_MIN = -50;
+
+const faixa = (de: number, ate: number, passo: number): number[] =>
+  Array.from({ length: Math.floor((ate - de) / passo) + 1 }, (_, i) => de + i * passo);
+
+/** Grade de crescimento: fina perto de 0 (onde ficam as metas usuais), grossa no fim. */
+const GRADE_CRESCIMENTO: number[] = [
+  ...faixa(5, 100, 5),
+  ...faixa(110, 200, 10),
+  ...faixa(225, VOLUME_MAX, 25),
+];
+/** Grade de redução (só usada quando nenhum crescimento atende). */
+const GRADE_REDUCAO: number[] = faixa(5, -VOLUME_MIN, 5).map((v) => -v);
 
 /** Default da meta conforme restrição. */
 function defaultMeta(restricao: RestricaoBreakEven): number {
@@ -111,14 +133,48 @@ export function solveBreakEvenDinamico(
     };
   }
 
-  // Bisecção monotônica em [lo, hi]. Assumimos métrica não-decrescente em volume
-  // (válido enquanto MC > 0 — caso contrário, sinalizamos inalcançável).
-  let lo = 0;
-  let hi = 500; // até 6× a receita atual
-  const metricaHi = metricaDo(simulado(base, hi), restricao);
-  if (metricaHi < metaValor) {
+  const atende = (v: number) => metricaDo(simulado(base, v), restricao) >= metaValor;
+  /** Bisecção entre `falha` (não atende) e `ok` (atende); devolve o lado que atende. */
+  const bisecta = (falha: number, ok: number): number => {
+    for (let i = 0; i < 22 && Math.abs(ok - falha) > 0.5; i++) {
+      const mid = (falha + ok) / 2;
+      if (atende(mid)) ok = mid;
+      else falha = mid;
+    }
+    return ok;
+  };
+
+  // 1) Crescimento: menor Δ% da grade que atende; refina dentro do passo.
+  let volume: number | null = null;
+  let anterior = 0; // baseline (0%) já sabidamente não atende
+  for (const v of GRADE_CRESCIMENTO) {
+    if (atende(v)) {
+      volume = bisecta(anterior, v);
+      break;
+    }
+    anterior = v;
+  }
+  // 2) Nenhum crescimento atende: testa reduções (métricas não monotônicas,
+  //    ex.: caixa com PMR alto melhora vendendo menos). Escolhe a mais próxima de 0.
+  let observacao: string | undefined;
+  if (volume == null) {
+    anterior = 0;
+    for (const v of GRADE_REDUCAO) {
+      if (atende(v)) {
+        volume = bisecta(anterior, v);
+        observacao =
+          "A meta só é atingida REDUZINDO o volume — mais venda consome caixa (prazo de recebimento) mais rápido do que gera.";
+        break;
+      }
+      anterior = v;
+    }
+  }
+
+  if (volume == null) {
     // Inalcançável dentro do intervalo (provável MC ≤ 0).
+    const hi = VOLUME_MAX;
     const stHi = simulado(base, hi);
+    const metricaHi = metricaDo(stHi, restricao);
     const receitaHi = stHi.revenue.bruta.reduce((s, v) => s + (Number.isFinite(v) ? v : 0), 0);
     return {
       restricao,
@@ -137,15 +193,6 @@ export function solveBreakEvenDinamico(
     };
   }
 
-  // Bisecção: 22 iterações ≈ tolerância 0,001% no volume.
-  for (let i = 0; i < 22 && hi - lo > 0.5; i++) {
-    const mid = (lo + hi) / 2;
-    const m = metricaDo(simulado(base, mid), restricao);
-    if (m >= metaValor) hi = mid;
-    else lo = mid;
-  }
-
-  const volume = hi;
   const stFinal = simulado(base, volume);
   const receitaTotalAnual = stFinal.revenue.bruta.reduce(
     (s, v) => s + (Number.isFinite(v) ? v : 0),
@@ -166,6 +213,7 @@ export function solveBreakEvenDinamico(
     receitaBaseAnual,
     distribuicaoMensal,
     atingiuMeta: true,
+    ...(observacao ? { observacao } : {}),
   };
 }
 
@@ -199,10 +247,12 @@ export function breakEvenDinamicoToMarkdown(r: BreakEvenDinamicoResult): string 
     return lines.join("\n");
   }
   const incremento = r.receitaTotalAnual - r.receitaBaseAnual;
+  const sinal = incremento < 0 ? "−" : "+";
   lines.push(
-    `- **Solução:** receita anual ${brl(r.receitaTotalAnual)} (+${r.volumeDeltaPct.toFixed(1)}% volume = +${brl(incremento)})`,
+    `- **Solução:** receita anual ${brl(r.receitaTotalAnual)} (${sinal}${Math.abs(r.volumeDeltaPct).toFixed(1)}% volume = ${sinal}${brl(Math.abs(incremento))})`,
   );
   lines.push(`- **Métrica resultante:** ${valFmt(r.metricaAtingida)}`);
+  if (r.observacao) lines.push(`- ${r.observacao}`);
   lines.push("");
   lines.push("**Distribuição mensal (R$):**");
   lines.push("| Mês | Receita |");

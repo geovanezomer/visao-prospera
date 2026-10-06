@@ -9,18 +9,29 @@ import { AppState } from "./types";
 import { zeros12 } from "./format";
 
 /**
- * SSOT-1 — Dívida Líquida canônica usada por Valuation e Indicadores.
- * Prefere caixa ocioso (excedente não-operacional). Fallback para
- * disponibilidades totais para compatibilidade com balanços antigos.
- * Retorna valor RAW (pode ser negativo quando caixa > dívida).
+ * SSOT-1 — Componentes da Dívida Líquida canônica (Valuation, Indicadores e
+ * memórias de cálculo). Expostos para que qualquer "Dívida − Caixa" impresso
+ * mostre EXATAMENTE os números usados no valor.
  */
-export function computeNetDebt(state: AppState): number {
-  const D = Math.max(0, totalDividaOnerosa(state));
+export function computeNetDebtParts(state: AppState): {
+  dividaOnerosa: number;
+  caixa: number;
+  dividaLiquida: number;
+} {
+  const dividaOnerosa = Math.max(0, totalDividaOnerosa(state));
   // [Auditoria Bloco 4] Dívida Líquida (Damodaran/CVM/IFRS) = Dívida Onerosa − Caixa e Equivalentes TOTAL.
   // O conceito de "caixa ocioso" pertence ao ROIC (subtrair do Capital Investido), NÃO à Dívida Líquida.
   // Antes: usava `caixaOcioso ?? disponibilidades` — inconsistente e subestimava o caixa abatedor.
-  const cash = Math.max(0, state.capital.disponibilidades ?? 0);
-  return D - cash;
+  const caixa = Math.max(0, state.capital.disponibilidades ?? 0);
+  return { dividaOnerosa, caixa, dividaLiquida: dividaOnerosa - caixa };
+}
+
+/**
+ * SSOT-1 — Dívida Líquida canônica = Dívida Onerosa − Disponibilidades.
+ * Retorna valor RAW (pode ser negativo quando caixa > dívida).
+ */
+export function computeNetDebt(state: AppState): number {
+  return computeNetDebtParts(state).dividaLiquida;
 }
 
 /**

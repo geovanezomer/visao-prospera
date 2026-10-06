@@ -12,7 +12,7 @@ import { sumContractSaldos } from "./debtContracts";
 import { buildDRE } from "./dre";
 import { calcIndicators } from "./indicators";
 import { resolveEffectiveRegime } from "./regime";
-import { computeNetDebt } from "./shared";
+import { computeNetDebt, computeNetDebtParts } from "./shared";
 import { buildForecast, ForecastConfig, DEFAULT_FORECAST_CFG } from "./forecast";
 import { computeStrategic, StrategicResult } from "./strategic";
 import { sum } from "./format";
@@ -403,7 +403,10 @@ export interface ValuationTrace {
     receita: number;
     ll: number;
     dividaOnerosa: number;
+    /** Caixa ocioso informado (usado no ROIC — NÃO entra na dívida líquida). */
     caixaOcioso: number;
+    /** Caixa abatido na dívida líquida (disponibilidades — SSOT `computeNetDebtParts`). */
+    caixa: number;
     dividaLiquida: number;
     wacc: number;
     ke: number;
@@ -444,6 +447,7 @@ export function traceValuation(
   const evAdj = evBaseRaw * (1 + params.controlPremium) * (1 - params.liquidityDiscount);
   const evFinal = evAdj * (1 - haircut);
   const nd = netDebt(state);
+  const ndParts = computeNetDebtParts(state);
 
   const steps: ValuationTrace["steps"] = [
     {
@@ -503,9 +507,13 @@ export function traceValuation(
     },
     {
       label: "Dívida líquida",
-      formula: `Dívida onerosa − Caixa = ${sumContractSaldos(state.capital.debtContracts).toFixed(2)} − ${(state.capital.caixaOcioso ?? 0).toFixed(2)}`,
+      // SSOT: mesmos componentes de `computeNetDebt` (caixa = disponibilidades).
+      formula: `Dívida onerosa − Caixa = ${ndParts.dividaOnerosa.toFixed(2)} − ${ndParts.caixa.toFixed(2)}`,
       value: nd,
-      note: "V4: equity desconta dívida líquida, não bruta",
+      note:
+        ndParts.dividaLiquida < 0
+          ? "V4: equity desconta dívida líquida, não bruta (caixa > dívida → limitado a 0)"
+          : "V4: equity desconta dívida líquida, não bruta",
     },
     {
       label: "Equity Value final",
@@ -519,8 +527,9 @@ export function traceValuation(
       ebitda: mults.ebitda,
       receita: mults.revenue,
       ll: mults.ll,
-      dividaOnerosa: sumContractSaldos(state.capital.debtContracts),
+      dividaOnerosa: ndParts.dividaOnerosa,
       caixaOcioso: state.capital.caixaOcioso ?? 0,
+      caixa: ndParts.caixa,
       dividaLiquida: nd,
       wacc: m.ind.wacc,
       ke: state.capital.ke,
