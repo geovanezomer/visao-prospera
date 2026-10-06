@@ -38,3 +38,6 @@ dist-ssr
 .env.local
 .env.*.local
 .preview/
+
+# Backups do banco gerados pelo serviço `backup` do docker compose
+/backups/

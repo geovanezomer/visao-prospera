@@ -51,3 +51,6 @@ README.docker.md
 .agents
 .claude
 mem
+
+# Backups do banco (ficam na VPS, nunca no repositório nem na imagem)
+backups

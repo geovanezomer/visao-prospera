@@ -11,6 +11,10 @@
 #
 # Na primeira subida o app aplica as migrations e cria o administrador
 # inicial (usuário: admin / senha: admin), com troca de senha obrigatória.
+#
+# Backup: o serviço `backup` grava um dump por dia em ./backups (na própria
+# VPS), guarda 30 dias e testa a restauração todo dia 1. Manual completo em
+# docs/OPERACAO.md.
 # ============================================================
 
 services:
@@ -31,6 +35,29 @@ services:
       retries: 20
     # Sem porta publicada: o banco só é acessível pela rede interna do compose.
 
+  # ---------- Backup diário (na própria VPS) ----------
+  backup:
+    image: postgres:17-alpine
+    container_name: financepro-backup
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:-financepro}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-financepro}
+      BACKUP_DIR: /backups
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-30}
+      # Horário em UTC (06:00 UTC = 03:00 de Brasília).
+      BACKUP_TIME: ${BACKUP_TIME:-06:00}
+      TZ: UTC
+    volumes:
+      - ${BACKUP_PATH:-./backups}:/backups
+      - ./scripts/ops:/ops:ro
+    entrypoint: ["/bin/sh", "/ops/backup-loop.sh"]
+
   # ---------- Produção ----------
   app:
     build:
@@ -46,10 +73,14 @@ services:
       - "3000:3000"
     env_file:
       - .env
+    volumes:
+      # Leitura do status do backup para o /api/health e o painel do admin.
+      - ${BACKUP_PATH:-./backups}:/backups:ro
     environment:
       - NODE_ENV=production
       - PORT=3000
       - HOST=0.0.0.0
+      - BACKUP_DIR=/backups
       - DATABASE_URL=${DATABASE_URL:-postgres://${POSTGRES_USER:-financepro}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-financepro}}
 
   # ---------- Desenvolvimento (hot reload) ----------
