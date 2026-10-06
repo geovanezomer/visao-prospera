@@ -55,6 +55,9 @@ const IndicatorsTab = lazy(() =>
 const DashboardTab = lazy(() =>
   import("@/components/sim/dashboard/DashboardTab").then((m) => ({ default: m.DashboardTab })),
 );
+const CockpitHome = lazy(() =>
+  import("@/components/odoo/CockpitHome").then((m) => ({ default: m.CockpitHome })),
+);
 const ConsolidadoTab = lazy(() =>
   import("@/components/odoo/ConsolidadoTab").then((m) => ({ default: m.ConsolidadoTab })),
 );
@@ -128,7 +131,7 @@ function suggestFor(
   return suggestPremissas(DEFAULT_STATE, refData);
 }
 
-type AppTab = TabKey | "ai" | "calculadoras" | "consolidado";
+type AppTab = TabKey | "ai" | "calculadoras" | "consolidado" | "cockpit";
 
 // Renderiza o TrialBanner apenas se o usuário logado for um trial válido.
 function TrialBannerSlot() {
@@ -369,6 +372,24 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
     return () => window.removeEventListener("keydown", onKey);
   }, [meetingMode]);
 
+  // Modo Odoo: abre o Cockpit na primeira vez da sessão; fora dele, abas
+  // exclusivas do Odoo voltam ao Dashboard.
+  useEffect(() => {
+    if (cockpit.active) {
+      try {
+        if (!window.sessionStorage.getItem("finnance:cockpitShown")) {
+          window.sessionStorage.setItem("finnance:cockpitShown", "1");
+          setActiveTab("cockpit");
+        }
+      } catch {
+        /* storage indisponível */
+      }
+    } else if (!cockpit.loading && (activeTab === "cockpit" || activeTab === "consolidado")) {
+      setActiveTab("dashboard");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cockpit.active, cockpit.loading]);
+
   // Escuta evento ("carregar_cenario" da IA ou deep-link de DiagnosisTab → SimulatorTab).
   // Aceita Partial<SimulatorParams>; faz merge com DEFAULT_SIM para nunca corromper o estado.
   useEffect(() => {
@@ -440,7 +461,9 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                           ? "Calculadoras"
                           : activeTab === "consolidado"
                             ? "Consolidado & Conciliação"
-                            : (NAV_ITEMS.find((i) => i.value === activeTab)?.title ?? activeTab)}
+                            : activeTab === "cockpit"
+                              ? "Cockpit"
+                              : (NAV_ITEMS.find((i) => i.value === activeTab)?.title ?? activeTab)}
                     </h2>
                     {/* Breadcrumb: empresa + status de backup na nuvem. */}
                     <div
@@ -661,6 +684,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                             </ActualsLock>
                           )}
                           {activeTab === "consolidado" && <ConsolidadoTab />}
+                          {activeTab === "cockpit" && <CockpitHome />}
                           {activeTab === "tributos" && <TaxTab />}
                           {activeTab === "prolabore" && <ProlaboreTab />}
                           {activeTab === "caixa" && (

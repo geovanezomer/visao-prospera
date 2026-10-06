@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useEffect, useState } from "react";
 
-import { LogOut, Share2, FolderOpen, Calculator, KeyRound, Network } from "lucide-react";
+import { LogOut, Share2, FolderOpen, Calculator, KeyRound, Network, Gauge } from "lucide-react";
 import { logoAsset } from "@/lib/brandAssets";
 import { BrandedLogo } from "@/components/BrandedLogo";
 import { useBranding } from "@/hooks/useBranding";
@@ -27,7 +27,7 @@ import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 
 import { cn } from "@/lib/utils";
 
-type SidebarTab = TabKey | "ai" | "calculadoras" | "consolidado";
+type SidebarTab = TabKey | "ai" | "calculadoras" | "consolidado" | "cockpit";
 
 interface AppSidebarProps {
   activeTab: SidebarTab;
@@ -106,6 +106,27 @@ export function AppSidebar({
       <SidebarContent className="py-2">
         <SidebarGroup>
           <SidebarMenu className="gap-0.5">
+            {showConsolidado && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={activeTab === "cockpit"}
+                  onClick={() => {
+                    setActiveTab("cockpit");
+                    setOpenMobile(false);
+                  }}
+                  tooltip="Cockpit"
+                  className={cn(
+                    "h-7 transition-colors",
+                    activeTab === "cockpit"
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  )}
+                >
+                  <Gauge className="h-4 w-4" />
+                  <span>Cockpit</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             {NAV_ITEMS.filter((it) => it.value !== "ai" || user?.aiEnabled !== false).map(
               (item) => (
                 <SidebarMenuItem key={item.value}>

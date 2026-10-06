@@ -244,8 +244,9 @@ export function ConsolidadoTab() {
           <Building2 className="h-4 w-4" /> DRE por entidade e consolidado — {period}
         </h3>
         <p className="mb-3 text-xs text-muted-foreground">
-          Tributos calculados pelo regime de cada CNPJ (defina em “Regime Tributário” com a entidade
-          selecionada). Eliminações: vendas, serviços e juros entre empresas do grupo.
+          DRE de cada CNPJ como contabilizada no Odoo (tributos lançados). Eliminações: vendas,
+          serviços e juros entre empresas do grupo. A conciliação abaixo compara os tributos
+          lançados com o que o regime configurado em “Regime Tributário” calcularia.
         </p>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-xs">
@@ -258,7 +259,7 @@ export function ConsolidadoTab() {
                       {x.entity.label.replace(" (matriz + filiais)", "")}
                     </div>
                     <div className="font-normal text-muted-foreground">
-                      {REGIME_LABEL[x.calc.regime] ?? x.calc.regime}
+                      conciliação: {REGIME_LABEL[x.calc.regime] ?? x.calc.regime}
                     </div>
                   </th>
                 ))}
