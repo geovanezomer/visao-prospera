@@ -104,3 +104,25 @@ test("conferências do cockpit e consolidado do grupo abrem", async ({ page }) =
     .click();
   await expect(page.getByText(/Eliminaç/).first()).toBeVisible();
 });
+
+test("conciliação: sem diferenças em cada entidade e CSV conta a conta", async ({ page }) => {
+  await page.goto("/app");
+  const empresa = page.locator('select[aria-label="Empresa"]');
+  await expect(empresa).toBeVisible({ timeout: 30_000 });
+  await page.locator('select[aria-label="Mês final da análise"]').selectOption("2026-09");
+  const opcoes = await empresa.locator("option").allTextContents();
+  const card = page.getByRole("region", { name: "Conciliação" });
+  for (const label of opcoes) {
+    await empresa.selectOption({ label });
+    await page
+      .locator("[data-sidebar='sidebar']")
+      .getByRole("button", { name: "Cockpit", exact: true })
+      .click();
+    await expect(card.getByText("sem diferenças"), `conciliação de ${label}`).toBeVisible();
+  }
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    card.getByRole("button", { name: /Conta a conta/ }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/^conciliacao-.*-contas\.csv$/);
+});
