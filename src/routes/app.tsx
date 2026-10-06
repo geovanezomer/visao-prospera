@@ -585,6 +585,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                             { isAIConfigured, gerarDiagnostico },
                             { PROMPT_VERSION },
                             { getCached, setCached },
+                            { buildStrategicPdfInsights },
                           ] = await Promise.all([
                             import("@/engines/finance/pdfExport"),
                             import("@/engines/finance/financialModel"),
@@ -595,6 +596,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                             import("@/engines/ai/diagnostico"),
                             import("@/engines/ai/diagnosticoPrompt"),
                             import("@/engines/ai/diagnosticoCache"),
+                            import("@/engines/finance/strategic2"),
                           ]);
                           const model = buildFinancialModel(state);
                           const { dre, ind, tax, cf } = model;
@@ -629,6 +631,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                             diags,
                             prescriptive,
                             aiDiagnostico,
+                            insights: buildStrategicPdfInsights(state, simParams),
                           });
                           toast.success("PDF gerado com sucesso", { id: "pdf-export" });
                         } catch (err) {

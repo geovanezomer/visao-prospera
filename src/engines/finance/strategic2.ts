@@ -804,3 +804,74 @@ export function productContribution(
   }
   return { itens, aliquotaVendas: t * 100, pareto: { produtos: n, pctMargem: Math.min(100, acc) } };
 }
+
+// ---------------------------------------------------------------------------
+// Resumo para o PDF de apresentação (mesmos cálculos da tela de insights)
+// ---------------------------------------------------------------------------
+
+/** Saídas do motor estratégico que vão para a página "Insights estratégicos" do PDF. */
+export interface StrategicPdfInsights {
+  /** Alavancas ativas no simulador (texto curto). */
+  cenario: string;
+  /** Ponte do lucro líquido: contribuição de cada alavanca (Shapley). */
+  ponte: { base: number; simulado: number; itens: { label: string; valor: number }[] } | null;
+  /** Sensibilidade do lucro a ±1 passo de cada alavanca, maiores primeiro. */
+  tornado: { label: string; passo: string; baixo: number; alto: number }[];
+  estresse: {
+    nome: string;
+    caixaMinimo: number;
+    mes: string;
+    creditoNecessario: number;
+    deltaLucro: number;
+  }[];
+  valor: {
+    base: { roic: number; wacc: number; eva: number };
+    simulado: { roic: number; wacc: number; eva: number };
+  };
+}
+
+const MESES_CURTOS = [
+  "Jan",
+  "Fev",
+  "Mar",
+  "Abr",
+  "Mai",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Set",
+  "Out",
+  "Nov",
+  "Dez",
+];
+
+export function buildStrategicPdfInsights(
+  base: AppState,
+  p: SimulatorParams,
+  mesesLabels: string[] = MESES_CURTOS,
+): StrategicPdfInsights {
+  const ativos = PLAYERS.filter((pl) => isActive(pl, p));
+  const b = ativos.length ? bridge(base, p) : null;
+  const t = tornado(base, p, "lucroLiquido").barras.slice(0, 8);
+  const v = valueCreation(base, p);
+  const pick = (x: ValueSide) => ({ roic: x.roic, wacc: x.wacc, eva: x.eva });
+  return {
+    cenario: ativos.length ? ativos.map((a) => a.label).join(", ") : "sem alavancas (cenário base)",
+    ponte: b
+      ? {
+          base: b.base.lucroLiquido,
+          simulado: b.simulado.lucroLiquido,
+          itens: b.itens.map((i) => ({ label: i.label, valor: i.lucroLiquido })),
+        }
+      : null,
+    tornado: t.map((x) => ({ label: x.label, passo: x.passo, baixo: x.baixo, alto: x.alto })),
+    estresse: stressTests(base, p).map((e) => ({
+      nome: e.nome,
+      caixaMinimo: e.caixaMinimo,
+      mes: mesesLabels[e.mesCaixaMinimo] ?? String(e.mesCaixaMinimo + 1),
+      creditoNecessario: e.creditoNecessario,
+      deltaLucro: e.deltaLucro,
+    })),
+    valor: { base: pick(v.base), simulado: pick(v.simulado) },
+  };
+}

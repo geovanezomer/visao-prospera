@@ -115,3 +115,17 @@ test("simulações salvas: salvar, aplicar e apagar", async ({ page }) => {
   await page.getByRole("button", { name: `Apagar simulação ${nome}` }).click();
   await expect(page.getByRole("button", { name: nome, exact: true })).toHaveCount(0);
 });
+
+test("relatório em PDF baixa com a página de insights estratégicos", async ({ page }) => {
+  await page.goto("/app");
+  const [download] = await Promise.all([
+    page.waitForEvent("download", { timeout: 60_000 }),
+    page.getByRole("button", { name: "Exportar PDF" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/^FinnancePRO_Relatorio_Executivo_.*\.pdf$/);
+  const path = await download.path();
+  const { readFileSync } = await import("node:fs");
+  const pdf = readFileSync(path!);
+  expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+  await download.saveAs("test-results/relatorio.pdf");
+});

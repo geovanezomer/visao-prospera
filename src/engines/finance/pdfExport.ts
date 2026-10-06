@@ -15,6 +15,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { logoAsset } from "@/lib/brandAssets";
 import { sum, fmtBRL, fmtPct, MESES } from "@/engines/finance/format";
+import type { StrategicPdfInsights } from "@/engines/finance/strategic2";
 import type { AppState, BalancoDetalhado } from "@/engines/finance/types";
 import type { FinancialModel } from "@/engines/finance/financialModel";
 import { monthValues } from "@/engines/finance/costs";
@@ -867,6 +868,8 @@ export interface ExportPDFInput {
   prescriptive: PrescriptiveCard[];
   /** Diagnóstico Executivo IA — opcional; quando ausente, a página é omitida. */
   aiDiagnostico?: DiagnosticoResult | null;
+  /** Insights do simulador (strategic2), calculados pelo caller; omitido = sem a página. */
+  insights?: StrategicPdfInsights | null;
 }
 
 interface PageMeta {
@@ -881,6 +884,7 @@ export async function exportFinancePDF({
   diags,
   prescriptive,
   aiDiagnostico = null,
+  insights: strategic = null,
 }: ExportPDFInput): Promise<void> {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
 
@@ -1318,6 +1322,93 @@ export async function exportFinancePDF({
   // ════════════════════════════════════════════════════════════════════
   // APÊNDICE
   // ════════════════════════════════════════════════════════════════════
+
+  // ── Insights estratégicos do simulador ─────────────────────────────
+  if (strategic) {
+    y = newPage(
+      doc,
+      "Simulador",
+      "Insights estratégicos",
+      `Cenário: ${strategic.cenario}. Calculado pelo mesmo motor da tela.`,
+    );
+    pageMeta[doc.getNumberOfPages()] = { eyebrow: "Simulador", title: "Insights estratégicos" };
+    if (strategic.ponte && strategic.ponte.itens.length) {
+      y = blockHeader(
+        doc,
+        y,
+        "De onde vem a variação do lucro líquido",
+        "Contribuição de cada alavanca (valor de Shapley): a soma fecha a diferença.",
+      );
+      y = execTable(
+        doc,
+        y,
+        ["Componente", "Lucro líquido (R$)"],
+        [
+          ["Base", fmtBRL(strategic.ponte.base)],
+          ...strategic.ponte.itens.map((i) => [i.label, fmtBRL(i.valor)]),
+          ["Simulado", fmtBRL(strategic.ponte.simulado)],
+        ],
+        { firstColBold: true },
+      );
+    }
+    if (strategic.tornado.length) {
+      y = blockHeader(
+        doc,
+        y + 8,
+        "Sensibilidade do lucro",
+        "Efeito de mover cada alavanca um passo para baixo e para cima.",
+      );
+      y = execTable(
+        doc,
+        y,
+        ["Alavanca", "Passo", "Para baixo (R$)", "Para cima (R$)"],
+        strategic.tornado.map((t) => [t.label, t.passo, fmtBRL(t.baixo), fmtBRL(t.alto)]),
+        { firstColBold: true },
+      );
+    }
+    if (strategic.estresse.length) {
+      if (y > doc.internal.pageSize.getHeight() - 220) {
+        y = newPage(doc, "Simulador", "Insights estratégicos (cont.)");
+        pageMeta[doc.getNumberOfPages()] = { eyebrow: "Simulador", title: "Insights estratégicos" };
+      }
+      y = blockHeader(
+        doc,
+        y + 8,
+        "Testes de estresse",
+        "Pior saldo de caixa e crédito necessário para manter o caixa mínimo.",
+      );
+      y = execTable(
+        doc,
+        y,
+        ["Choque", "Pior caixa (R$)", "Mês", "Crédito necessário (R$)", "Efeito no lucro (R$)"],
+        strategic.estresse.map((e) => [
+          e.nome,
+          fmtBRL(e.caixaMinimo),
+          e.mes,
+          fmtBRL(e.creditoNecessario),
+          fmtBRL(e.deltaLucro),
+        ]),
+        { firstColBold: true },
+      );
+    }
+    const v = strategic.valor;
+    y = blockHeader(doc, y + 8, "Criação de valor", "ROIC contra o custo de capital (WACC).");
+    execTable(
+      doc,
+      y,
+      ["", "ROIC", "WACC", "EVA (R$)"],
+      [
+        ["Base", fmtPct(v.base.roic / 100), fmtPct(v.base.wacc / 100), fmtBRL(v.base.eva)],
+        [
+          "Simulado",
+          fmtPct(v.simulado.roic / 100),
+          fmtPct(v.simulado.wacc / 100),
+          fmtBRL(v.simulado.eva),
+        ],
+      ],
+      { firstColBold: true },
+    );
+  }
 
   // Divisor de apêndice (página simples)
   doc.addPage();
