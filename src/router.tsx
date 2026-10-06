@@ -1,5 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
+import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { routeTree } from "./routeTree.gen";
 
 export const getRouter = () => {
@@ -24,6 +25,12 @@ export const getRouter = () => {
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
   });
+
+  // Leva ao navegador o cache que os loaders preencheram no SSR (ex.:
+  // app_settings com marca e cores). Sem isso o cliente começava com o cache
+  // vazio, renderizava diferente do servidor (erro de hidratação #418) e
+  // buscava tudo de novo. O QueryClientProvider continua no RootComponent.
+  setupRouterSsrQueryIntegration({ router, queryClient, wrapQueryClient: false });
 
   return router;
 };

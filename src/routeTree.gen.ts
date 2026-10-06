@@ -9,77 +9,37 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermosRouteImport } from './routes/termos'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as PrivacidadeRouteImport } from './routes/privacidade'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as LandingRouteImport } from './routes/landing'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as AppRouteImport } from './routes/app'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SharedShareIdRouteImport } from './routes/shared.$shareId'
-import { Route as CheckoutSucessoRouteImport } from './routes/checkout.sucesso'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
-import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AppRouteImport } from './routes/app'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as LandingRouteImport } from './routes/landing'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as ApiFeedbackRouteImport } from './routes/api/feedback'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as CheckoutSucessoRouteImport } from './routes/checkout.sucesso'
+import { Route as SharedShareIdRouteImport } from './routes/shared.$shareId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as ApiPublicTrialRequestRouteImport } from './routes/api/public/trial/request'
-import { Route as ApiPublicTrialActivateRouteImport } from './routes/api/public/trial/activate'
-import { Route as ApiPublicPaymentsResendMagicLinkRouteImport } from './routes/api/public/payments/resend-magic-link'
-import { Route as ApiPublicPaymentsIntentStatusRouteImport } from './routes/api/public/payments/intent-status'
-import { Route as ApiPublicPaymentsCheckoutRouteImport } from './routes/api/public/payments/checkout'
-import { Route as ApiPublicHooksWebhookRetryRouteImport } from './routes/api/public/hooks/webhook-retry'
-import { Route as ApiPublicHooksTrialCleanupRouteImport } from './routes/api/public/hooks/trial-cleanup'
 import { Route as ApiPublicHooksReconcileCheckoutIntentsRouteImport } from './routes/api/public/hooks/reconcile-checkout-intents'
-import { Route as ApiPublicPaymentsWebhookStripeRouteImport } from './routes/api/public/payments/webhook.stripe'
+import { Route as ApiPublicHooksTrialCleanupRouteImport } from './routes/api/public/hooks/trial-cleanup'
+import { Route as ApiPublicHooksWebhookRetryRouteImport } from './routes/api/public/hooks/webhook-retry'
+import { Route as ApiPublicPaymentsCheckoutRouteImport } from './routes/api/public/payments/checkout'
+import { Route as ApiPublicPaymentsIntentStatusRouteImport } from './routes/api/public/payments/intent-status'
+import { Route as ApiPublicPaymentsResendMagicLinkRouteImport } from './routes/api/public/payments/resend-magic-link'
+import { Route as ApiPublicTrialActivateRouteImport } from './routes/api/public/trial/activate'
+import { Route as ApiPublicTrialRequestRouteImport } from './routes/api/public/trial/request'
 import { Route as ApiPublicPaymentsWebhookAsaasRouteImport } from './routes/api/public/payments/webhook.asaas'
+import { Route as ApiPublicPaymentsWebhookStripeRouteImport } from './routes/api/public/payments/webhook.stripe'
 
-const TermosRoute = TermosRouteImport.update({
-  id: '/termos',
-  path: '/termos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacidadeRoute = PrivacidadeRouteImport.update({
-  id: '/privacidade',
-  path: '/privacidade',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LandingRoute = LandingRouteImport.update({
-  id: '/landing',
-  path: '/landing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppRoute = AppRouteImport.update({
-  id: '/app',
-  path: '/app',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -87,29 +47,49 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SharedShareIdRoute = SharedShareIdRouteImport.update({
-  id: '/shared/$shareId',
-  path: '/shared/$shareId',
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CheckoutSucessoRoute = CheckoutSucessoRouteImport.update({
-  id: '/checkout/sucesso',
-  path: '/checkout/sucesso',
+const LandingRoute = LandingRouteImport.update({
+  id: '/landing',
+  path: '/landing',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiHealthRoute = ApiHealthRouteImport.update({
-  id: '/api/health',
-  path: '/api/health',
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiFeedbackRoute = ApiFeedbackRouteImport.update({
@@ -117,43 +97,35 @@ const ApiFeedbackRoute = ApiFeedbackRouteImport.update({
   path: '/api/feedback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutSucessoRoute = CheckoutSucessoRouteImport.update({
+  id: '/checkout/sucesso',
+  path: '/checkout/sucesso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SharedShareIdRoute = SharedShareIdRouteImport.update({
+  id: '/shared/$shareId',
+  path: '/shared/$shareId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicTrialRequestRoute = ApiPublicTrialRequestRouteImport.update({
-  id: '/api/public/trial/request',
-  path: '/api/public/trial/request',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicTrialActivateRoute = ApiPublicTrialActivateRouteImport.update({
-  id: '/api/public/trial/activate',
-  path: '/api/public/trial/activate',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicPaymentsResendMagicLinkRoute =
-  ApiPublicPaymentsResendMagicLinkRouteImport.update({
-    id: '/api/public/payments/resend-magic-link',
-    path: '/api/public/payments/resend-magic-link',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicPaymentsIntentStatusRoute =
-  ApiPublicPaymentsIntentStatusRouteImport.update({
-    id: '/api/public/payments/intent-status',
-    path: '/api/public/payments/intent-status',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicPaymentsCheckoutRoute =
-  ApiPublicPaymentsCheckoutRouteImport.update({
-    id: '/api/public/payments/checkout',
-    path: '/api/public/payments/checkout',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksWebhookRetryRoute =
-  ApiPublicHooksWebhookRetryRouteImport.update({
-    id: '/api/public/hooks/webhook-retry',
-    path: '/api/public/hooks/webhook-retry',
+const ApiPublicHooksReconcileCheckoutIntentsRoute =
+  ApiPublicHooksReconcileCheckoutIntentsRouteImport.update({
+    id: '/api/public/hooks/reconcile-checkout-intents',
+    path: '/api/public/hooks/reconcile-checkout-intents',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksTrialCleanupRoute =
@@ -162,22 +134,50 @@ const ApiPublicHooksTrialCleanupRoute =
     path: '/api/public/hooks/trial-cleanup',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicHooksReconcileCheckoutIntentsRoute =
-  ApiPublicHooksReconcileCheckoutIntentsRouteImport.update({
-    id: '/api/public/hooks/reconcile-checkout-intents',
-    path: '/api/public/hooks/reconcile-checkout-intents',
+const ApiPublicHooksWebhookRetryRoute =
+  ApiPublicHooksWebhookRetryRouteImport.update({
+    id: '/api/public/hooks/webhook-retry',
+    path: '/api/public/hooks/webhook-retry',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicPaymentsCheckoutRoute =
+  ApiPublicPaymentsCheckoutRouteImport.update({
+    id: '/api/public/payments/checkout',
+    path: '/api/public/payments/checkout',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicPaymentsIntentStatusRoute =
+  ApiPublicPaymentsIntentStatusRouteImport.update({
+    id: '/api/public/payments/intent-status',
+    path: '/api/public/payments/intent-status',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicPaymentsResendMagicLinkRoute =
+  ApiPublicPaymentsResendMagicLinkRouteImport.update({
+    id: '/api/public/payments/resend-magic-link',
+    path: '/api/public/payments/resend-magic-link',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicTrialActivateRoute = ApiPublicTrialActivateRouteImport.update({
+  id: '/api/public/trial/activate',
+  path: '/api/public/trial/activate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicTrialRequestRoute = ApiPublicTrialRequestRouteImport.update({
+  id: '/api/public/trial/request',
+  path: '/api/public/trial/request',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPaymentsWebhookAsaasRoute =
+  ApiPublicPaymentsWebhookAsaasRouteImport.update({
+    id: '/api/public/payments/webhook/asaas',
+    path: '/api/public/payments/webhook/asaas',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicPaymentsWebhookStripeRoute =
   ApiPublicPaymentsWebhookStripeRouteImport.update({
     id: '/api/public/payments/webhook/stripe',
     path: '/api/public/payments/webhook/stripe',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicPaymentsWebhookAsaasRoute =
-  ApiPublicPaymentsWebhookAsaasRouteImport.update({
-    id: '/api/public/payments/webhook/asaas',
-    path: '/api/public/payments/webhook/asaas',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -391,67 +391,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/termos': {
-      id: '/termos'
-      path: '/termos'
-      fullPath: '/termos'
-      preLoaderRoute: typeof TermosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacidade': {
-      id: '/privacidade'
-      path: '/privacidade'
-      fullPath: '/privacidade'
-      preLoaderRoute: typeof PrivacidadeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/landing': {
-      id: '/landing'
-      path: '/landing'
-      fullPath: '/landing'
-      preLoaderRoute: typeof LandingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/app': {
-      id: '/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AppRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -461,39 +405,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/shared/$shareId': {
-      id: '/shared/$shareId'
-      path: '/shared/$shareId'
-      fullPath: '/shared/$shareId'
-      preLoaderRoute: typeof SharedShareIdRouteImport
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/checkout/sucesso': {
-      id: '/checkout/sucesso'
-      path: '/checkout/sucesso'
-      fullPath: '/checkout/sucesso'
-      preLoaderRoute: typeof CheckoutSucessoRouteImport
+    '/landing': {
+      id: '/landing'
+      path: '/landing'
+      fullPath: '/landing'
+      preLoaderRoute: typeof LandingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/health': {
-      id: '/api/health'
-      path: '/api/health'
-      fullPath: '/api/health'
-      preLoaderRoute: typeof ApiHealthRouteImport
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/feedback': {
@@ -503,60 +475,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiFeedbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout/sucesso': {
+      id: '/checkout/sucesso'
+      path: '/checkout/sucesso'
+      fullPath: '/checkout/sucesso'
+      preLoaderRoute: typeof CheckoutSucessoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shared/$shareId': {
+      id: '/shared/$shareId'
+      path: '/shared/$shareId'
+      fullPath: '/shared/$shareId'
+      preLoaderRoute: typeof SharedShareIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/trial/request': {
-      id: '/api/public/trial/request'
-      path: '/api/public/trial/request'
-      fullPath: '/api/public/trial/request'
-      preLoaderRoute: typeof ApiPublicTrialRequestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/trial/activate': {
-      id: '/api/public/trial/activate'
-      path: '/api/public/trial/activate'
-      fullPath: '/api/public/trial/activate'
-      preLoaderRoute: typeof ApiPublicTrialActivateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/payments/resend-magic-link': {
-      id: '/api/public/payments/resend-magic-link'
-      path: '/api/public/payments/resend-magic-link'
-      fullPath: '/api/public/payments/resend-magic-link'
-      preLoaderRoute: typeof ApiPublicPaymentsResendMagicLinkRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/payments/intent-status': {
-      id: '/api/public/payments/intent-status'
-      path: '/api/public/payments/intent-status'
-      fullPath: '/api/public/payments/intent-status'
-      preLoaderRoute: typeof ApiPublicPaymentsIntentStatusRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/payments/checkout': {
-      id: '/api/public/payments/checkout'
-      path: '/api/public/payments/checkout'
-      fullPath: '/api/public/payments/checkout'
-      preLoaderRoute: typeof ApiPublicPaymentsCheckoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/webhook-retry': {
-      id: '/api/public/hooks/webhook-retry'
-      path: '/api/public/hooks/webhook-retry'
-      fullPath: '/api/public/hooks/webhook-retry'
-      preLoaderRoute: typeof ApiPublicHooksWebhookRetryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/trial-cleanup': {
-      id: '/api/public/hooks/trial-cleanup'
-      path: '/api/public/hooks/trial-cleanup'
-      fullPath: '/api/public/hooks/trial-cleanup'
-      preLoaderRoute: typeof ApiPublicHooksTrialCleanupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/reconcile-checkout-intents': {
@@ -566,11 +517,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksReconcileCheckoutIntentsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/payments/webhook/stripe': {
-      id: '/api/public/payments/webhook/stripe'
-      path: '/api/public/payments/webhook/stripe'
-      fullPath: '/api/public/payments/webhook/stripe'
-      preLoaderRoute: typeof ApiPublicPaymentsWebhookStripeRouteImport
+    '/api/public/hooks/trial-cleanup': {
+      id: '/api/public/hooks/trial-cleanup'
+      path: '/api/public/hooks/trial-cleanup'
+      fullPath: '/api/public/hooks/trial-cleanup'
+      preLoaderRoute: typeof ApiPublicHooksTrialCleanupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/webhook-retry': {
+      id: '/api/public/hooks/webhook-retry'
+      path: '/api/public/hooks/webhook-retry'
+      fullPath: '/api/public/hooks/webhook-retry'
+      preLoaderRoute: typeof ApiPublicHooksWebhookRetryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/checkout': {
+      id: '/api/public/payments/checkout'
+      path: '/api/public/payments/checkout'
+      fullPath: '/api/public/payments/checkout'
+      preLoaderRoute: typeof ApiPublicPaymentsCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/intent-status': {
+      id: '/api/public/payments/intent-status'
+      path: '/api/public/payments/intent-status'
+      fullPath: '/api/public/payments/intent-status'
+      preLoaderRoute: typeof ApiPublicPaymentsIntentStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/resend-magic-link': {
+      id: '/api/public/payments/resend-magic-link'
+      path: '/api/public/payments/resend-magic-link'
+      fullPath: '/api/public/payments/resend-magic-link'
+      preLoaderRoute: typeof ApiPublicPaymentsResendMagicLinkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/trial/activate': {
+      id: '/api/public/trial/activate'
+      path: '/api/public/trial/activate'
+      fullPath: '/api/public/trial/activate'
+      preLoaderRoute: typeof ApiPublicTrialActivateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/trial/request': {
+      id: '/api/public/trial/request'
+      path: '/api/public/trial/request'
+      fullPath: '/api/public/trial/request'
+      preLoaderRoute: typeof ApiPublicTrialRequestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/payments/webhook/asaas': {
@@ -578,6 +571,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/payments/webhook/asaas'
       fullPath: '/api/public/payments/webhook/asaas'
       preLoaderRoute: typeof ApiPublicPaymentsWebhookAsaasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/webhook/stripe': {
+      id: '/api/public/payments/webhook/stripe'
+      path: '/api/public/payments/webhook/stripe'
+      fullPath: '/api/public/payments/webhook/stripe'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookStripeRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
