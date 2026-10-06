@@ -31,6 +31,7 @@ import {
 import { SectionTitle, HelpTip } from "@/components/sim/shared/primitives";
 import { ForecastCard, MonteCarloCard } from "@/components/sim/analysis/AnalysisTab";
 import { IndicatorsCard } from "@/components/sim/indicators/IndicatorsCard";
+import { StrategicInsights } from "./StrategicInsights";
 import { KanitzCard } from "@/components/sim/shared/KanitzCard";
 import {
   ArrowDownRight,
@@ -95,7 +96,8 @@ export function SimulatorTab({
   const active = countActiveLevers(p);
 
   // Desenquadramento do Simples (mesma regra da página Regime Tributário)
-  const rbAnual = useMemo(() => sum(state.revenue.bruta), [state.revenue.bruta]);
+  // Teto do Simples avaliado na receita SIMULADA (preço/volume podem cruzá-lo).
+  const rbAnual = useMemo(() => sum(simState.revenue.bruta), [simState.revenue.bruta]);
   const simplesLimite = state.tax.ratesOverride?.simplesLimite ?? SIMPLES_LIMITE;
   const desenquadradoSimples = rbAnual > simplesLimite;
 
@@ -129,6 +131,8 @@ export function SimulatorTab({
         inconsistencies={inconsistencies}
         onApply={applyToBase}
         onReset={reset}
+        // Modo Odoo: o realizado vem do ERP — "aplicar" gravaria só parte do cenário.
+        canApply={!state.realizado}
       />
 
       {/* KPIs em tempo real — refletem o cenário simulado */}
@@ -383,6 +387,9 @@ export function SimulatorTab({
         </div>
       </div>
 
+      {/* Simulador 2.0: ponte de valor, sensibilidade, metas, estresse, valor econômico */}
+      <StrategicInsights state={state} params={p} onApplyParams={setP} />
+
       {/* Projeções refletindo o cenário simulado */}
       <div className="space-y-4 border-t border-border/60 pt-6">
         <div
@@ -418,6 +425,7 @@ const StatusBar = memo(function StatusBar({
   inconsistencies,
   onApply,
   onReset,
+  canApply = true,
 }: {
   active: number;
   base: SimDREView;
@@ -425,6 +433,7 @@ const StatusBar = memo(function StatusBar({
   inconsistencies: string[];
   onApply: () => void;
   onReset: () => void;
+  canApply?: boolean;
 }) {
   const dEbitda = pctDelta(base.ebitda, sim.ebitda);
   const dLL = pctDelta(base.lucroLiquido, sim.lucroLiquido);
@@ -459,14 +468,16 @@ const StatusBar = memo(function StatusBar({
         >
           <RotateCcw className="mr-1 h-3.5 w-3.5" /> Resetar
         </Button>
-        <Button
-          size="sm"
-          onClick={onApply}
-          disabled={active === 0}
-          className="h-8 justify-start sm:justify-center"
-        >
-          Aplicar ao cenário base
-        </Button>
+        {canApply && (
+          <Button
+            size="sm"
+            onClick={onApply}
+            disabled={active === 0}
+            className="h-8 justify-start sm:justify-center"
+          >
+            Aplicar ao cenário base
+          </Button>
+        )}
       </div>
     </div>
   );
