@@ -192,13 +192,15 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           <Ind
             label="ROE"
             v={ind.roe == null ? "N/A — PL negativo" : fmtPct(ind.roe / 100)}
-            desc="Retorno sobre o Patrimônio Líquido. Usa PL MÉDIO ((abertura + final)/2, CFA/Damodaran) com o PL de abertura completo (Capital Social + Reservas + Lucros Acumulados) obtido do SSOT da abertura. Quando PL médio ≤ 0 (passivo a descoberto), exibe N/A — a métrica perde significado."
+            tone={ind.roe == null ? undefined : ind.roe >= 0 ? "pos" : "neg"}
+            desc="Retorno sobre o Patrimônio Líquido. Usa PL MÉDIO ((abertura + final)/2, CFA/Damodaran) com o PL de abertura completo (Capital Social + Reservas + Lucros Acumulados) obtido da abertura. Quando PL médio ≤ 0 (passivo a descoberto), exibe N/A — a métrica perde significado."
             formula="Lucro Líquido ÷ PL Médio × 100"
             calc={c.roe}
           />
           <Ind
             label="ROA"
             v={fmtPct(ind.roa / 100)}
+            tone={ind.roa >= 0 ? "pos" : "neg"}
             desc="Retorno sobre o Ativo Total. Usa Ativo Total MÉDIO ((abertura + final)/2, padrão CFA/Damodaran) quando o Ativo Total de abertura é informado em Capital; caso contrário, usa Ativo Total fim de período."
             formula="Lucro Líquido ÷ Ativo Total Médio × 100"
             calc={c.roa}
@@ -239,6 +241,9 @@ export function IndicatorsGrid({ state }: { state: AppState }) {
           <Ind
             label="Liquidez Seca"
             v={fmtLiquidez(ind.liquidezSeca)}
+            tone={
+              !indicadorValido(ind.liquidezSeca) ? undefined : ind.liquidezSeca >= 1 ? "pos" : "neg"
+            }
             desc="Versão mais rigorosa da liquidez corrente: exclui estoques (que podem demorar a virar caixa). Ideal acima de 1,0."
             formula="(Ativo Circulante − Estoques) ÷ Passivo Circulante"
             calc={c.liquidezSeca}

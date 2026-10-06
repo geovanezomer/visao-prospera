@@ -845,7 +845,7 @@ export function DRETab() {
                           {fmtBRL(total)}
                           {row.margin !== undefined && (
                             <div className="text-[10px] font-normal text-muted-foreground">
-                              Margem {fmtNum(row.margin, 1)}%
+                              {fmtNum(row.margin, 1)}% da receita líquida
                             </div>
                           )}
                         </td>

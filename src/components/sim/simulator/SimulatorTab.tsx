@@ -1,7 +1,8 @@
 import { ScenariosMenu } from "./ScenariosMenu";
 import { memo, useEffect, useId, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { AppState, TaxRegime } from "@/engines/finance/types";
+import { AppState, COST_VENDAS_LABEL, TaxRegime } from "@/engines/finance/types";
+import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import {
   applySimulator,
   computeSimView,
@@ -397,7 +398,18 @@ export function SimulatorTab({
 
         {/* DRE + Kanitz (coluna direita) */}
         <div className="lg:sticky lg:top-[72px] lg:h-fit space-y-4">
-          <DREPanel base={baseView} sim={simView} inconsistencies={inconsistencies} />
+          <DREPanel
+            base={baseView}
+            sim={simView}
+            inconsistencies={inconsistencies}
+            rotulos={{
+              tributos:
+                resolveEffectiveRegime(simState) === "simples"
+                  ? "(−) DAS Simples Nacional"
+                  : "(−) Tributos sobre Receita",
+              custo: `(−) ${COST_VENDAS_LABEL[simState.businessType].long}`,
+            }}
+          />
           {/* Termômetro de Insolvência (Kanitz) — reativo às alavancas do simulador */}
           <KanitzCard state={simState} />
         </div>
@@ -663,10 +675,13 @@ function DREPanel({
   base,
   sim,
   inconsistencies,
+  rotulos,
 }: {
   base: SimDREView;
   sim: SimDREView;
   inconsistencies: string[];
+  /** Mesmos nomes da DRE (dependem do regime e do tipo de negócio). */
+  rotulos: { tributos: string; custo: string };
 }) {
   const rows: {
     label: string;
@@ -686,7 +701,7 @@ function DREPanel({
       formula: "Σ (Preço × Quantidade vendida) — todas as linhas de receita",
     },
     {
-      label: "(−) Devoluções e Cancelamentos",
+      label: "(−) Inadimplência",
       b: -base.devolucoesCancelamentos,
       s: -sim.devolucoesCancelamentos,
       sign: -1,
@@ -707,7 +722,7 @@ function DREPanel({
       hint: "Reduções de preço após a venda por defeito, atraso ou avaria. Lançadas como redutoras da Receita Bruta.",
     },
     {
-      label: "(−) Tributos sobre Receita",
+      label: rotulos.tributos,
       b: -base.tributosReceita,
       s: -sim.tributosReceita,
       sign: -1,
@@ -723,7 +738,7 @@ function DREPanel({
       formula: "Receita Bruta − Devoluções − Descontos − Abatimentos − Tributos",
     },
     {
-      label: "(−) CPV / CMV / CSP",
+      label: rotulos.custo,
       b: -base.cpv,
       s: -sim.cpv,
       sign: -1,

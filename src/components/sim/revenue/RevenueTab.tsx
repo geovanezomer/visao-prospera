@@ -374,7 +374,7 @@ export function RevenueTab() {
         const recFinAnual = r.receitasFinanceiras?.reduce((acc, f) => acc + sum(f.valores), 0) || 0;
         const totalReceitas = brutaAnual + recFinAnual;
         return (
-          <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             <StatCard
               label="Receita Bruta Anual"
               value={fmtBRL(brutaAnual)}
@@ -401,7 +401,7 @@ export function RevenueTab() {
               }}
             />
             <StatCard
-              label="Receita Operacional"
+              label="Receita após deduções"
               value={fmtBRL(liqAnual)}
               tone="pos"
               sub={fmtPct(pctRec(liqAnual)) + " da receita"}
@@ -413,7 +413,7 @@ export function RevenueTab() {
               }}
             />
             <StatCard
-              label="Média Mensal YTD"
+              label="Média mensal"
               value={fmtBRL(mediaYTD)}
               sub={`${monthsWithRevenue} ${monthsWithRevenue === 1 ? "mês" : "meses"} com receita`}
               hint={{
@@ -423,17 +423,20 @@ export function RevenueTab() {
                 calc: `${fmtBRL(liqAnual)} ÷ ${monthsWithRevenue || 1} = ${fmtBRL(mediaYTD)}`,
               }}
             />
-            <StatCard
-              label="Total de Receitas"
-              value={fmtBRL(totalReceitas)}
-              tone="pos"
-              hint={{
-                description:
-                  "Soma da Receita Operacional Bruta com as Receitas Financeiras e demais entradas (aluguéis, venda de ativos).",
-                formula: "Receita Bruta + Receitas Financeiras",
-                calc: `${fmtBRL(brutaAnual)} + ${fmtBRL(recFinAnual)} = ${fmtBRL(totalReceitas)}`,
-              }}
-            />
+            {/* Só quando há outras receitas: senão repetiria a receita bruta. */}
+            {recFinAnual !== 0 && (
+              <StatCard
+                label="Total de Receitas"
+                value={fmtBRL(totalReceitas)}
+                tone="pos"
+                hint={{
+                  description:
+                    "Soma da Receita Operacional Bruta com as Receitas Financeiras e demais entradas (aluguéis, venda de ativos).",
+                  formula: "Receita Bruta + Receitas Financeiras",
+                  calc: `${fmtBRL(brutaAnual)} + ${fmtBRL(recFinAnual)} = ${fmtBRL(totalReceitas)}`,
+                }}
+              />
+            )}
           </div>
         );
       })()}

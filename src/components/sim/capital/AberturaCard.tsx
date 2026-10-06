@@ -109,7 +109,7 @@ export function AberturaCard({
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
             <span>
               <strong className="text-foreground">
-                Lucros Acumulados é o único "plug" aceitável.
+                Lucros acumulados é o único campo que absorve diferenças de abertura.
               </strong>{" "}
               Se o balanço de abertura não fechar (Ativo ≠ Passivo + PL), esta linha absorve o
               resíduo histórico — não é erro de cálculo, é a contrapartida de exercícios anteriores
@@ -121,7 +121,7 @@ export function AberturaCard({
             <SimpleField
               icon={<Wallet className="h-4 w-4" />}
               label="Lucros / prejuízos acumulados (abertura)"
-              hint="Resultados retidos de TODOS os exercícios anteriores (não distribuídos). Pode ser negativo. É o ÚNICO plug aceitável — representa o histórico contábil não reconstruído."
+              hint="Resultados retidos de TODOS os exercícios anteriores (não distribuídos). Pode ser negativo. É o único campo que absorve diferenças — representa o histórico contábil não reconstruído."
               value={n(ab.lucrosAcumulados)}
               onChange={(v) => set({ lucrosAcumulados: v })}
               emphasis
@@ -172,7 +172,7 @@ export function AberturaCard({
         step={isReal ? 4 : 3}
         color="var(--success)"
         title="Saldos derivados automaticamente"
-        subtitle="Cada rubrica mostra a sua fonte única (SSOT)"
+        subtitle="Cada linha mostra de onde vem o valor"
       >
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           <DerivedRow
@@ -311,16 +311,16 @@ export function AberturaCard({
               onClick={ajustarLucros}
               title={
                 "Lucros/Prejuízos Acumulados é a conta de fechamento histórico do PL. " +
-                "O plug representa os resultados de exercícios anteriores não distribuídos " +
+                "O ajuste representa os resultados de exercícios anteriores não distribuídos " +
                 "(pode ser positivo — lucros retidos — ou negativo — prejuízos acumulados). " +
                 "Este ajuste absorve a diferença sem alterar rubricas operacionais."
               }
               className="self-start rounded bg-destructive px-2 py-1 text-[10px] font-bold uppercase text-destructive-foreground hover:bg-destructive/90 transition-colors"
             >
-              Ajustar Lucros Acumulados (plug: {fmtBRL(derived.totals.diferenca)})
+              Ajustar diferença em lucros acumulados ({fmtBRL(derived.totals.diferenca)})
             </button>
             <span className="text-[10px] opacity-80">
-              O ajuste vai para Lucros/Prejuízos Acumulados — único plug contábil aceitável.
+              A diferença vai para Lucros/Prejuízos Acumulados, sem mexer nas demais contas.
             </span>
           </div>
         )}

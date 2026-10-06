@@ -560,7 +560,7 @@ function CostTable({
                     ))
                   )}
 
-                  <td className="num px-3 py-2 text-right text-neg">{fmtBRL(anual)}</td>
+                  <td className="num px-3 py-2 text-right text-foreground">{fmtBRL(anual)}</td>
                   <td className="num px-2 py-2 text-right text-xs text-muted-foreground">
                     {fmtPct(pct)}
                   </td>

@@ -87,7 +87,7 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         inputs: [
           { label: "Estoque declarado (Capital)", origem: "Capital", valor: n(cap.estoques) },
           {
-            label: "Estoque abertura (SSOT)",
+            label: "Estoque abertura",
             origem: ssot.estoques.origem,
             valor: ssot.estoques.value,
           },
@@ -201,7 +201,7 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
           { label: "CPV anual", origem: "Despesas (custo_vendas + direto_venda)", valor: cpv },
           { label: "PMP (dias)", origem: "Receitas", valor: pmp },
           {
-            label: "Fornecedores abertura (SSOT)",
+            label: "Fornecedores abertura",
             origem: ssot.fornecedores.origem,
             valor: ssot.fornecedores.value,
           },
@@ -215,7 +215,7 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         rubrica: "Empréstimos CP",
         inputs: [
           {
-            label: "Empréstimos CP (SSOT)",
+            label: "Empréstimos CP",
             origem: ssot.emprestimosCP.origem,
             valor: ssot.emprestimosCP.value,
           },
@@ -229,7 +229,7 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         inputs: [
           { label: "Impostos anuais (DRE)", origem: "DRE", valor: impostos },
           {
-            label: "Impostos abertura (SSOT)",
+            label: "Impostos abertura",
             origem: ssot.impostosPagar.origem,
             valor: ssot.impostosPagar.value,
           },
@@ -243,7 +243,7 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         inputs: [
           { label: "Folha anual", origem: "Despesas (fixo + variável)", valor: folha },
           {
-            label: "Salários abertura (SSOT)",
+            label: "Salários abertura",
             origem: ssot.salariosEncargos.origem,
             valor: ssot.salariosEncargos.value,
           },
@@ -257,7 +257,7 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         rubrica: "Empréstimos LP",
         inputs: [
           {
-            label: "Empréstimos LP (SSOT)",
+            label: "Empréstimos LP",
             origem: ssot.emprestimosLP.origem,
             valor: ssot.emprestimosLP.value,
           },
@@ -290,7 +290,7 @@ export function AuditoriaPanel({ onClose }: { onClose: () => void }) {
         rubrica: "Lucros acumulados (abertura)",
         inputs: [
           {
-            label: "Lucros acumulados (SSOT)",
+            label: "Lucros acumulados",
             origem: ssot.lucrosAcumulados.origem,
             valor: ssot.lucrosAcumulados.value,
           },

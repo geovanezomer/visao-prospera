@@ -106,8 +106,8 @@ function MonthlyCard({
   const [open, setOpen] = useState(false);
   const anual = sum(row.brlValues);
   const pct = receitaAnual > 0 ? anual / receitaAnual : 0;
-  const toneClass =
-    row.tone === "pos" ? "text-pos" : anual > 0 && row.tone === "neg" ? "text-neg" : "";
+  // Despesa não é "ruim" por ser despesa: vermelho fica para valores fora da faixa.
+  const toneClass = row.tone === "pos" ? "text-pos" : "";
   const unit = row.unit ?? "brl";
   const baseFixo = row.values.find((v) => v !== 0) ?? row.values[0] ?? 0;
 

@@ -90,7 +90,7 @@ export function AppSidebar({
                   {branding.systemName}
                 </span>
                 <span className="mt-1 truncate text-[10px] uppercase tracking-widest text-muted-foreground">
-                  Auditoria & Gestão
+                  Diagnóstico & Simulação
                 </span>
               </>
             ) : (
