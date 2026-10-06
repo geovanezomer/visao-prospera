@@ -8,6 +8,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { clientIp, rlConsume } from "@/lib/rateLimit.server";
+import { trialStartMetadata } from "@/lib/trialFlags";
 
 const Body = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -108,11 +109,8 @@ export const Route = createFileRoute("/api/public/trial/request")({
           email,
           password,
           email_confirm: true,
-          user_metadata: {
-            is_trial: true,
-            trial_expires_at: expiresAt,
-            display_name: email.split("@")[0],
-          },
+          app_metadata: trialStartMetadata(expiresAt),
+          user_metadata: { display_name: email.split("@")[0] },
         });
         if (createErr || !created?.user) {
           // Pode acontecer race: e-mail já existe no auth.users (mas não em trial_requests).

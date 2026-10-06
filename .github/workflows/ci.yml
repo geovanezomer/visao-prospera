@@ -23,7 +23,7 @@ jobs:
       - name: Prettier check
         run: bun run format:check
 
-      - name: "ESLint (baseline: 0 errors, <=36 warnings)"
+      - name: "ESLint (baseline: 0 errors, <=35 warnings)"
         run: bun run lint:ci
 
       - name: TypeScript typecheck

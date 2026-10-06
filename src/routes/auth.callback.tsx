@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Activity, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { readTrialFlags } from "@/lib/trialFlags";
 
 export const Route = createFileRoute("/auth/callback")({
   head: () => ({
@@ -22,7 +23,7 @@ function AuthCallbackPage() {
       if (doneRef.current) return;
       doneRef.current = true;
       // Marca trial como ativado (consumed_at) — não bloqueia redirect.
-      const isTrial = session.user.user_metadata?.is_trial === true;
+      const { isTrial } = readTrialFlags(session.user);
       if (isTrial) {
         try {
           await fetch("/api/public/trial/activate", {

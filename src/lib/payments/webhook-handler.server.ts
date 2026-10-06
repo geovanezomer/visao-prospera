@@ -9,6 +9,7 @@
 
 import type { NormalizedEvent, ProviderName, PlanId } from "./types";
 import type { AdminClient } from "@/lib/admin/_types";
+import { readTrialFlags, trialEndMetadata } from "@/lib/trialFlags";
 
 type DbRow = {
   user_id: string;
@@ -247,16 +248,12 @@ async function runEventLogic(
       // ── Conversão de trial → pago: limpa flags de trial e registra timestamp.
       try {
         const { data: u } = await admin.auth.admin.getUserById(userId);
-        const meta = (u?.user?.user_metadata ?? {}) as Record<string, unknown>;
-        if (meta.is_trial) {
+        if (readTrialFlags(u?.user).isTrial) {
           await admin.auth.admin.updateUserById(userId, {
-            user_metadata: {
-              ...meta,
-              is_trial: false,
-              trial_expires_at: null,
+            app_metadata: trialEndMetadata({
               trial_converted_at: new Date().toISOString(),
               trial_converted_plan: event.plan,
-            },
+            }),
           });
         }
       } catch (e) {

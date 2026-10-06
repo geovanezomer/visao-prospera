@@ -10,6 +10,7 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { revokeOtherSessions } from "@/lib/session.functions";
+import { readTrialFlags } from "@/lib/trialFlags";
 
 export type AuthUser = {
   id: string;
@@ -56,8 +57,7 @@ function toAuthUser(u: User | null | undefined): AuthUser | null {
     displayName,
     emailConfirmed: Boolean(u.email_confirmed_at),
     aiEnabled: meta.ai_enabled !== false,
-    isTrial: meta.is_trial === true,
-    trialExpiresAt: typeof meta.trial_expires_at === "string" ? meta.trial_expires_at : null,
+    ...readTrialFlags(u),
   };
 }
 
@@ -270,6 +270,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Provider + hook no mesmo módulo é o padrão de contexto; fast refresh recarrega o arquivo inteiro.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const v = useContext(Ctx);
   if (!v) throw new Error("useAuth must be used within AuthProvider");

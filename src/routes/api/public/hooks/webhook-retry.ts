@@ -1,19 +1,16 @@
 // ============================================================================
 // Endpoint público chamado pelo pg_cron para reprocessar webhooks pendentes.
-// Autenticação: header `apikey` igual ao SUPABASE_PUBLISHABLE_KEY/ANON_KEY.
+// Autenticação: `Authorization: Bearer <CRON_SECRET>` (ver lib/cronAuth.server.ts).
 // ============================================================================
 import { createFileRoute } from "@tanstack/react-router";
+import { rejectUnlessCron } from "@/lib/cronAuth.server";
 
 export const Route = createFileRoute("/api/public/hooks/webhook-retry")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apikey = request.headers.get("apikey") ?? "";
-        const expected =
-          process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY ?? "";
-        if (!expected || apikey !== expected) {
-          return new Response("Unauthorized", { status: 401 });
-        }
+        const denied = rejectUnlessCron(request);
+        if (denied) return denied;
         let limit = 25;
         try {
           const body = await request.json().catch(() => ({}));

@@ -178,14 +178,14 @@ function makeClient(_token?: string) {
           : { data: { user: null }, error: { message: "no" } };
       },
       admin: {
-        async createUser({ email, user_metadata }: any) {
+        async createUser({ email, user_metadata, app_metadata }: any) {
           if ([...db.users.values()].some((u) => u.email === email)) {
             return { data: null, error: { message: "User already registered" } };
           }
           const id = `usr_${db.users.size + 1}`;
           const token = `tok_${id}`;
-          db.users.set(token, { id, email, user_metadata });
-          return { data: { user: { id, email, user_metadata } }, error: null };
+          db.users.set(token, { id, email, user_metadata, app_metadata });
+          return { data: { user: { id, email, user_metadata, app_metadata } }, error: null };
         },
         async deleteUser(id: string) {
           for (const [k, v] of db.users) if (v.id === id) db.users.delete(k);
@@ -324,7 +324,7 @@ describe("POST /api/public/trial/activate", () => {
     db.users.set(token, {
       id: "usr_1",
       email: "a@b.com",
-      user_metadata: { is_trial: true },
+      app_metadata: { is_trial: true },
     });
     db.trial_requests.push({ email: "a@b.com", user_id: "usr_1", consumed_at: null });
 
@@ -357,6 +357,39 @@ describe("POST /api/public/trial/activate", () => {
     });
     expect(res.status).toBe(200);
     expect((await res.json()).activated).toBe(false);
+  });
+});
+
+describe("flags de trial vêm só de app_metadata", () => {
+  test("is_trial forjado em user_metadata não ativa o trial", async () => {
+    // user_metadata é editável pelo próprio usuário (auth.updateUser).
+    const token = "tok_usr_7";
+    db.users.set(token, {
+      id: "usr_7",
+      email: "forjado@b.com",
+      user_metadata: { is_trial: true, trial_expires_at: "2099-01-01T00:00:00Z" },
+    });
+    db.trial_requests.push({ email: "forjado@b.com", user_id: "usr_7", consumed_at: null });
+    const handler = await POST_ACTIVATE();
+    const res = await handler({
+      request: new Request("https://x/", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    });
+    expect((await res.json()).activated).toBe(false);
+    expect(db.trial_requests[0].consumed_at).toBeNull();
+  });
+
+  test("request grava o trial em app_metadata, não em user_metadata", async () => {
+    const handler = await POST_REQUEST();
+    await handler({
+      request: jsonReq("https://x/api/public/trial/request", { email: "meta@ex.com" }),
+    });
+    const u = [...db.users.values()].find((x) => x.email === "meta@ex.com");
+    expect(u?.app_metadata?.is_trial).toBe(true);
+    expect(typeof u?.app_metadata?.trial_expires_at).toBe("string");
+    expect(u?.user_metadata?.is_trial).toBeUndefined();
   });
 });
 

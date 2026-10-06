@@ -12,9 +12,12 @@
 //                                conhecido, o pior caso vence). Quando
 //                                `payment_method` estiver preenchido, é
 //                                usado para encurtar a janela do Pix.
+//
+// Acesso: `Authorization: Bearer <CRON_SECRET>` (ver lib/cronAuth.server.ts).
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { rejectUnlessCron } from "@/lib/cronAuth.server";
 
 type Window = { minutes: number; label: string };
 
@@ -40,17 +43,8 @@ export const Route = createFileRoute("/api/public/hooks/reconcile-checkout-inten
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = request.headers.get("apikey") ?? request.headers.get("x-api-key");
-        const expected = process.env.SUPABASE_PUBLISHABLE_KEY;
-        // FIX P0: lógica anterior `expected && apiKey && apiKey !== expected`
-        // permitia bypass quando o header não vinha. Agora: se há `expected`
-        // configurado, o header é obrigatório e comparado em constant-time.
-        if (expected) {
-          const { timingSafeEqual } = await import("@/lib/timingSafe");
-          if (!apiKey || !timingSafeEqual(apiKey, expected)) {
-            return new Response("forbidden", { status: 403 });
-          }
-        }
+        const denied = rejectUnlessCron(request);
+        if (denied) return denied;
 
         const sb = createClient<Database>(
           process.env.SUPABASE_URL!,

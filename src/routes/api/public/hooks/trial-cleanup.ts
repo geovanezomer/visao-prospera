@@ -3,21 +3,19 @@
 // Cron horário: remove usuários de trial expirados que NÃO converteram em
 // assinatura paga. Os registros de trial_requests são mantidos para preservar
 // a regra comercial: um único teste por e-mail, para sempre.
-// Acesso: header `apikey` deve corresponder ao SUPABASE_PUBLISHABLE_KEY (padrão
-// de cron pg_cron + pg_net descrito no knowledge).
+// Acesso: `Authorization: Bearer <CRON_SECRET>` (ver lib/cronAuth.server.ts).
 // ============================================================================
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import { readTrialFlags, trialEndMetadata } from "@/lib/trialFlags";
+import { rejectUnlessCron } from "@/lib/cronAuth.server";
 
 export const Route = createFileRoute("/api/public/hooks/trial-cleanup")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = request.headers.get("apikey") ?? "";
-        const expected = process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
-        if (!expected || apiKey !== expected) {
-          return new Response("Unauthorized", { status: 401 });
-        }
+        const denied = rejectUnlessCron(request);
+        if (denied) return denied;
 
         const admin = createClient(
           process.env.SUPABASE_URL!,
@@ -45,11 +43,9 @@ export const Route = createFileRoute("/api/public/hooks/trial-cleanup")({
           const users = list?.users ?? [];
           scanned += users.length;
           for (const u of users) {
-            const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
-            if (!meta.is_trial) continue;
-            const exp = meta.trial_expires_at
-              ? new Date(String(meta.trial_expires_at)).getTime()
-              : 0;
+            const trial = readTrialFlags(u);
+            if (!trial.isTrial) continue;
+            const exp = trial.trialExpiresAt ? new Date(trial.trialExpiresAt).getTime() : 0;
             // Tolerância de 5 minutos para evitar race com banner client-side.
             if (!exp || exp > now - 5 * 60_000) continue;
 
@@ -64,7 +60,7 @@ export const Route = createFileRoute("/api/public/hooks/trial-cleanup")({
             if (sub) {
               skippedConverted++;
               await admin.auth.admin.updateUserById(u.id, {
-                user_metadata: { ...meta, is_trial: false, trial_expires_at: null },
+                app_metadata: trialEndMetadata(),
               });
               continue;
             }

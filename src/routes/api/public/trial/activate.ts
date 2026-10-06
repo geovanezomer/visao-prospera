@@ -5,6 +5,7 @@
 // ============================================================================
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import { readTrialFlags } from "@/lib/trialFlags";
 
 export const Route = createFileRoute("/api/public/trial/activate")({
   server: {
@@ -27,8 +28,8 @@ export const Route = createFileRoute("/api/public/trial/activate")({
           return new Response("Unauthorized", { status: 401 });
         }
 
-        const meta = (authData.user.user_metadata ?? {}) as Record<string, unknown>;
-        if (meta.is_trial !== true) return Response.json({ ok: true, activated: false });
+        if (!readTrialFlags(authData.user).isTrial)
+          return Response.json({ ok: true, activated: false });
 
         const admin = createClient(url, service, {
           auth: { storage: undefined, persistSession: false, autoRefreshToken: false },

@@ -1,7 +1,7 @@
 // ============================================================================
 // requireActiveSubscription — enforcement server-side de assinatura ativa.
 //
-// Consulta subscriptions + auth.users.user_metadata via supabaseAdmin e lança
+// Consulta subscriptions + auth.users.app_metadata via supabaseAdmin e lança
 // Error("402: ...") quando não há acesso válido. Cache em memória por userId
 // (TTL 60s) para não bater no banco em cada chamada.
 //
@@ -10,6 +10,8 @@
 //
 // NÃO usar em rotas públicas de checkout/webhook/trial.
 // ============================================================================
+
+import { readTrialFlags } from "@/lib/trialFlags";
 
 type CacheEntry = { at: number; ok: boolean };
 const CACHE = new Map<string, CacheEntry>();
@@ -67,9 +69,7 @@ export async function requireActiveSubscription(userId: string): Promise<void> {
     supabaseAdmin.auth.admin.getUserById(userId),
   ]);
 
-  const meta = (userRes.data.user?.user_metadata ?? {}) as Record<string, unknown>;
-  const isTrial = meta.is_trial === true;
-  const trialExpiresAt = typeof meta.trial_expires_at === "string" ? meta.trial_expires_at : null;
+  const { isTrial, trialExpiresAt } = readTrialFlags(userRes.data.user);
 
   const ok = isAccessGranted({
     subscription: subRes.data
