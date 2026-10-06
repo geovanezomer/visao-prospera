@@ -1,125 +1,96 @@
 # FinancePRO — Deploy com Docker (VPS)
 
-Aplicação **TanStack Start** (React 19 + Vite 7 + Nitro) usando **Bun** como
-gerenciador de pacotes. Esta configuração permite buildar e rodar em qualquer
-VPS com Docker, sem precisar de Node ou Bun no host.
+Aplicação **TanStack Start** (React 19 + Vite 7 + Nitro) com **PostgreSQL 17**
+próprio e login **Better Auth** rodando dentro do app. Sem serviços de
+terceiros obrigatórios e sem custo de backend: tudo sobe com um
+`docker compose up`.
 
 ## Arquivos
 
-| Arquivo              | Função                                                |
-| -------------------- | ----------------------------------------------------- |
-| `Dockerfile`         | Build de produção multi-stage (gera servidor Node 22) |
-| `Dockerfile.dev`     | Container de desenvolvimento com hot reload           |
-| `docker-compose.yml` | Serviços `app` (prod) e `app-dev` (dev)               |
-| `.dockerignore`      | Reduz o contexto enviado ao Docker daemon             |
+| Arquivo              | Função                                                   |
+| -------------------- | -------------------------------------------------------- |
+| `Dockerfile`         | Build de produção multi-stage (servidor Node 22)         |
+| `Dockerfile.dev`     | Container de desenvolvimento com hot reload              |
+| `docker-compose.yml` | Serviços `db` (Postgres 17), `app` (prod), `app-dev`     |
+| `db/migrations/`     | Esquema do banco (Drizzle), aplicado pelo app na subida  |
 
-## Pré-requisitos
-
-- Docker 24+ e Docker Compose v2
-- Arquivo **`.env`** na raiz (copie de `.env.example` e preencha com
-  credenciais do Supabase, Stripe/Asaas, Resend, etc.).
-  **Sem ele o bundle sai quebrado** — as `VITE_*` são injetadas em
-  build-time pelo Vite.
+## Primeira subida
 
 ```bash
-docker --version
-docker compose version
-test -f .env && echo "OK .env presente" || cp .env.example .env
+cp .env.example .env
+# edite: POSTGRES_PASSWORD, BETTER_AUTH_SECRET, APP_URL e, se tiver, SMTP_*
+openssl rand -hex 24   # sugestão para POSTGRES_PASSWORD
+openssl rand -hex 32   # sugestão para BETTER_AUTH_SECRET
+docker compose up -d --build
 ```
 
-Edite `.env` antes de buildar.
+Acesse **http://SEU_IP:3000** e entre com **usuário `admin` / senha `admin`**.
+O app exige a troca da senha nesse primeiro acesso.
+
+Na subida, o app:
+
+1. aplica as migrations pendentes do banco (falha alta: se uma migration
+   quebrar, o app responde erro em vez de subir com esquema inconsistente);
+2. cria o administrador inicial, se ainda não existir nenhum.
 
 ## Variáveis de ambiente
 
-Dois grupos lidos a partir do mesmo `.env`:
+| Prefixo               | Quando é lida         | Exemplos                                              |
+| --------------------- | --------------------- | ----------------------------------------------------- |
+| `VITE_*`              | **Build** (bundle)    | `VITE_LANDING_PAGE`, `VITE_PAYMENTS_ENABLED`          |
+| Sem prefixo (runtime) | **Runtime** (servidor)| `DATABASE_URL`, `BETTER_AUTH_SECRET`, `SMTP_*`, `STRIPE_*` |
 
-| Prefixo               | Quando é lida                             | Exemplos                                                      |
-| --------------------- | ----------------------------------------- | ------------------------------------------------------------- |
-| `VITE_*`              | **Build-time** (bundlada no JS do client) | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`          |
-| Sem prefixo (runtime) | **Runtime SSR** (`process.env`)           | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_*`, etc. |
+O `.env` é usado só no estágio de build (para as `VITE_*`). A imagem final
+não contém o `.env`: as variáveis de runtime entram por `env_file` no compose
+ou por `docker run --env-file .env`.
 
-O Dockerfile usa o `.env` **só no estágio de build** (para as `VITE_*`).
-A imagem final não contém o `.env`: as variáveis de runtime entram por
-`env_file: .env` no `docker-compose.yml` ou por `docker run --env-file .env`.
-Assim nenhum segredo fica gravado nas camadas da imagem.
+> Mudou uma `VITE_*`? Rebuilde (`--build`). Mudou só runtime? `docker compose restart app`.
 
-> O `.env` não é versionado (está no `.gitignore`). Mantenha a cópia do
-> VPS fora do git e use `.env.example` como modelo.
+## Banco de dados
 
-> Mudou uma `VITE_*`? Rebuilde a imagem (`--build`). Mudou só uma var de
-> runtime? Basta reiniciar o container.
+- Serviço `db` (Postgres 17) com volume `pgdata`, sem porta exposta: só o app
+  o acessa, pela rede interna do compose.
+- **Usar um Postgres existente** (por exemplo, o mesmo servidor do Odoo):
+  crie um banco e um usuário **separados** para o FinancePRO, defina
+  `DATABASE_URL` no `.env` e remova o serviço `db` do compose. Nunca use o
+  banco do Odoo.
+- Backup: `docker compose exec db pg_dump -U financepro financepro > backup.sql`.
+- Migrations manuais (opcional): `DATABASE_URL=... bun run db:migrate`.
+- Alterou `src/db/schema.ts`? Gere a migration: `bun run db:generate`.
 
----
+## E-mail
+
+Reset de senha e links de acesso saem por **SMTP** (`SMTP_HOST` etc.) — pode
+ser o mesmo servidor de e-mail configurado no Odoo. Resend é opcional. Sem
+nenhum dos dois, o e-mail não é enviado e o aviso aparece no log.
 
 ## Produção
 
 ```bash
-docker compose up app -d --build
-```
-
-Acesse: **http://SEU_IP:3000**
-
-Logs:
-
-```bash
+docker compose up -d --build
 docker compose logs -f app
+docker compose ps        # app e db devem ficar "healthy"
 ```
 
-Parar:
-
-```bash
-docker compose down
-```
-
-### O que o build faz
-
-1. **Stage `builder`** (`oven/bun:1-alpine`) — `bun install --frozen-lockfile`,
-   copia `.env` para que o Vite leia as `VITE_*`, define
-   `NITRO_PRESET=node-server` (o template default é Cloudflare Workers, aqui
-   forçamos Node) e roda `bun run build`. Saída: `.output/server/index.mjs`.
-2. **Stage `runner`** (`node:22-alpine`) — copia só `.output/` (sem `.env`).
-   Sem `node_modules` extra. Imagem final ~150 MB.
-
----
+O healthcheck consulta `GET /api/health`, que confere o acesso ao banco.
 
 ## Desenvolvimento (hot reload)
 
 ```bash
-docker compose --profile dev up app-dev --build
+docker compose --profile dev up app-dev db --build
 ```
 
-Acesse: **http://localhost:5173**
-
-Código montado via volume — qualquer alteração recarrega.
-
-### Hot reload lento no Windows/macOS
-
-```bash
-docker compose --profile dev run --rm \
-  -e CHOKIDAR_USEPOLLING=true -e WATCHPACK_POLLING=true \
-  app-dev
-```
-
----
-
-## Build manual (sem compose)
-
-```bash
-docker build -t financepro:latest .
-docker run -d --name financepro -p 3000:3000 --env-file .env financepro:latest
-```
-
----
+Acesse **http://localhost:5173**.
 
 ## Deploy em VPS — checklist
 
 1. Clonar o repositório no VPS.
-2. Criar `.env` com as credenciais reais (`cp .env.example .env && nano .env`).
-3. `docker compose up app -d --build`.
-4. Confirmar saúde: `docker compose ps` (status `healthy`) e
-   `curl -I http://127.0.0.1:3000`.
-5. Subir Nginx/Caddy na frente do container fazendo proxy para `:3000`
-   com TLS (Let's Encrypt).
+2. `cp .env.example .env` e preencher (senha do banco, `BETTER_AUTH_SECRET`,
+   `APP_URL` com a URL pública final, SMTP).
+3. `docker compose up -d --build`.
+4. Entrar com `admin` / `admin` e trocar a senha.
+5. Nginx/Caddy na frente fazendo proxy para `:3000` com TLS, e
+   `TRUST_PROXY_HEADER="x-real-ip"` no `.env`.
 
 Exemplo mínimo de Nginx:
 
@@ -142,33 +113,15 @@ server {
 }
 ```
 
-Lembre-se de ajustar `APP_URL` no `.env` para a URL pública final
-(usado nos `return_url`/`success_url` do checkout).
-
----
-
-## Backend
-
-Este projeto usa **Supabase** (hospedado) como backend — banco, auth,
-storage e edge runtime ficam fora do VPS. O container Docker roda apenas
-o servidor SSR + bundle do client. Cenários e configurações de usuário
-são persistidos no Supabase quando autenticado, ou em `localStorage` para
-uso anônimo.
-
----
-
 ## Troubleshooting
 
-**Build falha no Nitro com erro de Cloudflare/Wrangler**
-Confirme que `NITRO_PRESET=node-server` está no Dockerfile (já está).
+**`DATABASE_URL não configurada`** — o compose monta a URL a partir de
+`POSTGRES_*`; confira se `POSTGRES_PASSWORD` está no `.env`.
 
-**Bundle gerado mas o app quebra no browser com `Missing Supabase environment variable`**
-O `.env` não estava presente no build. Confirme `test -f .env` antes do
-`docker compose build` — o `.dockerignore` permite que ele seja enviado ao daemon.
+**`BETTER_AUTH_SECRET ausente ou curto`** — defina um valor com 32+ caracteres.
 
-**Porta 3000 ocupada no VPS**
-Mude o mapeamento em `docker-compose.yml` para `"8080:3000"`.
+**Login não mantém a sessão atrás do proxy** — confira `APP_URL` (precisa ser
+a URL pública com `https://`) e o `proxy_set_header Host`.
 
-**Imagem muito grande**
-Já usa `node:22-alpine` (~50 MB base) + `.output/` (~80–100 MB). Para enxugar,
-troque a base por `gcr.io/distroless/nodejs20`.
+**Build falha no Nitro com erro de Cloudflare/Wrangler** — confirme
+`NITRO_PRESET=node-server` no Dockerfile (já está).

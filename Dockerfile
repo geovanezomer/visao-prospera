@@ -13,10 +13,9 @@ WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
 RUN bun install --frozen-lockfile
 
-# 2) Copia o .env ANTES do código — Vite lê em build-time e bundla
-#    as variáveis VITE_* no client. Sem isso o bundle sai sem
-#    SUPABASE_URL/KEY e a aplicação quebra no browser.
-#    O .env precisa existir na raiz do projeto (copie de .env.example).
+# 2) Copia o .env ANTES do código — Vite lê em build-time as variáveis
+#    VITE_* (flags públicas como VITE_LANDING_PAGE). Segredos não vão para
+#    o bundle: são lidos em runtime.
 COPY .env ./.env
 
 # 3) Restante do código
@@ -38,27 +37,26 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
 
-# psql é necessário para o bootstrap aplicar as migrations no boot.
 # wget é usado pelo HEALTHCHECK.
-RUN apk add --no-cache postgresql-client wget curl
+RUN apk add --no-cache wget
 
 # Copia apenas o output do Nitro (auto-contido)
 COPY --from=builder /app/.output ./.output
 
 # O .env NÃO é copiado para a imagem final: segredos gravados numa
 # camada ficam legíveis para quem tiver a imagem. As variáveis de
-# runtime (SUPABASE_SERVICE_ROLE_KEY, STRIPE_*, RESEND_*, etc.) chegam
+# runtime (DATABASE_URL, BETTER_AUTH_SECRET, SMTP_*, STRIPE_*, etc.) chegam
 # por process.env — via `env_file` no docker-compose ou
 # `docker run --env-file .env`.
 
-# Migrations + scripts de bootstrap (rodam no entrypoint)
-COPY --from=builder /app/supabase/migrations ./supabase/migrations
-COPY --from=builder /app/scripts ./scripts
-RUN chmod +x /app/scripts/db-bootstrap.sh /app/scripts/docker-entrypoint.sh /app/scripts/admin-bootstrap.sh
+# Migrations do banco: aplicadas pelo próprio app na primeira requisição
+# (src/db/bootstrap.server.ts), junto com o administrador inicial.
+COPY --from=builder /app/db/migrations ./db/migrations
+ENV MIGRATIONS_DIR=/app/db/migrations
 
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3000/ >/dev/null 2>&1 || exit 1
+  CMD wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1 || exit 1
 
-ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
+CMD ["node", ".output/server/index.mjs"]

@@ -1,14 +1,36 @@
 # ============================================================
 # FinancePRO — Docker Compose (VPS)
 #
-# Produção:        docker compose up app -d --build
-# Desenvolvimento: docker compose --profile dev up app-dev --build
+# Produção:        docker compose up -d --build
+# Desenvolvimento: docker compose --profile dev up app-dev db --build
 #
-# Pré-requisito: arquivo .env presente na raiz (copie de .env.example
-# e preencha as credenciais Supabase, Stripe/Asaas, Resend, etc.).
+# Pré-requisito: arquivo .env na raiz (copie de .env.example).
+# Banco: PostgreSQL 17 próprio (serviço `db`). Para usar um Postgres já
+# existente — por exemplo o mesmo servidor do Odoo, num banco e usuário
+# SEPARADOS — remova o serviço `db` e aponte DATABASE_URL para ele.
+#
+# Na primeira subida o app aplica as migrations e cria o administrador
+# inicial (usuário: admin / senha: admin), com troca de senha obrigatória.
 # ============================================================
 
 services:
+  db:
+    image: postgres:17-alpine
+    container_name: financepro-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-financepro}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:-financepro}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # Sem porta publicada: o banco só é acessível pela rede interna do compose.
+
   # ---------- Produção ----------
   app:
     build:
@@ -17,6 +39,9 @@ services:
     image: financepro:latest
     container_name: financepro
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "3000:3000"
     env_file:
@@ -25,6 +50,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOST=0.0.0.0
+      - DATABASE_URL=${DATABASE_URL:-postgres://${POSTGRES_USER:-financepro}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-financepro}}
 
   # ---------- Desenvolvimento (hot reload) ----------
   app-dev:
@@ -34,6 +60,9 @@ services:
       dockerfile: Dockerfile.dev
     image: financepro:dev
     container_name: financepro-dev
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "5173:5173"
     env_file:
@@ -42,6 +71,7 @@ services:
       - HOST=0.0.0.0
       - PORT=5173
       - NODE_ENV=development
+      - DATABASE_URL=${DATABASE_URL:-postgres://${POSTGRES_USER:-financepro}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-financepro}}
     volumes:
       # Código-fonte montado para hot reload
       - .:/app
@@ -49,3 +79,6 @@ services:
       - /app/node_modules
       - /app/.output
     command: ["bun", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+
+volumes:
+  pgdata:
