@@ -11,12 +11,9 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   ComposedChart,
   Legend,
   Line,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -25,13 +22,12 @@ import {
 import { useFinanceState } from "@/engines/finance/AppStateContext";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
 import { DSCR_THRESHOLDS } from "@/engines/finance/indicators";
-import { fmtBRL, fmtPct, indicadorValido, sum } from "@/engines/finance/format";
-import { StatCard, HintTip } from "@/components/sim/shared/primitives";
+import { fmtBRL, fmtPct, sum } from "@/engines/finance/format";
+import { StatCard } from "@/components/sim/shared/primitives";
 import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 
 import { DashboardExtras, Top5Despesas } from "./DashboardExtras";
-import { WaccRoicMeter } from "@/components/sim/capital/WaccRoicMeter";
-import { KanitzCard } from "@/components/sim/shared/KanitzCard";
+import { ProximosPassos } from "./ProximosPassos";
 import { leverageDisplay } from "@/components/sim/shared/leverageLabel";
 
 const COLORS = [
@@ -54,91 +50,6 @@ const TOOLTIP_STYLE = {
 // Recharts aplica cor inline preta nos labels/itens do tooltip; sobrescrevemos para seguir o tema.
 const TOOLTIP_LABEL_STYLE = { color: "var(--popover-foreground)" } as const;
 const TOOLTIP_ITEM_STYLE = { color: "var(--popover-foreground)" } as const;
-
-// Gauge semi-circular simples baseado em PieChart (sem libs extras).
-function Gauge({
-  label,
-  value,
-  max,
-  suffix = "%",
-  good = "high",
-  hint,
-}: {
-  label: string;
-  /** Aceita `null` para exibir "N/A" quando o indicador não é aplicável (ex.: ROE com PL ≤ 0). */
-  value: number | null;
-  max: number;
-  suffix?: string;
-  good?: "high" | "low";
-  hint?: { description: string; formula?: string; calc?: string };
-}) {
-  const isNA = value === null || !Number.isFinite(value);
-  const numeric = isNA ? 0 : (value as number);
-  const clamped = Math.max(0, Math.min(numeric, max));
-  const ratio = max > 0 ? clamped / max : 0;
-  const tone = isNA
-    ? "var(--muted)"
-    : good === "high"
-      ? ratio > 0.66
-        ? "var(--success)"
-        : ratio > 0.33
-          ? "#F5B85B"
-          : "var(--destructive)"
-      : ratio < 0.33
-        ? "var(--success)"
-        : ratio < 0.66
-          ? "#F5B85B"
-          : "var(--destructive)";
-  const data = [
-    { name: "v", value: clamped, fill: tone },
-    { name: "r", value: Math.max(0, max - clamped), fill: "var(--muted)" },
-  ];
-  return (
-    <div className="rounded-lg border border-border/40 bg-card p-4">
-      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-        {label}
-        {hint && <HintTip hint={hint} />}
-      </div>
-      <div className="relative h-32">
-        {/* Gauge decorativo: o valor já aparece em texto logo abaixo. */}
-        <div className="h-full" aria-hidden="true">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey="value"
-                rootTabIndex={-1}
-                startAngle={180}
-                endAngle={0}
-                innerRadius="65%"
-                outerRadius="95%"
-                stroke="none"
-              >
-                {data.map((d, i) => (
-                  <Cell key={i} fill={d.fill} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="absolute inset-0 flex items-end justify-center pb-2">
-          <span className="mono text-2xl font-bold text-foreground">
-            {isNA ? (
-              <span title="Indicador não aplicável — verifique o denominador (ex.: PL ≤ 0).">
-                N/A
-              </span>
-            ) : (
-              <>
-                {numeric.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}
-                <span className="text-sm text-muted-foreground">{suffix}</span>
-              </>
-            )}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -236,6 +147,9 @@ export function DashboardTab() {
 
   return (
     <div className="space-y-6">
+      {/* Situação em uma frase + até 3 ações: a primeira coisa que o dono lê. */}
+      <ProximosPassos state={state} />
+
       {/* Linha 1 — Cards numéricos resumo (com tooltips, base unificada `useFinanceModel`) */}
       <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <StatCard
@@ -319,63 +233,6 @@ export function DashboardTab() {
                 : "Debt Service Coverage Ratio — capacidade do EBITDA cobrir o serviço da dívida (juros de contratos + amortização do principal). ≥1.25× é saudável; <1.0× sinaliza risco real de inadimplência.",
             formula: "EBITDA Anual ÷ (Juros de contratos + Amortizações Anuais)",
             calc: c.dscr,
-          }}
-        />
-      </div>
-
-      {/* Linha 2 — KPIs em gauges (logo após os cards principais) */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Gauge
-          label="Margem Líquida"
-          value={ind.margemLiquida}
-          max={30}
-          hint={{
-            description:
-              "O lucro que efetivamente sobra para os sócios, após tudo pago (custos, despesas, juros e impostos).",
-            formula: "Lucro Líquido ÷ Receita Líquida × 100",
-            calc: c.margemLiquida,
-          }}
-        />
-        <Gauge
-          label="ROE"
-          value={ind.roe}
-          max={30}
-          hint={{
-            description:
-              "Retorno sobre o Patrimônio Líquido. Usa PL MÉDIO quando o PL de abertura é informado em Capital; caso contrário, usa PL fim de período.",
-            formula: "Lucro Líquido ÷ PL Médio × 100",
-            calc: c.roe,
-          }}
-        />
-        <Gauge
-          label="Liquidez Corrente"
-          // Sem ativo nem passivo circulante (empresa sem dados), a razão não existe.
-          value={
-            (ind.ativoCirculante <= 1 && ind.passivoCirculante <= 1) ||
-            !indicadorValido(ind.liquidezCorrente) ||
-            ind.liquidezCorrente < 0
-              ? null
-              : ind.liquidezCorrente
-          }
-          max={3}
-          suffix="x"
-          hint={{
-            description:
-              "Capacidade de pagar dívidas de curto prazo com recursos de curto prazo. Acima de 1,0 indica folga; abaixo, aperto.",
-            formula: "Ativo Circulante ÷ Passivo Circulante",
-            calc: c.liquidezCorrente,
-          }}
-        />
-        <Gauge
-          label="Endividamento Geral"
-          value={ind.endividamentoGeral}
-          max={100}
-          good="low"
-          hint={{
-            description:
-              "Percentual do ativo financiado por dívidas (terceiros). Acima de 60% costuma indicar alto risco financeiro.",
-            formula: "Passivo Total ÷ Ativo Total × 100",
-            calc: c.endividamentoGeral,
           }}
         />
       </div>
@@ -550,12 +407,6 @@ export function DashboardTab() {
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
-
-      {/* Termômetro de Valor — WACC × ROIC */}
-      <WaccRoicMeter wacc={ind.wacc} roic={ind.roic} />
-
-      {/* Termômetro de Insolvência (Kanitz) — alerta precoce de descontinuidade */}
-      <KanitzCard />
     </div>
   );
 }

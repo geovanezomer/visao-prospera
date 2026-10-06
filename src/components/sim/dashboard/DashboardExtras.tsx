@@ -16,10 +16,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Legend,
-  Pie,
-  PieChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -28,7 +25,6 @@ import {
 } from "recharts";
 import { AppState } from "@/engines/finance/types";
 import { useFinanceModel } from "@/engines/finance/useFinanceModel";
-import { HEALTH_LABEL } from "@/engines/finance/health";
 import {
   fmtBRL,
   fmtLiquidez,
@@ -374,63 +370,6 @@ function CronogramaDividas({ state }: { state: AppState }) {
 }
 
 // ============ 4. SCORE DE SAÚDE 0-100 ============
-function ScoreSaude({ state }: { state: AppState }) {
-  // Mesma nota do Diagnóstico e do PDF (computeHealth): uma régua só.
-  const { health } = useFinanceModel(state).model;
-  const score = health.total;
-  const cor =
-    health.status === "ok"
-      ? "var(--success)"
-      : health.status === "warn"
-        ? "#F5B85B"
-        : "var(--destructive)";
-  const conceito = `${HEALTH_LABEL[health.grade]} · Nota ${health.grade}`;
-
-  const data = [
-    { name: "score", value: score, fill: cor },
-    { name: "rest", value: 100 - score, fill: "var(--muted)" },
-  ];
-
-  return (
-    <Card title="Score de Saúde Financeira">
-      <div className="relative h-44">
-        {/* Gauge decorativo: o valor já aparece em texto logo abaixo. */}
-        <div className="h-full" aria-hidden="true">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey="value"
-                rootTabIndex={-1}
-                startAngle={180}
-                endAngle={0}
-                innerRadius="65%"
-                outerRadius="95%"
-                stroke="none"
-              >
-                {data.map((d, i) => (
-                  <Cell key={i} fill={d.fill} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="absolute inset-0 flex flex-col items-center justify-end pb-2">
-          <span className="mono text-4xl font-bold" style={{ color: cor }}>
-            {score.toFixed(0)}
-          </span>
-          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: cor }}>
-            {conceito}
-          </span>
-        </div>
-      </div>
-      <div className="mt-2 text-center text-[11px] text-muted-foreground">
-        A mesma nota do Diagnóstico, onde está o detalhe de cada dimensão.
-      </div>
-    </Card>
-  );
-}
-
 // ============ 5. TOP 5 DESPESAS ============
 export function Top5Despesas({ state }: { state: AppState }) {
   const { dre } = useFinanceModel(state);
@@ -497,12 +436,8 @@ export function DashboardExtras({ state }: { state: AppState }) {
     <div className="space-y-4">
       <RunwayCard state={state} />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <SemaforoPanel state={state} />
-        </div>
-        <ScoreSaude state={state} />
-      </div>
+      {/* A nota de saúde fica no topo do Dashboard (ProximosPassos). */}
+      <SemaforoPanel state={state} />
     </div>
   );
 }

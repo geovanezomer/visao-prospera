@@ -564,3 +564,18 @@ function labelRegime(r: AppState["tax"]["regime"]) {
 
 // `cloneCosts` é re-exportado para compatibilidade caso testes externos importem.
 export { cloneCosts };
+
+const PESO_SEVERIDADE: Record<PrescriptiveCard["severity"], number> = {
+  danger: 0,
+  warn: 1,
+  info: 2,
+  ok: 3,
+};
+
+/** As até 3 ações mais urgentes para o topo do Dashboard (só problemas com ação). */
+export function acoesPrioritarias(cards: PrescriptiveCard[]): PrescriptiveCard[] {
+  return cards
+    .filter((c) => (c.severity === "danger" || c.severity === "warn") && c.actions.length > 0)
+    .sort((a, b) => PESO_SEVERIDADE[a.severity] - PESO_SEVERIDADE[b.severity])
+    .slice(0, 3);
+}

@@ -5,6 +5,8 @@ import { buildIndicatorCalcs } from "@/engines/finance/indicatorCalc";
 import { HelpTip, StatCard } from "@/components/sim/shared/primitives";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { IndicatorsGrid } from "./IndicatorsGrid";
+import { WaccRoicMeter } from "@/components/sim/capital/WaccRoicMeter";
+import { KanitzCard } from "@/components/sim/shared/KanitzCard";
 
 // Tooltip style (mantido para CashConversionSmall e outros consumidores futuros)
 
@@ -68,6 +70,10 @@ export function IndicatorsTab() {
       </div>
 
       <IndicatorsGrid state={state} />
+
+      {/* Termômetros (vieram do Dashboard, que ficou só com o essencial). */}
+      <WaccRoicMeter wacc={ind.wacc} roic={ind.roic} />
+      <KanitzCard />
     </div>
   );
 }
