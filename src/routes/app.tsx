@@ -69,10 +69,10 @@ const CalculadorasTab = lazy(() =>
 // monta (cascata que custava ~1 s em celular).
 if (typeof window !== "undefined") {
   try {
-    const t = window.sessionStorage.getItem("finnance:activeTab") || "dre";
+    const t = window.sessionStorage.getItem("finnance:activeTab") || "dashboard";
     void (TAB_LOADERS as Record<string, () => Promise<unknown>>)[t]?.();
   } catch {
-    void TAB_LOADERS.dre();
+    void TAB_LOADERS.dashboard();
   }
 }
 
@@ -356,15 +356,15 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
   // remontagem transitória do SimulaPro (ex.: o SubscriptionGate voltar a
   // "loading" por um instante quando o navegador reativa a aba após ficar
   // muito tempo em background). Sem isso, ao voltar de outra aba do
-  // navegador o usuário era jogado de volta para "dre" e via "Carregando…".
+  // navegador o usuário era jogado de volta para o Dashboard e via "Carregando…".
   const TAB_KEY = "finnance:activeTab";
   const [activeTab, setActiveTabState] = useState<AppTab>(() => {
-    if (typeof window === "undefined") return "dre";
+    if (typeof window === "undefined") return "dashboard";
     try {
       const v = window.sessionStorage.getItem(TAB_KEY);
-      return (v as AppTab) || "dre";
+      return (v as AppTab) || "dashboard";
     } catch {
-      return "dre";
+      return "dashboard";
     }
   });
   const setActiveTab = (t: AppTab) => {

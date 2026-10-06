@@ -623,10 +623,48 @@ export function blankState(): AppState {
   };
 }
 
+/**
+ * Empresa de exemplo do primeiro acesso: prestadora de serviços saudável (nota
+ * B), com dois pontos claros a trabalhar — margem modesta e caixa abaixo do
+ * mínimo nos meses fracos do início do ano. Balanço de abertura fechado, mão de
+ * obra direta no custo do serviço e sem linhas duplicadas.
+ * (DEFAULT_STATE segue como base neutra dos testes e dos arquivos importados.)
+ */
+const EXAMPLE_REVENUE = [
+  21000, 22500, 25000, 24000, 25500, 27000, 25000, 23500, 25500, 28000, 29500, 33500,
+];
+export const EXAMPLE_STATE: AppState = {
+  ...DEFAULT_STATE,
+  revenue: { ...DEFAULT_STATE.revenue, bruta: EXAMPLE_REVENUE, inadimplencia: fill12(4) },
+  costs: defaultCostsFor("servicos")
+    // Sem duplicatas: um só frete ("Frete sobre vendas", que a migração exige)
+    // e a terceirização no custo do serviço (linha da tabela de custos diretos).
+    .filter((c) => c.id !== "frete_venda" && c.id !== "mod_terc")
+    .map((c) =>
+      c.category === "direto_venda" && c.subcategory === "terceirizacao"
+        ? { ...c, values: fill12(9000) }
+        : c.id === "frete_vendas"
+          ? { ...c, values: fill12(250) }
+          : c,
+    ),
+  capital: {
+    ...DEFAULT_STATE.capital,
+    disponibilidades: 25000,
+    patrimonioLiquido: 49200,
+    ativoTotal: 66300,
+    abertura: {
+      ...(DEFAULT_STATE.capital.abertura ?? {}),
+      caixa: 25000,
+      lucrosAcumulados: 19732.09,
+    },
+  },
+};
+
 /** Ainda são os dados de exemplo (nada foi digitado na receita nem no nome)? */
 export function isExampleState(s: AppState): boolean {
-  return (
-    s.companyName === DEFAULT_STATE.companyName &&
-    s.revenue.bruta.every((v, i) => v === DEFAULT_STATE.revenue.bruta[i])
-  );
+  const igual = (ref: AppState) =>
+    s.companyName === ref.companyName &&
+    s.revenue.bruta.every((v, i) => v === ref.revenue.bruta[i]);
+  // DEFAULT_STATE: exemplo antigo, ainda salvo no navegador de quem já usava.
+  return igual(EXAMPLE_STATE) || igual(DEFAULT_STATE);
 }

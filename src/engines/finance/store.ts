@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, Scenario } from "./types";
-import { DEFAULT_STATE, migrateState, validateAndMigrate } from "./defaults";
+import { EXAMPLE_STATE, migrateState, validateAndMigrate } from "./defaults";
 import { useAuth } from "@/lib/auth";
 import { loadKey, saveKey, broadcastChange, onRemoteChange } from "./persistence";
 import { archiveYearAsHistorical } from "@/engines/scenarios/store";
@@ -29,7 +29,7 @@ export type AutosaveStatus = "idle" | "saving" | "saved" | "error";
 export function useAppState(namespace?: string, initialState?: AppState) {
   const { user } = useAuth();
   const username = `${user?.id ?? "guest"}${namespace ? `:${namespace}` : ""}`;
-  const [state, setState] = useState<AppState>(DEFAULT_STATE);
+  const [state, setState] = useState<AppState>(EXAMPLE_STATE);
   const [hydrated, setHydrated] = useState(false);
   const [autosaveStatus, setAutosaveStatus] = useState<AutosaveStatus>("idle");
   // Evita race ao trocar de sessão (estado do user A escrito na key do user B).
@@ -63,12 +63,12 @@ export function useAppState(namespace?: string, initialState?: AppState) {
       if (!fromLegacy && !initialReady) return; // espera as premissas iniciais
       // validateAndMigrate: Zod no shape de topo + migrateState (sanitiza
       // Months[12], normaliza NaN/Infinity, garante invariantes). Se o
-      // JSON estiver corrompido ou manipulado, cai em DEFAULT_STATE.
+      // JSON estiver corrompido ou manipulado, cai na empresa de exemplo.
       suppressSave.current = !!fromLegacy;
-      setState(fromLegacy ? validateAndMigrate(fromLegacy) : (initialRef.current ?? DEFAULT_STATE));
+      setState(fromLegacy ? validateAndMigrate(fromLegacy) : (initialRef.current ?? EXAMPLE_STATE));
     } catch {
       if (gen !== hydrateGen.current) return;
-      setState(DEFAULT_STATE);
+      setState(EXAMPLE_STATE);
     }
     if (gen !== hydrateGen.current) return;
     hydratedFor.current = username;
@@ -165,7 +165,7 @@ export function useAppState(namespace?: string, initialState?: AppState) {
     });
   }, []);
 
-  const reset = useCallback(() => setState(DEFAULT_STATE), []);
+  const reset = useCallback(() => setState(EXAMPLE_STATE), []);
 
   return { state, setState, update, reset, hydrated, autosaveStatus };
 }
