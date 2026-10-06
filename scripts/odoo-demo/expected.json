@@ -1,0 +1,744 @@
+{
+  "gerado_de": "http://127.0.0.1:8069",
+  "database": "lab20",
+  "moeda": "BRL",
+  "observacoes": [
+    "Valores de resultado com sinal de apresentação: receitas e despesas positivas; lucro_liquido = receita_bruta - deducoes - cpv - pessoal - despesas_operacionais - despesas_financeiras + receitas_financeiras - ir_csll.",
+    "Dados obtidos via JSON-2 account.move.line/formatted_read_group (parent_state=posted).",
+    "IRPJ/CSLL do CNPJ Alfa é apurado na matriz (inclui a receita da filial).",
+    "Balanço: soma de balance (débito - crédito) por account_type até 2026-09-30, inclusive as contas de resultado ainda não encerradas (income*/expense*)."
+  ],
+  "empresas": [
+    {
+      "id": 12,
+      "name": "Grupo Alfa Comércio Ltda",
+      "vat": "11222333000181",
+      "parent_id": null,
+      "partner_id": 60,
+      "fiscalyear_lock_date": "2026-08-31",
+      "lock_date_efetiva": "2026-08-31"
+    },
+    {
+      "id": 13,
+      "name": "Grupo Alfa Comércio Ltda - Filial SP",
+      "vat": "11222333000262",
+      "parent_id": 12,
+      "partner_id": 61,
+      "fiscalyear_lock_date": null,
+      "lock_date_efetiva": "2026-08-31"
+    },
+    {
+      "id": 14,
+      "name": "Beta Serviços Ltda",
+      "vat": "44555666000199",
+      "parent_id": null,
+      "partner_id": 62,
+      "fiscalyear_lock_date": "2026-08-31",
+      "lock_date_efetiva": "2026-08-31"
+    }
+  ],
+  "dre_mensal": {
+    "Beta Serviços Ltda": {
+      "meses": {
+        "2025-10": {
+          "receita_bruta": 109050.0,
+          "deducoes": 9432.82,
+          "cpv": 4362.0,
+          "pessoal": 49072.5,
+          "despesas_operacionais": 10690.0,
+          "despesas_financeiras": 400.0,
+          "receitas_financeiras": 300.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 35392.68
+        },
+        "2025-11": {
+          "receita_bruta": 115785.88,
+          "deducoes": 10015.48,
+          "cpv": 4631.44,
+          "pessoal": 52103.64,
+          "despesas_operacionais": 10780.0,
+          "despesas_financeiras": 400.0,
+          "receitas_financeiras": 300.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 38155.32
+        },
+        "2025-12": {
+          "receita_bruta": 119468.44,
+          "deducoes": 10334.01,
+          "cpv": 4778.74,
+          "pessoal": 53760.79,
+          "despesas_operacionais": 11020.0,
+          "despesas_financeiras": 400.0,
+          "receitas_financeiras": 300.0,
+          "ir_csll": 31766.31,
+          "lucro_liquido": 7708.59
+        },
+        "2026-01": {
+          "receita_bruta": 107984.67,
+          "deducoes": 9340.67,
+          "cpv": 4319.39,
+          "pessoal": 48593.1,
+          "despesas_operacionais": 11170.0,
+          "despesas_financeiras": 2400.0,
+          "receitas_financeiras": 300.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 32461.51
+        },
+        "2026-02": {
+          "receita_bruta": 109280.28,
+          "deducoes": 9452.74,
+          "cpv": 4371.21,
+          "pessoal": 49176.13,
+          "despesas_operacionais": 11200.0,
+          "despesas_financeiras": 2400.0,
+          "receitas_financeiras": 300.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 32980.2
+        },
+        "2026-03": {
+          "receita_bruta": 111376.31,
+          "deducoes": 9634.06,
+          "cpv": 4455.05,
+          "pessoal": 50119.34,
+          "despesas_operacionais": 11080.0,
+          "despesas_financeiras": 2400.0,
+          "receitas_financeiras": 300.0,
+          "ir_csll": 30062.17,
+          "lucro_liquido": 3925.69
+        },
+        "2026-04": {
+          "receita_bruta": 116852.86,
+          "deducoes": 10107.77,
+          "cpv": 4674.11,
+          "pessoal": 52583.79,
+          "despesas_operacionais": 10870.0,
+          "despesas_financeiras": 2400.0,
+          "receitas_financeiras": 300.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 36517.19
+        },
+        "2026-05": {
+          "receita_bruta": 117311.2,
+          "deducoes": 10147.42,
+          "cpv": 4692.45,
+          "pessoal": 52790.04,
+          "despesas_operacionais": 10720.0,
+          "despesas_financeiras": 2400.0,
+          "receitas_financeiras": 300.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 36861.29
+        },
+        "2026-06": {
+          "receita_bruta": 116842.67,
+          "deducoes": 10106.89,
+          "cpv": 4673.71,
+          "pessoal": 52579.2,
+          "despesas_operacionais": 10630.0,
+          "despesas_financeiras": 2400.0,
+          "receitas_financeiras": 300.0,
+          "ir_csll": 32495.53,
+          "lucro_liquido": 4257.34
+        },
+        "2026-07": {
+          "receita_bruta": 119388.43,
+          "deducoes": 10327.09,
+          "cpv": 4775.54,
+          "pessoal": 53724.79,
+          "despesas_operacionais": 10600.0,
+          "despesas_financeiras": 2400.0,
+          "receitas_financeiras": 300.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 37861.01
+        },
+        "2026-08": {
+          "receita_bruta": 118889.71,
+          "deducoes": 10283.96,
+          "cpv": 4755.59,
+          "pessoal": 53500.36,
+          "despesas_operacionais": 10660.0,
+          "despesas_financeiras": 2400.0,
+          "receitas_financeiras": 300.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 37589.8
+        },
+        "2026-09": {
+          "receita_bruta": 122583.62,
+          "deducoes": 10603.48,
+          "cpv": 4903.34,
+          "pessoal": 55162.62,
+          "despesas_operacionais": 10750.0,
+          "despesas_financeiras": 2400.0,
+          "receitas_financeiras": 300.0,
+          "ir_csll": 33567.76,
+          "lucro_liquido": 5496.42
+        }
+      },
+      "total_12m": {
+        "receita_bruta": 1384814.07,
+        "deducoes": 119786.39,
+        "cpv": 55392.57,
+        "pessoal": 623166.3,
+        "despesas_operacionais": 130170.0,
+        "despesas_financeiras": 22800.0,
+        "receitas_financeiras": 3600.0,
+        "ir_csll": 127891.77,
+        "lucro_liquido": 309207.04
+      }
+    },
+    "Grupo Alfa Comércio Ltda": {
+      "meses": {
+        "2025-10": {
+          "receita_bruta": 415800.0,
+          "deducoes": 90020.7,
+          "cpv": 216216.0,
+          "pessoal": 76800.0,
+          "despesas_operacionais": 45300.0,
+          "despesas_financeiras": 6000.0,
+          "receitas_financeiras": 1500.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": -17036.7
+        },
+        "2025-11": {
+          "receita_bruta": 462717.36,
+          "deducoes": 100178.3,
+          "cpv": 240613.03,
+          "pessoal": 77312.0,
+          "despesas_operacionais": 45900.0,
+          "despesas_financeiras": 5875.0,
+          "receitas_financeiras": 1550.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": -5610.97
+        },
+        "2025-12": {
+          "receita_bruta": 503847.79,
+          "deducoes": 109083.04,
+          "cpv": 262000.85,
+          "pessoal": 77824.0,
+          "despesas_operacionais": 47000.0,
+          "despesas_financeiras": 5750.0,
+          "receitas_financeiras": 1600.0,
+          "ir_csll": 52857.0,
+          "lucro_liquido": -49067.1
+        },
+        "2026-01": {
+          "receita_bruta": 389453.78,
+          "deducoes": 84316.74,
+          "cpv": 202515.97,
+          "pessoal": 76800.0,
+          "despesas_operacionais": 47800.0,
+          "despesas_financeiras": 5625.0,
+          "receitas_financeiras": 3500.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": -24103.93
+        },
+        "2026-02": {
+          "receita_bruta": 387841.44,
+          "deducoes": 83967.67,
+          "cpv": 201677.55,
+          "pessoal": 77312.0,
+          "despesas_operacionais": 47000.0,
+          "despesas_financeiras": 5500.0,
+          "receitas_financeiras": 3550.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": -24065.78
+        },
+        "2026-03": {
+          "receita_bruta": 415159.48,
+          "deducoes": 89882.03,
+          "cpv": 215882.93,
+          "pessoal": 77824.0,
+          "despesas_operacionais": 46900.0,
+          "despesas_financeiras": 5375.0,
+          "receitas_financeiras": 3600.0,
+          "ir_csll": 47028.37,
+          "lucro_liquido": -64132.85
+        },
+        "2026-04": {
+          "receita_bruta": 450296.85,
+          "deducoes": 97489.27,
+          "cpv": 234154.36,
+          "pessoal": 76800.0,
+          "despesas_operacionais": 46500.0,
+          "despesas_financeiras": 5250.0,
+          "receitas_financeiras": 3500.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": -6396.78
+        },
+        "2026-05": {
+          "receita_bruta": 463355.46,
+          "deducoes": 100316.45,
+          "cpv": 240944.84,
+          "pessoal": 77312.0,
+          "despesas_operacionais": 46300.0,
+          "despesas_financeiras": 5125.0,
+          "receitas_financeiras": 3550.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": -3092.83
+        },
+        "2026-06": {
+          "receita_bruta": 445703.82,
+          "deducoes": 96494.87,
+          "cpv": 231765.99,
+          "pessoal": 77824.0,
+          "despesas_operacionais": 45100.0,
+          "despesas_financeiras": 5000.0,
+          "receitas_financeiras": 3600.0,
+          "ir_csll": 53943.65,
+          "lucro_liquido": -60824.69
+        },
+        "2026-07": {
+          "receita_bruta": 454478.73,
+          "deducoes": 98394.64,
+          "cpv": 236328.94,
+          "pessoal": 76800.0,
+          "despesas_operacionais": 45300.0,
+          "despesas_financeiras": 4875.0,
+          "receitas_financeiras": 3500.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": -3719.85
+        },
+        "2026-08": {
+          "receita_bruta": 459301.88,
+          "deducoes": 99438.86,
+          "cpv": 238836.98,
+          "pessoal": 77312.0,
+          "despesas_operacionais": 45800.0,
+          "despesas_financeiras": 4750.0,
+          "receitas_financeiras": 3550.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": -3285.96
+        },
+        "2026-09": {
+          "receita_bruta": 477999.18,
+          "deducoes": 103486.82,
+          "cpv": 248559.57,
+          "pessoal": 77824.0,
+          "despesas_operacionais": 46400.0,
+          "despesas_financeiras": 4625.0,
+          "receitas_financeiras": 3600.0,
+          "ir_csll": 55287.07,
+          "lucro_liquido": -54583.28
+        }
+      },
+      "total_12m": {
+        "receita_bruta": 5325955.77,
+        "deducoes": 1153069.39,
+        "cpv": 2769497.01,
+        "pessoal": 927744.0,
+        "despesas_operacionais": 555300.0,
+        "despesas_financeiras": 63750.0,
+        "receitas_financeiras": 36600.0,
+        "ir_csll": 209116.09,
+        "lucro_liquido": -315920.72
+      }
+    },
+    "Grupo Alfa Comércio Ltda - Filial SP": {
+      "meses": {
+        "2025-10": {
+          "receita_bruta": 143550.0,
+          "deducoes": 31078.57,
+          "cpv": 74646.0,
+          "pessoal": 28160.0,
+          "despesas_operacionais": 12005.0,
+          "despesas_financeiras": 250.0,
+          "receitas_financeiras": 0.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": -2589.57
+        },
+        "2025-11": {
+          "receita_bruta": 159747.66,
+          "deducoes": 34585.37,
+          "cpv": 83068.78,
+          "pessoal": 28416.0,
+          "despesas_operacionais": 12110.0,
+          "despesas_financeiras": 250.0,
+          "receitas_financeiras": 0.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 1317.51
+        },
+        "2025-12": {
+          "receita_bruta": 173947.45,
+          "deducoes": 37659.62,
+          "cpv": 90452.67,
+          "pessoal": 28160.0,
+          "despesas_operacionais": 12390.0,
+          "despesas_financeiras": 250.0,
+          "receitas_financeiras": 0.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 5035.16
+        },
+        "2026-01": {
+          "receita_bruta": 134454.28,
+          "deducoes": 29109.35,
+          "cpv": 69916.23,
+          "pessoal": 28416.0,
+          "despesas_operacionais": 12565.0,
+          "despesas_financeiras": 250.0,
+          "receitas_financeiras": 0.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": -5802.3
+        },
+        "2026-02": {
+          "receita_bruta": 133897.64,
+          "deducoes": 28988.84,
+          "cpv": 69626.77,
+          "pessoal": 28160.0,
+          "despesas_operacionais": 12600.0,
+          "despesas_financeiras": 250.0,
+          "receitas_financeiras": 0.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": -5727.97
+        },
+        "2026-03": {
+          "receita_bruta": 143328.87,
+          "deducoes": 31030.71,
+          "cpv": 74531.01,
+          "pessoal": 28416.0,
+          "despesas_operacionais": 12460.0,
+          "despesas_financeiras": 250.0,
+          "receitas_financeiras": 0.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": -3358.85
+        },
+        "2026-04": {
+          "receita_bruta": 155459.63,
+          "deducoes": 33657.01,
+          "cpv": 80839.01,
+          "pessoal": 28160.0,
+          "despesas_operacionais": 12215.0,
+          "despesas_financeiras": 250.0,
+          "receitas_financeiras": 0.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 338.61
+        },
+        "2026-05": {
+          "receita_bruta": 159967.96,
+          "deducoes": 34633.06,
+          "cpv": 83183.34,
+          "pessoal": 28416.0,
+          "despesas_operacionais": 12040.0,
+          "despesas_financeiras": 250.0,
+          "receitas_financeiras": 0.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 1445.56
+        },
+        "2026-06": {
+          "receita_bruta": 153873.94,
+          "deducoes": 33313.71,
+          "cpv": 80014.45,
+          "pessoal": 28160.0,
+          "despesas_operacionais": 11935.0,
+          "despesas_financeiras": 250.0,
+          "receitas_financeiras": 0.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 200.78
+        },
+        "2026-07": {
+          "receita_bruta": 156903.37,
+          "deducoes": 33969.58,
+          "cpv": 81589.75,
+          "pessoal": 28416.0,
+          "despesas_operacionais": 11900.0,
+          "despesas_financeiras": 250.0,
+          "receitas_financeiras": 0.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 778.04
+        },
+        "2026-08": {
+          "receita_bruta": 158568.51,
+          "deducoes": 34330.09,
+          "cpv": 82455.63,
+          "pessoal": 28160.0,
+          "despesas_operacionais": 11970.0,
+          "despesas_financeiras": 250.0,
+          "receitas_financeiras": 0.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 1402.79
+        },
+        "2026-09": {
+          "receita_bruta": 165023.53,
+          "deducoes": 35727.6,
+          "cpv": 85812.24,
+          "pessoal": 28416.0,
+          "despesas_operacionais": 12075.0,
+          "despesas_financeiras": 250.0,
+          "receitas_financeiras": 0.0,
+          "ir_csll": 0.0,
+          "lucro_liquido": 2742.69
+        }
+      },
+      "total_12m": {
+        "receita_bruta": 1838722.84,
+        "deducoes": 398083.51,
+        "cpv": 956135.88,
+        "pessoal": 339456.0,
+        "despesas_operacionais": 146265.0,
+        "despesas_financeiras": 3000.0,
+        "receitas_financeiras": 0.0,
+        "ir_csll": 0.0,
+        "lucro_liquido": -4217.55
+      }
+    }
+  },
+  "intercompany": {
+    "como_identificar": {
+      "matriz_filial": "diário code 'TRF' (Transferências Matriz/Filial); refs 'TRF-MATRIZ-FILIAL-AAAA-MM' (mercadorias) e 'TRF-CAIXA-FILIAL-MATRIZ-AAAA-MM' (repasse de caixa); partner_id = partner da outra empresa; contas 1.01.02.09.97 / 2.01.01.17.97",
+      "entre_cnpjs": "diário code 'INTC' (Operações Intercompany); refs 'IC-BETA-ALFA-SERV-AAAA-MM', 'IC-BETA-ALFA-PGTO-AAAA-MM', 'IC-MUTUO-ALFA-BETA-2026-01', 'IC-MUTUO-JUROS-AAAA-MM'; partner_id = partner da empresa contraparte",
+      "partners_das_empresas": {
+        "Beta Serviços Ltda": 62,
+        "Grupo Alfa Comércio Ltda": 60,
+        "Grupo Alfa Comércio Ltda - Filial SP": 61
+      }
+    },
+    "mensal": {
+      "Beta Serviços Ltda": {
+        "2025-10": {
+          "ic_receita_servicos": 15000.0
+        },
+        "2025-11": {
+          "ic_receita_servicos": 15000.0
+        },
+        "2025-12": {
+          "ic_receita_servicos": 15000.0
+        },
+        "2026-01": {
+          "ic_receita_servicos": 15000.0,
+          "ic_despesa_juros_mutuo": 2000.0,
+          "mutuo_principal": 200000.0
+        },
+        "2026-02": {
+          "ic_receita_servicos": 15000.0,
+          "ic_despesa_juros_mutuo": 2000.0
+        },
+        "2026-03": {
+          "ic_receita_servicos": 15000.0,
+          "ic_despesa_juros_mutuo": 2000.0
+        },
+        "2026-04": {
+          "ic_receita_servicos": 15000.0,
+          "ic_despesa_juros_mutuo": 2000.0
+        },
+        "2026-05": {
+          "ic_receita_servicos": 15000.0,
+          "ic_despesa_juros_mutuo": 2000.0
+        },
+        "2026-06": {
+          "ic_receita_servicos": 15000.0,
+          "ic_despesa_juros_mutuo": 2000.0
+        },
+        "2026-07": {
+          "ic_receita_servicos": 15000.0,
+          "ic_despesa_juros_mutuo": 2000.0
+        },
+        "2026-08": {
+          "ic_receita_servicos": 15000.0,
+          "ic_despesa_juros_mutuo": 2000.0
+        },
+        "2026-09": {
+          "ic_receita_servicos": 15000.0,
+          "ic_despesa_juros_mutuo": 2000.0
+        }
+      },
+      "Grupo Alfa Comércio Ltda": {
+        "2025-10": {
+          "ic_despesa_servicos": 15000.0,
+          "transferencia_mercadorias_matriz_filial": 74646.0,
+          "repasse_caixa_filial_matriz": 74646.0
+        },
+        "2025-11": {
+          "ic_despesa_servicos": 15000.0,
+          "transferencia_mercadorias_matriz_filial": 83068.78,
+          "repasse_caixa_filial_matriz": 83068.78
+        },
+        "2025-12": {
+          "ic_despesa_servicos": 15000.0,
+          "transferencia_mercadorias_matriz_filial": 90452.67,
+          "repasse_caixa_filial_matriz": 90452.67
+        },
+        "2026-01": {
+          "ic_receita_juros_mutuo": 2000.0,
+          "ic_despesa_servicos": 15000.0,
+          "transferencia_mercadorias_matriz_filial": 69916.23,
+          "repasse_caixa_filial_matriz": 69916.23,
+          "mutuo_principal": 200000.0
+        },
+        "2026-02": {
+          "ic_receita_juros_mutuo": 2000.0,
+          "ic_despesa_servicos": 15000.0,
+          "transferencia_mercadorias_matriz_filial": 69626.77,
+          "repasse_caixa_filial_matriz": 69626.77
+        },
+        "2026-03": {
+          "ic_receita_juros_mutuo": 2000.0,
+          "ic_despesa_servicos": 15000.0,
+          "transferencia_mercadorias_matriz_filial": 74531.01,
+          "repasse_caixa_filial_matriz": 74531.01
+        },
+        "2026-04": {
+          "ic_receita_juros_mutuo": 2000.0,
+          "ic_despesa_servicos": 15000.0,
+          "transferencia_mercadorias_matriz_filial": 80839.01,
+          "repasse_caixa_filial_matriz": 80839.01
+        },
+        "2026-05": {
+          "ic_receita_juros_mutuo": 2000.0,
+          "ic_despesa_servicos": 15000.0,
+          "transferencia_mercadorias_matriz_filial": 83183.34,
+          "repasse_caixa_filial_matriz": 83183.34
+        },
+        "2026-06": {
+          "ic_receita_juros_mutuo": 2000.0,
+          "ic_despesa_servicos": 15000.0,
+          "transferencia_mercadorias_matriz_filial": 80014.45,
+          "repasse_caixa_filial_matriz": 80014.45
+        },
+        "2026-07": {
+          "ic_receita_juros_mutuo": 2000.0,
+          "ic_despesa_servicos": 15000.0,
+          "transferencia_mercadorias_matriz_filial": 81589.75,
+          "repasse_caixa_filial_matriz": 81589.75
+        },
+        "2026-08": {
+          "ic_receita_juros_mutuo": 2000.0,
+          "ic_despesa_servicos": 15000.0,
+          "transferencia_mercadorias_matriz_filial": 82455.63,
+          "repasse_caixa_filial_matriz": 82455.63
+        },
+        "2026-09": {
+          "ic_receita_juros_mutuo": 2000.0,
+          "ic_despesa_servicos": 15000.0,
+          "transferencia_mercadorias_matriz_filial": 85812.24,
+          "repasse_caixa_filial_matriz": 85812.24
+        }
+      },
+      "Grupo Alfa Comércio Ltda - Filial SP": {
+        "2025-10": {
+          "transferencia_mercadorias_matriz_filial": 74646.0,
+          "repasse_caixa_filial_matriz": 74646.0
+        },
+        "2025-11": {
+          "transferencia_mercadorias_matriz_filial": 83068.78,
+          "repasse_caixa_filial_matriz": 83068.78
+        },
+        "2025-12": {
+          "transferencia_mercadorias_matriz_filial": 90452.67,
+          "repasse_caixa_filial_matriz": 90452.67
+        },
+        "2026-01": {
+          "transferencia_mercadorias_matriz_filial": 69916.23,
+          "repasse_caixa_filial_matriz": 69916.23
+        },
+        "2026-02": {
+          "transferencia_mercadorias_matriz_filial": 69626.77,
+          "repasse_caixa_filial_matriz": 69626.77
+        },
+        "2026-03": {
+          "transferencia_mercadorias_matriz_filial": 74531.01,
+          "repasse_caixa_filial_matriz": 74531.01
+        },
+        "2026-04": {
+          "transferencia_mercadorias_matriz_filial": 80839.01,
+          "repasse_caixa_filial_matriz": 80839.01
+        },
+        "2026-05": {
+          "transferencia_mercadorias_matriz_filial": 83183.34,
+          "repasse_caixa_filial_matriz": 83183.34
+        },
+        "2026-06": {
+          "transferencia_mercadorias_matriz_filial": 80014.45,
+          "repasse_caixa_filial_matriz": 80014.45
+        },
+        "2026-07": {
+          "transferencia_mercadorias_matriz_filial": 81589.75,
+          "repasse_caixa_filial_matriz": 81589.75
+        },
+        "2026-08": {
+          "transferencia_mercadorias_matriz_filial": 82455.63,
+          "repasse_caixa_filial_matriz": 82455.63
+        },
+        "2026-09": {
+          "transferencia_mercadorias_matriz_filial": 85812.24,
+          "repasse_caixa_filial_matriz": 85812.24
+        }
+      }
+    },
+    "saldos_em_2026-09-30": {
+      "Beta Serviços Ltda": {
+        "1.01.02.02.03 Trade Bills Receivable - Operations with Related Parties - in the Country": 15000.0,
+        "2.02.01.11.03 Mutual Loans – Related Parties – In the Country - Long Term": -218000.0
+      },
+      "Grupo Alfa Comércio Ltda": {
+        "1.01.02.09.97 Conta Corrente Filial SP (transferências entre estabelecimentos)": 411388.65,
+        "1.02.01.01.03 Mutual Loans with Related Parties - Asset - Long Term": 218000.0,
+        "2.01.01.03.03 Suppliers - Operations with Related Parties - In the Country – Current": -15000.0
+      },
+      "Grupo Alfa Comércio Ltda - Filial SP": {
+        "2.01.01.17.97 Conta Corrente Matriz (transferências entre estabelecimentos)": -411388.65
+      }
+    }
+  },
+  "balanco_2026_09_30": {
+    "Beta Serviços Ltda": {
+      "asset_cash": 680938.34,
+      "asset_fixed": 100600.0,
+      "asset_receivable": 122583.62,
+      "equity": -263127.72,
+      "expense": 1009414.46,
+      "expense_depreciation": 14400.0,
+      "expense_direct_cost": 55392.57,
+      "income": -1384814.07,
+      "income_other": -3600.0,
+      "liability_current": -99333.86,
+      "liability_non_current": -218000.0,
+      "liability_payable": -14453.34
+    },
+    "Grupo Alfa Comércio Ltda": {
+      "asset_cash": 286755.22,
+      "asset_current": 1361388.65,
+      "asset_fixed": 414000.0,
+      "asset_non_current": 218000.0,
+      "asset_receivable": 477999.18,
+      "equity": -2099694.07,
+      "expense": 2872979.48,
+      "expense_depreciation": 36000.0,
+      "expense_direct_cost": 2769497.01,
+      "income": -5325955.77,
+      "income_other": -36600.0,
+      "liability_current": -236597.89,
+      "liability_non_current": -360000.0,
+      "liability_payable": -377771.81
+    },
+    "Grupo Alfa Comércio Ltda - Filial SP": {
+      "asset_cash": 84366.17,
+      "asset_current": 160000.0,
+      "asset_fixed": 73000.0,
+      "asset_receivable": 165023.53,
+      "expense": 874804.51,
+      "expense_depreciation": 12000.0,
+      "expense_direct_cost": 956135.88,
+      "income": -1838722.84,
+      "liability_current": -475532.25,
+      "liability_payable": -11075.0
+    }
+  },
+  "balancete_zerado": {
+    "Beta Serviços Ltda": {
+      "debito": 5484204.56,
+      "credito": 5484204.56,
+      "saldo": 0.0,
+      "ok": true
+    },
+    "Grupo Alfa Comércio Ltda": {
+      "debito": 32045669.4,
+      "credito": 32045669.4,
+      "saldo": 0.0,
+      "ok": true
+    },
+    "Grupo Alfa Comércio Ltda - Filial SP": {
+      "debito": 8791531.56,
+      "credito": 8791531.56,
+      "saldo": 0.0,
+      "ok": true
+    }
+  }
+}

@@ -429,10 +429,23 @@ function minLockDate(companies: OdooCompanyInfo[]): string | null {
 }
 
 /**
- * Sobrepõe o realizado do Odoo a um estado do usuário (que guarda as
- * premissas). Campos de realizado são substituídos; premissas preservadas.
+ * Partes do AppState que vêm do Odoo, montadas UMA vez por retrato/entidade.
+ * As referências ficam estáveis entre renders: efeitos das abas que dependem
+ * delas (ex.: contratos de dívida) não disparam de novo a cada edição de
+ * premissa — o que geraria laço de atualização.
  */
-export function mergeOdooActuals(base: AppState, data: OdooEntityData): AppState {
+export type OdooOverlay = {
+  header: Pick<AppState, "companyName" | "periodoAnaliseMeses"> & {
+    cnpj: string | null;
+    fiscalYear: number | null;
+  };
+  revenue: Pick<AppState["revenue"], "bruta" | "brutaFixa" | "deducoes" | "receitasFinanceiras">;
+  costs: CostLine[];
+  capital: Partial<AppState["capital"]>;
+  abertura: Partial<AppState["capital"]["abertura"]>;
+};
+
+export function prepareOdooOverlay(data: OdooEntityData): OdooOverlay {
   const { actuals, entity } = data;
   const { pl } = actuals;
   const deducoes: RevenueDeducao[] = sum(pl.deducoes)
@@ -501,33 +514,21 @@ export function mergeOdooActuals(base: AppState, data: OdooEntityData): AppState
   const [fy] = (lastMonth ?? "").split("-").map(Number);
 
   return {
-    ...base,
-    companyName: entity.label,
-    cnpj: entity.vat ?? base.cnpj,
-    fiscalYear: fy || base.fiscalYear,
-    periodoAnaliseMeses: 12,
-    revenue: {
-      ...base.revenue,
-      bruta: pl.receita_bruta.map(r2),
-      brutaFixa: false,
-      deducoes,
-      receitasFinanceiras,
+    header: {
+      companyName: entity.label,
+      cnpj: entity.vat,
+      fiscalYear: fy || null,
+      periodoAnaliseMeses: 12,
     },
+    revenue: { bruta: pl.receita_bruta.map(r2), brutaFixa: false, deducoes, receitasFinanceiras },
     costs,
     capital: {
-      ...base.capital,
       depreciacaoMensal: r2(sum(pl.depreciacao) / 12),
       capexAtivacao: [],
       // Balanço de abertura (o motor projeta o fechamento pelos fluxos).
       balanco: {
         ...toBalancoDetalhado(o, firstMonth ? `${firstMonth}-01` : undefined),
         anterior: undefined,
-      },
-      abertura: {
-        ...base.capital.abertura,
-        impostosRecuperar: r2(o.impostos_recuperar),
-        lucrosAcumulados: r2(o.lucros_acumulados),
-        depreciacaoAcumulada: r2(Math.abs(o.depreciacao_acumulada)),
       },
       debtContracts: debtFromBalances(actuals),
       patrimonioLiquidoAbertura: r2(pl_(o)),
@@ -543,5 +544,35 @@ export function mergeOdooActuals(base: AppState, data: OdooEntityData): AppState
       ativoCirculante: r2(ac(c)),
       passivoCirculante: r2(pc(c)),
     },
+    abertura: {
+      impostosRecuperar: r2(o.impostos_recuperar),
+      lucrosAcumulados: r2(o.lucros_acumulados),
+      depreciacaoAcumulada: r2(Math.abs(o.depreciacao_acumulada)),
+    },
   };
+}
+
+/**
+ * Sobrepõe o realizado do Odoo a um estado do usuário (que guarda as
+ * premissas). Campos de realizado são substituídos; premissas preservadas.
+ */
+export function applyOdooOverlay(base: AppState, ov: OdooOverlay): AppState {
+  return {
+    ...base,
+    companyName: ov.header.companyName,
+    cnpj: ov.header.cnpj ?? base.cnpj,
+    fiscalYear: ov.header.fiscalYear ?? base.fiscalYear,
+    periodoAnaliseMeses: ov.header.periodoAnaliseMeses,
+    revenue: { ...base.revenue, ...ov.revenue },
+    costs: ov.costs,
+    capital: {
+      ...base.capital,
+      ...ov.capital,
+      abertura: { ...base.capital.abertura, ...ov.abertura },
+    },
+  };
+}
+
+export function mergeOdooActuals(base: AppState, data: OdooEntityData): AppState {
+  return applyOdooOverlay(base, prepareOdooOverlay(data));
 }
