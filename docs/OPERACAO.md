@@ -63,8 +63,16 @@ atende o Odoo) e ajuste `TRUST_PROXY_HEADER` no `.env` conforme o proxy.
 | Erro novo no sistema (assinatura inédita)   | um aviso por lote de erros novos |
 | Item voltou ao normal                       | uma vez, "Normalizado: ..."      |
 
+Se o e-mail (e o Slack) falhar, o aviso não é dado como entregue: a verificação seguinte
+tenta de novo.
+
 O botão **Verificar alertas agora** no painel roda a mesma verificação na hora (útil para
 testar o e-mail).
+
+**Limpeza automática** (todo dia às 03:41): links compartilhados vencidos há 7 dias,
+sessões expiradas, contadores de limite de acesso, webhooks processados com mais de 180
+dias, intenções de compra com mais de 180 dias, registro de e-mails com mais de 1 ano e
+auditoria/cadastros com mais de 2 anos.
 
 ## Atualizar
 
@@ -100,7 +108,9 @@ servidor) — nada no app muda.
 
 1. Escolha o arquivo: `ls -lt backups/`
 2. Pare o app: `docker compose stop app`
-3. Restaure (um dump do estado atual é salvo antes, por segurança):
+3. Restaure (um dump do estado atual é salvo antes, por segurança; o banco é apagado e
+   recriado a partir do arquivo, o que funciona também para voltar a um backup anterior
+   a uma atualização):
 
    ```sh
    docker compose exec backup /ops/restore.sh /backups/financepro-AAAAMMDD-HHMMSS.dump --confirmar

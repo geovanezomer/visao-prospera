@@ -18,8 +18,27 @@ let _client: postgres.Sql | null = null;
 function createDb(): Db {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL não configurada.");
-  _client = postgres(url, { max: Number(process.env.DATABASE_POOL_MAX ?? 10) });
+  _client = postgres(url, {
+    max: Number(process.env.DATABASE_POOL_MAX ?? 10),
+    // Conexão que não responde em 10 s falha em vez de pendurar a requisição.
+    connect_timeout: 10,
+    // Uma consulta presa ou transação esquecida não segura a conexão para
+    // sempre (com 10 conexões, poucas presas esgotam o pool). Migrações usam
+    // conexão própria, sem limite (ver migrationClient).
+    connection: {
+      statement_timeout: Number(process.env.DATABASE_STATEMENT_TIMEOUT_MS ?? 60_000),
+      idle_in_transaction_session_timeout: 60_000,
+    },
+  });
   return drizzle(_client, { schema });
+}
+
+/** Conexão avulsa, sem limite de tempo, para as migrações do boot. */
+export function migrationClient(): { db: Db; end: () => Promise<void> } | null {
+  const url = process.env.DATABASE_URL;
+  if (!url || !_client) return null;
+  const c = postgres(url, { max: 1, connect_timeout: 10 });
+  return { db: drizzle(c, { schema }), end: () => c.end() };
 }
 
 /** Banco da aplicação (criado na primeira chamada). */

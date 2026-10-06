@@ -5,7 +5,8 @@
 # Uso (dentro do serviço de backup):
 #   docker compose exec backup restore.sh /backups/financepro-AAAAMMDD-HHMMSS.dump --confirmar
 #
-# Pare o app antes (docker compose stop app) e suba de novo depois.
+# Pare o app antes (docker compose stop app) e suba de novo depois. O banco é
+# apagado e recriado a partir do dump.
 # Antes de restaurar, um dump de segurança do estado atual é gravado.
 # ============================================================================
 set -eu
@@ -28,7 +29,13 @@ echo "[restore] salvando o estado atual em $safety"
 pg_dump --format=custom --no-owner --no-privileges --file="$safety" "$DB"
 chmod 600 "$safety"
 
-echo "[restore] restaurando $file em $DB"
-pg_restore --clean --if-exists --no-owner --no-privileges --exit-on-error --single-transaction \
+# Restaura num banco RECRIADO (mesmo caminho do restore-test.sh). Com
+# --clean por cima do banco atual, uma tabela criada por migração posterior ao
+# dump (com FK para "user") travava o DROP — justamente no rollback de uma
+# atualização — e o histórico de migrações ficaria inconsistente.
+echo "[restore] recriando $DB e restaurando $file"
+dropdb --force --if-exists "$DB"
+createdb "$DB"
+pg_restore --no-owner --no-privileges --exit-on-error --single-transaction \
   --dbname="$DB" "$file"
 echo "[restore] concluído. Suba o app: docker compose start app"

@@ -2,7 +2,8 @@
 # ============================================================================
 # Teste de restauração: restaura o dump mais recente (ou o informado) numa
 # base TEMPORÁRIA, confere se as tabelas principais vieram com dados e apaga
-# a base. Não toca no banco em uso. Resultado em $BACKUP_DIR/restore-test.json.
+# a base. Mesmo caminho do restore.sh (banco recriado + pg_restore). Não toca
+# no banco em uso. Resultado em $BACKUP_DIR/restore-test.json.
 #
 # Uso: restore-test.sh [arquivo.dump]
 # ============================================================================

@@ -66,7 +66,13 @@ export function startScheduler(): void {
     opts,
     run("ops-alerts", async () => (await import("@/lib/ops/alerts.server")).runOpsAlerts()),
   );
+  // Limpeza diária das tabelas que só cresciam (madrugada).
+  new Cron(
+    "41 3 * * *",
+    opts,
+    run("retention", async () => (await import("@/lib/ops/retention.server")).runRetention()),
+  );
   console.log(
-    "[scheduler] rotinas agendadas: webhook-retry, trial-cleanup, reconcile-checkout, odoo-sync, ops-alerts.",
+    "[scheduler] rotinas agendadas: webhook-retry, trial-cleanup, reconcile-checkout, odoo-sync, ops-alerts, retention.",
   );
 }

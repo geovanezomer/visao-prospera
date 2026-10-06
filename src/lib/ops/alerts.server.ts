@@ -103,12 +103,16 @@ async function deliver(msgs: AlertMessage[]): Promise<number> {
       }).catch(() => ({ sent: false }));
       if (r.sent) sent++;
     }
-    if (cfg?.slack)
-      await fetch(cfg.slack, {
+    if (cfg?.slack) {
+      const ok = await fetch(cfg.slack, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: `*${subject}*\n${m.text}` }),
-      }).catch(() => undefined);
+      })
+        .then((r) => r.ok)
+        .catch(() => false);
+      if (ok) sent++;
+    }
     if (!to.length && !cfg?.slack) console.warn(`[alerts] sem destinatário: ${subject}`);
   }
   return sent;
@@ -146,13 +150,21 @@ export async function runOpsAlerts(now = Date.now()) {
     { ...prev, failing: prev.failing ?? {} },
     now,
   );
-  messages.push(...(await newErrors(prev.errorsSeenUntil, now)));
+  const desde = prev.errorsSeenUntil ?? new Date(now - 15 * 60_000).toISOString();
+  messages.push(...(await newErrors(desde, now)));
   next.errorsSeenUntil = new Date(now).toISOString();
   const sent = await deliver(messages);
+  // Nada chegou a ninguém (SMTP fora, sem destinatário): não marca como
+  // avisado — guarda o estado anterior com o início da janela de erros, e a
+  // próxima rodada (15 min) tenta de novo com os mesmos avisos.
+  const salvar: AlertState =
+    messages.length > 0 && sent === 0
+      ? { ...prev, failing: prev.failing ?? {}, errorsSeenUntil: desde }
+      : next;
   await db()
     .insert(schema.appSettings)
-    .values({ key: STATE_KEY, value: next })
-    .onConflictDoUpdate({ target: schema.appSettings.key, set: { value: next } });
+    .values({ key: STATE_KEY, value: salvar })
+    .onConflictDoUpdate({ target: schema.appSettings.key, set: { value: salvar } });
   const pruned = await pruneErrorEvents(30);
-  return { level: health.level, alerts: messages.length, sent, pruned };
+  return { level: health.level, alerts: messages.length, sent, pruned, retry: salvar !== next };
 }

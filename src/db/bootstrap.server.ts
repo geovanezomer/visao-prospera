@@ -9,7 +9,7 @@
 // ============================================================================
 import { eq } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
-import { db, schema, type Db } from "./client.server";
+import { db, migrationClient, schema, type Db } from "./client.server";
 
 /** Credencial provisória do primeiro acesso. A troca é exigida no app. */
 export const INITIAL_ADMIN = {
@@ -18,10 +18,19 @@ export const INITIAL_ADMIN = {
   password: "admin",
 } as const;
 
-export async function runMigrations(target: Db = db()): Promise<void> {
+export async function runMigrations(target?: Db): Promise<void> {
   const { migrate } = await import("drizzle-orm/postgres-js/migrator");
   const migrationsFolder = process.env.MIGRATIONS_DIR ?? "db/migrations";
-  await migrate(target, { migrationsFolder });
+  if (target) return void (await migrate(target, { migrationsFolder }));
+  // Produção: conexão própria, sem o statement_timeout do pool (criar índice
+  // numa tabela grande pode passar de 60 s).
+  const app = db();
+  const dedicated = migrationClient();
+  try {
+    await migrate(dedicated?.db ?? app, { migrationsFolder });
+  } finally {
+    await dedicated?.end();
+  }
 }
 
 /** Cria admin/admin quando o banco ainda não tem nenhum administrador. */
