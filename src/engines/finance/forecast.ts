@@ -1,7 +1,7 @@
 import { AppState } from "./types";
 import { buildDRE } from "./dre";
 import { calcIndicators } from "./indicators";
-import { effectiveMonthValues, isCpvCost } from "./costs";
+import { effectiveMonthValues, isComercialCost, isCpvCost } from "./costs";
 import { resolveEffectiveRegime } from "./regime";
 import { sum } from "./format";
 import { vplClassico } from "./external";
@@ -18,8 +18,10 @@ export interface ForecastMonth {
   anoCalendario: number | null;
   receita: number;
   ebitda: number;
-  /** Tributos sobre vendas do mês (inclui IRPJ/CSLL fora do Lucro Real). */
+  /** Tributos sobre vendas do mês (PIS/COFINS/ICMS/ISS/CBS/IBS ou DAS). */
   impostosReceita: number;
+  /** IRPJ/CSLL do mês (Real: sobre o LAIR; Presumido: sobre a receita). */
+  impostosLucro: number;
   lucroLiquido: number;
   /** Necessidade de Capital de Giro estimada no fim do mês. */
   ncg: number;
@@ -100,7 +102,7 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   // SSOT: regime EFETIVO. Garante consistência com IndicatorsTab/Valuation
   // quando a RBT12 estoura o limite do Simples (downgrade para Presumido).
   const regime = resolveEffectiveRegime(state);
-  const { dre, tax } = buildDRE(state, regime);
+  const { dre } = buildDRE(state, regime);
   const receitaBase = dre.receitaBruta.slice(); // 12
   const receitaAnoBase = sum(receitaBase) || 1;
   const cpvBase = dre.cpv.slice();
@@ -113,8 +115,17 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
   // impostos sobre lucro (proporcionais à margem). No Lucro Real, IRPJ/CSLL
   // dependem do LAIR, não da receita — manter um ratio único distorce projeções
   // quando a margem projetada muda em relação ao ano-base.
-  const impostosVendasAnoBase = sum(tax.monthlyVendas ?? []);
-  const impostosLucroAnoBase = sum(tax.monthlyLucro ?? []);
+  // Série da DRE (no modo Odoo já inclui o ajuste ao contabilizado).
+  const impostosVendasAnoBase = sum(dre.impostosVendas);
+  const impostosLucroAnoBase = sum(dre.impostos);
+  // Deduções da receita (inadimplência como dedução + devoluções/abatimentos):
+  // tudo que separa a Receita Líquida da Bruta além dos tributos.
+  const deducoesRatioBase =
+    (sum(receitaBase) - sum(dre.receitaLiquida) - impostosVendasAnoBase) / receitaAnoBase;
+  // PDD (quando a inadimplência é provisão) é despesa variável com a receita.
+  const pddRatioBase = sum(dre.pdd) / receitaAnoBase;
+  // Aluguéis/venda de ativos operacionais: mantidos no nível médio do ano-base.
+  const outrasReceitasOpMensal = sum(dre.outrasReceitasOperacionais) / 12;
   // Presumido/Simples têm tributos majoritariamente sobre receita; Lucro Real separa
   // IRPJ/CSLL sobre lucro. Isso evita o bug de dividir imposto por LAIR negativo/baixo,
   // que fazia a projeção multiplicar impostos por milhares de vezes.
@@ -138,13 +149,16 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     const v = sum(effectiveMonthValues(c, regime));
     const isLabor = c.encargosAuto || LABOR_RE.test(c.label);
     if (isCpvCost(c)) continue; // já em cpvBase (inclui direto_venda)
-    if (c.category === "variavel") variaveisNaoCpvBase += v;
+    // Mesmo critério de comportamento da DRE: despesa comercial é variável por
+    // padrão (comissão, frete s/ vendas); `comportamento` sobrepõe.
+    const variavel = (c.comportamento ?? (isComercialCost(c) ? "variavel" : "fixo")) === "variavel";
+    if (variavel) variaveisNaoCpvBase += v;
     else if (isLabor) folhaFixaBase += v;
     else fixosNaoFolhaBase += v;
   }
   const fixosNaoFolhaMensalBase = fixosNaoFolhaBase / 12;
   const folhaFixaMensalBase = folhaFixaBase / 12;
-  const variaveisRatioBase = variaveisNaoCpvBase / receitaAnoBase;
+  const variaveisRatioBase = variaveisNaoCpvBase / receitaAnoBase + pddRatioBase;
 
   // Folha de CPV (MOD): escala como folha por steps de receita
   let folhaCpvBase = 0;
@@ -259,16 +273,18 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
     // Auditoria A1/F-01: EBITDA segue CPC 26 / DRE legal brasileira.
     // Receita Líquida = Receita Bruta − Impostos sobre Vendas (PIS/COFINS/ICMS/ISS/CBS/IBS).
     // Antes, EBITDA era calculado sobre receita BRUTA, inflando margem.
-    const impostosReceita = receita * (vendasRatioBase * fatorReforma(i) + lucroSobreReceitaRatio);
-    const receitaLiquida = receita - impostosReceita;
+    const impostosReceita = receita * vendasRatioBase * fatorReforma(i);
+    const receitaLiquida = receita * (1 - deducoesRatioBase) - impostosReceita;
     const lucroBruto = receitaLiquida - cpv;
-    const ebitda = lucroBruto - despesasOp;
+    const ebitda = lucroBruto - despesasOp + outrasReceitasOpMensal;
     const ebit = ebitda - depMensal;
     const resultadoFinanceiro = receita * resultadoFinanceiroRatioBase; // negativo para empresas alavancadas
     // A2: IRPJ/CSLL incidem sobre o LAIR (EBIT + Resultado Financeiro), não sobre EBIT puro.
     // Para empresas alavancadas isso reduz a carga tributária (juros dedutíveis).
     const lair = ebit + resultadoFinanceiro;
-    const impostosLucro = Math.max(0, lair) * taxLucroRatio;
+    // Real: IRPJ/CSLL sobre o LAIR. Presumido: sobre a receita (presunção) — abaixo
+    // do EBITDA, como na DRE. Simples: dentro do DAS (zero aqui).
+    const impostosLucro = Math.max(0, lair) * taxLucroRatio + receita * lucroSobreReceitaRatio;
     const lucroLiquido = lair - impostosLucro;
 
     // NCG do mês: anualiza receita e CPV do mês para PMR/PMP
@@ -297,6 +313,7 @@ export function buildForecast(state: AppState, cfg: ForecastConfig): ForecastRes
       receita: safe(receita),
       ebitda: safe(ebitda),
       impostosReceita: safe(impostosReceita),
+      impostosLucro: safe(impostosLucro),
       lucroLiquido: safe(lucroLiquido),
       ncg: safe(ncgT),
       deltaNcg: safe(deltaNcg),

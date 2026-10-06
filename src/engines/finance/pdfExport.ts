@@ -16,9 +16,14 @@ import autoTable from "jspdf-autotable";
 import { logoAsset } from "@/lib/brandAssets";
 import { sum, fmtBRL, fmtPct, MESES } from "@/engines/finance/format";
 import type { StrategicPdfInsights } from "@/engines/finance/strategic2";
-import type { AppState, BalancoDetalhado } from "@/engines/finance/types";
+import type { AppState, BalancoDetalhado, TaxRegime } from "@/engines/finance/types";
 import type { FinancialModel } from "@/engines/finance/financialModel";
-import { monthValues } from "@/engines/finance/costs";
+import {
+  effectiveMonthValues,
+  isAdminCost,
+  isComercialCost,
+  isFinanceiroCost,
+} from "@/engines/finance/costs";
 import { splitReceitasFinanceiras } from "@/engines/finance/shared";
 // IMPORTS APENAS DE TIPO — pdfExport é render-only.
 // Diagnóstico, recomendações e IA são CALCULADOS pelo caller (UI) e
@@ -1895,6 +1900,25 @@ function renderDiagnosticoIA(doc: jsPDF, result: DiagnosticoResult): void {
   );
 }
 
+/** Despesas por função (CPC 26) para a DRE do PDF — mesmo regime efetivo da DRE. */
+export function despesasPorFuncao(state: AppState, regime: TaxRegime) {
+  const despComerciais = Array(12).fill(0) as number[];
+  const despAdmin = Array(12).fill(0) as number[];
+  const despFinanc = Array(12).fill(0) as number[];
+  for (const c of state.costs) {
+    const v = effectiveMonthValues(c, regime, { simplesAnexo: state.tax?.simplesAnexo });
+    const alvo = isComercialCost(c)
+      ? despComerciais
+      : isAdminCost(c)
+        ? despAdmin
+        : isFinanceiroCost(c)
+          ? despFinanc
+          : null;
+    if (alvo) for (let i = 0; i < 12; i++) alvo[i] += v[i] ?? 0;
+  }
+  return { despComerciais, despAdmin, despFinanc };
+}
+
 function renderDRE(doc: jsPDF, yStart: number, state: AppState, model: FinancialModel) {
   const { dre, regime } = model;
   const QUARTERS = ["1º Tri", "2º Tri", "3º Tri", "4º Tri", "Total"];
@@ -1911,15 +1935,7 @@ function renderDRE(doc: jsPDF, yStart: number, state: AppState, model: Financial
   const outrasDedResto = dre.outrasDeducoes.map(
     (v, i) => v - (descIncond[i] ?? 0) - (abatimentos[i] ?? 0),
   );
-  const despComerciais = zeros12();
-  const despAdmin = zeros12();
-  const despFinanc = zeros12();
-  for (const c of state.costs) {
-    const v = monthValues(c, state.tax.regime);
-    if (c.category === "variavel") for (let i = 0; i < 12; i++) despComerciais[i] += v[i];
-    else if (c.category === "fixo") for (let i = 0; i < 12; i++) despAdmin[i] += v[i];
-    else if (c.category === "financeiro") for (let i = 0; i < 12; i++) despFinanc[i] += v[i];
-  }
+  const { despComerciais, despAdmin, despFinanc } = despesasPorFuncao(state, regime);
   const { financeiras: receitasFinMensal, operacionais: outrasReceitasOpMensal } =
     splitReceitasFinanceiras(state);
   const usaPDD = !!state.revenue.inadimplenciaComoPDD;

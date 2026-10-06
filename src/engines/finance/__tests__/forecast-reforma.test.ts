@@ -10,8 +10,9 @@ const prestadora = () => ({
   costs: [],
 });
 const cfg = { ...DEFAULT_FORECAST_CFG, crescimentoMensalPct: 0, horizonteMeses: 48 };
-const carga = (m: { receita: number; impostosReceita: number }) =>
-  (m.impostosReceita / m.receita) * 100;
+/** Tributos sobre vendas + IRPJ/CSLL (Presumido) em % da receita. */
+const carga = (m: { receita: number; impostosReceita: number; impostosLucro: number }) =>
+  ((m.impostosReceita + m.impostosLucro) / m.receita) * 100;
 
 describe("projeção com o cronograma da Reforma", () => {
   // IRPJ 15% + CSLL 9% sobre 32% da receita = 7,68% (não muda com a Reforma).
@@ -29,6 +30,9 @@ describe("projeção com o cronograma da Reforma", () => {
     expect(carga(f[35])).toBeCloseTo(8.8 + 0.1 + 5 + IR_CSLL, 6);
     // 2029: IBS 10% de 17,7 = 1,77; ISS a 90% = 4,5.
     expect(carga(f[36])).toBeCloseTo(8.8 + 1.77 + 4.5 + IR_CSLL, 6); // 22,75%
+    // IRPJ/CSLL presumidos ficam fora dos tributos sobre vendas (abaixo do EBITDA).
+    expect((f[36].impostosLucro / f[36].receita) * 100).toBeCloseTo(IR_CSLL, 6);
+    expect((f[36].impostosReceita / f[36].receita) * 100).toBeCloseTo(8.8 + 1.77 + 4.5, 6);
     // Dentro do ano a carga é a mesma em todos os meses.
     for (let i = 13; i < 24; i++) expect(carga(f[i])).toBeCloseTo(carga(f[12]), 9);
   });
