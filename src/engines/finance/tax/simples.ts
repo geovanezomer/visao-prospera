@@ -8,12 +8,7 @@
 
 import { AppState, SimplesAnexo, TaxConfig } from "../types";
 import { sum, zeros12 } from "../format";
-import {
-  getSimplesTable,
-  getSimplesLimite,
-  SIMPLES_SUBLIMITE_ESTADUAL,
-  SIMPLES_PARTILHA_ICMS_ISS_PCT,
-} from "../taxDefaults";
+import { getSimplesTable, getSimplesLimite, SIMPLES_SUBLIMITE_ESTADUAL } from "../taxDefaults";
 import { receitaTributavel } from "../shared";
 import { resolveSimplesAnexo } from "../regime";
 import { computeIcmsIssNormal, type MonthlyTax } from "./shared";
@@ -46,21 +41,24 @@ export function calcSimples(state: AppState): MonthlyTax {
   const sublimEstadual = SIMPLES_SUBLIMITE_ESTADUAL;
   const excedeuSublimite = rbBrutaAnual > sublimEstadual && rbBrutaAnual <= limite;
 
-  // Ajuste ICMS/ISS "por fora" quando excedeuSublimite (LC 123/06 art. 13-A):
-  //   das_sem_icmsIss[m] = das[m] × (1 − partilha)  (partilha = 6ª faixa do anexo)
-  //   monthly[m]         = das_sem_icmsIss[m] + icmsIssForaMensal[m]
+  // Acima do sublimite (LC 123/06 art. 13-A), ICMS/ISS saem do DAS e são
+  // recolhidos pelo regime normal:
+  //   monthly[m] = das[m] + icmsIssForaMensal[m]
+  // O DAS NÃO é reduzido: RBT12 acima de R$ 3,6M cai sempre na 6ª faixa, cuja
+  // repartição nos Anexos da LC 123 não tem coluna de ICMS/ISS (a alíquota da
+  // faixa já é só federal — no Anexo I a efetiva cai de 11,875% para 8,5% ao
+  // cruzar R$ 3,6M). Antes subtraíamos a partilha da 5ª faixa e o ICMS/ISS
+  // saía duas vezes (Anexo I, RBT12 4M: DAS subestimado em ~R$ 128 mil/ano).
   // O teto de ISS (5% LC 116/03) e o multiplicador da reforma (transição ICMS→IBS)
-  // são aplicados dentro de `computeIcmsIssNormal` — defesa em profundidade.
+  // são aplicados dentro de `computeIcmsIssNormal`.
   let monthly = dasBruto.slice();
   let icmsIssForaAnual = 0;
   let dasSemIcmsIssAnual = 0;
   if (excedeuSublimite && !excedeu) {
-    const partilha = (SIMPLES_PARTILHA_ICMS_ISS_PCT[anexo] ?? 0) / 100;
-    const dasSemIcmsIss = dasBruto.map((v) => v * (1 - partilha));
     const fora = computeIcmsIssNormal(state);
-    monthly = dasSemIcmsIss.map((v, i) => v + (fora.monthly[i] || 0));
+    monthly = dasBruto.map((v, i) => v + (fora.monthly[i] || 0));
     icmsIssForaAnual = fora.annual;
-    dasSemIcmsIssAnual = dasSemIcmsIss.reduce((a, b) => a + b, 0);
+    dasSemIcmsIssAnual = sum(dasBruto);
   }
   const annual = sum(monthly);
 

@@ -3,11 +3,22 @@
 // comércio (Anexo I), regressão abaixo do sublimite e desenquadramento total.
 
 import { describe, expect, it } from "vitest";
-import { calcSimples } from "../tax/simples";
+import { calcSimples, simplesAliquotaEfetiva } from "../tax/simples";
 import { createState, m12 } from "./helpers";
-import { SIMPLES_PARTILHA_ICMS_ISS_PCT } from "../taxDefaults";
 
 describe("calcSimples — ICMS/ISS por fora acima do sublimite estadual", () => {
+  it("Anexo I, RBT12 = 4,0M: DAS integral de 9,55% (R$ 382 mil), sem desconto de partilha", () => {
+    // 6ª faixa: (4.000.000 × 19% − 378.000) / 4.000.000 = 9,55%
+    const st = createState({
+      tax: { regime: "simples", simplesAnexo: "I", issIcms: 18 },
+      businessType: "comercio",
+      revenue: { bruta: m12(4_000_000 / 12) },
+    });
+    const res = calcSimples(st);
+    expect(simplesAliquotaEfetiva(4_000_000, "I", st.tax)).toBeCloseTo(9.55, 2);
+    expect(res.detail["DAS Simples (Anexo I, s/ ICMS-ISS)"]).toBeCloseTo(382_000, -1);
+  });
+
   it("RBT12 = 3,0M → DAS integral, sem componente por fora (regressão)", () => {
     const st = createState({
       tax: { regime: "simples", simplesAnexo: "III", issIcms: 5 },
@@ -20,7 +31,7 @@ describe("calcSimples — ICMS/ISS por fora acima do sublimite estadual", () => 
     expect(Object.keys(res.detail).some((k) => k.includes("s/ ICMS-ISS"))).toBe(false);
   });
 
-  it("RBT12 = 4,2M serviços Anexo III: DAS reduzido pela partilha + ISS por fora", () => {
+  it("RBT12 = 4,2M serviços Anexo III: DAS da 6ª faixa + ISS por fora", () => {
     const st = createState({
       tax: { regime: "simples", simplesAnexo: "III", issIcms: 5 },
       businessType: "servicos",
@@ -31,13 +42,13 @@ describe("calcSimples — ICMS/ISS por fora acima do sublimite estadual", () => 
     const issFora = res.detail["ICMS/ISS por fora (sublimite art. 13-A)"] ?? 0;
     expect(dasSemIcmsIss).toBeGreaterThan(0);
     expect(issFora).toBeGreaterThan(0);
-    // Partilha aplicada corretamente e soma bate com o annual.
+    // Soma bate com o annual.
     expect(res.annual).toBeCloseTo(dasSemIcmsIss + issFora, 0);
     // ISS por fora ≈ receita tributável × 5% (alíquota municipal).
     expect(issFora).toBeCloseTo(350_000 * 12 * 0.05, -3);
   });
 
-  it("RBT12 = 4,2M comércio Anexo I: DAS reduzido + ICMS líquido de créditos por fora", () => {
+  it("RBT12 = 4,2M comércio Anexo I: DAS da 6ª faixa + ICMS líquido de créditos por fora", () => {
     const st = createState({
       tax: {
         regime: "simples",
@@ -64,8 +75,9 @@ describe("calcSimples — ICMS/ISS por fora acima do sublimite estadual", () => 
     // ICMS líquido (débito − crédito) < débito bruto.
     const debitoBruto = 350_000 * 12 * 0.18;
     expect(icmsFora).toBeLessThan(debitoBruto);
-    // Partilha do Anexo I = 33,5% da última faixa.
-    expect(SIMPLES_PARTILHA_ICMS_ISS_PCT.I).toBe(33.5);
+    // 6ª faixa já é só federal: o DAS entra integral, sem subtrair partilha.
+    const aliq = simplesAliquotaEfetiva(350_000 * 12, "I", st.tax) / 100;
+    expect(dasSemIcmsIss).toBeCloseTo(350_000 * 12 * aliq, 0);
   });
 
   it("RBT12 = 4,9M → desenquadramento prevalece (sem duplicar avisos)", () => {
@@ -104,7 +116,7 @@ describe("calcSimples — ICMS/ISS por fora acima do sublimite estadual", () => 
     expect(Object.keys(res.detail).some((k) => k.includes("Excedeu limite Simples"))).toBe(false);
   });
 
-  it("Anexo IV (44,75%): partilha reduz o DAS e ISS por fora respeita teto 5%", () => {
+  it("Anexo IV: ISS por fora respeita teto 5%", () => {
     const st = createState({
       tax: { regime: "simples", simplesAnexo: "IV", issIcms: 8 }, // acima do teto
       businessType: "servicos",
@@ -116,7 +128,7 @@ describe("calcSimples — ICMS/ISS por fora acima do sublimite estadual", () => 
     expect(issFora).toBeCloseTo(350_000 * 12 * 0.05, -3);
   });
 
-  it("Anexo V (30,5%): partilha aplicada corretamente e detail explícito", () => {
+  it("Anexo V: ISS por fora e detail explícito", () => {
     const st = createState({
       tax: { regime: "simples", simplesAnexo: "V", issIcms: 4 },
       businessType: "servicos",

@@ -12,13 +12,18 @@ import { calcSimples } from "./simples";
 import { calcPresumido } from "./presumido";
 import { calcReal } from "./real";
 import { getReformaRatesForYear, eraForYear, type ReformaRates } from "./reforma";
-import { getCbsAliquota, getIbsAliquotaRef, CBS_ALIQUOTA_2026_TESTE } from "../taxDefaults";
+import { getCbsAliquota, getIbsAliquotaRef } from "../taxDefaults";
 import type { MonthlyTax } from "./shared";
 
 /**
  * Projeção da carga efetiva ano-a-ano para um regime, aplicando o cronograma
  * oficial. Reaproveita o engine existente sobrescrevendo os multiplicadores de
- * transição via `ratesOverride`. Para 2026 força CBS=0,9% (teste).
+ * transição via `ratesOverride`.
+ *
+ * 2026 é calculado com as regras atuais: a CBS de 0,9% e o IBS de 0,1% da
+ * fase de teste são integralmente compensáveis com PIS/COFINS (LC 214/2025,
+ * art. 343), e PIS/COFINS seguem devidos. Calcular 2026 pela era "transicao"
+ * zerava PIS/COFINS e subestimava a carga (≈2,65 p.p. no Presumido).
  */
 export function compareYearsForRegime(
   state: AppState,
@@ -30,15 +35,13 @@ export function compareYearsForRegime(
     const rates = getReformaRatesForYear(year, state.tax);
     const ibsFrac = ibsFull > 0 ? rates.ibsPct / ibsFull : 0;
     const era = eraForYear(year);
+    const calcEra: TaxEra = year === 2026 ? "atual" : era;
     const s: AppState = {
       ...state,
       tax: {
         ...state.tax,
-        era,
-        cbsAliquota:
-          era === "transicao" && year === 2026
-            ? CBS_ALIQUOTA_2026_TESTE
-            : getCbsAliquota(state.tax),
+        era: calcEra,
+        cbsAliquota: getCbsAliquota(state.tax),
         ratesOverride: {
           ...(state.tax.ratesOverride ?? {}),
           reformaTransicaoIbsMult: ibsFrac,

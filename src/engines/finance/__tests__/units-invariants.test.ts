@@ -10,7 +10,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { buildDRE } from "../dre";
-import { calcIndicators } from "../indicators";
+import { calcIndicators, KE_DEFAULT_BY_SECTOR, KE_FALLBACK } from "../indicators";
 import { createState, m12 } from "./helpers";
 
 describe("Unidades — Ke/Kd/WACC nunca duplicam ×100", () => {
@@ -71,15 +71,16 @@ describe("Unidades — Ke/Kd/WACC nunca duplicam ×100", () => {
     expect(ind.wacc).toBeLessThan(1000);
   });
 
-  it("Piso de Ke=8% (não 0.08) quando ke<=0 — bug histórico", () => {
+  it("Ke padrão do setor em % (não fração) quando ke<=0 — bug histórico", () => {
     const s = createState({
       tax: { regime: "simples" },
       capital: { ke: 0, kd: 0, patrimonioLiquido: 1_000_000 },
     });
     const { dre } = buildDRE(s, "simples");
     const ind = calcIndicators(s, dre);
-    // wE=1, wD=0 → WACC = keSeguro = 8 (não 0.08)
-    expect(ind.wacc).toBeCloseTo(8, 1);
+    // wE=1, wD=0 → WACC = Ke padrão do setor, em % (ex.: 18, não 0.18)
+    expect(ind.wacc).toBeCloseTo(KE_DEFAULT_BY_SECTOR[s.businessType] ?? KE_FALLBACK, 1);
+    expect(ind.wacc).toBeGreaterThan(10);
   });
 
   it("ROIC e WACC estão no MESMO domínio (% units) — comparáveis", () => {

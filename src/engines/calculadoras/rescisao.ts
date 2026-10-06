@@ -56,15 +56,6 @@ export const motivoDescricao: Record<MotivoRescisao, string> = {
 
 import { getTabelas, ANO_VIGENTE } from "./tabelas";
 
-/** Faixas IRRF mensais (após dedução simplificada opcional). Vigente desde mai/2024. */
-const IRRF_FAIXAS = [
-  { ate: 2428.8, aliquota: 0.0, deduzir: 0 },
-  { ate: 2826.65, aliquota: 0.075, deduzir: 182.16 },
-  { ate: 3751.05, aliquota: 0.15, deduzir: 394.16 },
-  { ate: 4664.68, aliquota: 0.225, deduzir: 675.49 },
-  { ate: Infinity, aliquota: 0.275, deduzir: 908.73 },
-] as const;
-
 /**
  * Calcula INSS progressivo (cap no teto), usando as faixas do ano informado.
  * Padrão: ano vigente (SSOT em ./tabelas.ts).
@@ -83,15 +74,6 @@ export function calcularINSS(base: number, ano: number = ANO_VIGENTE): number {
   }
   return Math.round(total * 100) / 100;
 }
-
-/** Dedução por dependente (IRRF). */
-const DEP_DEDUCAO = 189.59;
-/**
- * Desconto simplificado mensal (Lei 14.848/2024, art. 5º) — R$ 607,20.
- * Substitui todas as deduções legais (INSS + dependentes + pensão etc.) quando
- * for MAIS vantajoso ao contribuinte. `calcularIRRF` escolhe automaticamente.
- */
-const DESCONTO_SIMPLIFICADO = 607.2;
 
 /**
  * Redutor do IRRF mensal — Lei nº 15.270/2025 (vigência 01/01/2026).
@@ -116,7 +98,7 @@ export function redutorLei15270(rendimentoBrutoMensal: number, irApurado: number
 /** Aplica a tabela progressiva do IRRF a uma base já líquida de deduções. */
 function irrfTabela(base: number): number {
   if (base <= 0) return 0;
-  for (const f of IRRF_FAIXAS) {
+  for (const f of getTabelas().irrfFaixas) {
     if (base <= f.ate) {
       return Math.max(0, base * f.aliquota - f.deduzir);
     }
@@ -141,8 +123,9 @@ export function calcularIRRF(
   dependentes: number,
   pensao: number = 0,
 ): number {
-  const baseTrad = Math.max(0, baseComINSS - inss - dependentes * DEP_DEDUCAO - pensao);
-  const baseSimp = Math.max(0, baseComINSS - DESCONTO_SIMPLIFICADO);
+  const { irrfDependente, irrfDescontoSimplificado } = getTabelas();
+  const baseTrad = Math.max(0, baseComINSS - inss - dependentes * irrfDependente - pensao);
+  const baseSimp = Math.max(0, baseComINSS - irrfDescontoSimplificado);
   const irTrad = irrfTabela(baseTrad);
   const irSimp = irrfTabela(baseSimp);
   const irApurado = Math.min(irTrad, irSimp);

@@ -252,6 +252,8 @@ export const KE_DEFAULT_BY_SECTOR: Record<string, number> = {
   comercio: 17,
   industria: 16,
 };
+/** Ke quando o setor não está mapeado (% a.a.). */
+export const KE_FALLBACK = 18;
 
 /**
  * IMPORTANTE (performance): prefira sempre passar `cfPre` e `balancoPre` já
@@ -344,11 +346,14 @@ export function calcIndicators(
   const wE = V > 0 ? PL / V : capital.proprio / 100;
   const wD = V > 0 ? D / V : 1 - capital.proprio / 100;
 
-  // SSOT: WACC usa shield do regime EFETIVO. Ke piso 8% (Selic neutra).
+  // SSOT: WACC usa shield do regime EFETIVO. Sem Ke informado, usa o padrão do
+  // setor (Selic + prêmio de risco PME-BR). Um piso fixo de 8% ficava abaixo
+  // da própria taxa livre de risco com Selic alta e inflava o valuation.
   // Otimização: regime resolvido uma única vez e reusado abaixo (NOPAT).
   const regimeEfetivo = resolveEffectiveRegime(state);
   const irShield = irShieldForRegime(regimeEfetivo, lairAnual);
-  const keSeguro = capital.ke > 0 ? capital.ke : 8;
+  const keSeguro =
+    capital.ke > 0 ? capital.ke : (KE_DEFAULT_BY_SECTOR[state.businessType] ?? KE_FALLBACK);
   const wacc = wE * keSeguro + wD * capital.kd * (1 - irShield);
 
   // ---- NOPAT e ROIC (auditoria CFO) ----

@@ -9,6 +9,7 @@
  * "esvaziar um campo no painel = voltar ao oficial" sem precisar limpar nada.
  */
 import type { BusinessType, SimplesAnexo, TaxConfig } from "./types";
+import { getTabelas } from "@/engines/calculadoras/tabelas";
 
 // =====================================================================
 // IMPOSTOS SOBRE LUCRO — IRPJ + Adicional + CSLL
@@ -43,30 +44,6 @@ export const SIMPLES_LIMITE = 4_800_000;
  *  e passam a ser recolhidos pelo regime normal estadual. SSOT-11. */
 export const SIMPLES_SUBLIMITE_ESTADUAL = 3_600_000;
 
-/**
- * Partilha do DAS destinada a ICMS/ISS na ÚLTIMA FAIXA (6ª) de cada anexo.
- * Fonte: LC 123/06, Anexos I a V (percentual de repartição da 6ª faixa).
- *
- * ⚠ CONFERIR NA APROVAÇÃO CVM: existe divergência doutrinária — parte da
- * literatura sustenta que na 6ª faixa (RBT12 3,6M–4,8M) o percentual de
- * ICMS/ISS na partilha é 0% (a faixa presume recolhimento por fora). Os
- * valores abaixo assumem a interpretação da Receita Federal (Solução de
- * Consulta COSIT nº 4/2019) — DAS inclui parcela ICMS/ISS mesmo na 6ª faixa,
- * daí a necessidade de subtrair antes de somar o RPA. Se a interpretação
- * mudar, use zeros — `computeIcmsIssNormal` continua correto porque só
- * SOMA o tributo por fora.
- *
- * Anexo III: partilha oficial da faixa (32,15%) implicaria ISS efetivo
- * eventualmente acima do teto de 5% da LC 116/03; o cap é aplicado no
- * consumo (`computeIcmsIssNormal` → ISS_TETO_LC116).
- */
-export const SIMPLES_PARTILHA_ICMS_ISS_PCT: Record<SimplesAnexo, number> = {
-  I: 33.5, // ICMS — comércio
-  II: 32.0, // ICMS — indústria
-  III: 32.15, // ISS — serviços (respeitando teto 5% LC 116)
-  IV: 44.75, // ISS — serviços Anexo IV
-  V: 30.5, // ISS — serviços Anexo V
-};
 /** Fator R — relação folha/RBT12 mínima para migrar Anexo V → III (%). */
 export const FATOR_R_MINIMO_PCT = 28;
 /** Encargos patronais padrão (CLT) para folha geral (%). */
@@ -177,27 +154,28 @@ export const ALIQ_PRESUMIDA_IBS_SN = 1.2;
 // (Plano v3 — todos editáveis via lightbox "Folha & Sócios")
 // =====================================================================
 /** Salário mínimo nacional vigente (R$/mês) — piso para pró-labore de sócio operacional. */
-export const SALARIO_MINIMO_DEFAULT = 1621;
+export const SALARIO_MINIMO_DEFAULT = getTabelas().salarioMinimo;
 /** INSS sócio (contribuinte individual) — plano simplificado, Lei 9.876/99. */
 export const INSS_SOCIO_ALIQ_DEFAULT = 11;
 /** Teto contributivo do INSS (R$/mês) — Portaria Interministerial MPS/MF nº 13/2026. */
-export const INSS_TETO_DEFAULT = 8475.55;
+export const INSS_TETO_DEFAULT = getTabelas().inssTeto;
 /** Cota patronal de INSS sobre pró-labore (Lucro Presumido/Real). */
 export const INSS_PATRONAL_ALIQ_DEFAULT = 20;
 /** Faixa do IRPF mensal: [até R$, alíquota %, parcela a deduzir R$]. */
 export type IrpfFaixa = [number, number, number];
-/** Tabela mensal do IRPF — vigente desde maio/2024 (Lei 14.848/2024). */
-export const IRPF_TABLE_DEFAULT: IrpfFaixa[] = [
-  [2259.2, 0, 0],
-  [2826.65, 7.5, 169.44],
-  [3751.05, 15, 381.44],
-  [4664.68, 22.5, 662.77],
-  [Number.POSITIVE_INFINITY, 27.5, 896.0],
-];
+/**
+ * Tabela mensal do IRPF do ano vigente. Fonte única: calculadoras/tabelas.ts
+ * (antes havia uma cópia aqui, parada na tabela de maio/2024).
+ */
+export const IRPF_TABLE_DEFAULT: IrpfFaixa[] = getTabelas().irrfFaixas.map((f) => [
+  f.ate === Infinity ? Number.POSITIVE_INFINITY : f.ate,
+  Math.round(f.aliquota * 1000) / 10,
+  f.deduzir,
+]);
 /** Dedução por dependente no IRPF mensal (R$). */
-export const IRPF_DEPENDENTE_DEDUCAO_DEFAULT = 189.59;
-/** Desconto simplificado mensal opcional — Lei 14.973/2024 (R$). */
-export const IRPF_DESCONTO_SIMPLIFICADO_DEFAULT = 564.8;
+export const IRPF_DEPENDENTE_DEDUCAO_DEFAULT = getTabelas().irrfDependente;
+/** Desconto simplificado mensal (R$). */
+export const IRPF_DESCONTO_SIMPLIFICADO_DEFAULT = getTabelas().irrfDescontoSimplificado;
 
 export interface PayrollOverride {
   salarioMinimo?: number;

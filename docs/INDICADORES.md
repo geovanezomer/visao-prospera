@@ -482,13 +482,13 @@ O FinancePRO **não gera** um Balanço automaticamente — os dados patrimoniais
 - **Calculado em:** `indicators.ts:171`
 - **Componentes:**
 
-| Componente  | Descrição                                                                             | Fonte                   |
-| ----------- | ------------------------------------------------------------------------------------- | ----------------------- |
-| `wE`        | Peso do capital próprio = `PL / (PL + D)` (fallback: `capital.proprio/100`)           | `indicators.ts:165`     |
-| `wD`        | Peso do capital de terceiros = `D / (PL + D)`                                         | `indicators.ts:166`     |
-| `Ke`        | Custo do capital próprio (% a.a.) — input direto `capital.ke`; piso 8% (Selic neutra) | `indicators.ts:170-171` |
-| `Kd`        | Custo da dívida (% a.a.) — input direto `capital.kd`                                  | `indicators.ts:171`     |
-| `IR Shield` | Escudo fiscal de juros — `irShieldForRegime()` de `tax/real.ts:202-204`               | `indicators.ts:169`     |
+| Componente  | Descrição                                                                                                                                                       | Fonte                   |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `wE`        | Peso do capital próprio = `PL / (PL + D)` (fallback: `capital.proprio/100`)                                                                                     | `indicators.ts:165`     |
+| `wD`        | Peso do capital de terceiros = `D / (PL + D)`                                                                                                                   | `indicators.ts:166`     |
+| `Ke`        | Custo do capital próprio (% a.a.) — input direto `capital.ke`; se vazio, Ke padrão do setor (`KE_DEFAULT_BY_SECTOR`: serviços 18%, comércio 17%, indústria 16%) | `indicators.ts:170-171` |
+| `Kd`        | Custo da dívida (% a.a.) — input direto `capital.kd`                                                                                                            | `indicators.ts:171`     |
+| `IR Shield` | Escudo fiscal de juros — `irShieldForRegime()` de `tax/real.ts:202-204`                                                                                         | `indicators.ts:169`     |
 
 **Escudo Fiscal (`irShieldForRegime`):**
 
