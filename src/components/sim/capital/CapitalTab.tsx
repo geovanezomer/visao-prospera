@@ -45,6 +45,8 @@ export function CapitalTab() {
   // indicadores (DSCR, ROIC, WACC, cobertura) automaticamente coerentes.
   const contracts = useMemo(() => c.debtContracts ?? EMPTY_CONTRACTS, [c.debtContracts]);
   useEffect(() => {
+    // Modo Odoo: juros, amortizações e captações já vêm do razão.
+    if (state.realizado) return;
     if (contracts.length === 0) {
       // Sem contratos: remove linha sintética de juros e zera amortizações/captações no fluxo.
       update((s) => {
@@ -96,6 +98,7 @@ export function CapitalTab() {
   // ke padrão por setor (benchmark PME BR — Selic + prêmio de risco). SSOT em
   // `engines/finance/indicators.ts`. O usuário pode sobrescrever via Análise/Valuation.
   useEffect(() => {
+    if (state.realizado) return;
     const keAlvo = KE_DEFAULT_BY_SECTOR[state.businessType] ?? 18;
     if (!c.ke || c.ke <= 0) {
       update((s) => ({ ...s, capital: { ...s.capital, ke: keAlvo } }));

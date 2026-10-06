@@ -30,7 +30,9 @@ import type { FinancialModelCashflow, FinancialModelDRE } from "./financialModel
 import type { MonthlyTax } from "./tax/shared";
 import { deriveAbertura } from "./aberturaDerivada";
 import { safeNumber as n } from "./safeMath";
-import { buildRecebivelMensal, buildComprasMensal } from "./cashflow";
+import { buildRecebivelMensal, buildComprasMensal, buildCashFlowEngine } from "./cashflow";
+import { anchorBalanco } from "./anchor";
+import { calcBalancoTotals } from "./balanco";
 import { isFolhaCost, effectiveMonthValues } from "./costs";
 import { resolveEffectiveRegime } from "./regime";
 
@@ -62,7 +64,33 @@ export interface BalancoFechamentoResult {
 }
 
 /** Deriva o Balanço de Fechamento a partir da abertura + período. PURE. */
-export function deriveBalancoFechamento({ state, dre, cf }: DeriveOpts): BalancoFechamentoResult {
+export function deriveBalancoFechamento(opts: DeriveOpts): BalancoFechamentoResult {
+  const r = opts.state.realizado;
+  if (!r?.fechamentoBase) return deriveBalancoFechamentoEngine(opts);
+  // Modo Odoo: fechamento REAL + efeito do motor. O motor recebe o fluxo
+  // reconstruído (não o ancorado) para que a diferença base→estado seja limpa.
+  const eng = deriveBalancoFechamentoEngine({ ...opts, cf: buildCashFlowEngine(opts.state) });
+  const balanco = { ...anchorBalanco(r, eng.balanco), anterior: eng.balanco.anterior };
+  const t = calcBalancoTotals(balanco);
+  const passivo = t.passivoTotal;
+  return {
+    balanco,
+    totals: {
+      ativo: t.ativoTotal,
+      passivo,
+      pl: t.patrimonioLiquido,
+      diferenca: t.diferenca,
+      fechado: Math.abs(t.diferenca) < 1,
+    },
+  };
+}
+
+/** Fechamento reconstruído pelo motor (abertura + fluxos), sem âncora. PURE. */
+export function deriveBalancoFechamentoEngine({
+  state,
+  dre,
+  cf,
+}: DeriveOpts): BalancoFechamentoResult {
   const cap = state.capital;
   // Saldos de abertura — fonte única em `aberturaSSOT` (abaixo).
   const balConst = cap.balanco ?? {}; // itens patrimoniais constantes

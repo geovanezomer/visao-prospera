@@ -137,5 +137,27 @@ check(
   g.realizavel_lp,
   alfa.d.actuals.closing.realizavel_lp - 218_000,
 );
+// Cockpit ancorado: o que o app EXIBE (DRE, caixa, balanço) = razão, em todas as entidades.
+console.log("\n# Cockpit (números exibidos = razão)");
+const { anchorOdooState, mergeOdooActuals, suggestPremissas } =
+  await import("@/engines/odoo/toAppState");
+const { buildFinancialModel } = await import("@/engines/finance/financialModel");
+const { DEFAULT_STATE } = await import("@/engines/finance/defaults");
+for (const e of entities) {
+  const d = buildEntityData(snap, e, "2026-09");
+  const st = anchorOdooState(mergeOdooActuals(suggestPremissas(DEFAULT_STATE, d), d));
+  const m = buildFinancialModel(st);
+  const a = d.actuals;
+  const p = a.pl;
+  const llOdoo = a.resultadoMensal.reduce((x, y) => x + y, 0);
+  check(`${e.key} lucro líquido exibido`, sum(m.dre.lucroLiquido), llOdoo);
+  check(
+    `${e.key} caixa final exibido`,
+    m.cf.saldoFinal[11],
+    a.closing.caixa + a.closing.aplicacoes,
+  );
+  check(`${e.key} tributos s/ vendas exibidos`, sum(m.dre.impostosVendas), sum(p.impostos_vendas));
+  check(`${e.key} balanço exibido fecha`, m.balancoFechamento.totals.diferenca, 0);
+}
 console.log(fails ? `\n${fails} divergência(s)` : "\nTudo confere.");
 process.exit(fails ? 1 : 0);

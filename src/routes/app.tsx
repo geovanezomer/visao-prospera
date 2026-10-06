@@ -98,8 +98,35 @@ import { cn } from "@/lib/utils";
 import { OdooCockpitProvider, useOdooCockpit } from "@/components/odoo/cockpit";
 import { OdooBar } from "@/components/odoo/OdooBar";
 import { ActualsLock } from "@/components/odoo/ActualsLock";
-import { applyOdooOverlay, suggestPremissas } from "@/engines/odoo/toAppState";
+import {
+  anchorOdooState,
+  applyOdooOverlay,
+  buildEntityData,
+  suggestPremissas,
+} from "@/engines/odoo/toAppState";
 import { DEFAULT_STATE } from "@/engines/finance/defaults";
+
+type Cockpit = ReturnType<typeof useOdooCockpit>;
+function suggestFor(
+  snapshot: Cockpit["snapshot"],
+  entity: Cockpit["entity"],
+  entities: Cockpit["entities"],
+  data: Cockpit["data"],
+  endMonth: Cockpit["endMonth"],
+) {
+  if (!snapshot || !entity || !data) return undefined;
+  let ref = entity;
+  if (entity.kind === "branch") {
+    ref = entities.find((e) => e.kind === "entity" && e.rootId === entity.rootId) ?? entity;
+  } else if (entity.kind === "consolidated") {
+    const fiscal = entities.filter((e) => e.kind === "entity");
+    const revenue = (e: typeof entity) =>
+      buildEntityData(snapshot, e, null).actuals.pl.receita_bruta.reduce((a, b) => a + b, 0);
+    ref = fiscal.sort((a, b) => revenue(b) - revenue(a))[0] ?? entity;
+  }
+  const refData = ref === entity ? data : buildEntityData(snapshot, ref, endMonth);
+  return suggestPremissas(DEFAULT_STATE, refData);
+}
 
 type AppTab = TabKey | "ai" | "calculadoras" | "consolidado";
 
@@ -240,9 +267,18 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
     cockpit.active && cockpit.entity
       ? `odoo:${cockpit.instanceKey ?? "x"}:${cockpit.entity.key}`
       : undefined;
+  // Premissas iniciais sugeridas pelo realizado. Filial herda da matriz (o
+  // CNPJ raiz é que apura IRPJ/CSLL); o consolidado, da maior entidade.
   const initialPremissas = useMemo(
-    () => (cockpit.data ? suggestPremissas(DEFAULT_STATE, cockpit.data) : undefined),
-    [cockpit.data],
+    () =>
+      suggestFor(
+        cockpit.snapshot,
+        cockpit.entity,
+        cockpit.entities,
+        cockpit.data,
+        cockpit.endMonth,
+      ),
+    [cockpit.snapshot, cockpit.entity, cockpit.entities, cockpit.data, cockpit.endMonth],
   );
   const {
     state: baseState,
@@ -254,7 +290,7 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
   } = useAppState(namespace, initialPremissas);
   const overlay = cockpit.active ? cockpit.overlay : null;
   const state = useMemo(
-    () => (overlay ? applyOdooOverlay(baseState, overlay) : baseState),
+    () => (overlay ? anchorOdooState(applyOdooOverlay(baseState, overlay)) : baseState),
     [baseState, overlay],
   );
   const { scenarios, save, remove, replaceAll: replaceScenarios } = useScenarios();

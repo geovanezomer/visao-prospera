@@ -160,7 +160,9 @@ const nn = (v: number | undefined): number => (typeof v === "number" && isFinite
 
 /** Aplica o balanço detalhado sobre os agregados de `capital`. Pure. */
 export function normalizeStateFromBalanco(state: AppState): AppState {
-  const b = state.capital.balanco;
+  // Modo Odoo: os agregados (ativo total, PL, liquidez...) são do fechamento
+  // REAL — não da abertura nem de uma reconstrução.
+  const b = state.realizado?.balancoFechamento ?? state.capital.balanco;
   if (!isBalancoPreenchido(b)) return state;
 
   const t = calcBalancoTotals(b);

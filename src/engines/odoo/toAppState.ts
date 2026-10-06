@@ -14,12 +14,20 @@
 // ============================================================================
 import type {
   AppState,
+  RealizadoLedger,
   BalancoDetalhado,
   CostLine,
   DebtContract,
   RevenueDeducao,
 } from "@/engines/finance/types";
 import { bsValue, plValue } from "./mapping";
+import type { CashFlow } from "@/engines/finance/cashflow";
+import { finalizeCashFlow, periodLabels } from "@/engines/finance/anchor";
+import { buildDRE } from "@/engines/finance/dre";
+import { buildCashFlowEngine } from "@/engines/finance/cashflow";
+import { deriveBalancoFechamentoEngine } from "@/engines/finance/balancoFechamento";
+import { normalizeStateFromBalanco } from "@/engines/finance/balanco";
+import { resolveEffectiveRegime } from "@/engines/finance/regime";
 import type { BsBucket, OdooCompanyInfo, OdooSnapshot, PlLine } from "./types";
 
 export type OdooEntityKind = "entity" | "branch" | "consolidated";
@@ -153,6 +161,10 @@ export type OdooActuals = {
   /** Resultado acumulado de todos os períodos até a abertura / fechamento. */
   resultadoAteAbertura: number;
   resultadoAteFechamento: number;
+  /** Saldo de cada grupo do balanço ao FIM de cada um dos 12 meses (alinhado à direita). */
+  bsMonthly: Record<BsBucket, number[]>;
+  /** Resultado contábil de cada mês (receitas − despesas, inclusive tributos). */
+  resultadoMensal: number[];
 };
 
 const PL_KEYS: PlLine[] = [
@@ -205,19 +217,43 @@ const BS_KEYS: BsBucket[] = [
  * termina no último mês fechado (data de bloqueio) ou no último mês completo
  * do retrato.
  */
+function prevMonth(ym: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 2, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+/** Mês fechado pela data de bloqueio ("yyyy-mm"), ou null. */
+export function closedMonthOf(lockDate: string | null | undefined): string | null {
+  if (!lockDate) return null;
+  const d = new Date(`${lockDate}T00:00:00Z`);
+  const next = new Date(d.getTime() + 86_400_000);
+  return next.getUTCDate() === 1 ? lockDate.slice(0, 7) : prevMonth(lockDate.slice(0, 7));
+}
+
 export function resolveWindow(
   snapshot: OdooSnapshot,
   endMonth?: string | null,
   lockDate?: string | null,
 ): { start: number; end: number } {
   const months = snapshot.months;
-  let end = months.length - 1;
-  // Sem data de bloqueio, o mês da sincronização ainda está em andamento.
-  if (!endMonth && !lockDate && months[end] === snapshot.syncedAt.slice(0, 7) && end > 0) end -= 1;
-  const target = endMonth ?? (lockDate ? lockDate.slice(0, 7) : null);
-  if (target) {
-    const idx = months.indexOf(target);
+  // Último mês COMPLETO: o mês da sincronização ainda está em andamento.
+  let lastComplete = months.length - 1;
+  if (months[lastComplete] >= snapshot.syncedAt.slice(0, 7) && lastComplete > 0) lastComplete -= 1;
+  let end = lastComplete;
+  if (endMonth) {
+    // Escolha explícita do usuário (pode ser um mês aberto — a barra avisa).
+    const idx = months.indexOf(endMonth);
     if (idx >= 0) end = idx;
+  } else if (lockDate) {
+    // Bloqueio no meio do mês não fecha o mês: vale o mês anterior.
+    const d = new Date(`${lockDate}T00:00:00Z`);
+    const next = new Date(d.getTime() + 86_400_000);
+    const fechado =
+      next.getUTCDate() === 1 ? lockDate.slice(0, 7) : prevMonth(lockDate.slice(0, 7));
+    const idx = months.indexOf(fechado);
+    // Só usa o bloqueio se ele estiver dentro do retrato e antes do mês corrente.
+    if (idx >= 0 && idx <= lastComplete) end = idx;
   }
   return { start: Math.max(0, end - 11), end };
 }
@@ -238,11 +274,32 @@ export function computeActuals(
   // Alinha à direita: janelas menores que 12 meses ficam nos últimos meses.
   const offset = 12 - len;
 
+  const bsMonthly = Object.fromEntries(BS_KEYS.map((k) => [k, zeros(12)])) as Record<
+    BsBucket,
+    number[]
+  >;
+  const resultadoMensal = zeros(12);
+
   for (const a of accounts) {
     let before = a.opening;
     for (let i = 0; i < window.start; i++) before += a.monthly[i] ?? 0;
     let atEnd = before;
     for (let i = window.start; i <= window.end; i++) atEnd += a.monthly[i] ?? 0;
+    // Saldo ao fim de cada mês (meses antes de uma janela curta = abertura).
+    let running = before;
+    const endOf = zeros(12);
+    for (let j = 0; j < 12; j++) {
+      if (j >= offset) running += a.monthly[window.start + j - offset] ?? 0;
+      endOf[j] = running;
+    }
+    if (a.cls.kind === "bs") {
+      for (let j = 0; j < 12; j++) bsMonthly[a.cls.bucket][j] += bsValue(a.cls.bucket, endOf[j]);
+    } else if (a.cls.kind === "pl") {
+      for (let j = offset; j < 12; j++)
+        resultadoMensal[j] -= a.monthly[window.start + j - offset] ?? 0;
+      // Resultado acumulado ainda não transferido ao PL entra em lucros acumulados.
+      for (let j = 0; j < 12; j++) bsMonthly.lucros_acumulados[j] -= endOf[j];
+    }
 
     if (a.cls.kind === "pl") {
       const line = a.cls.line;
@@ -270,10 +327,25 @@ export function computeActuals(
     closing,
     resultadoAteAbertura,
     resultadoAteFechamento,
+    bsMonthly,
+    resultadoMensal,
   };
 }
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
+const clampDias = (d: number) => Math.round(Math.min(365, Math.max(0, d)));
+
+/** Completa uma janela curta para 12 meses (meses anteriores, à esquerda). */
+function padMonths(months: string[]): string[] {
+  if (months.length >= 12 || !months.length) return months.slice(-12);
+  const out = [...months];
+  while (out.length < 12) {
+    const [y, m] = out[0].split("-").map(Number);
+    const d = new Date(Date.UTC(y, m - 2, 1));
+    out.unshift(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+  }
+  return out;
+}
 const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
 
 function toBalancoDetalhado(b: Record<BsBucket, number>, dataBase?: string): BalancoDetalhado {
@@ -368,18 +440,25 @@ function costLineFor(acc: OdooActuals["plAccounts"][number]): CostLine | null {
 
 /** Contratos sintéticos a partir dos saldos de empréstimos (taxa estimada pelos juros). */
 function debtFromBalances(actuals: OdooActuals): DebtContract[] {
-  const cp = Math.max(0, actuals.opening.emprestimos_cp);
-  const lp = Math.max(0, actuals.opening.emprestimos_lp);
+  // Dívida ATUAL = saldo contábil no fim da janela (indicadores e valuation).
+  const cp = Math.max(0, actuals.closing.emprestimos_cp);
+  const lp = Math.max(0, actuals.closing.emprestimos_lp);
   const total = cp + lp;
   if (total <= 0) return [];
   const jurosAno = sum(actuals.pl.despesa_financeira);
-  const taxaAA = Math.min(60, Math.max(0, r2((jurosAno / total) * 100)));
+  // Taxa aproximada: despesas financeiras ÷ dívida média do período.
+  const media =
+    (total +
+      Math.max(0, actuals.opening.emprestimos_cp) +
+      Math.max(0, actuals.opening.emprestimos_lp)) /
+    2;
+  const taxaAA = Math.min(60, Math.max(0, r2((jurosAno / (media || total)) * 100)));
   const out: DebtContract[] = [];
   if (cp > 0)
     out.push({
       id: "odoo:emprestimos-cp",
       credor: "Empréstimos de curto prazo (Odoo)",
-      descricao: "Saldo contábil na abertura; taxa estimada pelas despesas financeiras.",
+      descricao: "Saldo contábil no fim do período; taxa estimada pelas despesas financeiras.",
       saldoDevedor: r2(cp),
       taxaAA,
       sistema: "price",
@@ -390,7 +469,7 @@ function debtFromBalances(actuals: OdooActuals): DebtContract[] {
     out.push({
       id: "odoo:emprestimos-lp",
       credor: "Empréstimos de longo prazo (Odoo)",
-      descricao: "Saldo contábil na abertura; taxa estimada pelas despesas financeiras.",
+      descricao: "Saldo contábil no fim do período; taxa estimada pelas despesas financeiras.",
       saldoDevedor: r2(lp),
       taxaAA,
       sistema: "price",
@@ -398,6 +477,123 @@ function debtFromBalances(actuals: OdooActuals): DebtContract[] {
       tipoCredor: "banco",
     });
   return out;
+}
+
+/**
+ * DFC do razão pelo método indireto, mês a mês, a partir do balanço mensal.
+ * Como o balanço contábil fecha todo mês, a variação de caixa (caixa +
+ * aplicações) é EXATAMENTE operacional + investimento + financiamento.
+ */
+export function buildLedgerCashFlow(
+  a: OdooActuals,
+  caixaMinimo: number,
+  labels: string[],
+): CashFlow {
+  const B = a.bsMonthly;
+  const p = a.pl;
+  const prev = (k: BsBucket, j: number) => (j === 0 ? a.opening[k] : B[k][j - 1]);
+  const d = (k: BsBucket, j: number) => B[k][j] - prev(k, j);
+  const caixaFim = (j: number) => B.caixa[j] + B.aplicacoes[j];
+  const caixaIni = (j: number) =>
+    j === 0 ? a.opening.caixa + a.opening.aplicacoes : caixaFim(j - 1);
+  const m = (f: (j: number) => number) => Array.from({ length: 12 }, (_, j) => f(j));
+
+  const resultado = a.resultadoMensal;
+  // Depreciação/amortização: a contrapartida (conta redutora) não é caixa.
+  const naoCaixa = m((j) => -d("depreciacao_acumulada", j));
+  const fluxoOperacional = m(
+    (j) =>
+      resultado[j] +
+      naoCaixa[j] -
+      d("contas_receber", j) -
+      d("estoques", j) -
+      d("impostos_recuperar", j) -
+      d("despesas_antecipadas", j) -
+      d("outros_ac", j) +
+      d("fornecedores", j) +
+      d("salarios_encargos", j) +
+      d("impostos_pagar", j) +
+      d("adiantamentos_clientes", j) +
+      d("outros_pc", j),
+  );
+  const capex = m(
+    (j) => d("imobilizado", j) + d("intangivel", j) + d("investimentos", j) + d("realizavel_lp", j),
+  );
+  const fluxoInvestimento = capex.map((v) => -v);
+  const dividas = m(
+    (j) =>
+      d("emprestimos_cp", j) +
+      d("emprestimos_lp", j) +
+      d("impostos_parcelados", j) +
+      d("outros_pnc", j),
+  );
+  // Patrimônio sem o resultado do mês: aportes (+) ou distribuições (−).
+  const socios = m(
+    (j) => d("capital_social", j) + d("reservas", j) + d("lucros_acumulados", j) - resultado[j],
+  );
+  const fluxoFinanciamento = m((j) => dividas[j] + socios[j]);
+
+  // Detalhe operacional (soma = fluxo operacional; o resto vai em "fixos").
+  const pessoal = m((j) => p.pessoal_salarios[j] + p.pessoal_encargos[j] + p.pessoal_beneficios[j]);
+  const recebimentos = m(
+    (j) =>
+      p.receita_bruta[j] - p.deducoes[j] - d("contas_receber", j) + d("adiantamentos_clientes", j),
+  );
+  const pagamentosFornecedores = m((j) => p.cpv[j] + d("estoques", j) - d("fornecedores", j));
+  const pagamentosFolha = m((j) => pessoal[j] - d("salarios_encargos", j));
+  const pagamentosImpostos = m(
+    (j) =>
+      p.impostos_vendas[j] + p.ir_csll[j] - d("impostos_pagar", j) + d("impostos_recuperar", j),
+  );
+  const pagamentosFinanceiros = [...p.despesa_financeira];
+  const receitasFinanceiras = [...p.receita_financeira];
+  const outrasReceitasOperacionais = [...p.outras_receitas];
+  const pagamentosFixos = m(
+    (j) =>
+      recebimentos[j] +
+      receitasFinanceiras[j] +
+      outrasReceitasOperacionais[j] -
+      pagamentosFornecedores[j] -
+      pagamentosFolha[j] -
+      pagamentosImpostos[j] -
+      pagamentosFinanceiros[j] -
+      fluxoOperacional[j],
+  );
+  const saldoInicial = m(caixaIni);
+  const saldoFinal = m(caixaFim);
+  const variacaoCaixa = m((j) => saldoFinal[j] - saldoInicial[j]);
+  const z = zeros(12);
+  const cf: CashFlow = {
+    saldoInicial,
+    recebimentos,
+    receitasFinanceiras,
+    outrasReceitasOperacionais,
+    pagamentosFornecedores,
+    pagamentosFixos,
+    pagamentosVariaveis: [...z],
+    pagamentosFolha,
+    pagamentosFinanceiros,
+    pagamentosImpostos,
+    fluxoOperacional,
+    aportes: socios.map((v) => Math.max(0, v)),
+    emprestimosCaptados: dividas.map((v) => Math.max(0, v)),
+    amortizacoes: dividas.map((v) => Math.max(0, -v)),
+    dividendos: socios.map((v) => Math.max(0, -v)),
+    fluxoFinanciamento,
+    capex,
+    fluxoInvestimento,
+    permutasCredito: [...z],
+    permutasDebito: [...z],
+    permutasLiquido: [...z],
+    variacaoCaixa,
+    saldoFinal,
+    alertas: [],
+    contasReceberAnoSeguinte: a.closing.contas_receber,
+    fornecedoresAnoSeguinte: a.closing.fornecedores,
+    impostosAnoSeguinte: a.closing.impostos_pagar,
+    totais: {} as CashFlow["totais"],
+  };
+  return finalizeCashFlow(cf, caixaMinimo, labels);
 }
 
 export type TaxReconciliation = {
@@ -458,6 +654,10 @@ export type OdooOverlay = {
   costs: CostLine[];
   capital: Partial<AppState["capital"]>;
   abertura: Partial<AppState["capital"]["abertura"]>;
+  /** Prazos médios medidos no razão (dias). */
+  prazos: { pmr: number; pmp: number };
+  /** Realizado do razão (âncora dos motores; ajustes calculados em anchorOdooState). */
+  realizado: RealizadoLedger;
 };
 
 export function prepareOdooOverlay(data: OdooEntityData): OdooOverlay {
@@ -527,6 +727,8 @@ export function prepareOdooOverlay(data: OdooEntityData): OdooOverlay {
   const firstMonth = actuals.months[0];
   const lastMonth = actuals.months[actuals.months.length - 1];
   const [fy] = (lastMonth ?? "").split("-").map(Number);
+  const receitaAnual = sum(pl.receita_bruta);
+  const cpvAnual = sum(pl.cpv);
 
   return {
     header: {
@@ -553,6 +755,8 @@ export function prepareOdooOverlay(data: OdooEntityData): OdooOverlay {
         anterior: undefined,
       },
       debtContracts: debtFromBalances(actuals),
+      // Valuation: dívida líquida = dívida − caixa e aplicações do fechamento.
+      caixaOcioso: r2(c.caixa + c.aplicacoes),
       patrimonioLiquidoAbertura: r2(pl_(o)),
       ativoTotalAbertura: r2(ativoTotal(o)),
       patrimonioLiquido: r2(pl_(c)),
@@ -571,6 +775,18 @@ export function prepareOdooOverlay(data: OdooEntityData): OdooOverlay {
       lucrosAcumulados: r2(o.lucros_acumulados),
       depreciacaoAcumulada: r2(Math.abs(o.depreciacao_acumulada)),
     },
+    prazos: {
+      pmr: receitaAnual > 0 ? clampDias((c.contas_receber / receitaAnual) * 360) : 0,
+      pmp: cpvAnual > 0 ? clampDias((c.fornecedores / cpvAnual) * 360) : 0,
+    },
+    realizado: {
+      fonte: "odoo",
+      meses: actuals.months.length === 12 ? actuals.months : padMonths(actuals.months),
+      impostosVendas: pl.impostos_vendas.map(r2),
+      impostosLucro: pl.ir_csll.map(r2),
+      cf: buildLedgerCashFlow(actuals, 0, periodLabels({ meses: padMonths(actuals.months) })),
+      balancoFechamento: toBalancoDetalhado(c, lastMonth ? `${lastMonth}-01` : undefined),
+    },
   };
 }
 
@@ -581,11 +797,19 @@ export function prepareOdooOverlay(data: OdooEntityData): OdooOverlay {
 export function applyOdooOverlay(base: AppState, ov: OdooOverlay): AppState {
   return {
     ...base,
+    realizado: ov.realizado,
     companyName: ov.header.companyName,
     cnpj: ov.header.cnpj ?? base.cnpj,
     fiscalYear: ov.header.fiscalYear ?? base.fiscalYear,
     periodoAnaliseMeses: ov.header.periodoAnaliseMeses,
-    revenue: { ...base.revenue, ...ov.revenue },
+    revenue: {
+      ...base.revenue,
+      ...ov.revenue,
+      pmr: ov.prazos.pmr,
+      pmp: ov.prazos.pmp,
+      pmrMensal: undefined,
+      pmpMensal: undefined,
+    },
     costs: ov.costs,
     capital: {
       ...base.capital,
@@ -634,4 +858,48 @@ export function suggestPremissas(base: AppState, data: OdooEntityData): AppState
       issIcms: issIcms || base.tax.issIcms,
     },
   };
+}
+
+/**
+ * Âncora no razão: calcula, para o estado-base (premissas + realizado do
+ * Odoo), quanto o motor difere do contabilizado. Depois disso:
+ *   - DRE, fluxo de caixa e fechamento do estado-base = Odoo (exato);
+ *   - qualquer simulação derivada dele = Odoo + efeito das alavancas.
+ * Devolve o estado já normalizado (idempotente).
+ */
+export function anchorOdooState(state: AppState): AppState {
+  const r = state.realizado;
+  if (!r) return state;
+  const clean: RealizadoLedger = {
+    fonte: r.fonte,
+    meses: r.meses,
+    impostosVendas: r.impostosVendas,
+    impostosLucro: r.impostosLucro,
+    cf: r.cf,
+    balancoFechamento: r.balancoFechamento,
+  };
+  const s1 = normalizeStateFromBalanco({ ...state, realizado: clean });
+  const regime = resolveEffectiveRegime(s1);
+  const motor = buildDRE(s1, regime).dre;
+  const s2: AppState = {
+    ...s1,
+    realizado: {
+      ...clean,
+      ajusteImpostosVendas: r.impostosVendas.map((v, i) => v - (motor.impostosVendas[i] ?? 0)),
+      ajusteImpostosLucro: r.impostosLucro.map((v, i) => v - (motor.impostos[i] ?? 0)),
+    },
+  };
+  const cfBase = buildCashFlowEngine(s2, regime);
+  const dre2 = buildDRE(s2, regime).dre;
+  const fechamentoBase = deriveBalancoFechamentoEngine({
+    state: s2,
+    dre: dre2,
+    cf: cfBase,
+  }).balanco;
+  return { ...s2, realizado: { ...s2.realizado!, cfBase, fechamentoBase } };
+}
+
+/** Estado sem a âncora: tributos e fluxos 100% pelo motor (comparação/conciliação). */
+export function withoutAnchor(state: AppState): AppState {
+  return state.realizado ? { ...state, realizado: undefined } : state;
 }

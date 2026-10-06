@@ -220,6 +220,31 @@ function computeImpostosLucro(
 // ---------------------------------------------------------------------
 // API pública — orquestra as sub-funções acima na ordem correta.
 // ---------------------------------------------------------------------
+/** Soma a âncora do razão às séries de tributos (ver AppState.realizado). */
+function anchorTax(
+  t: MonthlyTax,
+  ajV: number[] | undefined,
+  ajL: number[] | undefined,
+): MonthlyTax {
+  if (!ajV && !ajL) return t;
+  const monthlyVendas = t.monthlyVendas.map((v, i) => v + (ajV?.[i] ?? 0));
+  const monthlyLucro = t.monthlyLucro.map((v, i) => v + (ajL?.[i] ?? 0));
+  const monthly = monthlyVendas.map((v, i) => v + monthlyLucro[i]);
+  const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
+  const annual = sum(monthly);
+  const receitaBase = t.effective > 0 ? t.annual / t.effective : 0;
+  return {
+    ...t,
+    monthlyVendas,
+    monthlyLucro,
+    monthly,
+    annual,
+    annualVendas: sum(monthlyVendas),
+    annualLucro: sum(monthlyLucro),
+    effective: receitaBase > 0 ? annual / receitaBase : t.effective,
+  };
+}
+
 export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: MonthlyTax } {
   const { revenue } = state;
   const usaPDD = !!revenue.inadimplenciaComoPDD;
@@ -232,7 +257,9 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
 
   // (1) Impostos sobre venda + Receita Líquida (CPC/IFRS 15)
   const taxPre = computeImpostosVendas(state, regime);
-  const impostosVendas = taxPre.monthlyVendas.slice();
+  // Modo Odoo: âncora no contabilizado (razão − motor-base); 0 fora dele.
+  const ajV = state.realizado?.ajusteImpostosVendas;
+  const impostosVendas = taxPre.monthlyVendas.map((v, i) => v + (ajV?.[i] ?? 0));
   const outrasDeducoes = outrasDeducoesMensal(state);
   const receitaLiquida = receitaBruta.map(
     (r, i) => r - deducoesInadimplencia[i] - outrasDeducoes[i] - impostosVendas[i],
@@ -264,7 +291,8 @@ export function buildDRE(state: AppState, regime: TaxRegime): { dre: DRE; tax: M
   const lair = ebit.map((e, i) => e + resultadoFinanceiro[i]);
 
   // (4) Impostos sobre lucro (com LAIR já correto no Real)
-  const { tax, impostosLucroBase } = computeImpostosLucro(state, regime, lair, taxPre);
+  const { tax: taxCalc, impostosLucroBase } = computeImpostosLucro(state, regime, lair, taxPre);
+  const tax = anchorTax(taxCalc, ajV, state.realizado?.ajusteImpostosLucro);
   const impostosLucro = tax.monthlyLucro;
   const impostosTotal = impostosVendas.map((v, i) => v + impostosLucro[i]);
   const lucroLiquido = lair.map((l, i) => l - impostosLucro[i]);

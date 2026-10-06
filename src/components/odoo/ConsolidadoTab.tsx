@@ -21,8 +21,10 @@ import { loadKey } from "@/engines/finance/persistence";
 import { fmtBRL } from "@/engines/finance/format";
 import type { AppState } from "@/engines/finance/types";
 import {
+  anchorOdooState,
   applyOdooOverlay,
   buildEntityData,
+  withoutAnchor,
   prepareOdooOverlay,
   suggestPremissas,
   type OdooActuals,
@@ -71,7 +73,9 @@ function rowFromModel(state: AppState): {
   lucro: number;
   regime: string;
 } {
+  // DRE exibida: ancorada no razão (= Odoo). Conciliação: tributos 100% pelo motor.
   const m = buildFinancialModel(state);
+  const motor = buildFinancialModel(withoutAnchor(state));
   const d = m.dre;
   const row: Row = {
     receitaBruta: sum(d.receitaBruta),
@@ -87,7 +91,12 @@ function rowFromModel(state: AppState): {
     impostosLucro: sum(d.impostos),
     lucroLiquido: sum(d.lucroLiquido),
   };
-  return { row, vendas: sum(d.impostosVendas), lucro: sum(d.impostos), regime: String(m.regime) };
+  return {
+    row,
+    vendas: sum(motor.dre.impostosVendas),
+    lucro: sum(motor.dre.impostos),
+    regime: String(m.regime),
+  };
 }
 
 /** Resultado contábil direto do Odoo (como lançado). */
@@ -187,7 +196,7 @@ export function ConsolidadoTab() {
         e.key === cockpit?.entity?.key
           ? liveState
           : (premissas[e.key] ?? suggestPremissas(DEFAULT_STATE, data));
-      const state = applyOdooOverlay(base, prepareOdooOverlay(data));
+      const state = anchorOdooState(applyOdooOverlay(base, prepareOdooOverlay(data)));
       const calc = rowFromModel(state);
       const contabil = rowFromActuals(data.actuals);
       return { entity: e, data, calc, contabil };
@@ -289,23 +298,6 @@ export function ConsolidadoTab() {
                   )}
                 </tr>
               ))}
-              <tr className="text-muted-foreground">
-                <td className="p-2">Lucro líquido contábil (Odoo)</td>
-                {perEntity.map((x) => (
-                  <td key={x.entity.key} className="p-2 text-right tabular-nums">
-                    {fmtBRL(x.contabil.lucroLiquido)}
-                  </td>
-                ))}
-                {elim && <td />}
-                {consolidated && (
-                  <td className="p-2 text-right tabular-nums">
-                    {fmtBRL(
-                      perEntity.reduce((s, x) => s + x.contabil.lucroLiquido, 0) -
-                        (elim?.lucroLiquido ?? 0),
-                    )}
-                  </td>
-                )}
-              </tr>
             </tbody>
           </table>
         </div>

@@ -4,6 +4,7 @@ import { resolveEffectiveRegime } from "./regime";
 import { splitReceitasFinanceiras, computeCapexMensal, outrasDeducoesMensal } from "./shared";
 import type { MonthlyTax } from "./tax/shared";
 import { partitionMonthlyTaxByLag, LAG_DIAS_PADRAO, LAG_DIAS_SPLIT } from "./tax/impostosLag";
+import { anchorCashFlow } from "./anchor";
 import { MESES, sum, zeros12 } from "./format";
 import { mediaMensal, mesesPreenchidos } from "./periodUtils";
 import { getSplitPaymentAtivo } from "./taxDefaults";
@@ -447,6 +448,17 @@ export function computeBurnRunway(args: {
 // Orquestrador — mesma assinatura e retorno do legado.
 // =====================================================================
 export function buildCashFlow(
+  state: AppState,
+  regime: TaxRegime = resolveEffectiveRegime(state),
+): CashFlow {
+  const eng = buildCashFlowEngine(state, regime);
+  // Modo Odoo: fluxo do razão + efeito do motor (ver engines/finance/anchor.ts).
+  const r = state.realizado;
+  return r?.cfBase ? anchorCashFlow(r, eng, state.cashflow?.caixaMinimo ?? 0) : eng;
+}
+
+/** Fluxo de caixa reconstruído pelo motor (premissas), sem âncora no razão. */
+export function buildCashFlowEngine(
   state: AppState,
   regime: TaxRegime = resolveEffectiveRegime(state),
 ): CashFlow {

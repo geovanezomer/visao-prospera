@@ -247,3 +247,58 @@ describe("suggestPremissas", () => {
     expect(merged.revenue.inadimplencia.every((v) => v === 0)).toBe(true);
   });
 });
+
+describe("âncora no razão (modo Odoo)", () => {
+  it("estado-base: DRE, caixa e fechamento iguais ao Odoo; simulação soma só o efeito", async () => {
+    const { anchorOdooState, suggestPremissas } = await import("../toAppState");
+    const { buildFinancialModel } = await import("@/engines/finance/financialModel");
+    const { applySimulator, DEFAULT_SIM } = await import("@/engines/finance/simulator");
+    const s = snapshot();
+    s.perCompany["1"].accounts.push(
+      acc(10, "3.01.01.01.02.03", "(-) ICMS", "expense", flat(1_800)),
+      acc(11, "2.01.01.09.01.01", "ICMS a recolher", "liability_current", flat(-1_800)),
+    );
+    const data = buildEntityData(s, listEntities(s)[0]);
+    const base = anchorOdooState(mergeOdooActuals(suggestPremissas(createState(), data), data));
+    const m = buildFinancialModel(base);
+    const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
+
+    // Tributos = contabilizado.
+    expect(sum(m.dre.impostosVendas)).toBeCloseTo(sum(data.actuals.pl.impostos_vendas), 2);
+    // Caixa final = caixa contábil no fim da janela.
+    const caixaOdoo = data.actuals.closing.caixa + data.actuals.closing.aplicacoes;
+    expect(m.cf.saldoFinal[11]).toBeCloseTo(caixaOdoo, 2);
+    // Variação de caixa = operacional + investimento + financiamento, mês a mês.
+    for (let i = 0; i < 12; i++) {
+      expect(m.cf.variacaoCaixa[i]).toBeCloseTo(
+        m.cf.fluxoOperacional[i] + m.cf.fluxoInvestimento[i] + m.cf.fluxoFinanciamento[i],
+        2,
+      );
+    }
+    // Fechamento real e fechado.
+    expect(m.balancoFechamento.balanco.ativoCirculante?.caixaEquivalentes).toBeCloseTo(
+      data.actuals.closing.caixa,
+      2,
+    );
+    expect(m.balancoFechamento.totals.fechado).toBe(true);
+
+    // Simulação: +10% de preço eleva a receita e o caixa a partir do realizado.
+    const sim = applySimulator(base, { ...DEFAULT_SIM, priceDeltaPct: 10 });
+    const ms = buildFinancialModel(sim);
+    expect(sum(ms.dre.receitaBruta)).toBeGreaterThan(sum(m.dre.receitaBruta));
+    expect(ms.cf.saldoFinal[11]).toBeGreaterThan(m.cf.saldoFinal[11]);
+  });
+});
+
+describe("resolveWindow — meses fechados", () => {
+  it("bloqueio fora do retrato não estende a janela ao mês corrente", () => {
+    const s = snapshot();
+    s.syncedAt = "2026-08-15T12:00:00Z"; // agosto/26 em andamento
+    const w = resolveWindow(s, null, "2023-12-31");
+    expect(MONTHS[w.end]).toBe("2026-07");
+  });
+  it("bloqueio no meio do mês fecha só o mês anterior", () => {
+    const w = resolveWindow(snapshot(), null, "2026-06-15");
+    expect(MONTHS[w.end]).toBe("2026-05");
+  });
+});

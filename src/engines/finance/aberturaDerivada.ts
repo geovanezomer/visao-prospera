@@ -26,6 +26,7 @@
 import type { AppState, DebtContract } from "./types";
 import { safeNumber as n } from "./safeMath";
 import { isFolhaCost } from "./costs";
+import { calcBalancoTotals } from "./balanco";
 
 const firstMonth = (a: number[] | undefined): number => n(a?.[0]);
 
@@ -117,14 +118,17 @@ export function deriveAbertura({
   // Empréstimos por maturidade — SSOT: contratos cadastrados no Card 2.
   // Sem contratos → CP = LP = 0 (empresa sem dívida).
   const split = splitDebtByMaturity(cap.debtContracts);
-  const cpVal = split.cp;
-  const lpVal = split.lp;
+  // Modo Odoo: a abertura é o balanço contábil — nada é estimado.
+  const real = !!state.realizado;
+  const cpVal = real ? n(pc.emprestimosFinanciamentosCP) : split.cp;
+  const lpVal = real ? n(bal.passivoNaoCirculante?.emprestimosFinanciamentosLP) : split.lp;
 
   // Impostos a pagar (abertura): M8 — usa a MÉDIA do 1º trimestre em vez de
   // apenas mês[0] para não subestimar/superestimar em cenários sazonais ou
   // trimestrais (IRPJ/CSLL do Presumido/Real). Aproxima a competência
   // provisionada que estaria em aberto na virada do ano.
   const impostosPagarVal = (() => {
+    if (real) return n(pc.impostosPagar);
     const arr = impostosTotalMensais ?? [];
     if (!arr.length) return 0;
     const janela = arr.slice(0, Math.min(3, arr.length));
@@ -135,9 +139,9 @@ export function deriveAbertura({
   // pelo Fator R e por balancoFechamento). Usa `values[0]` cru: encargos
   // reais são aplicados na DFC (via effectiveMonthValues) — aqui é apenas
   // provisão de abertura no valor bruto de folha.
-  const folhaMes1 = (state.costs ?? [])
-    .filter(isFolhaCost)
-    .reduce((s, l) => s + firstMonth(l.values), 0);
+  const folhaMes1 = real
+    ? n(pc.salariosEncargos)
+    : (state.costs ?? []).filter(isFolhaCost).reduce((s, l) => s + firstMonth(l.values), 0);
 
   // Overrides manuais (raros).
   const impostosRecVal = n(ab.impostosRecuperar);
@@ -165,7 +169,10 @@ export function deriveAbertura({
   const plTotal =
     n(pl.capitalSocial) + n(pl.reservasCapital) + n(pl.reservasLucros) + lucrosAcumVal;
 
-  const diferenca = ativo - (passivo + plTotal);
+  // Modo Odoo: totais com TODAS as rubricas do balanço contábil (aplicações,
+  // RLP, investimentos, outros passivos...), que fecha por construção.
+  const tReal = real ? calcBalancoTotals(bal) : null;
+  const diferenca = tReal ? tReal.diferenca : ativo - (passivo + plTotal);
   const tol = Math.max(100, ativo * 0.001);
   const fechado = Math.abs(diferenca) < tol;
 
@@ -236,6 +243,14 @@ export function deriveAbertura({
       value: lucrosAcumVal,
       editavel: true,
     },
-    totals: { ativo, passivo, pl: plTotal, diferenca, fechado },
+    totals: tReal
+      ? {
+          ativo: tReal.ativoTotal,
+          passivo: tReal.passivoTotal,
+          pl: tReal.patrimonioLiquido,
+          diferenca,
+          fechado,
+        }
+      : { ativo, passivo, pl: plTotal, diferenca, fechado },
   };
 }

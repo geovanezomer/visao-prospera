@@ -709,6 +709,36 @@ export interface AppState {
    *  sócios sobre quanto efetivamente retirar. Alimenta DRE/Balanço/DFC.
    *  `fixed=true` ⇒ um único valor replicado nos 12 meses. */
   distribuicaoRealizada?: { values: Months; fixed: boolean };
+
+  /**
+   * Realizado contábil (modo Odoo). Quando presente, DRE, fluxo de caixa e
+   * balanço de fechamento passam a ser ANCORADOS no razão:
+   *   exibido = razão + (motor(estado) − motor(estado-base))
+   * No estado-base o segundo termo é zero (números = Odoo); numa simulação,
+   * soma-se só o efeito das alavancas. Montado em engines/odoo/anchor.ts.
+   */
+  realizado?: RealizadoLedger;
+}
+
+/** Ver `AppState.realizado`. */
+export interface RealizadoLedger {
+  fonte: "odoo";
+  /** Meses da janela ("yyyy-mm"), alinhados com os 12 índices das séries. */
+  meses: string[];
+  /** Tributos sobre vendas e IRPJ/CSLL contabilizados (12 meses). */
+  impostosVendas: number[];
+  impostosLucro: number[];
+  /** razão − motor(base): somados aos tributos que o motor calcula. */
+  ajusteImpostosVendas?: number[];
+  ajusteImpostosLucro?: number[];
+  /** DFC do razão (método indireto sobre o balanço mensal). */
+  cf: import("./cashflow").CashFlow;
+  /** DFC que o motor produz para o estado-base (referência das simulações). */
+  cfBase?: import("./cashflow").CashFlow;
+  /** Balanço de fechamento real (último mês da janela). */
+  balancoFechamento: BalancoDetalhado;
+  /** Fechamento que o motor reconstrói para o estado-base. */
+  fechamentoBase?: BalancoDetalhado;
 }
 
 export interface Scenario {
