@@ -530,6 +530,24 @@ function SimulaPro(_props: { pastDueDaysLeft?: number } = {}) {
                       <span className="truncate font-medium text-foreground/80">
                         {state.companyName?.trim() || "Sem empresa"}
                       </span>
+                      {!cockpit.active && isExampleState(state) && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: "Começar em branco?",
+                              description:
+                                "Os números da empresa de exemplo serão apagados para você lançar os seus.",
+                              confirmLabel: "Começar em branco",
+                            });
+                            if (ok) update(() => blankState());
+                          }}
+                          className="shrink-0 rounded-full border border-warning/50 bg-warning/10 px-2 py-0.5 text-[10px] font-semibold text-warning hover:bg-warning/20"
+                          title="Os números atuais são de exemplo. Clique para começar com a sua empresa."
+                        >
+                          Dados de exemplo · começar em branco
+                        </button>
+                      )}
                       {/* Indicador de backup na nuvem — só aparece quando há userId e status ≠ idle. */}
                       {user && backupStatus !== "idle" && (
                         <>

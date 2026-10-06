@@ -45,7 +45,7 @@ export function ProximosPassos({ state }: { state: AppState }) {
         <button
           type="button"
           onClick={() => irPara("resultados")}
-          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          className="inline-flex w-full items-center gap-1 text-xs font-medium text-primary hover:underline sm:w-auto"
         >
           Diagnóstico completo <ArrowRight className="h-3 w-3" />
         </button>

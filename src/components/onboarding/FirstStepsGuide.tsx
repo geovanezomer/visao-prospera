@@ -22,49 +22,28 @@ const MANUAL: Etapa[] = [
   {
     titulo: "Bem-vindo ao FinnancePRO",
     texto:
-      "Aqui você monta o diagnóstico financeiro de uma empresa: DRE, balanço, fluxo de caixa, mais de 40 indicadores, tributação (inclusive a Reforma) e simulações. Os números que aparecem agora são de uma empresa de exemplo — troque pelos dados reais seguindo as próximas etapas.",
+      "Aqui você vê a saúde financeira de uma empresa e testa decisões antes de tomá-las. Os números de agora são de uma empresa de exemplo. Para usar a sua, siga as 3 etapas — dá para começar com o faturamento e as despesas do ano.",
   },
   {
     titulo: "1. Empresa e regime tributário",
     texto:
-      "No botão de engrenagem, no alto da tela, informe nome, setor e regime (Simples, Presumido ou Real). Alíquotas, Lalur, ICMS-ST/DIFAL e Reforma também ficam lá.",
+      "Na aba Regime Tributário, escolha Simples, Presumido ou Real. Se não souber, deixe como está e confira com o contador depois — o app mostra qual regime sairia mais barato.",
     aba: "tributos",
     botao: "Abrir Regime Tributário",
   },
   {
-    titulo: "2. Receitas",
+    titulo: "2. Receitas e despesas",
     texto:
-      "Lance o faturamento de cada mês, os prazos de recebimento e as deduções. É a base de tudo: DRE, impostos, caixa e indicadores reagem na hora.",
+      "Lance o faturamento de cada mês em Receitas e os gastos em Despesas (marque as linhas de folha CLT para o app calcular os encargos). Valores com ponto ou vírgula, como no extrato: 15.000 ou 15.000,00.",
     aba: "receitas",
     botao: "Abrir Receitas",
   },
   {
-    titulo: "3. Despesas, folha e pró-labore",
+    titulo: "3. Veja o que fazer",
     texto:
-      "Cadastre custos e despesas por categoria. Marque as linhas de folha CLT para o app calcular os encargos do regime. O pró-labore dos sócios fica na aba própria.",
-    aba: "custos",
-    botao: "Abrir Despesas",
-  },
-  {
-    titulo: "4. Capital e dívidas",
-    texto:
-      "Informe o balanço de abertura (caixa, clientes, estoques, fornecedores) e os contratos de empréstimo. Sem isso, o balanço de fechamento e os indicadores de endividamento ficam incompletos.",
-    aba: "capital",
-    botao: "Abrir Capital",
-  },
-  {
-    titulo: "5. Leia os resultados",
-    texto:
-      "Dashboard, DRE, Balanço, Fluxo de Caixa e Indicadores mostram a situação. O Diagnóstico aponta os problemas e as ações com maior efeito. Passe o mouse no ícone (i) de cada número para ver a fórmula e a memória de cálculo.",
+      "O Dashboard abre com a nota de saúde e até três ações prioritárias; o botão Simular de cada uma mostra o efeito antes de você decidir. O PDF, no alto da tela, leva tudo para o cliente ou para o banco. Caixa inicial e empréstimos (aba Capital) completam o balanço quando quiser.",
     aba: "dashboard",
     botao: "Abrir Dashboard",
-  },
-  {
-    titulo: "6. Simule e apresente",
-    texto:
-      "No Simulador, mova preço, volume, custos, prazos e dívida e veja o efeito em tudo. Salve simulações com nome, use o Modo Reunião para apresentar e exporte o relatório em PDF (com os insights estratégicos) pelo botão de impressora.",
-    aba: "simulador",
-    botao: "Abrir Simulador",
   },
 ];
 
@@ -91,7 +70,7 @@ const ODOO: Etapa[] = [
   {
     titulo: "3. Premissas",
     texto:
-      "Regime tributário, custo de capital e cenários continuam editáveis (botão de engrenagem e aba Valuation). Cada empresa guarda as suas premissas.",
+      "Regime tributário, custo de capital e cenários continuam editáveis (aba Regime Tributário e aba Valuation). Cada empresa guarda as suas premissas.",
     aba: "tributos",
     botao: "Abrir Regime Tributário",
   },

@@ -146,7 +146,7 @@ test("guia de primeiros passos reabre pelo botão de ajuda e leva à tela", asyn
 test("empresa em branco: aviso nas telas de resultado e volta ao exemplo", async ({ page }) => {
   await page.goto("/app");
   await page.getByRole("button", { name: "Ajuda", exact: true }).click();
-  await page.getByRole("button", { name: "Começar em branco" }).click();
+  await page.getByRole("button", { name: "Começar em branco", exact: true }).click();
   await expect(page.getByRole("dialog", { name: /Empresa e regime/ })).toBeVisible();
   await page.getByRole("button", { name: "Pular guia" }).click();
 

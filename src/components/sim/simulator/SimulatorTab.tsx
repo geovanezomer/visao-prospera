@@ -1,5 +1,5 @@
 import { ScenariosMenu } from "./ScenariosMenu";
-import { memo, useEffect, useId, useMemo, useState } from "react";
+import { memo, useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { AppState, COST_VENDAS_LABEL, TaxRegime } from "@/engines/finance/types";
 import { resolveEffectiveRegime } from "@/engines/finance/regime";
@@ -43,6 +43,7 @@ import {
   Save,
   SlidersHorizontal,
   TriangleAlert,
+  ChevronDown,
   Wand2,
   Sparkles,
 } from "lucide-react";
@@ -416,32 +417,48 @@ export function SimulatorTab({
       </div>
 
       {/* Simulador 2.0: ponte de valor, sensibilidade, metas, estresse, valor econômico */}
-      <MarketMacroCard state={state} params={p} setParams={setP} />
       <StrategicInsights state={state} params={p} onApplyParams={setP} />
 
-      {/* Projeções refletindo o cenário simulado */}
-      <div className="space-y-4 border-t border-border/60 pt-6">
-        <div
-          role="alert"
-          className="flex items-start gap-3 rounded-lg border-l-4 border-amber-500 bg-amber-500/10 p-4 text-sm text-foreground shadow-sm"
-        >
-          <TriangleAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" />
-          <div>
-            <div className="font-semibold text-amber-800 dark:text-amber-400">
-              Atenção — Cenário Simulado
-            </div>
-            <div className="mt-1 text-muted-foreground">
-              As análises abaixo refletem o cenário{" "}
-              <strong className="text-foreground">simulado</strong> acima. Sem ajustes nos sliders,
-              elas representam o cenário base atual do sistema.
-            </div>
-          </div>
-        </div>
+      {/* O resto é para quem quer aprofundar: fechado por padrão (e só calcula aberto). */}
+      <AnalisesAvancadas>
+        <MarketMacroCard state={state} params={p} setParams={setP} />
+        <p className="rounded-md border-l-4 border-amber-500 bg-amber-500/10 p-3 text-xs text-muted-foreground">
+          Indicadores, projeção e Monte Carlo abaixo refletem o cenário{" "}
+          <strong className="text-foreground">simulado</strong> (sem ajustes, o cenário atual).
+        </p>
         <IndicatorsCard state={simState} />
         <ForecastCard state={simState} />
         <MonteCarloCard state={simState} />
-      </div>
+      </AnalisesAvancadas>
     </div>
+  );
+}
+
+// ============== Análises avançadas (recolhidas) ==============
+
+function AnalisesAvancadas({ children }: { children: ReactNode }) {
+  const [aberto, setAberto] = useState(false);
+  return (
+    <section className="border-t border-border/60 pt-4">
+      <button
+        type="button"
+        aria-expanded={aberto}
+        onClick={() => setAberto((v) => !v)}
+        className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3 text-left text-sm font-semibold hover:bg-card/70"
+      >
+        <span>
+          Análises avançadas
+          <span className="ml-2 text-xs font-normal text-muted-foreground">
+            mercado e macroeconomia, indicadores do cenário, projeção 36 meses e Monte Carlo
+          </span>
+        </span>
+        <ChevronDown
+          className={cn("h-4 w-4 shrink-0 transition-transform", aberto && "rotate-180")}
+          aria-hidden="true"
+        />
+      </button>
+      {aberto && <div className="mt-4 space-y-4">{children}</div>}
+    </section>
   );
 }
 

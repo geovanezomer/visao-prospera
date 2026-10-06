@@ -27,18 +27,21 @@ export type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { title: "Dashboard", icon: LayoutDashboard, value: "dashboard" },
-  { title: "Capital", icon: Wallet, value: "capital" },
+  // Lançar (na ordem do guia de primeiros passos)
+  { title: "Regime Tributário", icon: Gavel, value: "tributos" },
   { title: "Receitas", icon: Receipt, value: "receitas" },
   { title: "Despesas", icon: ReceiptText, value: "custos" },
   { title: "Pró-labore", icon: Users, value: "prolabore" },
-  { title: "Fluxo de Caixa", icon: BarChart3, value: "caixa" },
-  { title: "Regime Tributário", icon: Gavel, value: "tributos" },
+  { title: "Capital", icon: Wallet, value: "capital" },
+  // Ler os resultados
   { title: "DRE", icon: FileSpreadsheet, value: "dre" },
+  { title: "Fluxo de Caixa", icon: BarChart3, value: "caixa" },
   { title: "Balanço", icon: Scale, value: "balanco" },
   { title: "Indicadores", icon: Activity, value: "indicadores" },
-  { title: "Governança", icon: ShieldCheck, value: "governanca" },
   { title: "Diagnóstico", icon: Search, value: "resultados" },
+  // Decidir
   { title: "Simulador", icon: Wand2, value: "simulador" },
   { title: "Valuation", icon: Landmark, value: "valuation" },
+  { title: "Governança", icon: ShieldCheck, value: "governanca" },
   { title: "Consultor IA", icon: Bot, value: "ai" },
 ];
