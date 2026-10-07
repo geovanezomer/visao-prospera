@@ -30,6 +30,12 @@ function createAuth() {
   return betterAuth({
     appName: "FinnancePRO",
     baseURL: appUrl(),
+    // Outros endereços aceitos no login além do APP_URL (ex.: IP da VPS e
+    // domínio), separados por vírgula. Sem isso o login responde "Invalid origin".
+    trustedOrigins: (process.env.TRUSTED_ORIGINS ?? "")
+      .split(",")
+      .map((o) => o.trim().replace(/\/$/, ""))
+      .filter(Boolean),
     secret,
     database: drizzleAdapter(db(), {
       provider: "pg",
